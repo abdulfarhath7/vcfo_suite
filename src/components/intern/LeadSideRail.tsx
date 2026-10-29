@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashSection } from '@/components/dash/DashSection';
@@ -23,7 +24,7 @@ export function LeadSideRail({ items }: { items: InternWorkItem[] }) {
     <div className="flex flex-col gap-5" data-intern-waiting-on>
       <DashSection title="Waiting on" meta={all.length ? String(all.length) : undefined} bodyClassName="p-0">
         {waiting.length === 0 ? (
-          <p className="px-4 py-4 text-[13px] text-ink-muted">Nobody is blocking you.</p>
+          <EmptyState title="Nothing waiting" className="m-4" />
         ) : (
           <ul>
             {waiting.map((item) => (

@@ -10,7 +10,10 @@ import type { AuthContext } from '@/auth/guards';
  *   dev    — developer or super admin only.
  *   client — only the caller's own engagement, or one `assertEngagementAccess` approves; a
  *            foreign engagement reads as no trends and runs no filing query.
- *   lead / manager / admin — the matching role; no series and no query.
+ *   lead    — project leads only; events and filings only for their scoped engagements,
+ *             tasks only where they are the assignee.
+ *   manager — managers and firm admins; the manager's scoped engagements only.
+ *   admin   — firm-wide admins only; every engagement.
  */
 
 type Call = { op: string; where?: SQL };
@@ -44,9 +47,11 @@ vi.mock('@/db/client', () => ({
 
 const assertEngagementAccess = vi.fn();
 const getMyEngagement = vi.fn();
+const listScopedEngagementIds = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...a: unknown[]) => assertEngagementAccess(...a),
   getMyEngagement: (...a: unknown[]) => getMyEngagement(...a),
+  listScopedEngagementIds: (...a: unknown[]) => listScopedEngagementIds(...a),
 }));
 
 const { getHomeTrends, HomeTrendsError } = await import('@/db/repositories/home-trends');
@@ -67,6 +72,7 @@ beforeEach(() => {
   calls.length = 0;
   results = [];
   getMyEngagement.mockResolvedValue({ id: OWN });
+  listScopedEngagementIds.mockResolvedValue([OWN]);
   assertEngagementAccess.mockImplementation(async (_c: AuthContext, id: string) =>
     id === OWN ? { ok: true, dbId: OWN, row: { id: OWN } } : { ok: false, dbId: id, forbidden: true },
   );
@@ -124,6 +130,22 @@ describe('client home', () => {
     expect(params()).not.toContain(OTHER);
   });
 
+  it('builds Documents in from the requests of the own engagement (closed_at)', async () => {
+    results = [
+      [],
+      [],
+      [
+        { status: 'fulfilled', closedAt: new Date('2026-10-26T05:00:00Z'), createdAt: new Date('2026-10-20T05:00:00Z') },
+        { status: 'pending', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') },
+      ],
+    ];
+    const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
+    expect(trends.docsIn).toEqual([0, 1, 1, 1]);
+    expect(calls).toHaveLength(3);
+    expect(params()).toContain(OWN);
+    expect(params()).not.toContain(OTHER);
+  });
+
   it.each(['client', 'manager', 'intern'] as const)('%s asking for a foreign engagement gets nothing and no filing query', async (role) => {
     const trends = await getHomeTrends(ctx(role), 'client', { engagementId: OTHER, now: NOW });
     expect(trends).toEqual({});
@@ -143,15 +165,56 @@ describe('client home', () => {
 });
 
 describe('staff homes', () => {
-  it.each([
-    ['lead', 'intern'],
-    ['manager', 'manager'],
-    ['manager', 'super_admin'],
-    ['admin', 'admin'],
-    ['admin', 'super_admin'],
-  ] as const)('%s home for %s returns no series and runs no query', async (home, role) => {
-    expect(await getHomeTrends(ctx(role), home, { now: NOW })).toEqual({});
+  // Day ends (IST) of 25, 26, 27 and 28 Oct 2026 for NOW = 29 Oct.
+  const day = (d: number, hh = '06') => new Date(`2026-10-${d}T${hh}:00:00Z`);
+
+  it('manager approvals read only the scoped engagements and rebuild from review events', async () => {
+    results = [
+      [{ at: day(20) }],
+      [
+        {
+          id: OWN,
+          createdAt: day(1),
+          checklistState: { 'post-1': { status: 'in-progress', reviewStatus: 'accepted' } },
+        },
+      ],
+      [
+        { engagementId: OWN, stepId: 'post-1', fromStatus: 'in-progress', toStatus: 'in-progress', reviewStatus: 'reviewing', at: day(24) },
+        { engagementId: OWN, stepId: 'post-1', fromStatus: 'in-progress', toStatus: 'in-progress', reviewStatus: 'accepted', at: day(27) },
+      ],
+    ];
+    const trends = await getHomeTrends(ctx('manager'), 'manager', { now: NOW });
+    expect(trends.approvals).toEqual([1, 1, 0, 0]);
+    expect(params()).toContain(OWN);
+    expect(params()).not.toContain(OTHER);
+  });
+
+  it('a manager with no engagements gets nothing and runs no query', async () => {
+    listScopedEngagementIds.mockResolvedValue([]);
+    expect(await getHomeTrends(ctx('manager'), 'manager', { now: NOW })).toEqual({});
     expect(calls).toHaveLength(0);
+  });
+
+  it('no review history yet draws no approvals line', async () => {
+    results = [[{ at: null }], [{ id: OWN, createdAt: day(1), checklistState: {} }], []];
+    expect(await getHomeTrends(ctx('admin'), 'admin', { now: NOW })).toEqual({});
+    expect(listScopedEngagementIds).not.toHaveBeenCalled();
+  });
+
+  it('lead done today counts steps, tasks and filings, scoped to the lead', async () => {
+    results = [
+      [{ at: day(1) }],
+      [{ engagementId: OWN, stepId: 'pre-1', fromStatus: 'in-progress', toStatus: 'completed', reviewStatus: null, at: day(27) }],
+      [{ status: 'done', completedAt: day(28), updatedAt: day(28) }],
+      [{ id: 'f1', engagementId: OWN, dueDate: '2026-10-26', status: 'filed', filedOn: '2026-10-26', createdAt: day(1) }],
+      [],
+    ];
+    const trends = await getHomeTrends(ctx('intern'), 'lead', { now: NOW });
+    expect(trends.doneToday).toEqual([0, 1, 1, 1]);
+    expect(listScopedEngagementIds).toHaveBeenCalledWith(expect.objectContaining({ role: 'intern' }));
+    expect(params()).toContain(OWN);
+    expect(params()).toContain('user-intern');
+    expect(params()).not.toContain(OTHER);
   });
 
   it.each([

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Button } from '@/components/ui/button';
-import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { CompanyTile, PersonCell } from '@/components/staff/today/today-parts';
 import {
@@ -15,12 +15,15 @@ import {
   dueClass,
   todayStatusTone,
 } from '@/components/staff/today/today-rows';
-import { ReassignDialog } from '@/views/admin/work/ReassignDialog';
 import { useFirmWorkRows, type FirmWorkRow } from '@/views/admin/work/use-firm-work-rows';
+import { WorkScreen } from '@/views/intern/MyWork';
+import { useTeamWork } from '@/views/manager/use-team-work';
+import { WorkAreaCard, WorkStatusCard } from '@/views/manager/work-summary';
 import { cn } from '@/lib/utils';
 
-/* The admin's Work tabs (prototype `AdminWorkItems` and the Project leads list, G-18). Both
-   read `useFirmWorkRows`, so a row is the same item the lead sees on their own Work page. */
+/* The admin's Work tabs (prototype `AdminWorkItems` and the Project leads list, G-18). The
+   Managers tab reads `useFirmWorkRows` and the Project leads tab `useTeamWork`; both build on
+   `buildInternWorkItems`, so a row is the same item the lead sees on their own Work page. */
 
 const STATUS_FILTER = [
   { value: 'open', label: 'Open' },
@@ -122,6 +125,9 @@ export function ManagersWorkPanel() {
     statusColumn,
   ];
 
+  const anyFilter = f.status !== 'open' || Boolean(f.who) || Boolean(f.company);
+  const scoped = rows.filter((r) => (!f.who || r.managerId === f.who) && (!f.company || r.engagementId === f.company));
+
   return (
     <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(280px,1fr)]">
       <DashSection title="Managers' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
@@ -129,6 +135,19 @@ export function ManagersWorkPanel() {
           <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
           <FilterChip label="Manager" value={f.who} options={options(rows, (r) => r.managerId, (r) => r.managerName)} onChange={f.setWho} />
           <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
+          {anyFilter ? (
+            <Button
+              size="sm"
+              variant="link"
+              onClick={() => {
+                f.setStatus('open');
+                f.setWho('');
+                f.setCompany('');
+              }}
+            >
+              Clear
+            </Button>
+          ) : null}
         </div>
         <div className="border-t border-line-soft px-2 pb-3">
           <EFilingGrid
@@ -137,12 +156,15 @@ export function ManagersWorkPanel() {
             rows={f.shown}
             rowKey={(r) => r.id}
             onRowClick={(r) => router.push(r.href)}
+            rowClassName={(r) => (r.status === 'Overdue' ? 'bg-danger-soft/40' : undefined)}
             pageSize={12}
             minWidth={820}
             empty="No items match these filters"
           />
         </div>
       </DashSection>
+      <div className="flex min-w-0 flex-col gap-5">
+      <WorkStatusCard title="Status" items={scoped} loading={loading} />
       <DashSection title="Open by manager" meta={String(byManager.length)} bodyClassName="p-0" loading={loading}>
         {byManager.length === 0 ? (
           <p className="px-4 py-4 text-[13px] text-ink-muted">Nothing open.</p>
@@ -172,67 +194,36 @@ export function ManagersWorkPanel() {
           </ul>
         )}
       </DashSection>
+      <WorkAreaCard items={scoped} loading={loading} />
+      </div>
     </div>
   );
 }
 
-/** Project leads: every lead's items, with Reassign on each row. */
+/**
+ * Project leads: the Work screen over every lead's items (prototype manager Work and the old
+ * leads grid): list, board, timeline and the admin's own planner, the Lead filter, bulk
+ * Assign, row Reassign and the task drawer. The tab stays in the URL (`tab=leads`).
+ */
 export function LeadsWorkPanel() {
-  const router = useRouter();
-  const { rows, teamMembers, loading } = useFirmWorkRows();
-  const f = useFiltered(rows, (r) => r.leadId);
-  const [reassign, setReassign] = useState<FirmWorkRow | null>(null);
-
-  const columns: EFilingColumn<FirmWorkRow>[] = [
-    { key: 'item', header: 'Item', render: (r) => <ItemCell row={r} /> },
-    { key: 'company', header: 'Company', width: '200px', render: (r) => <CompanyCell row={r} /> },
-    { key: 'lead', header: 'Lead', width: '128px', render: (r) => <PersonCell name={r.leadName} /> },
-    { key: 'area', header: 'Area', width: '128px', render: (r) => <AreaPill area={r.area} /> },
-    dueColumn,
-    statusColumn,
-    {
-      key: 'action',
-      header: <span className="sr-only">Action</span>,
-      width: '108px',
-      align: 'right',
-      render: (r) =>
-        r.status === 'Done' ? null : (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={(e) => {
-              e.stopPropagation();
-              setReassign(r);
-            }}
-          >
-            Reassign
-          </Button>
-        ),
-    },
-  ];
-
+  const work = useTeamWork({ projectBase: '/app/admin' });
   return (
-    <>
-      <DashSection title="Project leads' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-          <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
-          <FilterChip label="Lead" value={f.who} options={options(rows, (r) => r.leadId, (r) => r.leadName)} onChange={f.setWho} />
-          <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
+    <WorkScreen
+      workItems={work.items}
+      kpis={work.kpis}
+      engagements={work.engagements}
+      path="/app/admin/projects"
+      extraParams={{ tab: 'leads' }}
+      head={false}
+      summary={
+        <div className="mb-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+          <WorkStatusCard title="Team work · status" items={work.items} loading={work.loading} />
+          <WorkAreaCard items={work.items} loading={work.loading} />
         </div>
-        <div className="border-t border-line-soft px-2 pb-3">
-          <EFilingGrid
-            caption="Project leads' items"
-            columns={columns}
-            rows={f.shown}
-            rowKey={(r) => r.id}
-            onRowClick={(r) => router.push(r.href)}
-            pageSize={12}
-            minWidth={940}
-            empty="No items match these filters"
-          />
-        </div>
-      </DashSection>
-      <ReassignDialog row={reassign} onOpenChange={(open) => !open && setReassign(null)} leads={teamMembers} />
-    </>
+      }
+      team={work.team(true)}
+      storageScope="admin-leads"
+      seo={{ title: 'Work — VCFO Suite', description: 'Firm-wide projects and work items.', path: '/app/admin/projects' }}
+    />
   );
 }

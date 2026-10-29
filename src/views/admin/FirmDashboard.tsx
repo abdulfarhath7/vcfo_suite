@@ -26,6 +26,7 @@ import { AdminPracticeCards } from '@/components/metrics/practice-cards';
 import { CapacityControl, LastSeenCell, LoadCell, OnTimeCell } from '@/components/metrics/people-cells';
 import { indexPeople, usePeopleMetrics, usePracticeMetrics } from '@/components/metrics/use-metrics';
 import { isFirmWideAdmin } from '@/lib/auth';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -59,6 +60,8 @@ export default function FirmDashboard() {
   const peopleQuery = usePeopleMetrics();
   const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
   const canSetCapacity = isFirmWideAdmin(user?.role);
+  // Only "Awaiting approval" has a past that the stored rows give (review history).
+  const trends = useHomeTrends('admin', { enabled: showGreeting && isFirmWideAdmin(user?.role) });
 
   const pulse = useMemo(() => {
     let total = 0;
@@ -191,6 +194,8 @@ export default function FirmDashboard() {
                 value: pendingApprovals,
                 href: '/app/admin/approvals',
                 hot: pendingApprovals > 0,
+                trend: trendWithLive(trends, 'awaitingApproval', pendingApprovals),
+                trendTone: 'warn',
                 note: approvalClients > 0 ? plural(approvalClients, 'client', 'clients') : undefined,
                 how: 'Steps waiting for a manager decision before they move on.',
               },
@@ -233,7 +238,7 @@ export default function FirmDashboard() {
                     row.managerId === 'unassigned' ? (
                       <span className="font-medium">{nameFor(row.managerId)}</span>
                     ) : (
-                      <Link href={`/app/admin/people?managerId=${row.managerId}`} className="font-medium text-ink hover:underline">
+                      <Link href={`/app/admin/managers#${row.managerId}`} className="font-medium text-ink hover:underline">
                         {nameFor(row.managerId)}
                       </Link>
                     ),

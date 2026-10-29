@@ -522,8 +522,10 @@ export function buildTaskWorkItem(
 ): InternWorkItem | null {
   if (task.checklistKey?.trim()) return null;
   const done = task.status === 'completed';
+  // `completedAt` (tasks.completed_at) when it was kept; older rows fall back to the last change.
+  const finishedAt = task.completedAt ?? task.updatedAt;
   if (done) {
-    const doneYmd = ymdFromIsoInIst(task.updatedAt);
+    const doneYmd = ymdFromIsoInIst(finishedAt);
     if (!doneYmd || !new Set(istWeekYmds(now, 7)).has(doneYmd)) return null;
   }
   const dueAt = ymdFromIsoInIst(task.dueAt);
@@ -537,7 +539,7 @@ export function buildTaskWorkItem(
     kind: done ? 'done' : 'task',
     href: internWorkHref({ source: 'task', engagement }),
     dueAt,
-    completedAt: done ? task.updatedAt : undefined,
+    completedAt: done ? finishedAt : undefined,
     why: done ? 'Done' : overdue ? 'Assigned task · overdue' : whyForKind('task'),
     isOverdue: overdue,
     isCritical: false,

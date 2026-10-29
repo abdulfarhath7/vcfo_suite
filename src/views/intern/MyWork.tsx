@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BellRing, CheckCheck, Download, Plus, Sparkles } from 'lucide-react';
+import type { Engagement } from '@/data/engagements';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkKindChip } from '@/components/intern/InternWorkRow';
@@ -14,7 +15,11 @@ import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/sa
 import { StatusMenu } from '@/components/ui/status-menu';
 import type { BulkAction } from '@/components/ui/bulk-bar';
 import { EFilingGrid, GRID_SUB, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
+import { BulkAssignMenu, RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
+import { PersonCell } from '@/components/staff/today/today-parts';
+import { AreaPill } from '@/components/ui/spectrum-chip';
+import { ReassignDialog, canMoveItem } from '@/views/admin/work/ReassignDialog';
+import type { TeamLead, TeamWorkItem } from '@/views/manager/team-work';
 import { workItemChangedAt } from '@/components/staff/today/today-rows';
 import {
   TASK_STATUS_WORDS,
@@ -22,6 +27,7 @@ import {
   exportRowsCsv,
   remindMany,
   useMarkDoneMany,
+  useReassignMany,
   useSetTaskStatus,
 } from '@/components/staff/today/work-actions';
 import { internKindStatus } from '@/components/intern/intern-tones';
@@ -41,8 +47,9 @@ import { NewTodoDialog, PlannerTodos } from '@/components/work/PlannerTodos';
 import { RunningSessionChip } from '@/components/work/RunningSessionChip';
 import { filingInstanceIdMap, workItemKeyFor } from '@/lib/work/work-item-key';
 import { addDaysYmd, istYmdOf, weekOf } from '@/lib/work/planner';
-import { toastSuccess } from '@/lib/toast-errors';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
+  INTERN_TASKS_PATH,
   INTERN_WORK_VIEW_KEY,
   createCustomInternFocus,
   filterInternWork,
@@ -61,13 +68,14 @@ import {
   type InternWorkFocus,
   type InternWorkItem,
   type InternWorkKindFilter,
+  type InternWorkKpis,
   type InternWorkTag,
   type InternWorkView,
 } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
 /** The three list views plus the Planner (G-17), which lives only in this view's URL. */
-type WorkView = InternWorkView | 'plan';
+export type WorkView = InternWorkView | 'plan';
 
 const VIEWS: { key: WorkView; label: string }[] = [
   { key: 'list', label: 'List' },
@@ -80,12 +88,22 @@ function parseWorkView(value: string | null | undefined): WorkView {
   return value === 'plan' ? 'plan' : parseInternWorkView(value);
 }
 
-/** `internWorkPath` with the Planner view kept in the `view` param. */
-function workPath(filters: Parameters<typeof internWorkPath>[0], view: WorkView): string {
-  if (view !== 'plan') return internWorkPath({ ...filters, view });
-  const url = new URL(internWorkPath({ ...filters, view: 'tl' }), 'http://work.local');
-  url.searchParams.set('view', 'plan');
-  return `${url.pathname}${url.search}`;
+/**
+ * `internWorkPath` with the Planner view kept in the `view` param, on the page at `path` (the
+ * lead's `/app/intern/tasks`, the manager's `/app/manager/work`, or one lead's page). `lead`
+ * is the team pages' Lead filter.
+ */
+function workPath(
+  filters: Parameters<typeof internWorkPath>[0] & { lead?: string | null },
+  view: WorkView,
+  path: string = INTERN_TASKS_PATH,
+  extra?: Record<string, string>,
+): string {
+  const url = new URL(internWorkPath({ ...filters, view: view === 'plan' ? 'tl' : view }), 'http://work.local');
+  if (view === 'plan') url.searchParams.set('view', 'plan');
+  if (filters.lead) url.searchParams.set('lead', filters.lead);
+  for (const [k, v] of Object.entries(extra ?? {})) url.searchParams.set(k, v);
+  return `${path}${url.search}`;
 }
 
 /** Open items the planner may place: everything not done and not waiting on someone else. */
@@ -132,10 +150,71 @@ const TAG_LABEL: Record<InternWorkTag, string> = {
  * "New to-do" sit in the head on every view (G-17).
  */
 function InternMyWorkInner() {
+  const { workItems, kpis, myEngagements } = useInternPortfolio();
+  return <WorkScreen workItems={workItems} kpis={kpis} engagements={myEngagements} />;
+}
+
+/** The team part of a Work page: the leads, and each item's lead (manager Work, one lead's page). */
+export interface WorkTeam {
+  /** Leads the items can move to (`/api/work/reassign`); empty hides Assign and Reassign. */
+  leads: TeamLead[];
+  /** The team item for a work item id, with its lead and the Reassign row. */
+  byId: Map<string, TeamWorkItem>;
+  /** Show the Lead column, the Lead filter and the lead on board cards (the manager's Work). */
+  showLead: boolean;
+  /** The lead key of the viewer's own tasks: those items, and items waiting on a manager, are "Pending with me". */
+  meKey?: string;
+}
+
+export interface WorkScreenProps {
+  workItems: InternWorkItem[];
+  kpis: InternWorkKpis;
+  /** The engagements behind the items, for the Company filter. */
+  engagements: Engagement[];
+  /** The page the filters live on; the lead's Work by default. */
+  path?: string;
+  /** A page head in place of the "Work" title and its buttons (the one-lead page); `false` for none (a tab of another page). */
+  head?: ReactNode | false;
+  /** URL params of the host page kept on every filter change (`tab=leads` on the admin Work page). */
+  extraParams?: Record<string, string>;
+  /** Cards between the head and the views (the one-lead page's Status and By area). */
+  summary?: ReactNode;
+  /** The views offered, in order; all four by default. */
+  views?: WorkView[];
+  /** The Planner view's content in place of the user's own calendar and to-dos. */
+  planner?: ReactNode;
+  team?: WorkTeam;
+  /** Where the table preferences and the saved views are kept. */
+  storageScope?: string;
+  seo?: { title: string; description: string; path: string };
+}
+
+/**
+ * Work: the lead's own Work page (`/app/intern/tasks`), the manager's Work (`/app/manager/work`)
+ * and the work part of one lead's page. With `team` the list adds the Lead column and filter,
+ * bulk Assign and row Reassign (managers and admins move steps and tasks through
+ * `/api/work/reassign`), the board shows each card's lead and the drawer marks items that wait
+ * on the viewer.
+ */
+export function WorkScreen({
+  workItems,
+  kpis,
+  engagements: myEngagements,
+  path = INTERN_TASKS_PATH,
+  head,
+  extraParams,
+  summary,
+  views: allowedViews,
+  planner,
+  team,
+  storageScope,
+  seo = { title: 'My work — VCFO Suite', description: 'List, board, and timeline of your open steps and filings.', path: '/app/intern/tasks' },
+}: WorkScreenProps) {
   const params = useSearchParams();
   const router = useRouter();
-  const { workItems, kpis, myEngagements } = useInternPortfolio();
   const { user, tasks, engagementsLoading, getStateForEngagement } = useApp();
+  const viewList = allowedViews ? VIEWS.filter((v) => allowedViews.includes(v.key)) : VIEWS;
+  const scopeKey = storageScope ?? user?.id ?? 'lead';
   const register = useFilings();
   const { focus: todos, persist: persistTodos, byId: todoItems } = useOwnFocusTodos(user?.id ?? '', workItems);
   const now = useMemo(() => new Date(), []);
@@ -144,33 +223,41 @@ function InternMyWorkInner() {
   const companyId = params.get('company');
   const kind = parseInternWorkKindFilter(params.get('kind'));
   const day = parseInternWorkDay(params.get('day'));
-  const [view, setView] = useState<WorkView>(() => parseWorkView(params.get('view')));
+  const leadFilter = team?.showLead ? params.get('lead') : null;
+  const fitView = (v: WorkView): WorkView => (viewList.some((x) => x.key === v) ? v : viewList[0]!.key);
+  const [view, setView] = useState<WorkView>(() => fitView(parseWorkView(params.get('view'))));
   const listRef = useRef<HTMLDivElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [weekYmd, setWeekYmd] = useState(() => istYmdOf(now));
   const [planOpen, setPlanOpen] = useState(false);
   const [todoOpen, setTodoOpen] = useState(false);
+  const [moving, setMoving] = useState<InternWorkItem | null>(null);
+  const reassign = useReassignMany();
 
+  const viewKey = path === INTERN_TASKS_PATH ? INTERN_WORK_VIEW_KEY : `${INTERN_WORK_VIEW_KEY}:${path}`;
   useEffect(() => {
     const fromUrl = params.get('view');
     if (fromUrl) {
-      setView(parseWorkView(fromUrl));
+      setView(fitView(parseWorkView(fromUrl)));
       return;
     }
     try {
-      const stored = window.localStorage.getItem(INTERN_WORK_VIEW_KEY);
-      if (stored) setView(parseWorkView(stored));
+      const stored = window.localStorage.getItem(viewKey);
+      if (stored) setView(fitView(parseWorkView(stored)));
     } catch {
       /* ignore */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `fitView` and `viewKey` follow the props that do not change on a page.
   }, [params]);
 
   const filtered = useMemo(
     () =>
       sortInternWork(
-        filterInternWork(workItems, { focus, tag, companyId, kind, day }, now),
+        filterInternWork(workItems, { focus, tag, companyId, kind, day }, now).filter(
+          (item) => !leadFilter || team?.byId.get(item.id)?.leadId === leadFilter,
+        ),
       ),
-    [workItems, focus, tag, companyId, kind, day, now],
+    [workItems, focus, tag, companyId, kind, day, now, leadFilter, team],
   );
   const openItem = openId ? workItems.find((item) => item.id === openId) ?? null : null;
 
@@ -219,6 +306,7 @@ function InternMyWorkInner() {
     kind?: InternWorkKindFilter;
     view?: WorkView;
     day?: string | null;
+    lead?: string | null;
   }) => {
     const href = workPath(
       {
@@ -227,8 +315,11 @@ function InternMyWorkInner() {
         companyId: next.companyId === undefined ? companyId : next.companyId,
         kind: next.kind ?? kind,
         day: next.day === undefined ? day : next.day,
+        lead: next.lead === undefined ? leadFilter : next.lead,
       },
       next.view ?? view,
+      path,
+      extraParams,
     );
     router.replace(href, { scroll: false });
   };
@@ -236,7 +327,7 @@ function InternMyWorkInner() {
   const chooseView = (next: WorkView) => {
     setView(next);
     try {
-      window.localStorage.setItem(INTERN_WORK_VIEW_KEY, next);
+      window.localStorage.setItem(viewKey, next);
     } catch {
       /* ignore */
     }
@@ -267,19 +358,30 @@ function InternMyWorkInner() {
   useEffect(() => {
     const saved = WORK_VIEWS.find((v) => v.key === viewParam);
     if (!saved) return;
-    router.replace(workPath(filtersOfView(saved.filters), 'list'), { scroll: false });
-  }, [viewParam, router]);
+    router.replace(workPath(filtersOfView(saved.filters), 'list', path, extraParams), { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `extraParams` is fixed for a page.
+  }, [viewParam, router, path]);
 
-  const anyFilter = Boolean(companyId || kind !== 'all' || focus !== 'all' || tag || day);
-  const clearAll = () => router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null }, view), { scroll: false });
+  const anyFilter = Boolean(companyId || kind !== 'all' || focus !== 'all' || tag || day || leadFilter);
+  const clearAll = () =>
+    router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null, lead: null }, view, path, extraParams), {
+      scroll: false,
+    });
   const currentView: ViewFilters = {
     focus: focus === 'all' ? '' : focus,
     tag: tag ?? '',
     company: companyId ?? '',
     kind: kind === 'all' ? '' : kind,
     day: day ?? '',
+    ...(team?.showLead ? { lead: leadFilter ?? '' } : {}),
   };
-  const applyView = (f: ViewFilters) => router.replace(workPath(filtersOfView(f), view), { scroll: false });
+  const applyView = (f: ViewFilters) => router.replace(workPath(filtersOfView(f), view, path, extraParams), { scroll: false });
+  const leadOptions = useMemo(() => {
+    if (!team?.showLead) return [];
+    const seen = new Map<string, string>();
+    for (const t of team.byId.values()) seen.set(t.leadId, t.leadName);
+    return [...seen.entries()].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [team]);
   const filters = (
     <FilterChipRow
       className="min-w-0 flex-1"
@@ -297,6 +399,17 @@ function InternMyWorkInner() {
             />
           ),
         },
+        ...(team?.showLead
+          ? [
+              {
+                key: 'lead',
+                set: !!leadFilter,
+                node: (
+                  <FilterChip label="Lead" value={leadFilter ?? ''} options={leadOptions} onChange={(v) => go({ lead: v || null })} />
+                ),
+              },
+            ]
+          : []),
         {
           key: 'status',
           set: focus !== 'all',
@@ -340,7 +453,7 @@ function InternMyWorkInner() {
     />
   );
   const savedViews = (
-    <SavedViews storageKey={`${user?.id ?? 'lead'}:work`} views={WORK_VIEWS} current={currentView} onApply={applyView} className="mb-3" />
+    <SavedViews storageKey={`${scopeKey}:work`} views={WORK_VIEWS} current={currentView} onApply={applyView} className="mb-3" />
   );
 
   // Table parts for the list (E-01 to E-09).
@@ -360,8 +473,9 @@ function InternMyWorkInner() {
 
   return (
     <PageTransition>
-      <SEO title="My work — VCFO Suite" description="List, board, and timeline of your open steps and filings." path="/app/intern/tasks" />
+      <SEO title={seo.title} description={seo.description} path={seo.path} />
 
+      {head === undefined ? (
       <div className="mb-5 flex min-w-0 flex-wrap items-center gap-3">
         <div className="min-w-0 flex-[1_1_240px]">
           <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Work</h1>
@@ -376,7 +490,7 @@ function InternMyWorkInner() {
         <SpectrumTabs
           size="md"
           label="Work view"
-          items={VIEWS}
+          items={viewList}
           value={view}
           onChange={(next) => chooseView(next as WorkView)}
         />
@@ -395,7 +509,19 @@ function InternMyWorkInner() {
           </Button>
         </div>
       </div>
+      ) : head}
 
+      {head !== undefined ? (
+        <SpectrumTabs
+          size="md"
+          label="Work view"
+          items={viewList}
+          value={view}
+          onChange={(next) => chooseView(next as WorkView)}
+          className="mb-3"
+        />
+      ) : null}
+      {summary}
       {savedViews}
 
       {view === 'list' ? (
@@ -405,7 +531,9 @@ function InternMyWorkInner() {
               items={filtered}
               now={now}
               onOpen={(item) => setOpenId(item.id)}
-              scope={user?.id ?? 'lead'}
+              scope={scopeKey}
+              team={team}
+              onReassign={setMoving}
               loading={engagementsLoading}
               onClearFilters={anyFilter ? clearAll : undefined}
               changedAt={changedAt}
@@ -418,19 +546,46 @@ function InternMyWorkInner() {
       {view === 'board' ? (
         <>
           <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
-          <BoardView items={filtered} now={now} onOpen={(item) => setOpenId(item.id)} />
+          <BoardView items={filtered} now={now} onOpen={(item) => setOpenId(item.id)} ownerOf={team?.showLead ? (i) => team.byId.get(i.id)?.leadName : undefined} />
         </>
       ) : null}
       {view === 'tl' ? (
         <TimelineView items={filtered} now={now} selectedDay={day} filters={filters} onOpen={(item) => setOpenId(item.id)} />
       ) : null}
 
-      {view === 'plan' ? (
+      {view === 'plan' && planner ? planner : null}
+      {view === 'plan' && !planner ? (
         <>
           <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
             <PlannerCalendar days={weekDays} onWeek={stepWeek} items={plannerItems} now={now} onOpenItem={openByKey} />
-            <PlannerTodos focus={todos} byId={todoItems} persist={persistTodos} onOpenItem={setOpenId} onNew={() => setTodoOpen(true)} />
+            <PlannerTodos
+              focus={todos}
+              byId={todoItems}
+              persist={persistTodos}
+              onOpenItem={setOpenId}
+              onNew={() => setTodoOpen(true)}
+              hand={
+                team && team.leads.length > 0
+                  ? {
+                      leads: team.leads,
+                      ownerOf: (i) => {
+                        const t = team.byId.get(i.id);
+                        return t ? { id: t.leadId, name: t.leadName } : undefined;
+                      },
+                      canHand: (i) => {
+                        const t = team.byId.get(i.id);
+                        return Boolean(t && canMoveItem(t.row));
+                      },
+                      onHand: (i, to) => {
+                        const t = team.byId.get(i.id);
+                        if (!t?.row.itemId) return;
+                        void reassign([{ engagementId: t.engagementId, itemKey: t.row.itemId, title: t.title }], to);
+                      },
+                    }
+                  : undefined
+              }
+            />
           </div>
         </>
       ) : null}
@@ -440,7 +595,14 @@ function InternMyWorkInner() {
         workKey={openItem ? keyOf.get(openItem.id) ?? null : null}
         now={now}
         onClose={() => setOpenId(null)}
+        ownerName={openItem && team ? team.byId.get(openItem.id)?.leadName : undefined}
+        pendingWithMe={Boolean(
+          team?.meKey && openItem && (openItem.kind === 'waiting-manager' || team.byId.get(openItem.id)?.leadId === team.meKey),
+        )}
       />
+      {team ? (
+        <ReassignDialog row={moving ? team.byId.get(moving.id)?.row ?? null : null} onOpenChange={(o) => !o && setMoving(null)} leads={team.leads} />
+      ) : null}
       <PlanWeekDialog open={planOpen} onOpenChange={setPlanOpen} days={weekDays} items={plannerItems} now={now} />
       <NewTodoDialog
         open={todoOpen}
@@ -487,6 +649,7 @@ function filtersOfView(f: ViewFilters) {
     companyId: f.company || null,
     kind: parseInternWorkKindFilter(f.kind),
     day: f.day || null,
+    lead: f.lead || null,
   };
 }
 
@@ -496,13 +659,17 @@ function filtersOfView(f: ViewFilters) {
  * Open and Remind at the row end on hover and focus (R reminds), the row menu with Edit (E) and
  * Copy link (C) (M-27), the status menu on task rows, the density switch, the sticky head and
  * the new-since-last-visit squares. A lead cannot move work to another lead
- * (`/api/work/reassign` is for managers and admins), so there is no Assign or Reassign here.
+ * (`/api/work/reassign` is for managers and admins), so Assign and Reassign come only with
+ * `team`: bulk Assign, the Reassign row action (A) and the Lead and Area columns. A late row
+ * gets the soft red fill.
  */
 function ListView({
   items,
   now,
   onOpen,
   scope,
+  team,
+  onReassign,
   loading,
   onClearFilters,
   changedAt,
@@ -514,6 +681,8 @@ function ListView({
   onOpen: (item: InternWorkItem) => void;
   /** The user id for the table preferences; without it the list is read-only. */
   scope?: string;
+  team?: WorkTeam;
+  onReassign?: (item: InternWorkItem) => void;
   loading?: boolean;
   onClearFilters?: () => void;
   changedAt?: (item: InternWorkItem) => string | undefined;
@@ -524,6 +693,9 @@ function ListView({
   const router = useRouter();
   const markDone = useMarkDoneMany();
   const setTaskStatus = useSetTaskStatus();
+  const reassignMany = useReassignMany();
+  const teamOf = (i: InternWorkItem) => team?.byId.get(i.id);
+  const canReassign = Boolean(team && team.leads.length > 0 && onReassign);
   // M-27 Edit: a task opens its drawer; a step, filing or request opens the record it is edited on.
   const edit = (i: InternWorkItem) => (i.source === 'task' ? onOpen(i) : router.push(i.href));
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
@@ -579,11 +751,47 @@ function ListView({
     },
     {
       key: 'company',
-      header: 'Company',
-      width: '24%',
+      header: 'Client',
+      width: '22%',
       render: (item) => <LeadCompanyChip name={item.companyName} engagementId={item.engagementId} />,
     },
-    { key: 'status', header: 'Status', width: '128px', render: statusCell },
+    {
+      key: 'step',
+      header: 'Step',
+      width: '84px',
+      render: (item) =>
+        item.catalogLabel ? (
+          <span className="font-mono text-[12.5px] text-ink-2">{item.catalogLabel}</span>
+        ) : (
+          <span className="text-[12.5px] text-ink-muted">{item.source === 'filing' ? 'Filing' : item.source === 'request' ? 'Request' : 'Task'}</span>
+        ),
+    },
+    ...(team
+      ? [
+          {
+            key: 'area',
+            header: 'Area',
+            width: '120px',
+            render: (item: InternWorkItem) => {
+              const area = teamOf(item)?.area;
+              return area ? <AreaPill area={area} /> : null;
+            },
+          },
+        ]
+      : []),
+    ...(team?.showLead
+      ? [
+          {
+            key: 'lead',
+            header: 'Lead',
+            width: '132px',
+            render: (item: InternWorkItem) => {
+              const name = teamOf(item)?.leadName;
+              return name ? <PersonCell name={name} /> : null;
+            },
+          },
+        ]
+      : []),
     {
       key: 'due',
       header: 'Due',
@@ -594,6 +802,7 @@ function ListView({
         </span>
       ),
     },
+    { key: 'status', header: 'Status', width: '128px', render: statusCell },
     {
       key: 'action',
       header: <span className="sr-only">Action</span>,
@@ -607,7 +816,28 @@ function ListView({
     },
   ];
 
+  const assign = async (list: InternWorkItem[], to: { id: string; name: string }) => {
+    const movable = list
+      .map((i) => teamOf(i))
+      .filter((t): t is TeamWorkItem => Boolean(t && canMoveItem(t.row) && t.leadId !== to.id));
+    if (movable.length === 0) {
+      toastError('Nothing to assign', 'Steps and tasks move one at a time; filings and requests move with the client.');
+      return;
+    }
+    await reassignMany(movable.map((t) => ({ engagementId: t.engagementId, itemKey: t.row.itemId, title: t.title })), to);
+    setPicked(new Set());
+  };
+
   const bulkActions = (list: InternWorkItem[]): BulkAction[] => [
+    ...(canReassign && team
+      ? [
+          {
+            key: 'assign',
+            label: 'Assign',
+            render: (count: number) => <BulkAssignMenu people={team.leads} count={count} onPick={(p) => void assign(list, p)} />,
+          },
+        ]
+      : []),
     {
       key: 'remind',
       label: 'Remind',
@@ -635,8 +865,15 @@ function ListView({
       onClick: () => {
         exportRowsCsv(
           'work.csv',
-          ['Step or filing', 'Company', 'Status', 'Due', 'State'],
-          list.map((i) => [i.title, i.companyName, internKindStatus(i).word, i.dueAt?.slice(0, 10) ?? '', i.why]),
+          ['Step or filing', 'Client', ...(team ? ['Lead'] : []), 'Status', 'Due', 'State'],
+          list.map((i) => [
+            i.title,
+            i.companyName,
+            ...(team ? [teamOf(i)?.leadName ?? ''] : []),
+            internKindStatus(i).word,
+            i.dueAt?.slice(0, 10) ?? '',
+            i.why,
+          ]),
         );
         setPicked(new Set());
       },
@@ -651,8 +888,9 @@ function ListView({
         rows={items}
         rowKey={(i) => i.id}
         onRowClick={onOpen}
+        rowClassName={(i) => (i.isOverdue && i.kind !== 'done' ? 'bg-danger-soft/40' : undefined)}
         pageSize={25}
-        minWidth={720}
+        minWidth={team ? 960 : 800}
         empty="Nothing in this view"
         loading={loading}
         onClearFilters={onClearFilters}
@@ -666,7 +904,11 @@ function ListView({
               bulkActions,
               bulkNoun: ['item', 'items'] as [string, string],
               rowActions: (i: InternWorkItem) => (
-                <RowQuickActions onOpen={() => onOpen(i)} onRemind={remindableItemKey(i) ? () => remind([i]) : undefined}>
+                <RowQuickActions
+                  onOpen={() => onOpen(i)}
+                  onRemind={remindableItemKey(i) ? () => remind([i]) : undefined}
+                  onReassign={canReassign && teamOf(i) ? () => onReassign?.(i) : undefined}
+                >
                   <RowMoreMenu onEdit={() => edit(i)} link={() => void copyRowLink(i.href)} />
                 </RowQuickActions>
               ),
@@ -674,6 +916,7 @@ function ListView({
                 { key: 'r', run: (i: InternWorkItem) => remind([i]) },
                 { key: 'e', run: edit },
                 { key: 'c', run: (i: InternWorkItem) => void copyRowLink(i.href) },
+                ...(canReassign ? [{ key: 'a', run: (i: InternWorkItem) => (teamOf(i) ? onReassign?.(i) : undefined) }] : []),
               ],
               densityScope: `${scope}:work`,
               changedAt,
@@ -693,7 +936,18 @@ const BOARD_COLS: { key: 'action' | 'progress' | 'waiting' | 'done'; label: stri
 ];
 
 /** Board view (prototype `WorkBoard`): four quiet columns with a count tag in each head. */
-function BoardView({ items, now, onOpen }: { items: InternWorkItem[]; now: Date; onOpen: (item: InternWorkItem) => void }) {
+function BoardView({
+  items,
+  now,
+  onOpen,
+  ownerOf,
+}: {
+  items: InternWorkItem[];
+  now: Date;
+  onOpen: (item: InternWorkItem) => void;
+  /** The lead on each card (manager Work). */
+  ownerOf?: (item: InternWorkItem) => string | undefined;
+}) {
   const cols = internWorkBoard(items, now);
   return (
     <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -711,7 +965,7 @@ function BoardView({ items, now, onOpen }: { items: InternWorkItem[]; now: Date;
           <div className="grid gap-2 p-3">
             {cols[col.key].length === 0 ? <EmptyWork className="min-h-[72px] py-4" /> : null}
             {cols[col.key].map((item) => (
-              <InternWorkBoardCard key={item.id} item={item} now={now} dim={col.key === 'done'} onOpen={onOpen} />
+              <InternWorkBoardCard key={item.id} item={item} now={now} dim={col.key === 'done'} onOpen={onOpen} owner={ownerOf?.(item)} />
             ))}
           </div>
         </section>

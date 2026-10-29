@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  diffStepChanges,
   diffStepStatuses,
   median,
   stageAverages,
@@ -32,7 +33,41 @@ describe('diffStepStatuses', () => {
   });
 });
 
+describe('diffStepChanges', () => {
+  it('records the review state after a status change', () => {
+    expect(
+      diffStepChanges({ a: { status: 'in-progress' } }, { a: { status: 'completed', reviewStatus: 'accepted' } }),
+    ).toEqual([{ stepId: 'a', from: 'in-progress', to: 'completed', reviewStatus: 'accepted' }]);
+  });
+
+  it('records a review-only change with the same from and to status', () => {
+    expect(
+      diffStepChanges(
+        { a: { status: 'in-progress' }, b: { status: 'in-progress', reviewStatus: 'reviewing' } },
+        { a: { status: 'in-progress', reviewStatus: 'reviewing' }, b: { status: 'in-progress', reviewStatus: 'reviewing' } },
+      ),
+    ).toEqual([{ stepId: 'a', from: 'in-progress', to: 'in-progress', reviewStatus: 'reviewing' }]);
+  });
+
+  it('skips steps where neither the status nor the review changed', () => {
+    expect(diffStepChanges({}, { a: { responses: { x: '1' } } })).toEqual([]);
+  });
+});
+
 describe('timingOf', () => {
+  it('ignores review-only events', () => {
+    const t = timingOf(
+      [
+        ev('a', 'in-progress', '2026-10-01T09:00:00.000Z', 'not-started'),
+        ev('a', 'completed', '2026-10-05T09:00:00.000Z', 'in-progress'),
+        ev('a', 'completed', '2026-10-09T09:00:00.000Z', 'completed'),
+      ],
+      NOW,
+    );
+    expect(t.finishedAt).toBe('2026-10-05T09:00:00.000Z');
+    expect(t.daysInStep).toBe(4);
+  });
+
   it('opens on the first move out of not started and finishes on completion', () => {
     const t = timingOf(
       [

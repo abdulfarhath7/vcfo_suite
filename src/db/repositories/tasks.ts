@@ -28,6 +28,7 @@ import {
   personalTodoStepId,
   type PersonalTodoDto,
 } from '@/lib/intern/personal-todos';
+import { taskCompletionPatch } from '@/lib/metrics/trend-stamps';
 
 /**
  * TASKS REPOSITORY — replaces vcfo.tasks localStorage.
@@ -40,6 +41,9 @@ import {
  * Personal todos (LeadFocusCard) reuse this table with engagement_id null,
  * assigned_to = owner, step_id prefix `todo:`. They are excluded from
  * listTasks / getTaskById. See listPersonalTodos for Path A rules.
+ *
+ * Every write that changes the status also stamps `completed_at` (`taskCompletionPatch`): set
+ * when the task moves to done, cleared when it reopens. The home trend lines read it.
  */
 
 type Row = typeof tasks.$inferSelect;
@@ -88,6 +92,7 @@ export function toAppTask(row: Row): TaskInstance {
     notes: row.description ?? undefined,
     title: row.title,
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : undefined,
+    ...(row.completedAt ? { completedAt: row.completedAt.toISOString() } : {}),
   };
 }
 
@@ -154,13 +159,15 @@ export async function createTask(
   if (!access.ok) throw new Error('Engagement not found or not permitted');
 
   const title = input.title?.trim() || input.checklistKey?.trim() || 'Task';
+  const status = appStatusToDb(input.status ?? 'not-started');
   const [row] = await db
     .insert(tasks)
     .values({
       engagementId: access.dbId,
       title,
       stepId: input.checklistKey ?? null,
-      status: appStatusToDb(input.status ?? 'not-started'),
+      status,
+      ...taskCompletionPatch(null, status),
       assignedTo: input.assigneeId ?? null,
       deadline: input.dueAt ? new Date(input.dueAt) : null,
       description: input.notes ?? null,
@@ -192,11 +199,13 @@ export async function updateTask(
     }
   }
 
+  const nextStatus = patch.status !== undefined ? appStatusToDb(patch.status) : undefined;
   const [row] = await db
     .update(tasks)
     .set({
       ...(patch.checklistKey !== undefined ? { stepId: patch.checklistKey } : {}),
-      ...(patch.status !== undefined ? { status: appStatusToDb(patch.status) } : {}),
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...taskCompletionPatch(appStatusToDb(existing.status), nextStatus),
       ...(patch.assigneeId !== undefined ? { assignedTo: patch.assigneeId ?? null } : {}),
       ...(patch.dueAt !== undefined
         ? { deadline: patch.dueAt ? new Date(patch.dueAt) : null }
@@ -372,6 +381,7 @@ export async function upsertPersonalTodo(
       .set({
         title,
         status,
+        ...taskCompletionPatch(existing.status, status),
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, existing.id))
@@ -390,6 +400,7 @@ export async function upsertPersonalTodo(
       title,
       stepId,
       status,
+      ...taskCompletionPatch(null, status),
       description: custom ? 'custom' : 'pin',
     })
     .returning();
@@ -414,11 +425,13 @@ export async function updatePersonalTodo(
     patch.title !== undefined ? patch.title.trim().slice(0, INTERN_FOCUS_TITLE_MAX) : undefined;
   if (title !== undefined && !title) throw new Error('title_required');
 
+  const nextStatus = patch.done !== undefined ? (patch.done ? 'done' : 'open') : undefined;
   const [row] = await db
     .update(tasks)
     .set({
       ...(title !== undefined ? { title } : {}),
-      ...(patch.done !== undefined ? { status: patch.done ? 'done' : 'open' } : {}),
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...taskCompletionPatch(existing.task.status, nextStatus),
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, id))

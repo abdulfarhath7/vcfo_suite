@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, Users } from 'lucide-react';
@@ -42,7 +43,7 @@ export function LeadManagersCard({
       ) : directoryQuery.isError ? (
         <p className="px-4 py-3 text-[13px] text-ink-muted">Could not load.</p>
       ) : managers.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-muted">None assigned.</p>
+        <EmptyState title="No manager yet" className="m-4" />
       ) : (
         <ul className="max-h-[14rem] overflow-y-auto">
           {managers.map((manager) => (

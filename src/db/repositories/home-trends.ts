@@ -1,11 +1,31 @@
 import 'server-only';
-import { and, count, eq, gte, inArray, lt, lte } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt, lte, min, or } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { auditEvents, complianceInstances, emailSendLog, engagements, notificationDeliveries } from '@/db/schema';
+import {
+  auditEvents,
+  complianceInstances,
+  documentRequests,
+  emailSendLog,
+  engagementStepEvents,
+  engagements,
+  notificationDeliveries,
+  tasks,
+} from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
-import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
+import { assertEngagementAccess, getMyEngagement, listScopedEngagementIds } from '@/db/repositories/engagements';
+import { getReviewStatus } from '@/lib/checklist/checklist-item-review';
+import { primaryPhaseItems } from '@/lib/projects/project-stuck';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
+import {
+  awaitingApprovalAsOf,
+  doneOnDayAsOf,
+  indexStepEvents,
+  type ReviewStepNow,
+  type StepHistoryEvent,
+} from '@/lib/metrics/staff-home-trends';
 import { assertDeveloper } from '@/db/repositories/dev-scope';
+import { clientDocsInAsOf, type DocRequestHistoryRow } from '@/lib/metrics/client-docs-trend';
 import {
   addDaysYmd,
   engagementLiveAt,
@@ -39,23 +59,37 @@ import {
  *                        end that had failed by then (status, created_at, updated_at)
  *           denied       audit events with result "denied" in the 7 days before each day end
  *   client  dueSoon      filings of the year due within 15 days of each day and not filed
- *   lead, manager, admin nothing yet. Their tiles count step states (needs action, overdue,
- *                        waiting, approvals, stuck), the project stage and task completion.
- *                        `engagement_step_events` only holds history from the day it shipped,
- *                        the stage has no history and tasks keep no completion time, so no
- *                        past value of those tiles can be rebuilt today.
+ *           docsIn       requests answered by each day end, from `closed_at` (migration 0027;
+ *                        `src/lib/metrics/client-docs-trend.ts`)
+ *   lead    doneToday    steps completed that day (status events), tasks whose
+ *                        `completed_at` falls in it, filings due that day and filed by its end
+ *   manager approvals    steps awaiting a manager decision at each day end, rebuilt from the
+ *                        `review_status` of the step events (migration 0027)
+ *   admin   awaitingApproval  the same count, firm-wide
+ *   The pure rules for these three are in `src/lib/metrics/staff-home-trends.ts`. Each starts
+ *   on the first day its history covers, so a new install draws no line for a few days.
+ *
+ * Staff tiles with no line and why: lead Needs action, Overdue, Waiting on clients and Due this
+ * week, and manager Overdue, Waiting on clients and Due this week (they mix step windows,
+ * filing windows and request states, and window edits keep no history); manager Active
+ * projects and admin Clients, Incorporating, In compliance and Stuck (the project stage and
+ * the stuck reason keep no history).
  *
  * Tiles with no line and why: developer Jobs failed (the Inngest list is capped, so older days
  * would be short), Services working and Outlook mailboxes (only the current state is kept);
  * super admin Need attention and Awaiting review (step states); client Waiting, With SBC,
- * Overdue and Documents in (step states, and requests keep no fulfilled time).
+ * and Overdue (step states, and the waiting list mixes steps with requests).
  *
  * >>> ACCESS CONTROL (Path A) <<<
  *   super  — firm-wide admins only (`isFirmWideAdmin`), like the super admin overview.
  *   dev    — developer or super admin (`assertDeveloper`); counts only, nothing names a client.
  *   client — the caller's own engagement (`getMyEngagement`), or an engagement id that
  *            `assertEngagementAccess` approves; anything else reads as no trends.
- *   lead / manager / admin — the matching role; they return no series and touch no table.
+ *   lead    — project leads only; their engagements (`listScopedEngagementIds`) and the tasks
+ *             assigned to them.
+ *   manager — managers and firm admins (`isAdminOrManager`); their engagements
+ *             (`listScopedEngagementIds`, firm-wide for admins).
+ *   admin   — firm-wide admins only (`isFirmWideAdmin`); every engagement not deleted.
  * Nothing here writes.
  */
 
@@ -81,13 +115,13 @@ export async function getHomeTrends(ctx: AuthContext, home: HomeTrendHome, opts:
   switch (home) {
     case 'lead':
       if (ctx.role !== 'intern') throw new HomeTrendsError('Only project leads have this home', 403);
-      return {};
+      return leadTrends(ctx, now);
     case 'manager':
       if (!isAdminOrManager(ctx.role)) throw new HomeTrendsError('Only managers and admins have this home', 403);
-      return {};
+      return approvalTrends(await listScopedEngagementIds(ctx), 'approvals', now);
     case 'admin':
       if (!isFirmWideAdmin(ctx.role)) throw new HomeTrendsError('Only firm admins have this home', 403);
-      return {};
+      return approvalTrends(null, 'awaitingApproval', now);
     case 'super':
       if (!isFirmWideAdmin(ctx.role)) throw new HomeTrendsError('Only firm-wide admins have this home', 403);
       return superTrends(now);
@@ -178,6 +212,142 @@ async function superTrends(now: Date): Promise<HomeTrends> {
   });
 }
 
+/* ------------------------------------------------------------------ staff: lead, manager, admin */
+
+const stepEventColumns = {
+  engagementId: engagementStepEvents.engagementId,
+  stepId: engagementStepEvents.stepId,
+  fromStatus: engagementStepEvents.fromStatus,
+  toStatus: engagementStepEvents.toStatus,
+  reviewStatus: engagementStepEvents.reviewStatus,
+  at: engagementStepEvents.at,
+};
+
+/** The steps the approvals tiles count: primary-phase steps outside the direct flow. */
+function approvalStepIds(): string[] {
+  return primaryPhaseItems()
+    .map((item) => item.id)
+    .filter((id) => !isDirectFlowStep(id));
+}
+
+/**
+ * Manager "Needs your approval" (`ids` = the manager's engagements) and admin "Awaiting
+ * approval" (`ids` = null, every engagement not deleted), per past day end.
+ */
+async function approvalTrends(ids: string[] | null, key: 'approvals' | 'awaitingApproval', now: Date): Promise<HomeTrends> {
+  if (ids && ids.length === 0) return {};
+  const periods = pastDays(now);
+  const first = periods[0]!;
+  const stepIds = approvalStepIds();
+
+  const [sinceRows, engRows, eventRows] = await Promise.all([
+    // The first event that carries a review state: review history starts there.
+    db.select({ at: min(engagementStepEvents.at) }).from(engagementStepEvents).where(isNotNull(engagementStepEvents.reviewStatus)),
+    db
+      .select({ id: engagements.id, createdAt: engagements.createdAt, checklistState: engagements.checklistState })
+      .from(engagements)
+      .where(ids ? and(inArray(engagements.id, ids), isNull(engagements.deletedAt)) : isNull(engagements.deletedAt)),
+    db
+      .select(stepEventColumns)
+      .from(engagementStepEvents)
+      .where(
+        and(
+          ...(ids ? [inArray(engagementStepEvents.engagementId, ids)] : []),
+          inArray(engagementStepEvents.stepId, stepIds),
+          gte(engagementStepEvents.at, new Date(first.end.getTime() - 60 * DAY_MS)),
+        ),
+      )
+      .orderBy(asc(engagementStepEvents.at)),
+  ]);
+
+  const reviewSince = sinceRows[0]?.at ?? null;
+  const steps: ReviewStepNow[] = [];
+  const createdAt = new Map<string, Date>();
+  for (const row of engRows) {
+    createdAt.set(row.id, row.createdAt);
+    const state = (row.checklistState ?? {}) as Record<string, unknown>;
+    for (const stepId of stepIds) {
+      const slice = state[stepId];
+      const reviewNow = slice && typeof slice === 'object' ? getReviewStatus(slice as Parameters<typeof getReviewStatus>[0]) : null;
+      steps.push({ engagementId: row.id, stepId, reviewNow });
+    }
+  }
+  const events = indexStepEvents(eventRows as StepHistoryEvent[]);
+  return keep({
+    [key]: trailingKnown(
+      periods.map((period) => awaitingApprovalAsOf({ steps, events, engagementCreatedAt: createdAt, period, reviewSince })),
+    ),
+  });
+}
+
+/** Lead "Done today" per past day: their engagements, and the tasks assigned to them. */
+async function leadTrends(ctx: AuthContext, now: Date): Promise<HomeTrends> {
+  const ids = await listScopedEngagementIds(ctx);
+  const periods = pastDays(now);
+  const first = periods[0]!;
+  const last = periods[periods.length - 1]!;
+  const since = new Date(first.end.getTime() - DAY_MS);
+
+  const [sinceRows, eventRows, taskRows, filingRows, reopenRows] = await Promise.all([
+    // The first recorded step event: status history starts there.
+    db.select({ at: min(engagementStepEvents.at) }).from(engagementStepEvents),
+    ids.length
+      ? db
+          .select(stepEventColumns)
+          .from(engagementStepEvents)
+          .where(and(inArray(engagementStepEvents.engagementId, ids), gte(engagementStepEvents.at, new Date(since.getTime() - 60 * DAY_MS))))
+          .orderBy(asc(engagementStepEvents.at))
+      : Promise.resolve([]),
+    // Assigned tasks only, as the lead's Work list shows them: a task tied to a step, and a
+    // personal to-do (step id "todo:…", no engagement), are left out.
+    db
+      .select({ status: tasks.status, completedAt: tasks.completedAt, updatedAt: tasks.updatedAt })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.assignedTo, ctx.userId),
+          isNotNull(tasks.engagementId),
+          or(isNull(tasks.stepId), eq(tasks.stepId, '')),
+          or(gte(tasks.updatedAt, since), gte(tasks.completedAt, since)),
+        ),
+      ),
+    ids.length
+      ? db
+          .select(filingColumns)
+          .from(complianceInstances)
+          .where(
+            and(
+              inArray(complianceInstances.engagementId, ids),
+              gte(complianceInstances.dueDate, first.ymd),
+              lte(complianceInstances.dueDate, last.ymd),
+            ),
+          )
+      : Promise.resolve([]),
+    ids.length
+      ? db
+          .select({ metadata: auditEvents.metadata, createdAt: auditEvents.createdAt })
+          .from(auditEvents)
+          .where(
+            and(
+              inArray(auditEvents.engagementId, ids),
+              eq(auditEvents.action, 'compliance.reopened'),
+              gte(auditEvents.createdAt, first.end),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+
+  const statusSince = sinceRows[0]?.at ?? null;
+  const stepEvents = indexStepEvents(eventRows as StepHistoryEvent[]);
+  const filings = filingRows as FilingHistoryRow[];
+  const reopens = reopensFrom(reopenRows);
+  return keep({
+    doneToday: trailingKnown(
+      periods.map((period) => doneOnDayAsOf({ period, stepEvents, statusSince, tasks: taskRows, filings, reopens })),
+    ),
+  });
+}
+
 /* ------------------------------------------------------------------ developer */
 
 async function devTrends(now: Date): Promise<HomeTrends> {
@@ -238,7 +408,7 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
   const periods = pastDays(now);
   const first = periods[0]!;
   const last = periods[periods.length - 1]!;
-  const [filingRows, reopenRows] = await Promise.all([
+  const [filingRows, reopenRows, requestRows] = await Promise.all([
     db
       .select(filingColumns)
       .from(complianceInstances)
@@ -260,11 +430,18 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
           gte(auditEvents.createdAt, first.end),
         ),
       ),
+    // Documents in (C-023): every request of the engagement made before the last day end.
+    db
+      .select({ status: documentRequests.status, closedAt: documentRequests.closedAt, createdAt: documentRequests.createdAt })
+      .from(documentRequests)
+      .where(and(eq(documentRequests.engagementId, dbId), lt(documentRequests.createdAt, last.end))),
   ]);
 
   const filings = filingRows as FilingHistoryRow[];
   const reopens = reopensFrom(reopenRows);
+  const requests = requestRows as DocRequestHistoryRow[];
   return keep({
     dueSoon: trailingKnown(periods.map((p) => clientDueSoonAsOf(filings, reopens, p))),
+    docsIn: trailingKnown(periods.map((p) => clientDocsInAsOf(requests, p))),
   });
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -237,7 +238,7 @@ export function LeadActionQueue({
       bodyClassName="px-2 pb-3 pt-1"
     >
       {groups.length === 0 ? (
-        <p className="px-2 py-4 text-center text-[13px] text-ink-muted">Nothing needs you right now.</p>
+        <EmptyState title="Nothing needs you right now" className="m-2" />
       ) : view === 'list' ? (
         <EFilingGrid
           caption="Action queue"

@@ -15,6 +15,7 @@ import { primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 import { staffNewProjectPath, staffProjectBaseFromPathname, adminProjectPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
@@ -148,6 +149,8 @@ export function AdminDashboardView({
     return primaryPhaseItems().some((item) => isAwaitingManagerDecision(item.id, state[item.id]));
   }).length;
   const tasksHref = (view: string) => `${staffBase}/dashboard?view=${view}#team-tasks`;
+  // Only "Needs your approval" has a past that the stored rows give (review history).
+  const trends = useHomeTrends('manager', { enabled: isAdminOrManager(user?.role) });
   const heroStats: DashHeroStat[] = [
     {
       label: 'Active projects',
@@ -161,6 +164,8 @@ export function AdminDashboardView({
       value: approvalsReceived,
       href: `${projectBase}/approvals`,
       hot: approvalsReceived > 0,
+      trend: trendWithLive(trends, 'approvals', approvalsReceived),
+      trendTone: 'warn',
       note: approvalClients > 0 ? `${approvalClients} ${approvalClients === 1 ? 'client' : 'clients'}` : undefined,
       how: 'Steps a lead or a client sent you to approve before they move on.',
     },

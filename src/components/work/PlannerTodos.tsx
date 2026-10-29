@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { UserRoundPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -9,17 +9,44 @@ import { WorkField } from '@/components/work/WorkField';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { PersonAvatar } from '@/views/admin/firm-people/parts';
+import {
   INTERN_FOCUS_TITLE_MAX,
+  createCustomInternFocus,
   isCustomInternFocus,
   type InternFocusEntry,
   type InternWorkItem,
 } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
+type Person = { id: string; name: string };
+
 /**
- * Planner to-dos card (prototype `TodoCard`): the lead's personal to-dos, the same list as
+ * Hand a to-do to a project lead (manager Work, S-234). Only a pinned work item can move: it
+ * moves through `/api/work/reassign`, so the lead sees it in their own Work. A typed to-do has
+ * no client, so it stays the manager's.
+ */
+export interface TodoHandOff {
+  leads: Person[];
+  /** The lead who holds a pinned item now, if any. */
+  ownerOf: (item: InternWorkItem) => Person | undefined;
+  /** Whether the item can move on its own (steps and tasks; filings and requests move with the client). */
+  canHand: (item: InternWorkItem) => boolean;
+  onHand: (item: InternWorkItem, to: Person) => void;
+}
+
+/**
+ * Planner to-dos card (prototype `TodoCard`): the user's personal to-dos, the same list as
  * the Today to-do card (`useOwnFocusTodos`, `/api/todos`). A typed to-do shows its title;
- * a pinned work item opens the task drawer.
+ * a pinned work item opens the task drawer. The quick-add line at the top adds a typed to-do.
+ * With `hand` (manager Work) a pinned row shows its lead and a person-plus menu to hand it on,
+ * and the head counts the to-dos with project leads.
  */
 export function PlannerTodos({
   focus,
@@ -27,23 +54,59 @@ export function PlannerTodos({
   persist,
   onOpenItem,
   onNew,
+  hand,
 }: {
   focus: InternFocusEntry[];
   byId: Map<string, InternWorkItem>;
   persist: (next: InternFocusEntry[]) => void;
   onOpenItem: (id: string) => void;
   onNew: () => void;
+  hand?: TodoHandOff;
 }) {
+  const [quick, setQuick] = useState('');
   const open = focus.filter((f) => !f.done).length;
+  const withLeads = hand
+    ? focus.filter((f) => {
+        const item = isCustomInternFocus(f) ? undefined : byId.get(f.id);
+        return !f.done && item && hand.ownerOf(item);
+      }).length
+    : 0;
   return (
     <section className="surface min-w-0 overflow-hidden">
       <div className="flex min-h-[52px] items-center gap-2 border-b border-line-soft px-4">
         <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">To-dos</h2>
+        {withLeads > 0 ? (
+          <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[12px] font-medium text-brand-text tabular-nums">
+            {withLeads} with project leads
+          </span>
+        ) : null}
         <span className="text-[12.5px] text-ink-muted tabular-nums">{open} open</span>
         <Button size="sm" variant="secondary" onClick={onNew}>
           New to-do
         </Button>
       </div>
+      <form
+        className="flex items-center gap-2 border-b border-line-soft px-4 py-2.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const title = quick.trim();
+          if (!title) return;
+          persist([createCustomInternFocus(title), ...focus]);
+          setQuick('');
+        }}
+      >
+        <Input
+          value={quick}
+          onChange={(e) => setQuick(e.target.value)}
+          placeholder="Add a to-do"
+          aria-label="Add a to-do"
+          maxLength={INTERN_FOCUS_TITLE_MAX}
+          className="h-9"
+        />
+        <Button type="submit" size="sm" variant="secondary" disabled={!quick.trim()}>
+          Add
+        </Button>
+      </form>
       {focus.length === 0 ? (
         <div className="p-4">
           <EmptyState title="No to-dos" />
@@ -53,6 +116,7 @@ export function PlannerTodos({
           {focus.map((entry) => {
             const item = isCustomInternFocus(entry) ? undefined : byId.get(entry.id);
             const title = item?.title ?? entry.title ?? 'To-do';
+            const owner = item && hand ? hand.ownerOf(item) : undefined;
             return (
               <li key={entry.id} className="group flex min-h-11 items-center gap-3 border-b border-line-soft px-4 py-2 text-[13.5px] last:border-b-0">
                 <Checkbox
@@ -74,6 +138,7 @@ export function PlannerTodos({
                   )}
                   {item ? <span className="block truncate text-[12px] text-ink-muted">{item.companyName}</span> : null}
                 </span>
+                {item && hand ? <HandMenu item={item} owner={owner} hand={hand} /> : null}
                 <Button
                   size="icon"
                   variant="quiet"
@@ -89,6 +154,46 @@ export function PlannerTodos({
         </ul>
       )}
     </section>
+  );
+}
+
+/** The lead's face when the item has one, else a dashed person-plus button; both open the lead menu. */
+function HandMenu({ item, owner, hand }: { item: InternWorkItem; owner: Person | undefined; hand: TodoHandOff }) {
+  const movable = hand.canHand(item);
+  const people = hand.leads.filter((l) => l.id !== owner?.id);
+  const label = owner ? `With ${owner.name}. Hand to another project lead` : 'Hand to a project lead';
+  if (!movable || people.length === 0) {
+    return owner ? (
+      <span title={`With ${owner.name}`} className="flex-none">
+        <PersonAvatar name={owner.name} size={24} />
+      </span>
+    ) : null;
+  }
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          className={cn(
+            'grid h-7 w-7 flex-none place-items-center rounded-full text-ink-muted hover:text-ink',
+            !owner && 'border-1.5 border-dashed border-line-strong',
+          )}
+        >
+          {owner ? <PersonAvatar name={owner.name} size={24} /> : <UserRoundPlus className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" collisionPadding={12} className="max-h-[320px] w-[220px] overflow-y-auto">
+        <DropdownMenuLabel className="pb-1 text-[12px] font-medium text-ink-muted">Hand to</DropdownMenuLabel>
+        {people.map((p) => (
+          <DropdownMenuItem key={p.id} onSelect={() => hand.onHand(item, p)} className="flex h-[34px] items-center gap-2">
+            <PersonAvatar name={p.name} size={24} />
+            <span className="min-w-0 flex-1 truncate">{p.name}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

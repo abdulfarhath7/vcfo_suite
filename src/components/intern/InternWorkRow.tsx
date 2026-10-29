@@ -124,10 +124,13 @@ export function InternWorkBoardCard({
   dim,
   now,
   onOpen,
+  owner,
 }: {
   item: InternWorkItem;
   dim?: boolean;
   now?: Date;
+  /** The project lead who holds the item, shown after the company on team boards. */
+  owner?: string;
   /** Opens the task drawer. Without it the title links to the item's page. */
   onOpen?: (item: InternWorkItem) => void;
 }) {
@@ -146,7 +149,10 @@ export function InternWorkBoardCard({
     >
       <div className="flex min-w-0 items-center gap-2 text-[12px] text-ink-muted">
         <LeadCompanyChip name={item.companyName} compact />
-        <span className="truncate">{item.companyName}</span>
+        <span className="truncate">
+          {item.companyName}
+          {owner ? ` · ${owner}` : ''}
+        </span>
         {item.catalogLabel ? <span className="ml-auto flex-none font-mono">{item.catalogLabel}</span> : null}
       </div>
       {onOpen ? (

@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import type { HomeTrends } from '@/lib/metrics/home-trends';
 import {
   INTERN_TASKS_PATH,
   filterInternWork,
@@ -24,11 +26,11 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  *   Waiting on clients  Work › Waiting on clients (?view=waiting)
  *   Due this week       Work › This week     (?view=week)
  *   Done today          no list; done items stay in Work for the week
- * No trend line: each tile counts step states, and steps only keep status history from the
- * day `engagement_step_events` shipped; tasks keep no completion time
- * (`src/db/repositories/home-trends.ts` lists what each home can draw).
+ * Only "Done today" draws a trend line: its past days are rebuilt from the step events, the
+ * task completion times and the filing dates. The other tiles mix step and filing windows that
+ * keep no history (`src/db/repositories/home-trends.ts` lists what each home can draw).
  */
-export function leadHeroStats(items: InternWorkItem[], now: Date): DashHeroStat[] {
+export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends): DashHeroStat[] {
   const action = filterInternWork(items, { focus: 'action' }, now);
   const overdue = filterInternWork(items, { focus: 'overdue' }, now);
   const waiting = filterInternWork(items, { tag: 'client' }, now).filter((i) => i.kind !== 'done');
@@ -74,6 +76,8 @@ export function leadHeroStats(items: InternWorkItem[], now: Date): DashHeroStat[
       label: 'Done today',
       value: doneToday,
       good: doneToday > 0,
+      trend: trendWithLive(trends, 'doneToday', doneToday),
+      trendTone: 'ok',
       how: 'Steps, filings and tasks you finished today.',
     },
   ];
@@ -100,8 +104,9 @@ export function LeadHero({
 }) {
   const first = internFirstName(name);
   const greet = internGreeting(internGreetingHour(now));
+  const trends = useHomeTrends('lead');
   return (
-    <DashHero title={`Good ${greet}, ${first}`} stats={leadHeroStats(items, now)} scope={scope}>
+    <DashHero title={`Good ${greet}, ${first}`} stats={leadHeroStats(items, now, trends)} scope={scope}>
       {children}
     </DashHero>
   );

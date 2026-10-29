@@ -32,6 +32,8 @@ export function AssignTaskDialog({
   onOpenChange,
   engagements,
   teamMembers,
+  leadKey,
+  title: dialogTitle = 'Assign task',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,6 +41,9 @@ export function AssignTaskDialog({
   engagements: Engagement[];
   /** Lead names by `intern_id` key, for the primary lead of a project. */
   teamMembers: Array<{ id: string; name: string }>;
+  /** One lead's page: only that lead's companies, and the lead is picked. */
+  leadKey?: string;
+  title?: string;
 }) {
   const queryClient = useQueryClient();
   const [engagementId, setEngagementId] = useState('');
@@ -51,9 +56,11 @@ export function AssignTaskDialog({
   const companies = useMemo(
     () =>
       engagements
-        .filter((e) => e.internId || (e.leadIds ?? []).length > 0)
+        .filter((e) =>
+          leadKey ? e.internId === leadKey || (e.leadIds ?? []).includes(leadKey) : e.internId || (e.leadIds ?? []).length > 0,
+        )
         .sort((a, b) => a.companyName.localeCompare(b.companyName)),
-    [engagements],
+    [engagements, leadKey],
   );
   const engagement = companies.find((e) => e.id === engagementId) ?? null;
 
@@ -85,9 +92,10 @@ export function AssignTaskDialog({
 
   // One lead on the company: pick them.
   useEffect(() => {
-    if (leads.length === 1) setLeadId(leads[0]!.id);
+    if (leadKey && leads.some((l) => l.id === leadKey)) setLeadId(leadKey);
+    else if (leads.length === 1) setLeadId(leads[0]!.id);
     else if (!leads.some((l) => l.id === leadId)) setLeadId('');
-  }, [leads, leadId]);
+  }, [leads, leadId, leadKey]);
 
   const ready = Boolean(engagement && leadId && title.trim()) && !saving;
 
@@ -123,7 +131,7 @@ export function AssignTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Assign task</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
         <form
           className="grid gap-4"

@@ -82,11 +82,17 @@ export function InternWorkDrawer({
   workKey,
   now,
   onClose,
+  ownerName,
+  pendingWithMe,
 }: {
   item: InternWorkItem | null;
   workKey?: string | null;
   now: Date;
   onClose: () => void;
+  /** The project lead who holds the item (manager Work and the one-lead page). */
+  ownerName?: string;
+  /** The item waits on the viewer (a manager's approval): the head shows "Pending with me". */
+  pendingWithMe?: boolean;
 }) {
   const { user, approveDoc, submitDirectStep } = useApp();
   const queryClient = useQueryClient();
@@ -103,6 +109,7 @@ export function InternWorkDrawer({
   const facts: Array<{ k: string; v: ReactNode }> = item
     ? [
         { k: 'Company', v: item.companyName },
+        ...(ownerName ? [{ k: 'Owner', v: ownerName }] : []),
         { k: 'Type', v: SOURCE_WORD[item.source] ?? 'Step' },
         ...(item.catalogLabel ? [{ k: 'Step', v: <span className="font-mono text-[13px]">{item.catalogLabel}</span> }] : []),
         {
@@ -191,7 +198,11 @@ export function InternWorkDrawer({
                 <Chip tone={status.tone} title={item.why}>
                   {status.word}
                 </Chip>
-                {owner ? <OwnerChip owner={owner} label={owner === 'client' ? 'With client' : 'With manager'} /> : null}
+                {pendingWithMe ? (
+                  <Tag tone="prog">Pending with me</Tag>
+                ) : owner ? (
+                  <OwnerChip owner={owner} label={owner === 'client' ? 'With client' : 'With manager'} />
+                ) : null}
                 {item.isCritical ? <Tag tone="bad">Critical</Tag> : null}
               </div>
             </header>

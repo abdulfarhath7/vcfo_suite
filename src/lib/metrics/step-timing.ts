@@ -9,8 +9,14 @@
  *   - days in step — opened to finished, or opened to today while the step is still open;
  *   - stage days  — per phase, from the first step opened to the last step finished.
  *
+ * Since migration 0027 every event also carries the step's review state after the change
+ * (`review_status`), and a change of review state alone (a submit for approval, an accept, a
+ * send back) writes an event whose from and to statuses are the same. Timing ignores those.
+ *
  * No React, no `db`, so the numbers are unit-tested in `step-timing.test.ts`.
  */
+
+import { getReviewStatus } from '@/lib/checklist/checklist-item-review';
 
 export const DAY_MS = 86_400_000;
 
@@ -29,6 +35,11 @@ export interface StepStatusChange {
   stepId: string;
   from: string | null;
   to: string;
+  /**
+   * The review state after the change (`reviewing`, `accepted`, `rejected`) or null when the
+   * step has none. Set by `diffStepChanges`; absent on changes from `diffStepStatuses`.
+   */
+  reviewStatus?: string | null;
 }
 
 export interface StepTiming {
@@ -74,6 +85,40 @@ export function diffStepStatuses(
   return out;
 }
 
+function reviewOf(slice: unknown): string | null {
+  if (!slice || typeof slice !== 'object' || Array.isArray(slice)) return null;
+  return getReviewStatus(slice as Parameters<typeof getReviewStatus>[0]);
+}
+
+/**
+ * The steps whose status or review state differs between two `checklist_state` objects, each
+ * with the review state after the change. A review-only change keeps `from` equal to `to`
+ * (the unchanged status), so timing can skip it. This is what the engagements repository
+ * records; `diffStepStatuses` stays the status-only rule.
+ */
+export function diffStepChanges(
+  previous: Record<string, unknown> | null | undefined,
+  next: Record<string, unknown> | null | undefined,
+): StepStatusChange[] {
+  const before = previous ?? {};
+  const after = next ?? {};
+  const out: StepStatusChange[] = [];
+  for (const stepId of Object.keys(after)) {
+    const from = statusOf(before[stepId]);
+    const to = statusOf(after[stepId]) ?? NOT_STARTED;
+    const reviewBefore = reviewOf(before[stepId]);
+    const reviewAfter = reviewOf(after[stepId]);
+    if ((from ?? NOT_STARTED) === to && reviewBefore === reviewAfter) continue;
+    out.push({ stepId, from: (from ?? NOT_STARTED) === to ? to : from, to, reviewStatus: reviewAfter });
+  }
+  return out;
+}
+
+/** A recorded event that changed only the review state, not the status. */
+export function isReviewOnlyEvent(event: Pick<StepEvent, 'fromStatus' | 'toStatus'>): boolean {
+  return (event.fromStatus ?? NOT_STARTED) === event.toStatus;
+}
+
 /** Whole days between two instants (floored, never negative). */
 export function wholeDays(fromIso: string, to: Date | string): number {
   const end = typeof to === 'string' ? Date.parse(to) : to.getTime();
@@ -93,6 +138,7 @@ export function timingOf(events: StepEvent[], now: Date): StepTiming {
   let finishedAt: string | null = null;
   let lastStatus = NOT_STARTED;
   for (const event of sorted) {
+    if (isReviewOnlyEvent(event)) continue;
     lastStatus = event.toStatus;
     if (!openedAt && event.toStatus !== NOT_STARTED && event.toStatus !== 'not-applicable') {
       openedAt = event.at;

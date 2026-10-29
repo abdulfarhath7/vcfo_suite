@@ -156,8 +156,18 @@ describe('writeStepEvents', () => {
     ], NOW);
     const insert = calls.find((c) => c.op === 'insert')!;
     expect(insert.values).toEqual([
-      { engagementId: OWN, stepId: 'pre-1', fromStatus: 'in-progress', toStatus: 'completed', actorId: 'user-manager', at: NOW },
-      { engagementId: OWN, stepId: 'pre-2', fromStatus: null, toStatus: 'in-progress', actorId: 'user-manager', at: NOW },
+      { engagementId: OWN, stepId: 'pre-1', fromStatus: 'in-progress', toStatus: 'completed', reviewStatus: null, actorId: 'user-manager', at: NOW },
+      { engagementId: OWN, stepId: 'pre-2', fromStatus: null, toStatus: 'in-progress', reviewStatus: null, actorId: 'user-manager', at: NOW },
+    ]);
+  });
+
+  it('keeps the review state after the change', async () => {
+    await repo.writeStepEvents(ctx('manager'), db, OWN, [
+      { stepId: 'post-1', from: 'in-progress', to: 'in-progress', reviewStatus: 'reviewing' },
+    ], NOW);
+    const insert = calls.find((c) => c.op === 'insert')!;
+    expect(insert.values).toEqual([
+      { engagementId: OWN, stepId: 'post-1', fromStatus: 'in-progress', toStatus: 'in-progress', reviewStatus: 'reviewing', actorId: 'user-manager', at: NOW },
     ]);
   });
 

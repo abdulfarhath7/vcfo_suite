@@ -132,6 +132,8 @@ export interface TaskInstance {
   title?: string;
   /** Last change, ISO; set on rows from `/api/tasks`. */
   updatedAt?: string;
+  /** When the task moved to done, ISO (`tasks.completed_at`); absent while open or when done before it was kept. */
+  completedAt?: string;
 }
 
 export interface DocRequest {

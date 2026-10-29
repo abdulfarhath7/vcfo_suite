@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ClipboardCheck } from 'lucide-react';
@@ -39,7 +40,7 @@ export function DashboardApprovalsPanel() {
       bodyClassName="p-0"
     >
       {shown.length === 0 ? (
-        <p className="px-4 py-4 text-[13px] text-ink-muted">Nothing waiting</p>
+        <EmptyState title="Nothing waiting" className="m-4" />
       ) : (
         <ul>
           {shown.map((row) => {

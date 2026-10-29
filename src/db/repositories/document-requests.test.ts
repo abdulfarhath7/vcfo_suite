@@ -191,4 +191,26 @@ describe('updateDocumentRequest', () => {
     ).rejects.toThrow(/only mark requests as uploaded/i);
     expect(writes()).toHaveLength(0);
   });
+
+  it('stamps closed_at when a request is fulfilled, and clears it when it opens again', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[requestRow(OWN)], [{ ...requestRow(OWN), status: 'fulfilled' }]];
+    await repo.updateDocumentRequest(ctx('client'), 'req-1', { status: 'uploaded' });
+    const closed = calls.find((c) => c.op === 'update')!.set as { status: string; closedAt: Date };
+    expect(closed.status).toBe('fulfilled');
+    expect(closed.closedAt).toBeInstanceOf(Date);
+
+    calls.length = 0;
+    results = [[{ ...requestRow(OWN), status: 'fulfilled' }], [requestRow(OWN)]];
+    await repo.updateDocumentRequest(ctx('manager'), 'req-1', { status: 'pending' });
+    const reopened = calls.find((c) => c.op === 'update')!.set as { closedAt: Date | null };
+    expect(reopened.closedAt).toBeNull();
+  });
+
+  it('leaves closed_at alone when the status does not change', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[requestRow(OWN)], [requestRow(OWN)]];
+    await repo.updateDocumentRequest(ctx('manager'), 'req-1', { label: 'PAN' });
+    expect(calls.find((c) => c.op === 'update')!.set).not.toHaveProperty('closedAt');
+  });
 });
