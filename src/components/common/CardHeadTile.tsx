@@ -7,7 +7,7 @@ import {
   CircleCheck,
   ClipboardCheck,
   Clock,
-  File,
+  FileText,
   IdCard,
   Inbox,
   LayoutGrid,
@@ -18,7 +18,7 @@ import {
   User,
   type LucideIcon,
 } from 'lucide-react';
-import { CARD_HEAD_TONE_TOKENS, cardHeadIcon, type CardHeadIconName } from '@/lib/ui/card-head-icon';
+import { CARD_HEAD_TONE_TOKENS, cardHeadIcon, type CardHeadIconName, type CardHeadTone } from '@/lib/ui/card-head-icon';
 
 export const CARD_HEAD_ICONS: Record<CardHeadIconName, LucideIcon> = {
   'alert-triangle': TriangleAlert,
@@ -26,7 +26,7 @@ export const CARD_HEAD_ICONS: Record<CardHeadIconName, LucideIcon> = {
   'circle-check': CircleCheck,
   calendar: Calendar,
   inbox: Inbox,
-  file: File,
+  file: FileText,
   'shield-check': ShieldCheck,
   'clipboard-check': ClipboardCheck,
   user: User,
@@ -46,9 +46,24 @@ export const CARD_HEAD_ICONS: Record<CardHeadIconName, LucideIcon> = {
  * portal. Inline token styles keep it working inside the client portal's CSS
  * reset as well as in the staff shell.
  */
-export function CardHeadTile({ title, className, size = 28 }: { title: string; className?: string; size?: 28 | 30 }) {
-  const { icon, tone } = cardHeadIcon(title);
-  const Icon = CARD_HEAD_ICONS[icon];
+export function CardHeadTile({
+  title,
+  className,
+  size = 28,
+  icon: iconOverride,
+  tone: toneOverride,
+}: {
+  title: string;
+  className?: string;
+  size?: 28 | 30;
+  /** A different glyph than the title gives (prototype SectionCard `icon`). */
+  icon?: LucideIcon;
+  /** A different tone than the title gives. */
+  tone?: CardHeadTone;
+}) {
+  const fromTitle = cardHeadIcon(title);
+  const tone = toneOverride ?? fromTitle.tone;
+  const Icon = iconOverride ?? CARD_HEAD_ICONS[fromTitle.icon];
   const t = CARD_HEAD_TONE_TOKENS[tone];
   const style: CSSProperties = {
     display: 'inline-grid',

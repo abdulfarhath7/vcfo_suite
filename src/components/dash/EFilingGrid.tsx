@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BulkBar, type BulkAction } from '@/components/ui/bulk-bar';
 import { DensityMenu } from '@/components/ui/density-menu';
@@ -90,6 +91,7 @@ export function EFilingGrid<T>({
   rows,
   rowKey,
   pageSize = 10,
+  footer,
   empty,
   onRowClick,
   caption,
@@ -118,6 +120,8 @@ export function EFilingGrid<T>({
   rows: T[];
   rowKey: (row: T) => string;
   pageSize?: number;
+  /** Extra content in the footer after the row count: "Clear filters", a note. */
+  footer?: ReactNode;
   empty?: ReactNode;
   onRowClick?: (row: T) => void;
   caption?: string;
@@ -339,6 +343,9 @@ export function EFilingGrid<T>({
                             <span className="block h-3 w-3/5 animate-pulse rounded-bar bg-line motion-reduce:animate-none" />
                             <span className="block h-2.5 w-2/5 animate-pulse rounded-bar bg-line motion-reduce:animate-none" />
                           </span>
+                        ) : c.key === 'status' ? (
+                          // The status column gets the 104px chip shape.
+                          <span className="block h-6 w-[104px] animate-pulse rounded-md bg-line motion-reduce:animate-none" />
                         ) : (
                           <span
                             className={cn(
@@ -457,24 +464,69 @@ export function EFilingGrid<T>({
           }
         />
       ) : null}
-      {pages > 1 ? (
-        <nav aria-label="Pages" className="mt-2 flex flex-wrap items-center justify-end gap-1">
-          {Array.from({ length: pages }, (_, n) => (
-            <button
-              key={n}
-              type="button"
-              aria-current={n === current ? 'page' : undefined}
-              onClick={() => setPage(n)}
-              className={cn(
-                'h-7 min-w-7 rounded-md border-1.5 px-2 text-[12px] font-medium tabular-nums',
-                n === current ? 'border-brand bg-brand text-on-brand' : 'border-line bg-surface-raised text-ink-muted hover:text-ink',
+      {rows.length > 0 && !loading ? (
+        <footer className="mt-2 flex flex-wrap items-center gap-3 border-t border-line-soft pt-2 text-[13px] text-ink-muted">
+          <span className="tabular-nums">
+            {current * pageSize + 1}–{Math.min(rows.length, (current + 1) * pageSize)} of {rows.length}
+          </span>
+          {footer}
+          {pages > 1 ? (
+            <nav aria-label="Pages" className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setPage(Math.max(0, current - 1))}
+                disabled={current === 0}
+                aria-label="Previous page"
+                className="grid h-7 w-7 place-items-center rounded-md hover:bg-ink/[.06] disabled:opacity-40"
+              >
+                <ChevronLeft size={14} strokeWidth={1.6} aria-hidden />
+              </button>
+              {pageList(current, pages).map((n, i) =>
+                n === null ? (
+                  <span key={`e${i}`} className="px-1" aria-hidden>
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-current={n === current ? 'page' : undefined}
+                    onClick={() => setPage(n)}
+                    className={cn(
+                      'h-7 min-w-7 rounded-md px-1.5 font-medium tabular-nums',
+                      n === current ? 'bg-brand text-on-brand' : 'text-ink-2 hover:bg-ink/[.06]',
+                    )}
+                  >
+                    {n + 1}
+                  </button>
+                ),
               )}
-            >
-              {n + 1}
-            </button>
-          ))}
-        </nav>
+              <button
+                type="button"
+                onClick={() => setPage(Math.min(pages - 1, current + 1))}
+                disabled={current === pages - 1}
+                aria-label="Next page"
+                className="grid h-7 w-7 place-items-center rounded-md hover:bg-ink/[.06] disabled:opacity-40"
+              >
+                <ChevronRight size={14} strokeWidth={1.6} aria-hidden />
+              </button>
+            </nav>
+          ) : null}
+        </footer>
       ) : null}
     </div>
   );
+}
+
+/** Page indexes to show: the first, the last and the neighbours of the current one; null is a gap. */
+function pageList(current: number, pages: number): Array<number | null> {
+  const out: Array<number | null> = [];
+  for (let p = 0; p < pages; p++) {
+    if (p === 0 || p === pages - 1 || Math.abs(p - current) <= 1) {
+      const prev = out[out.length - 1];
+      if (typeof prev === 'number' && p - prev > 1) out.push(null);
+      out.push(p);
+    }
+  }
+  return out;
 }

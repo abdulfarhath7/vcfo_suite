@@ -3,6 +3,23 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  DIALOG_CLOSE,
+  DIALOG_CONTENT,
+  DIALOG_DESCRIPTION,
+  DIALOG_FOOT,
+  DIALOG_HEAD,
+  DIALOG_OVERLAY,
+  DIALOG_TITLE,
+  DIALOG_WIDTHS,
+  dialogIsFlush,
+  type DialogSize,
+} from "@/components/ui/dialog-classes";
+
+/* The shared dialog (VCFO Spectrum, prototype Modal): navy scrim, a 52px head with a hairline,
+   a 15px title, a 32px close square, a footer with a hairline above, widths 420 / 560 / 760 /
+   1000px, and a bottom sheet on phones. For a dialog built from props, use `Modal`
+   (`@/components/ui/modal`). */
 
 const Dialog = DialogPrimitive.Root;
 
@@ -10,74 +27,83 @@ const DialogTrigger = DialogPrimitive.Trigger;
 
 const DialogPortal = DialogPrimitive.Portal;
 
+const DialogClose = DialogPrimitive.Close;
+
 function DialogOverlay({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & { ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Overlay>> }) {
+  return <DialogPrimitive.Overlay ref={ref} className={cn(DIALOG_OVERLAY, className)} {...props} />;
+}
+
+function DialogContent({
+  ref,
+  className,
+  children,
+  size = "md",
+  hideClose,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>>;
+  /** 420, 560 (default), 760 or 1000px. A `max-w-*` class from the caller still wins. */
+  size?: DialogSize;
+  /** Leave out the 32px close square (the caller draws its own). */
+  hideClose?: boolean;
+}) {
+  const padded = !dialogIsFlush(className);
   return (
-      <DialogPrimitive.Overlay
-    ref={ref}
-    className={cn(
-      "discrete-overlay fixed inset-0 z-50 bg-black/80",
-      "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className,
-    )}
-    {...props}
-  />
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        data-dialog-pad={padded ? "" : undefined}
+        className={cn(DIALOG_CONTENT, DIALOG_WIDTHS[size], className)}
+        {...props}
+      >
+        {children}
+        {hideClose ? null : (
+          <DialogPrimitive.Close className={DIALOG_CLOSE}>
+            <X size={16} strokeWidth={1.6} aria-hidden />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
   );
 }
 
-function DialogContent({ ref, className, children, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Content>> }) {
-  return (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "discrete-panel discrete-panel-center fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border-1.5 bg-surface-raised p-6 shadow-dialog duration-200 sm:rounded-md",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-accent data-[state=open]:text-ink-muted hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2 disabled:pointer-events-none">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-);
-}
-
+/** The 52px head: an optional eyebrow, the title, then chips or a description. */
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn(DIALOG_HEAD, className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 
+/** Small muted line above the title. */
+const DialogEyebrow = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("truncate text-[12.5px] text-ink-muted", className)} {...props} />
+);
+DialogEyebrow.displayName = "DialogEyebrow";
+
+/** Buttons on the right with a hairline above. */
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
+  <div className={cn(DIALOG_FOOT, className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 
 function DialogTitle({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> & { ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Title>> }) {
-  return (
-      <DialogPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-  );
+  return <DialogPrimitive.Title ref={ref} className={cn(DIALOG_TITLE, className)} {...props} />;
 }
 
 function DialogDescription({ ref, className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description> & { ref?: React.Ref<React.ElementRef<typeof DialogPrimitive.Description>> }) {
-  return (
-      <DialogPrimitive.Description ref={ref} className={cn("text-sm text-ink-muted", className)} {...props} />
-  );
+  return <DialogPrimitive.Description ref={ref} className={cn(DIALOG_DESCRIPTION, className)} {...props} />;
 }
 
 export {
   Dialog,
   DialogTrigger,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
   DialogContent,
   DialogHeader,
+  DialogEyebrow,
   DialogFooter,
   DialogTitle,
   DialogDescription,

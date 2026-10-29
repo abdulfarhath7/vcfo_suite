@@ -1,6 +1,6 @@
 'use client';
 
-import { sep, time24 } from '@/lib/date-format';
+import { sep } from '@/lib/date-format';
 import { createElement, useSyncExternalStore } from 'react';
 
 const IST = 'Asia/Kolkata';
@@ -11,21 +11,22 @@ function subscribeEverySecond(onStoreChange: () => void) {
   return () => window.clearInterval(id);
 }
 
-/** `Monday · 17 Aug 2026 · 17:47` in en-IN / IST. */
-function formatClientNowLabel(now = new Date(), locale = DEFAULT_LOCALE): string {
-  const weekday = sep(now.toLocaleDateString(locale, { weekday: 'long', timeZone: IST }));
-  const date = sep(now.toLocaleDateString(locale, {
+/** `Wed 29 Oct 2026 · 12:31 PM` in IST, the prototype's greeting card date (R-17). */
+export function formatClientNowLabel(now = new Date(), locale = DEFAULT_LOCALE): string {
+  const weekday = now.toLocaleDateString('en-GB', { weekday: 'short', timeZone: IST });
+  const date = sep(now.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     timeZone: IST,
   }));
-  /* 24-hour clock without seconds (K-13, rule R-29): "17:47". */
-  const time = time24(now, IST);
-  return `${weekday} · ${date} · ${time}`;
+  const time = now
+    .toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: IST })
+    .replace(/\s*(am|pm)$/i, (m) => ` ${m.trim().toUpperCase()}`);
+  return `${weekday} ${date} · ${time}`;
 }
 
-/** Client-only weekday · date · time; ticks every second. Empty on the server. */
+/** Client-only short weekday, date and 12-hour time; checks every second. Empty on the server. */
 function useClientLocaleNow(locale = DEFAULT_LOCALE): string {
   return useSyncExternalStore(
     subscribeEverySecond,

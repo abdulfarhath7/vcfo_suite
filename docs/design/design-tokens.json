@@ -52,6 +52,18 @@
         }
       },
       {
+        "name": "hover",
+        "value": {
+          "light": "#f4f6fa",
+          "dark": "#1a1d23"
+        },
+        "usage": "Hovered table and list rows and the live step row. Lighter than the card in dark mode, so a hovered row lifts instead of sinking.",
+        "oklch": {
+          "light": "97.3% 0.006 265",
+          "dark": "23.0% 0.012 264"
+        }
+      },
+      {
         "name": "line",
         "value": {
           "light": "#e3e8ef",
@@ -141,6 +153,18 @@
         "oklch": {
           "light": "42.3% 0.050 256",
           "dark": "79.9% 0.019 258"
+        }
+      },
+      {
+        "name": "wash-ink-2",
+        "value": {
+          "light": "#3c4f69",
+          "dark": "#c9cdf5"
+        },
+        "usage": "Secondary text on the home card wash: the date and the step count. Lilac in dark mode so it reads on the violet wash.",
+        "oklch": {
+          "light": "42.3% 0.050 256",
+          "dark": "85.8% 0.056 281"
         }
       },
       {
@@ -444,6 +468,18 @@
         }
       },
       {
+        "name": "info-mid",
+        "value": {
+          "light": "#2f6feb",
+          "dark": "#5b8ff0"
+        },
+        "usage": "Blue dots and bars: the SBC owner dot and info marks. Marks only, never text.",
+        "oklch": {
+          "light": "57.3% 0.199 262",
+          "dark": "65.9% 0.155 262"
+        }
+      },
+      {
         "name": "upcoming",
         "value": {
           "light": "#4e5d73",
@@ -501,6 +537,18 @@
         "oklch": {
           "light": "94.6% 0.025 299",
           "dark": "26.6% 0.053 292"
+        }
+      },
+      {
+        "name": "identity-mid",
+        "value": {
+          "light": "#8b5cf6",
+          "dark": "#a78bfa"
+        },
+        "usage": "Violet dots and bars: the MCA owner dot, the violet chip dot. Marks only, never text (prototype violet-mid).",
+        "oklch": {
+          "light": "60.6% 0.219 293",
+          "dark": "70.9% 0.159 294"
         }
       },
       {
@@ -673,6 +721,18 @@
         "oklch": {
           "light": "26.0% 0.060 251",
           "dark": "19.2% 0.035 261"
+        }
+      },
+      {
+        "name": "side-deep",
+        "value": {
+          "light": "#0f2d4d",
+          "dark": "#111c30"
+        },
+        "usage": "The front mountain on the sign-in page, one step off the navy ground (prototype navy-2).",
+        "oklch": {
+          "light": "29.3% 0.069 252",
+          "dark": "22.7% 0.042 262"
         }
       },
       {
@@ -1129,7 +1189,7 @@
       {
         "name": "radius-mark",
         "value": "4px",
-        "usage": "Marks of 12 to 23px: checkboxes, step squares, swatches."
+        "usage": "Marks of 12 to 23px: checkboxes, step squares, swatches, small count badges. Tailwind rounded-sm and rounded-mark both read it."
       },
       {
         "name": "radius-bar",
@@ -1177,8 +1237,8 @@
       },
       {
         "name": "row-height",
-        "value": "40px",
-        "usage": "Table rows. Chips sit vertically centred with 9px above and below."
+        "value": "44px",
+        "usage": "Table rows (R-07, Stripe T1). Chips sit vertically centred with 10px above and below."
       },
       {
         "name": "tile",
@@ -1245,6 +1305,14 @@
         "usage": "The faint top shine of the main button."
       },
       {
+        "name": "shadow-control",
+        "value": {
+          "light": "0 1px 2px rgba(10, 37, 64, 0.05)",
+          "dark": "none"
+        },
+        "usage": "The faint drop under secondary buttons, inputs and the switch thumb. Light mode only."
+      },
+      {
         "name": "wash-tile",
         "value": {
           "light": "rgba(255, 255, 255, 0.9)",
@@ -1259,6 +1327,22 @@
           "dark": "rgba(255, 255, 255, 0.08)"
         },
         "usage": "Edge of a number tile on the wash."
+      },
+      {
+        "name": "hero-image-veil",
+        "value": {
+          "light": "rgba(244, 243, 255, 0.72)",
+          "dark": "rgba(21, 19, 46, 0.74)"
+        },
+        "usage": "Veil over a photo skin on the greeting card (Profile > Appearance), so its dark text stays readable."
+      },
+      {
+        "name": "shadow-signin",
+        "value": {
+          "light": "0 30px 80px -30px rgba(0, 0, 0, 0.6)",
+          "dark": "0 30px 80px -30px rgba(0, 0, 0, 0.6)"
+        },
+        "usage": "The deep shadow under the sign-in card on the navy ground."
       }
     ]
   },

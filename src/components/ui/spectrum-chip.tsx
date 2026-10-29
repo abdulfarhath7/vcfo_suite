@@ -22,13 +22,16 @@ const DOTS: Record<ChipTone, string> = {
   bad: 'bg-danger-mid',
   prog: 'bg-brand',
   idle: 'bg-upcoming-mid',
-  violet: 'bg-identity',
+  violet: 'bg-identity-mid',
   teal: 'bg-waiting-mid',
 };
 
 /** Map a status word to a tone. Six meanings: not started, in progress, waiting, due soon, overdue, done. */
 export function toneFor(status: string): ChipTone {
   const s = status.toLowerCase();
+  /* R-13: "Not started" is grey. Words that say "not yet" are checked first, because "started",
+     "due", "asked", "filed", "paid" and "complete" inside them would pick another tone. */
+  if (/(^|\b)(not[- ](started|due|asked|yet|filed|sent|begun)|unpaid|unfiled|incomplete|upcoming|planned|scheduled|queued)\b/.test(s)) return 'idle';
   if (/(done|complete|filed|approved|granted|active|paid|closed|resolved|\bok\b|healthy|connected|live|verified|on track)/.test(s)) return 'ok';
   if (/(overdue|late|fail|error|rejected|blocked|stuck|critical|down|expired|sent back|missing)/.test(s)) return 'bad';
   if (/(waiting|pending|with client|with sbc|with mca|hold|needs|asked|sent|awaiting)/.test(s)) return 'teal';
@@ -111,8 +114,8 @@ export function Chip({
 export type Owner = 'client' | 'sbc' | 'mca' | 'manager';
 const OWNER: Record<Owner, [string, string, string]> = {
   client: ['bg-owner-client-soft text-owner-client', 'bg-warning-mid', 'Client'],
-  sbc: ['bg-owner-sbc-soft text-owner-sbc', 'bg-owner-sbc', 'SBC'],
-  mca: ['bg-owner-mca-soft text-owner-mca', 'bg-identity', 'MCA'],
+  sbc: ['bg-owner-sbc-soft text-owner-sbc', 'bg-info-mid', 'SBC'],
+  mca: ['bg-owner-mca-soft text-owner-mca', 'bg-identity-mid', 'MCA'],
   manager: ['bg-owner-manager-soft text-owner-manager', 'bg-waiting-mid', 'Manager'],
 };
 

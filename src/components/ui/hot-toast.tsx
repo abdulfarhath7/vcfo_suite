@@ -12,58 +12,29 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/* VCFO Spectrum toasts (prototype UndoToast A1): white, a 1.5px edge, the float shadow, a 22px
+   status tile on the left. No coloured side bars; the tile carries the status colour. */
 const toastShellBase: CSSProperties = {
-  borderRadius: "0.5rem",
-  padding: "12px 16px",
-  fontSize: "0.8125rem",
-  boxShadow:
-    "0 1px 2px oklch(18% 0.02 260 / 0.04), 0 8px 24px -8px oklch(18% 0.02 260 / 0.12)",
-  maxWidth: "420px",
+  borderRadius: "var(--radius-md)",
+  padding: "12px 14px",
+  fontSize: "14px",
+  lineHeight: "20px",
+  boxShadow: "var(--shadow-float)",
+  maxWidth: "380px",
+  background: "oklch(var(--surface-raised))",
+  color: "oklch(var(--ink))",
+  border: "1.5px solid oklch(var(--line))",
 };
 
 export type ToastSemanticVariant = "success" | "error" | "warning" | "info" | "loading" | "default";
 
 const semanticToastShell: Record<ToastSemanticVariant, CSSProperties> = {
-  default: {
-    background: "oklch(var(--surface-raised))",
-    color: "oklch(var(--ink))",
-    border: "1px solid oklch(var(--line))",
-  },
-  success: {
-    background: "oklch(var(--positive-soft))",
-    color: "oklch(var(--success-text))",
-    border: "1px solid oklch(var(--positive) / 0.2)",
-    borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--positive))",
-  },
-  error: {
-    background: "oklch(var(--danger-light))",
-    color: "oklch(var(--danger-text))",
-    border: "1px solid oklch(var(--danger) / 0.2)",
-    borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--danger))",
-  },
-  warning: {
-    background: "oklch(var(--warning-light))",
-    color: "oklch(var(--warning-text))",
-    border: "1px solid oklch(var(--warning) / 0.2)",
-    borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--warning))",
-  },
-  info: {
-    background: "oklch(var(--info-light))",
-    color: "oklch(var(--info-text))",
-    border: "1px solid oklch(var(--info) / 0.2)",
-    borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--info))",
-  },
-  loading: {
-    background: "oklch(var(--surface-raised))",
-    color: "oklch(var(--ink))",
-    border: "1px solid oklch(var(--line))",
-    borderLeftWidth: "3px",
-    borderLeftColor: "oklch(var(--blue-500))",
-  },
+  default: {},
+  success: {},
+  error: {},
+  warning: {},
+  info: {},
+  loading: {},
 };
 
 /** Central semantic shell styles for react-hot-toast variants. */
@@ -74,11 +45,11 @@ export function getToastVariantStyle(variant: ToastSemanticVariant): CSSProperti
 type ToastIconVariant = "success" | "error" | "warning" | "info" | "loading";
 
 const variantIconStyles: Record<ToastIconVariant, { shell: string; icon: string }> = {
-  success: { shell: "border border-positive/25 bg-surface-raised/90", icon: "text-positive" },
-  error: { shell: "border border-danger/25 bg-surface-raised/90", icon: "text-danger" },
-  warning: { shell: "border border-warning/25 bg-surface-raised/90", icon: "text-warning" },
-  info: { shell: "border border-info/25 bg-surface-raised/90", icon: "text-info" },
-  loading: { shell: "border border-blue-200 bg-surface-raised/90", icon: "text-brand" },
+  success: { shell: "bg-positive-soft", icon: "text-positive" },
+  error: { shell: "bg-danger-soft", icon: "text-danger" },
+  warning: { shell: "bg-warning-soft", icon: "text-warning" },
+  info: { shell: "bg-info-soft", icon: "text-info" },
+  loading: { shell: "bg-brand-soft", icon: "text-brand" },
 };
 
 function ToastStatusIcon({
@@ -94,14 +65,14 @@ function ToastStatusIcon({
   return (
     <span
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+        "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-mark",
         styles.shell,
       )}
       aria-hidden
     >
       <Icon
         className={cn("h-3.5 w-3.5", styles.icon, spin && "animate-spin")}
-        strokeWidth={2.25}
+        strokeWidth={1.6}
         aria-hidden
       />
     </span>
@@ -131,13 +102,15 @@ function loadingToastIcon() {
 export function HotToaster() {
   return (
     <Toaster
-      position="top-right"
+      position="bottom-left"
       gutter={10}
       containerStyle={{
         top: "calc(var(--shell-sticky-top) + 0.5rem)",
         right: 16,
-        /* Bottom toasts (A1, A2) clear the phone tab bar; see --toast-bottom in globals.css. */
-        bottom: "var(--toast-bottom, 16px)",
+        /* Bottom left beside the sidebar (prototype UndoToast); on phones above the tab bar.
+           See --toast-left and --toast-bottom in globals.css. */
+        left: "var(--toast-left, 16px)",
+        bottom: "var(--toast-bottom, 24px)",
       }}
       toastOptions={{
         duration: 4500,

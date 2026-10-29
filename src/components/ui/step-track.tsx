@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +55,8 @@ export function StepMark({
 /**
  * ST5 phase track: one bar per phase, sized by its step count. A finished phase is green, the
  * current phase is blurple with a soft ring, a later phase is grey. On phones and in client
- * lists this is the whole step view.
+ * lists this is the whole step view. `stuck` draws the current phase red; `hrefFor` makes each
+ * phase bar a link (for example to that phase of the record).
  */
 export function PhaseBar({
   done,
@@ -62,6 +64,8 @@ export function PhaseBar({
   names,
   className,
   tall = false,
+  stuck = false,
+  hrefFor,
 }: {
   done: number[];
   totals: readonly number[];
@@ -69,27 +73,42 @@ export function PhaseBar({
   className?: string;
   /** 8px bars by default; `tall` draws the 10px home-card track. */
   tall?: boolean;
+  /** The current phase is stuck: red fill and ring instead of blurple. */
+  stuck?: boolean;
+  /** A link per phase (index from 0); the bar becomes a link with the phase title. */
+  hrefFor?: (phase: number) => string | undefined;
 }) {
   const cur = totals.findIndex((t, i) => (done[i] ?? 0) < t);
   return (
     <span
       className={cn('flex min-w-[96px] items-center gap-1', tall ? 'h-2.5' : 'h-2', className)}
-      role="img"
-      aria-label={totals.map((t, i) => `${names?.[i] ?? `Phase ${i + 1}`} ${done[i] ?? 0} of ${t}`).join(', ')}
+      role={hrefFor ? undefined : 'img'}
+      aria-label={hrefFor ? undefined : totals.map((t, i) => `${names?.[i] ?? `Phase ${i + 1}`} ${done[i] ?? 0} of ${t}`).join(', ')}
     >
       {totals.map((t, i) => {
         const pct = t > 0 ? Math.round(((done[i] ?? 0) / t) * 100) : 0;
-        return (
+        const label = `${names?.[i] ?? `Phase ${i + 1}`} · ${done[i] ?? 0} of ${t}`;
+        const isStuck = stuck && i === cur;
+        const cls = cn(
+          'relative h-full overflow-hidden rounded-bar bg-surface-sunken',
+          i === cur && (isStuck ? 'ring-[1.5px] ring-danger-mid/50' : 'ring-[1.5px] ring-brand-line'),
+        );
+        const fill = (
           <span
-            key={i}
-            className={cn('relative h-full overflow-hidden rounded-bar bg-surface-sunken', i === cur && 'ring-[1.5px] ring-brand-line')}
-            style={{ flex: Math.max(1, t) }}
-            title={`${names?.[i] ?? `Phase ${i + 1}`} · ${done[i] ?? 0} of ${t}`}
-          >
-            <span
-              className={cn('absolute inset-y-0 left-0 rounded-bar', pct === 100 ? 'bg-positive-mid' : 'bg-brand')}
-              style={{ width: pct > 0 ? `max(${pct}%, 6px)` : 0 }}
-            />
+            className={cn('absolute inset-y-0 left-0 rounded-bar', pct === 100 ? 'bg-positive-mid' : isStuck ? 'bg-danger-mid' : 'bg-brand')}
+            style={{ width: pct > 0 ? `max(${pct}%, 6px)` : 0 }}
+          />
+        );
+        const href = hrefFor?.(i);
+        if (href)
+          return (
+            <Link key={i} href={href} className={cn(cls, 'hover:opacity-80')} style={{ flex: Math.max(1, t) }} title={label} aria-label={label}>
+              {fill}
+            </Link>
+          );
+        return (
+          <span key={i} className={cls} style={{ flex: Math.max(1, t) }} title={label}>
+            {fill}
           </span>
         );
       })}

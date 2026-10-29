@@ -16,7 +16,8 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * V3 stacked people (VCFO Spectrum B-25): circles with a ring in the panel colour, overlapping,
+ * V3 stacked people (VCFO Spectrum B-25): circles in one of seven soft tones picked from the
+ * name, with a ring in the panel colour, overlapping,
  * up to `max` faces and then "+n". The whole stack has one name for screen readers and a tooltip
  * with every name. People are circles; companies are 6px squares and never use this.
  */
@@ -49,7 +50,8 @@ export function AvatarStack({
           key={`${p.name}-${i}`}
           src={p.src}
           initials={initialsOf(p.name)}
-          className={cn(box, 'bg-brand-soft font-medium text-brand-text ring-2 ring-surface-raised', i > 0 && overlap)}
+          toneFrom={p.name}
+          className={cn(box, 'font-medium ring-2 ring-surface-raised', i > 0 && overlap)}
         />
       ))}
       {more > 0 ? (

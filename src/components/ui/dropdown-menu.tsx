@@ -18,7 +18,7 @@ function DropdownMenuSubTrigger({ ref, className, inset, children, ...props }: R
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[state=open]:bg-accent focus:bg-accent",
+        "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[state=open]:bg-hover focus:bg-hover",
         inset && "pl-8",
         className,
       )}
@@ -91,7 +91,7 @@ function DropdownMenuItem({ ref, className, inset, shortcut, children, ...props 
     data-shortcut={key}
     aria-keyshortcuts={key?.toUpperCase()}
     className={cn(
-      "relative flex min-h-[34px] cursor-default select-none items-center rounded-mark px-2.5 py-1.5 text-[14px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground",
+      "relative flex min-h-[34px] cursor-default select-none items-center rounded-mark px-2.5 py-1.5 text-[14px] outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-hover focus:text-ink",
       inset && "pl-8",
       className,
     )}

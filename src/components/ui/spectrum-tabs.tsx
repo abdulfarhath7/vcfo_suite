@@ -1,6 +1,14 @@
 'use client';
 
+import type { MouseEvent } from 'react';
 import { cn } from '@/lib/utils';
+
+/** Event a tab switch sends up the tree. A card (`DashSection`) shows its L1 shapes for 300 ms. */
+export const TAB_SWITCH_EVENT = 'vcfo:tab-switch';
+
+function announce(e: MouseEvent<HTMLButtonElement>) {
+  e.currentTarget.dispatchEvent(new CustomEvent(TAB_SWITCH_EVENT, { bubbles: true }));
+}
 
 /* VCFO Spectrum tabs (rule R-11; prototype src/components/ui/Tabs.tsx). A segmented switch
    (N5, the default) is for filters: a quiet track, the picked option blurple with white text.
@@ -45,7 +53,10 @@ export function SpectrumTabs({
               type="button"
               role="tab"
               aria-selected={on}
-              onClick={() => onChange(t.key)}
+              onClick={(e) => {
+                if (!on) announce(e);
+                onChange(t.key);
+              }}
               className={cn(
                 '-mb-[1.5px] inline-flex h-10 items-center gap-1.5 whitespace-nowrap border-b-2 text-[14px] font-medium transition-colors',
                 on ? 'border-brand text-ink' : 'border-transparent text-ink-muted hover:text-ink',
@@ -79,7 +90,10 @@ export function SpectrumTabs({
             type="button"
             role="tab"
             aria-selected={on}
-            onClick={() => onChange(t.key)}
+            onClick={(e) => {
+              if (!on) announce(e);
+              onChange(t.key);
+            }}
             className={cn(
               'inline-flex items-center gap-1.5 whitespace-nowrap rounded-mark px-3 text-[13px] font-medium transition-colors',
               size === 'sm' ? 'h-[22px]' : 'h-7',

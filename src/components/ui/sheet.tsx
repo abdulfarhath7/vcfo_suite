@@ -4,6 +4,12 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { DIALOG_CLOSE } from "@/components/ui/dialog-classes";
+
+/* The sheet (VCFO Spectrum, prototype SidePanel frame): navy scrim, the right panel is 440px
+   wide with a 1px edge and the dialog shadow, full width on phones. For a panel with the
+   prototype's head (eyebrow, 15px title, chips) and footer, use `SidePanel`
+   (`@/components/ui/side-panel`). */
 
 const Sheet = SheetPrimitive.Root;
 
@@ -19,7 +25,7 @@ function SheetOverlay({
   return (
     <SheetPrimitive.Overlay
       className={cn(
-        "discrete-overlay fixed inset-0 z-50 bg-black/80",
+        "discrete-overlay fixed inset-0 z-50 bg-scrim",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className,
       )}
@@ -31,7 +37,7 @@ function SheetOverlay({
 
 const sheetVariants = cva(
   cn(
-    "discrete-panel fixed z-50 gap-4 bg-background p-6 shadow-lg ease-out",
+    "discrete-panel fixed z-50 gap-4 border-line bg-surface-raised p-5 text-ink shadow-dialog outline-none ease-out",
     "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
   ),
   {
@@ -50,7 +56,7 @@ const sheetVariants = cva(
           "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
         ),
         right: cn(
-          "discrete-sheet-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+          "discrete-sheet-right inset-y-0 right-0 h-full w-full border-l sm:max-w-[440px]",
           "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
         ),
       },
@@ -77,8 +83,8 @@ function SheetContent({
       <SheetOverlay />
       <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
         {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-focus-ring focus:ring-offset-2 disabled:pointer-events-none">
-          <X className="h-4 w-4" />
+        <SheetPrimitive.Close className={DIALOG_CLOSE}>
+          <X size={16} strokeWidth={1.6} aria-hidden />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>
@@ -94,7 +100,7 @@ function SheetTitle({
   ref?: React.Ref<React.ElementRef<typeof SheetPrimitive.Title>>;
 }) {
   return (
-    <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold text-ink", className)} {...props} />
+    <SheetPrimitive.Title ref={ref} className={cn("text-[15px] font-medium leading-snug text-ink", className)} {...props} />
   );
 }
 

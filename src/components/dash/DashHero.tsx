@@ -1,23 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { createElement, type CSSProperties, type ReactNode } from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import {
+  Award,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  CheckCheck,
+  CheckCircle2,
+  CircleAlert,
+  CircleDashed,
+  Gauge,
+  KeyRound,
+  ListChecks,
+  MessageSquareWarning,
+  Rocket,
+  TrendingUp,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DashHeroSettings } from '@/components/dash/DashHeroSettings';
 import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell/shell-appearance';
 import { CARD_HEAD_ICONS } from '@/components/common/CardHeadTile';
-import { cardHeadIcon } from '@/lib/ui/card-head-icon';
+import { tileIconName, type TileIconName } from '@/lib/ui/card-head-icon';
 
 /**
  * THE home card (VCFO Spectrum "H3 tight", rules R-17 and R-18, owner decision D-17). One
  * component, one look, every dashboard: lead, manager, firm admin, super admin, developer and
  * client all render this. About 160px tall on the colour wash, in two rows:
  *   1. The greeting at 22px with the live date on the same line (staff), or the 36px company
- *      tile, the name, the stage chip and the step count (client, through `lead`, `stage` and
- *      `steps`). The scope switch (`scope`), the actions (children) and the settings popover
- *      sit on the right. On a phone the client name takes the first line and the rest share
- *      the second (M-30).
+ *      tile, the name, the stage tag and the step count (client, through `lead`, `stage` and
+ *      `steps`). The scope switch (`scope`) and the actions (children) sit on the right. The
+ *      card has no settings button (the prototype has none): the skin, sidebar and motion
+ *      settings live in Profile > Appearance, and the card reads the skin from there. On a phone the client name
+ *      takes the first line and the rest share the second (M-30).
  *   2. The number tiles (KP1 on the wash): a 14px icon and 12.5px label, the number at 22px, a
  *      12px note, and a 64 x 26 trend line beside the number when `trend` is given (48 x 22 on
  *      phones). Tiles sit in a grid with a 170px minimum; on a phone they go two in a row and an
@@ -33,6 +53,8 @@ import { cardHeadIcon } from '@/lib/ui/card-head-icon';
 export type DashHeroStat = {
   label: string;
   value: number | string;
+  /** The 14px glyph before the label. By default it comes from the label (`tileIconName`). */
+  icon?: LucideIcon;
   /** Small text right after the number: "/ 6", "+2", "−3", "+4 pts". */
   of?: string;
   href?: string;
@@ -64,6 +86,32 @@ const TREND: Record<NonNullable<DashHeroStat['trendTone']>, string> = {
   accent: 'text-brand',
 };
 
+/** The tile glyphs beyond the card-head set (prototype home tiles). */
+const TILE_ICONS: Record<Exclude<TileIconName, keyof typeof CARD_HEAD_ICONS>, LucideIcon> = {
+  building: Building2,
+  rocket: Rocket,
+  'list-checks': ListChecks,
+  'calendar-days': CalendarDays,
+  'calendar-check': CalendarCheck,
+  'check-check': CheckCheck,
+  'check-circle': CheckCircle2,
+  'circle-alert': CircleAlert,
+  'message-warning': MessageSquareWarning,
+  award: Award,
+  key: KeyRound,
+  gauge: Gauge,
+  'trending-up': TrendingUp,
+  trophy: Trophy,
+  'circle-dashed': CircleDashed,
+};
+
+function tileIcon(label: string): LucideIcon {
+  const name = tileIconName(label);
+  return name in CARD_HEAD_ICONS
+    ? CARD_HEAD_ICONS[name as keyof typeof CARD_HEAD_ICONS]
+    : TILE_ICONS[name as keyof typeof TILE_ICONS];
+}
+
 export function DashHero({
   title,
   meta,
@@ -75,7 +123,6 @@ export function DashHero({
   steps,
   scope,
   children,
-  settings = true,
 }: {
   /** The big line: a greeting, or the company's name on the client home. */
   title: string;
@@ -96,7 +143,11 @@ export function DashHero({
   scope?: ReactNode;
   /** The main action, on the right of the first row. */
   children?: ReactNode;
-  /** Show the greeting card settings popover (staff homes). The client home turns it off. */
+  /**
+   * Kept so older callers still compile. The card no longer shows a settings button (the
+   * prototype has none); every setting it held is in Profile > Appearance.
+   * @deprecated
+   */
   settings?: boolean;
 }) {
   /* The old ring becomes the last number, unless a stat already shows it. A "% complete"
@@ -108,17 +159,19 @@ export function DashHero({
     : null;
   const repeats = ringStat && (stats ?? []).some((st) => st.label.trim().toLowerCase() === ringStat.label.toLowerCase());
   const strip: DashHeroStat[] = [...(stats ?? []), ...(ringStat && !repeats ? [ringStat] : [])];
+  /* The skin from Profile > Appearance: the colour wash by default, or a photo under a veil. */
+  const { hero } = useShellAppearance();
+  const skin = hero.image ? (surfaceCssVars(hero, 'hero') as CSSProperties) : undefined;
   const actions =
-    scope || children || settings ? (
+    scope || children ? (
       <div className={cn('flex flex-wrap items-center gap-2 sm:gap-2.5', lead && 'ml-auto')}>
         {scope}
         {children}
-        {settings ? <DashHeroSettings /> : null}
       </div>
     ) : null;
 
   return (
-    <section className="bg-wash flex flex-col gap-3 rounded-md border-1.5 border-line px-4 pb-4 pt-3.5 md:px-5" aria-label="Summary">
+    <section style={skin} data-hero-image={hero.image ? 'true' : undefined} className="bg-wash flex flex-col gap-3 rounded-md border-1.5 border-line px-4 pb-4 pt-3.5 md:px-5" aria-label="Summary">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         {lead ? (
           // M-30: on a phone the name takes the first line; the chip, step count and actions share the second.
@@ -128,20 +181,20 @@ export function DashHero({
               <h1 className="min-w-0 truncate text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
             </span>
             {stage}
-            {steps ? <span className="whitespace-nowrap text-[12.5px] text-ink-2">{steps}</span> : null}
-            {meta ? <span className="flex items-center gap-2 text-[12.5px] text-ink-2">{meta}</span> : null}
-            {subtitle ? <span className="flex min-w-0 items-center gap-1.5 truncate text-[12.5px] text-ink-2">{subtitle}</span> : null}
+            {steps ? <span className="whitespace-nowrap text-[12.5px] text-wash-ink-2">{steps}</span> : null}
+            {meta ? <span className="flex items-center gap-2 text-[12.5px] text-wash-ink-2">{meta}</span> : null}
+            {subtitle ? <span className="flex min-w-0 items-center gap-1.5 truncate text-[12.5px] text-wash-ink-2">{subtitle}</span> : null}
             {actions}
           </div>
         ) : (
           <>
             <div className="flex min-w-0 flex-[1_1_300px] flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h1 className="min-w-0 break-words text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
-              <span className="whitespace-nowrap text-[12.5px] text-ink-2">
+              <h1 className="min-w-0 truncate whitespace-nowrap text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
+              <span className="whitespace-nowrap text-[12.5px] text-wash-ink-2">
                 <ClientLocaleNowLabel />
               </span>
-              {meta ? <span className="flex items-center gap-2 self-center text-[12.5px] text-ink-2">{meta}</span> : null}
-              {subtitle ? <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-2">{subtitle}</span> : null}
+              {meta ? <span className="flex items-center gap-2 self-center text-[12.5px] text-wash-ink-2">{meta}</span> : null}
+              {subtitle ? <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-wash-ink-2">{subtitle}</span> : null}
             </div>
             {actions}
           </>
@@ -170,11 +223,17 @@ function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
   const note = stat.note ?? stat.sub;
   const label = capFirst(stat.label);
   const tone = stat.trendTone ?? (stat.hot ? 'bad' : stat.good ? 'ok' : 'accent');
-  const Icon = CARD_HEAD_ICONS[cardHeadIcon(stat.label).icon];
+  const glyph = createElement(stat.icon ?? tileIcon(stat.label), {
+    width: 14,
+    height: 14,
+    strokeWidth: 1.6,
+    className: 'flex-none text-ink-muted',
+    'aria-hidden': true,
+  });
   const inner = (
     <>
       <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium text-ink-2">
-        <Icon width={14} height={14} strokeWidth={1.6} className="flex-none text-ink-muted" aria-hidden />
+        {glyph}
         <span className="truncate">{label}</span>
       </span>
       <span className={cn('flex min-w-0 items-start gap-2 sm:gap-2.5', strip && 'max-sm:flex-none')}>
@@ -265,8 +324,9 @@ function TrendLine({ points, className }: { points: number[]; className?: string
 }
 
 /**
- * The client home's 36px company tile (R-17): a 6px square with the company's initials on the
- * brand tint, or its logo when there is one. Pass it as `lead`.
+ * The client home's 36px company tile (R-17): a 6px square with the company's initials in
+ * blurple text on the soft blurple ground (13px, weight 700), or its logo when there is one.
+ * Pass it as `lead`.
  */
 export function DashHeroCompanyTile({ name, src }: { name: string; src?: string | null }) {
   const initials =
@@ -280,7 +340,7 @@ export function DashHeroCompanyTile({ name, src }: { name: string; src?: string 
       .join('') || name.slice(0, 1).toUpperCase();
   return (
     <span
-      className="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-md bg-brand text-[14px] font-medium text-on-brand shadow-shine"
+      className="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-md bg-brand-soft text-[13px] font-bold text-brand-text"
       aria-hidden
     >
       {src ? (
@@ -290,6 +350,30 @@ export function DashHeroCompanyTile({ name, src }: { name: string; src?: string 
       ) : (
         initials
       )}
+    </span>
+  );
+}
+
+const STAGE_TONE = {
+  done: 'bg-positive-soft text-positive',
+  accent: 'bg-brand-soft text-brand-text',
+  warn: 'bg-warning-soft text-warning',
+  idle: 'bg-upcoming-soft text-upcoming',
+} as const;
+
+/**
+ * The client home's stage tag after the name (R-17): a 20px soft tag at 11.5px with no dot.
+ * Green "Incorporated" (`tone="done"`) or blurple "Incorporating" (`tone="accent"`). Pass it as `stage`.
+ */
+export function DashHeroStage({ children, tone = 'accent' }: { children: ReactNode; tone?: keyof typeof STAGE_TONE }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex h-5 flex-none items-center whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium',
+        STAGE_TONE[tone],
+      )}
+    >
+      {children}
     </span>
   );
 }

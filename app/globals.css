@@ -23,6 +23,7 @@
     --surface: 97.8% 0.005 258;
     --surface-raised: 100.0% 0.000 0;
     --surface-sunken: 96.6% 0.006 255;
+    --hover: 97.3% 0.006 265;
     --line: 92.9% 0.011 257;
     --line-soft: 95.6% 0.007 248;
     --line-strong: 86.4% 0.018 256;
@@ -31,6 +32,7 @@
     --ink-muted: 53.4% 0.041 257;
     --ink-faint: 66.8% 0.031 255;
     --ink-2: 42.3% 0.050 256;
+    --wash-ink-2: 42.3% 0.050 256;
     --brand: 57.8% 0.235 278;
     --brand-strong: 52.7% 0.239 277;
     --brand-soft: 95.5% 0.023 289;
@@ -56,11 +58,13 @@
     --info: 50.0% 0.172 257;
     --info-soft: 95.5% 0.019 256;
     --info-line: 87.4% 0.051 254;
+    --info-mid: 57.3% 0.199 262;
     --upcoming: 47.4% 0.040 258;
     --upcoming-soft: 95.4% 0.007 261;
     --upcoming-mid: 71.1% 0.035 257;
     --identity: 48.0% 0.196 286;
     --identity-soft: 94.6% 0.025 299;
+    --identity-mid: 60.6% 0.219 293;
     --on-status: 100.0% 0.000 0;
     --gold: 68.4% 0.185 45;
     --gold-text: 50.6% 0.126 55;
@@ -76,6 +80,7 @@
     --focus-ring: 57.8% 0.235 278;
     --scrim: rgba(10, 37, 64, 0.42);
     --side: 26.0% 0.060 251;
+    --side-deep: 29.3% 0.069 252;
     --side-ink: 85.7% 0.024 256;
     --side-muted: 71.0% 0.047 257;
     --side-active: 36.2% 0.101 268;
@@ -101,8 +106,11 @@
     --shadow-dialog: 0 32px 64px -16px rgba(10, 37, 64, 0.4), 0 12px 24px -12px rgba(10, 37, 64, 0.18);
     --shadow-tile: 0 8px 22px -12px rgba(10, 37, 64, 0.45);
     --shine: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    --shadow-control: 0 1px 2px rgba(10, 37, 64, 0.05);
     --wash-tile: rgba(255, 255, 255, 0.9);
     --wash-tile-line: rgba(255, 255, 255, 0.95);
+    --hero-image-veil: rgba(244, 243, 255, 0.72);
+    --shadow-signin: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
     --shadow-ink: 28.3% 0.068 254; /* legacy tint for .shadow-layered; navy */
 
     /* ---- Type: one face. --font-sans and --font-mono are set by next/font in app/layout.tsx. ---- */
@@ -142,7 +150,7 @@
     --control-min-width: 84px;
     --chip-height: 24px;
     --chip-min-width: 104px;
-    --row-height: 40px;
+    --row-height: 44px;
     --tile: 32px;
     --icon-sm: 14px;
     --icon-md: 16px;
@@ -238,6 +246,7 @@
     --surface: 15.5% 0.009 274;
     --surface-raised: 19.6% 0.011 268;
     --surface-sunken: 17.7% 0.009 264;
+    --hover: 23.0% 0.012 264;
     --line: 27.6% 0.016 264;
     --line-soft: 24.4% 0.014 267;
     --line-strong: 33.7% 0.021 266;
@@ -246,6 +255,7 @@
     --ink-muted: 67.4% 0.023 259;
     --ink-faint: 55.6% 0.024 259;
     --ink-2: 79.9% 0.019 258;
+    --wash-ink-2: 85.8% 0.056 281;
     --brand: 63.2% 0.203 281;
     --brand-strong: 67.9% 0.175 283;
     --brand-soft: 27.3% 0.050 281;
@@ -271,11 +281,13 @@
     --info: 75.7% 0.111 253;
     --info-soft: 25.3% 0.043 263;
     --info-line: 35.4% 0.098 262;
+    --info-mid: 65.9% 0.155 262;
     --upcoming: 76.1% 0.021 257;
     --upcoming-soft: 27.2% 0.012 264;
     --upcoming-mid: 55.6% 0.024 259;
     --identity: 80.1% 0.091 297;
     --identity-soft: 26.6% 0.053 292;
+    --identity-mid: 70.9% 0.159 294;
     --on-status: 15.5% 0.009 274;
     --gold: 72.5% 0.182 46;
     --gold-text: 86.8% 0.140 84;
@@ -291,6 +303,7 @@
     --focus-ring: 63.2% 0.203 281;
     --scrim: rgba(0, 0, 0, 0.6);
     --side: 19.2% 0.035 261;
+    --side-deep: 22.7% 0.042 262;
     --side-ink: 85.7% 0.024 256;
     --side-muted: 71.0% 0.047 257;
     --side-active: 31.8% 0.086 277;
@@ -315,8 +328,11 @@
     --shadow-dialog: 0 32px 64px -16px rgba(0, 0, 0, 0.75);
     --shadow-tile: 0 8px 22px -12px rgba(0, 0, 0, 0.6);
     --shine: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --shadow-control: none;
     --wash-tile: rgba(19, 21, 26, 0.8);
     --wash-tile-line: rgba(255, 255, 255, 0.08);
+    --hero-image-veil: rgba(21, 19, 46, 0.74);
+    --shadow-signin: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
     --shadow-ink: 0% 0 0;
 
     --hex-loader-primary: 213 73% 66%;
@@ -334,28 +350,33 @@
   body {
     @apply bg-surface text-ink font-sans antialiased;
     font-size: 14px;
-    line-height: 1.45;
+    line-height: 1.5;
     /* R-28: tabular numbers everywhere */
     font-variant-numeric: tabular-nums;
   }
-  /* Solid 2px focus ring, offset 2px; focus-ring holds 3:1 on every surface. */
+  /* Prototype focus: no outline; a 4px blurple glow on whatever takes focus. Controls that
+     draw their own ring (focus-visible:ring-*) replace this glow with theirs. */
   :focus-visible {
-    outline: var(--rule-width) solid oklch(var(--focus-ring));
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 4px oklch(var(--focus-ring) / 0.25);
   }
   ::selection {
-    background: oklch(var(--brand) / 0.18);
-    color: oklch(var(--ink));
+    background: oklch(var(--brand-soft));
   }
-
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb {
-    background: oklch(var(--ink) / 0.12);
-    border-radius: 8px;
+  /* Alpha of the blurple edge (prototype accent-line): 28 % light, 40 % dark. */
+  :root, [data-theme="light"] { --brand-line-alpha: 0.28; }
+  .dark, [data-theme="dark"] { --brand-line-alpha: 0.4; }
+  /* One global rule stops every transition and animation, like the prototype. The Appearance
+     setting "Reduce motion" sets data-reduce-motion="true" on the shell for the same result. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: oklch(var(--brand) / 0.4);
+  [data-reduce-motion="true"], [data-reduce-motion="true"] *, [data-reduce-motion="true"] *::before, [data-reduce-motion="true"] *::after {
+    transition: none !important;
+    animation: none !important;
   }
 }
 
@@ -366,11 +387,11 @@
     letter-spacing: -0.01em;
     font-weight: 500;
   }
-  /* Tabular figures for dates, counts and amounts. Identifiers (CIN, PAN, GSTIN, SRN,
-     file names) use the font-mono utility instead. */
+  /* Identifiers (CIN, PAN, GSTIN, SRN, file names, codes): Roboto Mono 500, like the prototype. */
   .mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum';
     letter-spacing: 0;
   }
 
@@ -415,17 +436,17 @@
 
   /* ---- VCFO Spectrum (docs/ui-port, prototype src/styles/globals.css) ---- */
   /* R-17: the home card colour wash. The only gradient in the product. */
-  .bg-wash { background: var(--hero-gradient); }
+  /* A photo skin from Profile > Appearance arrives in --hero-surface-bg (set by DashHero). */
+  .bg-wash { background: var(--hero-surface-bg, var(--hero-gradient)); }
   .wash-tile {
     background: var(--wash-tile);
     border: 1px solid var(--wash-tile-line);
     box-shadow: var(--shadow-tile);
     border-radius: var(--radius-md);
-    backdrop-filter: blur(6px);
   }
   /* R-21: the remaining part of the current phase, blurple hatch. */
   .hatch {
-    background: repeating-linear-gradient(135deg, oklch(var(--brand-soft)) 0 4px, oklch(var(--brand-line)) 4px 6px);
+    background: repeating-linear-gradient(135deg, oklch(var(--brand-soft)) 0 4px, oklch(var(--brand) / var(--brand-line-alpha)) 4px 6px);
   }
   /* R-46: the 3px regulator spectrum ribbon across the top of every screen. */
   .spectrum-ribbon {
@@ -434,6 +455,9 @@
       oklch(var(--data-3)) 0 16.667%, oklch(var(--data-1)) 0 33.333%, oklch(var(--data-2)) 0 50%,
       oklch(var(--data-5)) 0 66.667%, oklch(var(--data-4)) 0 83.333%, oklch(var(--data-6)) 0);
   }
+  /* R-49: the rail opens the full sidebar over the page. One short slide (off under reduced motion). */
+  .sidebar-peek { animation: sidebar-peek-in 160ms cubic-bezier(.2,.8,.2,1); }
+  @keyframes sidebar-peek-in { from { transform: translateX(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
   /* R-12: the main button's faint top shine. */
   .btn-shine { box-shadow: var(--shine); }
   /* R-07 (Stripe T1): clean rows. 36px head in small caps with a 1.5px line, 44px rows with one
@@ -446,10 +470,10 @@
     color: oklch(var(--ink-muted)); background: transparent;
   }
   .grid-table td {
-    height: 44px; padding: 0 10px; vertical-align: middle;
+    height: var(--row-height, 44px); padding: 0 10px; vertical-align: middle;
     border-bottom: 1px solid oklch(var(--line-soft)); color: oklch(var(--ink-2));
   }
-  .grid-table tbody tr:hover td { background: oklch(var(--surface-sunken) / 0.6); }
+  .grid-table tbody tr:hover td { background: oklch(var(--hover)); }
   .grid-table td.num, .grid-table th.num { text-align: right; }
   .grid-table tr.late td { color: oklch(var(--danger)); }
 
@@ -939,6 +963,23 @@
     .discrete-panel-center[data-state='closed'] {
       opacity: 0;
       transform: translate(-50%, -48%) scale(0.96);
+    }
+
+    /* Shared Dialog (ui/dialog-classes.ts): a bottom sheet that rises on phones, a centred box
+       that settles from 640px. */
+    .discrete-panel-dialog { transform: translateY(16px); }
+    .discrete-panel-dialog[data-state='open'] { opacity: 1; transform: none; }
+    .discrete-panel-dialog[data-state='open'] {
+      @starting-style { opacity: 0; transform: translateY(16px); }
+    }
+    .discrete-panel-dialog[data-state='closed'] { opacity: 0; transform: translateY(16px); }
+    @media (min-width: 640px) {
+      .discrete-panel-dialog { transform: translate(-50%, -48%) scale(0.96); }
+      .discrete-panel-dialog[data-state='open'] { transform: translate(-50%, -50%) scale(1); }
+      .discrete-panel-dialog[data-state='open'] {
+        @starting-style { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+      }
+      .discrete-panel-dialog[data-state='closed'] { transform: translate(-50%, -48%) scale(0.96); }
     }
 
     /* Sheet sides */
@@ -2469,7 +2510,25 @@ html[data-reduce-motion="true"] .discrete-panel {
   }
 }
 
-/* Bottom toasts sit above the phone tab bar (R-45). */
+/* Appearance: density and text size (Profile > Appearance sets them on <html>).
+   data-density="compact" tightens table and list rows; data-text-size scales the whole UI,
+   because component sizes are written in px. Both are opt-in; the default is unchanged. */
+:root { --text-scale: 1; }
+:root[data-density="compact"] { --row-height: 36px; }
+:root[data-text-size="small"] { --text-scale: 0.93; }
+:root[data-text-size="large"] { --text-scale: 1.07; }
+:root[data-text-size="small"] body, :root[data-text-size="large"] body { zoom: var(--text-scale); }
+
+/* Toasts sit bottom left beside the sidebar, and above the phone tab bar (R-45). */
+:root {
+  --toast-left: 16px;
+  --toast-bottom: 24px;
+}
+@media (min-width: 1024px) {
+  :root {
+    --toast-left: calc(248px + 20px);
+  }
+}
 @media (max-width: 767px) {
   :root {
     --toast-bottom: 80px;

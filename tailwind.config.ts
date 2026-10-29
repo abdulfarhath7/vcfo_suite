@@ -26,6 +26,9 @@ export default {
 
         /* ---- Design tokens v1 (docs/design/TOKENS.md). Everything below this group is a
            legacy alias that resolves to one of these and goes away on 2026-11-30. ---- */
+        /* Hovered rows and the live step row (prototype `hover`). Lighter than the card in dark mode. */
+        hover: "oklch(var(--hover) / <alpha-value>)",
+        "wash-ink-2": "oklch(var(--wash-ink-2) / <alpha-value>)",
         surface: {
           DEFAULT: "oklch(var(--surface) / <alpha-value>)",
           raised: "oklch(var(--surface-raised) / <alpha-value>)",
@@ -50,7 +53,9 @@ export default {
           soft: "oklch(var(--brand-soft) / <alpha-value>)",
           deep: "oklch(var(--brand-strong) / <alpha-value>)" /* legacy name for brand-strong */,
           text: "oklch(var(--brand-text) / <alpha-value>)",
-          line: "oklch(var(--brand-line) / <alpha-value>)",
+          /* Alpha blurple like the prototype's accent-line (28 % light, 40 % dark), so a tinted
+             ground shows through. --brand-line-alpha is set in app/globals.css. */
+          line: "oklch(var(--brand) / calc(<alpha-value> * var(--brand-line-alpha)))",
         },
         "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
         navy: {
@@ -61,6 +66,7 @@ export default {
         identity: {
           DEFAULT: "oklch(var(--identity) / <alpha-value>)",
           soft: "oklch(var(--identity-soft) / <alpha-value>)",
+          mid: "oklch(var(--identity-mid) / <alpha-value>)",
         },
         highlight: {
           DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
@@ -118,6 +124,8 @@ export default {
         scrim: "var(--scrim)",
         side: {
           DEFAULT: "oklch(var(--side) / <alpha-value>)",
+          /* One step off the navy ground: the sign-in page's front mountain. */
+          deep: "oklch(var(--side-deep) / <alpha-value>)",
           ink: "oklch(var(--side-ink) / <alpha-value>)",
           muted: "oklch(var(--side-muted) / <alpha-value>)",
           active: "oklch(var(--side-active) / <alpha-value>)",
@@ -247,6 +255,7 @@ export default {
           DEFAULT: "oklch(var(--info) / <alpha-value>)",
           soft: "oklch(var(--info-soft) / <alpha-value>)",
           line: "oklch(var(--info-line) / <alpha-value>)",
+          mid: "oklch(var(--info-mid) / <alpha-value>)",
           foreground: "oklch(var(--info-foreground) / <alpha-value>)",
           light: "oklch(var(--info-light) / <alpha-value>)",
           text: "oklch(var(--info-text) / <alpha-value>)",
@@ -318,7 +327,8 @@ export default {
         DEFAULT: "var(--radius-sm)",
         lg: "var(--radius-lg)",
         md: "var(--radius-md)",
-        sm: "var(--radius-sm)",
+        /* Prototype `rounded-sm` is 4px (small marks and badges); `rounded` stays 6px. */
+        sm: "var(--radius-mark)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
         "3xl": "var(--radius-3xl)",
@@ -349,6 +359,10 @@ export default {
         dialog: "var(--shadow-dialog)",
         tile: "var(--shadow-tile)",
         shine: "var(--shine)",
+        /* Faint drop under secondary buttons, inputs and the switch thumb (light only). */
+        control: "var(--shadow-control)",
+        /* The deep shadow under the sign-in card on navy. */
+        signin: "var(--shadow-signin)",
       },
       /* No `wash` or `hero` background image here: the gradient ends in a bare colour, which
          `background-image` rejects, so a utility would wipe the wash. `.bg-wash` in
@@ -363,6 +377,14 @@ export default {
         "icon-sm": "var(--icon-sm)",
         "icon-md": "var(--icon-md)",
         "icon-lg": "var(--icon-lg)",
+        /* Prototype layout names: card head, sidebar width, top bar. */
+        "4.5": "18px",
+        head: "52px",
+        side: "248px",
+        top: "60px",
+      },
+      maxWidth: {
+        page: "1440px",
       },
       minWidth: {
         control: "var(--control-min-width)",
@@ -376,6 +398,25 @@ export default {
         "section-head": "14px",
         "page-title": "22px",
         metric: "26px",
+        /* Prototype type steps (text-11 to text-44), each with its line height. */
+        "11": ["11px", "1.3"],
+        "11.5": ["11.5px", "1.3"],
+        "12": ["12px", "1.4"],
+        "12.5": ["12.5px", "1.4"],
+        "13": ["13px", "1.45"],
+        "13.5": ["13.5px", "1.45"],
+        "14": ["14px", "1.5"],
+        "14.5": ["14.5px", "1.4"],
+        "15": ["15px", "22px"],
+        "16": ["16px", "1.3"],
+        "18": ["18px", "1.3"],
+        "20": ["20px", "28px"],
+        "22": ["22px", "1.25"],
+        "24": ["24px", "1.2"],
+        "26": ["26px", "1"],
+        "28": ["28px", "36px"],
+        "40": ["40px", "48px"],
+        "44": ["44px", "1"],
       },
       keyframes: {
         "accordion-down": {
@@ -402,6 +443,10 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 oklch(var(--blue-600) / 0.55)" },
           "50%": { boxShadow: "0 0 0 6px oklch(var(--blue-600) / 0)" },
         },
+        "sidebar-peek-in": {
+          from: { transform: "translateX(-10px)", opacity: "0" },
+          to: { transform: "none", opacity: "1" },
+        },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
@@ -416,6 +461,7 @@ export default {
         "orange-pulse": "blue-pulse 2.4s ease-out infinite",
         "gold-pulse": "blue-pulse 2.4s ease-out infinite",
         "shimmer": "shimmer 2.8s linear infinite",
+        "sidebar-peek": "sidebar-peek-in 160ms cubic-bezier(.2,.8,.2,1)",
       },
     },
   },

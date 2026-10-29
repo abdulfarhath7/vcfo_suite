@@ -50,6 +50,6 @@ export function toastUndo(text: string, onUndo?: () => void, { duration = 5000 }
         </button>
       </div>
     ),
-    { id: UNDO_TOAST_ID, duration, position: 'bottom-center' },
+    { id: UNDO_TOAST_ID, duration, position: 'bottom-left' },
   );
 }

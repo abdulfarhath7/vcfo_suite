@@ -2,10 +2,10 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { DashHero, DashHeroCompanyTile } from './DashHero';
+import { DashHero, DashHeroCompanyTile, DashHeroStage } from './DashHero';
+import { formatClientNowLabel } from '@/hooks/use-client-locale-date';
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/app/manager/dashboard', useRouter: () => ({ push: vi.fn() }) }));
-vi.mock('@/components/dash/DashHeroSettings', () => ({ DashHeroSettings: () => <button type="button">Greeting card settings</button> }));
 
 describe('DashHero (H3c)', () => {
   it('draws one compact tile per stat with the note, and links tiles with href', () => {
@@ -61,5 +61,24 @@ describe('DashHero (H3c)', () => {
     expect(screen.getByText('Incorporating')).toBeInTheDocument();
     expect(screen.getByText('6 of 25 steps')).toBeInTheDocument();
     expect(screen.queryByText('Today')).toBeNull();
+  });
+
+  it('has no settings button; the settings live in Profile > Appearance', () => {
+    render(<DashHero title="Good morning, Asha" stats={[{ label: 'Overdue', value: 1 }]} />);
+    expect(screen.queryByRole('button', { name: 'Greeting card settings' })).toBeNull();
+  });
+
+  it('shows the small text after the number', () => {
+    render(<DashHero title="Overview" stats={[{ label: 'Filed', value: 4, of: '/ 6' }]} />);
+    expect(screen.getByText('/ 6')).toBeInTheDocument();
+  });
+
+  it('draws the stage tag without a dot', () => {
+    render(<DashHeroStage tone="done">Incorporated</DashHeroStage>);
+    expect(screen.getByText('Incorporated')).toHaveClass('bg-positive-soft');
+  });
+
+  it('writes the date as "Thu 29 Oct 2026 · 12:31 PM" in IST', () => {
+    expect(formatClientNowLabel(new Date('2026-10-29T07:01:00Z'))).toBe('Thu 29 Oct 2026 · 12:31 PM');
   });
 });

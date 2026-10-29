@@ -92,6 +92,6 @@ export function toastSaved(text: string, { kind = 'saved', sub, onUndo, action, 
         </button>
       </div>
     ),
-    { id, duration, position: 'bottom-center' },
+    { id, duration, position: 'bottom-left' },
   );
 }

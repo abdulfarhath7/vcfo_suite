@@ -8,19 +8,23 @@ import { shouldShowShellBack } from '@/components/shell/shell-back';
 /**
  * Plain white page head (VCFO Spectrum rule R-02, prototype Analytics and Audit): a 28px
  * weight-500 title, one muted meta line and the page's controls on the right. No card, band
- * or icon tile. The shell back chevron shows where `PageHeader` would show it.
+ * or icon tile. Sidebar pages (Approvals) have no back chevron (R-09); a page below a sidebar
+ * page passes `back` to show the shell back chevron where `PageHeader` would show it.
  */
 export function PlainPageHead({
   title,
   meta,
   actions,
+  back = false,
 }: {
   title: string;
   meta?: ReactNode;
   actions?: ReactNode;
+  /** Show the back chevron. Off by default: R-09 forbids it on sidebar pages. */
+  back?: boolean;
 }) {
   const pathname = usePathname();
-  const showBack = shouldShowShellBack(pathname);
+  const showBack = back && shouldShowShellBack(pathname);
   return (
     <header className="mb-5 flex flex-wrap items-center gap-3">
       {showBack ? <PageBackButton className="-ml-1.5" /> : null}

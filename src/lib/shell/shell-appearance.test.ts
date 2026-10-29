@@ -4,6 +4,7 @@ import {
   SIDEBAR_SOLIDS,
   parseShellAppearance,
   resolveSurface,
+  surfaceCssVars,
 } from '@/lib/shell/shell-appearance';
 
 describe('parseShellAppearance', () => {
@@ -19,9 +20,9 @@ describe('parseShellAppearance', () => {
       motion: 'ambient',
       reduceMotion: true,
     });
-    // The hero has one skin now; any stored solid resolves to it.
+    // The hero has one solid skin, the colour wash; any stored solid resolves to it.
     expect(parsed.hero.kind).toBe('solid');
-    expect(parsed.hero.solidId).toBe('navy');
+    expect(parsed.hero.solidId).toBe('wash');
     // Gradients left with the design system: a stored gradient becomes the navy solid.
     expect(parsed.sidebar.kind).toBe('solid');
     expect(parsed.sidebar.solidId).toBe('navy');
@@ -53,16 +54,17 @@ describe('resolveSurface', () => {
     expect(SIDEBAR_SOLIDS.find((s) => s.id === 'glass')?.value).toBe('oklch(var(--surface-raised))');
 
     const hero = resolveSurface(DEFAULT_SHELL_APPEARANCE.hero, 'hero');
-    expect(hero.ink).toBe('light');
-    expect(hero.background).toBe('oklch(var(--side))');
+    expect(hero.ink).toBe('dark');
+    expect(hero.background).toBe('var(--hero-gradient)');
 
     const preset = resolveSurface(
       { ...DEFAULT_SHELL_APPEARANCE.hero, kind: 'preset', presetId: 'night' },
       'hero',
     );
     expect(preset.image).toBe(true);
-    expect(preset.ink).toBe('light');
-    expect(preset.overlay).not.toBe('transparent');
+    expect(preset.ink).toBe('dark');
+    expect(preset.background).toContain('var(--hero-image-veil)');
+    expect(surfaceCssVars(preset, 'hero')['--hero-surface-bg']).toBe(preset.background);
   });
 
   it('strengthens sidebar photo overlays for light-ink labels', () => {

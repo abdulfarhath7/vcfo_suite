@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { CardLoad } from '@/components/ui/card-load';
 
 /** R-48: an empty state is a dashed area with the action. No filler sentence about the obvious. */
 export function EmptyState({ title, action, className }: { title: ReactNode; action?: ReactNode; className?: string }) {
@@ -16,13 +17,7 @@ export function EmptyState({ title, action, className }: { title: ReactNode; act
   );
 }
 
-/** R-48: loading shows grey shapes. */
+/** R-48: loading shows grey shapes of list rows: a tile, two lines and a 104px chip, hairlines between. */
 export function SkeletonRows({ rows = 4, className }: { rows?: number; className?: string }) {
-  return (
-    <div className={cn('grid gap-2', className)} aria-hidden>
-      {Array.from({ length: rows }, (_, i) => (
-        <span key={i} className="block h-11 animate-pulse rounded-md bg-surface-sunken" />
-      ))}
-    </div>
-  );
+  return <CardLoad variant="rows" rows={rows} className={className} />;
 }

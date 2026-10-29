@@ -19,11 +19,13 @@ export type ShellAppearance = {
   reduceMotion: boolean;
 };
 
-/* The greeting card has one skin: the navy `side` token (docs/design/TOKENS.md).
-   The eight solids and six gradients it used to offer are gone; stored
-   preferences that still name them resolve to navy in `parseShellAppearance`. */
+/* The greeting card's own skin is the colour wash (R-17, `--hero-gradient`). A photo skin
+   (preset or upload) lies under a light veil (`--hero-image-veil`) so the card's dark text stays
+   readable. Stored preferences that still name an old solid (navy, midnight, ...) resolve to
+   the wash in `parseShellAppearance`. `DashHero` writes the result into `--hero-surface-bg`,
+   which `.bg-wash` reads. */
 export const HERO_SOLIDS = [
-  { id: 'navy', label: 'Navy', value: 'oklch(var(--side))' },
+  { id: 'wash', label: 'Colour wash', value: 'var(--hero-gradient)' },
 ] as const;
 
 /* Two sidebar skins: navy (the default, the one weight on the screen) and white.
@@ -43,7 +45,7 @@ const LIGHT_SIDEBAR_IDS = new Set(['glass', 'white', 'mist', 'ice', 'sage']);
 /* Maps the ids the old pickers wrote (midnight, ocean, mist, ...) onto the two
    that exist now. */
 function normaliseSolidId(role: 'hero' | 'sidebar', id: string): string {
-  if (role === 'hero') return 'navy';
+  if (role === 'hero') return 'wash';
   return LIGHT_SIDEBAR_IDS.has(id) ? 'glass' : 'navy';
 }
 
@@ -90,7 +92,7 @@ export const MOTION_STYLES: { id: MotionStyle; label: string; hint: string }[] =
 
 const defaultHero: SurfaceAppearance = {
   kind: 'solid',
-  solidId: 'navy',
+  solidId: 'wash',
   gradientId: '',
   presetId: 'linen',
   customDataUrl: null,
@@ -196,14 +198,29 @@ export function surfaceCssVars(
   };
 }
 
+/* A photo under the greeting card's veil: one `background` value with two layers. */
+function heroImage(src: string): ResolvedSurface {
+  return {
+    background: `linear-gradient(var(--hero-image-veil), var(--hero-image-veil)), center / cover no-repeat url("${src}")`,
+    overlay: 'transparent',
+    ink: 'dark',
+    image: true,
+  };
+}
+
 export function resolveSurface(surface: SurfaceAppearance, role: 'hero' | 'sidebar'): ResolvedSurface {
+  if (role === 'hero') {
+    if (surface.kind === 'custom' && surface.customDataUrl) return heroImage(surface.customDataUrl);
+    if (surface.kind === 'preset') {
+      const preset = SURFACE_PRESETS.find((p) => p.id === surface.presetId) ?? SURFACE_PRESETS[0];
+      return heroImage(preset.src);
+    }
+    return { background: HERO_SOLIDS[0].value, overlay: 'transparent', ink: 'dark', image: false };
+  }
   if (surface.kind === 'custom' && surface.customDataUrl) {
     return {
       background: `center / cover no-repeat url("${surface.customDataUrl}")`,
-      overlay:
-        role === 'hero'
-          ? 'linear-gradient(180deg, rgb(15 23 42 / 0.42) 0%, rgb(15 23 42 / 0.62) 100%)'
-          : 'linear-gradient(180deg, rgb(15 23 42 / 0.38) 0%, rgb(15 23 42 / 0.55) 100%)',
+      overlay: 'linear-gradient(180deg, rgb(15 23 42 / 0.38) 0%, rgb(15 23 42 / 0.55) 100%)',
       ink: 'light',
       image: true,
     };
@@ -212,25 +229,19 @@ export function resolveSurface(surface: SurfaceAppearance, role: 'hero' | 'sideb
     const preset = SURFACE_PRESETS.find((p) => p.id === surface.presetId) ?? SURFACE_PRESETS[0];
     return {
       background: `center / cover no-repeat url("${preset.src}")`,
-      overlay:
-        role === 'hero'
-          ? 'linear-gradient(180deg, rgb(15 23 42 / 0.38) 0%, rgb(15 23 42 / 0.58) 100%)'
-          : 'linear-gradient(180deg, rgb(15 23 42 / 0.34) 0%, rgb(15 23 42 / 0.52) 100%)',
+      overlay: 'linear-gradient(180deg, rgb(15 23 42 / 0.34) 0%, rgb(15 23 42 / 0.52) 100%)',
       ink: 'light',
       image: true,
     };
   }
-  if (role === 'sidebar') {
-    const solidId = normaliseSolidId('sidebar', surface.solidId);
-    const value = findSolid(solidId, SIDEBAR_SOLIDS, SIDEBAR_SOLIDS[0].value);
-    return {
-      background: value,
-      overlay: 'transparent',
-      ink: solidId === 'navy' ? 'light' : 'dark',
-      image: false,
-    };
-  }
-  return { background: HERO_SOLIDS[0].value, overlay: 'transparent', ink: 'light', image: false };
+  const solidId = normaliseSolidId('sidebar', surface.solidId);
+  const value = findSolid(solidId, SIDEBAR_SOLIDS, SIDEBAR_SOLIDS[0].value);
+  return {
+    background: value,
+    overlay: 'transparent',
+    ink: solidId === 'navy' ? 'light' : 'dark',
+    image: false,
+  };
 }
 
 export function compressImageFile(file: File, maxEdge = 1400, quality = 0.74): Promise<string> {
