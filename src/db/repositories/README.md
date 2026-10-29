@@ -61,6 +61,18 @@ this table, so re-check the migration before trusting a row.
 | email_send_log | read | read | none | none | `20260806120000_email_send_log_seeds.sql` |
 | engagement_step_events | read: all | read: owned/assigned engagements | read: assigned engagements | **none** | product (G-13); written only inside `updateChecklistState`'s transaction |
 | metrics (practice, analytics, people; `metrics.ts`) | all; capacity write | own engagements; people: self + own leads | own engagements; people: none | **none** | product (G-13, G-14, G-27, G-29); reads only through the engagement scope |
+| firm_settings | read and write (audit per field) | read | read | **none** | `0026_gaps_backend.sql` (G-02) |
+| escalations | all; resolve | raise and read on owned engagements | raise and read on assigned engagements | **none** | `0026` (G-20); assignee must be an admin, null means the super admin |
+| profiles.reports_to_admin_id (reporting lines, `firm-org.ts`) | read and write | none | none | none | `0026` (G-20); developer accounts are created by the super admin only |
+| prospects / saved_reports / demo_requests | **super admin only** (saved reports: owner only) | none | none | none | `0026` (G-21, G-30); the public demo-request insert takes no AuthContext |
+| mail_groups / mail_group_members | own + shared; only admins create or change shared groups | own + shared | own + shared | **none** | `0026` (G-23); group ids expand to addresses on the server |
+| documents (vault review, preview, zip) | all | owned engagements | assigned engagements | preview and download of shared documents only; no review | `0026` (G-26) |
+| client_messages | all | owned engagements | led engagements; triage | own engagements; send and read | `0026` (G-09, G-11) |
+| client reminders (`client-reminders.ts`) | all | owned engagements | led engagements | **none** | product (G-15); one per item per 24 hours, read from audit events |
+| work-assignments (reassign) | all | owned engagements | **none** | **none** | product (G-18) |
+| engagement_notes | all; delete any | owned engagements | assigned engagements | **none** | `0026` (G-19); author edits, author or admin deletes (soft) |
+| work_sessions / work_checklist_items / time_blocks / item_window_requests | all | owned engagements; decide requests | led engagements; checklists and blocks are owner-only | **none** | `0026` (G-16, G-17) |
+| user_sessions, profiles.totp_* | own rows; reset another person's two-step | own rows | own rows | own rows | `0026` (G-25); developers reach own-account routes through `requireOwnAccount` |
 | dev-* (developer console reads) | **none** | **none** | **none** | **none** | developer and super admin only (`assertDeveloper`); firm-wide, client recipients masked or counted | `0026_gaps_backend.sql` |
 
 Corrections from the first draft:
