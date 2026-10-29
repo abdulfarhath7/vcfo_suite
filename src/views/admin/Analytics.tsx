@@ -12,6 +12,7 @@ import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { CHART_STATUS, ChartLegend, DashBarChart, type ChartSeries } from '@/components/charts';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { useAnalyticsMetrics } from '@/components/metrics/use-metrics';
+import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
 import type { StepTimeMetric } from '@/lib/metrics/practice-metrics';
 import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
@@ -54,11 +55,6 @@ const WORKLOAD_SERIES: ChartSeries[] = [
   { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked, stackId: 'load' },
 ];
 
-const FILING_SERIES: ChartSeries[] = [
-  { key: 'onTime', label: 'On time', color: CHART_STATUS.done, stackId: 'filed' },
-  { key: 'late', label: 'Late', color: CHART_STATUS.overdue, stackId: 'filed' },
-];
-
 const STEP_TIME_COLUMNS: EFilingColumn<StepTimeMetric>[] = [
   { key: 'step', header: 'Step', render: (s) => <span className="font-medium text-ink">{s.title}</span> },
   {
@@ -96,7 +92,8 @@ export default function Analytics() {
   const metrics = useAnalyticsMetrics(period === '6' ? 6 : 12);
   const months = metrics.data?.months ?? [];
   const data = months.map((m) => ({ m: m.label, completion: m.completionPct, delay: m.avgDelayDays }));
-  const filingRows = months.map((m) => ({ m: m.label, onTime: m.onTime, late: m.late }));
+  // Month words only ("Oct"); twelve months never repeat one, and the tooltip keeps the counts.
+  const filingRows = months.map((m) => ({ key: m.key, label: m.label.split(' ')[0] ?? m.label, onTime: m.onTime, late: m.late }));
   const filedTotal = months.reduce((n, m) => n + m.onTime + m.late, 0);
   const onTimeTotal = months.reduce((n, m) => n + m.onTime, 0);
   const lastRated = [...months].reverse().find((m) => m.completionPct !== null);
@@ -223,13 +220,12 @@ export default function Analytics() {
             loading={metrics.isPending}
             loadingVariant="block"
           >
-            <DashBarChart
-              data={filingRows}
-              categoryKey="m"
-              series={FILING_SERIES}
-              height={232}
-              emptyLabel="No filing recorded yet"
-            />
+            {/* C4 (B-23): the same on-time and late columns as the Filings rail. */}
+            {filedTotal ? (
+              <OnTimeColumns data={filingRows} height={180} />
+            ) : (
+              <EmptyState title="No filing recorded yet" />
+            )}
           </DashSection>
 
           <DashSection title="Time in step" meta="Open and finished steps" loading={metrics.isPending} bodyClassName="px-2 pb-2 pt-1">

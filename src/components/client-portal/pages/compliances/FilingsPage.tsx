@@ -16,6 +16,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { Term } from '@/components/ui/term';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { usePortal } from '../../PortalProvider';
@@ -199,7 +200,9 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
               open(r);
             }}
           >
-            <span className="block truncate font-medium leading-tight text-ink">{r.name}</span>
+            <span className="block truncate font-medium leading-tight text-ink">
+              <Term>{r.name}</Term>
+            </span>
             <span className="block truncate text-[12.5px] leading-tight text-ink-muted">{r.period}</span>
           </button>
           <PortalLink f={r} />

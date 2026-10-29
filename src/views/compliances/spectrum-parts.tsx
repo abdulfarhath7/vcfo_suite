@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { DashDonut, DashSection } from '@/components/dash/DashSection';
-import { Chip } from '@/components/ui/spectrum-chip';
+import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
 import { cn } from '@/lib/utils';
 import type { FilingStatus } from '@/lib/compliance/filings';
 import {
@@ -68,6 +68,63 @@ export function DateTile({
     >
       <b className="text-[16px] font-medium">{day}</b>
       <span className="mt-[3px] text-[10.5px] font-medium uppercase tracking-[.06em]">{month}</span>
+    </span>
+  );
+}
+
+/** "3 of 5 filed" with an 8px green bar (G1). The track is white because the band under it is grey. */
+export function FiledBar({ filed, total, className }: { filed: number; total: number; className?: string }) {
+  const pct = total ? Math.round((filed / total) * 100) : 0;
+  return (
+    <span className={cn('flex w-[190px] items-center gap-2.5', className)}>
+      <span className="whitespace-nowrap text-[12.5px] text-ink-muted">
+        {filed} of {total} filed
+      </span>
+      <span
+        className="relative h-2 min-w-0 flex-1 overflow-hidden rounded-bar bg-surface-raised"
+        role="progressbar"
+        aria-label={`${filed} of ${total} filed`}
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <i className="absolute inset-y-0 left-0 rounded-bar bg-positive-mid" style={{ width: `${pct}%` }} />
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The band over one filing's client rows (prototype `FilingBand`): the date tile, the name and
+ * its due line, the area pill and the "x of y filed" bar. Shared by the staff Filings and
+ * Obligations lists so both bands look the same. It wraps on a phone.
+ */
+export function FilingBand({
+  iso,
+  status,
+  name,
+  sub,
+  area,
+  filed,
+  total,
+}: {
+  iso: string;
+  status: FilingStatus;
+  name: ReactNode;
+  sub: ReactNode;
+  area: string;
+  filed: number;
+  total: number;
+}) {
+  return (
+    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-2">
+      <DateTile iso={iso} status={status} />
+      <span className="flex min-w-0 flex-[1_1_200px] flex-col gap-0.5">
+        <span className="truncate text-[14.5px] font-medium text-ink">{name}</span>
+        <span className="text-[12.5px] text-ink-muted">{sub}</span>
+      </span>
+      <AreaPill area={area} />
+      <FiledBar filed={filed} total={total} />
     </span>
   );
 }

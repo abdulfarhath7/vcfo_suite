@@ -133,7 +133,8 @@ describe('ObligationsView', () => {
     render(<ObligationsView basePath="/app/manager/compliances" scope={scope} />);
     const grid = screen.getByRole('region', { name: 'Obligations' });
     expect(within(grid).getByText('1 of 2 filed')).toBeInTheDocument();
-    expect(within(grid).getByText('TDS payment')).toBeInTheDocument();
+    // The band name carries the glossary card on its leading form code, so the text is split.
+    expect(grid).toHaveTextContent('TDS payment');
     expect(within(grid).getByText('Birch LLP')).toBeInTheDocument();
     const link = within(grid).getAllByRole('link').find((a) => a.textContent?.includes('Birch LLP'));
     expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/gst-3b?company=birch');
@@ -180,14 +181,39 @@ describe('RegistrationsView', () => {
 });
 
 describe('FilingsView and ComplianceCalendarView', () => {
-  it('draws the register month in a T1 grid with the six words', () => {
-    search = new URLSearchParams('period=2099-10&fy=2099');
+  it('draws the register month in a T1 grid with the six words on All filings', () => {
+    search = new URLSearchParams('period=2099-10&fy=2099&tab=all');
     render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
     const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
     expect(within(grid).getAllByText('GSTR-3B').length).toBe(2);
     expect(within(grid).getByText('Done')).toBeInTheDocument();
     expect(within(grid).getByText('Not started')).toBeInTheDocument();
     expect(within(grid).getByRole('button', { name: /Export/ })).toBeEnabled();
+  });
+
+  it('groups the month by filing with the client rows, the KPI tiles and the six regulators', () => {
+    search = new URLSearchParams('period=2099-10&fy=2099');
+    render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
+    expect(screen.getByRole('tab', { name: /By filing/ })).toHaveAttribute('aria-selected', 'true');
+    const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
+    expect(within(grid).getByText('1 of 2 filed')).toBeInTheDocument();
+    expect(within(grid).getByText('Acme Pvt Ltd')).toBeInTheDocument();
+    expect(within(grid).getByText('Birch LLP')).toBeInTheDocument();
+    const open = within(grid).getByRole('link', { name: 'Open: GSTR-3B Sep 2099, Acme Pvt Ltd' });
+    expect(open.getAttribute('href')).toBe('/app/manager/compliances/obligations/gst-3b?company=acme');
+    expect(within(grid).getByRole('link', { name: 'Open: GSTR-3B Sep 2099, Birch LLP' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Filter by state' })).toHaveTextContent('Due this month');
+    const regulators = screen.getByRole('heading', { name: 'By regulator' }).closest('section')!;
+    expect(within(regulators).getByRole('button', { name: /^GST: 1 of 2 filed/ })).toBeInTheDocument();
+    expect(within(regulators).getByRole('button', { name: /^Labour: 0 of 0 filed/ })).toBeInTheDocument();
+  });
+
+  it('narrows the list to a regulator from the filter chip in the URL', () => {
+    search = new URLSearchParams('period=2099-10&fy=2099&tab=all&area=it');
+    render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
+    const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
+    expect(within(grid).queryByText('GSTR-3B')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Remove Regulator filter' })).toBeInTheDocument();
   });
 
   it('plots the month with day tags and the coming-up rail', () => {

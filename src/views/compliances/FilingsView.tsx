@@ -2,23 +2,33 @@
 
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
-import { useMemo } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CalendarDays, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { AlertTriangle, BellRing, CalendarDays, ChevronLeft, ChevronRight, CircleCheck, Clock, Download } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { DashSection } from '@/components/dash/DashSection';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import { Button } from '@/components/ui/button';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { SkeletonRows } from '@/components/ui/empty-state';
+import { FilterChip, FilterChipRow, type FilterRowChip } from '@/components/ui/filter-chip';
+import { Term } from '@/components/ui/term';
+import { initialsOf } from '@/components/ui/avatar-stack';
+import type { BulkAction } from '@/components/ui/bulk-bar';
+import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
 import {
   PreIncorporationNotice,
   PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
+import { useApp } from '@/context/AppContext';
 import { useFilings } from '@/hooks/use-filings';
+import { useCompFilings } from '@/components/client-portal/pages/compliances/api';
+import { toastError, toastInfo, toastSuccess } from '@/lib/toast-errors';
+import type { PortalFiling } from '@/lib/client-portal/compliances';
 import {
   buildMatrix,
   filingStatus,
@@ -42,19 +52,14 @@ import {
 import { cn } from '@/lib/utils';
 import {
   ALL_COMPANIES,
-  isFilingStatusFilter,
   normaliseCompanyParam,
   pickedCompany,
   rowsForCompany,
-  rowsForStatus,
   soleCompany,
   type ComplianceScope,
-  type FilingStatusFilter,
 } from '@/views/compliances/compliance-scope';
 import {
   FILING_WORD,
-  STATUS_FILTER_LABEL,
-  STATUS_FILTER_ORDER,
   areaLabel,
   downloadCsv,
   emptyCounts,
@@ -65,34 +70,78 @@ import {
 import {
   CompactChip,
   DateTile,
-  StatusBar,
+  FiledBar,
+  FilingBand,
+  FilterStrip,
   StatusDonutCard,
   Swatch,
   WordChip,
+  type StripItem,
 } from '@/views/compliances/spectrum-parts';
 import { areaSwatch } from '@/views/compliances/area-swatch';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
-import { useMayWriteFilings } from '@/views/compliances/use-register';
-import { HeadCard } from '@/views/compliances/grouped-grid';
+import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import { GroupedGrid, HeadCard, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
+import {
+  BOARD_STATUS_OPTIONS,
+  REGULATORS,
+  groupByClient,
+  groupByFiling,
+  isBoardTile,
+  matchesStatus,
+  matchesTile,
+  noteFor,
+  onTimeByMonth,
+  parseBoardStatus,
+  parseRegulator,
+  regulatorCounts,
+  regulatorOf,
+  tileCounts,
+  type BoardGroup,
+  type BoardTile,
+} from '@/views/compliances/filings-board';
 
 /** The register shows a Client column only while more than one company is on the sheet. */
 type RegisterColumnsMode = { company: boolean };
 const ONE_COMPANY: RegisterColumnsMode = { company: false };
-const ALL_AREAS = 'all';
+
+/** The three views of the list (C-05): grouped by filing (default), grouped by client, or the flat register. */
+type BoardTab = 'filing' | 'client' | 'all';
+
+const TILE_LABEL: Record<Exclude<BoardTile, ''>, string> = {
+  month: 'Due this month',
+  filed: 'Filed this month',
+  week: 'Due in 7 days',
+  late: 'Overdue',
+};
+
+/** Staff roles that may send a client reminder (`POST /api/engagements/:id/remind`). */
+const REMIND_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
+
+/** Months in the "On time vs late" columns. */
+const ON_TIME_MONTHS = 6;
 
 /**
- * FILINGS — the compliance register, one view for every role (VCFO Spectrum).
+ * FILINGS — the compliance register, one view for every role (VCFO Spectrum
+ * C-05 to C-07, C-0118, C-0121).
  *
  * The caller passes its shell's base path (so links stay inside that role's
  * routes) and the `scope` it already holds. WHAT it shows is decided by
  * `getFilings`, which scopes by `AuthContext` — the client's register and the
  * super admin's are this component reading the same rows.
  *
- * Layout (prototype FilingsScreen, rules R-07, R-08, R-25): a status donut and
- * per-area bars for the period in view, area and status switches, then one
- * T1 grid whose head bar carries the company, period, year, cadence, full
- * year, export and calendar controls. URL state is unchanged: `?cadence=`,
- * `?status=`, `?company=`, `?period=`, `?fy=`, `?view=year`, plus `?area=`.
+ * Layout (prototype FilingsScreen): underline tabs By filing (default), By
+ * client and All filings; four KPI tiles that each toggle their filter; filter
+ * chips for regulator, status and lead; then the list, whose head bar keeps the
+ * company, period, year, cadence, full year, export and calendar controls. "By
+ * filing" bands each filing (one obligation and due date) with its client rows,
+ * "By client" bands each company, and "All filings" is the flat register (with
+ * row selection and the bulk bar) or the year and quarter matrices. The rail
+ * has "On time vs late" (C4), "By regulator" for all six regulators, and the
+ * status donut.
+ *
+ * URL state: `?tab=`, `?kpi=`, `?area=` (a regulator), `?status=`, `?lead=`,
+ * plus the old `?cadence=`, `?company=`, `?period=`, `?fy=`, `?view=year`.
  *
  * The pre-COI notice appears for a company in `scope.preIncorporationIds`
  * (derived by the caller from `isIncorporated`); on "All companies" the
@@ -108,6 +157,7 @@ export function FilingsView({
   const router = useRouter();
   const params = useSearchParams();
   const now = useMemo(() => new Date(), []);
+  const { user, internOptions, teamMembers } = useApp();
   const { engagements } = scope;
   const sole = soleCompany(engagements);
 
@@ -117,9 +167,13 @@ export function FilingsView({
   const periodParam = parseMonthParam(params.get('period'));
   const fullYear = params.get('view') === 'year';
   const companyId = sole ? sole.id : normaliseCompanyParam(params.get('company'), engagements);
-  const statusParam = params.get('status');
-  const statusFilter: FilingStatusFilter = isFilingStatusFilter(statusParam) ? statusParam : 'all';
-  const areaParam = params.get('area')?.trim() || ALL_AREAS;
+  const tabParam = params.get('tab');
+  const tab: BoardTab = tabParam === 'client' || tabParam === 'all' ? tabParam : 'filing';
+  const tileParam = params.get('kpi');
+  const tile: BoardTile = isBoardTile(tileParam) ? tileParam : '';
+  const regulator = parseRegulator(params.get('area'));
+  const status = parseBoardStatus(params.get('status'));
+  const leadParam = params.get('lead')?.trim() ?? '';
 
   const currentFy = financialYearForDate(now);
   // A `?period=` month decides the FY it belongs to, so a calendar cross-link
@@ -127,9 +181,19 @@ export function FilingsView({
   const fyStartYear =
     fyFromUrl ?? (periodParam ? financialYearForDate(new Date(`${periodParam}-01T00:00:00Z`)).startYear : currentFy.startYear);
   const monthKey = periodParam ?? monthKeyOf(now.toISOString())!;
+  const nowMonthKey = monthKeyOf(now.toISOString())!;
 
   const query = useFilings({ fyStartYear });
   const allRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
+  // The side-table facts (ARN, data received, preparing) for the Note column.
+  const facts = useCompFilings(fyStartYear);
+  const details = useMemo(() => {
+    const map = new Map<string, PortalFiling>();
+    for (const f of facts.data?.rows ?? []) map.set(f.id, f);
+    return map;
+  }, [facts.data?.rows]);
+  // This FY and the last, for the "On time vs late" months (the cache Obligations shares).
+  const history = useRegister(now);
 
   const months = useMemo(() => financialYearMonths(fyStartYear), [fyStartYear]);
   const quarters = useMemo(() => financialYearQuarters(fyStartYear), [fyStartYear]);
@@ -142,21 +206,38 @@ export function FilingsView({
     () => (singleMonth ? rowsInMonth(cadenceRows, monthKey) : cadenceRows),
     [singleMonth, cadenceRows, monthKey],
   );
-  const areas = useMemo(
-    () => [...new Set(windowRows.map((row) => row.compliance))].sort((a, b) => a.localeCompare(b)),
-    [windowRows],
+  // A KPI tile counts the company's whole sheet, so a picked tile replaces the period window.
+  const baseRows = useMemo(
+    () => (tile ? companyRows.filter((row) => matchesTile(row, tile, now)) : windowRows),
+    [tile, companyRows, windowRows, now],
   );
-  const area = areaParam !== ALL_AREAS && areas.includes(areaParam) ? areaParam : ALL_AREAS;
-  const areaRows = useMemo(
-    () => (area === ALL_AREAS ? windowRows : windowRows.filter((row) => row.compliance === area)),
-    [windowRows, area],
-  );
-  const shownRows = useMemo(() => rowsForStatus(areaRows, statusFilter, now), [areaRows, statusFilter, now]);
+
+  // Lead of each row: the engagement's lead, named from the team list.
+  const leadIdOf = useMemo(() => new Map(engagements.map((e) => [e.id, e.internId ?? ''])), [engagements]);
+  const people = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of [...internOptions, ...teamMembers]) if (p?.id && !map.has(p.id)) map.set(p.id, p.name);
+    return map;
+  }, [internOptions, teamMembers]);
+  const leadName = (row: FilingRow) => people.get(leadIdOf.get(row.engagementId) ?? '') ?? '';
+  const showLead = user?.role !== 'intern' && scope.audience === 'staff';
+  const leadOptions = useMemo(() => {
+    const ids = new Set(baseRows.map((row) => leadIdOf.get(row.engagementId) ?? '').filter(Boolean));
+    return [...ids]
+      .map((id) => ({ value: id, label: people.get(id) ?? '' }))
+      .filter((o) => o.label)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [baseRows, leadIdOf, people]);
+  const lead = showLead && leadOptions.some((o) => o.value === leadParam) ? leadParam : '';
+
+  const chipMatch = (row: FilingRow, withRegulator = true) =>
+    (!withRegulator || !regulator || regulatorOf(row) === regulator) &&
+    matchesStatus(row, status, now) &&
+    (!lead || leadIdOf.get(row.engagementId) === lead);
+  const shownRows = baseRows.filter((row) => chipMatch(row));
   // The matrices plot every period, so they take the year's rows through the same filters.
-  const matrixRows = useMemo(
-    () => rowsForStatus(area === ALL_AREAS ? cadenceRows : cadenceRows.filter((row) => row.compliance === area), statusFilter, now),
-    [cadenceRows, area, statusFilter, now],
-  );
+  const matrixRows = cadenceRows.filter((row) => chipMatch(row));
+  const useMatrix = tab === 'all' && !tile && (cadence === 'quarterly' || (cadence === 'monthly' && fullYear));
 
   const picked = pickedCompany(engagements, companyId);
   const pickedPreIncorporation = picked && scope.preIncorporationIds.has(picked.id) ? picked : null;
@@ -165,7 +246,7 @@ export function FilingsView({
   const setParams = (next: Record<string, string | null>) => {
     const search = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(next)) {
-      if (value === null) search.delete(key);
+      if (value === null || value === '') search.delete(key);
       else search.set(key, value);
     }
     router.replace(`${basePath}/filings?${search.toString()}`, { scroll: false });
@@ -180,23 +261,94 @@ export function FilingsView({
   const canStepForward = monthIndex >= 0 && monthIndex < months.length - 1;
 
   const fyLabel = financialYearLabel(fyStartYear);
-  const title =
-    cadence === 'monthly'
+  const title = tile
+    ? `${TILE_LABEL[tile]} · ${tile === 'month' || tile === 'filed' ? monthLabelOf(nowMonthKey) : fyLabel}`
+    : cadence === 'monthly'
       ? fullYear
         ? `Monthly · ${fyLabel}`
         : `Filings · ${monthLabelOf(monthKey)}`
       : cadence === 'quarterly'
         ? `Quarterly · ${fyLabel}`
         : `Annual · ${fyLabel}`;
-  const periodShort = singleMonth ? monthLabelOf(monthKey) : fyLabel;
+  const periodShort = tile ? TILE_LABEL[tile] : singleMonth ? monthLabelOf(monthKey) : fyLabel;
   const calendarQuery = picked && !sole ? `?company=${picked.id}` : '';
-  const exportRows = singleMonth || cadence === 'annual' ? shownRows : matrixRows;
+  const exportRows = useMatrix ? matrixRows : shownRows;
 
   const counts = useMemo(() => {
     const c = emptyCounts();
-    for (const row of windowRows) c[filingStatus(row, now)] += 1;
+    for (const row of baseRows) c[filingStatus(row, now)] += 1;
     return c;
-  }, [windowRows, now]);
+  }, [baseRows, now]);
+
+  // C-06: the four tiles count the company's sheet for this financial year.
+  const kpi = useMemo(() => tileCounts(companyRows, now), [companyRows, now]);
+  const strip: StripItem[] = [
+    { key: 'month', label: 'Due this month', value: kpi.month, Icon: CalendarDays, valueClass: 'text-brand-text' },
+    { key: 'filed', label: 'Filed', value: kpi.filed, Icon: CircleCheck, valueClass: 'text-positive' },
+    { key: 'week', label: 'Due in 7 days', value: kpi.week, Icon: Clock, valueClass: 'text-warning' },
+    { key: 'late', label: 'Overdue', value: kpi.late, Icon: AlertTriangle, valueClass: 'text-danger' },
+  ];
+
+  const byFiling = groupByFiling(baseRows, shownRows, now);
+  const byClient = groupByClient(baseRows, shownRows, now);
+  // The regulator bars ignore the regulator chip, so every bar stays a way to switch to it.
+  const regulators = regulatorCounts(baseRows.filter((row) => chipMatch(row, false)), now);
+  const historyRows = useMemo(() => rowsForCompany(history.rows, companyId), [history.rows, companyId]);
+  const onTime = useMemo(() => onTimeByMonth(historyRows, now, ON_TIME_MONTHS), [historyRows, now]);
+  const onTimeFiled = onTime.reduce((n, m) => n + m.onTime + m.late, 0);
+  const onTimePct = onTimeFiled ? Math.round((onTime.reduce((n, m) => n + m.onTime, 0) / onTimeFiled) * 100) : null;
+
+  const anyFilter = !!(regulator || status || lead || tile);
+  const clearAll = () => setParams({ area: null, status: null, lead: null, kpi: null });
+
+  const recordHref = (row: FilingRow) =>
+    `${basePath}/obligations/${encodeURIComponent(row.obligationId)}${sole ? '' : `?company=${encodeURIComponent(row.engagementId)}`}`;
+
+  // E-01: Remind through the one-click reminder route, one filing at a time, then one toast.
+  const mayRemind = scope.audience === 'staff' && REMIND_ROLES.has(user?.role ?? '');
+  const [reminding, setReminding] = useState(false);
+  const remindRows = async (rows: FilingRow[]) => {
+    const open = rows.filter((row) => !row.filedOn);
+    if (open.length === 0) {
+      toastInfo(rows.length === 1 ? 'Already filed' : 'These filings are already filed');
+      return;
+    }
+    setReminding(true);
+    let sent = 0;
+    let limited = 0;
+    let failed = 0;
+    for (const row of open) {
+      try {
+        const res = await fetch(`/api/engagements/${encodeURIComponent(row.engagementId)}/remind`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemKey: `filing:${row.id}` }),
+        });
+        if (res.ok) sent += 1;
+        else if (res.status === 429) limited += 1;
+        else failed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setReminding(false);
+    const many = (n: number) => `${n} ${n === 1 ? 'filing' : 'filings'}`;
+    const rest = [limited ? `${many(limited)} already reminded today` : '', failed ? `${many(failed)} could not be sent` : '']
+      .filter(Boolean)
+      .join(' · ');
+    if (sent) toastSuccess(sent === 1 && open.length === 1 ? `Reminder sent · ${open[0]!.particular}` : `Reminders sent · ${many(sent)}`, rest || undefined);
+    else if (failed) toastError('Could not send the reminders', rest);
+    else toastInfo('Already reminded today', rest);
+  };
+  const bulkActions = (rows: FilingRow[]): BulkAction[] => [
+    ...(mayRemind ? [{ key: 'remind', label: 'Remind', icon: BellRing, disabled: reminding, onClick: () => void remindRows(rows) }] : []),
+    {
+      key: 'export',
+      label: 'Export',
+      icon: Download,
+      onClick: () => downloadCsv(`filings-selected-${rows.length}.csv`, filingsCsv(rows, now)),
+    },
+  ];
 
   const filters = (
     <>
@@ -208,7 +360,7 @@ export function FilingsView({
           onChange={(id) => setParams({ company: id === ALL_COMPANIES ? null : id })}
         />
       )}
-      {singleMonth ? (
+      {singleMonth && !tile ? (
         <span className="inline-flex items-center">
           <Button size="icon" variant="quiet" className="h-7 w-7" disabled={!canStepBack} onClick={() => stepMonth(-1)} aria-label="Previous month">
             <ChevronLeft aria-hidden />
@@ -242,10 +394,10 @@ export function FilingsView({
           { key: 'annual', label: 'Annual' },
         ]}
         value={cadence}
-        onChange={(next) => setParams({ cadence: next })}
+        onChange={(next) => setParams({ cadence: next, kpi: null })}
       />
       {cadence === 'monthly' ? (
-        <Button size="sm" variant="secondary" onClick={() => setParams({ view: fullYear ? null : 'year' })}>
+        <Button size="sm" variant="secondary" onClick={() => setParams({ view: fullYear ? null : 'year', kpi: null })}>
           {fullYear ? 'This month' : 'Full year'}
         </Button>
       ) : null}
@@ -253,7 +405,7 @@ export function FilingsView({
         size="sm"
         variant="secondary"
         disabled={exportRows.length === 0}
-        onClick={() => downloadCsv(`filings-${singleMonth ? monthKey : fyStartYear}.csv`, filingsCsv(exportRows, now))}
+        onClick={() => downloadCsv(`filings-${tile || (singleMonth ? monthKey : fyStartYear)}.csv`, filingsCsv(exportRows, now))}
       >
         <Download aria-hidden />
         Export
@@ -267,6 +419,225 @@ export function FilingsView({
     </>
   );
 
+  /* ---------- Client rows under a band ---------- */
+
+  const actionCol: GridColumn<FilingRow> = {
+    key: 'action',
+    label: '',
+    width: 104,
+    align: 'right',
+    className: 'hidden md:table-cell',
+    render: (row) => <FilingAction row={row} now={now} href={recordHref(row)} />,
+  };
+  const statusCol: GridColumn<FilingRow> = { key: 'status', label: 'Status', width: 128, render: (row) => <WordChip word={filingWord(row, now)} /> };
+  const noteCol: GridColumn<FilingRow> = {
+    key: 'note',
+    label: 'Note',
+    width: 160,
+    className: 'hidden md:table-cell',
+    render: (row) => {
+      const note = noteFor(row, details.get(row.id), now);
+      const st = filingStatus(row, now);
+      return note ? (
+        <span className={cn('block max-w-[150px] truncate', st === 'overdue' ? 'font-medium text-danger' : st === 'due-soon' ? 'text-warning' : 'text-ink-2')} title={note}>
+          {note}
+        </span>
+      ) : (
+        <span className="text-ink-faint">—</span>
+      );
+    },
+  };
+  const leadCol: GridColumn<FilingRow> = {
+    key: 'lead',
+    label: 'Lead',
+    width: 160,
+    className: 'hidden md:table-cell',
+    render: (row) => {
+      const name = leadName(row);
+      return name ? (
+        <span className="inline-flex min-w-0 max-w-[150px] items-center gap-2">
+          <span className="grid h-6 w-6 flex-none place-items-center rounded-full bg-brand-soft text-[11px] font-medium text-brand-text" aria-hidden>
+            {initialsOf(name)}
+          </span>
+          <span className="min-w-0 truncate">{name}</span>
+        </span>
+      ) : (
+        <span className="text-ink-faint">—</span>
+      );
+    },
+  };
+  const filingCols: GridColumn<FilingRow>[] = [
+    {
+      key: 'client',
+      label: 'Filing · client',
+      render: (row) => <span className="block min-w-0 truncate font-medium text-ink md:pl-[56px]">{row.companyName}</span>,
+    },
+    ...(showLead ? [leadCol] : []),
+    noteCol,
+    statusCol,
+    actionCol,
+  ];
+  const clientCols: GridColumn<FilingRow>[] = [
+    {
+      key: 'filing',
+      label: 'Client · filing',
+      render: (row) => (
+        <span className="block min-w-0 md:pl-[42px]">
+          <b className="block truncate text-[14px] font-medium text-ink">{row.particular}</b>
+          <span className="block truncate text-[12.5px] text-ink-muted">
+            {[row.periodLabel, `due ${plainDate(row.dueDate, now)}`].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+      ),
+    },
+    { key: 'area', label: 'Area', width: 124, className: 'hidden md:table-cell', render: (row) => <AreaPill area={areaLabel(row.compliance)} /> },
+    noteCol,
+    statusCol,
+    actionCol,
+  ];
+
+  const filingGroups: GridGroup<FilingRow>[] = byFiling.map((g: BoardGroup) => ({
+    id: g.key,
+    label: g.label,
+    rows: g.rows,
+    head: (
+      <FilingBand
+        iso={g.first.dueDate}
+        status={g.status}
+        name={<Term>{g.first.particular}</Term>}
+        sub={[g.first.periodLabel, `due ${plainDate(g.first.dueDate, now)}`].filter(Boolean).join(' · ')}
+        area={areaLabel(g.first.compliance)}
+        filed={g.filed}
+        total={g.total}
+      />
+    ),
+  }));
+  const clientGroups: GridGroup<FilingRow>[] = byClient.map((g: BoardGroup) => {
+    const name = leadName(g.first);
+    return {
+      id: g.key,
+      label: g.label,
+      rows: g.rows,
+      head: (
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-2">
+          <span className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md bg-brand-soft text-[12px] font-medium text-brand-text" aria-hidden>
+            {initialsOf(g.label)}
+          </span>
+          <span className="flex min-w-0 flex-[1_1_200px] flex-col gap-0.5">
+            <span className="truncate text-[14.5px] font-medium text-ink">{g.label}</span>
+            {name ? <span className="text-[12.5px] text-ink-muted">Lead {name}</span> : null}
+          </span>
+          <FiledBar filed={g.filed} total={g.total} />
+        </span>
+      ),
+    };
+  });
+  const groupCount = (groups: BoardGroup[]) => groups.filter((g) => g.rows.length > 0).length;
+
+  const chips: FilterRowChip[] = [
+    {
+      key: 'area',
+      set: !!regulator,
+      node: (
+        <FilterChip
+          label="Regulator"
+          value={regulator}
+          options={REGULATORS.map((r) => ({ value: r.key, label: r.label }))}
+          onChange={(v) => setParams({ area: v || null })}
+        />
+      ),
+    },
+    {
+      key: 'status',
+      set: !!status,
+      node: <FilterChip label="Status" value={status} options={BOARD_STATUS_OPTIONS} onChange={(v) => setParams({ status: v || null })} />,
+    },
+    ...(showLead && leadOptions.length > 0
+      ? [
+          {
+            key: 'lead',
+            set: !!lead,
+            node: <FilterChip label="Lead" value={lead} options={leadOptions} onChange={(v) => setParams({ lead: v || null })} />,
+          },
+        ]
+      : []),
+  ];
+
+  const loadingCard = (
+    <HeadCard title={title} right={filters}>
+      <div className="p-4" aria-busy="true" aria-label="Loading filings">
+        <SkeletonRows rows={6} />
+      </div>
+    </HeadCard>
+  );
+  const errorCard = (
+    <HeadCard title={title} right={filters}>
+      <p className="px-4 py-6 text-center text-[13px] text-ink-muted">Could not load the register. Try again in a moment.</p>
+    </HeadCard>
+  );
+
+  let list: ReactNode;
+  if (query.isPending) list = loadingCard;
+  else if (query.isError) list = errorCard;
+  else if (tab === 'filing' || tab === 'client')
+    list = (
+      <GroupedGrid
+        title={title}
+        right={filters}
+        columns={tab === 'filing' ? filingCols : clientCols}
+        groups={tab === 'filing' ? filingGroups : clientGroups}
+        rowKey={(row) => row.id}
+        rowHref={recordHref}
+        pageSize={60}
+        empty={anyFilter ? 'No filings match' : EMPTY_REGISTER}
+      />
+    );
+  else
+    list = (
+      <HeadCard title={title} count={exportRows.length} right={filters}>
+        {cadence === 'monthly' && fullYear && useMatrix ? (
+          <PeriodMatrix
+            rows={matrixRows}
+            now={now}
+            perCompany={columnsMode.company}
+            columns={months.map((month) => ({
+              key: month.key,
+              label: month.shortLabel,
+              emphasis: month.key === nowMonthKey,
+            }))}
+            periodOf={(row) => monthKeyOf(row.dueDate)}
+          />
+        ) : cadence === 'quarterly' && useMatrix ? (
+          <PeriodMatrix
+            rows={matrixRows}
+            now={now}
+            perCompany={columnsMode.company}
+            showFiledRow
+            columns={quarters.map((quarter) => ({
+              key: quarter.key,
+              label: quarter.label,
+              sublabel: quarter.rangeLabel,
+              emphasis: quarter.key === quarterForMonthKey(nowMonthKey, fyStartYear)?.key,
+            }))}
+            periodOf={(row) => {
+              const key = monthKeyOf(row.dueDate);
+              return key ? (quarterForMonthKey(key, fyStartYear)?.key ?? null) : null;
+            }}
+          />
+        ) : (
+          <RegisterTable
+            rows={shownRows}
+            now={now}
+            basePath={basePath}
+            numbered={cadence === 'annual' && !tile}
+            mode={columnsMode}
+            bulkActions={bulkActions}
+            onClearFilters={anyFilter ? clearAll : undefined}
+          />
+        )}
+      </HeadCard>
+    );
+
   return (
     <PageTransition>
       <SEO
@@ -278,18 +649,19 @@ export function FilingsView({
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
         <h1 className="sr-only">Filings</h1>
 
-        {query.isPending ? null : (
-          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-            <StatusDonutCard counts={counts} caption="filings" label="Filings by status" />
-            <AreaBreakdown
-              rows={windowRows}
-              now={now}
-              title={`By area · ${periodShort}`}
-              area={area}
-              onArea={(next) => setParams({ area: next === area ? null : next })}
-            />
-          </div>
-        )}
+        <SpectrumTabs
+          variant="underline"
+          label="Filings view"
+          items={[
+            { key: 'filing', label: 'By filing', count: query.isPending ? undefined : groupCount(byFiling) },
+            { key: 'client', label: 'By client', count: query.isPending ? undefined : groupCount(byClient) },
+            { key: 'all', label: 'All filings', count: query.isPending ? undefined : exportRows.length },
+          ]}
+          value={tab}
+          onChange={(next) => setParams({ tab: next === 'filing' ? null : next })}
+        />
+
+        <FilterStrip items={strip} value={tile} onChange={(k) => setParams({ kpi: k || null })} />
 
         {pickedPreIncorporation ? (
           <PreIncorporationNotice
@@ -299,138 +671,80 @@ export function FilingsView({
           <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <SpectrumTabs
-            label="Filter by area"
-            items={[
-              { key: ALL_AREAS, label: 'All', count: windowRows.length },
-              ...areas.map((a) => ({ key: a, label: areaLabel(a), count: windowRows.filter((row) => row.compliance === a).length })),
-            ]}
-            value={area}
-            onChange={(next) => setParams({ area: next === ALL_AREAS ? null : next })}
-          />
-          <SpectrumTabs
-            label="Filter by status"
-            className="sm:ml-auto"
-            items={STATUS_FILTER_ORDER.map((status) => ({ key: status, label: STATUS_FILTER_LABEL[status] }))}
-            value={statusFilter}
-            onChange={(next) => setParams({ status: next === 'all' ? null : next })}
-          />
-        </div>
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid min-w-0 gap-3">
+            <FilterChipRow chips={chips} onClear={anyFilter ? clearAll : undefined} />
+            {list}
+          </div>
 
-        <HeadCard title={title} count={query.isPending ? undefined : exportRows.length} right={filters}>
-          {query.isPending ? (
-            <div className="p-4" aria-busy="true" aria-label="Loading filings">
-              <SkeletonRows rows={6} />
-            </div>
-          ) : query.isError ? (
-            <p className="px-4 py-6 text-center text-[13px] text-ink-muted">Could not load the register. Try again in a moment.</p>
-          ) : cadence === 'monthly' && fullYear ? (
-            <PeriodMatrix
-              rows={matrixRows}
-              now={now}
-              perCompany={columnsMode.company}
-              columns={months.map((month) => ({
-                key: month.key,
-                label: month.shortLabel,
-                emphasis: month.key === monthKeyOf(now.toISOString()),
-              }))}
-              periodOf={(row) => monthKeyOf(row.dueDate)}
-            />
-          ) : cadence === 'quarterly' ? (
-            <PeriodMatrix
-              rows={matrixRows}
-              now={now}
-              perCompany={columnsMode.company}
-              showFiledRow
-              columns={quarters.map((quarter) => ({
-                key: quarter.key,
-                label: quarter.label,
-                sublabel: quarter.rangeLabel,
-                emphasis: quarter.key === quarterForMonthKey(monthKeyOf(now.toISOString()) ?? '', fyStartYear)?.key,
-              }))}
-              periodOf={(row) => {
-                const key = monthKeyOf(row.dueDate);
-                return key ? (quarterForMonthKey(key, fyStartYear)?.key ?? null) : null;
-              }}
-            />
-          ) : (
-            <RegisterTable
-              rows={shownRows}
-              now={now}
-              basePath={basePath}
-              numbered={cadence === 'annual'}
-              mode={columnsMode}
-            />
-          )}
-        </HeadCard>
+          <div className="grid min-w-0 gap-3">
+            <DashSection
+              title="On time vs late"
+              meta={onTimePct === null ? undefined : `${onTimePct}% on time`}
+              loading={history.isPending}
+              loadingVariant="block"
+            >
+              {onTimeFiled ? (
+                <OnTimeColumns data={onTime} />
+              ) : (
+                <p className="text-[13px] text-ink-faint">No filing recorded in the last {ON_TIME_MONTHS} months</p>
+              )}
+            </DashSection>
+            <DashSection title="By regulator" meta={periodShort} loading={query.isPending}>
+              <div className="grid gap-1">
+                {regulators.map((r) => {
+                  const pct = r.total ? Math.round((r.filed / r.total) * 100) : 0;
+                  const on = regulator === r.key;
+                  return (
+                    <button
+                      key={r.key}
+                      type="button"
+                      onClick={() => setParams({ area: on ? null : r.key })}
+                      aria-pressed={on}
+                      aria-label={`${r.label}: ${r.filed} of ${r.total} filed. Filter by ${r.label}`}
+                      className={cn(
+                        '-mx-1.5 flex items-center gap-2.5 rounded-sm px-1.5 py-1 text-left hover:bg-surface-sunken',
+                        on && 'bg-brand-soft',
+                      )}
+                    >
+                      <Swatch className={areaSwatch(r.label)} />
+                      <span className="flex-1 text-[13.5px] text-ink">{r.label}</span>
+                      <span className={cn('text-[13px] tabular-nums', r.total ? 'text-ink-muted' : 'text-ink-faint')}>
+                        {r.filed} / {r.total}
+                      </span>
+                      <span className="relative h-1.5 w-[90px] flex-none overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+                        <i className={cn('absolute inset-y-0 left-0 rounded-bar', areaSwatch(r.label))} style={{ width: `${pct}%` }} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </DashSection>
+            {query.isPending ? null : <StatusDonutCard counts={counts} caption="filings" label="Filings by status" />}
+          </div>
+        </div>
       </div>
     </PageTransition>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Head charts
-// ---------------------------------------------------------------------------
-
-/** R-25 C2: one stacked bar per area in status colours; a click narrows the table to that area. */
-function AreaBreakdown({
-  rows,
-  now,
-  title,
-  area,
-  onArea,
-}: {
-  rows: FilingRow[];
-  now: Date;
-  title: string;
-  area: string;
-  onArea: (area: string) => void;
-}) {
-  const byArea = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof emptyCounts>>();
-    for (const row of rows) {
-      const c = map.get(row.compliance) ?? emptyCounts();
-      c[filingStatus(row, now)] += 1;
-      map.set(row.compliance, c);
-    }
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [rows, now]);
-
+/**
+ * The row action of a client row (prototype `FilingAction`): "File now" on a
+ * filing that is late, due soon or in progress, "Open" otherwise. Both open the
+ * filing's record (the obligation page for that client), where the window,
+ * proofs and ARN are set; there is no new write path here. A late row gets the
+ * blurple main button, every other row the white one.
+ */
+function FilingAction({ row, now, href }: { row: FilingRow; now: Date; href: string }) {
+  const st = filingStatus(row, now);
+  const fileNow = st !== 'filed' && st !== 'upcoming';
+  const label = fileNow ? 'File now' : 'Open';
   return (
-    <section className="surface px-5 py-4" aria-label="By area">
-      <p className="mb-3 text-[15px] font-medium text-ink">{title}</p>
-      {byArea.length === 0 ? (
-        <p className="text-[13px] text-ink-faint">No filings in this period</p>
-      ) : (
-        <div className="grid gap-1.5">
-          {byArea.map(([name, c]) => {
-            const total = c.filed + c.overdue + c['due-soon'] + c.upcoming;
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => onArea(name)}
-                aria-pressed={area === name}
-                className={cn(
-                  '-mx-1.5 grid grid-cols-[112px_minmax(0,1fr)_44px] items-center gap-3 rounded-sm px-1.5 py-0.5 text-left hover:bg-surface-sunken',
-                  area === name && 'bg-brand-soft',
-                )}
-              >
-                <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-ink-2">
-                  <Swatch className={areaSwatch(name)} />
-                  <span className="truncate">{areaLabel(name)}</span>
-                </span>
-                <StatusBar counts={c} label={`${areaLabel(name)} · ${total} filings`} />
-                <span className="text-right text-[12.5px] tabular-nums text-ink-muted">
-                  {c.filed}/{total}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </section>
+    <Button size="sm" variant={st === 'overdue' ? 'default' : 'outline'} className="h-[30px]" asChild>
+      <Link href={href} aria-label={`${label}: ${row.particular}${row.periodLabel ? ` ${row.periodLabel}` : ''}, ${row.companyName}`}>
+        {label}
+      </Link>
+    </Button>
   );
 }
 
@@ -462,12 +776,17 @@ function RegisterTable({
   basePath,
   numbered,
   mode = ONE_COMPANY,
+  bulkActions,
+  onClearFilters,
 }: {
   rows: FilingRow[];
   now: Date;
   basePath: string;
   numbered?: boolean;
   mode?: RegisterColumnsMode;
+  /** E-01: row selection and the bulk bar. */
+  bulkActions?: (picked: FilingRow[]) => BulkAction[];
+  onClearFilters?: () => void;
 }) {
   const mayWrite = useMayWriteFilings();
   const ordered = useMemo(() => sortByDueDate(rows), [rows]);
@@ -544,8 +863,12 @@ function RegisterTable({
       rows={ordered}
       rowKey={(row) => row.id}
       pageSize={25}
-      minWidth={mode.company ? 1120 : 980}
+      minWidth={mode.company ? 1160 : 1020}
       empty={EMPTY_REGISTER}
+      selectable={!!bulkActions}
+      bulkActions={bulkActions}
+      bulkNoun={['filing', 'filings']}
+      onClearFilters={onClearFilters}
     />
   );
 }

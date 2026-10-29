@@ -8,6 +8,7 @@ import { CompanyPicker } from '@/components/admin/CompanyPicker';
 import { Button } from '@/components/ui/button';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { Term } from '@/components/ui/term';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import {
   PreIncorporationNotice,
@@ -25,7 +26,7 @@ import {
 } from '@/views/compliances/compliance-scope';
 import { areaLabel, daysUntil, plainDate } from '@/views/compliances/spectrum-status';
 import {
-  DateTile,
+  FilingBand,
   FilterStrip,
   FlowCard,
   RailCard,
@@ -335,27 +336,17 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   );
 }
 
-/** Band of one filing: date tile, name and due date, area pill, filed count with a green bar. */
+/** Band of one filing (the shared `FilingBand`): date tile, name and due date, area pill, filed count with a green bar. */
 function FilingHead({ group }: { group: ObligationGroup }) {
-  const pct = group.total ? Math.round((group.filed / group.total) * 100) : 0;
   return (
-    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-2">
-      <DateTile iso={group.dueDate} status={group.status === 'filed' ? 'filed' : group.status} />
-      <span className="flex min-w-0 flex-[1_1_200px] flex-col gap-0.5">
-        <span className="truncate text-[14.5px] font-medium text-ink">{group.name}</span>
-        <span className="text-[12.5px] text-ink-muted">
-          Due {plainDate(group.dueDate)} · {group.authority}
-        </span>
-      </span>
-      <AreaPill area={areaLabel(group.area)} />
-      <span className="flex w-[190px] items-center gap-2.5">
-        <span className="whitespace-nowrap text-[12.5px] text-ink-muted">
-          {group.filed} of {group.total} filed
-        </span>
-        <span className="relative h-2 min-w-0 flex-1 overflow-hidden rounded-bar bg-surface-raised" aria-hidden>
-          <i className="absolute inset-y-0 left-0 rounded-bar bg-positive-mid" style={{ width: `${pct}%` }} />
-        </span>
-      </span>
-    </span>
+    <FilingBand
+      iso={group.dueDate}
+      status={group.status}
+      name={<Term>{group.name}</Term>}
+      sub={`Due ${plainDate(group.dueDate)} · ${group.authority}`}
+      area={areaLabel(group.area)}
+      filed={group.filed}
+      total={group.total}
+    />
   );
 }
