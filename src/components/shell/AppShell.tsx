@@ -7,7 +7,9 @@ import { RoleSidebar, MobileNavSheet } from "./RoleSidebar";
 import { TopBar } from "./TopBar";
 import { AnnouncementLivePopup } from "@/components/announcements/AnnouncementLivePopup";
 import { NotificationLivePopup } from "@/components/notifications/NotificationLivePopup";
-import { ShellNavProvider } from "./shell-nav-context";
+import { ShellNavProvider, useShellNav } from "./shell-nav-context";
+import { TabBar } from "./TabBar";
+import { ShortcutSheet } from "./ShortcutSheet";
 import { isInternEngagementPathname } from "@/lib/projects/project-step-path";
 import { shellDesktopNavExpanded } from "@/components/shell/intern-sidebar";
 import { cn } from "@/lib/utils";
@@ -83,6 +85,8 @@ export function AppShell({
         <MobileNavSheet />
         <AnnouncementLivePopup />
         <NotificationLivePopup />
+        <ShortcutSheet />
+        <ShellTabBar />
 
         <AskPushColumn className={cn("relative z-10 pl-0 pt-[3px] transition-[padding] duration-300 ease-out", desktopPad)}>
           <div className="sticky top-[3px] z-20 pt-0">
@@ -90,7 +94,7 @@ export function AppShell({
           </div>
           <main
             className={cn(
-              "mx-auto page-fade-up px-4 pb-20 pt-5 md:px-8 md:pt-7",
+              "mx-auto page-fade-up px-4 pb-28 pt-5 md:px-8 md:pb-20 md:pt-7",
               mainMaxWidth,
             )}
           >
@@ -101,4 +105,10 @@ export function AppShell({
       </AskShellMount>
     </ShellNavProvider>
   );
+}
+
+/** The phone tab bar (R-45); More opens the same drawer as the menu button. */
+function ShellTabBar() {
+  const { openMobile } = useShellNav();
+  return <TabBar onMore={openMobile} />;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type TransitionEvent } from 'react';
@@ -7,6 +8,7 @@ import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
+  Keyboard,
   LayoutDashboard,
   Briefcase,
   Building2,
@@ -531,6 +533,20 @@ function SidebarNavBody({
               </div>
             )}
           </Link>
+          {expanded ? (
+            <button
+              type="button"
+              onClick={openShortcuts}
+              aria-label="Keyboard shortcuts (?)"
+              title="Keyboard shortcuts (?)"
+              className={cn(
+                'grid h-[30px] w-[30px] flex-none place-items-center rounded-md transition-colors',
+                ink === 'light' ? 'text-side-muted hover:bg-white/[.12] hover:text-white' : 'text-ink-muted hover:bg-surface-sunken',
+              )}
+            >
+              <Keyboard className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+            </button>
+          ) : null}
         </div>
       </div>
     </>

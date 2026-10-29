@@ -20,6 +20,8 @@ import { AskLauncher } from './AskLauncher';
 import { SearchPalette } from './SearchPalette';
 import { PortalIntro } from './PortalIntro';
 import { IconTips } from './IconTips';
+import { TabBar } from '@/components/shell/TabBar';
+import { ShortcutSheet } from '@/components/shell/ShortcutSheet';
 import './portal-css';
 
 export function ClientPortalShell({ children }: { children: ReactNode }) {
@@ -68,6 +70,11 @@ function ShellBody({ children }: { children: ReactNode }) {
       <IconTips />
       <AskLauncher />
       <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {/* Tailwind islands (R-45 phone tab bar, the "?" shortcut sheet). */}
+      <div className="cp-tw">
+        <TabBar />
+        <ShortcutSheet />
+      </div>
     </>
   );
 }

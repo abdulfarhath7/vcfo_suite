@@ -9,6 +9,8 @@ body{margin:0}
 .cp-page-host{flex:1;min-width:0;display:block}
 /* bottom spacer: content scrolls clear of the floating Ask VCFO pill */
 .cp-page-host::after{content:"";display:block;height:var(--vp-launch-h)}
+/* Room for the phone tab bar (R-45). */
+@media (max-width:767px){.cp-page-host{padding-bottom:64px}}
 #vp-side{height:100vh}
 @supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
 .cp-search .cp-search-in{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line));color:oklch(var(--ink-muted))}
