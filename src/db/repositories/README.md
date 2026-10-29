@@ -72,6 +72,7 @@ this table, so re-check the migration before trusting a row.
 | work-assignments (reassign) | all | owned engagements | **none** | **none** | product (G-18) |
 | engagement_notes | all; delete any | owned engagements | assigned engagements | **none** | `0026` (G-19); author edits, author or admin deletes (soft) |
 | work_sessions / work_checklist_items / time_blocks / item_window_requests | all | owned engagements; decide requests | led engagements; checklists and blocks are owner-only | **none** | `0026` (G-16, G-17) |
+| weekly digest (`weekly-digest.ts`) | system only | system only | system only | system only | product; the Inngest cron lists active people with the digest on (never saved = on, developers never) as their own AuthContext, then reads through the scoped repositories; `notification_deliveries` rows with `event_type = 'weekly_digest'` and the ISO week in `template_sid` |
 | user_sessions, profiles.totp_* | own rows; reset another person's two-step | own rows | own rows | own rows | `0026` (G-25); developers reach own-account routes through `requireOwnAccount` |
 | dev-* (developer console reads) | **none** | **none** | **none** | **none** | developer and super admin only (`assertDeveloper`); firm-wide, client recipients masked or counted | `0026_gaps_backend.sql` |
 
