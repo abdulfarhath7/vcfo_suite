@@ -33,6 +33,8 @@ import { cardHeadIcon } from '@/lib/ui/card-head-icon';
 export type DashHeroStat = {
   label: string;
   value: number | string;
+  /** Small text right after the number: "/ 6", "+2", "−3", "+4 pts". */
+  of?: string;
   href?: string;
   /** Opens a drill or panel instead of a page (client home). Ignored when `href` is set. */
   onClick?: () => void;
@@ -185,6 +187,7 @@ function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
             )}
           >
             {stat.value}
+            {stat.of ? <small className="ml-1 text-[13px] font-medium text-ink-muted">{stat.of}</small> : null}
           </b>
           {stat.bar !== undefined ? (
             <span className="block h-1 w-full max-w-[96px] overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
@@ -205,7 +208,7 @@ function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
     (stat.href || stat.onClick) &&
       'transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25',
   );
-  const aria = `${label}: ${stat.value}${note ? `, ${note}` : ''}. Open the list`;
+  const aria = `${label}: ${stat.value}${stat.of ? ` ${stat.of}` : ''}${note ? `, ${note}` : ''}. Open the list`;
   const tile = stat.href ? (
     <Link href={stat.href} className={cls} aria-label={aria}>
       {inner}
