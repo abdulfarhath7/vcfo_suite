@@ -49,10 +49,14 @@ export function useServerSync({
   setDbChecklistState,
   setNotifications,
 }: ServerSyncParams) {
+  /* A developer may call only the developer console routes; every other guard returns 401
+     and fetchJson signs the person out on a 401, so the firm data sync stays off for them. */
+  const syncUser = user?.role === 'developer' ? null : user;
+
   const engagementsQuery = useQuery({
     queryKey: ['engagements', user?.id],
     queryFn: async () => fetchEngagements(),
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
   });
 
@@ -90,7 +94,7 @@ export function useServerSync({
       const data = await fetchJson<{ tasks: TaskInstance[] }>('/api/tasks');
       return data.tasks;
     },
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
   });
 
@@ -100,7 +104,7 @@ export function useServerSync({
       const data = await fetchJson<{ requests: DocRequest[] }>('/api/requests');
       return data.requests;
     },
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
   });
 
@@ -110,7 +114,7 @@ export function useServerSync({
       const data = await fetchJson<{ invites: Invite[] }>('/api/invites');
       return data.invites;
     },
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
   });
 
@@ -120,7 +124,7 @@ export function useServerSync({
       const data = await fetchJson<{ activity: ActivityEvent[] }>('/api/activity');
       return data.activity;
     },
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
   });
 
@@ -130,14 +134,14 @@ export function useServerSync({
       const data = await fetchJson<{ notifications: AppNotification[] }>('/api/notifications');
       return data.notifications;
     },
-    enabled: Boolean(user),
+    enabled: Boolean(syncUser),
     staleTime: 30_000,
     refetchOnWindowFocus: false,
     notifyOnChangeProps: ['data', 'error'],
   });
 
   useInvalidateOnHeadChange({
-    enabled: Boolean(user?.id),
+    enabled: Boolean(syncUser?.id),
     headQueryKey: ['notifications-head', user?.id],
     queryFn: async () => {
       const data = await fetchJson<{

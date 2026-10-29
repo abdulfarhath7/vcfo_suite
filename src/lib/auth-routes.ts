@@ -13,6 +13,8 @@ export function roleHomePath(role: Role): string {
       return '/app/intern/today';
     case 'client':
       return '/app/client/overview';
+    case 'developer':
+      return '/app/dev/overview';
   }
 }
 
@@ -29,6 +31,8 @@ export function roleNotificationsPath(role: Role): string {
       return '/app/intern/notifications';
     case 'client':
       return '/app/client/notifications';
+    case 'developer':
+      return '/app/dev/overview';
   }
 }
 
@@ -45,6 +49,8 @@ export function roleSettingsPath(role: Role): string {
       return '/app/intern/settings';
     case 'client':
       return '/app/client/settings';
+    case 'developer':
+      return '/app/dev/overview';
   }
 }
 

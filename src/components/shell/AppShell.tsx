@@ -19,7 +19,7 @@ export function AppShell({
   requireRole,
   children,
 }: {
-  requireRole?: "super_admin" | "admin" | "manager" | "intern" | "client";
+  requireRole?: "super_admin" | "admin" | "manager" | "intern" | "client" | "developer";
   children: ReactNode;
 }) {
   const { user, authLoading, sidebarMode } = useApp();

@@ -59,6 +59,7 @@ this table, so re-check the migration before trusting a row.
 | compliance_instances / _events / _triggers | all | via owned engagement | write via assigned engagement | read-only via own engagement | `20260708120000`, `20260805130000` |
 | audit_events | **read: all** | **read: owned/assigned engagements** | **own actor + assigned engagements** | own engagements | four-role + `20260529120000` + product |
 | email_send_log | read | read | none | none | `20260806120000_email_send_log_seeds.sql` |
+| dev-* (developer console reads) | **none** | **none** | **none** | **none** | developer and super admin only (`assertDeveloper`); firm-wide, client recipients masked or counted | `0026_gaps_backend.sql` |
 
 Corrections from the first draft:
 

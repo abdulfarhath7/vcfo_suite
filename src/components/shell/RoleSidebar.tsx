@@ -37,9 +37,15 @@ import {
   FileBarChart,
   Settings,
   BadgeCheck,
+  Plug,
+  Clock,
+  Text as TextIcon,
+  ShieldCheck,
+  Lock,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ROLE_UI_LABEL } from '@/lib/auth';
+import { ROLE_UI_LABEL, type Role } from '@/lib/auth';
 import { UserFace } from '@/components/common/UserFace';
 import { AskLauncher } from '@/components/ask/AskLauncher';
 import type { SidebarMode } from '@/context/AppContext';
@@ -197,7 +203,30 @@ const superAdminItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
   { to: '/app/client/audit', label: 'Client log', icon: ScrollText, iconTone: TONE.audit },
   { to: '/app/super/settings', label: 'Firm settings', icon: Settings, iconTone: TONE.audit },
+  { to: '/app/dev/overview', label: 'Developer console', icon: Plug, iconTone: TONE.work },
 ];
+
+/* Developer console (G-01), in the prototype's order. The super admin reaches it from a
+   "Developer console" link; a developer sees only these items. */
+const developerItems: NavEntry[] = [
+  { to: '/app/dev/overview', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/dev/connections', label: 'Connections', icon: Plug, iconTone: TONE.work },
+  { to: '/app/dev/jobs', label: 'Jobs', icon: Clock, iconTone: TONE.work },
+  { to: '/app/dev/logs', label: 'Logs', icon: TextIcon, iconTone: TONE.work },
+  { to: '/app/dev/messages', label: 'Messages', icon: Mail, iconTone: TONE.work },
+  { to: '/app/dev/deploys', label: 'Deploys', icon: ShieldCheck, iconTone: TONE.work },
+  { to: '/app/dev/access', label: 'Access', icon: Lock, iconTone: TONE.people },
+  { to: '/app/dev/data', label: 'Data and costs', icon: Database, iconTone: TONE.analytics },
+  { to: '/app/dev/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
+];
+
+/** Home and Profile for the rail. The developer has no profile page yet, so both open the console. */
+function railHomePath(role: Role): string {
+  return role === 'developer' ? '/app/dev/overview' : roleHomePath(role);
+}
+function railProfilePath(role: Role): string {
+  return role === 'developer' ? '/app/dev/overview' : roleSettingsPath(role);
+}
 
 const InternMyWorkBadge = memo(function InternMyWorkBadge() {
   const { kpis } = useInternPortfolio();
@@ -296,7 +325,9 @@ function SidebarNavBody({
           ? managerItems
           : user.role === 'intern'
             ? internItems
-            : clientItems;
+            : user.role === 'developer'
+              ? developerItems
+              : clientItems;
 
   return (
     <>
@@ -308,7 +339,7 @@ function SidebarNavBody({
         )}
       >
         <Link
-          href={roleHomePath(user.role)}
+          href={railHomePath(user.role)}
           onClick={onNavigate}
           aria-label="VCFO Suite home"
           className={cn(
@@ -460,7 +491,7 @@ function SidebarNavBody({
             />
           ) : null}
           <Link
-            href={roleSettingsPath(user.role)}
+            href={railProfilePath(user.role)}
             onClick={onNavigate}
             /* K-16: the account row opens Profile; there is no Settings item in the sidebar. */
             title="Profile"
