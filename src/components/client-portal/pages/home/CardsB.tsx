@@ -6,7 +6,7 @@
  * stacked bar, R-25), Company IDs, Compliance by area and Registrations (T1 tables, area pills,
  * R-07 and R-43) and Post-incorporation setup.
  */
-import { ChevronRight, Copy, Download, ExternalLink, Eye, Paperclip, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Download, ExternalLink, Eye, Paperclip } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { RevealCountdown, useRevealedIdentifier } from '@/components/client-port
 import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, StackedBar, stepChip, type BarTone } from '../incorporation/spectrum';
 import { exactDate } from '@/lib/relative-due';
 import { copyText, DueWords } from './ui';
-import { PendingRequestPopover } from './PendingRequest';
+import { PendingRequestChip } from './PendingRequest';
 import type { HomeData } from './useHome';
 import {
   AREA_NAME,
@@ -117,30 +117,15 @@ export function TimelineCard({ h, phases, onEdit, className }: { h: HomeData; ph
   const pending = t?.pending;
   const manager = h.manager ?? 'your project manager';
   const changed = t?.lastChangedAt ? `Changed ${t.lastChangedAt.slice(0, 10) === h.today ? 'today' : dShort(t.lastChangedAt)}${t.lastChangedBy ? ` · ${t.lastChangedBy}` : ''}` : undefined;
+  // C-050: the pending request pill and an outline "Edit"; after the COI the "Incorporated" chip replaces them.
   const right = h.after ? (
-    <Chip tone="ok">Completed</Chip>
+    <Chip tone="ok">Incorporated</Chip>
   ) : (
     <>
-      {pending ? (
-        <PendingRequestPopover
-          pending={pending}
-          manager={manager}
-          trigger={
-            <button
-              type="button"
-              aria-label={`Change request pending, waiting for ${manager}`}
-              className="inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning"
-            >
-              <i className="h-1.5 w-1.5 rounded-[2px] bg-current" aria-hidden />
-              <span className="hidden sm:inline">Request pending{pending.coiTo ? ' · ' : ''}</span>
-              {pending.coiTo ? `COI ${dShort(pending.coiTo)}` : null}
-            </button>
-          }
-        />
-      ) : null}
+      {pending ? <PendingRequestChip pending={pending} manager={manager} /> : null}
       {phases ? (
-        <Button size="sm" variant="secondary" onClick={onEdit}>
-          <Pencil size={14} strokeWidth={1.6} aria-hidden /> Edit
+        <Button size="sm" variant="outline" onClick={onEdit}>
+          Edit
         </Button>
       ) : null}
     </>
@@ -446,9 +431,10 @@ export function IdsCard({ h, onReveal, onCoi, className }: { h: HomeData; onReve
         return (
           <ListRow key={`${r.k}:${r.v ?? ''}`}>
             <span className="w-14 flex-none text-[12.5px] font-medium text-ink-muted">{r.k}</span>
-            <span className="min-w-0 flex-1 truncate">
-              <span className={cn('block truncate font-mono text-[13px]', clear ? 'text-positive' : r.v ? 'text-ink' : 'text-ink-faint')}>{value ?? '-'}</span>
-              {r.who ? <span className="block truncate text-[12px] text-ink-muted">{r.who}</span> : null}
+            {/* C-077: a director's name sits inline after the DIN. */}
+            <span className="flex min-w-0 flex-1 items-baseline gap-2 truncate">
+              <span className={cn('flex-none font-mono text-[13px]', clear ? 'text-positive' : r.v ? 'text-ink' : 'text-ink-faint')}>{value ?? '-'}</span>
+              {r.who ? <span className="min-w-0 truncate text-[12.5px] text-ink-muted">{r.who}</span> : null}
             </span>
             {r.secret && clear ? (
               <Chip tone="ok" dot={false}>
@@ -560,7 +546,7 @@ export function AreaCard({ h, className }: { h: HomeData; className?: string }) 
         </table>
       </div>
       <div className="border-t border-line-soft px-4 py-2.5 text-[12.5px] text-ink-muted md:px-5">
-        Total {h.filings.length} · filed {all.filed} · due soon {all.dueSoon} · overdue {all.overdue}
+        {`1–${areas.length} of ${areas.length}`} · Total {h.filings.length} · filed {all.filed} · due soon {all.dueSoon} · overdue {all.overdue}
       </div>
     </SCard>
   );
@@ -670,19 +656,43 @@ export function RegCard({ h, onProof, className }: { h: HomeData; onProof: (r: R
           </table>
         </div>
       )}
-      {pages > 1 ? (
-        <nav className="flex items-center justify-end gap-1 border-t border-line-soft px-4 py-2 md:px-5" aria-label="Pages">
-          {Array.from({ length: pages }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setPage(i)}
-              aria-current={i === cur ? 'page' : undefined}
-              className={cn('grid h-7 min-w-7 place-items-center rounded-md px-2 text-[12.5px] font-medium', i === cur ? 'bg-brand-soft text-brand-text' : 'text-ink-2 hover:bg-surface-sunken')}
-            >
-              {i + 1}
-            </button>
-          ))}
+      {rows.length > 0 ? (
+        // C-082: "1–8 of N", previous and next arrows, the page buttons; the current page solid blurple.
+        <nav className="flex items-center gap-1 border-t border-line-soft px-4 py-2 text-[12.5px] md:px-5" aria-label="Pages">
+          <span className="mr-auto text-ink-muted">{`${cur * PAGE + 1}–${cur * PAGE + shown.length} of ${rows.length}`}</span>
+          {pages > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setPage(cur - 1)}
+                disabled={cur === 0}
+                aria-label="Previous page"
+                className="grid h-7 w-7 place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft size={16} strokeWidth={1.6} aria-hidden />
+              </button>
+              {Array.from({ length: pages }, (_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setPage(i)}
+                  aria-current={i === cur ? 'page' : undefined}
+                  className={cn('grid h-7 min-w-7 place-items-center rounded-md px-2 font-medium', i === cur ? 'bg-brand text-on-brand' : 'text-ink-2 hover:bg-surface-sunken')}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPage(cur + 1)}
+                disabled={cur >= pages - 1}
+                aria-label="Next page"
+                className="grid h-7 w-7 place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <ChevronRight size={16} strokeWidth={1.6} aria-hidden />
+              </button>
+            </>
+          ) : null}
         </nav>
       ) : null}
     </SCard>

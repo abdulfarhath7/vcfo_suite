@@ -19,8 +19,10 @@ button:where(:not(.cp-tw *)){font:inherit;color:inherit}
 .ic{width:16px;height:16px;flex:none}
 .sp{flex:1}
 /* ---------- page ---------- */
-:root{display:block;padding:24px clamp(14px,2.2vw,24px) 120px;position:relative}
-.wrap{max-width:1600px;margin-inline:auto;display:flex;flex-direction:column;gap:16px;min-width:0}
+:root{display:block;padding:20px 16px 112px;position:relative}
+/* C-091: the prototype shell's main: 16px sides on a phone, 28px top and 32px sides from 768px. */
+@media (min-width:768px){:root{padding:28px 32px 80px}}
+.wrap{max-width:1440px;margin-inline:auto;display:flex;flex-direction:column;gap:16px;min-width:0}
 .card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);min-width:0}
 .card.acc:before{content:none}
 .lbl{font:500 12.5px var(--font-sans),sans-serif;color:var(--navy-ink,var(--navy));margin:0;display:flex;align-items:center;gap:6px}
@@ -443,8 +445,10 @@ a.rr:hover{background:var(--raised)}
 .brg{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
 .prv{background:var(--raised);overflow:hidden}
 .prv .ch{background:oklch(var(--surface-raised));border-bottom:1px solid var(--border);border-radius:6px 12px 0 0;padding:12px 18px}
-.pvw{overflow:auto;padding:20px 16px 24px;display:flex;justify-content:center}
-.paper{width:440px;max-width:100%;flex:none;background:oklch(var(--surface-raised));box-shadow:var(--pop);padding:34px 38px 30px;font:12px/1.6 Georgia,"Times New Roman",serif;color:oklch(var(--ink));transform-origin:top center;transition:transform .2s}
+.pvw{overflow:auto;max-height:760px;padding:12px;background:oklch(var(--surface-sunken));display:flex;justify-content:center}
+/* C-245: a grey tray (p-3, p-5 from 768px) with the page on a 1px line. */
+@media (min-width:768px){.pvw{padding:20px}}
+.paper{width:440px;max-width:100%;flex:none;background:oklch(var(--surface-raised));border:1px solid oklch(var(--line));padding:34px 38px 30px;font:12px/1.6 Georgia,"Times New Roman",serif;color:oklch(var(--ink));transform-origin:top center;transition:transform .2s}
 .paper .t{text-align:center;font-weight:500;font-size:12px;margin-bottom:16px}
 .paper .ln{height:7px;border-radius:2px;background:oklch(var(--line));margin:7px 0}
 .paper h4{margin:16px 0 6px;font:500 12px Georgia,serif}

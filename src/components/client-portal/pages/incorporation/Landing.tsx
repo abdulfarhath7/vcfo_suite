@@ -9,7 +9,9 @@
  * editor are kept.
  */
 import { sep } from '@/lib/date-format';
-import { Download, Pencil } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { useHomeQuery } from '../home/useHome';
+import { PendingRequestChip } from '../home/PendingRequest';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
@@ -26,7 +28,7 @@ import { SkeletonRows } from '@/components/ui/empty-state';
 import { phaseHref, portalHref } from '../../routes';
 import { usePortal, type DrillConfig, type DrillRow } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
-import { IncFrame, addD, days, fmt, fmtY, pd, useCountUp, wd } from './ui';
+import { IncFrame, addD, days, fmt, fmtY, pd, wd } from './ui';
 import { PHL, firstName, idx, kd, ownKey, phDoneEnd, phPlan, stRow, stepHrefOf, tabsFor, signedUrlFor, useIncData, type IncData } from './data';
 import { StepTable } from './StepTable';
 import { StatusBrief } from './StatusBrief';
@@ -151,7 +153,7 @@ function SplitCard({ rows }: { rows: Array<{ title: string; unit: string; segs: 
               <span className="min-w-0 truncate text-[13px] font-medium text-ink-2">{r.title}</span>
               <b className="ml-auto text-[14px] font-medium text-ink">{total}</b>
             </button>
-            <span className="flex h-2 w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+            <span className="flex h-2 w-full gap-0.5 overflow-hidden rounded-bar" aria-hidden>
               {r.segs
                 .filter((s) => s[1] > 0)
                 .map((s) => (
@@ -183,7 +185,7 @@ function weekRange(today: string): string {
   const sun = addD(mon, 6);
   const a = pd(mon);
   const b = pd(sun);
-  return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()} – ${fmt(sun)}` : `${fmt(mon)} – ${fmt(sun)}`;
+  return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()} to ${fmt(sun)}` : `${fmt(mon)} to ${fmt(sun)}`;
 }
 
 /** True below the md breakpoint: the timeline axis shows every second week. */
@@ -306,12 +308,12 @@ export default function IncorporationLanding() {
   const [briefOpen, setBriefOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const narrow = useNarrow();
+  const pendingTl = useHomeQuery(portal.shell?.engagementId).data?.timeline?.pending;
 
   /* ---------- head ---------- */
   const showAfter = after && Boolean(d.coiDate);
   const coiEnd = d.coiExpected;
   const daysLeft = coiEnd ? Math.max(0, days(today, coiEnd)) : null;
-  const shown = useCountUp(showAfter ? null : daysLeft, !showAfter);
   const you = model.steps.find((x) => kd(x) === 'you') ?? model.steps.find((x) => x.owner === 'client' && x.late && kd(x) !== 'done');
   const spice = model.spice;
   const all = model.all;
@@ -368,7 +370,8 @@ export default function IncorporationLanding() {
       data-tt={`Expected ${wd(coiEnd)} ${fmtY(coiEnd)}${d.extras?.windowSetByName ? ` · window set by ${d.extras.windowSetByName}` : ''}`}
       data-notip=""
     >
-      <span className="tabular-nums">{shown ?? daysLeft}</span> {daysLeft === 1 ? 'day to COI' : 'days to COI'}
+      {/* C-096: plain text, no count-up. */}
+      <span className="tabular-nums">{daysLeft}</span> {daysLeft === 1 ? 'day to COI' : 'days to COI'}
     </button>
   ) : (
     <button type="button" onClick={drillRing} className="text-left text-ink hover:underline">
@@ -566,13 +569,17 @@ export default function IncorporationLanding() {
       meta={`${all.done} of ${all.total} steps${rangeLabel ? ` · ${rangeLabel}` : ''}`}
       flush
       right={
-        <>
-          {showAfter ? <Chip tone="ok">Incorporated</Chip> : null}
-          <Button size="sm" variant="secondary" aria-label="Edit the timeline" onClick={() => setEditOpen(true)}>
-            <Pencil size={14} strokeWidth={1.6} aria-hidden />
-            Edit
-          </Button>
-        </>
+        // C-146 to C-148: the pending request pill and "Edit" before the COI; "Incorporated" after it.
+        showAfter ? (
+          <Chip tone="ok">Incorporated</Chip>
+        ) : (
+          <>
+            {pendingTl ? <PendingRequestChip pending={pendingTl} manager={d.managerName ?? 'your project manager'} /> : null}
+            <Button size="sm" variant="outline" aria-label="Edit the timeline" onClick={() => setEditOpen(true)}>
+              Edit
+            </Button>
+          </>
+        )
       }
     >
       <div className="overflow-x-auto">

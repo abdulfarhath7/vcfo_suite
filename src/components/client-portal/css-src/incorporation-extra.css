@@ -6,8 +6,7 @@
 .sk .card:after,.sk .coi:after,.sk .hero:after{content:"";position:absolute;inset:12px;height:auto;border-radius:6px;background:linear-gradient(90deg,oklch(var(--line)) 0,oklch(var(--surface-sunken)) 40%,oklch(var(--line)) 80%);background-size:600px 100%;animation:sh 1.2s linear infinite}
 .sk .coi:after,.sk .hero:after{background:linear-gradient(90deg,oklch(30% .05 258) 0,oklch(36% .05 258) 40%,oklch(30% .05 258) 80%);background-size:600px 100%}
 @keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
-.wrap>*{animation:fu .3s cubic-bezier(.22,1,.36,1) both}
-.sk .wrap>*{animation:none}
+/* C-093: no entry motion on page sections (the prototype has none). */
 @keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .sk-blk{display:block;min-height:120px}
 /* visually hidden file inputs behind the drop zones */

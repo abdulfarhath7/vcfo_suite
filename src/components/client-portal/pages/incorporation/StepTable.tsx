@@ -48,6 +48,9 @@ function viewerDocsFor(s: PortalStep, files: StepFile[]): ViewerDoc[] {
 
 const ICON_BTN = 'grid h-[30px] w-[30px] flex-none place-items-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink';
 
+/** The sticky cells keep the row's fill: white, grey on hover, blurple on the focus row. */
+const STICKY_BG = '!bg-surface-raised group-hover/row:!bg-surface-sunken';
+
 export function StepTable({
   phase,
   variant,
@@ -139,12 +142,13 @@ export function StepTable({
         <table className="grid-table min-w-[720px]">
           <thead>
             <tr>
-              <th className="w-10" aria-label="State" />
-              <th>Step</th>
+              {/* C-193: the mark and the step name stay on the left while the table scrolls sideways. */}
+              <th className="sticky left-0 z-[1] w-10 !bg-surface-raised" aria-label="State" />
+              <th className="sticky left-10 z-[1] !bg-surface-raised">Step</th>
               <th className="w-[124px]">Owner</th>
               <th className="w-[124px]">Status</th>
               <th className="w-[128px]">Date</th>
-              <th className="w-[120px]">Portal</th>
+              <th className="w-[110px]">Portal</th>
               {landing ? null : <th className="w-10" aria-label="Ask" />}
             </tr>
           </thead>
@@ -169,18 +173,19 @@ export function StepTable({
                   ) : null}
                   <tr
                     id={`step-${x.n}`}
-                    className={cn('cursor-pointer', cur === x.id && '[&>td]:!bg-brand-soft/50')}
+                    // C-185: the step the page is about; C-186: a late client step reads red.
+                    className={cn('group/row cursor-pointer', cur === x.id && '[&>td]:!bg-brand-soft', late && o === 'You' && 'late [&_.step-name]:!text-danger')}
                     onClick={() => go(href)}
                   >
-                    <td className="text-center">
+                    <td className={cn('sticky left-0 z-[1] text-center', STICKY_BG)}>
                       <span className="inline-grid" data-tt={tipTxt(x)}>
                         <StepMark state={markState(x)} tone={markTone(x)} size={20} label={chip.label} />
                       </span>
                     </td>
-                    <td>
+                    <td className={cn('sticky left-10 z-[1]', STICKY_BG)}>
                       <a href={href} onClick={(e) => { e.stopPropagation(); goTo(href)(e); }} className="flex min-w-[200px] items-baseline gap-2" aria-label={`Open step ${x.n} · ${x.title}`}>
                         <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {x.n}</span>
-                        <span className="truncate text-[14px] font-medium text-ink" title={x.title}>
+                        <span className="step-name truncate text-[14px] font-medium text-ink" title={x.title}>
                           {x.title}
                         </span>
                       </a>
@@ -221,6 +226,12 @@ export function StepTable({
           </tbody>
         </table>
       </div>
+      {/* C-191: the row count under the table (a phase has at most a few dozen steps, so one page). */}
+      {landing ? null : (
+        <div className="flex items-center border-t border-line-soft px-4 py-2.5 text-[12.5px] text-ink-muted md:px-5">
+          {phase.steps.length ? `1–${phase.steps.length} of ${phase.steps.length}` : 'None'}
+        </div>
+      )}
     </div>
   );
 }

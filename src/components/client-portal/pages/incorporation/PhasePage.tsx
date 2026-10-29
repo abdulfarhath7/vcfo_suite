@@ -6,7 +6,7 @@
  * the Progress card (one bar, key dates), the Steps table (T1), the ST5 journey of the phase
  * with the focus step's sub-steps, and "Who is doing it" as one stacked bar.
  */
-import { CircleHelp } from 'lucide-react';
+import { CircleHelp, ListChecks } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { cn } from '@/lib/utils';
@@ -56,7 +56,7 @@ function JourneyCard({ p, focus, d }: { p: PortalPhase; focus: string; d: IncDat
   }
   const prevOf = (x: PortalStep) => d.model.steps[d.model.steps.indexOf(x) - 1];
   return (
-    <SCard title={`${PH[p.no - 1]} · journey`} meta={`${p.done} / ${l.length}`}>
+    <SCard title={`${PH[p.no - 1]} · journey`} meta={`${p.done} / ${l.length}`} headIcon={{ icon: ListChecks, tone: 'blue' }}>
       <ol className="flex flex-col">
         {list.map((x, i) => {
           const isFocus = x.id === focus;
@@ -254,7 +254,7 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
                 </Col>
                 <Col>
                   {focusStep ? <JourneyCard p={p} focus={focusStep.id} d={d} /> : null}
-                  <SCard title="Who is doing it" meta={`${p.total} steps`}>
+                  <SCard title="Who is doing it">
                     <StackedBar
                       segments={owners.map((o) => ({ label: o[0], value: o[1].length, tone: o[2] }))}
                       onSegment={(j) => drillOwner(owners[j]![3])}

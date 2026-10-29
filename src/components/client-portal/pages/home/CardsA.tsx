@@ -6,15 +6,15 @@
  * (R-20), What SBC is doing, Recent documents and Recent activity. Every number and row comes
  * from `useHome` (the step model, ClientOverview and `/api/client/home`).
  */
-import { AlertCircle, Check, ChevronRight, Download, FileText, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronRight, Download, FileText, Upload } from 'lucide-react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge, type FileType } from '@/components/ui/file-badge';
 import { DashHero, DashHeroCompanyTile, type DashHeroStat } from '@/components/dash/DashHero';
-import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
+import { portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { UploadRow } from '@/lib/client-portal/multi-upload';
 import { exactDate } from '@/lib/relative-due';
@@ -28,8 +28,11 @@ import {
   dShort,
   days,
   docGroup,
+  complianceDrill,
   isOverdueNeed,
+  needsDrill,
   postIncDrill,
+  regsDrill,
   sortNeeds,
   spiceStepsDrill,
   type AlertRow,
@@ -49,6 +52,30 @@ function whenWord(today: string, iso: string): string {
   return `In ${plural(n, 'day')}`;
 }
 
+/** "Due 9 Oct" in amber within a week, blurple later; "Overdue 3d" in red (C-058). */
+function NeedDue({ iso, today }: { iso: string; today: string }) {
+  const n = days(today, iso);
+  if (n < 0) return <span className="text-danger" title={exactDate(iso)}>{`Overdue ${-n}d`}</span>;
+  return <span className={n <= 7 ? 'text-warning' : 'text-brand-text'} title={exactDate(iso)}>{`Due ${dShort(iso)}`}</span>;
+}
+
+/** "84 KB", "1.2 MB". */
+function sizeOf(bytes: number): string {
+  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+/** The India calendar day of a timestamp, `YYYY-MM-DD`. */
+function istDate(at: string): string {
+  const t = Date.parse(at);
+  return Number.isFinite(t) ? new Date(t + 5.5 * 3_600_000).toISOString().slice(0, 10) : at.slice(0, 10);
+}
+
+/** "14:05", India time. */
+function istTime(at: string): string {
+  const t = Date.parse(at);
+  return Number.isFinite(t) ? new Date(t + 5.5 * 3_600_000).toISOString().slice(11, 16) : '';
+}
+
 /* ------------------------------------------------------------ home card */
 
 /**
@@ -63,82 +90,58 @@ export function overdueCount(h: HomeData): number {
   return ids.size;
 }
 
-/** "Upload document": one open upload request opens the picker; several open a short list. */
-function UploadButton({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const uploads = h.needs.filter((n) => (n.kind === 'upload' || n.kind === 'correct') && n.requestId);
-  useEffect(() => {
-    if (!open) return;
-    const off = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', off);
-    document.addEventListener('keydown', esc);
-    return () => {
-      document.removeEventListener('mousedown', off);
-      document.removeEventListener('keydown', esc);
-    };
-  }, [open]);
-  const click = () => {
-    if (uploads.length === 0) h.portal.go('documents');
-    else if (uploads.length === 1) onUpload(uploads[0]!);
-    else setOpen((v) => !v);
-  };
+/**
+ * "Upload document" ("Upload" on a phone) opens the upload dialog (C-059) with the open
+ * requests. With no open request there is nothing to answer, so it opens Documents.
+ */
+function UploadButton({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow) => void }) {
+  const has = h.needs.some((n) => (n.kind === 'upload' || n.kind === 'correct') && n.requestId);
   return (
-    <div className="relative" ref={ref}>
-      <Button onClick={click} aria-haspopup={uploads.length > 1 ? 'menu' : undefined} aria-expanded={uploads.length > 1 ? open : undefined}>
-        <Upload size={16} strokeWidth={1.6} aria-hidden /> Upload
-      </Button>
-      {open ? (
-        <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-40 w-[300px] max-w-[calc(100vw-32px)] overflow-hidden rounded-md border-1.5 border-line bg-surface-raised py-1 shadow-float">
-          {uploads.map((n) => (
-            <button
-              key={n.key}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onUpload(n);
-              }}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-surface-sunken"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-medium text-ink">{n.title}</span>
-                <span className="block truncate text-[12px] text-ink-muted">
-                  {n.kind === 'correct' ? 'Sent back' : n.due ? `Due ${dShort(n.due)}` : n.sub}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    <Button onClick={() => (has ? onUpload() : h.portal.go('documents'))}>
+      <Upload size={16} strokeWidth={1.6} aria-hidden />
+      <span className="sm:hidden">Upload</span>
+      <span className="max-sm:hidden">Upload document</span>
+    </Button>
   );
 }
 
-/** The report download (`/api/ask/brief`), as before. */
-function downloadReport(h: HomeData) {
+/**
+ * The report download (`/api/ask/brief`): "Preparing…", then the PDF is fetched and saved, and
+ * a second toast names the file (C-016). A failed fetch says so.
+ */
+async function downloadReport(h: HomeData) {
   if (!h.engagementId) return;
   h.portal.toast(`Preparing ${h.company}’s progress report (PDF)`);
-  const a = document.createElement('a');
-  a.href = `/api/ask/brief?engagementId=${encodeURIComponent(h.engagementId)}`;
-  a.download = '';
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  try {
+    const res = await fetch(`/api/ask/brief?engagementId=${encodeURIComponent(h.engagementId)}`);
+    if (!res.ok) throw new Error(String(res.status));
+    const cd = res.headers.get('content-disposition') ?? '';
+    const name = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd)?.[1];
+    const file = name ? decodeURIComponent(name) : `${h.company} progress report.pdf`;
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    h.portal.toast(`Report downloaded · ${file}`);
+  } catch {
+    h.portal.toast('The report did not download. Try again.');
+  }
 }
 
 /**
  * R-17 (H3 tight, D-17): the shared `DashHero`. The company tile, the name, the stage chip and
  * the step count on the left; five tiles with a note, the list or drill they open (E-05) and
- * how they are counted (E-04); Report and Upload on the right. After incorporation, Due soon
- * draws a trend line of the last four days, rebuilt from the filings' due and filed dates; the
- * other tiles count step states and requests, which keep no history, so they draw none.
+ * how they are counted (E-04); Report and Upload on the right. Two tiles draw a trend line of
+ * the last four days, rebuilt from stored dates (R-18): Documents in (the requests' `closed_at`)
+ * before incorporation and Due soon (the filings' due and filed dates) after it. The other tiles
+ * count step states, which keep no history, so they draw none.
  */
-export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
+export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow) => void }) {
   const { portal, after, model, company } = h;
   const post = model.phases[2];
   const openSteps = (tab: number) => portal.drill(spiceStepsDrill(model, company, tab));
@@ -156,16 +159,16 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
   const dueNext = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && f.dueDate >= h.today).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
   const firstOverdueFiling = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && (f.status === 'overdue' || f.dueDate < h.today)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
 
-  const trends = useHomeTrends('client', { engagementId: h.engagementId, enabled: after && Boolean(h.engagementId) });
+  const trends = useHomeTrends('client', { engagementId: h.engagementId, enabled: Boolean(h.engagementId) });
   // Tiles that open a drill use the tile's own click (DashHero `onClick`).
   const openLate = () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 });
 
   const waiting: DashHeroStat = {
     label: `Waiting on ${company}`,
     value: h.needs.length,
-    note: oldest != null && oldest > 0 ? `oldest ${oldest}d` : undefined,
+    note: oldest != null && oldest > 0 ? `oldest ${plural(oldest, 'day')}` : undefined,
     how: `Uploads, details, corrections and approvals that SBC asked ${company} for and that are still open.`,
-    ...(after ? { href: portalHref('documents') } : { onClick: () => openSteps(3) }),
+    onClick: after ? () => portal.drill(needsDrill(h.needs, h.today, company)) : () => openSteps(3),
   };
   const overdueStat: DashHeroStat = {
     label: 'Overdue',
@@ -188,16 +191,17 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
           how: 'Filings not yet filed that fall due in the next 15 days.',
           trend: trendWithLive(trends, 'dueSoon', h.buckets.dueSoon),
           trendTone: 'accent',
-          href: portalHref('compliances'),
+          onClick: () => portal.drill(complianceDrill(h.filings, h.today, h.home?.filings.fyLabel ?? '', 2)),
         },
         ...(h.regs.length
           ? [
               {
                 label: 'Registrations',
-                value: `${regsDone}/${h.regs.length}`,
+                value: regsDone,
+                of: `/ ${h.regs.length}`,
                 bar: Math.round((regsDone / h.regs.length) * 100),
                 how: 'Registrations granted out of the ones planned for the company.',
-                href: phaseHref(4),
+                onClick: () => portal.drill(regsDrill(h.regs)),
               },
             ]
           : []),
@@ -206,7 +210,6 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
               {
                 label: 'Incorporated',
                 value: dShort(incorporatedOn),
-                good: true,
                 note: sinceCoi != null && sinceCoi > 0 ? `day ${sinceCoi}` : undefined,
                 how: 'The date on the Certificate of Incorporation.',
                 href: portalHref('incorporation'),
@@ -229,7 +232,10 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
               {
                 label: 'Documents in',
                 value: `${req.fulfilled}/${req.total}`,
+                note: req.total > req.fulfilled ? `${req.total - req.fulfilled} to go` : undefined,
                 bar: Math.round((req.fulfilled / req.total) * 100),
+                trend: trendWithLive(trends, 'docsIn', req.fulfilled),
+                trendTone: 'ok' as const,
                 how: 'Document requests answered out of all the requests SBC has sent.',
                 href: portalHref('documents'),
               },
@@ -258,7 +264,12 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
       title={company}
       settings={false}
       lead={<DashHeroCompanyTile name={h.companyName || company} />}
-      stage={<Chip tone={after ? 'ok' : 'prog'} className="!h-5 min-w-0 px-[7px] text-[11.5px]">{after ? 'Incorporated' : 'Incorporating'}</Chip>}
+      stage={
+        // C-012: a plain 20px label, no status dot.
+        <span className={cn('inline-flex h-5 items-center whitespace-nowrap rounded-[4px] px-[7px] text-[11.5px] font-medium', after ? 'bg-positive-soft text-positive' : 'bg-brand-soft text-brand-text')}>
+          {after ? 'Incorporated' : 'Incorporating'}
+        </span>
+      }
       steps={
         <button
           type="button"
@@ -266,7 +277,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
           title={`${ring.label} · ${pct}%`}
           className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline"
         >
-          {after ? `${ring.label} ${ring.done} of ${ring.total} done` : `${ring.done} of ${ring.total} steps`}
+          {after ? `${ring.done} of ${ring.total} done` : `${ring.done} of ${ring.total} steps`}
         </button>
       }
       // M-30: the lead's name leaves the phone layout so the chip, steps and actions fit one line.
@@ -276,7 +287,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
       {h.engagementId ? (
         // M-30: on a phone Report is a 36px icon button, so the chip, the step count and the
         // actions share one line.
-        <Button variant="secondary" onClick={() => downloadReport(h)} title="Report" className="max-sm:w-9 max-sm:px-0">
+        <Button variant="secondary" onClick={() => void downloadReport(h)} title="Report" className="max-sm:w-9 max-sm:px-0">
           <Download size={16} strokeWidth={1.6} aria-hidden />
           <span className="max-sm:sr-only">Report</span>
         </Button>
@@ -317,7 +328,7 @@ export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (
                   {n.title}
                 </button>
                 <span className="block truncate text-[12.5px] text-ink-muted">
-                  {/* E-11: relative due words first, the exact date in the tooltip. */}
+                  {/* C-058: "Due 9 Oct" (amber within a week, blurple later), "Overdue 3d" in red. */}
                   {n.kind === 'correct' ? (
                     <>
                       <span className="text-danger" title={n.due ? `Due ${exactDate(n.due)}` : undefined}>
@@ -327,7 +338,7 @@ export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (
                     </>
                   ) : n.due ? (
                     <>
-                      <DueWords iso={n.due} today={h.today} /> ·{' '}
+                      <NeedDue iso={n.due} today={h.today} /> ·{' '}
                     </>
                   ) : null}
                   {sub}
@@ -353,7 +364,7 @@ export function HoldsCard({ h, className }: { h: HomeData; className?: string })
   const groups = [
     { key: 'client', label: company, rows: spice.filter((s) => s.kind === 'you' || s.kind === 'prog'), fill: 'bg-waiting-mid', tab: 3 },
     { key: 'sbc', label: 'SBC', rows: model.steps.filter((s) => s.kind === 'with' && s.owner === 'sbc' && s.phaseNo <= 2), fill: 'bg-brand', tab: 2 },
-    { key: 'mca', label: 'MCA', rows: model.steps.filter((s) => s.kind === 'with' && s.owner === 'mca'), fill: 'bg-identity', tab: 0 },
+    { key: 'mca', label: 'MCA', rows: model.steps.filter((s) => s.kind === 'with' && s.owner === 'mca'), fill: 'bg-identity-mid', tab: 0 },
   ];
   const max = Math.max(1, ...groups.map((g) => g.rows.length));
   return (
@@ -392,22 +403,22 @@ export function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: Al
   const chipOf = (a: AlertRow): { label: string; tone: ChipTone } => {
     const n = days(h.today, a.date);
     if (n < 0 || a.tone === 'over') return { label: 'Overdue', tone: 'bad' };
-    return { label: whenWord(h.today, a.date), tone: a.tone === 'due' ? 'warn' : 'idle' };
+    // C-064: within 15 days amber, 16 to 30 days blurple, later plain.
+    return { label: whenWord(h.today, a.date), tone: a.tone === 'due' || n <= 15 ? 'warn' : n <= 30 ? 'prog' : 'idle' };
   };
   return (
     <ul>
       {hero ? (
         <li>
-          <div className="flex items-center gap-3 border-l-2 border-l-danger bg-danger-soft px-4 py-3 md:px-5">
-            <span className="grid h-11 w-11 flex-none place-items-center rounded-mark border border-danger bg-surface-raised text-danger" aria-hidden>
-              <AlertCircle size={16} strokeWidth={1.6} />
-            </span>
+          <div className="flex items-center gap-3 bg-danger-soft px-4 py-3 md:px-5">
+            <DateTile iso={hero.date} tint="bad" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13.5px] font-medium text-ink">{hero.title}</span>
-              <Chip tone="bad" className="mt-1">
-                Overdue
-              </Chip>
+              {hero.meta ? <span className="block truncate text-[12.5px] text-ink-muted">{hero.meta}</span> : null}
             </span>
+            <Chip tone="bad" fixed className="max-sm:hidden">
+              Overdue
+            </Chip>
             <Button variant="strong" size="sm" onClick={() => h.portal.go(hero.href)}>
               {hero.action ?? 'Open'}
             </Button>
@@ -424,7 +435,7 @@ export function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: Al
               className="flex w-full items-center gap-3 border-t border-line-soft px-4 py-3 text-left hover:bg-surface-sunken md:px-5"
             >
               <span title={exactDate(a.date)} className="flex-none">
-                <DateTile iso={a.date} tint={chip.tone === 'bad' ? 'bad' : chip.tone === 'warn' ? 'warn' : 'idle'} />
+                <DateTile iso={a.date} tint={chip.tone === 'bad' ? 'bad' : chip.tone === 'warn' ? 'warn' : chip.tone === 'prog' ? 'prog' : 'idle'} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13.5px] font-medium text-ink">{a.title}</span>
@@ -586,7 +597,7 @@ function UploadRows({ rows, busy, onCancel }: { rows: UploadRow[]; busy?: boolea
     <ul aria-label="Recent uploads" aria-live="polite" className="border-b border-line-soft">
       {rows.map((u, i) => (
         <li key={`${u.name}:${i}`} className="flex items-center gap-3 border-t border-line-soft px-4 py-2.5 first:border-t-0 md:px-5">
-          <FileBadge name={u.name} />
+          <FileText size={16} strokeWidth={1.6} className="flex-none text-ink-muted" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline gap-2">
               <b className="min-w-0 truncate text-[13.5px] font-medium text-ink">{u.name}</b>
@@ -674,6 +685,12 @@ export function DocsCard({
                           <span className={cn(d.from === 'client' && 'text-warning')}>{who}</span>
                           <span className="mx-1.5 text-ink-faint">·</span>
                           {dShort(d.date)}
+                          {d.sizeBytes ? (
+                            <>
+                              <span className="mx-1.5 text-ink-faint">·</span>
+                              {sizeOf(d.sizeBytes)}
+                            </>
+                          ) : null}
                         </span>
                       </span>
                     </button>
@@ -729,7 +746,11 @@ export function ActivityCard({ h, className }: { h: HomeData; className?: string
         <ul>
           {rows.map((a) => (
             <li key={a.id} className="grid grid-cols-[64px_minmax(0,1fr)] items-baseline gap-3 border-t border-line-soft px-4 py-2.5 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
-              <span className="text-[12.5px] text-ink-muted">{dShort(a.at.slice(0, 10))}</span>
+              <span className="text-[12.5px] text-ink-muted">
+                {dShort(istDate(a.at))}
+                {/* C-071: the time shows from 768px. */}
+                <span className="block font-mono text-[11.5px] text-ink-faint max-md:hidden">{istTime(a.at)}</span>
+              </span>
               <span className="min-w-0 break-words text-ink">{a.label}</span>
               <span className="truncate text-[12.5px] text-ink-muted md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
             </li>

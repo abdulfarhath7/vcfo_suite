@@ -416,7 +416,8 @@ export async function recordNeedUploads(
     .returning({ id: documents.id, fileName: documents.fileName });
   await db
     .update(documentRequests)
-    .set({ status: 'fulfilled' })
+    // closed_at feeds the staff home trend lines (migration 0027).
+    .set({ status: 'fulfilled', closedAt: new Date() })
     .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, target.dbId)));
   const documentIds = rows.map((r) => r.id);
   await recordAuditEvent(ctx, {
@@ -464,7 +465,7 @@ export async function undoNeedUpload(
   if (!link) return null;
   const reopened = await db
     .update(documentRequests)
-    .set({ status: 'pending' })
+    .set({ status: 'pending', closedAt: null })
     .where(
       and(
         eq(documentRequests.id, requestId),

@@ -96,3 +96,24 @@ export function PendingRequestPopover({
     </Popover>
   );
 }
+
+/** The amber "Request pending · COI date" pill that opens the popover (Home and Incorporation timelines). */
+export function PendingRequestChip({ pending, manager }: { pending: TimelineRequestDto; manager: string }) {
+  return (
+    <PendingRequestPopover
+      pending={pending}
+      manager={manager}
+      trigger={
+        <button
+          type="button"
+          aria-label={`Change request pending, waiting for ${manager}`}
+          className="inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning"
+        >
+          <i className="h-1.5 w-1.5 rounded-[2px] bg-current" aria-hidden />
+          <span className="hidden sm:inline">Request pending{pending.coiTo ? ' · ' : ''}</span>
+          {pending.coiTo ? `COI ${dShort(pending.coiTo)}` : null}
+        </button>
+      }
+    />
+  );
+}

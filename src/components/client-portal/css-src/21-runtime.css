@@ -1,5 +1,6 @@
 /* @cp-scope shared */
-/* Verbatim: prototype proto.js styles (toast, tooltip, launcher, chat, drill-down) */
+/* Prototype proto.js styles (tooltip, launcher, chat). The toast and the drill-down are
+   Tailwind islands in PortalProvider.tsx (VCFO Spectrum), so they have no rules here. */
 #vp-bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:6px;padding:5px;border-radius:6px;background:oklch(var(--navy-fill));box-shadow:var(--pop);font:500 12px var(--font-sans),system-ui,sans-serif;color:#fff}
 #vp-bar .vp-tag{padding:0 8px;color:#c9a24b;font-weight:500;font-size:11px}
 #vp-bar .vp-seg{position:relative;display:flex;background:rgba(255,255,255,.1);border-radius:6px;padding:2px}
@@ -9,9 +10,6 @@
 #vp-bar select option{color:oklch(var(--ink))}
 #vp-bar .vp-x{width:26px;height:26px;border:0;border-radius:6px;background:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:14px}
 #vp-mini{position:fixed;left:14px;bottom:14px;z-index:2147483000;border:0;border-radius:6px;background:oklch(var(--navy-fill));color:#c9a24b;font:500 11px var(--font-sans),sans-serif;letter-spacing:.08em;padding:8px 10px;cursor:pointer;box-shadow:var(--pop)}
-#vp-toast{position:fixed;left:50%;bottom:64px;transform:translate(-50%,12px);opacity:0;z-index:2147483001;display:flex;align-items:center;gap:12px;max-width:min(560px,calc(100vw - 32px));padding:10px 12px 10px 14px;border-radius:6px;background:oklch(var(--navy-fill));color:#fff;font:500 13px var(--font-sans),sans-serif;box-shadow:var(--pop);transition:opacity .18s,transform .22s cubic-bezier(.22,1,.36,1);pointer-events:none}
-#vp-toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-#vp-toast button{border:0;background:rgba(255,255,255,.14);color:#e6c46e;font:500 12px var(--font-sans),sans-serif;height:28px;padding:0 10px;border-radius:6px;cursor:pointer}
 #vp-tip{position:fixed;z-index:2147483002;pointer-events:none;background:oklch(var(--navy-fill));color:#fff;font:500 12px/1.3 var(--font-sans),sans-serif;padding:5px 9px;border-radius:6px;white-space:nowrap;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s}
 #vp-tip.on{opacity:1;transform:none}
 html.vp-enter body{animation:vpIn .26s cubic-bezier(.22,1,.36,1) both}
@@ -24,11 +22,9 @@ html,body,*{scrollbar-width:none!important}
 .ddscrim{position:fixed!important;inset:0!important;z-index:2147482000!important}
 .dd{position:fixed!important;z-index:2147482001!important;top:max(72px,8vh)!important;max-height:calc(100vh - 110px);overflow:auto!important}
 :is(.card,.kpi,section,.stag>*,.sc-host,dc-import):has([style*="z-index:201"],[style*="z-index: 201"]){transform:none!important;z-index:2147481500!important;position:relative}
-#vp-drill-scrim{position:fixed;inset:0;z-index:2147482000;background:rgba(8,20,40,.5);display:flex;align-items:center;justify-content:center;padding:24px 16px;opacity:0;transition:opacity .18s}
-#vp-drill-scrim.on{opacity:1}
 html.vp-mobile x-dc~div,html.vp-mobile body>div:first-of-type{margin:0 auto}
-@media (max-width:700px){#vp-bar{top:62px;bottom:auto;flex-wrap:wrap;justify-content:center;width:calc(100% - 20px)}#vp-bar select{max-width:none;flex:1}#vp-toast{bottom:100px}}
-@media (prefers-reduced-motion: reduce){html.vp-enter body{animation:none}#vp-toast,#vp-tip{transition:none}}
+@media (max-width:700px){#vp-bar{top:62px;bottom:auto;flex-wrap:wrap;justify-content:center;width:calc(100% - 20px)}#vp-bar select{max-width:none;flex:1}}
+@media (prefers-reduced-motion: reduce){html.vp-enter body{animation:none}#vp-tip{transition:none}}
 :root{--vpl-in:var(--vp-inset,clamp(14px,1.25vw + 8px,24px));--vpl-w:clamp(96px,4.5vw + 72px,148px);--vpk-w:clamp(96px,3vw + 72px,128px);--vpl-ph:36px;--vp-launch-h:calc(var(--vpl-ph) + 2 * var(--vpl-in));--vp-launch-w:calc(var(--vpl-w) + 4px + 108px + var(--vpl-in));scroll-padding-bottom:var(--vp-launch-h)}
 @media (max-width:767px){:root{--vpl-ph:40px}}
 html.vp-endpad body::after,.vp-endpad-box::after{content:"";display:block;flex:none;grid-column:1/-1;width:1px;height:var(--vp-launch-h);margin:0;padding:0;pointer-events:none}
@@ -129,34 +125,43 @@ html.vp-chat-on #vp-launch{visibility:hidden}
 #vp-chat input{border-color:var(--border)}
 }
 @media (prefers-reduced-motion: reduce){#vp-launch *,#vp-chat .vpc-ty i,#vp-chat .vpc-pk *{animation:none!important;transition:none!important}#vp-launch .vpv-head,#vp-chat .vpv-peek .vpv-head{transform:none}#vp-launch .vpv-hand,#vp-chat .vpv-peek .vpv-hand{opacity:1}#vp-chat{transition:none}}
-#vp-drill{width:min(600px,100%);max-height:min(560px,calc(100vh - 48px));display:flex;flex-direction:column;background:oklch(var(--surface-raised));border-radius:6px;box-shadow:var(--pop);overflow:hidden;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink));transform:translateY(10px) scale(.98);transition:transform .24s cubic-bezier(.22,1,.36,1)}
-#vp-drill-scrim.on #vp-drill{transform:none}
-#vp-drill .top{display:flex;align-items:center;gap:8px;padding:9px 18px;background:oklch(var(--brand-soft));border-bottom:1px solid oklch(var(--line));font-size:12px;color:oklch(var(--ink-muted))}
-#vp-drill .top a{margin-left:auto;font-weight:500;font-size:12.5px;color:#2e5cff;text-decoration:none;white-space:nowrap}
-#vp-drill .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line))}
-#vp-drill .hd b{flex:1;font:500 15px var(--font-sans);color:oklch(var(--ink))}
-#vp-drill .hd small{display:block;font:500 12px var(--font-sans);color:oklch(var(--ink-muted))}
-#vp-drill .x{width:32px;height:32px;border-radius:6px;border:1px solid oklch(var(--line));background:oklch(var(--surface-raised));color:oklch(var(--ink-muted));cursor:pointer;font-size:18px;line-height:1}
-#vp-drill .tabs{display:flex;gap:2px;margin:14px 18px 0;padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px #e3e8ef}
-#vp-drill .tabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border:0;border-radius:6px;background:none;font:500 12px var(--font-sans);color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap}
-#vp-drill .tabs button i{width:8px;height:8px;border-radius:2px;display:inline-block}
-#vp-drill .tabs button span{font:500 11px var(--font-sans),sans-serif;opacity:.75}
-#vp-drill .tabs button[aria-selected=true]{background:oklch(var(--navy-fill));color:#fff}
-#vp-drill .list{flex:1;min-height:0;overflow:auto;padding:8px 18px 6px;scrollbar-width:none}
-#vp-drill .list::-webkit-scrollbar{display:none}
-#vp-drill .r{display:grid;grid-template-columns:minmax(0,1fr) auto auto 16px;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:6px;cursor:pointer;color:inherit;text-decoration:none}
-#vp-drill .r:hover{background:oklch(var(--surface-sunken))}
-#vp-drill .r b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#vp-drill .r em{font:500 12px var(--font-sans),sans-serif;font-style:normal;color:oklch(var(--ink-muted));white-space:nowrap}
-#vp-drill .r .c{font:500 11px var(--font-sans);padding:2px 7px;border-radius:4px;color:#fff;white-space:nowrap}
-#vp-drill .r .a{color:#2e5cff}
-#vp-drill .ft{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:12px;color:oklch(var(--ink-muted))}
-#vp-drill .ft span{flex:1}
-#vp-drill .ft a{font-size:12.5px;font-weight:500;color:#2e5cff;text-decoration:none;white-space:nowrap}
-@media (max-width:700px){#vp-drill-scrim{align-items:flex-end;padding:0}#vp-drill{width:100%;border-radius:6px 14px 0 0;max-height:86vh}}
 
 /* VCFO Spectrum (R-04, R-45): no floating launcher and no mascot. Ask VCFO opens from the
    sidebar button or the "/" key; the chat window keeps its place on the right. */
 #vp-launch{display:none!important}
 :root{--vp-launch-h:0px}
 #vp-chat .vpc-pk,#vp-chat .vpc-av{display:none!important}
+
+/* The Search palette (SearchPalette.tsx) still draws the old drill frame (#vp-drill). The
+   drill-down itself is the Spectrum dialog in PortalProvider.tsx. Tokens only, so the frame
+   follows dark mode. */
+#vp-drill-scrim{position:fixed;inset:0;z-index:2147482000;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px 16px;opacity:0;transition:opacity .18s}
+#vp-drill-scrim.on{opacity:1}
+#vp-drill{width:min(600px,100%);max-height:min(560px,calc(100vh - 48px));display:flex;flex-direction:column;background:oklch(var(--surface-raised));border-radius:6px;box-shadow:var(--pop);overflow:hidden;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink));transform:translateY(10px) scale(.98);transition:transform .24s cubic-bezier(.22,1,.36,1)}
+#vp-drill-scrim.on #vp-drill{transform:none}
+#vp-drill .top{display:flex;align-items:center;gap:8px;padding:9px 18px;background:oklch(var(--brand-soft));border-bottom:1px solid oklch(var(--line));font-size:12px;color:oklch(var(--ink-muted))}
+#vp-drill .top a{margin-left:auto;font-weight:500;font-size:12.5px;color:oklch(var(--brand-text));text-decoration:none;white-space:nowrap}
+#vp-drill .hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid oklch(var(--line))}
+#vp-drill .hd b{flex:1;font:500 15px var(--font-sans);color:oklch(var(--ink))}
+#vp-drill .hd small{display:block;font:500 12px var(--font-sans);color:oklch(var(--ink-muted))}
+#vp-drill .x{width:32px;height:32px;border-radius:6px;border:1px solid oklch(var(--line));background:oklch(var(--surface-raised));color:oklch(var(--ink-muted));cursor:pointer;font-size:18px;line-height:1}
+#vp-drill .tabs{display:flex;gap:2px;margin:14px 18px 0;padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:inset 0 0 0 1px oklch(var(--line))}
+#vp-drill .tabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border:0;border-radius:6px;background:none;font:500 12px var(--font-sans);color:oklch(var(--ink-muted));cursor:pointer;white-space:nowrap}
+#vp-drill .tabs button i{width:8px;height:8px;border-radius:2px;display:inline-block}
+#vp-drill .tabs button span{font:500 11px var(--font-sans),sans-serif;opacity:.75}
+#vp-drill .tabs button[aria-selected=true]{background:oklch(var(--brand));color:oklch(var(--on-brand))}
+#vp-drill .list{flex:1;min-height:0;overflow:auto;padding:8px 18px 6px;scrollbar-width:none}
+#vp-drill .list::-webkit-scrollbar{display:none}
+#vp-drill .r{display:grid;grid-template-columns:minmax(0,1fr) auto auto 16px;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:6px;cursor:pointer;color:inherit;text-decoration:none}
+#vp-drill .r:hover{background:oklch(var(--surface-sunken))}
+#vp-drill .r b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#vp-drill .r em{font:500 12px var(--font-sans),sans-serif;font-style:normal;color:oklch(var(--ink-muted));white-space:nowrap}
+#vp-drill .r .c{font:500 11px var(--font-sans);padding:2px 7px;border-radius:4px;color:oklch(var(--on-brand));white-space:nowrap}
+#vp-drill .r .a{color:oklch(var(--brand-text))}
+#vp-drill .ft{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:12px;color:oklch(var(--ink-muted))}
+#vp-drill .ft span{flex:1}
+#vp-drill .ft a{font-size:12.5px;font-weight:500;color:oklch(var(--brand-text));text-decoration:none;white-space:nowrap}
+@media (max-width:639px){#vp-drill-scrim{align-items:flex-end;padding:0}#vp-drill{width:100%;border-radius:6px 6px 0 0;max-height:86vh}}
+/* VCFO Spectrum (AskButton): the chat is a floating card 420 x 620 px, 20 px from the right
+   and bottom edges, with the dialog shadow. Phones keep the bottom sheet above. */
+@media (min-width:768px){#vp-chat{right:20px;bottom:20px;width:min(420px,calc(100vw - 40px));height:min(620px,calc(100dvh - 40px));min-height:0;max-height:calc(100dvh - 40px);box-shadow:var(--shadow-dialog)}}

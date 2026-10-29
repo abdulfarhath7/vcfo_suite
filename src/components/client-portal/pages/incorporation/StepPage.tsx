@@ -14,7 +14,7 @@
  * `POST /api/client/steps/:id/files`, with Undo). Answers stay read-only for
  * the client (DECISIONS › Incorporation).
  */
-import { Check, CircleHelp, Download, ExternalLink, Eye, MessageSquare, MoreVertical } from 'lucide-react';
+import { Check, CircleHelp, Download, ExternalLink, Eye, ListChecks, MessageSquare, MoreVertical } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getActiveCatalogItems, getChecklistStepTimelineLabel, type ChecklistField } from '@/data/checklist';
@@ -39,7 +39,7 @@ import { portalHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
-import { Ic, IncFrame, fmt, fmtL, fmtS, istDay, kb } from './ui';
+import { IncFrame, fmt, fmtL, fmtS, istDay, kb } from './ui';
 import {
   INC_EXTRAS_KEY,
   KL,
@@ -59,6 +59,7 @@ import { stepFiles } from './StepTable';
 import { SubSteps } from './PhasePage';
 import { prefillNotes, subStepCount } from '@/lib/client-portal/step-progress';
 import { portalFor } from './portals';
+import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 
 /* ---------------- answers ---------------- */
@@ -132,58 +133,51 @@ function liveIntro(s: PortalStep, d: IncData, prev?: PortalStep): string {
 
 /* ---------------- change-request dialog ---------------- */
 
-function ChangeDialog({ title, onClose, onSend }: { title: string; onClose: () => void; onSend: (note: string) => Promise<void> }) {
+/**
+ * Request a change (C-225, prototype MessageModal): the Spectrum dialog, "Step n · title" above
+ * the title, a labelled message field, Cancel and the main Send button (R-12).
+ */
+function ChangeDialog({ about, to, onClose, onSend }: { about: string; to?: string; onClose: () => void; onSend: (note: string) => Promise<void> }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const ref = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    const last = document.activeElement as HTMLElement | null;
-    ref.current?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', key, true);
-    return () => {
-      document.removeEventListener('keydown', key, true);
-      last?.focus?.();
-    };
-  }, [onClose]);
+  const send = async () => {
+    setBusy(true);
+    setErr('');
+    try {
+      await onSend(note.trim());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not send the request');
+      setBusy(false);
+    }
+  };
   return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- scrim click closes; Esc handled on document
-    <div className="cr-ov" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="cr-dlg" role="dialog" aria-modal="true" aria-labelledby="cr-t">
-        <h2 id="cr-t">Request a change · {title}</h2>
-        <textarea ref={ref} value={note} maxLength={2000} aria-label="What should change" placeholder="What should change?" onChange={(e) => setNote(e.target.value)} />
-        {err ? <div className="err">{err}</div> : null}
-        <div className="row2">
-          <button type="button" className="btn" onClick={onClose}>
+    <PortalModal
+      onClose={onClose}
+      eyebrow={about}
+      title={to ? `Request a change · ${to}` : 'Request a change'}
+      size="sm"
+      initialFocus={ref}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="btn p"
-            disabled={!note.trim() || busy}
-            onClick={async () => {
-              setBusy(true);
-              setErr('');
-              try {
-                await onSend(note.trim());
-              } catch (e) {
-                setErr(e instanceof Error ? e.message : 'Could not send the request');
-                setBusy(false);
-              }
-            }}
-          >
-            <Ic n="message-square" />
+          </Button>
+          <Button disabled={!note.trim() || busy} onClick={() => void send()}>
+            <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
             {busy ? 'Sending…' : 'Send'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <FieldArea label="Message" value={note} onChange={setNote} areaRef={ref} placeholder="What should change?" />
+      {err ? (
+        <p role="alert" className="mt-2 text-[13px] text-danger">
+          {err}
+        </p>
+      ) : null}
+    </PortalModal>
   );
 }
 
@@ -589,7 +583,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           title={!awaiting && !openReqs.length ? clientApproveBlockedReason(s.slice) ?? undefined : undefined}
         >
           <Check size={16} strokeWidth={1.6} aria-hidden />
-          {submitted ? 'Submitted' : 'Approve and submit'}
+          {submitted ? 'Approved' : 'Approve'}
         </Button>
       </div>
     </div>
@@ -644,7 +638,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
 
   const ownerTone = { client: 'text-warning', sbc: 'text-brand-text', mca: 'text-identity' } as const;
   const rail = (
-    <SCard title={phl} meta={`${phase.done} / ${inPhase.length}`}>
+    <SCard title={phl} meta={`${phase.done} / ${inPhase.length}`} headIcon={{ icon: ListChecks, tone: 'blue' }}>
       <ol className="m-0 flex list-none flex-col p-0">
         {inPhase.map((y, i) => {
           const cur = y.id === s.id;
@@ -765,7 +759,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           />
         </Island>
       </div>
-      {changeOpen ? <ChangeDialog title={`Step ${s.n} · ${s.title}`} onClose={() => setChangeOpen(false)} onSend={sendChange} /> : null}
+      {changeOpen ? <ChangeDialog about={`Step ${s.n} · ${s.title}`} to={d.leadName ? firstName(d.leadName) : undefined} onClose={() => setChangeOpen(false)} onSend={sendChange} /> : null}
       {viewer.node}
     </IncFrame>
   );
@@ -777,7 +771,7 @@ function statusLine(s: PortalStep, d: IncData, prev?: PortalStep): { title: stri
   const due = s.due ? fmt(s.due) : '-';
   if (k === 'done')
     return { title: s.owner === 'client' ? 'Approved' : 'Completed', sub: `${s.owner === 'client' ? 'Accepted after submission on' : 'Delivered by SBC on'} ${fmtS(s.doneOn)}` };
-  if (k === 'you') return { title: `Waiting on ${d.short} · due ${due}`, sub: 'Check the answers, then approve and submit', bad: s.late };
+  if (k === 'you') return { title: `Waiting on ${d.short} · due ${due}`, sub: 'Check the answers, then approve', bad: s.late };
   if (k === 'prog') return { title: `In progress · due ${due}`, sub: `Fill the remaining answers and submit by ${due}`, bad: s.late };
   if (k === 'with')
     return {

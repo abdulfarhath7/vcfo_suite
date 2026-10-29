@@ -16,6 +16,7 @@ import { subStepsOf, type SubStep } from '@/lib/client-portal/step-progress';
 import { usePortalIncorporation, todayIST } from '../../hooks';
 import { usePortal, type DrillRow, type DrillTab, type WhatsThisAnswer } from '../../PortalProvider';
 import type { PortalStep, PortalPhase, PortalIncorporationModel } from '@/lib/client-portal/step-model';
+import type { ChipTone } from '@/components/ui/spectrum-chip';
 import type { ClientIncorporationExtras, ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { fmt, type GlyphKind, type OwnKey } from './ui';
 
@@ -66,7 +67,9 @@ export type LK = K | 'next';
 export const KL: Record<LK, string> = { done: 'Done', you: 'Waiting', prog: 'In progress', with: 'With SBC', up: 'Upcoming', next: 'Next' };
 /* Drill tab colours: the status tokens (R-03, R-13). */
 const KCOL: Record<K, string> = { done: 'oklch(var(--positive-mid))', you: 'oklch(var(--waiting-mid))', prog: 'oklch(var(--brand))', with: 'oklch(var(--brand))', up: 'oklch(var(--upcoming-mid))' };
-const KORD: K[] = ['done', 'you', 'prog', 'with', 'up'];
+/* Drill tab order (prototype stepsDrill): what needs the client first, done and upcoming last. */
+const KORD: K[] = ['you', 'prog', 'with', 'done', 'up'];
+const KTONE: Record<K, ChipTone> = { done: 'ok', you: 'teal', prog: 'prog', with: 'prog', up: 'idle' };
 
 /* ---------------- per-step helpers ---------------- */
 
@@ -94,10 +97,10 @@ export function dateCell(s: PortalStep, coiExpected?: string): string {
   const k = kd(s);
   if (k === 'done') return s.doneOn ? `Done ${fmt(s.doneOn)}` : 'Done';
   if (k === 'you' || k === 'prog') return s.due ? `Due ${fmt(s.due)}` : '—';
-  if (k === 'with') return s.since ? `since ${fmt(s.since)}` : s.due ? `Due ${fmt(s.due)}` : '—';
-  if (s.id === 'pre-12' && coiExpected) return `exp. ${fmt(coiExpected)}`;
-  // Gated steps that already have a planned window show it (as the rail's "Opens later · due …").
-  return s.due ? `Due ${fmt(s.due)}` : '—';
+  if (k === 'with') return s.since ? `Since ${fmt(s.since)}` : s.due ? `Due ${fmt(s.due)}` : '—';
+  if (s.id === 'pre-12' && coiExpected) return `Exp. ${fmt(coiExpected)}`;
+  // C-189: an upcoming step with a planned window reads "Planned 12 Oct".
+  return s.due ? `Planned ${fmt(s.due)}` : '—';
 }
 
 export function tipTxt(s: PortalStep, k: LK = kd(s)): string {
@@ -135,7 +138,22 @@ export function subList(s: PortalStep): SubStep[] {
 
 export function stRow(s: PortalStep, coi?: string): DrillRow {
   const k = kd(s);
-  return { title: `${s.n} · ${s.title}`, meta: dateCell(s, coi), chip: KL[k], chipColor: KCOL[k], href: stepHrefOf(s) };
+  const late = Boolean(s.late && k !== 'done');
+  return {
+    title: s.title,
+    meta: dateCell(s, coi),
+    chip: late ? 'Overdue' : KL[k],
+    chipColor: KCOL[k],
+    tone: late ? 'bad' : KTONE[k],
+    step: {
+      n: s.n,
+      state: k === 'done' ? 'done' : k === 'up' ? 'next' : 'now',
+      tone: late ? 'bad' : k === 'you' ? 'teal' : 'prog',
+      owner: s.owner === 'client' ? 'client' : s.owner === 'mca' ? 'mca' : 'sbc',
+      late,
+    },
+    href: stepHrefOf(s),
+  };
 }
 
 export function tabsFor(list: PortalStep[], coi?: string): Array<DrillTab & { k: K }> {

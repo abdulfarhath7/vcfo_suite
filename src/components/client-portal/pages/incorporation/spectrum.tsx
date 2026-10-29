@@ -10,8 +10,8 @@
  * Tailwind class, so the parts give each text span its own colour and weight, and actions
  * that look like buttons are `<button>` elements that call `portal.go`.
  */
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, Upload } from 'lucide-react';
-import { useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ListChecks, RefreshCw, Upload } from 'lucide-react';
+import { useRef, useState, type ComponentProps, type MouseEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { PhaseBar, StepMark, type StepTone } from '@/components/ui/step-track';
@@ -28,33 +28,53 @@ export function Island({ className, children }: { className?: string; children: 
   return <div className={cn('cp-tw min-w-0', className)}>{children}</div>;
 }
 
-/** Card (R-15, R-16) on the shared DashSection. `right` sits at the far right of the head; `flush` drops the body padding. */
+/**
+ * Card (R-15, R-16) on the shared DashSection. The meta sits right after the title: 13px muted
+ * text, or a grey pill when it is a count ("n of 25", C-038, C-107, C-112). `right` sits at the
+ * far right of the head; `flush` drops the body padding; `loading` covers the body with grey
+ * shapes (L1, C-108).
+ */
 export function SCard({
   title,
   meta,
+  pill,
   right,
   flush,
+  loading,
+  headIcon,
   className,
   bodyClassName,
   children,
 }: {
   title: string;
   meta?: ReactNode;
+  /** Draw the meta as a grey count pill. Numbers are always drawn as a pill. */
+  pill?: boolean;
   right?: ReactNode;
   flush?: boolean;
+  loading?: boolean;
+  headIcon?: ComponentProps<typeof DashSection>['headIcon'];
   className?: string;
   bodyClassName?: string;
   children?: ReactNode;
 }) {
+  const asPill = pill || typeof meta === 'number';
   const head =
-    meta || right ? (
-      <span className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-        {meta ? <span className="rounded-sm bg-surface-sunken px-[7px] py-px text-[12px] font-medium text-ink-2">{meta}</span> : null}
-        {right}
-      </span>
-    ) : undefined;
+    meta == null || meta === '' ? undefined : asPill ? (
+      <span className="inline-flex h-5 items-center rounded-[4px] bg-surface-sunken px-[7px] text-[12px] font-medium tabular-nums text-ink-2">{meta}</span>
+    ) : (
+      meta
+    );
   return (
-    <DashSection title={title} meta={head} className={className} bodyClassName={cn(flush ? 'p-0' : 'px-4 py-4 md:px-5', bodyClassName)}>
+    <DashSection
+      title={title}
+      meta={head}
+      right={right}
+      headIcon={headIcon}
+      loading={loading}
+      className={className}
+      bodyClassName={cn(flush ? 'p-0' : 'px-4 py-4 md:px-5', bodyClassName)}
+    >
       {children}
     </DashSection>
   );
@@ -225,10 +245,12 @@ export function StackedBar({
   format?: (n: number) => string;
   legend?: boolean;
 }) {
-  const sum = segments.reduce((a, s) => a + s.value, 0) || 1;
+  const raw = segments.reduce((a, s) => a + s.value, 0);
+  const sum = raw || 1;
   return (
     <div className="grid gap-2.5">
-      <span className="flex w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" style={{ height }} role="img" aria-label={segments.map((s) => `${s.label} ${s.value}`).join(', ')}>
+      {/* C-200: no track colour; an empty bar keeps a grey track so it still shows. */}
+      <span className={cn('flex w-full gap-0.5 overflow-hidden rounded-bar', raw === 0 && 'bg-surface-sunken')} style={{ height }} role="img" aria-label={segments.map((s) => `${s.label} ${s.value}`).join(', ')}>
         {segments.map((s, i) =>
           s.value > 0 ? (
             onSegment ? (
@@ -481,6 +503,8 @@ export function St5Card({
     <SCard
       title={title}
       meta={`${done} of ${steps.length}`}
+      pill
+      headIcon={{ icon: ListChecks, tone: 'blue' }}
       className={className}
       right={
         link ? (

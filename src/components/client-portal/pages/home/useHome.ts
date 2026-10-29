@@ -23,7 +23,8 @@ import {
 
 export const HOME_QUERY_KEY = 'client-home';
 
-function useHomeQuery(engagementId: string | undefined) {
+/** The `/api/client/home` aggregate (Home, and the Incorporation timeline's pending request). */
+export function useHomeQuery(engagementId: string | undefined) {
   return useQuery({
     queryKey: [HOME_QUERY_KEY, engagementId ?? 'mine'],
     queryFn: async (): Promise<ClientHome | null> => {

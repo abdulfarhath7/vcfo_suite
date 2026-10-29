@@ -242,6 +242,15 @@ export function useNeedUpload({ tray = true }: { tray?: boolean } = {}) {
     el.click();
   }, []);
 
+  /** Send files picked elsewhere (the upload dialog) against one request. */
+  const sendTo = useCallback(
+    (id: string, title: string, files: File[]) => {
+      pending.current = { id, title };
+      void send(files);
+    },
+    [send],
+  );
+
   const field = (
     <>
       <input
@@ -259,7 +268,7 @@ export function useNeedUpload({ tray = true }: { tray?: boolean } = {}) {
     </>
   );
   // B-20: the per-file rows, so Home can show them in Recent documents instead of the tray.
-  return { pick, field, rows: up.rows, busy: up.busy, cancel: up.cancel, clear: up.clear, target: trayTitle };
+  return { pick, sendTo, field, rows: up.rows, busy: up.busy, cancel: up.cancel, clear: up.clear, target: trayTitle };
 }
 
 /** ⬇ Download: resolve the signed URL, then save. */

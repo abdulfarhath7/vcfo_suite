@@ -13,10 +13,12 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Lock, X as XIcon } from 'lucide-react';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import type { TimelinePhaseDates } from '@/lib/client/client-home';
 import { HOME_QUERY_KEY } from './useHome';
-import { addDays, days, dShort, solid, type TlPhase } from './derive';
+import { addDays, days, dShort, type TlPhase } from './derive';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -56,7 +58,8 @@ export function TimelineEditor({
         e: days(T0, p.to),
         done: p.done,
         ms: p.milestone,
-        color: p.id === 'p1' ? 'var(--ok,#1f9d7a)' : p.id === 'p2' ? 'var(--navy-3,#1b4f94)' : p.id === 'mca' ? 'oklch(70% .03 255)' : 'var(--gold,#c9a24b)',
+        // Spectrum phase colours (tokens, so dark mode follows): done green, the build blurple, MCA grey, COI violet.
+        color: p.id === 'p1' ? 'oklch(var(--positive-mid))' : p.id === 'p2' ? 'oklch(var(--brand))' : p.id === 'mca' ? 'oklch(var(--upcoming-mid))' : 'oklch(var(--identity-mid))',
       })),
     [phases, T0],
   );
@@ -312,7 +315,7 @@ export function TimelineEditor({
   const lineW = level === 'Months' ? z * 7 : z;
   const dow0 = new Date(`${addDays(T0, W0)}T00:00:00Z`).getUTCDay();
   const startShift = level === 'Months' ? (((1 - dow0) + 7) % 7) * z : 0;
-  const laneBg = { backgroundImage: `repeating-linear-gradient(to right,transparent 0,transparent ${lineW - 1}px,#eef1f5 ${lineW - 1}px,#eef1f5 ${lineW}px)`, backgroundPosition: `${startShift}px 0` };
+  const laneBg = { backgroundImage: `repeating-linear-gradient(to right,transparent 0,transparent ${lineW - 1}px,oklch(var(--line-soft)) ${lineW - 1}px,oklch(var(--line-soft)) ${lineW}px)`, backgroundPosition: `${startShift}px 0` };
   const sliderVal = Math.round((Math.log(z / minPpd) / Math.log(ZMAX / minPpd)) * 1000);
 
   const coi = ph[3]!.s;
@@ -364,7 +367,7 @@ export function TimelineEditor({
         <div className="h">
           <h2 id="tle-t">Request a timeline change</h2>
           <button type="button" className="x" aria-label="Close editor" onClick={close}>
-            ×
+            <XIcon size={16} strokeWidth={1.6} aria-hidden />
           </button>
         </div>
         <div className="tools">
@@ -403,7 +406,7 @@ export function TimelineEditor({
             {rows.map(({ p }) => (
               <div key={p.id}>
                 <span className="n" style={{ display: 'flex' }}>
-                  {p.done ? <span aria-label="Done · locked">🔒</span> : null}
+                  {p.done ? <Lock size={13} strokeWidth={1.6} className="text-ink-muted" aria-label="Done · locked" /> : null}
                   {p.name}
                 </span>
               </div>
@@ -493,12 +496,12 @@ export function TimelineEditor({
                   return (
                     <tr key={p.id}>
                       <td className="rt" style={{ padding: '7px 8px' }}>{p.name}</td>
-                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, color: 'var(--muted)', textDecoration: 'line-through' }}>{range(b0)}</td>
-                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, fontWeight: 600 }}>{range(p)}</td>
+                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, color: 'oklch(var(--ink-muted))', textDecoration: 'line-through' }}>{range(b0)}</td>
+                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, fontWeight: 500 }}>{range(p)}</td>
                       <td style={{ padding: '7px 8px', textAlign: 'right' }}>
-                        <span className="chip" style={dd > 0 ? solid('over') : solid('ok')}>
+                        <Chip tone={dd > 0 ? 'bad' : 'ok'} note={false}>
                           {ds === dd && !p.ms && p.id !== 'p2' ? `moved ${dd > 0 ? '+' : ''}${dd}` : `${dd > 0 ? '+' : ''}${dd} days`}
-                        </span>
+                        </Chip>
                       </td>
                     </tr>
                   );

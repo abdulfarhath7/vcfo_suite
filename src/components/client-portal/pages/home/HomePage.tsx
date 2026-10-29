@@ -10,15 +10,17 @@
  *
  * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing.
  *
- * Pop-ups: step (StepPopup), compliance (CompliancePopup), the timeline editor, the PAN/TAN
- * reveal (credentials' IdsRevealDialog) and the document viewer (documents' DocViewer).
+ * A step row opens the step page (prototype). The compliance buttons open the shared Spectrum
+ * drill (`complianceDrill`). Pop-ups: the upload dialog, the timeline editor, the PAN/TAN reveal
+ * (credentials' IdsRevealDialog) and the document viewer (documents' DocViewer). The old v7
+ * StepPopup and CompliancePopup stay in Popups.tsx but Home no longer opens them.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { DocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { IdsRevealDialog } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
-import { phaseHref } from '@/components/client-portal/routes';
+import { phaseHref, stepHref } from '@/components/client-portal/routes';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import '../../css/home-base.css';
 import '../../css/home-tle.css';
@@ -28,10 +30,10 @@ import { useHome } from './useHome';
 import { useDownload, useNeedUpload } from './ui';
 import { ActivityCard, AlertsCard, DocsCard, HoldsCard, HomeCard, NeedsCard, SbcCard } from './CardsA';
 import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, TimelineCard } from './CardsB';
-import { CompliancePopup, StepPopup } from './Popups';
 import { TimelineEditor } from './TimelineEditor';
 import { MessagesCard } from './MessagesCard';
-import { dLong, docUrl, type DocItem, type NeedRow } from './derive';
+import { UploadDialog } from './UploadDialog';
+import { complianceDrill, dLong, docUrl, type DocItem, type NeedRow } from './derive';
 
 /** L1 skeleton: shown after 150 ms, held at least 300 ms. */
 function useSkeleton(loading: boolean): boolean {
@@ -67,8 +69,8 @@ function toViewer(d: DocItem, company: string): ViewerDoc {
   };
 }
 
-/** The page frame: 16px side gutter on phones, the board's clamp padding above. */
-const FRAME = 'mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-5 px-4 py-4 sm:p-[clamp(12px,2vw,24px)]';
+// C-002: the prototype shell's main (max 1440px; 16px sides, 32px from 768px; room for the phone tab bar).
+const FRAME = 'mx-auto grid w-full max-w-[1440px] grid-cols-1 gap-5 px-4 pb-28 pt-5 md:px-8 md:pb-20 md:pt-7';
 const COLS = 'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] max-lg:contents';
 const COL = 'grid min-w-0 grid-cols-1 gap-5 max-lg:contents';
 
@@ -92,9 +94,9 @@ export function HomePage() {
   const skeleton = useSkeleton(h.loading);
   const download = useDownload();
   // B-20: the upload's per-file rows show in Recent documents, so the floating tray is off here.
-  const { pick, field, rows: uploadRows, busy: uploading, cancel: cancelUpload } = useNeedUpload({ tray: false });
-  const [step, setStep] = useState<PortalStep | null>(null);
-  const [comp, setComp] = useState<number | null>(null);
+  const { sendTo, field, rows: uploadRows, busy: uploading, cancel: cancelUpload } = useNeedUpload({ tray: false });
+  // C-059: the upload dialog, open on one request (a Needs row) or on the first (the home card).
+  const [uploadFor, setUploadFor] = useState<{ id?: string } | null>(null);
   const [editor, setEditor] = useState(false);
   const [reveal, setReveal] = useState<'pan' | 'tan' | null>(null);
   const [viewer, setViewer] = useState<{ docs: ViewerDoc[]; i: number } | null>(null);
@@ -109,12 +111,14 @@ export function HomePage() {
 
   const openDocs = useCallback((docs: DocItem[], i: number) => setViewer({ docs: docs.map((d) => toViewer(d, h.company)), i }), [h.company]);
   const upload = useCallback(
-    (n: NeedRow) => {
-      if (n.requestId) pick(n.requestId, n.title);
+    (n?: NeedRow) => {
+      if (!n) setUploadFor({});
+      else if (n.requestId) setUploadFor({ id: n.requestId });
       else if (n.href) h.portal.go(n.href);
     },
-    [pick, h.portal],
+    [h.portal],
   );
+  const uploadRequests = h.needs.filter((n) => (n.kind === 'upload' || n.kind === 'correct') && n.requestId);
 
   if (h.loading && !skeleton && !h.overview) return <div className="cp-home" style={{ minHeight: '60vh' }} />;
   if (h.loading || skeleton) return <Skeleton />;
@@ -154,7 +158,7 @@ export function HomePage() {
       lead={h.lead}
       link={{ label: 'All steps', onClick: () => h.portal.go('incorporation') }}
       onPhase={(no) => h.portal.go(phaseHref(no))}
-      onStep={setStep}
+      onStep={(s) => h.portal.go(stepHref(s.id))}
       className={cls}
     />
   );
@@ -177,7 +181,7 @@ export function HomePage() {
               <div className={COL}>
                 <NeedsCard h={h} onUpload={upload} className="max-lg:order-1" />
                 <NextCard h={h} className="max-lg:order-2" />
-                <CompCard h={h} onOpen={setComp} className="max-lg:order-4" />
+                <CompCard h={h} onOpen={(tab) => h.portal.drill(complianceDrill(h.filings, h.today, h.home?.filings.fyLabel ?? '', tab))} className="max-lg:order-4" />
                 <IdsCard h={h} onReveal={setReveal} onCoi={coiOpen} className="max-lg:order-5" />
                 <AlertsCard h={h} className="max-lg:order-[10]" />
                 <SbcCard h={h} className="max-lg:order-[12]" />
@@ -205,8 +209,15 @@ export function HomePage() {
         )}
       </Island>
       {field}
-      {step ? <StepPopup h={h} step={step} onClose={() => setStep(null)} onUpload={upload} onOpenDocs={openDocs} /> : null}
-      {comp != null ? <CompliancePopup h={h} tab={comp} onClose={() => setComp(null)} /> : null}
+      {uploadFor ? (
+        <UploadDialog
+          requests={uploadRequests}
+          initialId={uploadFor.id}
+          today={h.today}
+          onClose={() => setUploadFor(null)}
+          onUpload={(r, files) => r.requestId && sendTo(r.requestId, r.title, files)}
+        />
+      ) : null}
       {editor && phases && h.engagementId ? (
         <TimelineEditor phases={phases} today={h.today} engagementId={h.engagementId} company={h.company} manager={h.manager} onClose={() => setEditor(false)} />
       ) : null}

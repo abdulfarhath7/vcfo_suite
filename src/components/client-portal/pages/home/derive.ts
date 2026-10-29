@@ -11,8 +11,8 @@ import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fil
 import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client/client-overview';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client/client-home';
-import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
-import { portalHref, stepHref } from '@/components/client-portal/routes';
+import type { DrillConfig, DrillRow, DrillStepMeta } from '@/components/client-portal/PortalProvider';
+import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 
 export type Tone = 'ok' | 'due' | 'over' | 'prog' | 'up';
 
@@ -117,6 +117,19 @@ export function stepTimelineText(s: PortalStep): string {
   return getChecklistStepTimelineLabel(s.item);
 }
 
+/** The ST5 part of a step row in a drill (C-138): mark, "Step n", owner chip, red date when late. */
+export function stepDrillMeta(s: PortalStep): DrillStepMeta {
+  const late = Boolean(s.late && s.kind !== 'done');
+  const live = s.kind === 'you' || s.kind === 'prog' || s.kind === 'with';
+  return {
+    n: s.n,
+    state: s.kind === 'done' ? 'done' : live ? 'now' : 'next',
+    tone: late ? 'bad' : s.kind === 'you' ? 'teal' : 'prog',
+    owner: s.owner === 'client' ? 'client' : s.owner === 'mca' ? 'mca' : 'sbc',
+    late,
+  };
+}
+
 export function stepDateLabel(s: PortalStep): string {
   if (s.kind === 'done') return s.doneOn ? dShort(s.doneOn) : 'Done';
   return s.due ? dShort(s.due) : '—';
@@ -127,7 +140,7 @@ export function spiceStepsDrill(model: PortalIncorporationModel, company: string
   const steps = model.steps.filter((s) => s.phaseNo <= 2);
   const row = (s: PortalStep): DrillRow => {
     const [label, tone] = stepStatus(s);
-    return { title: s.title, meta: stepDateLabel(s), chip: label, chipColor: chipBg(tone), href: stepHref(s.id) };
+    return { title: s.title, meta: stepDateLabel(s), chip: label, chipColor: chipBg(tone), step: stepDrillMeta(s), href: stepHref(s.id) };
   };
   const by = (f: (s: PortalStep) => boolean) => steps.filter(f).map(row);
   return {
@@ -555,7 +568,7 @@ export function timelineDrill(model: PortalIncorporationModel, active: number): 
   const p2 = (model.phases[1]?.steps ?? []).filter((s) => s.id !== 'pre-11' && s.id !== 'pre-12');
   const row = (s: PortalStep): DrillRow => {
     const [label, tone] = stepStatus(s);
-    return { title: s.title, meta: stepDateLabel(s), chip: label === 'Waiting' ? 'Waiting' : label, chipColor: chipBg(tone), href: stepHref(s.id) };
+    return { title: s.title, meta: stepDateLabel(s), chip: label === 'Waiting' ? 'Waiting' : label, chipColor: chipBg(tone), step: stepDrillMeta(s), href: stepHref(s.id) };
   };
   const one = (id: string) => (model.byId[id] ? [row(model.byId[id]!)] : []);
   return {
@@ -759,13 +772,12 @@ export function buildDocs(home: ClientHome | undefined, overview: ClientOverview
   return out.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 6);
 }
 
+/** C-066: "This week" under 7 days old, "Last week" under 14, then "Earlier". */
 export function docGroup(today: string, iso?: string): 'This week' | 'Last week' | 'Earlier' {
   if (!iso) return 'Earlier';
-  const p = parts(today);
-  const dow = (new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay() + 6) % 7; // Monday = 0
-  const monday = addDays(today, -dow);
-  if (iso >= monday) return 'This week';
-  if (iso >= addDays(monday, -7)) return 'Last week';
+  const age = days(iso.slice(0, 10), today);
+  if (age < 7) return 'This week';
+  if (age < 14) return 'Last week';
   return 'Earlier';
 }
 
@@ -784,4 +796,59 @@ export async function docUrl(d: DocItem): Promise<string> {
   const body = (await res.json().catch(() => ({}))) as { url?: string };
   if (!res.ok || !body.url) throw new Error('Could not open the file');
   return body.url;
+}
+
+/* --------------------------------------------------- home card drills */
+
+const NEED_WORD: Record<NeedKind, string> = { upload: 'Upload', fill: 'Fill', correct: 'Sent back', sign: 'Approve' };
+
+/** One open need as a drill row: the date, and a chip that says overdue, due soon or the kind. */
+function needRow(n: NeedRow, today: string): DrillRow {
+  const late = isOverdueNeed(n, today);
+  const chip = n.kind === 'correct' ? 'Sent back' : late ? 'Overdue' : NEED_WORD[n.kind];
+  return {
+    title: n.title,
+    meta: n.due ? `Due ${dShort(n.due)}` : n.area || undefined,
+    chip,
+    tone: late || n.kind === 'correct' ? 'bad' : n.due && days(today, n.due) <= 7 ? 'warn' : 'teal',
+    href: n.href,
+  };
+}
+
+/** The Waiting on tile after the COI (C-026): every open need, by kind. */
+export function needsDrill(needs: NeedRow[], today: string, company: string): DrillConfig {
+  const sorted = sortNeeds(needs, today);
+  return {
+    title: `Waiting on ${company}`,
+    sub: `${needs.length} open`,
+    tabs: [
+      { label: 'All', rows: sorted.map((n) => needRow(n, today)) },
+      ...NEED_TABS.map(([k, label]) => ({ label, rows: sorted.filter((n) => n.kind === k).map((n) => needRow(n, today)) })).filter((t) => t.rows.length > 0),
+    ],
+    link: { lead: 'Requests live in Documents', text: 'Open Documents →', href: portalHref('documents'), where: 'Documents' },
+  };
+}
+
+/** The Registrations tile (C-031): granted, in progress and upcoming registrations. */
+export function regsDrill(regs: RegRow[]): DrillConfig {
+  const row = (r: RegRow): DrillRow => ({
+    title: r.name,
+    meta: r.number ?? r.dateLabel,
+    chip: r.status,
+    tone: r.status === 'Registered' ? 'ok' : r.status === 'In progress' ? 'prog' : 'idle',
+    step: stepDrillMeta(r.step),
+    href: stepHref(r.step.id),
+  });
+  const by = (st: RegRow['status']) => regs.filter((r) => r.status === st).map(row);
+  return {
+    title: 'Registrations',
+    sub: `${regs.filter((r) => r.status === 'Registered').length} of ${regs.length} granted`,
+    tabs: [
+      { label: 'All', rows: regs.map(row) },
+      { label: 'Registered', rows: by('Registered') },
+      { label: 'In progress', rows: by('In progress') },
+      { label: 'Upcoming', rows: by('Upcoming') },
+    ],
+    link: { lead: 'Registrations live in phase 4', text: 'Open Registration →', href: phaseHref(4), where: 'Registration' },
+  };
 }
