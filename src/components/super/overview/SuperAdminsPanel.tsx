@@ -1,5 +1,6 @@
 'use client';
 
+import { AvatarStack } from '@/components/ui/avatar-stack';
 import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { SkeletonRows } from '@/components/ui/empty-state';
@@ -86,7 +87,14 @@ export function SuperAdminsPanel({ staff, engagements }: { staff: SuperStaff; en
         />
       ),
     },
-    { key: 'managers', header: 'Managers', width: '96px', align: 'right', render: (r) => r.managers.length },
+    {
+      key: 'managers',
+      header: 'Managers',
+      width: '120px',
+      align: 'right',
+      // V3 (C-0121): who reports to the admin, as stacked circles.
+      render: (r) => (r.managers.length ? <AvatarStack people={r.managers} max={3} label={`${r.managers.length} managers`} /> : 0),
+    },
     { key: 'clients', header: 'Clients', width: '84px', align: 'right', render: (r) => r.clients },
     { key: 'open', header: 'Open steps', width: '104px', align: 'right', render: (r) => r.open },
     {
