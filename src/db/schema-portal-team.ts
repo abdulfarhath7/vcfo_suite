@@ -6,7 +6,7 @@
  * `profiles` / `engagements` may only be touched lazily, inside
  * `.references(() => profiles.id)` callbacks — never at module top level.
  */
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid, smallint } from 'drizzle-orm/pg-core';
 import { engagements, profiles } from './schema';
 
 /**
@@ -67,6 +67,10 @@ export const notificationPrefs = pgTable('notification_prefs', {
   quietStart: text('quiet_start').notNull().default('21:00'),
   quietEnd: text('quiet_end').notNull().default('08:00'),
   tz: text('tz').notNull().default('Asia/Kolkata'),
+  /** Days before a due date to send the reminder: 7, 3 or 1; null means the firm default (C-831). */
+  remindDays: smallint('remind_days'),
+  /** Local time for the daily digest email, "HH:MM"; null means no digest (P-626, S-656). */
+  digestTime: text('digest_time'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

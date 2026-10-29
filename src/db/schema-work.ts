@@ -30,7 +30,7 @@
  *                             shown to the client.
  *  - client_messages        — client-to-lead messages and the lead's triage (G-09, G-11).
  */
-import { date, index, integer, pgTable, text, timestamp, uuid, boolean } from 'drizzle-orm/pg-core';
+import { date, index, integer, numeric, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, boolean } from 'drizzle-orm/pg-core';
 import * as base from './schema';
 
 export const engagementStepEvents = pgTable(
@@ -47,6 +47,8 @@ export const engagementStepEvents = pgTable(
     toStatus: text('to_status').notNull(),
     /** The review state after the change (pending, approved, sent back), when the step has one. */
     reviewStatus: text('review_status'),
+    /** Who holds the step after the change: client, lead, manager or sbc (client home trend lines). */
+    holder: text('holder'),
     actorId: uuid('actor_id').references(() => base.profiles.id, { onDelete: 'set null' }),
     at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -188,5 +190,97 @@ export const clientMessages = pgTable(
   },
   (t) => ({
     engIdx: index('client_messages_engagement_idx').on(t.engagementId, t.createdAt),
+  }),
+);
+
+/**
+ * STEP FIELD STATES (S-496, S-497, S-499): the review state of one field inside a step, so a lead
+ * can ask the client for one field and a manager can approve or send back one field.
+ * state: asked | answered | approved | sent_back.
+ */
+export const stepFieldStates = pgTable(
+  'step_field_states',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => base.engagements.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull(),
+    fieldId: text('field_id').notNull(),
+    state: text('state').notNull(),
+    askedAt: timestamp('asked_at', { withTimezone: true }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    actorId: uuid('actor_id').references(() => base.profiles.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    fieldUq: uniqueIndex('step_field_states_field_uq').on(t.engagementId, t.itemId, t.fieldId),
+  }),
+);
+
+/**
+ * FILING EVENTS (S-771): the dated two-sided thread on one filing period, for example
+ * "Client uploaded bank statement" or "SBC filed on the portal". side: client | sbc.
+ */
+export const filingEvents = pgTable(
+  'filing_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    instanceId: uuid('instance_id')
+      .notNull()
+      .references(() => base.complianceInstances.id, { onDelete: 'cascade' }),
+    side: text('side').notNull(),
+    label: text('label').notNull(),
+    actorId: uuid('actor_id').references(() => base.profiles.id, { onDelete: 'set null' }),
+    at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    instanceIdx: index('filing_events_instance_idx').on(t.instanceId, t.at),
+  }),
+);
+
+/**
+ * COMPLIANCE CHECKLIST CHECKS (S-783, S-816): ticks on the "Before filing" list of an obligation
+ * period or a registration. subjectKind: obligation | registration. subjectKey is the
+ * compliance instance id or the registration item key; itemKey names the line in the list.
+ */
+export const complianceChecklistChecks = pgTable(
+  'compliance_checklist_checks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => base.engagements.id, { onDelete: 'cascade' }),
+    subjectKind: text('subject_kind').notNull(),
+    subjectKey: text('subject_key').notNull(),
+    itemKey: text('item_key').notNull(),
+    checkedBy: uuid('checked_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    checkUq: uniqueIndex('compliance_checklist_checks_uq').on(
+      t.engagementId,
+      t.subjectKind,
+      t.subjectKey,
+      t.itemKey,
+    ),
+  }),
+);
+
+/**
+ * KPI SNAPSHOTS (S-618): one stored value per month and key, so Analytics can show the change
+ * against last month. scope is 'firm' or a profile id for a person-level number.
+ */
+export const kpiSnapshots = pgTable(
+  'kpi_snapshots',
+  {
+    period: date('period').notNull(),
+    key: text('key').notNull(),
+    scope: text('scope').notNull().default('firm'),
+    value: numeric('value').notNull(),
+    takenAt: timestamp('taken_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.period, t.key, t.scope] }),
   }),
 );

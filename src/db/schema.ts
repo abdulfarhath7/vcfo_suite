@@ -113,6 +113,10 @@ export const profiles = pgTable('profiles', {
   totpSecretEnc: text('totp_secret_enc'),
   /** When two-step sign-in was confirmed with a first code; null means it is off. */
   totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
+  /** Job title shown on Profile and Team, for example "Director" or "Senior associate" (P-617, C-821). */
+  designation: text('designation'),
+  /** ICAI or ICSI membership number for staff, shown in mono on Profile (P-617, S-653). */
+  membershipNo: text('membership_no'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -296,6 +300,9 @@ export const engagementBoardResolutions = pgTable('engagement_board_resolutions'
   signedUploadedBy: uuid('signed_uploaded_by').references(() => profiles.id, {
     onDelete: 'set null',
   }),
+  /** When the finalized draft was sent to the client for signing (S-573); null until then. */
+  sentToClientAt: timestamp('sent_to_client_at', { withTimezone: true }),
+  sentToClientBy: uuid('sent_to_client_by').references(() => profiles.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -678,6 +685,8 @@ export const tasks = pgTable(
       onDelete: 'cascade',
     }),
     assignedTo: uuid('assigned_to').references(() => profiles.id),
+    /** Who assigned the task; null for tasks a person made for themself or made before 0028 (S-217). */
+    assignedBy: uuid('assigned_by').references(() => profiles.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     description: text('description'),
     stepId: text('step_id'),
