@@ -1,37 +1,78 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Chip, OwnerChip, Tag } from '@/components/ui/spectrum-chip';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
 import { internKindOwner, internKindStatus } from '@/components/intern/intern-tones';
+import {
+  DrawerActivity,
+  DrawerChecklist,
+  DrawerFiles,
+  DrawerSessions,
+  DrawerWindow,
+} from '@/components/work/DrawerWorkSections';
+import { useWorkItemDetail, type WorkCompletionDto } from '@/components/work/use-work';
+import { useApp } from '@/context/AppContext';
 import { formatDueLabel, internWorkCta, type InternWorkItem } from '@/lib/intern/intern-work';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 
-const SOURCE_WORD: Record<string, string> = { step: 'Step', filing: 'Filing', request: 'Client request' };
-const OPEN_WORD: Record<string, string> = { step: 'Open step', filing: 'Open filing', request: 'Open company' };
+const SOURCE_WORD: Record<string, string> = { step: 'Step', filing: 'Filing', request: 'Client request', task: 'Task' };
+const OPEN_WORD: Record<string, string> = {
+  step: 'Open step',
+  filing: 'Open filing',
+  request: 'Open company',
+  task: 'Open company',
+};
+
+/** "Mark done" is offered only where the item's own completion path allows it (G-16). */
+function canMarkDone(item: InternWorkItem, completion: WorkCompletionDto | undefined): boolean {
+  if (!completion || item.kind === 'done') return false;
+  if (completion.mode === 'request') return completion.canComplete && Boolean(item.requestId);
+  if (completion.mode === 'direct') return completion.canComplete && Boolean(item.catalogId);
+  return false;
+}
 
 /**
  * Task drawer (prototype `TaskDrawer` and `WorkDrawer`): a right-side panel with the work item's
- * facts and the actions the row already had, so the lead can read a task without leaving Work.
- * Every fact comes from the work item itself; nothing here is invented for the panel. The step,
- * filing or company page stays one click away for the full form.
+ * facts, its manager window and "Request change", work sessions with a timer, the lead's own
+ * checklist, the item's files and activity, and the actions the row already had. Every fact
+ * comes from the work item or the work routes; nothing here is invented for the panel.
+ *
+ * "Mark done" uses only existing completion paths: a document request is approved
+ * (`approveDoc`, PATCH /api/requests/:id); a pre-incorporation direct-flow step is submitted
+ * (`submitDirectStep`, POST …/checklist/submit) when the checklist validator finds nothing
+ * missing. Every other step links to its form. `workKey` is the stored item key
+ * (`workItemKeyFor`); without one the per-item tools are hidden.
  */
 export function InternWorkDrawer({
   item,
+  workKey,
   now,
   onClose,
 }: {
   item: InternWorkItem | null;
+  workKey?: string | null;
   now: Date;
   onClose: () => void;
 }) {
+  const { user, approveDoc, submitDirectStep } = useApp();
+  const queryClient = useQueryClient();
+  const key = item ? (workKey ?? null) : null;
+  const detail = useWorkItemDetail(key);
+  const [completing, setCompleting] = useState(false);
+
   const status = item ? internKindStatus(item) : null;
   const owner = item ? internKindOwner(item.kind) : undefined;
   const cta = item ? internWorkCta(item) : null;
+  const completion = detail.data?.completion;
+  const markDone = item ? canMarkDone(item, completion) : false;
+
   const facts: Array<{ k: string; v: ReactNode }> = item
     ? [
         { k: 'Company', v: item.companyName },
@@ -41,13 +82,51 @@ export function InternWorkDrawer({
           k: 'Due',
           v: <span className={cn(item.isOverdue && item.kind !== 'done' && 'font-medium text-danger')}>{formatDueLabel(item.dueAt, now)}</span>,
         },
-        ...(item.windowLabel ? [{ k: 'Window', v: <span className="tabular-nums">{item.windowLabel}</span> }] : []),
+        // The Window section below replaces this row once the item's own window has loaded.
+        ...(item.windowLabel && !detail.data?.window
+          ? [{ k: 'Window', v: <span className="tabular-nums">{item.windowLabel}</span> }]
+          : []),
         ...(item.startedAt ? [{ k: 'Started', v: formatDueLabel(item.startedAt, now) }] : []),
         ...(item.completedAt ? [{ k: 'Done', v: formatDueLabel(item.completedAt, now) }] : []),
         ...(item.ageLabel ? [{ k: 'Waiting for', v: item.ageLabel }] : []),
         { k: 'State', v: item.why },
+        ...(completion?.mode === 'direct' && !completion.canComplete && item.kind !== 'done'
+          ? [{ k: 'To finish', v: `${completion.missing} ${completion.missing === 1 ? 'field' : 'fields'} in the step form` }]
+          : []),
+        ...(completion?.mode === 'locked' ? [{ k: 'Locked', v: completion.message }] : []),
       ]
     : [];
+
+  const complete = async () => {
+    if (!item || !completion) return;
+    setCompleting(true);
+    try {
+      if (completion.mode === 'request' && item.requestId) {
+        approveDoc(item.requestId);
+        toastSuccess('Marked done', item.title);
+        onClose();
+        return;
+      }
+      if (completion.mode === 'direct' && item.catalogId) {
+        const result = await submitDirectStep(item.engagementId, item.catalogId, {});
+        if (result.outcome === 'invalid') {
+          const n = Object.keys(result.fieldErrors ?? {}).length;
+          toastError('Step not complete', `${n} ${n === 1 ? 'field' : 'fields'} to finish in the step form`);
+          void queryClient.invalidateQueries({ queryKey: ['work', 'detail'] });
+          return;
+        }
+        toastSuccess('Marked done', item.title);
+        void queryClient.invalidateQueries({ queryKey: ['work', 'detail'] });
+        onClose();
+      }
+    } catch (err) {
+      toastError("Couldn't mark it done", errorMessage(err));
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const showOpen = Boolean(cta && (cta.action !== 'open' || item?.kind === 'done' || markDone));
 
   return (
     <Sheet open={!!item} onOpenChange={(open) => (!open ? onClose() : undefined)}>
@@ -73,8 +152,8 @@ export function InternWorkDrawer({
                 {item.isCritical ? <Tag tone="bad">Critical</Tag> : null}
               </div>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[13.5px]">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-5 py-4 text-[13.5px]">
                 {facts.map((f) => (
                   <div key={f.k} className="contents">
                     <dt className="text-ink-muted">{f.k}</dt>
@@ -82,14 +161,40 @@ export function InternWorkDrawer({
                   </div>
                 ))}
               </dl>
+              {key ? (
+                <>
+                  {detail.data?.window ? (
+                    <DrawerWindow
+                      itemKey={key}
+                      title={item.title}
+                      companyName={item.companyName}
+                      window={detail.data.window}
+                      canRequest={user?.role === 'intern' && item.kind !== 'done'}
+                    />
+                  ) : null}
+                  {item.kind !== 'done' ? <DrawerSessions itemKey={key} title={item.title} /> : null}
+                  <DrawerChecklist itemKey={key} />
+                  {detail.data ? <DrawerFiles files={detail.data.files} /> : null}
+                  {detail.data ? <DrawerActivity entries={detail.data.activity} /> : null}
+                </>
+              ) : null}
             </div>
             <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft px-5 py-3">
-              {cta && (cta.action !== 'open' || item.kind === 'done') ? (
+              {showOpen ? (
                 <Button variant="secondary" asChild>
                   <Link href={item.href}>{OPEN_WORD[item.source] ?? 'Open'}</Link>
                 </Button>
               ) : null}
-              <InternWorkCtaButton item={item} primary />
+              {markDone ? (
+                <>
+                  {cta && cta.action !== 'open' ? <InternWorkCtaButton item={item} /> : null}
+                  <Button onClick={() => void complete()} disabled={completing}>
+                    Mark done
+                  </Button>
+                </>
+              ) : (
+                <InternWorkCtaButton item={item} primary />
+              )}
             </footer>
           </>
         ) : (

@@ -1,13 +1,15 @@
 import { getItem, type Bucket } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
-import type { DocRequest, Engagement } from '@/data/engagements';
+import type { DocRequest, Engagement, TaskInstance } from '@/data/engagements';
 import type { ChipTone } from '@/components/ui/spectrum-chip';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { sep } from '@/lib/date-format';
 import {
   buildInternWorkItems,
+  buildTaskWorkItem,
   internCompanyPhaseProgress,
+  stepOwnerLead,
   parseIstNoon,
   ymdFromIsoInIst,
   ymdInIst,
@@ -97,6 +99,7 @@ const BUCKET_AREA: Record<Bucket, string> = {
 export function todayAreaOf(item: InternWorkItem, filingById: Map<string, ComplianceFiling>): string {
   if (item.source === 'filing' && item.filingId) return filingById.get(item.filingId)?.authority ?? 'Filing';
   if (item.source === 'request') return 'Documents';
+  if (item.source === 'task') return 'Tasks';
   const def = item.catalogId ? getItem(item.catalogId) : undefined;
   return def ? BUCKET_AREA[def.bucket] : 'Incorporation';
 }
@@ -116,6 +119,9 @@ export function engagementInScope(
 
 export interface TeamTaskRow {
   id: string;
+  /** The work item key (`step:…`, `filing:…`, `request:…`, `task:…`), for Reassign. */
+  itemId?: string;
+  source?: InternWorkItem['source'];
   engagementId: string;
   companyName: string;
   title: string;
@@ -139,21 +145,63 @@ export function buildTeamTaskRows(opts: {
   getState: (engagement: Engagement) => Record<string, ChecklistItemStateSlice>;
   filings: ComplianceFiling[];
   requests: DocRequest[];
-  leads: Array<{ id: string; name: string }>;
+  /** Task rows from `/api/tasks`; the ones assigned to a lead become task rows (G-12). */
+  tasks?: TaskInstance[];
+  /** Leads by `intern_id` key; `profileId` (sent by `/api/admin/interns`) maps task owners. */
+  leads: Array<{ id: string; name: string; profileId?: string }>;
   projectBase: '/app/admin' | '/app/manager';
   now: Date;
 }): TeamTaskRow[] {
   const byLead = new Map<string, Engagement[]>();
+  // Co-leads who own a reassigned step (G-18) list only those steps.
+  const ownersOnly = new Map<string, Engagement[]>();
+  const push = (map: Map<string, Engagement[]>, key: string, eng: Engagement) => {
+    const list = map.get(key);
+    if (list) list.push(eng);
+    else map.set(key, [eng]);
+  };
   for (const eng of opts.engagements) {
     if (!eng.internId || eng.stage === 'Operational Readiness') continue;
-    const list = byLead.get(eng.internId);
-    if (list) list.push(eng);
-    else byLead.set(eng.internId, [eng]);
+    push(byLead, eng.internId, eng);
+    const owners = new Set<string>();
+    for (const slice of Object.values(opts.getState(eng))) {
+      const owner = stepOwnerLead(eng, slice);
+      if (owner && owner !== eng.internId) owners.add(owner);
+    }
+    for (const owner of owners) push(ownersOnly, owner, eng);
   }
   const filingById = new Map(opts.filings.map((f) => [f.id, f]));
   const engById = new Map(opts.engagements.map((e) => [e.id, e]));
   const nameOf = (id: string) => opts.leads.find((l) => l.id === id)?.name ?? 'Project lead';
   const rows: TeamTaskRow[] = [];
+
+  const addRow = (leadId: string, item: InternWorkItem) => {
+    const eng = engById.get(item.engagementId);
+    if (!eng) return;
+    const slice = item.catalogId ? opts.getState(eng)[item.catalogId] : undefined;
+    const status = todayStatusOf(item, slice, opts.now);
+    const href =
+      item.source === 'filing'
+        ? `${opts.projectBase}/compliances/calendar`
+        : item.source === 'step' && item.catalogId
+          ? adminProjectStepPath(eng, item.catalogId, opts.projectBase)
+          : adminProjectPath(eng, opts.projectBase);
+    rows.push({
+      id: `${leadId}:${item.id}`,
+      itemId: item.id,
+      source: item.source,
+      engagementId: eng.id,
+      companyName: eng.companyName,
+      title: item.title,
+      leadId,
+      leadName: nameOf(leadId),
+      area: todayAreaOf(item, filingById),
+      dueAt: item.dueAt,
+      status,
+      withClient: status === 'Waiting' && (item.kind === 'waiting-client' || item.kind === 'waiting-request'),
+      href,
+    });
+  };
 
   for (const [leadId, engagements] of byLead) {
     const ids = new Set(engagements.map((e) => e.id));
@@ -165,32 +213,31 @@ export function buildTeamTaskRows(opts: {
       requests: opts.requests.filter((r) => ids.has(r.engagementId)),
       now: opts.now,
     });
-    for (const item of items) {
-      const eng = engById.get(item.engagementId);
-      if (!eng) continue;
-      const slice = item.catalogId ? opts.getState(eng)[item.catalogId] : undefined;
-      const status = todayStatusOf(item, slice, opts.now);
-      const href =
-        item.source === 'filing'
-          ? `${opts.projectBase}/compliances/calendar`
-          : item.source === 'step' && item.catalogId
-            ? adminProjectStepPath(eng, item.catalogId, opts.projectBase)
-            : adminProjectPath(eng, opts.projectBase);
-      rows.push({
-        id: `${leadId}:${item.id}`,
-        engagementId: eng.id,
-        companyName: eng.companyName,
-        title: item.title,
-        leadId,
-        leadName: nameOf(leadId),
-        area: todayAreaOf(item, filingById),
-        dueAt: item.dueAt,
-        status,
-        withClient: status === 'Waiting' && (item.kind === 'waiting-client' || item.kind === 'waiting-request'),
-        href,
-      });
-    }
+    for (const item of items) addRow(leadId, item);
   }
+
+  for (const [leadId, engagements] of ownersOnly) {
+    const items = buildInternWorkItems({
+      engagements,
+      getChecklistState: opts.getState,
+      internId: leadId,
+      ownedStepsOnly: true,
+      now: opts.now,
+    });
+    for (const item of items) addRow(leadId, item);
+  }
+
+  const leadKeyByProfile = new Map(
+    opts.leads.filter((l) => l.profileId).map((l) => [l.profileId as string, l.id]),
+  );
+  for (const task of opts.tasks ?? []) {
+    const eng = engById.get(task.engagementId);
+    const leadId = task.assigneeId ? leadKeyByProfile.get(task.assigneeId) : undefined;
+    if (!eng || !leadId || eng.stage === 'Operational Readiness') continue;
+    const item = buildTaskWorkItem(task, eng, opts.now);
+    if (item) addRow(leadId, item);
+  }
+
   return rows.sort((a, b) => (a.dueAt ?? '9999').localeCompare(b.dueAt ?? '9999'));
 }
 

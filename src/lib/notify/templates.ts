@@ -51,6 +51,7 @@ export function readTemplateNames(
  *   compliance_due_monthly   1 company name, 2 obligation name, 3 due date
  *   compliance_due_quarterly 1 company name, 2 obligation name, 3 due date
  *   compliance_overdue       1 company name, 2 obligation name
+ *   client_reminder          1 company name, 2 item title (step, filing or request)
  */
 function orderedVariables(
   event: NotifyEvent,
@@ -72,6 +73,8 @@ function orderedVariables(
       ];
     case 'compliance_overdue':
       return [vars.companyName ?? '', vars.obligationName ?? ''];
+    case 'client_reminder':
+      return [vars.companyName ?? '', vars.stepTitle ?? ''];
   }
 }
 

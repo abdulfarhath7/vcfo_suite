@@ -6,7 +6,7 @@ import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { LeadHero } from '@/components/intern/LeadHero';
-import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { LeadInboxCard } from '@/components/intern/LeadInboxCard';
 import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
 import { LeadPhaseProgress } from '@/components/intern/LeadPhaseProgress';
 import { LeadOverdueFilings } from '@/components/intern/LeadOverdueFilings';
@@ -24,7 +24,8 @@ const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_m
  * five numbers, then the Action queue, Phase progress and the overdue filings beside the rail
  * (Todos, Waiting on, My managers). The practice strip left the page; its numbers are in the
  * home card and the cards below. The scope switch narrows every card to the incorporating
- * companies or the incorporated ones.
+ * companies or the incorporated ones. The rail's Inbox holds the client messages to triage
+ * (G-11) beside the lead's own to-dos.
  */
 export default function InternToday() {
   const { user, getStateForEngagement } = useApp();
@@ -74,7 +75,7 @@ export default function InternToday() {
             ) : null}
           </div>
           <div className="flex min-w-0 flex-col gap-5" aria-label="Inbox">
-            <LeadFocusCard userId={user?.id ?? ''} items={workItems} />
+            <LeadInboxCard userId={user?.id ?? ''} items={workItems} />
             <LeadSideRail items={items} />
             <LeadManagersCard engagements={myEngagements} />
           </div>

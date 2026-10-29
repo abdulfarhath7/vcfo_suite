@@ -77,7 +77,7 @@ function appEngagementId(dbId: string | null): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
-function toAppTask(row: Row): TaskInstance {
+export function toAppTask(row: Row): TaskInstance {
   return {
     id: row.id,
     engagementId: appEngagementId(row.engagementId),
@@ -86,6 +86,8 @@ function toAppTask(row: Row): TaskInstance {
     assigneeId: row.assignedTo ?? undefined,
     dueAt: row.deadline ? row.deadline.toISOString() : undefined,
     notes: row.description ?? undefined,
+    title: row.title,
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : undefined,
   };
 }
 

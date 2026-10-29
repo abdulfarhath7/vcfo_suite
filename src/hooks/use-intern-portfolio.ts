@@ -16,7 +16,7 @@ import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
 export function useInternPortfolio() {
-  const { user, engagements, requests, getStateForEngagement } = useApp();
+  const { user, engagements, requests, tasks, getStateForEngagement } = useApp();
   const internId = user?.internId ?? '';
 
   const myEngagements = useMemo(
@@ -94,6 +94,14 @@ export function useInternPortfolio() {
     return out;
   }, [register.data]);
 
+  // Tasks a manager assigned to this lead, and client questions handed to them (G-12). Rows
+  // with a checklist key mirror a step and are already step items.
+  const userId = user?.id ?? '';
+  const myTasks = useMemo(
+    () => (userId ? tasks.filter((t) => t.assigneeId === userId && !t.checklistKey) : []),
+    [tasks, userId],
+  );
+
   const workItems = useMemo(
     () =>
       buildInternWorkItems({
@@ -103,8 +111,9 @@ export function useInternPortfolio() {
         filings,
         filingWindows,
         requests: myRequests,
+        tasks: myTasks,
       }),
-    [myEngagements, getStateForEngagement, internId, filings, filingWindows, myRequests],
+    [myEngagements, getStateForEngagement, internId, filings, filingWindows, myRequests, myTasks],
   );
 
   const kpis = useMemo(() => internWorkKpis(workItems, new Date()), [workItems]);

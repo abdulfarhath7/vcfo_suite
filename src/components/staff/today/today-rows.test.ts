@@ -113,6 +113,47 @@ describe('buildTeamTaskRows', () => {
     });
     expect(rows).toEqual([]);
   });
+
+  it('adds a task assigned to a lead as a Tasks row under that lead (G-12)', () => {
+    const rows = buildTeamTaskRows({
+      engagements: [engagement],
+      getState: () => ({}),
+      filings: [],
+      requests: [],
+      tasks: [
+        { id: 't1', engagementId: 'eng-1', checklistKey: '', status: 'not-started', assigneeId: 'p-a', title: 'Call the bank', dueAt: '2026-08-18T12:00:00Z' },
+        // A checklist-step task row is the step itself, not a second row.
+        { id: 't2', engagementId: 'eng-1', checklistKey: 'pre-2', status: 'not-started', assigneeId: 'p-a', title: 'pre-2' },
+        // Assigned to someone who is not a lead in the list.
+        { id: 't3', engagementId: 'eng-1', checklistKey: '', status: 'not-started', assigneeId: 'p-x', title: 'Other' },
+      ],
+      leads: [{ id: 'intern-a', name: 'Asha Rao', profileId: 'p-a' }],
+      projectBase: '/app/manager',
+      now,
+    });
+    const tasks = rows.filter((r) => r.source === 'task');
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]).toMatchObject({ itemId: 'task:t1', title: 'Call the bank', leadName: 'Asha Rao', area: 'Tasks', status: 'Overdue' });
+  });
+
+  it('lists a step reassigned to a co-lead under the co-lead only (G-18)', () => {
+    const eng = { ...engagement, leadIds: ['intern-a', 'intern-b'] };
+    const rows = buildTeamTaskRows({
+      engagements: [eng],
+      getState: () => ({ 'pre-1': { status: 'in-progress', assigneeId: 'intern-b' } }),
+      filings: [],
+      requests: [],
+      leads: [
+        { id: 'intern-a', name: 'Asha Rao' },
+        { id: 'intern-b', name: 'Ben Das' },
+      ],
+      projectBase: '/app/manager',
+      now,
+    });
+    const step = rows.filter((r) => r.itemId === 'step:eng-1:pre-1');
+    expect(step.map((r) => r.leadId)).toEqual(['intern-b']);
+    expect(rows.filter((r) => r.leadId === 'intern-b').every((r) => r.itemId === 'step:eng-1:pre-1')).toBe(true);
+  });
 });
 
 describe('buildPhaseProgressRows', () => {

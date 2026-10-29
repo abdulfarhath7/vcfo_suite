@@ -7,7 +7,7 @@ import { addDays, differenceInDays, differenceInHours } from 'date-fns';
 import { checklist, getItem, type ChecklistItem } from '@/data/checklist';
 import type { ComplianceFiling } from '@/data/compliance';
 import { formatWindow, windowForStep } from '@/lib/projects/schedule-windows';
-import type { DocRequest, Engagement } from '@/data/engagements';
+import type { DocRequest, Engagement, TaskInstance } from '@/data/engagements';
 import {
   getReviewStatus,
   isReviewAccepted,
@@ -53,7 +53,7 @@ const INTERN_FOCUS_STORAGE_PREFIX = 'vcfo.intern.focus.';
 const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
 export const INTERN_WORK_VIEW_KEY = 'vcfo.intern.workView';
 
-type InternWorkSource = 'step' | 'filing' | 'request';
+type InternWorkSource = 'step' | 'filing' | 'request' | 'task';
 type InternWorkKind =
   | 'rejected'
   | 'review'
@@ -64,6 +64,8 @@ type InternWorkKind =
   | 'waiting-manager'
   | 'waiting-request'
   | 'filing'
+  /** A task a manager assigned (G-12), or a client question handed to the lead. */
+  | 'task'
   | 'done';
 
 export type InternWorkFocus = 'all' | 'action' | 'overdue' | 'waiting' | 'due' | 'progress' | 'done';
@@ -80,7 +82,7 @@ export type InternWorkTag =
 export type InternWorkKindFilter = 'all' | 'steps' | 'filings';
 export type InternWorkView = 'list' | 'board' | 'tl';
 export type InternWorkBoardColumn = 'action' | 'progress' | 'waiting' | 'done';
-export type InternWorkCtaAction = 'open' | 'nudge-manager' | 'remind-client';
+export type InternWorkCtaAction = 'open' | 'nudge-manager' | 'remind-client' | 'complete-task';
 
 export interface InternWorkItem {
   id: string;
@@ -100,6 +102,8 @@ export interface InternWorkItem {
   catalogId?: string;
   filingId?: string;
   requestId?: string;
+  /** `tasks.id` for a task item. */
+  taskId?: string;
   catalogLabel?: string;
   /** Manager-set window, as quiet mono metadata (`formatWindow`). Absent when unset. */
   windowLabel?: string;
@@ -337,7 +341,7 @@ function internWorkHref(opts: {
   catalogId?: string;
 }): string {
   if (opts.source === 'filing') return '/app/intern/compliances/calendar';
-  if (opts.source === 'request') return internEngagementPath(opts.engagement);
+  if (opts.source === 'request' || opts.source === 'task') return internEngagementPath(opts.engagement);
   const item = opts.catalogId ? getItem(opts.catalogId) : undefined;
   if (item) return internEngagementStepPath(opts.engagement, item);
   return internEngagementPath(opts.engagement);
@@ -416,6 +420,8 @@ function whyForKind(kind: InternWorkKind, age?: string): string {
       return age ? `Client · ${age}` : 'Document request';
     case 'filing':
       return 'Filing';
+    case 'task':
+      return age ? `Assigned task · ${age}` : 'Assigned task';
     case 'done':
       return 'Done';
   }
@@ -440,6 +446,8 @@ function ctaForKind(kind: InternWorkKind): { label: string; variant: 'solid' | '
       return { label: 'Open company', variant: 'ghost', action: 'open' };
     case 'filing':
       return { label: 'Open filing', variant: 'ghost', action: 'open' };
+    case 'task':
+      return { label: 'Mark done', variant: 'ghost', action: 'complete-task' };
     case 'done':
       return { label: 'Open', variant: 'ghost', action: 'open' };
   }
@@ -457,6 +465,8 @@ function internWorkBoardColumn(item: InternWorkItem, now = new Date()): InternWo
       return 'action';
     case 'filing':
       return item.isOverdue || daysLate(item.dueAt, now) >= -2 ? 'action' : 'progress';
+    case 'task':
+      return 'action';
     case 'overdue':
     case 'in-progress':
       return 'progress';
@@ -486,6 +496,55 @@ function filingKind(
   return null;
 }
 
+/**
+ * The lead who owns a step: the step's `assigneeId` when it names a lead on the engagement
+ * (set by a reassign, G-18), otherwise null, meaning every lead on the engagement shares it.
+ */
+export function stepOwnerLead(
+  engagement: Pick<Engagement, 'internId' | 'leadIds'>,
+  slice: Pick<ChecklistItemStateSlice, 'assigneeId'> | undefined,
+): string | null {
+  const owner = slice?.assigneeId?.trim();
+  if (!owner) return null;
+  const onEngagement = engagement.internId === owner || (engagement.leadIds ?? []).includes(owner);
+  return onEngagement ? owner : null;
+}
+
+/**
+ * A task row as a work item (G-12): a task a manager assigned, or a client question handed to
+ * the lead. Checklist-step task rows (with a `checklistKey`) are the step items instead, so
+ * they return null. A done task shows only in the week it was finished.
+ */
+export function buildTaskWorkItem(
+  task: TaskInstance,
+  engagement: Pick<Engagement, 'id' | 'slug' | 'companyName'>,
+  now: Date,
+): InternWorkItem | null {
+  if (task.checklistKey?.trim()) return null;
+  const done = task.status === 'completed';
+  if (done) {
+    const doneYmd = ymdFromIsoInIst(task.updatedAt);
+    if (!doneYmd || !new Set(istWeekYmds(now, 7)).has(doneYmd)) return null;
+  }
+  const dueAt = ymdFromIsoInIst(task.dueAt);
+  const overdue = !done && Boolean(dueAt) && dueAt! < ymdInIst(now);
+  return {
+    id: `task:${task.id}`,
+    source: 'task',
+    engagementId: engagement.id,
+    companyName: engagement.companyName,
+    title: task.title?.trim() || 'Task',
+    kind: done ? 'done' : 'task',
+    href: internWorkHref({ source: 'task', engagement }),
+    dueAt,
+    completedAt: done ? task.updatedAt : undefined,
+    why: done ? 'Done' : overdue ? 'Assigned task · overdue' : whyForKind('task'),
+    isOverdue: overdue,
+    isCritical: false,
+    taskId: task.id,
+  };
+}
+
 export function buildInternWorkItems(opts: {
   engagements: Engagement[];
   getChecklistState: (engagement: Engagement) => Record<string, ChecklistItemStateSlice>;
@@ -494,6 +553,13 @@ export function buildInternWorkItems(opts: {
   /** Manager-set compliance windows keyed by the client-side filing id. */
   filingWindows?: Record<string, { from: string; to: string }>;
   requests?: DocRequest[];
+  /** Task rows assigned to this lead (`/api/tasks`, filtered by the caller to the lead). */
+  tasks?: TaskInstance[];
+  /**
+   * Only the steps this lead owns through a reassign (`stepOwnerLead`). The team views use it
+   * for a co-lead, so steps everyone shares are not listed twice.
+   */
+  ownedStepsOnly?: boolean;
   now?: Date;
 }): InternWorkItem[] {
   const now = opts.now ?? new Date();
@@ -519,6 +585,9 @@ export function buildInternWorkItems(opts: {
       const q = queueByKey.get(`${engagement.id}:${def.id}`);
       if (!q) continue;
       const slice = state[def.id];
+      // A step reassigned to another lead on this engagement is theirs alone (G-18).
+      const owner = stepOwnerLead(engagement, slice);
+      if (owner ? owner !== opts.internId : opts.ownedStepsOnly) continue;
       const kind = classifyStepKind(q, slice, def);
       if (!kind) continue;
 
@@ -635,6 +704,13 @@ export function buildInternWorkItems(opts: {
     });
   }
 
+  for (const task of opts.tasks ?? []) {
+    const engagement = byId.get(task.engagementId);
+    if (!engagement || !internAssignedToEngagement(engagement, opts.internId)) continue;
+    const item = buildTaskWorkItem(task, engagement, now);
+    if (item) out.push(item);
+  }
+
   return out;
 }
 
@@ -645,6 +721,7 @@ export function internWorkKpis(items: InternWorkItem[], now: Date): InternWorkKp
   const action = items.filter(
     (i) =>
       actionKinds.has(i.kind) ||
+      i.kind === 'task' ||
       (i.source === 'filing' && i.kind === 'filing' && internWorkBoardColumn(i, now) === 'action'),
   );
   const overdueItems = items.filter((i) => i.source === 'step' && i.isOverdue && i.kind !== 'done');
@@ -776,6 +853,7 @@ const KIND_RANK: Record<InternWorkKind, number> = {
   rejected: 0,
   overdue: 1,
   filing: 2,
+  task: 2,
   review: 3,
   deliver: 4,
   'in-progress': 5,

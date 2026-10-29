@@ -36,6 +36,7 @@ export const KIND_TONE: Record<string, InternChipTone> = {
   'waiting-manager': 'warning',
   'waiting-request': 'warning',
   filing: 'warning',
+  task: 'primary',
   done: 'success',
 };
 
@@ -64,6 +65,8 @@ export function internKindStatus(item: { kind: string; isOverdue?: boolean }): {
       return { word: 'Waiting', tone: 'teal' };
     case 'filing':
       return item.isOverdue ? { word: 'Overdue', tone: 'bad' } : { word: 'Due soon', tone: 'warn' };
+    case 'task':
+      return item.isOverdue ? { word: 'Overdue', tone: 'bad' } : { word: 'In progress', tone: 'prog' };
     case 'done':
       return { word: 'Done', tone: 'ok' };
     default:

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Plus, Sparkles } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkKindChip } from '@/components/intern/InternWorkRow';
@@ -14,8 +15,19 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { Button } from '@/components/ui/button';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
+import { useFilings } from '@/hooks/use-filings';
+import { useOwnFocusTodos } from '@/hooks/use-personal-todos';
+import { useApp } from '@/context/AppContext';
+import { PlannerCalendar, type PlannerItem } from '@/components/work/PlannerCalendar';
+import { PlanWeekDialog } from '@/components/work/PlanWeekDialog';
+import { NewTodoDialog, PlannerTodos } from '@/components/work/PlannerTodos';
+import { RunningSessionChip } from '@/components/work/RunningSessionChip';
+import { filingInstanceIdMap, workItemKeyFor } from '@/lib/work/work-item-key';
+import { addDaysYmd, istYmdOf, weekOf } from '@/lib/work/planner';
+import { toastSuccess } from '@/lib/toast-errors';
 import {
   INTERN_WORK_VIEW_KEY,
+  createCustomInternFocus,
   filterInternWork,
   formatDueLabel,
   formatIstWeekdayDay,
@@ -37,11 +49,30 @@ import {
 } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
 
-const VIEWS: { key: InternWorkView; label: string }[] = [
+/** The three list views plus the Planner (G-17), which lives only in this view's URL. */
+type WorkView = InternWorkView | 'plan';
+
+const VIEWS: { key: WorkView; label: string }[] = [
   { key: 'list', label: 'List' },
   { key: 'board', label: 'Board' },
   { key: 'tl', label: 'Timeline' },
+  { key: 'plan', label: 'Planner' },
 ];
+
+function parseWorkView(value: string | null | undefined): WorkView {
+  return value === 'plan' ? 'plan' : parseInternWorkView(value);
+}
+
+/** `internWorkPath` with the Planner view kept in the `view` param. */
+function workPath(filters: Parameters<typeof internWorkPath>[0], view: WorkView): string {
+  if (view !== 'plan') return internWorkPath({ ...filters, view });
+  const url = new URL(internWorkPath({ ...filters, view: 'tl' }), 'http://work.local');
+  url.searchParams.set('view', 'plan');
+  return `${url.pathname}${url.search}`;
+}
+
+/** Open items the planner may place: everything not done and not waiting on someone else. */
+const PLANNABLE = new Set(['rejected', 'review', 'deliver', 'overdue', 'in-progress', 'filing', 'task']);
 
 const FOCUS_OPTIONS: { value: InternWorkFocus; label: string }[] = [
   { value: 'action', label: 'Needs action' },
@@ -68,31 +99,39 @@ const TAG_LABEL: Record<InternWorkTag, string> = {
  * Lead Work (prototype `WorkScreen`): list, board and timeline of the lead's open steps and
  * filings. The views sit in a segmented switch; the filters are R-10 chips in the table head
  * bar and still live in the URL, so links from Today keep working. A row opens the task drawer
- * with the item's facts and its action; the step page stays one click away.
+ * with the item's facts and its action; the step page stays one click away. The Planner view
+ * holds the week calendar of time blocks and the personal to-dos; "Plan my week" and
+ * "New to-do" sit in the head on every view (G-17).
  */
 function InternMyWorkInner() {
   const params = useSearchParams();
   const router = useRouter();
   const { workItems, kpis, myEngagements } = useInternPortfolio();
+  const { user } = useApp();
+  const register = useFilings();
+  const { focus: todos, persist: persistTodos, byId: todoItems } = useOwnFocusTodos(user?.id ?? '', workItems);
   const now = useMemo(() => new Date(), []);
   const focus = parseInternWorkFocus(params.get('focus'));
   const tag = parseInternWorkTag(params.get('tag'));
   const companyId = params.get('company');
   const kind = parseInternWorkKindFilter(params.get('kind'));
   const day = parseInternWorkDay(params.get('day'));
-  const [view, setView] = useState<InternWorkView>(() => parseInternWorkView(params.get('view')));
+  const [view, setView] = useState<WorkView>(() => parseWorkView(params.get('view')));
   const [kb, setKb] = useState(-1);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [weekYmd, setWeekYmd] = useState(() => istYmdOf(now));
+  const [planOpen, setPlanOpen] = useState(false);
+  const [todoOpen, setTodoOpen] = useState(false);
 
   useEffect(() => {
     const fromUrl = params.get('view');
     if (fromUrl) {
-      setView(parseInternWorkView(fromUrl));
+      setView(parseWorkView(fromUrl));
       return;
     }
     try {
       const stored = window.localStorage.getItem(INTERN_WORK_VIEW_KEY);
-      if (stored) setView(parseInternWorkView(stored));
+      if (stored) setView(parseWorkView(stored));
     } catch {
       /* ignore */
     }
@@ -107,6 +146,38 @@ function InternMyWorkInner() {
   );
   const openItem = openId ? workItems.find((item) => item.id === openId) ?? null : null;
 
+  // Stored item keys (sessions, checklist, blocks, date requests) for each Work row.
+  const filingIds = useMemo(() => filingInstanceIdMap(register.data?.rows ?? []), [register.data]);
+  const keyOf = useMemo(() => {
+    const out = new Map<string, string>();
+    for (const item of workItems) {
+      const key = workItemKeyFor(item, filingIds);
+      if (key) out.set(item.id, key);
+    }
+    return out;
+  }, [workItems, filingIds]);
+  const idOfKey = useMemo(() => new Map([...keyOf.entries()].map(([id, key]) => [key, id])), [keyOf]);
+  const openByKey = (key: string) => {
+    const id = idOfKey.get(key);
+    if (id) setOpenId(id);
+  };
+
+  const weekDays = useMemo(() => weekOf(weekYmd), [weekYmd]);
+  const plannerItems = useMemo<PlannerItem[]>(
+    () =>
+      filtered
+        .filter((item) => PLANNABLE.has(item.kind) && keyOf.has(item.id))
+        .map((item) => ({
+          key: keyOf.get(item.id)!,
+          title: item.title,
+          companyName: item.companyName,
+          dueYmd: item.dueAt?.slice(0, 10),
+          overdue: item.isOverdue,
+        })),
+    [filtered, keyOf],
+  );
+  const stepWeek = (delta: -1 | 0 | 1) => setWeekYmd((ymd) => (delta === 0 ? istYmdOf(new Date()) : addDaysYmd(ymd, delta * 7)));
+
   const companies = useMemo(() => {
     const seen = new Map<string, string>();
     for (const e of myEngagements) seen.set(e.id, e.companyName);
@@ -118,21 +189,23 @@ function InternMyWorkInner() {
     tag?: InternWorkTag | null;
     companyId?: string | null;
     kind?: InternWorkKindFilter;
-    view?: InternWorkView;
+    view?: WorkView;
     day?: string | null;
   }) => {
-    const href = internWorkPath({
-      focus: next.focus ?? focus,
-      tag: next.tag === undefined ? tag : next.tag,
-      companyId: next.companyId === undefined ? companyId : next.companyId,
-      kind: next.kind ?? kind,
-      view: next.view ?? view,
-      day: next.day === undefined ? day : next.day,
-    });
+    const href = workPath(
+      {
+        focus: next.focus ?? focus,
+        tag: next.tag === undefined ? tag : next.tag,
+        companyId: next.companyId === undefined ? companyId : next.companyId,
+        kind: next.kind ?? kind,
+        day: next.day === undefined ? day : next.day,
+      },
+      next.view ?? view,
+    );
     router.replace(href, { scroll: false });
   };
 
-  const chooseView = (next: InternWorkView) => {
+  const chooseView = (next: WorkView) => {
     setView(next);
     try {
       window.localStorage.setItem(INTERN_WORK_VIEW_KEY, next);
@@ -190,7 +263,7 @@ function InternMyWorkInner() {
         <Button
           variant="link"
           size="sm"
-          onClick={() => router.replace(internWorkPath({ focus: 'all', tag: null, companyId: null, kind: 'all', view, day: null }), { scroll: false })}
+          onClick={() => router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null }, view), { scroll: false })}
         >
           Clear
         </Button>
@@ -209,13 +282,31 @@ function InternMyWorkInner() {
             {kpis.openCount} open · {kpis.companyCount} {kpis.companyCount === 1 ? 'company' : 'companies'}
           </p>
         </div>
+        <RunningSessionChip
+          titleFor={(key) => workItems.find((item) => item.id === idOfKey.get(key))?.title ?? null}
+          onOpen={openByKey}
+        />
         <SpectrumTabs
           size="md"
           label="Work view"
           items={VIEWS}
           value={view}
-          onChange={(next) => chooseView(next as InternWorkView)}
+          onChange={(next) => chooseView(next as WorkView)}
         />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              if (view !== 'plan') chooseView('plan');
+              setPlanOpen(true);
+            }}
+          >
+            <Sparkles className="h-4 w-4" strokeWidth={1.6} /> Plan my week
+          </Button>
+          <Button onClick={() => setTodoOpen(true)}>
+            <Plus className="h-4 w-4" strokeWidth={1.6} /> New to-do
+          </Button>
+        </div>
       </div>
 
       {view === 'list' ? (
@@ -233,7 +324,32 @@ function InternMyWorkInner() {
         <TimelineView items={filtered} now={now} selectedDay={day} filters={filters} onOpen={(item) => setOpenId(item.id)} />
       ) : null}
 
-      <InternWorkDrawer item={openItem} now={now} onClose={() => setOpenId(null)} />
+      {view === 'plan' ? (
+        <>
+          <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
+          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <PlannerCalendar days={weekDays} onWeek={stepWeek} items={plannerItems} now={now} onOpenItem={openByKey} />
+            <PlannerTodos focus={todos} byId={todoItems} persist={persistTodos} onOpenItem={setOpenId} onNew={() => setTodoOpen(true)} />
+          </div>
+        </>
+      ) : null}
+
+      <InternWorkDrawer
+        item={openItem}
+        workKey={openItem ? keyOf.get(openItem.id) ?? null : null}
+        now={now}
+        onClose={() => setOpenId(null)}
+      />
+      <PlanWeekDialog open={planOpen} onOpenChange={setPlanOpen} days={weekDays} items={plannerItems} now={now} />
+      <NewTodoDialog
+        open={todoOpen}
+        onOpenChange={setTodoOpen}
+        onAdd={(title) => {
+          persistTodos([createCustomInternFocus(title), ...todos]);
+          if (view !== 'plan') chooseView('plan');
+          toastSuccess('To-do added', title);
+        }}
+      />
     </PageTransition>
   );
 }

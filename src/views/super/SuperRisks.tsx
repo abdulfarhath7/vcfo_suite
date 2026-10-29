@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -9,6 +10,7 @@ import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Tag, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Button } from '@/components/ui/button';
+import { RemindClientButton } from '@/components/reminders/RemindClientButton';
 import {
   ClientTile,
   SuperPageError,
@@ -30,8 +32,10 @@ import { cn } from '@/lib/utils';
  *
  * Built only from stored states and dates: steps marked overdue, filings past their due date
  * and not filed, clients with open work and no move for `SUPER_STUCK_DAYS` days (or blocked),
- * and clients with nobody assigned. Each row opens the client or the step behind it. The
- * surface stays read-only, so "Open" replaces the prototype's Remind and Assign buttons.
+ * and clients with nobody assigned. Each row opens the client or the step behind it. An
+ * overdue step or filing also has the one-click Remind to the client (G-15); when the
+ * reminder cannot go out, the row's record opens instead so the super admin can follow up.
+ * Assign stays with the owners' screens.
  */
 export const SUPER_RISKS_HREF = '/app/super/risks';
 
@@ -61,7 +65,13 @@ function ageLabel(risk: SuperRisk): string {
   return `${risk.ageDays} days`;
 }
 
+/** Risks the client can act on: an overdue step or filing. The risk id is the item key. */
+function remindKeyOf(risk: SuperRisk): string | null {
+  return risk.kind === 'step' || risk.kind === 'filing' ? risk.id : null;
+}
+
 export default function SuperRisks() {
+  const router = useRouter();
   const query = useSuperInsights();
   const insights = query.data;
   const [kind, setKind] = useState('all');
@@ -131,13 +141,27 @@ export default function SuperRisks() {
     {
       key: 'action',
       header: <span className="sr-only">Action</span>,
-      width: '96px',
+      width: '184px',
       align: 'right',
-      render: (r) => (
-        <Button asChild size="sm" variant="outline" className="w-[76px]">
-          <Link href={r.href}>Open</Link>
-        </Button>
-      ),
+      render: (r) => {
+        const key = remindKeyOf(r);
+        return (
+          <span className="inline-flex items-center justify-end gap-1.5">
+            {key ? (
+              <RemindClientButton
+                engagementId={r.engagementId}
+                itemKey={key}
+                title={r.title}
+                className="w-[88px]"
+                onFailed={() => router.push(r.href)}
+              />
+            ) : null}
+            <Button asChild size="sm" variant="outline" className="w-[76px]">
+              <Link href={r.href}>Open</Link>
+            </Button>
+          </span>
+        );
+      },
     },
   ];
 
@@ -158,7 +182,7 @@ export default function SuperRisks() {
               onChange={setKind}
             />
           </div>
-          <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={820} pageSize={12} />
+          <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={908} pageSize={12} />
         </DashSection>
       </div>
     </PageTransition>

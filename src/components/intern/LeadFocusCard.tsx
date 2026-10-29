@@ -98,9 +98,12 @@ function QueuePinPopover({
 export function LeadFocusCard({
   userId,
   items,
+  embedded = false,
 }: {
   userId: string;
   items: InternWorkItem[];
+  /** Render only the body, for the "My to-dos" tab of the lead's Inbox card. */
+  embedded?: boolean;
 }) {
   const { focus, persist, byId } = useOwnFocusTodos(userId, items);
   const [picking, setPicking] = useState(false);
@@ -123,23 +126,18 @@ export function LeadFocusCard({
   const removeClass =
     'grid h-6 w-6 shrink-0 place-items-center rounded-md text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink';
 
-  return (
-    <DashSection
-      icon={ListChecks}
-      title="Todos"
-      className="h-fit"
-      bodyClassName="pt-2"
-      meta={
-        items.length > 0 ? (
-          <QueuePinPopover
-            open={picking}
-            onOpenChange={setPicking}
-            pickable={pickable}
-            onPin={(item) => persist([...focus, { id: item.id, done: false, title: item.title }])}
-          />
-        ) : undefined
-      }
-    >
+  const fromQueue =
+    items.length > 0 ? (
+      <QueuePinPopover
+        open={picking}
+        onOpenChange={setPicking}
+        pickable={pickable}
+        onPin={(item) => persist([...focus, { id: item.id, done: false, title: item.title }])}
+      />
+    ) : undefined;
+
+  const body = (
+    <>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -259,6 +257,21 @@ export function LeadFocusCard({
           })}
         </div>
       ) : null}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="px-4 pb-3 pt-3">
+        {fromQueue ? <div className="mb-2 flex justify-end">{fromQueue}</div> : null}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <DashSection icon={ListChecks} title="Todos" className="h-fit" bodyClassName="pt-2" meta={fromQueue}>
+      {body}
     </DashSection>
   );
 }

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   FileInput,
+  ListChecks,
   Mail,
   Send,
   Undo2,
@@ -31,6 +32,7 @@ const KIND_ICON = {
   'waiting-manager': Clock,
   'waiting-request': FileInput,
   filing: Clock,
+  task: ListChecks,
   done: CheckCircle2,
 } as const;
 
