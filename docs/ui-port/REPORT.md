@@ -16,9 +16,42 @@ npm run dev                                                        # http://loca
 Demo logins are in `README.md`. Check each portal in light, dark and at 390px width; no browser
 check was made tonight (D-14).
 
-Gate at the last commit: `npm run typecheck` 0 errors, `npm run lint` 0 errors (301 warnings,
-mostly `react-refresh/only-export-components`), `npm run test` 203 files and 2023 tests pass.
-The e2e smoke list (`e2e/smoke.spec.ts`) has the new routes but was not run.
+Gate at the last commit: `npm run typecheck` 0 errors, `npm run lint` 0 errors (329 warnings,
+mostly `react-refresh/only-export-components`), `npm run test` 281 files and 2774 tests pass, and
+`npm run build` succeeds. The e2e smoke list (`e2e/smoke.spec.ts`) has the new routes but was not run.
+
+## Second pass (29 Oct 2026): every gap, and the prototype's newer commits
+
+The owner asked for every gap to be built and for the prototype's five newer commits
+(05e5509 to ccb6ae4, the parity pass in its `docs/SPECTRUM-PARITY.md`) to be ported.
+
+- **Migration first.** `src/db/migrations/0026_gaps_backend.sql` adds every table and column the
+  gaps need, and the `developer` role. It was applied to the local Docker database only. Apply it
+  on RDS before deploying this branch. `docs/ui-port/GAPS.md` lists what was built for each gap
+  and what is left.
+- **New dependencies:** `@aws-sdk/client-apprunner`, `@aws-sdk/client-cloudwatch-logs`,
+  `@aws-sdk/client-cost-explorer` (developer console). Only those three lines of `package.json`
+  were committed; your own edits there are still uncommitted.
+- **New env names** are in `.env.example`: `APP_LOG_GROUP`, `APP_RUNNER_SERVICE_ARN`,
+  `AWS_COST_EXPLORER`, `INNGEST_SIGNING_KEY`, `INNGEST_API_BASE_URL`, `DEMO_REQUEST_TO`,
+  `WHATSAPP_TEMPLATE_NAME_CLIENT_REMINDER`.
+- **Not run:** `scripts/backfill-step-events.mjs` (dry run by default, `--apply` writes) seeds step
+  history from audit events, so days in step have a past.
+- **Security fixes found on the way:** `/api/audit-logs` returned every staff action on a
+  client's engagement to that client; it now applies the client allowlist. Staff could not mark a
+  filing filed at all; `PATCH /api/filings/:id/status` now does it, scoped and audited.
+
+| Area | What changed | Commit |
+|---|---|---|
+| Developer console | `developer` role, nine read-only screens, masked client data | 6c07b40, 441b0af |
+| Super admin | Firm settings, admins and escalations, assign and reassign, Growth pipeline, saved and scheduled PDF reports, Book a demo | 290b73c, ff4842d |
+| Security | Two-step sign-in (TOTP), device sessions and sign-out, staff notification preferences | 62ac1a4 |
+| Client portal | Proof upload, DINs, withdraw, multi-file upload, Message the lead, sub-step progress | e259bbe |
+| Work | Task drawer sessions, checklist, files, activity, Mark done; planner; client messages and triage; assign; Remind; reassign | 70f3338, f26603e |
+| Records and compliance | Obligation texts, renewals, certificates, record tabs, notes; step events, metrics, audit cursor; Mark filed | 556eaaf, e71d89e, b2a5edd |
+| Mail and vault | Signature, attachments, mail groups; vault ZIP, upload, requests, review, preview | 5373af9 |
+| Shared parts (parity) | Compact home card, FilterChip, DangerConfirm, toasts, L1 loading, menu keys, Term and Tip, AvatarStack, bulk bar, status menu, saved views, density, new-since, relative due words, six-word chips, ShortcutSheet, phone TabBar | a2d4de6, 8bdadcc |
+| Screens (parity) | Compact homes on every portal, Team tasks, Work and Clients tables, Filings by filing and client, client home upload progress, retaken landing screenshots | 787eb9e, 8b8ecbf, 3b755e1 |
 
 ## Done
 
@@ -63,9 +96,9 @@ give, the screen leaves it out and `GAPS.md` lists it.
 | e2e suites (`npm run e2e:smoke`, `npm run e2e`) | Run after `db:seed-demo`. Text checks that changed: the settings heading is "Sign-in and security"; Library's head reads "{company}’s library". |
 | Developer console (9 screens) | Gap G-01: needs a developer role and data sources. |
 | Firm settings (admin and super admin) | Gap G-02: needs a firm settings store. |
-| `DashHero` props for a company square, a tag after the name and tile `onClick` | The client home uses its own copy of the card on the same classes (`bg-wash`, `wash-tile`). Add the props, then switch the client home to `DashHero`. |
-| Promote `WorkFilterChip` (dropdown chip with ×) to `src/components/ui` | `DashFilterChip` is a toggle only. Move it and use it on every list. |
-| `EFilingGrid` keyboard-focusable rows | Rows with `onRowClick` cannot be reached by keyboard; the screens put a button in the name cell meanwhile. |
+| Trend lines on home tiles | Only super admin "Filed on time" has one; the other counts have no stored history yet. |
+| Client home tiles that open a drill | `DashHero` has no tile `onClick`; the client home catches `#dd-` links instead. |
+| Old client phone home files | `MobileHome.tsx` and the files around it are no longer imported; retire them with the list below. |
 | `src/lib/email/email-layout.ts` | Still its own palette. |
 | Old UI files no longer used by any route | Kept, not deleted (rule 5 of `new_context.md`). Retire after the owner's test: `src/components/client-portal/pages/home/{MobileHome,MobileCardsA,MobileCardsB,MobileParts,useMobileHome}.tsx`, `css-src/home-m.css`, `css-src/incorporation-landing.css`, `CrBot.tsx`, `Visor.tsx` figures, `src/views/auth/Login.tsx`, `src/components/auth/{LoginHero,LoginShowcase}.tsx`, `react-bits/BlurText.tsx`, `src/components/marketing/sections/{LandingHero,LandingImpact,LandingProblem,LandingHowItWorks}.tsx`, `HeroProductPlane.tsx`, `src/components/intern/LeadPracticeStrip.tsx` (keep `isOverdueOrDueSoon`), CSS classes `.lead-tl*`, `.lead-board-col*`, `.ann-kind*`, `.notif-kind`, `.lead-hero*` in `app/globals.css`, `DOC_STATUS_*_TONE` in `src/lib/doc-pack/labels.ts`. |
 

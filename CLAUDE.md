@@ -123,12 +123,14 @@ are in the prototype's `docs/RULES.md`; the shared Spectrum parts are
 `DashHero` is the home card on the colour wash. Untracked files the owner left in the tree
 (`docs/overview/*`, `docs/specs/landing-page/lovable/`, `scripts/build-incorp-docs-er*.mjs`,
 `new_context.md`, and edits to `docker-compose.yml`, `package.json` and the landing README)
-are not part of the port and were not committed.
+are not part of the port and were not committed. A second pass the same day built every gap in
+`docs/ui-port/GAPS.md` and the prototype's parity pass; it adds migration `0026_gaps_backend`
+(apply on RDS before deploy) and a `developer` role that only `requireDeveloper` admits.
 
 ## Next steps / known issues
 
 - `src/lib/email/email-layout.ts` still has its own literal palette (not Spectrum yet).
-- `npm run lint` has 0 errors and 301 warnings (mostly `react-refresh/only-export-components`).
+- `npm run lint` has 0 errors and 329 warnings (mostly `react-refresh/only-export-components`).
 - `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features
   throw in production until it is added.
 - Role checks in repositories must use the helpers in `src/lib/auth.ts` (`isFirmWideAdmin`,
