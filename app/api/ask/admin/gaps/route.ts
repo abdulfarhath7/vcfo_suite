@@ -13,7 +13,8 @@ import { requireAsk } from '@/lib/ask/route-guard';
 export async function GET() {
   const gate = await requireAsk();
   if (gate.ok === false) return gate.response;
-  if (!askFeatures().A1) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  // A1 off: answer 200 with `off` so the page shows its off state without a 404 in the console.
+  if (!askFeatures().A1) return NextResponse.json({ off: true });
   if (!isFirmWideAdmin(gate.ctx.role)) return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
   try {
     const since = new Date(Date.now() - GAPS_WINDOW_DAYS * 86_400_000);

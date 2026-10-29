@@ -41,8 +41,9 @@ export default function AskQuestionGaps() {
     queryFn: async (): Promise<GapsResponse | null> => {
       const res = await fetch('/api/ask/admin/gaps');
       if (res.status === 404) return null;
-      const body = (await res.json().catch(() => null)) as (GapsResponse & { error?: string }) | null;
+      const body = (await res.json().catch(() => null)) as (GapsResponse & { error?: string; off?: boolean }) | null;
       if (!res.ok || !body) throw new Error(body?.error || 'Could not load question gaps');
+      if (body.off) return null;
       return body;
     },
   });

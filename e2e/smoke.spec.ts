@@ -145,7 +145,8 @@ const createProjectForm: RouteCheck = async (page) => {
 /** Firm People: the role groups render and the create dialog opens. */
 const firmPeople: RouteCheck = async (page) => {
   await expect(page.getByRole('heading', { name: 'People' }).first()).toBeVisible();
-  await expect(page.getByText('Managers', { exact: true }).first()).toBeVisible();
+  // Admins see a Managers group; a manager sees only their Project leads.
+  await expect(page.getByRole('heading', { name: /^(Managers|Project leads)$/ }).first()).toBeVisible();
   const create = page.getByRole('button', { name: 'Create person' });
   if (await create.isVisible()) {
     await create.click();
