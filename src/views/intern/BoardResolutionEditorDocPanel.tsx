@@ -239,21 +239,12 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                 <div className="mb-6 rounded-md border-1.5 border-line bg-surface-raised p-5">
 
-                  <p className="mb-2 text-[15px] font-medium text-ink">
+                  <p className="mb-3 text-[15px] font-medium text-ink">Word document ready</p>
 
-                    Word document ready
-
-                  </p>
-
-                  <p className="text-[13px] text-ink-muted mb-4 max-w-lg">
-
-                    {previewStorageCorrupt && isFinalized
-                      ? 'The stored file could not be previewed. Re-generate or apply the latest template below to rebuild storage; the document stays finalized for the client.'
-                      : isFinalized
-                        ? 'This is the file clients download after finalization. Re-generate or apply the latest template to refresh it from current Pre-1 data; release status is unchanged.'
-                        : 'This is the file clients receive after finalization. Re-generate to apply the latest template and current Pre-1 data.'}
-
-                  </p>
+                  {/* R-06: no helper sentence; only the repair case keeps one line. */}
+                  {previewStorageCorrupt && isFinalized ? (
+                    <p className="mb-4 max-w-lg text-[13px] text-ink-muted">The stored file could not be previewed. Re-generate to rebuild it.</p>
+                  ) : null}
 
                   <div className="flex flex-wrap gap-2">
 

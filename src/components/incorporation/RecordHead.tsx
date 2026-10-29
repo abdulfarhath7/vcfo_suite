@@ -1,20 +1,33 @@
 import type { ReactNode } from 'react';
 import { initialsFromName } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { clientIdentityTone } from '@/views/client-record/client-identity';
 
 /* Parts of the plain client record head (VCFO Spectrum C-0108; prototype `ClientRecordScreen`). */
 
 /**
- * Company tile: initials on a 6px square (R-44). Companies stay neutral here, as on every other
- * staff company tile (docs/design/TOKENS.md).
+ * Company tile: initials on a 6px square (R-44). With `identityId` (the engagement id) the tile
+ * takes the client's identity colour (R-35, `client-identity.tsx`); without it the tile stays
+ * neutral, as on the recycle bin and the people screens.
  */
-export function RecordTile({ name, size = 44, className }: { name: string; size?: 30 | 36 | 44; className?: string }) {
+export function RecordTile({
+  name,
+  size = 44,
+  identityId,
+  className,
+}: {
+  name: string;
+  size?: 30 | 36 | 44;
+  identityId?: string | null;
+  className?: string;
+}) {
   const initials = (initialsFromName(name) || '•').slice(0, 2);
   return (
     <span
       aria-hidden
       className={cn(
-        'inline-grid flex-none place-items-center rounded-md bg-surface-sunken font-medium tracking-[.02em] text-ink-2',
+        'inline-grid flex-none place-items-center rounded-md font-medium tracking-[.02em]',
+        identityId ? clientIdentityTone(identityId) : 'bg-surface-sunken text-ink-2',
         size <= 30 ? 'text-[11px]' : 'text-[12.5px]',
         className,
       )}

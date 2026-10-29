@@ -12,7 +12,7 @@ import { ensureEngagementManager } from '@/db/repositories/engagement-managers-m
 import type { EngagementDbRow } from './scope';
 import { getEngagementById } from './read';
 import { writeStepEvents } from '@/db/repositories/step-events';
-import { diffStepStatuses } from '@/lib/metrics/step-timing';
+import { diffStepChanges } from '@/lib/metrics/step-timing';
 
 /** Engagement row writes: create, checklist_state, metadata, progress CC, soft delete and restore. */
 
@@ -64,9 +64,10 @@ export async function updateChecklistState(
   const existing = await getEngagementById(ctx, id);
   if (!existing) throw new Error('Engagement not found or not permitted');
 
-  // A status change also writes one engagement_step_events row per step, in the same
-  // transaction, so "opened at" and "days in step" never disagree with the stored status.
-  const changes = diffStepStatuses(
+  // A status or review change also writes one engagement_step_events row per step, in the
+  // same transaction, so "opened at", "days in step" and the review history never disagree
+  // with the stored state.
+  const changes = diffStepChanges(
     existing.checklistState as Record<string, unknown> | null,
     nextState,
   );

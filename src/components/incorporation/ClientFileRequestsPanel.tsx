@@ -94,10 +94,10 @@ export function ClientFileRequestsPanel({ engagementId, item }: { engagementId: 
                 {r.dueDate ? <span className="text-ink-muted"> · due {r.dueDate}</span> : null}
               </span>
               {r.fulfilledAt ? (
-                <span className="text-xs font-semibold text-emerald-700">Uploaded{r.fileName ? ` · ${r.fileName}` : ""}</span>
+                <span className="text-xs font-semibold text-positive">Uploaded{r.fileName ? ` · ${r.fileName}` : ""}</span>
               ) : (
                 <>
-                  <span className="text-xs font-semibold text-amber-700">Waiting on client</span>
+                  <span className="text-xs font-semibold text-warning">Waiting on client</span>
                   <Button size="sm" variant="ghost" disabled={cancel.isPending} onClick={() => cancel.mutate(r.id)}>
                     Cancel
                   </Button>

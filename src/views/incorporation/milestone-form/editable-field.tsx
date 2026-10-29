@@ -187,7 +187,7 @@ export function createEditableFieldRenderer(
                     'milestone-segment-option',
                     selected
                       ? 'bg-surface-raised text-ink shadow-sm ring-1 ring-line'
-                      : 'text-slate-600 hover:bg-white/70 hover:text-ink',
+                      : 'text-ink-2 hover:bg-surface-raised/70 hover:text-ink',
                   )}
                 >
                   {opt.label}

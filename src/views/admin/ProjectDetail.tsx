@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo } from 'react';
-import { useParams, redirect } from 'next/navigation';
+import { useParams, useRouter, redirect } from 'next/navigation';
 import { RedirectTo } from '@/components/routing/RedirectTo';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { InternPhaseEntryCards } from '@/components/incorporation/InternOverviewProgress';
 import { TimelineRequestsPanel } from '@/components/incorporation/TimelineRequestsPanel';
 import { WorkItemsPanel } from '@/components/incorporation/WorkItemsPanel';
-import { PhaseBar } from '@/components/ui/step-track';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { RecordStat, RecordStats, RecordTile } from '@/components/incorporation/RecordHead';
 import { STAGE_LABEL, type Stage } from '@/components/admin/create-project-form-utils';
@@ -17,44 +15,35 @@ import { DocPackPhasePill } from '@/components/doc-pack/DocPackPhasePill';
 import { useDocPack } from '@/hooks/use-doc-pack';
 import { docPackPagePath } from '@/lib/doc-pack/paths';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
-import { getActiveCatalogItems } from '@/data/checklist';
+import { getActiveCatalogItems, type ChecklistItem } from '@/data/checklist';
 import { adminProjectPath, adminProjectStepPath } from '@/lib/projects/project-step-path';
 import {
   gateActiveCatalog,
   isChecklistStepSequentiallyComplete,
 } from '@/lib/checklist/checklist-step-gate';
-import {
-  internOverviewCurrentItemInPhase,
-  internOverviewPhases,
-  internPhaseStepCounts,
-} from '@/lib/intern/intern-overview-progress';
 import { formatDate } from '@/lib/projects/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { useQueryClient } from '@tanstack/react-query';
-import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
-import { ExpectedCoiControl } from '@/components/metrics/expected-coi-control';
 import { RaiseEscalationButton } from '@/components/super/escalations/RaiseEscalationButton';
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
-import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
+import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
+import { RecordDocumentsButton, RecordMetaLine, RecordNumbers } from '@/views/client-record/RecordHeadParts';
+import { RecordTimelineCard } from '@/components/timeline';
 
 /**
- * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
- * not a lookalike.
+ * STAFF CLIENT RECORD (admin + manager; prototype `ClientRecordScreen`).
  *
- * Opening a project from the Projects list lands here: the same header and the
- * same four phase rows (SPICe+ Part A / Part B / Post-incorporation /
- * Registration) the client sees on `/app/client/incorporation`, built from the
- * same `InternPhaseEntryCards`. Gates run with the `client` viewer, so nothing
- * on this surface (or the step workspace it opens) is editable — staff read
- * the project exactly as the client does. Firm-side actions live elsewhere
- * (Approvals, Email, People).
+ * The head shows the client tile in its identity colour, the name and stage, the contact,
+ * manager and project lead with "Reassign", and the numbers line (step, days to COI, days with
+ * the holder, the Now link). The Incorporation tab holds the Timeline card (the shared Gantt,
+ * with "Edit the timeline" for the roles that set dates) and the Steps card with the ST5 phase
+ * track and the step list. Gates run with the `client` viewer, so nothing on the step list is
+ * editable here; staff read the steps as the client does.
  *
- * Underline tabs under the head switch the record in place (G-19): the
- * incorporation phases above, then Registrations, Obligations and Notes
- * (`src/views/client-record/RecordTabs.tsx`).
+ * Underline tabs under the head switch the record in place (G-19): Incorporation, then
+ * Registrations, Obligations, Documents and Notes (`src/views/client-record/RecordTabs.tsx`).
  */
 const STAGE_TONE: Record<string, ChipTone> = {
   'Pre-Incorporation': 'violet',
@@ -70,10 +59,11 @@ export default function ProjectDetail() {
     engagementsLoading,
     getStateForEngagement,
     refreshEngagementChecklist,
+    teamMembers,
     user,
   } = useApp();
   const staffBase = useStaffBasePath();
-  const queryClient = useQueryClient();
+  const router = useRouter();
   // G-19: the record's tabs (Incorporation, Registrations, Obligations, Notes), `?tab=`.
   const [recordTab, setRecordTab] = useRecordTab();
 
@@ -81,7 +71,6 @@ export default function ProjectDetail() {
     () => resolveEngagementFromRouteParam(engagements, slugParam),
     [engagements, slugParam],
   );
-  const phases = useMemo(() => internOverviewPhases(), []);
   const docPack = useDocPack(eng?.id);
   const docPackPill = useCallback(
     (phaseId: string) => {
@@ -104,18 +93,6 @@ export default function ProjectDetail() {
   // Client viewer on purpose: read-only gating, identical to the client portal.
   const gates = useMemo(() => gateActiveCatalog(state, 'client'), [state]);
 
-  /** A phase row opens that phase's live step — the same jump the client makes. */
-  const phaseHref = useCallback(
-    (phaseId: string): string | null => {
-      if (!eng) return null;
-      const phase = phases.find((entry) => entry.id === phaseId);
-      if (!phase) return null;
-      const item = internOverviewCurrentItemInPhase(phase.items, gates);
-      return item ? adminProjectStepPath(eng, item, staffBase) : null;
-    },
-    [eng, phases, gates, staffBase],
-  );
-
   if (!eng && engagementsLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -135,8 +112,9 @@ export default function ProjectDetail() {
   const totalDone = catalog.filter((item) =>
     isChecklistStepSequentiallyComplete(state[item.id]?.status ?? 'not-started', state[item.id], item.id),
   ).length;
+  const stepHref = (item: ChecklistItem) => adminProjectStepPath(eng, item, staffBase);
+  const leadName = teamMembers.find((m) => m.id === eng.internId)?.name ?? null;
   const incorporationDate = eng.incorporationDate;
-  const phaseCounts = phases.map((phase) => internPhaseStepCounts(phase.items, gates));
 
   return (
     <PageTransition>
@@ -146,11 +124,11 @@ export default function ProjectDetail() {
         path={adminProjectPath(eng, staffBase)}
       />
 
-      {/* Plain record head (VCFO Spectrum C-0108): no band, no back link (R-09), the ST5 bars. */}
+      {/* Plain record head (VCFO Spectrum C-0108): no band, no back link (R-09). */}
       <header className="mb-5 grid gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <RecordTile name={eng.companyName} />
-          <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-start gap-3">
+          <RecordTile name={eng.companyName} identityId={eng.id} />
+          <div className="min-w-0 flex-[1_1_320px]">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">{eng.companyName}</h1>
               {eng.stage ? (
@@ -159,46 +137,18 @@ export default function ProjectDetail() {
                 </Chip>
               ) : null}
             </div>
-            {eng.clientEmail?.trim() ? (
-              <p className="text-[13.5px] text-ink-muted">
-                <a href={`mailto:${eng.clientEmail.trim()}`} className="hover:text-ink hover:underline">
-                  {eng.clientEmail.trim()}
-                </a>
-              </p>
-            ) : null}
+            <RecordMetaLine engagement={eng} />
+          </div>
+          <div className="flex flex-none flex-wrap items-center gap-2">
+            {/* G-20: raise the client to an admin or the super admin. */}
+            <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
+            <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
           </div>
         </div>
         <RecordStats>
-          <RecordStat value={`${totalDone}/${totalSteps}`} label="steps done" />
+          <RecordNumbers engagement={eng} state={state} gates={gates} hrefFor={stepHref} />
           {incorporationDate ? <RecordStat value={formatDate(new Date(incorporationDate))} label="incorporated" /> : null}
-          <PhaseBar
-            tall
-            className="w-[min(320px,100%)]"
-            done={phaseCounts.map((p) => p.done)}
-            totals={phaseCounts.map((p) => p.total)}
-            names={phases.map((p) => p.title)}
-          />
         </RecordStats>
-        {/* One window for SPICe+ Part A + Part B together. Managers and
-            admins set it here; leads and clients read it on the phase rows. */}
-        {canSetScheduleWindows(user?.role) ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <ScheduleWindowControl
-              value={eng.schedule?.incorporation}
-              label="Incorporation"
-              onSave={async (window) => {
-                await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
-                await queryClient.invalidateQueries({ queryKey: ['engagements'] });
-              }}
-            />
-            {/* The date the firm expects the certificate (G-13); read by the practice cards. */}
-            {!incorporationDate ? <ExpectedCoiControl engagementId={eng.id} value={eng.expectedCoiOn} /> : null}
-          </div>
-        ) : null}
-        {/* G-20: raise the client to an admin or the super admin. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
-        </div>
       </header>
 
       <RecordTabBar
@@ -206,22 +156,26 @@ export default function ProjectDetail() {
         value={recordTab}
         onChange={setRecordTab}
         overviewCount={`${totalDone}/${totalSteps}`}
-        className="mb-4"
+        className="mb-5"
       />
       {recordTab === 'overview' ? (
-        <>
+        <div className="grid gap-5">
           <TimelineRequestsPanel engagementId={eng.id} canDecide={canSetScheduleWindows(user?.role)} />
-          <div className="flex flex-col gap-3">
-            <InternPhaseEntryCards
-              phases={phases}
-              gates={gates}
-              hrefForPhase={phaseHref}
-              metaForPhase={phaseWindowMeta(eng.schedule)}
-              trailingForPhase={docPackPill}
-            />
-          </div>
+          {/* R-21: the Gantt; "Edit" sets the incorporation window and the expected COI. */}
+          <RecordTimelineCard engagement={eng} state={state} role={user?.role} />
+          <RecordStepsCard
+            engagement={eng}
+            state={state}
+            gates={gates}
+            hrefFor={stepHref}
+            onOpen={(item) => router.push(stepHref(item))}
+            leadName={leadName}
+            metaForPhase={phaseWindowMeta(eng.schedule)}
+            trailingForPhase={docPackPill}
+            onOpenRegistrations={() => setRecordTab('registrations')}
+          />
           <WorkItemsPanel engagementId={eng.id} />
-        </>
+        </div>
       ) : (
         <RecordTabPanel tab={recordTab} engagement={eng} shellBase={staffBase} />
       )}

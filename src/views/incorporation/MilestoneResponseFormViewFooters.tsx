@@ -69,7 +69,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               )}
               {autoSaveStatus === 'saved' && (
                 <>
-                  <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                  <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                   <span>Saved</span>
                 </>
               )}
@@ -155,7 +155,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                       )}
                       {autoSaveStatus === 'saved' && (
                         <>
-                          <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                          <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                           <span>Saved</span>
                         </>
                       )}
@@ -179,7 +179,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                     >
                       {saving && <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />}
                       {!saving && staffSaveStatus === 'saved' && (
-                        <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                        <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                       )}
                       {!saving && staffSaveStatus === 'error' && (
                         <AlertCircle className="h-3 w-3 shrink-0 text-danger" aria-hidden />
@@ -241,7 +241,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                 <>
                   {saving && <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />}
                   {!saving && staffSaveStatus === 'saved' && (
-                    <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                    <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                   )}
                   {!saving && staffSaveStatus === 'error' && (
                     <AlertCircle className="h-3 w-3 shrink-0 text-danger" aria-hidden />
@@ -292,7 +292,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
               )}
               {autoSaveStatus === 'saved' && (
                 <>
-                  <Check className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
+                  <Check className="h-3 w-3 shrink-0 text-positive" aria-hidden />
                   <span>Saved</span>
                 </>
               )}

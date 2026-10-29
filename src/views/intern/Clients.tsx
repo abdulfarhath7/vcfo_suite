@@ -6,12 +6,24 @@ import { useQuery } from '@tanstack/react-query';
 import { BellRing, ChevronRight, Download } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
-import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { ClientIdentityTile } from '@/views/client-record/client-identity';
+import {
+  CLIENT_HEALTHS,
+  ClientsLegend,
+  NowCell,
+  STAGE_CHIP_TONE,
+  STAGE_WORD,
+  clientRowFacts,
+  nextInWeek,
+  shortDate,
+  type ClientRowFacts,
+  type ClientStage,
+} from '@/views/admin/clients/client-row';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { PhaseBar } from '@/components/ui/step-track';
@@ -19,9 +31,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { AvatarStack } from '@/components/ui/avatar-stack';
 import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/saved-views';
 import type { BulkAction } from '@/components/ui/bulk-bar';
-import { RowQuickActions } from '@/components/staff/today/row-actions';
+import { RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
 import { workItemChangedAt } from '@/components/staff/today/today-rows';
-import { exportRowsCsv, remindMany } from '@/components/staff/today/work-actions';
+import { copyRowLink, exportRowsCsv, remindMany } from '@/components/staff/today/work-actions';
 import { remindableItemKey } from '@/lib/reminders/reminder-rules';
 import type { DirectoryPerson } from '@/lib/email/directory-filter';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -38,6 +50,8 @@ type Row = {
   e: Engagement;
   pct: number;
   progress: InternCompanyPhaseProgress;
+  /** Stage, Now, next date and health, derived from the step state (`clientRowFacts`). */
+  facts: ClientRowFacts;
   /** The lead's work items on this client, for the views, Remind and the change time. */
   items: InternWorkItem[];
   /** People who work on the client (managers and leads), from the staff directory. */
@@ -87,18 +101,17 @@ function rowStatus(r: Row): { word: string; tone: ChipTone } {
   return { word: 'In progress', tone: 'prog' };
 }
 
-/** Stage is a category, not a status: no dot (prototype grids). */
-const STAGE_TONE: Record<string, ChipTone> = {
-  'Pre-Incorporation': 'violet',
-  'Post-Incorporation': 'prog',
-  'Operational Readiness': 'teal',
-};
+const NEXT_OPTIONS = [
+  { value: 'week', label: 'This week' },
+  { value: 'next', label: 'Next week' },
+];
 
 /**
  * Lead Clients (prototype `ClientsScreen` and `ClientsGrid`): a T1 grid of the lead's companies
- * with the stage chip, the ST5 phase bars, who works on it (V3 stacked faces from the staff
- * directory), where each one is now and its status. Stage tabs and the saved views sit in the
- * card head. Rows can be picked for the bulk bar (Remind the client about what they owe, Export),
+ * with the identity tile and contact, the stage chip (Incorporating or Compliance), the ST5 phase
+ * bars, where each one is now (holder square, step code, step), who works on it (V3 stacked faces
+ * from the staff directory), steps done and its status. Stage tabs, the Health and Next filter
+ * chips sit in the card head; the saved views sit in a row under it. Rows can be picked for the bulk bar (Remind the client about what they owe, Export),
  * and Open and Remind show at the row end. A lead does not reassign clients, so there is no
  * Assign. The status is derived from the steps, so its chip stays plain. On phones each company
  * is one row card.
@@ -118,6 +131,8 @@ function InternClientsInner() {
   const params = useSearchParams();
   const [stage, setStage] = useState('');
   const [show, setShow] = useState('');
+  const [health, setHealth] = useState('');
+  const [nextWin, setNextWin] = useState('');
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const now = useMemo(() => new Date(), []);
   const scope = user?.id ?? 'lead';
@@ -144,14 +159,21 @@ function InternClientsInner() {
         e,
         pct: progressByEngagement.get(e.id) ?? 0,
         progress: internCompanyPhaseProgress(e, state),
+        facts: clientRowFacts(e, state, now),
         items,
         people,
         changedAt: stamps.sort().at(-1),
       };
     });
-  }, [myEngagements, progressByEngagement, getStateForEngagement, workItems, directory.data]);
-  const stages = useMemo(() => [...new Set(all.map((r) => r.e.stage).filter(Boolean))] as string[], [all]);
-  const rows = all.filter((r) => (!stage || r.e.stage === stage) && inShow(show, r.items, now));
+  }, [myEngagements, progressByEngagement, getStateForEngagement, workItems, directory.data, now]);
+  const todayIso = now.toISOString().slice(0, 10);
+  const rows = all.filter(
+    (r) =>
+      (!stage || r.facts.stage === stage) &&
+      inShow(show, r.items, now) &&
+      (!health || r.facts.health === health) &&
+      nextInWeek(r.facts.next, todayIso, nextWin),
+  );
   const rowSig = rows.map((r) => r.e.id).join('|');
   // Clients that leave the list (a filter, a refetch) leave the selection too.
   useEffect(() => {
@@ -163,10 +185,12 @@ function InternClientsInner() {
     });
   }, [rowSig]);
   const current: ViewFilters = { stage, show };
-  const anyFilter = Boolean(stage || show);
+  const anyFilter = Boolean(stage || show || health || nextWin);
   const clear = () => {
     setStage('');
     setShow('');
+    setHealth('');
+    setNextWin('');
   };
   const remind = (list: Row[]) => {
     const targets = remindTargets(list);
@@ -190,8 +214,17 @@ function InternClientsInner() {
       onClick: () => {
         exportRowsCsv(
           'clients.csv',
-          ['Client', 'Stage', 'Now', 'Done', 'Status'],
-          list.map((r) => [r.e.companyName, stageDisplayLabel(r.e.stage), r.progress.currentLabel, `${r.pct}%`, rowStatus(r).word]),
+          ['Client', 'Contact', 'Stage', 'Now', 'Steps', 'Next', 'Health', 'Status'],
+          list.map((r) => [
+            r.e.companyName,
+            r.e.clientDisplayName ?? '',
+            STAGE_WORD[r.facts.stage],
+            r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : '',
+            `${r.facts.done}/${r.facts.total}`,
+            r.facts.next ?? '',
+            r.facts.health,
+            rowStatus(r).word,
+          ]),
         );
         setPicked(new Set());
       },
@@ -202,30 +235,37 @@ function InternClientsInner() {
     {
       key: 'name',
       header: 'Client',
-      width: '28%',
+      width: '240px',
       render: (r) => (
         <span className="flex min-w-0 items-center gap-2.5">
-          <LeadCompanyChip name={r.e.companyName} compact />
-          <Link href={internEngagementPath(r.e)} onClick={(ev) => ev.stopPropagation()} className="min-w-0 truncate font-medium text-ink hover:underline" title={r.e.companyName}>
-            {r.e.companyName}
-          </Link>
+          <ClientIdentityTile id={r.e.id} name={r.e.companyName} size={30} />
+          <span className="grid min-w-0">
+            <Link href={internEngagementPath(r.e)} onClick={(ev) => ev.stopPropagation()} className="min-w-0 truncate font-medium text-ink hover:underline" title={r.e.companyName}>
+              {r.e.companyName}
+            </Link>
+            {r.e.clientDisplayName ? (
+              <span className="grid-sub truncate text-[12px] leading-4 text-ink-muted">
+                {r.e.clientDisplayName}
+              </span>
+            ) : null}
+          </span>
         </span>
       ),
     },
     {
       key: 'stage',
       header: 'Stage',
-      width: '128px',
+      width: '120px',
       render: (r) => (
-        <Chip tone={STAGE_TONE[r.e.stage] ?? 'idle'} fixed dot={false}>
-          {stageDisplayLabel(r.e.stage) || 'Incorporation'}
+        <Chip tone={STAGE_CHIP_TONE[r.facts.stage]} fixed dot={false}>
+          {STAGE_WORD[r.facts.stage]}
         </Chip>
       ),
     },
     {
       key: 'phases',
       header: 'Phases',
-      width: '200px',
+      width: '180px',
       render: (r) => (
         <PhaseBar
           done={r.progress.phases.map((p) => p.done)}
@@ -236,51 +276,55 @@ function InternClientsInner() {
       ),
     },
     {
+      key: 'now',
+      header: 'Now',
+      render: (r) => <NowCell now={r.facts.now} />,
+    },
+    {
       key: 'team',
       header: 'Team',
       width: '96px',
       render: (r) => <AvatarStack people={r.people} label={r.people.length ? `Works on it: ${r.people.join(', ')}` : undefined} />,
     },
     {
-      key: 'now',
-      header: 'Now',
-      render: (r) => <span className="text-ink-2" title={r.progress.currentLabel}>{r.progress.currentLabel || '—'}</span>,
-    },
-    {
-      key: 'pct',
-      header: 'Done',
+      key: 'steps',
+      header: 'Steps',
       width: '72px',
       align: 'right',
-      render: (r) => <span className="text-[13px] tabular-nums text-ink-muted">{r.pct}%</span>,
+      render: (r) => (
+        <span className="text-[13px] tabular-nums text-ink-muted" title={`${r.pct}% done`}>
+          {r.facts.done}/{r.facts.total}
+        </span>
+      ),
     },
     {
       key: 'status',
       header: 'Status',
       width: '128px',
       render: (r) => {
-        const s = rowStatus(r);
+        const st = rowStatus(r);
         return (
-          <Chip tone={s.tone} fixed>
-            {s.word}
+          <Chip tone={st.tone} fixed>
+            {st.word}
           </Chip>
         );
       },
     },
   ];
 
-  const tabs =
-    stages.length > 1 ? (
-      <SpectrumTabs
-        label="Stage"
-        items={[
-          { key: '', label: 'All', count: all.length },
-          ...stages.map((s) => ({ key: s, label: stageDisplayLabel(s), count: all.filter((r) => r.e.stage === s).length })),
-        ]}
-        value={stage}
-        onChange={setStage}
-      />
-    ) : null;
-
+  const stageCount = (k: ClientStage) => all.filter((r) => r.facts.stage === k).length;
+  const tabs = (
+    <SpectrumTabs
+      label="Stage"
+      items={[
+        { key: '', label: 'All', count: all.length },
+        { key: 'incorporating', label: STAGE_WORD.incorporating, count: stageCount('incorporating') },
+        { key: 'compliance', label: STAGE_WORD.compliance, count: stageCount('compliance') },
+      ]}
+      value={stage}
+      onChange={setStage}
+    />
+  );
   return (
     <PageTransition>
       <SEO title="Clients — VCFO Suite" description="Engagements assigned to you and how far each company is through setup." path="/app/intern/clients" />
@@ -293,14 +337,26 @@ function InternClientsInner() {
           <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line-soft px-4 py-2">
             <CardHeadTile title="Clients" />
             <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Clients</h2>
-            {tabs}
+            <span className="shrink-0 text-[12.5px] tabular-nums text-ink-muted">
+              {rows.length === all.length ? all.length : `${rows.length} of ${all.length}`}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {tabs}
+              <FilterChip
+                label="Health"
+                value={health}
+                options={CLIENT_HEALTHS.map((h) => ({ value: h, label: h, count: all.filter((r) => r.facts.health === h).length }))}
+                onChange={setHealth}
+              />
+              <FilterChip label="Next" value={nextWin} options={NEXT_OPTIONS} onChange={setNextWin} />
+            </div>
+          </div>
+          {/* Saved views sit in their own row under the head (prototype `ClientsGrid`). */}
+          <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2">
             <SavedViews storageKey={`${scope}:clients`} views={CLIENT_VIEWS} current={current} onApply={(f) => {
               setStage(f.stage ?? '');
               setShow(f.show ?? '');
             }} />
-            <span className="shrink-0 text-[12.5px] tabular-nums text-ink-muted">
-              {rows.length === all.length ? all.length : `${rows.length} of ${all.length}`}
-            </span>
           </div>
           <div className="hidden px-2 pb-2 md:block">
             <EFilingGrid
@@ -311,7 +367,7 @@ function InternClientsInner() {
               pageSize={14}
               minWidth={860}
               onRowClick={(r) => router.push(internEngagementPath(r.e))}
-              empty="Nothing in this view"
+              empty="No clients match these filters"
               loading={engagementsLoading}
               onClearFilters={anyFilter ? clear : undefined}
               stickyHead
@@ -325,29 +381,40 @@ function InternClientsInner() {
                 <RowQuickActions
                   onOpen={() => router.push(internEngagementPath(r.e))}
                   onRemind={remindTargets([r]).length > 0 ? () => remind([r]) : undefined}
-                />
+                >
+                  <RowMoreMenu link={() => void copyRowLink(internEngagementPath(r.e))} />
+                </RowQuickActions>
               )}
-              rowShortcuts={[{ key: 'r', run: (r) => remind([r]) }]}
+              rowShortcuts={[
+                { key: 'r', run: (r) => remind([r]) },
+                { key: 'c', run: (r) => void copyRowLink(internEngagementPath(r.e)) },
+              ]}
               densityScope={`${scope}:clients`}
               changedAt={(r) => r.changedAt}
               visitKey={`${scope}:clients`}
             />
+            <ClientsLegend />
           </div>
           <ul className="md:hidden">
+            {rows.length === 0 ? (
+              <li className="p-4">
+                <EmptyState title="No clients match these filters" />
+              </li>
+            ) : null}
             {rows.map((r) => {
-              const s = rowStatus(r);
+              const st = rowStatus(r);
               return (
                 <li key={r.e.id} className="border-b border-line-soft last:border-b-0">
                   <Link href={internEngagementPath(r.e)} className="flex items-start gap-3 px-4 py-3 hover:bg-surface-sunken/60">
-                    <LeadCompanyChip name={r.e.companyName} compact />
+                    <ClientIdentityTile id={r.e.id} name={r.e.companyName} size={30} />
                     <span className="grid min-w-0 flex-1 gap-1.5">
                       <span className="flex min-w-0 items-center gap-2">
                         <b className="min-w-0 truncate font-medium text-ink">{r.e.companyName}</b>
-                        <Chip tone={s.tone} className="ml-auto flex-none">
-                          {s.word}
+                        <Chip tone={st.tone} className="ml-auto flex-none">
+                          {st.word}
                         </Chip>
                       </span>
-                      <span className="truncate text-[12.5px] text-ink-muted">{r.progress.currentLabel}</span>
+                      <NowCell now={r.facts.now} className="text-[12.5px]" />
                       <span className="flex items-center gap-2">
                         <PhaseBar
                           done={r.progress.phases.map((p) => p.done)}
@@ -355,7 +422,16 @@ function InternClientsInner() {
                           names={r.progress.phases.map((p) => p.title)}
                           className="flex-1"
                         />
-                        <span className="flex-none text-[12px] tabular-nums text-ink-muted">{r.pct}%</span>
+                        <span className="flex-none text-[12px] tabular-nums text-ink-muted">
+                          {r.facts.done}/{r.facts.total}
+                        </span>
+                      </span>
+                      <span className="flex min-w-0 items-center gap-2 text-[12.5px] text-ink-muted">
+                        <Chip tone={STAGE_CHIP_TONE[r.facts.stage]} dot={false}>
+                          {STAGE_WORD[r.facts.stage]}
+                        </Chip>
+                        {r.facts.next ? <span className="tabular-nums">Next {shortDate(r.facts.next)}</span> : null}
+                        <AvatarStack people={r.people} className="ml-auto" />
                       </span>
                     </span>
                     <ChevronRight className="mt-1 h-4 w-4 flex-none text-ink-faint" strokeWidth={1.6} aria-hidden />

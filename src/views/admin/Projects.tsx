@@ -7,23 +7,7 @@ import { ProjectsView } from '@/views/admin/ProjectsSections';
 import { deriveStuckReason } from '@/lib/projects/project-stuck';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
 import { engagementChangedAt } from '@/components/staff/today/today-rows';
-
-const CITIES: Array<{ name: string; x: number; y: number }> = [
-  { name: 'Bengaluru', x: 360, y: 470 },
-  { name: 'Mumbai',    x: 230, y: 360 },
-  { name: 'Delhi NCR', x: 330, y: 150 },
-  { name: 'Hyderabad', x: 380, y: 400 },
-  { name: 'Pune',      x: 270, y: 380 },
-  { name: 'Chennai',   x: 420, y: 510 },
-  { name: 'Gurgaon',   x: 320, y: 160 },
-  { name: 'Kolkata',   x: 550, y: 290 },
-];
-
-function cityFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return CITIES[h % CITIES.length];
-}
+import { clientRowFacts } from '@/views/admin/clients/client-row';
 
 type View = 'table' | 'board';
 
@@ -45,8 +29,8 @@ function ProjectsInner() {
   const owners = internOptions.length ? internOptions : teamMembers;
   const [view, setView] = useState<View>('table');
 
+  // Every client shows, incorporating and compliance (prototype Clients); the stage tabs split them.
   const enriched = useMemo(() => engagements
-    .filter((e) => e.stage !== 'Operational Readiness')
     .map((e) => {
       const eTasks = tasks.filter((t) => t.engagementId === e.id);
       const done = eTasks.filter((t) => t.status === 'completed').length;
@@ -74,8 +58,8 @@ function ProjectsInner() {
         total: eTasks.length,
         intern: leads[0],
         leads,
-        city: cityFor(e.id),
         stuck: deriveStuckReason(e, state),
+        facts: clientRowFacts(e, state),
       };
     }), [engagements, tasks, teamMembers, owners, getStateForEngagement]);
 

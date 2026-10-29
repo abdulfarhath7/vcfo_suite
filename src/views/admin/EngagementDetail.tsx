@@ -35,7 +35,6 @@ import {
   engagementRouteParamFromParams,
   resolveEngagementFromRouteParam,
 } from '@/lib/slug';
-import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { StepMark } from '@/components/ui/step-track';
@@ -54,14 +53,11 @@ import {
   INTERN_PHASE_TABS_ENABLED,
   InternNowStrip,
   InternPhaseEntryCards,
-  InternPhaseTabs,
-  InternRegistrationGroupedRows,
 } from '@/components/incorporation/InternOverviewProgress';
 import {
   internOverviewCurrentItemInPhase,
   internOverviewNow,
   internOverviewPhases,
-  internPhaseStepCounts,
 } from '@/lib/intern/intern-overview-progress';
 import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
 import { useBoardResolutionProgress } from '@/hooks/use-board-resolution-progress';
@@ -73,6 +69,9 @@ import {
 } from '@/lib/checklist/checklist-step-gate';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
+import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
+import { RecordDocumentsButton, RecordMetaLine, RecordNumbers } from '@/views/client-record/RecordHeadParts';
+import { RecordTimelineCard } from '@/components/timeline';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -317,49 +316,6 @@ export default function EngagementDetail() {
     return internEngagementStepPath(eng, item);
   };
 
-  const internPhaseTabs = internPhases.map((phase) => {
-    const { done, total } = internPhaseStepCounts(phase.items, gates);
-    return { id: phase.id, title: phase.title, done, total };
-  });
-
-  const renderInternPhases = () => (
-    <InternPhaseTabs
-      engagementId={eng.id}
-      currentPhaseId={internNow?.phaseId ?? null}
-      phases={internPhaseTabs}
-      metaForPhase={phaseWindowMeta(eng.schedule)}
-      trailingForPhase={docPackPill}
-      headAction={
-        internNow ? (
-          <Link
-            href={internEngagementStepPath(eng, internNow.item)}
-            className="shrink-0 text-[13px] font-medium text-brand-text hover:underline"
-          >
-            Open current step
-          </Link>
-        ) : null
-      }
-    >
-      {(phaseId) => {
-        const phase = internPhases.find((group) => group.id === phaseId);
-        if (!phase) return null;
-        if (phase.id === 'registration-phase-4') {
-          return (
-            <InternRegistrationGroupedRows
-              items={phase.items}
-              renderRow={(it) =>
-                renderChecklistRow(it, phaseStepNumber(it.bucket, it.id, it.order))
-              }
-            />
-          );
-        }
-        return phase.items.map((it) =>
-          renderChecklistRow(it, phaseStepNumber(it.bucket, it.id, it.order)),
-        );
-      }}
-    </InternPhaseTabs>
-  );
-
   return (
     <PageTransition>
       <SEO
@@ -374,25 +330,25 @@ export default function EngagementDetail() {
           clientEmail={eng.clientEmail}
           engagementId={eng.id}
           badge={<StageChip stage={eng.stage} />}
+          meta={<RecordMetaLine engagement={eng} />}
+          actions={<RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />}
           stats={
-            internNow ? (
-              <RecordStats>
-                <RecordStat value={`Step ${internNow.stepNumber}`} label={`of ${internNow.stepTotal} · ${internNow.phaseTitle}`} />
-                <Link
-                  href={internEngagementStepPath(eng, internNow.item)}
-                  className="flex min-w-0 flex-wrap items-center gap-2 text-[14px] hover:underline"
-                >
-                  <span className="text-ink-muted">Now</span>
-                  <b className="min-w-0 truncate font-medium text-ink">{internNow.stepTitle}</b>
-                  <Chip tone={internNow.waiting ? 'teal' : 'prog'} fixed>
-                    {internNow.waiting ? 'Waiting' : 'In progress'}
-                  </Chip>
-                </Link>
-              </RecordStats>
-            ) : null
+            <RecordStats>
+              <RecordNumbers
+                engagement={eng}
+                state={checklistState}
+                gates={gates}
+                hrefFor={(item) => internEngagementStepPath(eng, item)}
+              />
+            </RecordStats>
           }
         >
-          <RecordTabBar engagement={eng} value={recordTab} onChange={setRecordTab} />
+          <RecordTabBar
+            engagement={eng}
+            value={recordTab}
+            onChange={setRecordTab}
+            overviewCount={internNow ? `${internNow.stepNumber}/${internNow.stepTotal}` : undefined}
+          />
 
           {recordTab !== 'overview' ? (
             <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/intern" />
@@ -412,8 +368,21 @@ export default function EngagementDetail() {
                 </InternOverviewSyncNotice>
               ) : null}
 
+              {/* R-21: the Gantt; a lead reads it, managers and admins edit it. */}
+              <RecordTimelineCard engagement={eng} state={checklistState} role={user?.role} />
+
               {INTERN_PHASE_TABS_ENABLED ? (
-                renderInternPhases()
+                <RecordStepsCard
+                  engagement={eng}
+                  state={checklistState}
+                  gates={gates}
+                  hrefFor={(item) => internEngagementStepPath(eng, item)}
+                  onOpen={(item) => router.push(internEngagementStepPath(eng, item))}
+                  leadName={intern?.name ?? (user?.id === eng.internId ? user?.name : null)}
+                  metaForPhase={phaseWindowMeta(eng.schedule)}
+                  trailingForPhase={docPackPill}
+                  onOpenRegistrations={() => setRecordTab('registrations')}
+                />
               ) : (
                 <InternPhaseEntryCards
                   phases={internPhases}

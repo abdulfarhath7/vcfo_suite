@@ -5,7 +5,7 @@ import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
-import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
+import { RESPONSIBLE_ROLE_LABEL } from '@/lib/checklist/checklist-field-access';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { gateDisplayStatus } from '@/lib/checklist/checklist-step-gate';
 import { toastInfo } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Clock, MoreVertical } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, MoreVertical, User } from 'lucide-react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';
 
@@ -70,7 +70,26 @@ interface ChecklistJourneyRailProps {
   hideStatus?: boolean;
   /** Kebab → Attachments required (intern step rail). */
   showAttachmentMenu?: boolean;
+  /** Staff step rail (prototype `StepView`): "Step n" in a 50px mono column after the mark. */
+  showStepCode?: boolean;
   className?: string;
+}
+
+/**
+ * Who holds the step (prototype rail): a 14px person icon, faint for a client step and ink-2
+ * for a firm step. The role name is the icon's label.
+ */
+function HolderIcon({ role }: { role: ChecklistItem['responsibleRole'] }) {
+  if (!role) return null;
+  return (
+    <User
+      size={14}
+      strokeWidth={1.6}
+      className={cn('mt-[3px] shrink-0', role === 'client' ? 'text-ink-faint' : 'text-ink-2')}
+      role="img"
+      aria-label={RESPONSIBLE_ROLE_LABEL[role]}
+    />
+  );
 }
 
 function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmentRequirement[] }) {
@@ -129,6 +148,7 @@ export function ChecklistJourneyRail({
   allowLockedOpen = false,
   hideStatus = false,
   showAttachmentMenu = false,
+  showStepCode = false,
   className,
 }: ChecklistJourneyRailProps) {
   const reduceMotion = useReducedMotion();
@@ -179,7 +199,7 @@ export function ChecklistJourneyRail({
                 >
                   {item.title}
                 </p>
-                <ResponsibleRoleBadge role={item.responsibleRole} iconOnly className="mt-0.5" />
+                <HolderIcon role={item.responsibleRole} />
               </div>
               {!visuallyLocked && (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 empty:hidden">
@@ -227,6 +247,9 @@ export function ChecklistJourneyRail({
           const stepCopy = (
             <>
               <div className="relative z-[1] shrink-0">{node}</div>
+              {showStepCode ? (
+                <span className="w-[50px] flex-none pt-[3px] font-mono text-[12px] text-ink-muted">Step {stepNumber}</span>
+              ) : null}
               {labelBlock}
             </>
           );

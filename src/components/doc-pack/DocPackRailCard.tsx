@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { getItem } from '@/data/checklist';
-import { DocStatusDot } from '@/components/doc-pack/DocStatusChip';
+import { DOC_STATUS_BAR, DocStatusDot } from '@/components/doc-pack/DocStatusChip';
 import { Surface } from '@/components/noir';
 import { buttonVariants } from '@/components/ui/button-variants';
 import type { DocPackMissingInput, DocPackSummary, DocStatus } from '@/lib/doc-pack/types';
@@ -16,11 +16,8 @@ const LEGEND: Record<DocStatus, string> = {
   'waiting-release': 'waiting for release',
 };
 
-const BAR: Record<DocStatus, string> = {
-  ready: 'bg-positive-mid',
-  'needs-inputs': 'bg-warning-mid',
-  'waiting-release': 'bg-waiting-mid',
-};
+/* The same three colours as the pack page's chips: waiting for release is grey. */
+const BAR: Record<DocStatus, string> = DOC_STATUS_BAR;
 
 export type DocPackRailCardProps = {
   summary: DocPackSummary | undefined;

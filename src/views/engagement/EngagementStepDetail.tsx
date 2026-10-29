@@ -21,13 +21,18 @@ import {
 } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { useQueryClient } from '@tanstack/react-query';
-import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
+import { DashSection } from '@/components/dash/DashSection';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
+import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
+import { StepWindowBar } from '@/views/engagement/step/StepWindowBar';
 import { StepDaysMeta } from '@/components/metrics/step-days-meta';
 import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import {
   canSetScheduleWindows,
   formatWindow,
   isIncorporationWindowStep,
+  type ScheduleTarget,
   windowForStep,
   type EngagementSchedule,
 } from '@/lib/projects/schedule-windows';
@@ -156,6 +161,8 @@ export default function EngagementStepDetail() {
     user,
   } = useApp();
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
+  /* "What's this?" (S-487): the staff panel about this step. */
+  const [aboutOpen, setAboutOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const isClientRoute = isClientIncorporationStepPathname(pathname);
@@ -290,16 +297,24 @@ export default function EngagementStepDetail() {
     // `user` can be momentarily null across a soft navigation between step
     // routes; on the client route `eng` is derived from it, so redirecting on
     // that tick bounced the reader out of a step they were allowed to read.
-    if (!engagementsSettled || !user) {
-      return (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <HexgridLoader />
-        </div>
-      );
-    }
+    if (!engagementsSettled || !user) return <StepLoadingShapes />;
     return <RedirectTo href={listRedirect} />;
   }
-  if (!item) return <RedirectTo href={projectPath(eng)} />;
+  /* S-519: an unknown step shows a "Step" card with a dashed "No step" area, not a bounce. */
+  if (!item) {
+    return (
+      <DashSection title="Step" bodyClassName="p-4">
+        <EmptyState
+          title="No step"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => router.push(projectPath(eng))}>
+              Open {eng.companyName}
+            </Button>
+          }
+        />
+      </DashSection>
+    );
+  }
 
   const checklistLoading = engagementsLoading || checklistRefreshing;
   // Nobody is bounced off a locked step: readers may open any step in any
@@ -365,23 +380,16 @@ export default function EngagementStepDetail() {
       )
     : [];
   /**
-   * A manager or admin sets this step's window here (registrations and any
-   * step outside SPICe+ Part A / B — those share the one incorporation window
-   * set on the project page). Leads and clients see the dates on the rail.
+   * The window bar (S-489) for every staff reader. A manager, admin or super admin edits it
+   * (`canSetScheduleWindows`, enforced again in the repository); leads read it. A SPICe+ Part A
+   * or Part B step without a window of its own shares the one incorporation window, so its
+   * "Edit" moves that window, the same one the project page sets.
    */
-  const stepWindowControl =
-    !isClientRoute && !isIntern && canSetScheduleWindows(user?.role) && !isIncorporationWindowStep(item.id) ? (
-      <div className="mb-3">
-        <ScheduleWindowControl
-          value={eng.schedule?.steps?.[item.id]}
-          label={item.title}
-          onSave={async (window) => {
-            await setEngagementWindowInDb(eng.id, { kind: 'step', itemId: item.id }, window);
-            await queryClient.invalidateQueries({ queryKey: ['engagements'] });
-          }}
-        />
-      </div>
-    ) : null;
+  const stepWindowTarget: ScheduleTarget =
+    isIncorporationWindowStep(item.id) && !eng.schedule?.steps?.[item.id]
+      ? { kind: 'incorporation' }
+      : { kind: 'step', itemId: item.id };
+  const stepWindowValue = windowForStep(eng.schedule, item.id);
   const internPhaseRailGroups = (() => {
     if (!internPhase || internPhase.id !== 'registration-phase-4') return [];
     const byId = new Map(internPhaseRailItems.map((row) => [row.item.id, row]));
@@ -400,6 +408,9 @@ export default function EngagementStepDetail() {
 
   // Readers get the lead's workspace layout, not the old staff rail layout.
   const internWorkspace = isIntern || readOnlyView;
+  /* S-486: every staff reader sees the step's status chip in the head. The client route keeps
+     its approval line instead, as before. */
+  const showHeadStatus = !isClientRoute;
 
   // Direct-flow steps have no approval: no status pill, no Approve button.
   const directFlow = isDirectFlowStep(item.id);
@@ -452,8 +463,12 @@ export default function EngagementStepDetail() {
           ) : null}
         </p>
       </div>
-      {selfStatus && !directFlow && !internWorkspace ? <ChecklistStatusPill status={selfStatus} /> : null}
-      <WhatsThisButton kind="step" refId={item.id} label={item.title} />
+      {selfStatus && !directFlow && showHeadStatus ? <ChecklistStatusPill status={selfStatus} /> : null}
+      {isClientRoute ? (
+        <WhatsThisButton kind="step" refId={item.id} label={item.title} />
+      ) : (
+        <WhatsThisButton kind="step" refId={item.id} label={item.title} variant="outline" onOpen={() => setAboutOpen(true)} />
+      )}
       {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
       {docPackHref ? (
         <DocPackHeaderButton summary={docPack.data} packHref={docPackHref} className="lg:hidden" />
@@ -477,9 +492,10 @@ export default function EngagementStepDetail() {
       </div>
     ) : null;
 
+  /* Below lg the head's document pack button stands in for this card, so it shows on lg only. */
   const docPackRailCard = docPackHref ? (
     <DocPackRailCard
-      className="mt-4"
+      className="mt-3.5 hidden lg:block"
       summary={docPack.data}
       loading={docPack.isPending}
       error={docPack.isError}
@@ -489,9 +505,23 @@ export default function EngagementStepDetail() {
     />
   ) : null;
 
+  const stepWindowBar = !isClientRoute ? (
+    <StepWindowBar
+      className="mb-3.5"
+      value={stepWindowValue}
+      canEdit={canSetScheduleWindows(user?.role)}
+      editSub={`${selfRow ? `Step ${selfRow.stepNumber} · ` : ''}${eng.companyName}`}
+      scopeLabel={stepWindowTarget.kind === 'incorporation' ? 'SPICe+ Part A and Part B' : undefined}
+      docPackHref={docPackHref}
+      onSave={async (window) => {
+        await setEngagementWindowInDb(eng.id, stepWindowTarget, window);
+        await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+      }}
+    />
+  ) : null;
+
   const stepForm = (
     <>
-      {stepWindowControl}
       {docPackHref && docPack.data ? (
         <DocSourceStrip summary={docPack.data} stepId={item.id} packHref={docPackHref} />
       ) : null}
@@ -574,12 +604,16 @@ export default function EngagementStepDetail() {
    * locked for VIEWING: the sequential gate now governs actions only, and the
    * rail's node icons carry progress (tick done / blue current / dim upcoming).
    */
+  const railDone = internPhaseRailItems.filter((row) => row.gate.kind === 'done').length;
+  /* S-506, S-512: the phase rail is a section card (icon tile, phase name, "x of y"); below lg it
+     stacks under the main card instead of hiding. */
   const internPhaseRail = internWorkspace && internPhase ? (
-    <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
-      <Surface className="p-3">
-        <p className="mb-1.5 px-2 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
-          {internPhase.title}
-        </p>
+    <aside className="min-w-0 lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
+      <DashSection
+        title={internPhase.title}
+        meta={`${railDone} of ${internPhaseRailItems.length}`}
+        bodyClassName="px-2 py-2"
+      >
         {internPhase.id === 'registration-phase-4' ? (
           <div className="space-y-4">
             {internPhaseRailGroups.map((group) => (
@@ -593,6 +627,7 @@ export default function EngagementStepDetail() {
                   allowLockedOpen
                   hideStatus
                   showAttachmentMenu
+                  showStepCode={!isClientRoute}
                   onSelect={openStep}
                 />
               </div>
@@ -605,10 +640,11 @@ export default function EngagementStepDetail() {
             allowLockedOpen
             hideStatus
             showAttachmentMenu
+            showStepCode={!isClientRoute}
             onSelect={openStep}
           />
         )}
-      </Surface>
+      </DashSection>
       {docPackRailCard}
     </aside>
   ) : null;
@@ -631,8 +667,9 @@ export default function EngagementStepDetail() {
           )}
           {stepTitleRow}
           {stepMetaRow}
+          {stepWindowBar}
           {internPhase ? (
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18.5rem)] lg:items-start">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
               <div className="min-w-0">
                 {stepForm}
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
@@ -663,11 +700,41 @@ export default function EngagementStepDetail() {
             )}
             {stepTitleRow}
             {stepMetaRow}
+            {stepWindowBar}
             {stepForm}
             {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
           </div>
         </div>
       )}
+      {!isClientRoute ? (
+        <StepAboutPanel
+          stepId={aboutOpen ? item.id : null}
+          stepLabel={selfRow ? `Step ${selfRow.stepNumber}` : undefined}
+          engagementId={eng.id}
+          onClose={() => setAboutOpen(false)}
+        />
+      ) : null}
     </PageTransition>
+  );
+}
+
+/** R-48 (S-518): grey shapes for the head, the window bar, the main card and the rail while the engagement loads. */
+function StepLoadingShapes() {
+  return (
+    <div className="min-w-0" aria-busy="true" aria-label="Loading the step">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="h-[22px] w-[22px] animate-pulse rounded-mark bg-surface-sunken" />
+        <span className="h-8 w-[min(420px,70%)] animate-pulse rounded-md bg-surface-sunken" />
+      </div>
+      <span className="mb-3.5 block h-11 animate-pulse rounded-md bg-surface-sunken" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="surface p-4">
+          <SkeletonRows rows={5} />
+        </div>
+        <div className="surface p-4">
+          <SkeletonRows rows={6} className="gap-1.5" />
+        </div>
+      </div>
+    </div>
   );
 }

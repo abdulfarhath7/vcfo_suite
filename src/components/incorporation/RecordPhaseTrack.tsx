@@ -7,12 +7,14 @@ export interface RecordPhase {
   label: string;
   done: number;
   total: number;
+  /** The step numbers the phase holds, written after the count: "Steps 1–5". */
+  range?: string;
 }
 
 /**
  * ST5 phase track of a client record (R-22; prototype `PhaseTrack`). One bar per phase, sized by
  * its step count: a finished phase is green, the current one blurple with a soft ring, a later
- * one grey. Each bar is a button that picks the phase in place (R-36). On phones only the four
+ * one grey; a later phase that is partly done fills in faint grey. Each bar is a button that picks the phase in place (R-36). On phones only the four
  * bars show, with the picked phase written under them.
  */
 export function RecordPhaseTrack({
@@ -59,18 +61,21 @@ export function RecordPhaseTrack({
               >
                 {full || pct > 0 ? (
                   <i
-                    className={cn('absolute inset-y-0 left-0 rounded-bar', full ? 'bg-positive-mid' : 'bg-brand')}
+                    className={cn('absolute inset-y-0 left-0 rounded-bar', full ? 'bg-positive-mid' : isCur ? 'bg-brand' : 'bg-ink-faint')}
                     style={{ width: full ? '100%' : `max(${pct}%, 6px)` }}
                   />
                 ) : null}
               </span>
-              <span
-                className={cn(
-                  'hidden text-[12px] font-medium tabular-nums md:block',
-                  full ? 'text-positive' : isCur ? 'text-brand-text' : 'text-ink-muted',
-                )}
-              >
-                {p.done}/{p.total}
+              <span className="hidden min-w-0 items-baseline gap-1.5 whitespace-nowrap md:flex">
+                <span
+                  className={cn(
+                    'text-[12px] font-medium tabular-nums',
+                    full ? 'text-positive' : isCur ? 'text-brand-text' : 'text-ink-muted',
+                  )}
+                >
+                  {p.done}/{p.total}
+                </span>
+                {p.range ? <span className="truncate text-[11.5px] text-ink-muted">{p.range}</span> : null}
               </span>
             </button>
           );
@@ -82,6 +87,7 @@ export function RecordPhaseTrack({
           <span className="text-ink-muted tabular-nums">
             {' '}
             · {pickedPhase.done}/{pickedPhase.total}
+            {pickedPhase.range ? ` · ${pickedPhase.range}` : ''}
           </span>
         </p>
       ) : null}

@@ -10,7 +10,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import type { TimelineRequestDto } from "@/lib/client/client-home";
-import { Surface } from "@/components/noir/Surface";
+import { CardHeadTile } from "@/components/common/CardHeadTile";
+import { Chip } from "@/components/ui/spectrum-chip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -47,10 +48,16 @@ export function TimelineRequestsPanel({ engagementId, canDecide }: { engagementI
   const pending = (list.data ?? []).filter((r) => r.status === "pending");
   if (pending.length === 0) return null;
   return (
-    <Surface className="mb-4 border-amber-300 p-4">
-      <h3 className="mb-2 text-sm font-semibold text-ink">Client asked for a timeline change</h3>
+    <section className="surface mb-4 min-w-0 overflow-hidden" aria-label="Client asked for a timeline change">
+      <div className="flex min-h-[52px] min-w-0 items-center gap-2.5 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="Timeline change" />
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Client asked for a timeline change</h2>
+        <Chip tone="warn" fixed>
+          Waiting
+        </Chip>
+      </div>
       {pending.map((r) => (
-        <div key={r.id} className="space-y-2 text-sm">
+        <div key={r.id} className="space-y-2 border-b border-line-soft px-4 py-3 text-[13px] last:border-0">
           <p className="text-ink-muted">
             {r.requestedByName ?? "Client"}: “{r.reason}”{r.slipDays ? ` · COI moves ${r.slipDays > 0 ? "+" : ""}${r.slipDays} days` : ""}
           </p>
@@ -72,10 +79,10 @@ export function TimelineRequestsPanel({ engagementId, canDecide }: { engagementI
               </Button>
             </div>
           ) : (
-            <p className="text-xs text-ink-muted">Waiting for the project manager to decide.</p>
+            <p className="text-[12.5px] text-ink-muted">With the manager</p>
           )}
         </div>
       ))}
-    </Surface>
+    </section>
   );
 }

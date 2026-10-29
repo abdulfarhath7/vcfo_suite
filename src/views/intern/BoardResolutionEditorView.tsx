@@ -21,7 +21,10 @@ import { SEO } from '@/components/SEO';
 
 
 import { Chip } from '@/components/ui/spectrum-chip';
-import { FileBadge } from '@/components/ui/file-badge';
+import { StepMark } from '@/components/ui/step-track';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { RecordTile } from '@/components/incorporation/RecordHead';
+import { cn } from '@/lib/utils';
 
 
 import {
@@ -73,6 +76,55 @@ function missingFieldRefText(ref: BoardResolutionMissingFieldRef): string {
   return where ? `${ref.label} — ${where}` : ref.label;
 }
 
+type BrStage = { key: string; label: string; done: boolean };
+
+/**
+ * The five stages of a board resolution (prototype `BoardResolutionScreen` stepper), from the
+ * stored document only: a Word file exists, the draft left the lead (with the manager or
+ * finalized), it is finalized for the client, and the client uploaded the signed copy. The real
+ * tool does not record a separate "sent to the client" moment: finalizing makes the file visible
+ * on the client portal, so "Sent to client" is done with "Finalized".
+ */
+function brStages(doc: BoardResolutionEditorProps['doc'], withManager: boolean, isFinalized: boolean): BrStage[] {
+  const generated = Boolean(doc?.storagePath?.trim() || doc?.content?.trim());
+  const signed = Boolean(doc?.signedStoragePath?.trim());
+  return [
+    { key: 'generated', label: 'Generated from Pre-1', done: generated },
+    { key: 'draft', label: 'Draft · editing', done: withManager || isFinalized },
+    { key: 'finalized', label: 'Finalized · client visible', done: isFinalized },
+    { key: 'sent', label: 'Sent to client', done: isFinalized },
+    { key: 'signed', label: 'Signed copy uploaded', done: signed },
+  ];
+}
+
+function BrStageList({ stages }: { stages: BrStage[] }) {
+  const cur = stages.findIndex((x) => !x.done);
+  return (
+    <ol className="grid">
+      {stages.map((x, i) => (
+        <li
+          key={x.key}
+          className={cn('relative flex items-center gap-2.5 rounded-md px-2 py-2 text-[13.5px]', i === cur && 'bg-surface-sunken')}
+        >
+          {i < stages.length - 1 ? (
+            <span
+              aria-hidden
+              className={cn('absolute bottom-[-8px] left-[17px] top-[28px] w-[1.5px]', x.done ? 'bg-positive-mid' : 'bg-line')}
+            />
+          ) : null}
+          <StepMark
+            state={x.done ? 'done' : i === cur ? 'now' : 'next'}
+            size={20}
+            label={x.done ? 'Done' : i === cur ? 'Current' : 'Not started'}
+            className="relative z-[1]"
+          />
+          <span className={cn(x.done || i === cur ? 'text-ink' : 'text-ink-muted', i === cur && 'font-medium')}>{x.label}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
   const router = useRouter();
   const {
@@ -94,6 +146,9 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     withManager,
     sentBackNote,
   } = p;
+  const signed = Boolean(doc?.signedStoragePath?.trim());
+  const stageWord = signed ? 'Signed' : isFinalized ? 'Finalized' : withManager ? 'With manager' : 'Draft';
+  const stageTone = signed || isFinalized ? 'ok' : withManager ? 'teal' : 'warn';
   return (
 
     <PageTransition>
@@ -108,31 +163,25 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
       />
 
-      <div className="surface max-w-4xl p-5 md:p-6">
-
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-
-          {/* Plain head (prototype `BoardResolutionScreen`): file badge, 28px title, the company
-              in a muted line. No back link (R-09); the step page leads here and back. */}
-          <div className="flex min-w-0 items-center gap-3">
-            <FileBadge type="DOCX" />
-            <div className="min-w-0">
-              <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
-                Board resolution
-              </h1>
-              <p className="text-[13.5px] text-ink-muted">Legal document</p>
-            </div>
-          </div>
-
-          {isFinalized && (
-
-            <Chip tone="ok" title="Finalized — client visible">
-              Finalized
+      {/* Plain head (prototype `BoardResolutionScreen`): the 44px client tile, the 28px title and
+          the stage chip, then the client and the step code. No back link (R-09). */}
+      <header className="mb-5 flex min-w-0 items-start gap-3">
+        <RecordTile name={eng.companyName} identityId={eng.id} />
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Board resolution</h1>
+            <Chip tone={stageTone} fixed>
+              {stageWord}
             </Chip>
-
-          )}
-
+          </div>
+          <p className="text-[13.5px] text-ink-muted">
+            {eng.companyName} · <span className="font-mono text-[13px]">Pre-2</span>
+          </p>
         </div>
+      </header>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div className="min-w-0">
 
         {withManager && !isFinalized ? (
           <p role="status" className="mb-4 rounded-md border-1.5 border-brand-line bg-brand-soft px-3 py-2 text-[13.5px] text-ink">
@@ -302,21 +351,26 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         <BoardResolutionEditorDocPanel {...p} />
       </div>
+      <aside className="surface min-w-0 overflow-hidden lg:sticky lg:top-[var(--shell-sticky-top)]" aria-label="Stage">
+        <div className="flex min-h-[52px] items-center gap-2.5 border-b border-line-soft px-4 py-2">
+          <CardHeadTile title="Stage" />
+          <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Stage</h2>
+        </div>
+        <div className="p-2">
+          <BrStageList stages={brStages(doc, Boolean(withManager), Boolean(isFinalized))} />
+        </div>
+      </aside>
+      </div>
       <AlertDialog open={finalizeOpen} onOpenChange={setFinalizeOpen}>
 
         <AlertDialogContent>
 
           <AlertDialogHeader>
 
-            <AlertDialogTitle>
-              Send the board resolution for manager approval?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Send for manager approval?</AlertDialogTitle>
 
             <AlertDialogDescription>
-
-              Your manager reads the document and the Client Details it uses. When they approve it, the
-              client can download, sign and upload it. You cannot edit it while your manager decides.
-
+              The document locks until your manager approves it or sends it back.
             </AlertDialogDescription>
 
           </AlertDialogHeader>
@@ -326,7 +380,6 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
             <AlertDialogCancel disabled={busy === 'finalize'}>Cancel</AlertDialogCancel>
 
             <AlertDialogAction
-              className="bg-positive text-on-brand hover:bg-positive/90 focus-visible:ring-positive/40"
               disabled={busy === 'finalize'}
               onClick={(e) => {
                 e.preventDefault();

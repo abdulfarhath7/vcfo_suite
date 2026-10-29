@@ -7,9 +7,9 @@ import { useApp } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
 import type { BulkAction } from '@/components/ui/bulk-bar';
 import type { SavedView } from '@/components/ui/saved-views';
-import { BulkAssignMenu, RowQuickActions } from '@/components/staff/today/row-actions';
+import { BulkAssignMenu, RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
 import { clientRemindTargets, type TeamTaskRow } from '@/components/staff/today/today-rows';
-import { exportRowsCsv, reassignMany, remindMany } from '@/components/staff/today/work-actions';
+import { copyRowLink, exportRowsCsv, reassignMany, remindMany } from '@/components/staff/today/work-actions';
 import { ReassignDialog } from '@/views/admin/work/ReassignDialog';
 import { toastError } from '@/lib/toast-errors';
 
@@ -19,7 +19,7 @@ import { toastError } from '@/lib/toast-errors';
  */
 export const CLIENT_LIST_VIEWS: SavedView[] = [
   { key: 'all', label: 'All', filters: {} },
-  { key: 'overdue', label: 'Overdue', filters: { show: 'overdue' } },
+  { key: 'overdue', label: 'My overdue', filters: { show: 'overdue' } },
   { key: 'week', label: 'This week', filters: { show: 'week' } },
   { key: 'waiting', label: 'Waiting on clients', filters: { show: 'waiting' } },
 ];
@@ -36,9 +36,13 @@ export function windowEndsThisWeek(schedule: Engagement['schedule'], now = new D
 
 /**
  * Row selection, the bulk bar (Assign, Remind, Export), the row quick actions (Open, Remind,
- * Reassign) and the Reassign dialog for a staff Clients list (E-01, E-02). Assign and Reassign
- * move the whole client from its primary lead (`POST /api/work/reassign`, kind `lead`); Remind
- * sends the client one reminder per item they still owe. There is no Mark done for a client.
+ * Reassign), the D1 "..." row menu (Reassign with a side list of leads and a tick on the current
+ * one, Copy link with C) and the Reassign dialog for a staff Clients list (E-01, E-02). Assign and
+ * Reassign move the whole client from its primary lead (`POST /api/work/reassign`, kind `lead`);
+ * Remind sends the client one reminder per item they still owe. There is no Mark done for a client.
+ *
+ * The admin list assigns managers instead: it passes `assignTo` (the managers and what a pick
+ * does) and `onReassignRow` (its assign dialog), and the lead side list leaves the row menu.
  */
 export function useClientTableTools<T>({
   rows,
@@ -48,6 +52,8 @@ export function useClientTableTools<T>({
   canReassign,
   openHref,
   csv,
+  assignTo,
+  onReassignRow,
 }: {
   rows: T[];
   engagementOf: (row: T) => Engagement;
@@ -56,6 +62,10 @@ export function useClientTableTools<T>({
   canReassign: boolean;
   openHref: (row: T) => string;
   csv: { file: string; header: string[]; cells: (row: T) => Array<string | number | null | undefined> };
+  /** Bulk Assign to someone other than a lead (the admin list assigns managers). */
+  assignTo?: { people: Array<{ id: string; name: string }>; onPick: (list: T[], person: { id: string; name: string }) => Promise<void> | void };
+  /** Row Reassign other than the lead dialog (the admin list opens its manager dialog). */
+  onReassignRow?: (row: T) => void;
 }) {
   const router = useRouter();
   const { requests, getStateForEngagement } = useApp();
@@ -115,13 +125,25 @@ export function useClientTableTools<T>({
     });
   };
 
+  const reassignRowOf = (row: T) => (onReassignRow ? onReassignRow(row) : reassignOne(row));
   const bulkActions = (list: T[]): BulkAction[] => [
     ...(canReassign
       ? [
           {
             key: 'assign',
             label: 'Assign',
-            render: (count: number) => <BulkAssignMenu people={leads} count={count} onPick={(p) => void assign(list, p)} />,
+            render: (count: number) =>
+              assignTo ? (
+                <BulkAssignMenu
+                  people={assignTo.people}
+                  count={count}
+                  onPick={(p) => {
+                    void Promise.resolve(assignTo.onPick(list, p)).then(() => setPicked(new Set()));
+                  }}
+                />
+              ) : (
+                <BulkAssignMenu people={leads} count={count} onPick={(p) => void assign(list, p)} />
+              ),
           },
         ]
       : []),
@@ -152,16 +174,36 @@ export function useClientTableTools<T>({
       onSelectedChange: setPicked,
       bulkActions,
       bulkNoun: ['client', 'clients'] as [string, string],
-      rowActions: (row: T) => (
-        <RowQuickActions
-          onOpen={() => router.push(openHref(row))}
-          onRemind={() => remind([row])}
-          onReassign={canReassign ? () => reassignOne(row) : undefined}
-        />
-      ),
+      rowActions: (row: T) => {
+        const e = engagementOf(row);
+        return (
+          // The row-actions column is 104px: Open, Remind and the "..." menu, which holds Reassign
+          // and Copy link. A on a focused row still opens the Reassign dialog.
+          <RowQuickActions onOpen={() => router.push(openHref(row))} onRemind={() => remind([row])}>
+            <RowMoreMenu
+              reassign={
+                !canReassign
+                  ? undefined
+                  : onReassignRow
+                    ? { onOpen: () => onReassignRow(row) }
+                    : {
+                        people: leads,
+                        currentId: e.internId || null,
+                        onPick: (p) => {
+                          if (p.id === e.internId) return;
+                          void assign([row], p);
+                        },
+                      }
+              }
+              link={() => void copyRowLink(openHref(row))}
+            />
+          </RowQuickActions>
+        );
+      },
       rowShortcuts: [
         { key: 'r', run: (row: T) => remind([row]) },
-        ...(canReassign ? [{ key: 'a', run: (row: T) => reassignOne(row) }] : []),
+        ...(canReassign ? [{ key: 'a', run: (row: T) => reassignRowOf(row) }] : []),
+        { key: 'c', run: (row: T) => void copyRowLink(openHref(row)) },
       ],
     },
     dialog: canReassign ? (

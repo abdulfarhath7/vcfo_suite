@@ -184,6 +184,8 @@ export type InternPhaseTab = {
   title: string;
   done: number;
   total: number;
+  /** "Steps 1–5" under the phase bar. */
+  range?: string;
 };
 
 /**
@@ -197,6 +199,7 @@ export function InternPhaseTabs({
   metaForPhase,
   trailingForPhase,
   headAction,
+  headMeta,
   children,
 }: {
   engagementId: string;
@@ -208,6 +211,8 @@ export function InternPhaseTabs({
   trailingForPhase?: (phaseId: string) => ReactNode;
   /** Right-hand head action, such as "Open current step". */
   headAction?: ReactNode;
+  /** The head's muted count; "x of y done" by default. */
+  headMeta?: ReactNode;
   children: (phaseId: string) => ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
@@ -255,13 +260,13 @@ export function InternPhaseTabs({
         <CardHeadTile title="Steps" />
         <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Steps</h2>
         <span className="shrink-0 text-[12.5px] tabular-nums text-ink-muted">
-          {totalDone} of {total} done
+          {headMeta ?? `${totalDone} of ${total} done`}
         </span>
         {headAction}
       </div>
       <div className="px-4 pb-3 pt-4">
         <RecordPhaseTrack
-          phases={phases.map((p) => ({ id: p.id, label: internOverviewPhaseTitle(p.id, p.title), done: p.done, total: p.total }))}
+          phases={phases.map((p) => ({ id: p.id, label: internOverviewPhaseTitle(p.id, p.title), done: p.done, total: p.total, range: p.range }))}
           picked={selected.id}
           onPick={onValueChange}
         />

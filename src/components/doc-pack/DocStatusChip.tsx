@@ -3,18 +3,21 @@ import type { DocStatus } from '@/lib/doc-pack/types';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { cn } from '@/lib/utils';
 
-/* VCFO Spectrum status chip (R-13) for a pack document: ready is green, needs inputs amber,
-   waiting for release teal. The words stay the pack's own. */
-const TONE: Record<DocStatus, ChipTone> = {
+/* VCFO Spectrum status chip (R-13) for a pack document, as the prototype `DocumentPackScreen`
+   draws it: ready is green, needs inputs amber, waiting for release grey. The words stay the
+   pack's own. `DOC_STATUS_TAG_TONE` is the same tone for the count tags in the page head. */
+export const DOC_STATUS_TAG_TONE: Record<DocStatus, ChipTone> = {
   ready: 'ok',
   'needs-inputs': 'warn',
-  'waiting-release': 'teal',
+  'waiting-release': 'idle',
 };
-const DOT: Record<DocStatus, string> = {
+const TONE = DOC_STATUS_TAG_TONE;
+export const DOC_STATUS_BAR: Record<DocStatus, string> = {
   ready: 'bg-positive-mid',
   'needs-inputs': 'bg-warning-mid',
-  'waiting-release': 'bg-waiting-mid',
+  'waiting-release': 'bg-upcoming-mid',
 };
+const DOT = DOC_STATUS_BAR;
 
 export function DocStatusChip({ status, className }: { status: DocStatus; className?: string }) {
   return (

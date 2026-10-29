@@ -11,7 +11,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Surface } from "@/components/noir/Surface";
+import { CardHeadTile } from "@/components/common/CardHeadTile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -51,9 +51,13 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
 
   const items = list.data ?? [];
   return (
-    <Surface className="mt-4 p-4">
-      <h3 className="mb-1 text-sm font-semibold text-ink">What SBC is doing (client Home)</h3>
-      <p className="mb-3 text-xs text-ink-muted">The client sees these with % done. Without any, Home lists the steps SBC holds.</p>
+    <section className="surface mt-4 min-w-0 overflow-hidden" aria-label="What SBC is doing">
+      <div className="flex min-h-[52px] min-w-0 items-center gap-2.5 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="What SBC is doing" />
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">What SBC is doing</h2>
+        <span className="text-[12.5px] text-ink-muted">Client home</span>
+      </div>
+      <div className="p-4">
       {items.length ? (
         <ul className="mb-3 divide-y divide-line rounded-md border border-line">
           {items.map((it) => (
@@ -91,12 +95,13 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
           setReadyOn("");
         }}
       >
-        <Input className="min-w-[14rem] flex-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Drafting MOA & AOA" />
+        <Input className="min-w-[14rem] flex-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Drafting MOA and AOA" />
         <Input className="w-40" type="date" value={readyOn} onChange={(e) => setReadyOn(e.target.value)} aria-label="Ready on" />
         <Button type="submit" size="sm" disabled={!title.trim() || save.isPending}>
           Add
         </Button>
       </form>
-    </Surface>
+      </div>
+    </section>
   );
 }

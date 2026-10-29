@@ -10,13 +10,15 @@ import styles from './intern-engagement-overview.module.css';
  *
  * VCFO Spectrum (C-0108): a plain record head with no grey band and no back link (R-09): the
  * company tile, the 28px name, the stage chip, the client email and the CC control, then the
- * record's numbers line.
+ * record's numbers line. The tile takes the client's identity colour (R-35).
  */
 export function InternEngagementOverview({
   companyName,
   clientEmail,
   engagementId,
   badge,
+  meta,
+  actions,
   stats,
   children,
 }: {
@@ -26,6 +28,10 @@ export function InternEngagementOverview({
   engagementId: string;
   /** Chip after the name, such as the stage. */
   badge?: ReactNode;
+  /** The muted line under the name; the client email when absent. */
+  meta?: ReactNode;
+  /** Buttons at the right of the head, before the CC control. */
+  actions?: ReactNode;
   /** The numbers line under the head (step, now). */
   stats?: ReactNode;
   children: ReactNode;
@@ -36,13 +42,15 @@ export function InternEngagementOverview({
       <header className="grid gap-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-3">
           <div className="flex min-w-0 flex-[1_1_320px] items-start gap-3">
-            <RecordTile name={companyName} />
+            <RecordTile name={companyName} identityId={engagementId} />
             <div className="min-w-0">
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">{companyName}</h1>
                 {badge}
               </div>
-              {email ? (
+              {meta ? (
+                meta
+              ) : email ? (
                 <p className="text-[13.5px] text-ink-muted">
                   <a href={`mailto:${email}`} className="hover:text-ink hover:underline" title={`Email ${companyName}`}>
                     {email}
@@ -51,6 +59,7 @@ export function InternEngagementOverview({
               ) : null}
             </div>
           </div>
+          {actions}
           <ProgressEmailCcSection engagementId={engagementId} variant="inline" className={styles.cc} />
         </div>
         {stats}

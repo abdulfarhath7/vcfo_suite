@@ -11,11 +11,12 @@ import { ObligationsView } from '@/views/compliances/ObligationsView';
 import { RegistrationsView } from '@/views/compliances/RegistrationsView';
 import { preIncorporationIdsOf, type ComplianceScope } from '@/views/compliances/compliance-scope';
 import { registrationRows } from '@/views/compliances/registration-rows';
+import { RecordDocumentsPanel, useRecordDocuments } from '@/views/client-record/RecordDocuments';
 
 /**
  * CLIENT RECORD TABS (G-19, prototype ClientRecordScreen): the staff record of one client
  * switches in place (C-0032) between its incorporation steps (the record's own body, the
- * first tab), Registrations, Obligations and Notes. Fees stay out (R-37).
+ * first tab), Registrations, Obligations, Documents and Notes. Fees stay out (R-37).
  *
  * Registrations and Obligations are the staff list views from the Compliances module,
  * scoped to this one engagement and embedded, so a filter never leaves the record. Their
@@ -27,8 +28,8 @@ import { registrationRows } from '@/views/compliances/registration-rows';
  * parameter.
  */
 
-export type RecordTabKey = 'overview' | 'registrations' | 'obligations' | 'notes';
-const TABS: RecordTabKey[] = ['overview', 'registrations', 'obligations', 'notes'];
+export type RecordTabKey = 'overview' | 'registrations' | 'obligations' | 'documents' | 'notes';
+const TABS: RecordTabKey[] = ['overview', 'registrations', 'obligations', 'documents', 'notes'];
 
 export function useRecordTab(): [RecordTabKey, (key: RecordTabKey) => void] {
   const params = useSearchParams();
@@ -66,6 +67,7 @@ export function RecordTabBar({
 }) {
   const { getStateForEngagement } = useApp();
   const notes = useEngagementNotes(engagement.id);
+  const docs = useRecordDocuments(engagement.id);
   const regCount = useMemo(() => {
     const rows = registrationRows([engagement], getStateForEngagement, new Date());
     return rows.filter((r) => r.word !== 'Not needed').length;
@@ -80,6 +82,7 @@ export function RecordTabBar({
         { key: 'overview', label: overviewLabel, count: overviewCount },
         { key: 'registrations', label: 'Registrations', count: regCount },
         { key: 'obligations', label: 'Obligations' },
+        { key: 'documents', label: 'Documents', count: docs.data ? docs.data.length : undefined },
         { key: 'notes', label: 'Notes', count: notes.data ? notes.data.length : undefined },
       ]}
       value={value}
@@ -97,5 +100,6 @@ export function RecordTabPanel({ tab, engagement, shellBase }: { tab: Exclude<Re
   );
   if (tab === 'registrations') return <RegistrationsView shellBase={shellBase} scope={scope} embedded />;
   if (tab === 'obligations') return <ObligationsView basePath={`${shellBase}/compliances`} scope={scope} embedded />;
+  if (tab === 'documents') return <RecordDocumentsPanel engagement={engagement} vaultHref={`${shellBase}/vault`} />;
   return <EngagementNotesPanel engagementId={engagement.id} />;
 }

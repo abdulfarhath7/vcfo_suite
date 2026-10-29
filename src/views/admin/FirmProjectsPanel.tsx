@@ -1,27 +1,41 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
-import { Chip, Tag } from '@/components/ui/spectrum-chip';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { PhaseBar } from '@/components/ui/step-track';
 import { DashSection } from '@/components/dash/DashSection';
+import { EmptyState } from '@/components/ui/empty-state';
 import { FilterChip, FilterChipRow } from '@/components/ui/filter-chip';
 import { AvatarStack } from '@/components/ui/avatar-stack';
 import { SavedViews, type ViewFilters } from '@/components/ui/saved-views';
 import { engagementChangedAt } from '@/components/staff/today/today-rows';
 import { CLIENT_LIST_VIEWS, useClientTableTools, windowEndsThisWeek } from '@/views/admin/clients-table-tools';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
-import { isAdminOrManager } from '@/lib/auth';
-import { CompanyTile } from '@/components/staff/today/today-parts';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { ClientIdentityTile } from '@/views/client-record/client-identity';
+import { AssignClientDialog, assignManagerInDb } from '@/views/admin/clients/AssignClientDialog';
+import {
+  CLIENT_HEALTHS,
+  ClientsLegend,
+  HEALTH_RANK as CLIENT_HEALTH_RANK,
+  HEALTH_TONE,
+  HolderSquare,
+  STAGE_CHIP_TONE,
+  STAGE_WORD,
+  clientRowFacts,
+} from '@/views/admin/clients/client-row';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
-import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
@@ -64,7 +78,6 @@ const HOME_VIEWS: Record<string, ViewFilters> = {
 const SCOPE_LABEL: Record<string, string> = { incorporating: 'Incorporating', compliance: 'In compliance' };
 const SHOW_LABEL: Record<string, string> = { overdue: 'Overdue', week: 'Due this week', waiting: 'Waiting on client', stuck: 'Stuck' };
 const STUCK_FILTERS = ['waiting_client', 'waiting_manager', 'waiting_lead', 'blocked', 'on_track'] as const;
-const HEALTH_RANK = { overdue: 0, 'at-risk': 1, 'on-track': 2 } as const;
 
 /**
  * Firm-wide project list (admin Today "Clients · where each one is", and the Projects page).
@@ -82,7 +95,12 @@ export function FirmProjectsPanel({
   /** `?view=` from the page URL (the Work page passes it; the home card list does not). */
   viewParam?: string | null;
 }) {
-  const { engagements, getStateForEngagement, internOptions, teamMembers, engagementsLoading, user } = useApp();
+  const { engagements, getStateForEngagement, internOptions, teamMembers, engagementsLoading, user, tasks } = useApp();
+  const queryClient = useQueryClient();
+  const firmAdmin = isFirmWideAdmin(user?.role);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignClientId, setAssignClientId] = useState<string | null>(null);
+  const [health, setHealth] = useState('');
   const router = useRouter();
   const [phase, setPhase] = useState<PhaseFilter>('all');
   const [stuck, setStuck] = useState<StuckReason | ''>('');
@@ -98,6 +116,7 @@ export function FirmProjectsPanel({
     setManager(f.manager ?? '');
     setShow(f.show ?? '');
     setScope(f.scope ?? '');
+    setHealth(f.health ?? '');
   };
   // E-05: a home card tile opens this list on one view.
   useEffect(() => {
@@ -117,8 +136,8 @@ export function FirmProjectsPanel({
   };
 
   const rows = useMemo(() => {
+    // Every client shows, incorporating and compliance (prototype admin Clients).
     return engagements
-      .filter((e) => e.stage !== 'Operational Readiness')
       .filter((e) => (phase === 'all' ? true : e.stage === phase))
       .filter((e) => (!manager ? true : (e.managerId ?? e.adminId ?? 'unassigned') === manager))
       .filter((e) => (!scope ? true : isIncorporated(e, getStateForEngagement(e)) === (scope === 'compliance')))
@@ -138,9 +157,11 @@ export function FirmProjectsPanel({
           pct: total ? Math.round((done / total) * 100) : 0,
           leadNames: leadIds.map((id) => leadName(id)).filter((n): n is string => Boolean(n)),
           changedAt: engagementChangedAt(state),
+          facts: clientRowFacts(e, state),
         };
       })
       .filter((r) => (!stuck ? true : r.reason === stuck))
+      .filter((r) => (!health ? true : r.facts.health === health))
       .filter((r) =>
         show === 'overdue'
           ? r.eng.health === 'overdue'
@@ -154,13 +175,14 @@ export function FirmProjectsPanel({
       )
       .sort(
         (a, b) =>
-          HEALTH_RANK[a.eng.health] - HEALTH_RANK[b.eng.health] || a.eng.companyName.localeCompare(b.eng.companyName),
+          CLIENT_HEALTH_RANK[a.facts.health] - CLIENT_HEALTH_RANK[b.facts.health] ||
+          a.eng.companyName.localeCompare(b.eng.companyName),
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- leadName reads `leads`, listed here
-  }, [engagements, getStateForEngagement, phase, stuck, manager, show, scope, leads]);
+  }, [engagements, getStateForEngagement, phase, stuck, manager, show, scope, leads, health]);
 
   const managerIds = new Set(
-    engagements.filter((e) => e.stage !== 'Operational Readiness').map((e) => e.managerId ?? e.adminId ?? 'unassigned'),
+    engagements.map((e) => e.managerId ?? e.adminId ?? 'unassigned'),
   );
   const managerOptions = [...managerIds].map((id) => ({
     value: id,
@@ -175,12 +197,28 @@ export function FirmProjectsPanel({
       width: '22%',
       render: (r) => (
         <span className="flex min-w-0 items-center gap-2.5">
-          <CompanyTile name={r.eng.companyName} />
+          <ClientIdentityTile id={r.eng.id} name={r.eng.companyName} size={30} />
           <span className="truncate font-medium text-ink">{r.eng.companyName}</span>
         </span>
       ),
     },
-    { key: 'step', header: 'Now at', width: '20%', render: (r) => <span title={r.step}>{r.step || '—'}</span> },
+    {
+      key: 'step',
+      header: 'Now at',
+      width: '20%',
+      render: (r) =>
+        r.facts.now ? (
+          <span className="grid min-w-0" title={`${r.facts.now.code} · ${r.facts.now.title}`}>
+            <span className="flex min-w-0 items-center gap-2">
+              <HolderSquare holder={r.facts.now.holder} />
+              <span className="truncate font-medium text-ink">{r.facts.now.title}</span>
+            </span>
+            <span className="grid-sub truncate pl-4 font-mono text-[11.5px] text-ink-muted">{r.facts.now.code}</span>
+          </span>
+        ) : (
+          '—'
+        ),
+    },
     {
       key: 'progress',
       header: 'Progress',
@@ -199,7 +237,16 @@ export function FirmProjectsPanel({
       width: '84px',
       render: (r) => <AvatarStack people={r.leadNames} label={r.leadNames.length ? `Leads: ${r.leadNames.join(', ')}` : undefined} />,
     },
-    { key: 'stage', header: 'Stage', width: '12%', render: (r) => <Tag>{stageDisplayLabel(r.eng.stage)}</Tag> },
+    {
+      key: 'stage',
+      header: 'Stage',
+      width: '12%',
+      render: (r) => (
+        <Chip tone={STAGE_CHIP_TONE[r.facts.stage]} fixed dot={false}>
+          {STAGE_WORD[r.facts.stage]}
+        </Chip>
+      ),
+    },
     {
       key: 'next',
       header: 'Next',
@@ -214,12 +261,8 @@ export function FirmProjectsPanel({
       header: 'Health',
       width: '124px',
       render: (r) => (
-        <Chip
-          fixed
-          tone={r.eng.health === 'on-track' ? 'ok' : r.eng.health === 'overdue' ? 'bad' : 'warn'}
-          title={STUCK_LABEL[r.reason]}
-        >
-          {r.eng.health === 'on-track' ? 'On track' : r.eng.health === 'overdue' ? 'Overdue' : 'At risk'}
+        <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
+          {r.facts.health}
         </Chip>
       ),
     },
@@ -237,7 +280,7 @@ export function FirmProjectsPanel({
     },
   ];
 
-  const current: ViewFilters = { phase: phase === 'all' ? '' : phase, stuck, manager, show, scope };
+  const current: ViewFilters = { phase: phase === 'all' ? '' : phase, stuck, manager, show, scope, health };
   const anyFilter = Object.values(current).some(Boolean);
   const clear = () => applyView({});
   const tools = useClientTableTools({
@@ -247,10 +290,32 @@ export function FirmProjectsPanel({
     leads,
     canReassign: isAdminOrManager(user?.role),
     openHref: (r) => adminProjectPath(r.eng, '/app/admin'),
+    // The admin list moves clients between managers (prototype admin Clients): bulk Assign picks a
+    // manager, and the row Reassign opens "Assign a client to a manager" on that client.
+    ...(firmAdmin
+      ? {
+          assignTo: {
+            people: (managersQuery.data ?? []).map((m) => ({ id: m.id, name: m.name })),
+            onPick: async (list: typeof rows, person: { id: string; name: string }) => {
+              try {
+                for (const r of list) await assignManagerInDb(r.eng.id, person.id);
+                await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+                toastSuccess(`Assigned to ${person.name}`, `${list.length} ${list.length === 1 ? 'client' : 'clients'}`);
+              } catch (err) {
+                toastError('Could not assign', errorMessage(err));
+              }
+            },
+          },
+          onReassignRow: (r: (typeof rows)[number]) => {
+            setAssignClientId(r.eng.id);
+            setAssignOpen(true);
+          },
+        }
+      : {}),
     csv: {
       file: 'clients.csv',
       header: ['Client', 'Now at', 'Progress', 'Manager', 'Stage', 'Health'],
-      cells: (r) => [r.eng.companyName, r.step, `${r.pct}%`, managerName(r.eng.managerId ?? r.eng.adminId), stageDisplayLabel(r.eng.stage), r.eng.health],
+      cells: (r) => [r.eng.companyName, r.step, `${r.pct}%`, managerName(r.eng.managerId ?? r.eng.adminId), STAGE_WORD[r.facts.stage], r.facts.health],
     },
   });
 
@@ -288,6 +353,18 @@ export function FirmProjectsPanel({
             ),
           },
           { key: 'manager', set: !!manager, node: <FilterChip label="Manager" value={manager} options={managerOptions} onChange={setManager} /> },
+          {
+            key: 'health',
+            set: !!health,
+            node: (
+              <FilterChip
+                label="Health"
+                value={health}
+                options={CLIENT_HEALTHS.map((h) => ({ value: h, label: h }))}
+                onChange={setHealth}
+              />
+            ),
+          },
           ...(scope
             ? [{ key: 'scope', set: true, node: <FilterChip label="Clients" value={scope} valueLabel={SCOPE_LABEL[scope]} options={[]} onChange={setScope} /> }]
             : []),
@@ -307,7 +384,7 @@ export function FirmProjectsPanel({
       rows={rows}
       rowKey={(r) => r.eng.id}
       onRowClick={(r) => router.push(adminProjectPath(r.eng, '/app/admin'))}
-      empty="No projects match these filters."
+      empty="No clients match these filters"
       minWidth={1000}
       pageSize={title ? Math.max(1, rows.length) : 10}
       columns={projectColumns}
@@ -322,12 +399,63 @@ export function FirmProjectsPanel({
     />
   );
 
+  const assignDialog = firmAdmin ? (
+    <AssignClientDialog
+      open={assignOpen}
+      onOpenChange={(open) => {
+        setAssignOpen(open);
+        if (!open) setAssignClientId(null);
+      }}
+      engagements={engagements}
+      tasks={tasks}
+      managers={(managersQuery.data ?? []).map((m) => ({ id: m.id, name: m.name }))}
+      clientId={assignClientId}
+    />
+  ) : null;
+
+  // Phone: one card per client under 768px; the wide grid shows from md.
+  const phoneCards = (
+    <ul className="md:hidden">
+      {rows.map((r) => (
+        <li key={r.eng.id} className="border-b border-line-soft last:border-b-0">
+          <Link href={adminProjectPath(r.eng, '/app/admin')} className="flex items-start gap-3 px-3 py-3 hover:bg-surface-sunken/60">
+            <ClientIdentityTile id={r.eng.id} name={r.eng.companyName} size={30} />
+            <span className="grid min-w-0 flex-1 gap-1.5">
+              <span className="flex min-w-0 items-center gap-2">
+                <b className="min-w-0 truncate font-medium text-ink">{r.eng.companyName}</b>
+                <Chip tone={HEALTH_TONE[r.facts.health]} className="ml-auto flex-none">
+                  {r.facts.health}
+                </Chip>
+              </span>
+              {r.facts.now ? (
+                <span className="flex min-w-0 items-center gap-2 text-[12.5px]">
+                  <HolderSquare holder={r.facts.now.holder} />
+                  <span className="font-mono text-[12px] text-ink-muted">{r.facts.now.code}</span>
+                  <span className="min-w-0 truncate text-ink-2">{r.facts.now.title}</span>
+                </span>
+              ) : null}
+              <span className="flex items-center gap-2">
+                <PhaseBar done={r.phaseDone} totals={r.phaseTotals} names={r.phaseNames} className="flex-1" />
+                <span className="flex-none text-[12px] tabular-nums text-ink-muted">{r.pct}%</span>
+              </span>
+              <span className="truncate text-[12.5px] text-ink-muted">
+                {STAGE_WORD[r.facts.stage]} · {managerName(r.eng.managerId ?? r.eng.adminId)}
+              </span>
+            </span>
+            <ChevronRight className="mt-1 h-4 w-4 flex-none text-ink-faint" strokeWidth={1.6} aria-hidden />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
   if (title) {
     return (
       <DashSection title={title} meta={String(rows.length)} bodyClassName="px-2 pb-3 pt-0">
         <div className="px-2 py-3">{filters}</div>
         {grid}
         {tools.dialog}
+        {assignDialog}
       </DashSection>
     );
   }
@@ -342,9 +470,29 @@ export function FirmProjectsPanel({
           </Button>
         </div>
       )}
-      <div className="mb-3">{filters}</div>
-      {grid}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1">{filters}</div>
+        {firmAdmin ? (
+          <Button size="sm" onClick={() => setAssignOpen(true)}>
+            Assign client
+          </Button>
+        ) : null}
+      </div>
+      {rows.length === 0 && !engagementsLoading ? (
+        <div className="md:hidden">
+          <EmptyState
+            title="No clients match these filters"
+            action={anyFilter ? <Button size="sm" variant="secondary" onClick={clear}>Clear filters</Button> : undefined}
+          />
+        </div>
+      ) : null}
+      {phoneCards}
+      <div className="hidden md:block">
+        {grid}
+        <ClientsLegend />
+      </div>
       {tools.dialog}
+      {assignDialog}
     </div>
   );
 }
