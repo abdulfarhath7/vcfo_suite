@@ -136,6 +136,8 @@ export function HotToaster() {
       containerStyle={{
         top: "calc(var(--shell-sticky-top) + 0.5rem)",
         right: 16,
+        /* Bottom toasts (A1, A2) clear the phone tab bar; see --toast-bottom in globals.css. */
+        bottom: "var(--toast-bottom, 16px)",
       }}
       toastOptions={{
         duration: 4500,

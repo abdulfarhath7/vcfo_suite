@@ -265,6 +265,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
     <div onClickCapture={onTiles}>
       <DashHero
         title={company}
+        settings={false}
         lead={<DashHeroCompanyTile name={h.companyName || company} />}
         stage={<Chip tone={after ? 'ok' : 'prog'} className="!h-5 min-w-0 px-[7px] text-[11.5px]">{after ? 'Incorporated' : 'Incorporating'}</Chip>}
         steps={

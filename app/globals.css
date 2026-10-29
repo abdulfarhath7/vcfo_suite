@@ -2468,3 +2468,10 @@ html[data-reduce-motion="true"] .discrete-panel {
     background: oklch(var(--primary-light) / 0.55);
   }
 }
+
+/* Bottom toasts sit above the phone tab bar (R-45). */
+@media (max-width: 767px) {
+  :root {
+    --toast-bottom: 80px;
+  }
+}

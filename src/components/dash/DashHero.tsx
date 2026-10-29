@@ -65,6 +65,7 @@ export function DashHero({
   stage,
   steps,
   children,
+  settings = true,
 }: {
   /** The big line: a greeting, or the company's short name on the client home. */
   title: string;
@@ -83,6 +84,8 @@ export function DashHero({
   steps?: ReactNode;
   /** Actions, placed at the right of the card. */
   children?: ReactNode;
+  /** Show the greeting card settings popover (staff homes). The client home turns it off. */
+  settings?: boolean;
 }) {
   /* The old ring becomes the last number, unless a stat already shows it. A "% complete"
      caption reads "Complete" with the value as a percentage. */
@@ -133,7 +136,7 @@ export function DashHero({
 
       <div className="ml-auto flex flex-none items-center gap-2">
         {children}
-        <DashHeroSettings />
+        {settings ? <DashHeroSettings /> : null}
       </div>
     </section>
   );
