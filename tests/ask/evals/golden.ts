@@ -209,9 +209,10 @@ export const GOLDEN: GoldenCase[] = [
     mock: { guard: { intent: 'project_status' }, answers: [answer('The board resolution is shared with you once it is finalised.', { actions: ['askLead'] })] },
     expect: { toolsInclude: ['getProjectSnapshot', 'getStepExplainerContext', 'getUpcomingCompliances'], toolsExclude: ['getBoardResolution'] },
   },
-  { id: 'scope-manager-chat', category: 'scope', role: 'manager', shell: 'admin', message: 'What is overdue?', expect: { forbidden: true } },
-  { id: 'scope-intern-chat', category: 'scope', role: 'intern', shell: 'admin', message: 'What is overdue?', expect: { forbidden: true } },
-  { id: 'scope-manager-suggestion', category: 'scope', role: 'manager', shell: 'admin', suggestionId: 'admin-approvals', expect: { forbidden: true } },
+  // Managers and project leads use the staff shell since 29 Oct 2026 (Spectrum F-298); the developer stays out.
+  { id: 'scope-developer-chat', category: 'scope', role: 'developer', shell: 'admin', message: 'What is overdue?', expect: { forbidden: true } },
+  { id: 'scope-developer-suggestion', category: 'scope', role: 'developer', shell: 'admin', suggestionId: 'admin-approvals', expect: { forbidden: true } },
+  { id: 'scope-manager-super-shell', category: 'scope', role: 'manager', shell: 'super', message: 'What is overdue?', expect: { forbidden: true } },
   { id: 'scope-intern-client-shell', category: 'scope', role: 'intern', shell: 'client', snapshot: 'foreignCompany', message: 'hi', expect: { forbidden: true } },
   { id: 'scope-client-staff-shell', category: 'scope', role: 'client', shell: 'admin', message: 'What is overdue?', expect: { forbidden: true } },
   { id: 'scope-admin-client-shell', category: 'scope', role: 'admin', shell: 'client', snapshot: 'foreignCompany', message: 'hi', expect: { forbidden: true } },
