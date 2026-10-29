@@ -15,6 +15,7 @@ import type { PendingApprovalRow } from '@/lib/projects/pending-approvals';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { adminProjectStepPath } from '@/lib/projects/project-step-path';
 import { ProjectChangeRequestsPanel } from '@/views/admin/ProjectChangeRequestsPanel';
+import { DateChangeRequestsPanel } from '@/components/work/DateChangeRequestsPanel';
 import { PlainPageHead } from '@/views/admin/PlainPageHead';
 
 type KindKey = 'client' | 'lead' | 'send' | 'board';
@@ -81,6 +82,9 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
       <PlainPageHead title="Approvals" meta={`${rows.length} waiting`} />
 
       <ProjectChangeRequestsPanel scope={scope} />
+
+      {/* G-17: a lead's request to move a manager-set date window. */}
+      <DateChangeRequestsPanel />
 
       <DashSection
         title="Pending milestones"

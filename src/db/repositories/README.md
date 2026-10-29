@@ -118,3 +118,12 @@ System jobs (Inngest): `systemGenerateComplianceInstances` /
 `runComplianceGenerate` in `compliance.ts`, and feed ingest helpers in
 `announcements.ts`, may touch `db` without AuthContext. Routes still must
 not import `db`. Staff “Pull now” goes through `ingestAnnouncementSource`.
+Work tools (G-16, G-17, `ui/spectrum`): `work-items.ts` turns an item key
+(`src/lib/work/item-key.ts`) into an engagement through `assertEngagementAccess` — lead on
+the engagements they lead, manager on theirs, admin / super admin all, client and developer
+nothing — and every other work repository resolves its item there. `work-sessions` (timer;
+everyone in scope reads an item's sessions, a person starts and stops only their own, one
+running per person), `work-checklist` (own rows only), `time-blocks` (own rows only; a list
+hides blocks on engagements that left the scope) and `item-window-requests` (lead asks on a
+step or filing with a manager window; manager / admin decide, approve applies the window
+through `schedule.ts`; the asker withdraws). Tests share `work-test-stub.ts`.
