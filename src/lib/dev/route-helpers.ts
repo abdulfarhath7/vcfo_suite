@@ -1,11 +1,12 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import type { ZodType } from 'zod';
-import { requireAuth, requireDeveloper, type AuthContext } from '@/auth/guards';
+import { requireAuth, requireDeveloper, requireDeveloperOrToken, type AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 
 /**
- * Shared shape for every `app/api/dev/**` handler: the developer guard, query validation
+ * Shared shape for every `app/api/dev/**` read: the developer guard (or a personal API
+ * token, read only), query validation
  * with zod (400 on bad input), no caching, and a plain 500 that never echoes a secret.
  */
 export async function devRoute<Q>(
@@ -13,7 +14,8 @@ export async function devRoute<Q>(
   schema: ZodType<Q>,
   handler: (ctx: AuthContext, query: Q) => Promise<unknown>,
 ): Promise<NextResponse> {
-  const guard = await requireDeveloper();
+  // Reads also take a personal API token (Access › API tokens); writes below never do.
+  const guard = await requireDeveloperOrToken(request);
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const url = new URL(request.url);

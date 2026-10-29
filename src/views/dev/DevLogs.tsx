@@ -6,10 +6,66 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FilterChip } from '@/components/ui/filter-chip';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { CloseButton, DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip, pickedRow } from '@/components/dev/parts';
+import { ChangeConfirm as ChangeRow } from '@/components/ui/inline-confirm';
+import { CloseButton, DevCard, KeyValue, Pending, ReachChip, ReachNotice, SettingRow, StatusChip, pickedRow, useDevAction } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
-import { stampSec } from '@/lib/dev/format';
-import type { LogLine, LogsPayload } from '@/lib/dev/types';
+import { bytes, stampSec } from '@/lib/dev/format';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
+import type { LogLine, LogRetention, LogsPayload, Reach } from '@/lib/dev/types';
+
+const KEEP = ['14', '30', '90'] as const;
+const keepWord = (d: number | null) => (d ? `${d} days` : 'Never expire');
+
+/** "Keeping logs": how long CloudWatch keeps the lines; a change asks first (R-40). */
+function KeepingLogs() {
+  const q = useDevApi<Reach<LogRetention>>('/api/dev/logs/retention');
+  const save = useDevAction<{ days: number }>('/api/dev/logs/retention');
+  const [next, setNext] = useState<number | null>(null);
+  const cur = q.data?.state === 'ok' ? q.data.data : null;
+
+  const doSave = async () => {
+    if (!next) return;
+    const out = await save.run({ days: next });
+    if (out.ok === false) {
+      toastError('Not changed', out.error);
+      return;
+    }
+    toastSuccess('Saved', `Logs kept for ${next} days`);
+    setNext(null);
+  };
+
+  return (
+    <DevCard title="Keeping logs" meta={cur ? <span className="font-mono">{cur.group}</span> : undefined}>
+      {!q.data ? (
+        <Pending error={q.error} rows={2} />
+      ) : cur ? (
+        <>
+          <SettingRow label="Keep logs for" sub={cur.storedBytes !== null ? `${bytes(cur.storedBytes)} stored` : undefined}>
+            <SpectrumTabs
+              label="Keep logs for"
+              items={KEEP.map((d) => ({ key: d, label: `${d} days` }))}
+              value={String(next ?? cur.days ?? '')}
+              onChange={(k) => setNext(Number(k) === cur.days ? null : Number(k))}
+            />
+          </SettingRow>
+          {next ? (
+            <ChangeRow
+              question={`Keep logs for ${next} days?`}
+              now={keepWord(cur.days)}
+              after={keepWord(next)}
+              confirm="Save"
+              busy={save.busy}
+              onConfirm={() => void doSave()}
+              onCancel={() => setNext(null)}
+            />
+          ) : null}
+        </>
+      ) : (
+        <ReachNotice reach={q.data as Exclude<Reach<LogRetention>, { state: 'ok' }>} service="CloudWatch Logs" />
+      )}
+    </DevCard>
+  );
+}
 
 /**
  * Logs: CloudWatch log lines from APP_LOG_GROUP, newest first. The text filter runs in
@@ -106,6 +162,7 @@ export default function DevLogs() {
           <pre className="mx-4 mb-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-md border-1.5 border-line bg-surface-sunken p-3 font-mono text-[12.5px] text-ink-2">{cur.message}</pre>
         </DevCard>
       ) : null}
+      <KeepingLogs />
     </div>
   );
 }

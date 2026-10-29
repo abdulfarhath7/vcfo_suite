@@ -7,6 +7,7 @@ import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipi
 import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { systemGetRemindDays } from '@/db/repositories/notification-prefs';
 import { dueNudgeToday } from '@/lib/notify/reminder-days';
+import { withRunNow } from '@/jobs/dev-controls';
 
 /**
  * Scheduled: expand compliance obligations into dated instances.
@@ -18,7 +19,7 @@ import { dueNudgeToday } from '@/lib/notify/reminder-days';
  */
 export const complianceGenerate = inngest.createFunction(
   { id: 'compliance-generate' },
-  { cron: '0 6 * * *' }, // daily 06:00
+  withRunNow('compliance-generate', '0 6 * * *'), // daily 06:00
   async ({ step }) => {
     const result = await step.run('generate-instances', async () => {
       return systemGenerateComplianceInstances(new Date());

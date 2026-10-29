@@ -103,7 +103,7 @@ describe('parse', () => {
       { id: () => 'compliance-generate', opts: { triggers: [{ cron: '0 6 * * *' }] } },
       { id: () => 'whatsapp-send', opts: { retries: 3, triggers: [{ event: 'notify/whatsapp.send' }] } },
     ]);
-    expect(fns[1]).toEqual({ id: 'whatsapp-send', name: 'whatsapp-send', trigger: { kind: 'event', event: 'notify/whatsapp.send' }, retries: 3 });
+    expect(fns[1]).toEqual({ id: 'whatsapp-send', name: 'whatsapp-send', trigger: { kind: 'event', event: 'notify/whatsapp.send' }, retries: 3, runEvent: null });
     expect(functionForEvent({ name: 'inngest/scheduled.timer', data: { cron: '0 6 * * *' } }, fns)).toBe('compliance-generate');
     const runs = runsForEvent(
       { internal_id: 'e1', name: 'notify/whatsapp.send', data: { cron: undefined } },

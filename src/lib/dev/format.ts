@@ -97,3 +97,10 @@ export function imageVersion(image: string | null | undefined): string | null {
   const i = image.lastIndexOf(':');
   return i > 0 && i < image.length - 1 ? image.slice(i + 1) : null;
 }
+
+/** The git commit an image tag names, when the tag looks like one (7 to 40 hex digits). */
+export function commitOf(image: string | null | undefined): string | null {
+  const v = imageVersion(image);
+  if (!v || /@sha256:/i.test(image ?? '')) return null;
+  return /^[0-9a-f]{7,40}$/i.test(v) ? v.slice(0, 12) : null;
+}

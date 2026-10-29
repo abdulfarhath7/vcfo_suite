@@ -11,6 +11,7 @@ import {
   parseRssOrAtom,
   type AnnouncementSource,
 } from '@/lib/notifications/announcements';
+import { withRunNow } from '@/jobs/dev-controls';
 
 export async function ingestAnnouncementSource(
   source: AnnouncementSource,
@@ -70,7 +71,7 @@ async function ingestAllAnnouncementFeeds(): Promise<{
 /** Pull official RSS/Atom once each morning IST. Staff can still Pull now. */
 export const announcementFeeds = inngest.createFunction(
   { id: 'announcement-feeds' },
-  { cron: 'TZ=Asia/Kolkata 0 6 * * *' },
+  withRunNow('announcement-feeds', 'TZ=Asia/Kolkata 0 6 * * *'),
   async ({ step }) => {
     return step.run('ingest-all-feeds', async () => {
       const digest = await ingestAllAnnouncementFeeds();

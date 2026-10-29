@@ -9,6 +9,7 @@ import { collectWeeklyDigest } from '@/lib/digest/collect-weekly-digest';
 import { buildWeeklyDigestEmail } from '@/lib/digest/weekly-digest-email';
 import { digestWeek } from '@/lib/digest/weekly-digest';
 import { sendEmail } from '@/lib/email/send-email';
+import { PAUSED, skipWhenPaused, withRunNow } from '@/jobs/dev-controls';
 
 /**
  * Scheduled: the weekly digest (`notification_prefs.email.weeklyDigest`).
@@ -29,8 +30,9 @@ import { sendEmail } from '@/lib/email/send-email';
  */
 export const weeklyDigest = inngest.createFunction(
   { id: 'weekly-digest' },
-  { cron: 'TZ=Asia/Kolkata 0 9 * * 1' },
+  withRunNow('weekly-digest', 'TZ=Asia/Kolkata 0 9 * * 1'),
   async ({ step }) => {
+    if (await skipWhenPaused(step)) return PAUSED;
     const plan = await step.run('load-recipients', async () => {
       const week = digestWeek(new Date());
       const [recipients, done] = await Promise.all([

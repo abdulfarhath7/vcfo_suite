@@ -5,6 +5,7 @@ import { getAnalyticsMetrics } from '@/db/repositories/metrics';
 import { systemListKpiSubjects, systemSaveKpiSnapshot, type KpiValues } from '@/db/repositories/kpi-snapshots';
 import type { AuthContext } from '@/auth/guards';
 import { analyticsKpis, previousMonthEnd } from '@/lib/metrics/analytics-kpis';
+import { withRunNow } from '@/jobs/dev-controls';
 
 const ITEM_IDS = checklist.map((item) => item.id);
 
@@ -19,7 +20,7 @@ const ITEM_IDS = checklist.map((item) => item.id);
  */
 export const kpiSnapshots = inngest.createFunction(
   { id: 'kpi-snapshots' },
-  { cron: 'TZ=Asia/Kolkata 5 0 1 * *' },
+  withRunNow('kpi-snapshots', 'TZ=Asia/Kolkata 5 0 1 * *'),
   async ({ step }) => {
     const period = previousMonthEnd(new Date());
     const subjects = await step.run('list-subjects', () => systemListKpiSubjects());

@@ -4,6 +4,7 @@ import { systemApprovalAlertRecipients, systemEscalationAlertRecipients, type Al
 import { sendEmail } from '@/lib/email/send-email';
 import { quietHoursEnd } from '@/lib/notify/prefs-gate';
 import { STAFF_ALERT_EVENT, buildStaffAlertEmail, type StaffAlertRequest } from '@/lib/notify/staff-alerts';
+import { PAUSED, skipWhenPaused } from '@/jobs/dev-controls';
 
 /**
  * Event: one staff alert (`src/lib/notify/staff-alerts.ts`), queued after an approval starts
@@ -26,6 +27,7 @@ export const staffAlerts = inngest.createFunction(
   { id: 'staff-alerts' },
   { event: STAFF_ALERT_EVENT },
   async ({ event, step }) => {
+    if (await skipWhenPaused(step)) return PAUSED;
     const request = event.data as unknown as StaffAlertRequest;
     const plan = await step.run('load-recipients', async () =>
       request.kind === 'approval'

@@ -9,6 +9,7 @@ import { collectWeeklyDigest } from '@/lib/digest/collect-weekly-digest';
 import { dailyDigestDueDay } from '@/lib/digest/daily-digest';
 import { buildWeeklyDigestEmail } from '@/lib/digest/weekly-digest-email';
 import { sendEmail } from '@/lib/email/send-email';
+import { PAUSED, skipWhenPaused, withRunNow } from '@/jobs/dev-controls';
 
 /**
  * Scheduled, hourly: the daily digest (`notification_prefs.digest_time`, P-626, S-656).
@@ -27,8 +28,9 @@ import { sendEmail } from '@/lib/email/send-email';
  */
 export const dailyDigest = inngest.createFunction(
   { id: 'daily-digest' },
-  { cron: '1 * * * *' },
+  withRunNow('daily-digest', '1 * * * *'),
   async ({ step }) => {
+    if (await skipWhenPaused(step)) return PAUSED;
     const plan = await step.run('load-recipients', async () => {
       const now = new Date();
       const candidates = await systemListDailyDigestCandidates();

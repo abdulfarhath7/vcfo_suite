@@ -21,8 +21,9 @@ import {
   type DevAttentionRow,
 } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
-import { day, imageVersion, money, stamp, words } from '@/lib/dev/format';
-import type { CostGroup, JobRun, OverviewPayload, ServiceConfig } from '@/lib/dev/types';
+import { day, duration, imageVersion, money, stamp, words } from '@/lib/dev/format';
+import { uptimeLow } from '@/lib/dev/health';
+import type { CostGroup, EnvironmentRow, Incident, JobRun, OverviewPayload, ServiceConfig, ServiceHealth } from '@/lib/dev/types';
 import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 
 /** Things a developer should act on, worst first. Built only from the real readings. */
@@ -81,22 +82,73 @@ function attention(d: OverviewPayload, today = new Date()): DevAttentionRow[] {
   return rows;
 }
 
-const serviceColumns: EFilingColumn<ServiceConfig>[] = [
+/** Services health columns; uptime, p95 and the last check come from the stored live checks. */
+function serviceColumns(health: Map<string, ServiceHealth>): EFilingColumn<ServiceConfig>[] {
+  return [
+    {
+      key: 'name',
+      header: 'Service',
+      width: '28%',
+      render: (s) => (
+        <span className="block min-w-[180px]">
+          <span className="block truncate font-medium text-ink">{s.name}</span>
+          <span className="block truncate text-[12px] text-ink-muted">
+            {s.what} · {s.provider}
+          </span>
+        </span>
+      ),
+    },
+    { key: 'status', header: 'Status', width: '148px', render: (s) => <StatusChip status={s.status} /> },
+    {
+      key: 'up',
+      header: 'Uptime, 30 days',
+      width: '130px',
+      align: 'right',
+      render: (s) => {
+        const h = health.get(s.id);
+        if (!h || h.uptime === null) return <span className="text-ink-faint">-</span>;
+        return <span className={uptimeLow(h.uptime) ? 'font-medium text-warning' : undefined}>{`${h.uptime}%`}</span>;
+      },
+    },
+    {
+      key: 'p95',
+      header: 'p95',
+      width: '100px',
+      align: 'right',
+      render: (s) => {
+        const p = health.get(s.id)?.p95;
+        return p === null || p === undefined ? <span className="text-ink-faint">-</span> : <span className="whitespace-nowrap">{`${p.toLocaleString('en-IN')} ms`}</span>;
+      },
+    },
+    { key: 'last', header: 'Last check', width: '140px', render: (s) => stamp(health.get(s.id)?.lastCheck?.checkedAt) },
+    { key: 'missing', header: 'Note', wrap: true, render: (s) => <EnvNames names={s.missing} tone={s.status === 'partial' ? 'danger' : 'muted'} /> },
+  ];
+}
+
+const incidentColumns = (names: Map<string, string>): EFilingColumn<Incident>[] => [
+  { key: 'at', header: 'Date', width: '140px', render: (i) => stamp(i.startedAt) },
   {
-    key: 'name',
-    header: 'Service',
-    width: '30%',
-    render: (s) => (
-      <span className="block min-w-[180px]">
-        <span className="block truncate font-medium text-ink">{s.name}</span>
+    key: 'what',
+    header: 'What happened',
+    render: (i) => (
+      <span className="block min-w-0">
+        <span className="block truncate font-medium text-ink">{i.detail || 'Check failed'}</span>
         <span className="block truncate text-[12px] text-ink-muted">
-          {s.what} · {s.provider}
+          {names.get(i.service) ?? i.service} · {i.endedAt ? duration(i.startedAt, i.endedAt) : `${i.failedChecks} failed checks`}
         </span>
       </span>
     ),
   },
-  { key: 'status', header: 'Status', width: '148px', render: (s) => <StatusChip status={s.status} /> },
-  { key: 'missing', header: 'Note', wrap: true, render: (s) => <EnvNames names={s.missing} tone={s.status === 'partial' ? 'danger' : 'muted'} /> },
+  { key: 'status', header: 'Status', width: '148px', render: (i) => <StatusChip status={i.endedAt ? 'ok' : 'failed'} label={i.endedAt ? 'Resolved' : 'Open'} /> },
+];
+
+const envColumns: EFilingColumn<EnvironmentRow>[] = [
+  { key: 'name', header: 'Environment', width: '140px', render: (e) => <span className="font-medium text-ink">{e.name}</span> },
+  { key: 'addr', header: 'Address', render: (e) => <span className="font-mono text-[12.5px]">{e.address ?? '-'}</span> },
+  { key: 'ver', header: 'Version', width: '150px', render: (e) => <span className="font-mono text-[12.5px]">{e.version ?? '-'}</span> },
+  { key: 'commit', header: 'Commit', width: '130px', render: (e) => <span className="font-mono text-[12.5px]">{e.commit ?? '-'}</span> },
+  { key: 'at', header: 'Deployed', width: '140px', render: (e) => stamp(e.deployedAt) },
+  { key: 'by', header: 'By', width: '140px', render: (e) => e.by ?? <span className="text-ink-faint">Pipeline</span> },
 ];
 
 const runColumns: EFilingColumn<JobRun>[] = [
@@ -208,6 +260,9 @@ export default function DevOverview() {
   const rows = d ? attention(d) : [];
   const version = d && d.deploy.state === 'ok' ? imageVersion(d.deploy.data.image) : null;
   const conns = [...live].sort((a, b) => Number(a.status === 'configured') - Number(b.status === 'configured'));
+  const health = new Map((d?.health ?? []).map((h) => [h.service, h]));
+  const names = new Map((d?.services ?? []).map((s) => [s.id as string, s.name]));
+  const checked = (d?.health ?? []).some((h) => h.checks > 0);
 
   return (
     <div className="grid grid-cols-1 gap-5">
@@ -235,15 +290,27 @@ export default function DevOverview() {
         </DevCard>
       ) : (
         <>
-          <DevCard title="Services health" meta={`${working} of ${d.services.length} working`}>
+          <DevCard title="Services health" meta={`${working} of ${d.services.length} working · last 30 days`}>
             <div className="px-2 pb-2">
-              <EFilingGrid columns={serviceColumns} rows={d.services} rowKey={(s) => s.id} pageSize={20} minWidth={640} caption="Services" stickyFirstColumn stickyHead />
+              <EFilingGrid columns={serviceColumns(health)} rows={d.services} rowKey={(s) => s.id} pageSize={20} minWidth={640} caption="Services" stickyFirstColumn stickyHead />
             </div>
           </DevCard>
           <Cols>
             <Col>
               <DevCard title="Needs attention" meta={rows.length ? `${rows.length}` : undefined}>
                 <AttentionList rows={rows} />
+              </DevCard>
+              <DevCard title="Incidents" meta="Last 30 days" right={<HeadLink href="/app/dev/logs">Logs ›</HeadLink>}>
+                <div className="px-2 pb-2">
+                  <EFilingGrid
+                    columns={incidentColumns(names)}
+                    rows={d.incidents ?? []}
+                    rowKey={(i) => i.id}
+                    minWidth={520}
+                    empty={checked ? 'No failed checks in 30 days' : 'No checks yet. Run Test on Connections.'}
+                    stickyFirstColumn
+                  />
+                </div>
               </DevCard>
               <DevCard title="Recent job runs" right={<ReachChip reach={d.jobs} />}>
                 {d.jobs.state === 'ok' ? (
@@ -319,6 +386,17 @@ export default function DevOverview() {
               </DevCard>
             </Col>
           </Cols>
+          <DevCard title="Environments">
+            {d.environment?.state === 'ok' ? (
+              <div className="px-2 pb-2">
+                <EFilingGrid columns={envColumns} rows={[d.environment.data]} rowKey={(e) => e.name} minWidth={820} stickyFirstColumn />
+              </div>
+            ) : d.environment ? (
+              <ReachNotice reach={d.environment} service="App Runner" />
+            ) : (
+              <Pending />
+            )}
+          </DevCard>
         </>
       )}
     </div>

@@ -6,7 +6,7 @@ import {
   Briefcase,
   ClipboardCheck,
   ClipboardList,
-  Clock,
+  Terminal,
   FileSpreadsheet,
   FolderClosed,
   LayoutDashboard,
@@ -65,7 +65,7 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
     case 'developer':
       return [
         { label: 'Overview', href: '/app/dev/overview', Icon: LayoutDashboard },
-        { label: 'Jobs', href: '/app/dev/jobs', Icon: Clock },
+        { label: 'Jobs', href: '/app/dev/jobs', Icon: Terminal },
         { label: 'Connections', href: '/app/dev/connections', Icon: Plug },
       ];
     default:

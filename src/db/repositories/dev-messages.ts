@@ -1,9 +1,9 @@
 import 'server-only';
 import { and, desc, eq, gte, lt, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { emailSendLog, notificationDeliveries } from '@/db/schema';
+import { emailSendLog, emailTemplates, firmSettings, notificationDeliveries } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import type { DeliveryRow, EmailLogRow, MessagesPayload } from '@/lib/dev/types';
+import type { DeliveryRow, EmailLogRow, EmailTemplateRow, MessageRouteRow, MessagesPayload } from '@/lib/dev/types';
 import { maskAddress } from '@/lib/dev/mask';
 import { assertDeveloper } from './dev-scope';
 
@@ -44,6 +44,8 @@ export async function listDeliveriesForDev(ctx: AuthContext, opts: DevMessagesOp
       skipReason: notificationDeliveries.skipReason,
       errorCode: notificationDeliveries.errorCode,
       toAddress: notificationDeliveries.toAddress,
+      templateSid: notificationDeliveries.templateSid,
+      updatedAt: notificationDeliveries.updatedAt,
     })
     .from(notificationDeliveries)
     .where(conds.length ? and(...conds) : undefined)
@@ -59,6 +61,8 @@ export async function listDeliveriesForDev(ctx: AuthContext, opts: DevMessagesOp
     skipReason: r.skipReason,
     errorCode: r.errorCode,
     to: maskAddress(r.toAddress),
+    template: r.templateSid ?? null,
+    updatedAt: r.updatedAt ? r.updatedAt.toISOString() : null,
   }));
 }
 
@@ -153,4 +157,102 @@ export async function deliveryStatusCountsForDev(ctx: AuthContext, channel?: 'em
   const out: Record<string, number> = {};
   for (const r of rows) out[String(r.status)] = Number(r.n) || 0;
   return out;
+}
+
+/**
+ * Message routes: each event on each channel with its 7-day numbers from the delivery log
+ * and the template it last used. Pass the event list from the code, so a route that has
+ * sent nothing yet still shows with zeros.
+ */
+export async function messageRoutesForDev(
+  ctx: AuthContext,
+  routes: Array<{ event: string; channel: 'email' | 'whatsapp'; template: string | null }>,
+  now = new Date(),
+): Promise<MessageRouteRow[]> {
+  assertDeveloper(ctx);
+  const since = new Date(now.getTime() - 7 * 86400000);
+  const rows = await db
+    .select({
+      event: notificationDeliveries.eventType,
+      channel: notificationDeliveries.channel,
+      sent: sql<number>`count(*) filter (where ${notificationDeliveries.status} in ('sent','delivered','read'))::int`,
+      delivered: sql<number>`count(*) filter (where ${notificationDeliveries.status} in ('delivered','read'))::int`,
+      failed: sql<number>`count(*) filter (where ${notificationDeliveries.status} = 'failed')::int`,
+    })
+    .from(notificationDeliveries)
+    .where(gte(notificationDeliveries.createdAt, since))
+    .groupBy(notificationDeliveries.eventType, notificationDeliveries.channel);
+  const key = (e: string, c: string) => `${e}|${c}`;
+  const counts = new Map(rows.map((r) => [key(r.event, r.channel), r]));
+  return routes.map((r) => {
+    const c = counts.get(key(r.event, r.channel));
+    return {
+      event: r.event,
+      channel: r.channel,
+      template: r.template,
+      sent7d: Number(c?.sent ?? 0),
+      delivered7d: Number(c?.delivered ?? 0),
+      failed7d: Number(c?.failed ?? 0),
+    };
+  });
+}
+
+/** Failed deliveries in the last 24 hours, grouped by channel and error code. */
+export async function failureCausesForDev(ctx: AuthContext, now = new Date()): Promise<Array<{ channel: string; cause: string; count: number }>> {
+  assertDeveloper(ctx);
+  const since = new Date(now.getTime() - 86400000);
+  const cause = sql<string>`coalesce(${notificationDeliveries.errorCode}, 'no_code')`;
+  const rows = await db
+    .select({ channel: notificationDeliveries.channel, cause, n: sql<number>`count(*)::int` })
+    .from(notificationDeliveries)
+    .where(and(eq(notificationDeliveries.status, 'failed'), gte(notificationDeliveries.createdAt, since)))
+    .groupBy(notificationDeliveries.channel, cause);
+  return rows.map((r) => ({ channel: r.channel, cause: r.cause, count: Number(r.n) || 0 })).sort((a, b) => b.count - a.count);
+}
+
+
+/** The step mail templates with their last use and 7-day sends from the checklist mail log. */
+export async function emailTemplatesForDev(ctx: AuthContext, now = new Date()): Promise<EmailTemplateRow[]> {
+  assertDeveloper(ctx);
+  const since = new Date(now.getTime() - 7 * 86400000);
+  const usage = db
+    .select({
+      templateId: emailSendLog.templateId,
+      last: sql<Date>`max(${emailSendLog.createdAt})`.as('last'),
+      sent: sql<number>`count(*) filter (where ${emailSendLog.status} = 'sent' and ${emailSendLog.createdAt} >= ${since})::int`.as('sent'),
+    })
+    .from(emailSendLog)
+    .groupBy(emailSendLog.templateId)
+    .as('usage');
+  const rows = await db
+    .select({
+      id: emailTemplates.id,
+      name: emailTemplates.name,
+      active: emailTemplates.isActive,
+      updatedAt: emailTemplates.updatedAt,
+      last: usage.last,
+      sent: usage.sent,
+    })
+    .from(emailTemplates)
+    .leftJoin(usage, eq(usage.templateId, emailTemplates.id))
+    .orderBy(emailTemplates.name)
+    .limit(300);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    active: r.active,
+    updatedAt: r.updatedAt.toISOString(),
+    lastUsed: r.last ? new Date(r.last).toISOString() : null,
+    sent7d: Number(r.sent ?? 0),
+  }));
+}
+
+/** The firm's reminder days and time zone, for the read-only Timing card. */
+export async function messageTimingForDev(ctx: AuthContext): Promise<{ reminderDays: number[]; timezone: string }> {
+  assertDeveloper(ctx);
+  const [row] = await db.select({ reminderDays: firmSettings.reminderDays, timezone: firmSettings.timezone }).from(firmSettings).limit(1);
+  return {
+    reminderDays: Array.isArray(row?.reminderDays) ? row.reminderDays : [7, 3, 1],
+    timezone: row?.timezone || 'Asia/Kolkata',
+  };
 }

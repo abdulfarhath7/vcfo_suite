@@ -2,6 +2,7 @@ import 'server-only';
 import type { JobFunction, JobRun, Reach } from './types';
 import { missingEnv, notSetUp, reach } from './reach';
 import { inngest } from '@/jobs/client';
+import { scrubText } from './mask';
 import { canRetryRun, runsForEvent, type InngestEvent, type InngestRun } from './parse';
 
 /**
@@ -91,4 +92,42 @@ export async function retryInngestRun(input: { runId: string; eventId: string },
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * One run from the Inngest REST API (`GET /v1/runs/{id}`): its status, times and a short,
+ * scrubbed form of its output (an error message for a failed run). The output never holds
+ * event data, because the jobs return counts only.
+ */
+export async function readInngestRun(runId: string): Promise<Reach<{ id: string; status: string; startedAt: string | null; endedAt: string | null; output: string | null }>> {
+  const missing = missingEnv(['INNGEST_SIGNING_KEY']);
+  if (missing.length) return notSetUp(missing);
+  return reach(async (signal) => {
+    const res = await get<{ data?: { run_id?: string; status?: string; run_started_at?: string | null; ended_at?: string | null; output?: unknown } }>(
+      `/v1/runs/${encodeURIComponent(runId)}`,
+      signal,
+    );
+    const r = res.data ?? {};
+    const raw = r.output === undefined || r.output === null ? null : typeof r.output === 'string' ? r.output : JSON.stringify(r.output);
+    return {
+      id: r.run_id ?? runId,
+      status: r.status ?? 'Unknown',
+      startedAt: r.run_started_at ?? null,
+      endedAt: r.ended_at ?? null,
+      output: raw ? scrubText(raw).slice(0, 2000) : null,
+    };
+  });
+}
+
+/**
+ * "Run now": send the job's `dev/run.<id>` event once. Only a job that lists that event among
+ * its triggers starts; the caller checks `runEvent` first. The event carries who asked, so
+ * the run can be told apart from a scheduled one.
+ */
+export async function runJobNow(fn: JobFunction, by: string): Promise<{ sentIds: string[] }> {
+  if (!fn.runEvent) throw new Error('not_runnable');
+  const missing = missingEnv(['INNGEST_EVENT_KEY']);
+  if (missing.length) throw new Error('not_set_up');
+  const sent = await inngest.send({ name: fn.runEvent, data: { requestedBy: by } });
+  return { sentIds: sent.ids ?? [] };
 }

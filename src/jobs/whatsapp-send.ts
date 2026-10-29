@@ -6,6 +6,7 @@ import { quietHoursEnd, type WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import { sendWhatsAppTemplate } from '@/lib/notify/send-whatsapp';
 import { isRetryableWhatsAppError } from '@/lib/notify/whatsapp-retry';
 import { isNotifyEvent, type NotifyEvent, type NotifyVariables } from '@/lib/notify/types';
+import { PAUSED, skipWhenPaused } from '@/jobs/dev-controls';
 
 /**
  * Background WhatsApp dispatch.
@@ -44,6 +45,7 @@ export const whatsappSend = inngest.createFunction(
   { id: 'whatsapp-send', retries: 3 },
   { event: WHATSAPP_SEND_EVENT },
   async ({ event, step }) => {
+    if (await skipWhenPaused(step)) return PAUSED;
     const data = event.data as WhatsAppSendEventData;
 
     if (!data?.recipientProfileId || !isNotifyEvent(String(data.event))) {

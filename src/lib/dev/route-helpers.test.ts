@@ -5,7 +5,7 @@ const requireDeveloper = vi.fn();
 const requireAuth = vi.fn();
 const recordAuditEvent = vi.fn();
 
-vi.mock('@/auth/guards', () => ({ requireDeveloper: () => requireDeveloper(), requireAuth: () => requireAuth() }));
+vi.mock('@/auth/guards', () => ({ requireDeveloper: () => requireDeveloper(), requireAuth: () => requireAuth(), requireDeveloperOrToken: () => requireDeveloper() }));
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: (...a: unknown[]) => recordAuditEvent(...a) }));
 
 import { devAction } from './route-helpers';

@@ -119,19 +119,27 @@ export function sumCostsByService(results: CeResult[], metric = 'UnblendedCost')
 type FnLike = { id: (prefix?: string) => string; name?: string; opts?: { retries?: number; triggers?: unknown } };
 
 /** Describe registered Inngest functions from their own config (id, trigger, retries). */
+/** The event name that starts one job from the console's "Run now". */
+export function runNowEvent(functionId: string): string {
+  return `dev/run.${functionId}`;
+}
+
 export function describeFunctions(fns: FnLike[]): JobFunction[] {
   return fns.map((f) => {
     const triggers = (Array.isArray(f.opts?.triggers) ? f.opts?.triggers : f.opts?.triggers ? [f.opts.triggers] : []) as Array<{
       cron?: string;
       event?: string;
     }>;
-    const t = triggers[0] ?? {};
     const id = f.id();
+    // A `dev/run.<id>` trigger is the console's "Run now" door; it is not the job's schedule.
+    const runEvent = runNowEvent(id);
+    const t = triggers.find((x) => x.event !== runEvent) ?? {};
     return {
       id,
       name: f.name && f.name !== id ? f.name : id,
       trigger: t.cron ? { kind: 'cron', cron: t.cron } : { kind: 'event', event: t.event ?? '' },
       retries: typeof f.opts?.retries === 'number' ? f.opts.retries : null,
+      runEvent: triggers.some((x) => x.event === runEvent) ? runEvent : null,
     } satisfies JobFunction;
   });
 }

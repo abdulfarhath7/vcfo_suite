@@ -177,3 +177,22 @@ export async function requireDeveloper(): Promise<GuardResult> {
   }
   return { ok: true, ctx };
 }
+
+/**
+ * Developer console reads (`devRoute`, GET only): the signed-in developer as above, or, when
+ * there is no session, a personal API token sent as `Authorization: Bearer vcfo_dev_…`. The
+ * token is looked up by its SHA-256 hash and acts as the developer who made it, only while
+ * that person is active and still a developer or super admin. Writes (`devAction`) never
+ * accept a token.
+ */
+export async function requireDeveloperOrToken(request: Request): Promise<GuardResult> {
+  const session = await requireDeveloper();
+  if (session.ok === true || session.status !== 401) return session;
+  const header = request.headers.get('authorization') ?? '';
+  const m = /^Bearer\s+(\S+)$/i.exec(header);
+  if (!m) return session;
+  const { systemResolveDevToken } = await import('@/db/repositories/dev-tokens');
+  const ctx = await systemResolveDevToken(m[1]);
+  if (!ctx) return { ok: false, status: 401, error: 'Not authenticated' };
+  return { ok: true, ctx };
+}

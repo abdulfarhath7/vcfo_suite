@@ -8,6 +8,8 @@ import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { InlineConfirm } from '@/components/ui/inline-confirm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -458,6 +460,12 @@ export function actionError(code: string, status: number): string {
       return 'This run cannot be retried from here';
     case 'busy':
       return 'Another operation is running';
+    case 'paused':
+      return 'Jobs are paused';
+    case 'not_runnable':
+      return 'This job has no run event yet';
+    case 'current':
+      return 'Production already runs this image';
     case 'unreachable':
       return 'Could not reach the service';
     case 'forbidden':
@@ -509,5 +517,69 @@ export function EnvNames({ names, tone = 'muted' }: { names: string[]; tone?: 'm
         <span key={n}>{n}</span>
       ))}
     </span>
+  );
+}
+
+// ---------- Setting rows ----------
+
+/** A setting row (R-19): label and value or control on one line, hairline between rows. */
+export function SettingRow({ label, sub, children }: { label: string; sub?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2 first:border-t-0">
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-medium text-ink">{label}</span>
+        {sub ? <span className="block text-[12.5px] text-ink-muted">{sub}</span> : null}
+      </span>
+      <span className="flex flex-none items-center gap-2">{children}</span>
+    </div>
+  );
+}
+
+/**
+ * A switch setting (prototype SwitchRow). With `confirmOn`, turning it on first asks in place
+ * (R-40, InlineConfirm); turning it off needs no question.
+ */
+export function SwitchRow({
+  label,
+  sub,
+  on,
+  busy,
+  confirmOn,
+  onChange,
+}: {
+  label: string;
+  sub?: ReactNode;
+  on: boolean;
+  busy?: boolean;
+  confirmOn?: { question: string; confirm: string };
+  onChange: (on: boolean) => void | Promise<void>;
+}) {
+  const [asking, setAsking] = useState(false);
+  return (
+    <div className="border-t border-line-soft first:border-t-0">
+      <SettingRow label={label} sub={sub}>
+        <Switch
+          checked={on}
+          disabled={busy}
+          aria-label={label}
+          onCheckedChange={(next) => {
+            if (next && confirmOn) setAsking(true);
+            else void onChange(next);
+          }}
+        />
+      </SettingRow>
+      {asking && confirmOn ? (
+        <InlineConfirm
+          question={confirmOn.question}
+          confirm={confirmOn.confirm}
+          busy={busy}
+          onCancel={() => setAsking(false)}
+          onConfirm={async () => {
+            await onChange(true);
+            setAsking(false);
+          }}
+        />
+      ) : null}
+    </div>
   );
 }

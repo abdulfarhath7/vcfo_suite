@@ -1,18 +1,33 @@
 'use client';
 
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { DevCard, Pending, ReachChip, ReachNotice } from '@/components/dev/parts';
+import { CHART_STATUS, DashBarChart } from '@/components/charts';
+import { DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
-import { bytes, day, money } from '@/lib/dev/format';
-import type { CostLine, DataPayload, TableStat } from '@/lib/dev/types';
+import { bytes, day, money, stamp } from '@/lib/dev/format';
+import type { BucketStat, CostLine, DataExtra, DataPayload, TableStat } from '@/lib/dev/types';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabel = (ym: string) => MONTHS[Number(ym.slice(5, 7)) - 1] ?? ym;
+
+const bucketColumns: EFilingColumn<BucketStat>[] = [
+  { key: 'bucket', header: 'Bucket', render: (b) => <span className="font-mono text-[13px] text-ink">{b.bucket}</span> },
+  { key: 'region', header: 'Region', width: '120px', render: (b) => <span className="font-mono text-[12.5px]">{b.region ?? '-'}</span> },
+  { key: 'size', header: 'Size', width: '110px', align: 'right', render: (b) => `${bytes(b.bytes)}${b.capped ? '+' : ''}` },
+  { key: 'objects', header: 'Objects', width: '110px', align: 'right', render: (b) => `${b.objects.toLocaleString('en-IN')}${b.capped ? '+' : ''}` },
+  { key: 'ver', header: 'Versioning', width: '148px', render: (b) => <StatusChip status={b.versioning === 'Enabled' ? 'ok' : 'off'} label={b.versioning === 'Enabled' ? 'On' : b.versioning === 'Suspended' ? 'Suspended' : 'Off'} /> },
+  { key: 'life', header: 'Lifecycle', width: '110px', render: (b) => (b.lifecycleRules ? `${b.lifecycleRules} rules` : 'None') },
+];
 
 /**
- * Data and costs: table row estimates and sizes for the public schema (Postgres catalog
- * numbers, never rows), and AWS spend by service for the last 30 days from Cost Explorer
- * when AWS_COST_EXPLORER=on. Service costs belong here and nowhere else (R-37).
+ * Data and costs: AWS spend by service for 30 days and by month for six months (Cost
+ * Explorer, when AWS_COST_EXPLORER=on), database facts and this month's volumes from the app's
+ * own tables, the storage bucket, and table row estimates and sizes for the public schema
+ * (Postgres catalog numbers, never rows). Service costs belong here and nowhere else (R-37).
  */
 export default function DevData() {
-  const q = useDevApi<DataPayload>('/api/dev/data');
+  const q = useDevApi<DataPayload & DataExtra>('/api/dev/data');
+  const months = q.data?.months;
 
   const tableColumns: EFilingColumn<TableStat>[] = [
     { key: 'name', header: 'Table', render: (t) => <span className="font-mono text-[13px] font-medium text-ink">{t.name}</span> },
@@ -54,6 +69,72 @@ export default function DevData() {
           </div>
         ) : (
           <ReachNotice reach={q.data.costs} service="Cost Explorer" />
+        )}
+      </DevCard>
+
+      <DevCard title="Cost over 6 months" meta={months?.state === 'ok' ? months.data.currency : undefined} right={months ? <ReachChip reach={months} /> : null}>
+        {!q.data ? (
+          <Pending error={q.error} />
+        ) : q.data.months.state === 'ok' ? (
+          <div className="px-4 py-4">
+            <DashBarChart
+              data={q.data.months.data.months.map((m) => ({ month: monthLabel(m.month), amount: Math.round(m.amount * 100) / 100 }))}
+              categoryKey="month"
+              series={[{ key: 'amount', label: 'Spend', color: CHART_STATUS.active }]}
+              valueFormatter={(v) => money(Number(v ?? 0), q.data?.months.state === 'ok' ? q.data.months.data.currency : 'USD')}
+              emptyLabel="No spend yet"
+            />
+          </div>
+        ) : (
+          <ReachNotice reach={q.data.months} service="Cost Explorer" />
+        )}
+      </DevCard>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <DevCard title="Database" meta="Postgres">
+          {q.data ? (
+            <KeyValue
+              cols={2}
+              rows={[
+                { k: 'Version', v: q.data.facts.version || '-', mono: true },
+                { k: 'Size', v: bytes(q.data.facts.bytes) },
+                { k: 'Connections', v: `${q.data.facts.connections} of ${q.data.facts.maxConnections}` },
+                { k: 'Running since', v: stamp(q.data.facts.startedAt) },
+                { k: 'Oldest vacuum', v: stamp(q.data.facts.oldestVacuum) },
+                { k: 'Dead rows', v: q.data.facts.deadRows.toLocaleString('en-IN') },
+              ]}
+            />
+          ) : (
+            <Pending error={q.error} rows={3} />
+          )}
+        </DevCard>
+        <DevCard title="Volumes" meta={q.data ? `Since ${day(q.data.volumes.since)}` : undefined}>
+          {q.data ? (
+            <KeyValue
+              cols={2}
+              rows={[
+                { k: 'Emails sent', v: q.data.volumes.emails.toLocaleString('en-IN') },
+                { k: 'WhatsApp sent', v: q.data.volumes.whatsapp.toLocaleString('en-IN') },
+                { k: 'Documents added', v: `${q.data.volumes.documents.toLocaleString('en-IN')} · ${bytes(q.data.volumes.documentBytes)}` },
+                { k: 'Sign-ins', v: q.data.volumes.signIns.toLocaleString('en-IN') },
+                { k: 'Audit events', v: q.data.volumes.auditEvents.toLocaleString('en-IN') },
+              ]}
+            />
+          ) : (
+            <Pending error={q.error} rows={3} />
+          )}
+        </DevCard>
+      </div>
+
+      <DevCard title="Storage by bucket" right={q.data ? <ReachChip reach={q.data.bucket} /> : null}>
+        {!q.data ? (
+          <Pending error={q.error} rows={2} />
+        ) : q.data.bucket.state === 'ok' ? (
+          <div className="px-2 pb-2">
+            <EFilingGrid columns={bucketColumns} rows={[q.data.bucket.data]} rowKey={(b) => b.bucket} minWidth={720} stickyFirstColumn />
+          </div>
+        ) : (
+          <ReachNotice reach={q.data.bucket} service="File storage" />
         )}
       </DevCard>
 
