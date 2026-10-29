@@ -1,4 +1,4 @@
-export type Role = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client';
+export type Role = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
 export type DbRole = Role;
 
 /** User-facing role labels. */
@@ -8,6 +8,7 @@ export const ROLE_UI_LABEL: Record<Role, string> = {
   manager: 'Project Manager',
   intern: 'Project Lead',
   client: 'Client',
+  developer: 'Developer',
 };
 
 export interface AuthUser {
@@ -33,6 +34,7 @@ const DB_ROLES: readonly DbRole[] = [
   'manager',
   'intern',
   'client',
+  'developer',
 ];
 
 export function isValidDbRole(role: string): role is DbRole {

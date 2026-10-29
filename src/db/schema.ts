@@ -49,6 +49,8 @@ export const roleEnum = pgEnum('trak_role', [
   'manager',
   'intern',
   'client',
+  /** Engineering access to the developer console only; no client data (G-01). */
+  'developer',
 ]);
 export const stageEnum = pgEnum('engagement_stage', [
   'Pre-Incorporation',
@@ -101,6 +103,16 @@ export const profiles = pgTable('profiles', {
   reportsToManagerId: uuid('reports_to_manager_id'),
   /** S3 object key for the user’s chosen photo (upload or Outlook Graph). */
   avatarObjectKey: text('avatar_object_key'),
+  /** Firm Admin a Project Manager reports to (super admin's Admin column, G-20). */
+  reportsToAdminId: uuid('reports_to_admin_id'),
+  /** How many open items a person can carry at once; null means not set (G-14). */
+  capacity: integer('capacity'),
+  /** Last signed-in request, written at most every few minutes (G-14). */
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  /** AES-256-GCM of the base32 TOTP secret; set while two-step sign-in is on or pending (G-25). */
+  totpSecretEnc: text('totp_secret_enc'),
+  /** When two-step sign-in was confirmed with a first code; null means it is off. */
+  totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -153,6 +165,8 @@ export const engagements = pgTable(
      * `checklist_state`, whose normaliser treats every top-level key as a step.
      */
     schedule: jsonb('schedule'),
+    /** The date the firm expects the certificate of incorporation (G-13). */
+    expectedCoiOn: date('expected_coi_on'),
     // SQL type is text[], not jsonb — merge-cc.ts treats it as a string array.
     progressCcEmails: text('progress_cc_emails').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -330,6 +344,11 @@ export const documents = pgTable(
     uploadedBy: uuid('uploaded_by').references(() => profiles.id),
     stepId: text('step_id'), // checklist step this belongs to, if any
     sharedWithClient: boolean('shared_with_client').notNull().default(false),
+    /** none | pending | approved | changes — the vault review state (G-26). */
+    reviewStatus: text('review_status').notNull().default('none'),
+    reviewedBy: uuid('reviewed_by').references(() => profiles.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -419,6 +438,8 @@ export const auditEvents = pgTable(
     action: text('action').notNull(),
     summary: text('summary').notNull(),
     metadata: jsonb('metadata').notNull().default({}),
+    /** ok | failed | denied — what happened to the action (G-28). */
+    result: text('result').notNull().default('ok'),
   },
   (t) => ({
     engIdx: index('audit_events_engagement_idx').on(t.engagementId),
@@ -792,6 +813,10 @@ export const outlookConnections = pgTable('outlook_connections', {
   accessTokenEnc: text('access_token_enc').notNull(),
   refreshTokenEnc: text('refresh_token_enc').notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  /** Add the signature below to every message sent from the app (K-40, G-23). */
+  signatureEnabled: boolean('signature_enabled').notNull().default(false),
+  /** The signature as plain text; line breaks are kept. */
+  signatureText: text('signature_text'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -1106,3 +1131,5 @@ export * from './schema-portal-compliances';
 export * from './schema-portal-documents';
 export * from './schema-portal-team';
 export * from './schema-portal-credentials';
+export * from './schema-firm';
+export * from './schema-work';

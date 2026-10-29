@@ -3,7 +3,7 @@
 
 export const TEMP_PASSWORD = 'SBC@2026';
 
-export type PersonRole = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client';
+export type PersonRole = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
 
 export type StaffRow = {
   id: string;
@@ -67,4 +67,5 @@ export const ROLE_LABEL: Record<PersonRole, string> = {
   manager: 'Project manager',
   intern: 'Project lead',
   client: 'Client',
+  developer: 'Developer',
 };

@@ -14,6 +14,9 @@ import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
  *   - manager     = Project Manager (scoped by engagements.manager_id)
  *   - intern      = Project Lead
  *   - client      = client portal user
+ *   - developer   = developer console only; every guard except
+ *                   `requireDeveloper` refuses it, so no repository ever runs
+ *                   for a developer (G-01)
  *
  * Tenant scoping lives in repositories (Path A), not RLS.
  *
@@ -21,7 +24,7 @@ import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
  * (or Auth.js dropping custom credential fields) cannot block client submits.
  */
 
-export type AppRole = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client';
+export type AppRole = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
 
 export interface AuthContext {
   userId: string;
@@ -38,7 +41,12 @@ type Ok = { ok: true; ctx: AuthContext };
 type Err = { ok: false; status: 401 | 403; error: string };
 export type GuardResult = Ok | Err;
 
-async function currentContext(): Promise<AuthContext | null> {
+/**
+ * The signed-in person, or null. A developer gets null here unless the caller is
+ * `requireDeveloper`, because the repositories were written for the five firm and
+ * client roles and some treat an unknown role as firm-wide.
+ */
+async function currentContext(opts: { allowDeveloper?: boolean } = {}): Promise<AuthContext | null> {
   const session = await auth();
   const u = session?.user as
     | {
@@ -70,6 +78,7 @@ async function currentContext(): Promise<AuthContext | null> {
   if (!row || row.status !== 'active') return null;
   if (!isValidDbRole(row.role)) return null;
   if (row.role === 'intern' && !row.internId?.trim()) return null;
+  if (row.role === 'developer' && !opts.allowDeveloper) return null;
 
   return {
     userId: row.id,
@@ -125,4 +134,14 @@ export async function requireAnyRole(...roles: AppRole[]): Promise<GuardResult> 
   if (roles.includes(ctx.role)) return { ok: true, ctx };
   if (ctx.role === 'super_admin' && roles.includes('admin')) return { ok: true, ctx };
   return { ok: false, status: 403, error: `Requires one of: ${roles.join(', ')}` };
+}
+
+/** Developer console: a developer or the super admin. */
+export async function requireDeveloper(): Promise<GuardResult> {
+  const ctx = await currentContext({ allowDeveloper: true });
+  if (!ctx) return { ok: false, status: 401, error: 'Not authenticated' };
+  if (ctx.role !== 'developer' && ctx.role !== 'super_admin') {
+    return { ok: false, status: 403, error: 'Requires developer role' };
+  }
+  return { ok: true, ctx };
 }

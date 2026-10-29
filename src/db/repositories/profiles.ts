@@ -288,7 +288,7 @@ export type StaffPersonRow = {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'manager' | 'intern' | 'client';
+  role: 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
   internId: string | null;
   clientId: string | null;
   reportsToManagerId: string | null;
