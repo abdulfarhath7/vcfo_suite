@@ -23,7 +23,10 @@ import { isPersonalTodoStepId } from '@/lib/intern/personal-todos';
  */
 
 export interface SidebarFoldPerson {
+  /** Profile id. */
   id: string;
+  /** Route key: a lead's `intern_id` when set (the key the manager team pages use), else the profile id. */
+  key: string;
   name: string;
   /** Manager fold: open tasks the lead holds. Admin fold: engagements the manager owns. */
   count: number;
@@ -50,7 +53,7 @@ function displayName(name: string | null, email: string): string {
 
 async function leadsForManager(ctx: AuthContext): Promise<SidebarFoldPerson[]> {
   const leads = await db
-    .select({ id: profiles.id, name: profiles.name, email: profiles.email })
+    .select({ id: profiles.id, name: profiles.name, email: profiles.email, internId: profiles.internId })
     .from(profiles)
     .where(and(eq(profiles.role, 'intern'), eq(profiles.reportsToManagerId, ctx.userId)))
     .orderBy(asc(profiles.name));
@@ -77,7 +80,12 @@ async function leadsForManager(ctx: AuthContext): Promise<SidebarFoldPerson[]> {
       open.set(row.assignedTo, (open.get(row.assignedTo) ?? 0) + 1);
     }
   }
-  return leads.map((l) => ({ id: l.id, name: displayName(l.name, l.email), count: open.get(l.id) ?? 0 }));
+  return leads.map((l) => ({
+    id: l.id,
+    key: l.internId?.trim() || l.id,
+    name: displayName(l.name, l.email),
+    count: open.get(l.id) ?? 0,
+  }));
 }
 
 async function managersForFirm(): Promise<SidebarFoldPerson[]> {
@@ -104,7 +112,7 @@ async function managersForFirm(): Promise<SidebarFoldPerson[]> {
   for (const row of owned) {
     if (row.managerId) clients.set(row.managerId, (clients.get(row.managerId) ?? 0) + 1);
   }
-  return managers.map((m) => ({ id: m.id, name: displayName(m.name, m.email), count: clients.get(m.id) ?? 0 }));
+  return managers.map((m) => ({ id: m.id, key: m.id, name: displayName(m.name, m.email), count: clients.get(m.id) ?? 0 }));
 }
 
 async function managerOfLead(ctx: AuthContext): Promise<SidebarReportsTo | null> {

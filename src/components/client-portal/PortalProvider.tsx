@@ -94,6 +94,9 @@ interface PortalContextValue {
   setAfter: (after: boolean) => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  /** Text size (Small, Default, Large): `data-text-size` on <html> and on `.cp`, kept per browser. */
+  textSize: PortalTextSize;
+  setTextSize: (size: PortalTextSize) => void;
   prefs: ClientPortalPrefs | undefined;
   savePrefs: (patch: ClientPortalPrefsPatch) => void;
   toast: (msg: string, opts?: ToastOptions) => void;
@@ -110,6 +113,22 @@ interface PortalContextValue {
   /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]). */
   crumbs: string[] | null;
   setCrumbs: (trail: string[] | null) => void;
+}
+
+export type PortalTextSize = 'small' | 'default' | 'large';
+export const PORTAL_TEXT_SIZES: ReadonlyArray<{ value: PortalTextSize; label: string }> = [
+  { value: 'small', label: 'Small' },
+  { value: 'default', label: 'Default' },
+  { value: 'large', label: 'Large' },
+];
+const TEXT_SIZE_KEY = 'vcfo.text-size';
+function readTextSize(): PortalTextSize {
+  try {
+    const v = localStorage.getItem(TEXT_SIZE_KEY);
+    return v === 'small' || v === 'large' ? v : 'default';
+  } catch {
+    return 'default';
+  }
 }
 
 /** What's this? answer card (owner board vs_ask). */
@@ -230,6 +249,31 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
     }
   }, [theme, rootRef]);
 
+  /* ---------- text size: the foundations' `data-text-size` on <html> scales the page (zoom);
+     `.cp` carries the same attribute so portal CSS can key off it. Kept per browser. ---------- */
+  const [textSize, setTextSizeState] = useState<PortalTextSize>('default');
+  useEffect(() => setTextSizeState(readTextSize()), []);
+  const setTextSize = useCallback((size: PortalTextSize) => {
+    setTextSizeState(size);
+    try {
+      localStorage.setItem(TEXT_SIZE_KEY, size);
+    } catch {
+      /* private mode: the choice lasts for this page */
+    }
+  }, []);
+  useEffect(() => {
+    const html = document.documentElement;
+    const el = rootRef.current;
+    if (textSize === 'default') {
+      html.removeAttribute('data-text-size');
+      el?.removeAttribute('data-text-size');
+    } else {
+      html.setAttribute('data-text-size', textSize);
+      el?.setAttribute('data-text-size', textSize);
+    }
+    return () => html.removeAttribute('data-text-size');
+  }, [textSize, rootRef]);
+
   /* ---------- reduced motion: one flag on the portal root for every page's CSS ---------- */
   useEffect(() => {
     const el = rootRef.current;
@@ -306,6 +350,8 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
       setAfter,
       theme,
       toggleTheme,
+      textSize,
+      setTextSize,
       prefs,
       savePrefs,
       toast,
@@ -321,7 +367,7 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
       crumbs,
       setCrumbs,
     }),
-    [shell, isLoading, after, setAfter, theme, toggleTheme, prefs, savePrefs, toast, drill, tipAt, chatOpen, openChat, closeChat, pendingQuestion, go, drawerOpen, crumbs],
+    [shell, isLoading, after, setAfter, theme, toggleTheme, textSize, setTextSize, prefs, savePrefs, toast, drill, tipAt, chatOpen, openChat, closeChat, pendingQuestion, go, drawerOpen, crumbs],
   );
 
   return (

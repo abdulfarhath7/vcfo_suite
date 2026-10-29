@@ -76,6 +76,7 @@ import {
 import {
   ClientsFoldBody,
   NewTag,
+  useSidebarFolds,
   PeopleFoldBody,
   ReportsToBlock,
   SidebarFoldRow,
@@ -173,6 +174,7 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
   { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
+  { to: '/app/admin/managers', label: 'Managers', icon: UserSquare2, iconTone: TONE.people },
   compliancesGroup('/app/admin'),
   { to: '/app/admin/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
   updatesGroup('/app/admin'),
@@ -218,6 +220,7 @@ const superAdminItems: NavEntry[] = [
   { to: '/app/super/team', label: 'Team', icon: Users, iconTone: TONE.people },
   { to: '/app/super/growth', label: 'Growth', icon: TrendingUp, iconTone: TONE.analytics },
   { to: '/app/super/reports', label: 'Reports', icon: FileBarChart, iconTone: TONE.analytics },
+  { to: '/app/super/vault', label: 'Documents', icon: FolderOpen, iconTone: TONE.files },
   updatesGroup('/app/super'),
   NAV_TOOLS_BREAK,
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
@@ -306,9 +309,14 @@ function clientsRowHref(role: Role, staffBase: string): string | null {
   if (role === 'manager') return `${staffBase}/projects`;
   return null;
 }
-function peopleRowHref(role: Role, staffBase: string): { href: string; kind: 'leads' | 'managers' } | null {
-  if (role === 'manager') return { href: `${staffBase}/team`, kind: 'leads' };
-  if (role === 'admin') return { href: '/app/admin/people', kind: 'managers' };
+function peopleRowHref(
+  role: Role,
+  staffBase: string,
+): { href: string; kind: 'leads' | 'managers'; hrefFor?: (key: string) => string; counted?: boolean } | null {
+  if (role === 'manager')
+    return { href: `${staffBase}/team`, kind: 'leads', hrefFor: (key) => `/app/manager/team/${encodeURIComponent(key)}` };
+  if (role === 'admin')
+    return { href: '/app/admin/managers', kind: 'managers', hrefFor: (key) => `/app/admin/managers#${encodeURIComponent(key)}`, counted: true };
   if (role === 'super_admin') return { href: '/app/super/team', kind: 'managers' };
   return null;
 }
@@ -349,6 +357,7 @@ function SidebarNavBody({
   stacked?: boolean;
 }) {
   const { user, engagements, getStateForEngagement, signOut, unreadNotificationCount } = useApp();
+  const folds = useSidebarFolds(user?.role);
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const osReduce = useReducedMotion();
@@ -364,6 +373,7 @@ function SidebarNavBody({
   const managerItems = useMemo<NavEntry[]>(
     () => [
       { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
+      { to: `${staffBase}/work`, label: 'Work', icon: Columns3, iconTone: TONE.work },
       { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
       { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
       { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
@@ -526,10 +536,19 @@ function SidebarNavBody({
                 expanded={expanded}
                 ink={ink}
                 onNavigate={onNavigate}
+                count={people.counted ? (folds.data?.people.length ?? 0) : 0}
                 foldKey={`${user.role}.${people.kind}`}
                 foldLabel={people.kind === 'leads' ? 'project leads' : 'managers'}
               >
-                <PeopleFoldBody kind={people.kind} href={it.to} ink={ink} onNavigate={onNavigate} role={user.role} />
+                <PeopleFoldBody
+                  kind={people.kind}
+                  href={it.to}
+                  hrefFor={people.hrefFor}
+                  pathname={pathname}
+                  ink={ink}
+                  onNavigate={onNavigate}
+                  role={user.role}
+                />
               </SidebarFoldRow>
             );
           }

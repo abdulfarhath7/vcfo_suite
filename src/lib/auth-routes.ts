@@ -56,13 +56,15 @@ export function roleSettingsPath(role: Role): string {
 }
 
 /**
- * The profile page the sidebar's account row opens (P-608). Admin, manager and project lead
- * have their own `/app/<role>/profile`; the other roles keep their settings page. Links that
+ * The profile page the account row opens (P-608, P-644). Every role but the developer has its
+ * own `/app/<role>/profile` (super admin: `/app/super/profile`). Links that
  * point at a settings section (`#email`, `#appearance`, notification preferences, the Outlook
  * callback) keep `roleSettingsPath`.
  */
 export function roleProfilePath(role: Role): string {
   if (role === 'admin' || role === 'manager' || role === 'intern') return `/app/${role}/profile`;
+  if (role === 'super_admin') return '/app/super/profile';
+  if (role === 'client') return '/app/client/profile';
   return roleSettingsPath(role);
 }
 

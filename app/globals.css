@@ -2534,3 +2534,17 @@ html[data-reduce-motion="true"] .discrete-panel {
     --toast-bottom: 80px;
   }
 }
+
+/* Print (super admin Reports and any page): only the page content. The sidebar, top bar, tab bar,
+   ribbon and pop-ups are left out, the content takes the full width, and cards keep their edges. */
+@media print {
+  .spectrum-ribbon, .cp-ribbon, .page-atmosphere,
+  aside:not(main aside), header:not(main header), nav:not(main nav),
+  [data-print="hide"], [role="status"][aria-live], .cp-sidepad {
+    display: none !important;
+  }
+  *:has(> main) { padding: 0 !important; margin: 0 !important; }
+  main { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+  html, body { background: #fff !important; }
+  .surface, section { break-inside: avoid; box-shadow: none !important; }
+}

@@ -168,3 +168,18 @@ None.
 - Text size uses CSS `zoom` on body because component sizes are px literals.
 - Contrast gate (`design-tokens-check`) has 12 failing pairs that come from the prototype colours; unchanged.
 
+
+## Round 3 (after d51d7f6)
+
+| Request | What was done |
+|---|---|
+| Print on super Reports | `@media print` in `app/globals.css`: the sidebar, top bar, tab bar, ribbon, client-portal side pad and live pop-ups are left out (asides, headers and navs outside `<main>`, plus `[data-print="hide"]`); `<main>` takes the full width; cards keep their edges, lose shadows and do not split across pages. |
+| EFilingGrid whole-row links | New `rowHref(row)`. A click or Enter opens the link through the app router (it falls back to `location.assign` outside it); Ctrl, Cmd or a middle click opens a new tab. Clicks on links, buttons, menus and `data-grid-ctl` inside the row are left alone. Hovered rows use `bg-hover`. |
+| EFilingGrid sticky first column | `stickyFirstColumn="always"` keeps the first column (and the checkbox column) put at every width, with a hairline on its right edge. `true` keeps the old behaviour (phones only). |
+| File badge colours (P-559) | Already matched: DOCX blurple, semibold text (round 2). |
+| Person density fallback (P-630) | `src/lib/ui/table-prefs.ts`: `readPersonDensity`/`writePersonDensity` (`vcfo.density`). `readDensity(scope)` falls back to it when a table has no choice of its own, so every grid with a `densityScope` follows the person's default. |
+| Text size token (P-631) | `readTextSize`/`writeTextSize` (`vcfo.text-size`: small, default, large) and `--text-scale` in `globals.css` (0.93 / 1 / 1.07 through `data-text-size` on `<html>`). |
+| Attributes on load | `applyAppearanceAttributes()` sets `data-density` and `data-text-size` on `<html>`; `app/providers.tsx` calls it once per load. |
+| Appearance settings | `src/views/settings/AppearanceSettings.tsx`: the greeting-card preview is now the real wash (`bg-wash`, the photo skin through `--hero-surface-bg`) with ink text and wash tiles. New rows Density (Comfortable, Compact) and Text size (Small, Default, Large); each saves at once and sets the `<html>` attribute. |
+
+Checks: `npx tsc --noEmit -p .` is clean; vitest on dash, ui, lib/ui, lib/shell, views/settings and staff passes (85 tests); eslint on the changed files shows no problems.

@@ -21,6 +21,7 @@ export type PortalRouteKey =
   | 'team'
   | 'audit'
   | 'settings'
+  | 'profile'
   | 'board-resolution';
 
 export const PORTAL_PATHS: Record<PortalRouteKey, string> = {
@@ -39,6 +40,7 @@ export const PORTAL_PATHS: Record<PortalRouteKey, string> = {
   team: `${CP_BASE}/team`,
   audit: `${CP_BASE}/audit`,
   settings: `${CP_BASE}/settings`,
+  profile: `${CP_BASE}/profile`,
   'board-resolution': `${CP_BASE}/board-resolution`,
 };
 
@@ -58,6 +60,7 @@ export const PORTAL_TITLES: Record<PortalRouteKey, string> = {
   team: 'Team',
   audit: 'Audit',
   settings: 'Settings',
+  profile: 'Profile',
   'board-resolution': 'Board resolution',
 };
 

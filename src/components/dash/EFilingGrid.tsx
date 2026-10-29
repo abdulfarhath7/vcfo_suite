@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BulkBar, type BulkAction } from '@/components/ui/bulk-bar';
@@ -93,7 +94,8 @@ export function EFilingGrid<T>({
   pageSize = 10,
   footer,
   empty,
-  onRowClick,
+  onRowClick: onRowClickProp,
+  rowHref,
   caption,
   minWidth = 640,
   rowClassName,
@@ -124,6 +126,8 @@ export function EFilingGrid<T>({
   footer?: ReactNode;
   empty?: ReactNode;
   onRowClick?: (row: T) => void;
+  /** Whole-row link: a click or Enter opens it; Ctrl, Cmd or a middle click opens a new tab. */
+  rowHref?: (row: T) => string | undefined;
   caption?: string;
   minWidth?: number;
   /** Extra classes on a row (a late row, a picked record). */
@@ -144,8 +148,8 @@ export function EFilingGrid<T>({
   stickyHead?: boolean;
   /** Where the sticky head stops: the top bar plus the ribbon by default. Pass 0 inside a scrolling panel. */
   stickyTop?: number | string;
-  /** E-09: the first column (and the checkbox column) stay put under 640px. */
-  stickyFirstColumn?: boolean;
+  /** E-09: the first column (and the checkbox column) stay put under 640px, or at every width with 'always'. */
+  stickyFirstColumn?: boolean | 'always';
   /** E-07: controlled density. */
   density?: Density;
   /** E-07: show the density switch and keep the choice under this scope (a user id or a table name). */
@@ -163,6 +167,18 @@ export function EFilingGrid<T>({
   /** E3: a different action in the dashed empty state. */
   emptyAction?: ReactNode;
 }) {
+  // The router from context, not useRouter(): the grid also renders outside the app router (tests).
+  const router = useContext(AppRouterContext);
+  const onRowClick =
+    onRowClickProp ??
+    (rowHref
+      ? (row: T) => {
+          const href = rowHref(row);
+          if (!href) return;
+          if (router) router.push(href);
+          else window.location.assign(href);
+        }
+      : undefined);
   const [page, setPage] = useState(0);
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const current = Math.min(page, pages - 1);
@@ -226,10 +242,17 @@ export function EFilingGrid<T>({
   const colCount = columns.length + (selectable ? 1 : 0) + (trailing ? 1 : 0);
   const headTop = sticky.fits ? stickyTop : undefined;
   const stickTh = stickyHead ? 'sticky z-[2] bg-surface-raised' : '';
-  const boxSticky = stickyFirstColumn ? 'max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-surface-raised' : '';
-  const firstSticky = stickyFirstColumn
-    ? cn('max-sm:sticky max-sm:z-[1] max-sm:bg-surface-raised', selectable ? 'max-sm:left-[36px]' : 'max-sm:left-0')
-    : '';
+  const always = stickyFirstColumn === 'always';
+  const boxSticky = always
+    ? 'sticky left-0 z-[1] bg-surface-raised'
+    : stickyFirstColumn
+      ? 'max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-surface-raised'
+      : '';
+  const firstSticky = always
+    ? cn('sticky z-[1] bg-surface-raised shadow-[1px_0_0_oklch(var(--line-soft))]', selectable ? 'left-[36px]' : 'left-0')
+    : stickyFirstColumn
+      ? cn('max-sm:sticky max-sm:z-[1] max-sm:bg-surface-raised', selectable ? 'max-sm:left-[36px]' : 'max-sm:left-0')
+      : '';
   const showE3 = !loading && rows.length === 0 && (!!onClearFilters || !!emptyAction);
   const focusable = !!onRowClick || !!selectable || (!!rowShortcuts && rowShortcuts.length > 0);
 
@@ -391,18 +414,31 @@ export function EFilingGrid<T>({
                         : undefined
                     }
                     className={cn(
-                      'group/row hover:bg-surface-sunken/60',
+                      'group/row hover:[&>td]:bg-hover',
                       onRowClick && 'cursor-pointer',
                       focusable &&
-                        'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring focus-visible:[&>td]:bg-surface-sunken/60',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring focus-visible:[&>td]:bg-hover',
                       isPicked && '[&>td]:!bg-brand-soft',
                       rowClassName?.(row),
                     )}
                     onClick={
                       onRowClick
                         ? (e) => {
-                            if ((e.target as HTMLElement).closest('[data-grid-ctl], [role=menu]')) return;
+                            if ((e.target as HTMLElement).closest('[data-grid-ctl], [role=menu], a, button')) return;
+                            const href = rowHref?.(row);
+                            if (href && (e.ctrlKey || e.metaKey)) {
+                              window.open(href, '_blank', 'noopener');
+                              return;
+                            }
                             onRowClick(row);
+                          }
+                        : undefined
+                    }
+                    onAuxClick={
+                      rowHref
+                        ? (e) => {
+                            const href = rowHref(row);
+                            if (e.button === 1 && href) window.open(href, '_blank', 'noopener');
                           }
                         : undefined
                     }

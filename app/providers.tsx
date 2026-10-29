@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { LazyMotion, domMax } from "framer-motion";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { applyAppearanceAttributes } from "@/lib/ui/table-prefs";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
@@ -19,6 +20,8 @@ const ComposeOutgoingEmailHost = dynamic(
 );
 
 export function Providers({ children }: { children: ReactNode }) {
+  // The person's density and text size (Profile > Appearance) go on <html> once per load.
+  useEffect(() => applyAppearanceAttributes(), []);
   const [queryClient] = useState(
     () =>
       new QueryClient({

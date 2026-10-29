@@ -40,7 +40,7 @@ export type FoldIcon = ComponentType<{ className?: string; strokeWidth?: number 
 
 /** The `/api/shell/sidebar` body (the `sidebar-folds` repository's `SidebarFolds`). */
 export interface SidebarFolds {
-  people: { id: string; name: string; count: number }[];
+  people: { id: string; key: string; name: string; count: number }[];
   reportsTo: { id: string; name: string; email: string } | null;
 }
 
@@ -245,12 +245,17 @@ function Ini({ name, ink }: { name: string; ink: SidebarInk }) {
 export function PeopleFoldBody({
   kind,
   href,
+  hrefFor,
   ink,
   onNavigate,
   role,
+  pathname,
 }: {
   kind: 'leads' | 'managers';
   href: string;
+  /** Where one person opens; defaults to the list page. */
+  hrefFor?: (key: string) => string;
+  pathname?: string;
   ink: SidebarInk;
   onNavigate?: () => void;
   role: Role;
@@ -267,7 +272,14 @@ export function PeopleFoldBody({
       {people.map((p) => {
         const pill = kind === 'leads' ? `${p.count} open` : `${p.count} ${p.count === 1 ? 'client' : 'clients'}`;
         return (
-          <Link key={p.id} href={href} onClick={onNavigate} title={`${p.name} · ${pill}`} className={childClass(ink, false)}>
+          <Link
+            key={p.id}
+            href={hrefFor ? hrefFor(p.key) : href}
+            onClick={onNavigate}
+            title={`${p.name} · ${pill}`}
+            aria-current={hrefFor && pathname === hrefFor(p.key) ? 'page' : undefined}
+            className={childClass(ink, Boolean(hrefFor && pathname === hrefFor(p.key)))}
+          >
             <Ini name={p.name} ink={ink} />
             <span className="min-w-0 flex-1 truncate">{p.name}</span>
             <span className={pillClass(ink)}>{pill}</span>

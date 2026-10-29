@@ -94,8 +94,8 @@ describe('getSidebarFolds', () => {
   it('a manager counts open tasks only on their own engagements (cross-tenant)', async () => {
     results = [
       [
-        { id: 'lead-1', name: 'Asha', email: 'a@x' },
-        { id: 'lead-2', name: null, email: 'b@x' },
+        { id: 'lead-1', name: 'Asha', email: 'a@x', internId: 'i-asha' },
+        { id: 'lead-2', name: null, email: 'b@x', internId: null },
       ],
       [
         { assignedTo: 'lead-1', stepId: 'pre-3' },
@@ -111,8 +111,8 @@ describe('getSidebarFolds', () => {
     expect(taskWhere).toContainEqual({ op: 'ne', args: ['tasks.status', 'done'] });
     // The personal to-do does not count; a lead with no name shows the email.
     expect(out.people).toEqual([
-      { id: 'lead-1', name: 'Asha', count: 1 },
-      { id: 'lead-2', name: 'b@x', count: 1 },
+      { id: 'lead-1', key: 'i-asha', name: 'Asha', count: 1 },
+      { id: 'lead-2', key: 'lead-2', name: 'b@x', count: 1 },
     ]);
   });
 
@@ -121,7 +121,7 @@ describe('getSidebarFolds', () => {
     scoped.mockResolvedValue([]);
     const out = await repo.getSidebarFolds(ctx('manager', 'mgr-b'));
     expect(calls).toHaveLength(1);
-    expect(out.people).toEqual([{ id: 'lead-1', name: 'Asha', count: 0 }]);
+    expect(out.people).toEqual([{ id: 'lead-1', key: 'lead-1', name: 'Asha', count: 0 }]);
   });
 
   it.each(['admin', 'super_admin'] as const)('%s lists every manager with the live engagements they own', async (role) => {
@@ -135,8 +135,8 @@ describe('getSidebarFolds', () => {
     const out = await repo.getSidebarFolds(ctx(role));
     expect(leaves(calls[1]?.where)).toContainEqual({ op: 'isNull', args: ['engagements.deletedAt'] });
     expect(out.people).toEqual([
-      { id: 'm1', name: 'Pranay', count: 2 },
-      { id: 'm2', name: 'Krishna', count: 0 },
+      { id: 'm1', key: 'm1', name: 'Pranay', count: 2 },
+      { id: 'm2', key: 'm2', name: 'Krishna', count: 0 },
     ]);
     expect(out.reportsTo).toBeNull();
   });

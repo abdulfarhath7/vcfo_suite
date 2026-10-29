@@ -104,9 +104,48 @@ export function addSavedView(
 
 export const densityKey = (scope: string) => `vcfo.density.${scope}`;
 
+/** The person's own default density (Profile > Appearance). A table without its own choice uses it. */
+export const PERSON_DENSITY_KEY = 'vcfo.density';
+
+export function readPersonDensity(): Density {
+  return readRaw(PERSON_DENSITY_KEY) === 'compact' ? 'compact' : 'comfortable';
+}
+
+export function writePersonDensity(d: Density): void {
+  writeRaw(PERSON_DENSITY_KEY, d);
+}
+
 export function readDensity(scope: string): Density {
   const v = readRaw(densityKey(scope));
-  return v === 'compact' ? 'compact' : 'comfortable';
+  if (v === 'compact' || v === 'comfortable') return v;
+  return readPersonDensity();
+}
+
+/* ---------------------------------------------------------------- text size */
+
+export type TextSize = 'small' | 'default' | 'large';
+export const TEXT_SIZE_KEY = 'vcfo.text-size';
+
+export function readTextSize(): TextSize {
+  const v = readRaw(TEXT_SIZE_KEY);
+  return v === 'small' || v === 'large' ? v : 'default';
+}
+
+export function writeTextSize(t: TextSize): void {
+  writeRaw(TEXT_SIZE_KEY, t);
+}
+
+/**
+ * Put the person's density and text size on <html> (`data-density`, `data-text-size`), which
+ * app/globals.css reads. The default values remove the attribute.
+ */
+export function applyAppearanceAttributes(density: Density = readPersonDensity(), text: TextSize = readTextSize()): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  if (density === 'compact') root.setAttribute('data-density', 'compact');
+  else root.removeAttribute('data-density');
+  if (text === 'default') root.removeAttribute('data-text-size');
+  else root.setAttribute('data-text-size', text);
 }
 
 export function writeDensity(scope: string, d: Density): void {

@@ -86,6 +86,16 @@
 - P-608 done, differently: added `roleProfilePath()` in `src/lib/auth-routes.ts` (admin, manager, lead → `/app/<role>/profile`) and the sidebar profile row and rail avatar use it. `roleSettingsPath` is unchanged because its other callers link to settings sections (`#email`, `#appearance`, notification preferences, Outlook callback).
 - Client compliance agent: `'library'` is now a `PortalRouteKey` (alias of `knowledge-bank`, `/app/client/library`; the page exists). `PORTAL_ALIAS_KEYS` keeps it out of the search page list. spectrum.tsx:306 typechecks.
 
+### Round 3 (search frame and last shell requests)
+
+- Client search palette: the desktop frame is now a Spectrum Tailwind overlay (like `pages/compliances/overlay.tsx`): centred 600 px, scrim, dialog shadow, tokens only, so it follows dark mode. The old `#vp-drill` CSS (21-runtime.css) and the old search frame rules (23-portal.css) are removed.
+- Manager: "Work" item to `/app/manager/work` in the sidebar and phone tabs (Home, Work, Projects). The "Project leads" fold links each lead to `/app/manager/team/<lead key>`. The key is the lead's `intern_id` when set, else the profile id, the same key `LeadPage` reads from the team roster. `sidebar-folds` now returns `key`.
+- Admin: "Managers" item to `/app/admin/managers` with a count and a fold per manager linking `#<profile id>`. People no longer carries the fold.
+- Super admin: "Documents" item to `/app/super/vault`. The account row opens `/app/super/profile` (`roleProfilePath`). Updates was already in the super nav (P-644).
+- Client: the sidebar profile row opens `/app/client/profile` (new `profile` route key).
+- Text size: `PortalProvider` holds `textSize` (`small`, `default`, `large`), kept per browser under `vcfo.text-size`. It sets `data-text-size` on `<html>`, which the foundations' rule scales, and the same attribute on `.cp`. The control is the new `TextSizeSetting` (`src/components/client-portal/TextSizeSetting.tsx`). Request: the owner of the client Profile page mounts it under Appearance. The choice is not stored server-side, because `ClientPortalPrefs` and its API are not in the shell's files.
+- Checks: cp-css regenerated. tsc shows no errors in shell files. eslint shows 0 errors. vitest passes on shell, client-portal, `lib/client-portal` and `sidebar-folds` (14 files, 111 tests).
+
 ## Files changed
 
 - src/components/shell/RoleSidebar.tsx: md breakpoint, head and logo, folds, counts, New tag, Your manager, sign out, pin Tip, drawer width, no hairline, dev badges, super in dev console, profile path.

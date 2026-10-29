@@ -50,8 +50,13 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
         { label: 'Work', href: '/app/intern/tasks', Icon: ListChecks },
         { label: 'Clients', href: '/app/intern/clients', Icon: UserSquare2 },
       ];
-    case 'admin':
     case 'manager':
+      return [
+        { label: 'Home', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
+        { label: 'Work', href: `${staffBase}/work`, Icon: ListChecks },
+        { label: 'Projects', href: `${staffBase}/projects`, Icon: Briefcase },
+      ];
+    case 'admin':
       return [
         { label: 'Home', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
         { label: 'Projects', href: `${staffBase}/projects`, Icon: Briefcase },

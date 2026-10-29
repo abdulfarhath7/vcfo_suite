@@ -506,12 +506,13 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
           {/* F-360: the row opens Profile; the keyboard and sign-out buttons sit beside it. */}
           <a
             className="vps-mest-a"
-            href={portalHref('settings')}
+            href={portalHref('profile')}
             title="Your profile"
+            aria-current={act === 'profile' ? 'page' : undefined}
             onClick={(e) => {
               e.preventDefault();
               if (drawer) setDrawerOpen(false);
-              go('settings');
+              go('profile');
             }}
           >
             <span className="vps-a">{me?.initials ?? ''}</span>

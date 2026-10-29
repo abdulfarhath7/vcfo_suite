@@ -21,6 +21,15 @@ import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import {
+  applyAppearanceAttributes,
+  readPersonDensity,
+  readTextSize,
+  writePersonDensity,
+  writeTextSize,
+  type Density,
+  type TextSize,
+} from '@/lib/ui/table-prefs';
 import { ProfileCard, SettingsRow } from '@/views/settings/account/settings-layout';
 
 const KINDS: { id: SurfaceKind; label: string }[] = [
@@ -250,6 +259,17 @@ const THEMES = [
   { key: 'system', label: 'System' },
 ];
 
+const DENSITIES = [
+  { key: 'comfortable', label: 'Comfortable' },
+  { key: 'compact', label: 'Compact' },
+];
+
+const TEXT_SIZES = [
+  { key: 'small', label: 'Small' },
+  { key: 'default', label: 'Default' },
+  { key: 'large', label: 'Large' },
+];
+
 /** Light, dark or the device setting (next-themes keeps the choice in the browser). */
 function ThemePicker() {
   const { theme, setTheme } = useTheme();
@@ -262,12 +282,29 @@ function ThemePicker() {
 
 /**
  * Profile › Appearance (VCFO Spectrum, prototype AppearanceCard). The theme, the greeting card and
- * sidebar backgrounds, and motion. Every choice saves at once through `useShellAppearance`.
+ * sidebar backgrounds, density, text size and motion. Every choice saves at once.
  */
 export function AppearanceSettings() {
   const { user } = useApp();
   const { prefs, hero, sidebar, patchHero, patchSidebar, update } = useShellAppearance();
   const first = internFirstName(user?.name);
+  // Density and text size are per person and per browser; they go on <html> at once.
+  const [density, setDensity] = useState<Density>('comfortable');
+  const [textSize, setTextSize] = useState<TextSize>('default');
+  useEffect(() => {
+    setDensity(readPersonDensity());
+    setTextSize(readTextSize());
+  }, []);
+  const pickDensity = (d: Density) => {
+    setDensity(d);
+    writePersonDensity(d);
+    applyAppearanceAttributes(d, textSize);
+  };
+  const pickTextSize = (t: TextSize) => {
+    setTextSize(t);
+    writeTextSize(t);
+    applyAppearanceAttributes(density, t);
+  };
 
   return (
     <ProfileCard id="appearance" title="Appearance">
@@ -277,22 +314,22 @@ export function AppearanceSettings() {
 
       <StudioBlock title="Greeting card">
         <div
-          className="lead-hero rounded-md px-5 py-4"
+          className="bg-wash rounded-md border-1.5 border-line px-5 py-4"
           data-hero-image={hero.image ? 'true' : 'false'}
-          style={surfaceCssVars(hero, 'hero')}
+          style={hero.image ? (surfaceCssVars(hero, 'hero') as CSSProperties) : undefined}
         >
-          <div className="relative z-[2] min-w-0">
-            <p className="text-[12px] text-white/60">Preview</p>
-            <p className="mt-1.5 text-[20px] font-medium leading-tight text-white">Good morning, {first}</p>
-            <div className="mt-3.5 flex gap-4 text-[12.5px] text-white/75">
-              <span>
-                <b className="text-[15px] font-medium tabular-nums text-white">12</b> Action
+          <div className="min-w-0">
+            <p className="text-[12px] text-wash-ink-2">Preview</p>
+            <p className="mt-1.5 text-[20px] font-medium leading-tight text-ink">Good morning, {first}</p>
+            <div className="mt-3.5 flex gap-2.5 text-[12.5px] text-ink-2">
+              <span className="wash-tile px-3 py-2">
+                <b className="text-[15px] font-medium tabular-nums text-ink">12</b> Action
               </span>
-              <span className="border-l border-white/20 pl-4">
-                <b className="text-[15px] font-medium tabular-nums text-white">2</b> Overdue
+              <span className="wash-tile px-3 py-2">
+                <b className="text-[15px] font-medium tabular-nums text-danger">2</b> Overdue
               </span>
-              <span className="hidden border-l border-white/20 pl-4 sm:inline">
-                <b className="text-[15px] font-medium tabular-nums text-white">4</b> Waiting
+              <span className="wash-tile hidden px-3 py-2 sm:inline">
+                <b className="text-[15px] font-medium tabular-nums text-ink">4</b> Waiting
               </span>
             </div>
           </div>
@@ -320,6 +357,13 @@ export function AppearanceSettings() {
           </div>
         </div>
       </StudioBlock>
+
+      <SettingsRow label="Density">
+        <SpectrumTabs label="Density" items={DENSITIES} value={density} onChange={(v) => pickDensity(v as Density)} />
+      </SettingsRow>
+      <SettingsRow label="Text size">
+        <SpectrumTabs label="Text size" items={TEXT_SIZES} value={textSize} onChange={(v) => pickTextSize(v as TextSize)} />
+      </SettingsRow>
 
       <SettingsRow label="Animations">
         <SpectrumTabs
