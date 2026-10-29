@@ -15,6 +15,9 @@ export type ProfileData = {
   whatsappOptIn: boolean;
   role: string;
   avatarUrl: string | null;
+  /** Staff title and ICAI or ICSI membership number (P-617). Empty when unset; clients have none. */
+  designation: string;
+  membershipNo: string;
 };
 
 /**
@@ -36,6 +39,8 @@ export function useAccountSettings() {
   const [draftPhone, setDraftPhone] = useState('');
   const [draftWhatsapp, setDraftWhatsapp] = useState('');
   const [draftWhatsappOptIn, setDraftWhatsappOptIn] = useState(false);
+  const [draftDesignation, setDraftDesignation] = useState('');
+  const [draftMembershipNo, setDraftMembershipNo] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [outlookConnected, setOutlookConnected] = useState(false);
 
@@ -63,6 +68,8 @@ export function useAccountSettings() {
           whatsappOptIn?: boolean;
           role: string;
           avatarUrl?: string | null;
+          designation?: string | null;
+          membershipNo?: string | null;
         };
         const next = {
           name: p.name,
@@ -72,8 +79,12 @@ export function useAccountSettings() {
           whatsappOptIn: Boolean(p.whatsappOptIn),
           role: p.role,
           avatarUrl: p.avatarUrl ?? null,
+          designation: p.designation ?? '',
+          membershipNo: p.membershipNo ?? '',
         };
         setProfile(next);
+        setDraftDesignation(next.designation);
+        setDraftMembershipNo(next.membershipNo);
         setDraftName(next.name);
         setDraftEmail(next.email);
         setDraftPhone(next.phone);
@@ -97,6 +108,8 @@ export function useAccountSettings() {
     setDraftPhone(profile.phone);
     setDraftWhatsapp(profile.phoneE164);
     setDraftWhatsappOptIn(profile.whatsappOptIn);
+    setDraftDesignation(profile.designation);
+    setDraftMembershipNo(profile.membershipNo);
     setEmailPassword('');
     setEditingProfile(true);
   }
@@ -108,6 +121,8 @@ export function useAccountSettings() {
     setDraftPhone(profile.phone);
     setDraftWhatsapp(profile.phoneE164);
     setDraftWhatsappOptIn(profile.whatsappOptIn);
+    setDraftDesignation(profile.designation);
+    setDraftMembershipNo(profile.membershipNo);
     setEmailPassword('');
     setEditingProfile(false);
   }
@@ -134,6 +149,10 @@ export function useAccountSettings() {
           whatsappOptIn: draftWhatsappOptIn && Boolean(normalizeToE164(draftWhatsapp)),
           email: draftEmail.trim().toLowerCase(),
           ...(emailChanged ? { currentPassword: emailPassword } : {}),
+          // Staff and the developer keep a designation and membership number; a client has none.
+          ...(profile.role !== 'client'
+            ? { designation: draftDesignation.trim() || null, membershipNo: draftMembershipNo.trim() || null }
+            : {}),
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -152,6 +171,8 @@ export function useAccountSettings() {
           draftWhatsappOptIn && Boolean(normalizeToE164(draftWhatsapp)),
         role: profile.role,
         avatarUrl: profile.avatarUrl,
+        designation: (body.profile.designation as string | null) ?? '',
+        membershipNo: (body.profile.membershipNo as string | null) ?? '',
       };
       setProfile(next);
       setEditingProfile(false);
@@ -212,6 +233,8 @@ export function useAccountSettings() {
     whatsappOptIn: false,
     role: user?.role ?? '',
     avatarUrl: user?.imageUrl ?? null,
+    designation: '',
+    membershipNo: '',
   };
   const initials = initialsFromName(display.name || display.email || 'U');
   const roleLabel = display.role
@@ -222,6 +245,8 @@ export function useAccountSettings() {
     display.role === 'admin' ||
     display.role === 'manager' ||
     display.role === 'intern';
+  /** The developer console's own account (G-01): staff-like rows, no client parts. */
+  const isDeveloper = display.role === 'developer';
   const emailChanging =
     editingProfile && draftEmail.trim().toLowerCase() !== (profile?.email ?? '').toLowerCase();
 
@@ -250,6 +275,10 @@ export function useAccountSettings() {
     setDraftWhatsapp,
     draftWhatsappOptIn,
     setDraftWhatsappOptIn,
+    draftDesignation,
+    setDraftDesignation,
+    draftMembershipNo,
+    setDraftMembershipNo,
     emailPassword,
     setEmailPassword,
     outlookConnected,
@@ -272,6 +301,7 @@ export function useAccountSettings() {
     initials,
     roleLabel,
     isStaff,
+    isDeveloper,
     emailChanging,
   };
 }

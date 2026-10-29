@@ -533,6 +533,9 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
   whatsappStatus: string;
   role: string;
   avatarUrl: string | null;
+  /** Staff title and ICAI or ICSI membership number (P-617); null for clients and when unset. */
+  designation: string | null;
+  membershipNo: string | null;
 }> {
   const [row] = await db
     .select({
@@ -540,6 +543,8 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
       name: profiles.name,
       email: profiles.email,
       phone: profiles.phone,
+      designation: profiles.designation,
+      membershipNo: profiles.membershipNo,
       phoneE164: profiles.phoneE164,
       whatsappOptInAt: profiles.whatsappOptInAt,
       whatsappOptOutAt: profiles.whatsappOptOutAt,
@@ -563,6 +568,8 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
     whatsappStatus: row.whatsappStatus,
     role: row.role,
     avatarUrl: row.avatarObjectKey ? ownAvatarSrc(row.updatedAt) : null,
+    designation: row.designation ?? null,
+    membershipNo: row.membershipNo ?? null,
   };
 }
 
@@ -611,9 +618,12 @@ export async function updateOwnProfile(
     whatsappOptIn?: boolean;
     email?: string;
     currentPassword?: string;
+    /** Staff only (P-617). Omitted leaves it; null or "" clears it. A client's value is ignored. */
+    designation?: string | null;
+    membershipNo?: string | null;
   },
 ): Promise<
-  | { ok: true; name: string; email: string; phone: string | null }
+  | { ok: true; name: string; email: string; phone: string | null; designation?: string | null; membershipNo?: string | null }
   | { ok: false; error: 'account_not_found' | 'invalid_credentials' | 'email_already_registered' }
 > {
   const [row] = await db
@@ -623,12 +633,20 @@ export async function updateOwnProfile(
       passwordHash: profiles.passwordHash,
       phoneE164: profiles.phoneE164,
       whatsappOptInAt: profiles.whatsappOptInAt,
+      role: profiles.role,
     })
     .from(profiles)
     .where(eq(profiles.id, ctx.userId))
     .limit(1);
 
   if (!row) return { ok: false, error: 'account_not_found' };
+
+  // Designation and membership number belong to staff (and the developer); a client has neither.
+  const staffFields: { designation?: string | null; membershipNo?: string | null } = {};
+  if (row.role !== 'client') {
+    if (input.designation !== undefined) staffFields.designation = input.designation?.trim() || null;
+    if (input.membershipNo !== undefined) staffFields.membershipNo = input.membershipNo?.trim().toUpperCase() || null;
+  }
 
   const name = input.name.trim();
   if (!name) throw new Error('name_required');
@@ -684,6 +702,7 @@ export async function updateOwnProfile(
       name,
       phone,
       ...whatsappPatch,
+      ...staffFields,
       ...(emailChanging ? { email: nextEmail } : {}),
       updatedAt: new Date(),
     })
@@ -692,6 +711,8 @@ export async function updateOwnProfile(
       name: profiles.name,
       email: profiles.email,
       phone: profiles.phone,
+      designation: profiles.designation,
+      membershipNo: profiles.membershipNo,
     });
 
   return {
@@ -699,6 +720,8 @@ export async function updateOwnProfile(
     name: updated.name?.trim() || name,
     email: updated.email,
     phone: updated.phone,
+    designation: updated.designation ?? null,
+    membershipNo: updated.membershipNo ?? null,
   };
 }
 

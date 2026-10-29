@@ -11,10 +11,10 @@ Round 1 left this area half done: the dev routes, repositories and parsers were 
 | P-255 | ◐ (shared) | Shell file. Request: show the developer items when the super admin is inside `/app/dev`. |
 | P-256 | ✗ (shared) | Shell file. Request: `tabBarTabs('developer')` should return Overview, Jobs (Terminal icon), Connections. |
 | P-257 | ◐ (shared) | Shell file. Request: no Notifications bell for the developer, or point its history link somewhere real. |
-| P-258 | ✗ (shared) | `src/lib/auth-routes.ts` is not mine. Blocked by P-259. |
-| P-259 | ✗ (stays) | No backend: the account and profile routes use `currentContext()` without `allowDeveloper`, so AccountSettings would get 401/403 for a developer (G-01). Opening the profile APIs to the developer role is a guard change for the hub. |
-| P-260 | ✗ (stays) | Same as P-259. |
-| P-261 | ✗ (stays) | Same as P-259. |
+| P-258 | ✓ | Hub commit baf4bf3 points the developer's profile links at `/app/dev/profile`. |
+| P-259 | ✓ | `/app/dev/profile` (baf4bf3) renders the shared Profile view; the account routes use `requireOwnAccount`. Round 4 checked every call the view makes for a developer: profile, avatar upload, password, two-step, sessions and notification prefs all admit the role; the Outlook photo button and the Email (Outlook) section stay hidden, because they are staff-only. The developer sees About you (with designation and membership number), Sign-in and security, Notifications and Appearance. |
+| P-260 | ◐ | Security is the shared section: password, two-step, devices signed in and sign out. No "API tokens" row: the app keeps no token inventory. |
+| P-261 | ◐ | The developer's Notifications card shows the Email and WhatsApp channels and quiet hours, and leaves out the per-kind table (client and step updates do not reach the developer). No Teams channel and no "incidents and failed jobs" switch: nothing sends them. |
 | P-262 | ✓ | It was already the same. |
 | P-263 | ✓ | It was already the same. |
 | P-264 | ✓ | Every dev grid now passes `stickyFirstColumn` (Overview, Connections, Jobs, Logs, Deploys, Audit, Outlook); the services grid also `stickyHead`. |
@@ -369,8 +369,8 @@ Round 1 left this area half done: the dev routes, repositories and parsers were 
 | P-613 | ✓ | It was already the same. |
 | P-614 | ✓ | Round 1: "Saved" chip after the profile saves. |
 | P-615 | ✓ | It was already the same. |
-| P-616 | ◐ | Round 1, checked: photo, full name, email, phone, WhatsApp chip and role, read view with "Edit". No designation or membership number (P-617). |
-| P-617 | ✗ (stays) | Schema need: `profiles.designation text null` and `profiles.membership_no text null` (ICAI or ICSI number, shown in mono). Not added: no schema edits in this task. |
+| P-616 | ✓ | About you now has Designation and Membership number (mono) for staff and the developer, in the read view and the edit form (migration 0028). |
+| P-617 | ✓ | `profiles.designation` and `profiles.membership_no` (0028) go through `getOwnProfile` and `updateOwnProfile` (own row only; a client's values are ignored; the number is stored in capitals) and `PATCH /api/account/profile` (80 and 24 characters, the number limited to letters, digits, "/" and "-"). Tests: `src/db/repositories/profiles-own.test.ts`. |
 | P-618 | ◐ | "Password" row with "Change password". There is no Microsoft sign-in: Auth.js here signs in with email and password only (Outlook is a mail link, shown under Email). |
 | P-619 | ✓ | Round 1: `PasswordStrength` bar under the new password. |
 | P-620 | ◐ | Round 1, checked: two-step on and off with key, QR and code rows and plain toasts. No Undo: turning two-step back on needs a fresh code. |
@@ -379,8 +379,8 @@ Round 1 left this area half done: the dev routes, repositories and parsers were 
 | P-623 | ◐ | Round 1, checked: Email and WhatsApp per row; in-app is always on. The app has no Teams channel. |
 | P-624 | ✓ | Round 1, checked: each notifications row has a 28 px tinted tile (R-16). |
 | P-625 | ✓ | It was already the same. |
-| P-626 | ◐ | Weekly digest by email only. A daily digest time needs a stored preference and a job; neither exists. |
-| P-627 | ✗ (stays) | No data: the app sends no escalation or "approvals waiting" alert, so a switch would control nothing. |
+| P-626 | ✓ | Staff Notifications has "Remind me before a due date" (Default, 7, 3 or 1 days, `notification_prefs.remind_days`) and "Daily digest by email" (switch and time, `digest_time`, null = off), with Undo toasts. Stored only: no job reads `remind_days`, and there is no daily digest job (the weekly digest job reads only `email.weeklyDigest`). Tests: `notification-prefs.test.ts`, `NotificationsCard.test.tsx`. |
+| P-627 | ✓ | A manager gets an "Approvals waiting" switch and an admin or super admin gets "Escalations". They are stored as `approvalsWaiting` and `escalations` keys in `notification_prefs.email` and come back as `prefs.alerts`. Stored only: no sender reads them yet. |
 | P-628 | ✓ | It was already the same. |
 | P-629 | ✓ | It was already the same. |
 | P-630 | ✗ (shared) | Density is kept per grid (`readDensity(scope)` in `src/lib/ui/table-prefs.ts`, foundations). Request: a person-wide default density that grids fall back to, then the Appearance switch can set it. |
@@ -417,7 +417,7 @@ Round 3 (after commit 690832a) went through every row left over: Announcements, 
 
 New routes in round 3: `/app/super/profile`, `/app/super/vault`, `/app/super/vault/view/[id]`.
 
-Schema need from round 3: `profiles.designation text null` and `profiles.membership_no text null` (P-617).
+Schema need from round 3 (`profiles.designation`, `profiles.membership_no`) was met by migration 0028 and is wired in round 4.
 
 Requests added in round 3: the super nav needs a Documents link (`/app/super/vault`) and the account row should open `/app/super/profile` (shell); `file-badge.tsx` colours (P-559), a person-wide density default (P-630), a text-size token (P-631), the `EFilingGrid` range footer (P-541) and the card icon words (P-645) go to foundations.
 
@@ -459,7 +459,6 @@ None.
 
 - Shell (`RoleSidebar.tsx`, `TabBar.tsx`, `TopBar.tsx`): developer badges on Connections and Jobs (P-254); the developer items for the super admin inside `/app/dev` (P-255); phone tabs Overview, Jobs, Connections (P-256); no Notifications bell for the developer (P-257).
 - `src/lib/auth-routes.ts`: point `roleSettingsPath` and the rail Profile link for admin, manager and intern at the new `/app/<role>/profile` routes (P-608).
-- Guards: let the account and profile APIs admit the developer role, so `/app/dev/profile` can be built (P-258 to P-261).
 - Foundations: let a `DashHero` stat take an `icon` (P-280).
 - Round 1's public requests still stand: `NEXT_PUBLIC_DEMO_LOGINS` in `.env.example` and never in production; tokens `side-deep` and `shadow-signin`.
 
@@ -476,3 +475,18 @@ None.
 - `npx tsc --noEmit -p .`: clean in my files. Errors remain only in other agents' files (client portal compliances and team, super insights test, staff compliances, and new missing modules `@/views/admin/managers/ManagersPage` and `@/views/manager/LeadPage`).
 - `npx vitest run` on dev, vault, knowledge bank, audit log, notifications, settings, marketing and auth: 18 files and 104 tests pass.
 - `npx eslint` on my files: 0 errors (warnings only).
+
+## Round 4: migration 0028 wired
+
+- `src/db/repositories/profiles.ts`: `getOwnProfile` returns `designation` and `membershipNo`; `updateOwnProfile` writes them on the caller's row for every role but client.
+- `app/api/account/profile/route.ts`: the PATCH schema takes `designation` and `membershipNo` and the response returns them.
+- `src/lib/client-portal/notification-prefs.ts`: `STAFF_ALERTS`, `REMIND_DAYS`, optional `alerts`, `remindDays` and `digestTime` on the prefs and the patch, and their normalising. The fields are optional so the client portal code that builds prefs by hand still type-checks.
+- `src/db/repositories/notification-prefs.ts`: reads and writes `remind_days`, `digest_time` and the alert keys in the `email` jsonb, owner only.
+- `app/api/account/notification-prefs/route.ts`: the PATCH schema takes `alerts`, `remindDays` (7, 3, 1 or null) and `digestTime` ("HH:MM" or null).
+- `src/views/settings/account/use-account-settings.ts`, `src/views/settings/AccountSettings.tsx`: Designation and Membership number in About you (read and edit, mono number), the developer counted with staff for these rows, and the role passed to the Notifications card.
+- `src/views/settings/account/NotificationsCard.tsx`: the reminder, daily digest and role alert rows for staff; no per-kind table for the developer.
+- Tests (new or extended): `src/db/repositories/profiles-own.test.ts`, `src/db/repositories/notification-prefs.test.ts`, `src/views/settings/account/NotificationsCard.test.tsx`.
+
+Senders: no job reads `notification_prefs` for reminders or a daily digest (the compliance reminder job does not read it, and the weekly digest job reads only `email.weeklyDigest`), so `remind_days`, `digest_time` and the alerts are stored and shown but not yet acted on. A follow-up job would read them through a system reader like `systemGetWhatsAppGatePrefs`.
+
+Round 4 checks: `npx tsc --noEmit -p .` is clean in my files; the only errors are in other agents' files (`src/jobs/kpi-snapshots.ts`, `src/components/intern/InternWorkDrawer.tsx`). `npx vitest run` on settings, the profile and prefs repositories, the weekly digest, the client team pages, `src/lib/client-portal`, dev and the new card test: all pass. `npx eslint` on the round-4 files: 0 errors.

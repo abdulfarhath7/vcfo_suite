@@ -8,7 +8,9 @@ import { isUuid } from '@/lib/slug';
 import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import {
   DEFAULT_NOTIFICATION_PREFS,
+  REMIND_DAYS,
   normalizeNotificationPrefsPatch,
+  type RemindDays,
   type NotificationPrefs,
   type NotificationPrefsPatch,
 } from '@/lib/client-portal/notification-prefs';
@@ -27,7 +29,7 @@ type Row = typeof notificationPrefs.$inferSelect;
 
 function toPrefs(row: Row | undefined): NotificationPrefs {
   const d = DEFAULT_NOTIFICATION_PREFS;
-  if (!row) return { ...d, email: { ...d.email }, whatsapp: { ...d.whatsapp } };
+  if (!row) return { ...d, email: { ...d.email }, whatsapp: { ...d.whatsapp }, alerts: { ...d.alerts! } };
   const em = row.email ?? {};
   const wa = row.whatsapp ?? {};
   const pick = <T extends Record<string, boolean>>(def: T, src: Record<string, boolean>): T => {
@@ -44,6 +46,10 @@ function toPrefs(row: Row | undefined): NotificationPrefs {
     quietHours: row.quietHours,
     quietStart: row.quietStart,
     quietEnd: row.quietEnd,
+    // The role alerts live as keys in the email jsonb (P-627).
+    alerts: pick(d.alerts!, em),
+    remindDays: (REMIND_DAYS as readonly number[]).includes(row.remindDays ?? -1) ? (row.remindDays as RemindDays) : null,
+    digestTime: row.digestTime ?? null,
   };
 }
 
@@ -65,27 +71,36 @@ export async function updateOwnNotificationPrefs(
     quietHours: clean.quietHours ?? current.quietHours,
     quietStart: clean.quietStart ?? current.quietStart,
     quietEnd: clean.quietEnd ?? current.quietEnd,
+    alerts: { ...current.alerts!, ...(clean.alerts ?? {}) },
+    remindDays: clean.remindDays !== undefined ? clean.remindDays : current.remindDays ?? null,
+    digestTime: clean.digestTime !== undefined ? clean.digestTime : current.digestTime ?? null,
   };
+  // The email jsonb holds the optional categories and the role alerts side by side.
+  const emailStore = { ...next.email, ...next.alerts };
   const now = new Date();
   await db
     .insert(notificationPrefs)
     .values({
       profileId: ctx.userId,
-      email: next.email,
+      email: emailStore,
       whatsapp: next.whatsapp,
       quietHours: next.quietHours,
       quietStart: next.quietStart,
       quietEnd: next.quietEnd,
+      remindDays: next.remindDays ?? null,
+      digestTime: next.digestTime ?? null,
       updatedAt: now,
     })
     .onConflictDoUpdate({
       target: notificationPrefs.profileId,
       set: {
-        email: next.email,
+        email: emailStore,
         whatsapp: next.whatsapp,
         quietHours: next.quietHours,
         quietStart: next.quietStart,
         quietEnd: next.quietEnd,
+        remindDays: next.remindDays ?? null,
+        digestTime: next.digestTime ?? null,
         updatedAt: now,
       },
     });

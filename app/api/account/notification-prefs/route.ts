@@ -14,6 +14,12 @@ const patchSchema = z
     quietHours: z.boolean().optional(),
     quietStart: clock.optional(),
     quietEnd: clock.optional(),
+    /** Role alerts (P-627): approvalsWaiting, escalations. */
+    alerts: flags.optional(),
+    /** Reminder lead time; null is the firm default. */
+    remindDays: z.union([z.literal(7), z.literal(3), z.literal(1), z.null()]).optional(),
+    /** Daily digest time; null turns it off (P-626). */
+    digestTime: z.union([clock, z.null()]).optional(),
   })
   .strict();
 

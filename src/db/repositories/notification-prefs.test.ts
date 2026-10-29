@@ -93,6 +93,38 @@ describe('owner-only prefs', () => {
   });
 });
 
+describe('reminder days, daily digest and role alerts (P-626, P-627)', () => {
+  it('stores them in the caller’s row, the alerts as keys in the email jsonb', async () => {
+    results = [[], []];
+    const next = await repo.updateOwnNotificationPrefs(ctx(), {
+      remindDays: 3,
+      digestTime: '08:30',
+      alerts: { escalations: false },
+    });
+    const insert = calls.find((c) => c.op === 'insert')!;
+    expect(insert.values?.profileId).toBe(ME);
+    expect(insert.values?.remindDays).toBe(3);
+    expect(insert.values?.digestTime).toBe('08:30');
+    expect(insert.values?.email).toMatchObject({ escalations: false, approvalsWaiting: true, weeklyDigest: true });
+    expect(next.alerts).toEqual({ approvalsWaiting: true, escalations: false });
+  });
+
+  it('reads them back, and null turns the digest off and the reminder back to the default', async () => {
+    results = [[{ profileId: ME, email: { escalations: false }, whatsapp: {}, quietHours: true, quietStart: '21:00', quietEnd: '08:00', tz: 'Asia/Kolkata', remindDays: 7, digestTime: '09:00' }], []];
+    const next = await repo.updateOwnNotificationPrefs(ctx(), { remindDays: null, digestTime: null });
+    expect(next.remindDays).toBeNull();
+    expect(next.digestTime).toBeNull();
+    expect(next.alerts?.escalations).toBe(false);
+  });
+
+  it('ignores a reminder day off the list and a malformed digest time', async () => {
+    results = [[], []];
+    const next = await repo.updateOwnNotificationPrefs(ctx(), { remindDays: 5 as never, digestTime: '8am' });
+    expect(next.remindDays).toBeNull();
+    expect(next.digestTime).toBeNull();
+  });
+});
+
 describe('systemGetWhatsAppGatePrefs', () => {
   it('returns the defaults with the India time zone when nothing was saved', async () => {
     results = [[]];

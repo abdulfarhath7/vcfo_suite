@@ -3,6 +3,17 @@ export const EMAIL_OPTIONAL = ['announcements', 'feed', 'weeklyDigest'] as const
 export const WHATSAPP_CATEGORIES = ['docs', 'steps', 'deadlines', 'timeline', 'announcements', 'feed'] as const;
 
 export type EmailOptional = (typeof EMAIL_OPTIONAL)[number];
+
+/**
+ * Staff alerts by role (P-627): admin and super get "escalations", managers "approvalsWaiting".
+ * They are stored as keys in the same `email` jsonb as the optional categories.
+ */
+export const STAFF_ALERTS = ['approvalsWaiting', 'escalations'] as const;
+export type StaffAlert = (typeof STAFF_ALERTS)[number];
+
+/** Days before a due date to send the reminder (C-831); null keeps the firm default. */
+export const REMIND_DAYS = [7, 3, 1] as const;
+export type RemindDays = (typeof REMIND_DAYS)[number];
 export type WhatsAppCategory = (typeof WHATSAPP_CATEGORIES)[number];
 
 export interface NotificationPrefs {
@@ -11,6 +22,12 @@ export interface NotificationPrefs {
   quietHours: boolean;
   quietStart: string;
   quietEnd: string;
+  /** Staff alerts (P-627). Optional so older callers that build prefs by hand still type-check. */
+  alerts?: Record<StaffAlert, boolean>;
+  /** Reminder lead time in days; null is the firm default. */
+  remindDays?: RemindDays | null;
+  /** Daily digest time, "HH:MM"; null is no daily digest (P-626). */
+  digestTime?: string | null;
 }
 
 export interface NotificationPrefsPatch {
@@ -20,6 +37,11 @@ export interface NotificationPrefsPatch {
   /** `HH:MM`, 24-hour clock, in the person's time zone (staff Profile, G-25). */
   quietStart?: string;
   quietEnd?: string;
+  alerts?: Partial<Record<StaffAlert, boolean>>;
+  /** 7, 3 or 1; null goes back to the firm default. */
+  remindDays?: RemindDays | null;
+  /** "HH:MM"; null turns the daily digest off. */
+  digestTime?: string | null;
 }
 
 /** The board's defaults (settings_redesign: em {ann:on, feed:off, digest:on}, wa on except news). */
@@ -29,6 +51,9 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   quietHours: true,
   quietStart: '21:00',
   quietEnd: '08:00',
+  alerts: { approvalsWaiting: true, escalations: true },
+  remindDays: null,
+  digestTime: null,
 };
 
 export function normalizeNotificationPrefsPatch(input: unknown): NotificationPrefsPatch {
@@ -55,5 +80,15 @@ export function normalizeNotificationPrefsPatch(input: unknown): NotificationPre
   const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (typeof p.quietStart === 'string' && clock.test(p.quietStart)) out.quietStart = p.quietStart;
   if (typeof p.quietEnd === 'string' && clock.test(p.quietEnd)) out.quietEnd = p.quietEnd;
+  if (p.alerts && typeof p.alerts === 'object') {
+    const a: Partial<Record<StaffAlert, boolean>> = {};
+    for (const k of STAFF_ALERTS) {
+      const v = (p.alerts as Record<string, unknown>)[k];
+      if (typeof v === 'boolean') a[k] = v;
+    }
+    out.alerts = a;
+  }
+  if (p.remindDays === null || (REMIND_DAYS as readonly unknown[]).includes(p.remindDays)) out.remindDays = p.remindDays as RemindDays | null;
+  if (p.digestTime === null || (typeof p.digestTime === 'string' && clock.test(p.digestTime))) out.digestTime = p.digestTime as string | null;
   return out;
 }

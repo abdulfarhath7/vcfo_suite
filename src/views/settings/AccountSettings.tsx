@@ -71,6 +71,10 @@ export default function AccountSettings({ path }: Props) {
     setDraftWhatsapp,
     draftWhatsappOptIn,
     setDraftWhatsappOptIn,
+    draftDesignation,
+    setDraftDesignation,
+    draftMembershipNo,
+    setDraftMembershipNo,
     emailPassword,
     setEmailPassword,
     outlookConnected,
@@ -92,7 +96,10 @@ export default function AccountSettings({ path }: Props) {
     initials,
     roleLabel,
     isStaff,
+    isDeveloper,
   } = useAccountSettings();
+  // Designation and membership number (P-617): staff and the developer; a client has neither.
+  const hasTitle = isStaff || isDeveloper;
 
   const sections: SectionKey[] = isStaff
     ? [
@@ -205,11 +212,19 @@ export default function AccountSettings({ path }: Props) {
   const readRows = (
     <>
       <SettingsRow label="Full name">{display.name || '—'}</SettingsRow>
+      {hasTitle ? (
+        <>
+          <SettingsRow label="Designation">{display.designation || <span className="text-ink-muted">Not set</span>}</SettingsRow>
+          <SettingsRow label="Membership number" hint="ICAI or ICSI">
+            {display.membershipNo ? <span className="font-mono">{display.membershipNo}</span> : <span className="text-ink-muted">Not set</span>}
+          </SettingsRow>
+        </>
+      ) : null}
       <SettingsRow label="Email" hint="Your sign-in address">
         {display.email || '—'}
       </SettingsRow>
       <SettingsRow label="Phone">{display.phone || <span className="text-ink-muted">Not set</span>}</SettingsRow>
-      <SettingsRow label="WhatsApp" hint="Updates about your engagement">
+      <SettingsRow label="WhatsApp" hint={hasTitle ? 'Alerts on WhatsApp' : 'Updates about your engagement'}>
         {display.phoneE164 ? (
           <span className="flex flex-wrap items-center gap-2">
             <span className="tabular-nums">{display.phoneE164}</span>
@@ -231,7 +246,9 @@ export default function AccountSettings({ path }: Props) {
         emailDiffers ||
         draftPhone !== profile.phone ||
         draftWhatsapp !== profile.phoneE164 ||
-        draftWhatsappOptIn !== profile.whatsappOptIn);
+        draftWhatsappOptIn !== profile.whatsappOptIn ||
+        draftDesignation !== profile.designation ||
+        draftMembershipNo !== profile.membershipNo);
     return (
       <form onSubmit={(e: FormEvent) => void saveProfile(e)}>
         <SettingsRow label="Full name">
@@ -248,6 +265,36 @@ export default function AccountSettings({ path }: Props) {
             autoFocus={!inline}
           />
         </SettingsRow>
+        {hasTitle ? (
+          <>
+            <SettingsRow label="Designation" hint="Optional">
+              <Label htmlFor="profile-designation" className="sr-only">
+                Designation
+              </Label>
+              <Input
+                id="profile-designation"
+                value={draftDesignation}
+                onChange={(e) => setDraftDesignation(e.target.value)}
+                maxLength={80}
+                placeholder="Senior manager"
+              />
+            </SettingsRow>
+            <SettingsRow label="Membership number" hint="ICAI or ICSI, optional">
+              <Label htmlFor="profile-membership" className="sr-only">
+                Membership number
+              </Label>
+              <Input
+                id="profile-membership"
+                value={draftMembershipNo}
+                onChange={(e) => setDraftMembershipNo(e.target.value.toUpperCase())}
+                maxLength={24}
+                pattern="[A-Za-z0-9/\-]*"
+                className="font-mono"
+                placeholder="A123456"
+              />
+            </SettingsRow>
+          </>
+        ) : null}
         <SettingsRow label="Email" hint="Your sign-in address">
           <Label htmlFor="profile-email" className="sr-only">
             Email
@@ -495,6 +542,7 @@ export default function AccountSettings({ path }: Props) {
         whatsappOn={Boolean(display.phoneE164 && display.whatsappOptIn)}
         email={display.email}
         whatsappNumber={display.phoneE164}
+        userRole={display.role}
       />
     );
   } else if (active === 'email') {

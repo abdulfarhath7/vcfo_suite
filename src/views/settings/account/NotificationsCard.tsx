@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import {
+  AlarmClock,
   AlignLeft,
+  BellRing,
   Check,
   Clock,
   FileText,
   Lock,
   Megaphone,
   Moon,
+  Newspaper,
   Rss,
   type LucideIcon,
 } from 'lucide-react';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Chip, Tag } from '@/components/ui/spectrum-chip';
@@ -22,8 +26,24 @@ import type {
   EmailOptional,
   NotificationPrefs,
   NotificationPrefsPatch,
+  RemindDays,
+  StaffAlert,
   WhatsAppCategory,
 } from '@/lib/client-portal/notification-prefs';
+
+/** The role alert a staff person can switch (P-627): admin and super get escalations, a manager approvals. */
+function roleAlert(role: string | undefined): { key: StaffAlert; label: string } | null {
+  if (role === 'admin' || role === 'super_admin') return { key: 'escalations', label: 'Escalations' };
+  if (role === 'manager') return { key: 'approvalsWaiting', label: 'Approvals waiting' };
+  return null;
+}
+
+const REMIND_TABS = [
+  { key: 'default', label: 'Default' },
+  { key: '7', label: '7 days' },
+  { key: '3', label: '3 days' },
+  { key: '1', label: '1 day' },
+];
 import { ProfileCard, SettingsRow } from './settings-layout';
 
 /*
@@ -69,9 +89,12 @@ export function NotificationsCard({
   whatsappOn,
   email,
   whatsappNumber,
+  userRole: role,
 }: {
   id: string;
   title: string;
+  /** The signed-in role. Staff get the reminder, daily digest and role alert rows (P-626, P-627). */
+  userRole?: string;
   whatsappOn: boolean;
   /** The sign-in address that every email goes to. */
   email?: string;
@@ -83,6 +106,11 @@ export function NotificationsCard({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [draft, setDraft] = useState({ start: '', end: '' });
+  const [digestDraft, setDigestDraft] = useState('');
+  const staff = role === 'super_admin' || role === 'admin' || role === 'manager' || role === 'intern';
+  const alert = roleAlert(role);
+  // The developer gets no client or step updates, so the per-kind table stays out (G-01).
+  const developer = role === 'developer';
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +121,7 @@ export function NotificationsCard({
         if (cancelled) return;
         setPrefs(json.prefs);
         setDraft({ start: json.prefs.quietStart, end: json.prefs.quietEnd });
+        setDigestDraft(json.prefs.digestTime ?? '');
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
@@ -114,6 +143,9 @@ export function NotificationsCard({
       quietHours: patch.quietHours ?? prefs.quietHours,
       quietStart: patch.quietStart ?? prefs.quietStart,
       quietEnd: patch.quietEnd ?? prefs.quietEnd,
+      alerts: prefs.alerts ? { ...prefs.alerts, ...(patch.alerts ?? {}) } : prefs.alerts,
+      remindDays: patch.remindDays !== undefined ? patch.remindDays : prefs.remindDays,
+      digestTime: patch.digestTime !== undefined ? patch.digestTime : prefs.digestTime,
     });
     setSaving(true);
     try {
@@ -130,6 +162,7 @@ export function NotificationsCard({
     } catch {
       setPrefs(before);
       setDraft({ start: before.quietStart, end: before.quietEnd });
+      setDigestDraft(before.digestTime ?? '');
       toastError('Not saved', 'Try again in a moment.');
     } finally {
       setSaving(false);
@@ -161,6 +194,16 @@ export function NotificationsCard({
       return;
     }
     void save(which === 'start' ? { quietStart: value } : { quietEnd: value });
+  }
+
+  function saveDigestTime() {
+    if (!prefs) return;
+    const value = digestDraft;
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value) || value === prefs.digestTime) {
+      setDigestDraft(prefs.digestTime ?? '');
+      return;
+    }
+    void save({ digestTime: value });
   }
 
   return (
@@ -207,6 +250,7 @@ export function NotificationsCard({
               </Chip>
             </div>
           </div>
+          {developer ? null : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[360px] text-[14px]">
               <caption className="sr-only">Email and WhatsApp per kind of update</caption>
@@ -272,6 +316,7 @@ export function NotificationsCard({
               </tbody>
             </table>
           </div>
+          )}
           <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 md:px-5">
             <RowTile Icon={Moon} tile="bg-identity-soft text-identity" />
             <span className="min-w-0 flex-1 text-[14px] text-ink">Quiet hours · no WhatsApp in this window, India time</span>
@@ -307,6 +352,66 @@ export function NotificationsCard({
               />
             </span>
           </div>
+          {staff ? (
+            <>
+              {/* Stored on notification_prefs (remind_days, digest_time). No job reads them yet. */}
+              <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 md:px-5">
+                <RowTile Icon={AlarmClock} tile="bg-danger-soft text-danger" />
+                <span className="min-w-0 flex-1 text-[14px] text-ink">Remind me before a due date</span>
+                <SpectrumTabs
+                  label="Days before a due date"
+                  items={REMIND_TABS}
+                  value={prefs.remindDays ? String(prefs.remindDays) : 'default'}
+                  onChange={(k) => {
+                    const next = k === 'default' ? null : (Number(k) as RemindDays);
+                    const prev = prefs.remindDays ?? null;
+                    void save({ remindDays: next }, { text: `Reminder · ${k === 'default' ? 'default' : `${k} days before`}`, patch: { remindDays: prev } });
+                  }}
+                />
+              </div>
+              <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 md:px-5">
+                <RowTile Icon={Newspaper} tile="bg-identity-soft text-identity" />
+                <span className="min-w-0 flex-1 text-[14px] text-ink">Daily digest by email</span>
+                <span className="flex items-center gap-2">
+                  <Input
+                    type="time"
+                    aria-label="Daily digest time"
+                    value={digestDraft}
+                    disabled={!prefs.digestTime}
+                    onChange={(e) => setDigestDraft(e.target.value)}
+                    onBlur={saveDigestTime}
+                    className={timeInput}
+                  />
+                  <Switch
+                    checked={Boolean(prefs.digestTime)}
+                    onCheckedChange={(v) => {
+                      const prev = prefs.digestTime ?? null;
+                      const next = v ? prev ?? '08:00' : null;
+                      setDigestDraft(next ?? '');
+                      void save({ digestTime: next }, { text: v ? 'Daily digest on' : 'Daily digest off', patch: { digestTime: prev } });
+                    }}
+                    aria-label="Daily digest"
+                  />
+                </span>
+              </div>
+              {alert && prefs.alerts ? (
+                <div className="flex min-h-[52px] flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 md:px-5">
+                  <RowTile Icon={BellRing} tile="bg-warning-soft text-warning" />
+                  <span className="min-w-0 flex-1 text-[14px] text-ink">{alert.label}</span>
+                  <Switch
+                    checked={prefs.alerts[alert.key]}
+                    onCheckedChange={(v) =>
+                      void save(
+                        { alerts: { [alert.key]: v } },
+                        { text: `${alert.label} ${v ? 'on' : 'off'}`, patch: { alerts: { [alert.key]: !v } } },
+                      )
+                    }
+                    aria-label={alert.label}
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </>
       )}
     </ProfileCard>
