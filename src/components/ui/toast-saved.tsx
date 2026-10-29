@@ -1,16 +1,17 @@
 'use client';
 
 import toast from 'react-hot-toast';
-import { Check, FileCheck2, Upload, X, type LucideIcon } from 'lucide-react';
+import { Check, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** A1 kinds: what the status tile shows. */
 export type SavedToastKind = 'saved' | 'filed' | 'uploaded';
 
+// M-28 (A1): every kind is a success, so each gets the 22px green status tile with a tick.
 const KIND: Record<SavedToastKind, { Icon: LucideIcon; tile: string }> = {
   saved: { Icon: Check, tile: 'bg-positive-soft text-positive' },
-  filed: { Icon: FileCheck2, tile: 'bg-positive-soft text-positive' },
-  uploaded: { Icon: Upload, tile: 'bg-brand-soft text-brand-text' },
+  filed: { Icon: Check, tile: 'bg-positive-soft text-positive' },
+  uploaded: { Icon: Check, tile: 'bg-positive-soft text-positive' },
 };
 
 export interface SavedToastOptions {

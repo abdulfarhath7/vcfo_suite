@@ -6,19 +6,24 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from '@/lib/utils';
 import { DashHeroSettings } from '@/components/dash/DashHeroSettings';
 import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
+import { CARD_HEAD_ICONS } from '@/components/common/CardHeadTile';
+import { cardHeadIcon } from '@/lib/ui/card-head-icon';
 
 /**
- * THE home card (VCFO Spectrum H3c, rules R-17 and R-18, owner decision D-01). One component,
- * one look, every dashboard: lead, manager, firm admin, super admin and client all render this.
- *
- * One compact row, about 84px tall, on the colour wash. It wraps on phones.
- *   1. Left: the live local time and the greeting (staff), or a 40px company tile, the short
- *      name, the stage chip and the step count (client, through `lead`, `stage` and `steps`).
- *   2. Middle: the mini tiles. Each is 56px: a 12px muted label, a 20px number and a short 12px
- *      note, with a 52 x 24 trend line on the right when `trend` is given (hidden when the tile
- *      is narrow). No icons. A tile with `href` is a link to the list behind the number (E-05);
- *      a tile with `how` shows a white "How is this counted?" card on hover and focus (E-04).
- *   3. Right: the actions (children) and the settings popover.
+ * THE home card (VCFO Spectrum "H3 tight", rules R-17 and R-18, owner decision D-17). One
+ * component, one look, every dashboard: lead, manager, firm admin, super admin, developer and
+ * client all render this. About 160px tall on the colour wash, in two rows:
+ *   1. The greeting at 22px with the live date on the same line (staff), or the 36px company
+ *      tile, the name, the stage chip and the step count (client, through `lead`, `stage` and
+ *      `steps`). The scope switch (`scope`), the actions (children) and the settings popover
+ *      sit on the right. On a phone the client name takes the first line and the rest share
+ *      the second (M-30).
+ *   2. The number tiles (KP1 on the wash): a 14px icon and 12.5px label, the number at 22px, a
+ *      12px note, and a 64 x 26 trend line beside the number when `trend` is given (48 x 22 on
+ *      phones). Tiles sit in a grid with a 170px minimum; on a phone they go two in a row and an
+ *      odd last tile spans both columns as one short line. A tile with `href` is a link to the
+ *      list behind it (E-05), `onClick` opens a drill instead, and `how` shows a white "How is
+ *      this counted?" card on hover and focus (E-04).
  *
  * The headline numbers belong in those tiles. Do not add a band of metric cards under the
  * card: it prints the same numbers twice. The old progress ring is shown as one more tile,
@@ -29,19 +34,21 @@ export type DashHeroStat = {
   label: string;
   value: number | string;
   href?: string;
+  /** Opens a drill or panel instead of a page (client home). Ignored when `href` is set. */
+  onClick?: () => void;
   /** Paint the value in the danger colour when it demands attention. */
   hot?: boolean;
   /** Paint the value in the done colour (R-18). */
   good?: boolean;
-  /** Short note after the number ("3 new", "2 clients"). `note` wins when both are given. */
+  /** Short line under the number ("3 new today", "2 clients"). `note` wins when both are given. */
   sub?: string;
-  /** Short note after the number. */
+  /** Short line under the number. */
   note?: string;
-  /** Trend line points, oldest first. Drawn only when given with two or more points. */
+  /** Trend line points, oldest first, the last one the live count. Drawn only with two or more points. */
   trend?: number[];
   /** Trend colour; by default red for `hot`, green for `good`, blurple otherwise. */
   trendTone?: 'bad' | 'ok' | 'teal' | 'warn' | 'accent';
-  /** A 44px share bar after the number, in percent. */
+  /** A small share bar under the number, in percent. */
   bar?: number;
   /** E-04: one sentence on how the number is counted, shown in a white card on hover and focus. */
   how?: string;
@@ -64,25 +71,28 @@ export function DashHero({
   lead,
   stage,
   steps,
+  scope,
   children,
   settings = true,
 }: {
-  /** The big line: a greeting, or the company's short name on the client home. */
+  /** The big line: a greeting, or the company's name on the client home. */
   title: string;
-  /** Extra chips appended after the time, on the top line. */
+  /** Extra chips after the date on the first row. */
   meta?: ReactNode;
-  /** Small line under the title (scope, state, who owns it). */
+  /** Small text after the title row's date (scope, state, who owns it). */
   subtitle?: ReactNode;
   stats?: DashHeroStat[];
   /** Shown as one more number tile (no ring is drawn). */
   ring?: { value: number; total?: number; caption: string; display?: string };
-  /** Client home: the 40px company tile before the name (see `DashHeroCompanyTile`). The date line is not shown then. */
+  /** Client home: the company tile before the name (see `DashHeroCompanyTile`). The date is not shown then. */
   lead?: ReactNode;
-  /** Client home: the stage chip under the name. */
+  /** Client home: the stage chip after the name. */
   stage?: ReactNode;
   /** Client home: the step count after the stage chip ("6 of 25 steps"). */
   steps?: ReactNode;
-  /** Actions, placed at the right of the card. */
+  /** The scope switch (All / Incorporating / Compliance), on the right of the first row (D-17). */
+  scope?: ReactNode;
+  /** The main action, on the right of the first row. */
   children?: ReactNode;
   /** Show the greeting card settings popover (staff homes). The client home turns it off. */
   settings?: boolean;
@@ -96,101 +106,120 @@ export function DashHero({
     : null;
   const repeats = ringStat && (stats ?? []).some((st) => st.label.trim().toLowerCase() === ringStat.label.toLowerCase());
   const strip: DashHeroStat[] = [...(stats ?? []), ...(ringStat && !repeats ? [ringStat] : [])];
-  const underLine = stage || steps || subtitle;
+  const actions =
+    scope || children || settings ? (
+      <div className={cn('flex flex-wrap items-center gap-2 sm:gap-2.5', lead && 'ml-auto')}>
+        {scope}
+        {children}
+        {settings ? <DashHeroSettings /> : null}
+      </div>
+    ) : null;
 
   return (
-    <section
-      className="bg-wash flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-md border-1.5 border-line py-3.5 pl-4 pr-3 md:pl-5 md:pr-4"
-      aria-label="Summary"
-    >
-      <div className="mr-1 flex min-w-0 max-w-full flex-none items-center gap-3">
-        {lead}
-        <div className="flex min-w-0 flex-col gap-[3px]">
-          {lead ? null : (
-            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-ink-2">
-              <ClientLocaleNowLabel />
-              {meta}
-            </p>
-          )}
-          <h1 className="min-w-0 truncate text-[20px] font-medium leading-tight tracking-[-0.01em] text-ink">{title}</h1>
-          {lead && meta ? <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-[12.5px] text-ink-2">{meta}</p> : null}
-          {underLine ? (
-            <p className="flex min-w-0 max-w-[420px] items-center gap-2 text-[12.5px] leading-snug text-ink-2">
-              {stage}
-              {steps ? <span className="flex-none whitespace-nowrap">{steps}</span> : null}
-              {subtitle ? <span className="flex min-w-0 items-center gap-1.5 truncate">{subtitle}</span> : null}
-            </p>
-          ) : null}
-        </div>
+    <section className="bg-wash flex flex-col gap-3 rounded-md border-1.5 border-line px-4 pb-4 pt-3.5 md:px-5" aria-label="Summary">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        {lead ? (
+          // M-30: on a phone the name takes the first line; the chip, step count and actions share the second.
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-2 sm:gap-x-3">
+            <span className="flex min-w-0 max-w-full items-center gap-3 max-sm:basis-full">
+              {lead}
+              <h1 className="min-w-0 truncate text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
+            </span>
+            {stage}
+            {steps ? <span className="whitespace-nowrap text-[12.5px] text-ink-2">{steps}</span> : null}
+            {meta ? <span className="flex items-center gap-2 text-[12.5px] text-ink-2">{meta}</span> : null}
+            {subtitle ? <span className="flex min-w-0 items-center gap-1.5 truncate text-[12.5px] text-ink-2">{subtitle}</span> : null}
+            {actions}
+          </div>
+        ) : (
+          <>
+            <div className="flex min-w-0 flex-[1_1_300px] flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h1 className="min-w-0 break-words text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
+              <span className="whitespace-nowrap text-[12.5px] text-ink-2">
+                <ClientLocaleNowLabel />
+              </span>
+              {meta ? <span className="flex items-center gap-2 self-center text-[12.5px] text-ink-2">{meta}</span> : null}
+              {subtitle ? <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-2">{subtitle}</span> : null}
+            </div>
+            {actions}
+          </>
+        )}
       </div>
 
       {strip.length > 0 ? (
         <TooltipPrimitive.Provider delayDuration={350} skipDelayDuration={200}>
-          <div className="flex min-w-0 flex-[999_1_520px] flex-wrap gap-2">
-            {strip.map((stat) => (
-              <MiniTile key={stat.label} stat={stat} />
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
+            {strip.map((stat, i) => (
+              <WashTile key={stat.label} stat={stat} strip={strip.length % 2 === 1 && i === strip.length - 1} />
             ))}
           </div>
         </TooltipPrimitive.Provider>
       ) : null}
-
-      <div className="ml-auto flex flex-none items-center gap-2">
-        {children}
-        {settings ? <DashHeroSettings /> : null}
-      </div>
     </section>
   );
 }
 
 /**
- * R-18 (home card tile): 56px. A 12px label, a 20px number and a short 12px note on the left;
- * a 52 x 24 trend line on the right when given, or a 44px bar for a share. The tile is a size
- * container, so the trend line hides when the tile is narrower than 168px.
+ * R-18 (home card tile): KP1 on the wash. A 14px icon and 12.5px label, the number at 22px, a
+ * 12px note, and a 64 x 26 trend line beside the number when given (48 x 22 on phones).
+ * `strip` is the odd last tile on a phone: it spans both columns as one short line (M-30).
  */
-function MiniTile({ stat }: { stat: DashHeroStat }) {
+function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
   const note = stat.note ?? stat.sub;
   const label = capFirst(stat.label);
   const tone = stat.trendTone ?? (stat.hot ? 'bad' : stat.good ? 'ok' : 'accent');
+  const Icon = CARD_HEAD_ICONS[cardHeadIcon(stat.label).icon];
   const inner = (
-    <span className="flex h-full min-w-0 items-center gap-2">
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-[3px]">
-        <span className="truncate text-[12px] font-medium text-ink-muted">{label}</span>
-        <span className="flex min-w-0 items-baseline gap-1.5">
+    <>
+      <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium text-ink-2">
+        <Icon width={14} height={14} strokeWidth={1.6} className="flex-none text-ink-muted" aria-hidden />
+        <span className="truncate">{label}</span>
+      </span>
+      <span className={cn('flex min-w-0 items-start gap-2 sm:gap-2.5', strip && 'max-sm:flex-none')}>
+        <span className={cn('flex min-w-0 flex-1 flex-col gap-1', strip && 'max-sm:flex-row max-sm:items-baseline max-sm:gap-2')}>
           <b
             className={cn(
-              'whitespace-nowrap text-[20px] font-medium leading-none tabular-nums',
+              'whitespace-nowrap text-[22px] font-medium leading-none tabular-nums',
+              strip && 'max-sm:text-[18px]',
               stat.hot ? 'text-danger' : stat.good ? 'text-positive' : 'text-ink',
             )}
           >
             {stat.value}
           </b>
-          {note ? <span className="truncate text-[12px] text-ink-muted">{note}</span> : null}
           {stat.bar !== undefined ? (
-            <span className="ml-0.5 block h-[5px] w-11 flex-none self-center overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+            <span className="block h-1 w-full max-w-[96px] overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
               <i className="block h-full rounded-bar bg-positive-mid" style={{ width: `${Math.max(0, Math.min(100, stat.bar))}%` }} />
             </span>
           ) : null}
+          {note ? <span className="truncate text-[12px] text-ink-muted">{note}</span> : null}
         </span>
+        {stat.trend && stat.trend.length > 1 ? (
+          <TrendLine points={stat.trend} className={cn(TREND[tone], strip && 'max-sm:hidden')} />
+        ) : null}
       </span>
-      {stat.trend && stat.trend.length > 1 ? (
-        <TrendLine points={stat.trend} className={cn('[@container_(max-width:168px)]:hidden', TREND[tone])} />
-      ) : null}
-    </span>
+    </>
   );
   const cls = cn(
-    'wash-tile block h-14 min-w-[104px] flex-[1_1_120px] pl-3 pr-2.5 [container-type:inline-size]',
-    stat.href && 'transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25',
+    'wash-tile flex min-w-0 flex-col gap-1 px-3 py-2.5 text-left sm:px-3.5',
+    strip && 'max-sm:col-span-2 max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:py-2',
+    (stat.href || stat.onClick) &&
+      'transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25',
   );
+  const aria = `${label}: ${stat.value}${note ? `, ${note}` : ''}. Open the list`;
   const tile = stat.href ? (
-    <Link href={stat.href} className={cls} aria-label={`${label}: ${stat.value}${note ? `, ${note}` : ''}. Open the list`}>
+    <Link href={stat.href} className={cls} aria-label={aria}>
       {inner}
     </Link>
+  ) : stat.onClick ? (
+    <button type="button" onClick={stat.onClick} className={cls} aria-label={aria}>
+      {inner}
+    </button>
   ) : (
     // A tile with `how` takes focus so keyboard users can open its info card; it does nothing on activation.
     // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-    <span className={cls} tabIndex={stat.how ? 0 : undefined}>
+    <div className={cls} tabIndex={stat.how ? 0 : undefined}>
       {inner}
-    </span>
+    </div>
   );
   if (!stat.how) return tile;
   // E-04 (TP2): a white card says how the number is counted and, for a link, that it opens the list (E-05).
@@ -207,23 +236,25 @@ function MiniTile({ stat }: { stat: DashHeroStat }) {
         >
           <b className="block text-[12px] font-medium text-ink-muted">How is this counted?</b>
           <span className="mt-0.5 block leading-snug">{stat.how}</span>
-          {stat.href ? <span className="mt-1.5 block text-[12px] font-medium text-brand-text">Click to open the list</span> : null}
+          {stat.href || stat.onClick ? (
+            <span className="mt-1.5 block text-[12px] font-medium text-brand-text">Click to open the list</span>
+          ) : null}
         </TooltipPrimitive.Content>
       </TooltipPrimitive.Portal>
     </TooltipPrimitive.Root>
   );
 }
 
-/** 52 x 24 trend line with a soft area and a dot on the last point. */
+/** 64 x 26 trend line (48 x 22 on phones) with a soft area and a dot on the last point. */
 function TrendLine({ points, className }: { points: number[]; className?: string }) {
   const max = Math.max(...points);
   const min = Math.min(...points);
-  const xy = points.map((p, i) => [2 + (i / (points.length - 1)) * 48, 20 - ((p - min) / (max - min || 1)) * 16] as const);
+  const xy = points.map((p, i) => [2 + (i / (points.length - 1)) * 60, 22 - ((p - min) / (max - min || 1)) * 18] as const);
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const [lx, ly] = xy[xy.length - 1]!;
   return (
-    <svg width="52" height="24" viewBox="0 0 52 24" className={cn('flex-none', className)} aria-hidden>
-      <path d={`M2,24 L${line.split(' ').join(' L')} L50,24 Z`} fill="currentColor" fillOpacity=".14" />
+    <svg viewBox="0 0 64 26" className={cn('mb-0.5 h-[22px] w-12 flex-none self-end sm:h-[26px] sm:w-16', className)} aria-hidden>
+      <path d={`M2,26 L${line.split(' ').join(' L')} L62,26 Z`} fill="currentColor" fillOpacity=".14" />
       <polyline points={line} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={lx} cy={ly} r="2.5" fill="currentColor" />
     </svg>
@@ -231,7 +262,7 @@ function TrendLine({ points, className }: { points: number[]; className?: string
 }
 
 /**
- * The client home's 40px company tile (R-17): a 6px square with the company's initials on the
+ * The client home's 36px company tile (R-17): a 6px square with the company's initials on the
  * brand tint, or its logo when there is one. Pass it as `lead`.
  */
 export function DashHeroCompanyTile({ name, src }: { name: string; src?: string | null }) {
@@ -246,7 +277,7 @@ export function DashHeroCompanyTile({ name, src }: { name: string; src?: string 
       .join('') || name.slice(0, 1).toUpperCase();
   return (
     <span
-      className="grid h-10 w-10 flex-none place-items-center overflow-hidden rounded-md bg-brand text-[15px] font-medium text-on-brand shadow-shine"
+      className="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-md bg-brand text-[14px] font-medium text-on-brand shadow-shine"
       aria-hidden
     >
       {src ? (

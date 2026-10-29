@@ -577,7 +577,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 
 /* ---------- The VCFO way vs. the old way (board C2), between #record and #portals ---------- */
-.lp .cmp { position: relative; padding: 104px 0 112px; }
+/* M-29: the top padding was sized for the big logo; the record section's bottom padding gives the space now. */
+.lp .cmp { position: relative; padding: 40px 0 112px; }
 .lp .cmp-in { max-width: 1248px; margin: 0 auto; padding: 0 24px; display: flex; flex-direction: column; gap: 56px; }
 .lp .cmp-head { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
 .lp .cmp-kicker { font-family: var(--lp-font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #a5b4c6; }
@@ -608,7 +609,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .cmp-h { font-size: 42px; }
 }
 @media (max-width: 639px) {
-  .lp .cmp { padding: 56px 0 64px; }
+  .lp .cmp { padding: 24px 0 64px; }
   .lp .cmp-in { padding: 0 16px; gap: 32px; }
   .lp .cmp-h { font-size: 32px; }
   /* Three columns do not fit at 390 px: the generic task tool drops out (ComparePhone board). */
