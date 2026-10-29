@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/auth/guards';
+import { requireOwnAccount } from '@/auth/guards';
 import {
   getOwnAvatarObjectKey,
   setOwnAvatarObjectKey,
@@ -15,7 +15,7 @@ import { deleteObject, getObjectBuffer, putObject } from '@/storage/s3';
 
 /** GET /api/account/avatar — stream the signed-in user’s photo. */
 export async function GET() {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -42,7 +42,7 @@ export async function GET() {
 
 /** POST /api/account/avatar — multipart `file`; replaces any previous photo. */
 export async function POST(request: Request) {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
 /** DELETE /api/account/avatar — remove the signed-in user’s photo. */
 export async function DELETE() {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

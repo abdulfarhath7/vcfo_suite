@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/auth/guards';
+import { requireOwnAccount } from '@/auth/guards';
 import { updateOwnPassword } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
 
@@ -11,7 +11,7 @@ const bodySchema = z.object({
 
 /** POST /api/account/password — authenticated user changes their own password. */
 export async function POST(request: Request) {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

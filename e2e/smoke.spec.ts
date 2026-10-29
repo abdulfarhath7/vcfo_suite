@@ -209,6 +209,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/dev/access',
     '/app/dev/data',
     '/app/dev/audit',
+    ['/app/dev/profile', accountSettings],
   ],
   admin: [
     '/app/admin/dashboard',
