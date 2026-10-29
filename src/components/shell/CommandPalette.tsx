@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Command,
@@ -48,13 +48,35 @@ import {
   type IndexedDocumentRow,
 } from "@/lib/documents/vault-documents";
 import type { Role } from "@/lib/auth";
+import { regOf, type Regulator } from "@/components/ui/spectrum-chip";
+import { FilterChip, FilterChipRow, type FilterOption } from "@/components/ui/filter-chip";
 
 type PaletteFileHit = {
   id: string;
   label: string;
   href: string;
   value: string;
+  /** Company the file belongs to, for the Client chip. */
+  client?: string;
+  /** Regulator label, for the Regulator chip. */
+  reg?: string;
 };
+
+/* Q3 (VCFO Spectrum B-13): filter chips under the search field narrow the results. Regulator
+   narrows documents, Status narrows projects (by health, in the six status words), and Client
+   narrows projects and documents. Pages and Knowledge Bank files have none of these, so they
+   hide while a chip is set. */
+const REG_LABEL: Record<Regulator, string> = { mca: "MCA", gst: "GST", it: "Income tax", payroll: "Payroll", fema: "FEMA", labour: "Labour" };
+const HEALTH_WORD: Record<string, string> = { "on-track": "In progress", "at-risk": "Due soon", overdue: "Overdue" };
+const STATUS_ORDER = ["Not started", "In progress", "Waiting", "Due soon", "Overdue", "Done"];
+
+/** The regulator of a vault file from its step, section or phase, or undefined when none is clear. */
+function documentRegulator(doc: { section: string; milestoneTitle: string; bucket: string }): string | undefined {
+  const r = regOf(doc.section) ?? regOf(doc.milestoneTitle) ?? (doc.bucket.toLowerCase().includes("fema") ? "fema" : undefined);
+  return r ? REG_LABEL[r] : undefined;
+}
+
+const opts = (xs: string[]): FilterOption[] => xs.map((x) => ({ value: x, label: x }));
 
 function staffLibraryPaths(role: Role | undefined, staffBase: string) {
   if (role === "intern") {
@@ -82,6 +104,9 @@ export function CommandPalette() {
   const [idleKey, setIdleKey] = useState(0);
   const [vaultHits, setVaultHits] = useState<PaletteFileHit[]>([]);
   const [kbHits, setKbHits] = useState<PaletteFileHit[]>([]);
+  const [regFilter, setRegFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
   const isApple = useModShortcut();
   const canSearchLibraries =
     user?.role === "intern" || user?.role === "manager" || user?.role === "admin";
@@ -101,6 +126,9 @@ export function CommandPalette() {
   useEffect(() => {
     if (!commandOpen) {
       setQuery("");
+      setRegFilter("");
+      setStatusFilter("");
+      setClientFilter("");
       if (wasOpen.current) setIdleKey((n) => n + 1);
       wasOpen.current = false;
       return;
@@ -112,14 +140,18 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (!commandOpen) return;
+    // A filter chip's menu sits in a portal outside the palette; clicks and keys there belong to the menu.
+    const inChipMenu = (t: EventTarget | null) =>
+      t instanceof Element && !!t.closest("[data-radix-popper-content-wrapper], [role=menu]");
     const onPointer = (e: MouseEvent | PointerEvent) => {
       const root = rootRef.current;
+      if (inChipMenu(e.target)) return;
       if (root && !root.contains(e.target as Node)) {
         setCommandOpen(false);
       }
     };
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !inChipMenu(e.target)) {
         e.preventDefault();
         setCommandOpen(false);
       }
@@ -182,6 +214,8 @@ export function CommandPalette() {
                 label: formatVaultCommandHit(doc),
                 href: vaultHref,
                 value: `vault ${doc.fileName} ${doc.companyName} ${doc.bucket} ${doc.section}`,
+                client: doc.companyName,
+                reg: documentRegulator(doc),
               })),
           );
 
@@ -221,6 +255,33 @@ export function CommandPalette() {
     user?.internId,
     user?.role,
   ]);
+
+  const isClient = user?.role === "client";
+  const regOptions = useMemo(() => (canSearchLibraries ? opts(Object.values(REG_LABEL)) : []), [canSearchLibraries]);
+  const statusOptions = useMemo(() => {
+    if (isClient) return [];
+    const present = new Set(engagements.map((e) => HEALTH_WORD[e.health]).filter(Boolean));
+    return opts(STATUS_ORDER.filter((w) => present.has(w)));
+  }, [engagements, isClient]);
+  const clientOptions = useMemo(
+    () => (isClient ? [] : opts([...new Set(engagements.map((e) => e.companyName).filter(Boolean))].sort((a, b) => a.localeCompare(b)))),
+    [engagements, isClient],
+  );
+  const chips = [
+    { key: "reg", label: "Regulator", value: regFilter, set: setRegFilter, options: regOptions },
+    { key: "status", label: "Status", value: statusFilter, set: setStatusFilter, options: statusOptions },
+    { key: "client", label: "Client", value: clientFilter, set: setClientFilter, options: clientOptions },
+  ].filter((c) => c.options.length > 1);
+  const anyChip = Boolean(regFilter || statusFilter || clientFilter);
+  const fileHitShown = (hit: PaletteFileHit) =>
+    !statusFilter && (!regFilter || hit.reg === regFilter) && (!clientFilter || hit.client === clientFilter);
+  const shownVaultHits = anyChip ? vaultHits.filter(fileHitShown) : vaultHits;
+  const shownKbHits = anyChip ? [] : kbHits;
+  const shownEngagements = anyChip
+    ? engagements.filter(
+        (e) => !regFilter && (!statusFilter || HEALTH_WORD[e.health] === statusFilter) && (!clientFilter || e.companyName === clientFilter),
+      )
+    : engagements;
 
   const go = (to: string) => {
     setCommandOpen(false);
@@ -292,15 +353,30 @@ export function CommandPalette() {
           {shortcutHint}
         </div>
 
-        <CommandList
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border border-line/70 bg-surface-raised p-1 shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-brand/10"
-        >
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-xl border border-line/70 bg-surface-raised shadow-[0_16px_40px_-18px_oklch(22%_0.06_260_/_0.5)] ring-1 ring-brand/10">
+        {chips.length > 0 ? (
+          <FilterChipRow
+            className="border-b border-line-soft px-2 py-2"
+            onClear={() => {
+              setRegFilter("");
+              setStatusFilter("");
+              setClientFilter("");
+              inputRef.current?.focus();
+            }}
+            chips={chips.map((c) => ({
+              key: c.key,
+              set: Boolean(c.value),
+              node: <FilterChip label={c.label} value={c.value} onChange={c.set} options={c.options} />,
+            }))}
+          />
+        ) : null}
+        <CommandList className="max-h-[min(22rem,70vh)] overflow-y-auto overflow-x-hidden p-1">
           <CommandEmpty className="py-6 text-center text-[13px] text-ink-muted">
             Nothing matched. Try another term.
           </CommandEmpty>
-          {vaultHits.length > 0 && (
+          {shownVaultHits.length > 0 && (
             <CommandGroup heading="Documents">
-              {vaultHits.map((hit) => (
+              {shownVaultHits.map((hit) => (
                 <CommandItem
                   key={hit.id}
                   className={itemClass}
@@ -313,9 +389,9 @@ export function CommandPalette() {
               ))}
             </CommandGroup>
           )}
-          {kbHits.length > 0 && (
+          {shownKbHits.length > 0 && (
             <CommandGroup heading="Knowledge Bank">
-              {kbHits.map((hit) => (
+              {shownKbHits.map((hit) => (
                 <CommandItem
                   key={hit.id}
                   className={itemClass}
@@ -328,7 +404,7 @@ export function CommandPalette() {
               ))}
             </CommandGroup>
           )}
-          {user?.role === "super_admin" && (
+          {!anyChip && user?.role === "super_admin" && (
             <CommandGroup heading="Super admin">
               <CommandItem className={itemClass} onSelect={() => go("/app/super/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Overview</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/projects/new")}><Plus className="w-4 h-4 mr-2" />New project</CommandItem>
@@ -338,7 +414,7 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/compliances/filings")}><FileSpreadsheet className="w-4 h-4 mr-2" />Filings</CommandItem>
             </CommandGroup>
           )}
-          {user?.role === "admin" && (
+          {!anyChip && user?.role === "admin" && (
             <CommandGroup heading="Firm admin">
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Home</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
@@ -355,7 +431,7 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/admin/projects/new")}><Plus className="w-4 h-4 mr-2" />New project</CommandItem>
             </CommandGroup>
           )}
-          {user?.role === "manager" && (
+          {!anyChip && user?.role === "manager" && (
             <CommandGroup heading="Project manager">
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/dashboard")}><LayoutDashboard className="w-4 h-4 mr-2" />Dashboard</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
@@ -373,7 +449,7 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/manager/team")}><Users className="w-4 h-4 mr-2" />Project leads</CommandItem>
             </CommandGroup>
           )}
-          {user?.role === "intern" && (
+          {!anyChip && user?.role === "intern" && (
             <CommandGroup heading="Project Lead workbench">
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/today")}><LayoutDashboard className="w-4 h-4 mr-2" />Today</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/tasks")}><Briefcase className="w-4 h-4 mr-2" />My work</CommandItem>
@@ -389,7 +465,7 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/intern/knowledge-bank")}><BookOpen className="w-4 h-4 mr-2" />Knowledge Bank</CommandItem>
             </CommandGroup>
           )}
-          {user?.role === "client" && (
+          {!anyChip && user?.role === "client" && (
             <CommandGroup heading="Client portal">
               <CommandItem className={itemClass} onSelect={() => go("/app/client/overview")}><LayoutDashboard className="w-4 h-4 mr-2" />Home</CommandItem>
               <CommandItem className={itemClass} onSelect={() => go("/app/client/announcements")}><Megaphone className="w-4 h-4 mr-2" />Announcements</CommandItem>
@@ -400,9 +476,9 @@ export function CommandPalette() {
               <CommandItem className={itemClass} onSelect={() => go("/app/client/documents")}><FolderClosed className="w-4 h-4 mr-2" />Documents</CommandItem>
             </CommandGroup>
           )}
-          {engagements.length > 0 && user?.role !== "client" && (
+          {shownEngagements.length > 0 && user?.role !== "client" && (
             <CommandGroup heading="Projects">
-              {engagements.map((e) => (
+              {shownEngagements.map((e) => (
                 <CommandItem
                   key={e.id}
                   className={itemClass}
@@ -422,6 +498,7 @@ export function CommandPalette() {
             </CommandGroup>
           )}
         </CommandList>
+        </div>
       </Command>
     </div>
   );

@@ -27,6 +27,7 @@ import {
 } from '@/lib/client-portal/compliances';
 import { usePortal } from '../../PortalProvider';
 import { useDismiss } from './bits';
+import { exactDate } from '@/lib/relative-due';
 
 /* ------------------------------------------------------------------ island */
 
@@ -115,7 +116,7 @@ export function WordPill({ word, className }: { word: string; className?: string
 export function DateTile({ iso, s, weekday, size = 'md', className }: { iso: string; s: CompStatus | 'none'; weekday?: boolean; size?: 'sm' | 'md'; className?: string }) {
   const tint = s === 'none' ? 'border-1.5 border-line bg-surface-raised text-ink' : TINT[s];
   return (
-    <span className={cn('grid flex-none place-content-center rounded-md text-center leading-none', size === 'sm' ? 'h-9 w-9' : 'h-11 w-11', tint, className)} aria-hidden>
+    <span className={cn('grid flex-none place-content-center rounded-md text-center leading-none', size === 'sm' ? 'h-9 w-9' : 'h-11 w-11', tint, className)} title={exactDate(iso)} aria-hidden>
       <b className={cn('font-medium', size === 'sm' ? 'text-[14px]' : 'text-[16px]')}>{Number(iso.slice(8, 10))}</b>
       <small className={cn('mt-0.5 font-medium uppercase tracking-wider opacity-80', size === 'sm' ? 'text-[10px]' : 'text-[10.5px]')}>{weekday ? dow(iso) : MON[Number(iso.slice(5, 7)) - 1]}</small>
     </span>

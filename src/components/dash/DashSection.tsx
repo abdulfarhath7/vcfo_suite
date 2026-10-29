@@ -7,6 +7,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type IconChipTone } from '@/components/common/IconChip';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { CardLoadBody } from '@/components/ui/card-load';
 
 /**
  * Shared dashboard section card, every role (K-06, rules R-15 and R-16): a
@@ -23,6 +24,8 @@ export function DashSection({
   hrefLabel,
   className,
   bodyClassName,
+  loading,
+  loadingVariant = 'rows',
   children,
 }: {
   /** Kept for callers; the tile icon now comes from the title. */
@@ -39,6 +42,10 @@ export function DashSection({
   hrefLabel?: string;
   className?: string;
   bodyClassName?: string;
+  /** L1 (B-19): grey shapes cover the body while the card's data loads. Pass the real loading flag. */
+  loading?: boolean;
+  /** The shapes: list rows (default) or a summary block. */
+  loadingVariant?: 'rows' | 'block';
   children: ReactNode;
 }) {
   return (
@@ -59,7 +66,9 @@ export function DashSection({
           </Link>
         ) : null}
       </div>
-      <div className={cn('px-4 pb-3 pt-3', bodyClassName)}>{children}</div>
+      <CardLoadBody loading={loading} variant={loadingVariant} className={cn('px-4 pb-3 pt-3', bodyClassName)}>
+        {children}
+      </CardLoadBody>
     </section>
   );
 }

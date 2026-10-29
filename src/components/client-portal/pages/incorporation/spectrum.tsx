@@ -19,6 +19,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
+import { exactDate } from '@/lib/relative-due';
 
 /* ------------------------------------------------------------------ island */
 
@@ -181,7 +182,7 @@ export function urgencyOf(today: string, iso: string): Urgency {
 export function DateTile({ iso, tint, className }: { iso: string; tint: Urgency; className?: string }) {
   const [, m, d] = iso.slice(0, 10).split('-').map(Number);
   return (
-    <span className={cn('grid w-11 flex-none place-items-center rounded-md border-1.5 py-1 leading-none', TILE[tint], className)} aria-hidden>
+    <span className={cn('grid w-11 flex-none place-items-center rounded-md border-1.5 py-1 leading-none', TILE[tint], className)} title={exactDate(iso)} aria-hidden>
       <b className="text-[16px] font-medium">{d}</b>
       <span className={cn('text-[10.5px] font-medium uppercase tracking-wider', tint === 'idle' ? 'text-ink-muted' : 'opacity-80')}>{MON[(m ?? 1) - 1]}</span>
     </span>
