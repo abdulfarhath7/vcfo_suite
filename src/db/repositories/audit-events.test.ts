@@ -108,7 +108,10 @@ describe('listAuditEvents — manager and client', () => {
     const q = where()!;
     expect(q.sql).toContain('"audit_events"."engagement_id" in');
     expect(q.sql).not.toContain('actor_user_id');
-    expect(q.params).toEqual([OWN]);
+    expect(q.params[0]).toEqual(OWN);
+    if (role === 'manager') expect(q.params).toEqual([OWN]);
+    // A client also gets the client-visible action allowlist (client-audit.ts).
+    else expect(q.params).toContain('checklist.%');
   });
 
   it.each(['manager', 'client'] as const)(
@@ -130,7 +133,14 @@ describe('listAuditEvents — manager and client', () => {
 
   it('an in-scope engagement filter narrows to that engagement', async () => {
     await listAuditEvents(ctx('client'), { engagementId: OWN });
-    expect(where()!.params).toEqual([OWN]);
+    expect(where()!.params[0]).toEqual(OWN);
+  });
+
+  it('a client never gets staff-only actions or metadata', async () => {
+    await listAuditEvents(ctx('client'), { engagementId: OWN });
+    const q = where()!;
+    expect(q.sql).toContain(' like ');
+    expect(q.params).toContain('board_resolution.finalize');
   });
 });
 

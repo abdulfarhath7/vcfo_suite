@@ -39,6 +39,11 @@ export class ClientAuditError extends Error {
 const PREFIXES = ['checklist.', 'incorporation_docs.', 'doc_pack.', 'document_request.', 'client.', 'welcome_email.', 'credentials.'];
 const EXACT = ['board_resolution.finalize', 'email_templates.fire', 'engagement.checklist.submit', 'project.client_changed'];
 
+/** The SQL form of the client allowlist, shared with `listAuditEvents` for the client role. */
+export function clientVisibleAuditPredicate() {
+  return allowed();
+}
+
 function allowed() {
   return or(...PREFIXES.map((p) => like(auditEvents.action, `${p}%`)), inArray(auditEvents.action, EXACT));
 }

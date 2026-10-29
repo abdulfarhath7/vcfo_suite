@@ -134,6 +134,11 @@ export async function listAuditEvents(
     conds.push(inArray(auditEvents.engagementId, ids));
   }
 
+  // A client sees only the client-visible actions, the same allowlist as the portal's own
+  // Audit page (`client-audit.ts`), never staff-only actions on their engagement.
+  const clientAudit = ctx.role === 'client' ? await import('@/db/repositories/client-audit') : null;
+  if (clientAudit) conds.push(clientAudit.clientVisibleAuditPredicate());
+
   if (options.before && !Number.isNaN(options.before.getTime())) {
     if (options.beforeId) {
       // Sargable bound first, then the exact (millisecond, id) keyset.
@@ -158,6 +163,15 @@ export async function listAuditEvents(
     .orderBy(desc(createdMs), desc(auditEvents.id))
     .limit(limit);
 
+  if (clientAudit) {
+    // Client-safe projection: no staff e-mail addresses, ids or metadata.
+    return rows.map((r) => ({
+      ...toRow(r),
+      actor_email: null,
+      summary: clientAudit.scrubForClient(r.summary),
+      metadata: {},
+    }));
+  }
   return rows.map(toRow);
 }
 
