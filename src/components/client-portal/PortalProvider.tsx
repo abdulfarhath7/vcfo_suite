@@ -24,17 +24,46 @@ import {
   type ClientPortalShell,
   type PortalViewState,
 } from '@/lib/client-portal/types';
+import { Check, ChevronRight, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Chip, OwnerChip, type ChipTone, type Owner } from '@/components/ui/spectrum-chip';
+import { StepMark, type StepState, type StepTone } from '@/components/ui/step-track';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { portalHref, type PortalRouteKey } from './routes';
+import { PortalModal } from './pages/incorporation/modal';
 
 export interface DrillTab {
   label: string;
+  /** Legacy tab colour square; the Spectrum tabs do not draw it. */
   color?: string;
   /** Total behind the tab when the list is a preview. */
   n?: number;
   rows: DrillRow[];
 }
-/** [title, meta, chip, chipColor, href] — the prototype's row tuple. */
-export type DrillRow = { title: string; meta?: string; chip?: string; chipColor?: string; href?: string; onOpen?: () => void };
+/** A step row adds the ST5 mark, mono "Step n", the owner chip and a red date when late (C-138). */
+export interface DrillStepMeta {
+  n: number;
+  state: StepState;
+  tone: StepTone;
+  owner?: Owner;
+  ownerLabel?: string;
+  late?: boolean;
+}
+/**
+ * One drill row: the name, a mono meta (date), a soft status chip and a chevron when it opens.
+ * `chipColor` is the old solid fill and is no longer drawn: the chip takes `tone`, or the tone
+ * of its word (R-13).
+ */
+export type DrillRow = {
+  title: string;
+  meta?: string;
+  chip?: string;
+  chipColor?: string;
+  tone?: ChipTone;
+  step?: DrillStepMeta;
+  href?: string;
+  onOpen?: () => void;
+};
 export interface DrillConfig {
   title: string;
   sub?: string;
@@ -43,9 +72,19 @@ export interface DrillConfig {
   link?: { lead: string; text: string; href?: string; where?: string; onClick?: () => void };
 }
 
+export type PortalToastKind = 'saved' | 'filed' | 'uploaded';
 export interface ToastOptions {
   undo?: () => void;
+  /** A1: the white toast with a green status tile ("Saved", "Uploaded"). Without it the toast is the dark A2 line. */
+  kind?: PortalToastKind;
+  /** A1: a second line under the title. */
+  sub?: string;
+  /** One small action, for example "View". */
+  action?: { label: string; onClick: () => void };
 }
+
+/** How long a toast stays (prototype useUndoToast, 5 s). Deferred actions with Undo wait this long. */
+export const TOAST_MS = 5000;
 
 interface PortalContextValue {
   shell: ClientPortalShell | undefined;
@@ -201,13 +240,17 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
     return () => mq.removeEventListener('change', apply);
   }, [rootRef]);
 
-  /* ---------- toast (prototype #vp-toast: 3.2 s, Undo) ---------- */
-  const [toastState, setToastState] = useState<{ msg: string; undo?: () => void; n: number; on: boolean } | null>(null);
+  /* ---------- toast (prototype useUndoToast: one at a time, 5 s, Undo) ---------- */
+  const [toastState, setToastState] = useState<(ToastOptions & { msg: string; n: number }) | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toast = useCallback((msg: string, opts?: ToastOptions) => {
-    setToastState((prev) => ({ msg, undo: opts?.undo, n: (prev?.n ?? 0) + 1, on: true }));
+    setToastState((prev) => ({ ...opts, msg, n: (prev?.n ?? 0) + 1 }));
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastState((p) => (p ? { ...p, on: false } : p)), 3200);
+    toastTimer.current = setTimeout(() => setToastState(null), TOAST_MS);
+  }, []);
+  const hideToast = useCallback(() => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastState(null);
   }, []);
 
   /* ---------- Before / After ---------- */
@@ -284,24 +327,7 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
   return (
     <PortalContext.Provider value={value}>
       {children}
-      <div id="vp-toast" role="status" className={toastState?.on ? 'on' : undefined} data-n={toastState?.n}>
-        {toastState ? (
-          <>
-            <span>{toastState.msg}</span>
-            {toastState.undo ? (
-              <button
-                type="button"
-                onClick={() => {
-                  toastState.undo?.();
-                  toast('Undone');
-                }}
-              >
-                Undo
-              </button>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+      <PortalToast state={toastState} onClose={hideToast} onUndone={() => toast('Undone')} />
       <PointTip tip={tip} />
       {drillCfg ? <DrillDialog cfg={drillCfg} onClose={() => setDrillCfg(null)} go={go} toast={toast} /> : null}
     </PortalContext.Provider>
@@ -323,7 +349,107 @@ function PointTip({ tip }: { tip: { x: number; y: number; text: string } | null 
   );
 }
 
-/** One drill-down pop-up for every chart (rule 14): navy sliding pill tabs, rows open their page. */
+/**
+ * A2 dark toast (one line, Undo) or A1 white toast with a status tile (`kind`), VCFO Spectrum
+ * B-16. Bottom left of the page on a desk, above the phone tab bar on a phone. It sits inside
+ * the portal root, so the tokens follow the portal's light or dark theme.
+ */
+function PortalToast({ state, onClose, onUndone }: { state: (ToastOptions & { msg: string; n: number }) | null; onClose: () => void; onUndone: () => void }) {
+  if (!state) return <div id="vp-toast" role="status" aria-live="polite" className="cp-tw" />;
+  const undo = state.undo
+    ? () => {
+        state.undo?.();
+        onUndone();
+      }
+    : undefined;
+  const place =
+    'fixed bottom-[132px] left-1/2 z-[2147483001] max-w-[calc(100vw-32px)] -translate-x-1/2 md:bottom-16 md:left-[calc(var(--vp-side-w,248px)+20px)] md:translate-x-0 motion-safe:animate-in motion-safe:fade-in-0';
+  const small =
+    'inline-flex h-control-sm flex-none items-center rounded-md border-1.5 border-line-strong bg-surface-raised px-2.5 text-[13px] font-medium text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25';
+  return (
+    <div id="vp-toast" role="status" aria-live="polite" className="cp-tw" data-n={state.n}>
+      {state.kind ? (
+        <div key={state.n} className={cn(place, 'flex w-[380px] items-start gap-2.5 rounded-md border-1.5 border-line bg-surface-raised p-3.5 text-ink shadow-float')}>
+          <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-mark bg-positive-soft text-positive" aria-hidden>
+            <Check size={14} strokeWidth={1.6} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+            <b className="text-[14px] font-medium leading-[22px]">{state.msg}</b>
+            {state.sub ? <span className="text-[13px] leading-[19px] text-ink-2">{state.sub}</span> : null}
+          </span>
+          {state.action ? (
+            <button
+              type="button"
+              className={small}
+              onClick={() => {
+                state.action?.onClick();
+                onClose();
+              }}
+            >
+              {state.action.label}
+            </button>
+          ) : null}
+          {undo ? (
+            <button type="button" className={small} onClick={undo}>
+              Undo
+            </button>
+          ) : null}
+          <button type="button" aria-label="Dismiss" onClick={onClose} className="grid h-[30px] w-6 flex-none place-items-center rounded-mark text-ink-muted hover:bg-ink/[.06] hover:text-ink">
+            <X size={14} strokeWidth={1.6} aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <div key={state.n} className={cn(place, 'flex items-center gap-3 rounded-md bg-side px-4 py-2.5 text-[13.5px] text-white shadow-float')}>
+          <span className="min-w-0 truncate">{state.msg}</span>
+          {state.action ? (
+            <button
+              type="button"
+              className="flex-none rounded-sm font-medium text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              onClick={() => {
+                state.action?.onClick();
+                onClose();
+              }}
+            >
+              {state.action.label}
+            </button>
+          ) : null}
+          {undo ? (
+            <button type="button" className="flex-none rounded-sm font-medium text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" onClick={undo}>
+              Undo
+            </button>
+          ) : null}
+          <button type="button" aria-label="Dismiss" onClick={onClose} className="grid h-6 w-6 flex-none place-items-center rounded-sm text-side-ink hover:bg-white/[.12]">
+            <X size={14} strokeWidth={1.6} aria-hidden />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The tone of a row chip: its own, else the old solid fill read as a tone, else its word (R-13). */
+function rowTone(r: DrillRow): ChipTone | undefined {
+  if (r.tone) return r.tone;
+  const c = r.chipColor ?? '';
+  if (/--(ok|positive)/.test(c)) return 'ok';
+  if (/--(over|danger)/.test(c)) return 'bad';
+  if (/--waiting/.test(c)) return 'teal';
+  if (/--(prog|brand)/.test(c)) return 'prog';
+  if (/--(up|upcoming)\b|--up-|--upcoming/.test(c)) return 'idle';
+  return undefined;
+}
+
+/** "Open Incorporation →" becomes "Open Incorporation ›" (prototype HeadLink). */
+function linkWords(text: string): string {
+  return `${text.replace(/\s*[→›]\s*$/, '')} ›`;
+}
+
+/**
+ * One drill-down pop-up for every chart (rule 14, prototype DrillDialog): the Spectrum dialog,
+ * blurple segmented tabs with counts, rows with the name, a mono date, a 104px soft status chip
+ * and a chevron. Step rows add the ST5 mark, "Step n" and the owner chip. A phone gets a bottom
+ * sheet. Rows open their page.
+ */
 function DrillDialog({
   cfg,
   onClose,
@@ -336,132 +462,97 @@ function DrillDialog({
   toast: (m: string) => void;
 }) {
   const [tab, setTab] = useState(cfg.active ?? 0);
-  const [on, setOn] = useState(false);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const last = useRef<Element | null>(null);
-  useEffect(() => {
-    last.current = document.activeElement;
-    const r = requestAnimationFrame(() => setOn(true));
-    const t = setTimeout(() => closeRef.current?.focus({ preventScroll: true }), 40);
-    return () => {
-      cancelAnimationFrame(r);
-      clearTimeout(t);
-    };
-  }, []);
-  const close = useCallback(() => {
-    setOn(false);
-    setTimeout(onClose, 160);
-    (last.current as HTMLElement | null)?.focus?.({ preventScroll: true });
-  }, [onClose]);
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        close();
-      }
-    };
-    document.addEventListener('keydown', key, true);
-    return () => document.removeEventListener('keydown', key, true);
-  }, [close]);
   const t = cfg.tabs[tab] ?? cfg.tabs[0];
   const rows = t?.rows ?? [];
   const total = t?.n != null ? t.n : rows.length;
+  const openLink = () => {
+    onClose();
+    if (cfg.link?.href) go(cfg.link.href);
+    else cfg.link?.onClick?.();
+  };
+  const open = (r: DrillRow) => {
+    onClose();
+    if (r.onOpen) r.onOpen();
+    else if (r.href) go(r.href);
+    else toast(`Opening ${r.title}…`);
+  };
+  const opens = (r: DrillRow) => Boolean(r.onOpen || r.href);
   return (
-    <div
-      id="vp-drill-scrim"
-      className={on ? 'on' : undefined}
-      role="presentation"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) close();
-      }}
-    >
-      <div id="vp-drill" role="dialog" aria-modal="true" aria-labelledby="vp-drill-t">
-        {cfg.link ? (
-          <div className="top">
-            <span>{cfg.link.lead}</span>
-            <a
-              href={cfg.link.href ?? '#'}
-              onClick={(e) => {
-                e.preventDefault();
-                close();
-                if (cfg.link?.href) go(cfg.link.href);
-                else cfg.link?.onClick?.();
-              }}
-            >
-              {cfg.link.text}
-            </a>
-          </div>
-        ) : null}
-        <div className="hd">
-          <b id="vp-drill-t">
-            {cfg.title}
-            {cfg.sub ? <small>{cfg.sub}</small> : null}
-          </b>
-          <button ref={closeRef} type="button" className="x" aria-label="Close" onClick={close}>
-            ×
-          </button>
-        </div>
-        <div className="tabs" role="tablist">
-          {cfg.tabs.map((x, i) => (
-            <button key={x.label} type="button" role="tab" aria-selected={i === tab} onClick={() => setTab(i)}>
-              {x.color ? <i style={{ background: x.color }} /> : null}
-              {x.label}
-              <span>{x.n != null ? x.n : x.rows.length}</span>
-            </button>
-          ))}
-        </div>
-        <div className="list">
-          {rows.length ? (
-            rows.map((r, i) => (
-              <a
-                key={`${r.title}-${i}`}
-                href={r.href ?? '#'}
-                className="r"
-                onClick={(e) => {
-                  e.preventDefault();
-                  close();
-                  if (r.onOpen) r.onOpen();
-                  else if (r.href) go(r.href);
-                  else toast(`Opening ${r.title}…`);
-                }}
-              >
-                <b>{r.title}</b>
-                <em>{r.meta ?? ''}</em>
-                {r.chip ? (
-                  <span className="c" style={{ background: r.chipColor ?? '#5a6b82' }}>
-                    {r.chip}
-                  </span>
-                ) : (
-                  <span />
-                )}
-                <span className="a">→</span>
-              </a>
-            ))
-          ) : (
-            <div style={{ padding: '16px 0', color: '#5a6b82' }}>Nothing here.</div>
-          )}
-        </div>
-        <div className="ft">
-          <span>
-            {rows.length < total
-              ? `Showing ${rows.length} of ${total} · the full list is in ${cfg.link?.where ?? 'the app'}`
-              : `Showing all ${total}`}
+    <PortalModal
+      onClose={onClose}
+      title={cfg.title}
+      sub={cfg.sub}
+      size="lg"
+      flush
+      footer={
+        <>
+          <span className="mr-auto text-[12.5px] text-ink-muted">
+            {rows.length < total ? `Showing ${rows.length} of ${total}${cfg.link?.where ? ` · the full list is in ${cfg.link.where}` : ''}` : `Showing all ${total}`}
           </span>
           {cfg.link ? (
-            <a
-              href={cfg.link.href ?? '#'}
-              onClick={(e) => {
-                e.preventDefault();
-                close();
-                if (cfg.link?.href) go(cfg.link.href);
-                else cfg.link?.onClick?.();
-              }}
-            >
-              Open full list
-            </a>
+            <button type="button" onClick={openLink} className="inline-flex items-center whitespace-nowrap text-[13px] font-medium text-brand-text hover:underline">
+              {linkWords(cfg.link.text)}
+            </button>
           ) : null}
+        </>
+      }
+    >
+      {cfg.tabs.length > 1 || cfg.tabs[0]?.label ? (
+        <div className="border-b border-line-soft px-4 py-2.5 md:px-5">
+          <SpectrumTabs
+            label={cfg.title}
+            items={cfg.tabs.map((x, i) => ({ key: String(i), label: x.label, count: x.n != null ? x.n : x.rows.length }))}
+            value={String(tab)}
+            onChange={(k) => setTab(Number(k))}
+          />
         </div>
-      </div>
-    </div>
+      ) : null}
+      {rows.length === 0 ? (
+        <div className="m-4 flex flex-col items-center gap-2.5 rounded-md border-1.5 border-dashed border-line-strong px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5">None</div>
+      ) : (
+        <ul className="m-0 list-none p-0">
+          {rows.map((r, i) => {
+            const st = r.step;
+            const inner = (
+              <>
+                {st ? <StepMark state={st.state} tone={st.tone} size={20} /> : null}
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="flex min-w-0 items-baseline gap-2">
+                    {st ? <span className="flex-none font-mono text-[12px] text-ink-muted">Step {st.n}</span> : null}
+                    <span className="min-w-0 truncate font-medium text-ink">{r.title}</span>
+                  </span>
+                  {st && r.meta ? <span className={cn('truncate text-[12.5px]', st.late ? 'text-danger' : 'text-ink-muted')}>{r.meta}</span> : null}
+                </span>
+                {!st && r.meta ? <span className="hidden flex-none font-mono text-[12px] text-ink-muted sm:inline">{r.meta}</span> : null}
+                {st?.owner ? <OwnerChip owner={st.owner} label={st.ownerLabel} className="hidden md:inline-flex" /> : null}
+                {r.chip ? (
+                  <>
+                    <Chip tone={rowTone(r)} fixed className="hidden sm:inline-flex">
+                      {r.chip}
+                    </Chip>
+                    <Chip tone={rowTone(r)} className="sm:hidden" note={false}>
+                      {r.chip}
+                    </Chip>
+                  </>
+                ) : null}
+                {opens(r) ? <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden /> : null}
+              </>
+            );
+            const cls = 'flex w-full items-center gap-3 border-t border-line-soft px-4 py-3 text-left text-[13.5px] text-ink first:border-t-0 md:px-5';
+            return (
+              <li key={`${r.title}-${i}`} className="border-t border-line-soft first:border-t-0 [&>*]:border-t-0">
+                {opens(r) ? (
+                  <button type="button" className={cn(cls, 'hover:bg-surface-sunken focus-visible:bg-surface-sunken focus-visible:outline-none')} onClick={() => open(r)}>
+                    {inner}
+                  </button>
+                ) : (
+                  <div className={cls}>{inner}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </PortalModal>
   );
 }

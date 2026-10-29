@@ -93,12 +93,8 @@ export function AskLauncher() {
     }
   }, []);
 
-  /* first-visit bot note: once per client (client_portal_prefs.bot_note_seen_at),
-     and only on Home as in the prototype — on inner pages it would cover rows */
-  const pathname = usePathname();
-  const onHome = activeKeyFor(pathname ?? '') === 'home';
-  const showNote = Boolean(onHome && portal.prefs && !portal.prefs.botNoteSeen && !chatOpen);
-  const dismissNote = () => portal.savePrefs({ botNoteSeen: true });
+  /* VCFO Spectrum (R-04): no first-visit note. The chat itself opens with the same greeting
+     and questions; opening it still records client_portal_prefs.bot_note_seen_at below. */
   /* R-45: "/" opens Ask VCFO, unless the person is typing. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -490,32 +486,6 @@ export function AskLauncher() {
           <button type="submit">Send</button>
         </form>
       </section>
-      {showNote ? (
-        <div className="vpl-note" role="status">
-          <div className="vpl-note-h">
-            <span>Hello. Ask me anything about {company}’s setup, or pick a question below.</span>
-            <button type="button" aria-label="Dismiss" onClick={dismissNote}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          </div>
-          <div className="vpl-note-q">
-            {questions.slice(0, 2).map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => {
-                  dismissNote();
-                  openChat(q);
-                }}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div id="vp-launch" ref={launchRef} className={[yieldOn ? 'yield' : '', chatOpen ? 'open' : ''].filter(Boolean).join(' ')}>
         <span
           className="vpl-char"

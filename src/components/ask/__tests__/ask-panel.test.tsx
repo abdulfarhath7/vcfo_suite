@@ -9,7 +9,7 @@ vi.mock('@/context/AppContext', () => ({
   useApp: () => ({ user: { id: 'u1', role }, engagements: [{ id: 'eng-1', companyName: 'Acme' }] }),
 }));
 vi.mock('@/hooks/ask/use-ask-status', () => ({
-  useAskStatus: (r: string) => ({ enabled: ['client', 'admin', 'super_admin'].includes(r), firmName: 'SBC' }),
+  useAskStatus: (r: string) => ({ enabled: ['client', 'admin', 'super_admin', 'manager', 'intern'].includes(r), firmName: 'SBC' }),
 }));
 vi.mock('@/hooks/ask/use-ask-suggestions', () => ({
   useAskSuggestions: () => ({
@@ -68,14 +68,14 @@ describe('VisualRenderer', () => {
 });
 
 describe('role gating', () => {
-  it.each(['manager', 'intern'])('shows no launcher and no panel for %s', (r) => {
+  it.each(['developer'])('shows no launcher and no panel for %s', (r) => {
     role = r;
     render(wrap(<AskShellMount userRole={r}><AskLauncher /></AskShellMount>));
     expect(screen.queryByRole('button', { name: /ask vcfo/i })).toBeNull();
     expect(screen.queryByRole('complementary', { name: 'Ask VCFO' })).toBeNull();
   });
 
-  it.each(['client', 'admin', 'super_admin'])('shows the launcher for %s', (r) => {
+  it.each(['client', 'admin', 'super_admin', 'manager', 'intern'])('shows the launcher for %s', (r) => {
     role = r;
     render(wrap(<AskShellMount userRole={r}><AskLauncher /></AskShellMount>));
     expect(screen.getByRole('button', { name: /ask vcfo/i })).toBeInTheDocument();

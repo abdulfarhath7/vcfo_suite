@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { m, useReducedMotion } from "framer-motion";
-import { Bell, CheckCheck, History } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getToastVariantStyle } from "@/components/ui/hot-toast";
@@ -29,7 +29,7 @@ import {
 } from "@/lib/notifications/notification-popup";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
-import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
+import { SpectrumTabs } from "@/components/ui/spectrum-tabs";
 
 const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
   { id: "received", label: "Received" },
@@ -37,6 +37,9 @@ const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
 ];
 
 const UNDO_TOAST_ID = "notification-undo";
+
+/** The footer links of the menu (prototype StaffBellMenu `FOOT`). */
+const FOOT = "text-[13px] font-medium text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring rounded-sm";
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -145,10 +148,6 @@ export function NotificationsBell() {
 
   const tabCount = filter === "sent" ? counts.sent : counts.received;
   const hasUnread = unreadNotificationCount > 0;
-  const emptyCopy =
-    filter === "sent"
-      ? "No outbound email activity yet."
-      : "No received notifications yet.";
 
   const now = useMemo(() => new Date(), [notifications, filter, open]);
   const todayCount = notificationsMatchingClearScope(tabItems, "today", now).length;
@@ -258,6 +257,11 @@ export function NotificationsBell() {
     }
   };
 
+  // F-329: the developer console has no notifications page and gets no bell notifications, so
+  // the developer has only the Announcements bell (prototype). Super admin keeps both: it has a
+  // real notification history page.
+  if (user?.role === "developer") return null;
+
   return (
     <Popover
       modal={false}
@@ -302,87 +306,28 @@ export function NotificationsBell() {
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
+        className="flex w-[min(100vw-1.5rem,380px)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-md border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
         onPointerDownOutside={guardOutside}
         onInteractOutside={guardOutside}
       >
-        <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
-          <p className="p-0 text-[15px] font-medium leading-tight text-ink">
-            Notifications
-          </p>
-          {hasUnread && (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-[10px] font-medium text-ink-muted hover:text-ink"
-              onClick={() => markAllNotificationsRead()}
-            >
-              <CheckCheck className="h-3 w-3" aria-hidden />
-              Mark all read
-            </button>
-          )}
+        {/* Prototype StaffNotificationsBell: the title with Received and Sent at the right. */}
+        <div className="flex h-[52px] flex-none items-center gap-2 border-b border-line-soft px-4">
+          <p className="text-[15px] font-medium leading-tight text-ink">Notifications</p>
+          <SpectrumTabs
+            className="ml-auto"
+            label="Filter notifications"
+            items={FILTERS.map((tab) => {
+              const unread = tab.id === "sent" ? counts.sentUnread : counts.receivedUnread;
+              return { key: tab.id, label: tab.label, count: unread > 0 ? unread : undefined };
+            })}
+            value={filter}
+            onChange={(next) => setFilter(next as NotificationDirection)}
+          />
         </div>
 
-        <SegmentedPicker
-          value={filter}
-          options={FILTERS.map((tab) => {
-            const count = tab.id === "sent" ? counts.sent : counts.received;
-            const unread =
-              tab.id === "sent" ? counts.sentUnread : counts.receivedUnread;
-            return {
-              value: tab.id,
-              label: (
-                <>
-                  {tab.label}
-                  <span className="tabular-nums opacity-75">
-                    {count}
-                    {unread > 0 ? ` · ${unread}` : ""}
-                  </span>
-                </>
-              ),
-            };
-          })}
-          onChange={(next) => setFilter(next)}
-          ariaLabel="Filter notifications"
-          size="sm"
-          className="mx-2 mb-1"
-        />
-
-        {tabCount > 0 && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pb-2 text-[10px]">
-            {todayCount > 0 && (
-              <button
-                type="button"
-                className="font-medium text-ink-muted hover:text-brand"
-                onClick={() => handleClearScope("today")}
-              >
-                Clear today
-              </button>
-            )}
-            {weekCount > 0 && (
-              <button
-                type="button"
-                className="font-medium text-ink-muted hover:text-brand"
-                onClick={() => handleClearScope("week")}
-              >
-                Clear this week
-              </button>
-            )}
-            <button
-              type="button"
-              className="font-medium text-ink-muted hover:text-brand"
-              aria-label={`Clear all ${filter} notifications`}
-              onClick={() => handleClearScope("all")}
-            >
-              Clear all
-            </button>
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-line px-1 py-1">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="px-2 py-8 text-center text-[11px] text-ink-muted">
-              {emptyCopy}
-            </p>
+            <p className="px-4 py-4 text-[13px] text-ink-faint">None</p>
           ) : (
             filtered.map((n) => {
               const exiting = exitingIds.has(n.id);
@@ -424,14 +369,35 @@ export function NotificationsBell() {
           )}
         </div>
 
-        <div className="border-t border-line px-3 py-2">
-          <Link
-            href={historyHref}
-            className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-brand-text hover:underline"
-            onClick={() => setOpen(false)}
-          >
-            <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-            Notification history
+        {/* Footer row of 13px blurple links (prototype). A clear link shows only when it has rows to clear. */}
+        <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-soft px-4 py-2.5">
+          {hasUnread ? (
+            <button type="button" className={FOOT} onClick={() => markAllNotificationsRead()}>
+              Mark all read
+            </button>
+          ) : null}
+          {todayCount > 0 ? (
+            <button type="button" className={FOOT} onClick={() => handleClearScope("today")}>
+              Clear today
+            </button>
+          ) : null}
+          {weekCount > 0 ? (
+            <button type="button" className={FOOT} onClick={() => handleClearScope("week")}>
+              Clear this week
+            </button>
+          ) : null}
+          {tabCount > 0 ? (
+            <button
+              type="button"
+              className={FOOT}
+              aria-label={`Clear all ${filter} notifications`}
+              onClick={() => handleClearScope("all")}
+            >
+              Clear all
+            </button>
+          ) : null}
+          <Link href={historyHref} className={cn(FOOT, "ml-auto")} onClick={() => setOpen(false)}>
+            Notification history ›
           </Link>
         </div>
       </PopoverContent>

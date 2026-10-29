@@ -14,14 +14,14 @@ beforeEach(() => {
 });
 
 describe('requireAsk', () => {
-  it.each(['manager', 'intern'])('returns 403 for %s', async (role) => {
+  it.each(['developer'])('returns 403 for %s', async (role) => {
     as(role);
     const gate = await requireAsk();
     expect(gate.ok).toBe(false);
     if (gate.ok === false) expect(gate.response.status).toBe(403);
   });
 
-  it.each(['client', 'admin', 'super_admin'])('lets %s through', async (role) => {
+  it.each(['client', 'admin', 'super_admin', 'manager', 'intern'])('lets %s through', async (role) => {
     as(role);
     expect((await requireAsk()).ok).toBe(true);
   });

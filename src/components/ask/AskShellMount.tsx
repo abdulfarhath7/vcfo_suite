@@ -9,9 +9,9 @@ import { useAskPushPadding } from './use-ask-layout';
 import { AskProvider } from './AskProvider';
 
 /**
- * Mounts Ask VCFO for client, admin and super admin only — gated on the real
- * session role, never the route, because admin and manager share views.
- * Managers and Project Leads get their children untouched.
+ * Mounts Ask VCFO for the roles `canUseAsk` admits (client, project lead, manager,
+ * admin, super admin) — gated on the real session role, never the route, because
+ * admin and manager share views. The developer gets their children untouched.
  */
 export function AskShellMount({ userRole, children }: { userRole: string | null | undefined; children: ReactNode }) {
   if (!canUseAsk(userRole)) return <>{children}</>;
@@ -25,7 +25,7 @@ export function AskShellMount({ userRole, children }: { userRole: string | null 
   );
 }
 
-/** Content column that makes room for the panel in push mode (≥1440 px). */
+/** The shell's content column. The floating Ask card sits over it, so it adds no padding today. */
 export function AskPushColumn({
   className,
   style,

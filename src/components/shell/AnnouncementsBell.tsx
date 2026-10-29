@@ -23,9 +23,10 @@ import {
   type AnnouncementListFilter,
 } from "@/lib/notifications/announcements";
 import { AnnouncementComposeForm } from "@/components/announcements/AnnouncementCompose";
-import { AnnouncementRow } from "@/components/announcements/AnnouncementList";
+import { formatAnnouncementWhen } from "@/components/announcements/AnnouncementList";
+import { Chip } from "@/components/ui/spectrum-chip";
 import { cn } from "@/lib/utils";
-import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
+import { SpectrumTabs } from "@/components/ui/spectrum-tabs";
 
 const FILTER_TABS: Array<{ id: AnnouncementListFilter; label: string }> = [
   { id: "all", label: "All" },
@@ -67,7 +68,8 @@ export function AnnouncementsBell() {
     [user?.id, items, readTick],
   );
   const unread = items.filter((item) => !readIds.has(item.id)).length;
-  const boardHref = user ? roleAnnouncementsPath(user.role) : "/";
+  // The developer console has no Announcements page, so its menu has no "View all" link (prototype).
+  const boardHref = user && user.role !== "developer" ? roleAnnouncementsPath(user.role) : null;
   const visible = useMemo(
     () => items.filter((item) => announcementMatchesFilter(item.kind, filter)).slice(0, 16),
     [items, filter],
@@ -86,13 +88,6 @@ export function AnnouncementsBell() {
     requestAnnouncementPopup(item);
     setMenuOpen(false);
   };
-
-  const emptyCopy =
-    filter === "important"
-      ? "No important announcements."
-      : filter === "general"
-        ? "No general announcements."
-        : "No announcements yet.";
 
   return (
     <DropdownMenu
@@ -133,19 +128,25 @@ export function AnnouncementsBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="flex w-[min(100vw-1.5rem,24rem)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-[var(--radius-md)] border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
+        className="flex w-[min(100vw-1.5rem,360px)] max-h-[min(82vh,640px)] flex-col overflow-hidden rounded-md border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
       >
-        <div className="flex items-start justify-between gap-3 px-3.5 pt-3 pb-2">
-          <p className="text-[15px] font-medium leading-tight text-ink">
-            Announcements
-            {unread > 0 ? (
-              <span className="ml-1.5 font-medium text-ink-muted">· {unread} new</span>
-            ) : null}
-          </p>
-          {canWrite ? (
+        {/* Prototype StaffAnnouncementsBell: the title with All, Important and General at the right. */}
+        <div className="flex h-[52px] flex-none items-center gap-2 border-b border-line-soft px-4">
+          <p className="text-[15px] font-medium leading-tight text-ink">Announcements</p>
+          <SpectrumTabs
+            className="ml-auto"
+            label="Filter announcements"
+            items={FILTER_TABS.map((tab) => ({ key: tab.id, label: tab.label }))}
+            value={filter}
+            onChange={(next) => setFilter(next as AnnouncementListFilter)}
+          />
+        </div>
+
+        {canWrite ? (
+          <div className="flex-none border-b border-line-soft px-4 py-2">
             <button
               type="button"
-              className="inline-flex shrink-0 items-center gap-0.5 text-[12.5px] font-medium text-brand-text hover:underline"
+              className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-text hover:underline"
               aria-expanded={composing}
               onPointerDown={(event) => event.preventDefault()}
               onClick={(event) => {
@@ -155,14 +156,14 @@ export function AnnouncementsBell() {
               }}
             >
               {composing ? (
-                <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                <X className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               ) : (
-                <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
               )}
               {composing ? "Close" : "New announcement"}
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {composing && canWrite ? (
           <AnnouncementComposeForm
@@ -172,46 +173,56 @@ export function AnnouncementsBell() {
           />
         ) : null}
 
-        <SegmentedPicker
-          value={filter}
-          options={FILTER_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
-          onChange={(next) => setFilter(next)}
-          ariaLabel="Filter announcements"
-          size="sm"
-          className="mx-3 mb-2.5"
-        />
-
-        <div className="min-h-0 flex-1 overflow-y-auto border-t border-line">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {visible.length === 0 ? (
-            <p className="px-3.5 py-8 text-center text-[12px] text-ink-muted">{emptyCopy}</p>
+            <p className="px-4 py-4 text-[13px] text-ink-faint">None</p>
           ) : (
-            <div className="divide-y divide-line">
+            <ul>
               {visible.map((item) => {
                 const isUnread = !readIds.has(item.id);
+                const important = announcementMatchesFilter(item.kind, "important");
+                const message = item.body.trim() || item.title;
                 return (
-                  <AnnouncementRow
-                    key={item.id}
-                    item={item}
-                    unread={isUnread}
-                    compact
-                    showSource={false}
-                    onActivate={() => openRow(item)}
-                  />
+                  <li key={item.id} className="border-t border-line-soft first:border-t-0">
+                    <button
+                      type="button"
+                      onClick={() => openRow(item)}
+                      data-unread={isUnread ? "true" : "false"}
+                      className={cn(
+                        "grid w-full gap-1 px-4 py-2.5 text-left hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring",
+                        isUnread && "bg-surface-sunken",
+                      )}
+                    >
+                      {important ? (
+                        <Chip tone="bad" raw className="w-fit min-w-0">
+                          Important
+                        </Chip>
+                      ) : null}
+                      <b className={cn("line-clamp-2 text-[13px] text-ink", isUnread ? "font-semibold" : "font-medium")}>
+                        {message}
+                      </b>
+                      <time dateTime={item.publishedAt} className="text-[12px] text-ink-muted">
+                        {formatAnnouncementWhen(item.publishedAt)}
+                      </time>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-line px-3.5 py-2.5">
-          <Link
-            href={boardHref}
-            className="text-[12.5px] font-medium text-brand-text hover:underline"
-          >
-            View all announcements →
-          </Link>
-          <span className="text-[11px] text-ink-muted">Esc to close</span>
-        </div>
+        {boardHref ? (
+          <div className="flex flex-none items-center border-t border-line-soft px-4 py-2.5">
+            <Link
+              href={boardHref}
+              className="mr-auto text-[13px] font-medium text-brand-text hover:underline"
+              onClick={() => setMenuOpen(false)}
+            >
+              View all announcements ›
+            </Link>
+          </div>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

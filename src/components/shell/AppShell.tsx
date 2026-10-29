@@ -64,9 +64,9 @@ export function AppShell({
         ? "max-w-none"
         : "max-w-[1400px]";
 
-  /* Flush to the sidebar: exact width, no screen inset. Pinned (R-49) puts the page beside
+  /* Flush to the sidebar from 768 px (F-273): exact width, no screen inset. Pinned (R-49) puts the page beside
      the 248px sidebar; the rail keeps 56px and opens over the page. */
-  const desktopPad = navExpanded ? "lg:pl-[15.5rem]" : "lg:pl-14";
+  const desktopPad = navExpanded ? "md:pl-[15.5rem]" : "md:pl-14";
 
   return (
     <ShellNavProvider>

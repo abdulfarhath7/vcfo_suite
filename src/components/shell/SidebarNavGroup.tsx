@@ -69,10 +69,25 @@ export function sidebarNavTriggerClass({
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
     stacked
       ? 'min-h-[3.15rem] flex-col justify-center gap-0.5 rounded-md px-0 py-1.5 text-[10px]'
-      : 'min-h-[34px] gap-2.5 rounded-md px-2.5 text-[14px]',
+      : expanded
+        ? 'min-h-[34px] gap-2.5 rounded-md px-2.5 text-[14px]'
+        : // R-49 rail: 40 x 36 px squares, centred in the 56 px rail.
+          'mx-auto h-9 w-10 justify-center rounded-md px-0',
     active ? sidebarActiveTextClass(ink) : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', fillHover),
-    !expanded && !stacked && 'justify-center px-0',
   );
+}
+
+/** Icon size: 16 px in the open sidebar, 18 px on the rail (R-49). */
+export function sidebarIconSize(expanded: boolean, stacked = false) {
+  return stacked ? 'h-[1.15rem] w-[1.15rem]' : expanded ? 'h-4 w-4' : 'h-[18px] w-[18px]';
+}
+
+/**
+ * Idle icon colour (R-45): a step fainter than the label (`side-muted` on navy, `ink-muted`
+ * on the white skin). The picked row alone changes colour.
+ */
+export function sidebarIdleIconClass(ink: SidebarInk) {
+  return ink === 'light' ? 'text-side-muted' : 'text-ink-muted';
 }
 
 /** The word under the icon on the pinned-closed rail. Two lines, then it clips. */
@@ -105,7 +120,7 @@ export function SidebarRailUrgentBadge({ count, ink = 'light' }: { count: number
       aria-hidden
       data-rail-urgent=""
       className={cn(
-        'absolute right-0.5 top-0.5 z-10 grid h-4 min-w-4 place-items-center rounded-mark bg-danger-mid px-[3px] text-[10px] font-medium leading-none tabular-nums text-on-status ring-2',
+        'absolute -right-0.5 -top-0.5 z-10 grid h-4 min-w-4 place-items-center rounded-mark bg-danger-mid px-[3px] text-[10px] font-medium leading-none tabular-nums text-on-status ring-2',
         ink === 'light' ? 'ring-side' : 'ring-surface-raised',
       )}
     >
@@ -118,10 +133,20 @@ export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[
   return children.some((child) => pathname === child.to || pathname.startsWith(`${child.to}/`));
 }
 
-export function SidebarNavCountBadge({ count }: { count: number }) {
+/**
+ * A nav count (R-45): 12 px in the faint ink. An urgent count is a red square badge with
+ * white text.
+ */
+export function SidebarNavCountBadge({ count, hot = false, ink = 'light' }: { count: number; hot?: boolean; ink?: SidebarInk }) {
   if (count <= 0) return null;
   return (
-    <span className="relative z-10 min-w-[18px] text-center text-[12px] font-medium tabular-nums text-side-muted">
+    <span
+      data-nav-count={hot ? 'urgent' : 'plain'}
+      className={cn(
+        'relative z-10 inline-grid h-[18px] min-w-[18px] flex-none place-items-center text-center text-[12px] font-medium tabular-nums',
+        hot ? 'rounded-mark bg-danger-mid px-1 text-on-status' : ink === 'light' ? 'text-side-muted' : 'text-ink-muted',
+      )}
+    >
       {count > 99 ? '99+' : count}
     </span>
   );
@@ -166,19 +191,10 @@ export function SidebarNavGroupRail({
   children: ReactNode;
   className?: string;
 }) {
+  /* VCFO Spectrum (F-286): child rows sit 27 px in, under the label, with no tree line. */
+  void ink;
   return (
-    <div
-      className={cn(
-        'sidebar-nav-disclosure-panel',
-        showRail &&
-          'relative border-l pl-2.5 before:absolute before:-left-px before:top-0 before:h-1.5 before:w-px',
-        showRail &&
-          (ink === 'light'
-            ? 'border-side-line before:bg-side-muted'
-            : 'border-line before:bg-line-strong'),
-        className,
-      )}
-    >
+    <div className={cn('sidebar-nav-disclosure-panel', showRail && 'mb-1 pl-[27px]', className)}>
       {children}
     </div>
   );
@@ -199,11 +215,20 @@ function SidebarNavTriggerFace({
   layoutIdPrefix,
   reduceMotion,
   stacked = false,
+  countSlot,
+  railSlot,
+  tag,
 }: {
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
   label: string;
   badge?: number;
+  /** A small tag after the label, such as "New" (F-292). */
+  tag?: ReactNode;
+  /** Replaces the plain count in the open sidebar (for a live or urgent count). */
+  countSlot?: ReactNode;
+  /** The urgent badge on the rail icon (R-49). */
+  railSlot?: ReactNode;
   showChevron: boolean;
   chevronOpen: boolean;
   sidebarExpanded: boolean;
@@ -235,13 +260,14 @@ function SidebarNavTriggerFace({
       <Icon
         className={cn(
           'relative z-10 shrink-0',
-          stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-          sectionActive ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : iconTone,
+          sidebarIconSize(sidebarExpanded, stacked),
+          sectionActive ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : cn(sidebarIdleIconClass(ink), iconTone),
         )}
-        strokeWidth={1.75}
+        strokeWidth={1.6}
       />
       {stacked ? <SidebarRailLabel>{label}</SidebarRailLabel> : null}
       {stacked ? <SidebarRailBadge count={badge ?? 0} /> : null}
+      {!sidebarExpanded && !stacked ? railSlot : null}
       <span
         className={cn(
           'relative z-10 min-w-0 flex-1 truncate text-left',
@@ -250,13 +276,14 @@ function SidebarNavTriggerFace({
       >
         {label}
       </span>
+      {sidebarExpanded && tag ? <span className="relative z-10 flex-none">{tag}</span> : null}
       <span
         className={cn(
           'sidebar-nav-disclosure-meta relative z-10 ml-auto inline-flex shrink-0 items-center gap-1',
           !sidebarExpanded && 'hidden',
         )}
       >
-        <SidebarNavCountBadge count={badge ?? 0} />
+        {countSlot ?? <SidebarNavCountBadge count={badge ?? 0} ink={ink} />}
         {showChevron ? (
           <SidebarNavChevron open={chevronOpen} ink={ink} active={sectionActive} />
         ) : null}
@@ -282,6 +309,11 @@ export function SidebarNavDisclosure({
   flyoutAside,
   panel,
   stacked = false,
+  defaultOpen = false,
+  railHref,
+  countSlot,
+  railSlot,
+  tag,
 }: {
   id: string;
   label: string;
@@ -299,6 +331,16 @@ export function SidebarNavDisclosure({
   flyoutAside?: ReactNode;
   /** Pinned-closed rail: icon over a short label. */
   stacked?: boolean;
+  /** Start open (staff groups start open, F-285). A group that holds the page always opens. */
+  defaultOpen?: boolean;
+  /** On the rail the icon links here (the first child page, F-308) instead of opening a fly-out. */
+  railHref?: string;
+  /** Replaces the plain count in the open sidebar. */
+  countSlot?: ReactNode;
+  /** The urgent badge on the rail icon. */
+  railSlot?: ReactNode;
+  /** A small tag after the label, such as "New". */
+  tag?: ReactNode;
   panel: (ctx: {
     showRail: boolean;
     ink: SidebarInk;
@@ -311,7 +353,7 @@ export function SidebarNavDisclosure({
   const reduceMotion = Boolean(osReduce);
   const { sidebar } = useShellAppearance();
   const panelId = useId();
-  const [open, setOpen] = useState(sectionActive);
+  const [open, setOpen] = useState(sectionActive || defaultOpen);
   const [flyoutOpen, setFlyoutOpen] = useState(false);
   const [wideReady, setWideReady] = useState(sidebarExpanded);
   const wideMounted = useRef(sidebarExpanded);
@@ -363,13 +405,31 @@ export function SidebarNavDisclosure({
       layoutIdPrefix={layoutIdPrefix}
       reduceMotion={pillsReduced}
       stacked={stacked}
+      countSlot={countSlot}
+      railSlot={railSlot}
+      tag={tag}
     />
   );
 
   const labelForAria = ariaLabel ?? label;
   const hoverAttrs = hoverFollow ? sidebarHoverAttrs(hoverKey) : undefined;
 
-  const flyout = compactMounted.current ? (
+  const flyout = !compactMounted.current ? null : railHref ? (
+    <div hidden={sidebarExpanded}>
+      <Link
+        href={railHref}
+        title={label}
+        aria-label={labelForAria}
+        aria-current={sectionActive ? 'page' : undefined}
+        onClick={onNavigate}
+        className={triggerClass}
+        tabIndex={sidebarExpanded ? -1 : undefined}
+        {...hoverAttrs}
+      >
+        {triggerFace(sidebarExpanded ? true : reduceMotion, !sidebarExpanded)}
+      </Link>
+    </div>
+  ) : (
     <div hidden={sidebarExpanded}>
       <Popover open={!sidebarExpanded && flyoutOpen} onOpenChange={setFlyoutOpen}>
         <PopoverTrigger asChild>
@@ -422,7 +482,7 @@ export function SidebarNavDisclosure({
         </PopoverContent>
       </Popover>
     </div>
-  ) : null;
+  );
 
   const accordion = wideMounted.current ? (
     <div hidden={!sidebarExpanded}>
@@ -487,7 +547,6 @@ function SidebarGroupRow({
   groupId: string;
   reduceMotion: boolean;
 }) {
-  const Icon = child.icon;
   const active = pathname === child.to || pathname.startsWith(`${child.to}/`);
   const itemId = `group:${child.to}`;
   const followed = Boolean(hoverFollow);
@@ -498,12 +557,15 @@ function SidebarGroupRow({
       onClick={onNavigate}
       title={child.label}
       aria-current={active ? 'page' : undefined}
+      /* VCFO Spectrum (F-286): 28 px child rows, 13 px, in the faint ink, with no icon. */
       className={cn(
-        'relative flex min-h-[2.25rem] items-center gap-2 rounded-md py-1 pl-2.5 pr-1.5 transition-colors',
+        'relative flex h-7 items-center gap-2 rounded-md px-2.5 text-[13px] transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         active
           ? sidebarActiveTextClass(ink)
-          : sidebarInactiveOnSkin(ink, 'hover:bg-surface-sunken', !followed),
+          : ink === 'light'
+            ? cn('text-side-muted hover:text-white', !followed && 'hover:bg-side-hover')
+            : cn('text-ink-muted hover:text-ink', !followed && 'hover:bg-surface-sunken'),
       )}
       {...(hoverFollow ? sidebarHoverAttrs(itemId) : undefined)}
     >
@@ -522,14 +584,7 @@ function SidebarGroupRow({
           className={sidebarRailClass(ink, true)}
         />
       ) : null}
-      <Icon
-        className={cn(
-          'relative z-10 h-3.5 w-3.5 shrink-0',
-          active ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : child.iconTone,
-        )}
-        strokeWidth={1.75}
-      />
-      <span className="relative z-10 min-w-0 flex-1 truncate text-[12.5px] font-medium leading-tight">
+      <span className="relative z-10 min-w-0 flex-1 truncate leading-tight">
         {child.label}
       </span>
     </Link>
@@ -563,7 +618,7 @@ function SidebarGroupPanel({
   return (
     <SidebarNavGroupRail showRail={showRail} ink={ink}>
       <m.div
-        className="space-y-0.5 py-0.5 pr-0.5"
+        className="grid py-0.5 pr-0.5"
         variants={sidebarPanelStagger}
         initial={false}
         animate={open ? 'show' : 'hidden'}
@@ -600,11 +655,17 @@ export function SidebarNavGroup({
   ink = 'dark',
   hoverFollow,
   stacked = false,
+  tag,
+  badge,
 }: {
   id: string;
   label: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
+  /** A small tag after the label, such as "New". */
+  tag?: ReactNode;
+  /** A plain count after the label (for example unread updates). */
+  badge?: number;
   items: SidebarNavLeaf[];
   expanded: boolean;
   pathname: string;
@@ -630,6 +691,10 @@ export function SidebarNavGroup({
       hoverKey={`group:${id}`}
       onNavigate={onNavigate}
       stacked={stacked}
+      defaultOpen
+      railHref={items[0]?.to}
+      tag={tag}
+      badge={badge}
       panel={({ showRail, ink: panelInk, onNavigate: panelNav, hoverFollow: panelHover, open }) => (
         <SidebarGroupPanel
           pathname={pathname}

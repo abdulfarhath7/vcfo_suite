@@ -1,21 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAskOptional } from './ask-context';
 
-/** D2 / D5: push at ≥1440 px, overlay at 1024–1439 px, bottom sheet below. */
-export type AskLayoutMode = 'push' | 'overlay' | 'sheet';
+/**
+ * VCFO Spectrum (F-299): from 640 px Ask VCFO is a floating card at the bottom right,
+ * 420 x 620 px, over the page and without a scrim, so it can stay open while the person
+ * reads the page beside it. Under 640 px it fills the screen.
+ */
+export type AskLayoutMode = 'float' | 'sheet';
 
-export const ASK_PANEL_WIDTH = 400;
+export const ASK_PANEL_WIDTH = 420;
+export const ASK_PANEL_HEIGHT = 620;
 
 function modeFor(width: number): AskLayoutMode {
-  if (width >= 1440) return 'push';
-  if (width >= 1024) return 'overlay';
-  return 'sheet';
+  return width >= 640 ? 'float' : 'sheet';
 }
 
 export function useAskLayoutMode(): AskLayoutMode {
-  const [mode, setMode] = useState<AskLayoutMode>('overlay');
+  const [mode, setMode] = useState<AskLayoutMode>('float');
   useEffect(() => {
     const update = () => setMode(modeFor(window.innerWidth));
     update();
@@ -25,9 +27,10 @@ export function useAskLayoutMode(): AskLayoutMode {
   return mode;
 }
 
-/** Right padding the shell adds while the panel pushes content (≥1440 px). */
+/**
+ * Right padding the shell adds for the panel. The floating card sits over the page, so
+ * this is always 0; the hook stays so the shell column keeps one place to ask.
+ */
 export function useAskPushPadding(): number {
-  const ask = useAskOptional();
-  const mode = useAskLayoutMode();
-  return ask?.open && mode === 'push' ? ASK_PANEL_WIDTH : 0;
+  return 0;
 }

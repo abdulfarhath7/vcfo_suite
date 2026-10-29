@@ -56,6 +56,17 @@ export function roleSettingsPath(role: Role): string {
 }
 
 /**
+ * The profile page the sidebar's account row opens (P-608). Admin, manager and project lead
+ * have their own `/app/<role>/profile`; the other roles keep their settings page. Links that
+ * point at a settings section (`#email`, `#appearance`, notification preferences, the Outlook
+ * callback) keep `roleSettingsPath`.
+ */
+export function roleProfilePath(role: Role): string {
+  if (role === 'admin' || role === 'manager' || role === 'intern') return `/app/${role}/profile`;
+  return roleSettingsPath(role);
+}
+
+/**
  * The role a `/app/<segment>/…` pathname belongs to.
  *
  * Lets shell chrome resolve role-scoped links from the URL rather than from the

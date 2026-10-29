@@ -1,15 +1,20 @@
 'use client';
 
 /**
- * The navy sidebar — React port of prototype shell.js.
- *   desktop ≥1280: full 248 px sidebar · tablet 768–1279: 72 px icon rail with
- *   tooltips and fly-outs · phone ≤767: a drawer opened from the top bar.
+ * The navy sidebar — React port of prototype shell.js, with the VCFO Spectrum pin (R-49).
+ *   From 1100 px: the full 248 px sidebar, or the icon rail when the person picks it with the
+ *   pin button or the "[" key (saved per browser). The rail opens the full sidebar over the
+ *   page 160 ms after the pointer rests on it and closes 280 ms after it leaves.
+ *   768–1099 px: always the rail (tooltips and fly-outs); the pin button hides.
+ *   Phone ≤767: a drawer opened from the top bar.
  * The active pill + 3 px rail slide from where they were on the last screen
  * (sessionStorage) with the shell spring.
  */
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { Keyboard, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import { Lu, ShellIcon, type LuName } from './icons';
 import { usePortal } from './PortalProvider';
 import { activeKeyFor, portalHref, PORTAL_TITLES, type PortalRouteKey } from './routes';
@@ -19,6 +24,83 @@ type Bp = 'phone' | 'tablet' | 'desktop';
 
 function bpOf(w: number): Bp {
   return w <= 767 ? 'phone' : w < 1280 ? 'tablet' : 'desktop';
+}
+
+/** R-49 pin state for the client sidebar: pinned (full) or rail, saved per browser. */
+type CpSideMode = 'pinned' | 'rail';
+const CP_SIDE_KEY = 'vcfo.cp.sidebar';
+const CP_NARROW = 1100;
+const PEEK_OPEN_MS = 160;
+const PEEK_CLOSE_MS = 280;
+
+function typingIn(t: EventTarget | null): boolean {
+  const el = t as HTMLElement | null;
+  if (!el) return false;
+  return el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+}
+
+function useCpSidebarMode() {
+  const [mode, setMode] = useState<CpSideMode>('pinned');
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(CP_SIDE_KEY) === 'rail') setMode('rail');
+    } catch {
+      /* storage blocked: stay pinned */
+    }
+    const on = () => setNarrow(window.innerWidth < CP_NARROW);
+    on();
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  const toggle = useCallback(() => {
+    setMode((m) => {
+      const next: CpSideMode = m === 'pinned' ? 'rail' : 'pinned';
+      try {
+        window.localStorage.setItem(CP_SIDE_KEY, next);
+      } catch {
+        /* the choice lasts for this page only */
+      }
+      return next;
+    });
+  }, []);
+  /* "[" switches pinned and rail. Not while typing, not with a modifier, not under 1100 px. */
+  useEffect(() => {
+    if (narrow) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== '[' || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || typingIn(e.target)) return;
+      e.preventDefault();
+      toggle();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [narrow, toggle]);
+  return { mode, narrow, toggle };
+}
+
+/** R-49 pin control: in the full sidebar's head it collapses to the rail; on the rail it pins. */
+function PinBtn({ rail, onToggle }: { rail?: boolean; onToggle: () => void }) {
+  const label = rail ? 'Pin sidebar' : 'Collapse sidebar';
+  const Icon = rail ? PanelLeftOpen : PanelLeftClose;
+  return (
+    <button
+      type="button"
+      className={rail ? 'vps-i vps-pin-r' : 'vps-pin'}
+      aria-label={label}
+      aria-keyshortcuts="["
+      data-tip={`${label} ([)`}
+      title={rail ? undefined : `${label} ([)`}
+      onClick={onToggle}
+    >
+      {rail ? (
+        <span className="vps-ic">
+          <Icon size={20} strokeWidth={1.6} aria-hidden />
+        </span>
+      ) : (
+        <Icon size={16} strokeWidth={1.6} aria-hidden />
+      )}
+    </button>
+  );
 }
 
 export function useBreakpoint(): Bp {
@@ -257,7 +339,7 @@ function usePill(navRef: React.RefObject<HTMLElement | null>, mode: string, deps
   return { pillRef, railRef, place };
 }
 
-function SidebarFull({ drawer }: { drawer?: boolean }) {
+function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }) {
   const pathname = usePathname();
   const act = activeKeyFor(pathname);
   const nav = useNav();
@@ -310,7 +392,10 @@ function SidebarFull({ drawer }: { drawer?: boolean }) {
           </div>
         </>
       ) : (
-        <LogoLink />
+        <div className="vps-hd vps-hd-pin">
+          <LogoLink />
+          {onPin ? <PinBtn onToggle={onPin} /> : null}
+        </div>
       )}
       <nav className="vps-nav" aria-label="Main" ref={navRef}>
         <span className="vps-pill" aria-hidden="true" ref={pillRef} />
@@ -418,11 +503,26 @@ function SidebarFull({ drawer }: { drawer?: boolean }) {
       </div>
       <div className="vps-me">
         <div className="vps-mest">
-          <span className="vps-a">{me?.initials ?? ''}</span>
-          <span className="vps-nm">
-            <b>{me?.name ?? ''}</b>
-            <small>{me?.roleLabel ?? ''}</small>
-          </span>
+          {/* F-360: the row opens Profile; the keyboard and sign-out buttons sit beside it. */}
+          <a
+            className="vps-mest-a"
+            href={portalHref('settings')}
+            title="Your profile"
+            onClick={(e) => {
+              e.preventDefault();
+              if (drawer) setDrawerOpen(false);
+              go('settings');
+            }}
+          >
+            <span className="vps-a">{me?.initials ?? ''}</span>
+            <span className="vps-nm">
+              <b>{me?.name ?? ''}</b>
+              <small>{me?.roleLabel ?? ''}</small>
+            </span>
+          </a>
+          <button type="button" className="vps-out" aria-label="Keyboard shortcuts (?)" title="Keyboard shortcuts (?)" onClick={openShortcuts}>
+            <Keyboard size={16} strokeWidth={1.6} aria-hidden />
+          </button>
           <SignOutBtn />
         </div>
       </div>
@@ -473,7 +573,7 @@ function SignOutBtn() {
 }
 
 /** Tablet: 72 px icon rail; groups, people and the account open a fly-out; every icon has a tooltip. */
-function SidebarRail() {
+function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: boolean) => void }) {
   const pathname = usePathname();
   const act = activeKeyFor(pathname);
   const nav = useNav();
@@ -609,7 +709,11 @@ function SidebarRail() {
         if (el && !el.closest('.vps-fly')) showTip(el);
         else setTip(null);
       }}
-      onMouseLeave={() => setTip(null)}
+      onMouseLeave={() => {
+        setTip(null);
+        onPeek?.(false);
+      }}
+      onMouseEnter={() => onPeek?.(true)}
       onFocus={(e) => {
         const el = (e.target as HTMLElement).closest<HTMLElement>('[data-tip]');
         let fv = false;
@@ -702,6 +806,11 @@ function SidebarRail() {
           </button>
         ))}
       </div>
+      {onPin ? (
+        <div className="vps-pinw">
+          <PinBtn rail onToggle={onPin} />
+        </div>
+      ) : null}
       <div className="vps-me">
         <div className="vps-mest vps-mest-rail">
           <span className="vps-a" role="img" aria-label={`${me?.name ?? ''}, ${me?.roleLabel ?? ''}`} data-tip={`${me?.name ?? ''} · ${me?.roleLabel ?? ''}`}>
@@ -778,15 +887,72 @@ function Drawer() {
 
 export function PortalSidebar() {
   const bp = useBreakpoint();
+  const { mode, narrow, toggle } = useCpSidebarMode();
+  const phone = bp === 'phone';
+  const rail = !phone && (narrow || mode === 'rail');
+  const [peek, setPeek] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = usePathname();
+
+  /* The page column follows the sidebar width: 248 px pinned, the rail's width, none on phones. */
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>('.cp');
+    if (!root) return;
+    const w = phone ? '0px' : rail ? '72px' : '248px';
+    root.style.setProperty('--vp-side-w', w);
+    root.style.setProperty('--vps-w', w);
+    root.style.setProperty('--sw', w);
+  }, [phone, rail]);
+
+  /* Hover on the rail (from 1100 px, rail picked): open the full sidebar over the page after
+     160 ms, close it 280 ms after the pointer leaves. A page change closes it. */
+  const peekable = rail && !narrow;
+  const onPeek = useCallback(
+    (open: boolean) => {
+      if (timer.current) clearTimeout(timer.current);
+      if (!peekable) return;
+      timer.current = setTimeout(() => setPeek(open), open ? PEEK_OPEN_MS : PEEK_CLOSE_MS);
+    },
+    [peekable],
+  );
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    setPeek(false);
+  }, [pathname, peekable]);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+  useEffect(() => {
+    if (!peek) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPeek(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [peek]);
+
   return (
     <>
-      {bp === 'desktop' ? (
+      {phone ? null : rail ? (
+        <>
+          <SidebarRail onPin={narrow ? undefined : toggle} onPeek={peekable ? onPeek : undefined} />
+          {peek ? (
+            <aside
+              className="vps vps-peek"
+              data-mode="full"
+              aria-label="Sidebar"
+              onMouseEnter={() => onPeek(true)}
+              onMouseLeave={() => onPeek(false)}
+            >
+              <SidebarFull onPin={toggle} />
+            </aside>
+          ) : null}
+        </>
+      ) : (
         <aside id="vp-side" className="vps" data-mode="full" aria-label="Sidebar">
-          <SidebarFull />
+          <SidebarFull onPin={narrow ? undefined : toggle} />
         </aside>
-      ) : bp === 'tablet' ? (
-        <SidebarRail />
-      ) : null}
+      )}
       <Drawer />
     </>
   );

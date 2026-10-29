@@ -7,7 +7,8 @@ import type { AnswerEnvelope } from '@/data/ask/schema';
 
 /**
  * Cross-tenant rules for the Ask VCFO tables (Path A — enforced here, not RLS):
- *   - managers and Project Leads are refused before any query runs,
+ *   - a developer is refused before any query runs; managers and Project Leads
+ *     use the staff shell only and never manage sources,
  *   - conversations, messages and library items are private to one profile,
  *   - a client conversation / library item needs an engagement the caller can
  *     access, and is written against the approved id,
@@ -58,6 +59,7 @@ const admin = ctx('admin', 'user-admin');
 const superAdmin = ctx('super_admin', 'user-super');
 const manager = ctx('manager', 'user-manager');
 const lead = ctx('intern', 'user-lead');
+const developer = ctx('developer', 'user-dev');
 
 const ENG_A = '11111111-1111-1111-1111-111111111111';
 const ENG_B = '22222222-2222-2222-2222-222222222222';
@@ -122,7 +124,7 @@ beforeEach(() => {
 });
 
 describe('role gate', () => {
-  it.each([manager, lead])('refuses $role before touching the database', async (who) => {
+  it.each([developer])('refuses $role before touching the database', async (who) => {
     await expect(conversations.createAskConversation(who, { shell: 'admin' })).rejects.toBeInstanceOf(
       AskForbiddenError,
     );
@@ -135,6 +137,18 @@ describe('role gate', () => {
     await expect(
       documents.searchAskChunks(who, { query: 'gst', persona: 'staff', limit: 5 }),
     ).rejects.toBeInstanceOf(AskForbiddenError);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(dbInsert).not.toHaveBeenCalled();
+  });
+
+  it.each([manager, lead])('keeps $role to the staff shell and away from sources', async (who) => {
+    await expect(
+      conversations.createAskConversation(who, { shell: 'client', engagementId: ENG_A }),
+    ).rejects.toBeInstanceOf(AskForbiddenError);
+    await expect(conversations.createAskConversation(who, { shell: 'super' })).rejects.toBeInstanceOf(
+      AskForbiddenError,
+    );
+    await expect(documents.listAskDocuments(who)).rejects.toBeInstanceOf(AskForbiddenError);
     expect(dbSelect).not.toHaveBeenCalled();
     expect(dbInsert).not.toHaveBeenCalled();
   });

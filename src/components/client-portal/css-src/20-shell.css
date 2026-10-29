@@ -152,3 +152,22 @@ body:has(#vp-side) [data-vp="side"]:not(.vps){visibility:hidden}
 .vps.vps-icons .vps-ask{justify-content:center;padding:0}
 .vps.vps-icons .vps-ask .vps-ask-t,.vps.vps-icons .vps-ask kbd{display:none}
 .cp-ribbon{position:fixed;left:0;right:0;top:0;height:3px;z-index:2147482600;pointer-events:none;background:linear-gradient(90deg,oklch(var(--data-3)) 0 16.667%,oklch(var(--data-1)) 0 33.333%,oklch(var(--data-2)) 0 50%,oklch(var(--data-5)) 0 66.667%,oklch(var(--data-4)) 0 83.333%,oklch(var(--data-6)) 0)}
+
+/* VCFO Spectrum (F-352): the sidebar starts under the 3 px ribbon. */
+#vp-side,.vps.vps-peek{top:3px;height:calc(100vh - 3px)}
+@supports (height:100dvh){#vp-side,.vps.vps-peek{height:calc(100dvh - 3px)}}
+/* R-49 pin (F-362): the head holds the logo and a 32 px pin button; the rail keeps it above the account. */
+.vps .vps-hd-pin{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:64px;padding-right:10px;border-bottom:1px solid oklch(var(--side-line))}
+.vps .vps-hd-pin .vps-logo{flex:1;min-width:0;height:100%;border:0}
+.vps .vps-pin{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:6px;color:oklch(var(--side-muted));transition:background .15s,color .15s}
+.vps .vps-pin:hover{background:rgba(255,255,255,.12);color:#fff}
+.vps .vps-pinw{padding:4px 8px 0}
+/* The rail opened over the page: it slides in from 10 px left in 160 ms with the float shadow (F-311). */
+.vps.vps-peek{left:0;width:248px;z-index:46;box-shadow:var(--shadow-float);animation:vpsPeek .16s cubic-bezier(.22,1,.36,1) both}
+@keyframes vpsPeek{from{transform:translateX(-10px);opacity:.6}to{transform:none;opacity:1}}
+/* F-360: the profile row is a link to Profile, then the keyboard and sign-out buttons. */
+.vps .vps-mest{gap:4px;padding:0}
+.vps .vps-mest-a{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:6px;border-radius:6px;transition:background .15s}
+.vps .vps-mest-a:hover{background:rgba(255,255,255,.06)}
+.vps .vps-mest-a .vps-nm{flex:1;min-width:0}.vps .vps-mest-a .vps-nm b{display:block;font-size:13.5px;font-weight:500;color:#fff}.vps .vps-mest-a .vps-nm small{display:block;font-size:12px;color:oklch(var(--side-muted))}
+@media (prefers-reduced-motion: reduce){.vps.vps-peek{animation:none}}

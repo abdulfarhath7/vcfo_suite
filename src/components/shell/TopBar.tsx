@@ -17,7 +17,7 @@ import {
   LayoutDashboard,
   Mail,
   Megaphone,
-  PanelLeft,
+  Menu,
   Search,
   Settings,
   Users,
@@ -27,8 +27,7 @@ import { NotificationsBell } from "@/components/shell/NotificationsBell";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { useShellNav } from "@/components/shell/shell-nav-context";
 import { SBC_LOGO_LABEL, SbcLogo } from "@/components/brand/SbcLogo";
-import { roleHomePath, roleSettingsPath } from "@/lib/auth-routes";
-import { UserFace } from "@/components/common/UserFace";
+import { roleHomePath } from "@/lib/auth-routes";
 import { CommandPalette } from "@/components/shell/CommandPalette";
 import {
   resolveShellCrumbSegments,
@@ -104,25 +103,34 @@ export function TopBar() {
   const crumb = shellBreadcrumb(pathname);
   const segments = resolveShellCrumbSegments(crumb, engagements);
   const homeHref = user ? roleHomePath(user.role) : "/";
-  const profileHref = user ? roleSettingsPath(user.role) : "/";
+  /* F-329: the super admin and the developer have one bell, Announcements. Notification
+     history stays in their sidebar under Updates. */
+  const notificationsBell = user?.role !== "super_admin" && user?.role !== "developer";
 
   return (
-    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b-1.5 border-line bg-surface-raised px-2.5 sm:gap-3 sm:px-7">
+    <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b-1.5 border-line bg-surface-raised px-4 sm:gap-3 sm:px-7">
+      {/* F-317: phones get a menu button (20 px Menu icon) and the VCFO mark beside it. */}
       <button
         type="button"
         onClick={openMobile}
-        className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink lg:hidden"
-        aria-label="Open navigation"
+        className="-ml-1 grid h-9 w-9 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-md text-ink-2 transition-colors hover:bg-surface-sunken hover:text-ink md:hidden"
+        aria-label="Open menu"
       >
-        <PanelLeft className="h-4 w-4" strokeWidth={1.75} />
+        <Menu className="h-5 w-5" strokeWidth={1.6} />
       </button>
+      <Link href={homeHref} aria-label="VCFO Suite home" className="flex-none sm:hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/client-portal/vcfo-mark.webp" alt="VCFO Suite" className="block h-[26px] w-auto" />
+      </Link>
 
+      {/* F-318: the 26 px SBC logo with a 1 px line and 12 px gap after it; dark mode takes the
+          copy with light letters. */}
       <Link
         href={homeHref}
         aria-label={`${SBC_LOGO_LABEL} home`}
-        className="inline-flex shrink-0 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="hidden shrink-0 items-center border-r border-line pr-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring sm:inline-flex"
       >
-        <SbcLogo variant="navbar" decorative />
+        <SbcLogo variant="lockup" size={26} decorative />
       </Link>
 
       <ShellLocationTrail icon={crumb.icon} segments={segments} />
@@ -142,23 +150,10 @@ export function TopBar() {
           <Search className="h-4 w-4" strokeWidth={1.75} />
         </button>
         <AnnouncementsBell />
-        <NotificationsBell />
+        {notificationsBell ? <NotificationsBell /> : null}
         <ThemeToggle />
-        {user && (
-          <Link
-            href={profileHref}
-            aria-label="Profile"
-            title="Profile"
-            className="inline-flex h-control-md shrink-0 items-center gap-1.5 rounded-md px-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring sm:px-2"
-          >
-            <UserFace
-              src={user.imageUrl}
-              initials={user.initials}
-              className="h-6 w-6 bg-brand text-[9px] font-medium text-on-brand"
-            />
-            <span className="hidden sm:inline">Profile</span>
-          </Link>
-        )}
+        {/* F-335: Profile opens from the sidebar's profile row (and the rail's avatar), so the
+            top bar repeats no profile link. */}
       </div>
     </header>
   );

@@ -34,6 +34,7 @@ export function shortcutGroups(hasAsk: boolean): Array<[string, Row[]]> {
             ] as Row[])
           : []),
         [['?'], 'This list of shortcuts'],
+        [['['], 'Pin or collapse the sidebar'],
         [['Esc'], 'Close a menu, dialog or panel'],
       ],
     ],

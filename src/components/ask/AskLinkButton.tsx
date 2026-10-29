@@ -11,8 +11,9 @@ import { useAskOptional } from './ask-context';
 import { useAskLayoutMode } from './use-ask-layout';
 
 /**
- * A go-there link (§7.7). Navigates only. At ≥ 1440 px the panel stays open
- * beside the page; below that it closes and leaves a "Back to Ask VCFO" pill.
+ * A go-there link (§7.7). Navigates only. The floating card stays open over the
+ * new page; on phones, where Ask fills the screen, it closes and leaves a
+ * "Back to Ask VCFO" pill.
  * The primary link is the blurple main button; the rest are white secondary buttons.
  */
 export function AskLinkButton({ link }: { link: AnswerLink }) {
@@ -24,7 +25,7 @@ export function AskLinkButton({ link }: { link: AnswerLink }) {
     <Link
       href={resolveHref(link.dest, staffBase)}
       onClick={() => {
-        if (mode !== 'push') {
+        if (mode === 'sheet') {
           ask.setOpen(false);
           ask.setBackPill(true);
         }

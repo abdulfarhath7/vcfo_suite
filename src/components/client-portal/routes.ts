@@ -15,6 +15,8 @@ export type PortalRouteKey =
   | 'registrations'
   | 'documents'
   | 'knowledge-bank'
+  /** Alias of `knowledge-bank` (the prototype's "library" key); both open the same page. */
+  | 'library'
   | 'credentials'
   | 'team'
   | 'audit'
@@ -32,6 +34,7 @@ export const PORTAL_PATHS: Record<PortalRouteKey, string> = {
   registrations: `${CP_BASE}/registrations`,
   documents: `${CP_BASE}/documents`,
   'knowledge-bank': `${CP_BASE}/library`,
+  library: `${CP_BASE}/library`,
   credentials: `${CP_BASE}/credentials`,
   team: `${CP_BASE}/team`,
   audit: `${CP_BASE}/audit`,
@@ -50,6 +53,7 @@ export const PORTAL_TITLES: Record<PortalRouteKey, string> = {
   registrations: 'Registrations',
   documents: 'Documents',
   'knowledge-bank': 'Library',
+  library: 'Library',
   credentials: 'Credentials',
   team: 'Team',
   audit: 'Audit',
@@ -69,6 +73,9 @@ export function stepHref(stepId: string): string {
 export function phaseHref(phaseNo: number): string {
   return `${CP_BASE}/incorporation/phase/${phaseNo}`;
 }
+
+/** Route keys that only alias another key; lists of pages skip them so a page shows once. */
+export const PORTAL_ALIAS_KEYS: ReadonlySet<PortalRouteKey> = new Set<PortalRouteKey>(['library']);
 
 /** Which sidebar item is current for a pathname (prototype shell.js `active()` + ALIAS). */
 export function activeKeyFor(pathname: string): PortalRouteKey | null {

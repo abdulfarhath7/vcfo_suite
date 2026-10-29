@@ -6,11 +6,13 @@ import {
   Briefcase,
   ClipboardCheck,
   ClipboardList,
+  Clock,
   FileSpreadsheet,
   FolderClosed,
   LayoutDashboard,
   ListChecks,
   Menu,
+  Plug,
   Sparkles,
   TriangleAlert,
   UserSquare2,
@@ -54,6 +56,12 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
         { label: 'Home', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
         { label: 'Projects', href: `${staffBase}/projects`, Icon: Briefcase },
         { label: 'Approvals', href: `${staffBase}/approvals`, Icon: ClipboardCheck },
+      ];
+    case 'developer':
+      return [
+        { label: 'Overview', href: '/app/dev/overview', Icon: LayoutDashboard },
+        { label: 'Jobs', href: '/app/dev/jobs', Icon: Clock },
+        { label: 'Connections', href: '/app/dev/connections', Icon: Plug },
       ];
     default:
       return [];

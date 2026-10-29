@@ -29,12 +29,11 @@
 /* unread: a square red count; new announcements: a square red dot */
 .tbar-badge{position:absolute;top:5px;right:5px;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:4px;background:oklch(var(--danger-mid));color:#fff;box-shadow:0 0 0 2px oklch(var(--surface-raised));font:500 10.5px/1 var(--font-sans),sans-serif;display:flex;align-items:center;justify-content:center}
 .tbar-dot{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:2px;background:oklch(var(--danger-mid));box-shadow:0 0 0 2px oklch(var(--surface-raised))}
-/* the search field narrows on small desktops and folds to a 36 px icon on tablets */
-@media (max-width:1439px){.tbar-srch{width:300px}}
+/* VCFO Spectrum (F-366): the search field is 380 px from 768 px and a 36 px icon on phones.
+   The field may shrink when the trail and the bells need room, never under 200 px. */
+.tbar-srch{flex:0 1 380px;min-width:200px}
 @media (max-width:1279px){
   .tbar{padding:0 20px}
-  .tbar-srch{width:36px;padding:0;justify-content:center}
-  .tbar-srch .tbar-sl,.tbar-srch .tbar-kbd{display:none}
 }
 @media (max-width:959px){
   .tbar-pre{display:none}
@@ -49,6 +48,8 @@
   .tbar-ol{font-size:15px}
   .tbar-r{gap:0}
   .tbar-srch,.tbar-ib{width:44px;height:44px;border-color:transparent;background:transparent}
+  .tbar-srch{flex:none;min-width:0;padding:0;justify-content:center}
+  .tbar-srch .tbar-sl,.tbar-srch .tbar-kbd{display:none}
   .tbar-srch svg,.tbar-ib svg{width:19px;height:19px}
   .tbar-badge{top:6px;right:5px;min-width:17px;height:17px}
 }

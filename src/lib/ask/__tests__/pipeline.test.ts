@@ -100,10 +100,18 @@ beforeEach(() => {
 afterEach(() => setAskProviderForTests(undefined));
 
 describe('role gate', () => {
-  it.each(['manager', 'intern'] as const)('rejects %s before any work', async (role) => {
+  it.each(['developer'] as const)('rejects %s before any work', async (role) => {
     const provider = mockProvider([]);
     setAskProviderForTests(provider);
     await expect(run(role, { shell: 'admin', message: 'hi' })).rejects.toBeInstanceOf(AskForbiddenError);
+    expect(provider.calls).toHaveLength(0);
+    expect(appendAskMessage).not.toHaveBeenCalled();
+  });
+
+  it.each(['manager', 'intern'] as const)('keeps %s out of the client shell', async (role) => {
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    await expect(run(role, { shell: 'client', message: 'hi' })).rejects.toBeInstanceOf(AskForbiddenError);
     expect(provider.calls).toHaveLength(0);
     expect(appendAskMessage).not.toHaveBeenCalled();
   });

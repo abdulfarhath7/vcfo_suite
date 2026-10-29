@@ -45,31 +45,43 @@ import {
   ShieldCheck,
   Lock,
   Database,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL, type Role } from '@/lib/auth';
 import { UserFace } from '@/components/common/UserFace';
 import { AskLauncher } from '@/components/ask/AskLauncher';
 import type { SidebarMode } from '@/context/AppContext';
-import { SbcLogo } from '@/components/brand/SbcLogo';
+import { Tip } from '@/components/ui/tip';
 import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
 import { complianceLeaves } from '@/components/shell/compliance-nav';
 import { TONE } from '@/components/shell/nav-tones';
-import { InternClientsNav, INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
+import { INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
 import {
   SidebarNavCountBadge,
   SidebarNavGroup,
   SidebarRailBadge,
   SidebarRailLabel,
   SidebarRailUrgentBadge,
+  sidebarIconSize,
+  sidebarIdleIconClass,
   sidebarNavTriggerClass,
   sidebarPillClass,
   sidebarRailClass,
   type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
+import {
+  ClientsFoldBody,
+  NewTag,
+  PeopleFoldBody,
+  ReportsToBlock,
+  SidebarFoldRow,
+} from '@/components/shell/StaffSidebarFolds';
+import { usePendingApprovals } from '@/hooks/use-pending-approvals';
+import { useQuery } from '@tanstack/react-query';
 import {
   readSavedSidebarMode,
   saveSidebarMode,
@@ -80,7 +92,7 @@ import {
 } from '@/components/shell/intern-sidebar';
 import { useSidebarNarrow, useSidebarPeek, useSidebarPinKey } from '@/components/shell/use-sidebar-peek';
 import { MotionActivePill, SidebarHoverGlass, sidebarHoverAttrs, useSidebarHoverFollow } from '@/components/shell/MotionActivePill';
-import { roleHomePath, roleSettingsPath } from '@/lib/auth-routes';
+import { roleHomePath, roleProfilePath } from '@/lib/auth-routes';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { surfaceCssVars } from '@/lib/shell/shell-appearance';
@@ -237,13 +249,74 @@ function railHomePath(role: Role): string {
   return role === 'developer' ? '/app/dev/overview' : roleHomePath(role);
 }
 function railProfilePath(role: Role): string {
-  return role === 'developer' ? '/app/dev/overview' : roleSettingsPath(role);
+  return role === 'developer' ? '/app/dev/overview' : roleProfilePath(role);
 }
 
+/* R-49: the lead's "needs action" count is urgent, so it is a red square in the open
+   sidebar and a red badge on the rail. */
 const InternMyWorkBadge = memo(function InternMyWorkBadge() {
   const { kpis } = useInternPortfolio();
-  return <SidebarNavCountBadge count={kpis.action.total} />;
+  return <SidebarNavCountBadge count={kpis.action.total} hot />;
 });
+
+/* Steps waiting on a manager or admin decision are urgent too (Approvals). */
+function useApprovalCount(role: Role): number {
+  return usePendingApprovals(role === 'manager' ? 'manager' : 'firm').length;
+}
+const ApprovalsBadge = memo(function ApprovalsBadge({ role }: { role: Role }) {
+  return <SidebarNavCountBadge count={useApprovalCount(role)} hot />;
+});
+const RailApprovalsBadge = memo(function RailApprovalsBadge({ role, ink }: { role: Role; ink: 'light' | 'dark' }) {
+  return <SidebarRailUrgentBadge count={useApprovalCount(role)} ink={ink} />;
+});
+
+/* Developer console counts (P-254): Outlook links that need attention on Connections and job
+   runs that failed today on Jobs, both urgent. They share the console home's read
+   (`/api/dev/overview`, developer or super admin) and its cache key. */
+type DevCounts = { outlook?: { expiringSoon?: number }; jobs?: { state: string; data?: { failedToday?: number } } };
+function useDevCount(href: string): number {
+  const q = useQuery<DevCounts>({
+    queryKey: ['dev', '/api/dev/overview'],
+    queryFn: async () => {
+      const res = await fetch('/api/dev/overview', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      return (await res.json()) as DevCounts;
+    },
+    staleTime: 60_000,
+  });
+  const d = q.data;
+  if (!d) return 0;
+  if (href === '/app/dev/connections') return d.outlook?.expiringSoon ?? 0;
+  if (href === '/app/dev/jobs') return d.jobs?.state === 'ok' ? (d.jobs.data?.failedToday ?? 0) : 0;
+  return 0;
+}
+const DEV_COUNT_HREFS = new Set(['/app/dev/connections', '/app/dev/jobs']);
+const DevBadge = memo(function DevBadge({ href }: { href: string }) {
+  return <SidebarNavCountBadge count={useDevCount(href)} hot />;
+});
+const RailDevBadge = memo(function RailDevBadge({ href, ink }: { href: string; ink: 'light' | 'dark' }) {
+  return <SidebarRailUrgentBadge count={useDevCount(href)} ink={ink} />;
+});
+
+/** Folds per role: which row carries the client list, and which carries the people list. */
+function clientsRowHref(role: Role, staffBase: string): string | null {
+  if (role === 'intern') return INTERN_CLIENTS_HREF;
+  if (role === 'super_admin') return '/app/super/projects';
+  if (role === 'admin') return '/app/admin/projects';
+  if (role === 'manager') return `${staffBase}/projects`;
+  return null;
+}
+function peopleRowHref(role: Role, staffBase: string): { href: string; kind: 'leads' | 'managers' } | null {
+  if (role === 'manager') return { href: `${staffBase}/team`, kind: 'leads' };
+  if (role === 'admin') return { href: '/app/admin/people', kind: 'managers' };
+  if (role === 'super_admin') return { href: '/app/super/team', kind: 'managers' };
+  return null;
+}
+function approvalsHref(role: Role, staffBase: string): string | null {
+  if (role === 'admin') return '/app/admin/approvals';
+  if (role === 'manager') return `${staffBase}/approvals`;
+  return null;
+}
 
 const StackedInternWorkBadge = memo(function StackedInternWorkBadge() {
   const { kpis } = useInternPortfolio();
@@ -275,7 +348,7 @@ function SidebarNavBody({
   /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
   stacked?: boolean;
 }) {
-  const { user, engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement, signOut, unreadNotificationCount } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const osReduce = useReducedMotion();
@@ -334,8 +407,12 @@ function SidebarNavBody({
 
   if (!user) return null;
 
+  /* P-255: inside the developer console the super admin sees the console's own items. */
+  const inDevConsole = user.role === 'super_admin' && pathname.startsWith('/app/dev');
   const items =
-    user.role === 'super_admin'
+    inDevConsole
+      ? developerItems
+      : user.role === 'super_admin'
       ? superAdminItems
       : user.role === 'admin'
         ? firmAdminItems
@@ -349,10 +426,12 @@ function SidebarNavBody({
 
   return (
     <>
+      {/* F-278 and F-305: a 56 px head. Open, the VCFO wordmark at 26 px; on the rail, the
+          26 px VCFO mark. The white skin takes the wordmark drawn for light surfaces. */}
       <div
         className={cn(
-          'flex h-[var(--shell-rail-height)] shrink-0 items-center',
-          expanded ? 'px-3.5' : 'justify-center px-1',
+          'flex h-14 shrink-0 items-center',
+          expanded ? 'gap-2 pl-4 pr-2.5' : 'justify-center px-1',
           ink === 'light' ? 'border-b border-side-line' : 'border-b border-line',
         )}
       >
@@ -361,20 +440,21 @@ function SidebarNavBody({
           onClick={onNavigate}
           aria-label="VCFO Suite home"
           className={cn(
-            'flex min-w-0 items-center rounded-md py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
-            expanded ? 'gap-2.5 pr-1.5' : 'justify-center',
+            'flex min-w-0 items-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+            expanded ? '' : 'grid h-9 w-9 place-items-center hover:bg-side-hover',
           )}
         >
-          <SbcLogo variant="mark" size={28} decorative />
-          <span
-            className={cn(
-              'truncate text-[13px] font-semibold tracking-tight',
-              ink === 'light' ? 'text-side-ink' : 'text-ink',
-              !expanded && 'hidden',
-            )}
-          >
-            VCFO Suite
-          </span>
+          {expanded ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={ink === 'light' ? '/client-portal/vcfo-logo-on-black.webp' : '/client-portal/vcfo-logo-on-white.webp'}
+              alt="VCFO Suite by SBC"
+              className="block h-[26px] w-auto max-w-full object-contain object-left"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/client-portal/vcfo-mark.webp" alt="" className="h-[26px] w-[26px] object-contain" />
+          )}
         </Link>
         {/* R-49: the pin button sits in the sidebar head; the rail keeps it at its foot. */}
         {expanded && onTogglePin && mode ? (
@@ -392,6 +472,8 @@ function SidebarNavBody({
             return <SidebarNavSectionBreak key={it.id} expanded={expanded} ink={ink} />;
           }
           if (isNavGroup(it)) {
+            const isCompliances = it.id.startsWith('compliances:');
+            const isUpdates = it.id.startsWith('updates:');
             return (
               <SidebarNavGroup
                 key={it.id}
@@ -407,27 +489,54 @@ function SidebarNavBody({
                 ink={ink}
                 hoverFollow={hoverFollow}
                 stacked={stacked}
+                badge={isUpdates ? unreadNotificationCount : undefined}
+                tag={isCompliances && (user.role === 'intern' || user.role === 'manager') ? <NewTag ink={ink} /> : undefined}
               />
             );
           }
-          if (user.role === 'intern' && it.to === INTERN_CLIENTS_HREF) {
+          const foldActive = pathname === it.to || pathname.startsWith(`${it.to}/`);
+          if (!stacked && it.to === clientsRowHref(user.role, staffBase)) {
             return (
-              <InternClientsNav
+              <SidebarFoldRow
                 key={it.to}
-                expanded={expanded}
-                pathname={pathname}
-                layoutIdPrefix={layoutIdPrefix}
-                onNavigate={onNavigate}
+                href={it.to}
+                label={it.label}
                 icon={it.icon}
-                iconTone={it.iconTone}
+                active={foldActive}
+                expanded={expanded}
                 ink={ink}
-                hoverFollow={hoverFollow}
-                stacked={stacked}
-              />
+                onNavigate={onNavigate}
+                count={engagements.length}
+                foldKey={`${user.role}.clients`}
+                foldLabel="clients"
+              >
+                <ClientsFoldBody role={user.role} pathname={pathname} viewAllHref={it.to} ink={ink} onNavigate={onNavigate} />
+              </SidebarFoldRow>
+            );
+          }
+          const people = peopleRowHref(user.role, staffBase);
+          if (!stacked && people && it.to === people.href) {
+            return (
+              <SidebarFoldRow
+                key={it.to}
+                href={it.to}
+                label={it.label}
+                icon={it.icon}
+                active={foldActive}
+                expanded={expanded}
+                ink={ink}
+                onNavigate={onNavigate}
+                foldKey={`${user.role}.${people.kind}`}
+                foldLabel={people.kind === 'leads' ? 'project leads' : 'managers'}
+              >
+                <PeopleFoldBody kind={people.kind} href={it.to} ink={ink} onNavigate={onNavigate} role={user.role} />
+              </SidebarFoldRow>
             );
           }
           const active = pathname.startsWith(it.to);
           const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
+          const showApprovals = it.to === approvalsHref(user.role, staffBase);
+          const showDev = (user.role === 'developer' || inDevConsole) && DEV_COUNT_HREFS.has(it.to);
           return (
             <Link
               key={it.to}
@@ -464,8 +573,8 @@ function SidebarNavBody({
               <it.icon
                 className={cn(
                   'relative z-10 shrink-0',
-                  stacked ? 'h-[1.15rem] w-[1.15rem]' : 'h-4 w-4',
-                  active ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : it.iconTone,
+                  sidebarIconSize(expanded, stacked),
+                  active ? (ink === 'light' ? 'text-side-active-ink' : 'text-brand-text') : cn(sidebarIdleIconClass(ink), it.iconTone),
                 )}
                 strokeWidth={1.6}
               />
@@ -473,6 +582,8 @@ function SidebarNavBody({
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
               {stacked && !showInternBadge ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
               {!expanded && !stacked && showInternBadge ? <RailInternWorkBadge ink={ink} /> : null}
+              {!expanded && !stacked && showApprovals ? <RailApprovalsBadge role={user.role} ink={ink} /> : null}
+              {!expanded && !stacked && showDev ? <RailDevBadge href={it.to} ink={ink} /> : null}
               {/* On the rail the name stays for screen readers; the title shows it on hover. */}
               <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'sr-only')}>
                 {it.label}
@@ -483,13 +594,22 @@ function SidebarNavBody({
                   !expanded && 'hidden',
                 )}
               >
-                {showInternBadge ? <InternMyWorkBadge /> : <SidebarNavCountBadge count={it.badge ?? 0} />}
+                {showInternBadge ? (
+                  <InternMyWorkBadge />
+                ) : showApprovals ? (
+                  <ApprovalsBadge role={user.role} />
+                ) : showDev ? (
+                  <DevBadge href={it.to} />
+                ) : (
+                  <SidebarNavCountBadge count={it.badge ?? 0} ink={ink} />
+                )}
               </span>
             </Link>
           );
         })}
         <div onPointerEnter={onHoverLeave}>
           <SidebarComplianceMini expanded={expanded} staffBase={staffBase} ink={ink} />
+          {expanded ? <div className="mt-3"><ReportsToBlock role={user.role} ink={ink} /></div> : null}
         </div>
         </LayoutGroup>
       </nav>
@@ -549,6 +669,7 @@ function SidebarNavBody({
             )}
           </Link>
           {expanded ? (
+            <>
             <button
               type="button"
               onClick={openShortcuts}
@@ -561,6 +682,20 @@ function SidebarNavBody({
             >
               <Keyboard className="h-4 w-4" strokeWidth={1.6} aria-hidden />
             </button>
+            {/* F-303: sign out sits in the profile row. */}
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              aria-label="Sign out"
+              title="Sign out"
+              className={cn(
+                'grid h-[30px] w-[30px] flex-none place-items-center rounded-md transition-colors',
+                ink === 'light' ? 'text-side-muted hover:bg-white/[.12] hover:text-white' : 'text-ink-muted hover:bg-surface-sunken',
+              )}
+            >
+              <LogOut className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+            </button>
+            </>
           ) : null}
         </div>
       </div>
@@ -581,12 +716,8 @@ function SidebarNavSectionBreak({
       aria-hidden
       className={cn('flex items-center gap-2 px-2.5', expanded ? 'py-2.5' : 'py-1.5')}
     >
-      <span
-        className={cn(
-          'h-px flex-1',
-          ink === 'light' ? 'bg-side-line' : 'bg-line',
-        )}
-      />
+      {/* F-287: the prototype has no hairline in the nav list; the break is space alone. */}
+      <span className="h-px flex-1" data-ink={ink} />
     </div>
   );
 }
@@ -611,11 +742,12 @@ function SidebarPinButton({
   const pinned = sidebarIsPinned(mode);
   const { label, hint } = sidebarPinCopy(mode);
   const Icon = pinned ? PanelLeftClose : placement === 'rail' ? PanelLeftOpen : Pin;
+  void hint;
   return (
+    <Tip label={label} keys={['[']} side="right">
     <button
       type="button"
       onClick={onClick}
-      title={hint}
       aria-label={label}
       aria-keyshortcuts="["
       data-sidebar-pin={pinned ? 'pinned' : 'rail'}
@@ -630,6 +762,7 @@ function SidebarPinButton({
     >
       <Icon className="h-4 w-4" strokeWidth={1.6} aria-hidden />
     </button>
+    </Tip>
   );
 }
 
@@ -691,7 +824,7 @@ export function RoleSidebar() {
       {...handlers}
       onTransitionEnd={onWidthTransitionEnd}
       className={cn(
-        'shell-sidebar-skin fixed bottom-0 left-0 top-[3px] z-30 hidden flex-col overflow-hidden lg:flex',
+        'shell-sidebar-skin fixed bottom-0 left-0 top-[3px] z-30 hidden flex-col overflow-hidden md:flex',
         // R-49: a short slide, and none under reduced motion.
         reduceMotion ? 'transition-none' : 'transition-[width] duration-200 ease-out motion-reduce:transition-none',
         sidebar.ink === 'light' ? 'border-r-1.5 border-side-line' : 'border-r-1.5 border-line',
@@ -727,7 +860,13 @@ export function MobileNavSheet() {
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
       <SheetContent
         side="left"
-        className="shell-sidebar-skin flex h-full w-[min(18rem,88vw)] flex-col gap-0 border-line bg-transparent p-0 sm:max-w-xs"
+        /* F-315: the 248 px sidebar as a drawer, with a 40 px close button in its head. */
+        className={cn(
+          'shell-sidebar-skin flex h-full w-[min(248px,88vw)] flex-col gap-0 border-line bg-transparent p-0 sm:max-w-xs',
+          '[&>button.absolute]:right-2.5 [&>button.absolute]:top-2 [&>button.absolute]:h-10 [&>button.absolute]:w-10',
+          sidebar.ink === 'light' &&
+            '[&>button.absolute]:bg-white/[.08] [&>button.absolute]:text-white [&>button.absolute:hover]:bg-white/[.14] [&>button.absolute:hover]:text-white',
+        )}
         data-ink={sidebar.ink}
         style={surfaceCssVars(sidebar, 'sidebar')}
       >
