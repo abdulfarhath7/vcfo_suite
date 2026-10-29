@@ -481,7 +481,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
                             </>
                           )}
                         </span>
-                        <span className="tlv-d" style={{ left: X(due), background: late ? 'var(--over)' : 'var(--navy)' }} />
+                        <span className="tlv-d" style={{ left: X(due), background: late ? 'oklch(var(--danger))' : 'oklch(var(--brand))' }} />
                       </span>
                     );
                   })}

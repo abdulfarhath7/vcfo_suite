@@ -38,7 +38,7 @@ export function CompProvider({
   children: ReactNode;
   /** Drill-down row click (calendar → Filings side panel; filings → side panel). */
   onDrillRow: (f: PortalFiling) => void;
-  /** Drill top link: calendar "Open Filings →" / filings "Show in the Filings list ↓". */
+  /** Drill footer button: "Open filings" on the calendar, "Show in the list" on the Filings page. */
   drillLink: { text: string; onClick: () => void };
 }) {
   const { toast, shell } = usePortal();

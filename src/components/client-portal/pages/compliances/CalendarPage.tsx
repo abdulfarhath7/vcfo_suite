@@ -20,7 +20,6 @@ import {
   byDate,
   comingUp,
   daysBetween,
-  dow,
   tileSub,
   filterArea,
   fmtDM,
@@ -39,21 +38,19 @@ import {
   sortByDue,
   statusOf,
   stepMonth,
-  tileInk,
-  tileVar,
   todayIso,
   worstStatus,
   type AreaFilter,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ArrowRight, ChevronRight, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip as SChip } from '@/components/ui/spectrum-chip';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { useCompFilings } from './api';
-import { AreaChip, Chip, I, NameWithLinks, ProofChip, Seg, usePageTips } from './bits';
-import { AreaTag, Empty, Island, PortalLink, StatusChip, TINT } from './spectrum';
+import { ProofChip, Seg, usePageTips } from './bits';
+import { AreaTag, Empty, Island, PortalLink, STROKE, StatusChip, TINT } from './spectrum';
 import { CompProvider, useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { DonutCard } from './DonutCard';
@@ -120,7 +117,7 @@ export function CompliancesCalendar() {
       <CompProvider
         today={st.today}
         onDrillRow={openInFilings}
-        drillLink={{ text: 'Open Filings →', onClick: () => go(`${portalHref('filings')}?fy=${fyStartOfMonth(st.month)}`) }}
+        drillLink={{ text: 'Open filings', onClick: () => go(`${portalHref('filings')}?fy=${fyStartOfMonth(st.month)}`) }}
       >
         {narrow ? <CalendarMobile state={st} onOpenFilings={openInFilings} /> : <CalendarDesktop st={st} onOpenFilings={openInFilings} />}
       </CompProvider>
@@ -195,7 +192,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
     const ab = root.current!;
     const a = ab.getBoundingClientRect();
     const c = cell.getBoundingClientRect();
-    const PW = Math.min(320, window.innerWidth - 24);
+    const PW = Math.min(340, window.innerWidth - 24);
     const VW = Math.min(a.right, window.innerWidth) - a.left;
     const right = c.right - a.left + 12 + PW <= VW - 12;
     const left = c.left - a.left - PW - 12 >= 12;
@@ -220,7 +217,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   })();
 
   return (
-    <div className="cp-comp-root page stag" ref={root}>
+    <div className="cp-comp-root page" ref={root}>
       {/* header (C-01) */}
       <div className="row-wrap" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div data-calnav="" className="calbar">
@@ -249,16 +246,19 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
               same={(i) => toast(`Already showing the ${['month', 'year', 'timeline'][i]} view`)}
             />
           </span>
-          <a
-            className="btn btn-o btn-s"
-            href={`${portalHref('filings')}?fy=${fy}`}
-            onClick={(e) => {
-              e.preventDefault();
-              go(`${portalHref('filings')}?fy=${fy}`);
-            }}
-          >
-            {I.file(14)} Filings
-          </a>
+          <Island inline>
+            <Button asChild variant="secondary" className="h-8 font-semibold text-ink">
+              <a
+                href={`${portalHref('filings')}?fy=${fy}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go(`${portalHref('filings')}?fy=${fy}`);
+                }}
+              >
+                <FileText size={16} strokeWidth={1.6} aria-hidden /> Filings
+              </a>
+            </Button>
+          </Island>
         </div>
       </div>
 
@@ -322,11 +322,9 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
               </div>
             ) : null}
             {loading && view === 'month' ? (
-              <div aria-busy="true" aria-label="Loading calendar" style={{ position: 'absolute', inset: '44px 14px 14px', display: 'grid', placeItems: 'center' }}>
-                <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>
-                  Loading…
-                </span>
-              </div>
+              <Island className="absolute inset-x-3.5 bottom-3.5 top-11">
+                <div aria-busy="true" aria-label="Loading calendar" className="h-full animate-pulse rounded-md bg-surface-sunken" />
+              </Island>
             ) : null}
           </div>
         </div>
@@ -387,6 +385,21 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
           const s = it.length ? worstStatus(it, today) : '';
           const isToday = c.iso === today;
           const we = idx % 7 > 4;
+          // C-278: a day with no filings is not a button
+          if (!it.length)
+            return (
+              <div
+                key={c.iso}
+                role="gridcell"
+                className={`day${we ? ' we' : ''}${isToday ? ' today' : ''}`}
+                aria-label={`${fmtLongComma(c.iso)}, nothing due${isToday ? ', today' : ''}`}
+                aria-current={isToday ? 'date' : undefined}
+              >
+                <div className="dn">
+                  <span className="dt">{c.day}</span>
+                </div>
+              </div>
+            );
           return (
             <button
               key={c.iso}
@@ -418,7 +431,7 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
                 const rs = statusOf(r, today);
                 return (
                   <span key={r.id} className="ev" data-s={rs}>
-                    <i style={{ background: `var(${rs === 'ok' ? '--ok' : rs === 'due' ? '--due' : rs === 'over' ? '--over' : '--up'})` }} />
+                    <i style={{ background: STROKE[rs] }} />
                     <span className="a">{r.area}</span>
                     <span className="t">{r.name}</span>
                   </span>
@@ -446,67 +459,46 @@ function GridSkeleton() {
 /* ------------------------------------------------------- day pop-over */
 
 
+/**
+ * Day pop-over (prototype CalendarScreen DayPopover): 340px, a 1px edge and the float shadow, a head
+ * band with a hairline under it, then full-width rows with hairlines: the short area tag, the name
+ * with the portal ↗, the period, the Proof chip and the status chip. Esc and a click outside close it.
+ */
 const DayPopover = forwardRef<
   HTMLDivElement,
   { iso: string; cls: string; style: React.CSSProperties; rows: PortalFiling[]; onClose: () => void; onOpen: (f: PortalFiling) => void }
->(function DayPopover({ iso, cls, style, rows, onClose, onOpen }, ref) {
+>(function DayPopover({ iso, style, rows, onClose, onOpen }, ref) {
   const { today, openProof } = useComp();
   const { openChat } = usePortal();
   const list = sortByDue(rows);
-  const s = list.length ? worstStatus(list, today) : 'up';
-  const d = Number(iso.slice(8));
-  const closeBtn = useRef<HTMLButtonElement>(null);
+  const first = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    closeBtn.current?.focus({ preventScroll: true });
+    first.current?.focus({ preventScroll: true });
   }, [iso]);
   return (
-    <div className={`dpop${cls}`} ref={ref} style={style} role="dialog" aria-label={fmtLong(iso)}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 40, height: 44 }}>
-          <b style={{ fontSize: 16 }}>{d}</b>
-          <small>{dow(iso)}</small>
+      <div ref={ref} style={style} role="dialog" aria-label={fmtLong(iso)} className="cp-tw absolute z-[45] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-md border border-line bg-surface-raised shadow-float">
+        <div className="flex items-center gap-2 border-b border-line-soft bg-surface-sunken px-4 py-2.5">
+          <b className="flex-1 text-[13.5px] font-medium text-ink">{fmtLong(iso)}</b>
+          <span className="text-[12px] tabular-nums text-ink-muted">{plural(list.length, 'filing')}</span>
         </div>
-        <div style={{ flex: 1 }}>
-          <b style={{ fontSize: 14, fontWeight: 500 }}>{fmtLong(iso)}</b>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>{list.length ? plural(list.length, 'filing') : 'Free day'}</div>
-        </div>
-        <button ref={closeBtn} type="button" className="ibtn" style={{ border: 0 }} aria-label="Close" onClick={onClose}>
-          {I.x(14)}
-        </button>
-      </div>
-      {list.length ? (
-        <>
-          {list.map((r) => (
-            <div
-              key={r.id}
-              className="drow"
-              role="button"
-              tabIndex={0}
-              aria-label={`${r.name} · ${r.period} · open the details`}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', borderRadius: 6, border: '1.5px solid var(--border)', marginBottom: 6, cursor: 'pointer' }}
-              onClick={() => onOpen(r)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onOpen(r);
-                }
-              }}
-            >
-              <AreaChip a={r.area} compact />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 500, fontSize: 13 }}>
-                  <NameWithLinks f={r} />
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.period}</div>
-              </div>
+        <ul>
+          {list.map((r, i) => (
+            <li key={r.id} className="flex items-center gap-2 border-t border-line-soft px-4 py-2.5 first:border-t-0 hover:bg-surface-sunken">
+              <AreaTag a={r.area} compact />
+              <button ref={i === 0 ? first : undefined} type="button" className="min-w-0 flex-1 text-left" aria-label={`${r.name} · ${r.period} · open the details`} onClick={() => onOpen(r)}>
+                <span className="block truncate text-[13px] font-medium text-ink">{r.name}</span>
+                <span className="block truncate text-[12px] text-ink-muted">{r.period}</span>
+              </button>
+              <PortalLink f={r} />
               <ProofChip f={r} onOpen={(x) => openProof(x)} />
-              <Chip s={statusOf(r, today)} />
-            </div>
+              <StatusChip s={statusOf(r, today)} />
+            </li>
           ))}
+        </ul>
+        <div className="border-t border-line-soft px-4 py-2">
           <button
             type="button"
-            className="ask"
-            style={{ width: '100%', borderLeft: 0, borderRight: 0, borderBottom: 0, background: 'none', padding: '8px 0 0', font: 'inherit', fontWeight: 500, cursor: 'pointer' }}
+            className="text-[13px] font-medium text-brand-text hover:underline"
             onClick={() => {
               onClose();
               openChat(`What is due on ${fmtLong(iso)}?`);
@@ -514,11 +506,8 @@ const DayPopover = forwardRef<
           >
             Ask VCFO
           </button>
-        </>
-      ) : (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--subtle)' }}>Nothing due on this day</p>
-      )}
-    </div>
+        </div>
+      </div>
   );
 });
 
@@ -526,7 +515,8 @@ const DayPopover = forwardRef<
 
 const railCard = 'min-w-0 rounded-md border-1.5 border-line bg-surface-raised';
 
-function Rail({
+/** The right rail (donut, Next deadline, Coming up); the phone page stacks it under the agenda. */
+export function Rail({
   after,
   loading,
   monthAll,
@@ -605,13 +595,13 @@ function NextDeadlineCard({
   const firstOver = over[0];
   const fyTitle = `Compliances · ${fyLabelOf(fyStartOfMonth(nowKey))}`;
   const drillNext = () =>
-    next && openDrill({ kind: 'status', k: statusOf(next, today), title: `Compliances · ${monthLabel(nowKey)}`, rows: todayMonthRows.length ? todayMonthRows : railRows });
+    next && openDrill({ kind: 'status', k: 'due', title: `Compliances · ${monthLabel(nowKey)}`, rows: todayMonthRows.length ? todayMonthRows : railRows });
   return (
     <div className={cn(railCard, 'nd-card overflow-visible')}>
       {next ? (
         <div className="px-4 pb-3.5 pt-4">
-          <div className="flex items-center gap-1.5 text-[12px] font-medium text-ink">
-            <i className="h-1.5 w-1.5 rounded-[2px] bg-brand" aria-hidden />
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-ink">
+            <i className="h-1.5 w-1.5 rounded-[2px] bg-highlight-bright" aria-hidden />
             Next deadline
           </div>
           <div className="mt-2.5 flex items-center gap-3.5">
@@ -620,13 +610,13 @@ function NextDeadlineCard({
               onClick={drillNext}
               data-tip={`${next.name} · due ${fmtWDM(next.dueDate)}`}
               aria-label={`${plural(days, 'day')} left · ${next.name} · show the list`}
-              className="grid h-[62px] w-[58px] flex-none place-content-center rounded-md bg-upcoming-soft text-center leading-none text-ink hover:bg-surface-sunken"
+              className="grid h-[62px] w-[58px] flex-none place-content-center rounded-lg bg-upcoming-soft text-center leading-none text-ink hover:bg-surface-sunken"
             >
-              <b className="text-[28px] font-medium tabular-nums">{days}</b>
-              <small className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink-muted">{days === 1 ? 'day' : 'days'}</small>
+              <b className="text-[28px] font-bold tabular-nums">{days}</b>
+              <small className="mt-1 text-[11px] font-bold uppercase tracking-wide text-ink-muted">{days === 1 ? 'day' : 'days'}</small>
             </button>
             <div className="min-w-0 flex-1">
-              <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[17px] font-medium leading-tight text-ink">
+              <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[18px] font-bold leading-tight tracking-tight text-ink">
                 {next.name} · {next.period} <PortalLink f={next} />
                 <InfoPopover askAbout={`${next.name} · ${next.period}`} label="About this">
                   {next.name} for {next.period} · due {fmtWDM(next.dueDate)} · filed on the {portalFor(next)[0]}.
@@ -647,14 +637,15 @@ function NextDeadlineCard({
             <Button size="sm" className="flex-1" onClick={() => onOpen(next)}>
               Open filing <ArrowRight size={13} strokeWidth={1.6} aria-hidden />
             </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              aria-pressed={Boolean(next.reminderOn)}
-              onClick={() => (next.reminderOn ? toast(`Reminder already set · email on ${fmtDM(next.reminderOn)}`) : remind(next))}
-            >
-              {next.reminderOn ? `Reminder ${fmtDM(next.reminderOn)}` : 'Remind me'}
-            </Button>
+            {next.reminderOn ? (
+              <button type="button" className="self-center" onClick={() => toast(`Reminder set · email on ${fmtDM(next.reminderOn!)}`)} aria-label={`Reminder set · email on ${fmtDM(next.reminderOn)}`}>
+                <SChip tone="ok">Reminder set</SChip>
+              </button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => remind(next)}>
+                Remind me
+              </Button>
+            )}
           </div>
         </div>
       ) : (
@@ -669,8 +660,8 @@ function NextDeadlineCard({
           className="flex w-full items-center gap-2 border-t border-line-soft px-4 py-2.5 text-left text-[13px] hover:bg-surface-sunken"
         >
           <i className="h-2 w-2 flex-none rounded-[2px] bg-danger-mid" aria-hidden />
-          <b className="truncate font-medium text-ink">{firstOver.name}</b>
-          <span className="flex-none font-medium text-danger">
+          <b className="truncate font-semibold text-ink">{firstOver.name}</b>
+          <span className="flex-none font-semibold text-danger">
             {plural(-daysBetween(today, firstOver.dueDate), 'day')} late{over.length > 1 ? ` · +${over.length - 1} more` : ''}
           </span>
           <ChevronRight size={14} strokeWidth={1.6} className="ml-auto flex-none text-ink-muted" aria-hidden />
@@ -688,14 +679,14 @@ function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFi
     <div className={cn(railCard, 'px-4 pb-1.5 pt-3.5')}>
       <div className="mb-1 flex items-center gap-2 border-b border-line-soft pb-2">
         <h2 className="flex-1 text-[13px] font-medium text-ink">Coming up</h2>
-        <span className="text-[12px] tabular-nums text-ink-muted">{rows.length}</span>
+        <span className="text-[11px] tabular-nums text-ink-muted">{rows.length}</span>
       </div>
       {dates.length ? (
         dates.map(([d, list]) => (
           <div key={d} className="flex items-center gap-2.5 border-t border-line-soft py-2.5 first:border-t-0">
             <span className={cn('grid h-12 w-11 flex-none place-content-center rounded-md text-center leading-none', TINT[worstStatus(list, today)])} aria-hidden>
-              <b className="text-[18px] font-medium">{Number(d.slice(8))}</b>
-              <small className="mt-1 text-[11px] font-medium opacity-85">{tileSub(d, today.slice(0, 7))}</small>
+              <b className="text-[18px] font-bold">{Number(d.slice(8))}</b>
+              <small className="mt-1 text-[11px] font-semibold opacity-85">{tileSub(d, today.slice(0, 7))}</small>
             </span>
             <ul className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
               {list.map((r) => (
@@ -716,7 +707,7 @@ function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFi
           </div>
         ))
       ) : (
-        <p className="py-3 text-[13px] text-ink-faint">Nothing due in the coming weeks</p>
+        <p className="py-3 text-[13px] text-ink-faint">None</p>
       )}
     </div>
   );

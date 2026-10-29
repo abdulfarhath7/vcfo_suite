@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * Compliances · Filings (VCFO Spectrum FilingsScreen): the status donut and progress by area
- * (every part drills down), then the T1 grid with every filter in its head bar (R-08): the
- * two-month window with Full year, the frequency switch, the Area and Status filter chips,
- * the FY stepper, Export (CSV) and the calendar link. A row opens the right side panel (F-10).
+ * Compliances · Filings (VCFO Spectrum FilingsScreen): "Filings by month" and "Progress by area"
+ * for the whole financial year (every column and bar drills down), then the T1 grid with every
+ * filter in its head bar (R-08): the two-month window with Full year, the frequency switch with
+ * counts, the Area and Status filter chips, the FY stepper, Export (CSV) and the calendar link.
+ * A row opens the side panel at the right edge (F-10); that row keeps a soft blurple fill.
  *
- * URL state: ?fy= · ?cadence=monthly|quarterly|annual · ?area= · ?status=
+ * URL state: ?fy= · ?cadence=all|monthly|quarterly|annual · ?area= · ?status=
  * all|over|due|up|ok · ?period=YYYY-MM (window end month) · ?view=year · ?filing=<id>.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -30,7 +31,6 @@ import {
   fyLabelOf,
   fyMonths,
   fyStartOfMonth,
-  plural,
   sortByDue,
   statusOf,
   stepMonth,
@@ -43,15 +43,17 @@ import {
 import { fetchProofs, proofHref, useCompFilings, useDownload } from './api';
 import { usePageTips } from './bits';
 import { CompProvider, useComp } from './ctx';
-import { DonutCard } from './DonutCard';
+import { MonthChart } from './MonthChart';
 import { SidePanel } from './Detail';
-import { AreaTag, DateTile, Empty, FILL, FilterMenu, Island, PortalLink, STATUS_ORDER, StatusChip, WORD } from './spectrum';
+import { AreaTag, DateTile, Empty, FILL, FilterMenu, Island, PortalLink, SCard, STATUS_ORDER, StatusChip, WORD } from './spectrum';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { FiledCell, ProofCell } from './cells';
 import '../../css/compliances-board.css';
 
-const CADENCES = ['monthly', 'quarterly', 'annual'] as const;
+const CADENCES = ['all', 'monthly', 'quarterly', 'annual'] as const;
 type Cadence = (typeof CADENCES)[number];
-const CAD_FREQ: Record<Cadence, string[]> = { monthly: ['monthly'], quarterly: ['quarterly', 'half-yearly'], annual: ['annual', 'one-time'] };
+const CAD_FREQ: Record<Exclude<Cadence, 'all'>, string[]> = { monthly: ['monthly'], quarterly: ['quarterly', 'half-yearly'], annual: ['annual', 'one-time'] };
+const inCadence = (r: PortalFiling, c: Cadence) => c === 'all' || CAD_FREQ[c].includes(r.frequency.toLowerCase());
 const STATUS_KEYS: ('all' | CompStatus)[] = ['all', 'over', 'due', 'up', 'ok'];
 
 function useFilingsState() {
@@ -64,7 +66,7 @@ function useFilingsState() {
   const fyP = Number.parseInt(params.get('fy') ?? '', 10);
   const fy = Number.isInteger(fyP) && fyP >= 2000 && fyP <= curFy + 2 ? fyP : curFy;
   const cadP = params.get('cadence');
-  const cadence: Cadence = (CADENCES as readonly string[]).includes(cadP ?? '') ? (cadP as Cadence) : 'monthly';
+  const cadence: Cadence = (CADENCES as readonly string[]).includes(cadP ?? '') ? (cadP as Cadence) : 'all';
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREAS.some((a) => a.id === areaP) ? (areaP as AreaFilter) : 'all';
   const stP = params.get('status');
@@ -88,8 +90,7 @@ function useFilingsState() {
     },
     [params, router, pathname],
   );
-  const cadSet = cadP === cadence;
-  return { today, nowKey, curFy, fy, cadence, cadSet, area, status, end, months, fullYear, filing, set };
+  return { today, nowKey, curFy, fy, cadence, area, status, end, months, fullYear, filing, set };
 }
 
 export function CompliancesFilings() {
@@ -100,7 +101,7 @@ export function CompliancesFilings() {
       <CompProvider
         today={st.today}
         onDrillRow={(f) => st.set({ filing: f.id })}
-        drillLink={{ text: 'Show in the Filings list ↓', onClick: () => tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+        drillLink={{ text: 'Show in the list', onClick: () => tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
       >
         <FilingsBody st={st} tableRef={tableRef} />
       </CompProvider>
@@ -118,24 +119,19 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const q = useCompFilings(fy, after);
   const all = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
   const start = stepMonth(end, -1);
-  // no ?cadence: open on the first cadence that has filings in the window, so the
-  // page never opens on an empty Monthly view when the register has none (CP-05)
-  const cadence: Cadence = useMemo(() => {
-    if (st.cadSet || !all.length) return st.cadence;
-    const inWin = (r: PortalFiling) => fullYear || (r.dueDate >= `${start}-01` && r.dueDate <= `${end}-31`);
-    return CADENCES.find((c) => all.some((r) => CAD_FREQ[c].includes(r.frequency.toLowerCase()) && inWin(r))) ?? st.cadence;
-  }, [st.cadSet, st.cadence, all, fullYear, start, end]);
+  // no ?cadence opens on All, so the page never opens on an empty frequency (CP-05)
+  const cadence = st.cadence;
   const winLabel = fullYear
     ? fyLabelOf(fy)
     : start.slice(0, 4) === end.slice(0, 4)
-      ? `${MON[Number(start.slice(5)) - 1]} – ${MON[Number(end.slice(5)) - 1]} ${end.slice(0, 4)}`
-      : `${MON[Number(start.slice(5)) - 1]} ${start.slice(0, 4)} – ${MON[Number(end.slice(5)) - 1]} ${end.slice(0, 4)}`;
-  const winShort = fullYear ? fyLabelOf(fy) : `${MON[Number(start.slice(5)) - 1]}–${MON[Number(end.slice(5)) - 1]}`;
+      ? `${MON[Number(start.slice(5)) - 1]} to ${MON[Number(end.slice(5)) - 1]} ${end.slice(0, 4)}`
+      : `${MON[Number(start.slice(5)) - 1]} ${start.slice(0, 4)} to ${MON[Number(end.slice(5)) - 1]} ${end.slice(0, 4)}`;
 
-  const inView = useMemo(() => {
-    const cad = all.filter((r) => CAD_FREQ[cadence].includes(r.frequency.toLowerCase()));
-    return fullYear ? cad : cad.filter((r) => r.dueDate >= `${start}-01` && r.dueDate <= `${end}-31`);
-  }, [all, cadence, fullYear, start, end]);
+  const inWindow = useMemo(
+    () => (fullYear ? all : all.filter((r) => r.dueDate >= `${start}-01` && r.dueDate <= `${end}-31`)),
+    [all, fullYear, start, end],
+  );
+  const inView = useMemo(() => inWindow.filter((r) => inCadence(r, cadence)), [inWindow, cadence]);
   const table = useMemo(
     () => sortByDue(filterArea(inView, area).filter((r) => status === 'all' || statusOf(r, today) === status)),
     [inView, area, status, today],
@@ -163,7 +159,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       toast('That filing is not in your register');
     }
   }, [missing, lookup.isLoading, lookup.data, lookup.isFetched, fy, set, toast]);
-  const drillTitle = `Filings · ${fullYear ? fyLabelOf(fy) : winLabel.replace(' – ', '–')}`;
+  const onDrill = (title: string, list: PortalFiling[]) => openDrill({ kind: 'status', k: 'all', title, rows: list });
 
   const exportHref = `/api/client/compliances/export?fy=${fy}&cadence=${cadence}&area=${area}&status=${status}`;
   const canPrev = !fullYear && months.indexOf(start) > 0;
@@ -183,7 +179,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const statusWord = status === 'all' ? '' : WORD[status].toLowerCase();
 
   const columns: EFilingColumn<PortalFiling>[] = [
-    { key: 'due', header: 'Due', width: '64px', render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" /> },
+    { key: 'due', header: 'Due', width: '56px', render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" /> },
     { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
     {
       key: 'name',
@@ -211,14 +207,21 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
     },
     { key: 'freq', header: 'Frequency', width: '112px', render: (r) => <span className="text-ink-muted">{r.freqLabel}</span> },
     { key: 'filed', header: 'Filed on', width: '120px', render: (r) => <FiledCell r={r} today={today} /> },
-    { key: 'status', header: 'Status', width: '128px', render: (r) => <StatusChip s={statusOf(r, today)} /> },
+    { key: 'status', header: 'Status', width: '124px', render: (r) => <StatusChip s={statusOf(r, today)} /> },
+    {
+      key: 'ref',
+      header: 'Reference',
+      width: '190px',
+      render: (r) => (r.acknowledgementNo ? <span className="whitespace-nowrap font-mono text-[12.5px]">{r.acknowledgementNo}</span> : <span className="text-ink-faint">-</span>),
+    },
     { key: 'proof', header: 'Proof', width: '136px', align: 'right', render: (r) => <ProofCell r={r} onProof={openProof} onDownload={downloadPrimary} /> },
   ];
 
   const headBar = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft px-4 py-2.5 md:px-5">
+      <CardHeadTile title="Filings" />
       <h2 className="text-[15px] font-medium text-ink">Filings</h2>
-      {after && all.length ? <span className="rounded-sm bg-surface-sunken px-[7px] py-px text-[12px] font-medium text-ink-2">{table.length}</span> : null}
+      {after && all.length ? <span className="hidden text-[13px] tabular-nums text-ink-muted sm:inline">{table.length}</span> : null}
       <span className="inline-flex h-[30px] items-center overflow-hidden rounded-md border-1.5 border-line-strong bg-surface-raised">
         <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40" aria-label="Earlier months" disabled={!canPrev} onClick={() => set({ period: stepMonth(end, -1) })}>
           <ChevronLeft size={15} strokeWidth={1.6} aria-hidden />
@@ -240,10 +243,9 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       </span>
       <SpectrumTabs
         label="Frequency"
-        size="md"
         value={cadence}
-        onChange={(k) => (k === cadence ? toast(`Already showing ${k} filings`) : set({ cadence: k }))}
-        items={CADENCES.map((c) => ({ key: c, label: c[0]!.toUpperCase() + c.slice(1) }))}
+        onChange={(k) => set({ cadence: k === 'all' ? null : k })}
+        items={CADENCES.map((c) => ({ key: c, label: c[0]!.toUpperCase() + c.slice(1), count: inWindow.filter((r) => inCadence(r, c)).length }))}
       />
       <FilterMenu
         label="Area"
@@ -318,8 +320,15 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
         rows={table}
         rowKey={(r) => r.id}
         onRowClick={open}
-        pageSize={12}
+        pageSize={10}
         minWidth={760}
+        stickyFirstColumn
+        rowClassName={(r) =>
+          cn(
+            r.id === st.filing && 'bg-brand-soft',
+            (statusOf(r, today) === 'over' || (r.filedOn && r.filedOn > r.dueDate)) && 'text-danger',
+          ) || undefined
+        }
         empty={
           <span className="inline-flex flex-wrap items-center justify-center gap-3">
             {status === 'over' ? 'Nothing overdue' : `No ${statusWord ? `${statusWord} ` : ''}filings in ${winLabel}`}
@@ -335,15 +344,15 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   );
 
   return (
-    <div className="cp-comp-root page stag" ref={root}>
-      <Island className="grid gap-4">
+    <div className="cp-comp-root page" ref={root}>
+      <Island className="grid gap-5">
         {after && all.length ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
-            <DonutCard rows={inView} label="filings" drillTitle={drillTitle} />
-            <AreaBars rows={inView} title={`By area · ${winShort}`} drillTitle={drillTitle} openDrill={openDrill} />
+          <div className="grid gap-5 md:grid-cols-2">
+            <MonthChart rows={all} fy={fy} today={today} onDrill={onDrill} />
+            <AreaCard rows={all} onDrill={onDrill} />
           </div>
         ) : null}
-        <section ref={tableRef} className="surface min-w-0 overflow-visible">
+        <section ref={tableRef} className="min-w-0 overflow-visible rounded-md border-1.5 border-line bg-surface-raised">
           {headBar}
           {body}
         </section>
@@ -353,56 +362,52 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   );
 }
 
-/** Progress by area (R-25, C2): one stacked bar per area in status colours; every row drills down. */
-function AreaBars({
-  rows,
-  title,
-  drillTitle,
-  openDrill,
-}: {
-  rows: PortalFiling[];
-  title: string;
-  drillTitle: string;
-  openDrill: ReturnType<typeof useComp>['openDrill'];
-}) {
+/**
+ * Progress by area (prototype AreaCard, R-25): one 6px stacked bar per area for the whole financial
+ * year, "GST · 3 of 5 filed" over it and a legend row per status with its count. A bar opens the
+ * drill-down with that area's filings on the status tabs.
+ */
+function AreaCard({ rows, onDrill }: { rows: PortalFiling[]; onDrill: (title: string, list: PortalFiling[]) => void }) {
   const { today } = useComp();
-  const open = (a: string) => openDrill({ kind: 'area', k: a, title: drillTitle, rows });
+  const areas = AREA_ORDER.filter((a) => rows.some((r) => r.area === a));
   return (
-    <div className="min-w-0 rounded-md border-1.5 border-line bg-surface-raised px-4 py-3">
-      <h3 className="mb-2.5 text-[13px] font-medium text-ink-muted">{title}</h3>
-      <ul className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
-        {AREA_ORDER.map((a) => {
+    <SCard title="Progress by area">
+      <ul className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+        {areas.map((a) => {
           const rs = rows.filter((r) => r.area === a);
           const filed = rs.filter((r) => r.filedOn).length;
           const L = AREA_LABEL[a];
-          const parts = (['ok', 'over', 'due', 'up'] as CompStatus[]).map((s) => ({ s, n: rs.filter((r) => statusOf(r, today) === s).length }));
+          const parts = STATUS_ORDER.map((s) => ({ s, n: rs.filter((r) => statusOf(r, today) === s).length })).filter((p) => p.n > 0);
           return (
             <li key={a}>
               <button
                 type="button"
-                onClick={() => open(a)}
-                aria-label={`${L}: ${filed} of ${rs.length} filed. Show the list`}
-                data-tip={`${L} · ${plural(rs.length, 'filing')}`}
-                className="-mx-1.5 grid w-[calc(100%+12px)] gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-surface-sunken"
+                onClick={() => onDrill(`${L} filings`, rs)}
+                aria-label={`${L}: ${filed} of ${rs.length} filed. Show the rows`}
+                className="-m-1.5 grid w-[calc(100%+12px)] gap-2 rounded-md p-1.5 text-left hover:bg-surface-sunken"
               >
-                <span className="flex items-baseline gap-2 text-[13px]">
-                  <span className="font-medium text-ink">{L}</span>
-                  <span className="ml-auto tabular-nums text-ink-muted">
-                    {filed} of {rs.length} filed
-                  </span>
+                <span className="text-[13px] text-ink-muted">
+                  {L} · {filed} of {rs.length} filed
                 </span>
-                <span className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
-                  {parts
-                    .filter((p) => p.n > 0)
-                    .map((p) => (
-                      <i key={p.s} className={cn('block h-full rounded-[2px]', FILL[p.s])} style={{ width: `${(p.n / Math.max(1, rs.length)) * 100}%` }} />
-                    ))}
+                <span className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-bar" aria-hidden>
+                  {parts.map((p) => (
+                    <i key={p.s} className={cn('block h-full rounded-[2px]', FILL[p.s])} style={{ width: `${(p.n / Math.max(1, rs.length)) * 100}%` }} />
+                  ))}
+                </span>
+                <span className="grid gap-1">
+                  {parts.map((p) => (
+                    <span key={p.s} className="flex items-center gap-2 text-[12.5px] text-ink-2">
+                      <i className={cn('h-2 w-2 flex-none rounded-[2px]', FILL[p.s])} aria-hidden />
+                      <span className="flex-1">{WORD[p.s]}</span>
+                      <span className="tabular-nums text-ink-muted">{p.n}</span>
+                    </span>
+                  ))}
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-    </div>
+    </SCard>
   );
 }

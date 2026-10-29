@@ -1,6 +1,6 @@
 'use client';
 
-/** Year view (C-20; cal-views.js yearView()): 12 lined mini months of the FY. */
+/** Year view (prototype CalendarScreen YearView): twelve month cards of the FY; this month has a navy inner ring. */
 import {
   MON,
   byDate,
@@ -10,12 +10,12 @@ import {
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
 
-/** Status colours (R-25): a soft tint with its text colour on a day, the mid colour on a legend dot. Upcoming is grey. */
+/** Status colours (R-25, prototype YearView): a day with filings is a solid mid-colour fill with light text. */
 const TINT: Record<CompStatus, [string, string]> = {
-  ok: ['var(--ok-light)', 'var(--ok-text)'],
-  due: ['var(--due-light)', 'var(--due-text)'],
-  over: ['var(--over-light)', 'var(--over-text)'],
-  up: ['var(--up-light)', 'var(--fg)'],
+  ok: ['oklch(var(--positive-mid))', 'oklch(var(--surface-raised))'],
+  due: ['oklch(var(--warning-mid))', 'oklch(var(--surface-raised))'],
+  over: ['oklch(var(--danger-mid))', 'oklch(var(--surface-raised))'],
+  up: ['oklch(var(--upcoming-mid))', 'oklch(var(--surface-raised))'],
 };
 const DOT: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'oklch(var(--upcoming-mid))' };
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

@@ -6,7 +6,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
+import { Chip, OwnerChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { daysBetween } from '@/lib/client-portal/compliances';
 import type { CredentialsPayload } from '@/lib/client-portal/credentials';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
@@ -52,6 +52,15 @@ export const REG_FILL: Record<RegStatus, string> = {
   Overdue: 'bg-danger-mid',
   'Not started': 'bg-upcoming-mid',
 };
+/** Chip tone per status word (R-13); "Not started" is grey, not the blue `toneFor` gives /started/. */
+export const REG_TONE: Record<RegStatus, ChipTone> = {
+  Done: 'ok',
+  'In progress': 'prog',
+  Waiting: 'teal',
+  'Due soon': 'warn',
+  Overdue: 'bad',
+  'Not started': 'idle',
+};
 export const REG_ORDER: RegStatus[] = ['Overdue', 'Waiting', 'In progress', 'Not started', 'Done'];
 
 export function RegChip({ r, className }: { r: Pick<RegItem, 'status' | 'notNeeded'>; className?: string }) {
@@ -62,7 +71,7 @@ export function RegChip({ r, className }: { r: Pick<RegItem, 'status' | 'notNeed
       </Chip>
     );
   return (
-    <Chip fixed className={className}>
+    <Chip tone={REG_TONE[r.status]} fixed className={className}>
       {r.status}
     </Chip>
   );

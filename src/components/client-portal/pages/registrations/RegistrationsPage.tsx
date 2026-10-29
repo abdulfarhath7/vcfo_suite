@@ -24,16 +24,16 @@ import { todayIso } from '@/lib/client-portal/compliances';
 import { usePortal } from '../../PortalProvider';
 import { usePortalIncorporation } from '../../hooks';
 import { usePageTips } from '../compliances/bits';
-import { Empty, GoLink, GroupHead, HeadSearch, Island, ListRow, SCard, StackedBar, WordPill, relativeDue } from '../compliances/spectrum';
+import { DateTile, Empty, GoLink, GroupHead, HeadSearch, Island, ListRow, SCard, StackedBar, WordPill, relativeDue, urgencyTint } from '../compliances/spectrum';
 import { GROUP_ORDER, buildRegistrations, regDueWithin, regWaiting, type RegItem, type RegStatus } from './model';
-import { REG_FILL, REG_ORDER, RegChip, RegOwner, RegTile, registrationHref, useClientRegistrationFacts, useRegCredentials } from './parts';
+import { REG_FILL, REG_ORDER, RegChip, regDate, registrationHref, useClientRegistrationFacts, useRegCredentials } from './parts';
 import { renewalOf } from '@/lib/registrations/registration-facts';
 import { fmtDM } from '@/lib/client-portal/compliances';
 import '../../css/compliances-board.css';
 
 export function RegistrationsList() {
   const today = todayIso();
-  const { go } = usePortal();
+  const { go, after } = usePortal();
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
   const { model, loading } = usePortalIncorporation();
@@ -71,7 +71,6 @@ export function RegistrationsList() {
       <HeadSearch value={search} onChange={setSearch} label="Search registrations" onEnter={() => shown[0] && go(registrationHref(shown[0].id))} />
       <SpectrumTabs
         label="Group registrations"
-        size="md"
         value={view}
         onChange={(k) => setView(k as 'status' | 'group')}
         items={[
@@ -128,10 +127,10 @@ export function RegistrationsList() {
           <div key={g.id}>
             <GroupHead label={g.label} count={g.rows.length} open={Boolean(open)} onToggle={() => setClosed((c) => ({ ...c, [g.id]: !c[g.id] }))} />
             {open ? (
-              <ul className={g.id === 'na' ? '[&_a]:opacity-70' : undefined}>
+              <ul className={`grid grid-cols-1 gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 md:px-5 2xl:grid-cols-3${g.id === 'na' ? ' [&_a]:opacity-60' : ''}`}>
                 {g.rows.map((r) => (
-                  <li key={r.stepId}>
-                    <RegRow r={r} today={today} />
+                  <li key={r.stepId} className="min-w-0">
+                    <RegTileCard r={r} today={today} />
                   </li>
                 ))}
               </ul>
@@ -145,13 +144,15 @@ export function RegistrationsList() {
   return (
     <div className="cp-compliances">
       <div className="cp-comp-root page" ref={root}>
-        <Island className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Island className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <SCard title="Registrations" meta={items.length ? active.length : undefined} right={head} flush>
             {list}
           </SCard>
-          <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-1">
-            <SCard title="Due in the next 15 days" meta={due.length} flush>
-              {due.length ? (
+          <div className="grid min-w-0 gap-5">
+            <SCard title="Due in the next 15 days" flush>
+              {!after ? (
+                <Empty>After the certificate</Empty>
+              ) : due.length ? (
                 due.slice(0, 8).map((r) => {
                   const rel = relativeDue(today, r.due!);
                   return (
@@ -161,10 +162,10 @@ export function RegistrationsList() {
                       label={`${r.name} · ${rel.label}`}
                       className={`flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink first:border-t-0 hover:bg-surface-sunken md:px-5${rel.tone === 'bad' ? ' bg-danger-soft' : ''}`}
                     >
-                      <RegTile r={r} today={today} />
+                      <DateTile iso={r.due!} s={urgencyTint(today, r.due!)} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium">{r.name}</span>
-                        <span className="block truncate text-[12.5px] text-ink-muted">{r.group}</span>
+                        <span className="block truncate text-[13.5px] font-semibold">{r.name}</span>
+                        <span className="block truncate text-[12.5px] text-ink-muted">{r.needs[0] ?? r.group}</span>
                       </span>
                       <Chip tone={rel.tone} fixed>
                         {rel.label}
@@ -196,7 +197,7 @@ export function RegistrationsList() {
                 ))}
               </SCard>
             ) : null}
-            <SCard title="Waiting on client" meta={waiting.length} flush>
+            <SCard title="Waiting on client" flush>
               {waiting.length ? (
                 waiting.slice(0, 8).map((r) => (
                   <ListRow key={r.stepId}>
@@ -204,8 +205,8 @@ export function RegistrationsList() {
                       <span className="block truncate font-medium">{r.name}</span>
                       <span className="block truncate text-[12.5px] text-ink-muted">{r.needs.slice(0, 2).join(', ') || r.group}</span>
                     </span>
-                    <Button size="sm" onClick={() => go(clientIncorporationStepPath(r.step.item))}>
-                      Open
+                    <Button size="sm" variant="outline" onClick={() => go(clientIncorporationStepPath(r.step.item))}>
+                      Upload
                     </Button>
                   </ListRow>
                 ))
@@ -213,7 +214,7 @@ export function RegistrationsList() {
                 <Empty />
               )}
             </SCard>
-            <SCard title="Progress flow" className="md:col-span-2 lg:col-span-1">
+            <SCard title="Progress flow">
               <StackedBar
                 onPick={(k) => setStatus((cur) => (cur === k ? null : (k as RegStatus)))}
                 segments={REG_ORDER.map((s) => ({ key: s, label: s, value: count(s), fill: REG_FILL[s] }))}
@@ -226,32 +227,38 @@ export function RegistrationsList() {
   );
 }
 
-function RegRow({ r, today }: { r: RegItem; today: string }) {
+/**
+ * One registration as a tile (prototype RegisterGrid): a 1.5px card, the name with a chevron, the
+ * area pill and the status chip, then the date line (red when late), the stored number in mono
+ * and the renewal date once an expiry is stored.
+ */
+function RegTileCard({ r, today }: { r: RegItem; today: string }) {
   const renewal = renewalOf(r.facts, new Date(`${today}T00:00:00`));
+  const date = regDate(r);
+  const line = r.notNeeded ? 'Not needed' : r.status === 'Done' ? (date ? `Done ${fmtDM(date)}` : 'Done') : date ? `Due ${fmtDM(date)}` : r.needs[0] ?? r.group;
   return (
     <GoLink
       href={registrationHref(r.id)}
       label={`${r.name} · ${r.notNeeded ? 'Not needed' : r.status}`}
-      className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink hover:bg-surface-sunken md:px-5"
+      className="grid h-full min-w-0 gap-2 rounded-md border-1.5 border-line bg-surface-raised px-3.5 py-3 text-ink hover:border-line-strong hover:bg-surface-sunken"
     >
-      <RegTile r={r} today={today} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-ink">{r.name}</span>
-        <span className="block truncate text-[12.5px] text-ink-muted">
-          {r.number ? <span className="font-mono text-[12.5px] text-ink-2">{r.number}</span> : r.forms.join(' · ') || r.group}
-          {renewal ? (
-            <span className={renewal.word === 'Overdue' ? 'font-medium text-danger' : renewal.word ? 'font-medium text-warning' : undefined}>
-              {` · Renew by ${fmtDM(renewal.renewBy)}${renewal.word ? ` · ${renewal.word}` : ''}`}
-            </span>
-          ) : null}
-        </span>
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{r.name}</span>
+        <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
       </span>
-      <WordPill word={r.area} className="hidden sm:inline-flex" />
-      <span className="hidden md:inline-flex">
-        <RegOwner r={r} />
+      <span className="flex flex-wrap items-center gap-1.5">
+        <WordPill word={r.area} />
+        <RegChip r={r} />
       </span>
-      <RegChip r={r} />
-      <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
+      <span className="truncate text-[12.5px] text-ink-muted">
+        <span className={r.late && r.status !== 'Done' && !r.notNeeded ? 'font-medium text-danger' : undefined}>{line}</span>
+        {r.number ? <span className="font-mono text-ink-2">{` · ${r.number}`}</span> : null}
+        {renewal ? (
+          <span className={renewal.word === 'Overdue' ? 'font-medium text-danger' : renewal.word ? 'font-medium text-warning' : undefined}>
+            {` · Renew by ${fmtDM(renewal.renewBy)}${renewal.word ? ` · ${renewal.word}` : ''}`}
+          </span>
+        ) : null}
+      </span>
     </GoLink>
   );
 }

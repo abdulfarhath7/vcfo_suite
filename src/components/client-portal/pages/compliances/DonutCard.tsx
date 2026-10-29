@@ -72,10 +72,10 @@ export function DonutCard({ rows, label, drillTitle, className }: { rows: Portal
           onClick={() => open('all')}
           onKeyDown={key('all')}
         />
-        <text pointerEvents="none" x="44" y="43" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="500" fontSize="20" fill="oklch(var(--ink))">
+        <text pointerEvents="none" x="44" y="43" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize="20" fill="oklch(var(--ink))">
           <CountUp n={tot} svg />
         </text>
-        <text pointerEvents="none" x="44" y="58" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="500" fontSize={label.length > 7 ? 9.5 : 11} fill="oklch(var(--ink-muted))">
+        <text pointerEvents="none" x="44" y="58" textAnchor="middle" fontFamily="var(--font-sans)" fontWeight="600" fontSize={label.length > 7 ? 9.5 : 11} fill="oklch(var(--ink-muted))">
           {label}
         </text>
       </svg>
@@ -87,11 +87,11 @@ export function DonutCard({ rows, label, drillTitle, className }: { rows: Portal
               data-tip={`${WORD[s]} · ${c[s]}`}
               aria-label={`${WORD[s]} · ${c[s]} · show the list`}
               onClick={() => open(s)}
-              className="flex w-full items-center gap-2 rounded-sm text-left text-[13px] text-ink-2 hover:text-brand-text"
+              className="flex w-full items-center gap-2 rounded-sm text-left text-[12.5px] font-semibold text-ink-2 hover:text-brand-text"
             >
               <i className={cn('h-2.5 w-2.5 flex-none rounded-[3px]', FILL[s])} aria-hidden />
               <span className="flex-1">{WORD[s]}</span>
-              <b className="font-medium tabular-nums text-ink">
+              <b className="font-semibold tabular-nums text-ink">
                 <CountUp n={c[s]} />
               </b>
             </button>

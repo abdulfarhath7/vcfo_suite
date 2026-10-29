@@ -32,10 +32,13 @@ import { AreaChip, Chip, I, Seg, usePageTips } from './bits';
 import { useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { Empty, Island } from './spectrum';
-import type { useCalendarState } from './CalendarPage';
+import { Rail, type useCalendarState } from './CalendarPage';
+import { Button } from '@/components/ui/button';
+import { FileText } from 'lucide-react';
+import { portalHref } from '../../routes';
 
 export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
-  const { after, toast } = usePortal();
+  const { after, toast, go } = usePortal();
   const { today, openDrill } = useComp();
   const { area, set, nowKey } = state;
   const root = useRef<HTMLDivElement>(null);
@@ -231,6 +234,32 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
           )}
         </div>
       </div>
+      {/* C-338: the rail cards stack under the agenda, as on the desktop page; C-337: the Filings link stays. */}
+      <div style={{ marginTop: 12 }}>
+        <Rail
+          after={after}
+          loading={loading}
+          monthAll={fyRows.filter((r) => r.dueDate.startsWith(nowKey))}
+          month={nowKey}
+          railRows={fyRows}
+          nowKey={nowKey}
+          onOpen={(f) => set({ filing: f.id })}
+          openDrill={openDrill}
+        />
+      </div>
+      <Island className="mt-3">
+        <Button asChild variant="secondary" className="h-10 w-full font-semibold text-ink">
+          <a
+            href={`${portalHref('filings')}?fy=${todayFy}`}
+            onClick={(e) => {
+              e.preventDefault();
+              go(`${portalHref('filings')}?fy=${todayFy}`);
+            }}
+          >
+            <FileText size={16} strokeWidth={1.6} aria-hidden /> Filings
+          </a>
+        </Button>
+      </Island>
       {detail ? <DetailModal f={detail} onClose={() => set({ filing: null })} onOpenFilings={onOpenFilings} /> : null}
     </div>
   );

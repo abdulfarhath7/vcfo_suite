@@ -1,77 +1,68 @@
 'use client';
 
 /**
- * Filing detail — Calendar: centred pop-up (P-02, prototype detailModal());
- * Filings: right side panel (F-10, prototype filDetail()). Phones: bottom sheet.
+ * Filing record (prototype comp-parts.tsx FilingBody): the Calendar opens it in a centred dialog
+ * (EventDialog), Filings and the Obligation record in a side panel at the right edge (FilingPanel).
+ * Both show the four workflow steps (ST5), the facts, SBC's draft date, and the proof files with
+ * Preview and Download. The side panel also takes the client's own proof files (G-03), Remind me
+ * and "Open obligation". Phones: the dialog is a bottom sheet and the panel takes the full width.
  */
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
+import { Bell, CalendarPlus, Download, Eye, Paperclip } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { usePortal } from '../../PortalProvider';
+import { portalHref } from '../../routes';
 import {
+  AREA_LABEL,
   MON,
   MONTHS,
-  D,
   daysBetween,
-  dow,
   fmtDM,
   fmtDMY,
   focusNodes,
   plural,
   statusOf,
-  tileInk,
-  tileVar,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
+import { Button } from '@/components/ui/button';
 import { Chip as SChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
 import { toastSaved } from '@/components/ui/toast-saved';
-import { proofHref, useAddProof, useProofs } from './api';
-import { AreaChip, Chip, FocusTrack, I, PortalBtn, ProofChip, useModal } from './bits';
+import { proofHref, useAddProof, useProofs, type ProofMeta } from './api';
+import { FocusTrack } from './bits';
 import { useComp } from './ctx';
+import { slugOf } from './obligations';
+import { CpModal, CpSidePanel, KeyValue, PanelSection } from './overlay';
+import { AreaTag, PortalLink, StatusChip } from './spectrum';
 
 /** "Sep 2026" → "September 2026"; other period shapes unchanged. */
-function longPeriod(p: string): string {
+export function longPeriod(p: string): string {
   const m = /^([A-Z][a-z]{2}) (\d{4})$/.exec(p);
   if (!m) return p;
   const i = MON.indexOf(m[1]!);
   return i >= 0 ? `${MONTHS[i]} ${m[2]}` : p;
 }
 
-/** A soft Spectrum tag inside the legacy dialog markup. */
-function Tone({ tone, children }: { tone: ChipTone; children: string }) {
-  return (
-    <span className="cp-tw inline-flex align-middle">
-      <SChip tone={tone} dot={false} className="min-w-0">
-        {children}
-      </SChip>
-    </span>
-  );
-}
-
+/** Filed early or late as a chip; an open period shows "Due 20 Oct" (red when overdue). */
 export function TimingChip({ f, today }: { f: PortalFiling; today: string }) {
   if (f.filedOn) {
     const early = daysBetween(f.filedOn, f.dueDate);
-    if (early > 0) return <Tone tone="ok">{`${plural(early, 'day')} early`}</Tone>;
-    if (early === 0) return <Tone tone="ok">On the due date</Tone>;
-    return <Tone tone="bad">{`${plural(-early, 'day')} late`}</Tone>;
+    if (early > 0) return <SChip tone="ok">{`${plural(early, 'day')} early`}</SChip>;
+    if (early < 0) return <SChip tone="bad">{`${plural(-early, 'day')} late`}</SChip>;
+    return null;
   }
-  const left = daysBetween(today, f.dueDate);
-  if (left < 0) return <Tone tone="bad">{`${plural(-left, 'day')} late`}</Tone>;
-  return <Tone tone="prog">{left === 0 ? 'Due today' : `${plural(left, 'day')} left`}</Tone>;
-}
-
-function Fact({ k, children }: { k: string; children: React.ReactNode }) {
-  return (
-    <div style={{ padding: '9px 12px', borderRadius: 6, background: 'var(--raised)' }}>
-      <div style={{ font: '500 12px var(--font-sans),sans-serif', color: 'var(--muted)' }}>{k}</div>
-      <div style={{ fontWeight: 500, fontSize: 14, marginTop: 3 }}>{children}</div>
-    </div>
-  );
+  const late = daysBetween(today, f.dueDate) < 0;
+  return <span className={cn('text-[12.5px]', late ? 'font-medium text-danger' : 'text-ink-muted')}>Due {fmtDM(f.dueDate)}</span>;
 }
 
 export function RiskChip({ r }: { r: string }) {
   const t = r.toLowerCase();
   const tone: ChipTone = t === 'high' ? 'bad' : t === 'medium' ? 'warn' : 'ok';
-  return <Tone tone={tone}>{t ? t[0]!.toUpperCase() + t.slice(1) : '—'}</Tone>;
+  return (
+    <SChip tone={tone} dot={false}>
+      {t ? t[0]!.toUpperCase() + t.slice(1) : '-'}
+    </SChip>
+  );
 }
 
 function inr(v: string): string {
@@ -80,97 +71,12 @@ function inr(v: string): string {
   return `₹ ${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
-/* ---------------------------------------------------- calendar pop-up */
-
-export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; onClose: () => void; onOpenFilings: (f: PortalFiling) => void }) {
-  const { today, companyShort, openProof, addToCalendar } = useComp();
-  const { openChat } = usePortal();
-  const ref = useRef<HTMLDivElement>(null);
-  useModal(ref, onClose);
-  const s = statusOf(f, today);
-  const d = D(f.dueDate);
-  return (
-    <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
-      <div className="scrim" onClick={onClose} />
-      <div className="modal cdet" role="dialog" aria-modal="true" aria-labelledby="comp-det-t" ref={ref}>
-        <span className="sheet-grab" aria-hidden="true" />
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--hair)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 56, height: 62 }}>
-            <b style={{ fontSize: 24 }}>{d.getUTCDate()}</b>
-            {/* month and weekday on their own lines: "OCT · SAT" does not fit the 56 px tile (CP-12) */}
-            <small>{MON[d.getUTCMonth()]}</small>
-            <small style={{ fontSize: 9.5, marginTop: 0, opacity: 0.75 }}>{dow(f.dueDate)}</small>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-              <AreaChip a={f.area} />
-              <Chip s={s} />
-              <ProofChip f={f} onOpen={(x) => openProof(x)} />
-              <TimingChip f={f} today={today} />
-            </div>
-            <div id="comp-det-t" style={{ font: "500 22px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
-            </div>
-          </div>
-          <button type="button" className="ibtn" aria-label="Close" onClick={onClose}>
-            {I.x(15)}
-          </button>
-        </div>
-        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div style={{ overflowX: 'auto' }}>
-            <FocusTrack nodes={focusNodes(f, companyShort, today)} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))', gap: 10 }}>
-            <Fact k="Authority">{f.authorityName}</Fact>
-            <Fact k="Frequency">{f.freqLabel}</Fact>
-            <Fact k="Period">{f.periodLong ?? f.period}</Fact>
-            <Fact k="Penalty risk">
-              <RiskChip r={f.penaltyRisk} />
-            </Fact>
-          </div>
-          {f.draftDueOn && !f.approvedOn && !f.filedOn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, background: 'oklch(var(--waiting-soft))', color: 'oklch(var(--waiting))', fontWeight: 500, fontSize: 13 }}>
-              {I.user(16)}
-              <span style={{ flex: 1 }}>
-                SBC will send the draft for {companyShort}’s approval by {fmtDM(f.draftDueOn)}.
-              </span>
-            </div>
-          ) : null}
-        </div>
-        <div className="det-ft" style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="ask"
-            style={{ border: 0, margin: 0, padding: 0, flex: 1, background: 'none', font: 'inherit', cursor: 'pointer', textAlign: 'left', }}
-            onClick={() => {
-              onClose();
-              openChat(`Tell me about ${f.name} · ${f.period}`);
-            }}
-          >
-            Ask VCFO about {f.name}
-          </button>
-          {!f.filedOn ? (
-            <button type="button" className="btn btn-o btn-s" onClick={() => addToCalendar(f)}>
-              {I.cal(14)} Add to my calendar
-            </button>
-          ) : null}
-          <button type="button" className="btn btn-n btn-s" onClick={() => onOpenFilings(f)}>
-            Open in filings {I.arrow(13)}
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ----------------------------------------------------- filings panel */
-
-function kb(n: number | null): string {
+export function kb(n: number | null | undefined): string {
   if (n == null) return '';
   return n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
-function ext(name: string, mime: string | null): string {
+
+export function fileExt(name: string, mime: string | null): string {
   const e = /\.([a-z0-9]{2,4})$/i.exec(name)?.[1]?.toUpperCase();
   if (e) return e;
   if (mime?.includes('pdf')) return 'PDF';
@@ -178,17 +84,58 @@ function ext(name: string, mime: string | null): string {
   return 'FILE';
 }
 
-export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void }) {
-  const { today, companyShort, openProof, remind, addToCalendar } = useComp();
-  const { openChat, toast } = usePortal();
-  const ref = useRef<HTMLDivElement>(null);
-  useModal(ref, onClose);
-  const s = statusOf(f, today);
-  const d = D(f.dueDate);
+function FilingTitle({ f }: { f: PortalFiling }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {f.name} · {longPeriod(f.period)}
+      <PortalLink f={f} />
+    </span>
+  );
+}
+
+function FilingChips({ f, today }: { f: PortalFiling; today: string }) {
+  return (
+    <>
+      <AreaTag a={f.area} />
+      <StatusChip s={statusOf(f, today)} />
+      <TimingChip f={f} today={today} />
+    </>
+  );
+}
+
+/** One proof file row: the type badge, name, size and date, Preview and Download. */
+export function ProofRow({ f, p, first, onPreview }: { f: PortalFiling; p: ProofMeta; first?: boolean; onPreview: () => void }) {
+  return (
+    <li className={cn('flex items-center gap-3 border-t border-line-soft px-5 py-2.5 first:border-t-0', first && 'bg-surface-sunken')}>
+      <FileBadge name={p.fileName} type={fileExt(p.fileName, p.mime) === 'PDF' ? 'PDF' : undefined} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-medium text-ink">{p.fileName}</span>
+        <span className="block truncate text-[12px] text-ink-muted">
+          {[p.byClient ? 'From you · SBC checks it' : null, kb(p.sizeBytes), fmtDM(p.uploadedAt.slice(0, 10))].filter(Boolean).join(' · ')}
+        </span>
+      </span>
+      <Button size="iconSm" variant="quiet" aria-label={`Preview ${p.fileName}`} title="Preview" onClick={onPreview}>
+        <Eye size={16} strokeWidth={1.6} aria-hidden />
+      </Button>
+      <Button asChild size="iconSm" variant="quiet">
+        <a href={proofHref(f.id, p.id)} download aria-label={`Download ${p.fileName}`} title="Download">
+          <Download size={16} strokeWidth={1.6} aria-hidden />
+        </a>
+      </Button>
+    </li>
+  );
+}
+
+/** Steps, facts, SBC's draft date and the proof files of one filing. `upload` adds the client's own files. */
+function FilingBody({ f, upload }: { f: PortalFiling; upload?: boolean }) {
+  const { today, companyShort, openProof } = useComp();
+  const { toast } = usePortal();
   const proofs = useProofs(f.id);
   const addProof = useAddProof();
   const fileRef = useRef<HTMLInputElement>(null);
   const [failed, setFailed] = useState<{ name: string; error: string }[]>([]);
+  const s = statusOf(f, today);
+  const lateBy = f.filedOn ? daysBetween(f.dueDate, f.filedOn) : 0;
   const onFiles = (list: FileList | null) => {
     const files = Array.from(list ?? []);
     if (!files.length) return;
@@ -210,71 +157,42 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
       },
     );
   };
-  const proofList = proofs.data ?? [];
+  const list = proofs.data ?? [];
+  const facts: Array<{ k: string; v: ReactNode; mono?: boolean }> = [
+    { k: 'Authority', v: f.authorityName || f.authority },
+    { k: 'Frequency', v: f.freqLabel },
+    { k: 'Period', v: f.periodLong ?? f.period },
+    { k: 'Due', v: <span className={cn(s === 'over' && 'font-medium text-danger')}>{fmtDMY(f.dueDate)}</span> },
+    { k: 'Filed on', v: f.filedOn ? <span className={cn(lateBy > 0 && 'text-danger')}>{fmtDMY(f.filedOn)}</span> : '-' },
+    { k: 'Reference', v: f.acknowledgementNo ?? '-', mono: Boolean(f.acknowledgementNo) },
+    { k: 'Filed by', v: f.filedOn ? (f.filedByName ? `${f.filedByName} · SBC` : 'SBC') : '-' },
+    { k: 'Penalty risk', v: f.penaltyRisk ? <RiskChip r={f.penaltyRisk} /> : '-' },
+    ...(f.amountPaid ? [{ k: 'Tax paid', v: inr(f.amountPaid) }] : []),
+  ];
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
-      <div className="scrim" onClick={onClose} />
-      <div className="modal fpan" role="dialog" aria-modal="true" aria-labelledby="comp-pan-t" ref={ref}>
-        <span className="sheet-grab" aria-hidden="true" />
-        <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--hair)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 56, height: 62 }}>
-            <b style={{ fontSize: 24 }}>{d.getUTCDate()}</b>
-            <small>{MON[d.getUTCMonth()]}</small>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-              <AreaChip a={f.area} />
-              <Chip s={s} />
-              <ProofChip f={f} onOpen={(x) => openProof(x)} />
-              <TimingChip f={f} today={today} />
-            </div>
-            <div id="comp-pan-t" style={{ font: "500 21px var(--font-sans)", letterSpacing: '-.02em', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              {f.name} · {longPeriod(f.period)} <PortalBtn f={f} />
-            </div>
-          </div>
-          <button type="button" className="ibtn" aria-label="Close" onClick={onClose}>
-            {I.x(15)}
-          </button>
-        </div>
-        <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 18, flex: 1, overflow: 'auto' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <FocusTrack nodes={focusNodes(f, companyShort, today)} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {f.acknowledgementNo ? (
-              <Fact k="ARN">
-                <span className="idm">{f.acknowledgementNo}</span>
-              </Fact>
-            ) : null}
-            {f.amountPaid ? (
-              <Fact k="Tax paid">
-                <span className="metric" style={{ fontSize: 16 }}>
-                  {inr(f.amountPaid)}
-                </span>
-              </Fact>
-            ) : null}
-            <Fact k="Due date">{fmtDMY(f.dueDate)}</Fact>
-            {f.filedOn ? (
-              <Fact k="Filed by">{f.filedByName ? `${f.filedByName} · SBC` : `SBC · ${fmtDMY(f.filedOn)}`}</Fact>
-            ) : (
-              <>
-                <Fact k="Authority">{f.authorityName}</Fact>
-                <Fact k="Frequency">{f.freqLabel}</Fact>
-                <Fact k="Penalty risk">
-                  <RiskChip r={f.penaltyRisk} />
-                </Fact>
-              </>
-            )}
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <p className="st" style={{ margin: 0, flex: 1 }}>
-                Proof
-              </p>
-              <button type="button" className="btn btn-o btn-s" disabled={addProof.isPending} onClick={() => fileRef.current?.click()}>
-                {I.clip(14)} {addProof.isPending ? 'Uploading…' : 'Add proof'}
-              </button>
+      <PanelSection>
+        <FocusTrack nodes={focusNodes(f, companyShort, today)} />
+      </PanelSection>
+      <PanelSection>
+        <KeyValue rows={facts} />
+      </PanelSection>
+      {f.draftDueOn && !f.approvedOn && !f.filedOn ? (
+        <PanelSection>
+          <p className="rounded-md bg-waiting-soft px-3 py-2.5 text-[13px] font-medium text-waiting">
+            SBC will send the draft for {companyShort}’s approval by {fmtDM(f.draftDueOn)}.
+          </p>
+        </PanelSection>
+      ) : null}
+      <PanelSection
+        title="Proof"
+        flush
+        right={
+          upload ? (
+            <>
+              <Button size="sm" variant="secondary" disabled={addProof.isPending} onClick={() => fileRef.current?.click()}>
+                <Paperclip size={14} strokeWidth={1.6} aria-hidden /> {addProof.isPending ? 'Uploading' : 'Add proof'}
+              </Button>
               <input
                 ref={fileRef}
                 type="file"
@@ -287,83 +205,129 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
                   e.target.value = '';
                 }}
               />
-            </div>
-            {failed.length ? (
-              <div role="alert" style={{ display: 'grid', gap: 4, marginBottom: 8, fontSize: 12.5, color: 'var(--over-text, var(--muted))' }}>
-                {failed.map((x) => (
-                  <span key={x.name}>
-                    {x.name} · {x.error}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            {proofs.isLoading ? (
-              <div className="sk-row" style={{ height: 62, borderRadius: 8 }} />
-            ) : proofList.length ? (
-              proofList.map((p, i) => (
-                <div
-                  key={p.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 10,
-                    border: `1.5px solid ${i === 0 && !p.byClient ? 'oklch(var(--brand-line))' : 'var(--border)'}`,
-                    borderRadius: 6,
-                    marginBottom: 6,
-                    ...(i === 0 && !p.byClient ? { background: 'var(--primary-light)' } : {}),
-                  }}
-                >
-                  <span className="cp-tw inline-flex flex-none">
-                    <FileBadge name={p.fileName} type={ext(p.fileName, p.mime) === 'PDF' ? 'PDF' : undefined} />
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <b style={{ fontSize: 13, fontWeight: 500, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.fileName}</b>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      {[p.byClient ? 'From you · SBC checks it' : null, kb(p.sizeBytes), fmtDM(p.uploadedAt.slice(0, 10))].filter(Boolean).join(' · ')}
-                    </div>
-                  </div>
-                  <button type="button" className="ibtn" data-tip="Preview" aria-label={`Preview ${p.fileName}`} onClick={() => openProof(f, p.id)}>
-                    {I.eye(15)}
-                  </button>
-                  <a className="ibtn" data-tip="Download" aria-label={`Download ${p.fileName}`} href={proofHref(f.id, p.id)} download>
-                    {I.down(15)}
-                  </a>
-                </div>
-              ))
-            ) : (
-              // the header already carries the "Proof pending" chip (CP-15): say what will land here instead
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1.5px dashed oklch(var(--line-strong))', borderRadius: 6, color: 'var(--muted)', fontSize: 13 }}>
-                {I.file(16)}
-                <span style={{ flex: 1 }}>{f.filedOn ? 'Challan or acknowledgement from SBC' : 'No proof yet'}</span>
-              </div>
-            )}
+            </>
+          ) : undefined
+        }
+      >
+        {failed.length ? (
+          <div role="alert" className="grid gap-1 px-5 pb-2 text-[12.5px] text-danger">
+            {failed.map((x) => (
+              <span key={x.name}>
+                {x.name} · {x.error}
+              </span>
+            ))}
           </div>
-        </div>
-        <div className="det-ft" style={{ padding: '12px 20px', borderTop: '1px solid var(--hair)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="ask"
-            style={{ border: 0, margin: 0, padding: 0, flex: 1, background: 'none', font: 'inherit', cursor: 'pointer', textAlign: 'left', }}
-            onClick={() => {
-              onClose();
-              openChat(`Tell me about ${f.name} · ${f.period}`);
-            }}
-          >
-            Ask VCFO about this filing
-          </button>
+        ) : null}
+        {proofs.isLoading ? (
+          <div className="px-5 pb-4" aria-busy="true" aria-label="Loading the proof">
+            <span className="block h-11 animate-pulse rounded-md bg-surface-sunken" />
+          </div>
+        ) : list.length ? (
+          <ul>
+            {list.map((p, i) => (
+              <ProofRow key={p.id} f={f} p={p} first={i === 0} onPreview={() => openProof(f, p.id)} />
+            ))}
+          </ul>
+        ) : f.filedOn ? (
+          <div className="px-5 pb-4">
+            <SChip tone="warn">Proof pending</SChip>
+          </div>
+        ) : (
+          <p className="px-5 pb-4 text-[13px] text-ink-faint">None</p>
+        )}
+      </PanelSection>
+    </>
+  );
+}
+
+function AskLink({ f, onClose }: { f: PortalFiling; onClose: () => void }) {
+  const { openChat } = usePortal();
+  return (
+    <button
+      type="button"
+      className="mr-auto text-[13px] font-medium text-brand-text hover:underline"
+      onClick={() => {
+        onClose();
+        openChat(`Tell me about ${f.name} · ${f.period}`);
+      }}
+    >
+      Ask VCFO
+    </button>
+  );
+}
+
+/* ---------------------------------------------------- calendar dialog */
+
+export function DetailModal({ f, onClose, onOpenFilings }: { f: PortalFiling; onClose: () => void; onOpenFilings: (f: PortalFiling) => void }) {
+  const { today, addToCalendar } = useComp();
+  return (
+    <CpModal
+      size="lg"
+      flush
+      titleId="comp-det-t"
+      onClose={onClose}
+      eyebrow={`${f.authorityName || f.authority} · ${f.freqLabel}`}
+      title={<FilingTitle f={f} />}
+      sub={<FilingChips f={f} today={today} />}
+      footer={
+        <>
+          <AskLink f={f} onClose={onClose} />
+          {!f.filedOn ? (
+            <Button variant="secondary" onClick={() => addToCalendar(f)}>
+              <CalendarPlus size={16} strokeWidth={1.6} aria-hidden /> Add to my calendar
+            </Button>
+          ) : null}
+          <Button onClick={() => onOpenFilings(f)}>Open in filings</Button>
+        </>
+      }
+    >
+      <FilingBody f={f} />
+    </CpModal>
+  );
+}
+
+/* ----------------------------------------------------- filings panel */
+
+export function SidePanel({ f, onClose, hideObligation }: { f: PortalFiling; onClose: () => void; hideObligation?: boolean }) {
+  const { today, remind, addToCalendar } = useComp();
+  const { go } = usePortal();
+  const obHref = `${portalHref('obligations')}/${encodeURIComponent(slugOf(f.particular))}?filing=${encodeURIComponent(f.id)}`;
+  return (
+    <CpSidePanel
+      width={520}
+      titleId="comp-pan-t"
+      onClose={onClose}
+      eyebrow={`${AREA_LABEL[f.area]} · ${f.freqLabel}`}
+      title={<FilingTitle f={f} />}
+      sub={<FilingChips f={f} today={today} />}
+      footer={
+        <>
+          <AskLink f={f} onClose={onClose} />
           {!f.filedOn ? (
             <>
-              <button type="button" className="btn btn-o btn-s" onClick={() => addToCalendar(f)}>
-                {I.cal(14)} Add to my calendar
-              </button>
-              <button type="button" className="btn btn-o btn-s" onClick={() => remind(f)} aria-pressed={Boolean(f.reminderOn)}>
-                {I.bell(14)} {f.reminderOn ? `Reminder ${fmtDM(f.reminderOn)}` : 'Remind me'}
-              </button>
+              <Button variant="secondary" size="sm" onClick={() => addToCalendar(f)}>
+                <CalendarPlus size={14} strokeWidth={1.6} aria-hidden /> Add to my calendar
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => remind(f)} aria-pressed={Boolean(f.reminderOn)}>
+                <Bell size={14} strokeWidth={1.6} aria-hidden /> {f.reminderOn ? `Reminder ${fmtDM(f.reminderOn)}` : 'Remind me'}
+              </Button>
             </>
           ) : null}
-        </div>
-      </div>
-    </>
+          {!hideObligation ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                onClose();
+                go(obHref);
+              }}
+            >
+              Open obligation
+            </Button>
+          ) : null}
+        </>
+      }
+    >
+      <FilingBody f={f} upload />
+    </CpSidePanel>
   );
 }

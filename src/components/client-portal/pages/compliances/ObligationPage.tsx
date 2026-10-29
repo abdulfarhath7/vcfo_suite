@@ -2,31 +2,31 @@
 
 /**
  * Compliances · one obligation (VCFO Spectrum ObligationScreen): the record head with the
- * status, the area, the next due date and "n of m filed", then This period (the four
- * workflow steps of the open period, ST5), the History grid of every period, About, and
- * the What it is, Why it applies and If filed late texts from the scoped obligation read
- * (G-04, asked with one of the client's own filing ids).
+ * status, the area, the next due date, the step count and "n of m filed", then This period
+ * (the four workflow steps of the open period as a vertical ST5 list with their dates), the
+ * Past periods grid, About (the text, the facts and the SBC SOP link), and the Why it applies,
+ * Due rule and If filed late texts from the scoped obligation read (G-04, asked with one of
+ * the client's own filing ids).
  * A period opens the same side panel as Filings (proof viewer and download, Remind me, Add
  * to my calendar, Ask VCFO). `?filing=<id>` opens that period's panel on load.
  */
 import { useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Bell, CalendarPlus, Paperclip } from 'lucide-react';
+import { Bell, CalendarPlus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { portalHref } from '../../routes';
-import { AREA_FULL, focusNodes, fmtDM, fmtDMY, fyStartOfMonth, portalFor, statusOf, todayIso, type PortalFiling } from '@/lib/client-portal/compliances';
+import { AREA_FULL, focusNodes, fmtDM, fyStartOfMonth, portalFor, statusOf, todayIso, type PortalFiling, type TrackNode } from '@/lib/client-portal/compliances';
 import { fetchProofs, proofHref, useAllFilings, useDownload } from './api';
-import { FocusTrack } from './bits';
 import { FiledCell, ProofCell } from './cells';
 import { CompProvider, useComp } from './ctx';
-import { RiskChip, SidePanel } from './Detail';
+import { RiskChip, SidePanel, longPeriod } from './Detail';
 import { groupObligations, type Obligation } from './obligations';
 import { OBLIGATIONS_BASE } from './ObligationsPage';
-import { AreaTag, DateTile, Empty, FactRows, GoLink, Island, PortalLink, RecordHead, SCard, StatusChip } from './spectrum';
-import { useObligationAbout, whyItAppliesLine } from '@/hooks/use-obligation-about';
+import { AreaTag, Empty, FactRows, GoLink, Island, PortalLink, RecordHead, SCard, StatusChip, StepList, type ThreadStep } from './spectrum';
+import { useObligationAbout, whyItAppliesLine, type ObligationAbout } from '@/hooks/use-obligation-about';
 import '../../css/compliances-board.css';
 
 export function CompliancesObligation({ id }: { id: string }) {
@@ -39,7 +39,7 @@ export function CompliancesObligation({ id }: { id: string }) {
         today={today}
         onDrillRow={(f) => go(filingsOf(f))}
         drillLink={{
-          text: 'Open Filings →',
+          text: 'Open filings',
           onClick: () => go(portalHref('filings')),
         }}
       >
@@ -136,6 +136,7 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
   const late = o.status === 'over';
   const history = [...o.instances].sort((a, b) => b.dueDate.localeCompare(a.dueDate));
   const [portal] = portalFor(o);
+  const about = useObligationAbout({ instanceId: o.instances[0]?.id ?? null });
 
   const downloadPrimary = (f: PortalFiling) => {
     fetchProofs(f.id)
@@ -161,18 +162,15 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
       </Button>
     </>
   ) : o.last && o.last.proofCount > 0 ? (
-    <Button onClick={() => openProof(o.last!)}>
-      <Paperclip size={16} strokeWidth={1.6} aria-hidden /> Open proof
+    <Button onClick={() => downloadPrimary(o.last!)}>
+      <Download size={16} strokeWidth={1.6} aria-hidden /> Download acknowledgement
     </Button>
   ) : null;
+  const curNodes = cur ? focusNodes(cur, companyShort, today) : [];
+  const stepsDone = curNodes.filter((n) => n.st === 'done').length;
+  const past = history.filter((r) => r.id !== cur?.id && (r.filedOn || r.dueDate < today));
 
   const columns: EFilingColumn<PortalFiling>[] = [
-    {
-      key: 'due',
-      header: 'Due',
-      width: '64px',
-      render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" />,
-    },
     {
       key: 'period',
       header: 'Period',
@@ -206,7 +204,7 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
     {
       key: 'status',
       header: 'Status',
-      width: '128px',
+      width: '124px',
       render: (r) => <StatusChip s={statusOf(r, today)} />,
     },
     {
@@ -238,49 +236,51 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
             o.next
               ? {
                   k: 'Next due',
-                  v: fmtDMY(o.next.dueDate),
+                  v: fmtDM(o.next.dueDate),
                   tone: late ? 'bad' : undefined,
                 }
               : {
-                  k: 'Last filed',
-                  v: o.last?.filedOn ? fmtDMY(o.last.filedOn) : '-',
+                  k: 'Filed',
+                  v: o.last?.filedOn ? fmtDM(o.last.filedOn) : '-',
                 },
+            ...(curNodes.length ? [{ k: 'Steps', v: `${stepsDone} of ${curNodes.length}` }] : []),
             { k: 'Filed', v: `${o.filed} of ${o.total}` },
           ]}
           actions={actions}
         />
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="grid min-w-0 gap-4">
+        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid min-w-0 gap-5">
             {cur ? (
               <SCard
                 title="This period"
-                meta={cur.period}
+                meta={cur.periodLong ?? longPeriod(cur.period)}
                 right={
                   <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => setFiling(cur.id)}>
                     Open details
                   </button>
                 }
               >
-                <FocusTrack nodes={focusNodes(cur, companyShort, today)} />
+                <StepList steps={threadSteps(cur, curNodes, companyShort)} today={today} />
               </SCard>
             ) : null}
-            <SCard title="History" meta={o.instances.length} flush>
+            <SCard title="Past periods" flush>
               <div className="px-2 pb-3 pt-1 md:px-3">
                 <EFilingGrid
-                  caption={`${o.name} periods`}
+                  caption={`${o.name} past periods`}
                   columns={columns}
-                  rows={history}
+                  rows={past}
                   rowKey={(r) => r.id}
                   onRowClick={(r) => setFiling(r.id)}
-                  pageSize={8}
+                  pageSize={6}
                   minWidth={640}
                   empty="None"
                 />
               </div>
             </SCard>
           </div>
-          <div className="grid min-w-0 gap-4">
+          <div className="grid min-w-0 gap-5">
             <SCard title="About" flush>
+              {about.data?.about ? <p className="px-4 pb-1 pt-4 text-[13.5px] leading-relaxed text-ink-2 md:px-5">{about.data.about}</p> : null}
               <FactRows
                 rows={[
                   { k: 'Authority', v: o.authorityName },
@@ -298,40 +298,56 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
                   },
                 ]}
               />
-              <div className="border-t border-line-soft px-4 py-3 md:px-5">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-soft px-4 py-3 md:px-5">
+                <GoLink href={portalHref('knowledge-bank')} className="text-[13px] font-medium text-brand-text hover:underline">
+                  Read the SBC SOP
+                </GoLink>
                 <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => openChat(`Tell me about ${o.name}`)}>
                   Ask VCFO about {o.name}
                 </button>
               </div>
             </SCard>
-            <AboutTexts instanceId={o.instances[0]?.id ?? null} />
+            <AboutTexts about={about.data ?? null} />
           </div>
         </div>
       </Island>
-      {panel ? <SidePanel f={panel} onClose={() => setFiling(null)} /> : null}
+      {panel ? <SidePanel f={panel} onClose={() => setFiling(null)} hideObligation /> : null}
     </>
   );
 }
 
-/** What it is, Why it applies (with the due rule) and If filed late; not drawn until loaded. */
-function AboutTexts({ instanceId }: { instanceId: string | null }) {
-  const q = useObligationAbout({ instanceId });
-  const about = q.data;
+/** The four steps of a period as a vertical ST5 list (prototype SideThread), with the dates the register holds. */
+function threadSteps(f: PortalFiling, nodes: TrackNode[], companyShort: string): ThreadStep[] {
+  const dates = [f.dataReceivedOn, null, f.approvedOn, f.filedOn];
+  return nodes.map((n, i) => {
+    const client = n.icon === 'file' || n.icon === 'person';
+    const state: ThreadStep['state'] = n.st === 'done' ? 'done' : n.st === 'next' ? 'next' : 'now';
+    return {
+      key: String(i),
+      title: n.label,
+      state,
+      client,
+      holder: client ? `With ${companyShort}` : 'With SBC',
+      note: state === 'done' ? (i === 3 && f.filedByName ? `${f.filedByName} · SBC` : undefined) : n.sub || undefined,
+      date: dates[i] ?? undefined,
+    };
+  });
+}
+
+/** Why it applies and Due rule, then If filed late; not drawn until loaded. The about text sits in the About card. */
+function AboutTexts({ about }: { about: ObligationAbout | null }) {
   if (!about) return null;
   const why = whyItAppliesLine(about);
   return (
     <>
-      {about.about ? (
-        <SCard title="What it is">
-          <p className="text-[13.5px] leading-relaxed text-ink-2">{about.about}</p>
+      {why ? (
+        <SCard title="Why it applies">
+          <p className="text-[13.5px] leading-relaxed text-ink-2">{why}</p>
         </SCard>
       ) : null}
-      {why || about.dueRule ? (
-        <SCard title="Why it applies">
-          <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">
-            {why ? <p>{why}</p> : null}
-            {about.dueRule ? <p className="text-ink-muted">{about.dueRule}</p> : null}
-          </div>
+      {about.dueRule ? (
+        <SCard title="Due rule">
+          <p className="text-[13.5px] leading-relaxed text-ink-2">{about.dueRule}</p>
         </SCard>
       ) : null}
       {about.ifLate ? (

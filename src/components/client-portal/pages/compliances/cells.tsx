@@ -10,9 +10,13 @@ import { daysBetween, fmtDM, plural, statusOf, type PortalFiling } from '@/lib/c
 export function FiledCell({ r, today }: { r: PortalFiling; today: string }) {
   const s = statusOf(r, today);
   const left = daysBetween(today, r.dueDate);
-  if (r.filedOn) return <span className={cn('whitespace-nowrap font-medium', daysBetween(r.dueDate, r.filedOn) > 0 ? 'text-danger' : 'text-ink')}>{fmtDM(r.filedOn)}</span>;
+  if (r.filedOn) return <span className={cn('whitespace-nowrap', daysBetween(r.dueDate, r.filedOn) > 0 && 'font-medium text-danger')}>{fmtDM(r.filedOn)}</span>;
   if (s === 'over') return <span className="whitespace-nowrap font-medium text-danger">{plural(-left, 'day')} late</span>;
-  return <span className="whitespace-nowrap text-ink-muted">{left === 0 ? 'Due today' : `In ${plural(left, 'day')}`}</span>;
+  return (
+    <span className="whitespace-nowrap text-ink-muted" title={left === 0 ? 'Due today' : `Due in ${plural(left, 'day')}`}>
+      Not filed yet
+    </span>
+  );
 }
 
 export function ProofCell({ r, onProof, onDownload }: { r: PortalFiling; onProof: (f: PortalFiling) => void; onDownload: (f: PortalFiling) => void }) {

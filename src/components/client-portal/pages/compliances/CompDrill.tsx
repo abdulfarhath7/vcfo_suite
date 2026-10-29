@@ -1,28 +1,23 @@
 'use client';
 
 /**
- * Rule 14 drill-down for the compliances pages (prototype openDD(), I:994-1021):
- * primary-light top link, title + (i), full-width navy pill with the clicked
- * part pre-selected, a 7-row table, "Showing n of m" footer, raised footer bar.
- * Esc / ✕ / scrim close; focus is trapped; phones get a bottom sheet (CSS).
+ * Rule 14 drill-down for the compliances pages (prototype comp-parts.tsx ComplianceDrill): a 760px
+ * dialog with "As of <date>" above the title, segmented status tabs with counts, the T1 grid of the
+ * filings (7 rows a page, page numbers under it) and one primary button in the footer that opens
+ * the Filings list. Esc, ✕ and the scrim close it; phones get a bottom sheet (CpModal).
  */
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { usePortal } from '../../PortalProvider';
-import { InfoPopover } from '../../shared';
-import {
-  AREAS,
-  fmtDM,
-  fmtDMY,
-  sortByDue,
-  statusOf,
-  type AreaFilter,
-  type CompStatus,
-  type PortalFiling,
-} from '@/lib/client-portal/compliances';
-import { AreaChip, Chip, I, NameWithLinks, ProofChip, Seg, useModal } from './bits';
-import { Empty, Island, WORD } from './spectrum';
+import { AREAS, fmtDM, fmtDMY, sortByDue, statusOf, type AreaFilter, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
+import { Button } from '@/components/ui/button';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { ProofChip } from './bits';
+import { CpModal } from './overlay';
+import { AreaTag, PortalLink, StatusChip, WORD } from './spectrum';
 
 export interface DrillState {
+  /** `status` opens on the status tabs (the prototype's only kind); `area` keeps area tabs for callers that want them. */
   kind: 'status' | 'area';
   /** Pre-selected tab key: all | ok | due | over | up | MCA | … */
   k: string;
@@ -34,10 +29,10 @@ export interface DrillState {
 const TABS: Record<'status' | 'area', [string, string][]> = {
   status: [
     ['all', 'All'],
-    ['over', WORD.over],
-    ['due', WORD.due],
-    ['up', WORD.up],
     ['ok', WORD.ok],
+    ['due', WORD.due],
+    ['over', WORD.over],
+    ['up', WORD.up],
   ],
   area: AREAS.map((a) => [a.id, a.label]),
 };
@@ -52,6 +47,7 @@ export function CompDrill({
 }: {
   state: DrillState;
   today: string;
+  /** The footer button: "Open filings" on the calendar, "Show in the list" on the Filings page. */
   link: { text: string; onClick: () => void };
   onClose: () => void;
   onRow: (f: PortalFiling) => void;
@@ -60,145 +56,88 @@ export function CompDrill({
   const tabs = TABS[state.kind];
   const match = (r: PortalFiling, k: string) =>
     k === 'all' || (state.kind === 'status' ? statusOf(r, today) === (k as CompStatus) : r.area === (k as AreaFilter));
-  const [on, setOn] = useState(Math.max(0, tabs.findIndex((t) => t[0] === state.k)));
-  const ref = useRef<HTMLDivElement>(null);
+  const [k, setK] = useState(tabs.some((t) => t[0] === state.k) ? state.k : 'all');
   const { openChat } = usePortal();
-  useModal(ref, onClose);
-  const k = tabs[on]![0];
   const list = sortByDue(state.rows.filter((r) => match(r, k)));
+  const label = tabs.find((t) => t[0] === k)?.[1] ?? 'All';
+
+  const columns: EFilingColumn<PortalFiling>[] = [
+    {
+      key: 'name',
+      header: 'Filing',
+      render: (r) => (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <span className="truncate font-medium text-ink">{r.name}</span>
+          <PortalLink f={r} />
+          <ProofChip f={r} onOpen={onProof} />
+        </span>
+      ),
+    },
+    { key: 'period', header: 'Period', width: '120px', render: (r) => <span className="text-ink-muted">{r.period}</span> },
+    { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
+    {
+      key: 'due',
+      header: 'Due / filed',
+      width: '112px',
+      render: (r) => <span className="whitespace-nowrap tabular-nums">{r.filedOn ? `Filed ${fmtDM(r.filedOn)}` : fmtDM(r.dueDate)}</span>,
+    },
+    { key: 'status', header: 'Status', width: '124px', render: (r) => <StatusChip s={statusOf(r, today)} /> },
+  ];
+
   return (
-    <>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc closes (useModal) */}
-      <div className="ddscrim" onClick={onClose} />
-      <div className="dd" role="dialog" aria-modal="true" aria-labelledby="comp-dd-t" ref={ref}>
-        <span className="sheet-grab" aria-hidden="true" />
-        <div
-          className="dd-top"
-          style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '9px 18px', background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--muted)' }}
+    <CpModal
+      size="lg"
+      flush
+      titleId="comp-dd-t"
+      onClose={onClose}
+      eyebrow={`As of ${fmtDMY(today)}`}
+      title={state.title}
+      footer={
+        <Button
+          onClick={() => {
+            onClose();
+            link.onClick();
+          }}
         >
-          <span>These filings live in Compliances · Filings</span>
-          <button
-            type="button"
-            style={{ border: 0, background: 'none', padding: 0, cursor: 'pointer', font: 'inherit', marginLeft: 'auto', fontWeight: 800, fontSize: 12.5, whiteSpace: 'nowrap', color: 'var(--primary)' }}
-            onClick={() => {
-              onClose();
-              link.onClick();
-            }}
-          >
-            {link.text}
-          </button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-          <div id="comp-dd-t" style={{ flex: 1, font: '600 15px var(--font-sans),sans-serif', color: 'var(--navy-ink,var(--navy))', display: 'flex', alignItems: 'center', gap: 4 }}>
-            {state.title}
-            <InfoPopover askAbout={state.title} label="About this">
-              As of {fmtDMY(today)}.
-            </InfoPopover>
-          </div>
-          <button type="button" className="ibtn" aria-label="Close" onClick={onClose}>
-            {I.x(13)}
-          </button>
-        </div>
-        <div style={{ padding: '16px 18px' }}>
-          <div className="seg-scroll dd-segw">
-            <Seg
-              opts={tabs.map((t) => t[1])}
-              on={on}
-              onPick={setOn}
-              counts={tabs.map((t) => state.rows.filter((r) => match(r, t[0])).length)}
-              label={state.kind === 'status' ? 'Status' : 'Area'}
-            />
-          </div>
-          {list.length ? (
-            <div className="dd-tw">
-              <table style={{ marginTop: 12, fontSize: 12.5 }}>
-                <thead>
-                  <tr>
-                    <th>Filing</th>
-                    <th>Period</th>
-                    <th>Area</th>
-                    <th style={{ textAlign: 'right' }}>Due / filed</th>
-                    <th>Status</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.slice(0, 7).map((r) => {
-                    const st = statusOf(r, today);
-                    return (
-                      <tr
-                        key={r.id}
-                        tabIndex={0}
-                        onClick={() => onRow(r)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onRow(r);
-                          }
-                        }}
-                      >
-                        <td>
-                          <NameWithLinks f={r} /> <ProofChip f={r} onOpen={onProof} />
-                        </td>
-                        <td style={{ color: 'var(--muted)' }}>{r.period}</td>
-                        <td>
-                          <AreaChip a={r.area} />
-                        </td>
-                        <td className="mono" style={{ textAlign: 'right', fontSize: 12 }}>
-                          {r.filedOn ? `Filed ${fmtDM(r.filedOn)}` : fmtDM(r.dueDate)}
-                        </td>
-                        <td>
-                          <Chip s={st} />
-                        </td>
-                        <td style={{ color: 'var(--subtle)' }}>{I.chevR(14)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Island className="ddempty pt-3">
-              {k === 'over' ? (
-                <Empty className="m-0 md:mx-0">Nothing overdue</Empty>
-              ) : (
-                <Empty
-                  className="m-0 md:mx-0"
-                  action={
-                    <button
-                      type="button"
-                      className="text-[13px] font-medium text-brand-text hover:underline"
-                      onClick={() => {
-                        onClose();
-                        openChat(`Why are there no ${tabs[on]![1].toLowerCase()} filings in ${state.title}?`);
-                      }}
-                    >
-                      Ask VCFO why
-                    </button>
-                  }
-                >
-                  None
-                </Empty>
-              )}
-            </Island>
-          )}
-          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }} hidden={!list.length}>
-            {list.length > 7 ? `Showing 7 of ${list.length} · full list in Filings` : `Showing all ${list.length}`}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--raised)' }}>
-          <button
-            type="button"
-            className="btn btn-o btn-s"
-            onClick={() => {
-              onClose();
-              link.onClick();
-            }}
-          >
-            Open Filings
-          </button>
-        </div>
+          {link.text}
+        </Button>
+      }
+    >
+      <div className="border-b border-line-soft px-4 py-3 md:px-5">
+        <SpectrumTabs
+          label={state.kind === 'status' ? 'Status' : 'Area'}
+          value={k}
+          onChange={setK}
+          className="max-w-full overflow-x-auto"
+          items={tabs.map(([key, text]) => ({ key, label: text, count: state.rows.filter((r) => match(r, key)).length }))}
+        />
       </div>
-    </>
+      <div className="px-2 pb-3 pt-1 md:px-3">
+        <EFilingGrid
+          caption={`${state.title} · ${label}`}
+          columns={columns}
+          rows={list}
+          rowKey={(r) => r.id}
+          onRowClick={onRow}
+          pageSize={7}
+          minWidth={600}
+          empty={k === 'over' ? 'Nothing overdue' : 'None'}
+          emptyAction={
+            k === 'over' ? undefined : (
+              <button
+                type="button"
+                className="text-[13px] font-medium text-brand-text hover:underline"
+                onClick={() => {
+                  onClose();
+                  openChat(`Why are there no ${label.toLowerCase()} filings in ${state.title}?`);
+                }}
+              >
+                Ask VCFO why
+              </button>
+            )
+          }
+        />
+      </div>
+    </CpModal>
   );
 }

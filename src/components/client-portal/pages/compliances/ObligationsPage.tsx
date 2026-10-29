@@ -19,6 +19,7 @@ import { portalHref } from '../../routes';
 import {
   AREA_LABEL,
   AREA_ORDER,
+  fmtDM,
   fyLabelOf,
   fyStartOfMonth,
   todayIso,
@@ -45,7 +46,10 @@ import {
   StatusChip,
   WORD,
   relativeDue,
+  urgencyTint,
+  DueWords,
 } from './spectrum';
+import { buttonVariants } from '@/components/ui/button-variants';
 import '../../css/compliances-board.css';
 
 export const OBLIGATIONS_BASE = portalHref('obligations');
@@ -70,7 +74,7 @@ export function CompliancesObligations() {
   const filingsOf = (f: PortalFiling) => `${portalHref('filings')}?fy=${fyStartOfMonth(f.dueDate.slice(0, 7))}&filing=${f.id}`;
   return (
     <div className="cp-compliances">
-      <CompProvider today={today} onDrillRow={(f) => go(filingsOf(f))} drillLink={{ text: 'Open Filings →', onClick: () => go(portalHref('filings')) }}>
+      <CompProvider today={today} onDrillRow={(f) => go(filingsOf(f))} drillLink={{ text: 'Open filings', onClick: () => go(portalHref('filings')) }}>
         <ObligationsBody today={today} />
       </CompProvider>
     </div>
@@ -109,12 +113,11 @@ function ObligationsBody({ today }: { today: string }) {
       <HeadSearch value={search} onChange={setSearch} label="Search obligations" onEnter={() => shown[0] && go(obligationHref(shown[0].id))} />
       <SpectrumTabs
         label="Group obligations"
-        size="md"
         value={view}
         onChange={(k) => setView(k as 'freq' | 'area')}
         items={[
           { key: 'freq', label: 'By frequency' },
-          { key: 'area', label: 'By area' },
+          { key: 'area', label: 'By law' },
         ]}
       />
     </span>
@@ -165,10 +168,10 @@ function ObligationsBody({ today }: { today: string }) {
           <div key={g.id}>
             <GroupHead label={g.label} count={g.rows.length} open={Boolean(open)} onToggle={() => setClosed((c) => ({ ...c, [g.id]: !c[g.id] }))} />
             {open ? (
-              <ul>
+              <ul className="grid grid-cols-1 gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 md:px-5 2xl:grid-cols-3">
                 {g.rows.map((o) => (
-                  <li key={o.id}>
-                    <ObligationRow o={o} fy={fy} />
+                  <li key={o.id} className="min-w-0">
+                    <ObligationTile o={o} fy={fy} today={today} />
                   </li>
                 ))}
               </ul>
@@ -181,12 +184,12 @@ function ObligationsBody({ today }: { today: string }) {
 
   return (
     <div className="cp-comp-root page" ref={root}>
-      <Island className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <Island className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <SCard title="Obligations" meta={after && obligations.length ? shown.length : undefined} right={head} flush>
           {list}
         </SCard>
-        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-1">
-          <SCard title="Due in the next 15 days" meta={after ? due.length : undefined} flush>
+        <div className="grid min-w-0 gap-5">
+          <SCard title="Due in the next 15 days" flush>
             {!after ? (
               <Empty>After the certificate</Empty>
             ) : q.isLoading ? (
@@ -209,8 +212,8 @@ function ObligationsBody({ today }: { today: string }) {
                       {step} · {f.period}
                     </span>
                   </span>
-                  <Button size="sm" onClick={() => go(obligationHref(o.id, f.id))}>
-                    Open
+                  <Button size="sm" variant="outline" onClick={() => go(obligationHref(o.id, f.id))}>
+                    {/approve/i.test(step) ? 'Approve' : 'Upload'}
                   </Button>
                 </ListRow>
               ))
@@ -218,7 +221,7 @@ function ObligationsBody({ today }: { today: string }) {
               <Empty />
             )}
           </SCard>
-          <SCard title="Progress flow" className="md:col-span-2 lg:col-span-1">
+          <SCard title="Progress flow">
             <StackedBar
               onPick={(k) => setStatus((cur) => (cur === k ? null : (k as CompStatus)))}
               segments={STATUS_ORDER.map((s) => ({ key: s, label: WORD[s], value: after ? count(s) : 0, fill: FILL[s] }))}
@@ -230,26 +233,40 @@ function ObligationsBody({ today }: { today: string }) {
   );
 }
 
-function ObligationRow({ o, fy }: { o: Obligation; fy: string }) {
+/**
+ * One obligation as a tile (prototype ObligationsScreen): a 1.5px card, the name with a chevron, the
+ * area pill and the status chip, then "Due 20 Oct" (red when late) or "Filed 18 Oct" and the count
+ * filed this financial year.
+ */
+function ObligationTile({ o, fy, today }: { o: Obligation; fy: string; today: string }) {
+  const late = Boolean(o.next) && o.next!.dueDate < today;
   return (
     <GoLink
       href={obligationHref(o.id)}
       label={`${o.name} · ${WORD[o.status]} · ${o.filed} of ${o.total} filed`}
-      className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink hover:bg-surface-sunken md:px-5"
+      className="grid h-full min-w-0 gap-2 rounded-md border-1.5 border-line bg-surface-raised px-3.5 py-3 text-ink hover:border-line-strong hover:bg-surface-sunken"
     >
-      <DateTile iso={o.tileDate} s={o.status} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-ink">{o.name}</span>
-        <span className="block truncate text-[12.5px] text-ink-muted">
-          {o.authorityName} · {o.freqLabel}
+      <span className="flex min-w-0 items-center gap-1">
+        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{o.name}</span>
+        <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
+      </span>
+      <span className="flex flex-wrap items-center gap-1.5">
+        <AreaTag a={o.area} />
+        <StatusChip s={o.status} />
+      </span>
+      <span className="truncate text-[12.5px] text-ink-muted">
+        {o.next ? (
+          <span className={late ? 'font-medium text-danger' : undefined}>Due {fmtDM(o.next.dueDate)}</span>
+        ) : o.last?.filedOn ? (
+          `Filed ${fmtDM(o.last.filedOn)}`
+        ) : (
+          '-'
+        )}
+        <span title={fy}>
+          {' · '}
+          {o.filed} of {o.total} filed
         </span>
       </span>
-      <AreaTag a={o.area} className="hidden sm:inline-flex" />
-      <span className="hidden w-[96px] flex-none text-right text-[13px] tabular-nums text-ink-muted md:inline" title={fy}>
-        {o.filed} of {o.total} filed
-      </span>
-      <StatusChip s={o.status} />
-      <ChevronRight size={16} strokeWidth={1.6} className="flex-none text-ink-faint" aria-hidden />
     </GoLink>
   );
 }
@@ -257,19 +274,23 @@ function ObligationRow({ o, fy }: { o: Obligation; fy: string }) {
 function DueRow({ o, f, today }: { o: Obligation; f: PortalFiling; today: string }) {
   const rel = relativeDue(today, f.dueDate);
   const late = rel.tone === 'bad';
+  const tint = urgencyTint(today, f.dueDate);
   return (
     <GoLink
       href={obligationHref(o.id, f.id)}
       label={`${o.name} · ${f.period} · ${rel.label}`}
       className={`flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink first:border-t-0 hover:bg-surface-sunken md:px-5${late ? ' bg-danger-soft' : ''}`}
     >
-      <DateTile iso={f.dueDate} s={late ? 'over' : rel.tone === 'warn' ? 'due' : 'none'} />
+      <DateTile iso={f.dueDate} s={tint} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13.5px] font-medium">
+        <span className="block truncate text-[13.5px] font-semibold">
           {o.name} · {f.period}
         </span>
-        <span className="block truncate text-[12.5px] text-ink-muted">{AREA_LABEL[o.area]}</span>
+        <span className="block truncate text-[12.5px] text-ink-muted">
+          <DueWords today={today} due={f.dueDate} /> · {AREA_LABEL[o.area]}
+        </span>
       </span>
+      {late ? <span className={buttonVariants({ variant: 'strong', size: 'sm', className: 'h-7 px-2 text-[12px]' })}>Fix</span> : null}
       <SChip tone={rel.tone} fixed>
         {rel.label}
       </SChip>

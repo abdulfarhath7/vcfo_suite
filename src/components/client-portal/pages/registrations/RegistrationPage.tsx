@@ -10,11 +10,10 @@
  * scoped `/api/registrations/certificate`), the issue date, the expiry and a Renewal card.
  */
 import { useMemo } from 'react';
-import { StepMark } from '@/components/ui/step-track';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
-import { fmtDMY, todayIso } from '@/lib/client-portal/compliances';
+import { fmtDM, fmtDMY, todayIso } from '@/lib/client-portal/compliances';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { usePortalIncorporation } from '../../hooks';
 import { portalHref } from '../../routes';
@@ -22,9 +21,9 @@ import { subList } from '../incorporation/data';
 import { useAllFilings } from '../compliances/api';
 import { groupObligations } from '../compliances/obligations';
 import { obligationHref } from '../compliances/ObligationsPage';
-import { Empty, FactRows, GoLink, Island, ListRow, RecordHead, SCard, StatusChip, WordPill } from '../compliances/spectrum';
+import { Empty, FactRows, GoLink, Island, ListRow, RecordHead, SCard, StatusChip, StepList, WordPill } from '../compliances/spectrum';
 import { buildRegistrations, startsFilings, type RegItem } from './model';
-import { REGISTRATIONS_BASE, RegChip, RegOwner, useClientRegistrationFacts, useRegCredentials } from './parts';
+import { REGISTRATIONS_BASE, RegChip, useClientRegistrationFacts, useRegCredentials } from './parts';
 import { CertificateButton, renewalLine } from '@/views/compliances/registration-renewal';
 import { renewalOf } from '@/lib/registrations/registration-facts';
 import '../../css/compliances-board.css';
@@ -67,7 +66,8 @@ export function RegistrationRecordPage({ id }: { id: string }) {
 }
 
 function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boolean; credsLoading: boolean }) {
-  const { go, openChat, after } = usePortal();
+  const { go, openChat, after, shell } = usePortal();
+  const companyShort = shell?.companyShort || 'You';
   const today = todayIso();
   const parts = subList(r.step);
   const filings = useAllFilings(after && Boolean(startsFilings(r.stepId)));
@@ -77,7 +77,7 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
     return groupObligations(filings.data?.rows ?? [], today).filter((o) => o.area === rule.area && (!rule.name || rule.name.test(`${o.name} ${o.particular}`)));
   }, [filings.data, r.stepId, today]);
   const date = r.status === 'Done' ? r.doneOn : r.due;
-  const numberEmpty = credsLoading ? 'Loading' : credsError ? 'Could not load' : 'Not stored yet';
+  const numberEmpty = credsLoading ? 'Loading' : credsError ? 'Could not load' : '-';
   const now = new Date(`${today}T00:00:00`);
   const renewal = renewalOf(r.facts, now);
   const renewalText = renewalLine(r.facts, now);
@@ -86,10 +86,12 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
   const actions = (
     <>
       <CertificateButton facts={r.facts} size="default" />
-      {r.step.canOpen ? <Button onClick={() => go(clientIncorporationStepPath(r.step.item))}>Open step</Button> : null}
-      <Button variant="secondary" onClick={() => go(portalHref('credentials'))}>
-        Credentials
-      </Button>
+      {r.step.canOpen && !r.notNeeded ? <Button onClick={() => go(clientIncorporationStepPath(r.step.item))}>Open step</Button> : null}
+      {!r.notNeeded ? (
+        <Button variant="secondary" onClick={() => go(portalHref('credentials'))}>
+          Credentials
+        </Button>
+      ) : null}
     </>
   );
 
@@ -108,36 +110,35 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
           <>
             <RegChip r={r} />
             <WordPill word={r.area} />
-            <RegOwner r={r} />
           </>
         }
         facts={[
-          { k: r.status === 'Done' ? 'Done' : 'Due', v: date ? fmtDMY(date) : '-', tone: r.status === 'Overdue' ? 'bad' : undefined },
+          { k: r.status === 'Done' ? 'Done' : 'Due', v: date ? fmtDMY(date) : after ? '-' : 'After the certificate', tone: r.status === 'Overdue' ? 'bad' : undefined },
           { k: 'Number', v: r.number ? <span className="font-mono text-[13px]">{r.number}</span> : '-' },
           ...(renewal ? [{ k: 'Renew by', v: fmtDMY(renewal.renewBy), tone: renewal.word === 'Overdue' ? ('bad' as const) : undefined }] : []),
         ]}
         actions={actions}
       />
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="grid min-w-0 gap-4">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 gap-5">
           {!r.notNeeded ? (
             <SCard title="Steps" meta={`${parts.filter((p) => p.s === 'done').length} of ${parts.length} done`} flush>
-              <ol>
-                {parts.map((p, i) => (
-                  <li key={`${p.l}-${i}`} className={`grid grid-cols-[22px_minmax(0,1fr)] items-center gap-x-3 border-t border-line-soft px-4 py-2.5 first:border-t-0 md:px-5${p.s === 'now' ? ' bg-surface-sunken' : ''}`}>
-                    <StepMark state={p.s === 'done' ? 'done' : p.s === 'now' ? 'now' : 'next'} tone={r.step.kind === 'you' ? 'teal' : 'prog'} label={p.s === 'done' ? 'Done' : p.s === 'now' ? 'Now' : 'Upcoming'} />
-                    <span className="min-w-0">
-                      <b className={`block truncate text-[14px] font-medium ${p.s === 'todo' ? 'font-normal text-ink-muted' : 'text-ink'}`}>{p.l}</b>
-                      {p.s === 'now' ? (
-                        <small className={`block truncate text-[12.5px] ${r.step.kind === 'you' ? 'text-waiting' : 'text-brand-text'}`}>With {r.step.kind === 'you' ? 'you' : r.owner === 'mca' ? 'MCA' : 'SBC'}</small>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
-              </ol>
+              <div className="px-4 md:px-5">
+                <StepList
+                  today={today}
+                  steps={parts.map((p, i) => ({
+                    key: `${p.l}-${i}`,
+                    title: p.l,
+                    state: p.s === 'done' ? 'done' : p.s === 'now' ? 'now' : 'next',
+                    client: r.step.kind === 'you',
+                    holder: r.step.kind === 'you' ? `With ${companyShort}` : r.owner === 'mca' ? 'With MCA' : 'With SBC',
+                    note: p.s === 'now' && r.due ? `due ${fmtDM(r.due)}` : undefined,
+                  }))}
+                />
+              </div>
             </SCard>
           ) : null}
-          <SCard title="Registration details" meta="Read only" flush>
+          <SCard title="Filled by SBC" meta="Read only" flush>
             <FactRows
               rows={[
                 { k: 'Number', v: r.number ?? numberEmpty, mono: Boolean(r.number), empty: !r.number },
@@ -162,7 +163,7 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
             )}
           </SCard>
         </div>
-        <div className="grid min-w-0 gap-4">
+        <div className="grid min-w-0 gap-5">
           <SCard title="About" flush>
             <FactRows
               rows={[
@@ -173,7 +174,10 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
                 ...(r.late && r.status !== 'Done' ? [{ k: 'Late by', v: `${r.lateDays} ${r.lateDays === 1 ? 'day' : 'days'}` }] : []),
               ]}
             />
-            <div className="border-t border-line-soft px-4 py-3 md:px-5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-soft px-4 py-3 md:px-5">
+              <GoLink href={portalHref('knowledge-bank')} className="text-[13px] font-medium text-brand-text hover:underline">
+                Read the SBC SOP
+              </GoLink>
               <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => openChat(`Tell me about ${r.name}`)}>
                 Ask VCFO about {r.name}
               </button>
@@ -181,11 +185,11 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
           </SCard>
           <SCard title="Renewal">
             <p className={`text-[13.5px] leading-relaxed ${renewalText ? 'text-ink-2' : 'text-ink-faint'}`}>
-              {renewalText ?? 'No expiry recorded'}
+              {renewalText ?? 'None'}
               {renewal?.word ? ` ${renewal.word}.` : ''}
             </p>
           </SCard>
-          {startsFilings(r.stepId) ? (
+          {startsFilings(r.stepId) && (starts.length || !after) ? (
             <SCard title="What it starts" meta={starts.length || undefined} flush>
               {starts.length ? (
                 starts.map((o) => (

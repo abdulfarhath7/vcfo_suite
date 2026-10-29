@@ -9,11 +9,13 @@
  * rules in css-src/compliances-board.css skip `.cp-tw` islands, so the shared Spectrum parts
  * (chips, tabs, the T1 grid) draw exactly as on the staff portals.
  */
-import { useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Check, ChevronDown, ExternalLink, Plus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AreaPill, Chip, regOf, type ChipTone, type Regulator } from '@/components/ui/spectrum-chip';
-import { DashSection } from '@/components/dash/DashSection';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { AvatarStack } from '@/components/ui/avatar-stack';
+import { StepMark } from '@/components/ui/step-track';
 import {
   AREA_FULL,
   AREA_LABEL,
@@ -26,6 +28,7 @@ import {
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
 import { usePortal } from '../../PortalProvider';
+import { portalHref } from '../../routes';
 import { useDismiss } from './bits';
 import { exactDate } from '@/lib/relative-due';
 
@@ -112,14 +115,110 @@ export function WordPill({ word, className }: { word: string; className?: string
 
 /* -------------------------------------------------------------- date tile */
 
-/** Date tile tinted by status: the day over the month (or the weekday when `weekday`). 44px, or 36px (`sm`) inside grid rows. */
-export function DateTile({ iso, s, weekday, size = 'md', className }: { iso: string; s: CompStatus | 'none'; weekday?: boolean; size?: 'sm' | 'md'; className?: string }) {
-  const tint = s === 'none' ? 'border-1.5 border-line bg-surface-raised text-ink' : TINT[s];
+/** Blurple tint with an edge for a date 8 to 15 days away (prototype attention lists). */
+const SOON = 'border-1.5 border-brand-line bg-brand-soft text-brand-text';
+
+/**
+ * Date tile tinted by status: the day over the month (or the weekday when `weekday`). 44px, or 36px
+ * (`sm`) inside grid rows, where the month is short mixed case ("Oct") as in the prototype grid.
+ * `soon` is the blurple tile of a date 8 to 15 days away.
+ */
+export function DateTile({ iso, s, weekday, size = 'md', className }: { iso: string; s: CompStatus | 'none' | 'soon'; weekday?: boolean; size?: 'sm' | 'md'; className?: string }) {
+  const tint = s === 'none' ? 'border-1.5 border-line bg-surface-raised text-ink' : s === 'soon' ? SOON : TINT[s];
+  const sub = weekday ? dow(iso) : MON[Number(iso.slice(5, 7)) - 1];
   return (
     <span className={cn('grid flex-none place-content-center rounded-md text-center leading-none', size === 'sm' ? 'h-9 w-9' : 'h-11 w-11', tint, className)} title={exactDate(iso)} aria-hidden>
       <b className={cn('font-medium', size === 'sm' ? 'text-[14px]' : 'text-[16px]')}>{Number(iso.slice(8, 10))}</b>
-      <small className={cn('mt-0.5 font-medium uppercase tracking-wider opacity-80', size === 'sm' ? 'text-[10px]' : 'text-[10.5px]')}>{weekday ? dow(iso) : MON[Number(iso.slice(5, 7)) - 1]}</small>
+      {size === 'sm' ? (
+        <small className="mt-0.5 text-[11px] font-medium">{sub}</small>
+      ) : (
+        <small className={cn('mt-0.5 text-[10.5px] font-medium uppercase tracking-wider', s === 'none' ? 'text-ink-muted' : 'opacity-80')}>{sub}</small>
+      )}
     </span>
+  );
+}
+
+/** The tile tint of an attention row (R-20): late red, within 7 days amber, within 15 days blurple, else plain. */
+export function urgencyTint(today: string, due: string): CompStatus | 'none' | 'soon' {
+  const d = daysBetween(today, due);
+  if (d < 0) return 'over';
+  if (d <= 7) return 'due';
+  if (d <= 15) return 'soon';
+  return 'none';
+}
+
+/** "In 3 days", "Due tomorrow", "2 days late" with the urgency colour, for the sub line of an attention row. */
+export function DueWords({ today, due }: { today: string; due: string }) {
+  const d = daysBetween(today, due);
+  const words = d < -1 ? `${-d} days late` : d === -1 ? '1 day late' : d === 0 ? 'Due today' : d === 1 ? 'Due tomorrow' : `In ${d} days`;
+  return (
+    <span title={exactDate(due)} className={cn(d < 0 ? 'text-danger' : d <= 3 ? 'text-warning' : undefined)}>
+      {words}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------- people */
+
+/** The people on a record (prototype PeopleStack): 30px circles with a ring, the client, the project lead and the manager. */
+export function PeopleStack({ people }: { people: Array<{ name: string; role: string; src?: string | null }> }) {
+  const list = people.filter((p) => p.name.trim());
+  if (!list.length) return null;
+  return <AvatarStack size={30} max={4} people={list.map((p) => ({ name: p.name, src: p.src }))} label={list.map((p) => `${p.name} · ${p.role}`).join(', ')} />;
+}
+
+/* ------------------------------------------------------------ step list */
+
+export interface ThreadStep {
+  key: string;
+  title: string;
+  state: 'done' | 'now' | 'next';
+  /** The client holds the live step (teal). */
+  client?: boolean;
+  /** "With Northwind", "With SBC", "With MCA" for the live step. */
+  holder?: string;
+  /** A note after the holder on the live step, or who did a done step. */
+  note?: string;
+  /** Done date (yyyy-mm-dd). */
+  date?: string;
+}
+
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Steps of a record as ST5 (R-22, prototype SideThread): done steps a green square with a tick and
+ * their date, the live step a ring on a tinted row with who holds it and "Today", later steps a
+ * dashed square without dates (R-23). A 1.5px line joins the marks, green under done steps.
+ */
+export function StepList({ steps, today }: { steps: ThreadStep[]; today: string }) {
+  return (
+    <ol className="-mx-4 md:-mx-5">
+      {steps.map((s, i) => {
+        const last = i === steps.length - 1;
+        const done = s.state === 'done';
+        const now = s.state === 'now';
+        return (
+          <li key={s.key} className={cn('relative grid grid-cols-[22px_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-2.5 md:px-5', now && 'bg-surface-sunken')}>
+            {!last ? <span className={cn('absolute left-[26px] top-[34px] h-[calc(100%-24px)] w-[1.5px] md:left-[30px]', done ? 'bg-positive-mid' : 'bg-line')} aria-hidden /> : null}
+            <StepMark state={s.state} tone={now && s.client ? 'teal' : 'prog'} label={done ? 'Done' : now ? 'Now' : 'Upcoming'} className="relative" />
+            <span className="min-w-0">
+              <b className={cn('block truncate text-[14px] font-medium text-ink', s.state === 'next' && 'font-normal text-ink-muted')}>{s.title}</b>
+              {now ? (
+                <small className={cn('block truncate text-[12.5px]', s.client ? 'text-waiting' : 'text-brand-text')}>
+                  {s.holder}
+                  {s.note ? <span className="text-ink-muted"> · {s.note}</span> : null}
+                </small>
+              ) : done && s.note ? (
+                <small className="block truncate text-[12.5px] text-ink-muted">{s.note}</small>
+              ) : null}
+            </span>
+            <span className="pt-0.5 text-right text-[12.5px] text-ink-muted">
+              {done && s.date ? `${WD[new Date(`${s.date}T00:00:00Z`).getUTCDay()]} ${Number(s.date.slice(8, 10))} ${MON[Number(s.date.slice(5, 7)) - 1]}` : now ? <span className="font-medium text-brand-text">{WD[new Date(`${today}T00:00:00Z`).getUTCDay()]} · Today</span> : null}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -163,7 +262,11 @@ export function GoLink({ href, className, label, children }: { href: string; cla
 
 /* ------------------------------------------------------------------ cards */
 
-/** Card (R-15, R-16) on the shared DashSection. `right` sits at the far right of the head; `flush` drops the body padding. */
+/**
+ * Card (R-15, R-16; prototype SectionCard): white, a 1.5px line, 6px corners, a 52px head with the
+ * 28px icon tile from the title, the 15px title, then the meta as plain muted text and `right` at the
+ * far right. The head and body pad 16px, and 20px from 768px. `flush` drops the body padding.
+ */
 export function SCard({
   title,
   meta,
@@ -181,17 +284,30 @@ export function SCard({
   bodyClassName?: string;
   children?: ReactNode;
 }) {
-  const head =
-    meta !== undefined || right ? (
-      <span className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-        {meta !== undefined ? <span className="rounded-sm bg-surface-sunken px-[7px] py-px text-[12px] font-medium text-ink-2">{meta}</span> : null}
-        {right}
-      </span>
-    ) : undefined;
   return (
-    <DashSection title={title} meta={head} className={className} bodyClassName={cn(flush ? 'p-0' : 'px-4 py-4 md:px-5', bodyClassName)}>
-      {children}
-    </DashSection>
+    <section className={cn('min-w-0 overflow-hidden rounded-md border-1.5 border-line bg-surface-raised', className)} aria-label={title}>
+      <header className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line-soft px-4 py-2 md:px-5">
+        <CardHeadTile title={title} />
+        <h2 className="min-w-0 truncate text-[15px] font-medium text-ink">{title}</h2>
+        {meta !== undefined && meta !== null && meta !== '' ? <span className="hidden truncate text-[13px] tabular-nums text-ink-muted sm:inline">{meta}</span> : null}
+        {right ? <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">{right}</div> : null}
+      </header>
+      <div className={cn(!flush && 'px-4 py-4 md:px-5', bodyClassName)}>{children}</div>
+    </section>
+  );
+}
+
+/** Text card (prototype TextCard): a paragraph, with the "Read the SBC SOP" link when `sop` is set. */
+export function TextCard({ title, sop, children }: { title: string; sop?: boolean; children: ReactNode }) {
+  return (
+    <SCard title={title}>
+      <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">{children}</div>
+      {sop ? (
+        <GoLink href={portalHref('knowledge-bank')} className="mt-3 inline-block text-[13px] font-medium text-brand-text hover:underline">
+          Read the SBC SOP
+        </GoLink>
+      ) : null}
+    </SCard>
   );
 }
 
@@ -232,7 +348,7 @@ export function StackedBar({ segments, onPick, height = 8, className }: { segmen
   const sum = segments.reduce((a, s) => a + s.value, 0) || 1;
   return (
     <div className={cn('grid gap-2.5', className)}>
-      <span className="flex w-full gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" style={{ height }} aria-hidden>
+      <span className="flex w-full gap-0.5 overflow-hidden rounded-bar" style={{ height }} aria-hidden>
         {segments
           .filter((s) => s.value > 0)
           .map((s) => (
@@ -306,7 +422,7 @@ export function FilterMenu<V extends string>({
       {cur ? (
         <span className={cn(chip, 'border-1.5 border-brand-line bg-brand-soft pr-1 text-brand-text')}>
           <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} aria-label={`${label}: ${cur.label}. Change`}>
-            {cur.label}
+            <span className="font-normal opacity-80">{label}</span> {cur.label}
           </button>
           <button type="button" onClick={() => onChange(null)} className="grid h-5 w-5 place-items-center rounded-sm hover:bg-surface-raised" aria-label={`Clear ${label}`}>
             <X size={13} strokeWidth={1.8} aria-hidden />
@@ -354,12 +470,29 @@ export function FilterMenu<V extends string>({
   );
 }
 
-/** Compact search box for a card head. Enter opens the first match; Esc clears. */
+/** Compact search box for a card head (R-47 input, 160px; hidden below 640px). "/" focuses it, Enter opens the first match, Esc clears. */
 export function HeadSearch({ value, onChange, onEnter, label }: { value: string; onChange: (v: string) => void; onEnter?: () => void; label: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
+      const box = ref.current;
+      if (!box || box.offsetParent === null) return;
+      e.preventDefault();
+      e.stopPropagation();
+      box.focus();
+    };
+    // capture, so the page search wins over the portal's own "/" (Ask VCFO) while this box is shown
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
   return (
-    <span className="relative inline-flex">
+    <span className="relative hidden sm:inline-flex">
       <Search size={14} strokeWidth={1.6} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" aria-hidden />
       <input
+        ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
@@ -368,7 +501,7 @@ export function HeadSearch({ value, onChange, onEnter, label }: { value: string;
         }}
         placeholder="Search"
         aria-label={label}
-        className="h-[30px] w-[150px] rounded-md border-1.5 border-line-strong bg-surface-raised pl-8 pr-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-brand focus:outline-none"
+        className="h-[30px] w-[160px] rounded-md border-1.5 border-line-strong bg-surface-raised pl-8 pr-2 text-[13px] text-ink placeholder:text-ink-faint focus:border-brand focus:shadow-[0_0_0_4px_oklch(var(--focus-ring)/.24)] focus:outline-none"
       />
     </span>
   );

@@ -203,7 +203,6 @@ export function Seg({
     >
       <SpectrumTabs
         label={label}
-        size="md"
         value={String(on)}
         onChange={(k) => pick(Number(k))}
         items={opts.map((o, i) => ({ key: String(i), label: o, count: counts && counts[i] != null ? counts[i]! : undefined }))}
@@ -215,9 +214,9 @@ export function Seg({
 /* ------------------------------------------------ flow E · focus track (ST5) */
 
 /**
- * The four workflow steps of a filing as ST5 marks (R-22): done steps a green square with a
- * tick, the live step a ring on a tinted cell (teal when it is the client's move), later steps
- * a dashed square.
+ * The four workflow steps of a filing as ST5 marks (R-22, prototype FilingTrack): 20px marks, done
+ * steps a green square with a tick and their date, the live step a ring, later steps a dashed
+ * square. A step that is not done says who holds it: the client in amber, SBC in blue.
  */
 export function FocusTrack({ nodes }: { nodes: TrackNode[] }) {
   const total = nodes.length;
@@ -225,17 +224,14 @@ export function FocusTrack({ nodes }: { nodes: TrackNode[] }) {
     <ol className="cp-tw grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-4">
       {nodes.map((n, i) => {
         const now = n.st === 'cur';
-        const client = now && (n.icon === 'file' || n.icon === 'person');
+        const done = n.st === 'done';
+        const client = n.icon === 'file' || n.icon === 'person' || /\bapprove|send data/i.test(n.label);
         return (
-          <li
-            key={i}
-            className={`grid min-w-0 grid-cols-[22px_minmax(0,1fr)] gap-x-2 rounded-md px-2 py-1.5${now ? ' bg-surface-sunken' : ''}`}
-            data-tip={n.tip}
-          >
-            <StepMark state={n.st === 'done' ? 'done' : now ? 'now' : 'next'} tone={client ? 'teal' : 'prog'} label={now ? `Now · ${i + 1} of ${total}` : n.st === 'done' ? 'Done' : 'Upcoming'} />
+          <li key={i} className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] gap-x-2" data-tip={n.tip}>
+            <StepMark size={20} state={done ? 'done' : now ? 'now' : 'next'} tone={now && client ? 'teal' : 'prog'} label={now ? `Now · ${i + 1} of ${total}` : done ? 'Done' : 'Upcoming'} />
             <span className="min-w-0">
               <span className={`block truncate text-[13px] font-medium ${n.st === 'next' ? 'text-ink-muted' : 'text-ink'}`}>{n.label}</span>
-              {n.sub ? <span className={`block truncate text-[12px] ${now ? (client ? 'text-waiting' : 'text-brand-text') : 'text-ink-muted'}`}>{n.sub}</span> : null}
+              {n.sub ? <span className={`block truncate text-[12px] ${done ? 'text-ink-muted' : client ? 'text-warning' : 'text-info'}`}>{n.sub}</span> : null}
             </span>
           </li>
         );
