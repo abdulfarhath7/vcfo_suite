@@ -1,0 +1,119 @@
+{
+  "screen": "Admin · Today",
+  "route": "/admin/today",
+  "person": "Krishna, admin at SBC",
+  "excluded": ["the bottom PROTOTYPE bar", "the PREVIEW switch (All incorporating / Mixed / All compliance)"],
+  "topBar": { "crumb": ["SBC", "Today"], "search": "Search · Ctrl K", "bell": 2, "themeToggle": true, "askButton": "Ask VCFO" },
+  "sidebar": {
+    "items": [
+      { "label": "Today", "icon": "layout-grid", "active": true },
+      { "label": "Work", "icon": "list-checks" },
+      { "label": "Clients", "icon": "building-2", "count": 14, "children": [
+        { "label": "Northwind Technologies", "tag": "Inc", "colour": "violet" },
+        { "label": "Orchid Lane Foods", "tag": "Inc", "colour": "indigo" },
+        { "label": "Brightwave Robotics", "tag": "Cmp", "colour": "pink" },
+        { "label": "Kestrel Health", "tag": "Cmp", "colour": "sky" },
+        { "label": "View all 14" } ] },
+      { "label": "Managers", "icon": "users", "count": 3, "children": [
+        { "initials": "PN", "label": "Pranay", "meta": "8 clients" },
+        { "initials": "PR", "label": "Priya Raman", "meta": "3 clients" },
+        { "initials": "AM", "label": "Arjun Mehta", "meta": "3 clients" } ] },
+      { "label": "Compliances", "icon": "shield-check", "children": ["Calendar", "Filings", "Obligations"] },
+      { "label": "Registrations", "icon": "id-card" },
+      { "label": "Updates", "icon": "megaphone", "count": 2, "children": ["Announcements", "Notifications"] },
+      { "label": "Email", "icon": "mail" },
+      { "label": "Docs", "icon": "folder", "children": ["Vault", "Knowledge bank"] },
+      { "label": "Analytics", "icon": "bar-chart-3" },
+      { "label": "Audit", "icon": "clock" },
+      { "label": "Firm settings", "icon": "settings" }
+    ],
+    "you": { "initials": "KR", "name": "Krishna", "role": "Admin", "action": "sign out" }
+  },
+  "greeting": { "date": "Fri 16 Oct 2026 · 12:31 PM", "title": "Good afternoon, Krishna" },
+  "numberStrip": [
+    { "label": "Clients", "value": "14", "icon": "user", "tone": "accent" },
+    { "label": "Incorporating", "value": "7", "icon": "list", "tone": "accent" },
+    { "label": "In compliance", "value": "7", "icon": "circle-check", "tone": "ok" },
+    { "label": "Overdue", "value": "4", "icon": "alert-triangle", "tone": "bad" },
+    { "label": "Stuck", "value": "2", "icon": "list", "tone": "accent" },
+    { "label": "Due this week", "value": "5", "icon": "calendar", "tone": "warn" }
+  ],
+  "layout": { "row1": ["Incorporation", "Registrations", "Compliances · October"], "fullWidth": ["Clients · where each one is", "Phase progress"], "row3": ["Managers", "Needs your decision"] },
+  "cards": {
+    "Incorporation": {
+      "badge": 7, "type": "progress list",
+      "rows": [ { "label": "Name approval", "value": 3, "max": 3 }, { "label": "SPICe+ forms", "value": 3, "max": 3 }, { "label": "MCA review", "value": 1, "max": 3 }, { "label": "Certificate", "value": 0, "max": 3 } ],
+      "footer": { "text": "Average 36 days to COI · target 30", "link": "Open clients" }
+    },
+    "Registrations": {
+      "bigNumbers": [ { "value": "33", "label": "Done", "tone": "ok" }, { "value": "6", "label": "In progress", "tone": "accent" }, { "value": "9", "label": "Pending", "tone": "warn" } ],
+      "type": "stacked bars per statute",
+      "rows": [ { "label": "PF", "count": 3 }, { "label": "ESI", "count": 3 }, { "label": "Trademark", "count": 3 } ],
+      "footer": { "text": "Most pending: ESI", "link": "Open clients" }
+    },
+    "Compliances · October": {
+      "total": { "value": "58", "label": "filings" },
+      "render": "one stacked bar with a legend",
+      "legend": [ { "label": "Overdue", "value": 3, "tone": "bad" }, { "label": "Filed late", "value": 3, "tone": "warn" }, { "label": "Due this week", "value": 8, "tone": "accent" }, { "label": "Upcoming", "value": 15, "tone": "idle" }, { "label": "Filed on time", "value": 29, "tone": "ok" } ],
+      "footer": { "text": "Worst statute: PF and ESI", "link": "Open calendar" }
+    },
+    "Clients · where each one is": {
+      "badge": 14,
+      "headFilters": ["All managers", "All stages"],
+      "type": "e-Filing grid (R-07) with the two dropdown filters in the head bar (R-08)",
+      "columns": ["Client", "Now at", "Progress", "Manager", "Stage", "Next", "Health"],
+      "stageChipTones": { "Incorporating": "warn", "Compliance": "ok" },
+      "healthChipTones": { "Stuck": "bad", "Overdue": "bad", "Due this week": "warn", "Waiting on client": "warn", "In progress": "accent", "Not started": "idle" },
+      "rows": [
+        { "initials": "ML", "client": "Monsoon Labs", "nowAt": "MCA remarks on SPICe+", "sub": "Pre-13 · Kabir Sethi", "progress": 27, "manager": "Priya Raman", "stage": "Incorporating", "next": "19 Oct", "health": "Stuck" },
+        { "initials": "BW", "client": "Banyan Wellness", "nowAt": "Name resubmission after RUN rejection", "sub": "Pre-4 · Nikhil Jain", "progress": 6, "manager": "Arjun Mehta", "stage": "Incorporating", "next": "21 Oct", "health": "Stuck" },
+        { "initials": "BR", "client": "Brightwave Robotics", "nowAt": "Bank account opening", "sub": "Post-3 · Sneha Kulkarni", "progress": 33, "manager": "Pranay", "stage": "Compliance", "next": "15 Oct", "health": "Overdue" },
+        { "initials": "TL", "client": "Tidewater Logistics", "nowAt": "FC-GPR filing", "sub": "Post-8 · Meera Nair", "progress": 44, "manager": "Pranay", "stage": "Compliance", "next": "16 Oct", "health": "Due this week" },
+        { "initials": "IF", "client": "Indigo Freight", "nowAt": "PF registration", "sub": "Reg-6 · Aditi Rao", "progress": 65, "manager": "Priya Raman", "stage": "Compliance", "next": "17 Oct", "health": "Due this week" },
+        { "initials": "NT", "client": "Northwind Technologies", "nowAt": "Registered office address", "sub": "Pre-7 · Bharath", "progress": 13, "manager": "Pranay", "stage": "Incorporating", "next": "20 Oct", "health": "Waiting on client" },
+        { "initials": "HF", "client": "Halcyon Fintech", "nowAt": "Trademark registration", "sub": "Reg-15 · Sneha Kulkarni", "progress": 92, "manager": "Pranay", "stage": "Compliance", "next": "25 Oct", "health": "Waiting on client" },
+        { "initials": "CS", "client": "Coral Studios", "nowAt": "Auditor appointment (ADT-1)", "sub": "Post-9 · Tara Menon", "progress": 46, "manager": "Arjun Mehta", "stage": "Compliance", "next": "23 Oct", "health": "Waiting on client" },
+        { "initials": "OL", "client": "Orchid Lane Foods", "nowAt": "KYC review and DSC", "sub": "Pre-10 · Sneha Kulkarni", "progress": 19, "manager": "Pranay", "stage": "Incorporating", "next": "19 Oct", "health": "In progress" },
+        { "initials": "LA", "client": "Larkspur Analytics", "nowAt": "Draft board resolution", "sub": "Pre-2 · Meera Nair", "progress": 4, "manager": "Pranay", "stage": "Incorporating", "next": "21 Oct", "health": "In progress" },
+        { "initials": "KH", "client": "Kestrel Health", "nowAt": "GST registration", "sub": "Reg-1 · Bharath", "progress": 58, "manager": "Pranay", "stage": "Compliance", "next": "20 Oct", "health": "In progress" },
+        { "initials": "SR", "client": "Saffron Retail", "nowAt": "Share certificates", "sub": "Post-5 · Aditi Rao", "progress": 40, "manager": "Priya Raman", "stage": "Compliance", "next": "18 Oct", "health": "In progress" },
+        { "initials": "QM", "client": "Quartz Mobility", "nowAt": "Subscriber details", "sub": "Pre-9 · Nikhil Jain", "progress": 17, "manager": "Arjun Mehta", "stage": "Incorporating", "next": "22 Oct", "health": "In progress" },
+        { "initials": "JB", "client": "Juniper Bio", "nowAt": "Client details", "sub": "Pre-1 · Bharath", "progress": 0, "manager": "Pranay", "stage": "Incorporating", "next": "22 Oct", "health": "Not started" }
+      ]
+    },
+    "Phase progress": {
+      "badge": 7, "legend": ["Done", "Current", "Stuck", "Next"],
+      "type": "table with solid phase cells: done is a green cell with a tick, current is a blue cell with n/m, stuck is a red cell with n/m, next is a white lined cell with 0/m",
+      "columns": ["Client", "Name approval", "Incorporation", "Post-incorporation", "Days to COI", "Manager"],
+      "rows": [
+        { "initials": "ML", "client": "Monsoon Labs", "nameApproval": "done", "incorporation": { "text": "8/9", "state": "stuck" }, "post": "0/11", "days": { "text": "14 days", "tone": "bad" }, "manager": "Priya Raman" },
+        { "initials": "OL", "client": "Orchid Lane Foods", "nameApproval": "done", "incorporation": { "text": "4/9", "state": "current" }, "post": "0/11", "days": { "text": "19 days" }, "manager": "Pranay" },
+        { "initials": "NT", "client": "Northwind Technologies", "nameApproval": "done", "incorporation": { "text": "1/9", "state": "current" }, "post": "0/11", "days": { "text": "24 days" }, "manager": "Pranay" },
+        { "initials": "QM", "client": "Quartz Mobility", "nameApproval": "done", "incorporation": { "text": "3/9", "state": "current" }, "post": "0/11", "days": { "text": "27 days" }, "manager": "Arjun Mehta" },
+        { "initials": "LA", "client": "Larkspur Analytics", "nameApproval": { "text": "2/5", "state": "current" }, "incorporation": "0/9", "post": "0/11", "days": { "text": "41 days" }, "manager": "Pranay" },
+        { "initials": "BW", "client": "Banyan Wellness", "nameApproval": { "text": "3/5", "state": "stuck" }, "incorporation": "0/9", "post": "0/11", "days": { "text": "47 days", "tone": "bad" }, "manager": "Arjun Mehta" },
+        { "initials": "JB", "client": "Juniper Bio", "nameApproval": { "text": "0/5", "state": "current" }, "incorporation": "0/9", "post": "0/11", "days": { "text": "54 days" }, "manager": "Pranay" }
+      ]
+    },
+    "Managers": {
+      "action": { "label": "Assign client", "style": "secondary" },
+      "type": "e-Filing grid (R-07)",
+      "columns": ["Manager", "Clients", "Open", "Late"],
+      "rows": [
+        { "initials": "PN", "name": "Pranay", "sub": "3 leads · 91% on time", "clients": 8, "open": 15, "late": { "value": 2, "tone": "bad" } },
+        { "initials": "PR", "name": "Priya Raman", "sub": "2 leads · 86% on time", "clients": 3, "open": 4, "late": { "value": 1, "tone": "bad" } },
+        { "initials": "AM", "name": "Arjun Mehta", "sub": "2 leads · 79% on time", "clients": 3, "open": 4, "late": { "value": 1, "tone": "bad" } }
+      ]
+    },
+    "Needs your decision": {
+      "badge": 4,
+      "type": "list rows: initials tile, title, meta, one button on the right",
+      "rows": [
+        { "initials": "LD", "title": "Lotus Dental has no manager", "meta": "Incorporation · won 2 days ago", "action": { "label": "Assign", "style": "main" } },
+        { "initials": "BR", "title": "Escalate bank account delay", "meta": "Brightwave Robotics · Pranay · 15 Oct", "action": { "label": "Decide", "style": "secondary" } },
+        { "initials": "ML", "title": "Answer MCA remarks with Kabir", "meta": "Monsoon Labs · Priya Raman · 13 Oct", "action": { "label": "Decide", "style": "secondary" } },
+        { "initials": "BW", "title": "New name options after RUN rejection", "meta": "Banyan Wellness · Arjun Mehta · 14 Oct", "action": { "label": "Decide", "style": "secondary" } }
+      ]
+    }
+  }
+}

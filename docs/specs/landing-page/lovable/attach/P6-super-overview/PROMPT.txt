@@ -1,0 +1,95 @@
+Design the Super admin · Overview dashboard at /super/overview.
+
+What the page is for: Mithilesh is the partner who runs SBC. He opens this page to see the health of the whole firm: clients, incorporations, registrations, the month's filings, how his admins and managers perform, and the top risks. He wants the big picture first and the problems second.
+
+Work as the lead product designer: name the questions this person asks, find the best visual answer to each, and invent new cards wherever a table or a list would be weaker. Before you finish, review the page as a design director would and improve it.
+
+Design it in the direction I picked for Lead · Today: the same shell, the same card language, the same type and spacing. New cards and new ways to show this data are welcome. Use the real names, numbers and dates in the JSON below. Leave out anything listed under "excluded". The attached screenshot only shows what the old page held; do not copy its look. Use the attached logos. Light mode, desktop 1440 px.
+
+JSON:
+{
+  "screen": "Super admin · Overview",
+  "route": "/super/overview",
+  "person": "Mithilesh, super admin (partner), SBC",
+  "excluded": ["the bottom PROTOTYPE bar", "the PREVIEW switch (All incorporating / Mixed / All compliance)"],
+  "topBar": { "crumb": ["SBC", "Overview"], "search": "Search · Ctrl K", "bell": 2, "themeToggle": true, "askButton": "Ask VCFO" },
+  "sidebar": {
+    "items": [
+      { "label": "Overview", "icon": "layout-grid", "active": true },
+      { "label": "Risks", "icon": "alert-triangle", "count": 10 },
+      { "label": "Clients", "icon": "building-2", "count": 17, "children": [
+        { "label": "Northwind Technologies", "tag": "Inc", "colour": "violet" },
+        { "label": "Orchid Lane Foods", "tag": "Inc", "colour": "indigo" },
+        { "label": "Brightwave Robotics", "tag": "Cmp", "colour": "pink" },
+        { "label": "Kestrel Health", "tag": "Cmp", "colour": "sky" },
+        { "label": "View all 17" } ] },
+      { "label": "Practice areas", "icon": "bar-chart-3", "children": ["Incorporation", "Registrations", "Compliances"] },
+      { "label": "Team", "icon": "users" },
+      { "label": "Growth", "icon": "trending-up" },
+      { "label": "Reports", "icon": "file-text" },
+      { "label": "Firm settings", "icon": "settings" }
+    ],
+    "you": { "initials": "MI", "name": "Mithilesh", "role": "Super admin", "action": "sign out" }
+  },
+  "greeting": {
+    "date": "Fri 16 Oct 2026 · 12:31 PM · sbc, the whole firm",
+    "title": "Good afternoon, Mithilesh"
+  },
+  "numberStrip": [
+    { "label": "Clients", "value": "17", "delta": "+2", "icon": "building-2", "tone": "accent" },
+    { "label": "Registrations open", "value": "20", "delta": "−3", "icon": "id-card", "tone": "accent" },
+    { "label": "Filed on time", "value": "84%", "delta": "+4 pts", "icon": "shield-check", "tone": "accent" },
+    { "label": "Filings overdue", "value": "4", "delta": "+1", "icon": "alert-triangle", "tone": "accent" }
+  ],
+  "layout": { "row1": ["Incorporation", "Registrations", "Compliances · October"], "row2": ["Admins · this month", "Managers"], "row3": ["Top risks"] },
+  "cards": {
+    "Incorporation": {
+      "badge": 8,
+      "type": "progress list: label, a bar, the count on the right",
+      "rows": [ { "label": "Name approval", "value": 3, "max": 4 }, { "label": "SPICe+ forms", "value": 4, "max": 4 }, { "label": "MCA review", "value": 1, "max": 4 }, { "label": "Certificate", "value": 0, "max": 4 } ],
+      "footer": { "text": "Average 34 days to COI · target 30", "link": "Open" }
+    },
+    "Registrations": {
+      "bigNumbers": [ { "value": "41", "label": "Done", "tone": "ok" }, { "value": "8", "label": "In progress", "tone": "accent" }, { "value": "12", "label": "Pending", "tone": "warn" } ],
+      "type": "stacked bars per statute: done (ok), in progress (accent), pending (warn), count on the right",
+      "rows": [ { "label": "ESI", "count": 5 }, { "label": "PF", "count": 4 }, { "label": "Shops", "count": 3 }, { "label": "Trademark", "count": 3 } ],
+      "footer": { "text": "Most pending: ESI", "link": "Open" }
+    },
+    "Compliances · October": {
+      "total": { "value": "75", "label": "filings" },
+      "render": "one stacked bar with a legend (owner rule R-25), not the donut in the screenshot",
+      "legend": [ { "label": "Overdue", "value": 4, "tone": "bad" }, { "label": "Filed late", "value": 3, "tone": "warn" }, { "label": "Due this week", "value": 11, "tone": "accent" }, { "label": "Upcoming", "value": 19, "tone": "idle" }, { "label": "Filed on time", "value": 38, "tone": "ok" } ],
+      "footer": { "text": "Worst statute: PF and ESI", "link": "Open" }
+    },
+    "Admins · this month": {
+      "link": "Open Team",
+      "type": "e-Filing grid (R-07)",
+      "columns": ["Admin", "Clients", "Assigned", "Approvals", "Open esc.", "Response"],
+      "rows": [
+        { "initials": "KR", "name": "Krishna", "sub": "Pranay, Priya Raman, Arjun Mehta", "clients": 14, "assigned": 3, "approvals": 12, "openEsc": { "value": 2, "tone": "bad" }, "response": "3.2 h" },
+        { "initials": "RA", "name": "Ritu Agarwal", "sub": "Vikram Shah", "clients": 3, "assigned": 1, "approvals": 5, "openEsc": { "value": 1, "tone": "bad" }, "response": "5.5 h" }
+      ]
+    },
+    "Managers": {
+      "type": "e-Filing grid (R-07); Load is a small bar",
+      "columns": ["Manager", "Clients", "Open", "Late", "On time", "Load"],
+      "rows": [
+        { "initials": "PN", "name": "Pranay", "sub": "under Krishna", "clients": 8, "open": 15, "late": { "value": 2, "tone": "bad" }, "onTime": "91%", "load": 0.9 },
+        { "initials": "PR", "name": "Priya Raman", "sub": "under Krishna", "clients": 3, "open": 4, "late": { "value": 1, "tone": "bad" }, "onTime": "86%", "load": 0.3 },
+        { "initials": "AM", "name": "Arjun Mehta", "sub": "under Krishna", "clients": 3, "open": 4, "late": { "value": 1, "tone": "bad" }, "onTime": "79%", "load": 0.3 },
+        { "initials": "VS", "name": "Vikram Shah", "sub": "under Ritu Agarwal", "clients": 3, "open": 4, "late": { "value": 1, "tone": "bad" }, "onTime": "88%", "load": 0.3 }
+      ]
+    },
+    "Top risks": {
+      "badge": 10, "link": "All risks",
+      "type": "list rows: client initials tile, title, meta, a soft chip on the right",
+      "rows": [
+        { "initials": "CS", "title": "TDS challan not paid · Coral Studios", "meta": "Arjun Mehta · 9 days", "chip": "Overdue filing" },
+        { "initials": "ET", "title": "TDS challan not paid · Ember Textiles", "meta": "Vikram Shah · 9 days", "chip": "Overdue filing" },
+        { "initials": "ML", "title": "MCA remarks on SPICe+ unanswered · Monsoon Labs", "meta": "Priya Raman · 6 days", "chip": "MCA notice" },
+        { "initials": "HF", "title": "DIN KYC for one director not filed · Halcyon Fintech", "meta": "Pranay · 16 days", "chip": "DSC or KYC" },
+        { "initials": "BR", "title": "PF ECR not filed · Brightwave Robotics", "meta": "Pranay · 1 day", "chip": "Overdue filing" }
+      ]
+    }
+  }
+}

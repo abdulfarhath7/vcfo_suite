@@ -1,0 +1,439 @@
+Today
+Work
+Clients
+14
+Northwind Technologies
+Inc
+Orchid Lane Foods
+Inc
+Brightwave Robotics
+Cmp
+Kestrel Health
+Cmp
+View all 14
+Managers
+3
+PN
+Pranay
+8 clients
+PR
+Priya Raman
+3 clients
+AM
+Arjun Mehta
+3 clients
+Compliances
+Calendar
+Filings
+Obligations
+Registrations
+Updates
+2
+Announcements
+Notifications
+Email
+Docs
+Vault
+Knowledge bank
+Analytics
+Audit
+Firm settings
+KR
+Krishna
+Admin
+/
+Today
+Search
+Ctrl K
+2
+Fri 16 Oct 2026 · 12:31 PM
+Good afternoon, Krishna
+14
+Clients
+7
+Incorporating
+7
+In compliance
+4
+Overdue
+2
+Stuck
+5
+Due this week
+Incorporation
+7
+Name approval
+3
+SPICe+ forms
+3
+MCA review
+1
+Certificate
+0
+Average 36 days to COI · target 30
+Open clients
+Registrations
+33
+Done
+6
+In progress
+9
+Pending
+PF
+3
+ESI
+3
+Trademark
+3
+Most pending: ESI
+Open clients
+Compliances · October
+58
+filings
+Overdue
+3
+Filed late
+3
+Due this week
+8
+Upcoming
+15
+Filed on time
+29
+Worst statute: PF and ESI
+Open calendar
+Clients · where each one is
+14
+All managers
+All stages
+Client	Now at	Progress	Manager	Stage	Next	Health
+
+ML
+Monsoon Labs
+	MCA remarks on SPICe+
+Pre-13 · Kabir Sethi
+	
+27%
+	
+PR
+Priya Raman
+	
+Incorporating
+	19 Oct	
+Stuck
+
+
+BW
+Banyan Wellness
+	Name resubmission after RUN rejection
+Pre-4 · Nikhil Jain
+	
+6%
+	
+AM
+Arjun Mehta
+	
+Incorporating
+	21 Oct	
+Stuck
+
+
+BR
+Brightwave Robotics
+	Bank account opening
+Post-3 · Sneha Kulkarni
+	
+33%
+	
+PN
+Pranay
+	
+Compliance
+	15 Oct	
+Overdue
+
+
+TL
+Tidewater Logistics
+	FC-GPR filing
+Post-8 · Meera Nair
+	
+44%
+	
+PN
+Pranay
+	
+Compliance
+	16 Oct	
+Due this week
+
+
+IF
+Indigo Freight
+	PF registration
+Reg-6 · Aditi Rao
+	
+65%
+	
+PR
+Priya Raman
+	
+Compliance
+	17 Oct	
+Due this week
+
+
+NT
+Northwind Technologies
+	Registered office address
+Pre-7 · Bharath
+	
+13%
+	
+PN
+Pranay
+	
+Incorporating
+	20 Oct	
+Waiting on client
+
+
+HF
+Halcyon Fintech
+	Trademark registration
+Reg-15 · Sneha Kulkarni
+	
+92%
+	
+PN
+Pranay
+	
+Compliance
+	25 Oct	
+Waiting on client
+
+
+CS
+Coral Studios
+	Auditor appointment (ADT-1)
+Post-9 · Tara Menon
+	
+46%
+	
+AM
+Arjun Mehta
+	
+Compliance
+	23 Oct	
+Waiting on client
+
+
+OL
+Orchid Lane Foods
+	KYC review and DSC
+Pre-10 · Sneha Kulkarni
+	
+19%
+	
+PN
+Pranay
+	
+Incorporating
+	19 Oct	
+In progress
+
+
+LA
+Larkspur Analytics
+	Draft board resolution
+Pre-2 · Meera Nair
+	
+4%
+	
+PN
+Pranay
+	
+Incorporating
+	21 Oct	
+In progress
+
+
+KH
+Kestrel Health
+	GST registration
+Reg-1 · Bharath
+	
+58%
+	
+PN
+Pranay
+	
+Compliance
+	20 Oct	
+In progress
+
+
+SR
+Saffron Retail
+	Share certificates
+Post-5 · Aditi Rao
+	
+40%
+	
+PR
+Priya Raman
+	
+Compliance
+	18 Oct	
+In progress
+
+
+QM
+Quartz Mobility
+	Subscriber details
+Pre-9 · Nikhil Jain
+	
+17%
+	
+AM
+Arjun Mehta
+	
+Incorporating
+	22 Oct	
+In progress
+
+
+JB
+Juniper Bio
+	Client details
+Pre-1 · Bharath
+	
+0%
+	
+PN
+Pranay
+	
+Incorporating
+	22 Oct	
+Not started
+Phase progress
+7
+ Done
+ Current
+ Stuck
+ Next
+Client	Name approval	Incorporation	Post-incorporation	Days to COI	Manager
+
+ML
+Monsoon Labs
+	
+✓
+	
+8/9
+	
+0/11
+	14 days	Priya Raman
+
+OL
+Orchid Lane Foods
+	
+✓
+	
+4/9
+	
+0/11
+	19 days	Pranay
+
+NT
+Northwind Technologies
+	
+✓
+	
+1/9
+	
+0/11
+	24 days	Pranay
+
+QM
+Quartz Mobility
+	
+✓
+	
+3/9
+	
+0/11
+	27 days	Arjun Mehta
+
+LA
+Larkspur Analytics
+	
+2/5
+	
+0/9
+	
+0/11
+	41 days	Pranay
+
+BW
+Banyan Wellness
+	
+3/5
+	
+0/9
+	
+0/11
+	47 days	Arjun Mehta
+
+JB
+Juniper Bio
+	
+0/5
+	
+0/9
+	
+0/11
+	54 days	Pranay
+Managers
+Assign client
+Manager
+Clients
+Open
+Late
+PN
+Pranay
+3 leads · 91% on time
+8
+15
+2
+PR
+Priya Raman
+2 leads · 86% on time
+3
+4
+1
+AM
+Arjun Mehta
+2 leads · 79% on time
+3
+4
+1
+Needs your decision
+4
+LD
+Lotus Dental has no manager
+Incorporation · won 2 days ago
+Assign
+BR
+Escalate bank account delay
+Brightwave Robotics · Pranay · 15 Oct
+Decide
+ML
+Answer MCA remarks with Kabir
+Monsoon Labs · Priya Raman · 13 Oct
+Decide
+BW
+New name options after RUN rejection
+Banyan Wellness · Arjun Mehta · 14 Oct
+Decide
+Ask VCFO
+VCFO Suite home

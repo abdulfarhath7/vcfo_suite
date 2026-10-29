@@ -1,0 +1,1 @@
+Make every screen work at 390 px as the two attached screenshots show: the sidebar folds behind a menu button in the top bar, the number strip wraps to two columns, cards stack in one column in the same order, grids and the Gantt scroll sideways inside their card. Change nothing on desktop.

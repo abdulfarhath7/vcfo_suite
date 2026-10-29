@@ -1,0 +1,103 @@
+{
+  "screen": "Lead · Today",
+  "route": "/lead/today",
+  "person": "Bharath, project lead at SBC",
+  "excluded": ["the bottom PROTOTYPE bar", "the PREVIEW switch (All incorporating / Mixed / All compliance)", "the chatbot toast about Kestrel Health"],
+  "topBar": { "crumb": ["SBC", "Today"], "search": "Search · Ctrl K", "bell": 2, "themeToggle": true, "askButton": "Ask VCFO" },
+  "sidebar": {
+    "items": [
+      { "label": "Today", "icon": "layout-grid", "active": true },
+      { "label": "Work", "icon": "list-checks", "count": 9 },
+      { "label": "Clients", "icon": "building-2", "count": 8, "children": [
+        { "label": "Northwind Technologies", "tag": "Inc", "colour": "violet" },
+        { "label": "Orchid Lane Foods", "tag": "Inc", "colour": "indigo" },
+        { "label": "Brightwave Robotics", "tag": "Cmp", "colour": "pink" },
+        { "label": "Kestrel Health", "tag": "Cmp", "colour": "sky" },
+        { "label": "View all 8" } ] },
+      { "label": "Compliances", "icon": "shield-check", "badge": "New", "count": 4, "children": ["Calendar", "Filings", "Obligations"] },
+      { "label": "Registrations", "icon": "id-card" },
+      { "label": "Updates", "icon": "megaphone", "count": 2, "children": ["Announcements", "Notifications"] },
+      { "label": "Email", "icon": "mail" },
+      { "label": "Docs", "icon": "folder", "children": ["Vault", "Knowledge bank"] },
+      { "label": "Analytics", "icon": "bar-chart-3" },
+      { "label": "Audit", "icon": "clock" }
+    ],
+    "monthCalendar": { "title": "October 2026", "hint": "Due days", "today": 16, "dueDays": [7, 11, 15, 20, 22, 25, 31] },
+    "yourManagers": [ { "initials": "PN", "name": "Pranay", "role": "Manager", "action": "mail" } ],
+    "you": { "initials": "BH", "name": "Bharath", "role": "Project lead", "action": "sign out" }
+  },
+  "greeting": {
+    "date": "Fri 16 Oct 2026 · 12:31 PM",
+    "title": "Good afternoon, Bharath",
+    "tabs": [ { "label": "All", "count": 8, "active": true }, { "label": "Incorporating", "count": 4 }, { "label": "Compliance", "count": 4 } ]
+  },
+  "numberStrip": [
+    { "label": "Action", "value": "11", "icon": "list", "tone": "accent" },
+    { "label": "Overdue", "value": "4", "icon": "alert-triangle", "tone": "bad" },
+    { "label": "Waiting", "value": "6", "icon": "user", "tone": "warn" },
+    { "label": "This week", "value": "12", "icon": "calendar", "tone": "warn" },
+    { "label": "Done today", "value": "2", "icon": "circle-check", "tone": "ok" }
+  ],
+  "secondStrip": [ { "value": "4", "label": "Incorporating" }, { "value": "11", "label": "Registrations pending" }, { "value": "2", "label": "Filings overdue" } ],
+  "layout": { "left": ["Action queue", "Phase progress", "Clients × filings"], "right": ["Inbox", "Waiting on client"] },
+  "cards": {
+    "Action queue": {
+      "badge": 11, "note": { "text": "1 stuck · MCA query on SPICe+", "tone": "bad" }, "link": "View all work →",
+      "type": "table (keep the old look: plain head, no grid lines; it is a count matrix, not an e-Filing grid)",
+      "columns": ["Company", "Overdue", "Due today", "My step", "Waiting", "Upcoming", "Total"],
+      "cellTones": { "Overdue": "bad", "Due today": "warn", "My step": "accent", "Waiting": "idle" },
+      "rows": [
+        { "company": "Northwind Technologies", "initials": "NT", "colour": "violet", "overdue": "", "dueToday": "", "myStep": "", "waiting": "1", "upcoming": "", "total": "1 task" },
+        { "company": "Orchid Lane Foods", "initials": "OL", "colour": "indigo", "overdue": "", "dueToday": "", "myStep": "1", "waiting": "", "upcoming": "", "total": "1 task" },
+        { "company": "Larkspur Analytics", "initials": "LA", "colour": "green", "overdue": "", "dueToday": "", "myStep": "1", "waiting": "", "upcoming": "", "total": "1 task" },
+        { "company": "Juniper Bio", "initials": "JB", "colour": "slate", "overdue": "", "dueToday": "", "myStep": "", "waiting": "1", "upcoming": "", "total": "1 task" },
+        { "company": "Brightwave Robotics", "initials": "BR", "colour": "pink", "overdue": "1", "dueToday": "", "myStep": "1", "waiting": "", "upcoming": "", "total": "2 tasks" },
+        { "company": "Tidewater Logistics", "initials": "TL", "colour": "teal", "overdue": "1", "dueToday": "", "myStep": "", "waiting": "1", "upcoming": "", "total": "2 tasks" },
+        { "company": "Kestrel Health", "initials": "KH", "colour": "sky", "overdue": "", "dueToday": "1", "myStep": "1", "waiting": "", "upcoming": "", "total": "2 tasks" },
+        { "company": "Halcyon Fintech", "initials": "HF", "colour": "amber", "overdue": "", "dueToday": "1", "myStep": "", "waiting": "", "upcoming": "", "total": "1 task" }
+      ],
+      "emptyCell": "–"
+    },
+    "Phase progress": {
+      "title": "Phase progress · 4 incorporating", "legend": "Done ✓ · Current blue · Stuck red · Next grey",
+      "columns": ["Company", "Part A", "Part B", "Post-inc.", "Days to COI"],
+      "rows": [
+        { "company": "Northwind Technologies", "colour": "violet", "partA": { "done": true }, "partB": { "text": "1/9", "fill": 0.11, "tone": "accent" }, "post": { "text": "0/11", "fill": 0 }, "days": "24d" },
+        { "company": "Orchid Lane Foods", "colour": "indigo", "partA": { "done": true }, "partB": { "text": "4/9", "fill": 0.44, "tone": "accent" }, "post": { "text": "0/11", "fill": 0 }, "days": "19d" },
+        { "company": "Larkspur Analytics", "colour": "green", "partA": { "text": "2/5", "fill": 0.4, "tone": "accent" }, "partB": { "text": "0/9", "fill": 0 }, "post": { "text": "0/11", "fill": 0 }, "days": "41d" },
+        { "company": "Juniper Bio", "colour": "slate", "partA": { "text": "0/5", "fill": 0 }, "partB": { "text": "0/9", "fill": 0 }, "post": { "text": "0/11", "fill": 0 }, "days": "58d" }
+      ],
+      "note": "Each phase cell is a 6 px bar with its count under it. Done cells show a green tick."
+    },
+    "Clients × filings": {
+      "title": "Clients × filings · October", "legend": ["Filed", "Due soon", "Overdue", "Upcoming"],
+      "columns": ["Client", "GSTR-1", "GSTR-3B", "TDS", "PF ECR", "ESI", "PT", "FC-GPR", "DIR-3", "ADT-1"],
+      "cellCodes": { "filed": "soft green tile with a tick", "due:N": "soft amber tile with the due day N", "overdue": "soft red tile with !", "upcoming": "soft grey tile", "-": "a dash, not applicable" },
+      "rows": [
+        { "client": "Brightwave Robotics", "colour": "pink", "cells": ["filed", "filed", "due:7", "filed", "upcoming", "upcoming", "-", "upcoming", "-"] },
+        { "client": "Tidewater Logistics", "colour": "teal", "cells": ["filed", "filed", "filed", "filed", "upcoming", "upcoming", "overdue", "-", "upcoming"] },
+        { "client": "Kestrel Health", "colour": "sky", "cells": ["-", "-", "due:7", "-", "-", "-", "-", "upcoming", "-"] },
+        { "client": "Halcyon Fintech", "colour": "amber", "cells": ["due:11", "filed", "due:7", "overdue", "upcoming", "upcoming", "-", "filed", "-"] }
+      ]
+    },
+    "Inbox": {
+      "tabs": [ { "label": "Triage", "count": 5, "active": true }, { "label": "My to-dos", "count": 4 } ],
+      "rows": [
+        { "dot": "accent", "title": "Rohan uploaded the stamped rent agreement", "meta": "Northwind · client upload", "time": "Now", "highlighted": true },
+        { "dot": "ink", "title": "Mei Tanaka replied: \"FIRMS login sent\"", "meta": "Tidewater · email", "time": "10:12" },
+        { "dot": "ok", "title": "MCA: SRN AB1234 approved", "meta": "Orchid Lane · MCA mail", "time": "09:40" }
+      ]
+    },
+    "Waiting on client": {
+      "badge": 4,
+      "rows": [
+        { "colour": "violet", "title": "Utility bill + NOC", "meta": "Northwind · Pre-7 · 5d waiting", "action": "Remind" },
+        { "colour": "teal", "title": "FIRMS login", "meta": "Tidewater · Post-8 · 3d waiting", "action": "Remind" },
+        { "colour": "amber", "title": "Logo file (SVG)", "meta": "Halcyon · Reg-15 · 3d waiting", "action": "Remind" },
+        { "colour": "slate", "title": "KYC docs", "meta": "Juniper · Pre-1 · 1d waiting", "action": "Remind" }
+      ],
+      "note": "Remind is a secondary (white, lined) button, 30 px."
+    }
+  },
+  "mobile390": "lead-today-390.png: the sidebar folds behind a menu button; the number strip wraps to two columns; the cards stack in one column in the same order."
+}

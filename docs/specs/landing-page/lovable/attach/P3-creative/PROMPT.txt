@@ -1,0 +1,25 @@
+You are the lead product designer on VCFO Suite. Treat this as the most important screen in the product: SBC's team opens it every morning, and the CEO will judge the whole product by it. I am not asking you to tidy the old page. I am asking for your best original design thinking.
+
+The person: Bharath, a project lead at SBC, a chartered-accountancy firm. He handles eight clients: four companies SBC is incorporating and four in yearly compliance. Every morning he has a few minutes to answer five questions:
+1. What must I do first today? (overdue, due today, stuck)
+2. Who is blocking me, and have I chased them? (items waiting on clients)
+3. What came in since yesterday? (inbox)
+4. Will my four incorporations reach their certificate on time? (phase progress, days to COI)
+5. Are my compliance clients safe this month? (October filings)
+
+What is wrong with the current page (/lead/today): everything has the same weight, so nothing says "start here". Five equal number boxes are followed by a second strip of three more numbers, so eight numbers compete for attention. The action queue is a table of 40 cells where only 11 hold a number. Phase progress and the filings matrix are dense grids you have to decode. Every Remind button looks the same, whether the client has kept him waiting one day or five. The due days sit in a small sidebar calendar, away from the work they belong to, and the calendar and the managers block compete with the navigation.
+
+Your task:
+1. Start like a senior designer. In your reply, give a short critique in your own words, then three concepts. Each concept has a name, a one-sentence big idea, and the new card types it introduces. Make the three truly different: each one organises the morning around a different idea (by time, by client, by urgency, or better ideas of your own).
+2. Build the three concepts as complete pages with the shell at /lead/today/a, /lead/today/b and /lead/today/c. Add a small "A · B · C" switcher in the top bar; hovering an option shows that concept's name and big idea. Leave /lead/today as it is for comparison.
+3. Invent. Design new card types, new ways to show progress and risk, smarter groupings, inline actions, hover previews, keyboard hints and useful empty states. You may throw away every card and layout of the old page. Each card must answer its question better than a table would.
+4. Sweat the details the way Linear, Stripe, Mercury, Ramp and Superhuman do: one type scale, a strict spacing grid, exact alignment, tabular numerals, quiet secondary text, clear hover and focus states, and at most one calm motion.
+
+What stays fixed:
+- The real data on /lead/today: every client, person, number and date, word for word. You may derive new views from it, for example the three most urgent items, but do not invent clients, people or facts. Every navigation item stays reachable.
+- The brand: navy #15263b, the logo orange only for small highlights, and status colours only for meaning (green done, amber due soon, red overdue, grey upcoming, blue in progress). Use the attached logos; never draw a new one.
+- The taste: no gradients, glows or glass. No mascot; "Ask VCFO" is a text button. No filler sentences. Sentence case.
+
+Before you finish, review each page as a design director would. Is the most important thing the first thing the eye lands on? Does every element earn its place? Would this ship at Stripe? If a page fails, improve it before you stop.
+
+Light mode, desktop 1440 px.

@@ -1,0 +1,11 @@
+Build the three concepts as planned: A Runway, B Desks, C Signal.
+
+Four data fixes first. Check each one in src/data/lead-today.ts and derive everything from that file:
+1. Tidewater Logistics' overdue filing is FC-GPR, not PT.
+2. Halcyon Fintech's overdue filing is PF ECR, not TDS.
+3. The 7 and the 11 on the due-soon filing tiles are due dates in the month (the 7th and the 11th), not days left. Never show "in 7 days" or "in 11 days".
+4. The stuck item is the MCA query on SPICe+. "MCA: SRN AB1234 approved" is good news in the inbox, not a blocker.
+
+Skip the test file, the Playwright screenshots and the og and twitter tags. I review the pages myself.
+
+Push each concept as far as it can go. Each page must look like something a top design team would ship.

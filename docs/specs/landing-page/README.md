@@ -121,3 +121,14 @@ The prototype has four portals. Client: Rohan Kumar at Northwind. Project lead: 
 The admin screens are source files in `src/proto-fix/admin/` (data, sidebar, Today, Work, Managers, Clients, the assign dialog, shared CSS). `patch.mjs` loads them into the bundle under `s/admin/`, copies the remaining screens from the manager portal, and adds the `admin-*` routes. Edit the files there and rerun the two build commands.
 
 The developer console (Farhath) covers SBC's own setup: connections, message routing, jobs, logs, deploys, access and secrets, data and costs, and an audit of every change. Its screens are in `src/proto-fix/dev/`; every action goes through one confirm dialog. Every staff home and the client home also carry the practice-areas row from `src/proto-fix/shared/`.
+
+## The Lovable brief pack (cards and dashboards)
+
+`lovable/` holds the pack for the Lovable round that polishes the old prototype's cards and
+dashboards: `KNOWLEDGE.md` (the project knowledge to paste into Lovable), `PROMPTS.md` (the
+ordered prompts with a credit cap each and a ledger), `refs/old/` (the old dashboards at 1440 and
+390 px, captured from `vcfo-prototype-v10.html` with the prototype bar hidden), `refs/look/`
+(Karbon, TaxDome and Mercury captures from `reference/vcfo-suite/finance-ui-refs`) and `data/`
+(every label, number, name and date of each dashboard, card by card). Lovable renders the shell,
+three dashboards and a cards sheet; the finish then comes back into `src/proto-fix/ds.css` and
+`patch.mjs`, so every screen of the old prototype gets it. The landing page is not part of that round.

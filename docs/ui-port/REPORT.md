@@ -17,7 +17,7 @@ Demo logins are in `README.md`. Check each portal in light, dark and at 390px wi
 check was made tonight (D-14).
 
 Gate at the last commit: `npm run typecheck` 0 errors, `npm run lint` 0 errors (329 warnings,
-mostly `react-refresh/only-export-components`), `npm run test` 281 files and 2774 tests pass, and
+mostly `react-refresh/only-export-components`), `npm run test` 287 files and 2841 tests pass, and
 `npm run build` succeeds. The e2e smoke list (`e2e/smoke.spec.ts`) has the new routes but was not run.
 
 ## Second pass (29 Oct 2026): every gap, and the prototype's newer commits
@@ -52,6 +52,8 @@ The owner asked for every gap to be built and for the prototype's five newer com
 | Mail and vault | Signature, attachments, mail groups; vault ZIP, upload, requests, review, preview | 5373af9 |
 | Shared parts (parity) | Compact home card, FilterChip, DangerConfirm, toasts, L1 loading, menu keys, Term and Tip, AvatarStack, bulk bar, status menu, saved views, density, new-since, relative due words, six-word chips, ShortcutSheet, phone TabBar | a2d4de6, 8bdadcc |
 | Screens (parity) | Compact homes on every portal, Team tasks, Work and Clients tables, Filings by filing and client, client home upload progress, retaken landing screenshots | 787eb9e, 8b8ecbf, 3b755e1 |
+| Prototype 65f70b7 (D-17, M-27 to M-30) | H3 tight home card with the scope switch inside, trend lines where the past can be rebuilt, row menus with E, A and C keys, green A1 toasts, landing gap, phone home card | 92a5034, fc0e7c8 |
+| Follow-ups | Mark filed; client audit allowlist; only the super admin removes a super admin or developer; Message and Dates bell kinds; Remind me uses firm reminder days; weekly digest (Mondays 09:00) | b2a5edd, d03bb7c, 5063792, 522433e, 7e70e9b |
 
 ## Done
 
@@ -96,8 +98,8 @@ give, the screen leaves it out and `GAPS.md` lists it.
 | e2e suites (`npm run e2e:smoke`, `npm run e2e`) | Run after `db:seed-demo`. Text checks that changed: the settings heading is "Sign-in and security"; Library's head reads "{company}’s library". |
 | Developer console (9 screens) | Gap G-01: needs a developer role and data sources. |
 | Firm settings (admin and super admin) | Gap G-02: needs a firm settings store. |
-| Trend lines on home tiles | Only super admin "Filed on time" has one; the other counts have no stored history yet. |
-| Client home tiles that open a drill | `DashHero` has no tile `onClick`; the client home catches `#dd-` links instead. |
+| Trend lines on lead, manager and admin homes | Their tiles count step states, stages and windows, which keep no history. They need `tasks.completed_at`, review status in step events, stage and schedule change events and a fulfilled time on document requests; then `src/db/repositories/home-trends.ts` can add them. |
+| Shared menu parts | `DropdownMenuSubTrigger` has no `shortcut` prop, letter keys in a submenu reach the parent menu, and `EFilingGrid`'s row-actions column fits three buttons. |
 | Old client phone home files | `MobileHome.tsx` and the files around it are no longer imported; retire them with the list below. |
 | `src/lib/email/email-layout.ts` | Still its own palette. |
 | Old UI files no longer used by any route | Kept, not deleted (rule 5 of `new_context.md`). Retire after the owner's test: `src/components/client-portal/pages/home/{MobileHome,MobileCardsA,MobileCardsB,MobileParts,useMobileHome}.tsx`, `css-src/home-m.css`, `css-src/incorporation-landing.css`, `CrBot.tsx`, `Visor.tsx` figures, `src/views/auth/Login.tsx`, `src/components/auth/{LoginHero,LoginShowcase}.tsx`, `react-bits/BlurText.tsx`, `src/components/marketing/sections/{LandingHero,LandingImpact,LandingProblem,LandingHowItWorks}.tsx`, `HeroProductPlane.tsx`, `src/components/intern/LeadPracticeStrip.tsx` (keep `isOverdueOrDueSoon`), CSS classes `.lead-tl*`, `.lead-board-col*`, `.ann-kind*`, `.notif-kind`, `.lead-hero*` in `app/globals.css`, `DOC_STATUS_*_TONE` in `src/lib/doc-pack/labels.ts`. |
