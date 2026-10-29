@@ -36,6 +36,10 @@ export const clientInvites = pgTable(
     invitedBy: uuid('invited_by').references(() => profiles.id, { onDelete: 'set null' }),
     /** Hash the account was created with (null = an existing account was attached). */
     tempPasswordHash: text('temp_password_hash'),
+    /** SHA-256 of the set-password link token the invitee opens to choose a password (C-899); cleared once used. */
+    setPasswordTokenHash: text('set_password_token_hash'),
+    /** The set-password link stops working after this time (seven days after it was sent). */
+    setPasswordExpiresAt: timestamp('set_password_expires_at', { withTimezone: true }),
     sendCount: integer('send_count').notNull().default(1),
     lastSentAt: timestamp('last_sent_at', { withTimezone: true }).notNull().defaultNow(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),

@@ -356,6 +356,14 @@ export const documents = pgTable(
     reviewedBy: uuid('reviewed_by').references(() => profiles.id, { onDelete: 'set null' }),
     reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
     reviewNote: text('review_note'),
+    /** When a newer upload to the same checklist field took this file's place (vault "Replaced", P-575). */
+    replacedAt: timestamp('replaced_at', { withTimezone: true }),
+    /** The documents row of the newer upload that replaced this one (no FK: rows may be removed). */
+    replacedById: uuid('replaced_by_id'),
+    /** Soft delete from the vault (P-596); a deleted row is hidden everywhere and Undo clears it. */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** Who deleted the file from the vault. */
+    deletedBy: uuid('deleted_by').references(() => profiles.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -868,6 +876,8 @@ export const announcements = pgTable(
     sourceId: uuid('source_id').references(() => announcementSources.id, { onDelete: 'set null' }),
     externalId: text('external_id'),
     sourceUrl: text('source_url'),
+    /** In-app client portal page the announcement points to (`/app/client/...`); drives the detail "Open" button (C-741). */
+    linkPath: text('link_path'),
     authorId: uuid('author_id').references(() => profiles.id, { onDelete: 'set null' }),
     authorName: text('author_name').notNull(),
     authorRole: text('author_role'),

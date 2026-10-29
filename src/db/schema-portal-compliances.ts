@@ -99,3 +99,94 @@ export const complianceReminders = pgTable(
     dueIdx: index('compliance_reminders_remind_on_idx').on(t.remindOn),
   }),
 );
+
+/**
+ * COMPLIANCE SUBJECT FIELDS (0029, C-415, C-417, C-492, S-774, S-811): the values of the
+ * fields on an obligation period or a registration. The field list is static data
+ * (`src/data/compliance-inputs.ts`); a row holds one value. side 'client' is the "From the
+ * client" details the client submits; side 'sbc' is the "Filled by SBC" card.
+ */
+export const complianceSubjectFields = pgTable(
+  'compliance_subject_fields',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The engagement the subject belongs to; every read and write is scoped by it. */
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    /** 'obligation' (keyed by compliance instance id) or 'registration' (keyed by step id). */
+    subjectKind: text('subject_kind').notNull(),
+    /** The compliance instance id or the registration step id ('reg-4'). */
+    subjectKey: text('subject_key').notNull(),
+    /** The field key from the static field list ('turnover', 'gstin'). */
+    fieldKey: text('field_key').notNull(),
+    /** 'client' (the client fills it) or 'sbc' (SBC fills it). */
+    side: text('side').notNull(),
+    /** The value as typed; empty values are stored as null. */
+    value: text('value'),
+    /** Who last saved the value. */
+    updatedBy: uuid('updated_by').references(() => profiles.id, { onDelete: 'set null' }),
+    /** When the value was last saved. */
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When the client pressed "Submit details" for this value; null for SBC fields. */
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    /** The staff member who confirmed the client's value ("Confirmed by"). */
+    confirmedBy: uuid('confirmed_by').references(() => profiles.id, { onDelete: 'set null' }),
+    /** When the client's value was confirmed; cleared when the client changes it. */
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    oneEach: uniqueIndex('compliance_subject_fields_uq').on(t.engagementId, t.subjectKind, t.subjectKey, t.fieldKey),
+  }),
+);
+
+/**
+ * ASSIST RUNS (0029, C-324, C-363, C-377, S-773, S-809): one VCFO Assist run on a government
+ * portal for one filing period or one registration. Staff "Start filing" creates a requested
+ * run; the VCFO Assist extension posts its progress and result to
+ * `/api/assist/engagements/[id]/runs` from inside a signed-in Suite tab.
+ */
+export const assistRuns = pgTable(
+  'assist_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The engagement the run belongs to; every read and write is scoped by it. */
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    /** 'filing' (keyed by compliance instance id) or 'registration' (keyed by step id). */
+    subjectKind: text('subject_kind').notNull(),
+    /** The compliance instance id or the registration step id ('reg-4'). */
+    subjectKey: text('subject_key').notNull(),
+    /** The portal form the run fills ('GSTR-3B', 'SPICe+ Part A', 'GST REG-01'). */
+    form: text('form'),
+    /** requested | running | paused | done | failed | stopped */
+    state: text('state').notNull().default('requested'),
+    /** The steps as the extension reports them: [{ title, state: done|run|wait, at?, shotKey? }]. */
+    steps: jsonb('steps').notNull().default([]),
+    /** The reference the portal gave back (SRN, ARN), when the run reached it. */
+    reference: text('reference'),
+    /** How many portal fields the extension wrote. */
+    fieldsWritten: integer('fields_written'),
+    /** Values the portal showed that differ from VCFO: [{ field, expected, actual }]. */
+    mismatches: jsonb('mismatches').notNull().default([]),
+    /** The extension's error or halt reason when the run stopped. */
+    error: text('error'),
+    /** The Idempotency-Key the extension sent, so a repeat post updates the same run. */
+    idempotencyKey: text('idempotency_key'),
+    /** The recipe and field-map versions the extension ran with ("recipe 3 · map 5"). */
+    versions: text('versions'),
+    /** Who pressed "Start filing", or whose Suite session posted the first update. */
+    startedBy: uuid('started_by').references(() => profiles.id, { onDelete: 'set null' }),
+    /** When the run was requested or first reported. */
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When the last update arrived. */
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When the run reached done, failed or stopped. */
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => ({
+    subjectIdx: index('assist_runs_subject_idx').on(t.engagementId, t.subjectKind, t.subjectKey, t.startedAt),
+    idemIdx: uniqueIndex('assist_runs_idempotency_idx').on(t.engagementId, t.idempotencyKey),
+  }),
+);

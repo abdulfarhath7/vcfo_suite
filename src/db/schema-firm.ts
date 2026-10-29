@@ -54,6 +54,10 @@ export const firmSettings = pgTable('firm_settings', {
   supportEmail: text('support_email'),
   supportPhone: text('support_phone'),
   address: text('address'),
+  /** Service targets: { daysToCoi, fileDaysAhead, replyHours, escalateAfterDays, partnerReportDay }, each a number or null (P-238). */
+  serviceTargets: jsonb('service_targets').$type<Record<string, number | null>>().notNull().default({}),
+  /** Role permissions set by the super admin: { admin|manager|intern: { view, edit, approve } } (P-236). Empty means the code defaults. */
+  rolePermissions: jsonb('role_permissions').$type<Record<string, Record<string, boolean>>>().notNull().default({}),
   updatedBy: uuid('updated_by').references(() => base.profiles.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -67,12 +71,44 @@ export const userSessions = pgTable(
       .references(() => base.profiles.id, { onDelete: 'cascade' }),
     userAgent: text('user_agent'),
     ip: text('ip'),
+    /** Sign-in city from the CDN geo headers (C-851); null when no geo header came with the sign-in. */
+    city: text('city'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp('revoked_at', { withTimezone: true }),
   },
   (t) => ({
     userIdx: index('user_sessions_user_idx').on(t.userId),
+  }),
+);
+
+/**
+ * WhatsApp verification codes (C-868): one row per code sent to a person's WhatsApp number
+ * before the number is turned on. Only a hash of the code is kept.
+ */
+export const whatsappVerifyCodes = pgTable(
+  'whatsapp_verify_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The person verifying their own number. */
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => base.profiles.id, { onDelete: 'cascade' }),
+    /** The number the code was sent to, E.164. */
+    phoneE164: text('phone_e164').notNull(),
+    /** SHA-256 of the row id, the code and the auth secret; never the code itself. */
+    codeHash: text('code_hash').notNull(),
+    /** Wrong guesses so far; the code locks at five. */
+    attempts: integer('attempts').notNull().default(0),
+    /** The code stops working after this time (ten minutes after sending). */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** Set when the right code was entered; a used code never works again. */
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    /** When the code was sent. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index('whatsapp_verify_codes_user_idx').on(t.userId, t.createdAt),
   }),
 );
 
@@ -186,5 +222,162 @@ export const mailGroupMembers = pgTable(
   },
   (t) => ({
     groupEmailUq: uniqueIndex('mail_group_members_group_email_uq').on(t.groupId, t.email),
+  }),
+);
+
+/**
+ * Developer console (round X). One row per live check of an outside service ("Test" on
+ * Connections, or a scheduled check). Uptime, p95, incidents and "Last check" are read from
+ * these rows. Developer and super admin only (`src/db/repositories/dev-checks.ts`).
+ */
+export const devServiceChecks = pgTable(
+  'dev_service_checks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The service id from `src/lib/dev/env-status.ts`, for example 'email' or 'storage'. */
+    service: text('service').notNull(),
+    /** True when the service answered as expected. */
+    ok: boolean('ok').notNull(),
+    /** How long the check took, in milliseconds. */
+    latencyMs: integer('latency_ms').notNull(),
+    /** A short, scrubbed line: what was checked, or why it failed. Never a secret. */
+    detail: text('detail'),
+    /** Who ran the check; null for a scheduled check. */
+    checkedBy: uuid('checked_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** When the check ran. */
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    serviceAtIdx: index('dev_service_checks_service_at_idx').on(t.service, t.checkedAt),
+  }),
+);
+
+/**
+ * Developer console switches, one row per key (for example 'jobs.paused'). Developer and
+ * super admin write; the jobs and the console read (`src/db/repositories/dev-settings.ts`).
+ */
+export const devSettings = pgTable('dev_settings', {
+  /** The setting name, for example 'jobs.paused'. */
+  key: text('key').primaryKey(),
+  /** The value as JSON, for example { "on": true }. */
+  value: jsonb('value').notNull().default({}),
+  /** Who changed it last. */
+  updatedBy: uuid('updated_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+  /** When it was changed last. */
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Every App Runner image identifier the console has seen the production service run, so
+ * "Roll back" can offer an earlier one (App Runner keeps no image history).
+ */
+export const devDeployImages = pgTable('dev_deploy_images', {
+  /** The full image identifier App Runner names, for example '<repo>:<tag>'. */
+  image: text('image').primaryKey(),
+  /** When the console first saw the service run this image. */
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  /** When the console last saw the service run this image. */
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Personal API tokens for the developer console (Access › Secrets and API keys). A token
+ * reads the `/api/dev/*` GET routes as the developer who made it; it cannot write. Only the
+ * SHA-256 hash is stored; the token is shown once when it is made.
+ */
+export const devApiTokens = pgTable(
+  'dev_api_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** A name the developer gives it, for example "Grafana". */
+    name: text('name').notNull(),
+    /** SHA-256 of the token, hex. The token itself is never stored. */
+    tokenHash: text('token_hash').notNull(),
+    /** The first characters of the token, to tell tokens apart on screen. */
+    prefix: text('prefix').notNull(),
+    /** Who made it; the token acts as this person and only while they are a developer. */
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => base.profiles.id, { onDelete: 'cascade' }),
+    /** When it was made. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When it stops working. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    /** When it last read a route. */
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    /** When it was revoked; null while it works. */
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (t) => ({
+    hashUq: uniqueIndex('dev_api_tokens_hash_uq').on(t.tokenHash),
+  }),
+);
+
+/**
+ * A staff profile's link to an outside sign-in (S-650): today only Microsoft Entra ID. Made on the
+ * first Microsoft sign-in whose email matches an existing active profile; Microsoft sign-in never
+ * creates a profile. The owner reads and removes their own link (`src/db/repositories/sign-in-links.ts`).
+ */
+export const signInLinks = pgTable(
+  'sign_in_links',
+  {
+    /** Row id. */
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The VCFO profile this outside identity signs in as. */
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => base.profiles.id, { onDelete: 'cascade' }),
+    /** The Auth.js provider id, for example 'microsoft-entra-id'. */
+    provider: text('provider').notNull(),
+    /** The provider's stable subject for the person (the OIDC `sub`). */
+    subject: text('subject').notNull(),
+    /** The email the provider gave when the link was made. */
+    email: text('email').notNull(),
+    /** When the link was made (the first sign-in). */
+    linkedAt: timestamp('linked_at', { withTimezone: true }).notNull().defaultNow(),
+    /** The last sign-in through this link. */
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  },
+  (t) => ({
+    providerSubjectUidx: uniqueIndex('sign_in_links_provider_subject_uidx').on(t.provider, t.subject),
+    profileProviderUidx: uniqueIndex('sign_in_links_profile_provider_uidx').on(t.profileId, t.provider),
+  }),
+);
+
+/**
+ * Fees on one engagement, by service (P-100, the super admin client record's Fees tab). Admin,
+ * super admin and the engagement's manager write; the same roles read through the engagement
+ * scope (`src/db/repositories/engagement-fees.ts`). Outstanding is a billed line not yet paid.
+ */
+export const engagementFees = pgTable(
+  'engagement_fees',
+  {
+    /** Row id. */
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The engagement the fee belongs to. */
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => base.engagements.id, { onDelete: 'cascade' }),
+    /** The service the fee is for, for example 'Incorporation' or 'GST returns'. */
+    service: text('service').notNull(),
+    /** The fee in whole rupees. */
+    amountRupees: integer('amount_rupees').notNull(),
+    /** How it is billed: 'one_time' | 'monthly' | 'milestone'. */
+    billing: text('billing').notNull().default('one_time'),
+    /** Where it stands: 'not_billed' | 'billed' | 'paid'. */
+    status: text('status').notNull().default('not_billed'),
+    /** The day the invoice went out; the outstanding age counts from here. */
+    billedOn: date('billed_on'),
+    /** The day the payment came in. */
+    paidOn: date('paid_on'),
+    /** Who added the line. */
+    createdBy: uuid('created_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** When the line was added. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When the line last changed. */
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    engagementIdx: index('engagement_fees_engagement_idx').on(t.engagementId),
   }),
 );
