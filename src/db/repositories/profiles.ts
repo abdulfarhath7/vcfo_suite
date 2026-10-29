@@ -441,6 +441,12 @@ export async function deleteProfileAccount(
     }
   }
 
+  // Only the super admin removes a super admin or a developer account (developers are
+  // created by the super admin only).
+  if ((target.role === 'super_admin' || target.role === 'developer') && ctx.role !== 'super_admin') {
+    throw new Error('cannot_edit_super_admin');
+  }
+
   if (target.role === 'admin') {
     const admins = await db
       .select({ id: profiles.id })
@@ -458,6 +464,11 @@ export async function deleteProfileAccount(
         .update(profiles)
         .set({ reportsToManagerId: null, updatedAt: new Date() })
         .where(eq(profiles.reportsToManagerId, profileId));
+      // And the "Reports to admin" lines (G-20), which have no foreign key.
+      await tx
+        .update(profiles)
+        .set({ reportsToAdminId: null, updatedAt: new Date() })
+        .where(eq(profiles.reportsToAdminId, profileId));
 
       // RESTRICT FKs — reassign ownership to the actor deleting the account.
       await tx
@@ -730,7 +741,7 @@ export async function updatePersonEmail(
     }
   }
 
-  if (target.role === 'super_admin' && ctx.role !== 'super_admin') {
+  if ((target.role === 'super_admin' || target.role === 'developer') && ctx.role !== 'super_admin') {
     throw new Error('cannot_edit_super_admin');
   }
 
