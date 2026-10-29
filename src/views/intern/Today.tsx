@@ -23,9 +23,8 @@ const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_m
  * The lead's Today (prototype TodayScreen, C-0103, C-0114): the compact home card with five
  * numbers, then the Action queue, Phase progress and the overdue filings beside the rail
  * (Todos, Waiting on, My managers). The practice strip left the page; its numbers are in the
- * home card and the cards below. The scope switch sits in the Action queue head (R-17) and
- * narrows the cards below the home card to the incorporating companies or the incorporated
- * ones. The home card counts all the lead's work, as the Work lists its tiles open do. The rail's Inbox holds the client messages to triage
+ * home card and the cards below. The scope switch sits in the home card (D-17) and narrows
+ * the cards below it to the incorporating companies or the incorporated ones. The home card counts all the lead's work, as the Work lists its tiles open do. The rail's Inbox holds the client messages to triage
  * (G-11) beside the lead's own to-dos.
  */
 export default function InternToday() {
@@ -62,7 +61,12 @@ export default function InternToday() {
       />
 
       <div className="flex flex-col gap-5">
-        <LeadHero name={user?.name ?? ''} items={workItems} now={now} />
+        <LeadHero
+          name={user?.name ?? ''}
+          items={workItems}
+          now={now}
+          scope={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
+        />
 
         <div className={GRID}>
           <div className="flex min-w-0 flex-col gap-5">
@@ -71,7 +75,6 @@ export default function InternToday() {
               items={items}
               now={now}
               statusOf={statusOf}
-              scopeTabs={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
             />
             <LeadPhaseProgress engagements={engagements} getState={getStateForEngagement} />
             {scope !== 'incorporating' ? (

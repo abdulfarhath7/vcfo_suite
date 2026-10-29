@@ -9,6 +9,7 @@ import { DevCard, EnvNames, ListRow, Pending, ReachChip, ReachNotice, StatusChip
 import { useDevApi } from '@/components/dev/use-dev-api';
 import { stamp, words } from '@/lib/dev/format';
 import type { JobRun, OverviewPayload, ServiceConfig } from '@/lib/dev/types';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 
 type Attention = { id: string; title: string; sub: string; chip: string; status: string; href: string };
 
@@ -57,10 +58,13 @@ const runColumns: EFilingColumn<JobRun>[] = [
 export default function DevOverview() {
   const q = useDevApi<OverviewPayload>('/api/dev/overview', { refetchMs: 60_000 });
   const d = q.data;
+  // R-18: the last four day ends, rebuilt from the message logs and the audit log.
+  const trends = useHomeTrends('dev');
 
   const working = d ? d.services.filter((s) => s.status === 'configured').length : 0;
   /* Five numbers (R-18, E-04, E-05), each opening the page behind it. Staff signed in moves to
-     the line under the title. No trend line: the overview reads only the current state. */
+     the line under the title. Messages failed and Denied draw a trend line from the stored logs;
+     the other tiles keep only their current state, so they draw none. */
   const stats: DashHeroStat[] = d
     ? [
         {
@@ -83,6 +87,8 @@ export default function DevOverview() {
           value: d.messages.failed,
           hot: d.messages.failed > 0,
           note: `${d.messages.sent} sent · 24h`,
+          trend: trendWithLive(trends, 'messagesFailed', d.messages.failed),
+          trendTone: 'bad',
           href: '/app/dev/messages',
           how: 'Email and WhatsApp messages that failed in the last 24 hours.',
         },
@@ -91,6 +97,8 @@ export default function DevOverview() {
           value: d.audit7d.denied,
           hot: d.audit7d.denied > 0,
           note: `${d.audit7d.failed} failed`,
+          trend: trendWithLive(trends, 'denied', d.audit7d.denied),
+          trendTone: 'bad',
           href: '/app/dev/audit',
           how: 'Actions the access checks refused in the last seven days, from the audit log.',
         },

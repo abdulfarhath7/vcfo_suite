@@ -56,6 +56,7 @@ import {
 } from '@/lib/slug';
 
 import { toastError, toastSuccess } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import {
   formatBoardResolutionErrorDisplay,
@@ -639,7 +640,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     }
     const saved = await persistContentAndRegenerate(content);
     if (saved) {
-      toastSuccess('Changes saved', 'Board resolution draft saved to storage.');
+      toastSaved('Changes saved', { sub: 'Board resolution draft saved to storage.' });
     }
   }, [pendingContent, persistContentAndRegenerate]);
 

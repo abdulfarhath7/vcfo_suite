@@ -14,10 +14,11 @@ import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/sa
 import { StatusMenu } from '@/components/ui/status-menu';
 import type { BulkAction } from '@/components/ui/bulk-bar';
 import { EFilingGrid, GRID_SUB, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { RowQuickActions } from '@/components/staff/today/row-actions';
+import { RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
 import { workItemChangedAt } from '@/components/staff/today/today-rows';
 import {
   TASK_STATUS_WORDS,
+  copyRowLink,
   exportRowsCsv,
   remindMany,
   useMarkDoneMany,
@@ -492,9 +493,10 @@ function filtersOfView(f: ViewFilters) {
 /**
  * List view: T1 clean rows (R-07) on the shared grid. J and K move the focus; Enter opens the
  * drawer. With `scope` the list gets row selection and the bulk bar (Remind, Mark done, Export),
- * Open and Remind at the row end on hover and focus (R reminds), the status menu on task rows,
- * the density switch, the sticky head and the new-since-last-visit squares. A lead cannot move
- * work to another lead, so there is no Assign or Reassign here.
+ * Open and Remind at the row end on hover and focus (R reminds), the row menu with Edit (E) and
+ * Copy link (C) (M-27), the status menu on task rows, the density switch, the sticky head and
+ * the new-since-last-visit squares. A lead cannot move work to another lead
+ * (`/api/work/reassign` is for managers and admins), so there is no Assign or Reassign here.
  */
 function ListView({
   items,
@@ -519,8 +521,11 @@ function ListView({
   /** The filing's `compliance_instances.id`, when the register has it; Mark done files it. */
   filingInstanceOf?: (item: InternWorkItem) => string | undefined;
 }) {
+  const router = useRouter();
   const markDone = useMarkDoneMany();
   const setTaskStatus = useSetTaskStatus();
+  // M-27 Edit: a task opens its drawer; a step, filing or request opens the record it is edited on.
+  const edit = (i: InternWorkItem) => (i.source === 'task' ? onOpen(i) : router.push(i.href));
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
   const sig = items.map((i) => i.id).join('|');
   useEffect(() => {
@@ -661,9 +666,15 @@ function ListView({
               bulkActions,
               bulkNoun: ['item', 'items'] as [string, string],
               rowActions: (i: InternWorkItem) => (
-                <RowQuickActions onOpen={() => onOpen(i)} onRemind={remindableItemKey(i) ? () => remind([i]) : undefined} />
+                <RowQuickActions onOpen={() => onOpen(i)} onRemind={remindableItemKey(i) ? () => remind([i]) : undefined}>
+                  <RowMoreMenu onEdit={() => edit(i)} link={() => void copyRowLink(i.href)} />
+                </RowQuickActions>
               ),
-              rowShortcuts: [{ key: 'r', run: (i: InternWorkItem) => remind([i]) }],
+              rowShortcuts: [
+                { key: 'r', run: (i: InternWorkItem) => remind([i]) },
+                { key: 'e', run: edit },
+                { key: 'c', run: (i: InternWorkItem) => void copyRowLink(i.href) },
+              ],
               densityScope: `${scope}:work`,
               changedAt,
               visitKey: `${scope}:work`,

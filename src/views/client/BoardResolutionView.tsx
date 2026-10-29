@@ -25,7 +25,8 @@ import {
   fetchBoardResolutionInDb,
 } from '@/lib/projects/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
-import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 
 export default function BoardResolutionView() {
   const { user, engagements, getStateForEngagement, refreshEngagementChecklist } = useApp();
@@ -126,10 +127,10 @@ export default function BoardResolutionView() {
             }
           : prev,
       );
-      toastSuccess(
-        'Signed copy uploaded',
-        'Your engagement team can now download the signed board resolution.',
-      );
+      toastSaved('Signed copy uploaded', {
+        kind: 'uploaded',
+        sub: 'Your engagement team can now download the signed board resolution.',
+      });
     } catch (err) {
       toastError(
         'Upload failed',

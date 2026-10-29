@@ -95,6 +95,19 @@ export async function remindMany(targets: RemindTarget[]): Promise<{ sent: numbe
   return { sent, limited, failed };
 }
 
+/* ---------------------------------------------------------------- copy link */
+
+/** Copies a page of the app (an app path like `/app/manager/...`) as a full link (D1 Copy link, key C). */
+export async function copyRowLink(href: string): Promise<void> {
+  const url = /^https?:\/\//.test(href) ? href : `${window.location.origin}${href.startsWith('/') ? '' : '/'}${href}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    toastSaved('Link copied');
+  } catch {
+    toastError('Could not copy the link', url);
+  }
+}
+
 /* ---------------------------------------------------------------- reassign */
 
 export interface ReassignTarget {
@@ -107,6 +120,25 @@ export interface ReassignTarget {
 }
 
 /** Reassigns each target to one lead through `/api/work/reassign`, then one A1 toast. */
+/** `reassignMany`, then the task, engagement and checklist reads refetch (as the Reassign dialog does). */
+export function useReassignMany() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    async (targets: ReassignTarget[], to: { id: string; name: string }) => {
+      const moved = await reassignMany(targets, to);
+      if (moved > 0) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+          queryClient.invalidateQueries({ queryKey: ['engagements'] }),
+          queryClient.invalidateQueries({ queryKey: ['checklist-index'] }),
+        ]);
+      }
+      return moved;
+    },
+    [queryClient],
+  );
+}
+
 export async function reassignMany(targets: ReassignTarget[], to: { id: string; name: string }): Promise<number> {
   let moved = 0;
   const errors: string[] = [];

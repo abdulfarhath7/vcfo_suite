@@ -61,6 +61,8 @@ export function TodayScopeTabs({
       ]}
       value={value}
       onChange={(k) => onChange(k as TodayScope)}
+      // M-30: tighter tabs on a phone, so the home card's actions fit on the same line.
+      className="max-sm:[&>button]:px-2"
     />
   );
 }

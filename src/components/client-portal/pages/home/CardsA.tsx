@@ -7,7 +7,7 @@
  * from `useHome` (the step model, ClientOverview and `/api/client/home`).
  */
 import { AlertCircle, Check, ChevronRight, Download, FileText, Upload } from 'lucide-react';
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
@@ -18,6 +18,7 @@ import { phaseHref, portalHref, stepHref } from '@/components/client-portal/rout
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { UploadRow } from '@/lib/client-portal/multi-upload';
 import { exactDate } from '@/lib/relative-due';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, type BarTone } from '../incorporation/spectrum';
 import type { HomeData } from './useHome';
 import { DueWords } from './ui';
@@ -130,14 +131,12 @@ function downloadReport(h: HomeData) {
   a.remove();
 }
 
-/** A home tile that opens a drill links to `#dd-<key>`; the card's click handler opens the drill. */
-const DRILL = '#dd-';
-
 /**
- * R-17 (H3c, D-01): the shared compact `DashHero`. The company tile, the short name, the stage
- * chip and the step count on the left; five tiles with a note, the list they open (E-05) and how
- * they are counted (E-04); the Report icon and Upload on the right. No trend lines: the portal
- * keeps no history of these numbers yet.
+ * R-17 (H3 tight, D-17): the shared `DashHero`. The company tile, the name, the stage chip and
+ * the step count on the left; five tiles with a note, the list or drill they open (E-05) and
+ * how they are counted (E-04); Report and Upload on the right. After incorporation, Due soon
+ * draws a trend line of the last four days, rebuilt from the filings' due and filed dates; the
+ * other tiles count step states and requests, which keep no history, so they draw none.
  */
 export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
   const { portal, after, model, company } = h;
@@ -157,25 +156,16 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
   const dueNext = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && f.dueDate >= h.today).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
   const firstOverdueFiling = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && (f.status === 'overdue' || f.dueDate < h.today)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
 
-  const drills: Record<string, () => void> = {
-    you: () => openSteps(3),
-    sbc: () => openSteps(2),
-    late: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }),
-  };
-  const onTiles = (e: ReactMouseEvent) => {
-    const a = (e.target as HTMLElement).closest(`a[href^='${DRILL}']`);
-    const open = a ? drills[a.getAttribute('href')!.slice(DRILL.length)] : undefined;
-    if (!open) return;
-    e.preventDefault();
-    open();
-  };
+  const trends = useHomeTrends('client', { engagementId: h.engagementId, enabled: after && Boolean(h.engagementId) });
+  // Tiles that open a drill use the tile's own click (DashHero `onClick`).
+  const openLate = () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 });
 
   const waiting: DashHeroStat = {
     label: `Waiting on ${company}`,
     value: h.needs.length,
     note: oldest != null && oldest > 0 ? `oldest ${oldest}d` : undefined,
     how: `Uploads, details, corrections and approvals that SBC asked ${company} for and that are still open.`,
-    href: after ? portalHref('documents') : `${DRILL}you`,
+    ...(after ? { href: portalHref('documents') } : { onClick: () => openSteps(3) }),
   };
   const overdueStat: DashHeroStat = {
     label: 'Overdue',
@@ -185,7 +175,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
     how: after
       ? `Items from ${company} past their due date or sent back, late steps and filings past their due date.`
       : `Items from ${company} past their due date or sent back, and steps past their planned date.`,
-    href: `${DRILL}late`,
+    onClick: openLate,
   };
   const stats: DashHeroStat[] = after
     ? [
@@ -196,6 +186,8 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
           value: h.buckets.dueSoon,
           note: dueNext ? dueNext.title : undefined,
           how: 'Filings not yet filed that fall due in the next 15 days.',
+          trend: trendWithLive(trends, 'dueSoon', h.buckets.dueSoon),
+          trendTone: 'accent',
           href: portalHref('compliances'),
         },
         ...(h.regs.length
@@ -229,7 +221,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
           value: model.counts.with,
           note: sbcStep?.title,
           how: 'Steps that SBC or MCA holds now.',
-          href: `${DRILL}sbc`,
+          onClick: () => openSteps(2),
         },
         overdueStat,
         ...(req && req.total > 0
@@ -262,33 +254,35 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
   const pct = ring.total ? Math.round((ring.done / ring.total) * 100) : 0;
 
   return (
-    <div onClickCapture={onTiles}>
-      <DashHero
-        title={company}
-        settings={false}
-        lead={<DashHeroCompanyTile name={h.companyName || company} />}
-        stage={<Chip tone={after ? 'ok' : 'prog'} className="!h-5 min-w-0 px-[7px] text-[11.5px]">{after ? 'Incorporated' : 'Incorporating'}</Chip>}
-        steps={
-          <button
-            type="button"
-            onClick={ring.open}
-            title={`${ring.label} · ${pct}%`}
-            className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline"
-          >
-            {after ? `${ring.label} ${ring.done} of ${ring.total} done` : `${ring.done} of ${ring.total} steps`}
-          </button>
-        }
-        subtitle={h.lead ? <span title="Project lead">· {h.lead}</span> : undefined}
-        stats={stats}
-      >
-        {h.engagementId ? (
-          <Button variant="secondary" size="icon" onClick={() => downloadReport(h)} aria-label="Report" title="Report">
-            <Download size={16} strokeWidth={1.6} aria-hidden />
-          </Button>
-        ) : null}
-        <UploadButton h={h} onUpload={onUpload} />
-      </DashHero>
-    </div>
+    <DashHero
+      title={company}
+      settings={false}
+      lead={<DashHeroCompanyTile name={h.companyName || company} />}
+      stage={<Chip tone={after ? 'ok' : 'prog'} className="!h-5 min-w-0 px-[7px] text-[11.5px]">{after ? 'Incorporated' : 'Incorporating'}</Chip>}
+      steps={
+        <button
+          type="button"
+          onClick={ring.open}
+          title={`${ring.label} · ${pct}%`}
+          className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline"
+        >
+          {after ? `${ring.label} ${ring.done} of ${ring.total} done` : `${ring.done} of ${ring.total} steps`}
+        </button>
+      }
+      // M-30: the lead's name leaves the phone layout so the chip, steps and actions fit one line.
+      subtitle={h.lead ? <span title="Project lead" className="max-sm:hidden">· {h.lead}</span> : undefined}
+      stats={stats}
+    >
+      {h.engagementId ? (
+        // M-30: on a phone Report is a 36px icon button, so the chip, the step count and the
+        // actions share one line.
+        <Button variant="secondary" onClick={() => downloadReport(h)} title="Report" className="max-sm:w-9 max-sm:px-0">
+          <Download size={16} strokeWidth={1.6} aria-hidden />
+          <span className="max-sm:sr-only">Report</span>
+        </Button>
+      ) : null}
+      <UploadButton h={h} onUpload={onUpload} />
+    </DashHero>
   );
 }
 

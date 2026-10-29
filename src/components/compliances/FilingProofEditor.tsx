@@ -12,6 +12,7 @@
 import { useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { toastSaved } from "@/components/ui/toast-saved";
 import { Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
       if (!res.ok) throw new Error("Upload failed");
     },
     onSuccess: () => {
-      toast.success("Proof uploaded");
+      toastSaved("Proof uploaded", { kind: "uploaded" });
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -121,7 +122,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
       if (!res.ok) throw new Error("Could not save the details");
     },
     onSuccess: () => {
-      toast.success("Filing details saved");
+      toastSaved("Filing details saved");
       refresh();
       onClose();
     },

@@ -61,12 +61,15 @@ export type AdminDashboardViewProps = {
   filings?: ComplianceFiling[];
 };
 
+/** A home card action that shrinks to a 36px icon button on a phone (M-30). */
+const PHONE_ICON = 'max-sm:w-9 max-sm:px-0';
+
 /** Main column and a rail, as on every staff Today (prototype TodayScreen GRID). */
 const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
 
 /**
  * Manager Today as the board (prototype TodayScreen, C-0107, C-0114): the compact home card with
- * the five numbers, Team tasks (with the scope switch in its head) beside the approvals, Task
+ * the scope switch and the five numbers, Team tasks beside the approvals, Task
  * status and Workload by lead, then Phase progress beside the upcoming filings and the to-do cards. "Assign task"
  * gives one of the leads on the manager's engagements a task (G-12); it shows in Team tasks
  * and in the lead's Work list.
@@ -202,33 +205,33 @@ export function AdminDashboardView({
       />
 
       <div className="flex flex-col gap-5">
-        <DashHero title={first ? `Good ${greet}, ${first}` : 'Dashboard'} stats={heroStats}>
-          <Button variant="secondary" asChild>
-            <Link href={`${projectBase}/approvals`}>
+        <DashHero
+          title={first ? `Good ${greet}, ${first}` : 'Dashboard'}
+          stats={heroStats}
+          scope={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
+        >
+          {/* M-30: on a phone the actions are 36px icon buttons, so they fit beside the switch. */}
+          <Button variant="secondary" asChild className={PHONE_ICON}>
+            <Link href={`${projectBase}/approvals`} title="Approvals">
               <Inbox aria-hidden />
-              Approvals
+              <span className="max-sm:sr-only">Approvals</span>
             </Link>
           </Button>
-          <Button variant="secondary" onClick={() => setAssignOpen(true)}>
+          <Button variant="secondary" onClick={() => setAssignOpen(true)} className={PHONE_ICON} title="Assign task">
             <ListPlus aria-hidden />
-            Assign task
+            <span className="max-sm:sr-only">Assign task</span>
           </Button>
-          <Button asChild>
-            <Link href={newProjectHref}>
+          <Button asChild className={PHONE_ICON}>
+            <Link href={newProjectHref} title="New project">
               <Plus aria-hidden />
-              New project
+              <span className="max-sm:sr-only">New project</span>
             </Link>
           </Button>
         </DashHero>
 
         <div className={GRID}>
           <div id="team-tasks" className="min-w-0 scroll-mt-24">
-            <TeamTasksCard
-              rows={teamRows}
-              tools={tools}
-              loading={engagementsLoading}
-              scopeTabs={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
-            />
+            <TeamTasksCard rows={teamRows} tools={tools} loading={engagementsLoading} />
           </div>
           <div className="flex min-w-0 flex-col gap-5">
             <DashboardApprovalsPanel />

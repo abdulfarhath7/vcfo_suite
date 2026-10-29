@@ -87,6 +87,15 @@ describe('TeamTasksCard with tools', () => {
     search = new URLSearchParams();
   });
 
+  it('ends each row with Open and the row menu, and binds C on a focused row (M-27)', () => {
+    render(withQuery(<TeamTasksCard rows={rows} tools={tools} />));
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('button', { name: 'More actions' })).toHaveLength(rows.length);
+    expect(within(table).getAllByRole('button', { name: 'Open' })).toHaveLength(rows.length);
+    const row = within(table).getAllByRole('row').find((r) => r.getAttribute('aria-keyshortcuts'));
+    expect(row?.getAttribute('aria-keyshortcuts')).toContain('C');
+  });
+
   it('keeps a plain status chip on rows without a status write', () => {
     render(withQuery(<TeamTasksCard rows={rows} tools={tools} />));
     expect(screen.queryByRole('button', { name: /Change status/ })).not.toBeInTheDocument();

@@ -7,7 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import { plainDay } from '@/components/super/parts/super-text';
 import { useSetExpectedCoi } from '@/components/metrics/use-metrics';
-import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { cn } from '@/lib/utils';
 
 /**
@@ -34,7 +35,9 @@ export function ExpectedCoiControl({
   const commit = async (next: string | null) => {
     try {
       await mutation.mutateAsync({ engagementId, on: next });
-      toastSuccess(next ? 'Expected COI saved' : 'Expected COI cleared', next ? plainDay(next) : undefined, {
+      // M-28 (A1): the timeline's end date saved, with no Undo.
+      toastSaved(next ? 'Expected COI saved' : 'Expected COI cleared', {
+        sub: next ? plainDay(next) : undefined,
         id: `expected-coi:${engagementId}`,
       });
       setOpen(false);

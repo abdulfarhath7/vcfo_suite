@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import { formatWindow, isValidWindowRange } from '@/lib/projects/schedule-windows';
-import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { cn } from '@/lib/utils';
 
 type WindowValue = { from: string; to: string } | null | undefined;
@@ -50,7 +51,9 @@ export function ScheduleWindowControl({
     setBusy(true);
     try {
       await onSave(next);
-      toastSuccess(next ? `${label} window saved` : `${label} window cleared`, next ? formatWindow(next) : undefined, {
+      // M-28 (A1): a save with no Undo shows the white toast with the green tick.
+      toastSaved(next ? `${label} window saved` : `${label} window cleared`, {
+        sub: next ? formatWindow(next) : undefined,
         id: `schedule-window:${label}`,
       });
       setOpen(false);

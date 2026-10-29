@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BellRing, CheckCheck, Download } from 'lucide-react';
@@ -13,13 +13,16 @@ import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/sa
 import { StatusMenu, type SixWord } from '@/components/ui/status-menu';
 import type { BulkAction } from '@/components/ui/bulk-bar';
 import { CompanyTile, PersonCell } from '@/components/staff/today/today-parts';
-import { BulkAssignMenu, RowQuickActions } from '@/components/staff/today/row-actions';
+import { BulkAssignMenu, RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
 import {
   TASK_STATUS_WORDS,
+  copyRowLink,
   exportRowsCsv,
   reassignMany,
   remindMany,
+  type ReassignTarget,
   useMarkDoneMany,
+  useReassignMany,
   useSetTaskStatus,
 } from '@/components/staff/today/work-actions';
 import {
@@ -65,14 +68,18 @@ export interface TeamTaskTools {
   canReassign: boolean;
   markDone: (rows: TeamTaskRow[]) => Promise<unknown>;
   setTaskStatus: (row: TeamTaskRow, word: SixWord) => void;
+  /** Moves steps and tasks to a lead, then refetches the reads behind the rows. */
+  reassign?: (targets: ReassignTarget[], to: { id: string; name: string }) => Promise<number>;
 }
 
 /** Builds `TeamTaskTools` from the app context. */
 export function useTeamTaskTools(opts: Pick<TeamTaskTools, 'storageScope' | 'leads' | 'canReassign'>): TeamTaskTools {
   const markDoneMany = useMarkDoneMany();
   const setStatus = useSetTaskStatus();
+  const reassign = useReassignMany();
   return {
     ...opts,
+    reassign,
     markDone: (rows) =>
       markDoneMany(
         rows.map((r) => ({
@@ -115,8 +122,6 @@ type Props = {
   rows: TeamTaskRow[];
   /** Without tools the card is read-only: no checkboxes, quick actions or status menu. */
   tools?: TeamTaskTools;
-  /** The All / Incorporating / Compliance switch (R-17 moved it into the card it filters). */
-  scopeTabs?: ReactNode;
   /** L1: the engagements are still loading. */
   loading?: boolean;
 };
@@ -125,8 +130,9 @@ type Props = {
  * Team tasks (prototype ManagerToday "Team tasks"): R-10 filter chips, saved views, a List or
  * Board switch, and a T1 table. Each row opens the step, the filing calendar or the project.
  * With `tools` the table gets row selection and the bulk bar (Assign, Remind, Mark done,
- * Export), quick actions on hover and focus (Enter opens, R reminds, A reassigns), the status
- * menu on task rows, the density switch and the new-since-last-visit squares.
+ * Export), quick actions on hover and focus (Enter opens, R reminds, A reassigns, C copies the
+ * link), the row menu with Reassign and Copy link (M-27), the status menu on task rows, the
+ * density switch and the new-since-last-visit squares.
  */
 export function TeamTasksCard(props: Props) {
   return (
@@ -141,7 +147,7 @@ function TeamTasksWithParams(props: Props) {
   return <TeamTasksBody {...props} viewParam={params?.get('view') ?? null} />;
 }
 
-function TeamTasksBody({ rows, tools, scopeTabs, loading, viewParam }: Props & { viewParam: string | null }) {
+function TeamTasksBody({ rows, tools, loading, viewParam }: Props & { viewParam: string | null }) {
   const router = useRouter();
   const [status, setStatus] = useState('');
   const [lead, setLead] = useState('');
@@ -219,7 +225,7 @@ function TeamTasksBody({ rows, tools, scopeTabs, loading, viewParam }: Props & {
       toastError('Nothing to assign', 'Steps and tasks move one at a time; filings and requests move with the client.');
       return;
     }
-    await reassignMany(
+    await (tools?.reassign ?? reassignMany)(
       movable.map((r) => ({ engagementId: r.engagementId, itemKey: r.itemId, title: r.title })),
       to,
     );
@@ -323,7 +329,6 @@ function TeamTasksBody({ rows, tools, scopeTabs, loading, viewParam }: Props & {
             onApply={apply}
           />
           <span className="ml-auto flex flex-wrap items-center gap-2">
-            {scopeTabs}
             <SpectrumTabs
               label="Team tasks view"
               items={[
@@ -359,16 +364,30 @@ function TeamTasksBody({ rows, tools, scopeTabs, loading, viewParam }: Props & {
                   onSelectedChange: setPicked,
                   bulkActions,
                   bulkNoun: ['task', 'tasks'] as [string, string],
+                  // M-27 (D1): Open and Remind at the row end, then the row menu with Reassign (A)
+                  // and Copy link (C). The row column holds three buttons, so Reassign lives in the menu.
                   rowActions: (r: TeamTaskRow) => (
-                    <RowQuickActions
-                      onOpen={() => router.push(r.href)}
-                      onRemind={teamRowRemindKey(r) ? () => remind([r]) : undefined}
-                      onReassign={tools.canReassign ? () => setReassignRow(r) : undefined}
-                    />
+                    <RowQuickActions onOpen={() => router.push(r.href)} onRemind={teamRowRemindKey(r) ? () => remind([r]) : undefined}>
+                      <RowMoreMenu
+                        reassign={
+                          !tools.canReassign
+                            ? undefined
+                            : canMoveItem(r)
+                              ? {
+                                  people: tools.leads,
+                                  currentId: r.leadId,
+                                  onPick: (p) => void assign([r], p),
+                                }
+                              : { onOpen: () => setReassignRow(r) }
+                        }
+                        link={() => void copyRowLink(r.href)}
+                      />
+                    </RowQuickActions>
                   ),
                   rowShortcuts: [
                     { key: 'r', run: (r: TeamTaskRow) => (teamRowRemindKey(r) ? remind([r]) : undefined) },
                     ...(tools.canReassign ? [{ key: 'a', run: (r: TeamTaskRow) => setReassignRow(r) }] : []),
+                    { key: 'c', run: (r: TeamTaskRow) => void copyRowLink(r.href) },
                   ],
                   densityScope: `${tools.storageScope}:team-tasks`,
                   changedAt: (r: TeamTaskRow) => r.changedAt,

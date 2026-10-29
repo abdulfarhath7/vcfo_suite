@@ -33,6 +33,7 @@ import { Chip } from '@/components/ui/spectrum-chip';
 import { StepMark } from '@/components/ui/step-track';
 import { FileBadge } from '@/components/ui/file-badge';
 import { SkeletonRows } from '@/components/ui/empty-state';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { IncFrame, fmt, istDay } from './ui';
 import { INC_EXTRAS_KEY, firstName, signedUrlFor, stepHrefOf, useIncData } from './data';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, SCard, type PageHeadLink } from './spectrum';
@@ -110,7 +111,8 @@ export default function BoardPage() {
       const body = await uploadSignedBoardResolution(d.engagementId, file);
       setDoc((p) => (p ? { ...p, signedUploadedAt: body.signedUploadedAt ?? p.signedUploadedAt, signedStoragePath: body.signedStoragePath ?? p.signedStoragePath } : p));
       void qc.invalidateQueries({ queryKey: INC_EXTRAS_KEY });
-      toast(`Signed copy uploaded · ${firstName(d.leadName) || 'your team'} will check it`);
+      // M-28 (A1): an upload with no Undo shows the white toast with the green tick.
+      toastSaved('Signed copy uploaded', { kind: 'uploaded', sub: `${firstName(d.leadName) || 'Your team'} will check it.` });
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Upload failed');
     } finally {

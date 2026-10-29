@@ -31,6 +31,7 @@ import { useSuperOverview } from '@/hooks/use-super-overview';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { SUPER_ATTENTION_HREF, SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
 import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 
 /**
  * SUPER ADMIN OVERVIEW (L0) — the observatory.
@@ -56,6 +57,8 @@ export default function SuperOverview() {
   const insightsQuery = useSuperInsights();
   const insights = insightsQuery.data;
   const staff = useSuperStaff();
+  // R-18: month-end counts for the four months before this one, rebuilt from stored rows.
+  const trends = useHomeTrends('super');
   const [assignOpen, setAssignOpen] = useState(false);
   const [taskOpen, setTaskOpen] = useState(false);
 
@@ -126,6 +129,8 @@ export default function SuperOverview() {
               href: SUPER_PROJECTS_HREF,
               note: `${healthy} on track`,
               bar: kpis.engagements > 0 ? Math.round((healthy / kpis.engagements) * 100) : undefined,
+              trend: trendWithLive(trends, 'clients', kpis.engagements),
+              trendTone: 'accent',
               how: 'Every engagement in the firm; the bar is the share on track.',
             },
             {
@@ -148,6 +153,8 @@ export default function SuperOverview() {
               note: kpis.overdueFilings > 0 ? `${kpis.overdueFilings} overdue` : kpis.filingsDueSoon > 0 ? plural(kpis.filingsDueSoon, 'due soon', 'due soon') : undefined,
               href: '/app/admin/compliances/calendar',
               hot: kpis.overdueFilings > 0,
+              trend: trendWithLive(trends, 'filingsDue', kpis.overdueFilings + kpis.filingsDueSoon),
+              trendTone: 'accent',
               how: 'Filings past their due date plus filings due soon, across every client.',
             },
             {

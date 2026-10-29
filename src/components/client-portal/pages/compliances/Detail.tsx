@@ -23,6 +23,7 @@ import {
 } from '@/lib/client-portal/compliances';
 import { Chip as SChip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { proofHref, useAddProof, useProofs } from './api';
 import { AreaChip, Chip, FocusTrack, I, PortalBtn, ProofChip, useModal } from './bits';
 import { useComp } from './ctx';
@@ -197,7 +198,12 @@ export function SidePanel({ f, onClose }: { f: PortalFiling; onClose: () => void
       {
         onSuccess: ({ done, failed: bad }) => {
           setFailed(bad);
-          if (done.length) toast(done.length === 1 ? `Uploaded · ${done[0]!.fileName} · SBC checks it next` : `Uploaded · ${done.length} files · SBC checks them next`);
+          // M-28 (A1): an upload with no Undo shows the white toast with the green tick.
+          if (done.length)
+            toastSaved(done.length === 1 ? `${done[0]!.fileName} uploaded` : `${done.length} files uploaded`, {
+              kind: 'uploaded',
+              sub: done.length === 1 ? 'SBC checks it next.' : 'SBC checks them next.',
+            });
           void proofs.refetch();
         },
         onError: () => toast('Upload failed. Try again.'),

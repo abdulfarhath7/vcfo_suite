@@ -24,7 +24,9 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  *   Waiting on clients  Work › Waiting on clients (?view=waiting)
  *   Due this week       Work › This week     (?view=week)
  *   Done today          no list; done items stay in Work for the week
- * No trend line: the lead's work items carry no history to draw one from.
+ * No trend line: each tile counts step states, and steps only keep status history from the
+ * day `engagement_step_events` shipped; tasks keep no completion time
+ * (`src/db/repositories/home-trends.ts` lists what each home can draw).
  */
 export function leadHeroStats(items: InternWorkItem[], now: Date): DashHeroStat[] {
   const action = filterInternWork(items, { focus: 'action' }, now);
@@ -78,15 +80,28 @@ export function leadHeroStats(items: InternWorkItem[], now: Date): DashHeroStat[
 }
 
 /**
- * The lead's home card (prototype TodayScreen greeting, R-17, R-18, C-0114): the shared compact
- * `DashHero` with the date, the greeting, the five number tiles and the actions passed as
- * children. The scope switch lives in the Action queue head, the list it filters.
+ * The lead's home card (prototype TodayScreen greeting, R-17, R-18, D-17): the shared `DashHero`
+ * with the greeting and date, the scope switch (`scope`) and the actions passed as children on
+ * the right, then the five number tiles. The switch narrows the cards below the home card.
  */
-export function LeadHero({ name, items, now, children }: { name: string; items: InternWorkItem[]; now: Date; children?: ReactNode }) {
+export function LeadHero({
+  name,
+  items,
+  now,
+  scope,
+  children,
+}: {
+  name: string;
+  items: InternWorkItem[];
+  now: Date;
+  /** The All / Incorporating / Compliance switch (D-17 put it back in the home card). */
+  scope?: ReactNode;
+  children?: ReactNode;
+}) {
   const first = internFirstName(name);
   const greet = internGreeting(internGreetingHour(now));
   return (
-    <DashHero title={`Good ${greet}, ${first}`} stats={leadHeroStats(items, now)}>
+    <DashHero title={`Good ${greet}, ${first}`} stats={leadHeroStats(items, now)} scope={scope}>
       {children}
     </DashHero>
   );
