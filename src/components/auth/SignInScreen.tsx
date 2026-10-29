@@ -92,6 +92,11 @@ function SignInPage({ resetNotice, profileError }: { resetNotice: string | null;
         onOpenForgot={form.openForgot}
         headerAction={<ThemeToggle />}
         demoHref="/contact"
+        step={state.step}
+        code={state.code}
+        onCodeChange={form.setCode}
+        onCodeSubmit={form.submitCode}
+        onBackToPassword={form.backToPassword}
       />
     </div>
   );

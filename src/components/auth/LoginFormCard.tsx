@@ -37,6 +37,12 @@ export interface LoginFormCardProps {
   headerAction?: React.ReactNode;
   /** Where "Book a demo" goes for people without an account. */
   demoHref?: string;
+  /** Two-step sign-in (G-25): `code` swaps the password form for the code form. */
+  step?: 'password' | 'code';
+  code?: string;
+  onCodeChange?: (value: string) => void;
+  onCodeSubmit?: (e: React.FormEvent) => void;
+  onBackToPassword?: () => void;
 }
 
 /* The peak band along the bottom of the card, as in the prototype's sign-in card. */
@@ -91,7 +97,13 @@ export function LoginFormCard({
   onOpenForgot,
   headerAction,
   demoHref = '/contact',
+  step = 'password',
+  code = '',
+  onCodeChange,
+  onCodeSubmit,
+  onBackToPassword,
 }: LoginFormCardProps) {
+  const codeDigits = code.replace(/[\s-]/g, '');
   return (
     <div className="relative z-[1] w-full max-w-[420px] overflow-hidden rounded-[14px] border border-line bg-surface-raised px-[18px] py-[22px] text-ink shadow-dialog sm:p-7">
       <span
@@ -114,9 +126,13 @@ export function LoginFormCard({
         </div>
 
         <h1 id="sign-in-title" className="mt-1.5 text-[22px] font-semibold tracking-[-0.01em]">
-          Sign in to your workspace
+          {step === 'code' ? 'Enter your code' : 'Sign in to your workspace'}
         </h1>
-        <p className="-mt-1.5 mb-1 text-[14px] text-ink-muted">Use the account your firm created for you.</p>
+        <p className="-mt-1.5 mb-1 text-[14px] text-ink-muted">
+          {step === 'code'
+            ? `Open your authenticator app for ${email}.`
+            : 'Use the account your firm created for you.'}
+        </p>
 
         {profileError === 'no_profile' && (
           <Notice variant="error">No profile is linked to this account. Ask your firm admin to complete setup.</Notice>
@@ -126,64 +142,106 @@ export function LoginFormCard({
         )}
         {resetNotice === 'success' && <Notice variant="success">Password updated. Sign in with your new password.</Notice>}
 
-        <form onSubmit={onSubmit} className="grid gap-3.5" aria-labelledby="sign-in-title">
-          <div className="grid gap-1.5">
-            <Label htmlFor="email" className="text-[13px] font-medium text-ink-2">
-              Work email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => onEmailChange(e.target.value)}
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
-              autoFocus
-              autoComplete="username"
-              required
-            />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="password" className="text-[13px] font-medium text-ink-2">
-              Password
-            </Label>
-            <div className="relative">
+        {step === 'code' ? (
+          <form onSubmit={onCodeSubmit} className="grid gap-3.5" aria-labelledby="sign-in-title">
+            <div className="grid gap-1.5">
+              <Label htmlFor="otp" className="text-[13px] font-medium text-ink-2">
+                Code from the app
+              </Label>
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => onPasswordChange(e.target.value)}
-                className="pr-11"
-                autoComplete="current-password"
+                id="otp"
+                value={code}
+                onChange={(e) => onCodeChange?.(e.target.value)}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={7}
+                className="font-mono text-[16px] tracking-[0.3em]"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the code field when this step opens
+                autoFocus
                 required
               />
-              <button
-                type="button"
-                onClick={onToggleShowPassword}
-                className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-ink-muted transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" strokeWidth={1.6} /> : <Eye className="h-4 w-4" strokeWidth={1.6} />}
-              </button>
             </div>
-          </div>
 
-          {error && (
-            <p className="-mt-1 text-[13px] text-danger" role="alert">
-              {error}
-            </p>
-          )}
-
-          <Button type="submit" className="h-10 w-full" disabled={!email || !password || loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
-                Signing in
-              </>
-            ) : (
-              'Sign in'
+            {error && (
+              <p className="-mt-1 text-[13px] text-danger" role="alert">
+                {error}
+              </p>
             )}
-          </Button>
-        </form>
+
+            <Button type="submit" className="h-10 w-full" disabled={codeDigits.length !== 6 || loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+                  Checking
+                </>
+              ) : (
+                'Verify'
+              )}
+            </Button>
+            <Button type="button" variant="quiet" className="h-9 w-full" onClick={onBackToPassword} disabled={loading}>
+              Use another account
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={onSubmit} className="grid gap-3.5" aria-labelledby="sign-in-title">
+            <div className="grid gap-1.5">
+              <Label htmlFor="email" className="text-[13px] font-medium text-ink-2">
+                Work email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
+                autoFocus
+                autoComplete="username"
+                required
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="password" className="text-[13px] font-medium text-ink-2">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => onPasswordChange(e.target.value)}
+                  className="pr-11"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={onToggleShowPassword}
+                  className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-ink-muted transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" strokeWidth={1.6} /> : <Eye className="h-4 w-4" strokeWidth={1.6} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <p className="-mt-1 text-[13px] text-danger" role="alert">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="h-10 w-full" disabled={!email || !password || loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+                  Signing in
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
+        )}
 
         <p className="text-[13px] leading-relaxed text-ink-muted">
           <button

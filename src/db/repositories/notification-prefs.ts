@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientAccountMeta, notificationPrefs } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isUuid } from '@/lib/slug';
+import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import {
   DEFAULT_NOTIFICATION_PREFS,
   normalizeNotificationPrefsPatch,
@@ -61,6 +63,8 @@ export async function updateOwnNotificationPrefs(
     email: { ...current.email, ...(clean.email ?? {}) },
     whatsapp: { ...current.whatsapp, ...(clean.whatsapp ?? {}) },
     quietHours: clean.quietHours ?? current.quietHours,
+    quietStart: clean.quietStart ?? current.quietStart,
+    quietEnd: clean.quietEnd ?? current.quietEnd,
   };
   const now = new Date();
   await db
@@ -70,13 +74,44 @@ export async function updateOwnNotificationPrefs(
       email: next.email,
       whatsapp: next.whatsapp,
       quietHours: next.quietHours,
+      quietStart: next.quietStart,
+      quietEnd: next.quietEnd,
       updatedAt: now,
     })
     .onConflictDoUpdate({
       target: notificationPrefs.profileId,
-      set: { email: next.email, whatsapp: next.whatsapp, quietHours: next.quietHours, updatedAt: now },
+      set: {
+        email: next.email,
+        whatsapp: next.whatsapp,
+        quietHours: next.quietHours,
+        quietStart: next.quietStart,
+        quietEnd: next.quietEnd,
+        updatedAt: now,
+      },
     });
   return next;
+}
+
+/**
+ * SYSTEM READER — background WhatsApp job (documented deviation, G-25).
+ *
+ * The job runs after the request that queued it, so there is no session. It
+ * reads one person's WhatsApp categories and quiet hours, keyed by the queued
+ * recipient id, and nothing else. A person who never saved preferences gets the
+ * defaults the Settings page shows them (quiet hours on, 21:00 to 08:00).
+ */
+export async function systemGetWhatsAppGatePrefs(profileId: string): Promise<WhatsAppGatePrefs | null> {
+  const id = profileId.trim();
+  if (!id || !isUuid(id)) return null;
+  const [row] = await db.select().from(notificationPrefs).where(eq(notificationPrefs.profileId, id)).limit(1);
+  const prefs = toPrefs(row);
+  return {
+    whatsapp: prefs.whatsapp,
+    quietHours: prefs.quietHours,
+    quietStart: prefs.quietStart,
+    quietEnd: prefs.quietEnd,
+    tz: row?.tz || 'Asia/Kolkata',
+  };
 }
 
 /** When the caller last changed their password (null = never through the portal). */

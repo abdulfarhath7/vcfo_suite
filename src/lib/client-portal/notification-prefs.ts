@@ -1,6 +1,6 @@
 
-const EMAIL_OPTIONAL = ['announcements', 'feed', 'weeklyDigest'] as const;
-const WHATSAPP_CATEGORIES = ['docs', 'steps', 'deadlines', 'timeline', 'announcements', 'feed'] as const;
+export const EMAIL_OPTIONAL = ['announcements', 'feed', 'weeklyDigest'] as const;
+export const WHATSAPP_CATEGORIES = ['docs', 'steps', 'deadlines', 'timeline', 'announcements', 'feed'] as const;
 
 export type EmailOptional = (typeof EMAIL_OPTIONAL)[number];
 export type WhatsAppCategory = (typeof WHATSAPP_CATEGORIES)[number];
@@ -17,6 +17,9 @@ export interface NotificationPrefsPatch {
   email?: Partial<Record<EmailOptional, boolean>>;
   whatsapp?: Partial<Record<WhatsAppCategory, boolean>>;
   quietHours?: boolean;
+  /** `HH:MM`, 24-hour clock, in the person's time zone (staff Profile, G-25). */
+  quietStart?: string;
+  quietEnd?: string;
 }
 
 /** The board's defaults (settings_redesign: em {ann:on, feed:off, digest:on}, wa on except news). */
@@ -49,5 +52,8 @@ export function normalizeNotificationPrefsPatch(input: unknown): NotificationPre
     out.whatsapp = w;
   }
   if (typeof p.quietHours === 'boolean') out.quietHours = p.quietHours;
+  const clock = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (typeof p.quietStart === 'string' && clock.test(p.quietStart)) out.quietStart = p.quietStart;
+  if (typeof p.quietEnd === 'string' && clock.test(p.quietEnd)) out.quietEnd = p.quietEnd;
   return out;
 }

@@ -1,6 +1,8 @@
 import { inngest } from './client';
 import { systemGetNotifyRecipient } from '@/db/repositories/profiles';
 import { systemRecordDelivery } from '@/db/repositories/notification-deliveries';
+import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs';
+import { quietHoursEnd, type WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import { sendWhatsAppTemplate } from '@/lib/notify/send-whatsapp';
 import { isRetryableWhatsAppError } from '@/lib/notify/whatsapp-retry';
 import { isNotifyEvent, type NotifyEvent, type NotifyVariables } from '@/lib/notify/types';
@@ -15,6 +17,10 @@ import { isNotifyEvent, type NotifyEvent, type NotifyVariables } from '@/lib/not
  * to 3 attempts, exponential backoff); hard failures — invalid number,
  * unsubscribed, region not enabled — return cleanly so we stop burning
  * attempts on a message that can never land.
+ *
+ * Preferences (G-25): a person's quiet hours make the job sleep until the
+ * window ends, then consent and preferences are read again before sending. A
+ * category the person switched off is recorded as a `muted` skip.
  */
 
 export const WHATSAPP_SEND_EVENT = 'whatsapp/send.requested';
@@ -42,6 +48,16 @@ export const whatsappSend = inngest.createFunction(
 
     if (!data?.recipientProfileId || !isNotifyEvent(String(data.event))) {
       return { skipped: 'invalid_payload' };
+    }
+
+    // Quiet hours: wait for the window to end. The wake time is computed inside
+    // a step so a replay after the sleep takes the same path.
+    const wakeAt = await step.run('quiet-hours', async () => {
+      const prefs = await systemGetWhatsAppGatePrefs(data.recipientProfileId);
+      return quietHoursEnd(prefs)?.toISOString() ?? null;
+    });
+    if (wakeAt) {
+      await step.sleepUntil('wait-quiet-hours', new Date(wakeAt));
     }
 
     // Consent is re-read at send time — the queued payload is not trusted.
@@ -73,6 +89,8 @@ export const whatsappSend = inngest.createFunction(
           // step.run round-trips through JSON, so timestamps arrive as strings.
           whatsappOptInAt: reviveDate(recipient.whatsappOptInAt),
           whatsappOptOutAt: reviveDate(recipient.whatsappOptOutAt),
+          // Jsonify makes every field optional in the type; the values are whole.
+          prefs: (recipient.prefs as WhatsAppGatePrefs | null) ?? null,
         },
         event: data.event,
         variables: data.variables ?? {},

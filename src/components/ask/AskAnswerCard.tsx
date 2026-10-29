@@ -29,7 +29,8 @@ const voteButton =
  * Answer card (§7.5): badge · line · visual · why · sources · actions ·
  * related. Staff cards drop the client-only rows. Spectrum look from the
  * prototype AskThread: a 1.5px card, numbered sources, and "Helpful?" votes
- * for clients (stored through `/api/client/portal/feedback`, clients only).
+ * on every answer (clients through `/api/client/portal/feedback`, staff through
+ * `/api/ask/feedback`, G-24).
  */
 export function AskAnswerCard({
   answer,
@@ -55,11 +56,11 @@ export function AskAnswerCard({
   // Go-there links replace the older open-step / open-project buttons.
   const hasLinks = Boolean(answer.links && answer.links.length > 0);
 
-  const canVote = client && !ask.preview && answer.origin !== 'refusal';
+  const canVote = !ask.preview && answer.origin !== 'refusal';
   const sendVote = (v: 'up' | 'down') => {
     if (vote) return;
     setVote(v);
-    void fetch('/api/client/portal/feedback', {
+    void fetch(client ? '/api/client/portal/feedback' : '/api/ask/feedback', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ vote: v, messageId: messageId ?? undefined, question: lastQuestion, answer: answer.line }),

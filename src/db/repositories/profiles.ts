@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -17,6 +17,12 @@ import type { AuthContext } from '@/auth/guards';
 import { initialsFromName, isFirmWideAdmin } from '@/lib/auth';
 import { ownAvatarSrc } from '@/lib/account-avatar';
 import { isUuid } from '@/lib/slug';
+import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs';
+import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { generateTotpSecret, otpauthUri } from '@/lib/totp/totp';
+import { encryptTotpSecret } from '@/lib/totp/secret-box';
+import { checkTotpCode } from '@/lib/totp/check';
 
 /**
  * PROFILES REPOSITORY — intern provisioning + roster listing.
@@ -922,6 +928,8 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
   phoneE164: string | null;
   whatsappOptInAt: Date | null;
   whatsappOptOutAt: Date | null;
+  /** WhatsApp categories and quiet hours from `notification_prefs` (G-25). */
+  prefs: WhatsAppGatePrefs | null;
 } | null> {
   const id = profileId.trim();
   if (!id || !isUuid(id)) return null;
@@ -949,5 +957,192 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
     phoneE164: row.phoneE164,
     whatsappOptInAt: row.whatsappOptInAt,
     whatsappOptOutAt: row.whatsappOptOutAt,
+    prefs: await systemGetWhatsAppGatePrefs(row.id),
   };
+}
+
+/* ------------------------------------------------------------------------ */
+/* Sign-in check and two-step sign-in (G-25)                                 */
+/* ------------------------------------------------------------------------ */
+
+/** A real bcrypt hash of a random string, so an unknown email costs the same time as a wrong password. */
+const DUMMY_BCRYPT_HASH = '$2a$10$FRW41IOXAH9HuTeeEawcDeCcuozNhUwy2EZImk8vzyoP0E7f1AlSC';
+
+export type SignInCandidate = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: (typeof profiles.$inferSelect)['role'];
+  internId: string | null;
+  clientId: string | null;
+  avatarObjectKey: string | null;
+  updatedAt: Date;
+  /** True when two-step sign-in is confirmed for this person. */
+  twoStepOn: boolean;
+  totpSecretEnc: string | null;
+};
+
+/**
+ * SYSTEM READER — sign-in (documented deviation; there is no session yet).
+ *
+ * Returns the person when the email and password match an active account that
+ * may sign in, and null otherwise. It never says which part was wrong, and an
+ * unknown email still runs one bcrypt comparison so the timing does not tell
+ * either. Used by the Credentials `authorize` and by the code pre-check route.
+ */
+export async function systemCheckSignInPassword(emailInput: string, password: string): Promise<SignInCandidate | null> {
+  const email = String(emailInput ?? '').trim().toLowerCase();
+  if (!email || !password) return null;
+  const [row] = await db
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      name: profiles.name,
+      role: profiles.role,
+      internId: profiles.internId,
+      clientId: profiles.clientId,
+      status: profiles.status,
+      passwordHash: profiles.passwordHash,
+      avatarObjectKey: profiles.avatarObjectKey,
+      updatedAt: profiles.updatedAt,
+      totpSecretEnc: profiles.totpSecretEnc,
+      totpEnabledAt: profiles.totpEnabledAt,
+    })
+    .from(profiles)
+    .where(eq(profiles.email, email))
+    .limit(1);
+
+  const ok = await bcrypt.compare(password, row?.passwordHash || DUMMY_BCRYPT_HASH);
+  if (!row?.passwordHash || !ok) return null;
+  if (row.status !== 'active') return null;
+  // Interns without a scoping key see an empty portfolio — refuse login.
+  if (row.role === 'intern' && !row.internId?.trim()) return null;
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    internId: row.internId,
+    clientId: row.clientId,
+    avatarObjectKey: row.avatarObjectKey,
+    updatedAt: row.updatedAt,
+    twoStepOn: Boolean(row.totpEnabledAt && row.totpSecretEnc),
+    totpSecretEnc: row.totpSecretEnc,
+  };
+}
+
+export type TwoStepStatus = {
+  /** Confirmed with a first code; sign-in asks for a code. */
+  enabled: boolean;
+  enabledAt: string | null;
+};
+
+async function readOwnTwoStepRow(ctx: AuthContext) {
+  const [row] = await db
+    .select({
+      email: profiles.email,
+      totpSecretEnc: profiles.totpSecretEnc,
+      totpEnabledAt: profiles.totpEnabledAt,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.userId))
+    .limit(1);
+  if (!row) throw new Error('account_not_found');
+  return row;
+}
+
+/** The caller's own two-step state. */
+export async function getOwnTwoStep(ctx: AuthContext): Promise<TwoStepStatus> {
+  const row = await readOwnTwoStepRow(ctx);
+  const enabled = Boolean(row.totpEnabledAt && row.totpSecretEnc);
+  return { enabled, enabledAt: enabled ? row.totpEnabledAt!.toISOString() : null };
+}
+
+/**
+ * Starts setup for the caller: a new secret is sealed onto their row with
+ * `totp_enabled_at` still null, so sign-in does not ask for a code until the
+ * first code confirms it. Starting again replaces an unconfirmed secret.
+ * Returns the base32 key and the `otpauth://` link, shown once.
+ */
+export async function startOwnTwoStepSetup(
+  ctx: AuthContext,
+): Promise<{ secret: string; uri: string } | 'already_on'> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (row.totpEnabledAt && row.totpSecretEnc) return 'already_on';
+  const secret = generateTotpSecret();
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: encryptTotpSecret(ctx.userId, secret), totpEnabledAt: null })
+    .where(and(eq(profiles.id, ctx.userId), isNull(profiles.totpEnabledAt)));
+  return { secret, uri: otpauthUri({ issuer: 'VCFO Suite', account: row.email, secret }) };
+}
+
+/** Confirms setup with a first code and turns two-step sign-in on. */
+export async function confirmOwnTwoStep(
+  ctx: AuthContext,
+  code: string,
+): Promise<{ ok: true; status: TwoStepStatus } | { ok: false; error: 'not_started' | 'already_on' | 'invalid_code' | 'locked' }> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (row.totpEnabledAt && row.totpSecretEnc) return { ok: false, error: 'already_on' };
+  if (!row.totpSecretEnc) return { ok: false, error: 'not_started' };
+  const check = checkTotpCode(ctx.userId, row.totpSecretEnc, code);
+  if (check === 'locked') return { ok: false, error: 'locked' };
+  if (check === 'invalid') return { ok: false, error: 'invalid_code' };
+  const now = new Date();
+  await db
+    .update(profiles)
+    .set({ totpEnabledAt: now })
+    .where(and(eq(profiles.id, ctx.userId), isNull(profiles.totpEnabledAt)));
+  await recordAuditEvent(ctx, { action: 'account.two_step_on', summary: 'Turned on two-step sign-in' });
+  return { ok: true, status: { enabled: true, enabledAt: now.toISOString() } };
+}
+
+/** Turns two-step sign-in off for the caller; needs a current code. */
+export async function disableOwnTwoStep(
+  ctx: AuthContext,
+  code: string,
+): Promise<{ ok: true } | { ok: false; error: 'not_on' | 'invalid_code' | 'locked' }> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (!row.totpEnabledAt || !row.totpSecretEnc) return { ok: false, error: 'not_on' };
+  const check = checkTotpCode(ctx.userId, row.totpSecretEnc, code);
+  if (check === 'locked') return { ok: false, error: 'locked' };
+  if (check === 'invalid') return { ok: false, error: 'invalid_code' };
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: null, totpEnabledAt: null })
+    .where(eq(profiles.id, ctx.userId));
+  await recordAuditEvent(ctx, { action: 'account.two_step_off', summary: 'Turned off two-step sign-in' });
+  return { ok: true };
+}
+
+/**
+ * A firm admin or the super admin turns off another person's two-step sign-in,
+ * for a lost phone or after AUTH_SECRET was rotated. A firm admin cannot reset
+ * the super admin; nobody resets their own here (they use a code instead).
+ */
+export async function resetTwoStepFor(
+  ctx: AuthContext,
+  profileId: string,
+): Promise<'ok' | 'forbidden' | 'not_found' | 'self'> {
+  if (!isFirmWideAdmin(ctx.role)) return 'forbidden';
+  if (!isUuid(profileId)) return 'not_found';
+  if (profileId === ctx.userId) return 'self';
+  const [target] = await db
+    .select({ id: profiles.id, role: profiles.role, email: profiles.email, name: profiles.name })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+  if (!target) return 'not_found';
+  if (target.role === 'super_admin' && ctx.role !== 'super_admin') return 'forbidden';
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: null, totpEnabledAt: null })
+    .where(eq(profiles.id, profileId));
+  await recordAuditEvent(ctx, {
+    action: 'account.two_step_reset',
+    summary: `Reset two-step sign-in for ${target.name?.trim() || target.email}`,
+    metadata: { profileId },
+  });
+  return 'ok';
 }

@@ -18,6 +18,9 @@ import { AppearanceSettings } from '@/views/settings/AppearanceSettings';
 import { ProfileCard, SettingsRow } from './account/settings-layout';
 import { IdentityCard } from './account/IdentityCard';
 import { OutlookMailboxCard } from './account/OutlookMailboxCard';
+import { TwoStepRows } from './account/TwoStepRows';
+import { DevicesRows } from './account/DevicesRows';
+import { NotificationsCard } from './account/NotificationsCard';
 import { useAccountSettings } from './account/use-account-settings';
 
 type Props = {
@@ -28,12 +31,14 @@ type Props = {
  * Profile (VCFO Spectrum, prototype ProfileScreen; K-16: Settings sits under Profile). One page
  * with sections and a section menu on the left. Every section stays mounted so the `#appearance`
  * link from the greeting card and the Outlook connect return (`?outlook=`) keep working.
+ * G-25 adds two-step sign-in and the devices list under security, and Notifications.
  */
-type SectionKey = 'profile' | 'security' | 'email' | 'appearance';
+type SectionKey = 'profile' | 'security' | 'notify' | 'email' | 'appearance';
 
 const SECTION_LABEL: Record<SectionKey, string> = {
   profile: 'About you',
   security: 'Sign-in and security',
+  notify: 'Notifications',
   email: 'Email',
   appearance: 'Appearance',
 };
@@ -111,8 +116,8 @@ export default function AccountSettings({ path }: Props) {
   } = useAccountSettings();
 
   const sections: SectionKey[] = isStaff
-    ? ['profile', 'security', 'email', 'appearance']
-    : ['profile', 'security', 'appearance'];
+    ? ['profile', 'security', 'notify', 'email', 'appearance']
+    : ['profile', 'security', 'notify', 'appearance'];
   const [active, setActive] = useActiveSection(sections);
 
   const pick = (k: SectionKey) => {
@@ -123,6 +128,14 @@ export default function AccountSettings({ path }: Props) {
     } catch {
       /* The hash is a convenience; scrolling already happened. */
     }
+  };
+
+  const signOutHere = () => {
+    void signOut()
+      .then(() => router.push('/login'))
+      .catch(() => {
+        toastError('Sign out failed. Try again.');
+      });
   };
 
   const savingLabel = (
@@ -471,24 +484,26 @@ export default function AccountSettings({ path }: Props) {
                   </div>
                 </form>
               )}
+              <TwoStepRows />
+              <DevicesRows onSignOutHere={signOutHere} />
               <SettingsRow label="Sign out" hint="On this device">
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
                   className="text-danger"
-                  onClick={() => {
-                    void signOut()
-                      .then(() => router.push('/login'))
-                      .catch(() => {
-                        toastError('Sign out failed. Try again.');
-                      });
-                  }}
+                  onClick={signOutHere}
                 >
                   Sign out
                 </Button>
               </SettingsRow>
             </ProfileCard>
+
+            <NotificationsCard
+              id="notify"
+              title={SECTION_LABEL.notify}
+              whatsappOn={Boolean(display.phoneE164 && display.whatsappOptIn)}
+            />
 
             {isStaff ? <OutlookMailboxCard onConnectedChange={setOutlookConnected} /> : null}
 

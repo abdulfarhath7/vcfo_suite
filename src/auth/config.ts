@@ -1,10 +1,37 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles } from '@/db/schema';
 import { authConfigBase } from '@/auth/config.base';
+import { systemCheckSignInPassword } from '@/db/repositories/profiles';
+import {
+  systemCreateUserSession,
+  systemIsSessionActive,
+  systemRevokeSession,
+} from '@/db/repositories/user-sessions';
+import { checkTotpCode } from '@/lib/totp/check';
+
+/**
+ * Two-step sign-in outcomes (G-25). Each reaches the browser as `code` on the
+ * `signIn()` result. They are only thrown after the password was accepted, so
+ * they never say whether an email exists.
+ */
+class TwoStepRequired extends CredentialsSignin {
+  code = 'two_step_required';
+}
+class TwoStepInvalid extends CredentialsSignin {
+  code = 'two_step_invalid';
+}
+class TwoStepLocked extends CredentialsSignin {
+  code = 'two_step_locked';
+}
+
+/** The first address in X-Forwarded-For (App Runner and the tunnel set it), else X-Real-IP. */
+function clientIp(request: Request | undefined): string | null {
+  const fwd = request?.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return fwd || request?.headers.get('x-real-ip')?.trim() || null;
+}
 
 /**
  * Auth.js (NextAuth v5) — email/password now, SSO later.
@@ -13,6 +40,14 @@ import { authConfigBase } from '@/auth/config.base';
  * the `profiles` table. Role + scoping ids (internId, clientId) are baked into
  * the JWT/session so the repository layer can scope every query without an
  * extra DB round-trip.
+ *
+ * Two-step sign-in (G-25): when `profiles.totp_enabled_at` is set, `authorize`
+ * also needs a valid `otp` field (RFC 6238, see `src/lib/totp/`). The sign-in
+ * screen learns whether to ask for one from `POST /api/auth/two-step`.
+ *
+ * Devices (G-25): each sign-in makes a `user_sessions` row and the JWT carries
+ * its id as `sid`. A revoked row clears the token here and fails
+ * `currentContext` in `guards.ts`; signing out revokes the row.
  *
  * To add SSO later: add an OAuth/SAML provider here (e.g. WorkOS, Okta,
  * Azure AD). The session shape below stays the same, so nothing downstream
@@ -31,26 +66,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        otp: { label: 'Code', type: 'text' },
       },
-      async authorize(creds) {
-        const email = String(creds?.email ?? '').trim().toLowerCase();
-        const password = String(creds?.password ?? '');
-        if (!email || !password) return null;
+      async authorize(creds, request) {
+        const row = await systemCheckSignInPassword(String(creds?.email ?? ''), String(creds?.password ?? ''));
+        if (!row) return null;
 
-        const [row] = await db
-          .select()
-          .from(profiles)
-          .where(eq(profiles.email, email))
-          .limit(1);
-
-        if (!row?.passwordHash) return null;
-        const ok = await bcrypt.compare(password, row.passwordHash);
-        if (!ok) return null;
-        if (row.status !== 'active') return null;
-        if (row.role === 'intern' && !row.internId?.trim()) {
-          // Interns without a scoping key see an empty portfolio — refuse login.
-          return null;
+        if (row.twoStepOn) {
+          const otp = String(creds?.otp ?? '').trim();
+          if (!otp) throw new TwoStepRequired();
+          const check = checkTotpCode(row.id, row.totpSecretEnc, otp);
+          if (check === 'locked') throw new TwoStepLocked();
+          if (check === 'invalid') throw new TwoStepInvalid();
         }
+
+        const sid = await systemCreateUserSession({
+          userId: row.id,
+          userAgent: request?.headers.get('user-agent'),
+          ip: clientIp(request),
+        });
 
         return {
           id: row.id,
@@ -61,10 +95,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           clientId: row.clientId ?? undefined,
           hasAvatar: Boolean(row.avatarObjectKey),
           avatarVersion: row.updatedAt.getTime(),
+          sid: sid ?? undefined,
         };
       },
     }),
   ],
+  events: {
+    async signOut(message) {
+      const token = 'token' in message ? message.token : null;
+      if (typeof token?.sid === 'string' && typeof token.sub === 'string') {
+        await systemRevokeSession(token.sid, token.sub);
+      }
+    },
+  },
   callbacks: {
     ...authConfigBase.callbacks,
     async jwt({ token, user }) {
@@ -75,12 +118,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           clientId?: string;
           hasAvatar?: boolean;
           avatarVersion?: number;
+          sid?: string;
         };
         token.role = u.role;
         token.internId = u.internId;
         token.clientId = u.clientId;
         token.hasAvatar = Boolean(u.hasAvatar);
         token.avatarVersion = u.avatarVersion;
+        if (u.sid) token.sid = u.sid;
         return token;
       }
 
@@ -88,7 +133,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // If the profile was deleted/reseeded, clear the token so middleware + APIs
       // both treat the user as signed out (avoids /app shell with 401 APIs).
       if (token.sub) {
-        const [row] = await db
+        const sid = typeof token.sid === 'string' ? token.sid : null;
+        const rowQuery = db
           .select({
             role: profiles.role,
             internId: profiles.internId,
@@ -102,6 +148,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .from(profiles)
           .where(eq(profiles.id, token.sub))
           .limit(1);
+        const [[row], sessionActive] = await Promise.all([
+          rowQuery,
+          sid ? systemIsSessionActive(sid, token.sub) : Promise.resolve(true),
+        ]);
+        // A device signed out from Profile: clear the token like a deleted profile.
+        if (!sessionActive) {
+          return {};
+        }
         if (!row || row.status !== 'active') {
           return {};
         }
@@ -137,6 +191,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as { hasAvatar?: boolean }).hasAvatar = Boolean(token.hasAvatar);
         (session.user as { avatarVersion?: number }).avatarVersion =
           typeof token.avatarVersion === 'number' ? token.avatarVersion : undefined;
+        // The device id; `currentContext` reads it to check the row is not revoked.
+        (session.user as { sid?: string }).sid = typeof token.sid === 'string' ? token.sid : undefined;
       }
       return session;
     },

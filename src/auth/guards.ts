@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles } from '@/db/schema';
 import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
+import { systemIsSessionActive, systemTouchLastSeen } from '@/db/repositories/user-sessions';
 
 /**
  * Role guards for API routes and server actions.
@@ -22,6 +23,13 @@ import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
  *
  * Role/scoping ids are re-read from `profiles` on each request so a stale JWT
  * (or Auth.js dropping custom credential fields) cannot block client submits.
+ *
+ * Sessions (G-25): the JWT carries `sid`, the id of the `user_sessions` row made
+ * at sign-in. A request whose row is revoked (Profile › "Sign out" on a device,
+ * or "Sign out everywhere else") gets no context. A token without `sid`, issued
+ * before devices were tracked, keeps working until it expires. Each request
+ * also writes `last_seen_at` on the profile and the device, at most every five
+ * minutes. None of this runs in the edge proxy, which never touches the database.
  */
 
 export type AppRole = 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
@@ -35,6 +43,8 @@ export interface AuthContext {
   internId?: string;
   /** Scoping key for clients (was my_client_id() in RLS). */
   clientId?: string;
+  /** The `user_sessions` row of this device; absent on tokens issued before G-25. */
+  sessionId?: string;
 }
 
 type Ok = { ok: true; ctx: AuthContext };
@@ -56,12 +66,14 @@ async function currentContext(opts: { allowDeveloper?: boolean } = {}): Promise<
         role?: string;
         internId?: string;
         clientId?: string;
+        sid?: string;
       }
     | undefined;
   if (!u?.id) return null;
+  const sid = typeof u.sid === 'string' && u.sid ? u.sid : undefined;
 
   // Prefer live profile row over JWT custom claims (source of truth).
-  const [row] = await db
+  const rowQuery = db
     .select({
       id: profiles.id,
       email: profiles.email,
@@ -74,11 +86,19 @@ async function currentContext(opts: { allowDeveloper?: boolean } = {}): Promise<
     .from(profiles)
     .where(eq(profiles.id, u.id))
     .limit(1);
+  const [[row], sessionActive] = await Promise.all([
+    rowQuery,
+    sid ? systemIsSessionActive(sid, u.id) : Promise.resolve(true),
+  ]);
 
+  if (!sessionActive) return null;
   if (!row || row.status !== 'active') return null;
   if (!isValidDbRole(row.role)) return null;
   if (row.role === 'intern' && !row.internId?.trim()) return null;
   if (row.role === 'developer' && !opts.allowDeveloper) return null;
+
+  // Throttled inside and never throws, so it does not hold up the request.
+  void systemTouchLastSeen(row.id, sid);
 
   return {
     userId: row.id,
@@ -87,6 +107,7 @@ async function currentContext(opts: { allowDeveloper?: boolean } = {}): Promise<
     role: row.role,
     internId: row.internId ?? undefined,
     clientId: row.clientId ?? undefined,
+    sessionId: sid,
   };
 }
 
@@ -134,6 +155,17 @@ export async function requireAnyRole(...roles: AppRole[]): Promise<GuardResult> 
   if (roles.includes(ctx.role)) return { ok: true, ctx };
   if (ctx.role === 'super_admin' && roles.includes('admin')) return { ok: true, ctx };
   return { ok: false, status: 403, error: `Requires one of: ${roles.join(', ')}` };
+}
+
+/**
+ * Any signed-in person, developers included. Only for routes that touch the
+ * caller's own account (devices, two-step sign-in, notification preferences)
+ * and never reach a tenant-scoped repository.
+ */
+export async function requireOwnAccount(): Promise<GuardResult> {
+  const ctx = await currentContext({ allowDeveloper: true });
+  if (!ctx) return { ok: false, status: 401, error: 'Not authenticated' };
+  return { ok: true, ctx };
 }
 
 /** Developer console: a developer or the super admin. */

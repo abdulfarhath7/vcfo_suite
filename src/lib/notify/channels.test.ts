@@ -121,6 +121,31 @@ describe('resolveWhatsAppChannel', () => {
       }),
     ).toEqual({ send: false, skipReason: 'no_phone' });
   });
+
+  it('respects the person’s WhatsApp categories and quiet hours (G-25)', () => {
+    const prefs = {
+      whatsapp: { docs: false, steps: true, deadlines: true },
+      quietHours: true,
+      quietStart: '21:00',
+      quietEnd: '08:00',
+      tz: 'Asia/Kolkata',
+    };
+    // 12:00 and 23:00 India time on 29 Oct 2026.
+    const noon = new Date('2026-10-29T06:30:00Z');
+    const late = new Date('2026-10-29T17:30:00Z');
+    expect(
+      resolveWhatsAppChannel({ recipient: recipient({ prefs }), event: 'document_delivered', config: config(), now: noon }),
+    ).toEqual({ send: false, skipReason: 'muted' });
+    expect(
+      resolveWhatsAppChannel({ recipient: recipient({ prefs }), event: 'coi_issued', config: config(), now: noon }),
+    ).toMatchObject({ send: true });
+    expect(
+      resolveWhatsAppChannel({ recipient: recipient({ prefs }), event: 'coi_issued', config: config(), now: late }),
+    ).toEqual({ send: false, skipReason: 'quiet_hours' });
+    expect(
+      resolveWhatsAppChannel({ recipient: recipient({ prefs: null }), event: 'coi_issued', config: config(), now: late }),
+    ).toMatchObject({ send: true });
+  });
 });
 
 describe('readWhatsAppConfig', () => {

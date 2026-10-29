@@ -9,7 +9,17 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push }),
   useSearchParams: () => params,
 }));
-vi.mock('@/context/AppContext', () => ({ useApp: () => ({ signIn }) }));
+const refreshAuth = vi.fn();
+vi.mock('@/context/AppContext', () => ({ useApp: () => ({ signIn, refreshAuth }) }));
+const authJsSignIn = vi.fn();
+const getSession = vi.fn();
+vi.mock('next-auth/react', () => ({
+  signIn: (...a: unknown[]) => authJsSignIn(...a),
+  getSession: () => getSession(),
+  signOut: vi.fn(),
+}));
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
 vi.mock('@/components/common/ThemeToggle', () => ({ ThemeToggle: () => null }));
 vi.mock('@/lib/toast-errors', () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
@@ -24,6 +34,10 @@ describe('SignInScreen', () => {
   beforeEach(() => {
     push.mockReset();
     signIn.mockReset();
+    authJsSignIn.mockReset();
+    getSession.mockReset();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ codeRequired: false }) });
     params = new URLSearchParams();
   });
 
@@ -65,5 +79,44 @@ describe('SignInScreen', () => {
     expect(pass).toHaveAttribute('type', 'text');
     fireEvent.click(screen.getByRole('button', { name: 'Forgot your password?' }));
     expect(screen.getByRole('dialog', { name: 'Need a new password?' })).toBeInTheDocument();
+  });
+
+  it('asks for the two-step code after the password and signs in with it (G-25)', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ codeRequired: true }) });
+    authJsSignIn.mockResolvedValue({ ok: true, error: undefined });
+    getSession.mockResolvedValue({ user: { role: 'manager' } });
+    render(<SignInScreen />);
+    fill('pm@firm.in', 'secret');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    const codeField = await screen.findByLabelText('Code from the app');
+    expect(screen.getByRole('heading', { name: 'Enter your code' })).toBeInTheDocument();
+    expect(signIn).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/two-step', expect.objectContaining({ method: 'POST' }));
+    const verify = screen.getByRole('button', { name: 'Verify' });
+    expect(verify).toBeDisabled();
+    fireEvent.change(codeField, { target: { value: '123 456' } });
+    fireEvent.click(verify);
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/app/manager/dashboard'));
+    expect(authJsSignIn).toHaveBeenCalledWith('credentials', {
+      email: 'pm@firm.in',
+      password: 'secret',
+      otp: '123456',
+      redirect: false,
+    });
+    expect(refreshAuth).toHaveBeenCalled();
+  });
+
+  it('keeps the code step open on a wrong code and can go back', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ codeRequired: true }) });
+    authJsSignIn.mockResolvedValue({ ok: false, error: 'CredentialsSignin', code: 'two_step_invalid' });
+    render(<SignInScreen />);
+    fill('pm@firm.in', 'secret');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    fireEvent.change(await screen.findByLabelText('Code from the app'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('That code did not match.');
+    expect(push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Use another account' }));
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 });
