@@ -52,12 +52,13 @@ export function FilingProofEditor({ instanceId, label }: { instanceId: string; l
         <Paperclip className="h-3.5 w-3.5" aria-hidden />
         Proof
       </Button>
-      {open ? <EditorDialog instanceId={instanceId} label={label} onClose={() => setOpen(false)} /> : null}
+      {open ? <FilingProofEditorDialog instanceId={instanceId} label={label} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
 
-function EditorDialog({ instanceId, label, onClose }: { instanceId: string; label: string; onClose: () => void }) {
+/** The edit dialog on its own, for a caller that keeps its own trigger (the read dialog's Edit, the Proof pending chip). */
+export function FilingProofEditorDialog({ instanceId, label, onClose }: { instanceId: string; label: string; onClose: () => void }) {
   const qc = useQueryClient();
   const base = `/api/client/compliances/${encodeURIComponent(instanceId)}`;
   const fileRef = useRef<HTMLInputElement>(null);

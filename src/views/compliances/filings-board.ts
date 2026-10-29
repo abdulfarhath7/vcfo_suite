@@ -2,7 +2,8 @@ import { regOf, type Regulator } from '@/components/ui/spectrum-chip';
 import { filingStatus, monthKeyOf, sortByDueDate, type FilingRow, type FilingStatus } from '@/lib/compliance/filings';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
 import { filingMonths, type FilingRecord } from '@/lib/metrics/filing-metrics';
-import { daysUntil, filingWord, plainDate, worstStatus } from '@/views/compliances/spectrum-status';
+import { daysUntil, filingWord, plainDate, worstStatus, type SixWord } from '@/views/compliances/spectrum-status';
+import { companyInitials } from '@/components/super/parts/super-text';
 import { waitingOnClient } from '@/views/compliances/obligation-groups';
 
 /**
@@ -60,26 +61,123 @@ export function tileCounts(rows: FilingRow[], now: Date): Record<Exclude<BoardTi
  * `upcoming`, `filed`) keep their old `?status=` values; "Not done" (`open`)
  * and "In progress" (`in-progress`) are the two the board adds.
  */
-export type BoardStatus = '' | 'open' | 'overdue' | 'due-soon' | 'in-progress' | 'upcoming' | 'filed';
+export type BoardStatus = '' | 'open' | 'overdue' | 'due-soon' | 'in-progress' | 'waiting' | 'upcoming' | 'filed';
 
 export const BOARD_STATUS_OPTIONS: Array<{ value: Exclude<BoardStatus, ''>; label: string }> = [
   { value: 'open', label: 'Not done' },
   { value: 'overdue', label: 'Overdue' },
   { value: 'due-soon', label: 'Due soon' },
   { value: 'in-progress', label: 'In progress' },
+  { value: 'waiting', label: 'Waiting' },
   { value: 'upcoming', label: 'Not started' },
   { value: 'filed', label: 'Done' },
 ];
+
+/**
+ * The six-word status of a board row. A row that is neither filed nor late and is waiting
+ * on the client's data (`waitingOnClient`: no data received, due within 15 days) reads
+ * "Waiting"; every other row keeps `filingWord`.
+ */
+export function boardWord(row: FilingRow, detail: PortalFiling | undefined, now: Date): SixWord {
+  const word = filingWord(row, now);
+  if (word === 'Done' || word === 'Overdue') return word;
+  return waitingOnClient(row, detail, now) ? 'Waiting' : word;
+}
 
 export function parseBoardStatus(value: string | null | undefined): BoardStatus {
   return BOARD_STATUS_OPTIONS.some((o) => o.value === value) ? (value as BoardStatus) : '';
 }
 
-export function matchesStatus(row: FilingRow, status: BoardStatus, now: Date): boolean {
+export function matchesStatus(row: FilingRow, status: BoardStatus, now: Date, detail?: PortalFiling): boolean {
   if (!status) return true;
   if (status === 'open') return filingStatus(row, now) !== 'filed';
-  if (status === 'in-progress') return filingWord(row, now) === 'In progress';
+  if (status === 'in-progress') return boardWord(row, detail, now) === 'In progress';
+  if (status === 'waiting') return boardWord(row, detail, now) === 'Waiting';
+  if (status === 'upcoming' || status === 'due-soon') return filingStatus(row, now) === status && boardWord(row, detail, now) !== 'Waiting';
   return filingStatus(row, now) === status;
+}
+
+/* ----------------------------------------------------------------- period */
+
+/** The time window of the list (prototype Filings): two months, a quarter, or the year. */
+export type BoardPeriod = 'monthly' | 'quarterly' | 'annual';
+
+export function isBoardPeriod(value: string | null | undefined): value is BoardPeriod {
+  return value === 'monthly' || value === 'quarterly' || value === 'annual';
+}
+
+export interface PeriodWindow {
+  /** First and last month index in the financial year (0 = April). */
+  start: number;
+  end: number;
+  /** The month keys (yyyy-mm) in the window. */
+  keys: string[];
+}
+
+/**
+ * The window that holds the anchor month: monthly shows the anchor and the month before it
+ * ("Sep to Oct"), quarterly the quarter of the anchor, annual the whole year. An anchor
+ * outside the year starts at April.
+ */
+export function periodWindow(monthKeys: readonly string[], period: BoardPeriod, anchorKey: string): PeriodWindow {
+  const last = monthKeys.length - 1;
+  const idx = Math.max(0, monthKeys.indexOf(anchorKey));
+  let start = 0;
+  let end = last;
+  if (period === 'monthly') {
+    end = Math.max(Math.min(1, last), idx);
+    start = Math.max(0, end - 1);
+  } else if (period === 'quarterly') {
+    start = Math.floor(idx / 3) * 3;
+    end = Math.min(last, start + 2);
+  }
+  return { start, end, keys: monthKeys.slice(start, end + 1) };
+}
+
+/** The anchor month after a step of one window to the left or the right, kept inside the year. */
+export function stepAnchor(monthKeys: readonly string[], period: BoardPeriod, win: PeriodWindow, dir: 1 | -1): string | null {
+  if (period === 'annual') return null;
+  const step = period === 'monthly' ? 1 : 3;
+  const at = (period === 'monthly' ? win.end : win.start) + dir * step;
+  const min = period === 'monthly' ? Math.min(1, monthKeys.length - 1) : 0;
+  if (at < min || at > monthKeys.length - 1) return null;
+  return monthKeys[at] ?? null;
+}
+
+const SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Sep to Oct 2026", "Oct to Dec 2026", or the FY label for the year. */
+export function windowLabel(win: PeriodWindow, period: BoardPeriod, fyLabel: string): string {
+  if (period === 'annual' || win.keys.length === 0) return fyLabel;
+  const first = win.keys[0]!;
+  const lastKey = win.keys[win.keys.length - 1]!;
+  return `${SHORT[Number(first.slice(5, 7)) - 1]} to ${SHORT[Number(lastKey.slice(5, 7)) - 1]} ${lastKey.slice(0, 4)}`;
+}
+
+/* ------------------------------------------------------------ tile lines */
+
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/**
+ * The line under each KPI tile (C-06), counted from the same rows as the tiles:
+ * "3 filings · 2 clients", the filed share of the month, the last day of the 7-day
+ * window, and the late forms with the client initials.
+ */
+export function tileSubs(rows: FilingRow[], now: Date): Record<Exclude<BoardTile, ''>, string> {
+  const month = rows.filter((r) => matchesTile(r, 'month', now));
+  const filed = month.filter((r) => matchesTile(r, 'filed', now)).length;
+  const filings = new Set(month.map((r) => `${r.obligationId}|${r.dueDate.slice(0, 10)}`)).size;
+  const clients = new Set(month.map((r) => r.engagementId)).size;
+  const weekEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + WEEK_DAYS));
+  const late = sortByDueDate(rows.filter((r) => matchesTile(r, 'late', now)));
+  const lateWords = late.slice(0, 3).map((r) => `${r.particular} · ${companyInitials(r.companyName)}`);
+  return {
+    month: `${plural(filings, 'filing')} · ${plural(clients, 'client')}`,
+    filed: month.length ? `${Math.round((filed / month.length) * 100)}%` : '—',
+    week: `by ${DOW[weekEnd.getUTCDay()]} ${plainDate(weekEnd.toISOString(), now)}`,
+    late: late.length ? `${lateWords.join(', ')}${late.length > 3 ? ` +${late.length - 3}` : ''}` : 'None',
+  };
 }
 
 /* -------------------------------------------------------------- regulator */

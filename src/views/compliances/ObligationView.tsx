@@ -22,7 +22,8 @@ import {
   type ComplianceScope,
 } from '@/views/compliances/compliance-scope';
 import { areaLabel, daysUntil, filingWord, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
-import { DateTile, Fact, FlowCard, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { Fact, FlowCard, HeadRing, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { focusNodes } from '@/lib/client-portal/compliances';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
 import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
@@ -135,21 +136,50 @@ export function ObligationView({
     },
     { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={filingWord(row, now)} /> },
     { key: 'window', header: 'Window', width: '176px', render: (row) => <FilingWindowCell row={row} mayWrite={mayWrite} /> },
-    ...(mayWrite
-      ? [{ key: 'proof', header: 'Proof', width: '96px', align: 'right' as const, render: (row: FilingRow) => <FilingProofCell row={row} /> }]
-      : []),
+    {
+      key: 'proof',
+      header: 'Proof',
+      width: '120px',
+      align: 'right',
+      render: (row) => <FilingProofCell row={row} detail={register.details.get(row.id)} mayWrite={mayWrite} now={now} />,
+    },
   ];
 
   const historyCols: EFilingColumn<FilingRow>[] = [
     ...(showClient ? [{ key: 'client', header: 'Client', width: '22%', render: (row: FilingRow) => <span className="font-medium text-ink">{row.companyName}</span> }] : []),
     { key: 'period', header: 'Period', width: '20%', render: (row) => row.periodLabel ?? row.fyLabel ?? '—' },
     { key: 'due', header: 'Due', width: '120px', render: (row) => plainDate(row.dueDate, now) },
-    { key: 'filed', header: 'Filed on', width: '120px', render: (row) => <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>{plainDate(row.filedOn, now)}</span> },
+    {
+      key: 'filed',
+      header: 'Filed on',
+      width: '140px',
+      render: (row) => (
+        <span className={row.filedOn ? 'text-ink' : 'text-ink-muted'}>
+          {plainDate(row.filedOn, now)}
+          {row.filedOn && row.filedOn.slice(0, 10) > row.dueDate.slice(0, 10) ? (
+            <span className="ml-1.5 text-[12.5px] font-medium text-warning">Filed late</span>
+          ) : null}
+        </span>
+      ),
+    },
     { key: 'ref', header: 'Reference', render: refCell },
     { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={filingWord(row, now)} /> },
   ];
   const history = [...scoped].sort((a, b) => b.dueDate.localeCompare(a.dueDate) || a.companyName.localeCompare(b.companyName));
   const dueDays = daysUntil(group.dueDate, now);
+  // The head ring: for one client, the four workflow steps of this period (the same steps the
+  // client portal shows); across clients, how many have filed this period.
+  const oneRow = group.rows.length === 1 ? group.rows[0]! : null;
+  const steps = oneRow?.detail ? focusNodes(oneRow.detail, oneRow.row.companyName, now.toISOString().slice(0, 10)) : null;
+  const ringDone = steps ? steps.filter((n) => n.st === 'done').length : group.filed;
+  const ringTotal = steps ? steps.length : group.total;
+  const ringLate = group.status === 'overdue' && dueDays !== null ? -dueDays : 0;
+  const ringLabel = steps
+    ? `${ringDone} of ${ringTotal} steps done`
+    : `${group.filed} of ${group.total} clients filed`;
+  // One client in view: the head names it, as the prototype's "GSTR-1 · Northwind".
+  const oneClient = companyId !== ALL_COMPANIES ? clients.find((c) => c.id === companyId) : clients.length === 1 ? clients[0] : undefined;
+  const kbHref = `${basePath.replace(/\/compliances$/, '')}/knowledge-bank?q=${encodeURIComponent(group.name)}`;
 
   return (
     <PageTransition>
@@ -159,10 +189,13 @@ export function ObligationView({
         <header className="grid gap-3" aria-label="Obligation">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <div className="flex min-w-0 flex-[1_1_320px] items-center gap-3.5">
-              <DateTile iso={group.dueDate} status={group.status} />
+              <HeadRing done={ringDone} total={ringTotal} lateDays={ringLate} label={ringLabel} />
               <div className="min-w-0">
                 <h1 className="flex min-w-0 items-center gap-1.5 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
-                  <span className="truncate">{group.name}</span>
+                  <span className="truncate">
+                    {group.name}
+                    {oneClient ? ` · ${oneClient.companyName}` : ''}
+                  </span>
                   <WhatsThisButton compact kind="compliance" refId={group.obligationId} label={group.name} />
                 </h1>
                 <p className="flex flex-wrap items-center gap-2 text-[13.5px] text-ink-muted">
@@ -260,7 +293,7 @@ export function ObligationView({
                 rightClass: cn('font-medium', filingStatus(r, now) === 'overdue' ? 'text-danger' : 'text-waiting'),
               }))}
             />
-            <ObligationAboutCards obligationId={group.obligationId} />
+            <ObligationAboutCards obligationId={group.obligationId} kbHref={kbHref} />
           </div>
         </div>
       </div>

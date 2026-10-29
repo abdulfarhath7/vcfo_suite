@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CalendarClock } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarClock } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -16,8 +16,9 @@ import { adminProjectStepPath, internEngagementStepPath } from '@/lib/projects/p
 import { formatWindow } from '@/lib/projects/schedule-windows';
 import { cn } from '@/lib/utils';
 import type { ComplianceScope } from '@/views/compliances/compliance-scope';
-import { isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
-import { Fact, RailCard, TextCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { daysUntil, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
+import { Fact, HeadRing, RailCard, TextCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { PersonCell } from '@/views/compliances/identity';
 import { CertificateButton, RegistrationDatesDialog, RenewByCell, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
 import { isoOfText } from '@/lib/registrations/registration-facts';
@@ -116,6 +117,9 @@ export function RegistrationView({
       ? internEngagementStepPath(engagement, item)
       : adminProjectStepPath(engagement, item, shellBase === '/app/manager' ? '/app/manager' : '/app/admin');
   const marks = stageMarks(row);
+  const stagesDone = marks.filter((m) => m === 'done').length;
+  const lateDays = row.word === 'Overdue' && row.dueDate ? -(daysUntil(row.dueDate, now) ?? 0) : 0;
+  const kbHref = `${shellBase}/knowledge-bank?q=${encodeURIComponent(row.name)}`;
   const others = rows.filter((r) => r.key !== row.key && r.word !== 'Not needed' && r.word !== 'Done').slice(0, 6);
 
   return (
@@ -125,17 +129,30 @@ export function RegistrationView({
         {/* R-02 plain head: the name, a muted meta line, the chips, the facts and the one main button. */}
         <header className="grid gap-3" aria-label="Registration">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-            <div className="min-w-0 flex-[1_1_320px]">
-              <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">{row.name}</h1>
-              <p className="text-[13.5px] text-ink-muted">
-                {row.form ? <span>{row.form} · </span> : null}
-                {row.authority} · {engagement.companyName}
-              </p>
+            <div className="flex min-w-0 flex-[1_1_320px] items-center gap-3.5">
+              {row.word === 'Not needed' ? null : (
+                <HeadRing
+                  done={stagesDone}
+                  total={marks.length}
+                  lateDays={lateDays}
+                  label={`${stagesDone} of ${marks.length} stages done`}
+                />
+              )}
+              <div className="min-w-0">
+                <h1 className="truncate text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">
+                  {row.name} · {engagement.companyName}
+                </h1>
+                <p className="text-[13.5px] text-ink-muted">
+                  {row.form ? (
+                    <span className="font-mono text-[13px] underline decoration-dashed decoration-line-strong underline-offset-4" title={`Form ${row.form}`}>
+                      {row.form}
+                    </span>
+                  ) : null}
+                  {row.form ? ' · ' : null}
+                  {row.authority} · {row.category}
+                </p>
+              </div>
             </div>
-            <span className="flex flex-wrap items-center gap-2">
-              {row.word === 'Not needed' ? <span className="text-[13px] text-ink-muted">Not needed</span> : <WordChip word={row.word} />}
-              {row.owner ? <OwnerChip owner={row.owner} label={OWNER_LABEL[row.owner]} /> : null}
-            </span>
             <CertificateButton facts={facts} engagementId={engagement.id} size="default" />
             <Button variant="secondary" onClick={() => setEditing(true)}>
               <CalendarClock aria-hidden />
@@ -149,6 +166,14 @@ export function RegistrationView({
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+            <Fact k="Status">
+              {row.word === 'Not needed' ? <span className="font-normal text-ink-muted">Not needed</span> : <WordChip word={row.word} />}
+            </Fact>
+            {row.owner ? (
+              <Fact k="With">
+                <OwnerChip owner={row.owner} label={OWNER_LABEL[row.owner]} />
+              </Fact>
+            ) : null}
             <Fact k="Number" className={cn(number && isIdentifier(number) && 'font-mono')}>
               {number ?? <span className="font-normal text-ink-faint">Not recorded</span>}
             </Fact>
@@ -164,13 +189,19 @@ export function RegistrationView({
             ) : null}
             {facts?.certificate ? <Fact k="Certificate">{facts.certificate.name}</Fact> : null}
             {row.window ? <Fact k="Window">{formatWindow(row.window)}</Fact> : null}
-            <Fact k="Lead">{lead ?? '—'}</Fact>
-            {assignee && assignee !== lead ? <Fact k="Assigned to">{assignee}</Fact> : null}
+            <Fact k="Lead">
+              <PersonCell name={lead} />
+            </Fact>
+            {assignee && assignee !== lead ? (
+              <Fact k="Assigned to">
+                <PersonCell name={assignee} />
+              </Fact>
+            ) : null}
             <Fact k="Step">{`${row.step} of registration`}</Fact>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="grid min-w-0 gap-4">
             <DashSection title="Progress" bodyClassName="p-0">
               <ul>
@@ -213,6 +244,10 @@ export function RegistrationView({
                 {item.notes ? <p>{item.notes}</p> : null}
                 <p className="text-ink-muted">{getChecklistStepTimelineLabel(item)}</p>
                 {item.forms.length ? <p className="text-ink-muted">Forms: {item.forms.join(', ')}</p> : null}
+                <Link href={kbHref} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-text hover:underline">
+                  <BookOpen className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
+                  Find the SOP in the knowledge bank
+                </Link>
               </div>
             </DashSection>
             <TextCard title="Renewal">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { AlertTriangle, Calendar, CalendarClock, CircleCheck, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -34,7 +34,8 @@ import {
   type RailItem,
   type StripItem,
 } from '@/views/compliances/spectrum-parts';
-import { GroupedGrid, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
+import { GroupedGrid, KeyHint, useListKeys, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
+import { ClientTile, PersonCell } from '@/views/compliances/identity';
 import { areaSwatch } from '@/views/compliances/area-swatch';
 import { useRegister } from '@/views/compliances/use-register';
 import { useViewParams } from '@/views/compliances/view-params';
@@ -125,7 +126,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   const strip: StripItem[] = [
     { key: 'overdue', label: 'Overdue', value: count('overdue'), Icon: AlertTriangle, valueClass: 'text-danger' },
     { key: 'soon', label: 'Due in 15 days', value: count('soon'), Icon: Calendar, valueClass: 'text-warning' },
-    { key: 'waiting', label: 'Waiting on client', value: count('waiting'), Icon: User, valueClass: 'text-waiting' },
+    { key: 'waiting', label: 'Waiting on client', value: count('waiting'), Icon: User },
     { key: 'done', label: 'Done', value: count('done'), Icon: CircleCheck, valueClass: 'text-positive' },
     { key: 'none', label: 'Not started', value: count('none'), Icon: CalendarClock },
   ];
@@ -170,16 +171,17 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
       label: 'Filing · client',
       render: (r) => (
         <span className="flex min-w-0 items-center gap-2.5 md:pl-[56px]">
+          <ClientTile id={r.row.engagementId} name={r.row.companyName} />
           <span className="min-w-0 truncate font-medium text-ink">{r.row.companyName}</span>
         </span>
       ),
     },
     {
       key: 'owner',
-      label: 'Owner',
-      width: 160,
+      label: 'Lead',
+      width: 180,
       className: 'hidden md:table-cell',
-      render: (r) => <span className="truncate">{r.detail?.ownerName ?? '—'}</span>,
+      render: (r) => <PersonCell name={r.detail?.ownerName} />,
     },
     lastCol,
     statusCol,
@@ -233,8 +235,14 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
       href: hrefOf(r),
     }));
 
+  // List keys (prototype `useListKeys`): arrows move between rows, "/" goes to the first filter.
+  // Inside the client record the list ref stays unattached, so the record keeps its own keys.
+  const listRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLSpanElement>(null);
+  useListKeys(listRef, filterRef);
+
   const head = (
-    <>
+    <span ref={filterRef} className="contents">
       {sole ? null : (
         <CompanyPicker
           engagements={engagements}
@@ -259,7 +267,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           Clear
         </Button>
       ) : null}
-    </>
+    </span>
   );
 
   return (
@@ -277,8 +285,8 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="min-w-0">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div ref={embedded ? undefined : listRef} className="min-w-0">
             {register.isPending ? (
               <div className="surface p-4" aria-busy="true" aria-label="Loading obligations">
                 <SkeletonRows rows={6} />
@@ -294,6 +302,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
                 rowKey={(r) => r.key}
                 rowHref={hrefOf}
                 empty="No obligations in view"
+                footer={embedded ? undefined : <KeyHint />}
               />
             )}
           </div>

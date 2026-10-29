@@ -7,7 +7,6 @@ import { ComposeRecipientPicker } from '@/components/email/ComposeRecipientPicke
 import { ComposeTemplatePanel } from '@/components/email/ComposeTemplatePanel';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { PageBackCluster } from '@/components/shell/PageBackButton';
 import { Button } from '@/components/ui/button';
 import { Chip, Tag } from '@/components/ui/spectrum-chip';
 import { useApp } from '@/context/AppContext';
@@ -23,6 +22,8 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { EmailSettingsDialog, type SignatureState } from '@/views/staff/mail/EmailSettingsDialog';
 import { MailAttachments, type VaultAttachment } from '@/views/staff/mail/MailAttachments';
 import { useMailGroups } from '@/views/staff/mail/use-mail-groups';
+import { fillMergeFields, firstName, mergeValuesFor } from '@/views/staff/mail/merge-fields';
+import { checklist } from '@/data/checklist';
 
 type Props = {
   path: string;
@@ -56,7 +57,7 @@ function Line({
 }
 
 export default function ComposeMail({ path }: Props) {
-  const { user } = useApp();
+  const { user, engagements, getStateForEngagement } = useApp();
   const settingsHref = user ? `${roleSettingsPath(user.role)}#email` : '/login';
 
   const [people, setPeople] = useState<DirectoryPerson[]>([]);
@@ -156,6 +157,8 @@ export default function ComposeMail({ path }: Props) {
     if (presetBody) setBody(presetBody.slice(0, 5000));
   }, []);
 
+  const signatureOn = Boolean(signature.signatureEnabled && signature.signatureText?.trim());
+
   const selectedPeople = useMemo(
     () => people.filter((p) => selected.has(p.userId)),
     [people, selected],
@@ -171,11 +174,30 @@ export default function ComposeMail({ path }: Props) {
     });
   }
 
+  /** The company's current step: the first checklist step that is neither done nor not needed. */
+  function currentStepOf(engagementId: string): string | null {
+    const engagement = engagements.find((e) => e.id === engagementId);
+    if (!engagement) return null;
+    const state = getStateForEngagement(engagement);
+    const open = checklist.find((item) => {
+      const status = state[item.id]?.status ?? 'not-started';
+      return status !== 'completed' && status !== 'not-applicable';
+    });
+    return open?.title ?? null;
+  }
+
+  /**
+   * A picked template fills {client}, {name} and {step} from the first client contact in To.
+   * With the server signature off, the sender's first name goes under the message, as in the
+   * prototype; with it on, the send route adds the saved signature instead.
+   */
   function applyTemplate(template: EmailTemplateDto) {
     setSentTo(null);
     setAppliedTemplate(template);
-    setSubject(template.subject);
-    setBody(template.bodyText);
+    const values = mergeValuesFor(selectedPeople, currentStepOf);
+    const signOff = !signatureOn && user?.name ? `\n${firstName(user.name)}` : '';
+    setSubject(fillMergeFields(template.subject, values));
+    setBody(`${fillMergeFields(template.bodyText, values)}${signOff}`);
   }
 
   /** Clear the draft. Nothing has been sent, so nothing is lost on the server. */
@@ -266,10 +288,11 @@ export default function ComposeMail({ path }: Props) {
   // send route adds the saved signature under the message when it is on.
   const signatureLine =
     !loadingStatus && connected
-      ? signature.signatureEnabled && signature.signatureText?.trim()
-        ? 'Server-side signature on'
-        : 'Signature off'
+      ? signatureOn
+        ? 'Signature from Outlook · server-side signature on'
+        : 'Signature from Outlook · server-side signature off'
       : null;
+  const hasRecipient = selected.size > 0 || customEmails.length > 0 || selectedGroupIds.size > 0;
 
   const status = loadingStatus
     ? null
@@ -296,14 +319,12 @@ export default function ComposeMail({ path }: Props) {
       />
 
       <div className="grid gap-5">
-        {/* Plain page head (R-02): title, the Outlook status chip and the settings link. */}
+        {/* Plain page head (R-02, R-09: no back link): title, the Outlook status chip and the settings link. */}
         <div className="flex flex-wrap items-center gap-3">
-          <PageBackCluster forceBack className="min-w-0 flex-[1_1_240px]">
-            <div className="min-w-0">
-              <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Email</h1>
-              {signatureLine ? <p className="text-[13.5px] text-ink-muted">{signatureLine}</p> : null}
-            </div>
-          </PageBackCluster>
+          <div className="min-w-0 flex-[1_1_240px]">
+            <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Email</h1>
+            {signatureLine ? <p className="text-[13.5px] text-ink-muted">{signatureLine}</p> : null}
+          </div>
           {status ? <Chip tone={status.tone}>{status.word}</Chip> : null}
           <Button type="button" size="sm" variant="secondary" onClick={() => setSettingsOpen(true)}>
             <Settings2 aria-hidden /> Settings
@@ -390,14 +411,6 @@ export default function ComposeMail({ path }: Props) {
                 <>
                   <Tag tone="prog">Template · {appliedTemplate.name}</Tag>
                   <Tag>{emailBrandingLabel(appliedTemplate.branding)}</Tag>
-                  <Button
-                    type="button"
-                    variant="quiet"
-                    size="sm"
-                    onClick={() => setAppliedTemplate(null)}
-                  >
-                    Write without a template
-                  </Button>
                 </>
               ) : null}
               {sentTo ? (
@@ -421,7 +434,7 @@ export default function ComposeMail({ path }: Props) {
                 <Button
                   type="button"
                   onClick={() => void send()}
-                  disabled={sending || !connected}
+                  disabled={sending || !connected || !hasRecipient || !subject.trim()}
                 >
                   {sending ? (
                     <>

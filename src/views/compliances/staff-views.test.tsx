@@ -184,18 +184,18 @@ describe('FilingsView and ComplianceCalendarView', () => {
   it('draws the register month in a T1 grid with the six words on All filings', () => {
     search = new URLSearchParams('period=2099-10&fy=2099&tab=all');
     render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
-    const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
+    const grid = screen.getByRole('region', { name: 'Filings' });
     expect(within(grid).getAllByText('GSTR-3B').length).toBe(2);
     expect(within(grid).getByText('Done')).toBeInTheDocument();
     expect(within(grid).getByText('Not started')).toBeInTheDocument();
-    expect(within(grid).getByRole('button', { name: /Export/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Export/ })).toBeEnabled();
   });
 
   it('groups the month by filing with the client rows, the KPI tiles and the six regulators', () => {
     search = new URLSearchParams('period=2099-10&fy=2099');
     render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
     expect(screen.getByRole('tab', { name: /By filing/ })).toHaveAttribute('aria-selected', 'true');
-    const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
+    const grid = screen.getByRole('region', { name: 'Filings' });
     expect(within(grid).getByText('1 of 2 filed')).toBeInTheDocument();
     expect(within(grid).getByText('Acme Pvt Ltd')).toBeInTheDocument();
     expect(within(grid).getByText('Birch LLP')).toBeInTheDocument();
@@ -211,7 +211,7 @@ describe('FilingsView and ComplianceCalendarView', () => {
   it('narrows the list to a regulator from the filter chip in the URL', () => {
     search = new URLSearchParams('period=2099-10&fy=2099&tab=all&area=it');
     render(<FilingsView basePath="/app/manager/compliances" scope={scope} />);
-    const grid = screen.getByRole('region', { name: 'Filings · Oct 2099' });
+    const grid = screen.getByRole('region', { name: 'Filings' });
     expect(within(grid).queryByText('GSTR-3B')).toBeNull();
     expect(screen.getByRole('button', { name: 'Remove Regulator filter' })).toBeInTheDocument();
   });

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode, type RefObject } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { cn } from '@/lib/utils';
@@ -62,6 +62,57 @@ export function HeadCard({ title, count, right, children }: { title: string; cou
       <GridHead title={title} count={count} right={right} />
       {children}
     </section>
+  );
+}
+
+/**
+ * List keys of the register pages (prototype `useListKeys`): "/" moves focus to the
+ * list's filter (the search box or the first select in `filterRef`) instead of opening
+ * Ask VCFO, and the up and down arrows move between the row links of the list in `ref`.
+ * Enter on a focused link opens it, as any link does. Typing in a field is left alone.
+ */
+export function useListKeys(ref: RefObject<HTMLElement | null>, filterRef: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = ref.current;
+      if (!el) return;
+      const tag = (document.activeElement?.tagName ?? '').toLowerCase();
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || (document.activeElement as HTMLElement | null)?.isContentEditable;
+      if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = filterRef.current?.matches('input, select, button')
+          ? filterRef.current
+          : filterRef.current?.querySelector<HTMLElement>('input, select, button');
+        if (!target) return;
+        // On a list page "/" goes to the list filter; capture runs before the shell's own listener.
+        e.preventDefault();
+        e.stopPropagation();
+        target.focus();
+        return;
+      }
+      if ((e.key !== 'ArrowDown' && e.key !== 'ArrowUp') || typing) return;
+      const links = [...el.querySelectorAll<HTMLAnchorElement>('tbody a[href]')];
+      if (links.length === 0) return;
+      const active = document.activeElement;
+      const at = links.indexOf(active as HTMLAnchorElement);
+      // Only take the arrows when focus is in the list or nowhere in particular.
+      if (at < 0 && !el.contains(active) && active && active !== document.body) return;
+      e.preventDefault();
+      const next = e.key === 'ArrowDown' ? Math.min(links.length - 1, at + 1) : Math.max(0, at - 1);
+      links[next]?.focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [ref, filterRef]);
+}
+
+/** The keyboard hint under a register list. Hidden on phones. */
+export function KeyHint() {
+  const k = 'rounded-sm border border-line px-1 text-[11px] text-ink-muted';
+  return (
+    <span className="hidden items-center gap-1 text-[12px] text-ink-faint md:inline-flex" aria-hidden>
+      <kbd className={k}>↑</kbd>
+      <kbd className={k}>↓</kbd> move · <kbd className={k}>Enter</kbd> open · <kbd className={k}>/</kbd> filter
+    </span>
   );
 }
 

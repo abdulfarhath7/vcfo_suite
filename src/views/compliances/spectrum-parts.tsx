@@ -49,10 +49,13 @@ export function CompactChip({ word }: { word: SixWord }) {
 export function DateTile({
   iso,
   status,
+  accent = false,
   className,
 }: {
   iso: string;
   status: FilingStatus;
+  /** Filings and Obligations bands (B-06): a later filing takes the soft blurple tile, not the grey one. */
+  accent?: boolean;
   className?: string;
 }) {
   const { day, month } = tileParts(iso);
@@ -60,7 +63,7 @@ export function DateTile({
     <span
       className={cn(
         'inline-flex h-11 w-11 flex-none flex-col items-center justify-center rounded-md leading-none',
-        STATUS_TILE[status],
+        accent && status === 'upcoming' ? BAND_UPCOMING_TILE : STATUS_TILE[status],
         className,
       )}
       aria-label={`Due ${day} ${month}`}
@@ -71,6 +74,9 @@ export function DateTile({
     </span>
   );
 }
+
+/** The soft blurple tile of a later filing on a register band (prototype `DateTone` "accent"). */
+export const BAND_UPCOMING_TILE = 'bg-brand-soft text-brand-text';
 
 /** "3 of 5 filed" with an 8px green bar (G1). The track is white because the band under it is grey. */
 export function FiledBar({ filed, total, className }: { filed: number; total: number; className?: string }) {
@@ -118,7 +124,7 @@ export function FilingBand({
 }) {
   return (
     <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-2">
-      <DateTile iso={iso} status={status} />
+      <DateTile iso={iso} status={status} accent />
       <span className="flex min-w-0 flex-[1_1_200px] flex-col gap-0.5">
         <span className="truncate text-[14.5px] font-medium text-ink">{name}</span>
         <span className="text-[12.5px] text-ink-muted">{sub}</span>
@@ -190,6 +196,8 @@ export interface StripItem {
   Icon: LucideIcon;
   /** Text colour of the number when it is above zero. */
   valueClass?: string;
+  /** A muted line under the number ("3 filings · 2 clients", "by Thu 15 Oct"). */
+  sub?: string;
 }
 
 /**
@@ -220,6 +228,7 @@ export function FilterStrip({ items, value, onChange }: { items: StripItem[]; va
             <span className={cn('text-[26px] font-medium leading-none tracking-[-0.01em] tabular-nums text-ink', s.value > 0 && s.valueClass)}>
               {s.value}
             </span>
+            {s.sub ? <span className="truncate text-[12.5px] text-ink-muted" title={s.sub}>{s.sub}</span> : null}
           </button>
         );
       })}
@@ -314,5 +323,42 @@ export function TextCard({ title, children }: { title: string; children: ReactNo
     <DashSection title={title}>
       <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">{children}</div>
     </DashSection>
+  );
+}
+
+/**
+ * The 52 px head ring of a record (prototype `RecordHead` ring): the share done in the status
+ * colour, with "✓" when everything is done, "-3d" when it is late, or "n/m" otherwise.
+ */
+export function HeadRing({ done, total, lateDays = 0, label }: { done: number; total: number; lateDays?: number; label: string }) {
+  const size = 52;
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const share = total > 0 ? Math.min(1, done / total) : 0;
+  const complete = total > 0 && done >= total;
+  const late = !complete && lateDays > 0;
+  const tone = complete ? 'text-positive' : late ? 'text-danger' : 'text-brand-text';
+  const center = complete ? '✓' : late ? `-${lateDays}d` : `${done}/${total}`;
+  return (
+    <span role="img" aria-label={label} className={cn('relative inline-grid flex-none place-items-center', tone)} style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.16} strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c - share * c}
+        />
+      </svg>
+      <span className="absolute text-[13px] font-medium tabular-nums" aria-hidden>
+        {center}
+      </span>
+    </span>
   );
 }

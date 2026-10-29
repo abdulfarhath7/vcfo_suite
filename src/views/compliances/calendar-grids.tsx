@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { FilingStatus, FilingsMonth } from '@/lib/compliance/filings';
 import { FILING_WORD, STATUS_FILL, STATUS_TILE, worstStatus } from '@/views/compliances/spectrum-status';
@@ -8,7 +10,8 @@ import { FILING_WORD, STATUS_FILL, STATUS_TILE, worstStatus } from '@/views/comp
  * The register calendar grids (prototype MonthCalendar and YearGrid), drawn on
  * ISO dates in UTC so a timezone never moves a due date. A day takes the tint
  * of its worst item; one tag per filing name shows on the day, the rest as a
- * count. Clicking a day picks it; the view lists that day's filings below.
+ * count. Clicking a day picks it and opens a 340 px popover beside the day
+ * with that day's filings (`dayTitle` and `dayBody` fill it).
  */
 
 export interface CalendarMark {
@@ -53,14 +56,21 @@ export function MonthGrid({
   marks,
   picked,
   onPick,
+  dayTitle,
+  dayBody,
 }: {
   year: number;
   /** 0-based month. */
   month: number;
   todayIso: string;
   marks: CalendarMark[];
+  /** The open day (ISO), or null. */
   picked: string | null;
   onPick: (date: string | null) => void;
+  /** The popover head for a day. */
+  dayTitle?: (date: string) => ReactNode;
+  /** The popover body for a day; `close` shuts the popover. */
+  dayBody?: (date: string, close: () => void) => ReactNode;
 }) {
   const days = gridDays(year, month);
   const byDay = tagsByDay(marks);
@@ -109,12 +119,11 @@ export function MonthGrid({
               </div>
             );
           }
-          return (
+          const trigger = (
             <button
-              key={day}
               type="button"
               aria-pressed={picked === day}
-              onClick={() => onPick(picked === day ? null : day)}
+              onClick={dayBody ? undefined : () => onPick(picked === day ? null : day)}
               className={cn(cls, 'hover:bg-surface-sunken', isToday && 'hover:bg-brand-soft')}
               aria-label={`${dayNumber} ${LONG_MON[month]}, ${list.length} filing${list.length > 1 ? 's' : ''}`}
             >
@@ -138,6 +147,23 @@ export function MonthGrid({
                 ))}
               </span>
             </button>
+          );
+          if (!dayBody) return <span key={day} className="contents">{trigger}</span>;
+          return (
+            <Popover key={day} open={picked === day} onOpenChange={(v) => onPick(v ? day : null)}>
+              <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+              <PopoverContent
+                side="right"
+                align="start"
+                sideOffset={6}
+                collisionPadding={12}
+                aria-label={`${dayNumber} ${LONG_MON[month]}`}
+                className="w-[340px] max-w-[calc(100vw-24px)] overflow-hidden border-line bg-surface-raised p-0 text-ink"
+              >
+                {dayTitle ? <div className="border-b border-line-soft px-4 py-2.5 text-[14px] font-medium">{dayTitle(day)}</div> : null}
+                <div className="max-h-[60vh] overflow-y-auto">{dayBody(day, () => onPick(null))}</div>
+              </PopoverContent>
+            </Popover>
           );
         })}
       </div>
@@ -177,7 +203,7 @@ export function YearGrid({
             aria-label={`${m.label} · ${inMonth.length} filings · open the month`}
             className={cn(
               'min-w-0 rounded-md border border-line bg-surface-raised p-2.5 text-left hover:bg-surface-sunken',
-              current && 'shadow-[inset_0_0_0_2px_oklch(var(--brand))]',
+              current && 'shadow-[inset_0_0_0_2px_oklch(var(--navy-fill))]',
             )}
           >
             <span className="mb-1.5 flex items-center gap-2">
@@ -195,9 +221,10 @@ export function YearGrid({
                     key={i}
                     title={list.length ? list.map((x) => x.label).slice(0, 3).join(', ') + (list.length > 3 ? ` +${list.length - 3}` : '') : undefined}
                     className={cn(
-                      'grid h-5 min-w-0 place-items-center rounded-sm text-[10.5px] tabular-nums',
-                      worst ? cn(STATUS_TILE[worst], 'font-medium') : 'text-ink-faint',
-                      day === todayIso && 'shadow-[inset_0_0_0_1.5px_oklch(var(--brand))]',
+                      'grid h-5 min-w-0 place-items-center rounded-sm font-mono text-[10.5px] tracking-tight tabular-nums',
+                      worst ? cn(STATUS_FILL[worst], 'font-medium text-white') : 'text-ink-faint',
+                      day === todayIso && !worst && 'font-medium text-ink shadow-[inset_0_0_0_1.5px_oklch(var(--navy-fill))]',
+                      day === todayIso && worst && 'shadow-[0_0_0_1.5px_oklch(var(--navy-fill))]',
                     )}
                   >
                     {n}

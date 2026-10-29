@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { Plus } from 'lucide-react';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   emailBrandingLabel,
@@ -125,6 +125,14 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
     }
   }
 
+  /** Esc on either confirm button closes the delete question. */
+  function cancelOnEscape(e: KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setAsking(null);
+    }
+  }
+
   async function remove(template: EmailTemplateDto) {
     try {
       const res = await fetch(`/api/email-templates/${template.id}`, { method: 'DELETE' });
@@ -201,7 +209,7 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                         {template.name}
                       </span>
                       <span className="block truncate text-[12px] text-ink-muted">
-                        {emailBrandingLabel(template.branding)} · {template.subject}
+                        {emailBrandingLabel(template.branding)}
                       </span>
                     </button>
                     {template.canMutate ? (
@@ -224,28 +232,32 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
                     ) : null}
                   </div>
                   {asking === template.id ? (
+                    // Prototype InlineConfirm (R-40): the question on a grey fill, the main
+                    // button first, Cancel after it, Esc cancels.
                     <div
-                      role="group"
-                      aria-label={`Delete ${template.name}`}
-                      className="flex flex-wrap items-center gap-2 border-t border-line-soft bg-danger-soft px-4 py-2.5"
+                      role="alertdialog"
+                      aria-label={`Delete “${template.name}”?`}
+                      className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-sunken px-4 py-2.5"
                     >
-                      <span className="min-w-0 flex-1 text-[13px] text-ink">
+                      <span className="min-w-0 flex-1 text-[13px] font-medium text-ink">
                         Delete “{template.name}”?
                       </span>
-                      <Button type="button" variant="quiet" size="sm" onClick={() => setAsking(null)}>
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setAsking(null);
-                          void remove(template);
-                        }}
-                      >
-                        Delete
-                      </Button>
+                      <span className="flex flex-none items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onKeyDown={cancelOnEscape}
+                          onClick={() => {
+                            setAsking(null);
+                            void remove(template);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onKeyDown={cancelOnEscape} onClick={() => setAsking(null)}>
+                          Cancel
+                        </Button>
+                      </span>
                     </div>
                   ) : null}
                 </li>
@@ -259,30 +271,38 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editor === 'create' || editor === null ? 'Create a template' : 'Edit template'}
+              {editor === 'create' || editor === null ? 'New template' : 'Edit template'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="tpl-name">Name</Label>
-              <Input
-                id="tpl-name"
-                value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                maxLength={120}
-                placeholder="Client kickoff — SBC"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="tpl-desc">Description (optional)</Label>
-              <Input
-                id="tpl-desc"
-                value={draft.description}
-                onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                maxLength={500}
-                placeholder="When to use this template"
-              />
+          {/* Prototype TemplateDialog: Name and Style side by side from sm, Subject, then the
+              message with its merge-field hint. A stored description is kept on save. */}
+          <div className="grid gap-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-[minmax(0,1fr)_160px]">
+              <div className="space-y-1">
+                <Label htmlFor="tpl-name">Name</Label>
+                <Input
+                  id="tpl-name"
+                  value={draft.name}
+                  onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tpl-style">Style</Label>
+                <Select
+                  value={draft.branding}
+                  onValueChange={(v) => setDraft((d) => ({ ...d, branding: v as EmailBranding }))}
+                >
+                  <SelectTrigger id="tpl-style" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sbc">{emailBrandingLabel('sbc')}</SelectItem>
+                    <SelectItem value="plain">{emailBrandingLabel('plain')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="tpl-subject">Subject</Label>
@@ -297,43 +317,29 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
               <Label htmlFor="tpl-body">Message</Label>
               <Textarea
                 id="tpl-body"
+                rows={9}
                 className="min-h-[140px]"
                 value={draft.bodyText}
                 onChange={(e) => setDraft((d) => ({ ...d, bodyText: e.target.value }))}
                 maxLength={20000}
+                aria-describedby="tpl-body-hint"
               />
+              <p id="tpl-body-hint" className="text-[12px] text-ink-muted">
+                Fields: {'{client}'}, {'{name}'}, {'{step}'}
+              </p>
             </div>
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Branding</legend>
-              <RadioGroup
-                value={draft.branding}
-                onValueChange={(v) =>
-                  setDraft((d) => ({ ...d, branding: v as EmailBranding }))
-                }
-                className="gap-2"
-              >
-                <div className="flex items-start gap-2.5 rounded-md border-1.5 border-line px-3 py-2">
-                  <RadioGroupItem value="sbc" id="brand-sbc" className="mt-0.5" />
-                  <Label htmlFor="brand-sbc" className="cursor-pointer font-normal">
-                    <span className="block text-[13px] font-medium">SBC branded</span>
-                  </Label>
-                </div>
-                <div className="flex items-start gap-2.5 rounded-md border-1.5 border-line px-3 py-2">
-                  <RadioGroupItem value="plain" id="brand-plain" className="mt-0.5" />
-                  <Label htmlFor="brand-plain" className="cursor-pointer font-normal">
-                    <span className="block text-[13px] font-medium">Plain</span>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </fieldset>
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="quiet" onClick={() => setEditor(null)} disabled={saving}>
+            <Button type="button" variant="ghost" onClick={() => setEditor(null)} disabled={saving}>
               Cancel
             </Button>
-            <Button type="button" onClick={() => void save()} disabled={saving}>
-              {saving ? 'Saving' : editor === 'create' || editor === null ? 'Create template' : 'Save'}
+            <Button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving || !draft.name.trim() || !draft.subject.trim()}
+            >
+              {saving ? 'Saving' : 'Save template'}
             </Button>
           </DialogFooter>
         </DialogContent>

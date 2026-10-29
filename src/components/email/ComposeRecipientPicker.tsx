@@ -2,14 +2,9 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { AtSign, Users, X } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Tag, type ChipTone } from '@/components/ui/spectrum-chip';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -26,12 +21,48 @@ import {
 import { isEmailAddress, resolveTypedRecipients } from '@/lib/email/recipient-input';
 import { cn } from '@/lib/utils';
 
-/** Keep the To row compact; extras behind +N. */
-const VISIBLE_CHIPS = 2;
+/* Prototype email-parts: the pop-down shows up to five client contacts and four team members. */
+const CLIENT_CAP = 5;
+const TEAM_CAP = 4;
 
-/* Spectrum tag chips (prototype email-parts `ToChip`): 24px, 6px corners, soft grey, 12px. */
+/* Group chips in the pop-down: 24px, 6px corners, soft grey, 12px. */
 const CHIP =
-  'inline-flex h-6 max-w-[min(100%,18rem)] shrink-0 items-center gap-1.5 rounded-md bg-upcoming-soft pl-2 pr-1 text-[12px] font-medium text-ink-2 hover:bg-surface-sunken';
+  'inline-flex h-6 max-w-[min(100%,18rem)] shrink-0 items-center gap-1.5 rounded-md bg-upcoming-soft px-2 text-[12px] font-medium text-ink-2 hover:bg-surface-sunken';
+
+/* R-35: a client keeps one identity colour. The order matches the super admin client tile. */
+const IDENTITY_TONES: ChipTone[] = ['prog', 'violet', 'teal', 'warn', 'ok', 'idle'];
+
+function hashOf(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/** The identity tone of a client contact's first company; team members are grey. */
+function recipientTone(person: DirectoryPerson): ChipTone {
+  const project = person.kind === 'client' ? person.projects[0] : undefined;
+  return project ? IDENTITY_TONES[hashOf(project.id) % IDENTITY_TONES.length]! : 'idle';
+}
+
+/** "Name · Org" for a client contact, "Name · Team" for a firm member (prototype `toLabel`). */
+function personLabel(person: DirectoryPerson): string {
+  if (person.kind === 'client') {
+    const org = person.projects[0]?.companyName;
+    return org ? `${person.name} · ${org}` : person.name;
+  }
+  return `${person.name} · Team`;
+}
+
+/** 24px initials circle (R-44: people avatars are circles). */
+function Avatar({ name }: { name: string }) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const initials = (parts.length > 1 ? parts[0]![0]! + parts[parts.length - 1]![0]! : (parts[0] ?? '?').slice(0, 2)).toUpperCase();
+  return (
+    <span className="inline-grid h-6 w-6 flex-none place-items-center rounded-full bg-surface-sunken text-[10px] font-medium text-ink-2" aria-hidden>
+      {initials}
+    </span>
+  );
+}
 
 const FIELD =
   'box-border flex min-h-9 min-w-0 w-full flex-wrap items-center gap-1.5 rounded-md border-1.5 border-line-strong bg-surface-raised px-2 py-1 text-[13.5px] focus-within:border-brand focus-within:ring-4 focus-within:ring-brand-line';
@@ -118,8 +149,19 @@ export function ComposeRecipientPicker({
     const q = query.trim().toLowerCase();
     return groups.filter((g) => !selectedGroupIds?.has(g.id) && (!q || g.name.toLowerCase().includes(q)));
   }, [groups, selectedGroupIds, query]);
-  const shownChips = recipients.slice(0, VISIBLE_CHIPS);
-  const overflowChips = recipients.slice(VISIBLE_CHIPS);
+  /* Prototype pop-down groups: Client (up to 5), Team (up to 4), then Groups. A picked person
+     leaves the list. With a Team or Client filter set, every match shows. */
+  const filtered = managerId !== 'all' || clientId !== 'all';
+  const unpicked = visible.filter((p) => !selected.has(p.userId));
+  const clientMatches = unpicked.filter((p) => p.kind === 'client').slice(0, filtered ? undefined : CLIENT_CAP);
+  const teamMatches = unpicked.filter((p) => p.kind !== 'client').slice(0, filtered ? undefined : TEAM_CAP);
+  const firstMatch: { kind: 'person'; id: string } | { kind: 'group'; id: string } | null = clientMatches[0]
+    ? { kind: 'person', id: clientMatches[0].userId }
+    : teamMatches[0]
+      ? { kind: 'person', id: teamMatches[0].userId }
+      : groupMatches[0] && onToggleGroup
+        ? { kind: 'group', id: groupMatches[0].id }
+        : null;
   const trimmedQuery = query.trim();
   const typedIsAddress = isEmailAddress(trimmedQuery);
   const typedMatchesDirectory = people.some(
@@ -128,6 +170,14 @@ export function ComposeRecipientPicker({
   const typedAlreadyAdded = customEmails.includes(trimmedQuery.toLowerCase());
   /** Show "Send to …" when the text is an address nobody in the directory owns. */
   const offerTyped = typedIsAddress && !typedMatchesDirectory && !typedAlreadyAdded;
+
+  function pickFirst(): boolean {
+    if (!firstMatch) return false;
+    if (firstMatch.kind === 'person') handleToggle(firstMatch.id);
+    else onToggleGroup?.(firstMatch.id);
+    setQuery('');
+    return true;
+  }
 
   function handleToggle(userId: string) {
     if (selected.has(userId)) {
@@ -182,27 +232,26 @@ export function ComposeRecipientPicker({
                 open && !bare && 'border-brand ring-4 ring-brand-line',
               )}
             >
-              {shownChips.map((recipient) => (
-                <button
+              {recipients.map((recipient) => (
+                <Tag
                   key={recipient.key}
-                  type="button"
-                  className={cn(
-                    CHIP,
-                    recipients.length === 1 && overflowChips.length === 0 && 'max-w-[calc(100%-7rem)]',
-                  )}
-                  title={`Remove ${recipientLabel(recipient)}`}
-                  onClick={() => removeRecipient(recipient)}
+                  tone={recipient.kind === 'person' ? recipientTone(recipient.person) : 'idle'}
+                  className="h-6 max-w-full shrink-0 gap-1.5 pr-1"
                 >
-                  {recipient.kind === 'group' ? (
-                    <Users className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
-                  ) : null}
-                  <span className="truncate">{recipientEmail(recipient)}</span>
-                  <X className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
-                </button>
+                  {recipient.kind === 'group' ? <Users className="h-3 w-3 shrink-0" strokeWidth={1.6} aria-hidden /> : null}
+                  <span className="max-w-[200px] truncate" title={recipientEmail(recipient)}>
+                    {recipientText(recipient)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeRecipient(recipient)}
+                    className="grid h-4 w-4 place-items-center rounded-sm hover:bg-surface-raised"
+                    aria-label={`Remove ${recipientLabel(recipient)}`}
+                  >
+                    <X className="h-3 w-3" strokeWidth={1.6} aria-hidden />
+                  </button>
+                </Tag>
               ))}
-              {overflowChips.length > 0 ? (
-                <OverflowChips recipients={overflowChips} onRemove={removeRecipient} />
-              ) : null}
               <input
                 id="mail-to-search"
                 role="combobox"
@@ -221,7 +270,13 @@ export function ComposeRecipientPicker({
                   if (e.key === 'Enter' || e.key === ',' || (e.key === 'Tab' && typedIsAddress)) {
                     if (!trimmedQuery) return;
                     if (commitTyped(query)) e.preventDefault();
-                    else if (e.key === 'Enter' || e.key === ',') e.preventDefault();
+                    // Enter picks the first match (prototype RecipientField).
+                    else if (e.key === 'Enter') {
+                      e.preventDefault();
+                      pickFirst();
+                    } else if (e.key === ',') e.preventDefault();
+                  } else if (e.key === 'Escape') {
+                    setOpen(false);
                   } else if (e.key === 'Backspace' && !query && recipients.length > 0) {
                     removeRecipient(recipients[recipients.length - 1]);
                   }
@@ -237,10 +292,7 @@ export function ComposeRecipientPicker({
                 aria-haspopup="listbox"
                 aria-controls="mail-to-people"
                 autoComplete="off"
-                className={cn(
-                  'h-7 bg-transparent px-1 text-[13.5px] text-ink outline-none placeholder:text-ink-faint',
-                  recipients.length === 0 ? 'min-w-[7rem] flex-1' : 'w-[6.5rem] shrink-0',
-                )}
+                className="h-7 min-w-[140px] flex-1 bg-transparent px-1 text-[13.5px] text-ink outline-none placeholder:text-ink-faint"
               />
             </div>
           </PopoverAnchor>
@@ -271,8 +323,7 @@ export function ComposeRecipientPicker({
               id="mail-to-people"
               className="max-h-52 space-y-0.5 overflow-y-auto"
               role="listbox"
-              aria-multiselectable="true"
-              aria-label="People"
+              aria-label="Recipients"
             >
               {offerTyped ? (
                 <button
@@ -292,69 +343,70 @@ export function ComposeRecipientPicker({
                   </span>
                 </button>
               ) : null}
+              {loading ? (
+                <p className="px-2 py-3 text-[13px] text-ink-muted">Loading people…</p>
+              ) : null}
+              {!loading && clientMatches.length > 0 ? (
+                <>
+                  <p className="px-2 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-[.07em] text-ink-muted">Client</p>
+                  {clientMatches.map((person) => (
+                    <PickRow
+                      key={person.userId}
+                      person={person}
+                      first={firstMatch?.kind === 'person' && firstMatch.id === person.userId}
+                      onPick={() => {
+                        handleToggle(person.userId);
+                        setQuery('');
+                      }}
+                    />
+                  ))}
+                </>
+              ) : null}
+              {!loading && teamMatches.length > 0 ? (
+                <>
+                  <p className="px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-[.07em] text-ink-muted">Team</p>
+                  {teamMatches.map((person) => (
+                    <PickRow
+                      key={person.userId}
+                      person={person}
+                      first={firstMatch?.kind === 'person' && firstMatch.id === person.userId}
+                      onPick={() => {
+                        handleToggle(person.userId);
+                        setQuery('');
+                      }}
+                    />
+                  ))}
+                </>
+              ) : null}
               {groupMatches.length > 0 && onToggleGroup ? (
-                <div className="border-b border-line-soft pb-1.5">
-                  <p className="px-2 pb-1 pt-1.5 text-[11px] font-medium uppercase tracking-[.07em] text-ink-muted">
-                    Groups
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 px-2">
+                <>
+                  <p className="px-2 pb-1 pt-2 text-[11px] font-medium uppercase tracking-[.07em] text-ink-muted">Groups</p>
+                  <div className="flex flex-wrap gap-1.5 px-2 pb-1.5">
                     {groupMatches.map((g) => (
                       <button
                         key={g.id}
                         type="button"
+                        role="option"
+                        aria-selected={false}
                         title={g.members.map((m) => m.email).join(', ')}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onToggleGroup(g.id);
                           setQuery('');
                         }}
-                        className={cn(CHIP, 'pr-2')}
+                        className={cn(CHIP, firstMatch?.kind === 'group' && firstMatch.id === g.id && 'bg-surface-sunken')}
                       >
-                        <Users className="h-3 w-3 shrink-0 text-ink-muted" aria-hidden />
+                        <Users className="h-3 w-3 shrink-0 text-ink-muted" strokeWidth={1.6} aria-hidden />
                         <span className="truncate">{g.name}</span>
                         <span className="tabular-nums text-ink-muted">{g.members.length}</span>
                       </button>
                     ))}
                   </div>
-                </div>
+                </>
               ) : null}
-              {loading ? (
-                <p className="px-2 py-3 text-[13px] text-ink-muted">Loading people…</p>
-              ) : visible.length === 0 ? (
-                offerTyped ? null : (
-                  <p className="px-2 py-3 text-[13px] text-ink-muted">
-                    No one matches
-                  </p>
-                )
-              ) : (
-                visible.map((person) => {
-                  const checked = selected.has(person.userId);
-                  return (
-                    <label
-                      key={person.userId}
-                      htmlFor={`mail-to-person-${person.userId}`}
-                      className={cn(
-                        'flex cursor-pointer items-center gap-2.5 rounded-sm px-2 py-1.5 hover:bg-surface-sunken',
-                        checked && 'bg-brand-soft hover:bg-brand-soft',
-                      )}
-                    >
-                      <Checkbox
-                        id={`mail-to-person-${person.userId}`}
-                        checked={checked}
-                        onCheckedChange={() => handleToggle(person.userId)}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-medium text-ink">
-                          {person.name}
-                        </span>
-                        <span className="block truncate text-[11.5px] text-ink-muted">
-                          {person.email}
-                        </span>
-                      </span>
-                    </label>
-                  );
-                })
-              )}
+              {!loading && !offerTyped && clientMatches.length === 0 && teamMatches.length === 0 && groupMatches.length === 0 ? (
+                <p className="px-2 py-3 text-[13px] text-ink-muted">No one matches</p>
+              ) : null}
             </div>
           </PopoverContent>
         </Popover>
@@ -418,8 +470,14 @@ function RowFilter({
 }
 
 function recipientEmail(recipient: Recipient): string {
-  if (recipient.kind === 'group') return `${recipient.group.name} · ${recipient.group.members.length}`;
+  if (recipient.kind === 'group') return recipient.group.members.map((m) => m.email).join(', ');
   return recipient.kind === 'person' ? recipient.person.email : recipient.email;
+}
+
+/** The chip text: "Name · Org", "Name · Team", a group name, or a typed address. */
+function recipientText(recipient: Recipient): string {
+  if (recipient.kind === 'group') return recipient.group.name;
+  return recipient.kind === 'person' ? personLabel(recipient.person) : recipient.email;
 }
 
 function recipientLabel(recipient: Recipient): string {
@@ -427,46 +485,28 @@ function recipientLabel(recipient: Recipient): string {
   return recipient.kind === 'person' ? recipient.person.name : recipient.email;
 }
 
-function OverflowChips({
-  recipients,
-  onRemove,
-}: {
-  recipients: Recipient[];
-  onRemove: (recipient: Recipient) => void;
-}) {
+/** One suggestion (prototype `PickRow`): a 24px avatar, the name, and "org · email". */
+function PickRow({ person, first, onPick }: { person: DirectoryPerson; first: boolean; onPick: () => void }) {
+  const org = person.kind === 'client' ? (person.projects[0]?.companyName ?? 'Client') : 'Team';
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(CHIP, 'max-w-none tabular-nums hover:bg-surface-sunken')}
-          aria-label={`${recipients.length} more recipients`}
-        >
-          +{recipients.length}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-2">
-        <ul className="flex flex-col gap-1">
-          {recipients.map((recipient) => (
-            <li key={recipient.key} className="flex min-w-0 items-center gap-1 rounded-md px-1.5 py-1">
-              <span
-                className="min-w-0 flex-1 truncate text-[12px]"
-                title={recipientEmail(recipient)}
-              >
-                {recipientEmail(recipient)}
-              </span>
-              <button
-                type="button"
-                className="shrink-0 text-ink-muted hover:text-ink"
-                aria-label={`Remove ${recipientLabel(recipient)}`}
-                onClick={() => onRemove(recipient)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </PopoverContent>
-    </Popover>
+    <button
+      type="button"
+      role="option"
+      aria-selected={first}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onPick}
+      className={cn(
+        'flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left hover:bg-surface-sunken',
+        first && 'bg-surface-sunken',
+      )}
+    >
+      <Avatar name={person.name} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13px] font-medium text-ink">{person.name}</span>
+        <span className="block truncate text-[11.5px] text-ink-muted">
+          {org} · {person.email}
+        </span>
+      </span>
+    </button>
   );
 }
