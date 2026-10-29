@@ -33,7 +33,7 @@ export function DashboardApprovalsPanel() {
   return (
     <DashSection
       icon={ClipboardCheck}
-      title="Waiting for your approval"
+      title="Approvals"
       meta={String(rows.length)}
       href={`${projectBase}/approvals`}
       hrefLabel="All approvals"

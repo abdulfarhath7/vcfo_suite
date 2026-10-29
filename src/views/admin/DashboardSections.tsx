@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Inbox, ListPlus, Plus } from 'lucide-react';
+import { AlertTriangle, Briefcase, CalendarDays, Inbox, ListPlus, Plus, ShieldCheck, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
@@ -22,7 +22,12 @@ import type { Engagement } from '@/data/engagements';
 import type { ComplianceFiling } from '@/data/compliance';
 import { AdminDashboardFilingsPanel } from '@/views/admin/DashboardSecondaryRow';
 import { DashboardApprovalsPanel } from '@/views/admin/DashboardApprovalsPanel';
-import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { LeadInboxCard } from '@/components/intern/LeadInboxCard';
+import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
+import { LeadSideRail } from '@/components/intern/LeadSideRail';
+import { FilingsMatrix } from '@/components/intern/FilingsMatrix';
+import { useTeamWork } from '@/views/manager/use-team-work';
+import { deriveStuckReason } from '@/lib/projects/project-stuck';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
 import { TeamTasksCard, useTeamTaskTools } from '@/components/staff/today/TeamTasksCard';
 import { AssignTaskDialog } from '@/components/staff/today/AssignTaskDialog';
@@ -66,7 +71,7 @@ export type AdminDashboardViewProps = {
 const PHONE_ICON = 'max-sm:w-9 max-sm:px-0';
 
 /** Main column and a rail, as on every staff Today (prototype TodayScreen GRID). */
-const GRID = 'grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
+const GRID = 'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
 
 /**
  * Manager Today as the board (prototype TodayScreen, C-0107, C-0114): the compact home card with
@@ -129,10 +134,22 @@ export function AdminDashboardView({
         getState: getStateForEngagement,
         href: (e) => adminProjectPath(e, projectBase),
         now,
-      }),
+      }).filter((r) => !r.incorporated),
     [scoped, getStateForEngagement, projectBase, now],
   );
   const scopedDueSoon = dueSoon.filter((f) => scopedIds.has(f.engagementId));
+  // The leads' items for the Action queue and Waiting on cards (same builder as manager Work).
+  const team = useTeamWork({ projectBase: projectBase === '/app/manager' ? '/app/manager' : '/app/admin' });
+  const teamItems = useMemo(() => team.items.filter((i) => scopedIds.has(i.engagementId)), [team.items, scopedIds]);
+  const engById = useMemo(() => new Map(scoped.map((e) => [e.id, e])), [scoped]);
+  const stuck = useMemo(
+    () =>
+      scoped
+        .filter((e) => deriveStuckReason(e, getStateForEngagement(e)) !== 'on_track')
+        .map((e) => ({ engagementId: e.id, companyName: e.companyName, href: adminProjectPath(e, projectBase) })),
+    [scoped, getStateForEngagement, projectBase],
+  );
+  const scopedFilings = filings.filter((f) => scopedIds.has(f.engagementId));
 
   /* Five numbers (R-18, E-04, E-05). Overdue, Waiting on clients and Due this week count the
      Team tasks rows, and each opens Team tasks on the matching saved view. */
@@ -154,6 +171,7 @@ export function AdminDashboardView({
   const heroStats: DashHeroStat[] = [
     {
       label: 'Active projects',
+      icon: Briefcase,
       value: scoped.length,
       href: `${projectBase}/projects`,
       note: blockers > 0 && scope === 'all' ? `${blockers} at risk` : `${open.length} open tasks`,
@@ -161,6 +179,7 @@ export function AdminDashboardView({
     },
     {
       label: 'Needs your approval',
+      icon: ShieldCheck,
       value: approvalsReceived,
       href: `${projectBase}/approvals`,
       hot: approvalsReceived > 0,
@@ -171,6 +190,7 @@ export function AdminDashboardView({
     },
     {
       label: 'Overdue',
+      icon: AlertTriangle,
       value: overdue,
       hot: overdue > 0,
       href: tasksHref('overdue'),
@@ -179,6 +199,7 @@ export function AdminDashboardView({
     },
     {
       label: 'Waiting on clients',
+      icon: User,
       value: waitingOnClients,
       href: tasksHref('waiting'),
       note: waitingClients > 0 ? `${waitingClients} ${waitingClients === 1 ? 'client' : 'clients'}` : undefined,
@@ -186,6 +207,7 @@ export function AdminDashboardView({
     },
     {
       label: 'Due this week',
+      icon: CalendarDays,
       value: dueWeek,
       href: tasksHref('week'),
       note: dueInTwoDays > 0 ? `${dueInTwoDays} filings in 2 days` : undefined,
@@ -246,6 +268,26 @@ export function AdminDashboardView({
         </div>
 
         <div className={GRID}>
+          <LeadActionQueue
+            userId={user?.id ?? ''}
+            items={teamItems}
+            now={now}
+            statusOf={(i) => team.byId.get(i.id)?.status ?? 'In progress'}
+            stuck={stuck}
+            loading={engagementsLoading}
+            workHref={projectBase === '/app/manager' ? '/app/manager/work' : `${projectBase}/projects?tab=leads`}
+            companyHref={(id) => {
+              const e = engById.get(id);
+              return e ? adminProjectPath(e, projectBase) : `${projectBase}/projects`;
+            }}
+          />
+          <div className="flex min-w-0 flex-col gap-5">
+            {userId ? <LeadInboxCard userId={userId} items={teamItems} engagementIds={scopedIds} /> : null}
+            <LeadSideRail items={teamItems} title="Waiting on client" mailHref={`${staffBase}/mail`} />
+          </div>
+        </div>
+
+        <div className={GRID}>
           <PhaseProgressGrid
             rows={phaseRows}
             meta={`${completionRate}% tasks complete`}
@@ -266,14 +308,11 @@ export function AdminDashboardView({
           />
           <div className="flex min-w-0 flex-col gap-5">
             <AdminDashboardFilingsPanel engagements={engagements} dueSoon={scopedDueSoon} />
-            {userId ? (
-              <>
-                <LeadFocusCard userId={userId} items={[]} />
-                <TeamTodosPanel userId={userId} />
-              </>
-            ) : null}
+            {userId ? <TeamTodosPanel userId={userId} /> : null}
           </div>
         </div>
+
+        {scope !== 'incorporating' ? <FilingsMatrix filings={scopedFilings} engagements={scoped} now={now} /> : null}
       </div>
       <AssignTaskDialog open={assignOpen} onOpenChange={setAssignOpen} engagements={active} teamMembers={teamMembers} />
     </PageTransition>

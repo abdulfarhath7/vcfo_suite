@@ -149,7 +149,8 @@ function TeamTasksWithParams(props: Props) {
 
 function TeamTasksBody({ rows, tools, loading, viewParam }: Props & { viewParam: string | null }) {
   const router = useRouter();
-  const [status, setStatus] = useState('');
+  // Status starts on Open (prototype), so done rows show only when asked for.
+  const [status, setStatus] = useState('open');
   const [lead, setLead] = useState('');
   const [company, setCompany] = useState('');
   const [area, setArea] = useState('');
@@ -159,7 +160,7 @@ function TeamTasksBody({ rows, tools, loading, viewParam }: Props & { viewParam:
   const [reassignRow, setReassignRow] = useState<TeamTaskRow | null>(null);
 
   const apply = (f: ViewFilters) => {
-    setStatus(f.status ?? '');
+    setStatus(f.status ?? 'open');
     setLead(f.lead ?? '');
     setCompany(f.company ?? '');
     setArea(f.area ?? '');

@@ -54,3 +54,21 @@ export function requestClosedPatch(
   if (!isClosed && wasClosed) return { closedAt: null };
   return {};
 }
+
+/**
+ * The `assigned_by` part of a task write (migration 0028): the caller is stamped when the task
+ * goes to someone else; a task assigned to the caller themself, or to nobody, keeps none.
+ * `previous` is the stored assignee before the write (undefined for a new row); `next` is the
+ * assignee after it (undefined when the write does not touch the assignee).
+ */
+export function taskAssignmentPatch(
+  actorId: string,
+  previous: string | null | undefined,
+  next: string | null | undefined,
+  isNew = false,
+): { assignedBy?: string | null } {
+  if (next === undefined) return {};
+  if (!isNew && (previous ?? null) === (next ?? null)) return {};
+  if (!next || next === actorId) return { assignedBy: null };
+  return { assignedBy: actorId };
+}

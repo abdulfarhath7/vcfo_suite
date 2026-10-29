@@ -22,7 +22,8 @@ import {
  *
  * Each row also keeps the review state after the change (`review_status`, migration 0027), and
  * a review-only change writes a row whose from and to statuses match. The home trend lines
- * (`home-trends.ts`) rebuild "awaiting approval" from it.
+ * (`home-trends.ts`) rebuild "awaiting approval" from it. Since migration 0028 each row also keeps
+ * who holds the step after the change (`holder`: client, lead, manager or sbc; `stepHolders`).
  *
  * >>> ACCESS CONTROL (Path A) <<<
  *   write — only from inside the engagements repository, in the same transaction as the
@@ -59,6 +60,7 @@ export async function writeStepEvents(
       fromStatus: change.from,
       toStatus: change.to,
       reviewStatus: change.reviewStatus ?? null,
+      holder: change.holder ?? null,
       actorId: ctx.userId,
       at,
     })),

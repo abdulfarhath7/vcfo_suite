@@ -1,13 +1,18 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, CheckCheck, Download, Plus, Sparkles } from 'lucide-react';
+import { BellRing, CheckCheck, Download, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
+import { ActionMenu } from '@/components/ui/action-menu';
+import { DashSection } from '@/components/dash/DashSection';
+import { GanttTimeline } from '@/components/timeline';
+import { shortDate } from '@/components/timeline/timeline-model';
+import { workTimeline } from '@/views/manager/team-work';
+import { WorkAreaCard, WorkStatusCard } from '@/views/manager/work-summary';
 import type { Engagement } from '@/data/engagements';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { InternWorkBoardCard, InternWorkKindChip } from '@/components/intern/InternWorkRow';
-import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
 import { InternWorkDrawer } from '@/components/intern/InternWorkDrawer';
 import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
 import { FilterChip, FilterChipRow } from '@/components/ui/filter-chip';
@@ -20,7 +25,7 @@ import { PersonCell } from '@/components/staff/today/today-parts';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { ReassignDialog, canMoveItem } from '@/views/admin/work/ReassignDialog';
 import type { TeamLead, TeamWorkItem } from '@/views/manager/team-work';
-import { workItemChangedAt } from '@/components/staff/today/today-rows';
+import { todayAreaOf, todayStatusOf, workItemChangedAt, type TodayStatus } from '@/components/staff/today/today-rows';
 import {
   TASK_STATUS_WORDS,
   copyRowLink,
@@ -78,10 +83,17 @@ import { cn } from '@/lib/utils';
 export type WorkView = InternWorkView | 'plan';
 
 const VIEWS: { key: WorkView; label: string }[] = [
+  { key: 'plan', label: 'Planner' },
   { key: 'list', label: 'List' },
   { key: 'board', label: 'Board' },
   { key: 'tl', label: 'Timeline' },
-  { key: 'plan', label: 'Planner' },
+];
+
+/** The six status words (R-13) for the Status filter. */
+const STATUS_WORDS: TodayStatus[] = ['Overdue', 'Due soon', 'In progress', 'Waiting', 'Not started', 'Done'];
+const DUE_OPTIONS = [
+  { value: 'week', label: 'This week' },
+  { value: 'next', label: 'Next week' },
 ];
 
 function parseWorkView(value: string | null | undefined): WorkView {
@@ -94,7 +106,7 @@ function parseWorkView(value: string | null | undefined): WorkView {
  * is the team pages' Lead filter.
  */
 function workPath(
-  filters: Parameters<typeof internWorkPath>[0] & { lead?: string | null },
+  filters: Parameters<typeof internWorkPath>[0] & { lead?: string | null; status?: string | null; due?: string | null },
   view: WorkView,
   path: string = INTERN_TASKS_PATH,
   extra?: Record<string, string>,
@@ -102,6 +114,8 @@ function workPath(
   const url = new URL(internWorkPath({ ...filters, view: view === 'plan' ? 'tl' : view }), 'http://work.local');
   if (view === 'plan') url.searchParams.set('view', 'plan');
   if (filters.lead) url.searchParams.set('lead', filters.lead);
+  if (filters.status) url.searchParams.set('status', filters.status);
+  if (filters.due) url.searchParams.set('due', filters.due);
   for (const [k, v] of Object.entries(extra ?? {})) url.searchParams.set(k, v);
   return `${path}${url.search}`;
 }
@@ -225,7 +239,9 @@ export function WorkScreen({
   const day = parseInternWorkDay(params.get('day'));
   const leadFilter = team?.showLead ? params.get('lead') : null;
   const fitView = (v: WorkView): WorkView => (viewList.some((x) => x.key === v) ? v : viewList[0]!.key);
-  const [view, setView] = useState<WorkView>(() => fitView(parseWorkView(params.get('view'))));
+  const statusFilter = params.get('status');
+  const dueFilter = params.get('due');
+  const [view, setView] = useState<WorkView>(() => fitView(params.get('view') ? parseWorkView(params.get('view')) : 'plan'));
   const listRef = useRef<HTMLDivElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [weekYmd, setWeekYmd] = useState(() => istYmdOf(now));
@@ -250,14 +266,38 @@ export function WorkScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `fitView` and `viewKey` follow the props that do not change on a page.
   }, [params]);
 
+  // Status words and areas (team items carry them; the lead's own are worked out here).
+  const engIndex = useMemo(() => new Map(myEngagements.map((e) => [e.id, e])), [myEngagements]);
+  const statusOf = useCallback(
+    (item: InternWorkItem): TodayStatus => {
+      const t = team?.byId.get(item.id);
+      if (t) return t.status;
+      const eng = engIndex.get(item.engagementId);
+      const slice = eng && item.catalogId ? getStateForEngagement(eng)[item.catalogId] : undefined;
+      return todayStatusOf(item, slice, now);
+    },
+    [team, engIndex, getStateForEngagement, now],
+  );
+  const areaOf = useCallback(
+    (item: InternWorkItem): string => team?.byId.get(item.id)?.area ?? todayAreaOf(item, new Map()),
+    [team],
+  );
+  const dueWeeks = useMemo(() => {
+    const today = istYmdOf(now);
+    return { week: new Set(weekOf(today)), next: new Set(weekOf(addDaysYmd(today, 7))) };
+  }, [now]);
   const filtered = useMemo(
     () =>
       sortInternWork(
         filterInternWork(workItems, { focus, tag, companyId, kind, day }, now).filter(
-          (item) => !leadFilter || team?.byId.get(item.id)?.leadId === leadFilter,
+          (item) =>
+            (!leadFilter || team?.byId.get(item.id)?.leadId === leadFilter) &&
+            (!statusFilter || statusOf(item) === statusFilter) &&
+            (!dueFilter ||
+              (item.dueAt && (dueFilter === 'next' ? dueWeeks.next : dueWeeks.week).has(ymdInIst(new Date(item.dueAt))))),
         ),
       ),
-    [workItems, focus, tag, companyId, kind, day, now, leadFilter, team],
+    [workItems, focus, tag, companyId, kind, day, now, leadFilter, team, statusFilter, dueFilter, statusOf, dueWeeks],
   );
   const openItem = openId ? workItems.find((item) => item.id === openId) ?? null : null;
 
@@ -307,6 +347,8 @@ export function WorkScreen({
     view?: WorkView;
     day?: string | null;
     lead?: string | null;
+    status?: string | null;
+    due?: string | null;
   }) => {
     const href = workPath(
       {
@@ -316,6 +358,8 @@ export function WorkScreen({
         kind: next.kind ?? kind,
         day: next.day === undefined ? day : next.day,
         lead: next.lead === undefined ? leadFilter : next.lead,
+        status: next.status === undefined ? statusFilter : next.status,
+        due: next.due === undefined ? dueFilter : next.due,
       },
       next.view ?? view,
       path,
@@ -362,9 +406,9 @@ export function WorkScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `extraParams` is fixed for a page.
   }, [viewParam, router, path]);
 
-  const anyFilter = Boolean(companyId || kind !== 'all' || focus !== 'all' || tag || day || leadFilter);
+  const anyFilter = Boolean(companyId || kind !== 'all' || focus !== 'all' || tag || day || leadFilter || statusFilter || dueFilter);
   const clearAll = () =>
-    router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null, lead: null }, view, path, extraParams), {
+    router.replace(workPath({ focus: 'all', tag: null, companyId: null, kind: 'all', day: null, lead: null, status: null, due: null }, view, path, extraParams), {
       scroll: false,
     });
   const currentView: ViewFilters = {
@@ -412,16 +456,37 @@ export function WorkScreen({
           : []),
         {
           key: 'status',
-          set: focus !== 'all',
+          set: !!statusFilter,
           node: (
             <FilterChip
               label="Status"
-              value={focus === 'all' ? '' : focus}
-              options={FOCUS_OPTIONS}
-              onChange={(v) => go({ focus: (v || 'all') as InternWorkFocus })}
+              value={statusFilter ?? ''}
+              options={STATUS_WORDS.map((w) => ({ value: w, label: w }))}
+              onChange={(v) => go({ status: v || null })}
             />
           ),
         },
+        {
+          key: 'due',
+          set: !!dueFilter,
+          node: <FilterChip label="Due" value={dueFilter ?? ''} options={DUE_OPTIONS} onChange={(v) => go({ due: v || null })} />,
+        },
+        ...(focus !== 'all'
+          ? [
+              {
+                key: 'focus',
+                set: true,
+                node: (
+                  <FilterChip
+                    label="View"
+                    value={focus}
+                    options={FOCUS_OPTIONS}
+                    onChange={(v) => go({ focus: (v || 'all') as InternWorkFocus })}
+                  />
+                ),
+              },
+            ]
+          : []),
         {
           key: 'show',
           set: kind !== 'all',
@@ -471,6 +536,22 @@ export function WorkScreen({
     return key?.startsWith('filing:') ? key.slice('filing:'.length) : undefined;
   };
 
+  const plannerTimeline = workTimeline(filtered, istYmdOf(now));
+  const statusRows = filtered.map((i) => ({ status: statusOf(i), area: areaOf(i) }));
+  const exportShown = () =>
+    exportRowsCsv(
+      'work.csv',
+      ['Step or filing', 'Client', ...(team ? ['Lead'] : []), 'Area', 'Status', 'Due'],
+      filtered.map((i) => [
+        i.title,
+        i.companyName,
+        ...(team ? [team.byId.get(i.id)?.leadName ?? ''] : []),
+        areaOf(i),
+        statusOf(i),
+        i.dueAt?.slice(0, 10) ?? '',
+      ]),
+    );
+
   return (
     <PageTransition>
       <SEO title={seo.title} description={seo.description} path={seo.path} />
@@ -507,6 +588,15 @@ export function WorkScreen({
           <Button onClick={() => setTodoOpen(true)}>
             <Plus className="h-4 w-4" strokeWidth={1.6} /> New to-do
           </Button>
+          <ActionMenu
+            label="More actions"
+            trigger={
+              <Button size="icon" variant="secondary" aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} />
+              </Button>
+            }
+            items={[{ label: 'Export', Icon: Download, onSelect: exportShown }]}
+          />
         </div>
       </div>
       ) : head}
@@ -522,10 +612,11 @@ export function WorkScreen({
         />
       ) : null}
       {summary}
-      {savedViews}
+      <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
 
       {view === 'list' ? (
-        <WorkCard filters={filters} meta={`${filtered.filter((i) => i.kind !== 'done').length} open`}>
+        <WorkCard title="Tasks" meta={`${filtered.filter((i) => i.kind !== 'done').length} open`}>
+          <div className="px-4 pt-3">{savedViews}</div>
           <div ref={listRef}>
             <ListView
               items={filtered}
@@ -545,21 +636,32 @@ export function WorkScreen({
       ) : null}
       {view === 'board' ? (
         <>
-          <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
           <BoardView items={filtered} now={now} onOpen={(item) => setOpenId(item.id)} ownerOf={team?.showLead ? (i) => team.byId.get(i.id)?.leadName : undefined} />
         </>
       ) : null}
       {view === 'tl' ? (
-        <TimelineView items={filtered} now={now} selectedDay={day} filters={filters} onOpen={(item) => setOpenId(item.id)} />
+        <TimelineView items={filtered} now={now} selectedDay={day} onOpen={(item) => setOpenId(item.id)} />
       ) : null}
 
       {view === 'plan' && planner ? planner : null}
       {view === 'plan' && !planner ? (
         <>
-          <div className="mb-3 flex min-h-[44px] flex-wrap items-center gap-2">{filters}</div>
-          <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-            <PlannerCalendar days={weekDays} onWeek={stepWeek} items={plannerItems} now={now} onOpenItem={openByKey} />
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="flex min-w-0 flex-col gap-4">
+              <DashSection title="Timeline" meta={plannerTimeline?.start && plannerTimeline.end ? `${shortDate(plannerTimeline.start)} to ${shortDate(plannerTimeline.end)}` : undefined} flush>
+                {plannerTimeline ? (
+                  <GanttTimeline timeline={plannerTimeline} today={istYmdOf(now)} className="pb-3" />
+                ) : (
+                  <EmptyState title="Nothing dated" className="m-4" />
+                )}
+              </DashSection>
+              <PlannerCalendar days={weekDays} onWeek={stepWeek} items={plannerItems} now={now} onOpenItem={openByKey} />
+            </div>
             <PlannerTodos
+              assigned={filtered.filter(
+                (i) => i.source === 'task' && i.kind !== 'done' && (!team || team.byId.get(i.id)?.leadId === team.meKey),
+              )}
+              waiting={filtered.filter((i) => i.kind === 'waiting-client' || i.kind === 'waiting-request')}
               focus={todos}
               byId={todoItems}
               persist={persistTodos}
@@ -586,6 +688,10 @@ export function WorkScreen({
                   : undefined
               }
             />
+          </div>
+          <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+            <WorkStatusCard title="My work · status" items={statusRows} />
+            <WorkAreaCard items={statusRows} />
           </div>
         </>
       ) : null}
@@ -617,27 +723,22 @@ export function WorkScreen({
   );
 }
 
-/** A card whose head bar holds the filter chips (R-08, R-10) and a small count. */
+/** A Work card (prototype `SectionCard`): title, meta and a right slot in the 52 px head. */
 function WorkCard({
-  filters,
+  title,
   meta,
   right,
   children,
 }: {
-  filters: ReactNode;
+  title: string;
   meta?: ReactNode;
   right?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="surface min-w-0 overflow-hidden">
-      <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft px-4 py-2">
-        {filters}
-        {right}
-        {meta ? <span className="shrink-0 text-[12.5px] text-ink-muted tabular-nums">{meta}</span> : null}
-      </div>
+    <DashSection title={title} meta={meta} right={right} flush className="min-w-0 overflow-hidden">
       {children}
-    </section>
+    </DashSection>
   );
 }
 
@@ -803,17 +904,6 @@ function ListView({
       ),
     },
     { key: 'status', header: 'Status', width: '128px', render: statusCell },
-    {
-      key: 'action',
-      header: <span className="sr-only">Action</span>,
-      width: '136px',
-      align: 'right',
-      render: (item) => (
-        <span data-grid-ctl className="inline-flex">
-          <InternWorkCtaButton item={item} />
-        </span>
-      ),
-    },
   ];
 
   const assign = async (list: InternWorkItem[], to: { id: string; name: string }) => {
@@ -888,10 +978,12 @@ function ListView({
         rows={items}
         rowKey={(i) => i.id}
         onRowClick={onOpen}
-        rowClassName={(i) => (i.isOverdue && i.kind !== 'done' ? 'bg-danger-soft/40' : undefined)}
-        pageSize={25}
+        rowClassName={(i) =>
+          cn('focus:bg-brand-soft focus:outline-none', i.isOverdue && i.kind !== 'done' ? 'bg-danger-soft/40' : undefined)
+        }
+        pageSize={12}
         minWidth={team ? 960 : 800}
-        empty="Nothing in this view"
+        empty="No tasks match these filters"
         loading={loading}
         onClearFilters={onClearFilters}
         stickyHead
@@ -928,11 +1020,11 @@ function ListView({
   );
 }
 
-const BOARD_COLS: { key: 'action' | 'progress' | 'waiting' | 'done'; label: string; tone: 'warn' | 'prog' | 'teal' | 'ok' }[] = [
+const BOARD_COLS: { key: 'action' | 'progress' | 'waiting' | 'done'; label: string; tone: 'warn' | 'prog' | 'idle' | 'ok' }[] = [
   { key: 'action', label: 'Needs action', tone: 'warn' },
   { key: 'progress', label: 'In progress', tone: 'prog' },
-  { key: 'waiting', label: 'Waiting', tone: 'teal' },
-  { key: 'done', label: 'Done this week', tone: 'ok' },
+  { key: 'waiting', label: 'Waiting', tone: 'idle' },
+  { key: 'done', label: 'Done', tone: 'ok' },
 ];
 
 /** Board view (prototype `WorkBoard`): four quiet columns with a count tag in each head. */
@@ -963,7 +1055,7 @@ function BoardView({
             <Tag tone={col.tone}>{cols[col.key].length}</Tag>
           </header>
           <div className="grid gap-2 p-3">
-            {cols[col.key].length === 0 ? <EmptyWork className="min-h-[72px] py-4" /> : null}
+            {cols[col.key].length === 0 ? <EmptyState title="None" className="min-h-[72px] py-4" /> : null}
             {cols[col.key].map((item) => (
               <InternWorkBoardCard key={item.id} item={item} now={now} dim={col.key === 'done'} onOpen={onOpen} owner={ownerOf?.(item)} />
             ))}
@@ -986,6 +1078,8 @@ const TIMELINE_LEGEND: Array<[string, string]> = [
   ['Due soon', 'border-1.5 border-warning-mid bg-warning-soft'],
   ['Overdue', 'bg-danger-mid'],
   ['Done', 'bg-positive-mid'],
+  ['Step due', 'h-2.5 w-2.5 rotate-45 bg-ink'],
+  ['Filing due', 'h-2.5 w-2.5 rotate-45 bg-danger-mid'],
 ];
 
 /**
@@ -996,13 +1090,11 @@ function TimelineView({
   items,
   now,
   selectedDay,
-  filters,
   onOpen,
 }: {
   items: InternWorkItem[];
   now: Date;
   selectedDay: string | null;
-  filters: ReactNode;
   onOpen: (item: InternWorkItem) => void;
 }) {
   const today = ymdInIst(now);
@@ -1034,7 +1126,7 @@ function TimelineView({
   return (
     <div className="flex flex-col gap-4">
       <WorkCard
-        filters={filters}
+        title="Timeline"
         right={legend}
         meta={first && last ? `${formatDueLabel(`${first}T12:00:00+05:30`, now)} to ${formatDueLabel(`${last}T12:00:00+05:30`, now)}` : undefined}
       >
@@ -1112,6 +1204,15 @@ function TimelineView({
                           ) : null}
                           <span className={cn('relative truncate', doneShare > 0.5 && 'text-on-brand')}>{row.item.why}</span>
                         </button>
+                        {row.item.dueAt && row.item.kind !== 'done' ? (
+                          <span
+                            aria-hidden
+                            className="pointer-events-none relative z-[2] flex items-center justify-end self-center"
+                            style={{ gridColumn: `${row.endIdx + 2} / span 1`, gridRow: 1 }}
+                          >
+                            <i className={cn('block h-3 w-3 rotate-45 rounded-[2px]', row.item.source === 'filing' ? 'bg-danger-mid' : 'bg-ink')} />
+                          </span>
+                        ) : null}
                       </div>
                     );
                   })}

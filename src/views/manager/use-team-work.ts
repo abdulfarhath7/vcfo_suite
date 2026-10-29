@@ -106,6 +106,7 @@ export function useTeamWork(opts: {
     engagements: itemEngagements,
     leadEngagements,
     scopedEngagements: scoped,
+    filings,
     loading: engagementsLoading,
     now,
     team,

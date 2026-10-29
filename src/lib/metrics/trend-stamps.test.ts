@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { requestClosedPatch, taskCompletionPatch } from './trend-stamps';
+import { requestClosedPatch, taskAssignmentPatch, taskCompletionPatch } from './trend-stamps';
 
 const NOW = new Date('2026-10-29T06:00:00Z');
 
@@ -34,5 +34,21 @@ describe('requestClosedPatch', () => {
   it('keeps the first close time between closed states', () => {
     expect(requestClosedPatch('fulfilled', 'approved', NOW)).toEqual({});
     expect(requestClosedPatch('pending', undefined, NOW)).toEqual({});
+  });
+});
+
+
+describe('taskAssignmentPatch', () => {
+  it('stamps the caller when a task goes to someone else', () => {
+    expect(taskAssignmentPatch('me', undefined, 'lead', true)).toEqual({ assignedBy: 'me' });
+    expect(taskAssignmentPatch('me', 'lead-a', 'lead-b')).toEqual({ assignedBy: 'me' });
+  });
+  it('keeps none for a self-assigned or unassigned task', () => {
+    expect(taskAssignmentPatch('me', undefined, 'me', true)).toEqual({ assignedBy: null });
+    expect(taskAssignmentPatch('me', 'lead', null)).toEqual({ assignedBy: null });
+  });
+  it('leaves the column alone when the assignee does not change', () => {
+    expect(taskAssignmentPatch('me', 'lead', 'lead')).toEqual({});
+    expect(taskAssignmentPatch('me', 'lead', undefined)).toEqual({});
   });
 });

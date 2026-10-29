@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { AlertTriangle, CalendarDays, CheckCheck, ListChecks, User } from 'lucide-react';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
 import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 import type { HomeTrends } from '@/lib/metrics/home-trends';
@@ -45,6 +46,7 @@ export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeT
   return [
     {
       label: 'Needs action',
+      icon: ListChecks,
       value: action.length,
       href: internWorkPath({ focus: 'action' }),
       note: sentBack > 0 ? `${sentBack} sent back` : action.length > 0 ? plural(clients(action), 'client', 'clients') : undefined,
@@ -52,6 +54,7 @@ export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeT
     },
     {
       label: 'Overdue',
+      icon: AlertTriangle,
       value: overdue.length,
       href: `${INTERN_TASKS_PATH}?view=overdue`,
       hot: overdue.length > 0,
@@ -60,6 +63,7 @@ export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeT
     },
     {
       label: 'Waiting on clients',
+      icon: User,
       value: waiting.length,
       href: `${INTERN_TASKS_PATH}?view=waiting`,
       note: managerWaits > 0 ? `${managerWaits} on managers` : waiting.length > 0 ? plural(clients(waiting), 'client', 'clients') : undefined,
@@ -67,6 +71,7 @@ export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeT
     },
     {
       label: 'Due this week',
+      icon: CalendarDays,
       value: weekOpen.length,
       href: `${INTERN_TASKS_PATH}?view=week`,
       note: doneWeek > 0 ? `${doneWeek} done` : undefined,
@@ -74,6 +79,7 @@ export function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeT
     },
     {
       label: 'Done today',
+      icon: CheckCheck,
       value: doneToday,
       good: doneToday > 0,
       trend: trendWithLive(trends, 'doneToday', doneToday),

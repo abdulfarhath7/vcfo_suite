@@ -36,7 +36,7 @@ export interface PlannerItem {
   overdue: boolean;
 }
 
-const PX = 40;
+const PX = 44;
 const HOURS = PLAN_DAY_END - PLAN_DAY_START;
 const SELECT_CLASS =
   'box-border h-10 w-full rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] text-ink focus-visible:border-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25';
@@ -145,11 +145,17 @@ export function PlannerCalendar({
                 key={d}
                 className={cn(
                   'flex flex-col items-center py-1.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted',
-                  d === today && 'text-brand-text',
+                  d === today && 'bg-surface-sunken',
                 )}
               >
-                <span>
-                  {weekdayShort(d)} <span className="tabular-nums tracking-normal">{dayMonth(d).split(' ')[0]}</span>
+                <span>{weekdayShort(d)}</span>
+                <span
+                  className={cn(
+                    'mt-0.5 grid h-7 w-7 place-items-center rounded-md text-[13px] tracking-normal tabular-nums',
+                    d === today ? 'bg-brand text-on-brand' : 'text-ink',
+                  )}
+                >
+                  {dayMonth(d).split(' ')[0]}
                 </span>
                 <span className={cn('text-[11px] normal-case tracking-normal tabular-nums', load[i]! > 6 ? 'text-warning' : 'text-ink-faint')}>
                   {load[i]! > 0 ? `${Math.round(load[i]! * 10) / 10} h` : ' '}
@@ -170,7 +176,7 @@ export function PlannerCalendar({
               ))}
             </div>
             {days.map((d, dayIdx) => (
-              <div key={d} data-day={d} className="relative border-l border-line-soft" style={{ height: HOURS * PX }}>
+              <div key={d} data-day={d} className={cn("relative border-l border-line-soft", d === today && "bg-surface-sunken/60")} style={{ height: HOURS * PX }}>
                 {Array.from({ length: HOURS }, (_, h) => (
                   <button
                     key={h}
@@ -186,7 +192,9 @@ export function PlannerCalendar({
                     aria-hidden
                     className="pointer-events-none absolute inset-x-0 z-[2] h-0.5 bg-highlight-bright"
                     style={{ top: (nowHour - PLAN_DAY_START) * PX }}
-                  />
+                  >
+                    <b className="absolute -left-1 -top-[3px] block h-2 w-2 rounded-[1px] bg-highlight-bright" />
+                  </i>
                 ) : null}
                 {blocks.map((b) => {
                   const at = placeBlock(b, days);

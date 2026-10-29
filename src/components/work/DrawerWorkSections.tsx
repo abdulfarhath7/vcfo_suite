@@ -28,7 +28,7 @@ import { formatWindow } from '@/lib/projects/schedule-windows';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 
-/** One drawer section (prototype `PanelSection`): a quiet 12px head and its body. */
+/** One drawer section (prototype `PanelSection`): an 11.5px capitals head and its body. */
 export function DrawerSection({
   title,
   meta,
@@ -44,7 +44,7 @@ export function DrawerSection({
 }) {
   return (
     <section className={cn('border-t border-line-soft py-4', !flush && 'px-5')}>
-      <h3 className={cn('mb-2 flex min-h-[30px] items-center gap-2 text-[12px] text-ink-muted', flush && 'px-5')}>
+      <h3 className={cn('mb-2 flex min-h-[30px] items-center gap-2 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted', flush && 'px-5')}>
         <span>{title}</span>
         {meta ? <span className="text-ink-faint tabular-nums">{meta}</span> : null}
         {right ? <span className="ml-auto flex items-center gap-2">{right}</span> : null}

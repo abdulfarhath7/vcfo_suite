@@ -40,6 +40,11 @@ export interface StepStatusChange {
    * step has none. Set by `diffStepChanges`; absent on changes from `diffStepStatuses`.
    */
   reviewStatus?: string | null;
+  /**
+   * Who holds the step after the change (`client`, `lead`, `manager`, `sbc`, or null when done),
+   * from `stepHolders` in `step-holder.ts`. Set by the engagements repository before the write.
+   */
+  holder?: string | null;
 }
 
 export interface StepTiming {

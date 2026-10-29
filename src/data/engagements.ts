@@ -134,6 +134,9 @@ export interface TaskInstance {
   updatedAt?: string;
   /** When the task moved to done, ISO (`tasks.completed_at`); absent while open or when done before it was kept. */
   completedAt?: string;
+  /** Who assigned the task to its holder (`tasks.assigned_by`, migration 0028); absent when self-assigned or older. */
+  assignedById?: string;
+  assignedByName?: string;
 }
 
 export interface DocRequest {

@@ -128,6 +128,8 @@ export async function assignLeadTask(
     .values({
       engagementId: access.dbId,
       assignedTo: lead.profileId,
+      // Who assigned it (migration 0028): the Work drawer's "Assigned by".
+      assignedBy: ctx.userId,
       title,
       description: input.description?.trim() || null,
       stepId: null,
@@ -198,7 +200,7 @@ export async function reassignWork(ctx: AuthContext, input: ReassignInput): Prom
     if (!onEngagement(to, keys)) throw new AssignmentError('That lead is not on this engagement', 400);
     await db
       .update(tasks)
-      .set({ assignedTo: to.profileId, updatedAt: new Date() })
+      .set({ assignedTo: to.profileId, assignedBy: ctx.userId, updatedAt: new Date() })
       .where(and(eq(tasks.id, row.id), eq(tasks.engagementId, access.dbId)));
     return { ...base, kind: 'task', label: row.title };
   }

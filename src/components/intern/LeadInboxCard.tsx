@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { CompanyTile } from '@/components/staff/today/today-parts';
-import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { LeadFocusCard, type FocusTodos } from '@/components/intern/LeadFocusCard';
+import { useOwnFocusTodos } from '@/hooks/use-personal-todos';
 import { useApp } from '@/context/AppContext';
 import {
   useMessageThread,
@@ -153,14 +154,17 @@ function MessageThread({
   );
 }
 
-function TriageList() {
+function TriageList({ engagementIds }: { engagementIds?: Set<string> }) {
   const query = useStaffMessages('all');
   const [state, setState] = useState<MessageTriage>('new');
   const [openId, setOpenId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const now = useMemo(() => new Date(), []);
 
-  const clientMessages = useMemo(() => (query.data ?? []).filter((m) => m.senderSide === 'client'), [query.data]);
+  const clientMessages = useMemo(
+    () => (query.data ?? []).filter((m) => m.senderSide === 'client' && (!engagementIds || engagementIds.has(m.engagementId))),
+    [query.data, engagementIds],
+  );
   const count = (t: MessageTriage) => clientMessages.filter((m) => m.triage === t).length;
   const rows = clientMessages.filter((m) => m.triage === state);
   const shown = showAll ? rows : rows.slice(0, PAGE);
@@ -247,9 +251,26 @@ function TriageList() {
  * engagements by state (new, to do, done, ignored); a row opens its thread with a reply box,
  * the triage moves and "Open record". My to-dos is the lead's own to-do list.
  */
-export function LeadInboxCard({ userId, items }: { userId: string; items: InternWorkItem[] }) {
+export function LeadInboxCard({
+  userId,
+  items,
+  todos,
+  engagementIds,
+}: {
+  userId: string;
+  items: InternWorkItem[];
+  /** The to-do state shared with the page (Today's "New to-do"). */
+  todos?: FocusTodos;
+  /** The Today scope: only messages on these engagements. */
+  engagementIds?: Set<string>;
+}) {
   const [tab, setTab] = useState('triage');
-  const newCount = useStaffMessages('all').data?.filter((m) => m.senderSide === 'client' && m.triage === 'new').length;
+  const own = useOwnFocusTodos(todos ? '' : userId, items);
+  const state = todos ?? own;
+  const openTodos = state.focus.filter((f) => !f.done).length;
+  const newCount = useStaffMessages('all').data?.filter(
+    (m) => m.senderSide === 'client' && m.triage === 'new' && (!engagementIds || engagementIds.has(m.engagementId)),
+  ).length;
 
   return (
     <DashSection
@@ -262,14 +283,14 @@ export function LeadInboxCard({ userId, items }: { userId: string; items: Intern
           label="Inbox"
           items={[
             { key: 'triage', label: 'Triage', ...(newCount ? { count: newCount } : {}) },
-            { key: 'todos', label: 'My to-dos' },
+            { key: 'todos', label: 'My to-dos', ...(openTodos ? { count: openTodos } : {}) },
           ]}
           value={tab}
           onChange={setTab}
         />
       }
     >
-      {tab === 'triage' ? <TriageList /> : <LeadFocusCard userId={userId} items={items} embedded />}
+      {tab === 'triage' ? <TriageList engagementIds={engagementIds} /> : <LeadFocusCard userId={userId} items={items} embedded todos={state} />}
     </DashSection>
   );
 }

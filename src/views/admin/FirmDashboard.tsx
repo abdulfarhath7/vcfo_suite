@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
@@ -9,7 +9,9 @@ import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
 import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
 import { EFilingGrid } from '@/components/dash/EFilingGrid';
-import { Activity } from 'lucide-react';
+import { Activity, AlertTriangle, Building2, Clock, ListPlus, Rocket, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AssignTaskDialog } from '@/components/staff/today/AssignTaskDialog';
 import { deriveStuckReason, primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
 import { FirmDecisionsCard } from '@/views/admin/FirmDecisionsCard';
@@ -38,7 +40,7 @@ async function fetchManagers(): Promise<ManagerOption[]> {
 }
 
 export default function FirmDashboard() {
-  const { user, engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement, teamMembers } = useApp();
   const greet = internGreeting(internGreetingHour(new Date()));
   const first = internFirstName(user?.name ?? '');
   /**
@@ -49,6 +51,7 @@ export default function FirmDashboard() {
    * carries the same on-track / stuck / awaiting-PM counts and the total.
    */
   const showGreeting = user?.role !== 'super_admin';
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
@@ -162,6 +165,7 @@ export default function FirmDashboard() {
             stats={[
               {
                 label: 'Clients',
+                icon: Building2,
                 value: pulse.total,
                 href: '/app/admin/projects',
                 note: pulse.overdue > 0 ? `${pulse.overdue} overdue` : `${pulse.good} on track`,
@@ -169,6 +173,7 @@ export default function FirmDashboard() {
               },
               {
                 label: 'Incorporating',
+                icon: Rocket,
                 value: pulse.incorporating,
                 href: '/app/admin/projects?view=incorporating',
                 note: practice?.incorporation.avgDaysToCoi != null ? `avg ${practice.incorporation.avgDaysToCoi}d to COI` : undefined,
@@ -176,6 +181,7 @@ export default function FirmDashboard() {
               },
               {
                 label: 'In compliance',
+                icon: ShieldCheck,
                 value: pulse.total - pulse.incorporating,
                 href: '/app/admin/projects?view=compliance',
                 note: practice && practice.compliances.overdue > 0 ? `${plural(practice.compliances.overdue, 'filing', 'filings')} overdue` : undefined,
@@ -183,6 +189,7 @@ export default function FirmDashboard() {
               },
               {
                 label: 'Stuck',
+                icon: AlertTriangle,
                 value: pulse.pending,
                 href: '/app/admin/projects?view=stuck',
                 hot: pulse.pending > 0,
@@ -191,6 +198,7 @@ export default function FirmDashboard() {
               },
               {
                 label: 'Awaiting approval',
+                icon: Clock,
                 value: pendingApprovals,
                 href: '/app/admin/approvals',
                 hot: pendingApprovals > 0,
@@ -200,7 +208,11 @@ export default function FirmDashboard() {
                 how: 'Steps waiting for a manager decision before they move on.',
               },
             ]}
-          />
+          >
+            <Button onClick={() => setAssignOpen(true)}>
+              <ListPlus className="h-4 w-4" strokeWidth={1.6} /> Assign task
+            </Button>
+          </DashHero>
         ) : null}
 
         <AdminPracticeCards practice={practiceQuery.data} loading={practiceQuery.isPending} base="/app/admin" />
@@ -221,7 +233,7 @@ export default function FirmDashboard() {
           ]}
         />
 
-        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
           {/* Managers (K-37, C-0034): a T1 grid. */}
           <DashSection title="Managers" meta={managerStrip.length || undefined} bodyClassName="px-2 pb-3 pt-1">
             <EFilingGrid
@@ -310,6 +322,12 @@ export default function FirmDashboard() {
           </div>
         ) : null}
       </div>
+      <AssignTaskDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        engagements={engagements.filter((e) => e.stage !== 'Operational Readiness')}
+        teamMembers={teamMembers}
+      />
     </PageTransition>
   );
 }

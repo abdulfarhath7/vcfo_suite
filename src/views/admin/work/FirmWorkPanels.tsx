@@ -44,13 +44,15 @@ function options(rows: FirmWorkRow[], key: (r: FirmWorkRow) => string, label: (r
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+const KIND_WORD: Record<string, string> = { step: 'Step', filing: 'Filing', request: 'Document request', task: 'Task' };
+
 function ItemCell({ row }: { row: FirmWorkRow }) {
   return (
     <span className="flex min-w-0 flex-col">
       <Link href={row.href} className="truncate font-medium text-ink hover:underline" title={row.title} onClick={(e) => e.stopPropagation()}>
         {row.title}
       </Link>
-      <span className="truncate text-[12.5px] text-ink-muted">{row.area}</span>
+      <span className="truncate text-[12.5px] text-ink-muted">{KIND_WORD[row.source ?? 'step'] ?? 'Step'} · {row.area}</span>
     </span>
   );
 }
@@ -115,6 +117,7 @@ export function ManagersWorkPanel() {
     }
     return [...map.values()].sort((a, b) => b.overdue - a.overdue || b.open - a.open);
   }, [rows]);
+  const maxOpen = Math.max(1, ...byManager.map((m) => m.open));
 
   const columns: EFilingColumn<FirmWorkRow>[] = [
     { key: 'item', header: 'Item', render: (r) => <ItemCell row={r} /> },
@@ -129,7 +132,7 @@ export function ManagersWorkPanel() {
   const scoped = rows.filter((r) => (!f.who || r.managerId === f.who) && (!f.company || r.engagementId === f.company));
 
   return (
-    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,2.4fr)_minmax(280px,1fr)]">
+    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
       <DashSection title="Managers' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
         <div className="flex flex-wrap items-center gap-2 px-4 py-3">
           <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
@@ -157,7 +160,7 @@ export function ManagersWorkPanel() {
             rowKey={(r) => r.id}
             onRowClick={(r) => router.push(r.href)}
             rowClassName={(r) => (r.status === 'Overdue' ? 'bg-danger-soft/40' : undefined)}
-            pageSize={12}
+            pageSize={13}
             minWidth={820}
             empty="No items match these filters"
           />
@@ -181,11 +184,16 @@ export function ManagersWorkPanel() {
                   )}
                   aria-pressed={f.who === m.id}
                 >
-                  <PersonCell name={m.name} full />
-                  <span className="ml-auto flex items-center gap-3 tabular-nums">
-                    <span title="Open">{m.open}</span>
-                    <span className={cn(m.overdue > 0 ? 'font-medium text-danger' : 'text-ink-faint')} title="Overdue">
-                      {m.overdue} late
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-3">
+                      <PersonCell name={m.name} full />
+                      <span className="ml-auto tabular-nums text-ink-2">{m.open} open</span>
+                    </span>
+                    <span className="mt-1.5 flex h-2 gap-0.5" aria-hidden>
+                      {m.overdue > 0 ? <i className="block rounded-[2px] bg-danger-mid" style={{ width: `${(m.overdue / maxOpen) * 100}%` }} /> : null}
+                      {m.open - m.overdue > 0 ? (
+                        <i className="block rounded-[2px] bg-brand" style={{ width: `${((m.open - m.overdue) / maxOpen) * 100}%` }} />
+                      ) : null}
                     </span>
                   </span>
                 </button>
@@ -193,6 +201,16 @@ export function ManagersWorkPanel() {
             ))}
           </ul>
         )}
+        {byManager.length > 0 ? (
+          <span className="flex items-center gap-3 border-t border-line-soft px-4 py-2 text-[12px] text-ink-muted">
+            <span className="flex items-center gap-1.5">
+              <i className="h-2 w-2 rounded-[2px] bg-danger-mid" aria-hidden /> Overdue
+            </span>
+            <span className="flex items-center gap-1.5">
+              <i className="h-2 w-2 rounded-[2px] bg-brand" aria-hidden /> Other open
+            </span>
+          </span>
+        ) : null}
       </DashSection>
       <WorkAreaCard items={scoped} loading={loading} />
       </div>

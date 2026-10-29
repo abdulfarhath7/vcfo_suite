@@ -274,6 +274,18 @@ describe('createTask / updateTask', () => {
     expect((calls[0]!.values as { completedAt: Date }).completedAt).toBeInstanceOf(Date);
   });
 
+  it('stamps assigned_by with the caller when the task goes to someone else', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[{ ...taskRow(OWN), assignedTo: 'lead-1', assignedBy: 'user-manager' }]];
+    await repo.createTask(ctx('manager'), { engagementId: 'e1', assigneeId: 'lead-1' });
+    expect((calls[0]!.values as { assignedBy: string }).assignedBy).toBe('user-manager');
+
+    calls.length = 0;
+    results = [[taskRow(OWN, null)], [taskRow(OWN, null)]];
+    await repo.updateTask(ctx('manager'), 't-1', { assigneeId: 'lead-2' });
+    expect((calls.find((c) => c.op === 'update')!.set as { assignedBy: string }).assignedBy).toBe('user-manager');
+  });
+
   it('client may not update, even a visible task', async () => {
     results = [[taskRow(OWN)]];
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });

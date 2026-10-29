@@ -15,6 +15,7 @@ import { writeStepEvents } from '@/db/repositories/step-events';
 import { markAskedFieldsAnswered } from '@/db/repositories/step-field-answers';
 import { stepHolders } from '@/lib/metrics/step-holder';
 import { diffStepChanges } from '@/lib/metrics/step-timing';
+import { newlyAwaitingReview, queueStaffAlert } from '@/lib/notify/staff-alerts';
 
 /** Engagement row writes: create, checklist_state, metadata, progress CC, soft delete and restore. */
 
@@ -101,6 +102,9 @@ export async function updateChecklistState(
     return row;
   });
   await answered();
+  // An approval that starts waiting emails the engagement's managers (queued, never blocks).
+  const waiting = newlyAwaitingReview(existing.checklistState as Record<string, unknown> | null, changes);
+  if (waiting.length) void queueStaffAlert({ kind: 'approval', engagementDbId: existing.id, stepIds: waiting });
   return saved;
 }
 

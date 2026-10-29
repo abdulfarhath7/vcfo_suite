@@ -15,14 +15,14 @@ import { internWaitingItems, type InternWorkItem } from '@/lib/intern/intern-wor
    still owes. Each row has the company tile, the item, the company and how long it has waited,
    the owner chip (R-14) and the reminder or nudge action. What the client owes gets the
    one-click Remind (G-15), with Mail as the fallback when the reminder cannot go out. */
-export function LeadSideRail({ items }: { items: InternWorkItem[] }) {
+export function LeadSideRail({ items, mailHref = '/app/intern/mail', title = 'Waiting on' }: { items: InternWorkItem[]; mailHref?: string; title?: string }) {
   const router = useRouter();
   const all = internWaitingItems(items);
   const waiting = all.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-5" data-intern-waiting-on>
-      <DashSection title="Waiting on" meta={all.length ? String(all.length) : undefined} bodyClassName="p-0">
+      <DashSection title={title} meta={all.length ? String(all.length) : undefined} bodyClassName="p-0">
         {waiting.length === 0 ? (
           <EmptyState title="Nothing waiting" className="m-4" />
         ) : (
@@ -45,7 +45,7 @@ export function LeadSideRail({ items }: { items: InternWorkItem[] }) {
                       engagementId={item.engagementId}
                       itemKey={remindableItemKey(item)!}
                       title={item.title}
-                      onFailed={() => router.push('/app/intern/mail')}
+                      onFailed={() => router.push(mailHref)}
                     />
                   ) : (
                     <InternWorkCtaButton item={item} />

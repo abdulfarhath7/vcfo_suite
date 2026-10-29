@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { UserRoundPlus, X } from 'lucide-react';
+import { Lock, UserRoundPlus, X } from 'lucide-react';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { RemindClientButton } from '@/components/reminders/RemindClientButton';
+import { remindableItemKey } from '@/lib/reminders/reminder-rules';
+import { dayMonth } from '@/components/staff/today/today-rows';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -55,7 +59,13 @@ export function PlannerTodos({
   onOpenItem,
   onNew,
   hand,
+  assigned = [],
+  waiting = [],
 }: {
+  /** "Assigned by manager": open tasks a manager gave the user (they show a lock and their due date). */
+  assigned?: InternWorkItem[];
+  /** "Waiting on client": items the client owes, each with Remind. */
+  waiting?: InternWorkItem[];
   focus: InternFocusEntry[];
   byId: Map<string, InternWorkItem>;
   persist: (next: InternFocusEntry[]) => void;
@@ -64,7 +74,7 @@ export function PlannerTodos({
   hand?: TodoHandOff;
 }) {
   const [quick, setQuick] = useState('');
-  const open = focus.filter((f) => !f.done).length;
+  const open = focus.filter((f) => !f.done).length + assigned.length + waiting.length;
   const withLeads = hand
     ? focus.filter((f) => {
         const item = isCustomInternFocus(f) ? undefined : byId.get(f.id);
@@ -74,13 +84,14 @@ export function PlannerTodos({
   return (
     <section className="surface min-w-0 overflow-hidden">
       <div className="flex min-h-[52px] items-center gap-2 border-b border-line-soft px-4">
-        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">To-dos</h2>
+        <h2 className="flex min-w-0 flex-1 items-baseline gap-2 truncate text-[15px] font-medium text-ink">
+          To-do <span className="text-[13px] font-normal text-ink-muted tabular-nums">{open}</span>
+        </h2>
         {withLeads > 0 ? (
           <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[12px] font-medium text-brand-text tabular-nums">
             {withLeads} with project leads
           </span>
         ) : null}
-        <span className="text-[12.5px] text-ink-muted tabular-nums">{open} open</span>
         <Button size="sm" variant="secondary" onClick={onNew}>
           New to-do
         </Button>
@@ -107,6 +118,27 @@ export function PlannerTodos({
           Add
         </Button>
       </form>
+      {assigned.length > 0 ? (
+        <TodoGroup title="Assigned by manager" count={assigned.length}>
+          {assigned.map((item) => (
+            <li key={item.id} className="flex min-h-11 items-center gap-3 border-b border-line-soft px-4 py-2 text-[13.5px] last:border-b-0">
+              <Lock className="h-3.5 w-3.5 flex-none text-ink-faint" strokeWidth={1.6} aria-label="Set by a manager" />
+              <button type="button" onClick={() => onOpenItem(item.id)} className="min-w-0 flex-1 text-left">
+                <span className="block truncate font-medium text-ink hover:underline">{item.title}</span>
+                <span className="block truncate text-[12px] text-ink-muted">{item.companyName}</span>
+              </button>
+              {item.dueAt ? (
+                <Chip tone={item.isOverdue ? 'bad' : 'idle'} fixed>
+                  {dayMonth(item.dueAt)}
+                </Chip>
+              ) : null}
+            </li>
+          ))}
+        </TodoGroup>
+      ) : null}
+      {assigned.length > 0 || waiting.length > 0 ? (
+        <h3 className="px-4 pb-1 pt-3 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">My to-dos</h3>
+      ) : null}
       {focus.length === 0 ? (
         <div className="p-4">
           <EmptyState title="No to-dos" />
@@ -153,7 +185,37 @@ export function PlannerTodos({
           })}
         </ul>
       )}
+      {waiting.length > 0 ? (
+        <TodoGroup title="Waiting on client" count={waiting.length}>
+          {waiting.map((item) => {
+            const key = remindableItemKey(item);
+            return (
+              <li key={item.id} className="flex min-h-11 items-center gap-3 border-b border-line-soft px-4 py-2 text-[13.5px] last:border-b-0">
+                <button type="button" onClick={() => onOpenItem(item.id)} className="min-w-0 flex-1 text-left">
+                  <span className="block truncate font-medium text-ink hover:underline">{item.title}</span>
+                  <span className="block truncate text-[12px] text-ink-muted">
+                    {item.companyName}
+                    {item.ageLabel ? ` · ${item.ageLabel} waiting` : ''}
+                  </span>
+                </button>
+                {key ? <RemindClientButton engagementId={item.engagementId} itemKey={key} title={item.title} /> : null}
+              </li>
+            );
+          })}
+        </TodoGroup>
+      ) : null}
     </section>
+  );
+}
+
+function TodoGroup({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-line-soft">
+      <h3 className="flex items-center gap-2 px-4 pb-1 pt-3 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">
+        {title} <span className="tabular-nums">{count}</span>
+      </h3>
+      <ul>{children}</ul>
+    </div>
   );
 }
 

@@ -23,6 +23,7 @@ import {
   type InternWorkItem,
 } from '@/lib/intern/intern-work';
 import { cn } from '@/lib/utils';
+import { internKindOwner } from '@/components/intern/intern-tones';
 
 /* The action queue holds what the lead must move; waiting items live in the Waiting on card. */
 const COLS: TodayStatus[] = ['Overdue', 'Due soon', 'In progress', 'Not started'];
@@ -44,7 +45,9 @@ function CompanyRow({
   pick,
   onToggle,
   onPick,
+  companyHref,
 }: {
+  companyHref?: (engagementId: string) => string;
   group: InternActionCompanyGroup;
   statusOf: (item: InternWorkItem) => TodayStatus;
   open: boolean;
@@ -53,7 +56,7 @@ function CompanyRow({
   onPick: (status: TodayStatus) => void;
 }) {
   const panelId = `queue-${group.engagementId}`;
-  const href = internQueueCompanyHref(group.engagementId, group.items);
+  const href = companyHref ? companyHref(group.engagementId) : internQueueCompanyHref(group.engagementId, group.items);
   const shown = pick ? group.items.filter((i) => statusOf(i) === pick) : group.items;
   return (
     <Fragment>
@@ -84,7 +87,7 @@ function CompanyRow({
                   aria-pressed={open && pick === status}
                   aria-label={`${group.companyName} · ${status} · ${n}`}
                   className={cn(
-                    'mx-auto grid h-7 w-14 place-items-center rounded-sm text-[13px] font-medium tabular-nums',
+                    'mx-auto grid h-7 w-16 place-items-center rounded-sm text-[13px] font-medium tabular-nums',
                     HEAT[status],
                     open && pick === status && 'ring-2 ring-brand ring-offset-1 ring-offset-surface-raised',
                   )}
@@ -132,24 +135,45 @@ function CompanyRow({
   );
 }
 
+const PAGE = 8;
+
+/** A stuck client for the head chip: it opens the client. */
+export interface StuckClient {
+  engagementId: string;
+  companyName: string;
+  href: string;
+}
+
 /**
  * Action queue (prototype ActionQueue): by client, a row per company with a count per status
- * (click a count to list those tasks under the row), or the plain list. The open companies are
- * remembered for the lead.
+ * (click a count to list those tasks under the row), eight companies a page, or the plain list
+ * with Step and Owner columns. A red chip in the head names the stuck clients. The open
+ * companies are remembered for the lead.
  */
 export function LeadActionQueue({
   userId,
   items,
   now,
   statusOf,
+  stuck = [],
+  loading,
+  workHref = INTERN_TASKS_PATH,
+  companyHref,
 }: {
+  /** The Work page the head link opens (the manager's Work on their Today). */
+  workHref?: string;
+  /** Where a company name goes (staff project pages for the manager). */
+  companyHref?: (engagementId: string) => string;
   userId: string;
   items: InternWorkItem[];
   now: Date;
   /** The status word of an item (overdue, due soon, in progress, not started). */
   statusOf: (item: InternWorkItem) => TodayStatus;
+  stuck?: StuckClient[];
+  loading?: boolean;
 }) {
   const router = useRouter();
+  const [page, setPage] = useState(0);
   const groups = internActionQueueByCompany(items, now);
   const openItems = groups.flatMap((g) => g.items);
   const [view, setView] = useState('map');
@@ -193,15 +217,30 @@ export function LeadActionQueue({
       ),
     },
     {
+      key: 'step',
+      header: 'Step',
+      width: '90px',
+      render: (i) => (i.catalogLabel ? <span className="font-mono text-[12.5px] text-ink-2">{i.catalogLabel}</span> : <span className="text-ink-muted">{i.source === 'filing' ? 'Filing' : i.source === 'task' ? 'Task' : 'Request'}</span>),
+    },
+    {
+      key: 'owner',
+      header: 'Owner',
+      width: '120px',
+      render: (i) => {
+        const o = internKindOwner(i.kind);
+        return <span className="text-ink-2">{o === 'client' ? 'Client' : o === 'manager' ? 'Manager' : 'You'}</span>;
+      },
+    },
+    {
       key: 'due',
       header: 'Due',
-      width: '72px',
+      width: '80px',
       render: (i) => <span className={cn('tabular-nums', dueClass(statusOf(i)))}>{dayMonth(i.dueAt) || '—'}</span>,
     },
     {
       key: 'status',
       header: 'Status',
-      width: '124px',
+      width: '130px',
       render: (i) => {
         const s = statusOf(i);
         return (
@@ -218,9 +257,18 @@ export function LeadActionQueue({
     <DashSection
       icon={ListTodo}
       title="Action queue"
-      meta={
+      meta={`${openItems.length} open`}
+      right={
         <span className="flex flex-wrap items-center gap-3">
-          <span>{openItems.length} open</span>
+          {stuck.length > 0 ? (
+            <Link
+              href={stuck[0]!.href}
+              className="hidden h-6 items-center gap-1.5 rounded-md bg-danger-soft px-2 text-[12px] font-medium text-danger hover:underline md:inline-flex"
+            >
+              <i className="h-2 w-2 rounded-[2px] bg-danger-mid" aria-hidden />
+              {stuck.length} stuck · {stuck.map((c) => c.companyName).join(', ')}
+            </Link>
+          ) : null}
           <SpectrumTabs
             label="Action queue view"
             items={[
@@ -232,10 +280,11 @@ export function LeadActionQueue({
           />
         </span>
       }
-      href={INTERN_TASKS_PATH}
+      href={workHref}
       hrefLabel="Work"
       className="h-fit"
       bodyClassName="px-2 pb-3 pt-1"
+      loading={loading}
     >
       {groups.length === 0 ? (
         <EmptyState title="Nothing needs you right now" className="m-2" />
@@ -247,7 +296,7 @@ export function LeadActionQueue({
           rowKey={(i) => i.id}
           onRowClick={(i) => router.push(i.href)}
           pageSize={8}
-          minWidth={640}
+          minWidth={760}
         />
       ) : (
         <div className="max-w-full overflow-x-auto">
@@ -256,7 +305,7 @@ export function LeadActionQueue({
             <colgroup>
               <col />
               {COLS.map((c) => (
-                <col key={c} style={{ width: 84 }} />
+                <col key={c} style={{ width: 96 }} />
               ))}
               <col style={{ width: 88 }} />
               <col style={{ width: 40 }} />
@@ -280,13 +329,14 @@ export function LeadActionQueue({
               </tr>
             </thead>
             <tbody>
-              {groups.map((group) => {
+              {groups.slice(page * PAGE, page * PAGE + PAGE).map((group) => {
                 const open = expanded.has(group.engagementId);
                 const picked = pick?.engagementId === group.engagementId ? pick.status : null;
                 return (
                   <CompanyRow
                     key={group.engagementId}
                     group={group}
+                    companyHref={companyHref}
                     statusOf={statusOf}
                     open={open}
                     pick={open ? picked : null}
@@ -307,6 +357,24 @@ export function LeadActionQueue({
               })}
             </tbody>
           </table>
+          {groups.length > PAGE ? (
+            <div className="mt-2 flex items-center gap-2 border-t border-line-soft px-2 pt-2 text-[12.5px] text-ink-muted tabular-nums">
+              <span className="flex-1">
+                {page * PAGE + 1}–{Math.min(groups.length, page * PAGE + PAGE)} of {groups.length}
+              </span>
+              {Array.from({ length: Math.ceil(groups.length / PAGE) }, (_, n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPage(n)}
+                  aria-current={n === page ? 'page' : undefined}
+                  className={cn('grid h-7 min-w-7 place-items-center rounded-md px-1.5 hover:bg-hover', n === page && 'bg-brand-soft font-medium text-brand-text')}
+                >
+                  {n + 1}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
     </DashSection>

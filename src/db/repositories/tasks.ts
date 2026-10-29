@@ -28,7 +28,7 @@ import {
   personalTodoStepId,
   type PersonalTodoDto,
 } from '@/lib/intern/personal-todos';
-import { taskCompletionPatch } from '@/lib/metrics/trend-stamps';
+import { taskAssignmentPatch, taskCompletionPatch } from '@/lib/metrics/trend-stamps';
 
 /**
  * TASKS REPOSITORY — replaces vcfo.tasks localStorage.
@@ -93,7 +93,17 @@ export function toAppTask(row: Row): TaskInstance {
     title: row.title,
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : undefined,
     ...(row.completedAt ? { completedAt: row.completedAt.toISOString() } : {}),
+    ...(row.assignedBy ? { assignedById: row.assignedBy } : {}),
   };
+}
+
+/** Adds the name of whoever assigned each task ("Assigned by" in the Work drawer). One query. */
+async function withAssignerNames(list: TaskInstance[]): Promise<TaskInstance[]> {
+  const ids = [...new Set(list.map((t) => t.assignedById).filter(Boolean) as string[])];
+  if (ids.length === 0) return list;
+  const rows = await db.select({ id: profiles.id, name: profiles.name }).from(profiles).where(inArray(profiles.id, ids));
+  const names = new Map(rows.map((r) => [r.id, r.name ?? '']));
+  return list.map((t) => (t.assignedById && names.get(t.assignedById) ? { ...t, assignedByName: names.get(t.assignedById) } : t));
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
@@ -119,7 +129,7 @@ export async function listTasks(ctx: AuthContext): Promise<TaskInstance[]> {
           .where(and(inArray(tasks.engagementId, scope), notPersonalTodo))
           .orderBy(desc(tasks.updatedAt));
 
-  return rows.map(toAppTask);
+  return withAssignerNames(rows.map(toAppTask));
 }
 
 export async function getTaskById(
@@ -169,6 +179,7 @@ export async function createTask(
       status,
       ...taskCompletionPatch(null, status),
       assignedTo: input.assigneeId ?? null,
+      ...taskAssignmentPatch(ctx.userId, undefined, input.assigneeId ?? null, true),
       deadline: input.dueAt ? new Date(input.dueAt) : null,
       description: input.notes ?? null,
     })
@@ -207,6 +218,7 @@ export async function updateTask(
       ...(nextStatus !== undefined ? { status: nextStatus } : {}),
       ...taskCompletionPatch(appStatusToDb(existing.status), nextStatus),
       ...(patch.assigneeId !== undefined ? { assignedTo: patch.assigneeId ?? null } : {}),
+      ...taskAssignmentPatch(ctx.userId, existing.assigneeId ?? null, patch.assigneeId === undefined ? undefined : (patch.assigneeId ?? null)),
       ...(patch.dueAt !== undefined
         ? { deadline: patch.dueAt ? new Date(patch.dueAt) : null }
         : {}),

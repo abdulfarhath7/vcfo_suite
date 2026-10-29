@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { SidePanel } from '@/components/ui/side-panel';
 import { Button } from '@/components/ui/button';
 import { Chip, OwnerChip, Tag } from '@/components/ui/spectrum-chip';
 import { InternWorkCtaButton } from '@/components/intern/InternWorkCtaButton';
@@ -13,6 +13,7 @@ import {
   DrawerActivity,
   DrawerChecklist,
   DrawerFiles,
+  DrawerSection,
   DrawerSessions,
   DrawerWindow,
 } from '@/components/work/DrawerWorkSections';
@@ -94,7 +95,9 @@ export function InternWorkDrawer({
   /** The item waits on the viewer (a manager's approval): the head shows "Pending with me". */
   pendingWithMe?: boolean;
 }) {
-  const { user, approveDoc, submitDirectStep } = useApp();
+  const { user, approveDoc, submitDirectStep, tasks } = useApp();
+  // "Assigned by" (tasks.assigned_by, migration 0028) for a task someone else gave the holder.
+  const assignedBy = item?.taskId ? tasks.find((t) => t.id === item.taskId)?.assignedByName : undefined;
   const queryClient = useQueryClient();
   const key = item ? (workKey ?? null) : null;
   const detail = useWorkItemDetail(key);
@@ -178,83 +181,95 @@ export function InternWorkDrawer({
 
   const showOpen = Boolean(cta && (cta.action !== 'open' || item?.kind === 'done' || markDone));
 
+  const notes = item?.taskId ? tasks.find((t) => t.id === item.taskId)?.notes?.trim() : undefined;
+
   return (
-    <Sheet open={!!item} onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <SheetContent
-        side="right"
-        aria-describedby={undefined}
-        className="flex w-full flex-col gap-0 border-l-1.5 border-line bg-surface-raised p-0 sm:max-w-[480px]"
-      >
-        {item && status ? (
+    <SidePanel
+      open={!!item}
+      onOpenChange={(open) => (!open ? onClose() : undefined)}
+      width={480}
+      eyebrow={
+        item ? (
           <>
-            <header className="border-b border-line-soft px-5 pb-4 pr-12 pt-5">
-              <div className="flex min-w-0 items-center gap-2 text-[12.5px] text-ink-muted">
-                <LeadCompanyChip name={item.companyName} compact />
-                <span className="truncate">{item.companyName}</span>
-                {item.catalogLabel ? <span className="flex-none font-mono">· {item.catalogLabel}</span> : null}
-              </div>
-              <SheetTitle className="mt-1.5 text-[16px] font-medium leading-snug text-ink">{item.title}</SheetTitle>
-              <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                <Chip tone={status.tone} title={item.why}>
-                  {status.word}
-                </Chip>
-                {pendingWithMe ? (
-                  <Tag tone="prog">Pending with me</Tag>
-                ) : owner ? (
-                  <OwnerChip owner={owner} label={owner === 'client' ? 'With client' : 'With manager'} />
-                ) : null}
-                {item.isCritical ? <Tag tone="bad">Critical</Tag> : null}
-              </div>
-            </header>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-5 py-4 text-[13.5px]">
-                {facts.map((f) => (
-                  <div key={f.k} className="contents">
-                    <dt className="text-ink-muted">{f.k}</dt>
-                    <dd className="min-w-0 text-ink">{f.v}</dd>
-                  </div>
-                ))}
-              </dl>
-              {key ? (
-                <>
-                  {detail.data?.window ? (
-                    <DrawerWindow
-                      itemKey={key}
-                      title={item.title}
-                      companyName={item.companyName}
-                      window={detail.data.window}
-                      canRequest={user?.role === 'intern' && item.kind !== 'done'}
-                    />
-                  ) : null}
-                  {item.kind !== 'done' ? <DrawerSessions itemKey={key} title={item.title} /> : null}
-                  <DrawerChecklist itemKey={key} />
-                  {detail.data ? <DrawerFiles files={detail.data.files} /> : null}
-                  {detail.data ? <DrawerActivity entries={detail.data.activity} /> : null}
-                </>
-              ) : null}
-            </div>
-            <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft px-5 py-3">
-              {showOpen ? (
-                <Button variant="secondary" asChild>
-                  <Link href={item.href}>{OPEN_WORD[item.source] ?? 'Open'}</Link>
-                </Button>
-              ) : null}
-              {markDone ? (
-                <>
-                  {cta && cta.action !== 'open' ? <InternWorkCtaButton item={item} /> : null}
-                  <Button onClick={() => void complete()} disabled={completing}>
-                    Mark done
-                  </Button>
-                </>
-              ) : (
-                <InternWorkCtaButton item={item} primary />
-              )}
-            </footer>
+            <LeadCompanyChip name={item.companyName} compact />
+            <span className="truncate">{item.companyName}</span>
+            {item.catalogLabel ? <span className="flex-none font-mono">· {item.catalogLabel}</span> : null}
           </>
-        ) : (
-          <SheetTitle className="sr-only">Task</SheetTitle>
-        )}
-      </SheetContent>
-    </Sheet>
+        ) : null
+      }
+      title={item?.title ?? 'Task'}
+      sub={
+        item && status ? (
+          <>
+            <Chip tone={status.tone} title={item.why}>
+              {status.word}
+            </Chip>
+            {pendingWithMe ? (
+              <Tag tone="prog">Pending with me</Tag>
+            ) : owner ? (
+              <OwnerChip owner={owner} label={owner === 'client' ? 'With client' : 'With manager'} />
+            ) : null}
+            {item.isCritical ? <Tag tone="bad">Critical</Tag> : null}
+            {assignedBy ? <Tag tone="idle">Assigned by {assignedBy}</Tag> : null}
+          </>
+        ) : null
+      }
+      footer={
+        item ? (
+          <>
+            {showOpen ? (
+              <Button variant="secondary" asChild>
+                <Link href={item.href}>{OPEN_WORD[item.source] ?? 'Open'}</Link>
+              </Button>
+            ) : null}
+            {markDone ? (
+              <>
+                {cta && cta.action !== 'open' ? <InternWorkCtaButton item={item} /> : null}
+                <Button onClick={() => void complete()} disabled={completing}>
+                  Mark done
+                </Button>
+              </>
+            ) : (
+              <InternWorkCtaButton item={item} primary />
+            )}
+          </>
+        ) : null
+      }
+    >
+      {item ? (
+        <>
+          <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-5 py-4 text-[13.5px]">
+            {facts.map((f) => (
+              <div key={f.k} className="contents">
+                <dt className="text-ink-muted">{f.k}</dt>
+                <dd className="min-w-0 text-ink">{f.v}</dd>
+              </div>
+            ))}
+          </dl>
+          {notes ? (
+            <DrawerSection title="Notes">
+              <p className="whitespace-pre-wrap text-[13.5px] text-ink-2">{notes}</p>
+            </DrawerSection>
+          ) : null}
+          {key ? (
+            <>
+              {detail.data?.window ? (
+                <DrawerWindow
+                  itemKey={key}
+                  title={item.title}
+                  companyName={item.companyName}
+                  window={detail.data.window}
+                  canRequest={user?.role === 'intern' && item.kind !== 'done'}
+                />
+              ) : null}
+              {item.kind !== 'done' ? <DrawerSessions itemKey={key} title={item.title} /> : null}
+              <DrawerChecklist itemKey={key} />
+              {detail.data ? <DrawerFiles files={detail.data.files} /> : null}
+              {detail.data ? <DrawerActivity entries={detail.data.activity} /> : null}
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </SidePanel>
   );
 }
