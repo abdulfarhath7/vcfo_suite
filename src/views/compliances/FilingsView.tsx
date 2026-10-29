@@ -19,6 +19,8 @@ import { FilterChip, FilterChipRow, type FilterRowChip } from '@/components/ui/f
 import { Term } from '@/components/ui/term';
 import { initialsOf } from '@/components/ui/avatar-stack';
 import type { BulkAction } from '@/components/ui/bulk-bar';
+import { toastUndo } from '@/components/ui/undo-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
 import {
   PreIncorporationNotice,
@@ -117,6 +119,7 @@ const TILE_LABEL: Record<Exclude<BoardTile, ''>, string> = {
 
 /** Staff roles that may send a client reminder (`POST /api/engagements/:id/remind`). */
 const REMIND_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
+const MAY_REOPEN_ROLES = new Set(['super_admin', 'admin', 'manager']);
 
 /** Months in the "On time vs late" columns. */
 const ON_TIME_MONTHS = 6;
@@ -340,8 +343,50 @@ export function FilingsView({
     else if (failed) toastError('Could not send the reminders', rest);
     else toastInfo('Already reminded today', rest);
   };
+  // E-01: Mark filed through PATCH /api/filings/:id/status (today's date). A manager or
+  // admin may undo it, which reopens the same filings.
+  const queryClient = useQueryClient();
+  const [filing, setFiling] = useState(false);
+  const setFiled = async (ids: string[], action: 'file' | 'reopen') => {
+    let done = 0;
+    for (const id of ids) {
+      try {
+        const res = await fetch(`/api/filings/${encodeURIComponent(id)}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        });
+        if (res.ok) done += 1;
+      } catch {
+        /* counted as not done */
+      }
+    }
+    await queryClient.invalidateQueries();
+    return done;
+  };
+  const markFiledRows = async (rows: FilingRow[]) => {
+    const open = rows.filter((row) => !row.filedOn);
+    if (open.length === 0) {
+      toastInfo(rows.length === 1 ? 'Already filed' : 'These filings are already filed');
+      return;
+    }
+    setFiling(true);
+    const ids = open.map((row) => row.id);
+    const done = await setFiled(ids, 'file');
+    setFiling(false);
+    if (!done) {
+      toastError('Could not mark the filings filed');
+      return;
+    }
+    const text = done === 1 && open.length === 1 ? `Marked filed · ${open[0]!.particular}` : `Marked filed · ${done} filings`;
+    if (MAY_REOPEN_ROLES.has(user?.role ?? '')) toastUndo(text, () => void setFiled(ids, 'reopen'));
+    else toastSuccess(text);
+  };
   const bulkActions = (rows: FilingRow[]): BulkAction[] => [
     ...(mayRemind ? [{ key: 'remind', label: 'Remind', icon: BellRing, disabled: reminding, onClick: () => void remindRows(rows) }] : []),
+    ...(mayRemind
+      ? [{ key: 'filed', label: 'Mark filed', icon: CircleCheck, disabled: filing, onClick: () => void markFiledRows(rows) }]
+      : []),
     {
       key: 'export',
       label: 'Export',
