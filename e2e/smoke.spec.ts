@@ -308,12 +308,14 @@ for (const [role, routes] of Object.entries(ROUTES) as Array<[DemoRole, Route[]]
 }
 
 test.describe('smoke client phone', () => {
-  test('client home on a phone renders MobileHome @mobile', async ({ page, signIn, problems }) => {
+  // MobileHome was retired in the Spectrum port (3a800fd): phones get the responsive home page.
+  test('client home on a phone renders the responsive home @mobile', async ({ page, signIn, problems }) => {
     await signIn('client');
     await visit(page, problems, '/app/client/overview');
-    const home = page.locator('.cp-home-m');
-    await expect(home).toBeVisible();
-    await expect(home.locator('main').first()).toBeVisible();
+    const main = page.locator('main').first();
+    await expect(main).toBeVisible();
+    const box = await main.boundingBox();
+    expect(box?.width ?? 0).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
     expect(problems).toEqual([]);
   });
 });
