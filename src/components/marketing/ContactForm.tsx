@@ -4,29 +4,67 @@ import { FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const CONTACT_EMAIL = 'info@vcfosuite.com';
+/**
+ * "Book a demo" (G-30). Posts to `/api/public/demo-request`, which stores the request in
+ * `demo_requests` (it shows on the super admin Growth screen) and emails the firm. The
+ * `website` field is a honeypot: hidden from people, filled by bots.
+ */
+const DEMO_REQUEST_URL = '/api/public/demo-request';
 
 export function ContactForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [firm, setFirm] = useState('');
   const [message, setMessage] = useState('');
-  const [sent, setSent] = useState(false);
+  const [website, setWebsite] = useState('');
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const subject = encodeURIComponent(`VCFO Suite inquiry — ${firm || name || 'Prospect'}`);
-    const body = encodeURIComponent(
-      [`Name: ${name}`, `Email: ${email}`, firm ? `Firm: ${firm}` : null, '', message]
-        .filter(Boolean)
-        .join('\n'),
+    setState('sending');
+    setError(null);
+    try {
+      const res = await fetch(DEMO_REQUEST_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, company: firm, message, website }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || 'Could not send the request. Try again.');
+      }
+      setState('sent');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send the request. Try again.');
+      setState('idle');
+    }
+  }
+
+  if (state === 'sent') {
+    return (
+      <div data-state="open" className="discrete-fade-up space-y-3" role="status">
+        <p className="font-serif text-2xl font-medium text-ink">Request sent.</p>
+        <p className="text-sm leading-relaxed text-ink-muted">
+          The SBC team will write to <span className="font-medium text-ink">{email}</span> to set a time for the demo.
+        </p>
+      </div>
     );
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-    setSent(true);
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label htmlFor="contact-website">Website</label>
+        <input
+          id="contact-website"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <Field label="Name" htmlFor="contact-name">
           <input
@@ -79,28 +117,14 @@ export function ContactForm() {
       </Field>
 
       <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
-        <Button type="submit" size="lg" className="min-w-[10rem]">
-          Open email draft
+        <Button type="submit" size="lg" className="min-w-[10rem]" disabled={state === 'sending'}>
+          {state === 'sending' ? 'Sending' : 'Book a demo'}
         </Button>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted">
-          Uses your mail app · {CONTACT_EMAIL}
-        </p>
       </div>
 
-      {sent ? (
-        <p
-          data-state="open"
-          className="discrete-fade-up text-sm leading-relaxed text-ink-muted"
-          role="status"
-        >
-          If your mail app did not open, write to{' '}
-          <a
-            className="font-medium text-brand underline-offset-4 hover:underline"
-            href={`mailto:${CONTACT_EMAIL}`}
-          >
-            {CONTACT_EMAIL}
-          </a>
-          .
+      {error ? (
+        <p className="text-sm leading-relaxed text-danger" role="alert">
+          {error}
         </p>
       ) : null}
     </form>

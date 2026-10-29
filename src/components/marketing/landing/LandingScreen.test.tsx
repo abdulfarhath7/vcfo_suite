@@ -32,6 +32,13 @@ describe('LandingScreen', () => {
     expect(container.querySelector('a[href^="/client"], a[href^="/lead"], a[href^="/sign-in"]')).toBeNull();
   });
 
+  it('sends each "See the portal" link to the Book a demo form, not to a demo portal', () => {
+    render(<LandingScreen />);
+    expect(screen.getByRole('link', { name: 'See the client portal' })).toHaveAttribute('href', DEMO_HREF);
+    fireEvent.click(screen.getByRole('tab', { name: 'Super admin' }));
+    expect(screen.getByRole('link', { name: 'See the super admin portal' })).toHaveAttribute('href', DEMO_HREF);
+  });
+
   it('shows the comparison with six rows and three product columns', () => {
     render(<LandingScreen />);
     expect(

@@ -6,8 +6,8 @@ import { Eyebrow } from '@/components/noir';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata(
-  'Contact',
-  'Talk to the VCFO Suite team about bringing a compliance cockpit to your firm.',
+  'Book a demo',
+  'Book a demo of VCFO Suite, the compliance cockpit for incorporation and statutory filings.',
 );
 
 export default function ContactPage() {
@@ -19,14 +19,14 @@ export default function ContactPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl gap-14 px-5 pb-24 pt-32 sm:px-8 sm:pb-28 sm:pt-36 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-10 lg:items-start">
           <div className="max-w-md lg:sticky lg:top-32">
-            <Eyebrow>Contact</Eyebrow>
+            <Eyebrow>Book a demo</Eyebrow>
             <div className="mt-5 h-px w-12 bg-brand" />
             <h1 className="mt-7 font-serif text-[clamp(2.1rem,4vw,3.1rem)] font-medium leading-[1.08] tracking-[-0.02em] text-ink">
               Tell us about your firm.
             </h1>
             <p className="mt-5 text-[15px] leading-[1.7] text-ink-muted sm:text-base">
-              Evaluating VCFO Suite for GCC setup, or need access for an existing engagement — we
-              respond promptly.
+              Send your details and the SBC team will walk you through the client, lead, manager,
+              admin and partner portals on a call.
             </p>
             <p className="mt-10 text-sm text-ink-muted">
               Already have an account?{' '}

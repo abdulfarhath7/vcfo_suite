@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -13,20 +15,76 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { useSuperInsights } from '@/views/super/use-super-insights';
+import { Button } from '@/components/ui/button';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { SkeletonRows } from '@/components/ui/empty-state';
+import { PipelineBoard, PipelineList } from '@/components/super/growth/PipelineBoard';
+import { ProspectDialog } from '@/components/super/growth/ProspectDialog';
+import { ConvertDialog } from '@/components/super/growth/ConvertDialog';
+import { DemoRequestsCard } from '@/components/super/growth/DemoRequestsCard';
+import { useApp } from '@/context/AppContext';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import {
+  openCount,
+  PROSPECT_STAGE_LABEL,
+  winRate,
+  WIN_RATE_WINDOW_LABEL,
+  WIN_RATE_WINDOWS,
+  type Prospect,
+  type ProspectStage,
+  type WinRateWindow,
+} from '@/lib/growth/pipeline';
+import { useDemoRequests, useProspectMutations, useProspects } from '@/views/super/growth/use-growth-data';
 
 /**
  * GROWTH (prototype `GrowthScreen`), counts only.
  *
  * New engagements by the month they started (`created_at`) and certificates by the month they
- * were issued, over the last twelve months, plus how much of the current book is incorporated. The
- * prototype's sales pipeline, proposal win rate and per-manager capacity need a store the
- * product does not have, so they are left out. No money (R-37).
+ * were issued, over the last twelve months, plus how much of the current book is incorporated.
+ *
+ * The sales pipeline (G-21) reads `prospects` through `/api/super/growth/prospects`: a board by
+ * stage and a list, add and edit, stage moves, and "Convert to client", which links a won
+ * prospect to an engagement the super admin picks. The win rate is won / (won + lost) over
+ * prospects closed in the chosen window, from stored rows only. Demo requests from the public
+ * "Book a demo" form (G-30) sit below with "Add as prospect". Per-manager capacity is still
+ * left out. No money (R-37).
  */
 export const SUPER_GROWTH_HREF = '/app/super/growth';
+
+type PipelineView = 'board' | 'list';
 
 export default function SuperGrowth() {
   const query = useSuperInsights();
   const insights = query.data;
+  const { user } = useApp();
+  const pipeline = useProspects();
+  const demoRequests = useDemoRequests();
+  const { create, update, convert, fromDemoRequest } = useProspectMutations();
+  const [view, setView] = useState<PipelineView>('board');
+  const [rateWindow, setRateWindow] = useState<WinRateWindow>('90');
+  const [editing, setEditing] = useState<Prospect | 'new' | null>(null);
+  const [converting, setConverting] = useState<Prospect | null>(null);
+
+  const prospects = useMemo(() => pipeline.data?.prospects ?? [], [pipeline.data]);
+  const engagements = useMemo(
+    () => (insights?.clients ?? []).map((c) => ({ id: c.summary.id, companyName: c.summary.companyName })),
+    [insights],
+  );
+  const companyByDbId = useMemo(() => new Map(engagements.map((e) => [engagementDbId(e.id), e.companyName])), [engagements]);
+  const linkedCompany = useMemo(
+    () =>
+      new Map(
+        prospects
+          .filter((p) => p.engagementId)
+          .map((p) => [p.id, companyByDbId.get(p.engagementId!) ?? 'Client linked'] as const),
+      ),
+    [prospects, companyByDbId],
+  );
+  const linkedIds = useMemo(
+    () => new Set(engagements.filter((e) => prospects.some((p) => p.engagementId === engagementDbId(e.id))).map((e) => e.id)),
+    [engagements, prospects],
+  );
 
   const seo = <SEO title="Growth — VCFO Suite" description="New engagements and certificates over time." path={SUPER_GROWTH_HREF} />;
 
@@ -71,11 +129,29 @@ export default function SuperGrowth() {
   );
   const phaseAll = phaseTotals.map((t) => t * insights.clients.length);
 
+  const rate = winRate(prospects, rateWindow, new Date());
+
+  function move(p: Prospect, stage: ProspectStage) {
+    if (p.stage === stage) return;
+    update.mutate(
+      { id: p.id, values: { stage } },
+      {
+        onSuccess: () => toastSuccess(`${p.company || p.name} moved to ${PROSPECT_STAGE_LABEL[stage].toLowerCase()}`),
+        onError: (err) => toastError('Could not move the prospect', errorMessage(err)),
+      },
+    );
+  }
+
   return (
     <PageTransition>
       {seo}
       <div className="flex flex-col gap-5">
-        <SuperPageHead title="Growth" meta="Last 12 months" />
+        <SuperPageHead title="Growth" meta="Last 12 months">
+          <Button onClick={() => setEditing('new')} disabled={!pipeline.data}>
+            <Plus aria-hidden />
+            Add prospect
+          </Button>
+        </SuperPageHead>
 
         <SuperNumberStrip
           items={[
@@ -92,7 +168,59 @@ export default function SuperGrowth() {
               good: yearCertificates > 0,
             },
             { label: 'Clients in incorporation', value: incorporating },
+            { label: 'Prospects in the pipeline', value: pipeline.data ? openCount(prospects) : '–' },
+            {
+              label: `Win rate · ${WIN_RATE_WINDOW_LABEL[rateWindow].toLowerCase()}`,
+              value: rate.pct === null ? '–' : `${rate.pct}%`,
+              sub: `${rate.won} won · ${rate.lost} lost`,
+            },
           ]}
+        />
+
+        <DashSection
+          title="Sales pipeline"
+          meta={
+            <span className="flex flex-wrap items-center gap-2">
+              <SpectrumTabs
+                label="Win rate window"
+                items={WIN_RATE_WINDOWS.map((w) => ({ key: w, label: WIN_RATE_WINDOW_LABEL[w] }))}
+                value={rateWindow}
+                onChange={(k) => setRateWindow(k as WinRateWindow)}
+              />
+              <SpectrumTabs
+                label="Pipeline view"
+                items={[
+                  { key: 'board', label: 'Board' },
+                  { key: 'list', label: 'List' },
+                ]}
+                value={view}
+                onChange={(k) => setView(k as PipelineView)}
+              />
+            </span>
+          }
+        >
+          {pipeline.isPending ? (
+            <SkeletonRows rows={4} />
+          ) : pipeline.isError ? (
+            <p className="text-[13.5px] text-danger">{errorMessage(pipeline.error, 'The pipeline could not load.')}</p>
+          ) : view === 'board' ? (
+            <PipelineBoard prospects={prospects} linkedCompany={linkedCompany} onEdit={setEditing} onMove={move} onConvert={setConverting} />
+          ) : (
+            <PipelineList prospects={prospects} linkedCompany={linkedCompany} onEdit={setEditing} onMove={move} onConvert={setConverting} />
+          )}
+        </DashSection>
+
+        <DemoRequestsCard
+          requests={demoRequests.data ?? []}
+          loading={demoRequests.isPending}
+          error={demoRequests.isError ? errorMessage(demoRequests.error, 'Demo requests could not load.') : null}
+          addingId={fromDemoRequest.isPending ? (fromDemoRequest.variables ?? null) : null}
+          onAdd={(r) =>
+            fromDemoRequest.mutate(r.id, {
+              onSuccess: () => toastSuccess(`${r.company || r.name} added as a lead`),
+              onError: (err) => toastError('Could not add the prospect', errorMessage(err)),
+            })
+          }
         />
 
         <DashSection title="New engagements and certificates" meta={`${yearStarted} started · ${yearCertificates} certificates`}>
@@ -128,6 +256,41 @@ export default function SuperGrowth() {
           </DashSection>
         </div>
       </div>
+
+      <ProspectDialog
+        open={editing !== null}
+        onOpenChange={(o) => !o && setEditing(null)}
+        prospect={editing === 'new' ? null : editing}
+        owners={pipeline.data?.owners ?? []}
+        defaultOwnerId={user?.id ?? ''}
+        saving={create.isPending || update.isPending}
+        onSave={(values) => {
+          const done = { onSuccess: () => setEditing(null), onError: (err: unknown) => toastError('Could not save the prospect', errorMessage(err)) };
+          if (editing === 'new') create.mutate(values, done);
+          else if (editing) update.mutate({ id: editing.id, values }, done);
+        }}
+      />
+      <ConvertDialog
+        prospect={converting}
+        engagements={engagements}
+        linkedIds={linkedIds}
+        saving={convert.isPending}
+        onOpenChange={(o) => !o && setConverting(null)}
+        onConvert={(engagementId) => {
+          if (!converting) return;
+          const name = converting.company || converting.name;
+          convert.mutate(
+            { id: converting.id, engagementId },
+            {
+              onSuccess: () => {
+                toastSuccess(`${name} linked to its engagement`);
+                setConverting(null);
+              },
+              onError: (err) => toastError('Could not link the client', errorMessage(err)),
+            },
+          );
+        }}
+      />
     </PageTransition>
   );
 }

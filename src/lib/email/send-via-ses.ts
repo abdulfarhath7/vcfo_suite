@@ -77,6 +77,17 @@ export async function sendViaSes(input: SendEmailInput): Promise<SendEmailResult
               Html: { Data: input.html, Charset: 'UTF-8' },
               Text: { Data: input.text, Charset: 'UTF-8' },
             },
+            ...(input.attachments && input.attachments.length > 0
+              ? {
+                  Attachments: input.attachments.map((a) => ({
+                    FileName: a.filename,
+                    RawContent: a.content,
+                    ContentType: a.contentType,
+                    ContentDisposition: 'ATTACHMENT' as const,
+                    ContentTransferEncoding: 'BASE64' as const,
+                  })),
+                }
+              : {}),
           },
         },
       }),

@@ -20,6 +20,7 @@ async function postResendEmail(
     subject: string;
     html: string;
     text: string;
+    attachments?: SendEmailInput['attachments'];
   },
 ): Promise<{ ok: true; id?: string } | { ok: false; status: number; error: string }> {
   const res = await fetch('https://api.resend.com/emails', {
@@ -36,6 +37,15 @@ async function postResendEmail(
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
+      ...(payload.attachments && payload.attachments.length > 0
+        ? {
+            attachments: payload.attachments.map((a) => ({
+              filename: a.filename,
+              content: Buffer.from(a.content).toString('base64'),
+              ...(a.contentType ? { content_type: a.contentType } : {}),
+            })),
+          }
+        : {}),
     }),
   });
 
@@ -105,6 +115,7 @@ export async function sendViaResend(input: SendEmailInput): Promise<SendEmailRes
         subject,
         html: input.html,
         text: input.text,
+        attachments: input.attachments,
       });
       if (result.ok === false) {
         lastError = result.error;

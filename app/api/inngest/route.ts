@@ -5,8 +5,9 @@ import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
 import { complianceReminders } from '@/jobs/compliance-reminders';
+import { savedReportsSend } from '@/jobs/saved-reports-send';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, complianceReminders],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, complianceReminders, savedReportsSend],
 });

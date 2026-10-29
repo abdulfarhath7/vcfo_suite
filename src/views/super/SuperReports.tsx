@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Printer } from 'lucide-react';
+import { Download, Printer, Save } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -15,13 +15,26 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { plainDay } from '@/components/super/parts/super-text';
-import {
-  buildRisks,
-  type SuperMonth,
-  type SuperTeamManager,
-} from '@/components/super/insights/super-insights-model';
+import { buildRisks, type SuperTeamManager } from '@/components/super/insights/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button-variants';
+import { SaveReportDialog } from '@/components/super/reports/SaveReportDialog';
+import { SavedReportsCard } from '@/components/super/reports/SavedReportsCard';
+import { useApp } from '@/context/AppContext';
+import { clientLine, monthNumbers, onTimePct, recentMonths, type SavedReport } from '@/lib/reports/partner-report';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { useSavedReportMutations, useSavedReports } from '@/views/super/reports/use-saved-reports';
 
 /**
  * REPORTS (prototype `ReportsScreen`, the monthly partner report), counts only.
@@ -29,17 +42,16 @@ import { cn } from '@/lib/utils';
  * Each month reads from stored dates: engagements started, certificates issued, and the
  * filings due that month split into filed on time (`filed_on` on or before `due_date`), filed
  * late, and overdue. Below the report, filings on time and late per month as stacked columns
- * (R-25, C4). Print opens the browser's print dialog for the report. The prototype's saved
- * reports, schedules and fee report have no backend store and are left out (R-37: no money).
+ * (R-25, C4). Print opens the browser's print dialog for the report.
+ *
+ * G-21: "Download PDF" renders the same report on the server (`/api/super/reports/pdf`, built
+ * from the same insights through `src/lib/reports/partner-report.ts`, which this page also
+ * uses for its numbers). "Save report" stores the report with its month, a schedule (none,
+ * weekly, monthly) and recipients in `saved_reports`; the Inngest function
+ * `saved-reports-send` emails due schedules with the PDF attached. The prototype's fee report
+ * stays out (R-37: no money).
  */
 export const SUPER_REPORTS_HREF = '/app/super/reports';
-
-const REPORT_MONTHS = 6;
-
-function onTimePct(m: SuperTeamManager): string {
-  const filed = m.filedOnTime + m.filedLate;
-  return filed === 0 ? '–' : `${Math.round((m.filedOnTime / filed) * 100)}%`;
-}
 
 const managerColumns: EFilingColumn<SuperTeamManager>[] = [
   { key: 'name', header: 'Manager', render: (m) => <span className="font-medium text-ink">{m.name}</span> },
@@ -65,27 +77,19 @@ const managerColumns: EFilingColumn<SuperTeamManager>[] = [
   },
 ];
 
-function monthNumbers(m: SuperMonth): Array<{ k: string; v: string | number; tone?: 'bad' | 'warn' | 'ok' }> {
-  return [
-    { k: 'New engagements', v: m.engagementsStarted },
-    { k: 'Certificates issued', v: m.certificatesIssued, tone: m.certificatesIssued > 0 ? 'ok' : undefined },
-    { k: 'Average days to COI', v: m.avgDaysToCoi === null ? '–' : m.avgDaysToCoi },
-    { k: 'Filings due', v: m.filingsDue },
-    { k: 'Filed on time', v: m.filedOnTime, tone: m.filedOnTime > 0 ? 'ok' : undefined },
-    { k: 'Filed late', v: m.filedLate, tone: m.filedLate > 0 ? 'warn' : undefined },
-    { k: 'Overdue, not filed', v: m.overdue, tone: m.overdue > 0 ? 'bad' : undefined },
-    { k: 'Still to file', v: m.open },
-  ];
-}
-
 const TONE_TEXT = { bad: 'text-danger', warn: 'text-warning', ok: 'text-positive' } as const;
 
 export default function SuperReports() {
   const query = useSuperInsights();
   const insights = query.data;
   const [monthKey, setMonthKey] = useState<string | null>(null);
+  const { user } = useApp();
+  const saved = useSavedReports();
+  const { save, remove } = useSavedReportMutations();
+  const [saving, setSaving] = useState<SavedReport | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<SavedReport | null>(null);
 
-  const recent = useMemo(() => (insights?.months ?? []).slice(-REPORT_MONTHS), [insights]);
+  const recent = useMemo(() => (insights ? recentMonths(insights) : []), [insights]);
   const risks = useMemo(() => (insights ? buildRisks(insights, new Date()).slice(0, 4) : []), [insights]);
 
   const seo = <SEO title="Reports — VCFO Suite" description="The monthly partner report, from the firm's records." path={SUPER_REPORTS_HREF} />;
@@ -108,8 +112,13 @@ export default function SuperReports() {
   }
 
   const month = recent.find((m) => m.key === monthKey) ?? recent[recent.length - 1];
-  const incorporating = insights.clients.filter((c) => !c.summary.incorporated).length;
-  const clientLine = `${insights.clients.length} clients in the book: ${incorporating} in incorporation and ${insights.clients.length - incorporating} incorporated.`;
+  const clients = clientLine(insights);
+  const latestKey = recent[recent.length - 1]?.key;
+
+  function openSaved(r: SavedReport) {
+    setMonthKey(r.params.month === 'latest' ? null : recent.some((m) => m.key === r.params.month) ? r.params.month : null);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   const data: ChartRow[] = insights.months.map((m) => ({
     month: m.label,
@@ -132,6 +141,18 @@ export default function SuperReports() {
             <Printer aria-hidden />
             Print
           </Button>
+          <Button variant="outline" onClick={() => setSaving('new')} disabled={!month}>
+            <Save aria-hidden />
+            Save report
+          </Button>
+          {month ? (
+            <Button asChild>
+              <a href={`/api/super/reports/pdf?month=${month.key === latestKey ? 'latest' : month.key}`}>
+                <Download aria-hidden />
+                Download PDF
+              </a>
+            </Button>
+          ) : null}
         </SuperPageHead>
 
         <SpectrumTabs
@@ -163,7 +184,7 @@ export default function SuperReports() {
             </section>
             <section>
               <h3 className="mb-1 text-[15px] font-medium text-ink">Clients</h3>
-              <p className="text-[13.5px] text-ink-2">{clientLine}</p>
+              <p className="text-[13.5px] text-ink-2">{clients}</p>
             </section>
             <section>
               <h3 className="mb-2 text-[15px] font-medium text-ink">Managers</h3>
@@ -189,11 +210,70 @@ export default function SuperReports() {
           </article>
         ) : null}
 
+        <SavedReportsCard
+          reports={saved.data ?? []}
+          loading={saved.isPending}
+          error={saved.isError ? errorMessage(saved.error, 'Saved reports could not load.') : null}
+          onOpen={openSaved}
+          onSchedule={setSaving}
+          onDelete={setDeleting}
+        />
+
         <DashSection title="Filings on time and late" meta="Last 12 months, by due month">
           <DashBarChart data={data} categoryKey="month" series={series} height={220} emptyLabel="No filings yet" />
           <ChartLegend className="mt-2" items={series.map((s) => ({ label: s.label, color: s.color }))} />
         </DashSection>
       </div>
+
+      <SaveReportDialog
+        open={saving !== null}
+        onOpenChange={(o) => !o && setSaving(null)}
+        report={saving === 'new' ? null : saving}
+        monthKey={month?.key ?? ''}
+        monthLabel={month?.longLabel ?? ''}
+        defaultRecipient={user?.email ?? ''}
+        saving={save.isPending}
+        onSave={(values) =>
+          save.mutate(
+            { id: saving && saving !== 'new' ? saving.id : undefined, values },
+            {
+              onSuccess: (r) => {
+                toastSuccess(`${r.name} saved`);
+                setSaving(null);
+              },
+              onError: (err) => toastError('Could not save the report', errorMessage(err)),
+            },
+          )
+        }
+      />
+
+      <AlertDialog open={deleting !== null} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this saved report?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleting ? `${deleting.name} and its schedule will be removed. Nothing more goes to its recipients.` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={remove.isPending}
+              className={buttonVariants({ variant: 'destructive' })}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleting) return;
+                remove.mutate(deleting.id, {
+                  onSuccess: () => setDeleting(null),
+                  onError: (err) => toastError('Could not delete the report', errorMessage(err)),
+                });
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageTransition>
   );
 }

@@ -9,6 +9,7 @@ import { sendViaResend } from '@/lib/email/send-via-resend';
 import { sendViaSes } from '@/lib/email/send-via-ses';
 
 export type {
+  EmailAttachment,
   SendEmailInput,
   SendEmailResult,
 } from '@/lib/email/send-email-shared';
@@ -26,6 +27,9 @@ export {
  * - EMAIL_PROVIDER=ses → AWS SES v2
  *
  * Local/dev: missing API key / From → console skip (ok: false, skipped: true).
+ *
+ * `attachments` is optional; both transports send it (Resend as base64 `attachments`, SES v2
+ * as `Simple.Attachments`). Callers that pass none get exactly the old request.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const provider = resolveEmailProvider();
