@@ -6,39 +6,30 @@
  * (R-20), What SBC is doing, Recent documents and Recent activity. Every number and row comes
  * from `useHome` (the step model, ClientOverview and `/api/client/home`).
  */
-import {
-  AlertCircle,
-  AlertTriangle,
-  Award,
-  Building2,
-  CalendarCheck,
-  ChevronRight,
-  Download,
-  FileText,
-  IdCard,
-  ShieldCheck,
-  Upload,
-  User,
-  type LucideIcon,
-} from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Check, ChevronRight, Download, FileText, Upload } from 'lucide-react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge, type FileType } from '@/components/ui/file-badge';
+import { DashHero, DashHeroCompanyTile, type DashHeroStat } from '@/components/dash/DashHero';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
-import { Avatar, Bar, CompanySquare, DateTile, Empty, HeadLink, ListRow, SCard, type BarTone } from '../incorporation/spectrum';
+import type { UploadRow } from '@/lib/client-portal/multi-upload';
+import { exactDate } from '@/lib/relative-due';
+import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, type BarTone } from '../incorporation/spectrum';
 import type { HomeData } from './useHome';
+import { DueWords } from './ui';
 import {
   alertsDrill,
   chipBg,
-  dHeader,
   dShort,
   days,
   docGroup,
+  isOverdueNeed,
   postIncDrill,
+  sortNeeds,
   spiceStepsDrill,
   type AlertRow,
   type DocItem,
@@ -59,62 +50,16 @@ function whenWord(today: string, iso: string): string {
 
 /* ------------------------------------------------------------ home card */
 
+/**
+ * The Overdue tile's count: needs that are sent back or past due (`isOverdueNeed`), late steps
+ * that are not done, and after the COI the overdue filings. A step counts once.
+ */
 export function overdueCount(h: HomeData): number {
   const ids = new Set<string>();
-  for (const n of h.needs) if (n.due && n.due < h.today) ids.add(n.stepId ?? n.key);
+  for (const n of h.needs) if (isOverdueNeed(n, h.today)) ids.add(n.stepId ?? n.key);
   for (const s of h.model.steps) if (s.late && s.kind !== 'done') ids.add(s.id);
   if (h.after) return ids.size + h.buckets.overdue;
   return ids.size;
-}
-
-interface Tile {
-  label: string;
-  value: string | number;
-  of?: string;
-  Icon: LucideIcon;
-  bad?: boolean;
-  good?: boolean;
-  sub?: string;
-  bar?: number;
-  onClick?: () => void;
-}
-
-/** R-18 (KP1) tiles floating on the wash. */
-function Tiles({ items }: { items: Tile[] }) {
-  return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
-      {items.map((s) => {
-        const inner = (
-          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="flex items-start gap-1.5 text-[13px] font-medium leading-[18px] text-ink-2">
-              <s.Icon size={15} strokeWidth={1.6} className="mt-px flex-none text-ink-muted" aria-hidden />
-              <span className="min-w-0">{s.label}</span>
-            </span>
-            <b className={cn('text-[26px] font-medium leading-none tabular-nums', s.bad ? 'text-danger' : s.good ? 'text-positive' : 'text-ink')}>
-              {s.value}
-              {s.of ? <small className="ml-1 text-[14px] font-medium text-ink-muted">{s.of}</small> : null}
-            </b>
-            {s.bar !== undefined ? (
-              <span className="block h-1 w-full max-w-[120px] overflow-hidden rounded-bar bg-line" aria-hidden>
-                <i className="block h-full rounded-bar bg-positive-mid" style={{ width: `${s.bar}%` }} />
-              </span>
-            ) : null}
-            {s.sub ? <span className="truncate text-[12.5px] font-normal text-ink-muted">{s.sub}</span> : null}
-          </span>
-        );
-        const cls = cn('wash-tile flex min-w-0 items-end gap-2.5 px-4 py-3.5 text-left', s.onClick && 'transition-colors hover:border-line-strong');
-        return s.onClick ? (
-          <button key={s.label} type="button" onClick={s.onClick} className={cls}>
-            {inner}
-          </button>
-        ) : (
-          <div key={s.label} className={cls}>
-            {inner}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 /** "Upload document": one open upload request opens the picker; several open a short list. */
@@ -143,7 +88,7 @@ function UploadButton({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => 
   return (
     <div className="relative" ref={ref}>
       <Button onClick={click} aria-haspopup={uploads.length > 1 ? 'menu' : undefined} aria-expanded={uploads.length > 1 ? open : undefined}>
-        <Upload size={16} strokeWidth={1.6} aria-hidden /> Upload document
+        <Upload size={16} strokeWidth={1.6} aria-hidden /> Upload
       </Button>
       {open ? (
         <div role="menu" className="absolute right-0 top-[calc(100%+6px)] z-40 w-[300px] max-w-[calc(100vw-32px)] overflow-hidden rounded-md border-1.5 border-line bg-surface-raised py-1 shadow-float">
@@ -185,36 +130,129 @@ function downloadReport(h: HomeData) {
   a.remove();
 }
 
-/** R-17 (H3): the one home card. Date, company with its square, the lead and progress, the actions and five tiles. */
+/** A home tile that opens a drill links to `#dd-<key>`; the card's click handler opens the drill. */
+const DRILL = '#dd-';
+
+/**
+ * R-17 (H3c, D-01): the shared compact `DashHero`. The company tile, the short name, the stage
+ * chip and the step count on the left; five tiles with a note, the list they open (E-05) and how
+ * they are counted (E-04); the Report icon and Upload on the right. No trend lines: the portal
+ * keeps no history of these numbers yet.
+ */
 export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) => void }) {
   const { portal, after, model, company } = h;
   const post = model.phases[2];
   const openSteps = (tab: number) => portal.drill(spiceStepsDrill(model, company, tab));
   const overdue = overdueCount(h);
   const sbcStep = model.steps.find((s) => s.kind === 'with' && s.owner !== 'client');
-  const lateNeed = h.needs.find((n) => n.due && n.due < h.today);
+  const lateNeed = sortNeeds(h.needs, h.today).find((n) => isOverdueNeed(n, h.today));
+  const lateStep = model.steps.find((s) => s.late && s.kind !== 'done');
   const regsDone = h.regs.filter((r) => r.status === 'Registered').length;
   const req = h.home?.requestCounts;
   const toCoi = model.coiExpected ? days(h.today, model.coiExpected) : null;
   const incorporatedOn = h.overview?.engagement.incorporationDate;
+  const sinceCoi = incorporatedOn ? days(incorporatedOn.slice(0, 10), h.today) : null;
+  const oldestNeed = h.needs.map((n) => n.createdAt?.slice(0, 10)).filter((d): d is string => Boolean(d)).sort()[0];
+  const oldest = oldestNeed ? days(oldestNeed, h.today) : null;
+  const dueNext = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && f.dueDate >= h.today).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+  const firstOverdueFiling = h.filings.filter((f) => !f.filedOn && f.status !== 'filed' && (f.status === 'overdue' || f.dueDate < h.today)).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
 
-  const tiles: Tile[] = after
+  const drills: Record<string, () => void> = {
+    you: () => openSteps(3),
+    sbc: () => openSteps(2),
+    late: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }),
+  };
+  const onTiles = (e: ReactMouseEvent) => {
+    const a = (e.target as HTMLElement).closest(`a[href^='${DRILL}']`);
+    const open = a ? drills[a.getAttribute('href')!.slice(DRILL.length)] : undefined;
+    if (!open) return;
+    e.preventDefault();
+    open();
+  };
+
+  const waiting: DashHeroStat = {
+    label: `Waiting on ${company}`,
+    value: h.needs.length,
+    note: oldest != null && oldest > 0 ? `oldest ${oldest}d` : undefined,
+    how: `Uploads, details, corrections and approvals that SBC asked ${company} for and that are still open.`,
+    href: after ? portalHref('documents') : `${DRILL}you`,
+  };
+  const overdueStat: DashHeroStat = {
+    label: 'Overdue',
+    value: overdue,
+    hot: overdue > 0,
+    note: lateNeed?.title ?? lateStep?.title ?? (after ? firstOverdueFiling?.title : undefined),
+    how: after
+      ? `Items from ${company} past their due date or sent back, late steps and filings past their due date.`
+      : `Items from ${company} past their due date or sent back, and steps past their planned date.`,
+    href: `${DRILL}late`,
+  };
+  const stats: DashHeroStat[] = after
     ? [
-        { label: `Waiting on ${company}`, value: h.needs.length, Icon: User, onClick: () => portal.go('documents') },
-        { label: 'Overdue', value: overdue, Icon: AlertTriangle, bad: overdue > 0, onClick: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }) },
-        { label: 'Due soon', value: h.buckets.dueSoon, Icon: CalendarCheck, onClick: () => portal.go('compliances') },
-        ...(h.regs.length ? [{ label: 'Registrations', value: regsDone, of: `/ ${h.regs.length}`, Icon: IdCard, onClick: () => portal.go(phaseHref(4)) }] : []),
-        ...(incorporatedOn ? [{ label: 'Incorporated', value: dShort(incorporatedOn), Icon: ShieldCheck, good: true, onClick: () => portal.go('incorporation') }] : []),
+        waiting,
+        overdueStat,
+        {
+          label: 'Due soon',
+          value: h.buckets.dueSoon,
+          note: dueNext ? dueNext.title : undefined,
+          how: 'Filings not yet filed that fall due in the next 15 days.',
+          href: portalHref('compliances'),
+        },
+        ...(h.regs.length
+          ? [
+              {
+                label: 'Registrations',
+                value: `${regsDone}/${h.regs.length}`,
+                bar: Math.round((regsDone / h.regs.length) * 100),
+                how: 'Registrations granted out of the ones planned for the company.',
+                href: phaseHref(4),
+              },
+            ]
+          : []),
+        ...(incorporatedOn
+          ? [
+              {
+                label: 'Incorporated',
+                value: dShort(incorporatedOn),
+                good: true,
+                note: sinceCoi != null && sinceCoi > 0 ? `day ${sinceCoi}` : undefined,
+                how: 'The date on the Certificate of Incorporation.',
+                href: portalHref('incorporation'),
+              },
+            ]
+          : []),
       ]
     : [
-        { label: `Waiting on ${company}`, value: h.needs.length, Icon: User, onClick: () => openSteps(3) },
-        { label: 'With SBC', value: model.counts.with, sub: sbcStep?.title, Icon: Building2, onClick: () => openSteps(2) },
-        { label: 'Overdue', value: overdue, sub: lateNeed?.title, Icon: AlertTriangle, bad: overdue > 0, onClick: () => portal.drill({ ...alertsDrill(h.alerts.hero, h.alerts.rows, h.today, after), active: 1 }) },
+        waiting,
+        {
+          label: 'With SBC',
+          value: model.counts.with,
+          note: sbcStep?.title,
+          how: 'Steps that SBC or MCA holds now.',
+          href: `${DRILL}sbc`,
+        },
+        overdueStat,
         ...(req && req.total > 0
-          ? [{ label: 'Documents in', value: `${req.fulfilled}/${req.total}`, bar: Math.round((req.fulfilled / req.total) * 100), Icon: FileText, onClick: () => portal.go('documents') }]
+          ? [
+              {
+                label: 'Documents in',
+                value: `${req.fulfilled}/${req.total}`,
+                bar: Math.round((req.fulfilled / req.total) * 100),
+                how: 'Document requests answered out of all the requests SBC has sent.',
+                href: portalHref('documents'),
+              },
+            ]
           : []),
         ...(model.coiExpected
-          ? [{ label: 'Expected COI', value: dShort(model.coiExpected), sub: toCoi != null && toCoi > 0 ? `in ${plural(toCoi, 'day')}` : undefined, Icon: Award, onClick: () => portal.go('incorporation') }]
+          ? [
+              {
+                label: 'Expected COI',
+                value: dShort(model.coiExpected),
+                note: toCoi != null && toCoi > 0 ? `in ${plural(toCoi, 'day')}` : undefined,
+                how: 'The date MCA is expected to issue the certificate, from the current plan.',
+                href: portalHref('incorporation'),
+              },
+            ]
           : []),
       ];
 
@@ -224,43 +262,32 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n: NeedRow) 
   const pct = ring.total ? Math.round((ring.done / ring.total) * 100) : 0;
 
   return (
-    <section className="bg-wash flex flex-col gap-5 rounded-md border-1.5 border-line px-4 pb-5 pt-[18px] md:px-6 md:pb-6 md:pt-[22px]" aria-label="Summary">
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="flex min-w-0 flex-[1_1_300px] items-center gap-4">
-          <CompanySquare name={h.companyName || company} />
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-[13px] text-ink-2">{dHeader(h.today)}</span>
-            <h1 className="flex flex-wrap items-center gap-2.5 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
-              <span className="min-w-0">{h.companyName || company}</span>
-              <Chip tone={after ? 'ok' : 'prog'}>{after ? 'Incorporated' : 'Incorporating'}</Chip>
-            </h1>
-            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-2">
-              {h.lead ? (
-                <>
-                  <Avatar name={h.lead} size={24} />
-                  <span>
-                    <b className="font-medium text-ink">{h.lead}</b>, project lead
-                  </span>
-                  <span aria-hidden>·</span>
-                </>
-              ) : null}
-              <button type="button" onClick={ring.open} className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline">
-                {after ? `${ring.label} · ${ring.done} of ${ring.total} done` : `${ring.label} · ${ring.done} of ${ring.total} steps`} · {pct}%
-              </button>
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          {h.engagementId ? (
-            <Button variant="secondary" onClick={() => downloadReport(h)}>
-              Report
-            </Button>
-          ) : null}
-          <UploadButton h={h} onUpload={onUpload} />
-        </div>
-      </div>
-      <Tiles items={tiles} />
-    </section>
+    <div onClickCapture={onTiles}>
+      <DashHero
+        title={company}
+        lead={<DashHeroCompanyTile name={h.companyName || company} />}
+        stage={<Chip tone={after ? 'ok' : 'prog'} className="!h-5 min-w-0 px-[7px] text-[11.5px]">{after ? 'Incorporated' : 'Incorporating'}</Chip>}
+        steps={
+          <button
+            type="button"
+            onClick={ring.open}
+            title={`${ring.label} · ${pct}%`}
+            className="whitespace-nowrap text-brand-text underline-offset-2 hover:underline"
+          >
+            {after ? `${ring.label} ${ring.done} of ${ring.total} done` : `${ring.done} of ${ring.total} steps`}
+          </button>
+        }
+        subtitle={h.lead ? <span title="Project lead">· {h.lead}</span> : undefined}
+        stats={stats}
+      >
+        {h.engagementId ? (
+          <Button variant="secondary" size="icon" onClick={() => downloadReport(h)} aria-label="Report" title="Report">
+            <Download size={16} strokeWidth={1.6} aria-hidden />
+          </Button>
+        ) : null}
+        <UploadButton h={h} onUpload={onUpload} />
+      </DashHero>
+    </div>
   );
 }
 
@@ -270,10 +297,10 @@ const NEED_ACTION: Record<NeedRow['kind'], string> = { upload: 'Upload', fill: '
 
 /** Needs from <company>: file tile, title, the due word and where it belongs, one action. */
 export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (n: NeedRow) => void; className?: string }) {
-  const rows = [...h.needs].sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'));
-  const late = (n: NeedRow) => (n.due ? n.due < h.today : false) || n.kind === 'correct';
+  // C-02: a sent-back or late item leads the list (it is also the Overdue tile's note).
+  const rows = sortNeeds(h.needs, h.today);
   // R-12: one main button per card, on the most urgent row.
-  const main = rows.find(late)?.key;
+  const main = rows.find((n) => isOverdueNeed(n, h.today))?.key;
   const act = (n: NeedRow) => {
     if ((n.kind === 'upload' || n.kind === 'correct') && n.requestId) onUpload(n);
     else if (n.href) h.portal.go(n.href);
@@ -284,9 +311,6 @@ export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (
         <Empty />
       ) : (
         rows.map((n) => {
-          const bad = late(n);
-          const soon = !bad && n.due ? days(h.today, n.due) <= 7 : false;
-          const when = n.due ? (n.due < h.today ? whenWord(h.today, n.due) : `Due ${dShort(n.due)}`) : n.kind === 'correct' ? 'Sent back' : null;
           const sub = `${n.sub}${n.askedBy ? ` · asked by ${n.askedBy}` : ''}`;
           return (
             <ListRow key={n.key}>
@@ -298,9 +322,17 @@ export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (
                   {n.title}
                 </button>
                 <span className="block truncate text-[12.5px] text-ink-muted">
-                  {when ? (
+                  {/* E-11: relative due words first, the exact date in the tooltip. */}
+                  {n.kind === 'correct' ? (
                     <>
-                      <span className={bad ? 'text-danger' : soon ? 'text-warning' : 'text-brand-text'}>{when}</span> ·{' '}
+                      <span className="text-danger" title={n.due ? `Due ${exactDate(n.due)}` : undefined}>
+                        Sent back
+                      </span>{' '}
+                      ·{' '}
+                    </>
+                  ) : n.due ? (
+                    <>
+                      <DueWords iso={n.due} today={h.today} /> ·{' '}
                     </>
                   ) : null}
                   {sub}
@@ -396,10 +428,16 @@ export function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: Al
               onClick={() => (onRow ? onRow(a) : h.portal.go(a.href))}
               className="flex w-full items-center gap-3 border-t border-line-soft px-4 py-3 text-left hover:bg-surface-sunken md:px-5"
             >
-              <DateTile iso={a.date} tint={chip.tone === 'bad' ? 'bad' : chip.tone === 'warn' ? 'warn' : 'idle'} />
+              <span title={exactDate(a.date)} className="flex-none">
+                <DateTile iso={a.date} tint={chip.tone === 'bad' ? 'bad' : chip.tone === 'warn' ? 'warn' : 'idle'} />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13.5px] font-medium text-ink">{a.title}</span>
-                {a.meta ? <span className="block truncate text-[12.5px] text-ink-muted">{a.meta}</span> : null}
+                {/* E-11: the sub line starts with the relative due words. */}
+                <span className="block truncate text-[12.5px] text-ink-muted">
+                  <DueWords iso={a.date} today={h.today} />
+                  {a.meta ? ` · ${a.meta}` : null}
+                </span>
               </span>
               <Chip tone={chip.tone} fixed>
                 {chip.label}
@@ -413,7 +451,10 @@ export function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: Al
 }
 
 export function AlertsCard({ h, className }: { h: HomeData; className?: string }) {
-  const { hero, rows } = h.alerts;
+  const { rows } = h.alerts;
+  // C-02: the sent-back or late item already leads Needs and the Overdue tile, so the card does
+  // not repeat it. A hero that is not a Needs row (an overdue filing, a late step in progress) stays.
+  const hero = h.alerts.hero?.needKey && h.needs.some((n) => n.key === h.alerts.hero!.needKey) ? undefined : h.alerts.hero;
   const [tab, setTab] = useState('15');
   const in15 = rows.filter((a) => days(h.today, a.date) <= 15);
   const in30 = rows.filter((a) => days(h.today, a.date) <= 30);
@@ -541,7 +582,74 @@ export function SbcCard({ h, className }: { h: HomeData; className?: string }) {
 
 const FILE_TYPES = new Set(['PDF', 'DOCX', 'XLSX', 'JPG', 'PNG', 'ZIP', 'CSV', 'TXT']);
 
-export function DocsCard({ h, onOpen, onDownload, className }: { h: HomeData; onOpen: (i: number) => void; onDownload: (d: DocItem) => void; className?: string }) {
+/**
+ * B-20 (U1): each file of a new upload is a row at the top of Recent documents, with its own
+ * progress bar while it sends, then an Uploaded tick, or the reason it was refused.
+ */
+function UploadRows({ rows, busy, onCancel }: { rows: UploadRow[]; busy?: boolean; onCancel?: () => void }) {
+  return (
+    <ul aria-label="Recent uploads" aria-live="polite" className="border-b border-line-soft">
+      {rows.map((u, i) => (
+        <li key={`${u.name}:${i}`} className="flex items-center gap-3 border-t border-line-soft px-4 py-2.5 first:border-t-0 md:px-5">
+          <FileBadge name={u.name} />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-baseline gap-2">
+              <b className="min-w-0 truncate text-[13.5px] font-medium text-ink">{u.name}</b>
+              <span className="flex-none text-[12px] text-ink-muted">{Math.max(1, Math.round(u.size / 1024))} KB</span>
+            </span>
+            {u.state === 'done' ? (
+              <span className="mt-0.5 flex items-center gap-1 text-[12.5px] text-positive">
+                <Check size={13} strokeWidth={2} aria-hidden /> Uploaded
+              </span>
+            ) : u.state === 'failed' ? (
+              <span role="alert" className="mt-0.5 block truncate text-[12.5px] text-danger">
+                {u.error ?? 'Not uploaded'}
+              </span>
+            ) : (
+              <span
+                className="mt-1.5 flex items-center gap-2"
+                role="progressbar"
+                aria-label={`Uploading ${u.name}`}
+                aria-valuenow={u.pct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <span className="block h-1.5 flex-1 overflow-hidden rounded-bar bg-surface-sunken">
+                  <i className="block h-full rounded-bar bg-brand transition-[width] duration-200" style={{ width: `${u.pct}%` }} />
+                </span>
+                <span className="w-9 flex-none text-right text-[12px] tabular-nums text-ink-muted">{u.pct}%</span>
+              </span>
+            )}
+          </span>
+          {busy && i === 0 && onCancel ? (
+            <button type="button" onClick={onCancel} className="flex-none text-[12.5px] font-medium text-brand-text hover:underline">
+              Cancel
+            </button>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function DocsCard({
+  h,
+  onOpen,
+  onDownload,
+  uploads = [],
+  uploading,
+  onCancelUpload,
+  className,
+}: {
+  h: HomeData;
+  onOpen: (i: number) => void;
+  onDownload: (d: DocItem) => void;
+  /** B-20: the per-file rows of the upload in flight or just finished. */
+  uploads?: UploadRow[];
+  uploading?: boolean;
+  onCancelUpload?: () => void;
+  className?: string;
+}) {
   const groups: { label: string; docs: { d: DocItem; i: number }[] }[] = [];
   h.docs.forEach((d, i) => {
     const g = docGroup(h.today, d.date);
@@ -551,7 +659,8 @@ export function DocsCard({ h, onOpen, onDownload, className }: { h: HomeData; on
   });
   return (
     <SCard title="Recent documents" flush className={className} right={<HeadLink onClick={() => h.portal.go('documents')}>Documents ›</HeadLink>}>
-      {h.docs.length === 0 ? (
+      {uploads.length > 0 ? <UploadRows rows={uploads} busy={uploading} onCancel={onCancelUpload} /> : null}
+      {h.docs.length === 0 && uploads.length > 0 ? null : h.docs.length === 0 ? (
         <Empty />
       ) : (
         groups.map((g) => (

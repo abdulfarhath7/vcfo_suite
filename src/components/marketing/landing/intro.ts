@@ -28,12 +28,15 @@ export function playIntro(opts: { root: HTMLElement; hero: HTMLElement; navImg: 
     '<g id="rv-byline" opacity="0"><text id="rv-byText" class="by" font-size="18" font-weight="700" letter-spacing="3.5">BY</text>' +
     '<image id="rv-sbc" href="/landing/sbc-mark.webp" width="72" height="21.3"/></g></g></svg>';
   root.appendChild(wrap);
+  // The intro is placed in the landing root's coordinates (it is absolute, not fixed), so it sits
+  // over the hero only and never shows further down the page, for example in a full-page capture.
   const place = () => {
     const r = hero.getBoundingClientRect();
+    const base = root.getBoundingClientRect();
     const top = Math.max(0, r.top);
     const h = Math.min(r.bottom, innerHeight) - top;
-    wrap.style.left = r.left + "px";
-    wrap.style.top = top + "px";
+    wrap.style.left = r.left - base.left + "px";
+    wrap.style.top = top - base.top + "px";
     wrap.style.width = r.width + "px";
     wrap.style.height = Math.max(240, h) + "px";
   };

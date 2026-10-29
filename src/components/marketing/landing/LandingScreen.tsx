@@ -119,7 +119,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <div className="float float-a"><span className="pill pill-positive">Filed</span><span className="t"><span>GSTR-3B, September</span><span className="mono">Acknowledgement attached</span></span></div>
             <div className="float float-b"><span className="pill pill-highlight">Needs you</span><span className="t"><span>Utility bill for the office</span><span className="mono">Due 9 Oct</span></span></div>
             <div className="frame">
-              <img src="/landing/hero-incorporation.webp" alt="VCFO Suite client portal, incorporation view for Northwind Technologies India Pvt Ltd: 22 days to the Certificate of Incorporation, 6 of 25 steps done, this week's tasks and the SPICe+ timeline." width="2400" height="1375" fetchPriority="high" />
+              <img src="/landing/hero-incorporation.webp" alt="VCFO Suite client portal, incorporation view for Northwind Technologies India Pvt Ltd: 22 days to the Certificate of Incorporation, 6 of 25 steps done, the current steps with who holds each one, this week's tasks and the incorporation status." width="2400" height="1375" fetchPriority="high" />
             </div>
           </div>
         </div>
@@ -469,19 +469,19 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             </div>
             <div className="tabpanel">
               <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"}>
-                <img src="/landing/portal-client.webp" alt="Client portal home for Northwind Technologies India Pvt Ltd: what is needed from Northwind, who holds each step now, steps around Northwind and important alerts." width="2000" height="1146" />
+                <img src="/landing/portal-client.webp" alt="Client portal home for Northwind Technologies India Pvt Ltd: the home card with five numbers, the incorporation steps with who holds each one, what is needed from Northwind and the timeline." width="2000" height="1146" />
               </div>
               <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"}>
-                <img src="/landing/portal-lead.webp" alt="Project lead Today screen for Bharath: this week across eight companies, the action queue by company, triage and the calendar of due days." width="2000" height="1146" />
+                <img src="/landing/portal-lead.webp" alt="Project lead Today screen for Bharath: the home card with five numbers, the action queue by company, the inbox and phase progress." width="2000" height="1146" />
               </div>
               <div className="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"}>
-                <img src="/landing/portal-manager.webp" alt="Manager Today screen for Pranay: this week across eight companies, team tasks by project lead, company and status, and the task status breakdown." width="2000" height="1146" />
+                <img src="/landing/portal-manager.webp" alt="Manager Today screen for Pranay: the home card with five numbers, team tasks with filters, approvals, the task status donut and workload by project lead." width="2000" height="1146" />
               </div>
               <div className="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"}>
-                <img src="/landing/portal-admin.webp" alt="Admin Today screen for Krishna: fourteen clients with their stage, manager, who it is pending with, and health, the managers' load, and the incorporation pipeline." width="2000" height="1146" />
+                <img src="/landing/portal-admin.webp" alt="Admin Today screen for Krishna: the home card, the practice areas, fourteen clients with their stage, manager and health, and the managers' load." width="2000" height="1146" />
               </div>
               <div className="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"}>
-                <img src="/landing/portal-super.webp" alt="Super admin overview for Mithilesh: the firm's numbers, the three practice areas side by side, admins and managers, top risks and clients needing attention." width="2000" height="1146" />
+                <img src="/landing/portal-super.webp" alt="Super admin overview for Mithilesh: the home card with the firm's numbers, the practice areas side by side, top risks and clients needing attention." width="2000" height="1146" />
               </div>
             </div>
           </div>
@@ -494,7 +494,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <div className="ask">
             <div className="reveal">
               <div className="panel">
-                <img src="/landing/ask-vcfo.webp" alt="Ask VCFO panel inside the client portal, answering from Northwind's project data, with suggested questions." width="779" height="1126" />
+                <img src="/landing/ask-vcfo.webp" alt="Ask VCFO panel inside the client portal, answering from Northwind's project data, with suggested questions." width="779" height="1150" />
               </div>
             </div>
             <div className="reveal">

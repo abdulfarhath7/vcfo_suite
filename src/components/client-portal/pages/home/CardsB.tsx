@@ -19,7 +19,8 @@ import type { HomeFiling } from '@/lib/client/client-home';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import { RevealCountdown, useRevealedIdentifier } from '@/components/client-portal/pages/credentials/IdsRevealDialog';
 import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, StackedBar, stepChip, type BarTone } from '../incorporation/spectrum';
-import { copyText } from './ui';
+import { exactDate } from '@/lib/relative-due';
+import { copyText, DueWords } from './ui';
 import { PendingRequestPopover } from './PendingRequest';
 import type { HomeData } from './useHome';
 import {
@@ -306,11 +307,14 @@ export function NextCard({ h, className }: { h: HomeData; className?: string }) 
       {!lead && rows.length === 0 ? <Empty /> : null}
       {lead ? (
         <ListRow className="bg-surface-sunken">
-          <DateTile iso={lead.dueDate} tint="bad" />
+          <span title={exactDate(lead.dueDate)} className="flex-none">
+            <DateTile iso={lead.dueDate} tint="bad" />
+          </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate font-medium text-ink">{filingName(lead)}</span>
             <span className="block truncate text-[12.5px] text-ink-muted">
-              <span className="text-danger">Overdue {plural(Math.max(1, days(lead.dueDate, h.today)), 'day')}</span>
+              {/* E-11: relative due words first, the exact date in the tooltip. */}
+              <DueWords iso={lead.dueDate} today={h.today} />
               {ownerWord(lead) ? ` · ${ownerWord(lead)}` : ''}
               {lead.needTitle ? ` · ${lead.needTitle}${lead.needAskedBy ? ` · asked by ${lead.needAskedBy}` : ''}` : ''}
             </span>
@@ -327,11 +331,13 @@ export function NextCard({ h, className }: { h: HomeData; className?: string }) 
         return (
           <ListRow key={f.id}>
             <button type="button" onClick={() => drill(n <= 15 ? 2 : 3)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`${f.title} · open the list`}>
-              <DateTile iso={f.dueDate} tint={tint} />
+              <span title={exactDate(f.dueDate)} className="flex-none">
+                <DateTile iso={f.dueDate} tint={tint} />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-ink">{filingName(f)}</span>
                 <span className="block truncate text-[12.5px] text-ink-muted">
-                  {AREA_NAME[groupOf(f)]}
+                  <DueWords iso={f.dueDate} today={h.today} /> · {AREA_NAME[groupOf(f)]}
                   {f.windowTo ? ` · SBC prepares by ${dShort(f.windowTo)}` : ''}
                 </span>
               </span>

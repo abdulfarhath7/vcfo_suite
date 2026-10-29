@@ -2,11 +2,11 @@
 
 /**
  * Client portal Home (`/app/client/overview`), VCFO Spectrum (prototype
- * src/screens/client/HomeScreen.tsx). The home card (R-17), then two columns: the wide one
- * with the ST5 steps card and the Gantt timeline, the 360px one with what the client owes and
- * who holds the work. After the COI the compliance cards join and Registrations runs full
- * width. Below 1024px the columns dissolve and `order` sets the phone card order, so phones
- * show the same cards at 390px.
+ * src/screens/client/HomeScreen.tsx). The shared compact home card (`DashHero`, R-17), then
+ * two columns: the wide one with the ST5 steps card and the Gantt timeline, the 360px one with
+ * what the client owes and who holds the work. After the COI the compliance cards join and
+ * Registrations runs full width. Below 1024px the columns dissolve and `order` sets the phone
+ * card order, so phones show the same cards at 390px; the home card's tiles wrap there.
  *
  * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing.
  *
@@ -77,7 +77,7 @@ function Skeleton() {
   return (
     <div className="cp-home" aria-busy="true">
       <Island className={FRAME}>
-        <span className="block h-[180px] animate-pulse rounded-md bg-surface-sunken" aria-hidden />
+        <span className="block h-[84px] animate-pulse rounded-md bg-surface-sunken" aria-hidden />
         <div className={COLS.replace(' max-lg:contents', '')}>
           <SkeletonRows rows={6} />
           <SkeletonRows rows={5} />
@@ -91,7 +91,8 @@ export function HomePage() {
   const h = useHome();
   const skeleton = useSkeleton(h.loading);
   const download = useDownload();
-  const { pick, field } = useNeedUpload();
+  // B-20: the upload's per-file rows show in Recent documents, so the floating tray is off here.
+  const { pick, field, rows: uploadRows, busy: uploading, cancel: cancelUpload } = useNeedUpload({ tray: false });
   const [step, setStep] = useState<PortalStep | null>(null);
   const [comp, setComp] = useState<number | null>(null);
   const [editor, setEditor] = useState(false);
@@ -170,7 +171,7 @@ export function HomePage() {
                 <TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} className="max-lg:order-[9]" />
                 <AreaCard h={h} className="max-lg:order-[8]" />
                 <PostIncCard h={h} className="max-lg:order-6" />
-                <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} className="max-lg:order-[11]" />
+                <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} uploads={uploadRows} uploading={uploading} onCancelUpload={cancelUpload} className="max-lg:order-[11]" />
                 <ActivityCard h={h} className="max-lg:order-[13]" />
               </div>
               <div className={COL}>
@@ -190,7 +191,7 @@ export function HomePage() {
             <div className={COL}>
               {st5('max-lg:order-2')}
               <TimelineCard h={h} phases={phases} onEdit={() => setEditor(true)} className="max-lg:order-5" />
-              <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} className="max-lg:order-6" />
+              <DocsCard h={h} onOpen={docsIdx} onDownload={(d) => void download(d)} uploads={uploadRows} uploading={uploading} onCancelUpload={cancelUpload} className="max-lg:order-6" />
               <ActivityCard h={h} className="max-lg:order-8" />
             </div>
             <div className={COL}>

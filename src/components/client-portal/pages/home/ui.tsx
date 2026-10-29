@@ -11,6 +11,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { InfoPopover } from '@/components/client-portal/shared';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { UploadTray, useMultiUpload } from '@/components/client-portal/use-multi-upload';
+import { daysUntil, exactDate, relativeDue } from '@/lib/relative-due';
+import { cn } from '@/lib/utils';
 import { HOME_QUERY_KEY } from './useHome';
 import type { DocItem } from './derive';
 import { docUrl } from './derive';
@@ -160,6 +162,31 @@ export function ownerChipStyle(owner: 'client' | 'sbc' | 'firm' | 'mca'): CSSPro
   return { ...tone, width: 96, minWidth: 96, justifyContent: 'center', overflow: 'hidden', textOverflow: 'ellipsis' } as CSSProperties;
 }
 
+/* ------------------------------------------------------------ due words */
+
+/** `h.today` ("2026-10-29", India time) as a local calendar day for `relativeDue`. */
+function dayOf(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y!, (m ?? 1) - 1, d ?? 1);
+}
+
+/**
+ * E-11: the relative due words that start the sub line of an attention list ("In 3 days",
+ * "Today", "2 days late"), with the exact date ("Mon 19 Oct 2026") as a tooltip. Red when late,
+ * amber within a week. Tables keep plain dates.
+ */
+export function DueWords({ iso, today, className }: { iso: string; today: string; className?: string }) {
+  const now = dayOf(today);
+  const words = relativeDue(iso, now);
+  const n = daysUntil(iso, now);
+  if (!words || n === null) return null;
+  return (
+    <span title={exactDate(iso)} className={cn(n < 0 ? 'text-danger' : n <= 7 ? 'text-warning' : undefined, className)}>
+      {words}
+    </span>
+  );
+}
+
 /* ---------------------------------------------------------------- uploads */
 
 /**
@@ -169,7 +196,7 @@ export function ownerChipStyle(owner: 'client' | 'sbc' | 'firm' | 'mca'): CSSPro
  * in one request and the tray shows each file's own progress and, for a
  * refused file, its reason. Undo removes the whole batch.
  */
-export function useNeedUpload() {
+export function useNeedUpload({ tray = true }: { tray?: boolean } = {}) {
   const { toast } = usePortal();
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement | null>(null);
@@ -228,10 +255,11 @@ export function useNeedUpload() {
           if (files.length) void send(files);
         }}
       />
-      <UploadTray title={trayTitle} rows={up.rows} busy={up.busy} onCancel={up.cancel} onClose={up.clear} />
+      {tray ? <UploadTray title={trayTitle} rows={up.rows} busy={up.busy} onCancel={up.cancel} onClose={up.clear} /> : null}
     </>
   );
-  return { pick, field };
+  // B-20: the per-file rows, so Home can show them in Recent documents instead of the tray.
+  return { pick, field, rows: up.rows, busy: up.busy, cancel: up.cancel, clear: up.clear, target: trayTitle };
 }
 
 /** ⬇ Download: resolve the signed URL, then save. */

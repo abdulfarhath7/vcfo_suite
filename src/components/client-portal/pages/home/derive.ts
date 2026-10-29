@@ -316,6 +316,23 @@ export interface AlertRow {
   href: string;
   /** The hero (overdue) row's button. */
   action?: string;
+  /** The Needs row this alert repeats, when it comes from one (C-02: the card drops it then). */
+  needKey?: string;
+}
+
+/**
+ * The needs the home card's Overdue tile counts and Needs puts first: a correction SBC sent
+ * back, or any open need past its due date (HM-01).
+ */
+export function isOverdueNeed(n: NeedRow, today: string): boolean {
+  return n.kind === 'correct' || Boolean(n.due && n.due < today);
+}
+
+/** Needs in the order Needs from <company> shows them: sent back or late first, then by due date. */
+export function sortNeeds(needs: NeedRow[], today: string): NeedRow[] {
+  return [...needs].sort(
+    (a, b) => Number(isOverdueNeed(b, today)) - Number(isOverdueNeed(a, today)) || (a.due ?? '9999').localeCompare(b.due ?? '9999'),
+  );
 }
 
 export function buildAlerts(
@@ -344,6 +361,7 @@ export function buildAlerts(
         tone: 'over',
         href: overdueNeed.href ?? portalHref('documents'),
         action: overdueNeed.kind === 'correct' ? 'Fix' : overdueNeed.kind === 'upload' ? 'Upload' : 'Open',
+        needKey: overdueNeed.key,
       };
     } else if (rejected) {
       const at = ymd(rejected.slice?.reviewedAt) ?? rejected.due ?? today;
@@ -356,11 +374,14 @@ export function buildAlerts(
         tone: 'over',
         href: stepHref(rejected.id),
         action: 'Fix',
+        needKey: `step:${rejected.id}`,
       };
     } else {
       const late = model.steps.find((s) => s.late && (s.kind === 'you' || s.kind === 'prog'));
       if (late && late.due) {
-        hero = { key: `late:${late.id}`, title: `${late.title} is late`, meta: `Step ${late.n} · waiting on ${company}`, date: late.due, tone: 'over', href: stepHref(late.id), action: 'Continue' };
+        // A late step the client fills is also a Needs row (`step:<id>`); a step in progress is not.
+        const needKey = needs.some((n) => n.key === `step:${late.id}`) ? `step:${late.id}` : undefined;
+        hero = { key: `late:${late.id}`, title: `${late.title} is late`, meta: `Step ${late.n} · waiting on ${company}`, date: late.due, tone: 'over', href: stepHref(late.id), action: 'Continue', needKey };
       }
     }
     // open needs with a date, grouped by step
