@@ -699,7 +699,8 @@ export async function uploadRequestFiles(
         })),
       )
       .returning();
-    await tx.update(documentRequests).set({ status: 'fulfilled' }).where(eq(documentRequests.id, requestId));
+    // closed_at feeds the staff home trend lines (migration 0027).
+    await tx.update(documentRequests).set({ status: 'fulfilled', closedAt: now }).where(eq(documentRequests.id, requestId));
     return rows;
   });
   return {
@@ -749,7 +750,7 @@ export async function undoRequestUpload(ctx: AuthContext, requestId: string, fil
   const ids = batch.length ? batch.map((b) => b.id) : [fileId];
   await db.transaction(async (tx) => {
     await tx.delete(documentRequestFiles).where(and(inArray(documentRequestFiles.id, ids), eq(documentRequestFiles.requestId, requestId)));
-    await tx.update(documentRequests).set({ status: 'pending' }).where(eq(documentRequests.id, requestId));
+    await tx.update(documentRequests).set({ status: 'pending', closedAt: null }).where(eq(documentRequests.id, requestId));
   });
   for (const b of batch.length ? batch : [{ objectKey: f.objectKey }]) await deleteObject(b.objectKey).catch(() => undefined);
   return true;

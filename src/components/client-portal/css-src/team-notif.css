@@ -1,9 +1,9 @@
 /* @cp-scope page=team */
 /* Notifications — notif_redesign.dc.html, redrawn as VCFO Spectrum (C-0106, C-0110):
    type tiles, status chips, day groups in caps, "This month" as a total, a stacked bar and rows. */
-.tp-notif .tb-g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;align-items:start}
-.tp-notif .tb-s9{grid-column:span 9}.tp-notif .tb-s3{grid-column:span 3;display:flex;flex-direction:column;gap:20px}
-@media (max-width:959px){.tp-notif .tb-s9{grid-column:1 / -1}.tp-notif .tb-s3{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));align-items:start}}
+.tp-notif .tb-g12{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.tp-notif .tb-s3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px;align-items:start}
+@media (min-width:1024px){.tp-notif .tb-g12{grid-template-columns:minmax(0,1fr) 272px}.tp-notif .tb-s3{display:flex;flex-direction:column}}
 .tp-notif .tb-hd{flex-wrap:nowrap;min-width:0}
 .tp-notif .tb-tl{display:flex;align-items:center;gap:4px 8px;flex-wrap:wrap;min-width:0}
 .tp-notif .tb-glbl{display:flex;align-items:flex-end;gap:8px;height:36px;padding:0 16px 8px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft))}
@@ -26,8 +26,9 @@
 .tp-notif .tb-total{display:flex;align-items:baseline;gap:8px;width:100%;padding:16px 16px 0;border:0;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit}
 .tp-notif .tb-total:hover .metric{color:oklch(var(--brand-text))}
 .tp-notif .tb-total .metric{font-size:26px;line-height:1}
-.tp-notif .tb-stack{display:flex;gap:2px;height:8px;margin:12px 16px 8px;border-radius:3px;overflow:hidden;background:oklch(var(--surface-sunken))}
-.tp-notif .tb-stack>span{display:block;height:100%}
+.tp-notif .tb-stack{display:flex;gap:2px;height:8px;margin:12px 16px 8px;border-radius:3px;overflow:hidden}
+.tp-notif .tb-stack.empty{background:none}
+.tp-notif .tb-stack>span{display:block;height:100%;border-radius:2px}
 .tp-notif .tb-leg{min-height:44px;gap:10px}
 .tp-notif .tb-sw{width:8px;height:8px;border-radius:2px;flex:none}
 @media (max-width:767px){
@@ -35,4 +36,16 @@
   .tp-notif .nt{padding:11px 0;margin:-11px 0}
   .tp-notif .tb-ud{width:40px;height:40px}
 }
-@media (max-width:520px){.tp-notif .nkind{display:none}}
+@media (max-width:639px){.tp-notif .nkind{display:none}}
+/* a 30 px type tile with a 16 px icon on the list rows */
+.tp-notif .tb-t30{width:30px;height:30px}
+.tp-notif .tb-t30 svg{width:16px;height:16px}
+.tp-notif .tb-nrow.on{background:oklch(var(--brand-soft))}
+.tp-notif .tb-setlink{font-size:13px;font-weight:500;color:oklch(var(--brand-text));text-decoration:none}
+.tp-notif .tb-setlink:hover{text-decoration:underline;text-underline-offset:2px}
+/* detail side panel */
+.tp-notif .tb-sp-p{margin:12px 0 0;font-size:13.5px;line-height:1.5;color:oklch(var(--ink-2))}
+.tp-notif .tb-lstep{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));color:inherit;text-decoration:none}
+.tp-notif .tb-lstep:hover{background:oklch(var(--surface-sunken))}
+.tp-notif .tb-lstep-n{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:6px;background:oklch(var(--brand-soft));color:oklch(var(--brand-text));font-size:12px;font-weight:500}
+.tp-notif .tb-lstep-t{flex:1;min-width:0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

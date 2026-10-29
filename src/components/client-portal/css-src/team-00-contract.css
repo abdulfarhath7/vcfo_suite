@@ -126,3 +126,45 @@ input[type="checkbox"]{width:18px;height:18px;border-radius:4px;accent-color:okl
 .tb-note{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:13px;color:oklch(var(--ink-2))}
 .tb-note.bad{border-color:oklch(var(--danger) / .3);background:oklch(var(--danger-soft));color:oklch(var(--danger))}
 @media (prefers-reduced-motion: reduce){.sk{animation:none}}
+
+/* ---------------- prototype parts shared by the team pages (2c978c5) ----------------
+   Segmented switch (Tabs): a 1.5 px line edge, grey track, 3 px padding, 22 px buttons;
+   pages that use the md size set `.seg.md`. */
+.seg{padding:3px;gap:2px;border:1.5px solid oklch(var(--line));box-shadow:none}
+.seg button{height:22px;padding:0 12px;border-radius:4px}
+.seg.md button{height:28px}
+/* SidePanel: 440 px from the right over the scrim, full width on phones */
+.tb-sp-scrim{position:fixed;inset:0;z-index:2147482000;background:var(--scrim);display:flex;justify-content:flex-end;animation:tbspf .18s ease-out}
+.tb-sp{display:flex;flex-direction:column;width:100%;height:100%;box-sizing:border-box;border-left:1px solid oklch(var(--line));background:oklch(var(--surface-raised));color:oklch(var(--ink));box-shadow:var(--shadow-dialog);outline:none;animation:tbspi .24s cubic-bezier(.22,1,.36,1)}
+.tb-sp-h{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-bottom:1px solid oklch(var(--line-soft))}
+.tb-sp-eb{display:flex;align-items:center;gap:8px;min-width:0;font-size:12.5px;color:oklch(var(--ink-muted));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sp-t{margin:2px 0 0;font:500 15px/1.35 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.tb-sp-sub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.tb-sp-b{flex:1;min-height:0;overflow-y:auto}
+.tb-sp-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid oklch(var(--line-soft))}
+.tb-sp-sec{padding:16px 20px;border-bottom:1px solid oklch(var(--line-soft))}
+.tb-sp-sec:last-child{border-bottom:0}
+.tb-sp-st{margin:0 0 8px}
+.tb-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;margin:0}
+.tb-kv.one{grid-template-columns:minmax(0,1fr)}
+.tb-kv dt{font-size:12px;color:oklch(var(--ink-muted))}
+.tb-kv dd{margin:0;font-size:13.5px;font-weight:500;color:oklch(var(--ink));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes tbspf{from{opacity:0}to{opacity:1}}
+@keyframes tbspi{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.tb-sp-scrim,.tb-sp{animation:none}}
+@media (max-width:639px){.tb-kv{grid-template-columns:minmax(0,1fr)}}
+/* Select in a card head: 30 px, 1.5 px edge, a chevron at the right */
+.tb-sel{position:relative;display:inline-flex;flex:none;align-items:center}
+.tb-sel select.inp{height:30px;padding:0 30px 0 10px;font-size:13px;appearance:none;-webkit-appearance:none;cursor:pointer}
+.tb-sel svg{position:absolute;right:9px;pointer-events:none;color:oklch(var(--ink-muted))}
+@media (max-width:767px){.tb-sel select.inp{height:40px}}
+/* grid footer: count, extra buttons, page numbers (the picked page blurple) */
+.tb-pager{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 16px;border-top:1px solid oklch(var(--line-soft));font-size:13px;color:oklch(var(--ink-muted))}
+.tb-pages{display:flex;align-items:center;gap:4px;margin-left:auto}
+.tb-pg{display:grid;place-items:center;height:28px;min-width:28px;padding:0 6px;border:0;border-radius:6px;background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
+.tb-pg:hover{background:oklch(var(--ink) / .06)}
+.tb-pg:disabled{opacity:.4;cursor:default}
+.tb-pg[aria-current=page]{background:oklch(var(--brand));color:oklch(var(--on-brand))}
+@media (max-width:767px){.tb-pg{height:40px;min-width:40px}}
+/* card heads: 16 px side padding on phones, 20 px from 768 px (prototype SectionCard) */
+@media (min-width:768px){.cp-team .sx-card>.sx-head{padding-left:20px;padding-right:20px}}

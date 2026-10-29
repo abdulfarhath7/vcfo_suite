@@ -62,7 +62,7 @@ function LibraryInner() {
     }))
     .filter((s) => s.books.length);
   const shownIds = shelves.flatMap((s) => s.books.map((b) => b.id));
-  const recent = (reads.data ?? []).slice(0, 3);
+  const recent = reads.data ?? [];
   const engagementId = shell?.engagementId;
 
   if (lib.isLoading) {

@@ -15,7 +15,28 @@ import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { usePortal, PORTAL_SHELL_KEY } from '../../PortalProvider';
 import { portalHref } from '../../routes';
 import type { ChipTone } from '@/components/ui/spectrum-chip';
-import { CardHead, CloseBtn, Dialog, Empty, P, SChip, STag, Seg, Svg, Tile, api, useIsPhone, useScrollAfterClose, useSkeleton, type TileTone } from './common';
+import { stepNumbers } from '@/lib/client-portal/documents';
+import {
+  CardHead,
+  CloseBtn,
+  Dialog,
+  Empty,
+  KeyValue,
+  P,
+  PanelSection,
+  SChip,
+  STag,
+  Seg,
+  SidePanel,
+  Svg,
+  Tile,
+  api,
+  useIsPhone,
+  useScrollAfterClose,
+  useSkeleton,
+  useTabFlash,
+  type TileTone,
+} from './common';
 import '../../css/team-00-contract.css';
 import '../../css/team-notif.css';
 
@@ -29,7 +50,7 @@ type Grp = 'Documents' | 'Steps' | 'Deadlines' | 'Messages';
 const K: Record<'document' | 'step' | 'deadline' | 'email' | 'announcement' | 'team', { p1: string; tone: TileTone }> = {
   document: {
     p1: 'M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z M14 2v5a1 1 0 0 0 1 1h5 M10 9H8 M16 13H8 M16 17H8',
-    tone: 'blue',
+    tone: 'brand',
   },
   step: { p1: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M16 9l-5.5 5.5L8 12', tone: 'green' },
   deadline: {
@@ -43,7 +64,7 @@ const K: Record<'document' | 'step' | 'deadline' | 'email' | 'announcement' | 't
   },
   team: {
     p1: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M16 3.128a4 4 0 0 1 0 7.744 M22 21v-2a4 4 0 0 0-3-3.87 M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0',
-    tone: 'blue',
+    tone: 'brand',
   },
 };
 const T: Record<Ty, [keyof typeof K, Grp, string, ChipTone, string]> = {
@@ -52,9 +73,9 @@ const T: Record<Ty, [keyof typeof K, Grp, string, ChipTone, string]> = {
   step: ['step', 'Steps', 'Step', 'ok', 'Step done'],
   time: ['step', 'Steps', 'Timeline', 'prog', 'Timeline changed'],
   deadline: ['deadline', 'Deadlines', 'Deadline', 'warn', 'Deadline coming up'],
-  mail: ['email', 'Messages', 'Email', 'violet', 'Email sent'],
-  ann: ['announcement', 'Messages', 'Announcement', 'idle', 'Announcement'],
-  team: ['team', 'Messages', 'Team', 'teal', 'Team change'],
+  mail: ['email', 'Messages', 'Email', 'prog', 'Email sent'],
+  ann: ['announcement', 'Messages', 'Announcement', 'warn', 'Announcement'],
+  team: ['team', 'Messages', 'Team', 'prog', 'Team change'],
 };
 
 /** "This month" bar colours per group (the prototype's BAR_TONE). */
@@ -133,6 +154,15 @@ const LINK_LABEL: Record<Ty, string> = {
   team: 'Open the team',
 };
 
+/** The step a notification links to (`/app/client/incorporation/step/<id>`), with its number. */
+function linkedStep(href: string): { id: string; n: number; title: string } | null {
+  const m = href.match(/\/app\/client\/incorporation\/step\/([^/?#]+)/);
+  if (!m) return null;
+  const id = decodeURIComponent(m[1]);
+  const s = stepNumbers()[id];
+  return s ? { id, n: s.n, title: s.title } : null;
+}
+
 export function NotificationsPage() {
   const { go, toast, shell } = usePortal();
   const qc = useQueryClient();
@@ -148,8 +178,14 @@ export function NotificationsPage() {
     queryFn: () => api<{ profile: { whatsappOptIn: boolean; phoneE164: string | null } }>('/api/account/profile'),
   });
   const sk = useSkeleton(q.isLoading);
-  const [tab, setTab] = useState(0);
+  const [tab, setTabRaw] = useState(0);
+  const [flash, startFlash] = useTabFlash();
+  const setTab = (i: number) => {
+    if (i !== tab) startFlash();
+    setTabRaw(i);
+  };
   const [drill, setDrill] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const today = istDay(new Date().toISOString());
   const monday = useMemo(() => {
@@ -185,9 +221,10 @@ export function NotificationsPage() {
     setRead([it.n.id], true);
     void api('/api/client/notifications', { method: 'POST', json: { action: 'read', ids: [it.n.id] } }).then(refreshBadges, () => setRead([it.n.id], false));
   };
+  /** The arrow and the title open the detail side panel; its main button goes to the page. */
   const open = (it: Item) => {
     markRead(it);
-    go(it.href);
+    setDetailId(it.n.id);
   };
   const unreadIds = N.filter((x) => !x.n.read).map((x) => x.n.id);
   const markAll = async () => {
@@ -231,6 +268,8 @@ export function NotificationsPage() {
   const waOn = profile.data?.profile.whatsappOptIn ?? false;
   const company = shell?.companyShort ?? 'You';
   const teamHref = `${portalHref('settings')}#team`;
+  const detail = detailId ? (N.find((x) => x.n.id === detailId) ?? null) : null;
+  const detailStep = detail ? linkedStep(detail.href) : null;
 
   const whoEl = (x: Item) =>
     x.person ? (
@@ -248,11 +287,11 @@ export function NotificationsPage() {
       x.who
     );
 
-  const icon = (ty: Ty) => {
+  const icon = (ty: Ty, big = false) => {
     const k = K[T[ty][0]];
     return (
       <span className="nic" role="img" aria-label={T[ty][4]} data-tip={T[ty][4]}>
-        <Tile d={k.p1} tone={k.tone} />
+        <Tile d={k.p1} tone={k.tone} big={big} />
       </span>
     );
   };
@@ -270,6 +309,7 @@ export function NotificationsPage() {
                 onPick={setTab}
                 label="Filter notifications"
                 grid={false}
+                md
               />
               {unreadIds.length > 0 ? (
                 <button type="button" className="btn btn-g btn-sm tb-mark" onClick={() => void markAll()}>
@@ -277,8 +317,8 @@ export function NotificationsPage() {
                 </button>
               ) : null}
             </div>
-            {q.isLoading ? (
-              sk ? (
+            {q.isLoading || flash ? (
+              sk || flash ? (
                 [0, 1, 2, 3].map((i) => (
                   <div key={i} className="row" aria-hidden="true">
                     <span className="sk" style={{ width: 28, height: 28, borderRadius: 6 }} />
@@ -292,11 +332,9 @@ export function NotificationsPage() {
             ) : groups.length === 0 ? (
               <Empty
                 action={
-                  tab !== 0 ? (
-                    <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
-                      See all
-                    </button>
-                  ) : undefined
+                  <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
+                    See all
+                  </button>
                 }
               >
                 {tab === 1 || tab === 0 ? 'Nothing unread' : `No ${TABS[tab][0].toLowerCase()} yet`}
@@ -316,9 +354,10 @@ export function NotificationsPage() {
                   {g.items.map((x) => {
                     const u = !x.n.read;
                     const [, , kind, tone] = T[x.ty];
+                    const on = detailId === x.n.id;
                     return (
-                      <div key={x.n.id} className={u ? 'row unread tb-nrow' : 'row tb-nrow'}>
-                        {icon(x.ty)}
+                      <div key={x.n.id} className={`row tb-nrow${u ? ' unread' : ''}${on ? ' on' : ''}`}>
+                        {icon(x.ty, true)}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <span className="tb-tl">
                             <a
@@ -383,12 +422,12 @@ export function NotificationsPage() {
 
           <div className="tb-s3">
             <section className="sx-card" aria-labelledby="nt-month">
-              <CardHead id="nt-month" d="M4.5 6h15v13.5h-15Z M4.5 10h15 M9 3.5v4 M15 3.5v4" tone="teal" title="This month" />
+              <CardHead id="nt-month" d={P.grid} title="This month" />
               <button type="button" className="tb-total" onClick={() => setDrill(0)} aria-label={`Show all ${tot} notifications`}>
                 <span className="metric">{tot}</span>
                 <span className="cap">this month</span>
               </button>
-              <div className="tb-stack" aria-hidden="true">
+              <div className={tot > 0 ? 'tb-stack' : 'tb-stack empty'} aria-hidden="true">
                 {tot > 0
                   ? (DT.slice(1) as Grp[]).map((g) => (cnt(g) ? <span key={g} style={{ width: `${(cnt(g) / tot) * 100}%`, background: BAR[g] }} /> : null))
                   : null}
@@ -396,7 +435,6 @@ export function NotificationsPage() {
               <div style={{ paddingBottom: 4 }}>
                 {[1, 2, 3, 4].map((i) => (
                   <button key={i} type="button" className="sx-row tb-leg" onClick={() => setDrill(i)}>
-                    <span className="tb-sw" style={{ background: BAR[DT[i] as Grp] }} />
                     <span style={{ flex: 1 }}>{DT[i]}</span>
                     <span style={{ fontWeight: 500 }}>{cnt(DT[i] as Grp)}</span>
                     <Svg d={P.next} size={14} sw={1.8} style={{ color: 'oklch(var(--ink-faint))' }} />
@@ -405,7 +443,7 @@ export function NotificationsPage() {
               </div>
             </section>
             <section className="sx-card" aria-labelledby="nt-by">
-              <CardHead id="nt-by" d={P.bell} tone="amber" title={`${company} gets these by`} />
+              <CardHead id="nt-by" d={P.grid} title={`${company} gets these by`} />
               <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <STag tone="prog">✓ Email</STag>
@@ -413,7 +451,7 @@ export function NotificationsPage() {
                 </div>
                 <a
                   href={`${portalHref('settings')}#notifications`}
-                  style={{ fontSize: 13 }}
+                  className="tb-setlink"
                   onClick={(e) => {
                     e.preventDefault();
                     go(`${portalHref('settings')}#notifications`);
@@ -438,12 +476,69 @@ export function NotificationsPage() {
             setDrill(null);
             open(x);
           }}
+          isPhone={isPhone}
           onLink={(where) => {
             setDrill(null);
             if (where) go(where);
             else scrollAfter(200);
           }}
         />
+      ) : null}
+
+      {detail ? (
+        <SidePanel
+          labelledBy="nt-p"
+          tp="tp-notif"
+          onClose={() => setDetailId(null)}
+          title={detail.n.title}
+          eyebrow={
+            <>
+              <Svg d={P.bell} size={14} sw={1.6} />
+              {T[detail.ty][4]}
+            </>
+          }
+          sub={<STag tone={T[detail.ty][3]}>{T[detail.ty][2]}</STag>}
+          footer={
+            <a
+              href={detail.href}
+              className="btn btn-n"
+              onClick={(e) => {
+                e.preventDefault();
+                setDetailId(null);
+                go(detail.href);
+              }}
+            >
+              {LINK_LABEL[detail.ty]}
+            </a>
+          }
+        >
+          <PanelSection>
+            <KeyValue
+              rows={[
+                { k: 'From', v: detail.who },
+                { k: 'When', v: detail.w },
+                { k: 'Area', v: detail.grp },
+              ]}
+            />
+            {detail.n.body ? <p className="tb-sp-p">{detail.n.body}</p> : null}
+          </PanelSection>
+          {detailStep ? (
+            <PanelSection title="Linked step">
+              <a
+                href={detail.href}
+                className="tb-lstep"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setDetailId(null);
+                  go(detail.href);
+                }}
+              >
+                <span className="tb-lstep-n">{detailStep.n}</span>
+                <span className="tb-lstep-t">{detailStep.title}</span>
+              </a>
+            </PanelSection>
+          ) : null}
+        </SidePanel>
       ) : null}
     </div>
   );
@@ -457,11 +552,13 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
   sheet,
   onOpen,
   onLink,
+  isPhone,
 }: {
+  isPhone: boolean;
   drill: number;
   setDrill: (d: number | null) => void;
   items: I[];
-  icon: (t: Ty) => React.ReactNode;
+  icon: (t: Ty, big?: boolean) => React.ReactNode;
   sheet: boolean;
   onOpen: (x: I) => void;
   onLink: (where: string) => void;
@@ -477,25 +574,30 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
   ];
   const L = LINK[drill];
   const list = items.filter((x) => drill === 0 || x.grp === DT[drill]);
+  const tabs = (
+    <Seg
+      tabs={DT.map((l, i) => ({ label: l, cnt: i === 0 ? items.length : items.filter((x) => x.grp === l).length }))}
+      active={drill}
+      onPick={(i) => setDrill(i)}
+      label="Filter by type"
+      grid={false}
+    />
+  );
   return (
-    <Dialog labelledBy="nd-t" width={600} top sheet={sheet} onClose={() => setDrill(null)} tp="tp-notif" dlgStyle={{ display: 'flex', flexDirection: 'column' }}>
+    <Dialog labelledBy="nd-t" width={760} sheet={sheet} onClose={() => setDrill(null)} tp="tp-notif" dlgStyle={{ display: 'flex', flexDirection: 'column' }}>
       <div className="dlg-h">
-        <Tile d={P.bell} tone="amber" />
-        <h2 id="nd-t" style={{ margin: 0 }}>
-          Notifications this month
-        </h2>
-        <span className="cap">{list.length}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 id="nd-t" style={{ margin: 0 }}>
+            This month
+          </h2>
+          <div className="cap">
+            {list.length} {list.length === 1 ? 'notification' : 'notifications'}
+          </div>
+        </div>
+        {!isPhone ? tabs : null}
         <CloseBtn onClick={() => setDrill(null)} />
       </div>
-      <div style={{ padding: '12px 16px 4px' }}>
-        <Seg
-          tabs={DT.map((l, i) => ({ label: l, cnt: i === 0 ? items.length : items.filter((x) => x.grp === l).length }))}
-          active={drill}
-          onPick={(i) => setDrill(i)}
-          label="Filter by type"
-          grid={false}
-        />
-      </div>
+      {isPhone ? <div style={{ padding: '8px 16px', borderBottom: '1px solid oklch(var(--line-soft))' }}>{tabs}</div> : null}
       <div style={{ padding: '4px 0 8px', maxHeight: 'min(420px,52dvh)', overflow: 'auto' }}>
         {list.length === 0 ? (
           <Empty>None this month</Empty>
@@ -513,7 +615,7 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
             >
               {icon(x.ty)}
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="rt" style={{ display: 'block', fontWeight: 500 }}>
+                <span className="rt" style={{ display: 'block', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {x.n.title}
                 </span>
                 <span className="cap">
@@ -522,9 +624,6 @@ function NotifDrill<I extends { n: AppNotification; ty: Ty; grp: Grp; w: string;
               </span>
               <span className="tb-d">
                 <SChip tone={T[x.ty][3]}>{T[x.ty][2]}</SChip>
-              </span>
-              <span style={{ color: 'oklch(var(--ink-faint))', display: 'flex' }}>
-                <Svg d={P.next} size={14} sw={1.8} />
               </span>
             </a>
           ))

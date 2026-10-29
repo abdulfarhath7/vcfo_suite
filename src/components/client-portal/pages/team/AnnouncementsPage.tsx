@@ -32,16 +32,17 @@ import {
   Seg,
   Svg,
   api,
-  avatarColor,
+  avatarTint,
   contactHref,
   dayMonth,
   initialsOf,
+  useIsPhone,
   useSkeleton,
+  useTabFlash,
 } from './common';
 import '../../css/team-00-contract.css';
 import '../../css/team-ann.css';
 
-const PORTAL_CAP = 8;
 const READS_KEY = ['client-portal', 'announcement-reads'] as const;
 const UNREAD_KEY = ['client-portal', 'announcements-unread'] as const;
 
@@ -52,6 +53,10 @@ const KIND_REG: Partial<Record<Announcement['kind'], Regulator>> = { 'post-incor
 function KindMark({ a }: { a: Announcement }) {
   if (a.kind === 'deadline') return <SChip tone="warn">{ANNOUNCEMENT_KIND_LABEL[a.kind]}</SChip>;
   return <SArea area={ANNOUNCEMENT_KIND_LABEL[a.kind]} reg={KIND_REG[a.kind]} />;
+}
+/** "Thu 8 Oct 2026" for the date tile tooltip. */
+function longDate(iso: string): string {
+  return sep(new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })).replace(/,/g, '');
 }
 const imp = (a: Announcement) => a.kind === 'deadline' || a.kind === 'compliance';
 const host = (a: Announcement): string => {
@@ -83,9 +88,14 @@ export function AnnouncementsPage() {
   });
   const ov = useClientOverview();
   const sk = useSkeleton(list.isLoading);
-  const [tab, setTab] = useState(0);
+  const isPhone = useIsPhone();
+  const [tab, setTabRaw] = useState(0);
+  const [flash, startFlash] = useTabFlash();
+  const setTab = (i: number) => {
+    if (i !== tab) startFlash();
+    setTabRaw(i);
+  };
   const [pt, setPt] = useState(0);
-  const [portalsAll, setPortalsAll] = useState(false);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   const all = useMemo(() => list.data?.announcements ?? [], [list.data]);
@@ -112,10 +122,8 @@ export function AnnouncementsPage() {
   const tasks = VCFO_PORTAL_TASKS.filter((t) => t.portalUrl || t.circularUrl);
   const setup = tasks.filter((t) => SETUP_HEADS.includes(t.head));
   const recurring = tasks.filter((t) => RECUR[t.head]);
-  /* compact card (prototype shows ~8 rows): the first PORTAL_CAP rows, then "Show all" */
   const plist = pt === 0 ? setup : recurring;
-  const capped = !portalsAll && plist.length > PORTAL_CAP;
-  const groups = (capped ? plist.slice(0, PORTAL_CAP) : plist).reduce<Array<{ h: string; rows: VcfoPortalTask[] }>>((acc, t) => {
+  const groups = plist.reduce<Array<{ h: string; rows: VcfoPortalTask[] }>>((acc, t) => {
     const h = RECUR[t.head] ?? t.head;
     const g = acc.find((x) => x.h === h);
     if (g) g.rows.push(t);
@@ -137,7 +145,7 @@ export function AnnouncementsPage() {
       <main className="pg tb-wrap tp-ann">
         <div className="tb-g12">
           <section className="sx-card tb-s8" aria-labelledby="ann-latest">
-            <CardHead id="ann-latest" d={P.bell} tone="amber" title="Latest">
+            <CardHead id="ann-latest" d={P.grid} title="Latest">
               <Seg
                 tabs={['All', 'Important', 'General'].map((l, i) => ({ label: l, cnt: all.filter(F[i]).length }))}
                 active={tab}
@@ -149,7 +157,7 @@ export function AnnouncementsPage() {
             {next && nextDm && tab !== 2 ? (
               /* the next deadline, as a row inside the card it is about (R-48) */
               <div className="sx-row tb-next">
-                <div className="dtile tb-dt-warn">
+                <div className="dtile tb-dt-warn" data-tip={longDate(`${next.dueDate.slice(0, 10)}T12:00:00Z`)}>
                   <span className="d">{nextDm.d}</span>
                   <span className="m">{nextDm.m}</span>
                 </div>
@@ -175,8 +183,8 @@ export function AnnouncementsPage() {
                 </a>
               </div>
             ) : null}
-            {list.isLoading ? (
-              sk ? (
+            {list.isLoading || flash ? (
+              sk || flash ? (
                 [0, 1, 2, 3].map((i) => (
                   <div key={i} className="row" aria-hidden="true">
                     <span className="sk" style={{ width: 44, height: 44, borderRadius: 6 }} />
@@ -190,14 +198,12 @@ export function AnnouncementsPage() {
             ) : rows.length === 0 ? (
               <Empty
                 action={
-                  tab !== 0 ? (
-                    <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
-                      See all
-                    </button>
-                  ) : undefined
+                  <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
+                    See all
+                  </button>
                 }
               >
-                {tab === 1 ? 'No important updates' : tab === 2 ? 'No general updates' : 'No announcements yet'}
+                None
               </Empty>
             ) : (
               rows.map((a, i) => {
@@ -212,7 +218,7 @@ export function AnnouncementsPage() {
                     style={{ color: 'inherit', fontWeight: 'inherit', textDecoration: 'none', minHeight: 72 }}
                     onClick={() => openAt(i)}
                   >
-                    <div className={a.kind === 'deadline' ? 'dtile tb-dt-warn' : 'dtile tb-dt'}>
+                    <div className={a.kind === 'deadline' ? 'dtile tb-dt-warn' : 'dtile tb-dt'} data-tip={longDate(a.publishedAt)}>
                       <span className="d">{dm.d}</span>
                       <span className="m">{dm.m}</span>
                     </div>
@@ -241,7 +247,7 @@ export function AnnouncementsPage() {
           </section>
 
           <section className="sx-card tb-s4" aria-labelledby="ann-portals">
-            <CardHead id="ann-portals" d={P.bank} tone="blue" title="Official portals" />
+            <CardHead id="ann-portals" d={P.landmark} title="Official portals" />
             <div style={{ padding: '12px 16px 4px' }}>
               <Seg
                 tabs={[
@@ -261,7 +267,7 @@ export function AnnouncementsPage() {
                   <div className="lbl tb-ghead">{g.h}</div>
                   {g.rows.map((r) => (
                     <div key={r.task} className="tb-prow">
-                      <span className="rt" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="rt" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.task}>
                         {r.task}
                       </span>
                       {r.portalUrl ? (
@@ -278,11 +284,6 @@ export function AnnouncementsPage() {
                   ))}
                 </div>
               ))}
-              {plist.length > PORTAL_CAP ? (
-                <button type="button" className="btn btn-g btn-sm" style={{ alignSelf: 'flex-start', marginTop: 10 }} onClick={() => setPortalsAll((v) => !v)}>
-                  {capped ? `Show all ${plist.length}` : 'Show fewer'}
-                </button>
-              ) : null}
             </div>
           </section>
         </div>
@@ -294,10 +295,11 @@ export function AnnouncementsPage() {
           index={openIdx}
           total={rows.length}
           team={shell?.team ?? []}
+          sheet={isPhone}
           onClose={() => setOpenIdx(null)}
           onStep={(d) => {
-            const n = (openIdx + d + rows.length) % rows.length;
-            openAt(n);
+            const n = openIdx + d;
+            if (n >= 0 && n < rows.length) openAt(n);
           }}
           openChat={openChat}
         />
@@ -311,6 +313,7 @@ function AnnDetail({
   index,
   total,
   team,
+  sheet,
   onClose,
   onStep,
   openChat,
@@ -318,12 +321,12 @@ function AnnDetail({
   a: Announcement;
   index: number;
   total: number;
+  sheet: boolean;
   team: Array<{ id: string; name: string; role: string; email?: string; phoneE164?: string; whatsappE164?: string }>;
   onClose: () => void;
   onStep: (d: number) => void;
   openChat: (q?: string) => void;
 }) {
-  const dm = dayMonth(a.publishedAt);
   const feed = a.origin === 'feed';
   const author = team.find((t) => t.id === a.authorId);
   const authorName = author?.name ?? a.authorName.split('@')[0];
@@ -335,28 +338,24 @@ function AnnDetail({
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
-      if (e.key === 'ArrowLeft') onStep(-1);
-      if (e.key === 'ArrowRight') onStep(1);
+      if (e.key === 'ArrowLeft' && index > 0) onStep(-1);
+      if (e.key === 'ArrowRight' && index < total - 1) onStep(1);
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
-  }, [onStep]);
+  }, [onStep, index, total]);
   return (
-    <Dialog labelledBy="ad-t" width={560} top onClose={onClose} tp="tp-ann">
+    <Dialog labelledBy="ad-t" width={560} sheet={sheet} onClose={onClose} tp="tp-ann">
       <div className="dlg-h" style={{ alignItems: 'flex-start' }}>
-        <div className={a.kind === 'deadline' ? 'dtile tb-dt-warn' : 'dtile tb-dt'}>
-          <span className="d">{dm.d}</span>
-          <span className="m">{dm.m}</span>
-        </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <KindMark a={a} />
+          <h2 id="ad-t" className="tb-adt" style={{ margin: 0 }}>
+            {a.title}
+          </h2>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+            <STag tone={a.kind === 'deadline' ? 'warn' : 'idle'}>{ANNOUNCEMENT_KIND_LABEL[a.kind]}</STag>
             {imp(a) ? <STag tone="bad">Important</STag> : null}
             <span className="cap">{when}</span>
           </div>
-          <h2 id="ad-t" style={{ margin: '8px 0 0' }}>
-            {a.title}
-          </h2>
         </div>
         <CloseBtn onClick={onClose} />
       </div>
@@ -380,7 +379,7 @@ function AnnDetail({
           </div>
         ) : (
           <div className="tb-by">
-            <span className="av" style={{ width: 36, height: 36, fontSize: 12, background: avatarColor(a.authorId ?? authorName) }}>
+            <span className="av" style={{ width: 36, height: 36, fontSize: 12, ...avatarTint(a.authorId ?? authorName) }}>
               {initialsOf(authorName)}
             </span>
             <div style={{ flex: 1 }}>
@@ -414,10 +413,10 @@ function AnnDetail({
       </div>
       <div className="dlg-f" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button type="button" className="ibtn ghost" aria-label="Previous announcement" data-tip="Previous announcement" disabled={total < 2} onClick={() => onStep(-1)}>
+          <button type="button" className="ibtn ghost" aria-label="Previous announcement" data-tip="Previous announcement" disabled={index === 0} onClick={() => onStep(-1)}>
             <Svg d={P.prev} join={false} />
           </button>
-          <button type="button" className="ibtn ghost" aria-label="Next announcement" data-tip="Next announcement" disabled={total < 2} onClick={() => onStep(1)}>
+          <button type="button" className="ibtn ghost" aria-label="Next announcement" data-tip="Next announcement" disabled={index >= total - 1} onClick={() => onStep(1)}>
             <Svg d={P.next} join={false} />
           </button>
           <span className="cap" style={{ alignSelf: 'center' }}>

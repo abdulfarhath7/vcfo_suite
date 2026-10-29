@@ -130,3 +130,12 @@
 /* phone preview: who sent the file, as an owner chip (R-14: client amber, SBC blue) */
 .vmp-from{display:inline-flex;align-items:center;height:24px;padding:0 8px;box-sizing:border-box;border-radius:6px;background:oklch(var(--owner-client-soft));color:oklch(var(--owner-client));font:500 12px var(--font-sans),sans-serif;white-space:nowrap}
 .vmp-from[data-sbc]{background:oklch(var(--owner-sbc-soft));color:oklch(var(--owner-sbc))}
+/* ---------- prototype upload Modal parity, round 2: 1 px edge, 15 px title, 32 px close, lighter "For" list ---------- */
+.vup-dlg{border-width:1px}
+.vup-hd h2{font-size:15px}
+.vup-hd .sx-ib{width:32px;height:32px}
+.vup-for{border-width:1px}
+.vup-for>button{font-size:13.5px}
+.vup-big{border-width:1px;border-color:oklch(var(--line))}
+.vup-dt{font-size:13.5px}
+.vup-cap{font-size:11.5px}

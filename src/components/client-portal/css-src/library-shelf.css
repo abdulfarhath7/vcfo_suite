@@ -139,3 +139,11 @@ html[data-theme="dark"]{--lib-inc:color-mix(in oklch,oklch(var(--brand)) 45%,okl
 .ld-root .ld-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid oklch(var(--line-soft))}
 .ld-root .ld-title{flex:1;min-width:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ld-root .ld-pct{width:56px;text-align:right;font-size:12.5px;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
+/* ---------- prototype LibraryScreen parity, round 2 ---------- */
+/* spine: an 11 px flat navy band; page edge: a 5 px flat grey strip with a 1 px line on three sides */
+.book::before{background:oklch(var(--side) / .45)}
+.book::after{background:oklch(var(--surface-sunken));border:1px solid oklch(var(--line));border-left:0;box-sizing:border-box}
+/* hover: lift 12 px and turn -2deg in 0.3 s, no shadow */
+.book{transition:transform .3s ease,opacity .2s,filter .2s}
+.book:hover,.book:focus-visible{transform:translate3d(0,-12px,0) rotate(-2deg);box-shadow:none}
+@media (prefers-reduced-motion: reduce){.book,.book:hover,.book:focus-visible{transition:none;transform:none}}

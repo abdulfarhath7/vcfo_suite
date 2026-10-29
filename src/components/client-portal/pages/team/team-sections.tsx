@@ -27,7 +27,8 @@ import {
   Svg,
   Tile,
   api,
-  avatarColor,
+  SELF_TINT,
+  avatarTint,
   contactHref,
   copyText,
   initialsOf,
@@ -40,6 +41,11 @@ import '../../css/team-00-contract.css';
 import '../../css/team-team.css';
 
 export const TEAM_KEY = ['client-portal', 'team'] as const;
+
+/** "2 Sep 2026" for the Since column. */
+function fullDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }).replace('Sept', 'Sep');
+}
 const EMAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type Row = {
@@ -48,6 +54,8 @@ type Row = {
   name: string;
   email: string;
   when: string;
+  /** The Since column: the full date the person joined or the invite went out. */
+  date: string;
   you: boolean;
   userId?: string;
   inviteId?: string;
@@ -80,6 +88,7 @@ export function TeamSection() {
         name: p.name,
         email: p.email,
         when: `Since ${shortDate(p.since)}`,
+        date: fullDate(p.since),
         you: p.you,
         userId: p.userId,
       })),
@@ -89,6 +98,7 @@ export function TeamSection() {
         name: i.name,
         email: i.email,
         when: `Sent ${shortDate(i.sentAt)}`,
+        date: fullDate(i.sentAt),
         you: false,
         inviteId: i.id,
       })),
@@ -183,7 +193,6 @@ export function TeamSection() {
             aria-disabled={!isPrimary}
             onClick={openInvite}
           >
-            <Svg d={P.userPlus} join={false} />
             Invite
           </button>
         </CardHead>
@@ -207,21 +216,9 @@ export function TeamSection() {
             Could not load the team
           </Empty>
         ) : shown.length === 0 ? (
-          <Empty
-            action={
-              tab === 0 ? (
-                <button type="button" className="btn btn-o btn-sm" onClick={openInvite} aria-disabled={!isPrimary}>
-                  Invite
-                </button>
-              ) : (
-                <button type="button" className="btn btn-o btn-sm" onClick={() => setTab(0)}>
-                  See all
-                </button>
-              )
-            }
-          >
+          <div className="tb-faint" role="status">
             {tab === 3 ? 'No pending invites' : 'No people'}
-          </Empty>
+          </div>
         ) : (
           <div className="tb-tw">
             <table className="sx-t1 tb-people">
@@ -244,18 +241,18 @@ export function TeamSection() {
                     r.k === 'i'
                       ? { background: 'oklch(var(--upcoming-soft))', color: 'oklch(var(--upcoming))' }
                       : r.you
-                        ? { background: 'oklch(var(--brand))' }
-                        : { background: avatarColor(r.key) };
+                        ? SELF_TINT
+                        : avatarTint(r.key);
                   return (
                     <tr key={r.key}>
                       <td>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 160 }}>
-                          <span className="av" style={{ width: 28, height: 28, fontSize: 11, ...av }}>
+                          <span className="av" style={{ width: 24, height: 24, fontSize: 10, ...av }}>
                             {initialsOf(r.name)}
                           </span>
                           <span style={{ minWidth: 0 }}>
                             <span style={{ fontWeight: 500 }}>{r.name}</span>
-                            {r.you ? <span className="cap"> · you</span> : null}
+                            {r.you ? <span style={{ marginLeft: 6, fontSize: 12, color: 'oklch(var(--ink-muted))' }}>you</span> : null}
                             <span className="cap tb-m tb-flex" style={{ overflowWrap: 'anywhere' }}>
                               {r.email} · {r.when}
                             </span>
@@ -265,8 +262,8 @@ export function TeamSection() {
                       <td className="tb-d" style={{ color: 'oklch(var(--ink-2))', overflowWrap: 'anywhere' }}>
                         {r.email}
                       </td>
-                      <td className="tb-d cap" style={{ whiteSpace: 'nowrap' }}>
-                        {r.when}
+                      <td className="tb-d" style={{ width: 110, whiteSpace: 'nowrap', fontSize: 12.5, color: 'oklch(var(--ink-muted))' }}>
+                        {r.date}
                       </td>
                       <td style={{ width: 120 }}>{access(r)}</td>
                       <td style={{ width: 120, textAlign: 'right' }}>
@@ -318,6 +315,11 @@ export function TeamSection() {
                 })}
               </tbody>
             </table>
+            <footer className="tb-pager">
+              <span>
+                1–{shown.length} of {shown.length}
+              </span>
+            </footer>
           </div>
         )}
       </section>
@@ -383,7 +385,7 @@ function SbcRow({ p }: { p: ClientPortalContact }) {
   const line = support
     ? [p.email, prettyPhone(p.phoneE164)].filter(Boolean).join(' · ') || 'Contact details coming soon'
     : (p.email ?? '');
-  const bg = support ? 'oklch(var(--brand))' : avatarColor(p.id);
+  const tint = support ? SELF_TINT : avatarTint(p.id);
   const btn = (kind: 'wa' | 'call' | 'email' | 'teams', label: string) => {
     const href = contactHref(kind, p);
     return {
@@ -402,7 +404,7 @@ function SbcRow({ p }: { p: ClientPortalContact }) {
   };
   return (
     <div className="sx-row tb-sbc">
-      <span className="av" role="img" aria-label={`${p.name} photo`} style={{ width: 36, height: 36, fontSize: 12, background: bg, overflow: 'hidden' }}>
+      <span className="av" role="img" aria-label={`${p.name} photo`} style={{ width: 36, height: 36, fontSize: 12, ...tint, overflow: 'hidden' }}>
         {p.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={p.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -504,9 +506,8 @@ function InviteDialog({
     }
   };
   return (
-    <Dialog labelledBy="inv-t" onClose={onClose} tp="tp-team">
+    <Dialog labelledBy="inv-t" width={420} onClose={onClose} tp="tp-team">
       <div className="dlg-h">
-        <Tile d={P.userPlus} tone="violet" />
         <h2 id="inv-t" style={{ margin: 0 }}>
           Invite a colleague
         </h2>
@@ -519,16 +520,14 @@ function InviteDialog({
           void send();
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 12 }}>
-          <label className="fl">
-            Name
-            <input className="inp" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
-          </label>
-          <label className="fl">
-            Work email
-            <input className="inp" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
-          </label>
-        </div>
+        <label className="fl">
+          Name
+          <input className="inp" value={name} placeholder="Full name" onChange={(e) => setName(e.target.value)} autoComplete="off" />
+        </label>
+        <label className="fl">
+          Work email
+          <input className="inp" type="email" value={email} placeholder="name@company.in" onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+        </label>
         <SignInBox pw={pw} email={email.trim()} label="Sign-in" />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'oklch(var(--ink-2))' }}>
           Access
@@ -546,8 +545,7 @@ function InviteDialog({
         <button type="button" className="btn btn-g" onClick={onClose}>
           Cancel
         </button>
-        <button type="button" className="btn btn-n" disabled={busy} onClick={() => void send()}>
-          <Svg d={P.send} />
+        <button type="button" className="btn btn-n" disabled={busy || !valid} onClick={() => void send()}>
           Send invite
         </button>
       </div>
@@ -579,7 +577,7 @@ function SubstituteDialog({
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const first = name.trim().split(/\s+/)[0] || 'them';
-  const valid = EMAIL_OK.test(email.trim()) && (!self || ok);
+  const valid = EMAIL_OK.test(email.trim()) && ok;
   const submit = async () => {
     if (!valid || busy) return;
     setBusy(true);
@@ -622,9 +620,9 @@ function SubstituteDialog({
           void submit();
         }}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 28px 1fr', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1.5px solid oklch(var(--line))', borderRadius: 6, background: 'oklch(var(--surface-sunken))' }}>
-            <span className="av" style={{ width: 30, height: 30, fontSize: 11, background: self ? 'oklch(var(--brand))' : avatarColor(row.key) }}>
+        <div className="tb-seat">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span className="av" style={{ width: 30, height: 30, fontSize: 11, ...(self ? SELF_TINT : avatarTint(row.key)) }}>
               {initialsOf(row.name)}
             </span>
             <div style={{ minWidth: 0 }}>
@@ -634,21 +632,11 @@ function SubstituteDialog({
               </div>
             </div>
           </div>
-          <span style={{ color: 'oklch(var(--ink-faint))', display: 'flex', justifyContent: 'center' }}>
-            <Svg d={P.arrowR} size={18} />
+          <span aria-hidden="true" style={{ color: 'oklch(var(--ink-faint))', fontSize: 18 }}>
+            ›
           </span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: 10,
-              border: '1.5px solid oklch(var(--brand-line))',
-              borderRadius: 6,
-              background: 'oklch(var(--brand-soft))',
-            }}
-          >
-            <span className="av" style={{ width: 30, height: 30, fontSize: 11, background: 'oklch(var(--brand))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <span className="av" style={{ width: 30, height: 30, fontSize: 11, ...SELF_TINT }}>
               {name.trim() ? initialsOf(name) : '?'}
             </span>
             <div style={{ minWidth: 0 }}>
@@ -674,12 +662,10 @@ function SubstituteDialog({
           </label>
         </div>
         <SignInBox pw={pw} email={email.trim()} label={`Sign-in for ${first}`} />
-        {self ? (
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-            <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
-            I understand I will be signed out
-          </label>
-        ) : null}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+          <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
+          {self ? 'I understand I will be signed out' : `I understand ${row.name} loses access`}
+        </label>
         {err ? (
           <div className="tb-err" role="alert">
             {err}
@@ -694,7 +680,7 @@ function SubstituteDialog({
         {self ? (
           <button
             type="button"
-            className="btn btn-d"
+            className="btn btn-n"
             disabled={!valid || busy}
             onClick={() => void submit()}
           >

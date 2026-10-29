@@ -51,6 +51,9 @@ export const P = {
   download: 'M4.5 15v3.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V15 M12 4.5V15 M7.8 10.8 12 15l4.2-4.2',
   chevron: 'M6 9l6 6 6-6',
   check: 'M5 12.5 10 17.5 19 7',
+  clock: 'M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 1 0 0-15Z M12 8v4.2l2.8 1.8',
+  grid: 'M4 4h7v7H4Z M13 4h7v7h-7Z M4 13h7v7H4Z M13 13h7v7h-7Z',
+  landmark: 'M3.5 20.5h17 M5 20.5V10 M9.5 20.5V10 M14.5 20.5V10 M19 20.5V10 M3 10h18L12 3.5Z',
 };
 
 export function Svg({
@@ -94,20 +97,27 @@ export function initialsOf(name: string): string {
   return ((parts[0][0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1][0] ?? '') : '')).toUpperCase();
 }
 
-/** Stable avatar colour per person (the board's demo palette). */
-const AV = [
-  'oklch(52% 0.13 330)',
-  'oklch(50% 0.12 200)',
-  'oklch(62% 0.08 40)',
-  'oklch(55% 0.09 200)',
-  'oklch(52% 0.12 150)',
-  'oklch(54% 0.14 280)',
+/**
+ * Stable avatar tint per person (prototype `Avatar`, R-44): a soft token fill with
+ * coloured initials, so both themes flip with the tokens.
+ */
+const AV: Array<[string, string]> = [
+  ['--brand-soft', '--brand-text'],
+  ['--info-soft', '--info'],
+  ['--identity-soft', '--identity'],
+  ['--waiting-soft', '--waiting'],
+  ['--warning-soft', '--warning'],
+  ['--positive-soft', '--positive'],
+  ['--upcoming-soft', '--upcoming'],
 ];
-export function avatarColor(seed: string): string {
+export function avatarTint(seed: string): CSSProperties {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return AV[h % AV.length];
+  const [bg, fg] = AV[h % AV.length];
+  return { background: `oklch(var(${bg}))`, color: `oklch(var(${fg}))` };
 }
+/** The signed-in person's own avatar: blurple soft fill, blurple initials. */
+export const SELF_TINT: CSSProperties = { background: 'oklch(var(--brand-soft))', color: 'oklch(var(--brand-text))' };
 
 const IST = 'Asia/Kolkata';
 export function dayMonth(iso: string): { d: string; m: string } {
@@ -151,6 +161,23 @@ export function useSkeleton(loading: boolean): boolean {
     return () => clearTimeout(t);
   }, [loading, show]);
   return show;
+}
+
+/**
+ * Grey shapes for 300 ms after a filter switch (the prototype's `CardBody`), so a switch
+ * reads as a fresh load. `flash()` starts it; reduced motion skips it.
+ */
+export function useTabFlash(): [boolean, () => void] {
+  const [on, setOn] = useState(false);
+  const t = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(t.current), []);
+  const flash = () => {
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    clearTimeout(t.current);
+    setOn(true);
+    t.current = setTimeout(() => setOn(false), 300);
+  };
+  return [on, flash];
 }
 
 export async function api<T>(url: string, init?: RequestInit & { json?: unknown }): Promise<T> {
@@ -199,6 +226,7 @@ export function Seg({
   style,
   btnStyle,
   wrap = true,
+  md = false,
 }: {
   tabs: Array<{ label: string; cnt?: number | string }>;
   active: number;
@@ -208,11 +236,13 @@ export function Seg({
   style?: CSSProperties;
   btnStyle?: CSSProperties;
   wrap?: boolean;
+  /** The prototype's `size="md"` switch: 28 px buttons instead of 22 px. */
+  md?: boolean;
 }) {
   const n = tabs.length;
   const seg = (
     <div
-      className="seg"
+      className={md ? 'seg md' : 'seg'}
       role="tablist"
       aria-label={label}
       style={{ ...(grid ? { gridTemplateColumns: `repeat(${n},minmax(0,1fr))` } : {}), ...style }}
@@ -244,10 +274,10 @@ export function Seg({
 export type TileTone = 'amber' | 'green' | 'teal' | 'blue' | 'violet' | 'red' | 'brand';
 
 /** R-16: the 28 px tinted icon tile before a card title. */
-export function Tile({ d, tone = 'brand', sw = 1.8 }: { d: string; tone?: TileTone; sw?: number }) {
+export function Tile({ d, tone = 'brand', sw = 1.8, big = false }: { d: string; tone?: TileTone; sw?: number; big?: boolean }) {
   return (
-    <span className="sx-tile" data-tone={tone === 'brand' ? undefined : tone} aria-hidden="true">
-      <Svg d={d} size={15} sw={sw} />
+    <span className={big ? 'sx-tile tb-t30' : 'sx-tile'} data-tone={tone === 'brand' ? undefined : tone} aria-hidden="true">
+      <Svg d={d} size={big ? 16 : 15} sw={sw} />
     </span>
   );
 }
@@ -423,6 +453,199 @@ export function Dialog({
         </div>
       </div>
     </TPortal>
+  );
+}
+
+/**
+ * The prototype's right-side detail panel (SidePanel, 440 px): the scrim, a head with an
+ * eyebrow, the title and chips under it, a scrolling body of `PanelSection`s and a footer
+ * with the main action. Full width on phones. Esc, the scrim and the close button close it.
+ */
+export function SidePanel({
+  labelledBy,
+  title,
+  eyebrow,
+  sub,
+  footer,
+  onClose,
+  children,
+  tp,
+  width = 440,
+}: {
+  labelledBy: string;
+  title: ReactNode;
+  eyebrow?: ReactNode;
+  sub?: ReactNode;
+  footer?: ReactNode;
+  onClose: () => void;
+  children?: ReactNode;
+  tp?: string;
+  width?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const last = document.activeElement as HTMLElement | null;
+    const t = setTimeout(() => ref.current?.focus({ preventScroll: true }), 30);
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeRef.current();
+      }
+      if (e.key === 'Tab' && ref.current) {
+        const f = [...ref.current.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!f.length) return;
+        const first = f[0];
+        const lastEl = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          lastEl.focus();
+        } else if (!e.shiftKey && document.activeElement === lastEl) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', key, true);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', key, true);
+      last?.focus?.({ preventScroll: true });
+    };
+  }, []);
+  return (
+    <TPortal tp={tp}>
+      <div
+        className="tb-sp-scrim"
+        role="presentation"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div ref={ref} tabIndex={-1} className="tb-sp" role="dialog" aria-modal="true" aria-labelledby={labelledBy} style={{ maxWidth: width }}>
+          <header className="tb-sp-h">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              {eyebrow ? <div className="tb-sp-eb">{eyebrow}</div> : null}
+              <h2 id={labelledBy} className="tb-sp-t">
+                {title}
+              </h2>
+              {sub ? <div className="tb-sp-sub">{sub}</div> : null}
+            </div>
+            <button type="button" className="ibtn ghost" aria-label="Close" onClick={onClose}>
+              <Svg d={P.x} size={16} join={false} />
+            </button>
+          </header>
+          <div className="tb-sp-b">{children}</div>
+          {footer ? <footer className="tb-sp-f">{footer}</footer> : null}
+        </div>
+      </div>
+    </TPortal>
+  );
+}
+
+/** A titled block inside a SidePanel, with a hairline under it. */
+export function PanelSection({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className="tb-sp-sec">
+      {title ? <h3 className="lbl tb-sp-st">{title}</h3> : null}
+      {children}
+    </div>
+  );
+}
+
+/** Label and value pairs in one or two columns (the prototype's KeyValue). */
+export function KeyValue({ rows, cols = 2 }: { rows: Array<{ k: string; v: ReactNode }>; cols?: 1 | 2 }) {
+  return (
+    <dl className={`tb-kv${cols === 1 ? ' one' : ''}`}>
+      {rows.map((r) => (
+        <div key={r.k} style={{ minWidth: 0 }}>
+          <dt>{r.k}</dt>
+          <dd>{r.v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** A 30 px native select in a card head (the prototype's `Select` filters). */
+export function HeadSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <span className="tb-sel">
+      <select className="inp" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <Svg d={P.chevron} size={14} join={false} />
+    </span>
+  );
+}
+
+/**
+ * The grid footer (prototype DataGrid): "1–10 of N", any extra buttons, and page
+ * numbers with previous and next when there is more than one page.
+ */
+export function Pager({
+  total,
+  page,
+  pageSize,
+  setPage,
+  children,
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  setPage: (p: number) => void;
+  children?: ReactNode;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const cur = Math.min(Math.max(1, page), pages);
+  const nums = Array.from({ length: pages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === pages || Math.abs(p - cur) <= 1)
+    .reduce<Array<number | '…'>>((acc, p, i, arr) => {
+      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('…');
+      acc.push(p);
+      return acc;
+    }, []);
+  return (
+    <footer className="tb-pager">
+      <span>{total === 0 ? '0' : `${(cur - 1) * pageSize + 1}–${Math.min(total, cur * pageSize)}`} of {total}</span>
+      {children}
+      {pages > 1 ? (
+        <nav className="tb-pages" aria-label="Pages">
+          <button type="button" className="tb-pg" disabled={cur === 1} aria-label="Previous page" onClick={() => setPage(cur - 1)}>
+            <Svg d={P.prev} size={14} sw={1.8} />
+          </button>
+          {nums.map((p, i) =>
+            p === '…' ? (
+              <span key={`e${i}`} style={{ padding: '0 4px' }}>
+                …
+              </span>
+            ) : (
+              <button key={p} type="button" className="tb-pg n" aria-current={p === cur ? 'page' : undefined} onClick={() => setPage(p)}>
+                {p}
+              </button>
+            ),
+          )}
+          <button type="button" className="tb-pg" disabled={cur === pages} aria-label="Next page" onClick={() => setPage(cur + 1)}>
+            <Svg d={P.next} size={14} sw={1.8} />
+          </button>
+        </nav>
+      ) : null}
+    </footer>
   );
 }
 

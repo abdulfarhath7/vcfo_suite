@@ -309,8 +309,11 @@ export function useCredentialsState() {
       },
     });
   };
-  const copyText = (v: string) => {
-    const ok = () => toast('Copied');
+  /** `quiet`: the button shows its own tick, so no toast on success. */
+  const copyText = (v: string, opts?: { quiet?: boolean }) => {
+    const ok = () => {
+      if (!opts?.quiet) toast('Copied');
+    };
     const fb = () => {
       try {
         const ta = document.createElement('textarea');

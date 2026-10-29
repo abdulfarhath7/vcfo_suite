@@ -4,6 +4,9 @@ import { NextResponse } from 'next/server';
 import { requireAuth, type AuthContext } from '@/auth/guards';
 import { canUseAsk } from '@/lib/ask/access';
 
+/** Roles with a Library. Managers and Project Leads have Ask VCFO but no Library. */
+const LIBRARY_ROLES = new Set(['client', 'admin', 'super_admin']);
+
 /**
  * Client-portal Library routes: session (401) → role (403 for managers and
  * Project Leads, who have no library). Deliberately NOT the Ask VCFO feature
@@ -12,6 +15,6 @@ import { canUseAsk } from '@/lib/ask/access';
 export async function requireLibrary(): Promise<{ ok: true; ctx: AuthContext } | { ok: false; response: NextResponse }> {
   const guard = await requireAuth();
   if (guard.ok === false) return { ok: false, response: NextResponse.json({ error: guard.error }, { status: guard.status }) };
-  if (!canUseAsk(guard.ctx.role)) return { ok: false, response: NextResponse.json({ error: 'Not available for your role' }, { status: 403 }) };
+  if (!canUseAsk(guard.ctx.role) || !LIBRARY_ROLES.has(guard.ctx.role)) return { ok: false, response: NextResponse.json({ error: 'Not available for your role' }, { status: 403 }) };
   return { ok: true, ctx: guard.ctx };
 }

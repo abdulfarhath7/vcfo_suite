@@ -390,7 +390,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                     </span>
                   ) : null}
                   {missing ? <span className="ft-miss" role="img" aria-label="Not uploaded yet" /> : null}
-                  <span className="lb">{f ? f.label : folder!.label}</span>
+                  <span className={missing ? 'lb miss' : 'lb'}>{f ? f.label : folder!.label}</span>
                   {f?.stale ? (
                     <span className="cp-tw tip vdoc-hide-sm" data-tip="Bill is older than 2 months. SBC may ask for a newer one.">
                       <Tag tone="warn">Older than 2 months</Tag>
@@ -454,9 +454,9 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                   onClick={() => setMenu((m) => (m === e.id ? '' : e.id))}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <circle cx="12" cy="5.5" r="1.7" />
+                    <circle cx="5.5" cy="12" r="1.7" />
                     <circle cx="12" cy="12" r="1.7" />
-                    <circle cx="12" cy="18.5" r="1.7" />
+                    <circle cx="18.5" cy="12" r="1.7" />
                   </svg>
                 </button>
                 {menu === e.id ? (
@@ -610,6 +610,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
           n={sn}
           company={company}
           stepLabel={sn ? stepLabelOf(sn) : '—'}
+          accept={data.accept}
           onPreview={() => sn && onPreview(sn, viewerList())}
           onUpload={(file) => onUpload(sn?.requestId, file)}
         />
@@ -620,8 +621,27 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
   );
 }
 
-function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; company: string; stepLabel: string; onPreview: () => void; onUpload: (file?: File) => void }) {
+function Pane({
+  n,
+  company,
+  stepLabel,
+  accept,
+  onPreview,
+  onUpload,
+}: {
+  n?: DocNode;
+  company: string;
+  stepLabel: string;
+  accept: { exts: string[]; maxLabel: string };
+  onPreview: () => void;
+  onUpload: (file?: File) => void;
+}) {
   const [over, setOver] = useState(false);
+  /* The same caption the upload dialog shows, from the real accept list and size limit. */
+  const acceptCap = `${accept.exts
+    .filter((e) => e !== 'jpeg' && e !== 'doc')
+    .map((e) => e.toUpperCase())
+    .join(' · ')} · up to ${accept.maxLabel}`;
   if (!n) {
     return (
       <div className="vdoc-pane">
@@ -717,7 +737,8 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
               <Ico d={UP} size={18} sw={1.6} />
             </span>
             <b>{over ? 'Release to upload' : 'Drop the file here'}</b>
-            {over ? null : <span className="sx-btn sm p">Choose file</span>}
+            {over ? null : <span className="vdoc-drop-cap">{acceptCap}</span>}
+            {over ? null : <span className="sx-btn sm">Choose file</span>}
           </LinkButton>
         )}
       </div>
@@ -747,9 +768,8 @@ function Pane({ n, company, stepLabel, onPreview, onUpload }: { n?: DocNode; com
         {n.portal ? (
           <div className="kv">
             <span>Verify</span>
-            <a className="tip" data-tip={`Open ${n.portal.label}`} href={n.portal.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <a href={n.portal.url} target="_blank" rel="noopener noreferrer">
               {n.portal.label}
-              <Ico d="M8 16L16 8 M9 8h7v7" size={14} sw={1.6} />
               <span className="vdoc-sr"> (opens in a new tab)</span>
             </a>
           </div>

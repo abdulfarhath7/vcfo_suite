@@ -294,11 +294,8 @@ export function OtpDialog({
       <div className="cr-dlg" id="cr-dlg" role="dialog" aria-modal="true" aria-labelledby="cr-dlg-t" ref={dlgRef}>
         <header className="cr-dh">
           <div className="cr-dhx">
-            <div className="cr-eyebrow">
-              {verb} · {caption}
-            </div>
             <h2 id="cr-dlg-t" className="cr-dt">
-              Confirm it&#39;s you
+              {verb} {caption === 'whole page' ? 'the sheets' : caption}
             </h2>
           </div>
           <button type="button" id="cr-otp-x" className="sx-ib sm" aria-label="Close" onClick={onClose} ref={closeRef}>
@@ -345,9 +342,10 @@ export function OtpDialog({
               </>
             ) : null}
           </div>
+          {!locked && mode !== 'reveal' ? <div className="cr-hint">Open for 10 minutes</div> : null}
           {locked ? (
             <div className="cr-lock" role="status" aria-live="polite">
-              Too many wrong codes. Try again later. <span className="cr-num">{fmtS(lockUntil - now)}</span>
+              Too many wrong tries. Try again later. <span className="cr-num">{fmtS(lockUntil - now)}</span>
             </div>
           ) : info && !err ? (
             <div className="cr-ok" role="status" aria-live="polite">

@@ -15,6 +15,7 @@
  * Usage (Home › Company IDs card):
  *   const pan = useRevealedIdentifier('pan');          // string | null
  *   {open && <IdsRevealDialog field="pan" onClose={() => setOpen(false)} />}
+ *   hideRevealedIdentifier('pan');                     // mask it again now
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
@@ -45,6 +46,19 @@ function publish(field: 'pan' | 'tan', value: string, expiresAt?: string) {
     revealed = next;
     emit();
   }, until - now);
+  emit();
+}
+/**
+ * Masks a revealed PAN or TAN at once (the hide button on the Home IDs card). The reveal
+ * holds no server grant: the value lives only in this store, so clearing it is enough.
+ */
+export function hideRevealedIdentifier(field: 'pan' | 'tan'): void {
+  if (!revealed[field]) return;
+  if (timers[field]) clearTimeout(timers[field]);
+  delete timers[field];
+  const next = { ...revealed };
+  delete next[field];
+  revealed = next;
   emit();
 }
 function subscribe(l: () => void) {

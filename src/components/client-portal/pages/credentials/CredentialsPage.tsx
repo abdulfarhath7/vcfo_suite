@@ -3,7 +3,7 @@
 /**
  * Credentials page — board `s/home/v7p_credentials.dc.html` (route
  * `credentials`). Six tinted identifier tiles + a five-sheet workbook
- * (Address · Login Credentials · Registrations · Directors KYC · Other
+ * (Address · Login credentials · Registrations · Directors KYC · Other
  * credentials). Secret values stay masked; every Preview / Edit / Reveal asks
  * for a 6-digit OTP that goes to the client's Project Manager and opens a
  * 10-minute grant (server-enforced, `src/db/repositories/credentials/`).
@@ -102,7 +102,7 @@ function CredentialsInner() {
                 </button>
               </div>
               <span className="cr-sp" />
-              <button type="button" className="cr-btn" data-act="log" onClick={() => setLogOpen(true)}>
+              <button type="button" className="cr-btn cr-btn-sm" data-act="log" onClick={() => setLogOpen(true)}>
                 <Ic n="history" s={14} />
                 Access log
               </button>

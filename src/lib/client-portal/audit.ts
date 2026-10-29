@@ -9,6 +9,12 @@
 export type AuditNode = 'req' | 'back' | 'up' | 'ok' | 'time' | 'mail' | 'team';
 export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials';
 export type AuditRoleLabel = 'Manager' | 'Lead' | 'SBC' | 'System' | 'Client';
+/**
+ * What happened to the action, from `audit_events.result` (G-28): `ok` reads
+ * "Done" (or "Sent back" when the action asked for a fix), `failed` "Failed"
+ * and `denied` "Denied".
+ */
+export type AuditResult = 'Done' | 'Sent back' | 'Failed' | 'Denied';
 
 export interface ClientAuditEvent {
   id: string;
@@ -24,6 +30,7 @@ export interface ClientAuditEvent {
   subject: string;
   who: { name: string; initials: string; role: AuditRoleLabel; side: 'sbc' | 'client' };
   facts: Array<{ k: string; v: string }>;
+  result: AuditResult;
   cta?: { label: string; href: string };
 }
 
@@ -44,4 +51,11 @@ export interface ClientAuditPage {
 export function istParts(d: Date): { day: string; time: string } {
   const s = new Date(d.getTime() + 330 * 60_000).toISOString();
   return { day: s.slice(0, 10), time: s.slice(11, 16) };
+}
+
+/** The Result word for a stored `audit_events.result` and the event's node. */
+export function auditResultWord(result: string | null | undefined, node: AuditNode): AuditResult {
+  if (result === 'failed') return 'Failed';
+  if (result === 'denied') return 'Denied';
+  return node === 'back' ? 'Sent back' : 'Done';
 }

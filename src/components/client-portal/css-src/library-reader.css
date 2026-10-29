@@ -106,3 +106,5 @@ a.vrd-srcc:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))
 .vrd-foot a{color:oklch(var(--brand-text))}
 .vrd-foot a:hover{text-decoration:underline;color:oklch(var(--brand-text))}
 @media (max-width:767px){.vrd-tl .lnk{height:22px;margin-top:4px;border-top:0;background:oklch(var(--positive-mid))}.vrd-tl .lnk.dash{background:repeating-linear-gradient(180deg,oklch(var(--line-strong)) 0 6px,transparent 6px 11px)!important}.vrd .sx-btn{height:40px}.vrd .sx-ib{width:40px;height:40px}.vrd .sx-seg button{height:36px}.vrd-facts{grid-template-columns:minmax(0,1fr)!important}.vrd-facts>div{border-left:0!important;border-top:1px solid oklch(var(--line-soft))}.vrd-facts>div:first-child{border-top:0}}
+/* depth switch: the shared Tabs md look (1.5 px edge, 3 px padding, 28 px buttons) */
+.vrd .sx-seg{padding:3px;gap:2px;border:1.5px solid oklch(var(--line))}

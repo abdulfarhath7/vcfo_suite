@@ -1,24 +1,38 @@
 /* @cp-scope page=team */
-/* Audit — audit_redesign.dc.html, redrawn as VCFO Spectrum (C-0029, R-07, R-08): one card,
-   the search and Export in its head, the filters under it, the events in T1 rows. */
-.tp-audit .tb-srch{position:relative;display:block;flex:0 1 220px;width:220px;max-width:100%;min-width:150px}
+/* Audit — the prototype AuditScreen (2c978c5) as a grid card: search, Area and Who selects
+   and Export in the head; When, Event, Area, Who and Result columns; ten rows a page; a row
+   opens the side panel. */
+.tp-audit .tb-srch{position:relative;display:block;flex:none;width:150px;max-width:100%}
 .tp-audit .tb-srch .inp{height:30px;padding-left:30px;font-size:13px}
 .tp-audit .tb-srch-i{position:absolute;left:10px;top:8px;color:oklch(var(--ink-faint));display:flex}
-.tp-audit .tb-hd{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid oklch(var(--line-soft));flex-wrap:wrap}
-.tp-audit .tb-hd .tb-segx+.tb-segx{margin-left:auto}
-.tp-audit .tb-events tbody tr.on td{background:oklch(var(--surface-sunken))}
-.tp-audit .tb-events .tb-facts-row td{height:auto;padding:0 16px 12px;border-top:0;background:oklch(var(--surface-sunken))}
-.tp-audit .tb-facts-row:hover td{background:oklch(var(--surface-sunken))}
-.tp-audit .tb-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px;padding:12px 14px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-raised))}
-.tp-audit .tb-facts .rt{overflow-wrap:anywhere}
+.tp-audit .tb-events th,.tp-audit .tb-events td{padding-left:10px;padding-right:10px}
+.tp-audit .tb-events th:first-child,.tp-audit .tb-events td:first-child{padding-left:16px}
+.tp-audit .tb-events th:last-child,.tp-audit .tb-events td:last-child{padding-right:16px}
+/* the head sticks under the 60 px top bar and the 3 px ribbon */
+@media (min-width:768px){
+  .tp-audit .tb-tw{overflow:visible}
+  .tp-audit .tb-events thead th{position:sticky;top:63px;z-index:2;background:oklch(var(--surface-raised))}
+}
+.tp-audit .tb-events tbody tr{cursor:pointer}
+.tp-audit .tb-events tbody tr:hover td{background:oklch(var(--surface-sunken))}
+.tp-audit .tb-events tbody tr.on td{background:oklch(var(--brand-soft))}
+.tp-audit .tb-events tbody tr:focus-visible{outline:none}
+.tp-audit .tb-events tbody tr:focus-visible td{box-shadow:inset 0 0 0 2px oklch(var(--focus-ring) / .5)}
 .tp-audit .tb-when{padding:0;border:0;background:none;font:400 13px var(--font-sans),sans-serif;color:oklch(var(--brand-text));cursor:pointer;white-space:nowrap}
 .tp-audit .tb-when:hover{text-decoration:underline;text-underline-offset:2px}
 .tb-sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tb-node{display:flex;flex:none}
-.tp-audit .tb-foot{display:flex;justify-content:center;gap:8px;padding:12px 16px;border-top:1px solid oklch(var(--line-soft))}
+.tb-drow{display:flex;align-items:center;gap:12px;width:100%;padding:8px 16px;border-left:0;border-right:0;border-bottom:0;background:none;text-align:left;font:inherit;font-size:14px;color:inherit;cursor:pointer}
+/* side panel: the Before and After change (prototype `Facts`) */
+.tb-chg{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px}
+.tb-chg-b,.tb-chg-a{min-width:0;padding:8px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken))}
+.tb-chg-a{border-color:oklch(var(--brand-line));background:oklch(var(--brand-soft))}
+.tb-chg-v{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-chg-b .tb-chg-v{color:oklch(var(--ink-2));text-decoration:line-through;text-decoration-color:oklch(var(--ink-faint))}
+/* phones: every column stays, the table scrolls sideways, the first column sticks */
 @media (max-width:767px){
-  .tp-audit .tb-hd .tb-segx+.tb-segx{margin-left:0}
-  .tp-audit .tb-facts{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
-  .tp-audit .tb-srch{flex:1 1 150px;width:auto;max-width:none}
   .tp-audit .sx-head .sx-right{margin-left:0;width:100%}
+  .tp-audit .tb-srch{flex:1 1 150px;width:auto}
+  .tp-audit .tb-events{min-width:720px}
+  .tp-audit .tb-events th:first-child,.tp-audit .tb-events td:first-child{position:sticky;left:0;z-index:1;background:oklch(var(--surface-raised))}
 }
+.tp-audit .tb-faint{padding:28px 16px;text-align:center;font-size:13px;color:oklch(var(--ink-faint))}

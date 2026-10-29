@@ -143,3 +143,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .pb:hover::before,.pb:focus-visible::before,.kb:hover::before,.kb:focus-visible::before{content:none}
 .kb.tip::after,.kb.tip:hover::after,.kb.tip:focus-visible::after{left:auto;right:0;animation:none}
 .kb.tip::after{transform:translate(0,3px)}.kb.tip:hover::after,.kb.tip:focus-visible::after{transform:none}
+/* ---------- prototype DocumentsScreen (2c978c5) parity, round 2 ---------- */
+/* By step / By category: the shared Tabs look (1.5 px edge, 3 px padding, 22 px buttons) */
+.vdoc-tools .sx-seg{padding:3px;gap:2px;border:1.5px solid oklch(var(--line))}
+@media (min-width:768px){.vdoc-tools .sx-seg button{height:22px}}
+/* a missing file reads lighter than an uploaded one */
+.lb.miss{font-weight:400;color:oklch(var(--ink-2))}
+/* the row menu button: 30 px, horizontal dots */
+.kb{width:30px;height:30px}
+/* drop zone for a missing file: up to 340 px, the accepted types under the title, a secondary Choose file */
+.vdoc-drop{width:min(340px,100%);height:auto;min-height:200px;border-color:oklch(var(--line-strong))}
+.vdoc-drop-cap{font-size:13px;color:oklch(var(--ink-muted))}
+/* the Older and Due marks hide under 640 px only */
+@media (min-width:640px) and (max-width:767px){.vdoc-hide-sm{display:revert}}

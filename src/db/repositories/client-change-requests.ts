@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientTimelineRequests, profiles, tasks } from '@/db/schema';
 import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client/client-home';
@@ -226,8 +226,9 @@ export async function withdrawClientTimelineRequest(ctx: AuthContext, id: string
   if (row.taskId) {
     await db
       .update(tasks)
-      .set({ status: 'done', updatedAt: new Date() })
-      .where(and(eq(tasks.id, row.taskId), eq(tasks.engagementId, access.dbId)));
+      // completed_at feeds the staff home trend lines (migration 0027).
+      .set({ status: 'done', completedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tasks.id, row.taskId), eq(tasks.engagementId, access.dbId), ne(tasks.status, 'done')));
   }
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,
@@ -319,7 +320,12 @@ export async function decideTimelineRequest(
       updatedAt: new Date(),
     })
     .where(eq(clientTimelineRequests.id, row.id));
-  if (row.taskId) await db.update(tasks).set({ status: 'done' }).where(eq(tasks.id, row.taskId));
+  if (row.taskId) {
+    await db
+      .update(tasks)
+      .set({ status: 'done', completedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tasks.id, row.taskId), ne(tasks.status, 'done')));
+  }
 
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,

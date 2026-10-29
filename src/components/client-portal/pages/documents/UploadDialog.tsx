@@ -20,6 +20,7 @@ import { Chip } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
 import { PagePortal } from './shared-ui';
 import { missingLabel } from './model';
+import { dayMonth } from './file-types';
 
 const UP_ICON = 'M12 15V4 M7.5 8.5 12 4l4.5 4.5 M5 19.5h14';
 
@@ -176,13 +177,9 @@ export function UploadDialog({
                         <span className="vup-rl">{r.label}</span>
                         <span className="cp-tw">
                           {r.reupload ? (
-                            <Chip fixed tone="bad">
-                              Re-upload
-                            </Chip>
+                            <Chip tone="bad">Re-upload</Chip>
                           ) : (
-                            <Chip fixed tone={r.overdue ? 'bad' : 'warn'}>
-                              {missingLabel(r)}
-                            </Chip>
+                            <Chip tone={r.overdue ? 'bad' : 'warn'}>{r.overdue && r.due ? `Overdue · ${dayMonth(r.due)}` : missingLabel(r)}</Chip>
                           )}
                         </span>
                       </button>

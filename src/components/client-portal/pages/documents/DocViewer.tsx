@@ -6,8 +6,8 @@
  * Credentials): open it with a list of documents and the index to show.
  *
  *  - Esc / × close (focus returns to the opener) · ← / → and the round buttons
- *    cycle the list (wraps) · − / + and the navy bar zoom 50–150 % in 25 %
- *    steps (paper width 460 px × zoom, `.2s`).
+ *    cycle the list (wraps) · − / + and the navy bar zoom 50, 75, 100, 125, 150 and 200 %
+ *    (the percentage resets to 100 %) (paper width 460 px × zoom, `.2s`).
  *  - PDF → the browser's own renderer inside the paper; JPG / PNG / WEBP →
  *    `<img>`; DOCX → `docx-preview` inside a `.cp-tw` island; anything else →
  *    the board's "Preview not available for this file type" dialog.
@@ -49,9 +49,12 @@ export interface DocViewerProps {
   onIndexChange?: (i: number) => void;
 }
 
-const ZMIN = 50;
-const ZMAX = 150;
-const ZSTEP = 25;
+/** Zoom steps (prototype viewer): 50, 75, 100, 125, 150 and 200 %. */
+const ZOOMS = [50, 75, 100, 125, 150, 200];
+const ZMIN = ZOOMS[0]!;
+const ZMAX = ZOOMS[ZOOMS.length - 1]!;
+const zoomIn = (v: number) => ZOOMS.find((x) => x > v) ?? ZMAX;
+const zoomOut = (v: number) => [...ZOOMS].reverse().find((x) => x < v) ?? ZMIN;
 
 type Loaded =
   | { state: 'loading' }
@@ -117,7 +120,7 @@ const S_NAV: CSSProperties = {
   boxShadow: 'var(--shadow-float)',
   zIndex: 2,
 };
-const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: 'oklch(var(--on-brand))', font: '500 16px var(--font-sans),sans-serif', cursor: 'pointer' };
+const S_ZB: CSSProperties = { width: 30, height: 30, border: 0, borderRadius: 6, background: 'transparent', color: 'oklch(var(--ink))', font: '500 16px var(--font-sans),sans-serif', cursor: 'pointer' };
 
 export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProps) {
   const [i, setI] = useState(() => Math.min(Math.max(index, 0), Math.max(docs.length - 1, 0)));
@@ -245,8 +248,8 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         close();
       } else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === 'ArrowRight') go(1);
-      else if (e.key === '+' || e.key === '=') setZ((v) => Math.min(ZMAX, v + ZSTEP));
-      else if (e.key === '-' || e.key === '_') setZ((v) => Math.max(ZMIN, v - ZSTEP));
+      else if (e.key === '+' || e.key === '=') setZ(zoomIn);
+      else if (e.key === '-' || e.key === '_') setZ(zoomOut);
       else if (e.key === 'Tab') {
         // keep focus inside the dialog
         const root = document.querySelector('.cp-docviewer [role="dialog"]');
@@ -361,12 +364,12 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
   const navButtons =
     n > 1 ? (
       <>
-        <button type="button" className="dv-nav" aria-label="Previous document" onClick={() => go(-1)} style={{ ...S_NAV, left: 16 }}>
+        <button type="button" className="dv-nav vh-hide-sm" aria-label="Previous document" onClick={() => go(-1)} style={{ ...S_NAV, left: 16 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none', transform: 'rotate(180deg)' }}>
             <path d="M9 6l6 6-6 6" />
           </svg>
         </button>
-        <button type="button" className="dv-nav" aria-label="Next document" onClick={() => go(1)} style={{ ...S_NAV, right: 16 }}>
+        <button type="button" className="dv-nav vh-hide-sm" aria-label="Next document" onClick={() => go(1)} style={{ ...S_NAV, right: 16 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
             <path d="M9 6l6 6-6 6" />
           </svg>
@@ -455,27 +458,47 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         {navButtons}
         <div
           className="vh-zoom"
-          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, padding: 4, borderRadius: 6, background: 'oklch(var(--side))', color: 'oklch(var(--on-brand))', boxShadow: 'var(--shadow-float)', zIndex: 2 }}
+          style={{ position: 'absolute', left: '50%', bottom: 16, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 4, height: 38, padding: '0 4px', boxSizing: 'border-box', borderRadius: 6, border: '1.5px solid oklch(var(--line))', background: 'oklch(var(--surface-raised))', color: 'oklch(var(--ink))', boxShadow: 'var(--shadow-float)', zIndex: 2 }}
         >
           {pages ? (
             <>
               <span style={{ padding: '0 10px', font: '500 12.5px var(--font-sans),sans-serif', whiteSpace: 'nowrap' }}>
                 Page 1 / {pages}
               </span>
-              <span style={{ width: 1, height: 18, background: 'oklch(100% 0 0 / .2)' }} />
+              <span style={{ width: 1, height: 18, background: 'oklch(var(--line))' }} />
             </>
           ) : null}
-          <button type="button" className="dv-zb" aria-label="Zoom out" disabled={z <= ZMIN} onClick={() => setZ((v) => Math.max(ZMIN, v - ZSTEP))} style={S_ZB}>
+          <button type="button" className="dv-zb" aria-label="Zoom out" disabled={z <= ZMIN} onClick={() => setZ(zoomOut)} style={S_ZB}>
             −
           </button>
-          <span style={{ minWidth: 48, textAlign: 'center', font: '500 12.5px var(--font-sans),sans-serif' }} aria-live="polite">
+          <button
+            type="button"
+            className="dv-zb"
+            aria-label={`Zoom ${z}%, reset to 100%`}
+            onClick={() => setZ(100)}
+            style={{ ...S_ZB, width: 'auto', minWidth: 48, font: '500 12.5px var(--font-sans),sans-serif' }}
+            aria-live="polite"
+          >
             {z}%
-          </span>
-          <button type="button" className="dv-zb" aria-label="Zoom in" disabled={z >= ZMAX} onClick={() => setZ((v) => Math.min(ZMAX, v + ZSTEP))} style={S_ZB}>
+          </button>
+          <button type="button" className="dv-zb" aria-label="Zoom in" disabled={z >= ZMAX} onClick={() => setZ(zoomIn)} style={S_ZB}>
             +
           </button>
         </div>
       </div>
+      {n > 1 ? (
+        <div className="dv-pbar">
+          <LinkButton className="sx-btn sm" onClick={() => go(-1)}>
+            Previous
+          </LinkButton>
+          <span style={{ font: '500 12.5px var(--font-sans),sans-serif', color: 'oklch(var(--ink-muted))' }}>
+            {i + 1} / {n}
+          </span>
+          <LinkButton className="sx-btn sm" onClick={() => go(1)}>
+            Next
+          </LinkButton>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -487,7 +510,7 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) close();
         }}
-        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'oklch(var(--side) / .6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
+        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'var(--scrim)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
       >
         {body}
       </div>

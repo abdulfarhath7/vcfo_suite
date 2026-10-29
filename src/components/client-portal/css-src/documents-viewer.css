@@ -28,3 +28,13 @@
 .dv-zb:hover{background:oklch(100% 0 0 / .14)!important}
 .dv-zb:disabled{opacity:.4;cursor:default!important}
 @media (prefers-reduced-motion: reduce){.dv-scrim,.dv-dlg,.dv-line{animation:none!important}[data-paper]{transition:none!important}}
+/* ---------- prototype viewer parity, round 2 ---------- */
+.dv-zb:hover{background:oklch(var(--ink) / .06)!important}
+/* phones: Previous and Next in a footer bar; the dialog fills the area under the top bar */
+.dv-pbar{display:none}
+@media (max-width:767px){
+  .dv-pbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid oklch(var(--line-soft));background:oklch(var(--surface-raised))}
+  .dv-pbar .sx-btn{height:40px}
+  .dv-dlg{width:100%!important;height:100%!important;max-width:none!important;border-radius:0!important;border:0!important}
+  .vh-zoom{bottom:16px!important}
+}

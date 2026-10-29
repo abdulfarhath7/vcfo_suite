@@ -104,8 +104,8 @@ export const STATUS_TONE: Record<DocStatus, 'ok' | 'prog' | 'idle' | 'warn'> = {
 export const GLYPH: Record<'done' | 'sbc' | 'you' | 'late' | 'now', [CSSProperties, string, string]> = {
   done: [OK_TONE, '', 'M6.5 12.5l3.8 3.8 7.2-8'],
   sbc: [{ background: 'oklch(var(--brand-soft))', color: 'oklch(var(--brand-text))' }, '', 'M5.5 16l4.5-4.5 3 3 5.5-6 M14.5 8.5h4v4'],
-  you: [{ background: 'oklch(var(--warning-soft))', color: 'oklch(var(--warning))' }, 'M12 4.5a3.6 3.6 0 1 1 0 7.2a3.6 3.6 0 1 1 0-7.2Z M4.8 20.5a7.2 7.2 0 0 1 14.4 0Z', ''],
-  late: [{ background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' }, '', 'M12 6v7.5 M12 18.2v.1'],
+  you: [{ background: 'oklch(var(--warning-soft))', color: 'oklch(var(--warning))' }, '', 'M12 4.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7Z M5 20a7 7 0 0 1 14 0'],
+  late: [{ background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' }, '', 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17Z M12 8v4.5 M12 16h.01'],
   now: [{ background: 'oklch(var(--info-soft))', color: 'oklch(var(--info))' }, '', 'M12 6.5v6l3.5 2'],
 };
 

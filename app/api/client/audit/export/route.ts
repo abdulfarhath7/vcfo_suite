@@ -27,9 +27,9 @@ export async function GET(request: Request) {
       return /[",\n']/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
     };
     const lines = [
-      ['Date', 'Time (IST)', 'Type', 'What', 'Subject', 'Who', 'Role', 'Details'].join(','),
+      ['Date', 'Time (IST)', 'Type', 'What', 'Subject', 'Who', 'Role', 'Result', 'Details'].join(','),
       ...rows.map((e) =>
-        [e.day, e.time, e.cat, e.action, e.subject, e.who.name, e.who.role, e.facts.map((f) => `${f.k}: ${f.v}`).join(' · ')]
+        [e.day, e.time, e.cat, e.action, e.subject, e.who.name, e.who.role, e.result, e.facts.map((f) => `${f.k}: ${f.v}`).join(' · ')]
           .map(esc)
           .join(','),
       ),

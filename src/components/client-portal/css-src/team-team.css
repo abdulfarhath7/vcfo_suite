@@ -10,3 +10,14 @@
 .tb-team .ibtn[aria-disabled="true"],.tb-team .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
 .tb-err{color:oklch(var(--danger));font-size:13px;font-weight:500}
 @media (max-width:767px){.tb-team .tb-contact{width:100%;padding-left:48px}.tb-team .tb-contact .ibtn{width:40px;height:40px}.tb-team .sx-head .sx-right{margin-left:0;width:100%}}
+/* the empty filter: one faint centred line (prototype DataGrid empty cell) */
+.tb-team .tb-faint{padding:28px 16px;text-align:center;font-size:13px;color:oklch(var(--ink-faint))}
+/* seat dialog: one raised box, from › to */
+.tb-seat{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;padding:12px;border-radius:6px;background:oklch(var(--surface-sunken))}
+/* phones: the people table keeps every column, the name column sticks, the table scrolls sideways */
+@media (max-width:767px){
+  .tb-team .tb-people{min-width:640px}
+  .tb-team .tb-people .tb-d{display:table-cell!important}
+  .tb-team .tb-people .tb-m{display:none!important}
+  .tb-team .tb-people th:first-child,.tb-team .tb-people td:first-child{position:sticky;left:0;z-index:1;background:oklch(var(--surface-raised))}
+}

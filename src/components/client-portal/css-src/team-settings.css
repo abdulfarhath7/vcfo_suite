@@ -1,54 +1,6 @@
 /* @cp-scope page=team */
-/* Settings and Profile — settings_redesign.dc.html, redrawn as the VCFO Spectrum Profile page
-   (C-0027, C-0110, R-42): underline section tabs, white heads, the Team section in its own tab. */
-.tp-set{display:flex;flex-direction:column;gap:20px}
-.tp-set .tb-sectabs{margin-bottom:-4px}
-.tp-set .tb-g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;align-items:start}
-.tp-set .tb-s5{grid-column:span 5;display:flex;flex-direction:column;gap:20px;min-width:0}.tp-set .tb-s7{grid-column:span 7;display:flex;flex-direction:column;gap:20px;min-width:0}
-@media (max-width:959px){.tp-set .tb-s5,.tp-set .tb-s7{grid-column:1 / -1}}
-/* the profile head: avatar, name, email and the access chips on white (no navy band) */
-.tp-set .tb-hero{display:flex;align-items:center;gap:16px;padding:16px;border-bottom:1px solid oklch(var(--line-soft))}
-.tp-set .tb-photo{position:absolute;right:-6px;bottom:-6px;width:28px;height:28px;border-radius:6px}
-.tp-set .tb-ch2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;padding:16px 16px 4px}
-.tp-set .tb-chan{display:flex;align-items:center;gap:12px;padding:12px;border-radius:6px;border:1.5px solid oklch(var(--line));min-width:0}
-.tp-set .tb-chan[data-off]{background:oklch(var(--surface-sunken))}
-.tp-set .tb-chan .cap{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tp-set .tb-app{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
-.tp-set .tb-form{display:flex;flex-direction:column;gap:12px;padding:12px;margin:12px 0 8px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken))}
-.tp-set .tb-form>div:last-child{display:flex;justify-content:flex-end;gap:8px}
-.tp-set .kv>*{min-width:0}
-.tp-set .kv .rt{overflow-wrap:anywhere}
-.tp-set .kv{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:44px;padding:6px 0;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft))}
-.tp-set .kv:first-child{border-top:0}
-.tp-set .kv>.k{font-size:13px;font-weight:400;color:oklch(var(--ink-muted))}
-/* the notification matrix reads as T1 rows (R-07): a caps head with a 1.5 px line, 44 px rows */
-.tp-set .mx{display:grid;grid-template-columns:28px minmax(0,1fr) 84px 84px;gap:12px;align-items:center;min-height:44px;padding:6px 16px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft))}
-.tp-set .mx.mx-h{min-height:36px;margin-top:12px;border-top:0;border-bottom:1.5px solid oklch(var(--line))}
-.tp-set .mx.mx-h+.mx{border-top:0}
-.tp-set .tb-lock{background:oklch(var(--surface-sunken));color:oklch(var(--ink-muted))}
-.tp-set .tb-req{background:oklch(var(--surface-sunken));color:oklch(var(--ink-muted))}
-.tp-set .tb-req.on{background:oklch(var(--positive-soft));color:oklch(var(--positive))}
-.tp-set .tb-err{color:oklch(var(--danger));font-size:13px;font-weight:500}
-.tp-set .tb-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:40;min-width:180px;background:oklch(var(--surface-raised));color:oklch(var(--ink));border:1.5px solid oklch(var(--line));border-radius:6px;box-shadow:var(--shadow-float);padding:4px;display:flex;flex-direction:column}
-.tp-set .tb-menu button{display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:0;background:none;border-radius:4px;font:400 14px var(--font-sans);color:oklch(var(--ink));cursor:pointer;text-align:left}
-.tp-set .tb-menu button:hover,.tp-set .tb-menu button:focus-visible{background:oklch(var(--surface-sunken));outline:none}
-/* ST5 step marks in the WhatsApp dialog (R-22) */
-.tp-set .tb-steps{display:flex;align-items:center;gap:8px}
-.tp-set .tb-mk{width:22px;height:22px;flex:none;border-radius:4px;display:grid;place-items:center;box-sizing:border-box;font:500 11px var(--font-sans),sans-serif}
-.tp-set .tb-mk.done{background:oklch(var(--positive-mid));color:#fff}
-.tp-set .tb-mk.now{background:oklch(var(--brand));color:#fff;box-shadow:0 0 0 3px oklch(var(--brand-soft))}
-.tp-set .tb-mk.next{border:1.5px dashed oklch(var(--line-strong));color:oklch(var(--ink-muted))}
-.tp-set .tb-mkl{font-size:13px;font-weight:500;color:oklch(var(--ink))}
-.tp-set .tb-mkl.off{color:oklch(var(--ink-muted))}
-.tp-set .tb-mkb{flex:1;height:0;border-top:2px dashed oklch(var(--line-strong))}
-.tp-set .tb-mkb.done{border-top-style:solid;border-top-color:oklch(var(--positive-mid))}
-/* phone overrides last so they beat the base rules above (SR:59-75) */
-@media (max-width:767px){
-  .tp-set button[aria-label="Change photo"]::before{content:"";position:absolute;inset:-6px}
-  html .tp-set .kv{grid-template-columns:92px minmax(0,1fr) auto}
-  html .tp-set .mx{grid-template-columns:minmax(0,1fr) 60px 76px;gap:10px;padding:6px 12px}
-  html .tp-set .mx>:first-child{display:none}
-  .tp-set .tb-ch2{padding:12px 12px 4px}
-  .tp-set .tb-app{grid-template-columns:minmax(0,1fr);padding:12px}
-  .tp-set #profile>div:last-child,.tp-set #security>div:last-child{padding-left:12px!important;padding-right:12px!important}
-}
+/* Profile — the prototype's ProfileScreen (C-0027, K-16): a 220 px section menu, sticky from
+   768 px, beside one section. The sections are Tailwind islands (.cp-tw); the Team section keeps
+   the team CSS. */
+.tp-set .pf-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:768px){.tp-set .pf-grid{grid-template-columns:220px minmax(0,1fr)}.tp-set .pf-nav{position:sticky;top:20px}}

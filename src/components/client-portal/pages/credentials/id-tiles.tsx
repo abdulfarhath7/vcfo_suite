@@ -46,7 +46,7 @@ export function createIdTiles(ctx: CredentialsState & CellControls) {
     return tile(
       'oth',
       'Registrations',
-      data?.registrationsSummary ? <span className="cr-ctv">{data.registrationsSummary}</span> : <span className="cr-ctv cr-cpend">Not registered yet</span>,
+      data?.registrationsSummary ? <span className="cr-ctv cr-sans">{data.registrationsSummary}</span> : <span className="cr-ctv cr-cpend">Not registered yet</span>,
       <button type="button" className="cr-ib cr-s" data-act="tab" data-key="reg" aria-label="Open the registrations sheet" onClick={() => selectTab('reg')}>
         <Ic n="arrow-right" s={13} />
       </button>,
@@ -58,7 +58,7 @@ export function createIdTiles(ctx: CredentialsState & CellControls) {
     return tile(
       'oth',
       'DSC holders',
-      <span className="cr-ctv">
+      <span className="cr-ctv cr-sans">
         {n} holder{n === 1 ? '' : 's'}
       </span>,
       <button type="button" className="cr-ib cr-s" data-act="tab" data-key="kyc" aria-label="Open the directors KYC sheet" onClick={() => selectTab('kyc')}>

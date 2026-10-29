@@ -15,7 +15,7 @@ type ColKind = 'text' | 'sno' | 'status' | 'cert';
 
 export const CRED_TABS: Array<[CredSheet, string]> = [
   ['address', 'Address'],
-  ['login', 'Login Credentials'],
+  ['login', 'Login credentials'],
   ['reg', 'Registrations'],
   ['kyc', 'Directors KYC'],
   ['other', 'Other credentials'],

@@ -7,6 +7,7 @@ import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
 import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import {
+  auditResultWord,
   istParts,
   type AuditCategory,
   type AuditNode,
@@ -200,15 +201,17 @@ function project(
     cta = { label: 'Open Documents', href: '/app/client/documents' };
   } else if (a.startsWith('document_request.')) {
     cat = 'Documents';
-    if (/create|request/.test(a)) {
-      node = 'req';
-      action = 'Documents requested';
-      cta = { label: 'Open request', href: '/app/client/documents' };
-    } else if (/sent_back|reject/.test(a)) {
+    // Match on the verb only: the prefix itself contains "request".
+    const verb = a.slice('document_request.'.length);
+    if (/sent_back|reject/.test(verb)) {
       node = 'back';
       action = 'Document sent back';
       cta = { label: 'Upload again', href: '/app/client/documents' };
-    } else if (/upload/.test(a)) {
+    } else if (/create|request/.test(verb)) {
+      node = 'req';
+      action = 'Documents requested';
+      cta = { label: 'Open request', href: '/app/client/documents' };
+    } else if (/upload/.test(verb)) {
       node = 'up';
       action = 'Document uploaded';
       cta = { label: 'Preview file', href: '/app/client/documents' };
@@ -285,6 +288,7 @@ function project(
     subject: subject || action,
     who: { name: whoName, initials: initialsOf(whoName), role: rl.role, side: rl.side },
     facts: facts.filter((f) => f.v),
+    result: auditResultWord(r.result, node),
     cta,
   };
 }

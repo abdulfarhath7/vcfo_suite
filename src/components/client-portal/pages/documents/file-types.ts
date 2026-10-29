@@ -6,7 +6,7 @@
  */
 import type { CSSProperties } from 'react';
 
-export type FileTag = 'PDF' | 'JPG' | 'PNG' | 'WEBP' | 'DOCX' | 'DOC' | 'HEIC' | 'FILE';
+export type FileTag = 'PDF' | 'JPG' | 'PNG' | 'WEBP' | 'DOCX' | 'DOC' | 'XLSX' | 'HEIC' | 'FILE';
 export type PreviewMode = 'pdf' | 'image' | 'docx' | 'none';
 
 const EXT_TAG: Record<string, FileTag> = {
@@ -17,6 +17,9 @@ const EXT_TAG: Record<string, FileTag> = {
   webp: 'WEBP',
   docx: 'DOCX',
   doc: 'DOC',
+  xlsx: 'XLSX',
+  xls: 'XLSX',
+  csv: 'XLSX',
   heic: 'HEIC',
   heif: 'HEIC',
 };
@@ -30,6 +33,9 @@ const MIME_TAG: Record<string, FileTag> = {
   'image/heic': 'HEIC',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
   'application/msword': 'DOC',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+  'application/vnd.ms-excel': 'XLSX',
+  'text/csv': 'XLSX',
 };
 
 export function fileTag(name: string | null | undefined, contentType?: string | null): FileTag {
@@ -39,11 +45,12 @@ export function fileTag(name: string | null | undefined, contentType?: string | 
   return MIME_TAG[mime] ?? 'FILE';
 }
 
-/* R-26: file badges are coloured by type. PDF is red, Word is blue, images are violet,
-   anything else is grey (the shared FileBadge uses the same tones). */
+/* R-26: file badges are coloured by type, the same tones as the shared FileBadge:
+   PDF red, Word blurple, spreadsheets green, images violet, anything else grey. */
 const PDF_TONE: CSSProperties = { background: 'oklch(var(--danger-soft))', color: 'oklch(var(--danger))' };
 const IMG_TONE: CSSProperties = { background: 'oklch(var(--identity-soft))', color: 'oklch(var(--identity))' };
-const DOC_TONE: CSSProperties = { background: 'oklch(var(--info-soft))', color: 'oklch(var(--info))' };
+const DOC_TONE: CSSProperties = { background: 'oklch(var(--brand-soft))', color: 'oklch(var(--brand-text))' };
+const XLS_TONE: CSSProperties = { background: 'oklch(var(--positive-soft))', color: 'oklch(var(--positive))' };
 const ANY_TONE: CSSProperties = { background: 'oklch(var(--upcoming-soft))', color: 'oklch(var(--upcoming))' };
 export const TAG_STYLE: Record<FileTag, CSSProperties> = {
   PDF: PDF_TONE,
@@ -53,6 +60,7 @@ export const TAG_STYLE: Record<FileTag, CSSProperties> = {
   HEIC: IMG_TONE,
   DOCX: DOC_TONE,
   DOC: DOC_TONE,
+  XLSX: XLS_TONE,
   FILE: ANY_TONE,
 };
 
@@ -65,6 +73,7 @@ export const TAG_TIP: Record<FileTag, string> = {
   HEIC: 'Image (HEIC)',
   DOCX: 'Word document',
   DOC: 'Word document',
+  XLSX: 'Spreadsheet',
   FILE: 'File',
 };
 

@@ -30,7 +30,7 @@ import { DocViewer, type ViewerDoc } from '../DocViewer';
 import { dayMonth, fileTag, MONTHS_SHORT } from '../file-types';
 import { toViewerDoc, useClientDocuments } from '../shared-ui';
 import type { DocStatus } from '@/lib/client-portal/documents';
-import { categoryName, fetchLibrary, fetchLibraryItem, fetchTopicAnswer, LIBRARY_KEY, libraryItemExportHref, READS_KEY, saveToLibrary } from './library-model';
+import { catOf, categoryName, fetchLibrary, fetchLibraryItem, fetchTopicAnswer, LIBRARY_KEY, libraryItemExportHref, READS_KEY, saveToLibrary } from './library-model';
 import '../../../css/library-reader.css';
 
 /** Document status as a Spectrum chip tone (prototype STATUS_CHIP). */
@@ -557,19 +557,23 @@ function ReaderInner({ mode }: { mode: 'saved' | 'learn' }) {
               {related.length ? (
                 <section className="sx-card" aria-label={`Related in ${company}’s library`}>
                   <div className="sx-head">
-                    <HeadTile tone="violet" d="M5 4.5h10.5L19 8v11.5H5Z M9 10h6 M9 14h6" />
+                    <HeadTile tone="teal" d="M4 5.5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4Z M20 5.5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6Z" />
                     <h2>Related in {company}’s library</h2>
                   </div>
-                  {related.map((r) => (
-                    <Link key={r.slug} className="sx-row" href={r.href}>
-                      <span className="sx-tile" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M4 5.5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4Z M20 5.5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6Z" />
-                        </svg>
-                      </span>
-                      <span className="vrd-rt">{r.title}</span>
-                    </Link>
-                  ))}
+                  {related.map((r) => {
+                    const shelf = catOf(r.category);
+                    return (
+                      <Link key={r.slug} className="sx-row" href={r.href}>
+                        {/* the row tile takes the shelf's cover tone and icon */}
+                        <span className="sx-tile" aria-hidden="true" style={{ background: `color-mix(in oklch, ${shelf.color} 16%, transparent)`, color: shelf.color }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d={shelf.icon} />
+                          </svg>
+                        </span>
+                        <span className="vrd-rt">{r.title}</span>
+                      </Link>
+                    );
+                  })}
                 </section>
               ) : null}
               {relDocs.length ? (
