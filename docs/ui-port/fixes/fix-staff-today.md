@@ -135,17 +135,17 @@
 | S-178 | ◐ | Legend On track, Due soon, Overdue, Done, Step due, Filing due. |
 | S-179 | ◐ | Every bar opens the drawer, where Request change sits. |
 | S-180 | ◐ | real only: Later list kept. |
-| S-181 | ◐ | No Day/Week/Month tabs (week only). |
-| S-182 | ✗ | Day and Month views not built. |
+| S-181 | ✓ | Calendar head: title, range, Day/Week/Month tabs, previous, next, Today, + Block. |
+| S-182 | ✓ | Day and Month views (Month: Monday-first grid, due count, planned hours, two items a day; a day opens its week). |
 | S-183 | ◐ | 44 px an hour; range stays 8 AM to 8 PM because the planner's working day and the stored blocks use it. |
 | S-184 | ✓ | Weekday over a date box; today's box is filled blurple, today's column has a sunken fill. |
 | S-185 | ◐ | real only: day load kept. |
-| S-186 | ✗ | No all-day row. |
+| S-186 | ✓ | "All day" row: items due that day; filings red edge, manager-dated items lock and blurple edge. |
 | S-187 | ◐ | no data: no client identity colour. |
 | S-188 | ◐ | Red left edge kept for a block after the due date. |
 | S-189 | ✓ | Orange now line with an 8 px square at its left end. |
-| S-190 | ✗ | No drag or resize; the Time block dialog edits times. |
-| S-191 | ◐ | A block opens the Time block dialog (Open task inside). |
+| S-190 | ✓ | Drag to move (across days), drag the bottom edge to resize, arrow keys nudge 15 min (Shift for the end); saves through the time-block route with an Undo toast. |
+| S-191 | ◐ | A plain click opens the Time block dialog (Open task inside); drags no longer open it. |
 | S-192 | ◐ | real only: click an empty hour to plan a block. |
 | S-193 | ◐ | Empty state kept. |
 | S-194 | ✓ | Title "To-do" with the item count and New to-do. |
@@ -158,13 +158,13 @@
 | S-201 | ✓ | "My work · status" donut card under the planner. |
 | S-202 | ✓ | By area card with done, pending, overdue and d/n. |
 | S-203 | ◐ | no data: the to-do store keeps a title only. |
-| S-205 | ◐ | Dialog frame unchanged this round. |
+| S-205 | ✓ | Large dialog "Planning my week", sub "range · N to-dos · N h". |
 | S-206 | ◐ | Plans the week shown on the calendar. |
-| S-207 | ✗ | List of suggestions, not an hour grid. |
-| S-208 | ✗ | No Day/Week switch. |
-| S-209 | ✗ | Fixed rule, no options. |
-| S-210 | ◐ | The rule never plans a day over 6 h, so the note would never show. |
-| S-211 | ◐ | No Reshuffle. |
+| S-207 | ✓ | Hour grid (9 AM to 6 PM) with planned blocks in grey and suggestions; a click skips one (40 %). |
+| S-208 | ✓ | Day/Week tabs with previous and next day. |
+| S-209 | ✓ | Options: keep 9 to 11 AM for deep work, overdue and filings first, group by client, allow up to 8 h a day. |
+| S-210 | ✓ | Blue info note names the days over 6 h (possible with the 8 h option). |
+| S-211 | ✓ | Cancel, Reshuffle, "Add N blocks to calendar". |
 | S-212 | ◐ | Empty state kept. |
 | S-213 | ✓ | Drawer is the shared SidePanel (480 px, navy scrim, dialog shadow, full width on phones). |
 | S-214 | ✓ | SidePanel close button in the head. |
@@ -221,7 +221,7 @@
 | S-361 | ✓ | "Plan the week" opens the manager Work planner on the lead (manager only; admins have no Work planner for a lead). |
 | S-362 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
 | S-363 | ◐ | Menu with Export and Copy link; no Templates (no data). |
-| S-364 | ✗ | Remove lead needs a backend move of the lead's open work to the manager; not built. |
+| S-364 | ✓ | Remove lead: DangerConfirm with a target lead; manager/admin route moves open steps and tasks, audited, cross-tenant tested. |
 | S-365 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
 | S-366 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
 | S-367 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
@@ -229,7 +229,7 @@
 | S-369 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
 | S-370 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
 | S-371 | ✓ | New one-lead page /app/{manager,admin}/team/[leadId] (views/manager/LeadPage.tsx): face, name, counts, Planner/List/Board, Company and Show chips, Status and By area cards, Gantt timeline from the shared GanttTimeline. |
-| S-372 | ✗ | no data for the viewer: time_blocks are listed only for their owner (time-blocks.ts); a manager-scoped read is needed. |
+| S-372 | ✓ | The lead's page shows their week read-only from a manager-scoped time-block read (cross-tenant tested). |
 | S-373 | ◐ | To-do card: tasks assigned to the lead (Open/Overdue/All) and the lead's own to-dos read-only (owner-only writes). |
 | S-374 | ◐ | real only: Add project lead form kept. |
 | S-375 | ◐ | Open and Late now count the lead's real work items; rest unchanged. |
@@ -311,3 +311,18 @@ Every row in S-001 to S-267 and S-358 to S-402 now has a status above. New files
 Still open (✗): S-182 Day and Month calendar views, S-186 all-day row, S-190 drag and resize of blocks, S-207 to S-209 Plan my week hour grid, Day/Week switch and options, S-364 Remove lead, S-372 a lead's calendar (time blocks readable only by their owner).
 
 Checks: tsc clean; eslint 0 errors on my files; vitest 453 tests pass in the nearby folders.
+
+## Round 4: the ✗ rows
+
+- assigned_by in `ask-handoff.ts` and both inserts of `client-change-requests.ts`: `staffAssignedBy(role, actorId, assignedTo)` (trend-stamps.ts) stamps the acting person only when they are staff and the task goes to someone else (a client raising it is not an assigner). Test in trend-stamps.test.ts.
+- S-372 backend: `listLeadTimeBlocks(ctx, leadKey, range)` in time-blocks.ts; `GET /api/work/time-blocks?…&lead=<intern key>`. Admins: any lead. Managers: a lead who reports to them or leads one of their engagements, blocks on the manager's engagements only, free blocks only when the lead reports to them. Others 403. Cross-tenant tests in time-blocks.test.ts. `useTimeBlocks(range, leadKey)` reads it.
+- S-182 ✓: PlannerCalendar has Day, Week and Month views (SpectrumTabs). Day steps a day (the Work week follows through `onDate`); Month is a Monday-first grid with due counts, planned hours and two items per day; a day number opens its week.
+- S-186 ✓: "All day" row with the items due that day: filings with a red edge, manager-dated items (a window) with a lock and a blurple edge; a click opens the item.
+- S-190 ✓: drag a block to move it (also to another day), drag its bottom edge to resize, arrow keys move a focused block 15 min (Shift changes its end); snaps to 15 min; saves through PATCH `/api/work/time-blocks/:id` with an Undo toast. A plain click still opens the Time block dialog.
+- S-372 ✓: the lead's page shows their week read-only (`PlannerCalendar leadKey`), from the manager-scoped read above.
+- S-207 to S-212 ✓: Plan my week is a large dialog with an hour grid (9 AM to 6 PM): blocks already planned in grey, suggestions in blurple (filings red), a click skips one (40 % opacity); Day/Week switch with previous and next day; options Keep 9 to 11 AM for deep work, Overdue and filings first, Group by client, Allow up to 8 h a day (`suggestWeekBlocks` options, tests in planner.test.ts); a blue note names days over 6 h; Reshuffle starts the plan on a later day; sub line "range · N to-dos · N h".
+- S-364 ✓: "Remove lead" (last, red) in the lead page's "…" menu opens a DangerConfirm (type REMOVE) with a "Move open work to…" lead picker. `POST /api/work/remove-lead` (managers and admins) runs `removeLead` (work-assignments.ts): on every engagement the caller may access (`assertEngagementAccess` per engagement), steps reassigned to the lead move to the new lead, the lead is replaced (`replaceEngagementLead`, primary seat included), open tasks move with `assigned_by` = the caller, one `work.lead_removed` audit event per client, a bell row per client for the new lead. The account stays (People deletes accounts). Cross-tenant tests in work-assignments.test.ts (a foreign client is skipped and untouched; a lead on none of the caller's clients is a 404 with no writes).
+
+All ✗ rows of my area are now built. Checks for round 4 are at the end of this file.
+
+Round 4 checks: tsc clean; eslint 0 errors and 0 warnings on the files changed this round; vitest 104 tests pass (lib/work, trend-stamps, time-blocks, work-assignments, ask-handoff, client-change-requests, components/work, views/manager, views/intern, components/intern). The client home files (home-trends.ts, client-holder-trend.ts, pages/home/*) were not touched.

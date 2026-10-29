@@ -161,3 +161,31 @@ describe('suggestWeekBlocks', () => {
     expect(istYmdOf(out[0]!.startsAt)).toBe('2026-10-27');
   });
 });
+
+describe('suggestWeekBlocks options', () => {
+  const days = weekOf('2026-10-26');
+  const monday9 = new Date(istIso('2026-10-26', '09:00'));
+  const two = [
+    { itemKey: 'step:a', title: 'Step', client: 'Zeta', overdue: false },
+    { itemKey: 'filing:b', title: 'Filing', client: 'Alpha', filing: true, overdue: false },
+  ];
+
+  it('keeps 9 to 11 AM free', () => {
+    const out = suggestWeekBlocks({ candidates: [two[0]!], busy: [], days, now: new Date(istIso('2026-10-26', '08:00')), slotStart: 9, keepMorning: true });
+    expect(out[0]!.startsAt).toBe(istIso('2026-10-26', '11:00'));
+  });
+
+  it('puts filings first, or groups by client', () => {
+    expect(suggestWeekBlocks({ candidates: two, busy: [], days, now: monday9, filingsFirst: true })[0]!.itemKey).toBe('filing:b');
+    expect(suggestWeekBlocks({ candidates: two, busy: [], days, now: monday9, groupByClient: true })[0]!.itemKey).toBe('filing:b');
+    expect(suggestWeekBlocks({ candidates: two, busy: [], days, now: monday9 })[0]!.itemKey).toBe('step:a');
+  });
+
+  it('reshuffle starts on a later working day; the day cap can be raised', () => {
+    const out = suggestWeekBlocks({ candidates: [two[0]!], busy: [], days, now: monday9, shuffle: 1 });
+    expect(istYmdOf(out[0]!.startsAt)).toBe('2026-10-27');
+    const busy = [{ startsAt: istIso('2026-10-26', '10:00'), endsAt: istIso('2026-10-26', '16:00') }];
+    expect(istYmdOf(suggestWeekBlocks({ candidates: [two[0]!], busy, days, now: monday9 })[0]!.startsAt)).toBe('2026-10-27');
+    expect(istYmdOf(suggestWeekBlocks({ candidates: [two[0]!], busy, days, now: monday9, maxDayHours: 8 })[0]!.startsAt)).toBe('2026-10-26');
+  });
+});

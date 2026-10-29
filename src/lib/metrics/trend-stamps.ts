@@ -72,3 +72,13 @@ export function taskAssignmentPatch(
   if (!next || next === actorId) return { assignedBy: null };
   return { assignedBy: actorId };
 }
+
+/**
+ * `assigned_by` for a task a flow creates on someone's behalf (Ask VCFO hand-off, client change
+ * requests): the acting person when they are staff and the task goes to someone else, else null
+ * (a client raising it is not "assigning").
+ */
+export function staffAssignedBy(role: string, actorId: string, assignedTo: string | null | undefined): string | null {
+  if (role === 'client' || !assignedTo || assignedTo === actorId) return null;
+  return actorId;
+}

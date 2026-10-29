@@ -2,8 +2,13 @@
 
 import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { MoreHorizontal, Plus, Sparkles } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { PlannerCalendar, type PlannerItem } from '@/components/work/PlannerCalendar';
+import { addDaysYmd, istYmdOf, weekOf } from '@/lib/work/planner';
+import { MoreHorizontal, Plus, Sparkles, UserMinus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { ActionMenu } from '@/components/ui/action-menu';
@@ -39,6 +44,36 @@ function LeadPageInner({ leadKey }: { leadKey: string }) {
   const { teamMembers, internsLoading } = useApp();
   const work = useTeamWork({ projectBase, leadKey });
   const [assignOpen, setAssignOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [moveTo, setMoveTo] = useState('');
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const others = (teamMembers as Array<{ id: string; name: string }>).filter((m) => m.id !== leadKey);
+
+  // S-364: the lead leaves the caller's clients; their open steps and tasks move to `moveTo`.
+  const removeLead = async () => {
+    if (!moveTo) {
+      toastError('Pick a project lead', 'Their open work needs a new owner.');
+      throw new Error('no_target');
+    }
+    const res = await fetch('/api/work/remove-lead', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ fromLeadId: leadKey, toLeadId: moveTo }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; clients?: unknown[]; steps?: number; tasks?: number; to?: { name: string } };
+    if (!res.ok) {
+      toastError('Could not remove the lead', body.error ?? 'Try again');
+      throw new Error(body.error ?? 'remove_failed');
+    }
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['engagements'] }),
+      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      queryClient.invalidateQueries({ queryKey: ['checklist-index'] }),
+    ]);
+    toastSuccess(`${name} removed`, `${body.steps ?? 0} steps and ${body.tasks ?? 0} tasks moved to ${body.to?.name ?? 'the new lead'}`);
+    router.push(`${base}/team`);
+  };
   const lead = (teamMembers as Array<{ id: string; name: string; profileId?: string }>).find((m) => m.id === leadKey);
   const name = lead?.name ?? 'Project lead';
   const first = name.split(/\s+/)[0] ?? name;
@@ -90,6 +125,8 @@ function LeadPageInner({ leadKey }: { leadKey: string }) {
                 ),
             },
             { label: 'Copy link', key: 'C', onSelect: () => void copyRowLink(path) },
+            'separator',
+            { label: 'Remove lead', danger: true, Icon: UserMinus, disabled: !lead, onSelect: () => setRemoving(true) },
           ]}
         />
       </div>
@@ -115,8 +152,42 @@ function LeadPageInner({ leadKey }: { leadKey: string }) {
         views={['plan', 'list', 'board']}
         team={work.team(false)}
         storageScope={`lead:${leadKey}`}
-        planner={<LeadPlanner items={work.items} now={work.now} profileId={lead?.profileId} />}
+        planner={<LeadPlanner items={work.items} now={work.now} profileId={lead?.profileId} leadKey={leadKey} />}
         seo={{ title: `${name} — VCFO Suite`, description: `${name}'s work, status and planner.`, path }}
+      />
+      <DangerConfirm
+        open={removing}
+        onOpenChange={(o) => {
+          setRemoving(o);
+          if (!o) setMoveTo('');
+        }}
+        title={`Remove ${name} as project lead?`}
+        body={
+          <span className="grid gap-3">
+            <span>
+              {open.length
+                ? `${open.length} open ${open.length === 1 ? 'item moves' : 'items move'} to the lead you pick, on ${clients} ${clients === 1 ? 'client' : 'clients'}.`
+                : `${name} has no open items; they leave ${clients} ${clients === 1 ? 'client' : 'clients'}.`}
+            </span>
+            <select
+              aria-label="Move open work to"
+              value={moveTo}
+              onChange={(e) => setMoveTo(e.target.value)}
+              className="h-10 w-full rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] text-ink"
+            >
+              <option value="">Move open work to…</option>
+              {others.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </span>
+        }
+        word="REMOVE"
+        confirm="Remove lead"
+        icon={UserMinus}
+        onConfirm={removeLead}
       />
       <AssignTaskDialog
         open={assignOpen}
@@ -138,9 +209,28 @@ type TodoShow = 'open' | 'late' | 'all';
  * lead's to-dos through `/api/todos` (self, reports and people on scoped engagements) but only
  * the owner may tick them, so they are read-only here.
  */
-function LeadPlanner({ items, now, profileId }: { items: TeamWorkItem[]; now: Date; profileId?: string }) {
+function LeadPlanner({ items, now, profileId, leadKey }: { items: TeamWorkItem[]; now: Date; profileId?: string; leadKey: string }) {
   const [show, setShow] = useState<TodoShow>('open');
+  const router = useRouter();
   const today = ymdInIst(now);
+  const [weekYmd, setWeekYmd] = useState(() => istYmdOf(now));
+  const weekDays = useMemo(() => weekOf(weekYmd), [weekYmd]);
+  const hrefOf = useMemo(() => new Map(items.map((i) => [i.id, i.href])), [items]);
+  const calendarItems = useMemo<PlannerItem[]>(
+    () =>
+      items
+        .filter((i) => i.kind !== 'done')
+        .map((i) => ({
+          key: i.id,
+          title: i.title,
+          companyName: i.companyName,
+          dueYmd: i.dueAt?.slice(0, 10),
+          overdue: i.isOverdue,
+          source: i.source,
+          managerDated: Boolean(i.windowLabel),
+        })),
+    [items],
+  );
   const timeline = useMemo(() => workTimeline(items, today), [items, today]);
   const todosQuery = usePersonalTodos(Boolean(profileId));
   const ownTodos = (todosQuery.data ?? []).filter((t) => t.ownerId === profileId);
@@ -151,7 +241,8 @@ function LeadPlanner({ items, now, profileId }: { items: TeamWorkItem[]; now: Da
   const count = tasks.length + ownTodos.filter((t) => show === 'all' || !t.done).length;
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="flex min-w-0 flex-col gap-4">
       <DashSection
         title="Timeline"
         meta={timeline?.start && timeline.end ? `${formatDueLabel(`${timeline.start}T12:00:00+05:30`, now)} to ${formatDueLabel(`${timeline.end}T12:00:00+05:30`, now)}` : undefined}
@@ -159,6 +250,20 @@ function LeadPlanner({ items, now, profileId }: { items: TeamWorkItem[]; now: Da
       >
         {timeline ? <GanttTimeline timeline={timeline} today={today} className="pb-3" /> : <EmptyState title="Nothing dated" className="m-4" />}
       </DashSection>
+      {/* The lead's own week (read only): their time blocks on the manager's clients. */}
+      <PlannerCalendar
+        days={weekDays}
+        onWeek={(d) => setWeekYmd((ymd) => (d === 0 ? istYmdOf(new Date()) : addDaysYmd(ymd, d * 7)))}
+        onDate={setWeekYmd}
+        items={calendarItems}
+        now={now}
+        onOpenItem={(key) => {
+          const href = hrefOf.get(key);
+          if (href) router.push(href);
+        }}
+        leadKey={leadKey}
+      />
+      </div>
       <DashSection
         title="To-do"
         meta={count}

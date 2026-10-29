@@ -1,9 +1,9 @@
 import 'server-only';
 import { and, asc, eq, gt, inArray, isNull, lt, or } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { timeBlocks } from '@/db/schema';
+import { engagementLeads, engagements, profiles, timeBlocks } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { listScopedEngagementIds } from '@/db/repositories/engagements';
 import { resolveWorkItem } from '@/db/repositories/work-items';
@@ -20,6 +20,11 @@ import { isValidBlockRange, timeRangeLabel, type PlannerBlock } from '@/lib/work
  *   (`resolveWorkItem`: lead on the engagements they lead, manager on theirs, admins
  *   on all). A list hides blocks on engagements that left the caller's scope.
  *   client / developer — nothing.
+ *
+ *   `listLeadTimeBlocks` (a lead's calendar on their page, S-372) reads another person's rows:
+ *   firm-wide admins — any project lead's blocks; managers — a lead who reports to them or
+ *   leads one of their engagements, and only blocks on the manager's engagements (free blocks
+ *   with no engagement only when the lead reports to them); everyone else — refused.
  */
 
 export const BLOCK_TITLE_MAX = 200;
@@ -67,6 +72,63 @@ export async function listTimeBlocks(
     .from(timeBlocks)
     .where(and(...conds))
     .orderBy(asc(timeBlocks.startsAt));
+  return rows.map(toDto);
+}
+
+export class TimeBlockForbiddenError extends Error {
+  constructor(message = 'forbidden') {
+    super(message);
+    this.name = 'TimeBlockForbiddenError';
+  }
+}
+
+/** One project lead's blocks in [from, to), for a manager or admin (see the access note above). */
+export async function listLeadTimeBlocks(
+  ctx: AuthContext,
+  leadKey: string,
+  range: { from: string; to: string },
+): Promise<PlannerBlock[]> {
+  if (!isAdminOrManager(ctx.role)) throw new TimeBlockForbiddenError();
+  const from = new Date(range.from);
+  const to = new Date(range.to);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to <= from) throw new Error('invalid_range');
+  if (to.getTime() - from.getTime() > MAX_RANGE_DAYS * 86_400_000) throw new Error('invalid_range');
+
+  const [lead] = await db
+    .select({ id: profiles.id, reportsTo: profiles.reportsToManagerId })
+    .from(profiles)
+    .where(and(eq(profiles.internId, leadKey), eq(profiles.role, 'intern')))
+    .limit(1);
+  if (!lead) return [];
+
+  const conds = [eq(timeBlocks.userId, lead.id), lt(timeBlocks.startsAt, to), gt(timeBlocks.endsAt, from)];
+  if (!isFirmWideAdmin(ctx.role)) {
+    const scoped = await listScopedEngagementIds(ctx);
+    const reports = lead.reportsTo === ctx.userId;
+    let leadsHere = false;
+    if (scoped.length > 0) {
+      const [primary] = await db
+        .select({ id: engagements.id })
+        .from(engagements)
+        .where(and(inArray(engagements.id, scoped), eq(engagements.internId, leadKey)))
+        .limit(1);
+      const [co] = primary
+        ? [primary]
+        : await db
+            .select({ id: engagementLeads.engagementId })
+            .from(engagementLeads)
+            .where(and(inArray(engagementLeads.engagementId, scoped), eq(engagementLeads.internId, leadKey)))
+            .limit(1);
+      leadsHere = Boolean(co);
+    }
+    if (!reports && !leadsHere) throw new TimeBlockForbiddenError();
+    const onScoped = scoped.length > 0 ? inArray(timeBlocks.engagementId, scoped) : undefined;
+    const free = reports ? isNull(timeBlocks.engagementId) : undefined;
+    const allowed = onScoped && free ? or(onScoped, free) : (onScoped ?? free);
+    if (!allowed) return [];
+    conds.push(allowed);
+  }
+  const rows = await db.select().from(timeBlocks).where(and(...conds)).orderBy(asc(timeBlocks.startsAt));
   return rows.map(toDto);
 }
 

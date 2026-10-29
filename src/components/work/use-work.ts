@@ -178,13 +178,16 @@ export function useWorkChecklistActions(key: string) {
 
 /* ------------------------------------------------------------- time blocks */
 
-export function useTimeBlocks(range: { from: string; to: string }) {
+/** The caller's blocks in the range, or (with `leadKey`, managers and admins) one project lead's. */
+export function useTimeBlocks(range: { from: string; to: string }, leadKey?: string | null) {
   return useQuery({
-    queryKey: k.blocks(range.from, range.to),
+    queryKey: [...k.blocks(range.from, range.to), leadKey ?? 'me'],
     queryFn: async () =>
       (
         await call<{ blocks: PlannerBlock[] }>(
-          `/api/work/time-blocks?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
+          `/api/work/time-blocks?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}${
+            leadKey ? `&lead=${encodeURIComponent(leadKey)}` : ''
+          }`,
         )
       ).blocks,
     staleTime: 15_000,

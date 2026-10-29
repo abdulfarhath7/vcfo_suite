@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { staffAssignedBy } from '@/lib/metrics/trend-stamps';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientTimelineRequests, profiles, tasks } from '@/db/schema';
@@ -84,6 +85,7 @@ export async function createClientChangeRequest(
     .values({
       engagementId: access.dbId,
       assignedTo,
+      assignedBy: staffAssignedBy(ctx.role, ctx.userId, assignedTo),
       title: `${TITLE_PREFIX}: ${item.title}`,
       description: note,
       stepId: item.id,
@@ -158,6 +160,7 @@ export async function createClientTimelineRequest(
     .values({
       engagementId: access.dbId,
       assignedTo,
+      assignedBy: staffAssignedBy(ctx.role, ctx.userId, assignedTo),
       title: `${TITLE_PREFIX}: Timeline`,
       description: `${reason}\n\n${summary}`,
       stepId: 'pre-12',

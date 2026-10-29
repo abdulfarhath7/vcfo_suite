@@ -159,6 +159,10 @@ export function dayLoadHours(
 export interface PlanCandidate {
   itemKey: string;
   title: string;
+  /** A filing goes first with `filingsFirst`. */
+  filing?: boolean;
+  /** The client, for `groupByClient`. */
+  client?: string;
   /** IST due date, when the item has one. */
   dueYmd?: string;
   overdue: boolean;
@@ -189,13 +193,24 @@ export function suggestWeekBlocks(input: {
   minutes?: number;
   slotStart?: number;
   slotEnd?: number;
+  /** Plan options (Plan my week): keep 9 to 11 AM free, filings first, one client's items together. */
+  keepMorning?: boolean;
+  filingsFirst?: boolean;
+  groupByClient?: boolean;
+  /** Hours a day may hold (default `HEAVY_DAY_HOURS`). */
+  maxDayHours?: number;
+  /** Reshuffle: start the search on a later working day (0 = the first). */
+  shuffle?: number;
 }): SuggestedBlock[] {
   const minutes = input.minutes ?? 60;
-  const slotStart = input.slotStart ?? 10;
+  const slotStart = Math.max(input.slotStart ?? 10, input.keepMorning ? 11 : 0);
+  const maxDay = input.maxDayHours ?? HEAVY_DAY_HOURS;
   const slotEnd = input.slotEnd ?? 18;
   const nowMs = input.now.getTime();
   const todayYmd = istYmdOf(input.now);
-  const workDays = input.days.filter((d) => !isWeekend(d) && d >= todayYmd);
+  const open = input.days.filter((d) => !isWeekend(d) && d >= todayYmd);
+  const turn = open.length ? (input.shuffle ?? 0) % open.length : 0;
+  const workDays = [...open.slice(turn), ...open.slice(0, turn)];
 
   const taken: Array<[number, number]> = input.busy.map((b) => [Date.parse(b.startsAt), Date.parse(b.endsAt)]);
   const load = new Map<string, number>();
@@ -208,6 +223,8 @@ export function suggestWeekBlocks(input: {
     .map((c, i) => ({ c, i }))
     .sort((a, b) => {
       if (a.c.overdue !== b.c.overdue) return a.c.overdue ? -1 : 1;
+      if (input.filingsFirst && Boolean(a.c.filing) !== Boolean(b.c.filing)) return a.c.filing ? -1 : 1;
+      if (input.groupByClient && (a.c.client ?? '') !== (b.c.client ?? '')) return (a.c.client ?? '').localeCompare(b.c.client ?? '');
       const ad = a.c.dueYmd ?? '9999-12-31';
       const bd = b.c.dueYmd ?? '9999-12-31';
       if (ad !== bd) return ad < bd ? -1 : 1;
@@ -217,7 +234,7 @@ export function suggestWeekBlocks(input: {
 
   const findSlot = (days: string[]): { start: number; end: number; day: string } | null => {
     for (const day of days) {
-      if ((load.get(day) ?? 0) + minutes / 60 > HEAVY_DAY_HOURS) continue;
+      if ((load.get(day) ?? 0) + minutes / 60 > maxDay) continue;
       for (let h = slotStart * 60; h + minutes <= slotEnd * 60; h += 30) {
         const hhmm = `${String(Math.floor(h / 60)).padStart(2, '0')}:${String(h % 60).padStart(2, '0')}`;
         const start = Date.parse(istIso(day, hhmm));

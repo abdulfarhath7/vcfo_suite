@@ -1,11 +1,12 @@
 import 'server-only';
-import { and, eq, or } from 'drizzle-orm';
+import { and, eq, ne, or } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { engagementLeads, profiles, tasks } from '@/db/schema';
+import { engagementLeads, engagements, profiles, tasks } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import type { TaskInstance } from '@/data/engagements';
 import { getItem } from '@/data/checklist';
 import { assertEngagementAccess, patchChecklistItem } from '@/db/repositories/engagements';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { addEngagementLead, replaceEngagementLead } from '@/db/repositories/engagement-leads';
 import { toAppTask } from '@/db/repositories/tasks';
 import { isAdminOrManager } from '@/lib/auth';
@@ -217,3 +218,75 @@ export async function reassignWork(ctx: AuthContext, input: ReassignInput): Prom
 
   throw new AssignmentError('Only steps, tasks and whole clients can be reassigned', 400);
 }
+
+/* ------------------------------------------------------------------ *
+ * S-364: remove a lead — move their open work to another lead
+ * ------------------------------------------------------------------ */
+
+export interface RemoveLeadResult {
+  from: LeadProfile;
+  to: LeadProfile;
+  /** Clients moved (app engagement ids and names). */
+  clients: Array<{ engagementId: string; companyName: string }>;
+  steps: number;
+  tasks: number;
+}
+
+/**
+ * Remove a project lead from every client the caller manages: on each one the lead is replaced
+ * by `toLeadId` (`replaceEngagementLead`, which also hands over the primary seat), every step
+ * reassigned to the lead moves to the new lead, and the lead's open tasks move too
+ * (`assigned_by` = the caller). Managers touch only engagements they manage
+ * (`assertEngagementAccess` per engagement); admins every engagement. One audit event per
+ * client. The lead's account stays; People deletes accounts.
+ */
+export async function removeLead(
+  ctx: AuthContext,
+  input: { fromLeadId: string; toLeadId: string },
+): Promise<RemoveLeadResult> {
+  refuseNonManagers(ctx);
+  const from = await findLead(input.fromLeadId);
+  const to = await findLead(input.toLeadId);
+  if (!from || !to) throw new AssignmentError('Project lead not found', 404);
+  if (from.profileId === to.profileId) throw new AssignmentError('Pick another project lead', 400);
+
+  const primary = await db
+    .select({ id: engagements.id })
+    .from(engagements)
+    .where(eq(engagements.internId, from.leadKey));
+  const co = await db
+    .select({ id: engagementLeads.engagementId })
+    .from(engagementLeads)
+    .where(eq(engagementLeads.internId, from.leadKey));
+  const ids = [...new Set([...primary, ...co].map((r) => r.id))];
+
+  const result: RemoveLeadResult = { from, to, clients: [], steps: 0, tasks: 0 };
+  for (const id of ids) {
+    const access = await assertEngagementAccess(ctx, id);
+    if (!access.ok) continue;
+    const appId = appEngagementId(access.dbId);
+    const state = (access.row.checklistState ?? {}) as Record<string, { assigneeId?: string | null } | undefined>;
+    for (const [stepId, slice] of Object.entries(state)) {
+      if (slice?.assigneeId?.trim() !== from.leadKey || !getItem(stepId)) continue;
+      await patchChecklistItem(ctx, appId, stepId, { assigneeId: to.leadKey });
+      result.steps += 1;
+    }
+    await replaceEngagementLead(ctx, access.dbId, from.leadKey, to.leadKey);
+    const moved = await db
+      .update(tasks)
+      .set({ assignedTo: to.profileId, assignedBy: ctx.userId, updatedAt: new Date() })
+      .where(and(eq(tasks.engagementId, access.dbId), eq(tasks.assignedTo, from.profileId), ne(tasks.status, 'done')))
+      .returning({ id: tasks.id });
+    result.tasks += moved.length;
+    result.clients.push({ engagementId: appId, companyName: access.row.companyName });
+    await recordAuditEvent(ctx, {
+      engagementId: access.dbId,
+      action: 'work.lead_removed',
+      summary: `Removed ${from.name} as project lead; open work moved to ${to.name}`,
+      metadata: { fromLeadProfileId: from.profileId, toLeadProfileId: to.profileId, tasks: moved.length },
+    });
+  }
+  if (result.clients.length === 0) throw new AssignmentError('This lead is on none of your clients', 404);
+  return result;
+}
+

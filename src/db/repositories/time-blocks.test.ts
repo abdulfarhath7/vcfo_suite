@@ -128,3 +128,43 @@ describe('updateTimeBlock / deleteTimeBlock', () => {
     expect(dialect.sqlToQuery(write.where!).params).toEqual(['b1', 'user-intern']);
   });
 });
+
+describe('listLeadTimeBlocks', () => {
+  const LEAD = { id: 'lead-profile', reportsTo: 'someone-else' };
+
+  it.each(['intern', 'client'] as const)('%s is refused and reads nothing', async (role) => {
+    await expect(repo.listLeadTimeBlocks(ctx(role), 'i1', range)).rejects.toThrow(/forbidden/);
+    expect(stub.calls).toHaveLength(0);
+  });
+
+  it('a manager cannot read a lead who neither reports to them nor leads one of their clients', async () => {
+    stub.queue([LEAD], [], []);
+    await expect(repo.listLeadTimeBlocks(ctx('manager'), 'i1', range)).rejects.toThrow(/forbidden/);
+    expect(stub.calls.filter((c) => c.where && dialect.sqlToQuery(c.where).sql.includes('"time_blocks"'))).toHaveLength(0);
+  });
+
+  it('a manager reads the lead’s blocks on the manager’s own engagements only', async () => {
+    stub.queue([LEAD], [{ id: OWN }], [row({ userId: 'lead-profile', engagementId: OWN })]);
+    const out = await repo.listLeadTimeBlocks(ctx('manager'), 'i1', range);
+    expect(out).toHaveLength(1);
+    const q = dialect.sqlToQuery(stub.calls[2]!.where!);
+    expect(q.params).toContain('lead-profile');
+    expect(q.params).toContain(OWN);
+    expect(q.params).not.toContain(OTHER);
+    expect(q.sql).not.toContain('"time_blocks"."engagement_id" is null');
+  });
+
+  it('free blocks show only when the lead reports to the manager', async () => {
+    stub.queue([{ id: 'lead-profile', reportsTo: 'user-manager' }], [], [], []);
+    await repo.listLeadTimeBlocks(ctx('manager'), 'i1', range);
+    const last = stub.calls[stub.calls.length - 1]!;
+    expect(dialect.sqlToQuery(last.where!).sql).toContain('"time_blocks"."engagement_id" is null');
+  });
+
+  it('an admin reads any lead without an engagement filter', async () => {
+    stub.queue([LEAD], []);
+    await repo.listLeadTimeBlocks(ctx('admin'), 'i1', range);
+    expect(listScopedEngagementIds).not.toHaveBeenCalled();
+    expect(dialect.sqlToQuery(stub.calls[1]!.where!).params).toContain('lead-profile');
+  });
+});

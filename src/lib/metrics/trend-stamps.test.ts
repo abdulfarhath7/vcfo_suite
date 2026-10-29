@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { requestClosedPatch, taskAssignmentPatch, taskCompletionPatch } from './trend-stamps';
+import { requestClosedPatch, staffAssignedBy, taskAssignmentPatch, taskCompletionPatch } from './trend-stamps';
 
 const NOW = new Date('2026-10-29T06:00:00Z');
 
@@ -50,5 +50,14 @@ describe('taskAssignmentPatch', () => {
   it('leaves the column alone when the assignee does not change', () => {
     expect(taskAssignmentPatch('me', 'lead', 'lead')).toEqual({});
     expect(taskAssignmentPatch('me', 'lead', undefined)).toEqual({});
+  });
+});
+
+describe('staffAssignedBy', () => {
+  it('stamps staff who give the task to someone else, never a client', () => {
+    expect(staffAssignedBy('manager', 'm1', 'lead')).toBe('m1');
+    expect(staffAssignedBy('client', 'c1', 'lead')).toBeNull();
+    expect(staffAssignedBy('intern', 'l1', 'l1')).toBeNull();
+    expect(staffAssignedBy('admin', 'a1', null)).toBeNull();
   });
 });

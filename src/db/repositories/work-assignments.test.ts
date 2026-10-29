@@ -65,6 +65,9 @@ vi.mock('@/db/repositories/engagement-leads', () => ({
   replaceEngagementLead: (...a: unknown[]) => replaceEngagementLead(...a),
 }));
 
+const recordAuditEvent = vi.fn();
+vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: (...a: unknown[]) => recordAuditEvent(...a) }));
+
 const repo = await import('@/db/repositories/work-assignments');
 
 const OWN = '11111111-1111-1111-1111-111111111101';
@@ -190,5 +193,47 @@ describe('reassignWork', () => {
       repo.reassignWork(ctx('admin'), { kind: 'item', engagementId: OWN, itemKey: `filing:${TASK}`, toLeadId: 'i2' }),
     ).rejects.toThrow(/only steps, tasks/i);
     expect(writes()).toHaveLength(0);
+  });
+});
+
+describe('removeLead', () => {
+  const FROM = { id: LEAD, internId: 'i1', name: 'Asha', email: 'asha@x', status: 'active' };
+  const TO = { id: '66666666-6666-4666-8666-666666666606', internId: 'i2', name: 'Bala', email: 'bala@x', status: 'active' };
+
+  it.each(['intern', 'client'] as const)('%s is refused and nothing is read or written', async (role) => {
+    await expect(repo.removeLead(ctx(role), { fromLeadId: 'i1', toLeadId: 'i2' })).rejects.toThrow(/not permitted/i);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('a manager moves only the clients they manage; another firm’s client is untouched', async () => {
+    // findLead from, findLead to, primary engagements, co-lead engagements, then the task update.
+    results = [[FROM], [TO], [{ id: OWN }, { id: OTHER }], [], [{ id: TASK }]];
+    assertEngagementAccess.mockImplementation(async (_c: unknown, id: string) =>
+      id === OWN ? { ...allowed, row: { ...allowed.row, checklistState: { 'pre-2': { assigneeId: 'i1' }, 'pre-3': { assigneeId: 'i9' } } } } : denied,
+    );
+    const out = await repo.removeLead(ctx('manager'), { fromLeadId: 'i1', toLeadId: 'i2' });
+    expect(out.clients).toHaveLength(1);
+    expect(out.steps).toBe(1);
+    expect(out.tasks).toBe(1);
+    expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), appEngagementId(OWN), 'pre-2', { assigneeId: 'i2' });
+    expect(replaceEngagementLead).toHaveBeenCalledTimes(1);
+    expect(replaceEngagementLead).toHaveBeenCalledWith(expect.anything(), OWN, 'i1', 'i2');
+    const update = calls.find((c) => c.op === 'update')!;
+    expect((update.set as { assignedBy: string }).assignedBy).toBe('user-manager');
+    expect(calls.filter((c) => c.op === 'update')).toHaveLength(1);
+    expect(recordAuditEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('a lead on none of the caller’s clients is a 404 and nothing is written', async () => {
+    results = [[FROM], [TO], [{ id: OTHER }], []];
+    assertEngagementAccess.mockResolvedValue(denied);
+    await expect(repo.removeLead(ctx('manager'), { fromLeadId: 'i1', toLeadId: 'i2' })).rejects.toThrow(/none of your clients/);
+    expect(calls.filter((c) => c.op !== 'select')).toHaveLength(0);
+    expect(replaceEngagementLead).not.toHaveBeenCalled();
+  });
+
+  it('the same lead on both sides is refused', async () => {
+    results = [[FROM], [FROM]];
+    await expect(repo.removeLead(ctx('admin'), { fromLeadId: 'i1', toLeadId: 'i1' })).rejects.toThrow(/another/);
   });
 });
