@@ -40,6 +40,11 @@ function toIso(d: Date | null | undefined): string | null {
 }
 
 function mapRow(row: typeof engagementBoardResolutions.$inferSelect): BoardResolutionDoc {
+  const doc = mapRowBase(row);
+  return { ...doc, sentToClientAt: toIso(row.sentToClientAt), sentToClientBy: row.sentToClientBy ?? null };
+}
+
+function mapRowBase(row: typeof engagementBoardResolutions.$inferSelect): BoardResolutionDoc {
   return (
     parseBoardResolutionRpcPayload({
       content: row.content,
@@ -328,5 +333,36 @@ export async function setSignedBoardResolution(
     .returning();
 
   if (!row) throw new Error('Board resolution not found');
+  return mapRow(row);
+}
+
+const SEND_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
+
+/**
+ * "Send to client" (S-573): staff record that the finalized board resolution went to the client
+ * for signing. Staff only (a client never marks it); the engagement is read through
+ * `getEngagementById`, which scopes by role, so a foreign engagement is "not found". Only a
+ * finalized document can be sent. Sending again moves the date.
+ */
+export async function markBoardResolutionSentToClient(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<BoardResolutionDoc> {
+  if (!SEND_ROLES.has(ctx.role)) {
+    throw new Error('Only staff may send the board resolution to the client');
+  }
+  const engagement = await requireEngagement(ctx, appOrDbId);
+  const now = new Date();
+  const [row] = await db
+    .update(engagementBoardResolutions)
+    .set({ sentToClientAt: now, sentToClientBy: ctx.userId, updatedAt: now })
+    .where(
+      and(
+        eq(engagementBoardResolutions.engagementId, engagement.id),
+        eq(engagementBoardResolutions.status, 'finalized'),
+      ),
+    )
+    .returning();
+  if (!row) throw new Error('Board resolution is not finalized');
   return mapRow(row);
 }

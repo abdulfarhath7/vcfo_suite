@@ -34,6 +34,7 @@ import { fieldErrorId, isNicCodeInput } from './helpers';
 import type { FieldEditActions } from './field-edits';
 import type { ReadOnlyFieldRenderers } from './read-only-field';
 import type { MilestoneFormCtx } from './types';
+import { FieldReviewControls, FieldReviewMark } from './field-review';
 
 /** The editable control for one field, by field type (repeat groups render recursively). */
 export function createEditableFieldRenderer(
@@ -83,6 +84,7 @@ export function createEditableFieldRenderer(
       <div key={field.id} className={fieldShellClass(field, compactChrome ? 'space-y-1.5' : 'space-y-2')}>
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-3">
+            <FieldReviewMark engagementId={engagementId} itemId={item.id} fieldId={field.id} />
             <Label
               htmlFor={`${item.id}-${field.id}`}
               className="flex-1 text-xs font-medium leading-snug text-ink-muted"
@@ -90,6 +92,7 @@ export function createEditableFieldRenderer(
               {field.label}
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
+            <FieldReviewControls engagementId={engagementId} itemId={item.id} fieldId={field.id} label={field.label} />
             <FieldHelpButton stepId={item.id} fieldId={field.id} label={field.label} />
             {(() => {
               // Help icon only where Ask VCFO has something to say about the field.

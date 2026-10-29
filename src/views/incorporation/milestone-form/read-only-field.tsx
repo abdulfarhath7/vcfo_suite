@@ -19,6 +19,7 @@ import { FieldUnlockControl } from '@/views/incorporation/MilestoneResponseFormP
 import { isLeadOnlyField, LEAD_ONLY_FIELD_HELPER } from '@/lib/incorporation/pre-inc-direct-flow';
 import type { FieldEditActions } from './field-edits';
 import type { MilestoneFormCtx } from './types';
+import { FieldReviewControls, FieldReviewMark } from './field-review';
 
 /** Read-only field rendering: the staff read-only field and the client record row. */
 export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditActions) {
@@ -137,9 +138,11 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
   const renderReadOnlyField = (field: ChecklistField, options?: { showUnlock?: boolean }) => (
     <div key={field.id} className={fieldShellClass(field, 'space-y-1.5')}>
       <div className="flex items-center justify-between gap-3">
+        <FieldReviewMark engagementId={ctx.engagementId} itemId={ctx.item.id} fieldId={field.id} />
         <p className="flex-1 text-xs font-medium leading-snug text-ink-muted">
           {field.label}
         </p>
+        <FieldReviewControls engagementId={ctx.engagementId} itemId={ctx.item.id} fieldId={field.id} label={field.label} />
         <FieldUnlockControl
           field={field}
           showUnlock={options?.showUnlock}

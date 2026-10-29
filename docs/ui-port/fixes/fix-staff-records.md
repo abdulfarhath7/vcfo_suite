@@ -187,10 +187,10 @@ Rows S-268 to S-357 and S-403 to S-580.
 | S-493 | ◐ | Copy for Assist kept as a box on Assist steps. |
 | S-494 | ◐ | Form sections kept; no Forms/Activity switch or Filed/To file heads. |
 | S-495 | ◐ | Form sections kept; no Forms/Activity switch or Filed/To file heads. |
-| S-496 | ✗ | no data: per-field ask and review state. Needs a `step_field_states` table (engagement_id, item_id, field_id, state, asked_at, reviewed_at). |
-| S-497 | ✗ | no data: per-field ask and review state. Needs a `step_field_states` table (engagement_id, item_id, field_id, state, asked_at, reviewed_at). |
+| S-496 | ✓ | 20px ST5 mark per field from `step_field_states` (accepted done, asked teal, review amber, sent back red, not asked dashed): `FieldReviewMark` in `milestone-form/field-review.tsx`. |
+| S-497 | ✓ | 104px chip per field: "Asked · 3d", "Review", "Accepted", "Sent back". A client save turns asked fields into "answered" (`step-field-answers.ts`, called from `updateChecklistState`). |
 | S-498 | ◐ | Real form behaviour kept. |
-| S-499 | ✗ | no data: per-field ask and review state. Needs a `step_field_states` table (engagement_id, item_id, field_id, state, asked_at, reviewed_at). |
+| S-499 | ✓ | "Send reminder" on an asked field posts one staff message on the client thread (`client_messages.item_key = step:<engagement>:<item>`), writes an audit event and shows a toast. |
 | S-500 | ◐ | Real form behaviour kept. |
 | S-501 | ◐ | Real form behaviour kept. |
 | S-502 | ◐ | Real form behaviour kept. |
@@ -264,7 +264,7 @@ Rows S-268 to S-357 and S-403 to S-580.
 | S-570 | ✓ | Stage list with 20px ST5 marks and connectors. |
 | S-571 | ◐ | Lead still sends for manager approval (real permission). |
 | S-572 | ◐ | Modal kept; title and text shortened to one line; default blurple action. |
-| S-573 | ◐ | "Sent to client" stage is done on finalize (no separate send record; no data). |
+| S-573 | ✓ | After finalize the Stage rail shows "Next: send to client" and "Send to client": it opens a mail to the client and records `sent_to_client_at` (`POST /api/engagements/:id/board-resolution/sent`); then "Sent to client 29 Oct" and "Send again". |
 | S-574 | ◐ | Staff upload of a signed copy needs an API (no route today). |
 | S-575 | ✓ | Already matched. |
 | S-576 | ◐ | Real banners and loader kept. |
@@ -288,12 +288,22 @@ Rows S-268 to S-357 and S-403 to S-580.
 - src/views/intern/Clients.tsx, src/views/admin/Projects.tsx, ProjectsSections.tsx, FirmProjectsPanel.tsx: client row facts, filters, legend, phone cards, assign.
 - src/views/intern/BoardResolutionEditorView.tsx, BoardResolutionEditorDocPanel.tsx: head, stage chip, Stage rail, shorter confirm.
 
+## Round 3 (migration 0028)
+
+- `src/db/repositories/step-field-states.ts` (new): `listStepFieldStates`, `applyStepFieldAction` (ask, remind, answered, approve, send_back, clear). AuthContext and `assertEngagementAccess`; a developer is refused, a client reads its own engagement and never writes. Every write uses the approved id and writes an audit event.
+- `src/db/repositories/step-field-answers.ts` (new): a client's save turns fields staff asked for into "answered". It is best effort and never blocks the save. `engagements/write.ts` calls it.
+- `src/db/repositories/board-resolution.ts`: `markBoardResolutionSentToClient` (staff only, finalized only, scoped by `getEngagementById`); `mapRow` returns `sentToClientAt`/`sentToClientBy`. `BoardResolutionDoc` type has the two fields.
+- `src/lib/steps/field-states.ts` (new): types and the chip/mark words.
+- UI: `src/views/incorporation/milestone-form/field-review.tsx` (new), wired into `editable-field.tsx` and `read-only-field.tsx`; `BoardResolutionEditorView.tsx` "Send to client".
+- Tests: `step-field-states.test.ts` (18, cross-tenant: other engagement 403 with no query or write for every role, client and developer cannot write, the delete is scoped to the approved id), `board-resolution-sent.test.ts` (7, cross-tenant and finalized-only). `MilestoneResponseForm.errors.test.tsx` stubs the new review parts, the same way it stubs the Ask buttons.
+
 ## New routes
+- `GET/POST /api/engagements/:id/field-states` (GET: staff and the engagement's client; POST: staff).
+- `POST /api/engagements/:id/board-resolution/sent` (staff).
 None.
 
 ## Schema needs
-- Per-field step state (S-496, S-497, S-499): `step_field_states(engagement_id, item_id, field_id, state, asked_at, reviewed_at)`.
-- A "sent to client" timestamp on board resolutions (S-573): `board_resolutions.sent_to_client_at`.
+- Met by migration 0028 (`step_field_states`, `engagement_board_resolutions.sent_to_client_at/_by`). Nothing further.
 
 ## Requests for shared files
 - `src/components/ui/step-track.tsx` PhaseBar: a `stuck` prop (red current bar) and an optional `hrefFor(i)` so bars link to `?phase=n` (S-281, S-282).
@@ -302,6 +312,8 @@ None.
 - Shell: manager and admin "Clients" sidebar item with count and fold; phone tab "Clients" (S-269 to S-271).
 
 ## Decisions
+- Any staff member with access to the engagement may ask, remind, accept or send back a field (the lead reviews client answers on the step page); a client never writes field states.
+- "Send reminder" keeps the original ask date, so "Asked · 3d" keeps counting.
 - The lead and the manager/admin record keep their two routes but render the same shared parts.
 - "Edit the timeline" writes only what is stored (the incorporation window and the expected COI); the separate head controls were removed from ProjectDetail because the dialog does the same writes.
 - The registrations phase keeps its full step list under the new "Open registrations" summary row, so leads can still open registration steps.

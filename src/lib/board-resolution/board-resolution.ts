@@ -30,6 +30,9 @@ export interface BoardResolutionDoc {
   signedStoragePath?: string | null;
   signedUploadedAt?: string | null;
   signedUploadedBy?: string | null;
+  /** When staff sent the finalized document to the client for signing (S-573). */
+  sentToClientAt?: string | null;
+  sentToClientBy?: string | null;
 }
 
 export const DEFAULT_NIC_CODES =

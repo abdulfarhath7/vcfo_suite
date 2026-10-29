@@ -3,7 +3,11 @@
 'use client';
 
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 import {
 
@@ -76,6 +80,11 @@ function missingFieldRefText(ref: BoardResolutionMissingFieldRef): string {
   return where ? `${ref.label} — ${where}` : ref.label;
 }
 
+/** "29 Oct" (R-29). */
+function dayMonth(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).replace(/\bSept\b/, 'Sep');
+}
+
 type BrStage = { key: string; label: string; done: boolean };
 
 /**
@@ -83,16 +92,22 @@ type BrStage = { key: string; label: string; done: boolean };
  * stored document only: a Word file exists, the draft left the lead (with the manager or
  * finalized), it is finalized for the client, and the client uploaded the signed copy. The real
  * tool does not record a separate "sent to the client" moment: finalizing makes the file visible
- * on the client portal, so "Sent to client" is done with "Finalized".
+ * on the client portal; "Sent to client" is the staff record of sending it for signing
+ * (`sent_to_client_at`, S-573).
  */
-function brStages(doc: BoardResolutionEditorProps['doc'], withManager: boolean, isFinalized: boolean): BrStage[] {
+function brStages(
+  doc: BoardResolutionEditorProps['doc'],
+  withManager: boolean,
+  isFinalized: boolean,
+  sentToClientAt: string | null,
+): BrStage[] {
   const generated = Boolean(doc?.storagePath?.trim() || doc?.content?.trim());
   const signed = Boolean(doc?.signedStoragePath?.trim());
   return [
     { key: 'generated', label: 'Generated from Pre-1', done: generated },
     { key: 'draft', label: 'Draft · editing', done: withManager || isFinalized },
     { key: 'finalized', label: 'Finalized · client visible', done: isFinalized },
-    { key: 'sent', label: 'Sent to client', done: isFinalized },
+    { key: 'sent', label: 'Sent to client', done: isFinalized && (Boolean(sentToClientAt) || signed) },
     { key: 'signed', label: 'Signed copy uploaded', done: signed },
   ];
 }
@@ -147,7 +162,31 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     sentBackNote,
   } = p;
   const signed = Boolean(doc?.signedStoragePath?.trim());
-  const stageWord = signed ? 'Signed' : isFinalized ? 'Finalized' : withManager ? 'With manager' : 'Draft';
+  const [sentOverride, setSentOverride] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const sentToClientAt = sentOverride ?? doc?.sentToClientAt ?? null;
+
+  /** "Send to client" (S-573): opens a mail to the client and records the send. */
+  const sendToClient = async () => {
+    const to = eng.clientEmail?.trim();
+    if (to) {
+      const subject = encodeURIComponent(`Board resolution for signing · ${eng.companyName}`);
+      window.location.href = `mailto:${to}?subject=${subject}`;
+    }
+    setSending(true);
+    try {
+      const res = await fetch(`/api/engagements/${encodeURIComponent(eng.id)}/board-resolution/sent`, { method: 'POST' });
+      const out = (await res.json().catch(() => ({}))) as { boardResolution?: { sentToClientAt?: string | null }; error?: string };
+      if (!res.ok) throw new Error(out.error || 'Could not record the send');
+      setSentOverride(out.boardResolution?.sentToClientAt ?? new Date().toISOString());
+      toastSuccess('Sent to client', eng.companyName);
+    } catch (err) {
+      toastError('Could not send', errorMessage(err));
+    } finally {
+      setSending(false);
+    }
+  };
+  const stageWord = signed ? 'Signed' : isFinalized && sentToClientAt ? 'Sent' : isFinalized ? 'Finalized' : withManager ? 'With manager' : 'Draft';
   const stageTone = signed || isFinalized ? 'ok' : withManager ? 'teal' : 'warn';
   return (
 
@@ -357,7 +396,18 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
           <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Stage</h2>
         </div>
         <div className="p-2">
-          <BrStageList stages={brStages(doc, Boolean(withManager), Boolean(isFinalized))} />
+          <BrStageList stages={brStages(doc, Boolean(withManager), Boolean(isFinalized), sentToClientAt)} />
+          {isFinalized && !signed ? (
+            <div className="mt-1 grid gap-2 border-t border-line-soft px-2 pb-1 pt-3">
+              <p className="text-[13px] text-ink-muted">
+                {sentToClientAt ? `Sent to client ${dayMonth(sentToClientAt)}` : 'Next: send to client'}
+              </p>
+              <Button size="sm" variant={sentToClientAt ? 'outline' : 'default'} disabled={sending} onClick={() => void sendToClient()}>
+                <Send size={14} strokeWidth={1.6} aria-hidden />
+                {sentToClientAt ? 'Send again' : 'Send to client'}
+              </Button>
+            </div>
+          ) : null}
         </div>
       </aside>
       </div>

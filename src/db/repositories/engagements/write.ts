@@ -12,6 +12,8 @@ import { ensureEngagementManager } from '@/db/repositories/engagement-managers-m
 import type { EngagementDbRow } from './scope';
 import { getEngagementById } from './read';
 import { writeStepEvents } from '@/db/repositories/step-events';
+import { markAskedFieldsAnswered } from '@/db/repositories/step-field-answers';
+import { stepHolders } from '@/lib/metrics/step-holder';
 import { diffStepChanges } from '@/lib/metrics/step-timing';
 
 /** Engagement row writes: create, checklist_state, metadata, progress CC, soft delete and restore. */
@@ -67,19 +69,28 @@ export async function updateChecklistState(
   // A status or review change also writes one engagement_step_events row per step, in the
   // same transaction, so "opened at", "days in step" and the review history never disagree
   // with the stored state.
-  const changes = diffStepChanges(
+  const diff = diffStepChanges(
     existing.checklistState as Record<string, unknown> | null,
     nextState,
   );
+  // Each event also keeps who holds the step now (migration 0028), on the client home's rule.
+  const holders = diff.length ? stepHolders(nextState, diff.map((c) => c.stepId)) : {};
+  const changes = diff.map((c) => ({ ...c, holder: holders[c.stepId] ?? null }));
+  // S-497: a client's save turns the fields staff asked for into "answered". Best effort.
+  const answered = () =>
+    ctx.role === 'client'
+      ? markAskedFieldsAnswered(existing.id, existing.checklistState as Record<string, unknown> | null, nextState)
+      : Promise.resolve();
   if (changes.length === 0) {
     const [row] = await db
       .update(engagements)
       .set({ checklistState: nextState, updatedAt: new Date() })
       .where(eq(engagements.id, id))
       .returning();
+    await answered();
     return row;
   }
-  return db.transaction(async (tx) => {
+  const saved = await db.transaction(async (tx) => {
     const now = new Date();
     const [row] = await tx
       .update(engagements)
@@ -89,6 +100,8 @@ export async function updateChecklistState(
     await writeStepEvents(ctx, tx, existing.id, changes, now);
     return row;
   });
+  await answered();
+  return saved;
 }
 
 export async function updateEngagement(
