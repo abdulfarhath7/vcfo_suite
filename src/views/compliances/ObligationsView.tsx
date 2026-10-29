@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, Calendar, CalendarClock, CircleCheck, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -37,6 +36,7 @@ import {
 import { GroupedGrid, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
 import { areaSwatch } from '@/views/compliances/area-swatch';
 import { useRegister } from '@/views/compliances/use-register';
+import { useViewParams } from '@/views/compliances/view-params';
 import {
   dueWithinSoon,
   flowCounts,
@@ -90,11 +90,12 @@ function dueWords(iso: string, now: Date): string {
  *
  * Rows come from the scoped register (`useRegister`); `scope` is the caller's
  * roster for the company picker and the pre-COI notice. `?company=`, `?by=`
- * and `?state=` carry the state on refresh.
+ * and `?state=` carry the state on refresh. `embedded` renders the list as a
+ * tab of the client record (G-19): `scope` is that one client, the state stays
+ * in memory and the page head is left to the record.
  */
-export function ObligationsView({ basePath, scope }: { basePath: string; scope: ComplianceScope }) {
-  const router = useRouter();
-  const params = useSearchParams();
+export function ObligationsView({ basePath, scope, embedded = false }: { basePath: string; scope: ComplianceScope; embedded?: boolean }) {
+  const params = useViewParams(`${basePath}/obligations`, embedded);
   const now = useMemo(() => new Date(), []);
   const { engagements } = scope;
   const sole = soleCompany(engagements);
@@ -114,15 +115,7 @@ export function ObligationsView({ basePath, scope }: { basePath: string; scope: 
   const groups = groupObligations(rows, register.details, now);
   const allClientRows = groups.flatMap((g) => g.rows.map((r) => ({ ...r, group: g })));
 
-  const setParams = (next: Record<string, string | null>) => {
-    const search = new URLSearchParams(params.toString());
-    for (const [key, value] of Object.entries(next)) {
-      if (value === null || value === '') search.delete(key);
-      else search.set(key, value);
-    }
-    const q = search.toString();
-    router.replace(`${basePath}/obligations${q ? `?${q}` : ''}`, { scroll: false });
-  };
+  const setParams = params.set;
 
   const hrefOf = (r: FlatRow): string =>
     `${basePath}/obligations/${encodeURIComponent(r.group.obligationId)}${sole ? '' : `?company=${encodeURIComponent(r.row.engagementId)}`}`;
@@ -270,9 +263,11 @@ export function ObligationsView({ basePath, scope }: { basePath: string; scope: 
 
   return (
     <PageTransition>
-      <SEO title="Obligations — VCFO Suite" description="Statutory obligations grouped by filing, with each client's status." path={`${basePath}/obligations`} />
+      {embedded ? null : (
+        <SEO title="Obligations — VCFO Suite" description="Statutory obligations grouped by filing, with each client's status." path={`${basePath}/obligations`} />
+      )}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-        <h1 className="sr-only">Obligations</h1>
+        {embedded ? null : <h1 className="sr-only">Obligations</h1>}
         <FilterStrip items={strip} value={filter} onChange={(k) => setParams({ state: k || null })} />
 
         {pickedPreIncorporation ? (

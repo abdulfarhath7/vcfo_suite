@@ -33,9 +33,11 @@ import { resolveEngagementFromRouteParam } from '@/lib/slug';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
+import { ExpectedCoiControl } from '@/components/metrics/expected-coi-control';
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
+import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 
 /**
  * STAFF PROJECT DETAIL (admin + manager) — the client's incorporation page,
@@ -48,6 +50,10 @@ import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
  * on this surface (or the step workspace it opens) is editable — staff read
  * the project exactly as the client does. Firm-side actions live elsewhere
  * (Approvals, Email, People).
+ *
+ * Underline tabs under the head switch the record in place (G-19): the
+ * incorporation phases above, then Registrations, Obligations and Notes
+ * (`src/views/client-record/RecordTabs.tsx`).
  */
 const STAGE_TONE: Record<string, ChipTone> = {
   'Pre-Incorporation': 'violet',
@@ -67,6 +73,8 @@ export default function ProjectDetail() {
   } = useApp();
   const staffBase = useStaffBasePath();
   const queryClient = useQueryClient();
+  // G-19: the record's tabs (Incorporation, Registrations, Obligations, Notes), `?tab=`.
+  const [recordTab, setRecordTab] = useRecordTab();
 
   const eng = useMemo(
     () => resolveEngagementFromRouteParam(engagements, slugParam),
@@ -173,28 +181,45 @@ export default function ProjectDetail() {
         {/* One window for SPICe+ Part A + Part B together. Managers and
             admins set it here; leads and clients read it on the phase rows. */}
         {canSetScheduleWindows(user?.role) ? (
-          <ScheduleWindowControl
-            value={eng.schedule?.incorporation}
-            label="Incorporation"
-            onSave={async (window) => {
-              await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
-              await queryClient.invalidateQueries({ queryKey: ['engagements'] });
-            }}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ScheduleWindowControl
+              value={eng.schedule?.incorporation}
+              label="Incorporation"
+              onSave={async (window) => {
+                await setEngagementWindowInDb(eng.id, { kind: 'incorporation' }, window);
+                await queryClient.invalidateQueries({ queryKey: ['engagements'] });
+              }}
+            />
+            {/* The date the firm expects the certificate (G-13); read by the practice cards. */}
+            {!incorporationDate ? <ExpectedCoiControl engagementId={eng.id} value={eng.expectedCoiOn} /> : null}
+          </div>
         ) : null}
       </header>
 
-      <TimelineRequestsPanel engagementId={eng.id} canDecide={canSetScheduleWindows(user?.role)} />
-      <div className="flex flex-col gap-3">
-        <InternPhaseEntryCards
-          phases={phases}
-          gates={gates}
-          hrefForPhase={phaseHref}
-          metaForPhase={phaseWindowMeta(eng.schedule)}
-          trailingForPhase={docPackPill}
-        />
-      </div>
-      <WorkItemsPanel engagementId={eng.id} />
+      <RecordTabBar
+        engagement={eng}
+        value={recordTab}
+        onChange={setRecordTab}
+        overviewCount={`${totalDone}/${totalSteps}`}
+        className="mb-4"
+      />
+      {recordTab === 'overview' ? (
+        <>
+          <TimelineRequestsPanel engagementId={eng.id} canDecide={canSetScheduleWindows(user?.role)} />
+          <div className="flex flex-col gap-3">
+            <InternPhaseEntryCards
+              phases={phases}
+              gates={gates}
+              hrefForPhase={phaseHref}
+              metaForPhase={phaseWindowMeta(eng.schedule)}
+              trailingForPhase={docPackPill}
+            />
+          </div>
+          <WorkItemsPanel engagementId={eng.id} />
+        </>
+      ) : (
+        <RecordTabPanel tab={recordTab} engagement={eng} shellBase={staffBase} />
+      )}
     </PageTransition>
   );
 }

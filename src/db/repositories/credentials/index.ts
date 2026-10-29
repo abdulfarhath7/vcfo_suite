@@ -54,3 +54,11 @@ export {
 export type {
   IdentifierRevealOutcome,
 } from './identifier-reveal';
+export {
+  listRegistrationFacts,
+  setRegistrationDates,
+  getRegistrationCertificateUrl,
+} from './registrations';
+export type {
+  RegistrationDatesInput,
+} from './registrations';

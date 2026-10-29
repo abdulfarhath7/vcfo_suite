@@ -6,6 +6,8 @@
  * the client's own answers, the registration details stored on the credentials workbook,
  * the documents the step needs, About, and the filings it starts on the client's register.
  * The client acts on the incorporation step page, so "Open step" goes there.
+ * The registration facts (G-05) add the certificate download (a signed URL through the
+ * scoped `/api/registrations/certificate`), the issue date, the expiry and a Renewal card.
  */
 import { useMemo } from 'react';
 import { StepMark } from '@/components/ui/step-track';
@@ -22,7 +24,9 @@ import { groupObligations } from '../compliances/obligations';
 import { obligationHref } from '../compliances/ObligationsPage';
 import { Empty, FactRows, GoLink, Island, ListRow, RecordHead, SCard, StatusChip, WordPill } from '../compliances/spectrum';
 import { buildRegistrations, startsFilings, type RegItem } from './model';
-import { REGISTRATIONS_BASE, RegChip, RegOwner, useRegCredentials } from './parts';
+import { REGISTRATIONS_BASE, RegChip, RegOwner, useClientRegistrationFacts, useRegCredentials } from './parts';
+import { CertificateButton, renewalLine } from '@/views/compliances/registration-renewal';
+import { renewalOf } from '@/lib/registrations/registration-facts';
 import '../../css/compliances-board.css';
 
 const HOLDER: Record<RegItem['owner'], string> = { client: 'You', sbc: 'SBC', mca: 'MCA' };
@@ -30,7 +34,11 @@ const HOLDER: Record<RegItem['owner'], string> = { client: 'You', sbc: 'SBC', mc
 export function RegistrationRecordPage({ id }: { id: string }) {
   const { model, loading } = usePortalIncorporation();
   const creds = useRegCredentials();
-  const r = useMemo(() => buildRegistrations(model, creds.data).find((x) => x.id === id || x.stepId === id) ?? null, [model, creds.data, id]);
+  const { facts } = useClientRegistrationFacts();
+  const r = useMemo(
+    () => buildRegistrations(model, creds.data, facts).find((x) => x.id === id || x.stepId === id) ?? null,
+    [model, creds.data, facts, id],
+  );
   usePortalCrumbs(['Registrations', r?.name ?? 'Registration']);
   const back = (
     <GoLink href={REGISTRATIONS_BASE} className="text-[13px] font-medium text-brand-text hover:underline">
@@ -50,7 +58,7 @@ export function RegistrationRecordPage({ id }: { id: string }) {
               <Empty action={back}>Not on your checklist</Empty>
             </SCard>
           ) : (
-            <Record r={r} credsError={creds.isError} credsLoading={creds.isLoading} />
+            <Record r={r} credsError={creds.isError && !facts} credsLoading={creds.isLoading} />
           )}
         </Island>
       </div>
@@ -70,9 +78,14 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
   }, [filings.data, r.stepId, today]);
   const date = r.status === 'Done' ? r.doneOn : r.due;
   const numberEmpty = credsLoading ? 'Loading' : credsError ? 'Could not load' : 'Not stored yet';
+  const now = new Date(`${today}T00:00:00`);
+  const renewal = renewalOf(r.facts, now);
+  const renewalText = renewalLine(r.facts, now);
+  const registeredOn = r.registeredOn && /^\d{4}-\d{2}-\d{2}$/.test(r.registeredOn) ? fmtDMY(r.registeredOn) : r.registeredOn;
 
   const actions = (
     <>
+      <CertificateButton facts={r.facts} size="default" />
       {r.step.canOpen ? <Button onClick={() => go(clientIncorporationStepPath(r.step.item))}>Open step</Button> : null}
       <Button variant="secondary" onClick={() => go(portalHref('credentials'))}>
         Credentials
@@ -101,6 +114,7 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
         facts={[
           { k: r.status === 'Done' ? 'Done' : 'Due', v: date ? fmtDMY(date) : '-', tone: r.status === 'Overdue' ? 'bad' : undefined },
           { k: 'Number', v: r.number ? <span className="font-mono text-[13px]">{r.number}</span> : '-' },
+          ...(renewal ? [{ k: 'Renew by', v: fmtDMY(renewal.renewBy), tone: renewal.word === 'Overdue' ? ('bad' as const) : undefined }] : []),
         ]}
         actions={actions}
       />
@@ -127,8 +141,10 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
             <FactRows
               rows={[
                 { k: 'Number', v: r.number ?? numberEmpty, mono: Boolean(r.number), empty: !r.number },
-                { k: 'Date of registration', v: r.registeredOn ?? '-', empty: !r.registeredOn },
+                { k: 'Date of registration', v: registeredOn ?? '-', empty: !registeredOn },
                 { k: 'Certificate', v: r.certificate ?? '-', mono: Boolean(r.certificate), empty: !r.certificate },
+                ...(r.facts?.issuedOn ? [{ k: 'Issued', v: fmtDMY(r.facts.issuedOn) }] : []),
+                ...(r.facts?.expiresOn ? [{ k: 'Expires', v: fmtDMY(r.facts.expiresOn) }] : []),
               ]}
             />
           </SCard>
@@ -162,6 +178,12 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
                 Ask VCFO about {r.name}
               </button>
             </div>
+          </SCard>
+          <SCard title="Renewal">
+            <p className={`text-[13.5px] leading-relaxed ${renewalText ? 'text-ink-2' : 'text-ink-faint'}`}>
+              {renewalText ?? 'No expiry recorded'}
+              {renewal?.word ? ` ${renewal.word}.` : ''}
+            </p>
           </SCard>
           {startsFilings(r.stepId) ? (
             <SCard title="What it starts" meta={starts.length || undefined} flush>

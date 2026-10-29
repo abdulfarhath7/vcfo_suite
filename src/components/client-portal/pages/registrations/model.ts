@@ -4,10 +4,15 @@
  * on the credentials workbook (its Registrations sheet, filled from the registration steps or
  * typed in by SBC). Pure: no React, no fetch. A number that is not stored stays null; the
  * pages show an empty state for it and never a placeholder number.
+ *
+ * The registration facts (`GET /api/registrations`, G-05) add what the workbook payload
+ * does not carry: the issue date, expiry and renewal period, and whether the certificate
+ * can be downloaded. They also stand in for the workbook when it cannot load.
  */
 import { coerceStatusCode } from '@/data/checklist';
 import { REG_ROWS, type CredentialsPayload } from '@/lib/client-portal/credentials';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
+import type { RegistrationFacts, RegistrationFactsMap } from '@/lib/registrations/registration-facts';
 
 /** R-13: the six status words. */
 export type RegStatus = 'Not started' | 'In progress' | 'Waiting' | 'Due soon' | 'Overdue' | 'Done';
@@ -40,6 +45,8 @@ export interface RegItem {
   number: string | null;
   registeredOn: string | null;
   certificate: string | null;
+  /** Stored facts of the registration (renewal dates, certificate download), when loaded. */
+  facts: RegistrationFacts | null;
   step: PortalStep;
 }
 
@@ -115,12 +122,17 @@ function cell(payload: CredentialsPayload | null | undefined, rowKey: string | n
   return typeof v === 'string' && v.trim() ? v.trim() : null;
 }
 
-export function buildRegistrations(model: PortalIncorporationModel, credentials?: CredentialsPayload | null): RegItem[] {
+export function buildRegistrations(
+  model: PortalIncorporationModel,
+  credentials?: CredentialsPayload | null,
+  facts?: RegistrationFactsMap | null,
+): RegItem[] {
   const phase = model.phases.find((p) => p.no === 4) ?? model.phases.find((p) => p.id.startsWith('registration'));
   if (!phase) return [];
   return phase.steps.map((s, i) => {
     const regKey = REG_KEY_BY_TITLE.get(s.title.toLowerCase()) ?? null;
     const gstin = regKey === 'gst' ? credentials?.ids?.find((t) => t.key === 'gstin')?.value?.trim() || null : null;
+    const f = facts?.[s.id] ?? null;
     return {
       id: s.item.slug,
       stepId: s.id,
@@ -140,9 +152,10 @@ export function buildRegistrations(model: PortalIncorporationModel, credentials?
       forms: s.item.forms,
       needs: s.item.infoRequired,
       regKey,
-      number: cell(credentials, regKey, 'number') ?? gstin,
-      registeredOn: cell(credentials, regKey, 'date'),
-      certificate: cell(credentials, regKey, 'cert'),
+      number: cell(credentials, regKey, 'number') ?? f?.number ?? gstin,
+      registeredOn: cell(credentials, regKey, 'date') ?? f?.registeredOn ?? null,
+      certificate: cell(credentials, regKey, 'cert') ?? f?.certificate?.name ?? null,
+      facts: f,
       step: s,
     } satisfies RegItem;
   });

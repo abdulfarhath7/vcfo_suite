@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, AlertTriangle, Check, CircleCheck, CircleDashed, Clock, MoreHorizontal, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -19,6 +18,10 @@ import { cn } from '@/lib/utils';
 import { ALL_COMPANIES, normaliseCompanyParam, soleCompany, type ComplianceScope } from '@/views/compliances/compliance-scope';
 import { isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
 import { FilterStrip, FlowCard, RailCard, WordChip, type StripItem } from '@/views/compliances/spectrum-parts';
+import { useViewParams } from '@/views/compliances/view-params';
+import { RenewByCell } from '@/views/compliances/registration-renewal';
+import { useRegistrationFacts, type RegistrationFacts } from '@/hooks/use-registration-facts';
+import { renewalOf } from '@/lib/registrations/registration-facts';
 import { GroupedGrid, HeadCard, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
 import {
   REG_CATEGORIES,
@@ -78,13 +81,21 @@ function cellOf(word: RegWord): keyof typeof CELL {
  * step state is `getStateForEngagement`; pre-incorporation companies are left
  * out (their registrations cannot start) and counted in the portfolio note.
  * `?company=`, `?view=grid` and `?state=` carry the state on refresh.
+ *
+ * Numbers, certificates and renewal dates come from the slim, scoped
+ * `GET /api/registrations` read across the engagements in scope (G-05, G-06);
+ * a number typed on the credentials workbook wins over the step's answer.
+ * `embedded` renders the list as a tab of the client record (G-19): the state
+ * stays in memory and the page head is left to the record.
  */
-export function RegistrationsView({ shellBase, scope }: { shellBase: string; scope: ComplianceScope }) {
-  const router = useRouter();
-  const params = useSearchParams();
+export function RegistrationsView({ shellBase, scope, embedded = false }: { shellBase: string; scope: ComplianceScope; embedded?: boolean }) {
   const now = useMemo(() => new Date(), []);
   const { getStateForEngagement } = useApp();
   const basePath = `${shellBase}/registrations`;
+  const params = useViewParams(basePath, embedded);
+  const factsQ = useRegistrationFacts({ engagementId: embedded ? scope.engagements[0]?.id : null });
+  const factOf = (r: RegistrationRow): RegistrationFacts | undefined => factsQ.data?.[r.engagement.id]?.[r.item.id];
+  const numberOf = (r: RegistrationRow): string | undefined => factOf(r)?.number ?? r.number;
 
   const engagements = useMemo(
     () => scope.engagements.filter((e) => !scope.preIncorporationIds.has(e.id)),
@@ -107,15 +118,7 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
   const shown = live.filter((r) => match(r, filter));
   const count = (f: Exclude<RegFilter, ''>) => live.filter((r) => match(r, f)).length;
 
-  const setParams = (next: Record<string, string | null>) => {
-    const search = new URLSearchParams(params.toString());
-    for (const [key, value] of Object.entries(next)) {
-      if (value === null || value === '') search.delete(key);
-      else search.set(key, value);
-    }
-    const q = search.toString();
-    router.replace(`${basePath}${q ? `?${q}` : ''}`, { scroll: false });
-  };
+  const setParams = params.set;
   const hrefOf = (r: RegistrationRow) => `${basePath}/${encodeURIComponent(r.key)}`;
 
   const strip: StripItem[] = [
@@ -152,12 +155,14 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
       label: 'Number',
       width: 160,
       className: 'hidden md:table-cell',
-      render: (r) =>
-        r.number ? (
-          <span className={cn(isIdentifier(r.number) && 'font-mono text-[12.5px]')}>{r.number}</span>
+      render: (r) => {
+        const number = numberOf(r);
+        return number ? (
+          <span className={cn(isIdentifier(number) && 'font-mono text-[12.5px]')}>{number}</span>
         ) : (
           <span className="text-ink-muted">{r.form ?? '—'}</span>
-        ),
+        );
+      },
     },
     {
       key: 'status',
@@ -171,6 +176,13 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
       width: 128,
       className: 'hidden lg:table-cell',
       render: (r) => (r.owner ? <OwnerChip owner={r.owner} label={OWNER_LABEL[r.owner]} /> : <span className="text-ink-faint">—</span>),
+    },
+    {
+      key: 'renew',
+      label: 'Renew by',
+      width: 150,
+      className: 'hidden lg:table-cell',
+      render: (r) => <RenewByCell facts={factOf(r)} now={now} />,
     },
     {
       key: 'date',
@@ -216,6 +228,12 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
     .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
     .slice(0, 5);
   const waiting = live.filter((r) => r.word === 'Waiting').slice(0, 5);
+  // Renewals: registrations with a stored expiry that is within 30 days or past.
+  const renewals = live
+    .map((r) => ({ r, renewal: renewalOf(factOf(r), now) }))
+    .filter((x) => x.renewal?.word)
+    .sort((a, b) => a.renewal!.renewBy.localeCompare(b.renewal!.renewBy))
+    .slice(0, 5);
   const done = live
     .filter((r) => r.word === 'Done')
     .sort((a, b) => (b.completedOn ?? '').localeCompare(a.completedOn ?? ''))
@@ -251,9 +269,9 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
 
   return (
     <PageTransition>
-      <SEO title="Registrations — VCFO Suite" description="Statutory registrations across your clients." path={basePath} />
+      {embedded ? null : <SEO title="Registrations — VCFO Suite" description="Statutory registrations across your clients." path={basePath} />}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-        <h1 className="sr-only">Registrations</h1>
+        {embedded ? null : <h1 className="sr-only">Registrations</h1>}
         <FilterStrip items={strip} value={filter} onChange={(k) => setParams({ state: k || null })} />
         {scope.preIncorporationIds.size ? <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} /> : null}
 
@@ -327,11 +345,22 @@ export function RegistrationsView({ shellBase, scope }: { shellBase: string; sco
               }))}
             />
             <RailCard
+              title="Renewals and expiry"
+              items={renewals.map(({ r, renewal }) => ({
+                key: r.key,
+                title: r.name,
+                sub: renewal!.word === 'Overdue' ? `${r.engagement.companyName} · Expired` : r.engagement.companyName,
+                right: plainDate(renewal!.renewBy, now),
+                rightClass: renewal!.word === 'Overdue' ? 'font-medium text-danger' : 'font-medium text-warning',
+                href: hrefOf(r),
+              }))}
+            />
+            <RailCard
               title="Recently done"
               items={done.map((r) => ({
                 key: r.key,
                 title: r.name,
-                sub: r.number ? `${r.engagement.companyName} · ${r.number}` : r.engagement.companyName,
+                sub: numberOf(r) ? `${r.engagement.companyName} · ${numberOf(r)}` : r.engagement.companyName,
                 right: plainDate(r.registrationDate ?? r.completedOn, now),
                 href: hrefOf(r),
               }))}

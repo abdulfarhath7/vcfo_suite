@@ -17,6 +17,7 @@ import {
   tileParts,
   type SixWord,
 } from '@/views/compliances/spectrum-status';
+import { exactDate } from '@/lib/relative-due';
 
 /**
  * Small Spectrum pieces shared by the staff compliance screens (Calendar,
@@ -63,6 +64,7 @@ export function DateTile({
         className,
       )}
       aria-label={`Due ${day} ${month}`}
+      title={exactDate(iso)}
     >
       <b className="text-[16px] font-medium">{day}</b>
       <span className="mt-[3px] text-[10.5px] font-medium uppercase tracking-[.06em]">{month}</span>
@@ -246,5 +248,14 @@ export function Fact({ k, children, className }: { k: string; children: ReactNod
       <em className="block text-[12.5px] not-italic text-ink-muted">{k}</em>
       <b className={cn('block whitespace-nowrap text-[15px] font-medium text-ink', className)}>{children}</b>
     </div>
+  );
+}
+
+/** A short text card of the record rail: About, Why it applies, If filed late, Renewal. */
+export function TextCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <DashSection title={title}>
+      <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">{children}</div>
+    </DashSection>
   );
 }

@@ -127,3 +127,13 @@ running per person), `work-checklist` (own rows only), `time-blocks` (own rows o
 hides blocks on engagements that left the scope) and `item-window-requests` (lead asks on a
 step or filing with a manager window; manager / admin decide, approve applies the window
 through `schedule.ts`; the asker withdraws). Tests share `work-test-stub.ts`.
+
+Compliance record reads (G-04, G-05, G-06, G-19): `obligation-about` (an obligation's About,
+Why it applies and If filed late; firm-wide admins read any, other roles only one with an
+instance on a scoped engagement, or by instance id through `assertEngagementAccess`),
+`credentials/registrations` (registration facts and renewal dates on the workbook's reg rows,
+`fields` only, never the ciphertext; one engagement through `resolveAccess` or every scoped
+engagement through a narrow `reg-*` SQL read; staff write the dates, everyone in scope opens
+the certificate through a signed URL) and `engagement-notes` (staff only; anyone on the
+engagement adds and pins, the author edits, the author or a firm-wide admin soft-deletes;
+audit summaries never quote the note because clients read their engagement's audit events).

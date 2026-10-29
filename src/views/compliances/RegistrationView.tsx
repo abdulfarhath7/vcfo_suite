@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowRight } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, CalendarClock } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -13,52 +12,23 @@ import { StepMark, type StepState } from '@/components/ui/step-track';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useApp } from '@/context/AppContext';
 import { getChecklistStepTimelineLabel, getRegistrationPhases } from '@/data/checklist';
-import type { CredentialsPayload } from '@/lib/client-portal/credentials';
 import { adminProjectStepPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
 import { formatWindow } from '@/lib/projects/schedule-windows';
 import { cn } from '@/lib/utils';
 import type { ComplianceScope } from '@/views/compliances/compliance-scope';
 import { isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
-import { Fact, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { Fact, RailCard, TextCard, WordChip } from '@/views/compliances/spectrum-parts';
+import { CertificateButton, RegistrationDatesDialog, RenewByCell, renewalLine } from '@/views/compliances/registration-renewal';
+import { useRegistrationFacts } from '@/hooks/use-registration-facts';
+import { isoOfText } from '@/lib/registrations/registration-facts';
 import {
   parseRegistrationKey,
   regDateLabel,
   registrationRows,
-  workbookRowKey,
   type RegistrationRow,
 } from '@/views/compliances/registration-rows';
 
 const OWNER_LABEL = { client: 'Client', sbc: 'SBC', mca: 'Authority', manager: 'Manager' } as const;
-
-/** The stored number and date of one registration, from the credentials workbook. */
-interface StoredRegistration {
-  number: string | null;
-  date: string | null;
-}
-
-/**
- * The credentials workbook holds the registration numbers staff typed in as
- * well as the ones read from the steps. Only the "Registrations" row of this
- * step is kept; the rest of the payload (logins, secrets) is dropped at once.
- * A failure (for example no encryption key on the server) leaves the step's
- * own answers as the only source.
- */
-function useStoredRegistration(engagementId: string | undefined, rowKey: string | undefined) {
-  return useQuery({
-    queryKey: ['registration-stored', engagementId, rowKey],
-    enabled: Boolean(engagementId && rowKey),
-    retry: false,
-    staleTime: 60_000,
-    queryFn: async (): Promise<StoredRegistration | null> => {
-      const res = await fetch(`/api/client/credentials?engagementId=${encodeURIComponent(engagementId!)}`, { cache: 'no-store' });
-      if (!res.ok) return null;
-      const data = (await res.json().catch(() => ({}))) as { credentials?: CredentialsPayload };
-      const row = data.credentials?.sheets.reg.rows.find((r) => r.key === rowKey);
-      if (!row) return null;
-      return { number: row.cells.number?.v?.trim() || null, date: row.cells.date?.v?.trim() || null };
-    },
-  });
-}
 
 /** Three workflow stages (Client, SBC, authority) as ST5 marks. */
 function stageMarks(row: RegistrationRow): StepState[] {
@@ -82,6 +52,11 @@ function stageMarks(row: RegistrationRow): StepState[] {
  * window, the completion date, and the registration number and date when the
  * step's answers or the credentials workbook hold them. No number is ever
  * made up.
+ *
+ * The number, the date of registration, the certificate and the renewal dates
+ * come from the scoped `GET /api/registrations?engagementId=` read (G-05),
+ * which reads only the workbook's non-secret cells. Staff set the issue date,
+ * expiry and renewal period in the Renewal dates dialog (audited).
  */
 export function RegistrationView({
   shellBase,
@@ -109,7 +84,9 @@ export function RegistrationView({
     [engagement, getStateForEngagement, now],
   );
   const row = item ? rows.find((r) => r.item.id === item.id) : undefined;
-  const stored = useStoredRegistration(engagementId, item ? workbookRowKey(item) : undefined);
+  const factsQ = useRegistrationFacts({ engagementId, enabled: Boolean(engagementId) });
+  const facts = engagementId && item ? factsQ.data?.[engagementId]?.[item.id] : undefined;
+  const [editing, setEditing] = useState(false);
   const basePath = `${shellBase}/registrations`;
 
   if (!engagement || !item || !row) {
@@ -129,8 +106,10 @@ export function RegistrationView({
   const nameOf = (id: string | undefined) => (id ? people.find((p) => p.id === id)?.name : undefined);
   const lead = nameOf(engagement.internId);
   const assignee = nameOf(row.assigneeId);
-  const number = stored.data?.number ?? row.number ?? null;
-  const regDate = row.registrationDate ? plainDate(row.registrationDate, now) : stored.data?.date ?? null;
+  const number = facts?.number ?? row.number ?? null;
+  const factDate = facts?.registeredOn ? (isoOfText(facts.registeredOn) ? plainDate(facts.registeredOn, now) : facts.registeredOn) : null;
+  const regDate = factDate ?? (row.registrationDate ? plainDate(row.registrationDate, now) : null);
+  const renewal = renewalLine(facts, now);
   const date = regDateLabel(row, now);
   const stepHref =
     shellBase === '/app/intern'
@@ -157,6 +136,11 @@ export function RegistrationView({
               {row.word === 'Not needed' ? <span className="text-[13px] text-ink-muted">Not needed</span> : <WordChip word={row.word} />}
               {row.owner ? <OwnerChip owner={row.owner} label={OWNER_LABEL[row.owner]} /> : null}
             </span>
+            <CertificateButton facts={facts} engagementId={engagement.id} size="default" />
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              <CalendarClock aria-hidden />
+              Renewal dates
+            </Button>
             <Button asChild>
               <Link href={stepHref}>
                 Open step
@@ -172,6 +156,13 @@ export function RegistrationView({
               {date.text}
             </Fact>
             {regDate ? <Fact k="Date of registration">{regDate}</Fact> : null}
+            {facts?.issuedOn ? <Fact k="Issued">{plainDate(facts.issuedOn, now)}</Fact> : null}
+            {facts?.expiresOn ? (
+              <Fact k="Renew by">
+                <RenewByCell facts={facts} now={now} />
+              </Fact>
+            ) : null}
+            {facts?.certificate ? <Fact k="Certificate">{facts.certificate.name}</Fact> : null}
             {row.window ? <Fact k="Window">{formatWindow(row.window)}</Fact> : null}
             <Fact k="Lead">{lead ?? '—'}</Fact>
             {assignee && assignee !== lead ? <Fact k="Assigned to">{assignee}</Fact> : null}
@@ -224,6 +215,9 @@ export function RegistrationView({
                 {item.forms.length ? <p className="text-ink-muted">Forms: {item.forms.join(', ')}</p> : null}
               </div>
             </DashSection>
+            <TextCard title="Renewal">
+              <p className={renewal ? undefined : 'text-ink-faint'}>{renewal ?? 'No expiry recorded'}</p>
+            </TextCard>
             <RailCard
               title={`Open for ${engagement.companyName}`}
               items={others.map((r) => {
@@ -234,6 +228,14 @@ export function RegistrationView({
           </div>
         </div>
       </div>
+      <RegistrationDatesDialog
+        open={editing}
+        onOpenChange={setEditing}
+        engagementId={engagement.id}
+        stepId={item.id}
+        title={`${row.name} · ${engagement.companyName}`}
+        facts={facts}
+      />
     </PageTransition>
   );
 }

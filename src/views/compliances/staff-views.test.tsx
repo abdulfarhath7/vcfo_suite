@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import type { Engagement } from '@/data/engagements';
 import type { FilingRow } from '@/lib/compliance/filings';
 
@@ -73,6 +73,29 @@ vi.mock('@/components/client-portal/pages/compliances/api', () => ({
   useCompFilings: () => ({ data: { rows: [] } }),
   useReminder: () => ({ set: { mutate: vi.fn(), isPending: false }, clear: { mutate: vi.fn(), isPending: false } }),
 }));
+// The slim registration facts read (G-05, G-06): a number typed on the workbook and an
+// expiry 10 days out for Acme's GST registration.
+const soon = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+vi.mock('@/hooks/use-registration-facts', () => ({
+  useRegistrationFacts: () => ({
+    data: {
+      acme: {
+        'reg-4': {
+          stepId: 'reg-4',
+          rowKey: 'gst',
+          number: '29ABCDE1234F1Z5',
+          registeredOn: null,
+          certificate: null,
+          issuedOn: null,
+          expiresOn: soon,
+          renewEveryMonths: null,
+        },
+      },
+    },
+  }),
+  useSetRegistrationDates: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  openRegistrationCertificate: vi.fn(),
+}));
 vi.mock('@tanstack/react-query', async (orig) => ({
   ...(await orig<typeof import('@tanstack/react-query')>()),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -134,6 +157,25 @@ describe('RegistrationsView', () => {
     expect(gst?.getAttribute('href')).toBe(`/app/manager/registrations/${encodeURIComponent('acme~reg-4')}`);
     expect(within(grid).getAllByText('Done').length).toBeGreaterThan(0);
     expect(within(grid).getAllByText('Waiting').length).toBeGreaterThan(0);
+  });
+
+  it('shows the stored number and the renewal from the slim facts read', () => {
+    search = new URLSearchParams('company=acme');
+    render(<RegistrationsView shellBase="/app/manager" scope={scope} />);
+    const grid = screen.getByRole('region', { name: 'Registrations' });
+    expect(within(grid).getByText('29ABCDE1234F1Z5')).toBeInTheDocument();
+    expect(within(grid).getByText('Due soon')).toBeInTheDocument();
+    const renewals = screen.getByRole('heading', { name: 'Renewals and expiry' }).closest('section')!;
+    expect(within(renewals).getByText('GST Registration')).toBeInTheDocument();
+  });
+
+  it('keeps filter state in memory when embedded in the client record', () => {
+    search = new URLSearchParams();
+    replace.mockClear();
+    render(<RegistrationsView shellBase="/app/manager" scope={{ ...scope, engagements: [scope.engagements[0]!] }} embedded />);
+    act(() => screen.getByRole('tab', { name: 'Grid' }).click());
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.getByRole('tab', { name: 'Grid' })).toHaveAttribute('aria-selected', 'true');
   });
 });
 

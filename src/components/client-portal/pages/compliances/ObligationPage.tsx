@@ -3,7 +3,9 @@
 /**
  * Compliances · one obligation (VCFO Spectrum ObligationScreen): the record head with the
  * status, the area, the next due date and "n of m filed", then This period (the four
- * workflow steps of the open period, ST5), the History grid of every period, and About.
+ * workflow steps of the open period, ST5), the History grid of every period, About, and
+ * the What it is, Why it applies and If filed late texts from the scoped obligation read
+ * (G-04, asked with one of the client's own filing ids).
  * A period opens the same side panel as Filings (proof viewer and download, Remind me, Add
  * to my calendar, Ask VCFO). `?filing=<id>` opens that period's panel on load.
  */
@@ -24,6 +26,7 @@ import { RiskChip, SidePanel } from './Detail';
 import { groupObligations, type Obligation } from './obligations';
 import { OBLIGATIONS_BASE } from './ObligationsPage';
 import { AreaTag, DateTile, Empty, FactRows, GoLink, Island, PortalLink, RecordHead, SCard, StatusChip } from './spectrum';
+import { useObligationAbout, whyItAppliesLine } from '@/hooks/use-obligation-about';
 import '../../css/compliances-board.css';
 
 export function CompliancesObligation({ id }: { id: string }) {
@@ -301,10 +304,41 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
                 </button>
               </div>
             </SCard>
+            <AboutTexts instanceId={o.instances[0]?.id ?? null} />
           </div>
         </div>
       </Island>
       {panel ? <SidePanel f={panel} onClose={() => setFiling(null)} /> : null}
+    </>
+  );
+}
+
+/** What it is, Why it applies (with the due rule) and If filed late; not drawn until loaded. */
+function AboutTexts({ instanceId }: { instanceId: string | null }) {
+  const q = useObligationAbout({ instanceId });
+  const about = q.data;
+  if (!about) return null;
+  const why = whyItAppliesLine(about);
+  return (
+    <>
+      {about.about ? (
+        <SCard title="What it is">
+          <p className="text-[13.5px] leading-relaxed text-ink-2">{about.about}</p>
+        </SCard>
+      ) : null}
+      {why || about.dueRule ? (
+        <SCard title="Why it applies">
+          <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">
+            {why ? <p>{why}</p> : null}
+            {about.dueRule ? <p className="text-ink-muted">{about.dueRule}</p> : null}
+          </div>
+        </SCard>
+      ) : null}
+      {about.ifLate ? (
+        <SCard title="If filed late">
+          <p className="text-[13.5px] leading-relaxed text-ink-2">{about.ifLate}</p>
+        </SCard>
+      ) : null}
     </>
   );
 }

@@ -24,6 +24,7 @@ import {
 import { areaLabel, daysUntil, filingWord, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
 import { DateTile, Fact, FlowCard, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
+import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
 import {
   dueWithinSoon,
@@ -42,7 +43,8 @@ const RISK_WORD: Record<string, string> = { low: 'Low', medium: 'Medium', high: 
  * it, how many are late, the penalty risk), then a T1 grid of each client's
  * instance for that period with the window and proof actions, and a second
  * grid of every period on record. `?company=` narrows the page to one client.
- * Everything comes from the scoped register; nothing is invented.
+ * The rail closes with About, Why it applies and If filed late from the scoped
+ * obligation read (G-04). Everything comes from the scoped register; nothing is invented.
  */
 export function ObligationView({
   basePath,
@@ -258,6 +260,7 @@ export function ObligationView({
                 rightClass: cn('font-medium', filingStatus(r, now) === 'overdue' ? 'text-danger' : 'text-waiting'),
               }))}
             />
+            <ObligationAboutCards obligationId={group.obligationId} />
           </div>
         </div>
       </div>

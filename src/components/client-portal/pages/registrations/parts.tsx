@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { daysBetween } from '@/lib/client-portal/compliances';
 import type { CredentialsPayload } from '@/lib/client-portal/credentials';
+import { useRegistrationFacts } from '@/hooks/use-registration-facts';
+import type { RegistrationFactsMap } from '@/lib/registrations/registration-facts';
 import { portalHref } from '../../routes';
 import { DateTile } from '../compliances/spectrum';
 import type { RegItem, RegStatus } from './model';
@@ -32,6 +34,13 @@ export function useRegCredentials(enabled = true) {
     staleTime: 15_000,
     retry: false,
   });
+}
+
+/** The client's own registration facts (GET /api/registrations), by step id. */
+export function useClientRegistrationFacts(enabled = true): { facts: RegistrationFactsMap | null; isError: boolean } {
+  const q = useRegistrationFacts({ enabled });
+  const facts = q.data ? (Object.values(q.data)[0] ?? null) : null;
+  return { facts, isError: q.isError };
 }
 
 /** Solid fills for the progress flow bar (R-25). */

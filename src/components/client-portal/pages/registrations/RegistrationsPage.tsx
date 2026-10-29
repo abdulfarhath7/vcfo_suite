@@ -7,8 +7,11 @@
  * status. Not-applicable steps sit in a folded "Not needed" group. The right rail keeps
  * three cards: Due in the next 15 days, Waiting on client, Progress flow.
  *
- * Data: the step model (`usePortalIncorporation`, the client-redacted checklist state) and
- * the numbers stored on the credentials workbook (GET /api/client/credentials).
+ * Data: the step model (`usePortalIncorporation`, the client-redacted checklist state),
+ * the numbers stored on the credentials workbook (GET /api/client/credentials) and the
+ * registration facts (GET /api/registrations, G-05): each row shows when it must be
+ * renewed once an expiry is stored, with Due soon 30 days before and Overdue after it, and
+ * a Renewals card lists those rows.
  */
 import { useMemo, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
@@ -23,7 +26,9 @@ import { usePortalIncorporation } from '../../hooks';
 import { usePageTips } from '../compliances/bits';
 import { Empty, GoLink, GroupHead, HeadSearch, Island, ListRow, SCard, StackedBar, WordPill, relativeDue } from '../compliances/spectrum';
 import { GROUP_ORDER, buildRegistrations, regDueWithin, regWaiting, type RegItem, type RegStatus } from './model';
-import { REG_FILL, REG_ORDER, RegChip, RegOwner, RegTile, registrationHref, useRegCredentials } from './parts';
+import { REG_FILL, REG_ORDER, RegChip, RegOwner, RegTile, registrationHref, useClientRegistrationFacts, useRegCredentials } from './parts';
+import { renewalOf } from '@/lib/registrations/registration-facts';
+import { fmtDM } from '@/lib/client-portal/compliances';
 import '../../css/compliances-board.css';
 
 export function RegistrationsList() {
@@ -33,7 +38,8 @@ export function RegistrationsList() {
   usePageTips(root);
   const { model, loading } = usePortalIncorporation();
   const creds = useRegCredentials();
-  const items = useMemo(() => buildRegistrations(model, creds.data), [model, creds.data]);
+  const { facts } = useClientRegistrationFacts();
+  const items = useMemo(() => buildRegistrations(model, creds.data, facts), [model, creds.data, facts]);
   const [view, setView] = useState<'status' | 'group'>('status');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<RegStatus | null>(null);
@@ -52,6 +58,11 @@ export function RegistrationsList() {
   ].filter((s) => s.rows.length);
 
   const due = regDueWithin(items, today, 15);
+  const now = new Date(`${today}T00:00:00`);
+  const renewals = active
+    .map((r) => ({ r, renewal: renewalOf(r.facts, now) }))
+    .filter((x) => x.renewal?.word)
+    .sort((a, b) => a.renewal!.renewBy.localeCompare(b.renewal!.renewBy));
   const waiting = regWaiting(items);
   const count = (s: RegStatus) => active.filter((r) => r.status === s).length;
 
@@ -106,7 +117,7 @@ export function RegistrationsList() {
           </span>
         </div>
       ) : null}
-      {creds.isError ? (
+      {creds.isError && !facts ? (
         <p className="border-b border-line-soft px-4 py-2 text-[13px] text-ink-muted md:px-5" role="status">
           Registration numbers could not load
         </p>
@@ -165,6 +176,26 @@ export function RegistrationsList() {
                 <Empty />
               )}
             </SCard>
+            {renewals.length ? (
+              <SCard title="Renewals" meta={renewals.length} flush>
+                {renewals.slice(0, 8).map(({ r, renewal }) => (
+                  <GoLink
+                    key={r.stepId}
+                    href={registrationHref(r.id)}
+                    label={`${r.name} · ${renewal!.word}`}
+                    className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink first:border-t-0 hover:bg-surface-sunken md:px-5"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] font-medium">{r.name}</span>
+                      <span className="block truncate text-[12.5px] text-ink-muted">Renew by {fmtDM(renewal!.renewBy)}</span>
+                    </span>
+                    <Chip tone={renewal!.word === 'Overdue' ? 'bad' : 'warn'} fixed>
+                      {renewal!.word}
+                    </Chip>
+                  </GoLink>
+                ))}
+              </SCard>
+            ) : null}
             <SCard title="Waiting on client" meta={waiting.length} flush>
               {waiting.length ? (
                 waiting.slice(0, 8).map((r) => (
@@ -196,6 +227,7 @@ export function RegistrationsList() {
 }
 
 function RegRow({ r, today }: { r: RegItem; today: string }) {
+  const renewal = renewalOf(r.facts, new Date(`${today}T00:00:00`));
   return (
     <GoLink
       href={registrationHref(r.id)}
@@ -207,6 +239,11 @@ function RegRow({ r, today }: { r: RegItem; today: string }) {
         <span className="block truncate font-medium text-ink">{r.name}</span>
         <span className="block truncate text-[12.5px] text-ink-muted">
           {r.number ? <span className="font-mono text-[12.5px] text-ink-2">{r.number}</span> : r.forms.join(' · ') || r.group}
+          {renewal ? (
+            <span className={renewal.word === 'Overdue' ? 'font-medium text-danger' : renewal.word ? 'font-medium text-warning' : undefined}>
+              {` · Renew by ${fmtDM(renewal.renewBy)}${renewal.word ? ` · ${renewal.word}` : ''}`}
+            </span>
+          ) : null}
         </span>
       </span>
       <WordPill word={r.area} className="hidden sm:inline-flex" />

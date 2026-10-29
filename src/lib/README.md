@@ -24,9 +24,12 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `knowledge-bank/` — knowledge bank folders, search and storage keys.
 - `noc/` — the parent company NOC (Pre-2 board resolution) templates and variants.
 - `notifications/` — in-app bell, announcements, popup cadence and the dock animation.
+- `notes/` — the wire type of a staff note on a client record (G-19).
 - `notify/` — WhatsApp nudges (outbound only; never blocks email).
+- `obligations/` — the obligation About wire type and the due rule in one plain sentence (G-04).
 - `outlook/` — Microsoft Outlook OAuth and token encryption for sending mail as a user.
 - `projects/` — engagements (projects): create scope, DB helpers, change requests, step paths, stuck rules, schedule windows, deadlines and pending approvals.
+- `registrations/` — registration facts (number, certificate, issue date, expiry, renewal) built from the step answers and the workbook's reg rows (G-05, G-06).
 - `shell/` — app chrome: shell appearance, brand name, motion presets, phase colours and page metadata.
 - `super/` — the super admin overview shape builder.
 

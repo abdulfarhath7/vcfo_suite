@@ -72,6 +72,7 @@ import {
   getStepGate,
 } from '@/lib/checklist/checklist-step-gate';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
+import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -179,6 +180,8 @@ export default function EngagementDetail() {
 
   /* R-36: the bucket tabs and the phase picker switch in place. */
   const [bucketTab, setBucketTab] = useState<Bucket | null>(null);
+  /* G-19: the lead's record tabs (Incorporation, Registrations, Obligations, Notes), `?tab=`. */
+  const [recordTab, setRecordTab] = useRecordTab();
   const [phasePick, setPhasePick] = useState<Record<string, string>>({});
 
   if (isIntern && eng) {
@@ -389,30 +392,38 @@ export default function EngagementDetail() {
             ) : null
           }
         >
-          {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
-            <InternNowStrip
-              now={internNow}
-              onOpen={() => router.push(internEngagementStepPath(eng, internNow.item))}
-            />
-          ) : null}
+          <RecordTabBar engagement={eng} value={recordTab} onChange={setRecordTab} />
 
-          {checklistLoading ? (
-            <InternOverviewSyncNotice>
-              <HexgridLoader size="sm" />
-              Syncing client answers…
-            </InternOverviewSyncNotice>
-          ) : null}
-
-          {INTERN_PHASE_TABS_ENABLED ? (
-            renderInternPhases()
+          {recordTab !== 'overview' ? (
+            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/intern" />
           ) : (
-            <InternPhaseEntryCards
-              phases={internPhases}
-              gates={gates}
-              hrefForPhase={internPhaseHref}
-              metaForPhase={phaseWindowMeta(eng.schedule)}
-              trailingForPhase={docPackPill}
-            />
+            <>
+              {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
+                <InternNowStrip
+                  now={internNow}
+                  onOpen={() => router.push(internEngagementStepPath(eng, internNow.item))}
+                />
+              ) : null}
+
+              {checklistLoading ? (
+                <InternOverviewSyncNotice>
+                  <HexgridLoader size="sm" />
+                  Syncing client answers…
+                </InternOverviewSyncNotice>
+              ) : null}
+
+              {INTERN_PHASE_TABS_ENABLED ? (
+                renderInternPhases()
+              ) : (
+                <InternPhaseEntryCards
+                  phases={internPhases}
+                  gates={gates}
+                  hrefForPhase={internPhaseHref}
+                  metaForPhase={phaseWindowMeta(eng.schedule)}
+                  trailingForPhase={docPackPill}
+                />
+              )}
+            </>
           )}
         </InternEngagementOverview>
       ) : (
