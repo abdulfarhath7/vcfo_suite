@@ -26,7 +26,7 @@ listed below were ✓ in PROTOTYPE-DIFF.md and are unchanged.
 | S-615 | ✓ | Analytics head has no back chevron (inline head, not PlainPageHead). |
 | S-616 | ✓ (real only) | Fifth tile "Filed on time · 12 months" is real data and stays. |
 | S-617 | ✓ | Local KpiStrip: 13 px label with 15 px muted icon on the left, 26 px value, 1.5 px border, 16 x 14 padding. |
-| S-618 | ✗ no data | Change tags need a stored KPI snapshot per period. Schema need below. |
+| S-618 | ✓ | Round 3: `kpi_snapshots` (migration 0028). The month-end job `src/jobs/kpi-snapshots.ts` stores the five tile values per scope (the firm, each manager, each lead) with the same rule the page uses (`src/lib/metrics/analytics-kpis.ts`). Analytics shows a green or amber change tag only when last month's snapshot exists (`GET /api/metrics/kpi-snapshot`). |
 | S-619 | ✓ | Overdue value turns red above 0. |
 | S-620 | ✓ | Steps completed shows the count with "/ total". |
 | S-621 | ✓ | Two tiles per row on a phone, auto-fit 170 px from sm. |
@@ -50,9 +50,9 @@ listed below were ✓ in PROTOTYPE-DIFF.md and are unchanged.
 | S-650 | ✗ no data | No Microsoft sign-in provider in Auth.js and no API token store. Needs backend. |
 | S-652 | ◐ kept | Disconnect bar stays truthful: the real Outlook link sends mail; it does not sync Teams. |
 | S-653 | ✗ no data | Designation and membership number need columns (below). |
-| S-654 | ◐ | Email and WhatsApp per kind, quiet hours, weekly digest. Teams channel, due-date reminder and daily digest need preference keys and senders. |
-| S-655 | ✗ no data | "Approvals waiting" toggle needs a preference key and a sender. |
-| S-656 | ✗ no data | "Escalations" toggle needs a preference key and a sender. |
+| S-654 | ◐ | Round 3: the reminder days (`remind_days`) now drive "Remind me" emails and client WhatsApp due nudges, and the daily digest time sends a daily digest. The Teams channel is still not built. |
+| S-655 | ✓ (backend) | Round 3: an email goes to the engagement's managers with "Approvals waiting" on when a step's review turns to waiting (`src/jobs/staff-alerts.ts`). The toggle itself is on the Profile (shared agent). |
+| S-656 | ✓ (backend) | Round 3: an email goes to the assignee, or to every admin and super admin, with "Escalations" on when an escalation opens. The daily digest job sends at each person's digest time. |
 | S-657 | ◐ shared | AppearanceSettings is shared with the Profile rows; Density and Text size need foundations tokens. |
 | S-658 | ✓ (real only) | `/app/admin/firm-settings` stays. |
 | S-662 | ✓ (real only) | A lead with no incorporated client goes to Today; kept (real routing). |
@@ -116,7 +116,7 @@ listed below were ✓ in PROTOTYPE-DIFF.md and are unchanged.
 | S-767 | ◐ | Area pill · authority · frequency. No law code is stored per obligation. |
 | S-768 | ◐ | The lead shows in the Lead column; client contact and manager per filing are not on the register read. |
 | S-769 | ◐ kept | No "Mark next step done": the register has no route that advances a filing step (data received, prepared). Calendar and Open filings stay. |
-| S-771 | ✗ no data | Dated authority and SBC events per filing are not stored. |
+| S-771 | ✓ | Round 3: `filing_events` (migration 0028). Events are written when a filing is filed (or filed late) or reopened, when staff upload a proof or the client sends one, and when staff or the client move a window. The obligation record shows the "This period" thread: client left, SBC right, weekday and date on the spine (`record-cards.tsx`, `GET /api/filings/events`). |
 | S-772 | ✓ (real only) | Clients grid stays. |
 | S-773 | ✗ no data | No portal automation backend. |
 | S-774 | ✗ no data | No per-filing document requests. |
@@ -126,7 +126,7 @@ listed below were ✓ in PROTOTYPE-DIFF.md and are unchanged.
 | S-778 | ✓ (real only) | Rail lists stay. |
 | S-779 | ✓ | About card has a "Find the SOP in the knowledge bank" link (`knowledge-bank?q=<name>`). Worded honestly: no SOP id is stored per obligation. |
 | S-782 | ✓ | Own "Due rule" card (round 2). |
-| S-783 | ✗ no data | Checklist state needs storage. |
+| S-783 | ✓ | Round 3: "Before filing" card, staff only, for one client's period. Lines in `src/data/before-filing.ts` (per obligation, else per area); ticks in `compliance_checklist_checks` (`/api/compliance-checklist`). |
 | S-785 | ✓ | Strip: Granted, In progress, Waiting on client, Not started, Renewals in 60 days. Overdue stays as a sixth tile (real state). |
 | S-786 | ✓ | "Renewals in 60 days" tile filters on the stored expiry (`?state=renewals`). |
 | S-790 | ◐ | "Not needed" is a grey chip. "Changed by <manager>" is not stored on the step. |
@@ -151,7 +151,7 @@ listed below were ✓ in PROTOTYPE-DIFF.md and are unchanged.
 | S-812 | ✓ | About card has the knowledge bank link. |
 | S-813 | ✗ no data | No stored reason why a registration applies or is not needed. |
 | S-814 | ✗ no data | No mapping from a registration to the obligations it starts. |
-| S-816 | ✗ no data | Checklist state needs storage. |
+| S-816 | ✓ | Round 3: the same card on the registration record, lines by registration category. |
 | S-817 | ✓ (real only) | Kept. |
 
 ## Files changed in round 2
@@ -175,11 +175,8 @@ None.
 
 ## Schema needs
 
-- `kpi_snapshots (firm_id, period, key, value)` for the Analytics change tags (S-618).
 - `profiles.designation text`, `profiles.membership_no text` (S-653).
-- Notification preference keys `approvalsWaiting`, `escalations`, `dueReminderDays`, `dailyDigest`, and a Teams channel (S-654 to S-656).
-- `obligation_checklist_checks (instance_id, item, checked_by, checked_at)` and the same for registrations (S-783, S-816).
-- `filing_events (instance_id, side, label, at)` for the two-sided thread (S-771).
+- A Teams channel for notifications (S-654).
 - `registration_triggers (registration_item_id, obligation_id)` and a stored applicability reason (S-813, S-814).
 - `engagement_steps.not_needed_by` for "Changed by <manager>" (S-790).
 
@@ -202,3 +199,66 @@ None.
 - The obligation ring for one client uses the client portal's four workflow steps, so staff and client see the same progress.
 - The SOP link is a knowledge bank search, labelled "Find the SOP in the knowledge bank", because no SOP id is stored.
 - `/settings` is not redirected (see requests).
+
+
+## Round 3 (after migration 0028)
+
+Built on the tables the hub added in commit 09d86c7, then on the hub's later requests.
+
+### Files
+
+- New repositories, each with a cross-tenant test:
+  - `src/db/repositories/filing-events.ts`: `recordFilingEvent` and `listFilingEvents`.
+  - `src/db/repositories/compliance-checklist-checks.ts`: staff-only ticks.
+  - `src/db/repositories/kpi-snapshots.ts`: one scope per role, plus the `system*` helpers for the job.
+- New repositories for the jobs (`system*` only, documented deviations):
+  - `src/db/repositories/staff-alerts.ts`: alert recipients (tested).
+  - `src/db/repositories/daily-digest.ts`.
+- Event writes hooked into:
+  - `filing-status.ts`: filed, filed late, reopened.
+  - `schedule.ts`: staff and client window moves.
+  - `client-compliances.ts`: staff proof and client proof.
+- Reminder days:
+  - `client-compliances.ts`: "Remind me" stores the person's own day, and the due list honours `remind_days`.
+  - `compliance.ts` and `src/jobs/compliance-generate.ts`: client WhatsApp due nudges on each client's own days, else the old 5 (monthly) and 7 (quarterly).
+  - `notification-prefs.ts`: `systemGetRemindDays`.
+- Alerts are queued from `engagements/write.ts` (a step whose review just turned to waiting) and from `escalations.ts` (raise).
+- New jobs, registered in `app/api/inngest/route.ts`:
+  - `src/jobs/kpi-snapshots.ts`: 1st of the month at 00:05 IST.
+  - `src/jobs/staff-alerts.ts`: on an event; sleeps out quiet hours.
+  - `src/jobs/daily-digest.ts`: hourly.
+- New pure modules, each with tests:
+  - `src/lib/metrics/analytics-kpis.ts`
+  - `src/lib/notify/reminder-days.ts`
+  - `src/lib/notify/staff-alerts.ts`
+  - `src/lib/digest/daily-digest.ts`
+- `src/lib/digest/weekly-digest-email.ts`: `buildWeeklyDigestEmail(digest, 'daily')`. It is the same builder, with daily title, intro and footer.
+- New data: `src/data/before-filing.ts`.
+- New view parts:
+  - `src/views/compliances/record-cards.tsx`: `FilingThreadCard`, `BeforeFilingCard`.
+  - These are used in `ObligationView.tsx` and `RegistrationView.tsx`.
+  - Analytics change tags are in `src/views/admin/Analytics.tsx`.
+- Tests updated: the repository tests that stub the database now mock `filing-events`. This fixed `client-compliances.test.ts > addClientFilingProof`, which my event write had broken. Also updated: `escalations.test.ts` (alert queued) and `client-reminder-days.test.ts` (own days win).
+
+### New routes
+
+- `GET /api/filings/events?ids=`: the thread, scoped.
+- `GET` and `POST /api/compliance-checklist`: staff only.
+- `GET /api/metrics/kpi-snapshot`: the caller's own scope.
+
+### Decisions
+
+- A KPI snapshot is per scope (`firm`, or the profile id of a manager or lead). A manager's tiles are compared with that manager's own numbers, never with the firm's. The "Filed on time" change shows only on the 12-month view, the window the snapshot stores.
+- An approval alert goes to managers only (`manager_id`, the legacy `admin_id`, co-managers). An escalation goes to its assignee when it has one, else to every admin and super admin. Both respect the switch: never saved counts as on.
+- Quiet hours:
+  - Alerts wait out each person's quiet hours with `step.sleepUntil`.
+  - A daily digest time inside quiet hours moves to the end of the window.
+  - Reminder emails keep their old timing.
+- A personal remind day applies to "Remind me" emails and to client WhatsApp due nudges. Without one, the firm default and the old windows stay.
+- The SOP link and the checklist lines are plain, real steps; no numbers.
+
+### Checks
+
+- `npx tsc --noEmit -p .`: 0 errors in the whole tree.
+- `npx vitest run src/db src/lib src/views src/components/compliances src/components/email src/jobs`: 277 files, 2,704 tests pass.
+- `npx eslint` on every file changed in round 3: 0 errors.

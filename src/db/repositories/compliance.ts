@@ -274,29 +274,19 @@ export async function systemGenerateComplianceInstances(
 }
 
 /**
- * SYSTEM READER — WhatsApp compliance nudges (Inngest cron).
+ * SYSTEM (Inngest only — no AuthContext): the compliance instances that may get a WhatsApp
+ * nudge today. Only what a template variable needs — obligation name, company name, due
+ * date — plus the frequency and the days left, so the job can apply each recipient's own
+ * reminder days (`dueNudgeToday`, notification_prefs.remind_days).
  *
- * Unscoped like `systemGenerateComplianceInstances`: the daily job has no
- * session. Returns only what a template variable needs — obligation name,
- * company name, due date. No filing numbers, no evidence, no owner details.
- *
- * Windows are exact IST civil-day matches, so each instance enters a window
- * once:
- *   monthly   → 5 days before due
- *   quarterly → 7 days before due
- *   overdue   → the day after due, any frequency
- * Filed instances are excluded.
+ * Rows:
+ *   overdue — due yesterday (IST), any frequency, sent to clients and leads;
+ *   due     — due in 1 to 7 IST days. With no personal choice a monthly filing nudges 5 days
+ *             before and a quarterly one 7 days before, as before; a client who chose 7, 3 or
+ *             1 days is nudged that many days before instead.
+ * Filed instances and soft-deleted projects are excluded.
  */
-export async function systemListComplianceNudges(today: Date): Promise<
-  Array<{
-    kind: 'compliance_due_monthly' | 'compliance_due_quarterly' | 'compliance_overdue';
-    instanceId: string;
-    engagementDbId: string;
-    companyName: string;
-    obligationName: string;
-    dueDate: string;
-  }>
-> {
+export async function systemListComplianceNudges(today: Date): Promise<ComplianceNudgeRow[]> {
   const { ymdInIst, parseIstNoon } = await import('@/lib/intern/intern-work');
 
   const shift = (days: number): string => {
@@ -305,9 +295,9 @@ export async function systemListComplianceNudges(today: Date): Promise<
     return ymdInIst(base);
   };
 
-  const dueInFive = shift(5);
-  const dueInSeven = shift(7);
   const dueYesterday = shift(-1);
+  const ahead = [1, 2, 3, 4, 5, 6, 7].map((d) => [shift(d), d] as const);
+  const daysTo = new Map<string, number>(ahead);
 
   try {
     const rows = await db
@@ -327,48 +317,48 @@ export async function systemListComplianceNudges(today: Date): Promise<
         complianceObligations,
         eq(complianceObligations.id, complianceInstances.obligationId),
       )
-      .where(
-        inArray(complianceInstances.dueDate, [dueInFive, dueInSeven, dueYesterday]),
-      );
+      .where(inArray(complianceInstances.dueDate, [dueYesterday, ...ahead.map(([d]) => d)]));
 
-    const out: Array<{
-      kind: 'compliance_due_monthly' | 'compliance_due_quarterly' | 'compliance_overdue';
-      instanceId: string;
-      engagementDbId: string;
-      companyName: string;
-      obligationName: string;
-      dueDate: string;
-    }> = [];
-
+    const out: ComplianceNudgeRow[] = [];
     for (const row of rows) {
       // Soft-deleted projects are hidden everywhere else — do not message them.
       if (row.deletedAt) continue;
       if (row.status === 'filed') continue;
-
       const base = {
         instanceId: row.instanceId,
         engagementDbId: row.engagementDbId,
         companyName: row.companyName,
         obligationName: row.obligationName,
         dueDate: row.dueDate,
+        frequency: row.frequency,
       };
-
       if (row.dueDate === dueYesterday) {
-        out.push({ kind: 'compliance_overdue', ...base });
+        out.push({ kind: 'compliance_overdue', daysToDue: -1, ...base });
         continue;
       }
-      if (row.dueDate === dueInFive && row.frequency === 'monthly') {
-        out.push({ kind: 'compliance_due_monthly', ...base });
-        continue;
-      }
-      if (row.dueDate === dueInSeven && row.frequency === 'quarterly') {
-        out.push({ kind: 'compliance_due_quarterly', ...base });
-      }
+      const days = daysTo.get(row.dueDate);
+      if (days === undefined) continue;
+      out.push({
+        kind: row.frequency === 'monthly' ? 'compliance_due_monthly' : 'compliance_due_quarterly',
+        daysToDue: days,
+        ...base,
+      });
     }
-
     return out;
   } catch (err) {
     console.error('[compliance] nudge scan failed', err);
     return [];
   }
+}
+
+export interface ComplianceNudgeRow {
+  kind: 'compliance_due_monthly' | 'compliance_due_quarterly' | 'compliance_overdue';
+  instanceId: string;
+  engagementDbId: string;
+  companyName: string;
+  obligationName: string;
+  dueDate: string;
+  frequency: string;
+  /** IST days from today to the due date; -1 for the overdue nudge. */
+  daysToDue: number;
 }

@@ -9,6 +9,8 @@ import { workDbStub as stub } from '@/db/repositories/work-test-stub';
  * load.
  */
 
+// Filing events are written fire-and-forget after the action; they are tested in filing-events.test.ts.
+vi.mock('@/db/repositories/filing-events', () => ({ recordFilingEvent: async () => undefined, windowEventLabel: () => '' }));
 vi.mock('@/db/client', async () => ({
   db: (await import('@/db/repositories/work-test-stub')).workDbStub.db,
 }));

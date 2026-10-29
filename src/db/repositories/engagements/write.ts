@@ -1,7 +1,7 @@
 import 'server-only';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { engagements } from '@/db/schema';
+import { engagementStepEvents, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { normalizeParentIndianRelationship } from '@/data/engagements';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -14,6 +14,7 @@ import { getEngagementById } from './read';
 import { writeStepEvents } from '@/db/repositories/step-events';
 import { markAskedFieldsAnswered } from '@/db/repositories/step-field-answers';
 import { stepHolders } from '@/lib/metrics/step-holder';
+import { holderChanges } from '@/lib/metrics/client-holder-trend';
 import { diffStepChanges } from '@/lib/metrics/step-timing';
 import { newlyAwaitingReview, queueStaffAlert } from '@/lib/notify/staff-alerts';
 
@@ -76,7 +77,18 @@ export async function updateChecklistState(
   );
   // Each event also keeps who holds the step now (migration 0028), on the client home's rule.
   const holders = diff.length ? stepHolders(nextState, diff.map((c) => c.stepId)) : {};
-  const changes = diff.map((c) => ({ ...c, holder: holders[c.stepId] ?? null }));
+  // A gated step can change hands without a status change of its own, so holder-only rows are
+  // added for those; the first save with no holder history writes a baseline for every model
+  // step (client home trend lines, `client-holder-trend.ts`).
+  const [hasHolders] = await db
+    .select({ id: engagementStepEvents.id })
+    .from(engagementStepEvents)
+    .where(and(eq(engagementStepEvents.engagementId, existing.id), isNotNull(engagementStepEvents.holder)))
+    .limit(1);
+  const changes = [
+    ...diff.map((c) => ({ ...c, holder: holders[c.stepId] ?? null })),
+    ...holderChanges(existing.checklistState as Record<string, unknown> | null, nextState, new Set(diff.map((c) => c.stepId)), !hasHolders),
+  ];
   // S-497: a client's save turns the fields staff asked for into "answered". Best effort.
   const answered = () =>
     ctx.role === 'client'

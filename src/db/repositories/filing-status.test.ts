@@ -12,6 +12,8 @@ const recordAuditEvent = vi.fn();
 let selected: unknown[] = [];
 let updatedSet: Record<string, unknown> | null = null;
 
+// Filing events are written fire-and-forget after the action; they are tested in filing-events.test.ts.
+vi.mock('@/db/repositories/filing-events', () => ({ recordFilingEvent: async () => undefined, windowEventLabel: () => '' }));
 vi.mock('@/db/client', () => ({
   db: {
     select: () => {

@@ -11,6 +11,8 @@ import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { CHART_STATUS, ChartLegend } from '@/components/charts';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { useAnalyticsMetrics } from '@/components/metrics/use-metrics';
+import { useQuery } from '@tanstack/react-query';
+import { analyticsKpis, kpiChange, type KpiKey } from '@/lib/metrics/analytics-kpis';
 import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
 import type { StepTimeMetric } from '@/lib/metrics/practice-metrics';
 import { shortCompany } from '@/components/super/parts/super-text';
@@ -66,6 +68,43 @@ interface Kpi {
   Icon: LucideIcon;
   /** An overdue number above zero is red (R-18). */
   bad?: boolean;
+  /** Change against last month's stored snapshot (S-618); null hides the tag. */
+  change?: number | null;
+  /** True when a rise is good news (green), false when it is bad news (amber). */
+  upIsGood?: boolean;
+}
+
+/**
+ * Last month-end's stored tile values for the caller's own scope (`kpi_snapshots`, written by
+ * the month-end job). Empty until the job has run once, and then no change tag shows.
+ */
+function useKpiSnapshot() {
+  return useQuery({
+    queryKey: ['metrics', 'kpi-snapshot'],
+    queryFn: async () => {
+      const res = await fetch('/api/metrics/kpi-snapshot', { cache: 'no-store' });
+      if (!res.ok) return { period: null, values: {} as Partial<Record<KpiKey, number>> };
+      return (await res.json()) as { period: string | null; values: Partial<Record<KpiKey, number>> };
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
+/** The change tag after a tile number: "+1" or "−2", green for good news and amber for bad. */
+function ChangeTag({ change, upIsGood = true }: { change: number; upIsGood?: boolean }) {
+  if (change === 0) return null;
+  const good = change > 0 === upIsGood;
+  return (
+    <span
+      className={cn(
+        'ml-2 inline-flex h-5 items-center rounded-sm px-1.5 align-middle text-[11.5px] font-medium tabular-nums',
+        good ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning',
+      )}
+      title="Change since the end of last month"
+    >
+      {change > 0 ? `+${change}` : `−${Math.abs(change)}`}
+    </span>
+  );
 }
 
 /**
@@ -84,6 +123,7 @@ function KpiStrip({ items }: { items: Kpi[] }) {
           <b className={cn('text-[26px] font-medium leading-none tabular-nums', k.bad ? 'text-danger' : 'text-ink')}>
             {k.value}
             {k.of ? <small className="ml-1 text-[14px] font-medium text-ink-muted">{k.of}</small> : null}
+            {k.change !== null && k.change !== undefined ? <ChangeTag change={k.change} upIsGood={k.upIsGood} /> : null}
           </b>
         </div>
       ))}
@@ -143,24 +183,11 @@ export default function Analytics() {
     [engagements, getStateForEngagement],
   );
 
-  /** Live portfolio KPIs computed from real engagement state. */
-  const live = useMemo(() => {
-    let stepsDone = 0;
-    let stepsTotal = 0;
-    let awaitingClient = 0;
-    let overdue = 0;
-    for (const p of projects) {
-      for (const id of ITEM_IDS) {
-        const s = p.state[id]?.status ?? 'not-started';
-        if (s === 'not-applicable') continue;
-        stepsTotal += 1;
-        if (s === 'completed') stepsDone += 1;
-        if (s === 'awaiting-client') awaitingClient += 1;
-        if (s === 'overdue') overdue += 1;
-      }
-    }
-    return { projects: projects.length, stepsDone, stepsTotal, awaitingClient, overdue };
-  }, [projects]);
+  /** Live portfolio KPIs computed from real engagement state (the same rule as the month-end job). */
+  const live = useMemo(() => analyticsKpis(projects.map((p) => p.state), ITEM_IDS), [projects]);
+  const snapshot = useKpiSnapshot();
+  const prev = snapshot.data?.values ?? {};
+  const onTimePct = metrics.data?.onTime.pct ?? null;
 
   const weeks = useMemo(() => stepsCompletedPerWeek(projects, ITEM_IDS, new Date()), [projects]);
   const weeksTotal = weeks.reduce((sum, w) => sum + w.steps, 0);
@@ -207,15 +234,36 @@ export default function Analytics() {
 
       <KpiStrip
         items={[
-          { label: 'Projects', value: live.projects, Icon: Building2 },
-          { label: 'Steps completed', value: live.stepsDone, of: live.stepsTotal ? `/ ${live.stepsTotal}` : undefined, Icon: CircleCheck },
-          { label: 'Waiting on client', value: live.awaitingClient, Icon: User },
+          { label: 'Projects', value: live.projects, Icon: Building2, change: kpiChange(live.projects, prev.projects) },
+          {
+            label: 'Steps completed',
+            value: live.stepsDone,
+            of: live.stepsTotal ? `/ ${live.stepsTotal}` : undefined,
+            Icon: CircleCheck,
+            change: kpiChange(live.stepsDone, prev.steps_done),
+          },
+          {
+            label: 'Waiting on client',
+            value: live.awaitingClient,
+            Icon: User,
+            change: kpiChange(live.awaitingClient, prev.awaiting_client),
+            upIsGood: false,
+          },
           {
             label: 'Filed on time · 12 months',
-            value: metrics.data?.onTime.pct === null || metrics.data?.onTime.pct === undefined ? '–' : `${metrics.data.onTime.pct}%`,
+            value: onTimePct === null ? '–' : `${onTimePct}%`,
             Icon: Timer,
+            // Compared only on the 12-month view, the window the snapshot stores.
+            change: period === '12' ? kpiChange(onTimePct, prev.on_time_pct) : null,
           },
-          { label: 'Overdue steps', value: live.overdue, Icon: AlertTriangle, bad: live.overdue > 0 },
+          {
+            label: 'Overdue steps',
+            value: live.overdue,
+            Icon: AlertTriangle,
+            bad: live.overdue > 0,
+            change: kpiChange(live.overdue, prev.overdue_steps),
+            upIsGood: false,
+          },
         ]}
       />
 

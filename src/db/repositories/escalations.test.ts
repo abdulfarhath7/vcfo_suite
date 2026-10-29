@@ -64,6 +64,9 @@ vi.mock('@/db/repositories/audit-events', () => ({
   recordAuditEvent: (...a: unknown[]) => recordAuditEvent(...a),
 }));
 
+const queueStaffAlert = vi.fn();
+vi.mock('@/lib/notify/staff-alerts', () => ({ queueStaffAlert: (...a: unknown[]) => queueStaffAlert(...a) }));
+
 const repo = await import('@/db/repositories/escalations');
 
 const dialect = new PgDialect();
@@ -159,6 +162,8 @@ describe('raiseEscalation', () => {
     expect(writes()[0]!.values).toMatchObject({ engagementId: OWN, raisedBy: 'user-manager', reason: 'Stuck' });
     expect(out.raisedByName).toBe('Pranay');
     expect(recordAuditEvent).toHaveBeenCalledWith(ctx('manager'), expect.objectContaining({ action: 'escalation.raise', engagementId: OWN }));
+    // The admins' email alert is queued against the approved engagement id.
+    expect(queueStaffAlert).toHaveBeenCalledWith(expect.objectContaining({ kind: 'escalation', engagementDbId: OWN, reason: 'Stuck' }));
   });
 
   it('refuses an assignee who is not an admin', async () => {
@@ -168,6 +173,7 @@ describe('raiseEscalation', () => {
       repo.raiseEscalation(ctx('manager'), { engagementId: OWN, reason: 'Stuck', assignedTo: 'p1' }),
     ).rejects.toThrow('assignee_not_admin');
     expect(writes()).toHaveLength(0);
+    expect(queueStaffAlert).not.toHaveBeenCalled();
   });
 });
 

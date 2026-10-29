@@ -68,31 +68,41 @@ function summary(sections: DigestSection[]): string {
     .join(', ');
 }
 
-export function buildWeeklyDigestEmail(digest: WeeklyDigest): DigestEmailCopy | null {
+/**
+ * The digest email. `daily` is the same summary of the person's open items, sent at the hour
+ * they chose in Profile › Notifications (`notification_prefs.digest_time`); only the title,
+ * eyebrow and footer lines change.
+ */
+export function buildWeeklyDigestEmail(digest: WeeklyDigest, cadence: 'weekly' | 'daily' = 'weekly'): DigestEmailCopy | null {
   if (isEmptyDigest(digest)) return null;
+  const daily = cadence === 'daily';
   const sections = digest.sections.filter((s) => s.items.length > 0);
   const weekOf = digestDate(digest.week.mondayIso);
-  const title = `Your week from ${weekOf}`;
-  const intro =
-    digest.audience === 'client'
+  const title = daily ? 'Your open items today' : `Your week from ${weekOf}`;
+  const intro = daily
+    ? 'Here is what is open for you today.'
+    : digest.audience === 'client'
       ? 'Here is what is coming up on your filings and what we need from you.'
       : digest.audience === 'admin' || digest.audience === 'super_admin'
         ? 'Here is where the firm stands this week.'
         : 'Here is what needs you this week.';
   const settings = absolute(digest.settingsHref);
-  const footerNote = 'You get this summary every Monday because the weekly digest is on in your notification settings.';
+  const footerNote = daily
+    ? 'You get this summary every day because a daily digest time is set in your notification settings.'
+    : 'You get this summary every Monday because the weekly digest is on in your notification settings.';
+  const stopLine = daily ? 'clear the daily digest time' : 'switch off the weekly digest';
 
   return {
     subject: `${title}: ${summary(sections)}`,
     html: renderEmailDocument({
-      eyebrow: 'Weekly digest',
+      eyebrow: daily ? 'Daily digest' : 'Weekly digest',
       title,
       bodyHtml:
         emailParagraph(`Hi ${escapeHtml(firstName(digest.recipientName))},`) +
         emailParagraph(escapeHtml(intro)) +
         sections.map(sectionHtml).join('') +
         emailParagraph(
-          `<span style="font-size:13px;color:#64748B;">To stop these emails, switch off the weekly digest in <a href="${escapeHtml(settings)}" style="color:#2563EB;">Settings</a>.</span>`,
+          `<span style="font-size:13px;color:#64748B;">To stop these emails, ${stopLine} in <a href="${escapeHtml(settings)}" style="color:#2563EB;">Settings</a>.</span>`,
         ),
       footerNote,
     }),
@@ -100,7 +110,7 @@ export function buildWeeklyDigestEmail(digest: WeeklyDigest): DigestEmailCopy | 
       `Hi ${firstName(digest.recipientName)},`,
       intro,
       ...sections.map(sectionText),
-      `To stop these emails, switch off the weekly digest in Settings: ${settings}`,
+      `To stop these emails, ${stopLine} in Settings: ${settings}`,
     ].join('\n\n'),
   };
 }

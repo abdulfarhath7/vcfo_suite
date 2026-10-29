@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { complianceInstances, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { recordFilingEvent, windowEventLabel } from '@/db/repositories/filing-events';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { assertEngagementAccess, getEngagementById } from '@/db/repositories/engagements';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -120,6 +121,11 @@ export async function setComplianceInstanceWindow(
       : 'Compliance window cleared',
     metadata: { instanceId, window },
   });
+  void recordFilingEvent(ctx, {
+    instanceId,
+    side: 'sbc',
+    label: windowEventLabel(window, 'sbc'),
+  });
   return updated;
 }
 
@@ -181,6 +187,7 @@ export async function setClientComplianceWindow(
     summary: window ? `Filing window moved ${window.from} → ${window.to}` : 'Filing window reset',
     metadata: { instanceId, window, by: 'client' },
   });
+  void recordFilingEvent(ctx, { instanceId, side: 'client', label: windowEventLabel(window, 'client') });
   return updated!;
 }
 

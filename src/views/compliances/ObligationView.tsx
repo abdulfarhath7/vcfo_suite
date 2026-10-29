@@ -24,6 +24,8 @@ import {
 import { areaLabel, daysUntil, filingWord, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
 import { Fact, FlowCard, HeadRing, RailCard, WordChip } from '@/views/compliances/spectrum-parts';
 import { focusNodes } from '@/lib/client-portal/compliances';
+import { BeforeFilingCard, FilingThreadCard } from '@/views/compliances/record-cards';
+import { obligationChecklist } from '@/data/before-filing';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
 import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
@@ -257,6 +259,10 @@ export function ObligationView({
                 empty="No clients"
               />
             </DashSection>
+            <FilingThreadCard
+              instanceIds={group.rows.map((r) => r.row.id)}
+              companyOf={showClient ? new Map(group.rows.map((r) => [r.row.id, r.row.companyName])) : undefined}
+            />
             <DashSection title="Past periods" meta={`${history.length}`} bodyClassName="p-0">
               <EFilingGrid
                 caption={`${group.name} · every period`}
@@ -293,6 +299,14 @@ export function ObligationView({
                 rightClass: cn('font-medium', filingStatus(r, now) === 'overdue' ? 'text-danger' : 'text-waiting'),
               }))}
             />
+            {oneRow ? (
+              <BeforeFilingCard
+                engagementId={oneRow.row.engagementId}
+                kind="obligation"
+                subjectKey={oneRow.row.id}
+                lines={obligationChecklist(group.obligationId, group.area)}
+              />
+            ) : null}
             <ObligationAboutCards obligationId={group.obligationId} kbHref={kbHref} />
           </div>
         </div>

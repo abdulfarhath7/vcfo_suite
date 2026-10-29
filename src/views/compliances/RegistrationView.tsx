@@ -19,6 +19,8 @@ import type { ComplianceScope } from '@/views/compliances/compliance-scope';
 import { daysUntil, isIdentifier, plainDate } from '@/views/compliances/spectrum-status';
 import { Fact, HeadRing, RailCard, TextCard, WordChip } from '@/views/compliances/spectrum-parts';
 import { PersonCell } from '@/views/compliances/identity';
+import { BeforeFilingCard } from '@/views/compliances/record-cards';
+import { registrationChecklist } from '@/data/before-filing';
 import { CertificateButton, RegistrationDatesDialog, RenewByCell, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
 import { isoOfText } from '@/lib/registrations/registration-facts';
@@ -250,6 +252,14 @@ export function RegistrationView({
                 </Link>
               </div>
             </DashSection>
+            {row.word === 'Not needed' ? null : (
+              <BeforeFilingCard
+                engagementId={engagement.id}
+                kind="registration"
+                subjectKey={item.id}
+                lines={registrationChecklist(row.category)}
+              />
+            )}
             <TextCard title="Renewal">
               <p className={renewal ? undefined : 'text-ink-faint'}>{renewal ?? 'No expiry recorded'}</p>
             </TextCard>

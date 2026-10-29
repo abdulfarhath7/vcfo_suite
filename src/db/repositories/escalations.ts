@@ -1,4 +1,5 @@
 import 'server-only';
+import { queueStaffAlert } from '@/lib/notify/staff-alerts';
 
 import { and, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
@@ -195,6 +196,8 @@ export async function raiseEscalation(ctx: AuthContext, input: RaiseEscalationIn
     summary: `Escalated ${access.row.companyName}: ${reason.slice(0, 120)}`,
     metadata: { escalationId: row.id, assignedTo },
   });
+  // Email the admins with "Escalations" on (queued, never blocks the write).
+  void queueStaffAlert({ kind: 'escalation', engagementDbId: access.dbId, escalationId: row.id, assignedTo, reason });
 
   const selected: SelectedRow = { ...row, companyName: access.row.companyName };
   return toEscalation(selected, await namesFor([selected]));

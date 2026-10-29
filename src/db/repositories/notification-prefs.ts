@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientAccountMeta, notificationPrefs } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -146,4 +146,23 @@ export async function stampOwnPasswordChanged(ctx: AuthContext): Promise<string>
     .values({ profileId: ctx.userId, passwordChangedAt: now, updatedAt: now })
     .onConflictDoUpdate({ target: clientAccountMeta.profileId, set: { passwordChangedAt: now, updatedAt: now } });
   return now.toISOString();
+}
+
+/**
+ * SYSTEM READER — the compliance nudge job (no session). Each listed person's own reminder
+ * days (7, 3 or 1); a person with no choice, or no saved row, is left out and gets the firm
+ * default. Keyed by the recipient ids the job already resolved, nothing else.
+ */
+export async function systemGetRemindDays(profileIds: string[]): Promise<Map<string, number>> {
+  const ids = [...new Set(profileIds.map((id) => id.trim()).filter((id) => isUuid(id)))];
+  const out = new Map<string, number>();
+  if (ids.length === 0) return out;
+  const rows = await db
+    .select({ profileId: notificationPrefs.profileId, remindDays: notificationPrefs.remindDays })
+    .from(notificationPrefs)
+    .where(inArray(notificationPrefs.profileId, ids));
+  for (const r of rows) {
+    if (r.remindDays != null && (REMIND_DAYS as readonly number[]).includes(r.remindDays)) out.set(r.profileId, r.remindDays);
+  }
+  return out;
 }

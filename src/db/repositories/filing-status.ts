@@ -4,6 +4,7 @@ import { db } from '@/db/client';
 import { complianceInstances } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { recordFilingEvent } from '@/db/repositories/filing-events';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { isAdminOrManager } from '@/lib/auth';
 
@@ -82,6 +83,7 @@ export async function markFilingFiled(
     summary: `Filing marked filed on ${filedOn}`,
     metadata: { instanceId, filedOn, dueDate: row.dueDate, from: row.status, onTime: filedOn <= row.dueDate },
   });
+  void recordFilingEvent(ctx, { instanceId, side: 'sbc', label: filedOn <= row.dueDate ? 'Filed' : 'Filed late' });
   return updated!;
 }
 
@@ -103,5 +105,6 @@ export async function reopenFiling(ctx: AuthContext, instanceId: string): Promis
     summary: 'Filing reopened',
     metadata: { instanceId, previousFiledOn: row.filedOn, to: status },
   });
+  void recordFilingEvent(ctx, { instanceId, side: 'sbc', label: 'Filing reopened' });
   return updated!;
 }

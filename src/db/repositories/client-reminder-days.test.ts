@@ -11,6 +11,8 @@ let due = '2026-12-31';
 let inserted: Record<string, unknown> | null = null;
 const systemGetReminderDays = vi.fn();
 
+// Filing events are written fire-and-forget after the action; they are tested in filing-events.test.ts.
+vi.mock('@/db/repositories/filing-events', () => ({ recordFilingEvent: async () => undefined, windowEventLabel: () => '' }));
 vi.mock('@/db/client', () => ({
   db: {
     select: () => {
@@ -29,6 +31,8 @@ vi.mock('@/db/client', () => ({
 }));
 vi.mock('@/db/repositories/engagements', () => ({ listScopedEngagementIds: async () => ['e1'] }));
 vi.mock('@/db/repositories/firm-settings', () => ({ systemGetReminderDays: () => systemGetReminderDays() }));
+let ownDays = new Map<string, number>();
+vi.mock('@/db/repositories/notification-prefs', () => ({ systemGetRemindDays: async () => ownDays }));
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: vi.fn() }));
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn() }));
 vi.mock('@/storage/s3', () => ({ bucketKey: vi.fn(), putObject: vi.fn(), signedDownloadUrl: vi.fn(), deleteObject: vi.fn() }));
@@ -41,6 +45,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-12-01T06:00:00Z'));
   inserted = null;
   due = '2026-12-31';
+  ownDays = new Map();
 });
 
 describe('setFilingReminder', () => {
@@ -53,6 +58,12 @@ describe('setFilingReminder', () => {
   it('keeps due − 3 days when the firm saved no days', async () => {
     systemGetReminderDays.mockResolvedValue(null);
     expect((await setFilingReminder(client, INSTANCE)).remindOn).toBe('2026-12-28');
+  });
+
+  it('uses the person’s own reminder days over the firm default', async () => {
+    systemGetReminderDays.mockResolvedValue([7, 3, 1]);
+    ownDays = new Map([['u1', 1]]);
+    expect((await setFilingReminder(client, INSTANCE)).remindOn).toBe('2026-12-30');
   });
 
   it('falls back to today when every day has passed', async () => {

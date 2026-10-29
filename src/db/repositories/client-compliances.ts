@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, count, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
 import {
@@ -10,15 +10,19 @@ import {
   complianceObligations,
   complianceReminders,
   engagements,
+  notificationPrefs,
   profiles,
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { listScopedEngagementIds } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { recordFilingEvent } from '@/db/repositories/filing-events';
+import { reminderIsDue } from '@/lib/notify/reminder-days';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { bucketKey, putObject, signedDownloadUrl, deleteObject } from '@/storage/s3';
 import { systemGetReminderDays } from '@/db/repositories/firm-settings';
+import { systemGetRemindDays } from '@/db/repositories/notification-prefs';
 import {
   addDays,
   areaOf,
@@ -331,6 +335,7 @@ export async function addFilingProof(
       uploadedBy: ctx.userId,
     })
     .returning();
+  void recordFilingEvent(ctx, { instanceId: inst.id, side: 'sbc', label: 'Proof uploaded' });
   return {
     id: row!.id,
     fileName: row!.fileName,
@@ -403,6 +408,7 @@ export async function addClientFilingProof(
     summary: `Proof uploaded for ${filingName}`,
     metadata: { instanceId: inst.id, proofId: row.id, kind: row.kind },
   });
+  void recordFilingEvent(ctx, { instanceId: inst.id, side: 'client', label: 'Proof sent' });
 
   const leadKey = about?.internId?.trim();
   if (leadKey) {
@@ -480,8 +486,9 @@ export async function upsertFilingDetails(ctx: AuthContext, instanceId: string, 
 export type ReminderChannel = 'email' | 'whatsapp';
 
 /**
- * The caller's own reminder: the earliest of the firm's default reminder days (Firm settings,
- * G-02) that is still ahead, else due − 3 days; today when the due date is closer.
+ * The caller's own reminder: their own reminder days when they chose some (Settings), else
+ * the earliest of the firm's default reminder days (Firm settings, G-02) that is still ahead,
+ * else due − 3 days; today when the due date is closer.
  */
 export async function setFilingReminder(
   ctx: AuthContext,
@@ -491,7 +498,9 @@ export async function setFilingReminder(
   const inst = await scopedInstance(ctx, instanceId);
   if (inst.filedOn) throw new Error('Already filed');
   const today = todayIso();
-  const firmDays = await systemGetReminderDays();
+  // The caller's own reminder days (Settings, 7, 3 or 1) win over the firm default.
+  const own = (await systemGetRemindDays([ctx.userId])).get(ctx.userId);
+  const firmDays = own ? [own] : await systemGetReminderDays();
   const ahead = (firmDays ?? [3])
     .map((d) => addDays(inst.dueDate, -d))
     .filter((on) => daysBetween(today, on) > 0)
@@ -519,11 +528,17 @@ export async function clearFilingReminder(ctx: AuthContext, instanceId: string):
  * SYSTEM (Inngest only — no AuthContext): reminders whose day has come and
  * that were not sent yet, with what the email needs. Re-checks the filing is
  * still unfiled at send time.
+ *
+ * The day: a person who chose their own reminder days (notification_prefs.remind_days,
+ * 7, 3 or 1) is reminded that many days before the due date; everyone else on the
+ * stored remind_on, which came from the firm default (`reminderIsDue`).
  */
 export async function systemListDueComplianceReminders(today: string) {
-  return db
+  const rows = await db
     .select({
       id: complianceReminders.id,
+      remindOn: complianceReminders.remindOn,
+      remindDays: notificationPrefs.remindDays,
       channels: complianceReminders.channels,
       email: profiles.email,
       name: profiles.name,
@@ -534,12 +549,15 @@ export async function systemListDueComplianceReminders(today: string) {
     })
     .from(complianceReminders)
     .innerJoin(profiles, eq(profiles.id, complianceReminders.userId))
+    .leftJoin(notificationPrefs, eq(notificationPrefs.profileId, complianceReminders.userId))
     .innerJoin(complianceInstances, eq(complianceInstances.id, complianceReminders.instanceId))
     .innerJoin(complianceObligations, eq(complianceObligations.id, complianceInstances.obligationId))
     .innerJoin(engagements, eq(engagements.id, complianceInstances.engagementId))
     .where(
       and(
-        lte(complianceReminders.remindOn, today),
+        // The stored day has come, or the filing is close enough for a personal choice
+        // (at most 7 days) to apply; `reminderIsDue` below decides which day counts.
+        or(lte(complianceReminders.remindOn, today), lte(complianceInstances.dueDate, addDays(today, 7))),
         isNull(complianceReminders.sentAt),
         // removed people get no more reminders (security review L6)
         eq(profiles.status, 'active'),
@@ -547,6 +565,9 @@ export async function systemListDueComplianceReminders(today: string) {
         gte(complianceInstances.dueDate, addDays(today, -1)),
       ),
     );
+  return rows.filter((r) =>
+    reminderIsDue({ remindOn: String(r.remindOn ?? ''), dueDate: String(r.dueDate ?? ''), remindDays: r.remindDays }, today),
+  );
 }
 
 export async function systemMarkComplianceReminderSent(id: string): Promise<void> {
