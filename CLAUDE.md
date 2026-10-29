@@ -116,7 +116,8 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 
 The branch ports the VCFO Spectrum design from the prototype's `design/spectrum` branch onto
 every portal, on top of `port/carryover-1` (which holds the design-system work and the K-01 to
-K-47 carry-over). It is not merged and not deployed. Read `docs/ui-port/REPORT.md` first; the
+K-47 carry-over). On 2026-10-29 it was fast-forwarded to `main` (72d2d7f) and deployed; RDS is on
+migration 0026. Read `docs/ui-port/REPORT.md` first; the
 audit, decisions, gaps and the screen-agent brief sit beside it. Spectrum rules (R-01 to R-48)
 are in the prototype's `docs/RULES.md`; the shared Spectrum parts are
 `src/components/ui/{spectrum-chip,step-track,spectrum-tabs,file-badge,empty-state}.tsx`, and
