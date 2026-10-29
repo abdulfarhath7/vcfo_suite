@@ -34,6 +34,7 @@ import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScheduleWindowControl } from '@/components/schedule/ScheduleWindowControl';
 import { ExpectedCoiControl } from '@/components/metrics/expected-coi-control';
+import { RaiseEscalationButton } from '@/components/super/escalations/RaiseEscalationButton';
 import { phaseWindowMeta } from '@/components/schedule/phase-window-meta';
 import { setEngagementWindowInDb } from '@/lib/projects/engagements-db';
 import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
@@ -194,6 +195,10 @@ export default function ProjectDetail() {
             {!incorporationDate ? <ExpectedCoiControl engagementId={eng.id} value={eng.expectedCoiOn} /> : null}
           </div>
         ) : null}
+        {/* G-20: raise the client to an admin or the super admin. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
+        </div>
       </header>
 
       <RecordTabBar

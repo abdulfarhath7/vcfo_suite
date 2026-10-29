@@ -28,6 +28,7 @@ import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog
 import { AssignTaskDialog } from '@/components/super/assign/AssignTaskDialog';
 import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import { EscalationsPanel } from '@/components/super/escalations/EscalationsPanel';
+import { EngagementNotesPanel } from '@/components/notes/EngagementNotesPanel';
 import { RaiseEscalationButton } from '@/components/super/escalations/RaiseEscalationButton';
 import { useSuperOverview, useSuperProject } from '@/hooks/use-super-overview';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,7 @@ import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
  * live step, then underline tabs (R-11) for steps, registrations, filings,
  * documents, escalations, team and activity. Step work stays in the firm shell.
  */
-type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'team' | 'activity';
+type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'notes' | 'team' | 'activity';
 
 export default function SuperProjectDetail() {
   const params = useParams();
@@ -122,6 +123,7 @@ export default function SuperProjectDetail() {
     { key: 'filings', label: 'Filings', count: detail.filings.length },
     { key: 'documents', label: 'Documents', count: detail.documents.length },
     { key: 'escalations', label: 'Escalations' },
+    { key: 'notes', label: 'Notes' },
     { key: 'team', label: 'Team', count: detail.team.length },
     { key: 'activity', label: 'Activity' },
   ];
@@ -238,6 +240,7 @@ export default function SuperProjectDetail() {
         {tab === 'filings' ? <SuperFilingsPanel detail={detail} /> : null}
         {tab === 'documents' ? <SuperProjectDocuments detail={detail} /> : null}
         {tab === 'escalations' ? <EscalationsPanel engagementId={summary.id} canResolve /> : null}
+        {tab === 'notes' ? <EngagementNotesPanel engagementId={summary.id} /> : null}
         {tab === 'team' ? <SuperTeamPanel detail={detail} /> : null}
         {tab === 'activity' ? <SuperActivityPanel detail={detail} /> : null}
       </div>
