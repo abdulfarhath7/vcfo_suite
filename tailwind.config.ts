@@ -350,10 +350,9 @@ export default {
         tile: "var(--shadow-tile)",
         shine: "var(--shine)",
       },
-      backgroundImage: {
-        hero: "var(--hero-gradient)",
-        wash: "var(--hero-gradient)",
-      },
+      /* No `wash` or `hero` background image here: the gradient ends in a bare colour, which
+         `background-image` rejects, so a utility would wipe the wash. `.bg-wash` in
+         app/globals.css draws it with the `background` shorthand (R-17). */
       spacing: {
         "control-sm": "var(--control-sm)",
         "control-md": "var(--control-md)",

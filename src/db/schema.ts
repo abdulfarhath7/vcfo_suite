@@ -683,6 +683,8 @@ export const tasks = pgTable(
     stepId: text('step_id'),
     deadline: timestamp('deadline', { withTimezone: true }),
     status: text('status').notNull().default('open'), // open|in-progress|done
+    /** When the task moved to done; cleared when it reopens (home trend lines). */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -701,6 +703,8 @@ export const documentRequests = pgTable('document_requests', {
   title: text('title').notNull(),
   detail: text('detail'),
   status: text('status').notNull().default('pending'), // pending|fulfilled|cancelled
+  /** When the request was fulfilled or cancelled; null while pending (home trend lines). */
+  closedAt: timestamp('closed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

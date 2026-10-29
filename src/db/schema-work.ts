@@ -45,6 +45,8 @@ export const engagementStepEvents = pgTable(
     fromStatus: text('from_status'),
     /** The status the step moved to, as stored in checklist_state. */
     toStatus: text('to_status').notNull(),
+    /** The review state after the change (pending, approved, sent back), when the step has one. */
+    reviewStatus: text('review_status'),
     actorId: uuid('actor_id').references(() => base.profiles.id, { onDelete: 'set null' }),
     at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
   },
