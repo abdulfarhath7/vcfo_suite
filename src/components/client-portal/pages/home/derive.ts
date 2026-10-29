@@ -210,8 +210,10 @@ export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | u
       area: needArea(step, filing),
     });
   }
+  // A client step the client has started but not sent (`prog`) is still waiting on the client,
+  // so it is a "Fill" need too; this matches the step holder rule behind the trend lines.
   for (const s of model.steps) {
-    if (s.kind !== 'you') continue;
+    if (s.kind !== 'you' && s.kind !== 'prog') continue;
     const slice = s.slice;
     let kind: NeedKind = 'fill';
     let title = s.title;

@@ -141,9 +141,35 @@ describe('client home', () => {
     ];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
     expect(trends.docsIn).toEqual([0, 1, 1, 1]);
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(4);
     expect(params()).toContain(OWN);
     expect(params()).not.toContain(OTHER);
+  });
+
+  it('builds Waiting on and With SBC from the step holder rows of the own engagement', async () => {
+    const { modelStepIds } = await import('@/lib/metrics/client-holder-trend');
+    const ids = modelStepIds({});
+    const baseline = new Date('2026-10-24T05:00:00Z');
+    // Baseline: the first step with the client, the second with the lead, the rest not open.
+    const holders = ids.map((stepId, i) => ({ stepId, holder: i === 0 ? 'client' : i === 1 ? 'lead' : 'sbc', at: baseline }));
+    results = [
+      [],
+      [],
+      [{ status: 'pending', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') }],
+      [...holders, { stepId: ids[0], holder: 'lead', at: new Date('2026-10-27T05:00:00Z') }],
+    ];
+    const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
+    expect(trends.waiting).toEqual([2, 2, 1, 1]);
+    expect(trends.withSbc).toEqual([1, 1, 2, 2]);
+    expect(params()).toContain(OWN);
+    expect(params()).not.toContain(OTHER);
+  });
+
+  it('draws no Waiting on or With SBC line before the holder history starts', async () => {
+    results = [[], [], [], []];
+    const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
+    expect(trends.waiting).toBeUndefined();
+    expect(trends.withSbc).toBeUndefined();
   });
 
   it.each(['client', 'manager', 'intern'] as const)('%s asking for a foreign engagement gets nothing and no filing query', async (role) => {

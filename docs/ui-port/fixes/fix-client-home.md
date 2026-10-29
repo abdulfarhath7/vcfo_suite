@@ -19,7 +19,7 @@ finished it and closed the rows below. Only the rows that were ◐ or ✗ are li
 | C-019 | ◐ | Shared `.wash-tile` (globals.css). |
 | C-021 | ◐ | Shared tile icons (`DashHero`, `card-head-icon.ts`). |
 | C-022 | ◐ | Shared, as C-021. |
-| C-023 | ◐ | Documents in now draws a green trend line from real data (`document_requests.closed_at`, migration 0027). Waiting on and With SBC stay without a line: they count step states, which keep no history. |
+| C-023 | ✓ | Waiting on (teal), With SBC (blurple) and Documents in (green) draw trend lines from stored history only. Documents in: `document_requests.closed_at` (0027). Waiting on: open requests + steps held by the client; With SBC: steps held by the lead or a manager, from `engagement_step_events.holder` (0028), rule in `src/lib/metrics/client-holder-trend.ts`. No line before an engagement's holder baseline; a day with any unknown step or request ends the line. |
 | C-024 | ◐ | Due soon keeps its real line (prototype has none after COI); the real line is real data, so it stays. |
 | C-026 | ✓ | Note "oldest n days"; before COI the step drill on the "Waiting for" tab; after COI a new needs drill (`needsDrill`). |
 | C-029 | ✓ | "x/y", note "n to go", green trend line, share bar. Opens Documents (no separate documents drill; Documents is the list). |
@@ -182,7 +182,16 @@ None.
 
 ## Schema needs
 
-None. The Waiting on and With SBC trend lines would need a history of step owner and status (for example a `holder` column on `engagement_step_events`); not requested now.
+None left. Round 3 uses `engagement_step_events.holder` (migration 0028).
+
+## Round 3: holder trend lines
+
+- `src/lib/metrics/client-holder-trend.ts` (+ test): `holderChanges` (write side), `holderAsOf`, `holderCountsAsOf`, `openRequestsAsOf`, `modelStepIds`.
+- `src/db/repositories/engagements/write.ts` (already committed in 6314c5d5; it imports the untracked `client-holder-trend.ts`, so that file must be committed with it): a gated step can change hands without a status change of its own, so each save adds holder-only rows (from = to status) for every model step whose holder moved. The first save with no holder history writes a baseline row for every model step. Those rows keep the review state only when it is "reviewing", so the super admin approvals count does not double.
+- `src/db/repositories/home-trends.ts` `clientTrends`: one more query (the engagement's step events, same access check), series `waiting` and `withSbc`. Tests cover the tenant check and the "no history" case.
+- `derive.ts` `buildNeeds`: a client step the client has started (kind `prog`) is now a "Fill" need, so the Waiting on tile counts what the holder rule calls client. `CardsA.tsx` draws the two lines.
+- `sbc` (step not open yet) counts in neither tile, matching the live With SBC count (kind `with`).
+- Deploy note: ship the write.ts change with migration 0028 so the holder history starts complete. An engagement draws these lines from about four days after its first save.
 
 ## Requests for shared files
 

@@ -27,6 +27,13 @@ import {
 import { assertDeveloper } from '@/db/repositories/dev-scope';
 import { clientDocsInAsOf, type DocRequestHistoryRow } from '@/lib/metrics/client-docs-trend';
 import {
+  holderCountsAsOf,
+  indexHolderEvents,
+  modelStepIds,
+  openRequestsAsOf,
+  type HolderHistoryEvent,
+} from '@/lib/metrics/client-holder-trend';
+import {
   addDaysYmd,
   engagementLiveAt,
   fyStartOfYmd,
@@ -61,6 +68,9 @@ import {
  *   client  dueSoon      filings of the year due within 15 days of each day and not filed
  *           docsIn       requests answered by each day end, from `closed_at` (migration 0027;
  *                        `src/lib/metrics/client-docs-trend.ts`)
+ *           waiting      open requests + steps held by the client at each day end, and
+ *           withSbc      steps held by the lead or a manager, from the step holder rows
+ *                        (migration 0028; `src/lib/metrics/client-holder-trend.ts`)
  *   lead    doneToday    steps completed that day (status events), tasks whose
  *                        `completed_at` falls in it, filings due that day and filed by its end
  *   manager approvals    steps awaiting a manager decision at each day end, rebuilt from the
@@ -77,8 +87,8 @@ import {
  *
  * Tiles with no line and why: developer Jobs failed (the Inngest list is capped, so older days
  * would be short), Services working and Outlook mailboxes (only the current state is kept);
- * super admin Need attention and Awaiting review (step states); client Waiting, With SBC,
- * and Overdue (step states, and the waiting list mixes steps with requests).
+ * super admin Need attention and Awaiting review (step states); client Overdue (it mixes
+ * late steps, late requests and late filings).
  *
  * >>> ACCESS CONTROL (Path A) <<<
  *   super  — firm-wide admins only (`isFirmWideAdmin`), like the super admin overview.
@@ -408,7 +418,7 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
   const periods = pastDays(now);
   const first = periods[0]!;
   const last = periods[periods.length - 1]!;
-  const [filingRows, reopenRows, requestRows] = await Promise.all([
+  const [filingRows, reopenRows, requestRows, holderRows] = await Promise.all([
     db
       .select(filingColumns)
       .from(complianceInstances)
@@ -435,13 +445,33 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
       .select({ status: documentRequests.status, closedAt: documentRequests.closedAt, createdAt: documentRequests.createdAt })
       .from(documentRequests)
       .where(and(eq(documentRequests.engagementId, dbId), lt(documentRequests.createdAt, last.end))),
+    // Waiting on and With SBC: the step holder rows of this engagement (migration 0028).
+    db
+      .select({ stepId: engagementStepEvents.stepId, holder: engagementStepEvents.holder, at: engagementStepEvents.at })
+      .from(engagementStepEvents)
+      .where(and(eq(engagementStepEvents.engagementId, dbId), lt(engagementStepEvents.at, last.end)))
+      .orderBy(asc(engagementStepEvents.at)),
   ]);
 
   const filings = filingRows as FilingHistoryRow[];
   const reopens = reopensFrom(reopenRows);
   const requests = requestRows as DocRequestHistoryRow[];
+  const holderEvents = holderRows as HolderHistoryEvent[];
+  // Holder history starts with this engagement's first row that names a holder (the baseline).
+  const holderSince = holderEvents.find((e) => e.holder !== null)?.at ?? null;
+  const byStep = indexHolderEvents(holderEvents);
+  const stepIds = modelStepIds(access.row.checklistState as Record<string, unknown> | null);
+  const held = periods.map((p) => holderCountsAsOf({ stepIds, events: byStep, since: holderSince, period: p }));
   return keep({
     dueSoon: trailingKnown(periods.map((p) => clientDueSoonAsOf(filings, reopens, p))),
     docsIn: trailingKnown(periods.map((p) => clientDocsInAsOf(requests, p))),
+    waiting: trailingKnown(
+      periods.map((p, i) => {
+        const open = openRequestsAsOf(requests, p);
+        const h = held[i];
+        return open === null || !h ? null : open + h.client;
+      }),
+    ),
+    withSbc: trailingKnown(held.map((h) => (h ? h.withSbc : null))),
   });
 }

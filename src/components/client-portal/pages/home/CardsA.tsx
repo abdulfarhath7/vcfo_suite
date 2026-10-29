@@ -136,10 +136,10 @@ async function downloadReport(h: HomeData) {
 /**
  * R-17 (H3 tight, D-17): the shared `DashHero`. The company tile, the name, the stage chip and
  * the step count on the left; five tiles with a note, the list or drill they open (E-05) and
- * how they are counted (E-04); Report and Upload on the right. Two tiles draw a trend line of
- * the last four days, rebuilt from stored dates (R-18): Documents in (the requests' `closed_at`)
- * before incorporation and Due soon (the filings' due and filed dates) after it. The other tiles
- * count step states, which keep no history, so they draw none.
+ * how they are counted (E-04); Report and Upload on the right. Tiles draw a trend line of the
+ * last four days only where stored history rebuilds it (R-18): Waiting on and With SBC (the step
+ * holder rows and the requests' `closed_at`), Documents in (`closed_at`) and Due soon (the
+ * filings' due and filed dates). Overdue and the date tiles draw none.
  */
 export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow) => void }) {
   const { portal, after, model, company } = h;
@@ -168,6 +168,8 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow)
     value: h.needs.length,
     note: oldest != null && oldest > 0 ? `oldest ${plural(oldest, 'day')}` : undefined,
     how: `Uploads, details, corrections and approvals that SBC asked ${company} for and that are still open.`,
+    trend: trendWithLive(trends, 'waiting', h.needs.length),
+    trendTone: 'teal',
     onClick: after ? () => portal.drill(needsDrill(h.needs, h.today, company)) : () => openSteps(3),
   };
   const overdueStat: DashHeroStat = {
@@ -223,6 +225,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow)
           label: 'With SBC',
           value: model.counts.with,
           note: sbcStep?.title,
+          trend: trendWithLive(trends, 'withSbc', model.counts.with),
           how: 'Steps that SBC or MCA holds now.',
           onClick: () => openSteps(2),
         },
