@@ -1,3 +1,17 @@
+# Where the Spectrum diff work stands (30 Oct 2026)
+
+All areas are built and committed on `ui/spectrum` (pushed; not merged, not deployed). The diff
+table shows 2041 ✓, 701 ◐, 8 ✗; the eight ✗ rows have reasons in `docs/ui-port/fixes/xfix-*.md`.
+`npm run check` passes (3309 tests). Migrations 0027 to 0029 are applied locally only.
+
+Next: owner browser pass; apply 0027 to 0029 on RDS; set `CREDENTIALS_ENCRYPTION_KEY` and the new
+env vars on App Runner; push per-commit image tags; fast-forward `main` and deploy when the owner
+says so. See `docs/context/STATE.md`.
+
+---
+
+Earlier note (29 Oct):
+
 # Where the Spectrum diff work stopped (29 Oct 2026, about 23:40)
 
 Branch `ui/spectrum`, pushed to origin. Nothing is merged to `main` and nothing is deployed.
