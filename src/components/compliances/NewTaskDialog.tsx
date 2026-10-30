@@ -156,6 +156,7 @@ export function NewTaskDialog({
   owners,
   reviewers,
   defaultClient,
+  prefill,
   saving = false,
   onClientChange,
   onCreate,
@@ -169,6 +170,8 @@ export function NewTaskDialog({
   reviewers: PersonOption[];
   /** The client picked on the list, if any. */
   defaultClient?: string;
+  /** Start and end dates to open on (a click on an empty calendar day, M6 G2). */
+  prefill?: { start: string; end: string } | null;
   saving?: boolean;
   /** Tells the caller which client is picked, so it can load that client's people. */
   onClientChange?: (id: string) => void;
@@ -191,8 +194,8 @@ export function NewTaskDialog({
       act: '',
       name: '',
       client,
-      start: today,
-      end: '',
+      start: prefill?.start ?? today,
+      end: prefill?.end ?? '',
       urgency: 'Medium',
       vis: 'both',
       owner,
@@ -200,7 +203,7 @@ export function NewTaskDialog({
       repeats: 'one-time',
       notify: '5',
     };
-  }, [defaultClient, clients, peopleOf, today]);
+  }, [defaultClient, clients, peopleOf, today, prefill?.start, prefill?.end]);
   const [f, setF] = useState<NewTaskForm>(blank);
   const [tried, setTried] = useState(false);
   useEffect(() => {

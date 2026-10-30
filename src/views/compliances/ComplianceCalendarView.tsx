@@ -58,6 +58,7 @@ import {
 } from '@/views/compliances/spectrum-status';
 import { DateTile, StatusDonutCard, WordChip } from '@/views/compliances/spectrum-parts';
 import { MonthGrid, YearGrid, type CalendarMark } from '@/views/compliances/calendar-grids';
+import { StaffComplianceCalendar } from '@/views/compliances/staff-compliance-calendar';
 import { AreaShort, ClientDot, ClientTag } from '@/views/compliances/identity';
 import { FilingWindows } from '@/views/compliances/filing-windows';
 import { MonthNav } from '@/views/compliances/month-nav';
@@ -130,6 +131,8 @@ export function ComplianceCalendarView({
   const pickedPreIncorporation = picked && scope.preIncorporationIds.has(picked.id) ? picked : null;
 
   const mayWrite = useMayWriteFilings();
+  // Staff get the drag-and-drop calendar (M6 G2); a client keeps the read-only month grid.
+  const staffGrid = scope.audience === 'staff';
   const fyStartYear = financialYearForDate(month).startYear;
   const query = useFilings({ fyStartYear });
   const scopedRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
@@ -280,7 +283,7 @@ export function ComplianceCalendarView({
             <SpectrumTabs
               label="Calendar view"
               items={[
-                { key: 'month', label: 'Month' },
+                { key: 'month', label: staffGrid ? 'Calendar' : 'Month' },
                 { key: 'year', label: 'Year' },
                 { key: 'timeline', label: 'Timeline' },
                 // The firm's act grid; named "By act" so it does not read like the Statutory filter (C-1).
@@ -365,6 +368,25 @@ export function ComplianceCalendarView({
               </div>
             ) : (
               <>
+                {staffGrid ? (
+                  // M6 G2: staff get the FullCalendar Day, Week and Month grid with drag and drop.
+                  <StaffComplianceCalendar
+                    rows={rows.filter(inArea)}
+                    tasks={tasks}
+                    now={now}
+                    month={`${monthKey}-01`}
+                    onMonth={(first) => {
+                      setMonth(new Date(`${first}T00:00:00Z`));
+                      setPickedDay(null);
+                    }}
+                    engagements={engagements}
+                    companyId={companyId !== ALL_COMPANIES ? companyId : null}
+                    showCompany={showCompany}
+                    recordHref={recordHref}
+                    taskHref={taskLink}
+                    canEdit={mayWrite}
+                  />
+                ) : (
                 <div className="surface min-w-0 p-3">
                   <MonthGrid
                     year={month.getUTCFullYear()}
@@ -386,6 +408,7 @@ export function ComplianceCalendarView({
                     )}
                   />
                 </div>
+                )}
                 <DashSection
                   title={monthLabelOf(monthKey)}
                   meta={

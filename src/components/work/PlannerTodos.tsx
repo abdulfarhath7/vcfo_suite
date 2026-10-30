@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lock, UserRoundPlus, X } from 'lucide-react';
-import { Chip } from '@/components/ui/spectrum-chip';
+import { Chip, Tag } from '@/components/ui/spectrum-chip';
 import { RemindClientButton } from '@/components/reminders/RemindClientButton';
 import { remindableItemKey } from '@/lib/reminders/reminder-rules';
 import { dayMonth } from '@/components/staff/today/today-rows';
@@ -161,15 +161,16 @@ export function PlannerTodos({
                     <button
                       type="button"
                       onClick={() => onOpenItem(item.id)}
-                      className={cn('block max-w-full truncate text-left font-medium text-ink hover:underline', entry.done && 'text-ink-muted line-through')}
+                      className={cn('block max-w-full truncate text-left font-medium text-ink hover:underline', entry.done && 'text-ink-muted')}
                     >
                       {title}
                     </button>
                   ) : (
-                    <span className={cn('block truncate text-ink', entry.done && 'text-ink-muted line-through')}>{title}</span>
+                    <span className={cn('block truncate text-ink', entry.done && 'text-ink-muted')}>{title}</span>
                   )}
                   {item ? <span className="block truncate text-[12px] text-ink-muted">{item.companyName}</span> : null}
                 </span>
+                {entry.done ? <Tag tone="ok">Done</Tag> : null}
                 {item && hand ? <HandMenu item={item} owner={owner} hand={hand} /> : null}
                 <Button
                   size="icon"

@@ -62,7 +62,7 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
         <ul className="mb-3 divide-y divide-line rounded-md border border-line">
           {items.map((it) => (
             <li key={it.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-ink-muted line-through" : ""}`}>{it.title}</span>
+              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-ink-muted" : ""}`}>{it.title}</span>
               <input
                 type="range"
                 min={0}

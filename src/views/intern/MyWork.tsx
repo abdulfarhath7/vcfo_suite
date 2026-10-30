@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, CheckCheck, Download, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
+import { BellRing, CheckCheck, CheckCircle2, Download, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { DashSection } from '@/components/dash/DashSection';
 import { GanttTimeline } from '@/components/timeline';
@@ -12,7 +12,8 @@ import { WorkAreaCard, WorkStatusCard } from '@/views/manager/work-summary';
 import type { Engagement } from '@/data/engagements';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
-import { InternWorkBoardCard, InternWorkKindChip } from '@/components/intern/InternWorkRow';
+import { InternWorkKindChip } from '@/components/intern/InternWorkRow';
+import { WorkBoard } from '@/components/work/WorkBoard';
 import { InternWorkDrawer } from '@/components/intern/InternWorkDrawer';
 import { LeadCompanyChip } from '@/components/intern/LeadCompanyChip';
 import { FilterChip, FilterChipRow } from '@/components/ui/filter-chip';
@@ -40,7 +41,6 @@ import { remindableItemKey } from '@/lib/reminders/reminder-rules';
 import type { StatusCode } from '@/data/checklist';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Tag } from '@/components/ui/spectrum-chip';
 import { Button } from '@/components/ui/button';
 import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { useFilings } from '@/hooks/use-filings';
@@ -61,7 +61,6 @@ import {
   formatDueLabel,
   formatIstWeekdayDay,
   internTimelineGantt,
-  internWorkBoard,
   internWorkPath,
   parseInternWorkDay,
   parseInternWorkFocus,
@@ -330,6 +329,7 @@ export function WorkScreen({
           overdue: item.isOverdue,
           source: item.source,
           managerDated: Boolean(item.windowLabel),
+          window: item.window,
         })),
     [filtered, keyOf],
   );
@@ -638,7 +638,7 @@ export function WorkScreen({
       ) : null}
       {view === 'board' ? (
         <>
-          <BoardView items={filtered} now={now} onOpen={(item) => setOpenId(item.id)} ownerOf={team?.showLead ? (i) => team.byId.get(i.id)?.leadName : undefined} />
+          <WorkBoard items={filtered} now={now} onOpen={(item) => setOpenId(item.id)} ownerOf={team?.showLead ? (i) => team.byId.get(i.id)?.leadName : undefined} />
         </>
       ) : null}
       {view === 'tl' ? (
@@ -842,11 +842,10 @@ function ListView({
       header: 'Step or filing',
       render: (item) => (
         <span className="flex min-w-0 flex-col">
-          <span
-            title={item.title}
-            className={cn('truncate font-medium text-ink', item.kind === 'done' && 'text-ink-muted line-through')}
-          >
-            {item.title}
+          {/* G3: a done row shows a green tick and a muted title, never a strikethrough. */}
+          <span title={item.title} className={cn('flex min-w-0 items-center gap-1.5 font-medium text-ink', item.kind === 'done' && 'text-ink-muted')}>
+            {item.kind === 'done' ? <CheckCircle2 className="h-4 w-4 flex-none text-positive" strokeWidth={1.8} aria-label="Done" /> : null}
+            <span className="truncate">{item.title}</span>
           </span>
           <span className={cn('truncate text-[12px] text-ink-muted md:hidden', GRID_SUB)}>{item.companyName}</span>
         </span>
@@ -1018,52 +1017,6 @@ function ListView({
             }
           : {})}
       />
-    </div>
-  );
-}
-
-const BOARD_COLS: { key: 'action' | 'progress' | 'waiting' | 'done'; label: string; tone: 'warn' | 'prog' | 'idle' | 'ok' }[] = [
-  { key: 'action', label: 'Needs action', tone: 'warn' },
-  { key: 'progress', label: 'In progress', tone: 'prog' },
-  { key: 'waiting', label: 'Waiting', tone: 'idle' },
-  { key: 'done', label: 'Done', tone: 'ok' },
-];
-
-/** Board view (prototype `WorkBoard`): four quiet columns with a count tag in each head. */
-function BoardView({
-  items,
-  now,
-  onOpen,
-  ownerOf,
-}: {
-  items: InternWorkItem[];
-  now: Date;
-  onOpen: (item: InternWorkItem) => void;
-  /** The lead on each card (manager Work). */
-  ownerOf?: (item: InternWorkItem) => string | undefined;
-}) {
-  const cols = internWorkBoard(items, now);
-  return (
-    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {BOARD_COLS.map((col) => (
-        <section
-          key={col.key}
-          data-col={col.key}
-          aria-label={col.label}
-          className="min-w-0 rounded-md border-1.5 border-line bg-surface-sunken"
-        >
-          <header className="flex h-11 items-center gap-2 border-b border-line-soft px-4">
-            <h2 className="text-[14px] font-medium text-ink">{col.label}</h2>
-            <Tag tone={col.tone}>{cols[col.key].length}</Tag>
-          </header>
-          <div className="grid gap-2 p-3">
-            {cols[col.key].length === 0 ? <EmptyState title="None" className="min-h-[72px] py-4" /> : null}
-            {cols[col.key].map((item) => (
-              <InternWorkBoardCard key={item.id} item={item} now={now} dim={col.key === 'done'} onOpen={onOpen} owner={ownerOf?.(item)} />
-            ))}
-          </div>
-        </section>
-      ))}
     </div>
   );
 }

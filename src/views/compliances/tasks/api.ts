@@ -381,6 +381,24 @@ export function useTaskActions(id: string) {
   return { stage, review, tick, addItem, comment, upload, edit, removeItem, removeFile };
 }
 
+/**
+ * A calendar drag on a non-statutory task (M6 G2): the new start and end dates through the
+ * same edit route the task page uses (`PATCH /api/compliances/tasks/:id`, action "edit").
+ */
+export function useMoveTaskDates() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (b: { id: string; startDate: string; dueDate: string }) =>
+      (
+        await readJson<{ task: TaskDetailDto }>(
+          await fetch(`/api/compliances/tasks/${encodeURIComponent(b.id)}`, json('PATCH', { action: 'edit', startDate: b.startDate, dueDate: b.dueDate })),
+          'the task',
+        )
+      ).task,
+    onSettled: () => qc.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
 /** The fields an admin, super admin or manager may change after creation. */
 export interface TaskEditBody {
   name?: string;

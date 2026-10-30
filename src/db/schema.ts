@@ -750,6 +750,11 @@ export const tasks = pgTable(
     stepId: text('step_id'),
     deadline: timestamp('deadline', { withTimezone: true }),
     status: text('status').notNull().default('open'), // open|in-progress|done
+    /**
+     * The card's place in its Work board column (M6 G1); null keeps the default order.
+     * Needs the migration in docs/ui-port/fixes/overnight-m6.md (not generated yet).
+     */
+    sortOrder: integer('sort_order'),
     /** When the task moved to done; cleared when it reopens (home trend lines). */
     completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -230,7 +230,7 @@ export function LeadFocusCard({
                 </button>
                 {item ? (
                   <Link href={item.href} className="min-w-0 flex-1 overflow-hidden">
-                    <span className={cn('block line-clamp-2 text-[13px] font-medium leading-snug text-ink', entry.done && 'text-ink-muted line-through')}>
+                    <span className={cn('block line-clamp-2 text-[13px] font-medium leading-snug text-ink', entry.done && 'text-ink-muted')}>
                       {title}
                     </span>
                     <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -248,7 +248,7 @@ export function LeadFocusCard({
                     </span>
                   </Link>
                 ) : (
-                  <span className={cn('min-w-0 flex-1 truncate pt-px text-[13px] font-medium text-ink', entry.done && 'text-ink-muted line-through')}>
+                  <span className={cn('min-w-0 flex-1 truncate pt-px text-[13px] font-medium text-ink', entry.done && 'text-ink-muted')}>
                     {title}
                   </span>
                 )}
