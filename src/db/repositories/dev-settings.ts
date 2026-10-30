@@ -5,6 +5,7 @@ import { profiles } from '@/db/schema';
 import { devSettings } from '@/db/schema-firm';
 import type { AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from './audit-events';
+import { maskEmail } from '@/lib/dev/mask';
 import { assertDeveloper } from './dev-scope';
 
 /**
@@ -16,7 +17,7 @@ import { assertDeveloper } from './dev-scope';
  */
 
 /** The keys the console knows. A new switch adds its key here. */
-export const DEV_SETTING_KEYS = ['jobs.paused'] as const;
+export const DEV_SETTING_KEYS = ['jobs.paused', 'connections.test_to'] as const;
 export type DevSettingKey = (typeof DEV_SETTING_KEYS)[number];
 
 export interface DevSwitch {
@@ -68,4 +69,28 @@ export async function systemJobsPaused(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** The address "Send a test" uses by default (Access › Console settings), or null. */
+export async function getTestMailToForDev(ctx: AuthContext): Promise<string | null> {
+  assertDeveloper(ctx);
+  const [row] = await db.select({ value: devSettings.value }).from(devSettings).where(eq(devSettings.key, 'connections.test_to')).limit(1);
+  const v = row?.value as { to?: unknown } | undefined;
+  return typeof v?.to === 'string' && v.to ? v.to : null;
+}
+
+/** Save the test mail address (null clears it). Audited with the addresses masked. */
+export async function setTestMailToForDev(ctx: AuthContext, to: string | null): Promise<void> {
+  assertDeveloper(ctx);
+  const before = await getTestMailToForDev(ctx);
+  const now = new Date();
+  await db
+    .insert(devSettings)
+    .values({ key: 'connections.test_to', value: { to }, updatedBy: ctx.userId, updatedAt: now })
+    .onConflictDoUpdate({ target: devSettings.key, set: { value: { to }, updatedBy: ctx.userId, updatedAt: now } });
+  await recordAuditEvent(ctx, {
+    action: 'dev.setting.change',
+    summary: 'Test mail address changed',
+    metadata: { key: 'connections.test_to', before: before ? maskEmail(before) : 'None', after: to ? maskEmail(to) : 'None' },
+  });
 }

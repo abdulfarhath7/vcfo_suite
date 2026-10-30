@@ -8,6 +8,7 @@ import { createUniqueNamer, zipArchiveName, zipEntryPath } from '@/lib/zip/entry
 import { createZipStream, type ZipEntrySource } from '@/lib/zip/zip-writer';
 import { listObjects } from '@/storage/s3';
 import { contentDisposition, openObjectStream } from '../_lib/object-response';
+import { recordStreamExport } from '@/lib/exports/record-export';
 
 /** The vault caps one archive at 500 files or 1 GB. */
 const MAX_FILES = 500;
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
     modified: f.createdAt ? new Date(f.createdAt) : undefined,
     open: async () => (await openObjectStream(f.storageKey))?.body ?? null,
   }));
-  const stream = createZipStream(entries, { maxBytes: MAX_BYTES });
+  const stream = recordStreamExport(auth.ctx, { kind: 'vault_zip', format: 'zip', fileName: zipArchiveName(name) }, createZipStream(entries, { maxBytes: MAX_BYTES }));
 
   return new Response(stream, {
     status: 200,

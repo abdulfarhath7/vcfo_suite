@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/auth/guards';
 import { renderPartnerReportPdf } from '@/lib/reports/render-partner-report';
 import { pdfQuerySchema } from '@/lib/reports/saved-report-schema';
+import { recordExport } from '@/lib/exports/record-export';
 
 /**
  * GET /api/super/reports/pdf?month=YYYY-MM|latest — the partner report the Reports page shows,
@@ -21,6 +22,7 @@ export async function GET(request: Request) {
   try {
     const rendered = await renderPartnerReportPdf(guard.ctx, { month: query.data.month });
     if (!rendered) return NextResponse.json({ error: 'No report for that month' }, { status: 404 });
+    await recordExport(guard.ctx, { kind: 'partner_report', format: 'pdf', fileName: rendered.filename, body: rendered.pdf });
     return new NextResponse(new Uint8Array(rendered.pdf), {
       headers: {
         'Content-Type': 'application/pdf',

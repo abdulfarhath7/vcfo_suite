@@ -151,3 +151,15 @@ engagement through a narrow `reg-*` SQL read; staff write the dates, everyone in
 the certificate through a signed URL) and `engagement-notes` (staff only; anyone on the
 engagement adds and pins, the author edits, the author or a firm-wide admin soft-deletes;
 audit summaries never quote the note because clients read their engagement's audit events).
+
+Statutory and non-statutory Compliances (30 Oct 2026, `docs/ui-port/COMPLIANCE-API.md`):
+`compliance-activities` (the 43-row activity master; everyone reads, only firm-wide admins see
+and settle the `confirm` point and edit; `systemEnsureActivitiesSeeded` fills it once),
+`compliance-tasks/` (non-statutory tasks; staff in scope through `assertEngagementAccess`, a
+client only its own tasks with visibility client or both; admin, super admin and manager create,
+edit and approve; a lead works and submits; a client comments and uploads),
+`compliance-statutory` (the statutory detail payload and workflow side table; staff write, the
+client reads without reviewer, review note, confirm point, escalations, ticks or Assist runs),
+`compliance-reminder-schedule` (the six reminders per item; admin, super admin and manager edit;
+the `system*` readers serve the reminder job only) and `compliance-counts` (category totals in
+the same scope). Cross-tenant tests: `compliance-tasks.test.ts`.

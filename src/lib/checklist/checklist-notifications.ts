@@ -24,6 +24,10 @@ const NOTIFICATION_KINDS = [
   'message.received',
   /** A date change request on a manager-set window, or its decision (G-17). */
   'schedule.window',
+  /** One of the six compliance reminders (COMPLIANCE-MODEL 3.4), statutory or non-statutory. */
+  'compliance.reminder',
+  /** A non-statutory task was assigned, submitted, approved, sent back or commented on. */
+  'compliance.task',
   'team.assigned',
   'team.removed',
   'email.sent',

@@ -420,6 +420,8 @@ export interface MessagesSetupPayload {
   whatsappTemplates: Reach<WhatsAppTemplate[]>;
   domain: Reach<DomainCheck>;
   timing: { reminderDays: number[]; timezone: string; schedules: Array<{ id: string; cron: string }> };
+  /** Failed mail kept 30 days for "Retry". */
+  failedEmails: FailedEmailRow[];
 }
 
 export interface DevSessionRow {
@@ -466,6 +468,8 @@ export interface MonthVolumes {
 }
 
 export interface DataExtra {
+  backups: Reach<RdsBackups>;
+  exports: ExportRow[];
   facts: DatabaseFacts;
   volumes: MonthVolumes;
   months: Reach<{ currency: string; months: MonthCost[] }>;
@@ -493,4 +497,63 @@ export interface DevTokenRow {
   expiresAt: string;
   lastUsedAt: string | null;
   status: 'active' | 'expired' | 'revoked';
+}
+
+/** A failed mail kept for retry (`failed_emails`), as the console lists it. */
+export interface FailedEmailRow {
+  id: string;
+  /** Masked addresses. */
+  to: string;
+  /** Subject with emails, phones and PANs scrubbed. */
+  subject: string;
+  templateKey: string | null;
+  error: string | null;
+  attempts: number;
+  /** False when the mail had attachments, which are not kept. */
+  canRetry: boolean;
+  createdAt: string;
+  lastAttemptAt: string;
+}
+
+/** One exported file on Data and costs › Exports (`export_files`). */
+export interface ExportRow {
+  id: string;
+  kind: string;
+  format: string;
+  fileName: string;
+  sizeBytes: number;
+  madeBy: string;
+  createdAt: string;
+  /** The S3 copy is still kept (30 days). */
+  kept: boolean;
+  /** The caller may download it: the maker or the super admin. */
+  canDownload: boolean;
+}
+
+/** One RDS snapshot on Data and costs › Backups. */
+export interface SnapshotRow {
+  id: string;
+  takenAt: string | null;
+  kind: 'automated' | 'manual' | string;
+  /** Allocated storage in GiB. */
+  sizeGiB: number | null;
+  status: string;
+}
+
+export interface RdsBackups {
+  instance: string;
+  engine: string;
+  instanceClass: string | null;
+  multiAz: boolean | null;
+  retentionDays: number | null;
+  backupWindow: string | null;
+  latestRestorable: string | null;
+  snapshots: SnapshotRow[];
+}
+
+/** Access › Console settings. */
+export interface ConsoleSettings {
+  paused: { on: boolean; by: string | null; at: string | null };
+  retention: Reach<LogRetention>;
+  testMailTo: string | null;
 }

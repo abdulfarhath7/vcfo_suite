@@ -11,6 +11,7 @@ import {
 } from '@/db/schema';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
 import { COMPLIANCE_OBLIGATIONS } from '@/lib/compliance/obligations-seed';
+import { OBLIGATION_ACTIVITY } from '@/data/compliance-activities';
 import type {
   ComplianceInstance,
   EngagementComplianceTriggers,
@@ -127,6 +128,8 @@ async function ensureObligationsSeeded(): Promise<void> {
         applicabilityNote: o.applicabilityNote ?? null,
         isConditional: o.isConditional ?? false,
         penaltyRisk: o.penaltyRisk,
+        // The activity master link (0030); existing rows get it from systemEnsureActivitiesSeeded.
+        activityId: OBLIGATION_ACTIVITY[o.id] ?? null,
       })),
     )
     .onConflictDoNothing();

@@ -590,6 +590,8 @@ export const complianceObligations = pgTable('compliance_obligations', {
   applicabilityNote: text('applicability_note'),
   isConditional: boolean('is_conditional').notNull().default(false),
   penaltyRisk: text('penalty_risk').notNull().default('low'),
+  /** The activity master row (compliance_activities.id) this obligation belongs to; null when the master has none (0030). */
+  activityId: text('activity_id'),
 });
 
 /** One row per engagement — the anchor dates that drive instance generation. */
@@ -1156,3 +1158,4 @@ export * from './schema-portal-team';
 export * from './schema-portal-credentials';
 export * from './schema-firm';
 export * from './schema-work';
+export * from './schema-compliance-tasks';

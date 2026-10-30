@@ -12,6 +12,16 @@ const recorded: Array<Record<string, unknown>> = [];
 
 vi.mock('@/db/client', async () => (await import('@/db/repositories/dev-test-db')).mockDbModule);
 vi.mock('@/db/repositories/dev-settings', () => ({ systemJobsPaused: () => paused() }));
+const purged = { emails: 0, keys: [] as string[] };
+const deleted: string[] = [];
+vi.mock('@/db/repositories/failed-emails', () => ({ systemPurgeFailedEmails: async () => purged.emails }));
+vi.mock('@/db/repositories/export-files', () => ({ systemPurgeExportFiles: async () => purged.keys }));
+vi.mock('@/storage/s3', () => ({
+  deleteObject: async (key: string) => {
+    if (key === 'bad') throw new Error('gone');
+    deleted.push(key);
+  },
+}));
 vi.mock('@/db/repositories/dev-checks', () => ({
   systemRecordServiceCheck: async (row: Record<string, unknown>) => {
     recorded.push(row);
@@ -27,8 +37,10 @@ const jobs = {
   savedReportsSend: (await import('./saved-reports-send')).savedReportsSend,
   staffAlerts: (await import('./staff-alerts')).staffAlerts,
   whatsappSend: (await import('./whatsapp-send')).whatsappSend,
+  devCleanup: (await import('./dev-cleanup')).devCleanup,
 };
 const { runServiceChecks } = await import('./service-checks');
+const { devCleanup, runDevCleanup } = await import('./dev-cleanup');
 
 /** A step that runs each callback at once and remembers the step names. */
 function fakeStep() {
@@ -93,5 +105,16 @@ describe('service checks', () => {
     const out = await runServiceChecks({ CREDENTIALS_ENCRYPTION_KEY: 'short' });
     expect(out).toEqual({ checked: 1, failed: 1 });
     expect(recorded[0]).toMatchObject({ service: 'credentials', ok: false });
+  });
+});
+
+describe('daily cleanup', () => {
+  it('purges kept mail and exports, deleting each S3 copy', async () => {
+    purged.emails = 3;
+    purged.keys = ['exports/a', 'bad'];
+    deleted.length = 0;
+    expect(await runDevCleanup()).toEqual({ failedEmails: 3, exports: 2, objectsFailed: 1 });
+    expect(deleted).toEqual(['exports/a']);
+    expect(devCleanup).toBeDefined();
   });
 });

@@ -20,7 +20,7 @@ Round X built the data paths the earlier rounds lacked. These are new: stored li
 | P-311 | ✓ | "Recent events": the last five checks plus console audit rows that name the service. |
 | P-312 | ✗ (stays) | Services are connected through the env and Terraform, and Outlook from each person's profile. No connect route fits. |
 | P-320 | ◐ | Delivery rows can be picked. The preview shows the Queued, Sent, Delivered, Read dots from the stored status, then Channel, To (masked), Queued, Last update, Status, Template and Error. Bodies, subjects and retries are not stored. |
-| P-321 | ✗ (stays) | The message body and variables are not stored, so one message cannot be sent again. |
+| P-321 | ✓ | Owner decision: `sendEmail` now keeps every mail the provider REFUSED in `failed_emails` for 30 days: recipients, subject, template key (`purpose`), the rendered HTML and text, the error and the try count. Sent and skipped mail are never stored. A new "Failed mail" card on Messages lists them, with addresses masked and the subject scrubbed. Picking a row opens a preview with "Retry" in its head. `POST /api/dev/messages/retry` sends the mail again through `sendEmailNoLog` and audits `dev.message.retry`. A mail that goes out is deleted; one that fails again adds a try. A mail that had attachments cannot be retried, because attachments are not kept. The daily `dev-cleanup` job removes rows older than 30 days. |
 | P-322 | ◐ | "Message routes" grid: Message, Channel, Template, 7 days, Delivered %, Failed, and a channel filter. There is no Test or Edit, because routes are code (`NOTIFY_EVENTS`, template env names). |
 | P-323 | ◐ | "Timing" card (read-only): deadline reminder days from firm settings, each job schedule (cron in words) and the time zone. It is not editable here: reminder days belong to the admin firm settings, and quiet hours are per person. |
 | P-324 | ◐ | "Failed in 24 hours" card: counts by channel and error code. There is no "Retry failed" (see P-321). |
@@ -37,18 +37,18 @@ Round X built the data paths the earlier rounds lacked. These are new: stored li
 | P-351 | ◐ | "Feature flags" grid built from the env switches (WhatsApp, Ask VCFO, SES, costs): flag and env name, Production, who sees it, On. There is no switch (Terraform owns the env) and no staging. |
 | P-353 | ✓ | "Sign-in methods" StackedBar, "People, last 30 days": Password and code (navy) and Password only (blurple), from sessions started in 30 days and each person's two-step state. There is no third method because there is no SSO. |
 | P-354 | ◐ | "Sign-in rules" (read-only): staff two-step "Not required" (each person turns it on) and session length 30 days. Enforcing a rule needs a change in `src/auth/config.ts`. |
-| P-355 | ✗ (stays) | No console-wide settings exist apart from the ones built on their own pages (Pause all jobs, Keep logs for). |
+| P-355 | ✓ | Owner decision: a "Console settings" card on Access gathers the existing settings, and each saves on change with an audit row: "Pause all jobs" (asks in place before turning on), "Keep logs for" 14, 30 or 90 days (CloudWatch), and "Test mail goes to". The test address is new, stored in `dev_settings` key `connections.test_to`, audited with the address masked, and prefills "Send a test" on Connections. |
 | P-357 | ✓ | "Sessions signed in now": person (role), device, browser, address (first two parts only, because the app stores no place), since, active, and "Revoke" or a "You" tag. Revoke asks in place, signs that device out and writes `dev.session.revoke`. It refuses the caller's own device. Client sessions stay counted, not listed. |
 | P-358 | ◐ | "Secrets and API keys" (meta "Values never shown"): each secret the app uses, with its scope, Stored in (Secrets Manager or App Runner env, read from App Runner's names, or this server), a masked value and Set or Missing. The new "API tokens" card lists personal tokens with created, expires, last used and status. Created and expiry dates for provider secrets are not known. |
 | P-359 | ✓ | Rotate on an API token: DangerConfirm, type ROTATE, RotateCw icon. It makes a new token, shows it once, and keeps the old one working for 24 hours, then shows the "Key rotated" toast (`dev.token.rotate`). |
 | P-360 | ◐ | Revoke a token uses the inline ChangeConfirm (Active, then Revoked). "Purge" for the seeded demo logins uses DangerConfirm (type PURGE): it turns every @vcfo.local account except the caller's to inactive and signs their devices out (`dev.demo.purge`). "Set" is not built, because Terraform owns the secrets. |
 | P-363 | ✓ | "Service accounts": the App Runner instance role, the Inngest app, the Microsoft Entra app (id cut short) and the storage key, if one is set. Each row has Kind, Can (tags) and Last used (that service's last check). |
-| P-365 | ◐ | "Database" card from Postgres: version, size, connections of max, running since, oldest vacuum and dead rows. There is no RDS backup facts or "Test a restore": no `@aws-sdk/client-rds`. |
+| P-365 | ◐ | The Database card has the Postgres facts. The new Backups card adds the RDS facts (instance, engine, class, restorable to, backup window and keep days). There is no "Test a restore": by owner decision restores follow the runbook. |
 | P-366 | ✓ | "Volumes" since the first of the month: emails and WhatsApp sent, documents added (with size), sign-ins and audit events. |
 | P-369 | ✓ | "Cost over 6 months" bar chart (`DashBarChart`, brand bars), from Cost Explorer MONTHLY. Without `AWS_COST_EXPLORER=on` it shows "not set up". |
 | P-370 | ✓ | "Storage by bucket" for `S3_BUCKET`: region, size, objects (counted up to 20,000, with "+" beyond), versioning chip and lifecycle rule count. |
-| P-372 | ✗ (stays) | No RDS snapshot reader: `@aws-sdk/client-rds` is not installed, and the rules allow no new dependencies. |
-| P-373 | ✗ (stays) | The app has no export feature to list. |
+| P-372 | ✓ | Owner decision: added `@aws-sdk/client-rds` (^3.1160.0). The Backups card on Data and costs lists the snapshots of `RDS_INSTANCE_ID` (Snapshot in mono, Taken, Kind tag Automated or Manual, Size, Status). Meta reads "Daily <window> UTC · kept N days". "Take snapshot now" asks with the inline ChangeConfirm (N snapshots, then N+1), then calls `POST /api/dev/data/snapshot` (CreateDBSnapshot, audited `dev.db.snapshot`). There is no Restore button; a line points to `docs/context/AWS-DEPLOY.md`. Without `RDS_INSTANCE_ID` the card shows "not set up". |
+| P-373 | ✓ | Owner decision: every export is logged in `export_files` (kind, format, file name, size, made by, when, S3 key), with a copy under `exports/` for 30 days (files over 50 MB are logged without a copy). An "Exports" card on Data and costs lists them, with "Download" (a 5-minute signed link, audited `dev.export.download`) that then reads "Downloaded". Only the maker or the super admin can download, because exports hold client data. A developer sees the row with "Maker only", and a client maker shows as "Client" with the file name hidden. The daily `dev-cleanup` job deletes old rows and their S3 copies. |
 
 ## Follow-ups (done after the first report, at the coordinator's request)
 
@@ -57,6 +57,43 @@ Round X built the data paths the earlier rounds lacked. These are new: stored li
 - **Scheduled checks:** the new `src/jobs/service-checks.ts` (cron `*/5 * * * *`, retries 0) runs the live probes and stores each check with the new system writer `systemRecordServiceCheck` (`checked_by` is null and reads as "System"). It is registered in `app/api/inngest/route.ts` and in `src/lib/dev/jobs-registry.ts`, which now lists all 11 functions. "Pause all jobs" does not stop it, because it sends nothing.
 - **Jobs tab icon:** the developer's Jobs tab now uses the Terminal icon.
 - **Tests:** `src/jobs/dev-controls.test.ts` (run-now triggers on every registered cron job; each paused job returns before any work; the checks job writes system rows and counts failures), a system-check case in `src/db/repositories/dev-x.test.ts`, and `src/components/shell/tab-bar-developer.test.ts`.
+
+## Round Y (owner decisions on the last ✗ rows)
+
+New files:
+- `src/db/repositories/failed-emails.ts`, `src/db/repositories/export-files.ts`
+- `src/lib/exports/record-export.ts`, `src/lib/exports/log-export-client.ts`
+- `src/lib/dev/rds.ts`, `src/jobs/dev-cleanup.ts` (daily 03:00 IST, honours the pause, has Run now)
+- `src/components/dev/ConsoleSettingsCard.tsx`
+- Routes: `app/api/dev/messages/retry`, `app/api/dev/settings` (GET and POST), `app/api/dev/data/snapshot`, `app/api/dev/exports/download`, `app/api/exports/log`
+
+Changed files:
+- `src/lib/email/send-email.ts`: `sendEmail` now keeps refused mail; a new `sendEmailNoLog` is the plain send, used by retry and test send.
+- `src/db/repositories/dev-settings.ts`: the test mail address.
+- `app/api/dev/{data,messages/setup,connections/test-send}/route.ts`
+- `src/views/dev/{DevMessages,DevAccess,DevData,DevConnections}.tsx`
+- `src/lib/dev/{types,jobs-registry}.ts`, `app/api/inngest/route.ts` (registers `devCleanup`)
+- `.env.example` (`RDS_INSTANCE_ID`)
+- `package.json` and `package-lock.json` (`@aws-sdk/client-rds`)
+
+Export routes in other areas, each a one- or two-line `recordExport` call plus its import:
+- `app/api/documents/zip/route.ts`: vault ZIP. The stream passes through `recordStreamExport`, which counts it and keeps a copy up to 50 MB.
+- `app/api/client/documents/zip/route.ts`: client vault ZIP.
+- `app/api/super/reports/pdf/route.ts`, `app/api/super/reports/csv/route.ts`, `app/api/super/reports/[id]/pdf/route.ts`, `app/api/super/reports/[id]/csv/route.ts`: partner report PDF and CSV.
+- `app/api/client/audit/export/route.ts`: client audit CSV. The CSV and file name moved into two constants so they can be logged.
+- `src/views/admin/audit-log/AuditTable.tsx`: the staff audit log CSV is built in the browser, so `onExport` now also calls `logBrowserExport`, which POSTs the CSV to the new `app/api/exports/log` (staff only, 5 MB cap).
+
+Schema added (for migration 0029, in `src/db/schema-firm.ts`):
+- `failed_emails`: id; to_addresses, cc_addresses, reply_to jsonb; from_address; subject; template_key; html; text_body; had_attachments; error; attempts; created_at (indexed); last_attempt_at.
+- `export_files`: id; kind; format; file_name; size_bytes; made_by → profiles (set null); object_key; created_at (indexed).
+
+Env: `RDS_INSTANCE_ID` (added to `.env.example`).
+
+IAM:
+- On the instance role: `rds:DescribeDBInstances`, `rds:DescribeDBSnapshots`, `rds:CreateDBSnapshot` and `rds:AddTagsToResource` (the snapshot carries a `made-by` tag) on the instance and its snapshots.
+- On the bucket: `s3:PutObject`, `s3:GetObject` and `s3:DeleteObject` under `exports/` (the bucket policy already covers the bucket).
+
+Tests: `src/lib/email/send-email-failed.test.ts`, `src/db/repositories/dev-y.test.ts`, `src/lib/dev/dev-y.test.ts` (RDS SDK and S3 mocked), and a cleanup case and the paused cleanup job in `src/jobs/dev-controls.test.ts`.
 
 ## Files changed
 
@@ -139,5 +176,6 @@ These IAM permissions must be added to the App Runner instance role:
 ## Checks
 
 - `npx tsc --noEmit -p .`: clean.
-- `npx vitest run src/jobs src/db/repositories/dev- src/lib/dev src/auth src/components/shell/tab-bar-developer.test.ts`: 121 tests pass.
+- `npx vitest run src/jobs src/db/repositories/dev- src/lib/dev src/lib/email src/auth src/components/shell/tab-bar-developer.test.ts`: 223 tests pass. `npx vitest run app src/views/admin`: 79 tests pass.
+- `npx tsc --noEmit -p .`: 0 errors at the end. An error in `src/jobs/compliance-task-reminders.ts` appeared mid-round; it belongs to another agent and was gone by the final run.
 - `npx eslint` on every file I changed: 0 errors, 4 warnings. Three are the old `react-refresh` warnings in `parts.tsx`; the fourth is the old one in `TabBar.tsx` (it exports `tabBarTabs` beside the component).

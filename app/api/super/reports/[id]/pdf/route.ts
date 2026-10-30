@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireSuperAdmin } from '@/auth/guards';
 import { getSavedReport } from '@/db/repositories/saved-reports';
 import { renderPartnerReportPdf } from '@/lib/reports/render-partner-report';
+import { recordExport } from '@/lib/exports/record-export';
 
 /**
  * GET /api/super/reports/:id/pdf — a saved report as a PDF, with its saved month (G-21).
@@ -26,6 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const rendered = await renderPartnerReportPdf(guard.ctx, report.params);
     if (!rendered) return NextResponse.json({ error: 'No report for that month' }, { status: 404 });
+    await recordExport(guard.ctx, { kind: 'partner_report', format: 'pdf', fileName: rendered.filename, body: rendered.pdf });
     return new NextResponse(new Uint8Array(rendered.pdf), {
       headers: {
         'Content-Type': 'application/pdf',

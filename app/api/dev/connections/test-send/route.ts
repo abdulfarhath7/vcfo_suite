@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { devAction } from '@/lib/dev/route-helpers';
-import { sendEmail } from '@/lib/email/send-email';
+import { sendEmailNoLog as sendEmail } from '@/lib/email/send-email';
 import { maskEmail } from '@/lib/dev/mask';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 

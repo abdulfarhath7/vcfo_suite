@@ -6,12 +6,14 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
-import { CloseButton, DevCard, KeyValue, ListRow, LoadOlder, Pending, ReachNotice, StatusChip, pickedRow } from '@/components/dev/parts';
+import { CloseButton, DevCard, KeyValue, ListRow, LoadOlder, Pending, ReachNotice, StatusChip, pickedRow, useDevAction } from '@/components/dev/parts';
+import { Button } from '@/components/ui/button';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { DomainCard } from '@/components/dev/DomainCard';
 import { useDevApi } from '@/components/dev/use-dev-api';
 import { stamp, words } from '@/lib/dev/format';
 import { cronWords } from '@/lib/dev/parse';
-import type { DeliveryRow, EmailLogRow, EmailTemplateRow, MessageRouteRow, MessagesPayload, MessagesSetupPayload, WhatsAppTemplate } from '@/lib/dev/types';
+import type { DeliveryRow, EmailLogRow, EmailTemplateRow, FailedEmailRow, MessageRouteRow, MessagesPayload, MessagesSetupPayload, WhatsAppTemplate } from '@/lib/dev/types';
 
 /**
  * Messages: the notification delivery log (email and WhatsApp) with a preview of the picked
@@ -61,6 +63,23 @@ const routeColumns: EFilingColumn<MessageRouteRow>[] = [
     render: (r) => (r.sent7d ? `${Math.round((r.delivered7d / r.sent7d) * 100)}%` : <span className="text-ink-faint">-</span>),
   },
   { key: 'failed', header: 'Failed', width: '80px', align: 'right', render: (r) => <span className={r.failed7d ? 'font-medium text-danger' : 'text-ink-muted'}>{r.failed7d}</span> },
+];
+
+const failedColumns: EFilingColumn<FailedEmailRow>[] = [
+  { key: 'at', header: 'Failed', width: '140px', render: (m) => stamp(m.lastAttemptAt) },
+  {
+    key: 'subject',
+    header: 'Subject',
+    render: (m) => (
+      <span className="block min-w-0">
+        <span className="block truncate font-medium text-ink">{m.subject}</span>
+        <span className="block truncate font-mono text-[12px] text-ink-muted">{m.templateKey ?? '-'}</span>
+      </span>
+    ),
+  },
+  { key: 'to', header: 'To', width: '20%', render: (m) => m.to },
+  { key: 'tries', header: 'Tries', width: '70px', align: 'right', render: (m) => m.attempts },
+  { key: 'why', header: 'Error', width: '22%', render: (m) => <span className="text-[13px] text-ink-muted">{m.error ?? '-'}</span> },
 ];
 
 const waColumns: EFilingColumn<WhatsAppTemplate>[] = [
@@ -115,6 +134,19 @@ export default function DevMessages() {
   const [picked, setPicked] = useState<string | null>(null);
   const [routeChannel, setRouteChannel] = useState<'all' | 'email' | 'whatsapp'>('all');
   const [tplTab, setTplTab] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [failedPick, setFailedPick] = useState<string | null>(null);
+  const retry = useDevAction<{ id: string }>('/api/dev/messages/retry');
+
+  /* R-40: the retry sends the kept mail once more; the route audits every try. */
+  const doRetry = async (m: FailedEmailRow) => {
+    const out = await retry.run({ id: m.id });
+    if (out.ok === false) {
+      toastError('Retry failed', out.error);
+      return;
+    }
+    setFailedPick(null);
+    toastSuccess('Sent again', m.to);
+  };
 
   const del = useOlder<DeliveryRow>(url);
   const mail = useOlder<EmailLogRow>(url);
@@ -147,6 +179,7 @@ export default function DevMessages() {
   const c = q.data?.counts24h;
   const cur = deliveries.find((m) => m.id === picked) ?? null;
   const st = setup.data;
+  const failedCur = (st?.failedEmails ?? []).find((m) => m.id === failedPick) ?? null;
   const routes = (st?.routes ?? []).filter((r) => routeChannel === 'all' || r.channel === routeChannel);
 
   const deliveryColumns: EFilingColumn<DeliveryRow>[] = [
@@ -247,6 +280,59 @@ export default function DevMessages() {
           ) : (
             <Pending error={q.error} />
           )}
+        </DevCard>
+      ) : null}
+
+      <DevCard title="Failed mail" meta={st ? `${st.failedEmails.length} kept · 30 days` : undefined}>
+        {st ? (
+          <div className="px-2 pb-2">
+            <EFilingGrid
+              columns={failedColumns}
+              rows={st.failedEmails}
+              rowKey={(m) => m.id}
+              pageSize={10}
+              minWidth={820}
+              empty="No failed mail in 30 days"
+              stickyFirstColumn
+              onRowClick={(m) => setFailedPick((p) => (p === m.id ? null : m.id))}
+              rowClassName={pickedRow((m: FailedEmailRow) => m.id, failedPick)}
+            />
+          </div>
+        ) : (
+          <Pending error={setup.error} rows={3} />
+        )}
+      </DevCard>
+
+      {failedCur ? (
+        <DevCard
+          title="Failed mail"
+          meta={stamp(failedCur.lastAttemptAt)}
+          right={
+            <>
+              {failedCur.canRetry ? (
+                <Button size="sm" onClick={() => void doRetry(failedCur)} disabled={retry.busy}>
+                  {retry.busy ? 'Sending' : 'Retry'}
+                </Button>
+              ) : (
+                <span className="text-[12.5px] text-ink-muted">Had attachments</span>
+              )}
+              <CloseButton onClick={() => setFailedPick(null)} />
+            </>
+          }
+        >
+          <DeliverySteps status="failed" />
+          <KeyValue
+            rows={[
+              { k: 'Channel', v: 'Email' },
+              { k: 'To', v: failedCur.to },
+              { k: 'Queued', v: stamp(failedCur.createdAt) },
+              { k: 'Status', v: <StatusChip status="failed" /> },
+              { k: 'Retries', v: Math.max(0, failedCur.attempts - 1) },
+              { k: 'Template', v: failedCur.templateKey ?? '-', mono: Boolean(failedCur.templateKey) },
+              { k: 'Subject', v: failedCur.subject },
+              { k: 'Error', v: failedCur.error ?? '-' },
+            ]}
+          />
         </DevCard>
       ) : null}
 

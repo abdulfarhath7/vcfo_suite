@@ -12,6 +12,7 @@ import { Trash2 } from 'lucide-react';
 import { Cols, Col, DevCard, KeyValue, Pending, SettingRow, StackedBar, StatusChip, useDevAction } from '@/components/dev/parts';
 import { useDevApi } from '@/components/dev/use-dev-api';
 import { ApiTokensCard } from '@/components/dev/ApiTokensCard';
+import { ConsoleSettingsCard } from '@/components/dev/ConsoleSettingsCard';
 import { stamp } from '@/lib/dev/format';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { describeUserAgent } from '@/views/settings/account/device-label';
@@ -284,6 +285,7 @@ export default function DevAccess() {
               <Pending error={q.error} rows={2} />
             )}
           </DevCard>
+          <ConsoleSettingsCard />
           <DevCard title="Sign-in rules">
             <SettingRow label="Staff two-step" sub="Each person turns it on in Profile">
               <span className="text-[13px] text-ink-muted">Not required</span>

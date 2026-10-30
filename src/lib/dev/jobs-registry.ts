@@ -10,6 +10,9 @@ import { kpiSnapshots } from '@/jobs/kpi-snapshots';
 import { staffAlerts } from '@/jobs/staff-alerts';
 import { dailyDigest } from '@/jobs/daily-digest';
 import { serviceChecks } from '@/jobs/service-checks';
+import { complianceTaskReminders } from '@/jobs/compliance-task-reminders';
+import { complianceTaskRepeatOnComplete, complianceTaskRepeatSweep } from '@/jobs/compliance-task-repeat';
+import { devCleanup } from '@/jobs/dev-cleanup';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -30,5 +33,9 @@ export function registeredJobs(): JobFunction[] {
     staffAlerts,
     dailyDigest,
     serviceChecks,
+    devCleanup,
+    complianceTaskReminders,
+    complianceTaskRepeatOnComplete,
+    complianceTaskRepeatSweep,
   ]);
 }

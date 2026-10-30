@@ -5,28 +5,31 @@ import { readWhatsAppTemplates } from '@/lib/dev/aws';
 import { messageRoutes } from '@/lib/dev/message-routes';
 import { registeredJobs } from '@/lib/dev/jobs-registry';
 import type { MessagesSetupPayload } from '@/lib/dev/types';
+import { listFailedEmailsForDev } from '@/db/repositories/failed-emails';
 import { emailTemplatesForDev, failureCausesForDev, messageRoutesForDev, messageTimingForDev } from '@/db/repositories/dev-messages';
 
 /**
  * GET /api/dev/messages/setup: the cards under the message log. Message routes with 7-day
  * numbers, failed messages in 24 hours by cause, the step mail templates and the WhatsApp
  * templates (from AWS End User Messaging when set up), the mail domain check, and the
- * timing the code and firm settings give (reminder days, job schedules). Read only.
+ * timing the code and firm settings give (reminder days, job schedules), and the failed mail
+ * kept for retry (addresses masked, no bodies). Read only.
  * Developer or super admin.
  */
 export async function GET(request: Request) {
   return devRoute(request, z.object({}), async (ctx): Promise<MessagesSetupPayload> => {
-    const [routes, causes, emailTemplates, whatsappTemplates, domain, timing] = await Promise.all([
+    const [routes, causes, emailTemplates, whatsappTemplates, domain, timing, failedEmails] = await Promise.all([
       messageRoutesForDev(ctx, messageRoutes()),
       failureCausesForDev(ctx),
       emailTemplatesForDev(ctx),
       readWhatsAppTemplates(),
       checkMailDomain(),
       messageTimingForDev(ctx),
+      listFailedEmailsForDev(ctx),
     ]);
     const schedules = registeredJobs()
       .filter((f) => f.trigger.kind === 'cron')
       .map((f) => ({ id: f.id, cron: f.trigger.kind === 'cron' ? f.trigger.cron : '' }));
-    return { routes, causes, emailTemplates, whatsappTemplates, domain, timing: { ...timing, schedules } };
+    return { routes, causes, emailTemplates, whatsappTemplates, domain, timing: { ...timing, schedules }, failedEmails };
   });
 }

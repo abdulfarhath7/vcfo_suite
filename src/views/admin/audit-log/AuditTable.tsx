@@ -29,6 +29,7 @@ import {
   type AuditResultWord,
 } from '@/views/admin/audit-log/audit-filters';
 import { auditEventsCsv, downloadCsv } from '@/views/admin/audit-log/audit-csv';
+import { logBrowserExport } from '@/lib/exports/log-export-client';
 
 /** Plain date and time, for example "14 Oct 10:42" (R-05); the year shows only when it is not this year. */
 function plainWhen(iso: string): string {
@@ -440,7 +441,11 @@ export function AuditTable({
             filters={filters}
             onChange={onFiltersChange}
             events={events}
-            onExport={() => downloadCsv(auditEventsCsv(filtered, engagementsByDbId), exportName)}
+            onExport={() => {
+              const csv = auditEventsCsv(filtered, engagementsByDbId);
+              downloadCsv(csv, exportName);
+              logBrowserExport('audit_log', exportName, csv);
+            }}
           />
         </div>
       </header>

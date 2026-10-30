@@ -11,8 +11,11 @@ import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
 import { weeklyDigest } from '@/jobs/weekly-digest';
 import { serviceChecks } from '@/jobs/service-checks';
+import { complianceTaskReminders } from '@/jobs/compliance-task-reminders';
+import { complianceTaskRepeatOnComplete, complianceTaskRepeatSweep } from '@/jobs/compliance-task-repeat';
+import { devCleanup } from '@/jobs/dev-cleanup';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep],
 });

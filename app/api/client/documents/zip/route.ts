@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { buildClientDocumentsZip, ClientDocumentsForbiddenError } from '@/db/repositories/client-documents';
+import { recordExport } from '@/lib/exports/record-export';
 
 /**
  * GET /api/client/documents/zip?folder=all|phase:<id>|step:<itemId>|cat:<c1..c5>
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
     const zip = await buildClientDocumentsZip(guard.ctx, folder);
     if (!zip) return NextResponse.json({ error: 'not_found' }, { status: 404 });
     if (zip.count === 0) return NextResponse.json({ error: 'empty' }, { status: 404 });
+    await recordExport(guard.ctx, { kind: 'client_vault_zip', format: 'zip', fileName: zip.filename, body: zip.buffer });
     const safe = zip.filename.replace(/["\\\r\n]/g, '_');
     return new NextResponse(new Uint8Array(zip.buffer), {
       status: 200,

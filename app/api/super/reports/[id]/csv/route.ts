@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireSuperAdmin } from '@/auth/guards';
 import { getSavedReport } from '@/db/repositories/saved-reports';
 import { renderPartnerReportCsv } from '@/lib/reports/render-partner-report';
+import { recordExport } from '@/lib/exports/record-export';
 
 /**
  * GET /api/super/reports/:id/csv — a saved report as a CSV file that Excel opens, with its
@@ -26,6 +27,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const rendered = await renderPartnerReportCsv(guard.ctx, report.params);
     if (!rendered) return NextResponse.json({ error: 'No report for that month' }, { status: 404 });
+    await recordExport(guard.ctx, { kind: 'partner_report', format: 'csv', fileName: rendered.filename, body: rendered.csv });
     return new NextResponse(new Uint8Array(rendered.csv), {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

@@ -211,6 +211,13 @@
       "when": 1793307454438,
       "tag": "0029_spectrum_x_rows",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793339053345,
+      "tag": "0030_compliance_tasks",
+      "breakpoints": true
     }
   ]
 }

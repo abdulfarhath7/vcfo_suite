@@ -15,6 +15,7 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `client/` — client overview, home (`/api/client/home`) and progress-board shapes, shared by the portal and the legacy client views.
 - `client-portal/` — the v7 client portal's pure models (answers, compliances, credentials, documents, steps).
 - `compliance/` — the recurring compliance calendar: FY periods, obligation instances and the filings register.
+- `compliance-tasks/` — the statutory and non-statutory model: stages and status words, reminders, repeats, progress steps, the reminder email.
 - `doc-pack/` — the incorporation document pack registry, inputs and what blocks each document.
 - `documents/` — vault and milestone document visibility rules and storage keys.
 - `email/` — outbound email (`send-email.ts`, the system of record), layout and engagement event mail.

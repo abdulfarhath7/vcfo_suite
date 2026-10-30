@@ -335,7 +335,13 @@ function ServiceDetail({
   const url = `/api/dev/connections/detail?service=${service.id}`;
   const d = useDevApi<ConnectionDetailPayload>(url);
   const send = useDevAction<{ to: string }>('/api/dev/connections/test-send');
+  const settings = useDevApi<{ testMailTo: string | null }>('/api/dev/settings');
   const [to, setTo] = useState('');
+  const savedTo = settings.data?.testMailTo ?? '';
+  // Start from the address saved in Access › Console settings.
+  useEffect(() => {
+    if (savedTo) setTo((cur) => cur || savedTo);
+  }, [savedTo]);
   const last = health?.lastCheck ?? null;
 
   const doSend = async () => {
