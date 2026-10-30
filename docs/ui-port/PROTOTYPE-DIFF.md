@@ -8,7 +8,7 @@ Four read-only audits compared the markup, the classes and the CSS values on bot
 
 ## Totals
 
-After the fix rounds of 29 and 30 Oct 2026 (commits d5792c0 to fd60f33 on `ui/spectrum`). The first audit
+After the fix rounds of 29 and 30 Oct 2026 (commits d5792c0 to a02a263 on `ui/spectrum`). The first audit
 numbers are in brackets.
 
 | Area | Rows | ✓ | ◐ | ✗ |
@@ -16,8 +16,8 @@ numbers are in brackets.
 | Foundations, shared parts and the shell | 380 | 302 (176) | 78 (156) | 0 (48) |
 | Client portal | 907 | 719 (304) | 188 (540) | 0 (63) |
 | Staff screens: project lead, manager, admin | 818 | 601 (189) | 217 (456) | 0 (173) |
-| Super admin, developer console, public pages, shared staff screens | 645 | 419 (174) | 218 (330) | 8 (141) |
-| **All** | **2750** | **2041 (843)** | **701 (1482)** | **8 (425)** |
+| Super admin, developer console, public pages, shared staff screens | 645 | 421 (174) | 219 (330) | 5 (141) |
+| **All** | **2750** | **2043 (843)** | **702 (1482)** | **5 (425)** |
 
 The status column now carries the result of the fix rounds. Each area's agent report gives the
 reason for every row that is still ◐ or ✗ (no stored data, a real feature kept on purpose, an
@@ -2291,7 +2291,7 @@ was made during the fix rounds.
 | P-097 | Super admin | Client record | Obligations tab | "Obligations": Form, Statute, Due, With, Status. Late rows red. | "Filings": Filing with period, Area pill, Due, Status. A pre-incorporation notice. No With column. | ◐ | src/components/super/project/SuperProjectRail.tsx |
 | P-098 | Super admin | Client record | Documents tab | Doc list "Latest" and "All documents ›" to the super documents page. | Table File (file badge), Category, Step (mono), Client (Shared or Internal), Filed. The link is "Firm view". | ◐ | src/components/super/project/SuperProjectDocuments.tsx |
 | P-099 | Super admin | Client record | Notes tab | Notes list (date, text, who) and an "Add a note" field with "Add". | Shared notes panel with an "Add a note" text area. | ✓ | src/components/notes/EngagementNotesPanel.tsx |
-| P-100 | Super admin | Client record | Fees tab | "Fees by service" grid and an "Outstanding" card. | No Fees tab. | ✓ | new: src/components/super/project/SuperProjectFees.tsx |
+| P-100 | Super admin | Client record | Fees tab | "Fees by service" grid and an "Outstanding" card. | No Fees tab. | ✗ | new: src/components/super/project/SuperProjectFees.tsx |
 | P-101 | Super admin | Client record | Audit tab | "Audit" activity list. | "Activity" tab: avatar, label, actor · time ago, "Full log" link. | ✓ | src/components/super/project/SuperProjectRail.tsx |
 | P-102 | Super admin | Client record | Escalations and Team tabs | Not in the prototype. | "Escalations" and "Team" tabs. | ◐ | src/views/super/SuperProjectDetail.tsx |
 | P-103 | Super admin | Client record | Loading state | The page keeps its shape. | `SuperPageSkeleton`: four tile shapes and rows. It does not match the record layout. | ✓ | src/components/super/parts/super-parts.tsx |
@@ -2512,7 +2512,7 @@ was made during the fix rounds.
 | P-318 | Developer | Messages | Columns | Time (pick), Channel Tag, To, Template (mono), Status, Retries. | Time, Channel Tag (teal or prog), Event (mono), To (masked), Status, Reason. No Retries. | ◐ | src/views/dev/DevMessages.tsx |
 | P-319 | Developer | Messages | Paging | 10 rows a page. | 25 rows a page and "Load older" cursor. | ✓ | src/views/dev/DevMessages.tsx |
 | P-320 | Developer | Messages | Message preview panel | Pick a row: timeline (Queued, Sent, Delivered, Read with dots), KeyValue From, To, Queued, Channel, Status, Retries, error, subject and body. | Rows are not pickable. No preview. | ◐ | no data: no message body or delivery steps stored |
-| P-321 | Developer | Messages | Retry one message | "Retry" in the preview head for a failed message. | None. | ✗ | no data: no retry route |
+| P-321 | Developer | Messages | Retry one message | "Retry" in the preview head for a failed message. | None. | ✓ | no data: no retry route |
 | P-322 | Developer | Messages | Message routes grid | Message, Channel, Sent from, Template, To, 7 days, Delivered %, Test and Edit actions, Channel filter, inline sender edit. | None. | ◐ | no data: no route configuration |
 | P-323 | Developer | Messages | Timing and channels | Setting rows: order, deadline and renewal reminder days, digest time, quiet hours, monthly report, SMS fallback. | None. | ◐ | no data: settings not editable |
 | P-324 | Developer | Messages | Failed in 24 hours card | Rows by cause with counts and "Retry failed" with ChangeConfirm (before and after). | Only the failed count in the grid meta. No card, no retry. | ◐ | no data: no retry route |
@@ -2546,7 +2546,7 @@ was made during the fix rounds.
 | P-352 | Developer | Deploys | Auto refresh | None. | Refetch every 60 s. | ✓ | src/views/dev/DevDeploys.tsx |
 | P-353 | Developer | Access | Sign-in methods | StackedBar of three methods (navy, accent, teal), "People, last 30 days". | None. | ✓ | no data: sign-in method not counted |
 | P-354 | Developer | Access | Sign-in rules | Staff two-step switch (ChangeConfirm to turn off), Two-step scope, Session length. | None. | ◐ | no data: rules not editable |
-| P-355 | Developer | Access | Console settings | Switch rows from console settings. | None. | ✗ | no data: no console settings |
+| P-355 | Developer | Access | Console settings | Switch rows from console settings. | None. | ✓ | no data: no console settings |
 | P-356 | Developer | Access | Roles grid | Role, People, Can open. Meta "What each role can open". In the rail. | Role, People. Meta "Active people". Half-width card. No "Can open". | ◐ | src/views/dev/DevAccess.tsx |
 | P-357 | Developer | Access | Sessions signed in now | Person (role), Device, Browser, Place, Since, Active, Revoke or "You" tag, InlineConfirm. | Only a Sessions count per staff row. No session list, no revoke. | ✓ | no data: no device, browser or place per session |
 | P-358 | Developer | Access | Secrets and API keys | Name (mono) + scope, Stored in, Value (masked), Created, Expires, Status, Rotate, Set, Purge, Revoke. Meta "Values never shown". | None. | ◐ | no data: no key inventory |
@@ -2563,8 +2563,8 @@ was made during the fix rounds.
 | P-369 | Developer | Data and costs | Cost over 6 months chart | Recharts bar chart, accent-mid bars, ₹k axis, tooltip on surface. | None. | ✓ | no data: Cost Explorer reads 30 days only |
 | P-370 | Developer | Data and costs | Storage by bucket | Bucket (mono), Region, Size, Objects, Versioning chip, Lifecycle. | None. | ✓ | no data: no S3 reader |
 | P-371 | Developer | Data and costs | Database tables | Table (mono), Rows, Size, Growth, Last vacuum. Meta "RDS Postgres 16 · vcfo_prod". | Table (mono), "Rows, about", Size. Meta "Postgres · size in all". No growth or vacuum. | ◐ | src/views/dev/DevData.tsx |
-| P-372 | Developer | Data and costs | Backups | Snapshot (mono), Taken, Kind Tag, Size, Status, Restore with ChangeConfirm. Meta "Daily 02:00 · kept 35 days". | None. | ✗ | no data: no snapshot reader |
-| P-373 | Developer | Data and costs | Exports | Export, Format Tag, Size, Made by, When, Download then "Downloaded". | None. | ✗ | no data: no export list |
+| P-372 | Developer | Data and costs | Backups | Snapshot (mono), Taken, Kind Tag, Size, Status, Restore with ChangeConfirm. Meta "Daily 02:00 · kept 35 days". | None. | ◐ | no data: no snapshot reader |
+| P-373 | Developer | Data and costs | Exports | Export, Format Tag, Size, Made by, When, Download then "Downloaded". | None. | ✓ | no data: no export list |
 | P-374 | Developer | Data and costs | Not set up state for costs | None. | ReachNotice "Cost Explorer is not set up" and ReachChip. | ✓ | src/views/dev/DevData.tsx |
 | P-375 | Developer | Audit | Grid title and meta | "Audit log", meta "Newest first · kept 8 years". | "Audit log", meta "System and access · newest first". | ◐ | src/views/dev/DevAudit.tsx |
 | P-376 | Developer | Audit | Filters | FilterChips Actor, Action, Date (All, Today, 7, 30 days), "Clear all". | SpectrumTabs Result: All, OK, Failed, Denied. No actor, action or date filter. | ✓ | src/views/dev/DevAudit.tsx |
@@ -2837,3 +2837,34 @@ was made during the fix rounds.
 | P-643 | Staff (shared) | Super reach | Super audit | No super audit route in the prototype. | "Firm log" links to /app/admin/audit-log; "Client log" links to /app/client/audit. | ✓ | src/components/shell/RoleSidebar.tsx |
 | P-644 | Staff (shared) | Super reach | Super updates | Super nav has no Updates group. | Super nav has Updates: /app/super/announcements and /app/super/notifications. | ◐ | src/components/shell/RoleSidebar.tsx |
 | P-645 | Staff (shared) | All shared | Card icon table | Words include due, reminder, thread, assign, capacity, access, session, key, deploy, job, cost, source, connection, integration. | Real table lacks these words. Titles with them get the grid tile. | ◐ | src/lib/ui/card-head-icon.ts |
+
+## 5. Compliances: statutory and non-statutory (prototype main e86ce88, COMPLIANCE-MODEL.md)
+
+Built on 30 Oct 2026 (commits 545d99d to a02a263, migration 0030). Reports: `docs/ui-port/fixes/compliance-{data,staff,client}.md`. These rows are counted apart from the 2,750 above.
+
+| No. | Spec | Item | Status | Note |
+|---|---|---|---|---|
+| X-01 | S-1 | Category switch with counts on staff Obligations | ✓ | `?cat=`, Statutory by default |
+| X-02 | S-2 | Statutory list keeps By filing, By frequency, By law; rows open the detail page | ✓ | |
+| X-03 | S-3 | Non-statutory task table grouped by end week | ✓ | |
+| X-04 | S-4 | New task for admin and manager only | ✓ | Super admin too; never the lead |
+| X-05 | S-5 | New task form (activity, client, dates, urgency, visibility, owner, reviewer, repeats, remind before) | ✓ | Real tasks, `POST /api/compliances/tasks` |
+| X-06 | S-6 | Urgency pill with signal bars | ✓ | |
+| X-07 | S-7 | Visibility tag | ✓ | |
+| X-08 | S-8 | Strip counts follow the category | ✓ | |
+| X-09 | D-1 | Statutory detail header with the role action | ✓ | |
+| X-10 | D-2 | From the client, Filled by SBC, Reminders, Rule, Activity | ✓ | Reminders editable per row |
+| X-11 | D-3 | Progress steps, stage, owner, reviewer, previous periods | ✓ | Assign owner and reviewer |
+| X-12 | D-4 | Client page without internal parts | ✓ | Six-step Progress only |
+| X-13 | 4.3 | Non-statutory task page | ✓ | Edit task, delete checklist items and files |
+| X-14 | C-1 to C-4 | Calendar filter, hollow square, hover, all views and rail | ✓ | Staff, super admin and client |
+| X-15 | F-1 to F-3 | Filings filter, done tasks as rows, counts follow | ✓ | Staff, super admin and client |
+| X-16 | K-1, K-2 | Client Obligations with both categories, no New task | ✓ | Only tasks shared with the client |
+| X-17 | DR-01 | Activity master | ✓ | 43 rows from the owner's documents, seeded on first use |
+| X-18 | DR-02 | Entity-wise configuration | ◐ | Per occurrence; no per-client default for an activity yet |
+| X-19 | DR-03 to DR-16, DR-19, DR-21, DR-22 | Kinds, repeats, dates, reminders, roles, workflow, evidence, filters, audit, confirm, DR-22 hold | ✓ | Five activities with open owner points send no reminders until confirmed |
+| X-20 | DR-17 | Holidays and jurisdiction | ✗ | Not built; needs a holiday calendar |
+| X-21 | DR-18 | Duplicate handling | ✓ | Applied in the data file |
+| X-22 | DR-20 | Security and retention rules | ✗ | Not built; needs the owner's retention periods |
+| X-23 | — | Activity master edit screen | ✗ | The route exists; no screen yet |
+| X-24 | — | WhatsApp for compliance reminders | ✗ | Needs an approved Meta template |
