@@ -68,20 +68,6 @@ CREATE TABLE "dev_settings" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "engagement_fees" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"engagement_id" uuid NOT NULL,
-	"service" text NOT NULL,
-	"amount_rupees" integer NOT NULL,
-	"billing" text DEFAULT 'one_time' NOT NULL,
-	"status" text DEFAULT 'not_billed' NOT NULL,
-	"billed_on" date,
-	"paid_on" date,
-	"created_by" uuid,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "sign_in_links" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"profile_id" uuid NOT NULL,
@@ -123,8 +109,6 @@ ALTER TABLE "compliance_subject_fields" ADD CONSTRAINT "compliance_subject_field
 ALTER TABLE "dev_api_tokens" ADD CONSTRAINT "dev_api_tokens_created_by_profiles_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "dev_service_checks" ADD CONSTRAINT "dev_service_checks_checked_by_profiles_id_fk" FOREIGN KEY ("checked_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "dev_settings" ADD CONSTRAINT "dev_settings_updated_by_profiles_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "engagement_fees" ADD CONSTRAINT "engagement_fees_engagement_id_engagements_id_fk" FOREIGN KEY ("engagement_id") REFERENCES "public"."engagements"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "engagement_fees" ADD CONSTRAINT "engagement_fees_created_by_profiles_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sign_in_links" ADD CONSTRAINT "sign_in_links_profile_id_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "whatsapp_verify_codes" ADD CONSTRAINT "whatsapp_verify_codes_user_id_profiles_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "assist_runs_subject_idx" ON "assist_runs" USING btree ("engagement_id","subject_kind","subject_key","started_at");--> statement-breakpoint
@@ -132,7 +116,6 @@ CREATE UNIQUE INDEX "assist_runs_idempotency_idx" ON "assist_runs" USING btree (
 CREATE UNIQUE INDEX "compliance_subject_fields_uq" ON "compliance_subject_fields" USING btree ("engagement_id","subject_kind","subject_key","field_key");--> statement-breakpoint
 CREATE UNIQUE INDEX "dev_api_tokens_hash_uq" ON "dev_api_tokens" USING btree ("token_hash");--> statement-breakpoint
 CREATE INDEX "dev_service_checks_service_at_idx" ON "dev_service_checks" USING btree ("service","checked_at");--> statement-breakpoint
-CREATE INDEX "engagement_fees_engagement_idx" ON "engagement_fees" USING btree ("engagement_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "sign_in_links_provider_subject_uidx" ON "sign_in_links" USING btree ("provider","subject");--> statement-breakpoint
 CREATE UNIQUE INDEX "sign_in_links_profile_provider_uidx" ON "sign_in_links" USING btree ("profile_id","provider");--> statement-breakpoint
 CREATE INDEX "whatsapp_verify_codes_user_idx" ON "whatsapp_verify_codes" USING btree ("user_id","created_at");--> statement-breakpoint

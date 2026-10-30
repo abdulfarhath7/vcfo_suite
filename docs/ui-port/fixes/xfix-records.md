@@ -1,5 +1,15 @@
 # X-fix: board resolutions, staff sign-in settings, super admin client record (30 Oct 2026)
 
+## Fees removed (owner decision, 30 Oct)
+
+The Fees tab (P-100) was removed completely after this report was written: the tab and its dialog
+(`SuperProjectFees.tsx`), the routes `app/api/engagements/[id]/fees/**`, the repository
+`engagement-fees.ts` and its test, `src/lib/fees/*`, and the `engagementFees` table in
+`src/db/schema-firm.ts`. P-100 is not built. The hub must drop `engagement_fees` from migration
+0029 (`0029_spectrum_x_rows.sql` lines 71, 126, 127, 135 and `meta/0029_snapshot.json`). The
+P-100 row, its files, routes and schema entries below are kept only as history. After the removal
+`tsc` is clean, vitest near the files passes (7 files, 67 tests) and eslint has 0 errors.
+
 | No. | New status | What you did, or why it stays |
 |---|---|---|
 | S-556 | ✓ | New route `/app/manager/projects/[slug]/board-resolution` renders the same editor. The manager may edit while the draft is with them (the server already allowed it: `assertLeadMayEdit` only locks the lead), and the Stage card gives "Approve and send to client" (the existing finalize route) and "Send back" with a note (the existing `pre-2` review) while the lead's request is pending. The lead-only "Send for manager approval" button is hidden. Access: the manager shell's role guard, then every API call goes through `assertEngagementBoardResolutionAccess` → `getEngagementById` (role scope). |

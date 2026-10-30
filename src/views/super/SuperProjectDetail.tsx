@@ -13,7 +13,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
 import { SuperProjectTimeline } from '@/components/super/project/SuperProjectTimeline';
-import { SuperProjectFees } from '@/components/super/project/SuperProjectFees';
 import {
   SuperActivityPanel,
   SuperFilingsPanel,
@@ -45,10 +44,10 @@ import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
  * Under it one white band with the step, steps done, who holds the work and the
  * live step, then underline tabs (R-11): Steps opens on the Gantt timeline (R-21)
  * over the step list, then registrations, filings, documents, escalations, team
- * and activity. Step work stays in the firm shell. Fees (P-100) reads `engagement_fees`; the
+ * and activity. Step work stays in the firm shell. The
  * head links to the super admin's board resolution editor (P-112).
  */
-type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'notes' | 'fees' | 'team' | 'activity';
+type TabKey = 'steps' | 'registrations' | 'filings' | 'documents' | 'escalations' | 'notes' | 'team' | 'activity';
 
 export default function SuperProjectDetail() {
   const params = useParams();
@@ -134,7 +133,6 @@ export default function SuperProjectDetail() {
     { key: 'documents', label: 'Documents', count: detail.documents.length },
     { key: 'escalations', label: 'Escalations' },
     { key: 'notes', label: 'Notes' },
-    { key: 'fees', label: 'Fees' },
     { key: 'team', label: 'Team', count: detail.team.length },
     { key: 'activity', label: 'Audit' },
   ];
@@ -273,7 +271,6 @@ export default function SuperProjectDetail() {
         {tab === 'documents' ? <SuperProjectDocuments detail={detail} /> : null}
         {tab === 'escalations' ? <EscalationsPanel engagementId={summary.id} canResolve /> : null}
         {tab === 'notes' ? <EngagementNotesPanel engagementId={summary.id} /> : null}
-        {tab === 'fees' ? <SuperProjectFees engagementId={summary.id} /> : null}
         {tab === 'team' ? <SuperTeamPanel detail={detail} /> : null}
         {tab === 'activity' ? <SuperActivityPanel detail={detail} /> : null}
       </div>

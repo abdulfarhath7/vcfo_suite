@@ -314,6 +314,76 @@ export const devApiTokens = pgTable(
 );
 
 /**
+ * Outbound mail that FAILED, kept for 30 days so the developer console can send it again
+ * (Messages › Retry). Written by `src/lib/email/send-email.ts` only when the provider refused
+ * the mail; a successful mail is never stored, and a successful retry deletes the row.
+ */
+export const failedEmails = pgTable(
+  'failed_emails',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Recipients as given to sendEmail. */
+    toAddresses: jsonb('to_addresses').$type<string[]>().notNull(),
+    /** Copy recipients. */
+    ccAddresses: jsonb('cc_addresses').$type<string[]>().notNull().default([]),
+    /** Reply-To addresses. */
+    replyTo: jsonb('reply_to').$type<string[]>().notNull().default([]),
+    /** The From override, when the caller gave one. */
+    fromAddress: text('from_address'),
+    /** Subject line. */
+    subject: text('subject').notNull(),
+    /** The template key: sendEmail's `purpose`, for example 'welcome'. */
+    templateKey: text('template_key'),
+    /** The rendered mail (render data): HTML body. */
+    html: text('html').notNull(),
+    /** The rendered mail: plain-text body. */
+    textBody: text('text_body').notNull(),
+    /** True when the mail had attachments; they are not stored, so it cannot be retried. */
+    hadAttachments: boolean('had_attachments').notNull().default(false),
+    /** The provider's error, short. */
+    error: text('error'),
+    /** How many sends were tried, the first one included. */
+    attempts: integer('attempts').notNull().default(1),
+    /** When it first failed. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** When the last try ran. */
+    lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    createdIdx: index('failed_emails_created_idx').on(t.createdAt),
+  }),
+);
+
+/**
+ * One row per file the app exported (audit log CSV, vault ZIP, partner report PDF or CSV,
+ * client audit CSV). The file is kept in S3 under `exports/` for 30 days. Listed on the
+ * developer console (Data and costs › Exports).
+ */
+export const exportFiles = pgTable(
+  'export_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** What was exported: 'audit_log' | 'vault_zip' | 'partner_report' | 'client_audit' | 'client_vault_zip'. */
+    kind: text('kind').notNull(),
+    /** 'csv' | 'zip' | 'pdf'. */
+    format: text('format').notNull(),
+    /** The file name the person received. */
+    fileName: text('file_name').notNull(),
+    /** Size in bytes. */
+    sizeBytes: integer('size_bytes').notNull().default(0),
+    /** Who made it. */
+    madeBy: uuid('made_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** S3 key under exports/, or null when the copy was not kept (too large, or the upload failed). */
+    objectKey: text('object_key'),
+    /** When it was made. */
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    createdIdx: index('export_files_created_idx').on(t.createdAt),
+  }),
+);
+
+/**
  * A staff profile's link to an outside sign-in (S-650): today only Microsoft Entra ID. Made on the
  * first Microsoft sign-in whose email matches an existing active profile; Microsoft sign-in never
  * creates a profile. The owner reads and removes their own link (`src/db/repositories/sign-in-links.ts`).
@@ -341,43 +411,5 @@ export const signInLinks = pgTable(
   (t) => ({
     providerSubjectUidx: uniqueIndex('sign_in_links_provider_subject_uidx').on(t.provider, t.subject),
     profileProviderUidx: uniqueIndex('sign_in_links_profile_provider_uidx').on(t.profileId, t.provider),
-  }),
-);
-
-/**
- * Fees on one engagement, by service (P-100, the super admin client record's Fees tab). Admin,
- * super admin and the engagement's manager write; the same roles read through the engagement
- * scope (`src/db/repositories/engagement-fees.ts`). Outstanding is a billed line not yet paid.
- */
-export const engagementFees = pgTable(
-  'engagement_fees',
-  {
-    /** Row id. */
-    id: uuid('id').primaryKey().defaultRandom(),
-    /** The engagement the fee belongs to. */
-    engagementId: uuid('engagement_id')
-      .notNull()
-      .references(() => base.engagements.id, { onDelete: 'cascade' }),
-    /** The service the fee is for, for example 'Incorporation' or 'GST returns'. */
-    service: text('service').notNull(),
-    /** The fee in whole rupees. */
-    amountRupees: integer('amount_rupees').notNull(),
-    /** How it is billed: 'one_time' | 'monthly' | 'milestone'. */
-    billing: text('billing').notNull().default('one_time'),
-    /** Where it stands: 'not_billed' | 'billed' | 'paid'. */
-    status: text('status').notNull().default('not_billed'),
-    /** The day the invoice went out; the outstanding age counts from here. */
-    billedOn: date('billed_on'),
-    /** The day the payment came in. */
-    paidOn: date('paid_on'),
-    /** Who added the line. */
-    createdBy: uuid('created_by').references(() => base.profiles.id, { onDelete: 'set null' }),
-    /** When the line was added. */
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    /** When the line last changed. */
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    engagementIdx: index('engagement_fees_engagement_idx').on(t.engagementId),
   }),
 );
