@@ -61,7 +61,38 @@ docker build -t vcfo-suite:local . && docker tag vcfo-suite:local 600627321277.d
 ```
 
 Schema changes: run `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate`
-with the RDS `DATABASE_URL` before (or right after) the push.
+with the RDS `DATABASE_URL` before (or right after) the push. Once
+`db_managed_password` is on, get that URL with
+`export DATABASE_URL="$(node scripts/db-url-prod.mjs)"`, which reads the
+rotating RDS master secret through your AWS CLI login.
+
+## Switching to the rotating DB password
+
+SOC 2 finding #370: the `vcfo-suite/DATABASE_URL` secret never rotates. With
+`db_managed_password = true` RDS owns the master password, keeps it in its own
+secret and rotates it every 7 days; the app reads it per new connection
+(`src/db/client.ts`, `DB_SECRET_ARN`). Do it in this order:
+
+1. Deploy an image that contains the new `src/db/client.ts` while the flag is
+   still false. With `DATABASE_URL` set the app behaves exactly as before.
+2. At night, set `db_managed_password = true` in tfvars and apply **twice, back
+   to back**. The first apply switches RDS to the managed password (the old
+   password stops working); the second sees the new secret's ARN and moves App
+   Runner to `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USER`/`DB_SECRET_ARN`. Expect
+   2 to 5 minutes of failed new DB connections while App Runner redeploys. If
+   the second plan shows no App Runner change, RDS has not finished: check
+   `aws rds describe-db-instances` for `MasterUserSecret` and plan again.
+3. Log in to the app. Then run
+   `aws secretsmanager rotate-secret --secret-id <MasterUserSecret ARN>` (or
+   `aws rds modify-db-instance --db-instance-identifier vcfo-suite-db
+   --rotate-master-user-password --apply-immediately`), wait a minute, and
+   confirm the app still logs in and loads pages. Then check that
+   `MasterUserSecret.SecretStatus` in `describe-db-instances` is `active`, not
+   `impaired`: `impaired` means the deny-all secret policy blocks RDS's own
+   rotation, and the policy needs an exception for AWS services.
+4. The second apply deletes the old `DATABASE_URL` secret with a 7-day recovery
+   window. Turning the flag off inside that window fails on the secret name;
+   restore the secret (`aws secretsmanager restore-secret`) and import it first.
 
 ## Email (SES)
 

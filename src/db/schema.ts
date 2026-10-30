@@ -303,8 +303,56 @@ export const engagementBoardResolutions = pgTable('engagement_board_resolutions'
   /** When the finalized draft was sent to the client for signing (S-573); null until then. */
   sentToClientAt: timestamp('sent_to_client_at', { withTimezone: true }),
   sentToClientBy: uuid('sent_to_client_by').references(() => profiles.id, { onDelete: 'set null' }),
+  /*
+   * Board resolution (NOC) receive steps (R-52, docs/ui-port/BR-NOC-API.md). Notarised and
+   * Apostilled apply to a foreign parent only; staff stamp them by ticking the matching receive
+   * check. Accepted closes the document; a copy received before this build is backfilled.
+   */
+  notarisedAt: timestamp('notarised_at', { withTimezone: true }),
+  notarisedBy: uuid('notarised_by').references(() => profiles.id, { onDelete: 'set null' }),
+  apostilledAt: timestamp('apostilled_at', { withTimezone: true }),
+  apostilledBy: uuid('apostilled_by').references(() => profiles.id, { onDelete: 'set null' }),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  acceptedBy: uuid('accepted_by').references(() => profiles.id, { onDelete: 'set null' }),
+  sentBackAt: timestamp('sent_back_at', { withTimezone: true }),
+  sentBackBy: uuid('sent_back_by').references(() => profiles.id, { onDelete: 'set null' }),
+  sentBackReason: text('sent_back_reason'),
+  /** Receive checklist ticks: `{ [checkKey]: { by: profileId, at: iso } }`. Cleared by a new signed upload. */
+  receiveChecks: jsonb('receive_checks').notNull().default({}),
+  /** D1: SBC turned the notary and apostille steps off for this client. */
+  notaryStepsOff: boolean('notary_steps_off').notNull().default(false),
+  /** Staff "Change template" override (a NocVariant); null follows the project answers. */
+  templateVariant: text('template_variant'),
+  templateChangedAt: timestamp('template_changed_at', { withTimezone: true }),
+  templateChangedBy: uuid('template_changed_by').references(() => profiles.id, { onDelete: 'set null' }),
+  templateChangeReason: text('template_change_reason'),
+  /** The Vault row the accepted signed copy was filed as (T6). */
+  vaultDocumentId: uuid('vault_document_id'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One row per generated board resolution draft (T4 Compare versions, T3 out-of-date mark).
+ * `fields` is the merge-value snapshot from `nocSnapshotFields()` (answers only, never inline
+ * edits). Additive; written by the generate route through the board-resolution repository.
+ */
+export const engagementBoardResolutionVersions = pgTable(
+  'engagement_board_resolution_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    variant: text('variant').notNull(),
+    fields: jsonb('fields').notNull().default({}),
+    createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueVersion: uniqueIndex('engagement_br_versions_unique').on(t.engagementId, t.version),
+  }),
+);
 
 /**
  * Uploaded .docx templates. Reconciled against

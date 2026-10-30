@@ -171,6 +171,26 @@ const credentials: RouteCheck = async (page) => {
   }
 };
 
+/** R-52: the client's board resolution (NOC) page: the head, "Passed by" and the decision tree. */
+const clientBoardResolution: RouteCheck = async (page) => {
+  await expect(page.getByRole('heading', { name: /Board resolution \(NOC\)/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^Passed by: Board of /)).toBeVisible();
+  await expect(page.getByText('Why VCFO chose this template')).toBeVisible();
+  const replay = page.getByRole('button', { name: 'Replay the chosen path' });
+  await replay.click();
+  await expect(page.getByText('Project setup · Ownership type')).toBeVisible();
+};
+
+/** R-52: the staff board resolution (NOC) page: the head, the template card and the evidence. */
+const staffBoardResolution: RouteCheck = async (page) => {
+  await expect(page.getByRole('heading', { name: /Board resolution \(NOC\)/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('region', { name: 'Template' })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('region', { name: 'Why VCFO chose this template' })).toBeVisible();
+  await page.getByRole('button', { name: 'Compare versions' }).click();
+  await expect(page.getByRole('dialog', { name: 'Compare versions' })).toBeVisible();
+  await page.keyboard.press('Escape');
+};
+
 const STAFF_COMMON = [
   'announcements',
   'audit-log',
@@ -195,6 +215,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/super/projects',
     '/app/super/risks',
     '/app/super/practice/incorporation',
+    [`/app/super/projects/${PROJECT}/board-resolution`, staffBoardResolution],
     '/app/super/practice/registrations',
     '/app/super/team',
     '/app/super/growth',
@@ -232,6 +253,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     `/app/admin/projects/${PROJECT}/documents`,
     `/app/admin/projects/${PROJECT}/edit`,
     [`/app/admin/projects/${PROJECT}/step/${FORM_STEP}`, milestoneForm],
+    [`/app/admin/projects/${PROJECT}/board-resolution`, staffBoardResolution],
     ['/app/admin/settings', accountSettings],
     ...STAFF_COMMON.map((p) => `/app/admin/${p}`),
   ],
@@ -249,6 +271,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     `/app/manager/projects/${PROJECT}/documents`,
     `/app/manager/projects/${PROJECT}/edit`,
     [`/app/manager/projects/${PROJECT}/step/${FORM_STEP}`, milestoneForm],
+    [`/app/manager/projects/${PROJECT}/board-resolution`, staffBoardResolution],
     ['/app/manager/settings', accountSettings],
     ...STAFF_COMMON.map((p) => `/app/manager/${p}`),
   ],
@@ -260,7 +283,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/intern/tasks',
     `/app/intern/engagements/${PROJECT}`,
     `/app/intern/engagements/${PROJECT}/documents`,
-    `/app/intern/engagements/${PROJECT}/board-resolution`,
+    [`/app/intern/engagements/${PROJECT}/board-resolution`, staffBoardResolution],
     [`/app/intern/engagements/${PROJECT}/step/${FORM_STEP}`, milestoneForm],
     ['/app/intern/settings', accountSettings],
     ...STAFF_COMMON.map((p) => `/app/intern/${p}`),
@@ -271,7 +294,7 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/client/incorporation',
     '/app/client/incorporation/phase/1',
     `/app/client/incorporation/step/${FORM_STEP}`,
-    '/app/client/board-resolution',
+    ['/app/client/board-resolution', clientBoardResolution],
     ['/app/client/credentials', credentials],
     '/app/client/documents',
     '/app/client/library',

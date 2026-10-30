@@ -1,0 +1,25 @@
+/* R-52 C8: the NOC decision tree. Tokens only, so it works inside the client portal (.cp) and
+   in the staff shell, light and dark. Every branch is grey; the chosen path is brand. The lit
+   state fades, so Replay walks the path; reduced motion shows it at once. */
+.box{overflow-x:auto;padding:12px 16px 4px}
+.box svg{display:block;min-width:760px;width:100%;height:auto}
+.tn rect{fill:oklch(var(--surface-raised));stroke:oklch(var(--line-strong));stroke-width:1.5}
+.tn text{fill:oklch(var(--ink-muted));font-size:13px;font-weight:500}
+.dash rect{stroke-dasharray:5 4;fill:oklch(var(--surface-sunken))}
+.root rect{fill:oklch(var(--ink));stroke:oklch(var(--ink))}
+.root text{fill:oklch(var(--surface-raised))}
+.on:not(.root) rect{stroke:oklch(var(--brand));stroke-width:2;fill:oklch(var(--brand-soft))}
+.on:not(.root) text{fill:oklch(var(--brand-text))}
+.end.on rect,.dash.on rect{fill:oklch(var(--brand))}
+.end.on text,.dash.on text{fill:oklch(var(--on-brand))}
+.tn rect,.tn text,.te{transition:fill .25s,stroke .25s,opacity .25s}
+.te{fill:none;stroke:oklch(var(--line-strong));stroke-width:1.5}
+.te.on{stroke:oklch(var(--brand));stroke-width:2.5}
+.tlbl{font-size:10.5px;font-weight:500;letter-spacing:.06em;fill:oklch(var(--ink-faint))}
+.tlbl.on{fill:oklch(var(--brand-text))}
+.badge circle,.chosen rect{fill:oklch(var(--brand))}
+.badge text{fill:oklch(var(--on-brand));font-size:11px;font-weight:700}
+.chosen text{fill:oklch(var(--on-brand));font-size:10px;font-weight:700;letter-spacing:.06em}
+.badge,.chosen{animation:fadein .25s ease-out}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.tn rect,.tn text,.te{transition:none}.badge,.chosen{animation:none}}

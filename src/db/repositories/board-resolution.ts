@@ -333,6 +333,17 @@ export async function setSignedBoardResolution(
       signedStoragePath: path,
       signedUploadedAt: now,
       signedUploadedBy: ctx.userId,
+      // A new copy starts the NOC receive checks again (R-52): the old ticks, the notary and
+      // apostille stamps and a send back belonged to the copy it replaces. An accepted copy
+      // stays accepted until staff look at the new one.
+      receiveChecks: {},
+      notarisedAt: null,
+      notarisedBy: null,
+      apostilledAt: null,
+      apostilledBy: null,
+      sentBackAt: null,
+      sentBackBy: null,
+      sentBackReason: null,
       updatedAt: now,
     })
     .where(eq(engagementBoardResolutions.engagementId, engagement.id))

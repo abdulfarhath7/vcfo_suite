@@ -1,83 +1,87 @@
 'use client';
 
 /**
- * BOARD RESOLUTION — `/app/client/board-resolution` (VCFO Spectrum, prototype
- * src/screens/client/BoardResolutionScreen.tsx): a plain page head with links to steps 2
- * and 3, the Drafted → Released → Signed → Received ST5 track, the preview card (zoom
- * 60–160 %, full screen = shared document viewer) and the Files card (Word draft, signed
- * copy, Replace signed copy drop zone). Real data: the board-resolution repository
- * (`GET /api/engagements/:id/board-resolution`, download / download-signed /
- * upload-signed routes) and `GET /api/client/incorporation` for names.
+ * BOARD RESOLUTION (NOC) — `/app/client/board-resolution` (rule R-52, prototype
+ * docs/BOARD-RESOLUTION-NOC.md section 3). The NOC is the parent's Pre-2 board resolution, one
+ * document in three variants. The page has the head ("Passed by: Board of {parent}", the variant
+ * as subtitle, Previous and Next step), the ST5 track (Notarised and Apostilled for a foreign
+ * parent only), Key facts, What you do with one main button, the preview with the Draft tab
+ * (tinted filled values) and the Signed copy tab (the uploaded file only, never a drawn
+ * signature), Files (no internal file name, P5) and the full decision tree.
+ *
+ * Real data: the board-resolution repository (`GET /api/engagements/:id/board-resolution`,
+ * download / download-signed / upload-signed routes), the NOC state route
+ * (`GET /api/engagements/:id/board-resolution/noc`, docs/ui-port/BR-NOC-API.md) and
+ * `GET /api/client/incorporation` for names. The shared parts come from `@/components/board-doc`.
  */
-import { CircleHelp, Download, Eye, Maximize2, Minus, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { CircleHelp, Download, Maximize2, Minus, Plus, RotateCcw, Upload } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
-import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
-import {
-  BOARD_RESOLUTION_DOCX_FILENAME,
-  uploadSignedBoardResolution,
-  validateSignedBoardResolutionFile,
-} from '@/lib/board-resolution/board-resolution-storage';
+import { buildBoardResolutionMergeFields, formatIndianFigures, type BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import { uploadSignedBoardResolution, validateSignedBoardResolutionFile } from '@/lib/board-resolution/board-resolution-storage';
 import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
+import type { NocState } from '@/lib/noc/state';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
+import {
+  DocFiles,
+  DocPaper,
+  DocPreviewCard,
+  DocTodo,
+  DocTrack,
+  EvidenceTable,
+  SignedCopyView,
+  VariantTree,
+  docDay,
+  nocDocModel,
+  nocDocType,
+  nocMergeValues,
+  todoStates,
+  treePath,
+  NOC_STAGE_KEYS,
+  type DocFile,
+  type DocPreviewTab,
+  type MergeValue,
+} from '@/components/board-doc';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
-import { useDocViewer } from '../documents/DocViewer';
+import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
-import { StepMark } from '@/components/ui/step-track';
-import { FileBadge } from '@/components/ui/file-badge';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { toastSaved } from '@/components/ui/toast-saved';
-import { IncFrame, fmt, istDay } from './ui';
+import { IncFrame, istDay } from './ui';
 import { INC_EXTRAS_KEY, firstName, signedUrlFor, stepHrefOf, useIncData } from './data';
-import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, SCard, type PageHeadLink } from './spectrum';
+import { Col, Cols, Dot, DropZone, Empty, Island, PageHead, SCard, type PageHeadLink } from './spectrum';
+import { NOC_CLIENT_FILENAME, known, nocMainAction, nocPhase, nocRecords, nocTrackVariant, nocVariantLabel } from './board/noc';
 
-/** A merge value still holding its template placeholder ("[Designation]") is not known yet. */
-function known(v: string | undefined): string {
-  const t = (v ?? '').trim();
-  return t && !/^\[.*\]$/.test(t) && !/^_+$/.test(t) ? t : '';
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const UPLOAD_ACCEPT = `.pdf,.docx,application/pdf,${DOCX_TYPE}`;
+
+/** The NOC state for this engagement (BR-NOC-API.md). Null when the route has nothing. */
+async function fetchNoc(engagementId: string): Promise<NocState | null> {
+  const res = await fetch(`/api/engagements/${engagementId}/board-resolution/noc`, { credentials: 'include' });
+  if (!res.ok) return null;
+  const body = (await res.json().catch(() => null)) as { ok?: boolean; noc?: NocState } | null;
+  return body?.noc ?? null;
 }
 
-/**
- * C-247, C-248: where the certified copy is signed and stamped (prototype BoardResolutionScreen
- * signature block and CompanyStamp). The names come from the Part A answers that fill the Word
- * draft (authorised person, designation, parent company, place). The line and the stamp ring
- * stay empty: the real signature and stamp are on the signed copy the client uploads.
- */
-function SignOff({ fields, signedOn }: { fields?: ReturnType<typeof buildBoardResolutionMergeFields>; signedOn?: string }) {
-  const parent = known(fields?.PARENT_ENTITY_NAME);
-  const signer = known(fields?.SIGNATORY_NAME);
-  const role = known(fields?.SIGNATORY_DESIGNATION);
-  const place = known(fields?.CERTIFICATION_PLACE);
+/** "10,00,000" from the raw answer, or '' when it is not given. */
+function inr(raw: unknown): string {
+  const t = String(raw ?? '').trim();
+  return t && /\d/.test(t) ? formatIndianFigures(t) : '';
+}
+
+/** C3: one row of the Key facts card. A missing value is "Not given yet" in faint ink. */
+function Fact({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-t border-line-soft px-4 py-4 md:px-5" aria-label="Signature and stamp">
-      <div className="min-w-[180px]">
-        <div className="text-[12px] text-ink-muted">{parent ? `For ${parent}` : 'For the parent company'}</div>
-        <div className="mt-8 w-[200px] max-w-full border-b border-ink-2" role="img" aria-label={signedOn ? 'Signed on the uploaded copy' : 'Not signed yet'} />
-        <div className={cn('mt-1.5 text-[13px] font-medium', signer ? 'text-ink' : 'text-ink-faint')}>{signer || '-'}</div>
-        <div className="text-[12px] text-ink-muted">{[role || 'Authorised person', parent].filter(Boolean).join(', ')}</div>
-      </div>
-      <div className="flex items-end gap-5">
-        <span
-          className="grid h-[74px] w-[74px] flex-none -rotate-12 place-items-center rounded-full border-2 border-dashed border-line-strong text-center"
-          role="img"
-          aria-label={parent ? `Company stamp area · ${parent}` : 'Company stamp area'}
-        >
-          <span className="grid h-[62px] w-[62px] place-items-center rounded-full border border-dashed border-line px-1.5 font-serif text-[9px] font-bold uppercase leading-tight text-ink-faint">
-            <span className="line-clamp-3 break-words">{parent || 'Company stamp'}</span>
-          </span>
-        </span>
-        <div className="text-right text-[12px] text-ink-muted">
-          <div>Place: {place || '-'}</div>
-          <div>Date: {signedOn ? fmt(signedOn) : '-'}</div>
-        </div>
-      </div>
+    <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 border-t border-line-soft px-4 py-2.5 text-[13px] first:border-t-0 md:px-5">
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className={cn('m-0 min-w-0 break-words', value ? 'font-medium text-ink' : 'text-ink-faint')}>{value || 'Not given yet'}</dd>
     </div>
   );
 }
@@ -85,15 +89,28 @@ function SignOff({ fields, signedOn }: { fields?: ReturnType<typeof buildBoardRe
 export default function BoardPage() {
   const d = useIncData();
   const { go, toast, openChat } = usePortal();
-  usePortalCrumbs(['Incorporation', 'Board resolution']);
+  usePortalCrumbs(['Incorporation', 'Board resolution (NOC)']);
   const qc = useQueryClient();
   const viewer = useDocViewer();
-  const { engagements, user, getStateForEngagement } = useApp();
+  const { engagements, getStateForEngagement } = useApp();
   const engagement = useMemo(() => engagements.find((e) => e.id === d.engagementId), [engagements, d.engagementId]);
   const [doc, setDoc] = useState<BoardResolutionDoc | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<DocPreviewTab | null>(null);
+  const [replayKey, setReplayKey] = useState(0);
+  const uploadRef = useRef<HTMLInputElement>(null);
+
+  const nocKey = useMemo(() => ['board-resolution-noc', d.engagementId ?? ''] as const, [d.engagementId]);
+  const nocQ = useQuery({
+    queryKey: nocKey,
+    queryFn: () => fetchNoc(d.engagementId!),
+    enabled: Boolean(d.engagementId),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const noc = nocQ.data ?? null;
 
   const load = useCallback(async () => {
     if (!d.engagementId) return;
@@ -108,15 +125,42 @@ export default function BoardPage() {
   useEffect(() => {
     void load();
   }, [load]);
-  useRealtimeBoardResolution({ appEngagementId: d.engagementId, onRemoteChange: () => void load() });
-  void user;
+  useRealtimeBoardResolution({
+    appEngagementId: d.engagementId,
+    onRemoteChange: () => {
+      void load();
+      void qc.invalidateQueries({ queryKey: nocKey });
+    },
+  });
 
-  const mergeFields = useMemo(() => {
-    const pre1 = checklist.find((c) => c.id === 'pre-1');
-    if (!engagement || !pre1) return undefined;
-    return buildBoardResolutionMergeFields({ engagement, pre1: extractItemResponses(pre1, getStateForEngagement(engagement)['pre-1']) });
-  }, [engagement, getStateForEngagement]);
+  const engState = engagement ? getStateForEngagement(engagement) : undefined;
+  const pre1 = useMemo(() => {
+    const item = checklist.find((c) => c.id === 'pre-1');
+    return item ? extractItemResponses(item, engState?.['pre-1']) : {};
+  }, [engState]);
+  const nominee = useMemo(() => {
+    const item = checklist.find((c) => c.id === 'pre-16');
+    return item ? known(String(extractItemResponses(item, engState?.['pre-16']).shareholderNominee ?? '')) : '';
+  }, [engState]);
+  const mergeFields = useMemo(() => (engagement ? buildBoardResolutionMergeFields({ engagement, pre1 }) : undefined), [engagement, pre1]);
+  const mergeValues = useMemo(() => nocMergeValues(mergeFields), [mergeFields]);
 
+  const answers = useMemo(
+    () =>
+      noc?.answers ?? {
+        ownershipType: engagement?.ownershipType ?? null,
+        companyType: engagement?.companyType ?? null,
+        parentIndianRelationship: engagement?.parentIndianRelationship ?? null,
+      },
+    [noc, engagement],
+  );
+  const variant = nocTrackVariant(noc, answers);
+  const variantLabel = nocVariantLabel(noc, answers);
+  const docType = nocDocType(variant, { notary: !noc?.notaryStepsOff });
+  // Pre-1's answer wins over the project's, as in the draft; never the new company's own name.
+  const parent = known(String(pre1.parentEntityName ?? '')) || known(noc?.parentName) || known(engagement?.parentEntityName);
+
+  const s1 = d.model.byId['pre-1'];
   const s2 = d.model.byId['pre-2'];
   const s3 = d.model.byId['pre-3'];
   const ex = d.extras?.boardResolution ?? null;
@@ -141,7 +185,37 @@ export default function BoardPage() {
   const signed = istDay(doc?.signedUploadedAt) ?? istDay(s3?.slice?.clientSubmittedAt) ?? (s3Path && s3?.kind === 'done' ? s3.doneOn : undefined);
   const received = istDay(ex?.receivedAt) ?? (s3?.kind === 'done' ? s3.doneOn : undefined);
   const signedName = (doc?.signedStoragePath || s3Path).split('/').pop()?.replace(/^\d+-/, '') || 'signed copy';
+  const signedType = /\.docx?$/i.test(signedName) ? DOCX_TYPE : /\.pdf$/i.test(signedName) ? 'application/pdf' : '';
   const signedUrl = signedHref ? async () => signedHref : s3Path ? () => signedUrlFor(s3Path) : null;
+
+  const records = nocRecords(noc, {
+    drafted,
+    released,
+    releasedBy: ex?.finalizedByName ? firstName(ex.finalizedByName) : undefined,
+    signed,
+    signedBy: ex?.signedUploadedByName ? firstName(ex.signedUploadedByName) : d.short,
+    accepted: received,
+    acceptedBy: ex?.receivedByName ? firstName(ex.receivedByName) : undefined,
+    onFile: visible,
+  });
+  const phase = nocPhase(records);
+  const main = nocMainAction(phase);
+  const accepted = phase === 'accepted';
+  const todo = todoStates(docType, records);
+  const openStage = docType.stages.find((s) => !records[s.key]?.at);
+  const waitingOnClient = openStage?.key === NOC_STAGE_KEYS.signed;
+  const sentBack = !accepted && noc?.sentBack ? noc.sentBack : null;
+
+  // C8: the evidence rows, and the steps a foreign parent adds (D1) unless SBC turned them off.
+  const whyPath = treePath(answers);
+  const whyRows = whyPath.ev.rows;
+  const addedSteps = whyPath.ev.outcome === 'foreign' && !noc?.notaryStepsOff ? ['Notarise', 'Apostille'] : [];
+
+  const download = () => {
+    if (!downloadHref) return;
+    triggerDownload(downloadHref, NOC_CLIENT_FILENAME);
+    toast('Download started · Board resolution (NOC)');
+  };
 
   const replace = async (file: File) => {
     if (!d.engagementId) return;
@@ -155,6 +229,7 @@ export default function BoardPage() {
       const body = await uploadSignedBoardResolution(d.engagementId, file);
       setDoc((p) => (p ? { ...p, signedUploadedAt: body.signedUploadedAt ?? p.signedUploadedAt, signedStoragePath: body.signedStoragePath ?? p.signedStoragePath } : p));
       void qc.invalidateQueries({ queryKey: INC_EXTRAS_KEY });
+      void qc.invalidateQueries({ queryKey: nocKey });
       // M-28 (A1): an upload with no Undo shows the white toast with the green tick.
       toastSaved('Signed copy uploaded', { kind: 'uploaded', sub: `${firstName(d.leadName) || 'Your team'} will check it.` });
     } catch (e) {
@@ -164,82 +239,135 @@ export default function BoardPage() {
     }
   };
 
+  const draftDoc: ViewerDoc | null = downloadHref
+    ? { id: 'br-draft', name: NOC_CLIENT_FILENAME, url: async () => downloadHref, meta: 'Board resolution (NOC) · draft', contentType: DOCX_TYPE }
+    : null;
+  const signedDoc: ViewerDoc | null = signedUrl
+    ? { id: 'br-signed', name: 'Signed copy', url: signedUrl, meta: 'Board resolution (NOC) · signed copy', contentType: signedType }
+    : null;
+  const openSigned = () => signedDoc && viewer.open([signedDoc], 0);
   const openFull = () => {
-    if (!visible) {
-      if (signedUrl) viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0);
+    if (!visible || !draftDoc) {
+      openSigned();
       return;
     }
-    if (!downloadHref) return;
-    const docs = [{ id: 'br-draft', name: BOARD_RESOLUTION_DOCX_FILENAME, url: async () => downloadHref, meta: 'Board resolution · draft', contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }];
-    if (signedHref) docs.push({ id: 'br-signed', name: signedName, url: async () => signedHref, meta: 'Board resolution · signed copy', contentType: '' });
-    viewer.open(docs, 0);
+    viewer.open(signedDoc ? [draftDoc, signedDoc] : [draftDoc], 0);
   };
 
-  const stages: Array<[string, string | undefined, boolean]> = [
-    ['Drafted', drafted ? `SBC · ${fmt(drafted)}` : 'SBC', Boolean(drafted || visible || released)],
-    ['Released', released ? fmt(released) : undefined, Boolean(released)],
-    ['Signed', signed ? `${d.short} · ${fmt(signed)}` : d.short, Boolean(signed)],
-  ];
+  /* C5: a click on a filled value opens step 1 while the client can still change it there. */
+  const canEdit = (v: MergeValue) => v.source.startsWith('Pre-1') && s1?.kind === 'you' && s1.canOpen;
+  const onField = (v: MergeValue) => {
+    if (!s1) return;
+    toast(`${v.source.replace(/^Pre-1 · /, '')} · step ${s1.n}`);
+    go(stepHrefOf(s1));
+  };
 
   const answer = {
-    title: 'Board resolution',
-    text: `${d.short}’s parent board authorises the India subsidiary. SBC drafts it, a director signs it, and ${d.short} uploads the signed copy.`,
+    title: 'Board resolution (NOC)',
+    text: `${parent || 'The parent company'}’s board authorises the India company. SBC drafts it, a director signs it, and ${d.short} uploads the signed copy.`,
     why: 'The name application in step 4 cannot be filed without it.',
     source: 'Companies Act 2013 · SPICe+ Part A',
     href: '/app/client/board-resolution',
   };
 
-  const stepLinks: PageHeadLink[] = [s2, s3].filter((x): x is NonNullable<typeof x> => Boolean(x)).map((x) => ({ href: stepHrefOf(x), label: `${x.n} · ${x.title}`, dir: 'next' as const }));
-  const headChip = received ? <Chip tone="ok">Done</Chip> : signed ? <Chip tone="prog">In progress</Chip> : visible ? <Chip tone="teal">Waiting</Chip> : null;
-  const track: Array<{ label: string; sub?: string; done: boolean }> = [
-    ...stages.map(([label, sub, done]) => ({ label, sub, done })),
-    {
-      label: 'Received by SBC',
-      sub: received ? `${ex?.receivedByName ? `${firstName(ex.receivedByName)} · ` : ''}${fmt(received)}` : undefined,
-      done: Boolean(received),
-    },
+  // C1: "Previous step" and "Next step" only; the page itself covers steps 2 and 3 (P6).
+  const steps = d.model.steps;
+  const at2 = s2 ? steps.indexOf(s2) : -1;
+  const at3 = s3 ? steps.indexOf(s3) : -1;
+  const prevStep = at2 > 0 ? steps[at2 - 1] : undefined;
+  const nextStep = at3 >= 0 ? steps[at3 + 1] : undefined;
+  const stepLinks: PageHeadLink[] = [
+    ...(prevStep ? [{ href: stepHrefOf(prevStep), label: 'Previous step', dir: 'prev' as const }] : []),
+    ...(nextStep ? [{ href: stepHrefOf(nextStep), label: 'Next step', dir: 'next' as const }] : []),
   ];
-  // The first open stage names who holds it now.
-  const nowAt = track.findIndex((x) => !x.done);
-  if (nowAt === 2) track[2]!.sub = `Waiting on ${d.short}`;
-  if (nowAt === 3) track[3]!.sub = 'With SBC';
+  const headChip = accepted ? <Chip tone="ok">Done</Chip> : phase === 'sent' ? <Chip tone="prog">In progress</Chip> : visible ? <Chip tone="teal">Waiting</Chip> : null;
   const zoomBtn = 'h-[30px] w-[30px] min-w-0';
-  const openSigned = () => signedUrl && viewer.open([{ id: 'br-signed', name: signedName, url: signedUrl, meta: 'Board resolution · signed copy' }], 0);
-  const fileCount = (visible ? 1 : 0) + (signedUrl ? 1 : 0);
+  const shownTab: DocPreviewTab = tab ?? (visible ? 'draft' : 'signed');
+
+  const capital = (() => {
+    const auth = inr(pre1.authorisedShareCapital);
+    const paid = inr(pre1.paidUpShareCapital);
+    const nominal = inr(pre1.nominalValuePerEquityShare);
+    const parts = [auth && `₹${auth} authorised`, paid && `₹${paid} paid up`, nominal && `₹${nominal} a share`].filter(Boolean);
+    return parts.join(' · ');
+  })();
+  const shares =
+    variant === 'indian-name-only'
+      ? parent
+        ? `${parent} lends its name only`
+        : ''
+      : parent
+        ? [`${parent} (parent)`, nominee ? `${nominee}, 1 share (nominee)` : ''].filter(Boolean).join(' · ')
+        : '';
+  const signer = [known(mergeFields?.SIGNATORY_NAME), known(mergeFields?.SIGNATORY_DESIGNATION)].filter(Boolean).join(', ');
+
+  const files: DocFile[] = [
+    ...(visible ? [{ id: 'br-draft', title: 'Draft · Word', type: 'DOCX' as const, status: 'Released', by: records.released?.by ?? 'SBC', at: records.released?.at }] : []),
+    ...(signedUrl
+      ? [
+          {
+            id: 'br-signed',
+            title: 'Signed copy',
+            type: signedType === DOCX_TYPE ? ('DOCX' as const) : ('PDF' as const),
+            status: accepted ? 'Accepted' : 'Sent',
+            by: records.signed?.by ?? d.short,
+            at: records.signed?.at,
+          },
+        ]
+      : []),
+  ];
+
+  const draftBody = !visible ? (
+    <Empty
+      action={
+        signedUrl ? (
+          <Button variant="secondary" onClick={openSigned}>
+            Open the signed copy
+          </Button>
+        ) : undefined
+      }
+    >
+      {signedUrl ? 'The Word draft is not on file. The signed copy from step 3 is.' : 'The board resolution file is not on file yet'}
+    </Empty>
+  ) : doc?.content?.trim() && mergeFields ? (
+    <div className="pvw">
+      <div className="origin-top" style={{ transform: `scale(${zoom})` }}>
+        <DocPaper model={nocDocModel({ content: doc.content, fields: mergeFields })} values={mergeValues} onField={onField} canEdit={canEdit} />
+      </div>
+    </div>
+  ) : (
+    <div className="pvw">
+      <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
+        <div className="cp-tw">
+          {d.engagementId ? (
+            <BoardResolutionDocPreview engagementId={d.engagementId} downloadUrl={downloadHref} refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`} mergeFields={mergeFields} />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <IncFrame pending={d.pending || !loaded} title="Board resolution · Incorporation · VCFO Suite">
+    <IncFrame pending={d.pending || !loaded} title="Board resolution (NOC) · Incorporation · VCFO Suite">
       <div className="wrap">
         <Island className="grid grid-cols-1 gap-5">
           <PageHead
-            label="Board resolution"
-            title="Board resolution"
+            label="Board resolution (NOC)"
+            title="Board resolution (NOC)"
             chips={headChip}
             meta={
               <>
-                <span>Phase 1 · Name Application · steps 2-3</span>
-                {received ? (
-                  <>
-                    <Dot />
-                    <span>Signed copy received · {fmt(received)}</span>
-                  </>
-                ) : signed ? (
-                  <>
-                    <Dot />
-                    <span>Signed copy sent · {fmt(signed)}</span>
-                  </>
-                ) : null}
-                {visible || signedUrl ? (
-                  <>
-                    <Dot />
-                    <span>Certified true copy</span>
-                  </>
-                ) : null}
+                <span className="basis-full font-medium text-ink-2" data-testid="noc-variant">
+                  {variantLabel}
+                </span>
+                <span data-testid="noc-passed-by">Passed by: Board of {parent || 'the parent company'} (the parent)</span>
+                <Dot />
+                <span>Phase 1 · Steps 2–3</span>
               </>
             }
             links={stepLinks}
             actions={
-              <Button variant="quiet" size="sm" aria-label="What’s this? Board resolution" onClick={() => openChat('What’s this: Board resolution?', answer)}>
+              <Button variant="quiet" size="sm" aria-label="What’s this? Board resolution (NOC)" onClick={() => openChat('What’s this: Board resolution (NOC)?', answer)}>
                 <CircleHelp size={15} strokeWidth={1.6} aria-hidden />
                 What’s this?
               </Button>
@@ -268,33 +396,24 @@ export default function BoardPage() {
             </Empty>
           ) : (
             <>
-              {/* ST5 track (R-22): done stages are green squares with a tick, joined by a green line. */}
-              <section className="rounded-md border-1.5 border-line bg-surface-raised px-4 py-4 md:px-5" aria-label="Progress of the board resolution">
-                <ol className="m-0 flex list-none flex-col gap-3 p-0 md:flex-row md:items-start md:gap-0">
-                  {track.map((st, i) => (
-                    <li key={st.label} className="relative flex min-w-0 flex-1 items-center gap-2.5 md:flex-col md:items-start md:gap-2">
-                      {i < track.length - 1 ? (
-                        <span className={cn('absolute left-[30px] right-3 top-[10px] hidden h-[1.5px] md:block', st.done && track[i + 1]!.done ? 'bg-positive-mid' : 'bg-line')} aria-hidden />
-                      ) : null}
-                      <StepMark state={st.done ? 'done' : i === nowAt ? 'now' : 'next'} tone={i === nowAt && nowAt === 2 ? 'teal' : 'prog'} label={st.done ? 'Done' : i === nowAt ? 'Now' : 'Not started'} className="relative z-[1]" />
-                      <span className="min-w-0">
-                        <b className="block truncate text-[14px] font-medium text-ink">{st.label}</b>
-                        {st.sub ? <span className="block truncate text-[12.5px] text-ink-muted">{st.sub}</span> : null}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
+              {/* C2: ST5 track. Notarised and Apostilled only for a foreign parent (D1, D4). */}
+              <DocTrack
+                stages={docType.stages}
+                records={records}
+                nowLabel={waitingOnClient ? `Waiting on ${d.short}` : 'With SBC'}
+                nowTone={waitingOnClient ? 'teal' : 'prog'}
+                label="Progress of the board resolution"
+              />
 
               <Cols>
                 <Col>
-                  <SCard
-                    title="Preview"
-                    meta={visible ? `certified true copy · ${Math.round(zoom * 100)}%` : 'signed copy'}
-                    flush
+                  <DocPreviewCard
+                    tab={shownTab}
+                    onTab={setTab}
+                    meta={shownTab === 'draft' && visible ? `${Math.round(zoom * 100)}%` : undefined}
                     right={
                       <>
-                        {visible ? (
+                        {shownTab === 'draft' && visible ? (
                           <>
                             <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Zoom out" disabled={zoom <= 0.6} onClick={() => setZoom((z) => Math.max(0.6, Math.round((z - 0.1) * 10) / 10))}>
                               <Minus size={16} strokeWidth={1.6} aria-hidden />
@@ -304,118 +423,142 @@ export default function BoardPage() {
                             </Button>
                           </>
                         ) : null}
-                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Open full screen" onClick={openFull}>
+                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Open full screen" onClick={shownTab === 'signed' ? openSigned : openFull}>
                           <Maximize2 size={16} strokeWidth={1.6} aria-hidden />
                         </Button>
                       </>
                     }
-                  >
-                    {!visible ? (
-                      <Empty
-                        action={
-                          signedUrl ? (
-                            <Button variant="secondary" onClick={openSigned}>
-                              Open the signed copy
-                            </Button>
-                          ) : undefined
-                        }
-                      >
-                        {signedUrl ? 'The Word draft is not on file. The signed copy from step 3 is.' : 'The board resolution file is not on file yet'}
-                      </Empty>
-                    ) : (
-                      <div className="pvw">
-                        <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
-                          <div className="cp-tw">
-                            {d.engagementId ? (
-                              <BoardResolutionDocPreview
-                                engagementId={d.engagementId}
-                                downloadUrl={downloadHref}
-                                refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`}
-                                mergeFields={mergeFields}
-                              />
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {visible ? <SignOff fields={mergeFields} signedOn={signed} /> : null}
-                  </SCard>
+                    draft={draftBody}
+                    signed={
+                      <SignedCopyView
+                        file={signedUrl ? { name: signedName, url: signedUrl, contentType: signedType, uploadedAt: records.signed?.at, uploadedBy: records.signed?.by } : null}
+                        onOpenFull={signedUrl ? openSigned : undefined}
+                      />
+                    }
+                  />
                 </Col>
                 <Col>
-                  <SCard title="Files" meta={`${fileCount} file${fileCount === 1 ? '' : 's'}`} flush>
-                    {visible ? (
-                      <ListRow>
-                        <FileBadge type="DOCX" />
-                        <span className="min-w-0 flex-1" title={BOARD_RESOLUTION_DOCX_FILENAME}>
-                          <b className="block truncate font-medium text-ink">Draft · Word</b>
-                          <span className="block truncate text-[12.5px] text-ink-muted">
-                            <span className="text-positive">Released</span> · {BOARD_RESOLUTION_DOCX_FILENAME} · SBC{released ? ` · ${fmt(released)}` : ''}
-                          </span>
-                        </span>
-                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Preview Draft · Word" onClick={openFull}>
-                          <Eye size={16} strokeWidth={1.6} aria-hidden />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="quiet"
-                          className={zoomBtn}
-                          aria-label={`Download ${BOARD_RESOLUTION_DOCX_FILENAME}`}
-                          onClick={() => {
-                            triggerDownload(downloadHref, BOARD_RESOLUTION_DOCX_FILENAME);
-                            toast(`Download started · ${BOARD_RESOLUTION_DOCX_FILENAME}`);
-                          }}
-                        >
-                          <Download size={16} strokeWidth={1.6} aria-hidden />
-                        </Button>
-                      </ListRow>
+                  {/* C3: values only, from the project and the Pre-1 answers. */}
+                  <SCard title="Key facts" flush>
+                    <dl className="m-0">
+                      <Fact label="New company" value={known(mergeFields?.PROPOSED_NAME_1) || d.companyName} />
+                      <Fact label="Capital" value={capital} />
+                      <Fact label="Shares" value={shares} />
+                      <Fact label="Signs the forms" value={signer} />
+                      <Fact label="Files the forms" value="SBC" />
+                      <Fact label="Template" value={variant ? variantLabel : ''} />
+                    </dl>
+                  </SCard>
+
+                  {/* C4: the numbered list with one main button. */}
+                  <SCard title="What you do" meta={headChip} flush>
+                    <DocTodo
+                      items={todo}
+                      action={
+                        main?.kind === 'download' ? (
+                          <Button onClick={download}>
+                            <Download size={16} strokeWidth={1.6} aria-hidden />
+                            {main.label}
+                          </Button>
+                        ) : main?.kind === 'upload' ? (
+                          <Button onClick={() => uploadRef.current?.click()} disabled={busy}>
+                            <Upload size={16} strokeWidth={1.6} aria-hidden />
+                            {main.label}
+                          </Button>
+                        ) : undefined
+                      }
+                    />
+                    {sentBack ? (
+                      <div className="border-t border-line-soft px-4 py-3 text-[13px] text-ink-2 md:px-5" data-testid="noc-sent-back">
+                        <b className="font-medium text-ink">Sent back{docDay(sentBack.at) ? ` · ${docDay(sentBack.at)}` : ''}</b>
+                        <span className="mt-0.5 block text-ink-muted">{sentBack.reason}</span>
+                      </div>
                     ) : null}
-                    {signedUrl ? (
-                      <ListRow>
-                        <FileBadge type={/\.docx?$/i.test(signedName) ? 'DOCX' : 'PDF'} />
-                        <span className="min-w-0 flex-1" title={signedName}>
-                          <b className="block truncate font-medium text-ink">Signed copy</b>
-                          <span className="block truncate text-[12.5px] text-ink-muted">
-                            <span className="text-positive">{received ? 'Received' : 'Sent'}</span> · {signedName} · {ex?.signedUploadedByName ? firstName(ex.signedUploadedByName) : d.short}
-                            {signed ? ` · ${fmt(signed)}` : ''}
-                          </span>
-                        </span>
-                        <Button size="icon" variant="quiet" className={zoomBtn} aria-label="Preview Signed copy" onClick={openSigned}>
-                          <Eye size={16} strokeWidth={1.6} aria-hidden />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="quiet"
-                          className={zoomBtn}
-                          aria-label={`Download ${signedName}`}
-                          onClick={async () => {
-                            try {
-                              triggerDownload(await signedUrl(), signedName);
-                              toast(`Download started · ${signedName}`);
-                            } catch (e) {
-                              toast(e instanceof Error ? e.message : 'Could not download the file');
-                            }
-                          }}
-                        >
-                          <Download size={16} strokeWidth={1.6} aria-hidden />
-                        </Button>
-                      </ListRow>
-                    ) : null}
-                    <div className="border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
-                      <DropZone
-                        label={signedUrl ? 'Replace signed copy' : 'Upload signed copy'}
-                        hint="PDF · DOCX"
-                        tone="accent"
-                        busy={busy}
-                        browseText="Drop a PDF or"
-                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        onFile={(f) => void replace(f)}
-                      />
-                    </div>
+                    <input
+                      ref={uploadRef}
+                      type="file"
+                      accept={UPLOAD_ACCEPT}
+                      className="hidden"
+                      tabIndex={-1}
+                      aria-label="Choose the signed copy"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = '';
+                        if (f) void replace(f);
+                      }}
+                    />
+                  </SCard>
+
+                  {/* C7: the client never sees the internal file name (P5). */}
+                  <SCard title="Files" meta={`${files.length} file${files.length === 1 ? '' : 's'}`} flush>
+                    <DocFiles
+                      files={files}
+                      onOpen={(f) => (f.id === 'br-draft' ? openFull() : openSigned())}
+                      onDownload={async (f) => {
+                        if (f.id === 'br-draft') {
+                          download();
+                          return;
+                        }
+                        if (!signedUrl) return;
+                        try {
+                          triggerDownload(await signedUrl(), signedName);
+                          toast('Download started · Signed copy');
+                        } catch (e) {
+                          toast(e instanceof Error ? e.message : 'Could not download the file');
+                        }
+                      }}
+                      footer={
+                        accepted ? undefined : (
+                          <DropZone
+                            label={signedUrl ? 'Replace signed copy' : 'Upload signed copy'}
+                            hint="PDF · DOCX"
+                            tone="accent"
+                            busy={busy}
+                            browseText="Drop a PDF or"
+                            accept={UPLOAD_ACCEPT}
+                            onFile={(f) => void replace(f)}
+                          />
+                        )
+                      }
+                    />
                   </SCard>
                 </Col>
               </Cols>
             </>
           )}
+
+          {/* C8: the full tree for everyone (D5), under the two columns. */}
+          {!d.pending && loaded ? (
+            <SCard
+              title="Why VCFO chose this template"
+              meta={<span className="text-[13px] text-ink-muted">VCFO checked {whyRows.length === 1 ? '1 answer' : `${whyRows.length} answers`} on the project</span>}
+              flush
+              right={
+                <Button variant="quiet" size="sm" onClick={() => setReplayKey((k) => k + 1)} aria-label="Replay the chosen path">
+                  <RotateCcw size={15} strokeWidth={1.6} aria-hidden />
+                  Replay
+                </Button>
+              }
+            >
+              <VariantTree answers={answers} replayKey={replayKey} />
+              <div className="px-4 pb-4 pt-2 md:px-5">
+                <EvidenceTable
+                  rows={whyRows}
+                  result={
+                    <span data-testid="noc-adds">
+                      {addedSteps.length ? (
+                        <>
+                          This choice adds {addedSteps.length} steps: <b className="font-medium">{addedSteps.join(' · ')}</b>
+                        </>
+                      ) : (
+                        'This choice adds no steps'
+                      )}
+                    </span>
+                  }
+                />
+              </div>
+            </SCard>
+          ) : null}
         </Island>
       </div>
       {viewer.node}

@@ -218,6 +218,13 @@
       "when": 1793339053345,
       "tag": "0030_compliance_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793378519014,
+      "tag": "0031_board_resolution_noc",
+      "breakpoints": true
     }
   ]
 }

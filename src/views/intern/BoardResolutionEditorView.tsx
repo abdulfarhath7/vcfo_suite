@@ -81,6 +81,13 @@ import {
   BoardResolutionEditorDocPanel,
   type BoardResolutionEditorProps,
 } from '@/views/intern/BoardResolutionEditorDocPanel';
+import { useNocState } from '@/views/intern/board-resolution-noc/useNocState';
+import {
+  NocReceiveCard,
+  NocTemplateCard,
+  NocTrackStrip,
+  NocWhyCard,
+} from '@/views/intern/board-resolution-noc/NocStaffCards';
 
 /** "NIC code — Client Details, Business Description" */
 function missingFieldRefText(ref: BoardResolutionMissingFieldRef): string {
@@ -174,8 +181,24 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     handleFinalize,
     withManager,
     sentBackNote,
+    handleGenerate,
   } = p;
   const signed = Boolean(doc?.signedStoragePath?.trim());
+  // R-52 (T1 to T6): the board resolution (NOC) state, reloaded when the document changes.
+  const nocState = useNocState(eng.id, `${doc?.status ?? ''}:${doc?.updatedAt ?? ''}:${doc?.signedUploadedAt ?? ''}`);
+  const noc = nocState.noc;
+  const parentName = noc?.parentName || eng.parentEntityName?.trim() || '';
+  const nocError = (message: string) => toastError('Could not save', message);
+  const [makingAgain, setMakingAgain] = useState(false);
+  const makeAgain = async () => {
+    setMakingAgain(true);
+    try {
+      await handleGenerate();
+      await nocState.reload();
+    } finally {
+      setMakingAgain(false);
+    }
+  };
   const signedInputRef = useRef<HTMLInputElement>(null);
   const [backOpen, setBackOpen] = useState(false);
   const [backNote, setBackNote] = useState('');
@@ -225,18 +248,22 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         <RecordTile name={eng.companyName} identityId={eng.id} />
         <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Board resolution</h1>
+            <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Board resolution (NOC)</h1>
             <Chip tone={stageTone} fixed>
               {stageWord}
             </Chip>
           </div>
+          {noc ? <p className="text-[14px] text-ink-2">{noc.variantLabel}</p> : null}
           <p className="text-[13.5px] text-ink-muted">
-            {eng.companyName} · <span className="font-mono text-[13px]">Pre-2</span>
+            {parentName ? `Passed by: Board of ${parentName} (the parent) · ` : ''}
+            {eng.companyName} · Phase 1 · Steps 2–3 · <span className="font-mono text-[13px]">Pre-2</span>
           </p>
         </div>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      {noc ? <NocTrackStrip noc={noc} nowLabel={signed && !noc.accepted ? 'With SBC' : undefined} /> : null}
+
+      <div className={cn('grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start', noc && 'mt-5')}>
       <div className="min-w-0">
 
         {withManager && !isFinalized ? (
@@ -407,6 +434,19 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
 
         )}
 
+        {noc && signed ? (
+          <div className="mb-4">
+          <NocReceiveCard
+            noc={noc}
+            busy={nocState.busy}
+            act={nocState.act}
+            hasSignedCopy={signed}
+            onAccepted={() => toastSuccess('Signed copy accepted', 'Filed in Documents › Vault')}
+            onError={nocError}
+          />
+          </div>
+        ) : null}
+
         <BoardResolutionEditorDocPanel {...p} />
       </div>
       <aside className="surface min-w-0 overflow-hidden lg:sticky lg:top-[var(--shell-sticky-top)]" aria-label="Stage">
@@ -464,6 +504,20 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         </div>
       </aside>
       </div>
+      {noc ? (
+        <div className="mt-5 grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+          <NocTemplateCard
+            noc={noc}
+            busy={nocState.busy}
+            act={nocState.act}
+            onMakeAgain={makeAgain}
+            makingAgain={makingAgain}
+            loadVersions={nocState.loadVersions}
+            onError={nocError}
+          />
+          <NocWhyCard noc={noc} />
+        </div>
+      ) : null}
       <Dialog open={backOpen} onOpenChange={setBackOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

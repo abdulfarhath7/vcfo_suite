@@ -11,6 +11,16 @@ variable "db_username" {
 # The DB password is generated (random_password) and stored in Secrets Manager
 # as part of DATABASE_URL — never passed on the command line.
 
+# SOC 2 finding #370: false keeps the baked DATABASE_URL secret (no rotation).
+# true hands the master password to RDS, which rotates it every 7 days, and the
+# app reads it per connection. See database.tf and the cut-over order in
+# infra/README.md before turning it on.
+variable "db_managed_password" {
+  description = "Let RDS manage and rotate the master password (app reads DB_SECRET_ARN)."
+  type        = bool
+  default     = false
+}
+
 variable "alert_emails" {
   description = "Recipients for the AWS Budgets alerts ($10 / $25 thresholds)."
   type        = list(string)
@@ -95,3 +105,16 @@ variable "ask_vcfo_anthropic_secret_name" {
   type        = string
   default     = "/vcfo/ask-vcfo/anthropic-api-key"
 }
+
+# People who may manage the vcfo secrets despite the Deny in database.tf. Exact
+# user or role ARNs, no wildcards (the SOC 2 scanner rejects wildcards). Keep
+# the Terraform user here, and the SOC scanner user so it can read the policy.
+variable "secret_admin_arns" {
+  description = "IAM user/role ARNs exempt from the deny-all policy on the vcfo secrets."
+  type        = list(string)
+  default = [
+    "arn:aws:iam::600627321277:user/farhath_vcfo",
+    "arn:aws:iam::600627321277:user/sandeep.gaja", # SOC 2 Prowler scanner
+  ]
+}
+

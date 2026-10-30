@@ -37,6 +37,12 @@ data "aws_iam_policy_document" "apprunner_build_assume" {
       type        = "Service"
       identifiers = ["build.apprunner.amazonaws.com"]
     }
+    # Confused-deputy guard: only App Runner acting for this account may assume it.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
   }
 }
 
@@ -60,6 +66,12 @@ data "aws_iam_policy_document" "apprunner_tasks_assume" {
     principals {
       type        = "Service"
       identifiers = ["tasks.apprunner.amazonaws.com"]
+    }
+    # Confused-deputy guard: only App Runner acting for this account may assume it.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
   }
 }
@@ -94,10 +106,10 @@ data "aws_iam_policy_document" "app" {
     sid     = "RuntimeSecrets"
     actions = ["secretsmanager:GetSecretValue"]
     resources = concat(
-      [
-        aws_secretsmanager_secret.database_url.arn,
-        aws_secretsmanager_secret.auth_secret.arn,
-      ],
+      [aws_secretsmanager_secret.auth_secret.arn],
+      aws_secretsmanager_secret.database_url[*].arn,
+      # The RDS-managed master secret, read by src/db/db-password.ts.
+      local.db_rotating ? [local.db_master_secret_arn] : [],
       aws_secretsmanager_secret.azure_ad_client_secret[*].arn,
       data.aws_secretsmanager_secret.anthropic_api_key[*].arn,
     )
@@ -138,6 +150,16 @@ locals {
       AUTH_URL             = var.site_url
       NEXT_PUBLIC_SITE_URL = var.site_url
     },
+    # Rotating DB password (database.tf): the app builds its connection from
+    # these and reads the password from DB_SECRET_ARN instead of DATABASE_URL.
+    # The user name is not a secret; the variable is only marked sensitive.
+    local.db_rotating ? {
+      DB_HOST       = aws_db_instance.postgres.address
+      DB_PORT       = tostring(aws_db_instance.postgres.port)
+      DB_NAME       = aws_db_instance.postgres.db_name
+      DB_USER       = nonsensitive(var.db_username)
+      DB_SECRET_ARN = local.db_master_secret_arn
+    } : {},
     # Outlook Graph connect flow (secret comes via runtime_environment_secrets).
     local.outlook_enabled ? {
       AZURE_AD_CLIENT_ID = var.azure_ad_client_id
@@ -173,9 +195,9 @@ resource "aws_apprunner_service" "app" {
         port                          = "3000"
         runtime_environment_variables = local.app_env
         runtime_environment_secrets = merge(
-          {
-            DATABASE_URL = aws_secretsmanager_secret.database_url.arn
-            AUTH_SECRET  = aws_secretsmanager_secret.auth_secret.arn
+          { AUTH_SECRET = aws_secretsmanager_secret.auth_secret.arn },
+          local.db_rotating ? {} : {
+            DATABASE_URL = aws_secretsmanager_secret.database_url[0].arn
           },
           local.outlook_enabled ? {
             AZURE_AD_CLIENT_SECRET = aws_secretsmanager_secret.azure_ad_client_secret[0].arn

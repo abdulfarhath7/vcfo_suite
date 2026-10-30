@@ -10,6 +10,8 @@ import {
   parseBoardResolutionUpdatedAtMs,
 } from '@/lib/api/board-resolution-template';
 import { requireAnyRole } from '@/auth/guards';
+import { getNocTemplateOverride } from '@/db/repositories/board-resolution-noc';
+import { withNocVariantOverride } from '@/lib/noc/receive';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -31,7 +33,9 @@ export async function GET(_request: Request, context: RouteContext) {
 
   try {
     const doc = await fetchBoardResolutionForApi(auth.ctx, access.dbId);
-    const templateInfo = boardResolutionTemplateInfo(access.row);
+    // The template follows a staff "Change template" override, as generation does (R-52, T2).
+    const templateOverride = await getNocTemplateOverride(auth.ctx, access.dbId).catch(() => null);
+    const templateInfo = boardResolutionTemplateInfo(access.row ? withNocVariantOverride(access.row, templateOverride) : access.row);
     const {
       path: templatePath,
       fingerprint: templateFingerprint,
