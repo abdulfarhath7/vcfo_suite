@@ -100,3 +100,21 @@ export function staffBasePathForRole(role: Role | undefined): StaffBasePath {
   if (role === 'admin') return '/app/admin';
   return '/app/manager';
 }
+
+/**
+ * The full Ask VCFO page of a role (owner item F4, 30 Oct 2026): `/app/<role>/ask`.
+ * Null for the developer, who has no Ask VCFO (`canUseAsk`).
+ */
+export function roleAskPath(role: Role | null | undefined): string | null {
+  switch (role) {
+    case 'super_admin':
+      return '/app/super/ask';
+    case 'admin':
+    case 'manager':
+    case 'intern':
+    case 'client':
+      return `/app/${role}/ask`;
+    default:
+      return null;
+  }
+}

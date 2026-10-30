@@ -1,16 +1,28 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
 import { AskAnswerCard } from './AskAnswerCard';
 import { AskPreviewPicker } from './AskPreviewPicker';
 import { AskHandoffForm } from './AskHandoffForm';
+import { useApp } from '@/context/AppContext';
 import { useAskOptional } from './ask-context';
-import { AskUserBubble } from './AskUserBubble';
+import { AskAvatar, AskUserBubble } from './AskUserBubble';
+
+/** An answer row: the VCFO mark, then the answer (owner item F2). */
+function AnswerRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <AskAvatar />
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
 
 /** Message list + progress label (U2), announced politely to screen readers. Spectrum look from the prototype AskThread. */
 export function AskThread() {
   const ask = useAskOptional();
+  const { user } = useApp();
   const endRef = useRef<HTMLDivElement>(null);
   const count = ask?.thread.length ?? 0;
   useEffect(() => {
@@ -24,7 +36,7 @@ export function AskThread() {
       {ask.thread.map((item) => {
         if (item.kind === 'user') {
           lastQuestion = item.text;
-          return <AskUserBubble key={item.id} text={item.text} />;
+          return <AskUserBubble key={item.id} text={item.text} initials={user?.initials} />;
         }
         if (item.kind === 'error') {
           return (
@@ -35,13 +47,19 @@ export function AskThread() {
         }
         if (item.answer.line === PREVIEW_CLIENT_LINE && ask.shell === 'super') {
           return (
-            <div key={item.id} className="space-y-2">
-              <p className="text-[13px] text-ink">{item.answer.line}</p>
-              <AskPreviewPicker />
-            </div>
+            <AnswerRow key={item.id}>
+              <div className="space-y-2">
+                <p className="text-[13px] text-ink">{item.answer.line}</p>
+                <AskPreviewPicker />
+              </div>
+            </AnswerRow>
           );
         }
-        return <AskAnswerCard key={item.id} answer={item.answer} messageId={item.messageId} lastQuestion={lastQuestion} />;
+        return (
+          <AnswerRow key={item.id}>
+            <AskAnswerCard answer={item.answer} messageId={item.messageId} lastQuestion={lastQuestion} />
+          </AnswerRow>
+        );
       })}
       <div aria-live="polite" className="min-h-[1.25rem]">
         {ask.busy ? (

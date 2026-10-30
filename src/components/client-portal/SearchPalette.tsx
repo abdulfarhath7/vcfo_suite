@@ -26,6 +26,7 @@ import { PORTAL_ALIAS_KEYS, PORTAL_PATHS, PORTAL_TITLES, stepHref, type PortalRo
 import { useBreakpoint } from './Sidebar';
 import { SHELL_PATHS } from './icons';
 import { usePortalIncorporation } from './hooks';
+import { useAskOptional } from '@/components/ask/ask-context';
 import { stepChip } from './pages/incorporation/spectrum';
 import { buildRegistrations } from './pages/registrations/model';
 import { registrationHref } from './pages/registrations/parts';
@@ -181,6 +182,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const phone = useBreakpoint() === 'phone';
   const { model } = usePortalIncorporation();
+  const askOn = Boolean(useAskOptional()?.enabled);
   const term = q.trim().toLowerCase();
   const anyChip = Boolean(reg || status);
   /* phone: the search is a bottom sheet; like the prototype's sheets it sends the launcher away (sheet-open) */
@@ -243,13 +245,15 @@ function SearchBody({ onClose }: { onClose: () => void }) {
         code: r.number ?? undefined,
       }));
     const pages: Hit[] = PAGE_KEYS.map((k) => ({ group: 'Pages' as const, title: PORTAL_TITLES[k], href: PORTAL_PATHS[k], icon: PAGE_ICON[k] }));
+    // Owner item F5: the full Ask VCFO page, first in Pages, when Ask VCFO is on.
+    if (askOn) pages.unshift({ group: 'Pages' as const, title: 'Open Ask VCFO', href: '/app/client/ask' });
     const local = [...steps, ...registrations].filter((h) => has(h.title, h.meta, h.code));
     const records = term || anyChip ? [...local, ...(remote.data?.hits ?? [])] : [];
     const shown = (anyChip ? records.filter((h) => hitPasses(h, reg, status)) : records).concat(
       anyChip ? [] : pages.filter((h) => has(h.title)),
     );
     return ORDER.map((g) => ({ group: g, hits: shown.filter((h) => h.group === g).slice(0, PER_GROUP) })).filter((g) => g.hits.length);
-  }, [term, anyChip, reg, status, model, remote.data]);
+  }, [term, anyChip, reg, status, model, remote.data, askOn]);
   const hits = useMemo(() => groups.flatMap((g) => g.hits), [groups]);
 
   const go = (h: Hit) => {

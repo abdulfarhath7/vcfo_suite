@@ -60,17 +60,17 @@ export function AskLauncher({
         aria-keyshortcuts="/ Meta+J Control+J"
         title="Ask VCFO (/)"
         className={cn(
-          'flex h-[38px] w-full items-center gap-2.5 rounded-md border-1.5 border-side-line px-2.5 text-[14px] font-medium text-white transition-colors hover:bg-side-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+          'flex h-[38px] w-full items-center gap-2.5 rounded-md border-1.5 border-side-line px-2.5 text-[14px] font-medium text-side-ink transition-colors hover:bg-side-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
           !expanded && 'justify-center px-0',
-          ask.open && 'bg-side-active',
+          ask.open && 'bg-side-active text-side-active-ink',
         )}
       >
-        <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-mark bg-brand text-white" aria-hidden>
+        <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-mark bg-brand text-on-brand" aria-hidden>
           <Sparkles className="h-[13px] w-[13px]" strokeWidth={1.6} />
         </span>
         <span className={cn('flex-1 text-left', !expanded && 'sr-only')}>Ask VCFO</span>
         {expanded ? (
-          <kbd className="rounded-sm border border-side-line bg-white/[.07] px-[5px] font-sans text-[11px] font-medium leading-[18px] text-side-muted">
+          <kbd className="rounded-sm border border-side-line bg-side-hover px-[5px] font-sans text-[11px] font-medium leading-[18px] text-side-muted">
             /
           </kbd>
         ) : null}

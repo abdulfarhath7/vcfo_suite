@@ -11,6 +11,20 @@ export type ThreadItem =
 
 export type AskPreview = { engagementId: string; companyName: string };
 
+/**
+ * One past conversation in the person's chat list (owner item F4). There is no server list of
+ * conversations yet, so the list lives in localStorage per user; the messages themselves are
+ * read from `/api/ask/conversations/[id]`.
+ */
+export type AskHistoryEntry = {
+  id: string;
+  title: string;
+  /** ISO time of the last answer. */
+  at: string;
+  /** The storage key of the shell and engagement the chat belongs to. */
+  scope: string;
+};
+
 export type AskInput = {
   message?: string;
   suggestionId?: string;
@@ -40,6 +54,13 @@ export interface AskContextValue {
   /** Re-read a topic at another depth without a model call. */
   showTopic: (slug: string, depth?: AnswerDepth, label?: string) => Promise<void>;
   reset: () => void;
+  /** Past chats of this shell and engagement, newest first (localStorage, per user). */
+  history: AskHistoryEntry[];
+  /** Show a past chat (the full page's chat list). */
+  openConversation: (id: string) => void;
+  /** True while the full Ask VCFO page is on screen: the pop-up hides and the thread loads. */
+  pageOpen: boolean;
+  setPageOpen: (open: boolean) => void;
   /** Shown after a go-there link closed the panel (< 1440 px): "Back to Ask VCFO". */
   backPill: boolean;
   setBackPill: (show: boolean) => void;
