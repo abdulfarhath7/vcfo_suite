@@ -212,6 +212,7 @@ const ERROR_TEXT: Record<string, string> = {
   end_before_start: 'End on or after the start',
   name_required: 'Give the task a name',
   unknown_activity: 'Pick an activity from the list',
+  statutory_is_both: 'A statutory activity is visible to both',
   owner_not_staff: 'Pick an owner from the team',
   not_in_review: 'This item is not in review',
   filed: 'This filing is already filed',
@@ -261,6 +262,29 @@ export function useActivities(group?: 'statutory' | 'non-statutory') {
     queryFn: async () =>
       (await readJson<{ activities: ActivityDto[] }>(await fetch(`/api/compliances/activities${group ? `?group=${group}` : ''}`), 'the activities')).activities,
     staleTime: 5 * 60_000,
+  });
+}
+
+export interface ActivityPatchBody {
+  notifyDays?: number;
+  ownerRole?: string;
+  reviewerRole?: string;
+  visibility?: TaskVisibility;
+  confirmed?: boolean;
+}
+
+/** X-23: admin and super admin edit one activity (`PATCH /api/compliances/activities/:id`). */
+export function useUpdateActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: ActivityPatchBody }) =>
+      (
+        await readJson<{ activity: ActivityDto }>(
+          await fetch(`/api/compliances/activities/${encodeURIComponent(id)}`, json('PATCH', body)),
+          'the activity',
+        )
+      ).activity,
+    onSettled: () => qc.invalidateQueries({ queryKey: ['compliance-activities'] }),
   });
 }
 
