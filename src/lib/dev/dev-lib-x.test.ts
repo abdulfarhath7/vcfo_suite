@@ -106,11 +106,12 @@ describe('secrets and accounts', () => {
   };
 
   it('says where each secret is stored and never carries a value', () => {
-    const rows = secretInventory({ DATABASE_URL: 'postgres://user:pw@host/db' }, svc);
+    const rows = secretInventory({ DB_SECRET_ARN: 'arn:aws:secretsmanager:ap-south-1:1:secret:rds!db-1' }, svc);
     const by = Object.fromEntries(rows.map((r) => [r.name, r]));
     expect(by.AUTH_SECRET).toMatchObject({ storedIn: 'Secrets Manager', set: true });
     expect(by.RESEND_API_KEY).toMatchObject({ storedIn: 'App Runner env', set: true });
-    expect(by.DATABASE_URL).toMatchObject({ storedIn: 'This server', set: true });
+    expect(by.DB_SECRET_ARN).toMatchObject({ storedIn: 'Secrets Manager', set: true });
+    expect(by.DATABASE_URL).toBeUndefined();
     expect(by.ANTHROPIC_API_KEY).toMatchObject({ storedIn: 'Not set', set: false });
     expect(JSON.stringify(rows)).not.toContain('pw@host');
   });

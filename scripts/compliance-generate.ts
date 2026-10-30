@@ -1,12 +1,13 @@
 /**
- * One-off / manual run of the compliance generator against whatever
- * DATABASE_URL points at. Same code path as the Inngest cron
+ * One-off / manual run of the compliance generator against the database that
+ * src/db/client.ts connects to. Same code path as the Inngest cron
  * (`src/jobs/compliance-generate.ts`), minus the WhatsApp nudges.
  *
  *   npm run compliance:generate
  *
- * Against RDS: export DATABASE_URL from Secrets Manager first and set
- * NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem (see docs/context/AWS-DEPLOY.md §5).
+ * Locally that is DATABASE_URL. Against RDS (private, no DATABASE_URL): open the
+ * SSM tunnel on the NAT instance, set the DB_* vars that `node scripts/db-env-prod.mjs`
+ * prints, and NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem (docs/context/AWS-DEPLOY.md).
  */
 import './load-env';
 import { systemGenerateComplianceInstances } from '../src/db/repositories/compliance';

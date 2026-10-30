@@ -9,15 +9,22 @@ import { SERVICE_SCOPES, tail4 } from './service-meta';
 
 type Env = Record<string, string | undefined>;
 
-export const APP_SECRETS: Array<{ name: string; scope: string }> = [
+/**
+ * `secretIdVar` (M7): the env var that names a Secrets Manager secret the app reads at
+ * runtime. When it is set, the secret counts as set and stored in Secrets Manager.
+ * The database password has no DATABASE_URL in production: DB_SECRET_ARN names the
+ * RDS-managed master secret (rotated every 7 days). DATABASE_URL is for local dev only.
+ */
+export const APP_SECRETS: Array<{ name: string; scope: string; secretIdVar?: string }> = [
   { name: 'AUTH_SECRET', scope: 'Signs sign-in tokens' },
-  { name: 'CREDENTIALS_ENCRYPTION_KEY', scope: 'Encrypts client portal logins' },
-  { name: 'DATABASE_URL', scope: 'Postgres connection' },
+  { name: 'AUTH_SECRET_PREVIOUS', scope: 'Accepts tokens from before a rotation' },
+  { name: 'CREDENTIALS_ENCRYPTION_KEY', scope: 'Encrypts portal logins and two-step secrets' },
+  { name: 'DB_SECRET_ARN', scope: 'Postgres password, rotated by RDS' },
   { name: 'RESEND_API_KEY', scope: 'Email through Resend' },
   { name: 'INNGEST_SIGNING_KEY', scope: 'Background jobs, reads' },
   { name: 'INNGEST_EVENT_KEY', scope: 'Background jobs, sends' },
-  { name: 'ANTHROPIC_API_KEY', scope: 'Ask VCFO answers' },
-  { name: 'AZURE_AD_CLIENT_SECRET', scope: 'Outlook mail sign-in' },
+  { name: 'ANTHROPIC_API_KEY', scope: 'Ask VCFO answers', secretIdVar: 'ANTHROPIC_API_KEY_SECRET_ID' },
+  { name: 'AZURE_AD_CLIENT_SECRET', scope: 'Outlook mail sign-in', secretIdVar: 'AZURE_AD_CLIENT_SECRET_SECRET_ID' },
   { name: 'S3_SECRET_ACCESS_KEY', scope: 'File storage with a key (local only)' },
 ];
 
@@ -29,10 +36,13 @@ export interface SecretRow {
 }
 
 export function secretInventory(env: Env, service: DeployService | null): SecretRow[] {
-  return APP_SECRETS.map((s) => {
+  return APP_SECRETS.map(({ secretIdVar, ...s }) => {
     const set = Boolean(env[s.name]?.trim());
     let storedIn: SecretRow['storedIn'] = set ? 'This server' : 'Not set';
-    if (service?.secretNames?.includes(s.name)) storedIn = 'Secrets Manager';
+    const runtime = Boolean(secretIdVar && (env[secretIdVar]?.trim() || service?.envNames?.includes(secretIdVar)));
+    // DB_SECRET_ARN is a plain env var that names the RDS-managed secret.
+    const dbSecret = s.name === 'DB_SECRET_ARN' && (set || service?.envNames?.includes(s.name));
+    if (runtime || dbSecret || service?.secretNames?.includes(s.name)) storedIn = 'Secrets Manager';
     else if (service?.envNames?.includes(s.name)) storedIn = 'App Runner env';
     return { ...s, storedIn, set: set || storedIn === 'Secrets Manager' || storedIn === 'App Runner env' };
   });

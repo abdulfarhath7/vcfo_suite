@@ -97,7 +97,8 @@ moved {
   to   = aws_secretsmanager_secret_version.database_url[0]
 }
 
-# Auth.js session signing secret. Generated once; rotating it logs everyone out.
+# Auth.js session signing secret. Generated once. M7: rotating it no longer signs
+# anyone out; follow docs/context/AWS-DEPLOY.md §11.1 (AUTH_SECRET_PREVIOUS).
 resource "random_password" "auth_secret" {
   length  = 48
   special = false
@@ -111,12 +112,18 @@ resource "aws_secretsmanager_secret" "auth_secret" {
 resource "aws_secretsmanager_secret_version" "auth_secret" {
   secret_id     = aws_secretsmanager_secret.auth_secret.id
   secret_string = random_password.auth_secret.result
+
+  # M7: AUTH_SECRET is rotated by hand every 90 days (SOC 2 exception 371) with
+  # put-secret-value. Without this, the next apply would put the old value back.
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # Azure client secret for the Outlook Graph connect flow. Only created when the
-# three azure_ad_* vars are set (see variables.tf). Rotating it in Azure means
-# updating the var and re-applying; existing user connections keep working
-# because refresh tokens are exchanged with the new secret.
+# three azure_ad_* vars are set (see variables.tf). M7: rotate it with
+# put-secret-value (AWS-DEPLOY.md §11.1); the app reads it at runtime, so no
+# apply or redeploy is needed, and user connections keep working.
 locals {
   outlook_enabled = var.azure_ad_client_id != "" && var.azure_ad_tenant_id != "" && var.azure_ad_client_secret != ""
 }
@@ -131,6 +138,12 @@ resource "aws_secretsmanager_secret_version" "azure_ad_client_secret" {
   count         = local.outlook_enabled ? 1 : 0
   secret_id     = aws_secretsmanager_secret.azure_ad_client_secret[0].id
   secret_string = var.azure_ad_client_secret
+
+  # M7: rotated by hand every 6 months (SOC 2 exception 372) with put-secret-value;
+  # the app reads it at runtime. The tfvar seeds the first value only.
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # Ask VCFO: the Anthropic API key lives in a secret created by hand in the

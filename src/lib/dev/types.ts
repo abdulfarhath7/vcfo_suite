@@ -441,6 +441,8 @@ export interface AccessExtra {
   secrets: Array<{ name: string; scope: string; storedIn: string; set: boolean }>;
   /** Where "Stored in" was read: App Runner, or only this server's env. */
   secretsSource: 'app_runner' | 'process';
+  /** M7: last rotated and next due per secret, and RDS auto-rotation. */
+  rotation: RotationPayload;
   accounts: Array<{ account: string; kind: string; can: string[]; service: string; lastUsed: string | null }>;
   /** Seeded demo logins that can still sign in. */
   demoLogins: number;
@@ -469,6 +471,10 @@ export interface MonthVolumes {
 
 export interface DataExtra {
   backups: Reach<RdsBackups>;
+  /** M7: AWS Backup plan vcfo-suite-db. */
+  backupPlan: Linked<BackupPlanInfo>;
+  /** M7: VPC connector, NAT and RDS private. */
+  network: NetworkPayload;
   exports: ExportRow[];
   facts: DatabaseFacts;
   volumes: MonthVolumes;
@@ -556,4 +562,70 @@ export interface ConsoleSettings {
   paused: { on: boolean; by: string | null; at: string | null };
   retention: Reach<LogRetention>;
   testMailTo: string | null;
+}
+
+// ---------- SOC 2 cards (M7) ----------
+
+/**
+ * A reader for an AWS control the app role may not be allowed to read. `not_connected` is
+ * the honest state when IAM access is missing (or this server has no AWS credentials).
+ */
+export type Linked<T> = Reach<T> | { state: 'not_connected'; error: string };
+
+export type RotationStatus = 'ok' | 'due_soon' | 'past_due' | 'auto' | 'auto_off' | 'not_found' | 'not_connected' | 'unreachable';
+
+/** One secret on Access › Secrets and rotation. No value and no ARN suffix leave the server. */
+export interface RotationRow {
+  key: string;
+  /** The secret name, for example "vcfo-suite/AUTH_SECRET". */
+  name: string;
+  /** What the secret is for. */
+  scope: string;
+  /** The SOC 2 finding with an accepted exception, for example "371". */
+  finding: string | null;
+  mode: 'manual' | 'auto';
+  /** "Every 90 days", "Every 6 months", "Every 7 days". */
+  cadence: string;
+  lastRotated: string | null;
+  /** Where lastRotated came from: Secrets Manager rotation, the last change, or creation. */
+  lastFrom: 'rotated' | 'changed' | 'created' | null;
+  dueAt: string | null;
+  /** The next review date of the accepted exception. */
+  reviewAt: string | null;
+  status: RotationStatus;
+  /** A short safe line for an error state. */
+  error?: string;
+}
+
+export interface RotationPayload {
+  rows: RotationRow[];
+  /** The RDS-managed master secret: RDS auto-rotation on or off. */
+  rdsAutoRotation: Linked<{ enabled: boolean; everyDays: number | null; nextAt: string | null; status: string | null }>;
+}
+
+export interface RecoveryPointRow {
+  id: string;
+  createdAt: string | null;
+  status: string;
+  sizeBytes: number | null;
+  deleteAt: string | null;
+  resource: string | null;
+}
+
+/** AWS Backup plan vcfo-suite-db and its recent recovery points. */
+export interface BackupPlanInfo {
+  planName: string;
+  vault: string | null;
+  /** "cron(30 20 * * ? *)" as AWS stores it. */
+  schedule: string | null;
+  /** "02:00 IST" when the schedule is a daily cron. */
+  scheduleLabel: string | null;
+  deleteAfterDays: number | null;
+  points: RecoveryPointRow[];
+}
+
+export interface NetworkPayload {
+  connector: Linked<{ name: string; status: string; subnets: number; securityGroups: number }>;
+  nat: Linked<{ id: string; name: string | null; kind: 'instance' | 'gateway'; state: string; type: string | null }[]>;
+  rds: Linked<{ instance: string; publiclyAccessible: boolean }>;
 }

@@ -20,9 +20,12 @@
  * is skipped, and so is any engagement and step that already has events, so the script is
  * safe to run twice. Actor is left null: the audit trail does not say who changed the status.
  *
- * Reads DATABASE_URL from the environment, `.env.local` or `.env`.
+ * Connects with scripts/db-connect.mjs: DATABASE_URL locally, or DB_SECRET_ARN and the DB_*
+ * vars through the SSM tunnel for RDS (docs/context/AWS-DEPLOY.md). Env comes from the
+ * environment, `.env.local` or `.env`.
  */
 import pg from 'pg';
+import { pgConfig } from './db-connect.mjs';
 
 for (const file of ['.env.local', '.env']) {
   try {
@@ -41,8 +44,7 @@ function toTime(value) {
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  const client = new pg.Client(pgConfig());
   await client.connect();
   try {
     const { rows: engagements } = await client.query(
