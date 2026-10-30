@@ -7,7 +7,7 @@ export function EmptyState({ title, action, className }: { title: ReactNode; act
   return (
     <div
       className={cn(
-        'flex min-h-[96px] flex-col items-center justify-center gap-2.5 rounded-md border-1.5 border-dashed border-line-strong px-4 py-6 text-center text-[14px] text-ink-muted',
+        'flex min-h-[96px] flex-col items-center justify-center gap-2.5 rounded-md border-dash-fine px-4 py-6 text-center text-[14px] text-ink-muted',
         className,
       )}
     >

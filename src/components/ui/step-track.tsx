@@ -17,7 +17,9 @@ const DOT: Record<StepTone, string> = { prog: 'bg-brand', teal: 'bg-waiting-mid'
 
 /**
  * ST5 step marker, 22px. Done: a green square with a tick. Live: a ring with a square in the
- * status colour and a soft halo. Upcoming: a dashed square.
+ * status colour and a soft halo. Upcoming: an empty square with a 1.5px solid edge (R-56, R-57:
+ * never a dashed or dotted box). The mark is positioned and filled, so a `StepLink` drawn behind
+ * it never shows through.
  */
 export function StepMark({
   state,
@@ -38,10 +40,10 @@ export function StepMark({
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={cn(
-        'inline-grid flex-none place-items-center rounded-mark',
+        'relative z-[1] inline-grid flex-none place-items-center rounded-mark',
         state === 'done' && 'bg-positive-mid text-white',
         state === 'now' && cn('bg-surface-raised', RING[tone]),
-        state === 'next' && 'border-[1.5px] border-dashed border-line-strong',
+        state === 'next' && 'border-[1.5px] border-line-strong bg-surface-raised',
         className,
       )}
       style={{ width: size, height: size }}
@@ -49,6 +51,65 @@ export function StepMark({
       {state === 'done' ? <Check size={size - 9} strokeWidth={2.6} /> : null}
       {state === 'now' ? <i className={cn('h-2 w-2 rounded-[2px]', DOT[tone])} /> : null}
     </span>
+  );
+}
+
+type Len = number | string;
+/** A half-line's state; any falsy value draws nothing (so `i > 0 && …` reads naturally). */
+export type StepLinkState = 'done' | 'todo' | false | '' | null | undefined;
+const px = (v: Len) => (typeof v === 'number' ? `${v}px` : v);
+
+/**
+ * R-58: the line between two step marks (or checkboxes) in a vertical list, centred on the marks
+ * at every size and every row height. Each row draws its own two half-lines: `up` runs from the
+ * top of the row (and across the `gap` above it) down to this mark's centre, `down` runs from this
+ * mark's centre to the bottom of the row. Two rows together join centre to centre, even when the
+ * rows have different heights. The row must be `position: relative`; the line sits behind the
+ * mark (StepMark is positioned and filled).
+ *
+ * - `x`: the mark's centre from the row's left edge (mark left + size / 2), a number in px or any
+ *   CSS length (for example `var(--step-x)` for a value that changes at a breakpoint).
+ * - `y`: the mark's centre from the row's top edge. Default `50%`, for rows that centre the mark.
+ * - `up` / `down`: draw that half; `'done'` draws it green (the step above is done), `'todo'` grey.
+ *   The `up` half of a row takes the state of the step above it.
+ */
+export function StepLink({
+  x,
+  y = '50%',
+  up,
+  down,
+  gap = 0,
+  className,
+}: {
+  x: Len;
+  y?: Len;
+  up?: StepLinkState;
+  down?: StepLinkState;
+  /** Space between this row and the row above it, which the `up` half also covers. */
+  gap?: number;
+  className?: string;
+}) {
+  const line = 'pointer-events-none absolute w-[1.5px] -translate-x-1/2';
+  const tone = (s: 'done' | 'todo') => (s === 'done' ? 'bg-positive-mid' : 'bg-line');
+  return (
+    <>
+      {up ? (
+        <span
+          aria-hidden
+          data-step-link="up"
+          className={cn(line, tone(up), className)}
+          style={{ left: px(x), top: -gap, height: `calc(${px(y)} + ${gap}px)` }}
+        />
+      ) : null}
+      {down ? (
+        <span
+          aria-hidden
+          data-step-link="down"
+          className={cn(line, tone(down), className)}
+          style={{ left: px(x), top: px(y), bottom: 0 }}
+        />
+      ) : null}
+    </>
   );
 }
 

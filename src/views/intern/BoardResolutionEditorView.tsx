@@ -33,7 +33,7 @@ import { SEO } from '@/components/SEO';
 
 
 import { Chip } from '@/components/ui/spectrum-chip';
-import { StepMark } from '@/components/ui/step-track';
+import { StepLink, StepMark } from '@/components/ui/step-track';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { RecordTile } from '@/components/incorporation/RecordHead';
 import { cn } from '@/lib/utils';
@@ -136,12 +136,11 @@ function BrStageList({ stages }: { stages: BrStage[] }) {
           key={x.key}
           className={cn('relative flex items-center gap-2.5 rounded-md px-2 py-2 text-[13.5px]', i === cur && 'bg-surface-sunken')}
         >
-          {i < stages.length - 1 ? (
-            <span
-              aria-hidden
-              className={cn('absolute bottom-[-8px] left-[17px] top-[28px] w-[1.5px]', x.done ? 'bg-positive-mid' : 'bg-line')}
-            />
-          ) : null}
+          <StepLink
+            x={18}
+            up={i > 0 && (stages[i - 1].done ? 'done' : 'todo')}
+            down={i < stages.length - 1 && (x.done ? 'done' : 'todo')}
+          />
           <StepMark
             state={x.done ? 'done' : i === cur ? 'now' : 'next'}
             size={20}

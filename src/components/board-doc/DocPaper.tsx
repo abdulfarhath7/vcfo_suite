@@ -59,7 +59,7 @@ export function DocPaper({
             className={cn(
               'cursor-pointer rounded-[3px] px-[3px] outline-none transition-[box-shadow] focus-visible:ring-[1.5px] focus-visible:ring-brand',
               f.missing
-                ? 'border-b-[1.5px] border-dashed border-line-strong text-ink-faint'
+                ? 'border-b-[1.5px] border-line-strong text-ink-faint'
                 : 'bg-brand-soft font-medium text-brand-text hover:ring-[1.5px] hover:ring-brand-line',
               activeKey === f.key && 'ring-[1.5px] ring-brand',
             )}
@@ -93,7 +93,7 @@ export function DocPaper({
         </header>
       ) : null}
       {model.letterhead?.note ? (
-        <span className="mb-2.5 inline-flex rounded-mark border border-dashed border-line-strong px-1.5 text-[10.5px] text-ink-muted">{model.letterhead.note}</span>
+        <span className="mb-2.5 inline-flex rounded-mark border border-line-strong px-1.5 text-[10.5px] text-ink-muted">{model.letterhead.note}</span>
       ) : null}
       {model.heading ? <h3 className="mx-0 mb-1 mt-2.5 text-center text-[12.5px] font-bold leading-normal tracking-[.04em]">{renderText(model.heading, 'h')}</h3> : null}
       {model.dates?.length ? (

@@ -50,5 +50,6 @@ export function RecordStat({ value, label, className }: { value: ReactNode; labe
 
 /** The numbers line under the record head. */
 export function RecordStats({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-x-8 gap-y-2">{children}</div>;
+  /* R-60: the numbers sit in a design-system card, never as a bare line on the page. */
+  return <div className="surface flex flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3 md:px-5">{children}</div>;
 }

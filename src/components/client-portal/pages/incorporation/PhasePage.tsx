@@ -68,6 +68,7 @@ function JourneyCard({ p, focus, d }: { p: PortalPhase; focus: string; d: IncDat
               prev={prevOf(x)}
               company={d.short}
               lastRow={i === list.length - 1}
+              above={list[i - 1]}
               focus={isFocus}
               compact
               below={subs && subs.length > 1 ? <SubSteps subs={subs} /> : undefined}

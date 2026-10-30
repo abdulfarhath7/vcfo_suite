@@ -91,7 +91,7 @@ export function CapacityControl({ person }: { person: PersonMetrics }) {
           type="button"
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md border border-dashed border-line px-2 py-1 text-[12px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
+            'inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[12px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
             person.capacity && 'border-solid',
           )}
           aria-label={`Capacity for ${person.name}`}

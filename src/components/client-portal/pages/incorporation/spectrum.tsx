@@ -14,7 +14,7 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ListChecks, Refresh
 import { useRef, useState, type ComponentProps, type MouseEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
-import { PhaseBar, StepMark, type StepTone } from '@/components/ui/step-track';
+import { PhaseBar, StepLink, StepMark, type StepTone } from '@/components/ui/step-track';
 import { DashSection } from '@/components/dash/DashSection';
 import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
@@ -114,7 +114,7 @@ export function ListRow({ children, className, onClick, label }: { children: Rea
 /** Empty list body (R-05, R-48): a dashed area with the action. */
 export function Empty({ children = 'None', action }: { children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="m-4 flex flex-col items-center gap-2.5 rounded-md border-1.5 border-dashed border-line-strong px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5">
+    <div className="m-4 flex flex-col items-center gap-2.5 rounded-md border-dash-fine px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5">
       <span>{children}</span>
       {action}
     </div>
@@ -394,6 +394,7 @@ export function StepRow({
   company,
   lead,
   lastRow,
+  above,
   focus,
   below,
   compact,
@@ -404,6 +405,8 @@ export function StepRow({
   company: string;
   lead?: string;
   lastRow: boolean;
+  /** The row above in this list (R-58: the line joins its mark to this one). Unset on the first row. */
+  above?: PortalStep;
   focus?: boolean;
   below?: ReactNode;
   compact?: boolean;
@@ -418,9 +421,7 @@ export function StepRow({
   const href = stepHref(s.id);
   return (
     <li className={cn('relative', focus === undefined && !live && 'max-sm:hidden')}>
-      {!lastRow ? (
-        <span className={cn('absolute bottom-[-6px] left-[20.25px] top-[30px] w-[1.5px] max-sm:hidden', s.kind === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden />
-      ) : null}
+      <StepLink x={11} up={above && (above.kind === 'done' ? 'done' : 'todo')} down={!lastRow && (s.kind === 'done' ? 'done' : 'todo')} className="max-sm:hidden" />
       <a
         href={href}
         onClick={
@@ -531,7 +532,7 @@ export function St5Card({
       </div>
       <ol className="mt-5 flex flex-col border-t border-line-soft pt-3 max-sm:mt-3">
         {shown.map((s, i) => (
-          <StepRow key={s.id} s={s} prev={prevOf(s)} company={company} lead={lead} lastRow={i === shown.length - 1} onStep={onStep} />
+          <StepRow key={s.id} s={s} prev={prevOf(s)} company={company} lead={lead} lastRow={i === shown.length - 1} above={shown[i - 1]} onStep={onStep} />
         ))}
       </ol>
       {hidden.length > 0 ? (
@@ -684,8 +685,8 @@ export function DropZone({
         if (f) onFile(f);
       }}
       className={cn(
-        'drop-zone flex items-center gap-3 rounded-md border-1.5 border-dashed border-line-strong bg-surface-raised px-4 py-3.5',
-        over && 'border-brand bg-brand-soft',
+        'drop-zone flex items-center gap-3 rounded-md border-dash-fine bg-surface-raised px-4 py-3.5',
+        over && 'bg-brand-soft [--dash-color:oklch(var(--brand))]',
         busy && 'opacity-70',
         className,
       )}

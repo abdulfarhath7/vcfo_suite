@@ -137,7 +137,7 @@ export function InternWorkBoardCard({
   const late = item.isOverdue && item.kind !== 'done';
   const titleClass = cn(
     'block text-left text-[14px] font-medium leading-snug text-ink hover:underline',
-    dim && 'text-ink-muted line-through',
+    dim && 'text-ink-muted',
   );
   return (
     <article

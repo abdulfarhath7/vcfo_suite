@@ -98,7 +98,7 @@ export function DocPackRailCard({
       </Link>
 
       {hint ? (
-        <p className="mt-3 border-t border-dashed border-line pt-3 text-[12.5px] text-ink-muted">
+        <p className="mt-3 border-t border-line-soft pt-3 text-[12.5px] text-ink-muted">
           Fastest unblock:{' '}
           <Link href={hrefForMissing(hint.input)} className="font-medium text-brand-text hover:underline">
             {missingInputLabel(hint.input)}

@@ -61,7 +61,7 @@ const CELL: Record<'done' | 'run' | 'wait' | 'late' | 'none' | 'na', { cls: stri
   wait: { cls: 'bg-waiting-soft text-waiting', Icon: AlertCircle, label: 'Waiting' },
   late: { cls: 'bg-danger-soft text-danger', Icon: AlertTriangle, label: 'Overdue' },
   none: { cls: 'bg-surface-sunken text-ink-faint', label: 'Not started' },
-  na: { cls: 'border-1.5 border-dashed border-line-strong text-ink-faint', label: 'Not needed' },
+  na: { cls: 'border-1.5 border-line-strong text-ink-faint', label: 'Not needed' },
 };
 function cellOf(word: RegWord): keyof typeof CELL {
   if (word === 'Done') return 'done';

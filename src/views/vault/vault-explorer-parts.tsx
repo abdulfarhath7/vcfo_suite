@@ -245,7 +245,7 @@ export function VaultFileRow({
       >
         <FileBadge name={doc.fileName} className="h-[18px] w-[22px] text-[7.5px]" />
         <span className="min-w-0 flex-1">
-          <span className={cn('block truncate font-medium', replaced ? 'text-ink-muted line-through' : 'text-ink')}>
+          <span className={cn('block truncate font-medium', replaced ? 'text-ink-muted' : 'text-ink')}>
             {doc.fileName}
           </span>
           {sub ? <span className="block truncate text-[12px] text-ink-muted">{sub}</span> : null}

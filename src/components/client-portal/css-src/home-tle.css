@@ -41,7 +41,7 @@
 #tle .zoom button.fit{width:auto;padding:0 10px;font-size:12px}
 #tle .zoom input{width:120px;accent-color:oklch(var(--brand))}
 #tle .zoom .lv{min-width:52px;text-align:center;font:500 11.5px var(--font-sans);color:oklch(var(--ink-muted))}
-#tle .ghost{position:absolute;top:13px;height:26px;border-radius:5px;border:1.5px dashed oklch(var(--line-strong));background:transparent;pointer-events:none}
+#tle .ghost{position:absolute;top:13px;height:26px;border-radius:5px;border:1.5px solid oklch(var(--line-strong));background:transparent;pointer-events:none}
 #tle .bar{position:absolute;top:13px;height:26px;border-radius:5px;cursor:grab;touch-action:none;box-shadow:var(--shadow-tile);outline:none;transition:left .18s,width .18s}
 #tle .bar.drag{cursor:grabbing;transition:none;box-shadow:0 0 0 3px oklch(var(--brand) / .35),var(--shadow-float)}
 #tle .bar:focus-visible{box-shadow:0 0 0 4px oklch(var(--focus-ring) / .35)}

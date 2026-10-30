@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { StepMark } from '@/components/ui/step-track';
+import { StepLink, StepMark } from '@/components/ui/step-track';
 import { OwnerChip, type Owner } from '@/components/ui/spectrum-chip';
 
 /**
@@ -39,9 +39,7 @@ export function Thread({ steps, className }: { steps: ThreadStep[]; className?: 
         const date = s.state !== 'upcoming' ? threadDate(s.date) : '';
         return (
           <li key={s.id} className={cn('relative grid grid-cols-[20px_minmax(0,1fr)] gap-x-3 pb-4 last:pb-0', s.state === 'upcoming' && 'opacity-50')}>
-            {!last ? (
-              <span className={cn('absolute left-[9px] top-5 h-[calc(100%-20px)] border-l', s.state === 'done' ? 'border-positive-mid' : 'border-line')} aria-hidden />
-            ) : null}
+            <StepLink x={10} y={10} up={i > 0 && (steps[i - 1].state === 'done' ? 'done' : 'todo')} down={!last && (s.state === 'done' ? 'done' : 'todo')} />
             <StepMark state={s.state === 'done' ? 'done' : s.state === 'current' ? 'now' : 'next'} size={20} />
             <div className="min-w-0 pt-px">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

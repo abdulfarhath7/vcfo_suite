@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
-import { StepMark } from '@/components/ui/step-track';
+import { StepLink, StepMark } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge } from '@/components/ui/file-badge';
 import { threadDate } from '@/components/dash/thread';
@@ -750,9 +750,11 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           const o = ownKey(y);
           return (
             <li key={y.id} className="relative flex items-center gap-1">
-              {i < inPhase.length - 1 ? (
-                <span className={cn('absolute bottom-[-6px] left-[20.25px] top-[30px] w-[1.5px]', kd(y) === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden />
-              ) : null}
+              <StepLink
+                x={11}
+                up={i > 0 && (kd(inPhase[i - 1]) === 'done' ? 'done' : 'todo')}
+                down={i < inPhase.length - 1 && (kd(y) === 'done' ? 'done' : 'todo')}
+              />
               <a
                 href={stepHrefOf(y)}
                 onClick={goTo(stepHrefOf(y))}
