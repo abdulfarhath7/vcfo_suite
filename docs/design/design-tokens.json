@@ -18,12 +18,12 @@
       {
         "name": "surface",
         "value": {
-          "light": "#f6f8fb",
+          "light": "#edf1f6",
           "dark": "#0b0c10"
         },
-        "usage": "Page canvas behind everything. Cool off-white; deep navy in dark. Never pure white, never pure black.",
+        "usage": "Page canvas behind everything. One step darker than surface-raised in both themes, so every card reads as raised (R-54). Cool grey; deep navy in dark. Never pure white, never pure black.",
         "oklch": {
-          "light": "97.8% 0.005 258",
+          "light": "95.7% 0.008 254",
           "dark": "15.5% 0.009 274"
         }
       },
@@ -33,7 +33,7 @@
           "light": "#ffffff",
           "dark": "#13151a"
         },
-        "usage": "Cards, tables, dialogs, popovers, the top bar. Sits on surface with a line hairline and shadow-card.",
+        "usage": "Cards, tables, dialogs, popovers, the top bar. Sits on surface with a 2px line edge (R-55). A card never sits on a ground of its own colour (R-54).",
         "oklch": {
           "light": "100.0% 0.000 0",
           "dark": "19.6% 0.011 268"
@@ -69,7 +69,7 @@
           "light": "#e3e8ef",
           "dark": "#242830"
         },
-        "usage": "1px hairline between rows and around cards. Decorative; never the only edge of a control.",
+        "usage": "2px edge around every card, panel and section (R-55). Decorative; never the only edge of a control.",
         "oklch": {
           "light": "92.9% 0.011 257",
           "dark": "27.6% 0.016 264"

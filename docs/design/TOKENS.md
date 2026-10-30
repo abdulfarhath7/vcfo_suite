@@ -23,7 +23,7 @@ Light and dark are two values of one name; nothing has a separate dark token. `{
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `surface` | `#f7f9fc` | `#0b1521` | Page canvas. Never pure white or black. |
+| `surface` | `#edf1f6` | `#0b0c10` | Page canvas, one step darker than `surface-raised` (R-54). Never pure white or black. |
 | `surface-raised` | `#ffffff` | `#111d2c` | Cards, tables, dialogs, popovers, top bar. |
 | `surface-sunken` | `#eef2f7` | `#070e18` | Wells: table heads, inputs on cards, empty states, skeletons. |
 | `line` | `#e1e7ef` | `#1f2d40` | Hairline rows and card frames. |
