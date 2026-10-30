@@ -18,7 +18,7 @@ import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import { Lu, ShellIcon, type LuName } from './icons';
 import { usePortal } from './PortalProvider';
 import { activeKeyFor, portalHref, PORTAL_TITLES, type PortalRouteKey } from './routes';
-import type { ClientPortalContact } from '@/lib/client-portal/types';
+import { showsBeforeAfterSwitch, type ClientPortalContact } from '@/lib/client-portal/types';
 
 type Bp = 'phone' | 'tablet' | 'desktop';
 
@@ -267,9 +267,17 @@ function Avatar({ p }: { p: ClientPortalContact }) {
   return <span className="vps-av">{p.support ? <ShellIcon name="head" size={14} /> : p.initials}</span>;
 }
 
+/** D4: false once a client's engagement has a COI date; the view is then After by itself. */
+export function useShowBeforeAfter(): boolean {
+  const { shell } = usePortal();
+  return showsBeforeAfterSwitch(shell);
+}
+
 /** Before | After pill — horizontal in the top bar and drawer, vertical in the rail. */
 export function BeforeAfterPill({ vertical }: { vertical?: boolean }) {
   const { after, setAfter } = usePortal();
+  const show = useShowBeforeAfter();
+  if (!show) return null;
   return (
     <div className={`vp-ba${vertical ? ' vp-ba-v' : ''}`} role="group" aria-label="Before or after incorporation" data-on={after ? 1 : 0}>
       <span className="vp-ba-th" aria-hidden="true" />
@@ -365,6 +373,7 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
   const act = activeKeyFor(pathname);
   const nav = useNav();
   const { shell, prefs, savePrefs, toast, go, setDrawerOpen, openChat } = usePortal();
+  const showBa = useShowBeforeAfter();
   const navRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   useEffect(() => setOpen(prefs?.navOpen ?? {}), [prefs?.navOpen]);
@@ -408,9 +417,11 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
               <ShellIcon name="x" size={18} />
             </button>
           </div>
-          <div className="vp-ba-drawer">
-            <BeforeAfterPill />
-          </div>
+          {showBa ? (
+            <div className="vp-ba-drawer">
+              <BeforeAfterPill />
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="vps-hd vps-hd-pin">
@@ -600,6 +611,7 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
   const act = activeKeyFor(pathname);
   const nav = useNav();
   const { shell, go, toast } = usePortal();
+  const showBa = useShowBeforeAfter();
   const rootRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const { pillRef, railRef } = usePill(navRef, 'rail', [act]);
@@ -806,9 +818,11 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
           );
         })}
       </nav>
-      <div className="vps-bar" data-tip="Show the company before or after incorporation">
-        <BeforeAfterPill vertical />
-      </div>
+      {showBa ? (
+        <div className="vps-bar" data-tip="Show the company before or after incorporation">
+          <BeforeAfterPill vertical />
+        </div>
+      ) : null}
       <div className="vps-team">
         <div className="vps-lbl" aria-hidden="true">
           Team

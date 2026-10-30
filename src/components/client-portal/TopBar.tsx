@@ -12,11 +12,12 @@ import { Fragment, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePortal } from './PortalProvider';
 import { crumbsFor, activeKeyFor, portalHref } from './routes';
-import { BeforeAfterPill, useBreakpoint } from './Sidebar';
+import { BeforeAfterPill, useBreakpoint, useShowBeforeAfter } from './Sidebar';
 
 export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => void; hasAnnouncements: boolean }) {
   const pathname = usePathname();
   const { shell, go, theme, toggleTheme, setDrawerOpen, crumbs } = usePortal();
+  const showBa = useShowBeforeAfter();
   const bp = useBreakpoint();
   const { mid, crumb } = crumbsFor(pathname);
   const act = activeKeyFor(pathname);
@@ -93,7 +94,7 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             <span className="tbar-sl">Search steps, filings, documents</span>
             <kbd className="tbar-kbd">Ctrl K</kbd>
           </button>
-          {bp === 'desktop' ? (
+          {bp === 'desktop' && showBa ? (
             <div id="vp-ba-top" className="vp-ba-slot">
               <BeforeAfterPill />
             </div>
