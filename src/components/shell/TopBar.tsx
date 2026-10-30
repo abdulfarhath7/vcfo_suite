@@ -103,9 +103,9 @@ export function TopBar() {
   const crumb = shellBreadcrumb(pathname);
   const segments = resolveShellCrumbSegments(crumb, engagements);
   const homeHref = user ? roleHomePath(user.role) : "/";
-  /* F-329: the super admin and the developer have one bell, Announcements. Notification
-     history stays in their sidebar under Updates. */
-  const notificationsBell = user?.role !== "super_admin" && user?.role !== "developer";
+  /* Owner, 30 Oct 2026: every practice role keeps the Notifications bell and its popup (the
+     prototype's F-329 dropped it for the super admin). The developer keeps one bell. */
+  const notificationsBell = user?.role !== "developer";
 
   return (
     <header className="relative flex h-[var(--shell-rail-height)] items-center gap-2 border-b-1.5 border-line bg-surface-raised px-4 sm:gap-3 sm:px-7">

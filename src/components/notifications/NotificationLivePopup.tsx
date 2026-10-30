@@ -11,6 +11,7 @@ import { NotificationKindTile } from '@/components/notifications/notification-ki
 import { NOTIFICATION_KIND_LOOK } from '@/components/notifications/notification-kind-look';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
+import { roleNotificationsPath } from '@/lib/auth-routes';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { measureGenieDock, type GenieBox } from '@/lib/notifications/genie-dock';
 import {
@@ -109,6 +110,9 @@ function NotificationGenieCard({
   const message = item.body.trim() || item.title;
   const extraTitle = Boolean(item.title && item.body && item.title !== item.body);
   const canOpen = notificationHrefIsNavigable(item.href);
+  const { user } = useApp();
+  /* The popup stays the first stop; only this button goes to the full Notifications page. */
+  const pageHref = user && user.role !== 'developer' ? roleNotificationsPath(user.role) : null;
 
   const finish = useCallback(() => {
     window.dispatchEvent(new Event(NOTIFICATION_GENIE_LAND_EVENT));
@@ -261,6 +265,11 @@ function NotificationGenieCard({
               </>
             ) : null}
             <span className="mr-auto" />
+            {pageHref ? (
+              <Button asChild variant="quiet">
+                <Link href={pageHref}>Open page</Link>
+              </Button>
+            ) : null}
             {canOpen ? (
               <Button asChild variant="outline">
                 <Link href={item.href}>Open</Link>

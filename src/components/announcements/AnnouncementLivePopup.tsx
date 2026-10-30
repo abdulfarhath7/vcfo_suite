@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
 import { ExternalLink, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
   formatAnnouncementWhen,
 } from '@/components/announcements/AnnouncementList';
 import { useApp } from '@/context/AppContext';
+import { roleNotificationsPath } from '@/lib/auth-routes';
 import { useAnnouncements } from '@/hooks/use-announcements';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import {
@@ -109,6 +111,10 @@ function AnnouncementGenieCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const [flying, setFlying] = useState(false);
+  const { user } = useApp();
+  /* The popup stays the first stop; only this button goes to the full Announcements page. */
+  const pageHref =
+    user && user.role !== 'developer' ? roleNotificationsPath(user.role).replace(/\/notifications$/, '/announcements') : null;
   const message = item.body.trim() || item.title;
   const extraTitle = Boolean(item.title && item.body && item.title !== item.body);
 
@@ -261,6 +267,11 @@ function AnnouncementGenieCard({
               </>
             ) : null}
             <span className="mr-auto" />
+            {pageHref ? (
+              <Button asChild variant="quiet">
+                <Link href={pageHref}>Open page</Link>
+              </Button>
+            ) : null}
             {item.sourceUrl ? (
               <Button asChild variant="outline">
                 <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
