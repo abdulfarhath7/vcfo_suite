@@ -341,7 +341,7 @@ export function SidebarFoldRow({
         strokeWidth={1.6}
       />
       {!expanded && urgent ? <SidebarRailUrgentBadge count={count} ink={ink} /> : null}
-      <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'sr-only')}>{label}</span>
+      <span className={expanded ? 'relative z-10 min-w-0 flex-1 truncate' : 'sr-only'}>{label}</span>
       {expanded ? <SidebarNavCountBadge count={count} hot={urgent} ink={ink} /> : null}
     </Link>
   );

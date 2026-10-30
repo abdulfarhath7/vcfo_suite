@@ -370,8 +370,9 @@ function SidebarNavBody({
               {!expanded && !stacked && showInternBadge ? <RailInternWorkBadge ink={ink} /> : null}
               {!expanded && !stacked && showApprovals ? <RailApprovalsBadge role={user.role} ink={ink} /> : null}
               {!expanded && !stacked && showDev ? <RailDevBadge href={it.to} ink={ink} /> : null}
-              {/* On the rail the name stays for screen readers; the title shows it on hover. */}
-              <span className={cn('relative z-10 min-w-0 flex-1 truncate', !expanded && 'sr-only')}>
+              {/* On the rail the name stays for screen readers only. It must not keep `relative` or
+                 `flex-1` there: they beat sr-only and pushed the icon off centre. */}
+              <span className={expanded ? 'relative z-10 min-w-0 flex-1 truncate' : 'sr-only'}>
                 {it.label}
               </span>
               <span
