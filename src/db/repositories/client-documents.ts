@@ -241,6 +241,7 @@ export async function getClientDocuments(ctx: AuthContext): Promise<ClientDocume
         stepId: item.id,
         categoryId: categoryFor(item.id, label),
         stale: isStaleProof(label, date, now),
+        ...(/Signed(Url)?$/.test(fieldId) ? { signed: true } : {}),
         portal: portalForField(fieldId),
         source: 'milestone',
       });
@@ -339,6 +340,7 @@ export async function getClientDocuments(ctx: AuthContext): Promise<ClientDocume
         date: br.signedUploadedAt ?? undefined,
         stepId: 'pre-3',
         categoryId: 'c3',
+        signed: true,
         source: 'board-resolution',
       });
     }
