@@ -137,6 +137,8 @@ export interface TaskInstance {
   /** Who assigned the task to its holder (`tasks.assigned_by`, migration 0028); absent when self-assigned or older. */
   assignedById?: string;
   assignedByName?: string;
+  /** The card's place in its Work board column (`tasks.sort_order`); absent keeps the default order. */
+  sortOrder?: number | null;
 }
 
 export interface DocRequest {

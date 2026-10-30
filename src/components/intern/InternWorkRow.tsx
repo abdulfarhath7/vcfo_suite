@@ -135,6 +135,8 @@ export function InternWorkBoardCard({
   onOpen?: (item: InternWorkItem) => void;
 }) {
   const late = item.isOverdue && item.kind !== 'done';
+  const done = item.kind === 'done';
+  // G3: a done card shows a green tick, the Done chip and a muted card; never a strikethrough.
   const titleClass = cn(
     'block text-left text-[14px] font-medium leading-snug text-ink hover:underline',
     dim && 'text-ink-muted',
@@ -155,15 +157,18 @@ export function InternWorkBoardCard({
         </span>
         {item.catalogLabel ? <span className="ml-auto flex-none font-mono">{item.catalogLabel}</span> : null}
       </div>
-      {onOpen ? (
-        <button type="button" onClick={() => onOpen(item)} title={item.title} className={cn(titleClass, 'line-clamp-2')}>
-          {item.title}
-        </button>
-      ) : (
-        <Link href={item.href} title={item.title} className={cn(titleClass, 'line-clamp-2')}>
-          {item.title}
-        </Link>
-      )}
+      <div className="flex min-w-0 items-start gap-1.5">
+        {done ? <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-positive" strokeWidth={1.8} aria-label="Done" /> : null}
+        {onOpen ? (
+          <button type="button" onClick={() => onOpen(item)} title={item.title} className={cn(titleClass, 'line-clamp-2 min-w-0')}>
+            {item.title}
+          </button>
+        ) : (
+          <Link href={item.href} title={item.title} className={cn(titleClass, 'line-clamp-2 min-w-0')}>
+            {item.title}
+          </Link>
+        )}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <InternWorkKindChip item={item} className="min-w-0" />
         {now ? (

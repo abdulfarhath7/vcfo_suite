@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Lock, UserRoundPlus, X } from 'lucide-react';
-import { Chip } from '@/components/ui/spectrum-chip';
+import { Chip, Tag } from '@/components/ui/spectrum-chip';
 import { RemindClientButton } from '@/components/reminders/RemindClientButton';
 import { remindableItemKey } from '@/lib/reminders/reminder-rules';
 import { dayMonth } from '@/components/staff/today/today-rows';
@@ -170,6 +170,7 @@ export function PlannerTodos({
                   )}
                   {item ? <span className="block truncate text-[12px] text-ink-muted">{item.companyName}</span> : null}
                 </span>
+                {entry.done ? <Tag tone="ok">Done</Tag> : null}
                 {item && hand ? <HandMenu item={item} owner={owner} hand={hand} /> : null}
                 <Button
                   size="icon"

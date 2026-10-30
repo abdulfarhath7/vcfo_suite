@@ -225,6 +225,13 @@
       "when": 1793378519014,
       "tag": "0031_board_resolution_noc",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793401707429,
+      "tag": "0032_task_sort_order",
+      "breakpoints": true
     }
   ]
 }
