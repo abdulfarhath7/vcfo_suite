@@ -243,12 +243,15 @@ export function StaffSbcFieldsCard({
   kind,
   subjectKey,
   locked,
+  facts = [],
 }: {
   engagementId: string;
   kind: 'obligation' | 'registration';
   subjectKey: string;
   /** After filing the values stay as filed. */
   locked?: boolean;
+  /** Read-only facts of the filing shown before the editable values (statutory detail D-2.2: filed on, ARN, amount paid). */
+  facts?: Array<{ key: string; label: string; value: string | null; sub?: string | null }>;
 }) {
   const q = useSubjectInputs({ engagementId, kind, key: subjectKey });
   const act = useInputsAction();
@@ -268,10 +271,19 @@ export function StaffSbcFieldsCard({
         <SkeletonRows rows={2} />
       ) : q.isError ? (
         <p className="text-[13px] text-ink-faint">Could not load the fields</p>
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && facts.length === 0 ? (
         <p className="text-[13px] text-ink-faint">None</p>
       ) : (
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {facts.map((f) => (
+            <div key={`fact-${f.key}`} className="min-w-0">
+              <dt className="text-[12.5px] text-ink-muted">{f.label}</dt>
+              <dd className={cn('truncate text-[14px]', f.value ? 'text-ink' : 'text-ink-faint', f.value && isIdentifier(f.value) && 'font-mono text-[13.5px]')}>
+                {f.value ?? '-'}
+                {f.sub ? <span className="ml-1.5 font-sans text-[12.5px] text-ink-muted">{f.sub}</span> : null}
+              </dd>
+            </div>
+          ))}
           {rows.map((f) => {
             const mono = f.mono || Boolean(f.value && isIdentifier(f.value));
             return (

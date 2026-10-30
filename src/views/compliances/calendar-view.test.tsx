@@ -62,6 +62,49 @@ vi.mock('@/components/client-portal/pages/compliances/api', () => ({
   useCompFilings: () => ({ data: { rows: [] } }),
   useReminder: () => ({ set: { mutate: vi.fn(), isPending: false }, clear: { mutate: vi.fn(), isPending: false } }),
 }));
+// Non-statutory tasks from GET /api/compliances/tasks (COMPLIANCE-API.md section 2). Empty unless a test sets them.
+let taskList: unknown[] = [];
+const taskQueries: Array<Record<string, unknown>> = [];
+vi.mock('@/views/compliances/tasks/api', async (orig) => ({
+  ...(await orig<typeof import('@/views/compliances/tasks/api')>()),
+  useTasks: (q: Record<string, unknown>) => {
+    taskQueries.push(q);
+    return { data: { tasks: taskList, today: '2099-10-16' }, isPending: false, isError: false };
+  },
+}));
+const boardPack = {
+  id: 't1',
+  engagementId: 'acme',
+  companyName: 'Acme Pvt Ltd',
+  activityId: null,
+  activityName: null,
+  name: 'Board pack',
+  periodLabel: null,
+  title: 'Board pack',
+  startDate: '2099-10-12',
+  dueDate: '2099-10-22',
+  urgency: 'High',
+  urgencyBars: 3,
+  visibility: 'both',
+  stage: 'in-progress',
+  stageLabel: 'In progress',
+  word: 'In progress',
+  hidden: false,
+  week: 'Next week',
+  daysToStart: -4,
+  daysToDue: 6,
+  owner: { id: 'lead-1', name: 'Bharath' },
+  reviewer: null,
+  repeats: 'one-time',
+  remindBefore: 5,
+  checklist: { done: 0, total: 0 },
+  attachmentCount: 0,
+  deliverable: null,
+  completedAt: null,
+  createdBy: null,
+  createdAt: '2099-10-01T00:00:00Z',
+};
+
 vi.mock('@tanstack/react-query', async (orig) => ({
   ...(await orig<typeof import('@tanstack/react-query')>()),
   useQueryClient: () => ({ invalidateQueries: vi.fn(async () => undefined) }),
@@ -84,6 +127,8 @@ beforeEach(() => {
   toastUndo.mockClear();
   push.mockClear();
   mayWrite = true;
+  taskList = [];
+  taskQueries.length = 0;
 });
 
 describe('ComplianceCalendarView bar', () => {
@@ -105,7 +150,8 @@ describe('ComplianceCalendarView bar', () => {
     expect(pop).toHaveTextContent('Tuesday 20 October');
     expect(pop).toHaveTextContent('2 filings');
     const link = within(pop).getAllByRole('link').find((a) => a.textContent?.includes('Birch LLP'));
-    expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/gst-3b?company=birch');
+    // A filing opens the statutory detail page of that client's period.
+    expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/gst-3b/b');
   });
 
   it('groups one filing for several clients in Coming up', () => {
@@ -161,6 +207,47 @@ describe('Timeline view', () => {
     act(() => {
       fireEvent.keyDown(bar, { key: 'Enter' });
     });
-    expect(push).toHaveBeenCalledWith('/app/manager/compliances/obligations/gst-3b?company=acme');
+    expect(push).toHaveBeenCalledWith('/app/manager/compliances/obligations/gst-3b/a');
+  });
+});
+
+describe('Statutory and non-statutory filter (C-1 to C-4)', () => {
+  it('reads the tasks of the FY and counts both categories', () => {
+    taskList = [boardPack];
+    search = new URLSearchParams('date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    expect(taskQueries.at(-1)).toMatchObject({ from: '2099-04-01', to: '2100-03-31' });
+    // October: 2 filings (a, b), 1 task.
+    expect(screen.getByRole('tab', { name: /^All\s*3$/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /^Statutory\s*2$/ })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^Non-statutory\s*1$/ })).toBeInTheDocument();
+  });
+
+  it('shows a task on its end date with a hollow square and the start and urgency on hover', () => {
+    taskList = [boardPack];
+    search = new URLSearchParams('date=2099-10-22');
+    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    const day = screen.getByRole('button', { name: '22 October, 1 filing' });
+    expect(day.querySelector('[data-hollow]')).not.toBeNull();
+    expect(within(day).getByTitle('Board pack · Starts 12 Oct 2099 · High')).toBeInTheDocument();
+    const pop = screen.getByRole('dialog', { name: '22 October' });
+    const link = within(pop).getAllByRole('link').find((a) => a.textContent?.includes('Board pack'));
+    expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/tasks/t1');
+  });
+
+  it('applies the filter to the grid and the rail', () => {
+    taskList = [boardPack];
+    search = new URLSearchParams('date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    act(() => screen.getByRole('tab', { name: /^Non-statutory/ }).click());
+    expect(screen.queryByRole('button', { name: /20 October/ })).toBeNull();
+    const coming = screen.getByRole('region', { name: 'Coming up' });
+    expect(within(coming).getByText('Board pack')).toBeInTheDocument();
+    expect(within(coming).queryByText('TDS payment')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Next deadline' })).toHaveTextContent('Board pack');
+
+    act(() => screen.getByRole('tab', { name: /^Statutory/ }).click());
+    expect(screen.queryByRole('button', { name: /22 October/ })).toBeNull();
+    expect(within(screen.getByRole('region', { name: 'Coming up' })).queryByText('Board pack')).toBeNull();
   });
 });

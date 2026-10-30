@@ -96,6 +96,30 @@ export function ObligationPage({ basePath, obligationId }: { basePath: string; o
 }
 
 /**
+ * Super admin Practice · Compliances (prototype PracticeCalendar) and Practice · Filings: the
+ * staff calendar and register with the statutory and non-statutory filter, read across every
+ * client. The super admin shell has no obligation or task pages, so a filing or a task opens
+ * its client's project page.
+ */
+const SUPER_BASE = '/app/super/practice';
+const superHrefs = {
+  record: (row: { engagementId: string }) => `/app/super/projects/${encodeURIComponent(row.engagementId)}`,
+  task: (t: { engagementId: string }) => `/app/super/projects/${encodeURIComponent(t.engagementId)}`,
+};
+
+export function SuperComplianceCalendarPage() {
+  const { settled, scope } = useComplianceScope();
+  if (!settled) return <Settling label="Loading calendar" />;
+  return <ComplianceCalendarView basePath={SUPER_BASE} scope={scope} hrefs={superHrefs} />;
+}
+
+export function SuperFilingsPage() {
+  const { settled, scope } = useComplianceScope();
+  if (!settled) return <Settling label="Loading filings" />;
+  return <FilingsView basePath={SUPER_BASE} scope={scope} hrefs={superHrefs} />;
+}
+
+/**
  * Registrations sit outside Compliances in the nav but read the same scoped
  * roster: `shellBase` is the shell's root (`/app/intern`, `/app/manager`,
  * `/app/admin`), so the list lives at `{shellBase}/registrations` and a step

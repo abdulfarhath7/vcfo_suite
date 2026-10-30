@@ -31,6 +31,7 @@ import { obligationChecklist } from '@/data/before-filing';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
 import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import { statHref } from '@/views/compliances/tasks/task-list';
 import {
   dueWithinSoon,
   flowCounts,
@@ -122,7 +123,17 @@ export function ObligationView({
 
   const periodCols: EFilingColumn<FilingRow>[] = [
     ...(showClient ? [{ key: 'client', header: 'Client', width: '20%', render: (row: FilingRow) => <span className="font-medium text-ink">{row.companyName}</span> }] : []),
-    { key: 'period', header: 'Period', width: '16%', render: (row) => row.periodLabel ?? row.fyLabel ?? '—' },
+    {
+      key: 'period',
+      header: 'Period',
+      width: '16%',
+      // The period opens that client's statutory detail page (COMPLIANCE-MODEL.md 4.2).
+      render: (row) => (
+        <Link href={statHref(basePath, obligationId, row.id)} className="font-medium text-brand-text hover:underline">
+          {row.periodLabel ?? row.fyLabel ?? '—'}
+        </Link>
+      ),
+    },
     {
       key: 'due',
       header: 'Due',
@@ -152,7 +163,16 @@ export function ObligationView({
 
   const historyCols: EFilingColumn<FilingRow>[] = [
     ...(showClient ? [{ key: 'client', header: 'Client', width: '22%', render: (row: FilingRow) => <span className="font-medium text-ink">{row.companyName}</span> }] : []),
-    { key: 'period', header: 'Period', width: '20%', render: (row) => row.periodLabel ?? row.fyLabel ?? '—' },
+    {
+      key: 'period',
+      header: 'Period',
+      width: '20%',
+      render: (row) => (
+        <Link href={statHref(basePath, obligationId, row.id)} className="hover:text-brand-text hover:underline">
+          {row.periodLabel ?? row.fyLabel ?? '—'}
+        </Link>
+      ),
+    },
     { key: 'due', header: 'Due', width: '120px', render: (row) => plainDate(row.dueDate, now) },
     {
       key: 'filed',

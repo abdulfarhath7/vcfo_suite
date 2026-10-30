@@ -29,7 +29,7 @@ import {
 import { useApp } from '@/context/AppContext';
 import { useFilings } from '@/hooks/use-filings';
 import { useCompFilings } from '@/components/client-portal/pages/compliances/api';
-import { toastError, toastInfo, toastSuccess } from '@/lib/toast-errors';
+import { errorMessage, toastError, toastInfo, toastSuccess } from '@/lib/toast-errors';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
 import {
   buildMatrix,
@@ -81,6 +81,12 @@ import {
 import { areaSwatch } from '@/views/compliances/area-swatch';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import { CatFilterTabs } from '@/components/compliances/CategoryTabs';
+import { FileBadge, fileType } from '@/components/ui/file-badge';
+import { openTaskAttachment, useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
+import { INTERNAL_AREA, fyRange, taskAsFilingRow, taskIdOfRow } from '@/views/compliances/tasks/task-calendar';
+import { statHref, taskHref } from '@/views/compliances/tasks/task-list';
+import { showStat, showTasks, type CatFilter } from '@/views/compliances/tasks/task-model';
 import { GroupedGrid, HeadCard, KeyHint, useListKeys, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
 import { ClientTile, PortalLink } from '@/views/compliances/identity';
 import {
@@ -164,9 +170,12 @@ const ON_TIME_MONTHS = 6;
 export function FilingsView({
   basePath,
   scope,
+  hrefs,
 }: {
   basePath: string;
   scope: ComplianceScope;
+  /** Where a filing or a task opens when the shell has no obligation pages (super admin Practice). */
+  hrefs?: { record?: (row: FilingRow) => string; task?: (t: TaskRowDto) => string };
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -201,7 +210,18 @@ export function FilingsView({
   const anchorKey = periodParam ?? nowMonthKey;
 
   const query_ = useFilings({ fyStartYear });
-  const allRows = useMemo(() => query_.data?.rows ?? [], [query_.data?.rows]);
+  // F-1: All, Statutory, Non-statutory (`?cat=`). F-2: a non-statutory row is a completed task with its deliverable.
+  const catParam = params.get('cat');
+  const cat: CatFilter = catParam === 'statutory' || catParam === 'non-statutory' ? catParam : 'all';
+  const doneTasks = useTasks({ done: true, ...fyRange(fyStartYear) });
+  const taskById = useMemo(() => new Map((doneTasks.data?.tasks ?? []).filter((t) => !t.hidden).map((t) => [t.id, t])), [doneTasks.data?.tasks]);
+  const statRows = useMemo(() => query_.data?.rows ?? [], [query_.data?.rows]);
+  const taskRows = useMemo(() => [...taskById.values()].map(taskAsFilingRow), [taskById]);
+  // F-3: everything below (tiles, groups, donut, regulator bars) reads these rows, so it follows the filter.
+  const allRows = useMemo(
+    () => [...(showStat(cat) ? statRows : []), ...(showTasks(cat) ? taskRows : [])],
+    [cat, statRows, taskRows],
+  );
   // The side-table facts (ARN, data received, preparing, proofs) for the Note, Status and Proof columns.
   const facts = useCompFilings(fyStartYear);
   const details = useMemo(() => {
@@ -321,8 +341,18 @@ export function FilingsView({
     setParams({ area: null, status: null, lead: null, kpi: null, company: null });
   };
 
-  const recordHref = (row: FilingRow) =>
-    `${basePath}/obligations/${encodeURIComponent(row.obligationId)}${sole ? '' : `?company=${encodeURIComponent(row.engagementId)}`}`;
+  // A filing opens the statutory detail page of that client's period; a task row opens its task page.
+  const recordHref = (row: FilingRow) => {
+    const taskId = taskIdOfRow(row);
+    const task = taskId ? taskById.get(taskId) : undefined;
+    if (task) return hrefs?.task?.(task) ?? taskHref(basePath, task.id);
+    return hrefs?.record?.(row) ?? statHref(basePath, row.obligationId, row.id);
+  };
+  // Category counts of the window in view (F-1).
+  const inWindow = (row: FilingRow) => win.keys.includes(monthKeyOf(row.dueDate) ?? '') && (companyId === ALL_COMPANIES || row.engagementId === companyId);
+  const catStat = statRows.filter(inWindow).length;
+  const catTasks = taskRows.filter(inWindow).length;
+  const internalRows = baseRows.filter((row) => row.compliance === INTERNAL_AREA && chipMatch(row, false));
 
   // E-01: Remind through the one-click reminder route, one filing at a time, then one toast.
   const mayRemind = scope.audience === 'staff' && REMIND_ROLES.has(user?.role ?? '');
@@ -399,7 +429,12 @@ export function FilingsView({
     if (MAY_REOPEN_ROLES.has(user?.role ?? '')) toastUndo(text, () => void setFiled(ids, 'reopen'));
     else toastSuccess(text);
   };
-  const bulkActions = (rows: FilingRow[]): BulkAction[] => [
+  const bulkActions = (picked: FilingRow[]): BulkAction[] => {
+    // Task rows are done tasks: Remind and Mark filed act on filings only.
+    const rows = picked.filter((row) => !taskIdOfRow(row));
+    return bulkFor(rows, picked);
+  };
+  const bulkFor = (rows: FilingRow[], picked: FilingRow[]): BulkAction[] => [
     ...(mayRemind ? [{ key: 'remind', label: 'Remind', icon: BellRing, disabled: reminding, onClick: () => void remindRows(rows) }] : []),
     ...(mayRemind
       ? [{ key: 'filed', label: 'Mark filed', icon: CircleCheck, disabled: filing, onClick: () => void markFiledRows(rows) }]
@@ -408,7 +443,7 @@ export function FilingsView({
       key: 'export',
       label: 'Export',
       icon: Download,
-      onClick: () => downloadCsv(`filings-selected-${rows.length}.csv`, filingsCsv(rows, now, details)),
+      onClick: () => downloadCsv(`filings-selected-${picked.length}.csv`, filingsCsv(picked, now, details)),
     },
   ];
 
@@ -715,6 +750,8 @@ export function FilingsView({
             now={now}
             basePath={basePath}
             details={details}
+            tasks={taskById}
+            recordHref={recordHref}
             numbered={period === 'annual' && !tile}
             mode={columnsMode}
             bulkActions={bulkActions}
@@ -783,6 +820,7 @@ export function FilingsView({
                   className="h-9 pl-9"
                 />
               </span>
+              <CatFilterTabs value={cat} onChange={(c) => setParams({ cat: c === 'all' ? null : c })} stat={catStat} ns={catTasks} />
               <FilterChipRow chips={chips} onClear={anyFilter ? clearAll : undefined} />
             </div>
             <div ref={listRef} className="min-w-0">
@@ -831,6 +869,19 @@ export function FilingsView({
                     </button>
                   );
                 })}
+                {internalRows.length ? (
+                  // Non-statutory work has no regulator; its row shows beside the six (F-3).
+                  <span className="-mx-1.5 flex items-center gap-2.5 px-1.5 py-1" aria-label={`Internal: ${internalRows.length} done`}>
+                    <i className="h-2 w-2 flex-none rounded-[2px] border-[1.5px] border-ink-2" aria-hidden />
+                    <span className="flex-1 text-[13.5px] text-ink">Internal</span>
+                    <span className="text-[13px] tabular-nums text-ink-muted">
+                      {internalRows.length} / {internalRows.length}
+                    </span>
+                    <span className="relative h-1.5 w-[90px] flex-none overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+                      <i className="absolute inset-y-0 left-0 w-full rounded-bar bg-ink-2" />
+                    </span>
+                  </span>
+                ) : null}
               </div>
             </DashSection>
             <DashSection title="Filings by status" meta={periodShort} loading={query_.isPending}>
@@ -915,6 +966,8 @@ function RegisterTable({
   now,
   basePath,
   details,
+  tasks,
+  recordHref,
   numbered,
   mode = ONE_COMPANY,
   bulkActions,
@@ -925,6 +978,9 @@ function RegisterTable({
   basePath: string;
   /** The side-table facts (ARN, proofs) keyed by filing id. */
   details: Map<string, PortalFiling>;
+  /** Done tasks by id (F-2): their rows show the deliverable instead of the window and proof. */
+  tasks?: Map<string, TaskRowDto>;
+  recordHref?: (row: FilingRow) => string;
   numbered?: boolean;
   mode?: RegisterColumnsMode;
   /** E-01: row selection and the bulk bar. */
@@ -957,10 +1013,22 @@ function RegisterTable({
       width: '30%',
       render: (row) => (
         <span className="block min-w-0" data-ask-focus={row.id}>
-          <span className="flex min-w-0 items-center gap-1">
-            <GlossaryText text={row.particular} className="truncate text-[14px] font-medium text-ink" />
-            <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
-          </span>
+          {taskIdOfRow(row) ? (
+            <span className="flex min-w-0 items-center gap-1">
+              {recordHref ? (
+                <Link href={recordHref(row)} className="truncate text-[14px] font-medium text-ink hover:text-brand-text">
+                  {row.particular}
+                </Link>
+              ) : (
+                <span className="truncate text-[14px] font-medium text-ink">{row.particular}</span>
+              )}
+            </span>
+          ) : (
+            <span className="flex min-w-0 items-center gap-1">
+              <GlossaryText text={row.particular} className="truncate text-[14px] font-medium text-ink" />
+              <WhatsThisButton compact kind="compliance" refId={row.obligationId} label={row.particular} />
+            </span>
+          )}
           <span className="block truncate text-[12.5px] text-ink-muted">
             {[row.periodLabel, row.authority].filter(Boolean).join(' · ')}
           </span>
@@ -986,14 +1054,30 @@ function RegisterTable({
         );
       },
     },
-    { key: 'window', header: 'Window', width: '176px', render: (row) => <FilingWindowCell row={row} mayWrite={mayWrite} /> },
+    {
+      key: 'window',
+      header: 'Window',
+      width: '176px',
+      render: (row) =>
+        taskIdOfRow(row) ? (
+          <span className="text-[13px] text-ink-muted">
+            {plainDate(row.windowFrom, now)} to {plainDate(row.windowTo, now)}
+          </span>
+        ) : (
+          <FilingWindowCell row={row} mayWrite={mayWrite} />
+        ),
+    },
     { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={boardWord(row, details.get(row.id), now)} /> },
     {
       key: 'proof',
       header: 'Proof',
       width: '120px',
       align: 'right',
-      render: (row) => <FilingProofCell row={row} detail={details.get(row.id)} mayWrite={mayWrite} now={now} />,
+      render: (row) => {
+        const taskId = taskIdOfRow(row);
+        if (!taskId) return <FilingProofCell row={row} detail={details.get(row.id)} mayWrite={mayWrite} now={now} />;
+        return <TaskDeliverable taskId={taskId} file={tasks?.get(taskId)?.deliverable ?? null} />;
+      },
     },
   );
 
@@ -1011,6 +1095,22 @@ function RegisterTable({
       bulkNoun={['filing', 'filings']}
       onClearFilters={onClearFilters}
     />
+  );
+}
+
+/** F-2: the file a done task delivers, opened through its short-lived link. */
+function TaskDeliverable({ taskId, file }: { taskId: string; file: { id: string; fileName: string } | null }) {
+  if (!file) return <span className="text-ink-faint">—</span>;
+  return (
+    <button
+      type="button"
+      title={file.fileName}
+      aria-label={`Open ${file.fileName}`}
+      onClick={() => void openTaskAttachment(taskId, file.id).catch((e: unknown) => toastError('Could not open the file', errorMessage(e)))}
+      className="inline-flex max-w-full items-center gap-1.5 rounded-md hover:text-brand-text"
+    >
+      <FileBadge type={fileType(file.fileName)} />
+    </button>
   );
 }
 

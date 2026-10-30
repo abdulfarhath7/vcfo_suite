@@ -121,6 +121,7 @@ type Entry<T> = { kind: 'g'; g: GridGroup<T>; open: boolean } | { kind: 'r'; row
 export function GroupedGrid<T>({
   title,
   right,
+  bar,
   columns,
   groups,
   rowKey,
@@ -132,6 +133,8 @@ export function GroupedGrid<T>({
 }: {
   title: string;
   right?: ReactNode;
+  /** A row under the head for switches (the Obligations category switch, S-1). */
+  bar?: ReactNode;
   columns: GridColumn<T>[];
   groups: GridGroup<T>[];
   rowKey: (row: T) => string;
@@ -160,6 +163,7 @@ export function GroupedGrid<T>({
   return (
     <section className="surface min-w-0 overflow-hidden" aria-label={title}>
       <GridHead title={title} count={shownCount} right={right} />
+      {bar ? <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 py-2.5">{bar}</div> : null}
       <div className="overflow-x-auto">
         <table className="grid-table md:min-w-[720px]">
           <thead>

@@ -62,6 +62,12 @@ import { AreaShort, ClientDot, ClientTag } from '@/views/compliances/identity';
 import { FilingWindows } from '@/views/compliances/filing-windows';
 import { MonthNav } from '@/views/compliances/month-nav';
 import { useMayWriteFilings } from '@/views/compliances/use-register';
+import { CatFilterTabs } from '@/components/compliances/CategoryTabs';
+import { UrgencyPill } from '@/components/compliances/TaskMarks';
+import { useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
+import { fyRange, taskAsFilingRow, taskHintOf, taskIdOfRow, taskStatus } from '@/views/compliances/tasks/task-calendar';
+import { statHref, taskHref } from '@/views/compliances/tasks/task-list';
+import { showStat, showTasks, type CatFilter } from '@/views/compliances/tasks/task-model';
 
 type CalendarView = 'month' | 'year' | 'timeline' | 'statutory';
 const ALL_AREAS = 'all';
@@ -97,9 +103,12 @@ function firstOfMonth(date: Date): Date {
 export function ComplianceCalendarView({
   basePath,
   scope,
+  hrefs,
 }: {
   basePath: string;
   scope: ComplianceScope;
+  /** Where a filing or a task opens when the shell has no obligation pages (super admin Practice). */
+  hrefs?: { record?: (row: FilingRow) => string; task?: (t: TaskRowDto) => string };
 }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -113,6 +122,8 @@ export function ComplianceCalendarView({
   const [pickedDay, setPickedDay] = useState<string | null>(() => (dateParam ? dateParam.toISOString().slice(0, 10) : null));
   const [view, setView] = useState<CalendarView>('month');
   const [area, setArea] = useState<string>(ALL_AREAS);
+  // C-1: All, Statutory, Non-statutory. The filter applies to every view and the rail (C-4).
+  const [cat, setCat] = useState<CatFilter>('all');
   const [pickedId, setPickedId] = useState<string>(() => normaliseCompanyParam(params.get('company'), engagements));
   const companyId = sole ? sole.id : pickedId;
   const picked = pickedCompany(engagements, companyId);
@@ -122,7 +133,13 @@ export function ComplianceCalendarView({
   const fyStartYear = financialYearForDate(month).startYear;
   const query = useFilings({ fyStartYear });
   const scopedRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
-  const rows = useMemo(() => rowsForCompany(scopedRows, companyId), [scopedRows, companyId]);
+  const allRows = useMemo(() => rowsForCompany(scopedRows, companyId), [scopedRows, companyId]);
+  const rows = useMemo(() => (showStat(cat) ? allRows : []), [allRows, cat]);
+
+  // Non-statutory tasks of the financial year in view (C-3), by their end date.
+  const range = fyRange(fyStartYear);
+  const taskQuery = useTasks({ engagementId: companyId !== ALL_COMPANIES ? companyId : undefined, from: range.from, to: range.to });
+  const allTasks = useMemo(() => (taskQuery.data?.tasks ?? []).filter((t) => !t.hidden), [taskQuery.data?.tasks]);
 
   const monthKey = monthKeyForDate(month);
   const nowKey = monthKeyForDate(now);
@@ -134,6 +151,13 @@ export function ComplianceCalendarView({
   const areas = useMemo(() => [...new Set(counted.map((row) => row.compliance))].sort((a, b) => a.localeCompare(b)), [counted]);
   const areaOn = area !== ALL_AREAS && areas.includes(area) ? area : ALL_AREAS;
   const inArea = (row: FilingRow) => areaOn === ALL_AREAS || row.compliance === areaOn;
+  // Tasks have no regulator: they show under the All area only.
+  const tasks = useMemo(() => (showTasks(cat) && areaOn === ALL_AREAS ? allTasks : []), [allTasks, cat, areaOn]);
+  const monthTasks = useMemo(() => tasks.filter((t) => t.dueDate.startsWith(monthKey)), [tasks, monthKey]);
+  const statCount = (view === 'month' ? sortByDueDate(rowsInMonth(allRows, monthKey)) : allRows).length;
+  const taskCount = (view === 'month' ? allTasks.filter((t) => t.dueDate.startsWith(monthKey)) : allTasks).length;
+  const recordHref = (row: FilingRow) => hrefs?.record?.(row) ?? statHref(basePath, row.obligationId, row.id);
+  const taskLink = (t: TaskRowDto) => hrefs?.task?.(t) ?? taskHref(basePath, t.id);
 
   const marks: CalendarMark[] = useMemo(
     () =>
@@ -144,21 +168,40 @@ export function ComplianceCalendarView({
         date: row.dueDate.slice(0, 10),
         label: row.particular,
         status: filingStatus(row, now),
-      })),
-    [rows, areaOn, now],
+      }))
+        .concat(
+          tasks.map((t) => ({
+            id: `task-${t.id}`,
+            date: t.dueDate.slice(0, 10),
+            label: t.title,
+            status: taskStatus(t, now),
+            hollow: true,
+            hint: taskHintOf(t, now),
+          })),
+        ),
+    [rows, tasks, areaOn, now],
   );
 
   // The rail always reads this calendar month (the donut is "this month", R-25).
   const nowMonthCounts = useMemo(() => {
     const c = emptyCounts();
     for (const row of rowsInMonth(rows, nowKey)) c[filingStatus(row, now)] += 1;
+    // A done task counts as filed, as in the prototype's donut.
+    for (const t of tasks) if (t.dueDate.startsWith(nowKey)) c[taskStatus(t, now)] += 1;
     return c;
-  }, [rows, nowKey, now]);
+  }, [rows, tasks, nowKey, now]);
   const upcoming = useMemo(
     () => sortByDueDate(rows.filter((row) => !row.filedOn && row.dueDate.slice(0, 10) >= todayIso)),
     [rows, todayIso],
   );
+  const upcomingTasks = useMemo(
+    () => tasks.filter((t) => t.stage !== 'completed' && t.dueDate.slice(0, 10) >= todayIso).sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+    [tasks, todayIso],
+  );
   const next = upcoming[0];
+  const nextTask = upcomingTasks[0];
+  // C-4: the next deadline is the earlier of the next filing and the next task.
+  const nextIsTask = Boolean(nextTask && (!next || nextTask.dueDate.slice(0, 10) < next.dueDate.slice(0, 10)));
   // "Remind me": the caller's own reminder on the next deadline (existing route, scoped in the repository).
   const facts = useCompFilings(fyStartYear);
   const reminder = useReminder();
@@ -172,12 +215,12 @@ export function ComplianceCalendarView({
       ? `${basePath}/filings?cadence=monthly&period=${monthKeyOf(row.dueDate)}${companyQuery}`
       : `${basePath}/filings${companyQuery ? `?${companyQuery.slice(1)}` : ''}`;
 
-  // A filing opens its record: the obligation page for that client.
-  const recordHref = (row: FilingRow) => `${basePath}/obligations/${encodeURIComponent(row.obligationId)}?company=${row.engagementId}`;
+  // A filing opens its record: the statutory detail page of that client's period (S-2).
   const factOf = (row: FilingRow) => facts.data?.rows.find((f) => f.id === row.id);
 
   const listRows = monthRows.filter(inArea);
   const dayRows = (day: string) => listRows.filter((row) => row.dueDate.slice(0, 10) === day);
+  const dayTasks = (day: string) => monthTasks.filter((t) => t.dueDate.slice(0, 10) === day);
 
   return (
     <PageTransition>
@@ -220,16 +263,19 @@ export function ComplianceCalendarView({
           <span className="inline-flex h-8 flex-none items-center rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning">
             {financialYearLabel(fyStartYear)}
           </span>
-          <SpectrumTabs
-            label="Filter by area"
-            className="min-w-0 xl:flex-shrink"
-            items={[
-              { key: ALL_AREAS, label: 'All', count: counted.length },
-              ...areas.map((a) => ({ key: a, label: areaLabel(a), count: counted.filter((row) => row.compliance === a).length })),
-            ]}
-            value={areaOn}
-            onChange={setArea}
-          />
+          <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
+          {cat === 'non-statutory' ? null : (
+            <SpectrumTabs
+              label="Filter by area"
+              className="min-w-0 xl:flex-shrink"
+              items={[
+                { key: ALL_AREAS, label: 'All', count: counted.length },
+                ...areas.map((a) => ({ key: a, label: areaLabel(a), count: counted.filter((row) => row.compliance === a).length })),
+              ]}
+              value={areaOn}
+              onChange={setArea}
+            />
+          )}
           <span className="ml-auto flex flex-none flex-wrap items-center gap-1.5">
             <SpectrumTabs
               label="Calendar view"
@@ -237,7 +283,8 @@ export function ComplianceCalendarView({
                 { key: 'month', label: 'Month' },
                 { key: 'year', label: 'Year' },
                 { key: 'timeline', label: 'Timeline' },
-                { key: 'statutory', label: 'Statutory' },
+                // The firm's act grid; named "By act" so it does not read like the Statutory filter (C-1).
+                { key: 'statutory', label: 'By act' },
               ]}
               value={view}
               onChange={(v) => setView(v as CalendarView)}
@@ -273,16 +320,36 @@ export function ComplianceCalendarView({
                 <SkeletonRows rows={6} />
               </div>
             ) : view === 'timeline' ? (
-              <div className="surface min-w-0 p-3">
-                <FilingWindows
-                  rows={rows.filter(inArea)}
-                  fyStartYear={fyStartYear}
-                  todayIso={todayIso}
-                  now={now}
-                  mayWrite={mayWrite}
-                  hrefOf={recordHref}
-                />
-              </div>
+              <>
+                {showStat(cat) ? (
+                  <div className="surface min-w-0 p-3">
+                    <FilingWindows
+                      rows={rows.filter(inArea)}
+                      fyStartYear={fyStartYear}
+                      todayIso={todayIso}
+                      now={now}
+                      mayWrite={mayWrite}
+                      hrefOf={recordHref}
+                    />
+                  </div>
+                ) : null}
+                {tasks.length ? (
+                  <section className="surface min-w-0 p-3" aria-label="Non-statutory tasks">
+                    {/* Tasks run from the start date to the end date; read-only here, the task page edits them. */}
+                    <FilingWindows
+                      rows={tasks.map(taskAsFilingRow)}
+                      fyStartYear={fyStartYear}
+                      todayIso={todayIso}
+                      now={now}
+                      mayWrite={false}
+                      hrefOf={(row) => {
+                        const t = tasks.find((x) => x.id === taskIdOfRow(row));
+                        return t ? taskLink(t) : basePath;
+                      }}
+                    />
+                  </section>
+                ) : null}
+              </>
             ) : view === 'year' ? (
               <div className="surface min-w-0 p-3">
                 <YearGrid
@@ -306,11 +373,14 @@ export function ComplianceCalendarView({
                     marks={marks}
                     picked={pickedDay}
                     onPick={setPickedDay}
-                    dayTitle={(day) => <DayHead day={day} rows={dayRows(day)} now={now} />}
+                    dayTitle={(day) => <DayHead day={day} rows={dayRows(day)} tasks={dayTasks(day)} now={now} />}
                     dayBody={(day) => (
                       <ul>
                         {dayRows(day).map((row) => (
                           <PopRow key={row.id} row={row} now={now} href={recordHref(row)} />
+                        ))}
+                        {dayTasks(day).map((t) => (
+                          <TaskPopRow key={`task-${t.id}`} task={t} now={now} href={taskLink(t)} />
                         ))}
                       </ul>
                     )}
@@ -328,12 +398,15 @@ export function ComplianceCalendarView({
                   }
                   bodyClassName="p-0"
                 >
-                  {listRows.length === 0 ? (
+                  {listRows.length === 0 && monthTasks.length === 0 ? (
                     <p className="px-4 py-3 text-[13px] text-ink-faint">Nothing falls due</p>
                   ) : (
                     <ul>
                       {listRows.map((row) => (
                         <DayRow key={row.id} row={row} now={now} href={recordHref(row)} showCompany={showCompany} />
+                      ))}
+                      {monthTasks.map((t) => (
+                        <TaskDayRow key={`task-${t.id}`} task={t} now={now} href={taskLink(t)} showCompany={showCompany} />
                       ))}
                     </ul>
                   )}
@@ -344,7 +417,9 @@ export function ComplianceCalendarView({
 
           <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-1">
             <StatusDonutCard counts={nowMonthCounts} caption={LONG_MON[now.getUTCMonth()]!} label="This month by status" />
-            {next ? (
+            {nextIsTask && nextTask ? (
+              <NextTaskCard task={nextTask} now={now} showCompany={showCompany} href={taskLink(nextTask)} />
+            ) : next ? (
               <NextDeadlineCard
                 row={next}
                 now={now}
@@ -361,7 +436,7 @@ export function ComplianceCalendarView({
               />
             ) : null}
             <div className="md:col-span-2 lg:col-span-1">
-              <ComingUpCard rows={upcoming} now={now} showCompany={showCompany} hrefOf={recordHref} />
+              <ComingUpCard rows={upcoming} tasks={upcomingTasks} now={now} showCompany={showCompany} hrefOf={recordHref} taskHrefOf={taskLink} />
             </div>
           </div>
         </div>
@@ -440,9 +515,11 @@ const DOT_MID: Partial<Record<ChipTone, string>> = {
 };
 
 /** The day popover head: a date tile, the long date and the count. */
-function DayHead({ day, rows, now }: { day: string; rows: FilingRow[]; now: Date }) {
+function DayHead({ day, rows, tasks = [], now }: { day: string; rows: FilingRow[]; tasks?: TaskRowDto[]; now: Date }) {
   const d = parseIsoDate(day)!;
-  const status = rows.length ? worstStatus(rows.map((row) => filingStatus(row, now))) : 'upcoming';
+  const all = [...rows.map((row) => filingStatus(row, now)), ...tasks.map((t) => taskStatus(t, now))];
+  const status = all.length ? worstStatus(all) : 'upcoming';
+  const count = rows.length + tasks.length;
   return (
     <span className="flex items-center gap-2.5">
       <CalDateTile iso={day} status={status} className="h-11 w-10" />
@@ -450,7 +527,9 @@ function DayHead({ day, rows, now }: { day: string; rows: FilingRow[]; now: Date
         <b className="block text-[14px] font-medium">
           {LONG_DOW[d.getUTCDay()]} {d.getUTCDate()} {LONG_MON[d.getUTCMonth()]}
         </b>
-        <span className="block text-[12px] font-normal text-ink-muted">{rows.length === 1 ? '1 filing' : `${rows.length} filings`}</span>
+        <span className="block text-[12px] font-normal text-ink-muted">
+          {tasks.length === 0 ? (count === 1 ? '1 filing' : `${count} filings`) : count === 1 ? '1 item' : `${count} items`}
+        </span>
       </span>
     </span>
   );
@@ -475,6 +554,104 @@ function PopRow({ row, now, href }: { row: FilingRow; now: Date; href: string })
         <WordChip word={filingWord(row, now)} />
       </Link>
     </li>
+  );
+}
+
+/** The hollow 8 px square of a non-statutory task (C-3). */
+function TaskSquare() {
+  return <i className="h-2 w-2 flex-none rounded-[2px] border-[1.5px] border-ink-2" aria-hidden />;
+}
+
+/** One task of a day popover: the hollow square, the task, its client, the start and urgency, and the status chip. */
+function TaskPopRow({ task, now, href }: { task: TaskRowDto; now: Date; href: string }) {
+  return (
+    <li className="border-t border-line-soft first:border-t-0">
+      <Link href={href} className="flex items-center gap-2 px-4 py-2 hover:bg-surface-sunken" title={taskHintOf(task, now)}>
+        <span className="grid w-[34px] flex-none place-items-center">
+          <TaskSquare />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13.5px] font-medium text-ink">{task.title}</span>
+          <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-ink-muted">
+            <ClientDot id={task.engagementId} />
+            <span className="truncate">
+              {task.companyName} · {taskHintOf(task, now)}
+            </span>
+          </span>
+        </span>
+        <WordChip word={task.word} />
+      </Link>
+    </li>
+  );
+}
+
+/** One task of the month list, beside the filings. */
+function TaskDayRow({ task, now, href, showCompany }: { task: TaskRowDto; now: Date; href: string; showCompany: boolean }) {
+  return (
+    <li className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2 first:border-t-0" title={taskHintOf(task, now)}>
+      <DateTile iso={task.dueDate} status={taskStatus(task, now)} />
+      <UrgencyPill urgency={task.urgency} className="hidden sm:inline-flex" />
+      <span className="min-w-0 flex-1">
+        <Link href={href} className="flex min-w-0 items-center gap-1.5 truncate text-[14px] font-medium text-ink hover:text-brand-text">
+          <TaskSquare />
+          <span className="truncate">{task.title}</span>
+        </Link>
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-[12.5px] text-ink-muted">
+          {showCompany ? (
+            <>
+              <ClientDot id={task.engagementId} />
+              <span className="truncate">{task.companyName} · </span>
+            </>
+          ) : null}
+          <span className="truncate">
+            starts {plainDate(task.startDate, now)} · ends {plainDate(task.dueDate, now)}
+          </span>
+        </span>
+      </span>
+      <WordChip word={task.word} />
+    </li>
+  );
+}
+
+/** The next deadline when it is a task: days left, the task, its client and a way in. */
+function NextTaskCard({ task, now, showCompany, href }: { task: TaskRowDto; now: Date; showCompany: boolean; href: string }) {
+  const days = daysUntil(task.dueDate, now) ?? 0;
+  return (
+    <section className="surface overflow-hidden" aria-label="Next deadline">
+      <div className="px-4 pb-3.5 pt-4">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-ink">
+          <i className="h-1.5 w-1.5 rounded-[2px] bg-highlight-bright" aria-hidden />
+          Next deadline
+        </div>
+        <div className="mt-2.5 flex items-center gap-3.5">
+          <Link
+            href={href}
+            className="grid h-[62px] w-[58px] flex-none place-content-center rounded-md bg-surface-sunken text-center leading-none text-ink hover:bg-line-soft"
+            aria-label={`${days} days left · open ${task.title}`}
+          >
+            <b className="text-[28px] font-medium tabular-nums">{days}</b>
+            <small className="mt-1 text-[11px] font-medium tracking-wide text-ink-muted">{days === 1 ? 'DAY' : 'DAYS'}</small>
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[18px] font-medium leading-tight tracking-tight text-ink" title={task.title}>
+              {task.title}
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <UrgencyPill urgency={task.urgency} />
+              {showCompany ? <ClientTag id={task.engagementId} name={task.companyName} /> : null}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3.5 flex gap-2">
+          <Button size="sm" className="flex-1" asChild>
+            <Link href={href}>
+              Open task
+              <ArrowRight aria-hidden />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -605,8 +782,10 @@ interface ComingItem {
   name: string;
   /** Text after the name: the client, or "n clients". */
   who: string | null;
-  row: FilingRow;
-  area: string;
+  href: string;
+  /** Null for a task: it has no regulator and shows the hollow square. */
+  area: string | null;
+  hint?: string;
   status: FilingStatus;
   word: SixWord;
 }
@@ -617,17 +796,44 @@ interface ComingItem {
  */
 function ComingUpCard({
   rows,
+  tasks = [],
   now,
   showCompany,
   hrefOf,
+  taskHrefOf,
 }: {
   rows: FilingRow[];
+  tasks?: TaskRowDto[];
   now: Date;
   showCompany: boolean;
   hrefOf: (row: FilingRow) => string;
+  taskHrefOf?: (t: TaskRowDto) => string;
 }) {
   const items: ComingItem[] = [];
-  for (const row of rows) {
+  // Filings and tasks in one date order (C-4); a filing comes before a task on the same day.
+  type Entry = { kind: 'row'; row: FilingRow; day: string } | { kind: 'task'; task: TaskRowDto; day: string };
+  const entries: Entry[] = [
+    ...rows.map((row) => ({ kind: 'row' as const, row, day: row.dueDate.slice(0, 10) })),
+    ...tasks.map((task) => ({ kind: 'task' as const, task, day: task.dueDate.slice(0, 10) })),
+  ].sort((a, b) => a.day.localeCompare(b.day) || (a.kind === b.kind ? 0 : a.kind === 'row' ? -1 : 1));
+  for (const e of entries) {
+    if (e.kind === 'task') {
+      if (items.length >= 7) break;
+      const t = e.task;
+      items.push({
+        key: `task-${t.id}`,
+        day: e.day,
+        name: t.title,
+        who: showCompany ? shortName(t.companyName) : null,
+        href: taskHrefOf?.(t) ?? '#',
+        area: null,
+        hint: taskHintOf(t, now),
+        status: taskStatus(t, now),
+        word: t.word,
+      });
+      continue;
+    }
+    const row = e.row;
     const day = row.dueDate.slice(0, 10);
     const status = filingStatus(row, now);
     const hit = items.find((x) => x.day === day && x.name === row.particular);
@@ -643,7 +849,7 @@ function ComingUpCard({
         day,
         name: row.particular,
         who: showCompany ? shortName(row.companyName) : null,
-        row,
+        href: hrefOf(row),
         area: areaLabel(row.compliance),
         status,
         word: filingWord(row, now),
@@ -671,8 +877,14 @@ function ComingUpCard({
             <ul className="grid min-w-0 flex-1 grid-cols-1 gap-1.5">
               {list.map((x) => (
                 <li key={x.key} className="min-w-0">
-                  <Link href={hrefOf(x.row)} className="flex w-full min-w-0 items-center gap-2 text-left hover:text-brand-text">
-                    <AreaShort area={x.area} />
+                  <Link href={x.href} title={x.hint} className="flex w-full min-w-0 items-center gap-2 text-left hover:text-brand-text">
+                    {x.area ? (
+                      <AreaShort area={x.area} />
+                    ) : (
+                      <span className="grid w-[34px] flex-none place-items-center">
+                        <TaskSquare />
+                      </span>
+                    )}
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
                       <span>{x.name}</span>
                       {x.who ? <span className="font-normal text-ink-muted"> · {x.who}</span> : null}

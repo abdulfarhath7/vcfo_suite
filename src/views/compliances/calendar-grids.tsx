@@ -20,6 +20,10 @@ export interface CalendarMark {
   date: string;
   label: string;
   status: FilingStatus;
+  /** A non-statutory task (C-3): a hollow 8 px square on its end date, not the regulator bar. */
+  hollow?: boolean;
+  /** Hover text, for example "Starts 12 Oct · High". */
+  hint?: string;
 }
 
 const HEAD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -41,9 +45,9 @@ function tagsByDay(marks: CalendarMark[]): Map<string, CalendarMark[]> {
   const days = new Map<string, CalendarMark[]>();
   for (const m of marks) {
     const list = days.get(m.date) ?? [];
-    const hit = list.find((x) => x.label === m.label);
+    const hit = list.find((x) => x.label === m.label && Boolean(x.hollow) === Boolean(m.hollow));
     if (hit) hit.status = worstStatus([hit.status, m.status]);
-    else list.push({ ...m, id: `${m.date}-${m.label}` });
+    else list.push({ ...m, id: `${m.date}-${m.hollow ? 't' : 's'}-${m.label}` });
     days.set(m.date, list);
   }
   return days;
@@ -132,10 +136,14 @@ export function MonthGrid({
                 {list.slice(0, 2).map((x) => (
                   <span
                     key={x.id}
-                    title={`${x.label} · ${FILING_WORD[x.status]}`}
+                    title={x.hollow ? `${x.label} · ${x.hint ?? FILING_WORD[x.status]}` : `${x.label} · ${FILING_WORD[x.status]}`}
                     className="flex h-5 min-w-0 items-center gap-1.5 overflow-hidden rounded-[3px] bg-surface-sunken pr-1.5 text-[11px] font-medium text-ink"
                   >
-                    <i className={cn('w-[3px] flex-none self-stretch rounded-l-[3px]', STATUS_FILL[x.status])} aria-hidden />
+                    {x.hollow ? (
+                      <i className="ml-1 h-2 w-2 flex-none rounded-[2px] border-[1.5px] border-ink-2" aria-hidden data-hollow />
+                    ) : (
+                      <i className={cn('w-[3px] flex-none self-stretch rounded-l-[3px]', STATUS_FILL[x.status])} aria-hidden />
+                    )}
                     <span className="truncate">{x.label}</span>
                   </span>
                 ))}
@@ -143,7 +151,7 @@ export function MonthGrid({
               </span>
               <span className="flex flex-wrap gap-0.5 md:hidden" aria-hidden>
                 {list.map((x) => (
-                  <i key={x.id} className={cn('h-1.5 w-1.5 rounded-[2px]', STATUS_FILL[x.status])} />
+                  <i key={x.id} className={cn('h-1.5 w-1.5 rounded-[2px]', x.hollow ? 'border border-ink-2' : STATUS_FILL[x.status])} />
                 ))}
               </span>
             </button>

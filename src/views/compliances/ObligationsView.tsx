@@ -39,6 +39,13 @@ import { ClientTile, PersonCell } from '@/views/compliances/identity';
 import { areaSwatch } from '@/views/compliances/area-swatch';
 import { useRegister } from '@/views/compliances/use-register';
 import { useViewParams } from '@/views/compliances/view-params';
+import { useApp } from '@/context/AppContext';
+import { isAdminOrManager } from '@/lib/auth';
+import { CategoryTabs } from '@/components/compliances/CategoryTabs';
+import { useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
+import { NewTaskButton } from '@/views/compliances/tasks/new-task';
+import { statHref, taskColumns, taskGroups, taskHref, taskRowMatches } from '@/views/compliances/tasks/task-list';
+import type { Category } from '@/views/compliances/tasks/task-model';
 import {
   dueWithinSoon,
   flowCounts,
@@ -51,6 +58,13 @@ import {
 } from '@/views/compliances/obligation-groups';
 
 type GroupBy = 'filing' | 'frequency' | 'law';
+
+/** S-8: the strip labels follow the category in view. */
+const STRIP_LABELS: Record<Category, [string, string, string, string, string]> = {
+  stat: ['Overdue', 'Due in 15 days', 'Waiting on client', 'Done', 'Not started'],
+  ns: ['Overdue', 'Due this week', 'Waiting on client', 'Done', 'Not started'],
+  all: ['Overdue', 'Due soon', 'Waiting on client', 'Done', 'Not started'],
+};
 const FREQUENCIES: Array<[string, string]> = [
   ['monthly', 'Monthly'],
   ['quarterly', 'Quarterly'],
@@ -109,6 +123,14 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
     ? (stateParam as ObligationFilter)
     : '';
 
+  const catParam = params.get('cat');
+  const cat: Category = catParam === 'ns' || catParam === 'all' ? catParam : 'stat';
+  const hasStat = cat !== 'ns';
+  const hasNs = cat !== 'stat';
+  const { user } = useApp();
+  // S-4: admin and manager create non-statutory tasks; leads do not. Super admin has the same rights.
+  const canCreate = isAdminOrManager(user?.role);
+
   const picked = pickedCompany(engagements, companyId);
   const pickedPreIncorporation = picked && scope.preIncorporationIds.has(picked.id) ? picked : null;
 
@@ -119,16 +141,26 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
 
   const setParams = params.set;
 
-  const hrefOf = (r: FlatRow): string =>
-    `${basePath}/obligations/${encodeURIComponent(r.group.obligationId)}${sole ? '' : `?company=${encodeURIComponent(r.row.engagementId)}`}`;
+  // S-2: a row opens the statutory detail page of that client's period (4.2).
+  const hrefOf = (r: FlatRow): string => statHref(basePath, r.group.obligationId, r.row.id);
+
+  // Non-statutory tasks (S-3). The client filter applies to them too; not-applicable rows stay hidden.
+  const tasksQuery = useTasks({ engagementId: companyId !== ALL_COMPANIES ? companyId : undefined });
+  const tasks: TaskRowDto[] = useMemo(() => (tasksQuery.data?.tasks ?? []).filter((t) => !t.hidden), [tasksQuery.data?.tasks]);
+  const shownTasks = tasks.filter((t) => taskRowMatches(t, filter));
+  const tHref = (t: TaskRowDto) => taskHref(basePath, t.id);
 
   const count = (f: ObligationFilter) => allClientRows.filter((r) => matchesFilter(r, f, now)).length;
+  const taskCount = (f: ObligationFilter) => tasks.filter((t) => taskRowMatches(t, f)).length;
+  /** S-8: the strip counts the category in view. */
+  const tally = (f: ObligationFilter) => (hasStat ? count(f) : 0) + (hasNs ? taskCount(f) : 0);
+  const L = STRIP_LABELS[cat];
   const strip: StripItem[] = [
-    { key: 'overdue', label: 'Overdue', value: count('overdue'), Icon: AlertTriangle, valueClass: 'text-danger' },
-    { key: 'soon', label: 'Due in 15 days', value: count('soon'), Icon: Calendar, valueClass: 'text-warning' },
-    { key: 'waiting', label: 'Waiting on client', value: count('waiting'), Icon: User },
-    { key: 'done', label: 'Done', value: count('done'), Icon: CircleCheck, valueClass: 'text-positive' },
-    { key: 'none', label: 'Not started', value: count('none'), Icon: CalendarClock },
+    { key: 'overdue', label: L[0], value: tally('overdue'), Icon: AlertTriangle, valueClass: 'text-danger' },
+    { key: 'soon', label: L[1], value: tally('soon'), Icon: Calendar, valueClass: 'text-warning' },
+    { key: 'waiting', label: L[2], value: tally('waiting'), Icon: User },
+    { key: 'done', label: L[3], value: tally('done'), Icon: CircleCheck, valueClass: 'text-positive' },
+    { key: 'none', label: L[4], value: tally('none'), Icon: CalendarClock },
   ];
 
   const shownFlat: FlatRow[] = allClientRows.filter((r) => matchesFilter(r, filter, now));
@@ -234,6 +266,60 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
       rightClass: rightClass?.(r),
       href: hrefOf(r),
     }));
+  const taskRail = (list: TaskRowDto[]): RailItem[] =>
+    list.map((t) => ({
+      key: `task-${t.id}`,
+      title: t.title,
+      sub: t.companyName,
+      right: plainDate(t.dueDate, now),
+      rightClass: t.word === 'Overdue' ? 'font-medium text-danger' : undefined,
+      href: tHref(t),
+    }));
+  const byDue = (a: TaskRowDto, b: TaskRowDto) => a.dueDate.localeCompare(b.dueDate);
+  // The rail follows the category; All lists statutory rows first, then tasks.
+  const soonItems: RailItem[] = [
+    ...(hasStat ? rail(soon, (r) => plainDate(r.row.dueDate, now)) : []),
+    ...(hasNs ? taskRail(tasks.filter((t) => t.word !== 'Done' && t.week === 'This week').sort(byDue)) : []),
+  ].slice(0, 5);
+  const waitingItems: RailItem[] = [
+    ...(hasStat
+      ? rail(
+          waiting,
+          (r) => dueWords(r.row.dueDate, now),
+          (r) => cn('font-medium', r.status === 'overdue' ? 'text-danger' : 'text-waiting'),
+        )
+      : []),
+    ...(hasNs ? taskRail(tasks.filter((t) => t.word === 'Waiting').sort(byDue)) : []),
+  ].slice(0, 5);
+  const doneItems: RailItem[] = [
+    ...(hasStat
+      ? filedRecently.map((r) => ({
+          key: r.id,
+          title: r.particular,
+          sub: r.companyName,
+          right: plainDate(r.filedOn, now),
+          href: statHref(basePath, r.obligationId, r.id),
+        }))
+      : []),
+    ...(hasNs
+      ? taskRail(tasks.filter((t) => t.word === 'Done').sort((a, b) => (b.completedAt ?? b.dueDate).localeCompare(a.completedAt ?? a.dueDate)))
+      : []),
+  ].slice(0, 4);
+  const inStage = (...st: TaskRowDto['stage'][]) => tasks.filter((t) => st.includes(t.stage)).length;
+  const flowSteps =
+    cat === 'stat'
+      ? [
+          { label: 'Data from client', value: flow.data },
+          { label: 'Prepared', value: flow.prepared },
+          { label: 'Filed', value: flow.filed },
+          { label: 'Acknowledged', value: flow.acknowledged },
+        ]
+      : [
+          { label: 'Not started', value: (hasStat ? count('none') : 0) + inStage('not-started', 'ready') },
+          { label: 'Waiting on client', value: (hasStat ? count('waiting') : 0) + inStage('waiting') },
+          { label: 'In progress', value: (hasStat ? flow.prepared : 0) + inStage('in-progress', 'review', 'rework') },
+          { label: 'Done', value: (hasStat ? count('done') : 0) + inStage('completed') },
+        ];
 
   // List keys (prototype `useListKeys`): arrows move between rows, "/" goes to the first filter.
   // Inside the client record the list ref stays unattached, so the record keeps its own keys.
@@ -252,22 +338,58 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           onChange={(id) => setParams({ company: id === ALL_COMPANIES ? null : id })}
         />
       )}
-      <SpectrumTabs
-        label="Group by"
-        items={[
-          { key: 'filing', label: 'By filing' },
-          { key: 'frequency', label: 'By frequency' },
-          { key: 'law', label: 'By law' },
-        ]}
-        value={groupBy}
-        onChange={(v) => setParams({ by: v === 'filing' ? null : v })}
-      />
       {filter || (!sole && companyId !== ALL_COMPANIES) ? (
         <Button size="sm" variant="ghost" onClick={() => setParams({ state: null, company: null })}>
           Clear
         </Button>
       ) : null}
+      {canCreate ? (
+        <NewTaskButton
+          engagements={engagements}
+          defaultClient={companyId !== ALL_COMPANIES ? companyId : sole?.id}
+          now={now}
+          onCreated={(t) => {
+            // Show the new row: open the task list and drop filters that would hide it.
+            const next: Record<string, string | null> = { cat: cat === 'stat' ? 'ns' : cat, state: null };
+            if (companyId !== ALL_COMPANIES && companyId !== t.engagementId) next.company = null;
+            setParams(next);
+          }}
+        />
+      ) : null}
     </span>
+  );
+
+  // S-1: the category switch over the list; the group switch stays for statutory rows (S-2).
+  const bar = (
+    <>
+      <CategoryTabs value={cat} onChange={(c) => setParams({ cat: c === 'stat' ? null : c })} stat={allClientRows.length} ns={tasks.length} />
+      {hasStat ? (
+        <SpectrumTabs
+          label="Group by"
+          className="sm:ml-auto"
+          items={[
+            { key: 'filing', label: 'By filing' },
+            { key: 'frequency', label: 'By frequency' },
+            { key: 'law', label: 'By law' },
+          ]}
+          value={groupBy}
+          onChange={(v) => setParams({ by: v === 'filing' ? null : v })}
+        />
+      ) : null}
+    </>
+  );
+  const taskGrid = (top: boolean) => (
+    <GroupedGrid
+      title={top ? 'Obligations' : 'Non-statutory tasks'}
+      right={top ? head : undefined}
+      bar={top ? bar : undefined}
+      columns={taskColumns(now)}
+      groups={taskGroups(shownTasks)}
+      rowKey={(t) => t.id}
+      rowHref={tHref}
+      empty={tasksQuery.isPending ? 'Loading tasks' : tasksQuery.isError ? 'Could not load the tasks' : 'No tasks in view'}
+      footer={embedded || !top ? undefined : <KeyHint />}
+    />
   );
 
   return (
@@ -293,51 +415,30 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
               </div>
             ) : register.isError ? (
               <p className="surface px-4 py-6 text-center text-[13px] text-ink-muted">Could not load the register. Try again in a moment.</p>
+            ) : hasStat ? (
+              <div className="grid min-w-0 gap-5">
+                <GroupedGrid
+                  title="Obligations"
+                  right={head}
+                  bar={bar}
+                  columns={groupBy === 'filing' ? filingCols : flatCols}
+                  groups={gridGroups}
+                  rowKey={(r) => r.key}
+                  rowHref={hrefOf}
+                  empty="No obligations in view"
+                  footer={embedded ? undefined : <KeyHint />}
+                />
+                {cat === 'all' ? taskGrid(false) : null}
+              </div>
             ) : (
-              <GroupedGrid
-                title="Obligations"
-                right={head}
-                columns={groupBy === 'filing' ? filingCols : flatCols}
-                groups={gridGroups}
-                rowKey={(r) => r.key}
-                rowHref={hrefOf}
-                empty="No obligations in view"
-                footer={embedded ? undefined : <KeyHint />}
-              />
+              taskGrid(true)
             )}
           </div>
           <div className="grid min-w-0 gap-3">
-            <FlowCard
-              title="This month"
-              steps={[
-                { label: 'Data from client', value: flow.data },
-                { label: 'Prepared', value: flow.prepared },
-                { label: 'Filed', value: flow.filed },
-                { label: 'Acknowledged', value: flow.acknowledged },
-              ]}
-            />
-            <RailCard
-              title="Due in the next 15 days"
-              items={rail(soon, (r) => plainDate(r.row.dueDate, now))}
-            />
-            <RailCard
-              title="Waiting on client"
-              items={rail(
-                waiting,
-                (r) => dueWords(r.row.dueDate, now),
-                (r) => cn('font-medium', r.status === 'overdue' ? 'text-danger' : 'text-waiting'),
-              )}
-            />
-            <RailCard
-              title="Filed recently"
-              items={filedRecently.map((r) => ({
-                key: r.id,
-                title: r.particular,
-                sub: r.companyName,
-                right: plainDate(r.filedOn, now),
-                href: `${basePath}/obligations/${encodeURIComponent(r.obligationId)}?company=${encodeURIComponent(r.engagementId)}`,
-              }))}
-            />
+            <FlowCard title="This month" steps={flowSteps} />
+            <RailCard title={cat === 'stat' ? 'Due in the next 15 days' : cat === 'ns' ? 'This week' : 'Due soon'} items={soonItems} />
+            <RailCard title="Waiting on client" items={waitingItems} />
+            <RailCard title={cat === 'stat' ? 'Filed recently' : 'Done recently'} items={doneItems} />
           </div>
         </div>
       </div>
