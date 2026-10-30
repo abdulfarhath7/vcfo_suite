@@ -12,6 +12,9 @@
  * POST /api/client/compliances/:id/window (ownership checked in the
  * repository). A click without a drag, or Enter, opens the filing. Windows
  * come from compliance_instances.window_from/to, else due − PREP days.
+ * C-4: non-statutory tasks shared with the client sit in their own "Non-statutory" group after
+ * the areas. Their bar runs from the start date to the end date, drawn hollow (C-3), and it is
+ * locked: SBC sets those dates. A click opens the task page.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -27,6 +30,7 @@ import {
   type CompStatus,
   type PortalFiling,
 } from '@/lib/client-portal/compliances';
+import { isTaskRow, taskHint } from './tasks';
 
 const DAY = 86_400_000;
 const ZMAX = 40;
@@ -34,7 +38,7 @@ const PREP: Record<string, number> = { monthly: 5, quarterly: 10, 'half-yearly':
 /** Status colours (R-25): upcoming is grey, not navy. */
 const STC: Record<CompStatus, string> = { ok: 'var(--ok-mid)', due: 'var(--due-mid)', over: 'var(--over-mid)', up: 'oklch(var(--upcoming-mid))' };
 
-type Lane = { ar: AreaCode } | { name: string; items: PortalFiling[] };
+type Lane = { ar: AreaCode } | { grp: string } | { name: string; items: PortalFiling[] };
 
 export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number; rows: PortalFiling[]; today: string; onOpen: (f: PortalFiling) => void }) {
   const { toast } = usePortal();
@@ -52,7 +56,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
     const inRange = rows.filter((r) => dayN(r.dueDate) >= 0 && dayN(r.dueDate) <= NDAYS);
     const out: Lane[] = [];
     for (const a of AREA_ORDER) {
-      const inA = inRange.filter((r) => r.area === a);
+      const inA = inRange.filter((r) => r.area === a && !isTaskRow(r));
       if (!inA.length) continue;
       out.push({ ar: a });
       const names = new Map<string, PortalFiling[]>();
@@ -62,6 +66,13 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
         if (l) l.push(r);
         else names.set(k, [r]);
       }
+      for (const [name, items] of names) out.push({ name, items });
+    }
+    const tasks = inRange.filter(isTaskRow);
+    if (tasks.length) {
+      out.push({ grp: 'Non-statutory' });
+      const names = new Map<string, PortalFiling[]>();
+      for (const r of tasks) names.set(r.name, [...(names.get(r.name) ?? []), r]);
       for (const [name, items] of names) out.push({ name, items });
     }
     return out;
@@ -272,7 +283,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
     const w = winOf(r);
     const h = (e.target as HTMLElement).closest('.hd');
     // a filed window is locked: the press still opens it on release
-    drag.current = { r, mode: h ? (h.getAttribute('data-h') === 'l' ? 'start' : 'end') : 'move', x0: e.clientX, s0: w.s, e0: w.e, moved: false, sn: snap, prev: prevOf(r), locked: Boolean(r.filedOn) };
+    drag.current = { r, mode: h ? (h.getAttribute('data-h') === 'l' ? 'start' : 'end') : 'move', x0: e.clientX, s0: w.s, e0: w.e, moved: false, sn: snap, prev: prevOf(r), locked: Boolean(r.filedOn) || isTaskRow(r) };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
   const barMove = (e: React.PointerEvent) => {
@@ -327,7 +338,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
       return;
     }
     if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-    if (r.filedOn) return;
+    if (r.filedOn || isTaskRow(r)) return;
     ev.preventDefault();
     const w = winOf(r);
     const d = (ev.key === 'ArrowRight' ? 1 : -1) * snap;
@@ -412,9 +423,9 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
         <div className="tlv-n">
           <div className="sp" />
           {lanes.map((l, i) =>
-            'ar' in l ? (
+            'ar' in l || 'grp' in l ? (
               <div key={i} className="ar">
-                {AREA_LABEL[l.ar]}
+                {'ar' in l ? AREA_LABEL[l.ar] : l.grp}
               </div>
             ) : (
               <div key={i} title={l.name}>
@@ -434,7 +445,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
           <div className="tlv-w" style={{ width: X(NDAYS) }}>
             <div className="tlv-r">{ruler}</div>
             {lanes.map((l, li) =>
-              'ar' in l ? (
+              'ar' in l || 'grp' in l ? (
                 <div key={li} className="tlv-l ar" />
               ) : (
                 <div
@@ -451,11 +462,14 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
                     const st = statusOf(r, today);
                     const late = we > due && !r.filedOn;
                     const col = r.filedOn ? 'var(--ok-mid)' : STC[st];
-                    const tip = `${r.name} · ${r.period} · window ${nStr(ws)} – ${nStr(we)} · due ${nStr(due)}${r.filedOn ? ' · filed' : late ? ` · ends ${we - due} d after the due date` : ''}`;
+                    const task = isTaskRow(r);
+                    const tip = task
+                      ? `${r.name} · ${taskHint(r.task)} · ends ${nStr(due)}${r.filedOn ? ' · done' : ''}`
+                      : `${r.name} · ${r.period} · window ${nStr(ws)} – ${nStr(we)} · due ${nStr(due)}${r.filedOn ? ' · filed' : late ? ` · ends ${we - due} d after the due date` : ''}`;
                     return (
                       <span key={r.id}>
                         <span
-                          className={`tlv-b${late ? ' late' : ''}${r.filedOn ? ' lock' : ''}${dragId === r.id ? ' drag' : ''}`}
+                          className={`tlv-b${late ? ' late' : ''}${r.filedOn ? ' lock' : ''}${task ? ` task${r.filedOn ? ' done' : ''}` : ''}${dragId === r.id ? ' drag' : ''}`}
                           role="slider"
                           tabIndex={0}
                           aria-label={tip}
@@ -474,7 +488,7 @@ export function TimelineView({ fyStart, rows, today, onOpen }: { fyStart: number
                           }}
                           onKeyDown={(ev) => barKey(ev, r)}
                         >
-                          {r.filedOn ? null : (
+                          {r.filedOn || task ? null : (
                             <>
                               <span className="hd l" data-h="l" />
                               <span className="hd r" data-h="r" />

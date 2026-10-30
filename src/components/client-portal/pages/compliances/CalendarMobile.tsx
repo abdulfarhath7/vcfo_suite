@@ -5,6 +5,8 @@
  * week nav · 3 KPI cards · area pill · week strip · agenda (DECISIONS: week
  * strip + agenda; no grid / donut / year / timeline on phones). The prototype's
  * own phone top bar is the shared portal phone top bar.
+ * C-1 to C-4: the All · Statutory · Non-statutory switch sits above the area pill; the shared
+ * tasks join the week strip, the agenda, the numbers and the rail on their end date.
  */
 import { useMemo, useRef, useState } from 'react';
 import { usePortal } from '../../PortalProvider';
@@ -36,11 +38,17 @@ import { Rail, type useCalendarState } from './CalendarPage';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { portalHref } from '../../routes';
+import { CategoryTabs, RowArea } from './task-marks';
+import { taskHref, useTaskRows } from './task-api';
+import { fyOfIso, isTaskRow, showStat, showTasks, taskHint } from './tasks';
 
 export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
   const { after, toast, go } = usePortal();
   const { today, openDrill } = useComp();
-  const { area, set, nowKey } = state;
+  const { area, set, nowKey, cat } = state;
+  const statOn = showStat(cat);
+  const tasksOn = showTasks(cat) && area === 'all';
+  const allTasks = useTaskRows(after);
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
   const [week0, setWeek0] = useState(() => weekOf(state.month === nowKey ? today : `${state.month}-01`)[0]!);
@@ -56,26 +64,31 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
   const rows = useMemo(() => {
     if (!after) return [];
     const m = new Map<string, PortalFiling>();
-    for (const r of [...(qA.data?.rows ?? []), ...(fyB !== fyA ? qB.data?.rows ?? [] : []), ...(qT.data?.rows ?? [])]) m.set(r.id, r);
+    if (statOn) for (const r of [...(qA.data?.rows ?? []), ...(fyB !== fyA ? qB.data?.rows ?? [] : []), ...(qT.data?.rows ?? [])]) m.set(r.id, r);
+    if (tasksOn) for (const r of allTasks) m.set(r.id, r);
     return sortByDue([...m.values()]);
-  }, [after, qA.data, qB.data, qT.data, fyA, fyB]);
-  const fyRows = useMemo(() => (after ? qT.data?.rows ?? [] : []), [after, qT.data]);
+  }, [after, statOn, tasksOn, allTasks, qA.data, qB.data, qT.data, fyA, fyB]);
+  const statFy = useMemo(() => (after ? qT.data?.rows ?? [] : []), [after, qT.data]);
+  const taskFy = useMemo(() => allTasks.filter((r) => fyOfIso(r.dueDate) === todayFy), [allTasks, todayFy]);
+  const fyRows = useMemo(() => [...(statOn ? statFy : []), ...(tasksOn ? taskFy : [])], [statOn, tasksOn, statFy, taskFy]);
+  const openRow = (r: PortalFiling) => (isTaskRow(r) ? go(taskHref(r.task.id)) : set({ filing: r.id }));
   const loading = after && (qA.isLoading || qT.isLoading);
 
   const c = countByStatus(fyRows, today);
   const fyPct = fyRows.length ? Math.round((c.ok / fyRows.length) * 100) : 0;
   const fyTitle = `Compliances · ${fyLabelOf(todayFy)}`;
-  const areaRows = filterArea(rows, area);
+  const areaRows = [...filterArea(rows.filter((r) => !isTaskRow(r)), area), ...rows.filter(isTaskRow)].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const dates = byDate(areaRows);
   const areaIdx = Math.max(0, AREAS.findIndex((a) => a.id === area));
-  const areaCounts = AREAS.map((a) => (a.id === 'all' ? fyRows.length : fyRows.filter((r) => r.area === a.id).length));
+  const statCount = statOn ? statFy : [];
+  const areaCounts = AREAS.map((a) => (a.id === 'all' ? statCount.length : statCount.filter((r) => r.area === a.id).length));
 
   // agenda (CP-07): this week from Monday (filed and overdue included), then what follows;
   // in the current week every overdue filing from earlier weeks leads the list
   const thisWeek = week[0]! <= today && today <= week[6]!;
   const carried = thisWeek ? areaRows.filter((r) => r.dueDate < week[0]! && statusOf(r, today) === 'over') : [];
   const agenda = selDay ? dates.get(selDay) ?? [] : [...carried, ...areaRows.filter((r) => r.dueDate >= week[0]!).slice(0, 6)];
-  const detail = state.filing ? rows.find((r) => r.id === state.filing) ?? null : null;
+  const detail = state.filing ? rows.find((r) => r.id === state.filing && !isTaskRow(r)) ?? null : null;
   const mid = week[3]!;
   const label = `${MON[Number(mid.slice(5, 7)) - 1]} ${mid.slice(0, 4)}`;
 
@@ -136,7 +149,12 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
             ))}
           </div>
         ) : null}
-        <div className="cm-seg">
+        {after ? (
+          <Island className="max-w-full overflow-x-auto">
+            <CategoryTabs allFirst value={cat} onChange={(c) => set({ cat: c, area: 'all' })} stat={statFy.length} ns={taskFy.length} />
+          </Island>
+        ) : null}
+        <div className="cm-seg" style={cat === 'non-statutory' ? { display: 'none' } : undefined}>
           <div style={{ width: 'max-content' }}>
             <Seg
               opts={AREAS.map((a) => a.label)}
@@ -207,9 +225,10 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                   key={r.id}
                   type="button"
                   className="cm-ag"
-                  aria-label={`${r.name} · ${r.period} · open the details`}
+                  aria-label={`${r.name} · ${isTaskRow(r) ? taskHint(r.task) : r.period} · open the details`}
+                  title={isTaskRow(r) ? taskHint(r.task) : undefined}
                   data-notip=""
-                  onClick={() => set({ filing: r.id })}
+                  onClick={() => openRow(r)}
                   style={{ display: 'flex', gap: 10, alignItems: 'center', minHeight: 56, background: 'var(--panel)', border: '1.5px solid var(--border)', borderRadius: 6, padding: 8 }}
                 >
                   <div className="dtile" style={{ background: tileVar(s), color: tileInk(s), width: 40, height: 44 }}>
@@ -219,7 +238,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 3 }}>
-                      <AreaChip a={r.area} compact />
+                      {isTaskRow(r) ? <span className="cp-tw inline-flex"><RowArea r={r} compact /></span> : <AreaChip a={r.area} compact />}
                       <Chip s={s} />
                     </div>
                   </div>
@@ -243,7 +262,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
           month={nowKey}
           railRows={fyRows}
           nowKey={nowKey}
-          onOpen={(f) => set({ filing: f.id })}
+          onOpen={openRow}
           openDrill={openDrill}
         />
       </div>

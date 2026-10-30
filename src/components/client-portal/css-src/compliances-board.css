@@ -440,3 +440,10 @@ circle[data-dd]{transition:stroke-width .15s}circle[data-dd]:hover{stroke-width:
 .ym-g span{font:500 10.5px var(--font-mono),ui-monospace,monospace;letter-spacing:0}
 .ym-g span.f{color:oklch(var(--surface-raised))}
 .ym-g span.t{box-shadow:0 0 0 1.5px var(--navy)}
+
+/* C-3 (COMPLIANCE-MODEL.md 4.4): a non-statutory task on its end date carries a hollow 8px
+   square in ink-2 in place of the status stripe; statutory events keep the solid stripe (C-2). */
+.ev.task i{width:8px;height:8px;align-self:center;margin-left:5px;border:1.5px solid oklch(var(--ink-2));border-radius:2px;background:transparent!important}
+.cal .ev.task i{border-radius:2px}
+.tlv-b.task{cursor:pointer;background:transparent!important;border:1.5px solid oklch(var(--ink-2))}
+.tlv-b.task.done{border-color:var(--ok-mid)}

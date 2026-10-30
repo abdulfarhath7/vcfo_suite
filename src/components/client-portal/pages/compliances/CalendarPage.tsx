@@ -6,7 +6,13 @@
  * #cal-mobile under 700 px (CalendarMobile). Real data: /api/client/compliances.
  *
  * URL state: ?date=YYYY-MM · ?view=month|year|timeline · ?area=all|mca|gst|it|pay|fema
- * · ?filing=<id> (the detail pop-up).
+ * · ?filing=<id> (the detail pop-up) · ?cat=statutory|non-statutory (C-1; All when absent).
+ *
+ * C-1 to C-4 (COMPLIANCE-MODEL.md 4.4): the All · Statutory · Non-statutory switch with counts.
+ * Statutory events keep their solid stripe; the tasks SBC shares with the client
+ * (GET /api/compliances/tasks) show on their end date with a hollow square, and their hover gives
+ * the start date and the urgency. The switch applies to the month, year and timeline views and
+ * to the rail. Tasks have no area, so an area pick hides them.
  */
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -50,7 +56,7 @@ import { Chip as SChip } from '@/components/ui/spectrum-chip';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { useCompFilings } from './api';
 import { ProofChip, Seg, usePageTips } from './bits';
-import { AreaTag, Empty, Island, PortalLink, STROKE, StatusChip, TINT } from './spectrum';
+import { Empty, Island, PortalLink, STROKE, StatusChip, TINT } from './spectrum';
 import { CompProvider, useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { DonutCard } from './DonutCard';
@@ -58,6 +64,9 @@ import { MonthNav } from './MonthNav';
 import { TimelineView } from './TimelineView';
 import { YearView } from './YearView';
 import { CalendarMobile } from './CalendarMobile';
+import { CategoryTabs, RowArea } from './task-marks';
+import { taskHref, useTaskRows } from './task-api';
+import { dayWords, fyOfIso, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
 import '../../css/compliances-board.css';
 
 const VIEWS = ['month', 'year', 'timeline'] as const;
@@ -88,12 +97,14 @@ export function useCalendarState() {
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREA_IDS.includes(areaP as AreaFilter) ? (areaP as AreaFilter) : 'all';
   const filing = params.get('filing') ?? params.get('open');
+  const catP = params.get('cat');
+  const cat: Category = catP === 'statutory' || catP === 'non-statutory' ? catP : 'all';
   const set = useCallback(
     (patch: Record<string, string | null>) => {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
         if (k === 'filing') next.delete('open');
-        if (v == null || v === '' || (k === 'view' && v === 'month') || (k === 'area' && v === 'all') || (k === 'date' && v === nowKey)) next.delete(k);
+        if (v == null || v === '' || (k === 'view' && v === 'month') || (k === 'area' && v === 'all') || (k === 'cat' && v === 'all') || (k === 'date' && v === nowKey)) next.delete(k);
         else next.set(k, k === 'area' ? v.toLowerCase() : v);
       }
       const q = next.toString();
@@ -101,8 +112,9 @@ export function useCalendarState() {
     },
     [params, router, pathname, nowKey],
   );
-  return { today, nowKey, month, view, area, filing, set };
+  return { today, nowKey, month, view, area, filing, cat, set };
 }
+
 
 export function CompliancesCalendar() {
   const narrow = useNarrow(700);
@@ -130,7 +142,10 @@ export function CompliancesCalendar() {
 function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
   const { after, go, toast, openChat } = usePortal();
   const { today, openDrill } = useComp();
-  const { month, view, area, nowKey, set } = st;
+  const { month, view, area, nowKey, cat, set } = st;
+  const statOn = showStat(cat);
+  const tasksOn = showTasks(cat) && area === 'all';
+  const allTasks = useTaskRows(after);
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
 
@@ -141,24 +156,34 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   const nearFyEnd = Number(nowKey.slice(5)) <= 3;
   const qNext = useCompFilings(todayFy + 1, after && nearFyEnd);
 
-  const fyRows = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
+  const statFy = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
+  const fyRows = useMemo(() => (statOn ? statFy : []), [statOn, statFy]);
+  const taskFy = useMemo(() => allTasks.filter((r) => fyOfIso(r.dueDate) === fy), [allTasks, fy]);
+  const fyTasks = useMemo(() => (tasksOn ? taskFy : []), [tasksOn, taskFy]);
   const railRows = useMemo(
-    () => (after ? [...(qToday.data?.rows ?? []), ...(nearFyEnd ? qNext.data?.rows ?? [] : [])] : []),
-    [after, qToday.data, qNext.data, nearFyEnd],
+    () => [
+      ...(after && statOn ? [...(qToday.data?.rows ?? []), ...(nearFyEnd ? qNext.data?.rows ?? [] : [])] : []),
+      ...(tasksOn ? allTasks.filter((r) => fyOfIso(r.dueDate) === todayFy || (nearFyEnd && fyOfIso(r.dueDate) === todayFy + 1)) : []),
+    ],
+    [after, statOn, tasksOn, allTasks, todayFy, qToday.data, qNext.data, nearFyEnd],
   );
   const monthAll = useMemo(() => fyRows.filter((r) => r.dueDate.startsWith(month)), [fyRows, month]);
-  const monthRows = useMemo(() => filterArea(monthAll, area), [monthAll, area]);
+  const monthTasks = useMemo(() => fyTasks.filter((r) => r.dueDate.startsWith(month)), [fyTasks, month]);
+  const monthRows = useMemo(() => [...filterArea(monthAll, area), ...monthTasks], [monthAll, area, monthTasks]);
   const countBase = view === 'month' ? monthAll : fyRows;
+  // C-1 counts: the month on screen in Month view, the whole year in Year and Timeline.
+  const scope = (list: PortalFiling[]) => (view === 'month' ? list.filter((r) => r.dueDate.startsWith(month)) : list).length;
+  const catCounts = { stat: scope(statFy), ns: scope(taskFy) };
   const areaCounts = AREAS.map((a) => (a.id === 'all' ? countBase.length : countBase.filter((r) => r.area === a.id).length));
   const loading = after && (q.isLoading || qToday.isLoading);
 
   const byId = useMemo(() => {
     const m = new Map<string, PortalFiling>();
-    for (const r of [...fyRows, ...railRows]) m.set(r.id, r);
+    for (const r of [...statFy, ...railRows]) if (!isTaskRow(r)) m.set(r.id, r);
     return m;
-  }, [fyRows, railRows]);
+  }, [statFy, railRows]);
   const detail = st.filing ? byId.get(st.filing) ?? null : null;
-  const openDetail = (f: PortalFiling) => set({ filing: f.id });
+  const openDetail = (f: PortalFiling) => (isTaskRow(f) ? go(taskHref(f.task.id)) : set({ filing: f.id }));
 
   /* day pop-over */
   const [sel, setSel] = useState<{ iso: string; style: React.CSSProperties; cls: string } | null>(null);
@@ -186,7 +211,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
       document.removeEventListener('pointerdown', down, true);
     };
   }, [sel]);
-  useEffect(() => setSel(null), [month, view, area]);
+  useEffect(() => setSel(null), [month, view, area, cat]);
 
   const openDay = (iso: string, cell: HTMLElement) => {
     const ab = root.current!;
@@ -209,9 +234,9 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   const emptyOverlay = (() => {
     if (!after) return { lines: ['Starts after incorporation'], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
     if (loading || q.isError || view !== 'month' || monthRows.length) return null;
-    const pool = sortByDue(filterArea([...fyRows, ...railRows], area)).filter((r) => r.dueDate > `${month}-31`);
+    const pool = sortByDue([...filterArea([...fyRows, ...railRows].filter((r) => !isTaskRow(r)), area), ...fyTasks]).filter((r) => r.dueDate > `${month}-31`);
     const next = pool[0];
-    const head = area === 'all' ? `Nothing due in ${monthName}` : `No ${AREA_LABEL[area]} deadlines in ${monthName}`;
+    const head = area !== 'all' ? `No ${AREA_LABEL[area]} deadlines in ${monthName}` : cat === 'non-statutory' ? `No tasks end in ${monthName}` : `Nothing due in ${monthName}`;
     const tail = next ? `Next: ${next.name} on ${fmtDM(next.dueDate)}` : `None due in ${fyLabelOf(fy)}`;
     return { lines: [head, tail], showAll: area !== 'all', q: `Why is nothing due in ${monthName}?` };
   })();
@@ -219,22 +244,36 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   return (
     <div className="cp-comp-root page" ref={root}>
       {/* header (C-01) */}
+      {after ? (
+        <Island inline>
+          <CategoryTabs
+            allFirst
+            value={cat}
+            onChange={(c) => set({ cat: c, area: 'all' })}
+            stat={catCounts.stat}
+            ns={catCounts.ns}
+            className="max-w-full justify-self-start"
+          />
+        </Island>
+      ) : null}
       <div className="row-wrap" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div data-calnav="" className="calbar">
           <MonthNav month={month} nowKey={nowKey} hidden={view !== 'month'} onMonth={(k) => set({ date: k })} onStep={(k) => set({ date: stepMonth(month, k) })} />
           <span className="mono fy-tag" data-tip={`Financial year ${fyLabelOf(fy).slice(3)}`}>
             {fyLabelOf(fy)}
           </span>
-          <div className="seg-scroll">
-            <Seg
-              opts={AREAS.map((a) => a.label)}
-              on={areaIdx}
-              counts={areaCounts}
-              label="Area"
-              onPick={(i) => set({ area: AREAS[i]!.id })}
-              same={(i) => toast(`Already showing ${AREAS[i]!.label === 'All' ? 'all areas' : AREAS[i]!.label}`)}
-            />
-          </div>
+          {cat === 'non-statutory' ? null : (
+            <div className="seg-scroll">
+              <Seg
+                opts={AREAS.map((a) => a.label)}
+                on={areaIdx}
+                counts={areaCounts}
+                label="Area"
+                onPick={(i) => set({ area: AREAS[i]!.id })}
+                same={(i) => toast(`Already showing ${AREAS[i]!.label === 'All' ? 'all areas' : AREAS[i]!.label}`)}
+              />
+            </div>
+          )}
         </div>
         <div className="end" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span data-calview="" style={{ display: 'contents' }}>
@@ -283,9 +322,9 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
             ) : loading ? (
               <GridSkeleton />
             ) : view === 'year' ? (
-              <YearView months={fyMonths(fy)} rows={filterArea(fyRows, area)} today={today} onMonth={(k) => set({ date: k, view: 'month' })} />
+              <YearView months={fyMonths(fy)} rows={[...filterArea(fyRows, area), ...fyTasks]} today={today} onMonth={(k) => set({ date: k, view: 'month' })} />
             ) : (
-              <TimelineView fyStart={fy} rows={filterArea(fyRows, area)} today={today} onOpen={openDetail} />
+              <TimelineView fyStart={fy} rows={[...filterArea(fyRows, area), ...fyTasks]} today={today} onOpen={openDetail} />
             )}
             {emptyOverlay ? (
               <div
@@ -331,7 +370,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
         <Rail
           after={after}
           loading={loading}
-          monthAll={monthAll}
+          monthAll={[...monthAll, ...monthTasks]}
           month={month}
           railRows={railRows}
           nowKey={nowKey}
@@ -366,7 +405,7 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
   const cells = mondayMonthGrid(month);
   return (
     <div className="cal-scroll">
-      <div className="cal" role="grid" aria-label={`${monthLabel(month)} filings`}>
+      <div className="cal" role="grid" aria-label={`${monthLabel(month)} deadlines`}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
           <div key={d} className={`dow${i > 4 ? ' we' : ''}`} role="columnheader">
             {d}
@@ -406,8 +445,8 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
               type="button"
               className={`day${we ? ' we' : ''}${s ? ` s-${s}` : ''}${isToday ? ' today' : ''}${selIso === c.iso ? ' sel' : ''}`}
               data-iso={c.iso}
-              data-tip={it.length ? `${fmtWDM(c.iso)} · ${plural(it.length, 'filing')}` : undefined}
-              aria-label={`${fmtLongComma(c.iso)}, ${plural(it.length, 'filing')}${isToday ? ', today' : ''}`}
+              data-tip={it.length ? `${fmtWDM(c.iso)} · ${dayWords(it)}` : undefined}
+              aria-label={`${fmtLongComma(c.iso)}, ${dayWords(it)}${isToday ? ', today' : ''}`}
               aria-current={isToday ? 'date' : undefined}
               aria-expanded={selIso === c.iso}
               data-notip=""
@@ -429,6 +468,14 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
               </div>
               {it.slice(0, 2).map((r) => {
                 const rs = statusOf(r, today);
+                if (isTaskRow(r))
+                  return (
+                    <span key={r.id} className="ev task" data-s={rs} title={`${r.name} · ${taskHint(r.task)}`}>
+                      <i />
+                      <span className="a">Task</span>
+                      <span className="t">{r.name}</span>
+                    </span>
+                  );
                 return (
                   <span key={r.id} className="ev" data-s={rs}>
                     <i style={{ background: STROKE[rs] }} />
@@ -479,19 +526,32 @@ const DayPopover = forwardRef<
       <div ref={ref} style={style} role="dialog" aria-label={fmtLong(iso)} className="cp-tw absolute z-[45] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-md border border-line bg-surface-raised shadow-float">
         <div className="flex items-center gap-2 border-b border-line-soft bg-surface-sunken px-4 py-2.5">
           <b className="flex-1 text-[13.5px] font-medium text-ink">{fmtLong(iso)}</b>
-          <span className="text-[12px] tabular-nums text-ink-muted">{plural(list.length, 'filing')}</span>
+          <span className="text-[12px] tabular-nums text-ink-muted">{dayWords(list)}</span>
         </div>
         <ul>
           {list.map((r, i) => (
             <li key={r.id} className="flex items-center gap-2 border-t border-line-soft px-4 py-2.5 first:border-t-0 hover:bg-surface-sunken">
-              <AreaTag a={r.area} compact />
-              <button ref={i === 0 ? first : undefined} type="button" className="min-w-0 flex-1 text-left" aria-label={`${r.name} · ${r.period} · open the details`} onClick={() => onOpen(r)}>
+              <RowArea r={r} compact />
+              <button
+                ref={i === 0 ? first : undefined}
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                title={isTaskRow(r) ? taskHint(r.task) : undefined}
+                aria-label={`${r.name} · ${isTaskRow(r) ? taskHint(r.task) : r.period} · open the details`}
+                onClick={() => onOpen(r)}
+              >
                 <span className="block truncate text-[13px] font-medium text-ink">{r.name}</span>
-                <span className="block truncate text-[12px] text-ink-muted">{r.period}</span>
+                <span className="block truncate text-[12px] text-ink-muted">{isTaskRow(r) ? taskHint(r.task) : r.period}</span>
               </button>
-              <PortalLink f={r} />
-              <ProofChip f={r} onOpen={(x) => openProof(x)} />
-              <StatusChip s={statusOf(r, today)} />
+              {isTaskRow(r) ? (
+                <SChip fixed>{taskWord(r.task, today)}</SChip>
+              ) : (
+                <>
+                  <PortalLink f={r} />
+                  <ProofChip f={r} onOpen={(x) => openProof(x)} />
+                  <StatusChip s={statusOf(r, today)} />
+                </>
+              )}
             </li>
           ))}
         </ul>
@@ -616,15 +676,22 @@ function NextDeadlineCard({
               <small className="mt-1 text-[11px] font-bold uppercase tracking-wide text-ink-muted">{days === 1 ? 'day' : 'days'}</small>
             </button>
             <div className="min-w-0 flex-1">
-              <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[18px] font-bold leading-tight tracking-tight text-ink">
-                {next.name} · {next.period} <PortalLink f={next} />
-                <InfoPopover askAbout={`${next.name} · ${next.period}`} label="About this">
-                  {next.name} for {next.period} · due {fmtWDM(next.dueDate)} · filed on the {portalFor(next)[0]}.
-                  {next.dataReceivedOn ? ` Data received ${fmtDM(next.dataReceivedOn)}.` : ''}
-                </InfoPopover>
-              </div>
+              {isTaskRow(next) ? (
+                <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[18px] font-bold leading-tight tracking-tight text-ink" title={taskHint(next.task)}>
+                  {next.name}
+                </div>
+              ) : (
+                <div className="nd-title flex min-w-0 flex-wrap items-center gap-1 text-[18px] font-bold leading-tight tracking-tight text-ink">
+                  {next.name} · {next.period} <PortalLink f={next} />
+                  <InfoPopover askAbout={`${next.name} · ${next.period}`} label="About this">
+                    {next.name} for {next.period} · due {fmtWDM(next.dueDate)} · filed on the {portalFor(next)[0]}.
+                    {next.dataReceivedOn ? ` Data received ${fmtDM(next.dataReceivedOn)}.` : ''}
+                  </InfoPopover>
+                </div>
+              )}
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                <AreaTag a={next.area} compact />
+                <RowArea r={next} compact />
+                {isTaskRow(next) && next.task.stage === 'waiting' ? <SChip tone="warn">Your inputs needed</SChip> : null}
                 {next.dataReceivedOn ? (
                   <SChip tone="ok" data-tip={`Data received ${fmtDM(next.dataReceivedOn)}`}>
                     Data received
@@ -635,9 +702,9 @@ function NextDeadlineCard({
           </div>
           <div className="mt-3.5 flex gap-2">
             <Button size="sm" className="flex-1" onClick={() => onOpen(next)}>
-              Open filing <ArrowRight size={13} strokeWidth={1.6} aria-hidden />
+              {isTaskRow(next) ? 'Open task' : 'Open filing'} <ArrowRight size={13} strokeWidth={1.6} aria-hidden />
             </Button>
-            {next.reminderOn ? (
+            {isTaskRow(next) ? null : next.reminderOn ? (
               <button type="button" className="self-center" onClick={() => toast(`Reminder set · email on ${fmtDM(next.reminderOn!)}`)} aria-label={`Reminder set · email on ${fmtDM(next.reminderOn)}`}>
                 <SChip tone="ok">Reminder set</SChip>
               </button>
@@ -694,10 +761,11 @@ function ComingUp({ rows, onOpen }: { rows: PortalFiling[]; onOpen: (f: PortalFi
                   <button
                     type="button"
                     onClick={() => onOpen(r)}
-                    aria-label={`${r.name} · ${r.period} · open the details`}
+                    aria-label={`${r.name} · ${isTaskRow(r) ? taskHint(r.task) : r.period} · open the details`}
+                    title={isTaskRow(r) ? taskHint(r.task) : undefined}
                     className="flex w-full min-w-0 items-center gap-2 text-left hover:text-brand-text"
                   >
-                    <AreaTag a={r.area} compact />
+                    <RowArea r={r} compact />
                     <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{r.name}</span>
                     <StatusChip s={statusOf(r, today)} compact />
                   </button>

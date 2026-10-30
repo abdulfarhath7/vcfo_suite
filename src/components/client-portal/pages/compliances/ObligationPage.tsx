@@ -9,10 +9,16 @@
  * the client's own filing ids).
  * A period opens the same side panel as Filings (proof viewer and download, Remind me, Add
  * to my calendar, Ask VCFO). `?filing=<id>` opens that period's panel on load.
+ *
+ * D-4 (COMPLIANCE-MODEL.md 4.2, client view): the open period also shows Progress (the six
+ * steps with who, when and evidence, the stage and the owner), Reminders without escalations,
+ * the Rule without the confirm note, and the Activity trail, from
+ * GET /api/compliances/statutory/:instanceId. No reviewer, no reviewer note, no staff controls.
+ * The header's Upload takes the client to the open asks in "From the client".
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Bell, CalendarPlus, Download } from 'lucide-react';
+import { Bell, CalendarPlus, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
@@ -32,6 +38,8 @@ import { useComplianceStarts, type StartedObligation } from '@/components/compli
 import { obligationInputs } from '@/data/compliance-inputs';
 import { registrationHref } from '../registrations/parts';
 import { useObligationAbout, whyItAppliesLine, type ObligationAbout } from '@/hooks/use-obligation-about';
+import { useStatExtras, type StatExtras } from './task-api';
+import { ActivityCard, ProgressCard, RemindersCard } from './detail-parts';
 import '../../css/compliances-board.css';
 
 export function CompliancesObligation({ id }: { id: string }) {
@@ -137,6 +145,15 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
   const history = [...o.instances].sort((a, b) => b.dueDate.localeCompare(a.dueDate));
   const [portal] = portalFor(o);
   const about = useObligationAbout({ instanceId: o.instances[0]?.id ?? null });
+  const extras = useStatExtras(cur?.id ?? null);
+  const x = extras.data ?? null;
+  const fromClient = useRef<HTMLDivElement>(null);
+  const toInputs = () => {
+    const el = fromClient.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+  };
 
   const downloadPrimary = (f: PortalFiling) => {
     fetchProofs(f.id)
@@ -150,6 +167,11 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
 
   const actions = o.next ? (
     <>
+      {x?.canUpload !== false ? (
+        <Button variant="secondary" onClick={toInputs}>
+          <Upload size={16} strokeWidth={1.6} aria-hidden /> Upload
+        </Button>
+      ) : null}
       <Button
         aria-pressed={Boolean(o.next.reminderOn)}
         onClick={() => (o.next!.reminderOn ? toast(`Reminder already set · email on ${fmtDM(o.next!.reminderOn)}`) : remind(o.next!))}
@@ -245,6 +267,9 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
                   k: 'Filed',
                   v: o.last?.filedOn ? fmtDM(o.last.filedOn) : '-',
                 },
+            ...(o.next && x?.daysToDue != null
+              ? [{ k: x.daysToDue < 0 ? 'Overdue' : 'Due in', v: x.daysToDue < 0 ? `${-x.daysToDue} day${x.daysToDue === -1 ? '' : 's'}` : `${x.daysToDue} day${x.daysToDue === 1 ? '' : 's'}`, tone: x.daysToDue < 0 ? ('bad' as const) : undefined }]
+              : []),
             ...(curNodes.length ? [{ k: 'Steps', v: `${stepsDone} of ${curNodes.length}` }] : []),
             { k: 'Filed', v: `${o.filed} of ${o.total}` },
           ]}
@@ -267,7 +292,9 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
             ) : null}
             {cur ? (
               <>
-                <FromClientCard kind="obligation" subjectKey={cur.id} editable={!cur.filedOn} />
+                <div ref={fromClient} className="grid min-w-0 scroll-mt-4">
+                  <FromClientCard kind="obligation" subjectKey={cur.id} editable={!cur.filedOn} />
+                </div>
                 <SbcFieldsCard
                   kind="obligation"
                   subjectKey={cur.id}
@@ -277,6 +304,9 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
                     ...(cur.filedOn ? [{ k: 'Filed by', v: cur.filedByName ? `${cur.filedByName} · SBC` : 'SBC' }] : []),
                   ]}
                 />
+                {x ? <RemindersCard rows={x.reminders} /> : null}
+                {x?.rule ? <RuleCard rule={x.rule} frequency={o.freqLabel} /> : null}
+                {x ? <ActivityCard rows={x.history} /> : null}
               </>
             ) : null}
             <SCard title="Past periods" flush>
@@ -295,6 +325,7 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
             </SCard>
           </div>
           <div className="grid min-w-0 gap-5">
+            {cur && x ? <ProgressCard steps={x.steps} stage={x.stageLabel} owner={x.owner ?? cur.ownerName} /> : null}
             <SCard title="About" flush>
               {about.data?.about ? <p className="px-4 pb-1 pt-4 text-[13.5px] leading-relaxed text-ink-2 md:px-5">{about.data.about}</p> : null}
               <FactRows
@@ -323,12 +354,29 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
                 </button>
               </div>
             </SCard>
-            <AboutTexts about={about.data ?? null} />
+            <AboutTexts about={about.data ?? null} ruleShown={Boolean(x?.rule?.dueRule)} />
           </div>
         </div>
       </Island>
       {panel ? <SidePanel f={panel} onClose={() => setFiling(null)} hideObligation /> : null}
     </>
+  );
+}
+
+/** D-2.4 Rule, client view: the due rule, where it applies and the penalty. The confirm note never shows here (D-4). */
+function RuleCard({ rule, frequency }: { rule: NonNullable<StatExtras['rule']>; frequency: string }) {
+  return (
+    <SCard title="Rule" flush>
+      <FactRows
+        rows={[
+          { k: 'Due rule', v: rule.dueRule ?? '-', empty: !rule.dueRule },
+          ...(rule.applies ? [{ k: 'Applies to', v: rule.applies }] : []),
+          { k: 'Penalty', v: rule.penalty || '-', empty: !rule.penalty },
+          { k: 'Frequency', v: frequency },
+          ...(rule.note ? [{ k: 'Note', v: rule.note }] : []),
+        ]}
+      />
+    </SCard>
   );
 }
 
@@ -351,7 +399,7 @@ function threadSteps(f: PortalFiling, nodes: TrackNode[], companyShort: string):
 }
 
 /** Why it applies and Due rule, then If filed late; not drawn until loaded. The about text sits in the About card. */
-function AboutTexts({ about }: { about: ObligationAbout | null }) {
+function AboutTexts({ about, ruleShown }: { about: ObligationAbout | null; ruleShown?: boolean }) {
   if (!about) return null;
   const why = whyItAppliesLine(about);
   return (
@@ -361,7 +409,7 @@ function AboutTexts({ about }: { about: ObligationAbout | null }) {
           <p className="text-[13.5px] leading-relaxed text-ink-2">{why}</p>
         </SCard>
       ) : null}
-      {about.dueRule ? (
+      {about.dueRule && !ruleShown ? (
         <SCard title="Due rule">
           <p className="text-[13.5px] leading-relaxed text-ink-2">{about.dueRule}</p>
         </SCard>

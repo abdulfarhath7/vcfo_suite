@@ -15,6 +15,7 @@ import { CompliancesCalendar } from './CalendarPage';
 import { CompliancesFilings } from './FilingsPage';
 import { CompliancesObligations } from './ObligationsPage';
 import { CompliancesObligation } from './ObligationPage';
+import { CompliancesTask } from './TaskPage';
 
 export function ClientCompliancesCalendarRoute() {
   const portal = usePortalOptional();
@@ -39,4 +40,12 @@ export function ClientCompliancesObligationRoute() {
   const params = useParams<{ id: string }>();
   if (!portal) return <FilingsPage basePath="/app/client/compliances" />;
   return <CompliancesObligation id={decodeURIComponent(String(params?.id ?? ''))} />;
+}
+
+/** The client's non-statutory task page (COMPLIANCE-MODEL.md 4.3, K-1, K-2). */
+export function ClientCompliancesTaskRoute() {
+  const portal = usePortalOptional();
+  const params = useParams<{ id: string }>();
+  if (!portal) return <FilingsPage basePath="/app/client/compliances" />;
+  return <CompliancesTask id={decodeURIComponent(String(params?.id ?? ''))} />;
 }

@@ -8,7 +8,14 @@
  * A row opens the side panel at the right edge (F-10); that row keeps a soft blurple fill.
  *
  * URL state: ?fy= · ?cadence=all|monthly|quarterly|annual · ?area= · ?status=
- * all|over|due|up|ok · ?period=YYYY-MM (window end month) · ?view=year · ?filing=<id>.
+ * all|over|due|up|ok · ?period=YYYY-MM (window end month) · ?view=year · ?filing=<id>
+ * · ?cat=statutory|non-statutory (All when absent).
+ *
+ * F-1 to F-3 (COMPLIANCE-MODEL.md 4.5): the All · Statutory · Non-statutory switch in the head
+ * bar. Non-statutory rows are the completed tasks SBC shared with the client
+ * (GET /api/compliances/tasks), with their deliverable file; a row opens the task page. The
+ * counts, "Filings by month" and "Progress by area" (a "Tasks" bar) follow the switch. An area
+ * pick hides the tasks, which have no regulator; Export stays the statutory register.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -48,15 +55,19 @@ import { usePageTips } from './bits';
 import { CompProvider, useComp } from './ctx';
 import { MonthChart } from './MonthChart';
 import { SidePanel } from './Detail';
-import { AreaTag, DateTile, Empty, FILL, FilterMenu, Island, PortalLink, SCard, STATUS_ORDER, StatusChip, WORD } from './spectrum';
+import { DateTile, Empty, FILL, FilterMenu, Island, SCard, STATUS_ORDER, StatusChip, WORD } from './spectrum';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { FiledCell, ProofCell } from './cells';
+import { CategoryTabs, RowArea, RowPortalLink } from './task-marks';
+import { taskHref, useClientTasks } from './task-api';
+import { doneTaskRows, fyOfIso, isTaskRow, showStat, showTasks, type Category } from './tasks';
 import '../../css/compliances-board.css';
 
 const CADENCES = ['all', 'monthly', 'quarterly', 'annual'] as const;
 type Cadence = (typeof CADENCES)[number];
 const CAD_FREQ: Record<Exclude<Cadence, 'all'>, string[]> = { monthly: ['monthly'], quarterly: ['quarterly', 'half-yearly'], annual: ['annual', 'one-time'] };
-const inCadence = (r: PortalFiling, c: Cadence) => c === 'all' || CAD_FREQ[c].includes(r.frequency.toLowerCase());
+/** A task has no filing cadence: it shows under All only. */
+const inCadence = (r: PortalFiling, c: Cadence) => c === 'all' || (!isTaskRow(r) && CAD_FREQ[c].includes(r.frequency.toLowerCase()));
 const STATUS_KEYS: ('all' | CompStatus)[] = ['all', 'over', 'due', 'up', 'ok'];
 
 function useFilingsState() {
@@ -80,12 +91,14 @@ function useFilingsState() {
   const end = perP && months.includes(perP) && months.indexOf(perP) > 0 ? perP : months.includes(nowKey) && months.indexOf(nowKey) > 0 ? nowKey : months[1]!;
   const fullYear = params.get('view') === 'year';
   const filing = params.get('filing') ?? params.get('open');
+  const catP = params.get('cat');
+  const cat: Category = catP === 'statutory' || catP === 'non-statutory' ? catP : 'all';
   const set = useCallback(
     (patch: Record<string, string | null>) => {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
         if (k === 'filing') next.delete('open');
-        if (v == null || v === '' || (k === 'area' && v === 'all') || (k === 'status' && v === 'all')) next.delete(k);
+        if (v == null || v === '' || (k === 'area' && v === 'all') || (k === 'status' && v === 'all') || (k === 'cat' && v === 'all')) next.delete(k);
         else next.set(k, k === 'area' ? v.toLowerCase() : v);
       }
       const q = next.toString();
@@ -93,7 +106,7 @@ function useFilingsState() {
     },
     [params, router, pathname],
   );
-  return { today, nowKey, curFy, fy, cadence, area, status, end, months, fullYear, filing, set };
+  return { today, nowKey, curFy, fy, cadence, area, status, end, months, fullYear, filing, cat, set };
 }
 
 export function CompliancesFilings() {
@@ -118,9 +131,16 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const download = useDownload();
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
-  const { fy, area, status, end, months, fullYear, set } = st;
+  const { fy, area, status, end, months, fullYear, cat, set } = st;
   const q = useCompFilings(fy, after);
-  const all = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
+  const tq = useClientTasks(after);
+  const statAll = useMemo(() => (after ? q.data?.rows ?? [] : []), [after, q.data]);
+  // F-2: the completed tasks of this financial year, by their end date.
+  const taskAll = useMemo(() => doneTaskRows(tq.data ?? []).filter((r) => fyOfIso(r.dueDate) === fy), [tq.data, fy]);
+  const all = useMemo(
+    () => [...(showStat(cat) ? statAll : []), ...(showTasks(cat) && area === 'all' ? taskAll : [])],
+    [cat, area, statAll, taskAll],
+  );
   const start = stepMonth(end, -1);
   // no ?cadence opens on All, so the page never opens on an empty frequency (CP-05)
   const cadence = st.cadence;
@@ -139,7 +159,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
     () => sortByDue(filterArea(inView, area).filter((r) => status === 'all' || statusOf(r, today) === status)),
     [inView, area, status, today],
   );
-  const detail = st.filing ? all.find((r) => r.id === st.filing) ?? null : null;
+  const detail = st.filing ? statAll.find((r) => r.id === st.filing) ?? null : null;
   // deep link to a filing outside the FY in view (?filing= / ?open=): look it up and jump to its FY
   const missing = Boolean(st.filing) && after && q.isSuccess && !detail;
   const lookup = useQuery({
@@ -170,6 +190,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
   const calHref = `${portalHref('compliances')}${fullYear ? '' : `?date=${end}`}`;
 
   const downloadPrimary = (f: PortalFiling) => {
+    if (isTaskRow(f)) return openProof(f);
     fetchProofs(f.id)
       .then((p) => {
         if (!p.length) return toast('Proof pending · SBC will upload it');
@@ -178,7 +199,8 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       })
       .catch(() => toast('Could not download the proof'));
   };
-  const open = (f: PortalFiling) => set({ filing: f.id });
+  const open = (f: PortalFiling) => (isTaskRow(f) ? go(taskHref(f.task.id)) : set({ filing: f.id }));
+  const inWin = (r: PortalFiling) => fullYear || (r.dueDate >= `${start}-01` && r.dueDate <= `${end}-31`);
   const statusWord = status === 'all' ? '' : WORD[status].toLowerCase();
 
   // C-363: the VCFO Assist state per filing, from the stored runs of the client's engagement.
@@ -188,7 +210,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
 
   const columns: EFilingColumn<PortalFiling>[] = [
     { key: 'due', header: 'Due', width: '56px', render: (r) => <DateTile iso={r.dueDate} s={statusOf(r, today)} size="sm" /> },
-    { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
+    { key: 'area', header: 'Area', width: '124px', render: (r) => <RowArea r={r} /> },
     {
       key: 'name',
       header: 'Filing',
@@ -204,12 +226,10 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
               open(r);
             }}
           >
-            <span className="block truncate font-medium leading-tight text-ink">
-              <Term>{r.name}</Term>
-            </span>
-            <span className="block truncate text-[12.5px] leading-tight text-ink-muted">{r.period}</span>
+            <span className="block truncate font-medium leading-tight text-ink">{isTaskRow(r) ? r.name : <Term>{r.name}</Term>}</span>
+            <span className="block truncate text-[12.5px] leading-tight text-ink-muted">{isTaskRow(r) ? r.task.deliverable?.fileName ?? r.period : r.period}</span>
           </button>
-          <PortalLink f={r} />
+          <RowPortalLink r={r} />
         </span>
       ),
     },
@@ -222,7 +242,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       width: '190px',
       render: (r) => (r.acknowledgementNo ? <span className="whitespace-nowrap font-mono text-[12.5px]">{r.acknowledgementNo}</span> : <span className="text-ink-faint">-</span>),
     },
-    { key: 'assist', header: 'VCFO Assist', width: '140px', render: (r) => (assist.isLoading ? <span className="text-ink-faint">-</span> : <AssistChip run={assistBy.get(r.id)} setUp={assistSetUp} />) },
+    { key: 'assist', header: 'VCFO Assist', width: '140px', render: (r) => (assist.isLoading || isTaskRow(r) ? <span className="text-ink-faint">-</span> : <AssistChip run={assistBy.get(r.id)} setUp={assistSetUp} />) },
     { key: 'proof', header: 'Proof', width: '136px', align: 'right', render: (r) => <ProofCell r={r} onProof={openProof} onDownload={downloadPrimary} /> },
   ];
 
@@ -231,6 +251,15 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       <CardHeadTile title="Filings" />
       <h2 className="text-[15px] font-medium text-ink">Filings</h2>
       {after && all.length ? <span className="hidden text-[13px] tabular-nums text-ink-muted sm:inline">{table.length}</span> : null}
+      {after ? (
+        <CategoryTabs
+          allFirst
+          value={cat}
+          onChange={(c) => set({ cat: c, area: c === 'non-statutory' ? 'all' : area })}
+          stat={statAll.filter(inWin).length}
+          ns={taskAll.filter(inWin).length}
+        />
+      ) : null}
       <span className="inline-flex h-[30px] items-center overflow-hidden rounded-md border-1.5 border-line-strong bg-surface-raised">
         <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40" aria-label="Earlier months" disabled={!canPrev} onClick={() => set({ period: stepMonth(end, -1) })}>
           <ChevronLeft size={15} strokeWidth={1.6} aria-hidden />
@@ -256,12 +285,14 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
         onChange={(k) => set({ cadence: k === 'all' ? null : k })}
         items={CADENCES.map((c) => ({ key: c, label: c[0]!.toUpperCase() + c.slice(1), count: inWindow.filter((r) => inCadence(r, c)).length }))}
       />
-      <FilterMenu
-        label="Area"
-        value={area === 'all' ? null : area}
-        onChange={(v) => set({ area: v ?? 'all' })}
-        options={AREAS.filter((a) => a.id !== 'all').map((a) => ({ value: a.id as AreaCode, label: a.label, count: inView.filter((r) => r.area === a.id).length }))}
-      />
+      {cat === 'non-statutory' ? null : (
+        <FilterMenu
+          label="Area"
+          value={area === 'all' ? null : area}
+          onChange={(v) => set({ area: v ?? 'all' })}
+          options={AREAS.filter((a) => a.id !== 'all').map((a) => ({ value: a.id as AreaCode, label: a.label, count: inView.filter((r) => !isTaskRow(r) && r.area === a.id).length }))}
+        />
+      )}
       <FilterMenu
         label="Status"
         value={status === 'all' ? null : status}
@@ -320,7 +351,7 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       <SkeletonRows rows={5} />
     </div>
   ) : !all.length ? (
-    <Empty>No filings for {fyLabelOf(fy)}</Empty>
+    <Empty>{cat === 'non-statutory' ? `No completed tasks in ${fyLabelOf(fy)}` : `No filings for ${fyLabelOf(fy)}`}</Empty>
   ) : (
     <div className="px-2 pb-3 pt-1 md:px-3">
       <EFilingGrid
@@ -378,14 +409,16 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
  */
 function AreaCard({ rows, onDrill }: { rows: PortalFiling[]; onDrill: (title: string, list: PortalFiling[]) => void }) {
   const { today } = useComp();
-  const areas = AREA_ORDER.filter((a) => rows.some((r) => r.area === a));
+  const stat = rows.filter((r) => !isTaskRow(r));
+  const tasks = rows.filter(isTaskRow);
+  const areas: Array<AreaCode | 'TASK'> = [...AREA_ORDER.filter((a) => stat.some((r) => r.area === a)), ...(tasks.length ? (['TASK'] as const) : [])];
   return (
     <SCard title="Progress by area">
       <ul className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
         {areas.map((a) => {
-          const rs = rows.filter((r) => r.area === a);
+          const rs = a === 'TASK' ? tasks : stat.filter((r) => r.area === a);
           const filed = rs.filter((r) => r.filedOn).length;
-          const L = AREA_LABEL[a];
+          const L = a === 'TASK' ? 'Tasks' : AREA_LABEL[a];
           const parts = STATUS_ORDER.map((s) => ({ s, n: rs.filter((r) => statusOf(r, today) === s).length })).filter((p) => p.n > 0);
           return (
             <li key={a}>

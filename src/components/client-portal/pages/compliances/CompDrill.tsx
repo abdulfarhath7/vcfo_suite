@@ -14,7 +14,8 @@ import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { ProofChip } from './bits';
 import { CpModal } from './overlay';
-import { AreaTag, PortalLink, StatusChip, WORD } from './spectrum';
+import { StatusChip, WORD } from './spectrum';
+import { RowArea, RowPortalLink } from './task-marks';
 
 export interface DrillState {
   /** `status` opens on the status tabs (the prototype's only kind); `area` keeps area tabs for callers that want them. */
@@ -68,13 +69,13 @@ export function CompDrill({
       render: (r) => (
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span className="truncate font-medium text-ink">{r.name}</span>
-          <PortalLink f={r} />
+          <RowPortalLink r={r} />
           <ProofChip f={r} onOpen={onProof} />
         </span>
       ),
     },
     { key: 'period', header: 'Period', width: '120px', render: (r) => <span className="text-ink-muted">{r.period}</span> },
-    { key: 'area', header: 'Area', width: '124px', render: (r) => <AreaTag a={r.area} /> },
+    { key: 'area', header: 'Area', width: '124px', render: (r) => <RowArea r={r} /> },
     {
       key: 'due',
       header: 'Due / filed',

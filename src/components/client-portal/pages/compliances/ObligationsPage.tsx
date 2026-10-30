@@ -7,6 +7,11 @@
  * and the status. The right rail keeps three cards: Due in the next 15 days, Waiting on
  * client, Progress flow. Data: GET /api/client/compliances (every year, client-compliances
  * repository), the same rows the Calendar and Filings pages read.
+ *
+ * K-1, K-2 (COMPLIANCE-MODEL.md 4.6): after the certificate a Statutory / Non-statutory / All
+ * switch sits under the card head. Non-statutory lists the tasks SBC shares with the client
+ * (visibility "client" or "both", from GET /api/client/compliances/tasks) grouped by end week;
+ * the rail follows the switch. There is no New task button and no reviewer on this page.
  */
 import { useMemo, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
@@ -19,6 +24,7 @@ import { portalHref } from '../../routes';
 import {
   AREA_LABEL,
   AREA_ORDER,
+  daysBetween,
   fmtDM,
   fyLabelOf,
   fyStartOfMonth,
@@ -51,6 +57,10 @@ import {
   DueWords,
 } from './spectrum';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { CategoryTabs } from './task-marks';
+import { TaskList } from './TaskList';
+import { taskHref, useClientTasks } from './task-api';
+import { STATUS_WORDS, showStat, showTasks, taskWord, type Category, type ClientTask } from './tasks';
 import '../../css/compliances-board.css';
 
 export const OBLIGATIONS_BASE = portalHref('obligations');
@@ -95,6 +105,12 @@ function ObligationsBody({ today }: { today: string }) {
   const companyShort = shell?.companyShort || 'Your company';
   // C-395: before the certificate, the obligations to come (static library, legal form, questionnaire).
   const starts = useComplianceStarts(undefined, !after);
+  const [catPicked, setCat] = useState<Category>('statutory');
+  const cat: Category = after ? catPicked : 'statutory';
+  const tq = useClientTasks(after);
+  const tasks = useMemo(() => (after ? tq.data ?? [] : []), [after, tq.data]);
+  const hasStat = showStat(cat);
+  const hasNs = showTasks(cat);
 
   const needle = search.trim().toLowerCase();
   const shown = obligations.filter(
@@ -107,8 +123,15 @@ function ObligationsBody({ today }: { today: string }) {
   const groups = sections.filter((s) => s.rows.length);
   const fy = fyLabelOf(fyStartOfMonth(today.slice(0, 7)));
 
-  const due = dueWithin(obligations, today, 15);
-  const waiting = waitingOnClient(obligations, today, companyShort);
+  const due = hasStat ? dueWithin(obligations, today, 15) : [];
+  const waiting = hasStat ? waitingOnClient(obligations, today, companyShort) : [];
+  const openTasks = hasNs ? tasks.filter((t) => t.stage !== 'completed') : [];
+  const dueTasks = openTasks.filter((t) => daysBetween(today, t.endDate) <= 15).sort((a, b) => a.endDate.localeCompare(b.endDate));
+  const waitTasks = openTasks.filter((t) => taskWord(t, today) === 'Waiting');
+  const dueAll: Array<{ date: string; node: React.ReactNode }> = [
+    ...due.map(({ o, f }) => ({ date: f.dueDate, node: <DueRow key={f.id} o={o} f={f} today={today} /> })),
+    ...dueTasks.map((t) => ({ date: t.endDate, node: <TaskDueRow key={t.id} t={t} today={today} /> })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
   const count = (s: CompStatus) => obligations.filter((o) => o.status === s).length;
 
   const head = (
@@ -220,12 +243,44 @@ function ObligationsBody({ today }: { today: string }) {
     </div>
   );
 
+  const bar = after ? (
+    <div className="border-b border-line-soft px-4 py-2.5 md:px-5">
+      <CategoryTabs value={cat} onChange={setCat} stat={obligations.length} ns={tasks.length} />
+    </div>
+  ) : null;
+  const taskBody = tq.isError ? (
+    <Empty action={<Button size="sm" variant="secondary" onClick={() => void tq.refetch()}>Try again</Button>}>Could not load the tasks</Empty>
+  ) : tq.isLoading ? (
+    <div className="px-4 py-4 md:px-5" aria-busy="true" aria-label="Loading tasks">
+      <SkeletonRows rows={4} />
+    </div>
+  ) : !tasks.length ? (
+    <Empty>No tasks shared with you</Empty>
+  ) : (
+    <TaskList tasks={tasks} today={today} />
+  );
+
   return (
     <div className="cp-comp-root page" ref={root}>
       <Island className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <SCard title="Obligations" meta={after ? (obligations.length ? shown.length : undefined) : before.length || undefined} right={head} flush>
-          {list}
-        </SCard>
+        <div className="grid min-w-0 gap-5">
+          {hasStat ? (
+            <SCard title="Obligations" meta={after ? (obligations.length ? shown.length : undefined) : before.length || undefined} right={head} flush>
+              {bar}
+              {list}
+            </SCard>
+          ) : (
+            <SCard title="Obligations" meta={tasks.length || undefined} flush>
+              {bar}
+              {taskBody}
+            </SCard>
+          )}
+          {cat === 'all' ? (
+            <SCard title="Non-statutory tasks" meta={tasks.length || undefined} flush>
+              {taskBody}
+            </SCard>
+          ) : null}
+        </div>
         <div className="grid min-w-0 gap-5">
           <SCard title="Due in the next 15 days" flush>
             {!after ? (
@@ -234,15 +289,15 @@ function ObligationsBody({ today }: { today: string }) {
               <div className="p-4">
                 <SkeletonRows rows={2} />
               </div>
-            ) : due.length ? (
-              due.slice(0, 8).map(({ o, f }) => <DueRow key={f.id} o={o} f={f} today={today} />)
+            ) : dueAll.length ? (
+              dueAll.slice(0, 8).map((d) => d.node)
             ) : (
               <Empty />
             )}
           </SCard>
-          <SCard title="Waiting on client" meta={after ? waiting.length : undefined} flush>
-            {waiting.length ? (
-              waiting.slice(0, 8).map(({ o, f, step }) => (
+          <SCard title="Waiting on client" meta={after ? waiting.length + waitTasks.length : undefined} flush>
+            {waiting.length + waitTasks.length ? (
+              [...waiting.slice(0, 8).map(({ o, f, step }) => (
                 <ListRow key={f.id}>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{o.name}</span>
@@ -254,16 +309,38 @@ function ObligationsBody({ today }: { today: string }) {
                     {/approve/i.test(step) ? 'Approve' : 'Upload'}
                   </Button>
                 </ListRow>
-              ))
+              )),
+              ...waitTasks.slice(0, 8).map((t) => (
+                <ListRow key={t.id}>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{t.name}</span>
+                    <span className="block truncate text-[12.5px] text-ink-muted">Inputs for SBC · ends {fmtDM(t.endDate)}</span>
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => go(taskHref(t.id))}>
+                    Upload
+                  </Button>
+                </ListRow>
+              ))]
             ) : (
               <Empty />
             )}
           </SCard>
           <SCard title="Progress flow">
-            <StackedBar
-              onPick={(k) => setStatus((cur) => (cur === k ? null : (k as CompStatus)))}
-              segments={STATUS_ORDER.map((s) => ({ key: s, label: WORD[s], value: after ? count(s) : 0, fill: FILL[s] }))}
-            />
+            {hasStat ? (
+              <>
+                {hasNs ? <h3 className="mb-2 text-[13px] font-medium text-ink-muted">Statutory</h3> : null}
+                <StackedBar
+                  onPick={(k) => setStatus((cur) => (cur === k ? null : (k as CompStatus)))}
+                  segments={STATUS_ORDER.map((s) => ({ key: s, label: WORD[s], value: after ? count(s) : 0, fill: FILL[s] }))}
+                />
+              </>
+            ) : null}
+            {hasNs ? (
+              <>
+                {hasStat ? <h3 className="mb-2 mt-4 text-[13px] font-medium text-ink-muted">Tasks</h3> : null}
+                <StackedBar segments={STATUS_WORDS.map((w) => ({ key: w, label: w, value: tasks.filter((t) => taskWord(t, today) === w).length, fill: WORD_FILL[w] }))} />
+              </>
+            ) : null}
           </SCard>
         </div>
       </Island>
@@ -305,6 +382,41 @@ function ObligationTile({ o, fy, today }: { o: Obligation; fy: string; today: st
           {o.filed} of {o.total} filed
         </span>
       </span>
+    </GoLink>
+  );
+}
+
+/** The six task words as bar fills (R-13 tones). */
+const WORD_FILL: Record<string, string> = {
+  Overdue: 'bg-danger-mid',
+  'Due soon': 'bg-warning-mid',
+  Waiting: 'bg-waiting-mid',
+  'In progress': 'bg-brand',
+  'Not started': 'bg-upcoming-mid',
+  Done: 'bg-positive-mid',
+};
+
+/** A task in "Due in the next 15 days": the end-date tile, the name, "Task" and the relative chip. */
+function TaskDueRow({ t, today }: { t: ClientTask; today: string }) {
+  const rel = relativeDue(today, t.endDate);
+  const late = rel.tone === 'bad';
+  return (
+    <GoLink
+      href={taskHref(t.id)}
+      label={`${t.name} · ${rel.label}`}
+      className={`flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[14px] text-ink first:border-t-0 hover:bg-surface-sunken md:px-5${late ? ' bg-danger-soft' : ''}`}
+    >
+      <DateTile iso={t.endDate} s={urgencyTint(today, t.endDate)} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13.5px] font-semibold">{t.name}</span>
+        <span className="block truncate text-[12.5px] text-ink-muted">
+          <DueWords today={today} due={t.endDate} /> · Task
+        </span>
+      </span>
+      {late ? <span className={buttonVariants({ variant: 'strong', size: 'sm', className: 'h-7 px-2 text-[12px]' })}>Open</span> : null}
+      <SChip tone={rel.tone} fixed>
+        {rel.label}
+      </SChip>
     </GoLink>
   );
 }
