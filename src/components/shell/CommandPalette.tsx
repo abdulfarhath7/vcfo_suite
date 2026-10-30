@@ -13,6 +13,8 @@ import {
   internEngagementStepPath,
 } from "@/lib/projects/project-step-path";
 import { useStaffBasePath } from "@/hooks/use-staff-base-path";
+import { useAskOptional } from "@/components/ask/ask-context";
+import { roleAskPath } from "@/lib/auth-routes";
 import { internVisibleDocuments } from "@/lib/documents/document-access";
 import {
   formatKnowledgeBankCommandHit,
@@ -192,6 +194,7 @@ export function CommandPalette() {
   const { commandOpen, setCommandOpen, user, engagements, getStateForEngagement } = useApp();
   const router = useRouter();
   const staffBase = useStaffBasePath();
+  const askOn = Boolean(useAskOptional()?.enabled);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -400,10 +403,12 @@ export function CommandPalette() {
     return out;
   }, [anyChip, commandOpen, engagements, getStateForEngagement, isClient, projectHref, q, role, staffBase]);
 
-  const pageHits = useMemo<SearchHit[]>(
-    () => pagesForRole(role).map((p) => ({ id: `page:${p.href}`, group: "Pages" as const, title: p.label, href: p.href })),
-    [role],
-  );
+  const pageHits = useMemo<SearchHit[]>(() => {
+    const pages = pagesForRole(role).map((p) => ({ id: `page:${p.href}`, group: "Pages" as const, title: p.label, href: p.href }));
+    // Owner item F5: the full Ask VCFO page, first in Pages, when Ask VCFO is on for this role.
+    const askHref = askOn ? roleAskPath(role) : null;
+    return askHref ? [{ id: "page:ask", group: "Pages" as const, title: "Open Ask VCFO", href: askHref }, ...pages] : pages;
+  }, [role, askOn]);
 
   const regOptions = useMemo(() => (isClient ? [] : opts(Object.values(REG_LABEL))), [isClient]);
   const statusOptions = useMemo(() => (isClient ? [] : opts(STATUS_ORDER)), [isClient]);

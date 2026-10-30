@@ -4,22 +4,32 @@ import { useEffect, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 // `m`, not `motion`: the app runs framer-motion in strict LazyMotion mode.
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { RotateCcw, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { AppWindow, Maximize2, Minimize2, PanelRight, RotateCcw, X, type LucideIcon } from 'lucide-react';
+import { roleAskPath } from '@/lib/auth-routes';
+import { cn } from '@/lib/utils';
 import { ease } from '@/lib/shell/motion';
 import { useApp } from '@/context/AppContext';
 import { AskComposer } from './AskComposer';
 import { AskHome } from './AskHome';
 import { useAskOptional } from './ask-context';
 import { AskThread } from './AskThread';
-import { ASK_PANEL_HEIGHT, ASK_PANEL_WIDTH, useAskLayoutMode } from './use-ask-layout';
+import { ASK_PANEL_SIZES, useAskLayoutMode, useAskPanelSize, type AskPanelSize } from './use-ask-layout';
 
 const iconButton =
   'inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25';
 
-/** Prototype AskButton head: 52px, the title in 15px weight 500, no bot figure (R-04). */
-function Header({ onClose }: { onClose: () => void }) {
+const SIZE_ICON: Record<AskPanelSize, LucideIcon> = { small: Minimize2, large: Maximize2, side: PanelRight };
+
+/**
+ * Prototype AskButton head: 52px, the title in 15px weight 500, no bot figure (R-04). The
+ * floating card adds the three size buttons and "Open full page" (owner items F3, F4).
+ */
+function Header({ onClose, size, setSize }: { onClose: () => void; size?: AskPanelSize; setSize?: (s: AskPanelSize) => void }) {
   const ask = useAskOptional()!;
   const { user } = useApp();
+  const router = useRouter();
+  const fullPage = roleAskPath(user?.role);
   const client = ask.shell === 'client';
   // Managers and leads read through their own scope, not the whole firm.
   const scoped = user?.role === 'manager' || user?.role === 'intern';
@@ -38,6 +48,40 @@ function Header({ onClose }: { onClose: () => void }) {
         <span className="min-w-0 flex-1 truncate text-[13px] text-ink-muted">
           {client ? 'Verified sources' : scoped ? 'Your clients · read only' : 'Firm-wide · read only'}
         </span>
+        {size && setSize ? (
+          <div role="group" aria-label="Chat size" className="flex items-center">
+            {(Object.keys(ASK_PANEL_SIZES) as AskPanelSize[]).map((k) => {
+              const Icon = SIZE_ICON[k];
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={size === k}
+                  aria-label={ASK_PANEL_SIZES[k].label}
+                  title={ASK_PANEL_SIZES[k].label}
+                  onClick={() => setSize(k)}
+                  className={cn(iconButton, size === k && 'bg-brand-soft text-brand-text hover:bg-brand-soft hover:text-brand-text')}
+                >
+                  <Icon className="h-4 w-4" strokeWidth={1.6} />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+        {fullPage ? (
+          <button
+            type="button"
+            aria-label="Open full page"
+            title="Open full page"
+            className={iconButton}
+            onClick={() => {
+              onClose();
+              router.push(fullPage);
+            }}
+          >
+            <AppWindow className="h-4 w-4" strokeWidth={1.6} />
+          </button>
+        ) : null}
         {ask.thread.length > 0 && (
           <button
             type="button"
@@ -73,16 +117,20 @@ function Body({ compactHome }: { compactHome: boolean }) {
 }
 
 /**
- * The panel (§7.3, VCFO Spectrum F-299): from 640 px a floating card at the bottom right,
- * 420 x 620 px, 6 px corners and the dialog shadow, with no scrim. Under 640 px it fills
- * the screen as a dialog with a focus trap.
+ * The panel (§7.3, VCFO Spectrum F-299): from 640 px a floating card with 6 px corners and the
+ * dialog shadow, with no scrim, in one of three sizes the person picks in the head (owner item
+ * F3): Small 380 x 560 and Large 520 x 720 at the bottom right, or Side panel, full height and
+ * 440 px wide at the right edge. Under 640 px it fills the screen as a dialog with a focus trap.
+ * It hides while the full Ask VCFO page is on screen.
  */
 export function AskPanel() {
   const ask = useAskOptional();
   const mode = useAskLayoutMode();
   const reduceMotion = useReducedMotion();
+  const { user } = useApp();
+  const [size, setSize] = useAskPanelSize(user?.id);
   const panelRef = useRef<HTMLElement>(null);
-  const open = Boolean(ask?.open);
+  const open = Boolean(ask?.open) && !ask?.pageOpen;
   const close = () => ask?.setOpen(false);
 
   // Esc closes the floating card; the phone dialog gets it from Radix.
@@ -102,6 +150,8 @@ export function AskPanel() {
   }, [open, mode]);
 
   if (!ask?.enabled) return null;
+  const dims = ASK_PANEL_SIZES[size];
+  const side = size === 'side';
 
   if (mode === 'sheet') {
     return (
@@ -130,17 +180,22 @@ export function AskPanel() {
           ref={panelRef}
           role="complementary"
           aria-label="Ask VCFO"
-          className="fixed bottom-5 right-5 z-50 flex flex-col overflow-hidden rounded-md border border-line bg-surface-raised shadow-dialog"
-          style={{
-            width: `min(${ASK_PANEL_WIDTH}px, calc(100vw - 40px))`,
-            height: `min(${ASK_PANEL_HEIGHT}px, calc(100vh - 40px))`,
-          }}
+          data-size={size}
+          className={cn(
+            'fixed z-50 flex flex-col overflow-hidden border border-line bg-surface-raised shadow-dialog',
+            side ? 'inset-y-0 right-0 border-y-0 border-r-0' : 'bottom-5 right-5 rounded-md',
+          )}
+          style={
+            side
+              ? { width: `min(${dims.width}px, 100vw)` }
+              : { width: `min(${dims.width}px, calc(100vw - 40px))`, height: `min(${dims.height}px, calc(100vh - 40px))` }
+          }
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
           animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
           transition={{ duration: reduceMotion ? 0.1 : 0.16, ease }}
         >
-          <Header onClose={close} />
+          <Header onClose={close} size={size} setSize={setSize} />
           <Body compactHome />
         </m.aside>
       )}

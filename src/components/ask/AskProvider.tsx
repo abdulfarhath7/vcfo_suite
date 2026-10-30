@@ -18,6 +18,7 @@ import {
   AskContext,
   type AskInput,
   type AskContextValue,
+  type AskHistoryEntry,
   type AskPreview,
   type ThreadItem,
 } from './ask-context';
@@ -52,6 +53,29 @@ function writeSession(key: string, value: string | null) {
   }
 }
 
+const HISTORY_MAX = 40;
+
+function historyKey(userId: string | null | undefined) {
+  return `vcfo.ask.history.${userId ?? 'anon'}`;
+}
+
+function readHistory(key: string): AskHistoryEntry[] {
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(key) ?? '[]') as unknown;
+    return Array.isArray(raw) ? (raw as AskHistoryEntry[]).filter((e) => e && typeof e.id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHistory(key: string, list: AskHistoryEntry[]) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(list.slice(0, HISTORY_MAX)));
+  } catch {
+    // Storage blocked: the chat list lasts for this page load only.
+  }
+}
+
 export function AskProvider({ children }: { children: ReactNode }) {
   const { user, engagements } = useApp();
   const role = user?.role ?? null;
@@ -64,6 +88,10 @@ export function AskProvider({ children }: { children: ReactNode }) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [handoffDraft, setHandoffDraft] = useState<string | null>(null);
   const [backPill, setBackPill] = useState(false);
+  const [pageOpen, setPageOpen] = useState(false);
+  const [allHistory, setAllHistory] = useState<AskHistoryEntry[]>([]);
+  const hKey = historyKey(user?.id);
+  useEffect(() => setAllHistory(readHistory(hKey)), [hKey]);
   const abortRef = useRef<AbortController | null>(null);
 
   const shell: AskShell | null = useMemo(() => {
@@ -80,6 +108,21 @@ export function AskProvider({ children }: { children: ReactNode }) {
   }, [shell, preview, engagements, user]);
 
   const key = storageKey(shell, engagementId);
+  const history = useMemo(() => allHistory.filter((e) => e.scope === key).sort((a, b) => b.at.localeCompare(a.at)), [allHistory, key]);
+
+  /** Adds a chat to the list, or moves it to the top; the first question stays its title. */
+  const remember = useCallback(
+    (id: string, title: string) => {
+      setAllHistory((list) => {
+        const old = list.find((e) => e.id === id);
+        const entry: AskHistoryEntry = { id, title: old?.title ?? title.slice(0, 120), at: new Date().toISOString(), scope: key };
+        const next = [entry, ...list.filter((e) => e.id !== id)];
+        writeHistory(hKey, next);
+        return next;
+      });
+    },
+    [key, hKey],
+  );
 
   // A different shell / engagement is a different conversation.
   const lastKey = useRef(key);
@@ -107,7 +150,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
   // Resume a stored conversation the first time the panel shows it.
   const hydrated = useRef<string | null>(null);
   useEffect(() => {
-    if (!open || !enabled || !conversationId || thread.length > 0 || hydrated.current === conversationId) return;
+    if (!(open || pageOpen) || !enabled || !conversationId || thread.length > 0 || hydrated.current === conversationId) return;
     hydrated.current = conversationId;
     fetchConversation(conversationId)
       .then(({ messages }) => {
@@ -120,11 +163,16 @@ export function AskProvider({ children }: { children: ReactNode }) {
         );
       })
       .catch(() => {
-        // Gone or not ours: start fresh.
+        // Gone or not ours: start fresh, and drop it from the chat list.
         writeSession(key, null);
+        setAllHistory((list) => {
+          const next = list.filter((e) => e.id !== conversationId);
+          writeHistory(hKey, next);
+          return next;
+        });
         setConversationId(null);
       });
-  }, [open, enabled, conversationId, thread.length, key]);
+  }, [open, pageOpen, enabled, conversationId, thread.length, key, hKey]);
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
@@ -169,6 +217,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
               setConversationId(event.conversationId);
               writeSession(key, event.conversationId);
               hydrated.current = event.conversationId;
+              remember(event.conversationId, text);
               setThread((t) => [
                 ...t,
                 { id: nextId(), kind: 'assistant', messageId: event.messageId || null, answer: event.answer },
@@ -193,7 +242,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [shell, busy, engagementId, conversationId, key],
+    [shell, busy, engagementId, conversationId, key, remember],
   );
 
   const showTopic = useCallback(
@@ -221,6 +270,21 @@ export function AskProvider({ children }: { children: ReactNode }) {
     writeSession(key, null);
   }, [key]);
 
+  const openConversation = useCallback(
+    (id: string) => {
+      if (id === conversationId && thread.length > 0) return;
+      abortRef.current?.abort();
+      setThread([]);
+      setStatus(null);
+      setBusy(false);
+      setHandoffDraft(null);
+      hydrated.current = null;
+      setConversationId(id);
+      writeSession(key, id);
+    },
+    [conversationId, thread.length, key],
+  );
+
   const value = useMemo<AskContextValue>(
     () => ({
       enabled: enabled && shell !== null,
@@ -240,12 +304,16 @@ export function AskProvider({ children }: { children: ReactNode }) {
       ask,
       showTopic,
       reset,
+      history,
+      openConversation,
+      pageOpen,
+      setPageOpen,
       handoffDraft,
       setHandoffDraft,
       backPill,
       setBackPill,
     }),
-    [enabled, firmName, features, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, handoffDraft, backPill],
+    [enabled, firmName, features, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, history, openConversation, pageOpen, handoffDraft, backPill],
   );
 
   return <AskContext.Provider value={value}>{children}</AskContext.Provider>;

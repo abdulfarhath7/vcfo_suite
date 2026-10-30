@@ -66,6 +66,7 @@ const PAGE_LABEL: Record<string, string> = {
   'board-resolution': 'Board Resolution',
   library: 'Library',
   'ask-vcfo': 'Ask VCFO',
+  ask: 'Ask VCFO',
   learn: 'Library',
 };
 
@@ -95,6 +96,7 @@ const PAGE_ICON: Record<string, ShellCrumbIcon> = {
   incorporation: 'briefcase',
   library: 'book',
   'ask-vcfo': 'book',
+  ask: 'book',
   learn: 'book',
 };
 
