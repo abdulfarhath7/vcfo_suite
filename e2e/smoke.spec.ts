@@ -180,6 +180,8 @@ const STAFF_COMMON = [
   'compliances/calendar',
   'compliances/filings',
   'compliances/obligations',
+  // R-51: the practice block's staff Incorporation page.
+  'incorporation',
   'registrations',
   'knowledge-bank',
   'mail',

@@ -114,13 +114,13 @@ export function useBreakpoint(): Bp {
   return bp;
 }
 
-interface NavLeaf {
+export interface NavLeaf {
   k: PortalRouteKey;
   t: string;
   badge?: string;
   hot?: boolean;
 }
-interface NavItem extends Partial<NavLeaf> {
+export interface NavItem extends Partial<NavLeaf> {
   g?: string;
   t: string;
   i: LuName;
@@ -136,10 +136,31 @@ interface NavItem extends Partial<NavLeaf> {
  */
 function useNav(): NavItem[] {
   const { shell, after } = usePortal();
-  const unread = shell?.badges.notifications ?? 0;
-  const inc = shell ? `${shell.badges.spiceDone}/${shell.badges.spiceTotal}` : undefined;
-  const docs = shell?.badges.documents ?? 0;
-  const incorporation: NavItem = { k: 'incorporation', t: 'Incorporation', i: 'building-2', badge: inc };
+  return portalNav({
+    after,
+    unread: shell?.badges.notifications ?? 0,
+    inc: shell ? `${shell.badges.spiceDone}/${shell.badges.spiceTotal}` : undefined,
+    docs: shell?.badges.documents ?? 0,
+  });
+}
+
+/**
+ * The client sidebar entries, pure so the order can be tested. R-51: the practice block
+ * (Incorporation with the Landmark icon, Compliances, Registrations with BadgeCheck) is the one
+ * every practice role shares; staff copy this order.
+ */
+export function portalNav({
+  after,
+  unread,
+  inc,
+  docs,
+}: {
+  after: boolean;
+  unread: number;
+  inc: string | undefined;
+  docs: number;
+}): NavItem[] {
+  const incorporation: NavItem = { k: 'incorporation', t: 'Incorporation', i: 'landmark', badge: inc };
   const compliances: NavItem = {
     g: 'compliances',
     t: 'Compliances',

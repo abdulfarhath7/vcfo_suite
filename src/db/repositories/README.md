@@ -61,6 +61,7 @@ this table, so re-check the migration before trusting a row.
 | email_send_log | read | read | none | none | `20260806120000_email_send_log_seeds.sql` |
 | engagement_step_events | read: all | read: owned/assigned engagements | read: assigned engagements | **none** | product (G-13); written only inside `updateChecklistState`'s transaction |
 | metrics (practice, analytics, people; `metrics.ts`) | all; capacity write | own engagements; people: self + own leads | own engagements; people: none | **none** | product (G-13, G-14, G-27, G-29); reads only through the engagement scope |
+| practice incorporation (`practice-incorporation.ts`, R-51) | all | own engagements | assigned engagements | **none** (developer: none) | product (D-29); engagements and checklist through the engagement scope, names and next filing date only for the approved ids |
 | firm_settings | read and write (audit per field) | read | read | **none** | `0026_gaps_backend.sql` (G-02) |
 | escalations | all; resolve | raise and read on owned engagements | raise and read on assigned engagements | **none** | `0026` (G-20); assignee must be an admin, null means the super admin |
 | profiles.reports_to_admin_id (reporting lines, `firm-org.ts`) | read and write | none | none | none | `0026` (G-20); developer accounts are created by the super admin only |

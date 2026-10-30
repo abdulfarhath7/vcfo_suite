@@ -9,6 +9,7 @@ import { ObligationView } from '@/views/compliances/ObligationView';
 import { RegistrationsView } from '@/views/compliances/RegistrationsView';
 import { RegistrationView } from '@/views/compliances/RegistrationView';
 import { RedirectTo } from '@/components/routing/RedirectTo';
+import { EmptyState } from '@/components/ui/empty-state';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
   preIncorporationIdsOf,
@@ -58,6 +59,14 @@ function useComplianceScope(): {
 
 const LEAD_HOME = '/app/intern/today';
 
+/**
+ * R-51: the lead always has Compliances in the sidebar. With no incorporated client yet the
+ * pages say so instead of sending the lead to Today.
+ */
+export function NoIncorporatedClients() {
+  return <EmptyState title="No incorporated clients yet" />;
+}
+
 /** The same skeleton the views show while the register loads. */
 function Settling({ label }: { label: string }) {
   return (
@@ -70,28 +79,28 @@ function Settling({ label }: { label: string }) {
 export function ComplianceCalendarPage({ basePath }: { basePath: string }) {
   const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading calendar" />;
-  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  if (leadHasNothing) return <NoIncorporatedClients />;
   return <ComplianceCalendarView basePath={basePath} scope={scope} />;
 }
 
 export function FilingsPage({ basePath }: { basePath: string }) {
   const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading filings" />;
-  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  if (leadHasNothing) return <NoIncorporatedClients />;
   return <FilingsView basePath={basePath} scope={scope} />;
 }
 
 export function ObligationsPage({ basePath }: { basePath: string }) {
   const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading obligations" />;
-  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  if (leadHasNothing) return <NoIncorporatedClients />;
   return <ObligationsView basePath={basePath} scope={scope} />;
 }
 
 export function ObligationPage({ basePath, obligationId }: { basePath: string; obligationId: string }) {
   const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading obligation" />;
-  if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
+  if (leadHasNothing) return <NoIncorporatedClients />;
   return <ObligationView basePath={basePath} scope={scope} obligationId={obligationId} />;
 }
 

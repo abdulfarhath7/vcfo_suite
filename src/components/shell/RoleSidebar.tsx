@@ -3,52 +3,10 @@
 import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, type TransitionEvent } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, type TransitionEvent } from 'react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
-import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
-import {
-  Keyboard,
-  LayoutDashboard,
-  Briefcase,
-  Building2,
-  Inbox,
-  UserSquare2,
-  FolderClosed,
-  BookMarked,
-  FolderOpen,
-  CalendarCheck,
-  CalendarDays,
-  FileSpreadsheet,
-  BarChart3,
-  Landmark,
-  Users,
-  History as HistoryIcon,
-  BookOpen,
-  ClipboardCheck,
-  ScrollText,
-  Mail,
-  Pin,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Columns3,
-  Megaphone,
-  Archive,
-  Bell,
-  TriangleAlert,
-  Layers,
-  TrendingUp,
-  FileBarChart,
-  Settings,
-  BadgeCheck,
-  Plug,
-  Clock,
-  Text as TextIcon,
-  ShieldCheck,
-  Lock,
-  Database,
-  LogOut,
-} from 'lucide-react';
+import { Keyboard, Pin, PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ROLE_UI_LABEL, type Role } from '@/lib/auth';
 import { UserFace } from '@/components/common/UserFace';
@@ -59,8 +17,12 @@ import { useShellNav } from '@/components/shell/shell-nav-context';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { SidebarComplianceMini } from '@/components/shell/SidebarComplianceMini';
-import { complianceLeaves } from '@/components/shell/compliance-nav';
-import { TONE } from '@/components/shell/nav-tones';
+import { isNavGroup, isNavSectionBreak, sidebarItemsFor } from '@/components/shell/sidebar-items';
+import {
+  showsIncorporationCount,
+  useComplianceDueCount,
+  useIncorporatingCount,
+} from '@/components/shell/practice-counts';
 import { INTERN_CLIENTS_HREF } from '@/components/shell/InternClientsNav';
 import {
   SidebarNavCountBadge,
@@ -73,7 +35,6 @@ import {
   sidebarNavTriggerClass,
   sidebarPillClass,
   sidebarRailClass,
-  type SidebarNavLeaf,
 } from '@/components/shell/SidebarNavGroup';
 import {
   ClientsFoldBody,
@@ -100,158 +61,6 @@ import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { SUPER_RISKS_NAV_HREF, SuperRisksNavCount, SuperRisksRailCount } from '@/components/super/parts/SuperRisksCount';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { surfaceCssVars } from '@/lib/shell/shell-appearance';
-
-interface Item {
-  to: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  badge?: number;
-  /** Icon color when item is inactive — the "colorful nav" treatment. */
-  iconTone?: string;
-}
-
-interface NavGroupDef {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  iconTone?: string;
-  items: SidebarNavLeaf[];
-}
-
-type NavSectionBreak = { kind: 'break'; id: string };
-
-type NavEntry = Item | NavGroupDef | NavSectionBreak;
-
-/** Hairline before Analytics + Audit Log so they read as a quieter tools cluster. */
-const NAV_TOOLS_BREAK: NavSectionBreak = { kind: 'break', id: 'tools' };
-
-function isNavSectionBreak(entry: NavEntry): entry is NavSectionBreak {
-  return 'kind' in entry && entry.kind === 'break';
-}
-
-function isNavGroup(entry: NavEntry): entry is NavGroupDef {
-  return 'items' in entry;
-}
-
-function docsGroup(base: string, vaultIcon: Item['icon'] = FolderClosed): NavGroupDef {
-  return {
-    id: `docs:${base}`,
-    label: 'Docs',
-    icon: FolderOpen,
-    iconTone: TONE.files,
-    items: [
-      { to: `${base}/vault`, label: 'Vault', icon: vaultIcon, iconTone: TONE.files },
-      { to: `${base}/knowledge-bank`, label: 'Knowledge Bank', icon: BookOpen, iconTone: TONE.knowledge },
-    ],
-  };
-}
-
-/** Compliances → Calendar + Filings, the same disclosure shape as Updates — every role. */
-function compliancesGroup(base: string): NavGroupDef {
-  return {
-    id: `compliances:${base}`,
-    label: 'Compliances',
-    icon: CalendarCheck,
-    iconTone: TONE.calendar,
-    items: complianceLeaves(base),
-  };
-}
-
-function updatesGroup(base: string): NavGroupDef {
-  return {
-    id: `updates:${base}`,
-    label: 'Updates',
-    icon: Bell,
-    iconTone: TONE.news,
-    items: [
-      { to: `${base}/announcements`, label: 'Announcements', icon: Megaphone, iconTone: TONE.news },
-      { to: `${base}/notifications`, label: 'Notifications', icon: Bell, iconTone: TONE.work },
-    ],
-  };
-}
-
-/* Sidebars in priority order (K-15, rule R-32): daily work, dated work, messages,
-   documents, then reports and settings below the break. */
-const firmAdminItems: NavEntry[] = [
-  { to: '/app/admin/dashboard', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/admin/projects', label: 'Projects', icon: Briefcase, iconTone: TONE.work },
-  { to: '/app/admin/approvals', label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
-  { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  { to: '/app/admin/managers', label: 'Managers', icon: UserSquare2, iconTone: TONE.people },
-  compliancesGroup('/app/admin'),
-  { to: '/app/admin/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-  updatesGroup('/app/admin'),
-  { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
-  docsGroup('/app/admin'),
-  NAV_TOOLS_BREAK,
-  { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-  { to: '/app/admin/ask-vcfo/sources', label: 'Ask VCFO sources', icon: BookMarked, iconTone: TONE.knowledge },
-  { to: '/app/admin/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
-  { to: '/app/admin/firm-settings', label: 'Firm settings', icon: Settings, iconTone: TONE.audit },
-];
-
-const clientItems: NavEntry[] = [
-  { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/client/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
-  compliancesGroup('/app/client'),
-  { to: '/app/client/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-  updatesGroup('/app/client'),
-  { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
-  { to: '/app/client/library', label: 'Library', icon: BookMarked, iconTone: TONE.knowledge },
-  { to: '/app/client/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
-  { to: '/app/client/team', label: 'Team', icon: Users, iconTone: TONE.people },
-];
-
-/* Super admin, in the prototype's order (K-45): Overview, Risks, Clients, Practice areas, Team,
-   Growth, Reports, then the firm-scope entries the super admin already had, then Firm settings. */
-const superAdminItems: NavEntry[] = [
-  { to: '/app/super/dashboard', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/super/risks', label: 'Risks', icon: TriangleAlert, iconTone: TONE.queue },
-  { to: '/app/super/projects', label: 'Clients', icon: Briefcase, iconTone: TONE.work },
-  {
-    id: 'practice:super',
-    label: 'Practice areas',
-    icon: Layers,
-    iconTone: TONE.work,
-    items: [
-      { to: '/app/super/practice/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
-      { to: '/app/super/practice/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-      // Practice · Compliances and Filings carry the statutory and non-statutory filter across every
-      // client; Obligations (with New task) stays in the firm scope at /app/admin.
-      ...complianceLeaves('/app/admin').filter((leaf) => leaf.to.endsWith('/obligations')),
-      { to: '/app/super/practice/compliances', label: 'Compliances', icon: CalendarDays, iconTone: TONE.calendar },
-      { to: '/app/super/practice/filings', label: 'Filings', icon: FileSpreadsheet, iconTone: TONE.files },
-    ],
-  },
-  { to: '/app/super/team', label: 'Team', icon: Users, iconTone: TONE.people },
-  { to: '/app/super/growth', label: 'Growth', icon: TrendingUp, iconTone: TONE.analytics },
-  { to: '/app/super/reports', label: 'Reports', icon: FileBarChart, iconTone: TONE.analytics },
-  { to: '/app/super/vault', label: 'Documents', icon: FolderOpen, iconTone: TONE.files },
-  updatesGroup('/app/super'),
-  NAV_TOOLS_BREAK,
-  { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
-  { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
-  { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
-  { to: '/app/admin/audit-log', label: 'Firm log', icon: HistoryIcon, iconTone: TONE.audit },
-  { to: '/app/client/overview', label: 'Portal', icon: Inbox, iconTone: TONE.home },
-  { to: '/app/client/audit', label: 'Client log', icon: ScrollText, iconTone: TONE.audit },
-  { to: '/app/super/settings', label: 'Firm settings', icon: Settings, iconTone: TONE.audit },
-  { to: '/app/dev/overview', label: 'Developer console', icon: Plug, iconTone: TONE.work },
-];
-
-/* Developer console (G-01), in the prototype's order. The super admin reaches it from a
-   "Developer console" link; a developer sees only these items. */
-const developerItems: NavEntry[] = [
-  { to: '/app/dev/overview', label: 'Overview', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/dev/connections', label: 'Connections', icon: Plug, iconTone: TONE.work },
-  { to: '/app/dev/jobs', label: 'Jobs', icon: Clock, iconTone: TONE.work },
-  { to: '/app/dev/logs', label: 'Logs', icon: TextIcon, iconTone: TONE.work },
-  { to: '/app/dev/messages', label: 'Messages', icon: Mail, iconTone: TONE.work },
-  { to: '/app/dev/deploys', label: 'Deploys', icon: ShieldCheck, iconTone: TONE.work },
-  { to: '/app/dev/access', label: 'Access', icon: Lock, iconTone: TONE.people },
-  { to: '/app/dev/data', label: 'Data and costs', icon: Database, iconTone: TONE.analytics },
-  { to: '/app/dev/audit', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
-];
 
 /** Home and Profile for the rail. The developer has no profile page yet, so both open the console. */
 function railHomePath(role: Role): string {
@@ -362,8 +171,11 @@ function SidebarNavBody({
   /** Pinned closed: icon over a short label. Hover-peek stays icon-only. */
   stacked?: boolean;
 }) {
-  const { user, engagements, getStateForEngagement, signOut, unreadNotificationCount } = useApp();
+  const { user, engagements, signOut, unreadNotificationCount } = useApp();
   const folds = useSidebarFolds(user?.role);
+  // R-51: counts on the practice block, only where the number is real and cheap.
+  const incorporatingCount = useIncorporatingCount(user?.role);
+  const complianceDueCount = useComplianceDueCount(user?.role);
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const osReduce = useReducedMotion();
@@ -376,69 +188,11 @@ function SidebarNavBody({
     staticHover,
   );
 
-  const managerItems = useMemo<NavEntry[]>(
-    () => [
-      { to: `${staffBase}/dashboard`, label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
-      { to: `${staffBase}/work`, label: 'Work', icon: Columns3, iconTone: TONE.work },
-      { to: `${staffBase}/projects`, label: 'Projects', icon: Briefcase, iconTone: TONE.work },
-      { to: `${staffBase}/approvals`, label: 'Approvals', icon: ClipboardCheck, iconTone: TONE.queue },
-      { to: `${staffBase}/people`, label: 'People', icon: Users, iconTone: TONE.people },
-      { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
-      compliancesGroup(staffBase),
-      { to: `${staffBase}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-      updatesGroup(staffBase),
-      { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
-      docsGroup(staffBase),
-      NAV_TOOLS_BREAK,
-      { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-      { to: `${staffBase}/audit-log`, label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
-    ],
-    [staffBase],
-  );
-
-  // A lead sees Compliances only once at least one of their engagements is
-  // incorporated; the pages themselves redirect to Today until then.
-  const leadHasCompliances = useMemo(
-    () =>
-      user?.role === 'intern' &&
-      complianceEngagementsForRole('intern', engagements, getStateForEngagement).length > 0,
-    [user?.role, engagements, getStateForEngagement],
-  );
-  const internItems = useMemo<NavEntry[]>(
-    () => [
-      { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-      { to: '/app/intern/tasks', label: 'Work', icon: Columns3, iconTone: TONE.work },
-      { to: INTERN_CLIENTS_HREF, label: 'Clients', icon: UserSquare2, iconTone: TONE.people },
-      ...(leadHasCompliances ? [compliancesGroup('/app/intern')] : []),
-      { to: '/app/intern/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-      updatesGroup('/app/intern'),
-      { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
-      docsGroup('/app/intern', Archive),
-      NAV_TOOLS_BREAK,
-      { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-      { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
-    ],
-    [leadHasCompliances],
-  );
-
   if (!user) return null;
 
   /* P-255: inside the developer console the super admin sees the console's own items. */
   const inDevConsole = user.role === 'super_admin' && pathname.startsWith('/app/dev');
-  const items =
-    inDevConsole
-      ? developerItems
-      : user.role === 'super_admin'
-      ? superAdminItems
-      : user.role === 'admin'
-        ? firmAdminItems
-        : user.role === 'manager'
-          ? managerItems
-          : user.role === 'intern'
-            ? internItems
-            : user.role === 'developer'
-              ? developerItems
-              : clientItems;
+  const items = sidebarItemsFor(user.role, staffBase, inDevConsole);
 
   return (
     <>
@@ -505,7 +259,7 @@ function SidebarNavBody({
                 ink={ink}
                 hoverFollow={hoverFollow}
                 stacked={stacked}
-                badge={isUpdates ? unreadNotificationCount : undefined}
+                badge={isUpdates ? unreadNotificationCount : isCompliances && !inDevConsole ? complianceDueCount : undefined}
                 tag={isCompliances && (user.role === 'intern' || user.role === 'manager') ? <NewTag ink={ink} /> : undefined}
               />
             );
@@ -564,6 +318,10 @@ function SidebarNavBody({
           const showDev = (user.role === 'developer' || inDevConsole) && DEV_COUNT_HREFS.has(it.to);
           // P-129: the super admin's Risks row counts the open risks (not urgent, so not red).
           const showRisks = user.role === 'super_admin' && !inDevConsole && it.to === SUPER_RISKS_NAV_HREF;
+          // R-51: Incorporation counts the clients still incorporating (a plain count, not urgent).
+          const navCount =
+            showsIncorporationCount(user.role) && it.to.endsWith('/incorporation') ? incorporatingCount
+              : (it.badge ?? 0);
           return (
             <Link
               key={it.to}
@@ -608,7 +366,7 @@ function SidebarNavBody({
               {stacked ? <SidebarRailLabel>{it.label}</SidebarRailLabel> : null}
               {stacked && showInternBadge ? <StackedInternWorkBadge /> : null}
               {stacked && showRisks ? <SuperRisksRailCount /> : null}
-              {stacked && !showInternBadge && !showRisks ? <SidebarRailBadge count={it.badge ?? 0} /> : null}
+              {stacked && !showInternBadge && !showRisks ? <SidebarRailBadge count={navCount} /> : null}
               {!expanded && !stacked && showInternBadge ? <RailInternWorkBadge ink={ink} /> : null}
               {!expanded && !stacked && showApprovals ? <RailApprovalsBadge role={user.role} ink={ink} /> : null}
               {!expanded && !stacked && showDev ? <RailDevBadge href={it.to} ink={ink} /> : null}
@@ -631,7 +389,7 @@ function SidebarNavBody({
                 ) : showRisks ? (
                   <SuperRisksNavCount ink={ink} />
                 ) : (
-                  <SidebarNavCountBadge count={it.badge ?? 0} ink={ink} />
+                  <SidebarNavCountBadge count={navCount} ink={ink} />
                 )}
               </span>
             </Link>
