@@ -1,0 +1,70 @@
+# Overnight report, 31 Oct 2026
+
+Built by the hub session with six parallel agents, on the owner's order ("Build everything… never require any approvals… built, committed, and pushed").
+Branch `overnight/31oct`, merged into `main`. Every milestone has its own report in `docs/ui-port/fixes/overnight-*.md`.
+
+## 1. Next actions (owner)
+
+| # | Action | Why | Done |
+|---|---|---|---|
+| 1 | Apply migrations **0031** (Board resolution NOC) and **0032** (task `sort_order`) on RDS **before** you deploy this code. Use the SSM tunnel through the NAT instance (`node scripts/db-env-prod.mjs`, see `docs/context/AWS-DEPLOY.md` §11). Take an RDS snapshot first. Never open RDS to the internet. | Without them, the board resolution pages and every task list fail. | ✗ |
+| 2 | Commit your laptop-only SOC 2 infra files (`infra/private-db.tf` and the edited `infra/*.tf`) and merge them with `main`. Then run `terraform fmt` and `terraform validate`. | `infra/network.tf` in git still shows the old public setup. M7 edited only the files that are in git. | ✗ |
+| 3 | Create the `vcfo-suite/CREDENTIALS_ENCRYPTION_KEY` secret, if your laptop files do not already create it. Then `terraform apply`. | M7 moves TOTP encryption to this key. | ✗ |
+| 4 | Build and push the image of `main`, with a rollback tag of the live image (`0f34763`). | This session has no AWS access. | ✗ |
+| 5 | Run `npm run totp:reencrypt -- --dry-run`, then `npm run totp:reencrypt`, through the tunnel. | It moves the TOTP secrets to the new key. | ✗ |
+| 6 | Test the app. Send the bugs to the hub. | Owner's testing rule: no browser tests were run overnight. | ✗ |
+
+## 2. Milestones
+
+| # | Milestone | Done | Commits | Report |
+|---|---|---|---|---|
+| M0 | Main matches the waiting work (NOC page, landing v2) | ✓ in git. ✗ deploy (no AWS access here) | `5053b56`, `9e252e0`, `2feb3b5`, `f4f15c0` | `fixes/br-noc-*.md`, `fixes/landing-v2.md` |
+| M1 | Design rules R-54 to R-60 | ✓ | `ed848f7`, `ae3bdea` | `fixes/overnight-m1.md` |
+| M2 | Client home: 5 fixed tiles, real trend lines, Recent activity 5 rows + View all | ✓ | `295ef1e` | `fixes/overnight-m2-m3.md` |
+| M3 | Incorporation: no Registration section, timeline on top, Days to COI card, COI hides Before/After | ✓ | `6265c92` | `fixes/overnight-m2-m3.md` |
+| M4 | Documents: one flat table, open-folder view unchanged | ✓ | `f064130` | `fixes/overnight-m4-m5.md` |
+| M5 | Ask: tokens in dark mode, avatars, 3 sizes, full page, Ctrl K | ✓ | `39c26f7` | `fixes/overnight-m4-m5.md` |
+| M6 | Work drag and drop, FullCalendar staff calendar, no strikethrough, migration 0032 | ✓ | `e0510f6`, `f2b46de`, merge `97350f1` | `fixes/overnight-m6.md` |
+| M7 | SOC 2: secret rotation, runtime secrets, private DB path, console cards, read-only IAM | ✓ code. ✗ apply (owner) | `8f966ad`, `977f8a8` | `fixes/overnight-m7.md` |
+| M8 | Leftovers: X-23 activity master, demo seed files, SPICe+ attachments list | ✓ | `ae762c9`, `6c673c5`, `0ae8e94`, `7854c40` | `fixes/overnight-m8.md` |
+
+## 3. Checks on the merged branch
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit -p .` | ✓ 0 errors |
+| `npx vitest run` | ✓ 387 files, 3,674 tests pass |
+| `npx eslint . --quiet` | ✓ 0 errors |
+| Browser, Playwright, smoke, screenshots | ✗ Not run (owner's rule) |
+| `terraform fmt` / `validate` | ✗ terraform is not installed in this session |
+
+## 4. Decisions made overnight (change any of them)
+
+| # | Area | Decision |
+|---|---|---|
+| 1 | Hub | The builder on the laptop refused production actions without the owner's word in its own chat. The hub built everything itself with six parallel agents. |
+| 2 | M1 | Light page background `#edf1f6`, one step darker than white cards. Dark mode already had the step. |
+| 3 | M1 | Pages that draw their own 1.5 px card frame get 2 px from one rule at the end of `globals.css`; client-portal cards from a temporary `!important` rule in `23-portal.css`. |
+| 4 | M1 | New `border-dash-fine` (3 px dash, 3 px gap) only for drop zones and empty states. Other dashed edges are now solid. |
+| 5 | M1 | New shared `StepLink` draws each connector through the mark centres (11 places fixed). |
+| 6 | M2 | "Steps done" counts SPICe+ steps. The Expected COI date moved into the note of that tile. |
+| 7 | M2 | Trend lines are rebuilt from real records for the last days. A tile with no history shows a flat dashed line and "No history yet". |
+| 8 | M3 | Three stat cards on top: Days to COI (Incorporated after the COI), SPICe+ steps, All steps. |
+| 9 | M4 | A new optional `signed` flag on document rows marks signed files (no schema change). |
+| 10 | M5 | Past chats on the full Ask page are kept in localStorage (40 per user). A server list is still a gap. |
+| 11 | M6 | "A date agreed with the client" = the manager-set window on a step; a lead's drag opens the date-change request. Compliance tasks the client sees move freely for managers. |
+| 12 | M6 | Staff compliance calendar tab "Month" is renamed "Calendar". Clients keep the old month grid. |
+| 13 | M7 | The Auth.js config is built per request, so the Entra secret can rotate without a redeploy. |
+| 14 | M7 | `ignore_changes` on the AUTH_SECRET and Azure secret versions, so `terraform apply` does not undo a hand rotation. |
+| 15 | M7 | `apprunner:DescribeService` added (read-only) for the Network card. |
+| 16 | M8 | The demo seed also uploads placeholders for demo request files. |
+
+## 5. Known gaps
+
+| # | Gap |
+|---|---|
+| 1 | X-20 holidays, X-22 retention, X-24 Meta template: they wait for the owner. |
+| 2 | P-304, P-305, P-312 developer console rows: not built. |
+| 3 | Ask full page: no server list of past chats; suggested-question answers of the client pop-up do not show on the full page. |
+| 4 | The WhatsApp verify-code hash still uses AUTH_SECRET. A code sent just before a rotation fails once. |
+| 5 | Landing check T6 (Lighthouse) was never run. |
