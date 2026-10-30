@@ -64,7 +64,7 @@ export function RecordStepsCard({
   const totalDone = tabs.reduce((n, t) => n + t.done, 0);
   const total = tabs.reduce((n, t) => n + t.total, 0);
 
-  const row = (it: ChecklistItem, index: number, count: number) => (
+  const row = (it: ChecklistItem, index: number, count: number, above?: ChecklistItem) => (
     <ChecklistPhaseStepRow
       key={it.id}
       item={it}
@@ -77,6 +77,7 @@ export function RecordStepsCard({
       leadName={leadName}
       onAbout={(item) => setAbout({ id: item.id, label: `Step ${index + 1}` })}
       connector={index < count - 1}
+      connectorAbove={above ? (getStepGate(gates, above.id).kind === 'done' ? 'done' : 'todo') : undefined}
       today={today}
     />
   );
@@ -137,7 +138,7 @@ export function RecordStepsCard({
               </>
             );
           }
-          return <div className="py-2">{phase.items.map((it, i) => row(it, i, phase.items.length))}</div>;
+          return <div className="py-2">{phase.items.map((it, i) => row(it, i, phase.items.length, phase.items[i - 1]))}</div>;
         }}
       </InternPhaseTabs>
       <StepAboutPanel

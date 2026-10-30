@@ -25,7 +25,7 @@ a:where(:not(.cp-tw *)){color:oklch(var(--brand-text));text-decoration:none;font
 :where(.lbtn){display:inline;cursor:pointer;border:0;background:none;padding:0;margin:0;font:inherit;font-weight:500;letter-spacing:inherit;text-align:inherit;text-transform:inherit;color:var(--primary)}:where(.lbtn):hover{color:var(--primary-dark)}
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.card{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
+.card{position:relative;background:var(--panel);border:2px solid var(--border);border-radius:6px;box-shadow:var(--shadow);min-width:0;display:flex;flex-direction:column;transition:transform .25s ease,box-shadow .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
 .card:hover{transform:translateY(-2px);box-shadow:var(--shadow),var(--pop)}
 .card.t::before{content:none}
 .ch{display:flex;align-items:center;gap:10px;min-height:52px;box-sizing:border-box;border-bottom:1px solid var(--hair);padding:8px 18px;margin-bottom:12px;flex-wrap:wrap}
@@ -52,7 +52,7 @@ a:where(:not(.cp-tw *)){color:oklch(var(--brand-text));text-decoration:none;font
 .pct{font-size:11.5px;font-weight:500;width:36px;text-align:right;color:var(--fg);font-feature-settings:"tnum"}
 .go{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;margin-top:auto;padding:10px 18px 12px;border-top:1px solid var(--hair);color:var(--primary)}
 .av{border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:500;flex:none;color:#fff;box-shadow:0 0 0 2px var(--panel)}
-.kpi{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow);padding:14px 14px 0 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
+.kpi{position:relative;background:var(--panel);border:2px solid var(--border);border-radius:6px;box-shadow:var(--shadow);padding:14px 14px 0 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;transition:transform .25s ease;animation:up .5s cubic-bezier(.2,.7,.2,1) backwards}
 .kpi:hover{transform:translateY(-2px)}
 .kpi::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 4px 4px 0;background:var(--ac)}
 .kpi .go{padding:9px 0 11px;margin:0}

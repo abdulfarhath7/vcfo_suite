@@ -86,7 +86,7 @@ html[data-reduce-motion="true"] *,html[data-reduce-motion="true"] *::before,html
 .inp::placeholder{color:oklch(var(--ink-faint))}
 .inp:focus{outline:none;border-color:oklch(var(--brand));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
 .fl{gap:6px;font-size:13px;font-weight:500;color:oklch(var(--ink-2))}
-input[type="checkbox"]{width:18px;height:18px;border-radius:4px;accent-color:oklch(var(--brand))}
+input[type="checkbox"]{width:16px;height:16px;border-radius:4px}
 /* segmented switch for filters (R-11): quiet track, the picked option blurple with white text */
 .seg{padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:none}
 .seg button{height:28px;padding:0 12px;border-radius:4px;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--ink-2))}

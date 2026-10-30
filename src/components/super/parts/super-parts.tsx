@@ -168,7 +168,7 @@ function FilterMenu({ filter, trigger }: { filter: SuperFilterDef; trigger: Reac
   );
 }
 
-/** R-10: a set filter is a soft blurple chip with an ×; an unset one is a dashed "+ Label" chip. */
+/** R-10: a set filter is a soft blurple chip with an ×; an unset one is a "+ Label" chip with a plain edge (R-56). */
 export function SuperFilterChips({
   filters,
   onClear,
@@ -212,7 +212,7 @@ export function SuperFilterChips({
             trigger={
               <button
                 type="button"
-                className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border-1.5 border-dashed border-line-strong px-2.5 text-[13px] font-medium text-ink-2 hover:bg-surface-sunken"
+                className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md border-1.5 border-line-strong px-2.5 text-[13px] font-medium text-ink-2 hover:bg-surface-sunken"
               >
                 <Plus size={13} strokeWidth={1.6} aria-hidden />
                 {filter.label}

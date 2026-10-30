@@ -193,7 +193,7 @@ function AuditEventPanel({
                 <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
                   <div className="min-w-0 rounded-md border-1.5 border-line bg-surface-sunken px-3 py-2">
                     <div className="text-[12.5px] text-ink-muted">Before</div>
-                    <div className="truncate text-[13.5px] font-medium text-ink-2 line-through decoration-ink-faint">{change.before}</div>
+                    <div className="truncate text-[13.5px] font-medium text-ink-muted">{change.before}</div>
                   </div>
                   <ArrowRight className="h-4 w-4 text-ink-faint" strokeWidth={1.6} aria-hidden />
                   <div className="min-w-0 rounded-md border-1.5 border-brand-line bg-brand-soft px-3 py-2">

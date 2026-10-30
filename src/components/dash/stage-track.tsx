@@ -23,7 +23,7 @@ export interface TrackNow {
 
 export function StageTrack({ stages, now, className }: { stages: TrackStage[]; now?: TrackNow; className?: string }) {
   return (
-    <section className={cn('min-w-0 overflow-hidden rounded-md border-[1.5px] border-line bg-surface px-4 py-3.5 md:px-5', className)} aria-label="Progress">
+    <section className={cn('min-w-0 overflow-hidden rounded-md border-2 border-line bg-surface-raised px-4 py-3.5 md:px-5', className)} aria-label="Progress">
       <ol className="flex flex-col gap-2 md:flex-row md:items-center md:gap-0">
         {stages.map((s, i) => {
           const last = i === stages.length - 1;
@@ -51,7 +51,7 @@ export function StageTrack({ stages, now, className }: { stages: TrackStage[]; n
                   </span>
                 </div>
               )}
-              {!last ? <span className={cn('mx-3 hidden h-px min-w-4 flex-1 md:block', s.state === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden /> : null}
+              {!last ? <span className={cn('mx-3 hidden h-[1.5px] min-w-4 flex-1 md:block', s.state === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden /> : null}
             </li>
           );
         })}

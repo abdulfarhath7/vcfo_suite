@@ -844,7 +844,7 @@ function ListView({
         <span className="flex min-w-0 flex-col">
           <span
             title={item.title}
-            className={cn('truncate font-medium text-ink', item.kind === 'done' && 'text-ink-muted line-through')}
+            className={cn('truncate font-medium text-ink', item.kind === 'done' && 'text-ink-muted')}
           >
             {item.title}
           </span>

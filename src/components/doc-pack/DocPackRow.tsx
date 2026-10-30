@@ -98,7 +98,7 @@ export function DocPackRow({ item, downloadUrl, hrefForMissing, hrefForStep, onP
               <li key={input.key}>
                 <Link
                   href={hrefForMissing(input)}
-                  className="inline-flex h-6 items-center gap-1 rounded-md border-1.5 border-dashed border-warning-mid bg-surface-raised px-2 text-[12.5px] text-ink hover:bg-warning-soft"
+                  className="inline-flex h-6 items-center gap-1 rounded-md border-1.5 border-warning-mid bg-surface-raised px-2 text-[12.5px] text-ink hover:bg-warning-soft"
                 >
                   {missingInputLabel(input)}
                   <span className="text-ink-muted">in {stepTitle(input.stepId)}</span>

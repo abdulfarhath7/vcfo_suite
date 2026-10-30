@@ -5,6 +5,7 @@ import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
+import { StepLink } from '@/components/ui/step-track';
 import { RESPONSIBLE_ROLE_LABEL } from '@/lib/checklist/checklist-field-access';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -140,7 +141,7 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
   );
 }
 
-/** Sticky vertical stepper: solid connector through done, dashed through locked. */
+/** Sticky vertical stepper: a green connector through done steps, a grey one through the rest (R-58: centred on the nodes). */
 export function ChecklistJourneyRail({
   items,
   selectedId,
@@ -168,13 +169,15 @@ export function ChecklistJourneyRail({
           const visuallyLocked = gate.kind === 'locked' && !allowLockedOpen;
           const canSelect = allowLockedOpen || gate.canOpen;
 
-          const compactConnector = !isLast && (
-            <span
-              className={cn(
-                'absolute left-[1.0625rem] top-[2.125rem] bottom-[-0.35rem] w-[1.5px]',
-                connectorSolid ? 'bg-positive-mid' : 'bg-line',
-              )}
-              aria-hidden
+          const prev = items[index - 1];
+          const prevSolid = prev ? prev.gate.kind === 'done' && gate.kind !== 'locked' : false;
+          /* R-58: half-lines join the 20px node centres (8px row padding + 10px). */
+          const compactConnector = (
+            <StepLink
+              x={18}
+              y={18}
+              up={prev && (prevSolid ? 'done' : 'todo')}
+              down={!isLast && (connectorSolid ? 'done' : 'todo')}
             />
           );
 

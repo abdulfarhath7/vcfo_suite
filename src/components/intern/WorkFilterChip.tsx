@@ -11,7 +11,7 @@ export interface WorkFilterOption {
 
 /**
  * Table head filter chip (VCFO Spectrum R-10, Q3; prototype `FilterChip`). An unset filter is a
- * dashed "+ Label" chip that opens a menu of options. A set filter has a soft blurple fill, the
+ * "+ Label" chip with a plain edge (R-56) that opens a menu of options. A set filter has a soft blurple fill, the
  * picked value and an × that clears it. A chip with no options can only be cleared, for filters
  * that arrive from a link (a day or a focus from Today).
  */
@@ -84,7 +84,7 @@ export function WorkFilterChip({
         <button
           type="button"
           className={cn(
-            'inline-flex h-7 flex-none items-center gap-1.5 rounded-md border-1.5 border-dashed border-line-strong px-2.5 text-[13px] font-medium text-ink-2',
+            'inline-flex h-7 flex-none items-center gap-1.5 rounded-md border-1.5 border-line-strong px-2.5 text-[13px] font-medium text-ink-2',
             'hover:bg-surface-sunken data-[state=open]:bg-surface-sunken',
           )}
         >

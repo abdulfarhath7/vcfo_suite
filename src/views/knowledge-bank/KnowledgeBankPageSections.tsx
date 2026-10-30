@@ -473,8 +473,8 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                 <span className="text-[13px] font-medium text-ink-2">File</span>
                 <div
                   className={cn(
-                    'flex flex-col items-center gap-2.5 rounded-md border-1.5 border-dashed px-4 py-5 text-center',
-                    dragging ? 'border-brand bg-brand-soft' : 'border-line-strong bg-surface-raised',
+                    'flex flex-col items-center gap-2.5 rounded-md border-dash-fine px-4 py-5 text-center',
+                    dragging ? 'bg-brand-soft [--dash-color:oklch(var(--brand))]' : 'bg-surface-raised',
                   )}
                   onDragOver={(e) => {
                     e.preventDefault();

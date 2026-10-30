@@ -20,7 +20,7 @@ export function Flow({ visual }: { visual: FlowVisual }) {
               'flex min-w-0 flex-col gap-0.5 rounded-[var(--radius-md)] border px-2.5 py-2',
               stage.state === 'here' && 'border-brand bg-brand-soft',
               stage.state === 'done' && 'border-line bg-surface-sunken',
-              stage.state === 'next' && 'border-dashed border-line bg-surface-raised',
+              stage.state === 'next' && 'border-line bg-surface-raised',
             )}
           >
             <span className="flex items-center gap-1 text-[10.5px] font-medium">

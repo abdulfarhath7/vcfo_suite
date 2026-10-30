@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { AreaPill, Chip, regOf, type ChipTone, type Regulator } from '@/components/ui/spectrum-chip';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { AvatarStack } from '@/components/ui/avatar-stack';
-import { StepMark } from '@/components/ui/step-track';
+import { StepLink, StepMark } from '@/components/ui/step-track';
 import {
   AREA_FULL,
   AREA_LABEL,
@@ -188,7 +188,7 @@ const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 /**
  * Steps of a record as ST5 (R-22, prototype SideThread): done steps a green square with a tick and
  * their date, the live step a ring on a tinted row with who holds it and "Today", later steps a
- * dashed square without dates (R-23). A 1.5px line joins the marks, green under done steps.
+ * plain empty square without dates (R-23). A 1.5px line joins the mark centres (R-58), green under done steps.
  */
 export function StepList({ steps, today }: { steps: ThreadStep[]; today: string }) {
   return (
@@ -198,8 +198,8 @@ export function StepList({ steps, today }: { steps: ThreadStep[]; today: string 
         const done = s.state === 'done';
         const now = s.state === 'now';
         return (
-          <li key={s.key} className={cn('relative grid grid-cols-[22px_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-2.5 md:px-5', now && 'bg-surface-sunken')}>
-            {!last ? <span className={cn('absolute left-[26px] top-[34px] h-[calc(100%-24px)] w-[1.5px] md:left-[30px]', done ? 'bg-positive-mid' : 'bg-line')} aria-hidden /> : null}
+          <li key={s.key} className={cn('relative grid grid-cols-[22px_minmax(0,1fr)_auto] items-start gap-x-3 px-4 py-2.5 [--step-x:27px] md:px-5 md:[--step-x:31px]', now && 'bg-surface-sunken')}>
+            <StepLink x="var(--step-x)" y={21} up={i > 0 && (steps[i - 1].state === 'done' ? 'done' : 'todo')} down={!last && (done ? 'done' : 'todo')} />
             <StepMark state={s.state} tone={now && s.client ? 'teal' : 'prog'} label={done ? 'Done' : now ? 'Now' : 'Upcoming'} className="relative" />
             <span className="min-w-0">
               <b className={cn('block truncate text-[14px] font-medium text-ink', s.state === 'next' && 'font-normal text-ink-muted')}>{s.title}</b>
@@ -314,7 +314,7 @@ export function TextCard({ title, sop, children }: { title: string; sop?: boolea
 /** Empty body (R-48): a dashed area with the action. */
 export function Empty({ children = 'None', action, className }: { children?: ReactNode; action?: ReactNode; className?: string }) {
   return (
-    <div className={cn('m-4 flex flex-col items-center gap-2.5 rounded-md border-1.5 border-dashed border-line-strong px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5', className)}>
+    <div className={cn('m-4 flex flex-col items-center gap-2.5 rounded-md border-dash-fine px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5', className)}>
       <span>{children}</span>
       {action}
     </div>
@@ -390,7 +390,7 @@ export function StackedBar({ segments, onPick, height = 8, className }: { segmen
 
 /**
  * R-10 filter chip for a table head bar. Set: a soft blurple fill with the value and an ×.
- * Not set: a dashed "+ Area" chip that opens a small menu (inside the portal, so it follows
+ * Not set: a "+ Area" chip with a plain edge (R-56) that opens a small menu (inside the portal, so it follows
  * the portal's theme).
  */
 export function FilterMenu<V extends string>({
@@ -434,7 +434,7 @@ export function FilterMenu<V extends string>({
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className={cn(chip, 'border-1.5 border-dashed border-line-strong text-ink-2 hover:bg-surface-sunken hover:text-ink')}
+          className={cn(chip, 'border-1.5 border-line-strong text-ink-2 hover:bg-surface-sunken hover:text-ink')}
         >
           <Plus size={14} strokeWidth={1.8} aria-hidden /> {label}
         </button>

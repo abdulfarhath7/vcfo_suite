@@ -130,7 +130,7 @@ export function DrawerChecklist({ itemKey }: { itemKey: string }) {
                 aria-label={item.label}
                 onCheckedChange={(v) => update.mutate({ id: item.id, done: v === true }, { onError: fail })}
               />
-              <span className={cn('min-w-0 flex-1 truncate', item.done ? 'text-ink-muted line-through' : 'text-ink')}>{item.label}</span>
+              <span className={cn('min-w-0 flex-1 truncate', item.done ? 'text-ink-muted' : 'text-ink')}>{item.label}</span>
               <span className="flex flex-none items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                 <Button
                   size="icon"

@@ -33,7 +33,7 @@ function RequestDiff({ request }: { request: ChangeRequestDto }) {
         <div key={f.label} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12.5px]">
           <dt className="text-ink-muted">{f.label}</dt>
           <dd className="flex min-w-0 flex-wrap items-baseline gap-1.5">
-            <span className="text-ink-muted line-through">{f.from}</span>
+            <span className="text-ink-muted">{f.from}</span>
             <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" aria-hidden />
             <span className="font-medium text-ink">{f.to}</span>
           </dd>

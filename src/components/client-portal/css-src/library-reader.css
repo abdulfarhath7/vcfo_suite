@@ -51,7 +51,7 @@ a:focus-visible,button:focus-visible{outline:2px solid oklch(var(--focus-ring) /
   .vrd-tl .node{flex:none;flex-direction:row;align-items:center;text-align:left;gap:12px;width:auto}
   .vrd-tl .node>span:nth-child(2){flex:1;min-width:0}
   .vrd-tl .lnk{flex:none;width:3px;height:22px;min-width:0;margin:4px 0 4px 18px}
-  .vrd-tl .lnk.dash{background:repeating-linear-gradient(180deg,var(--primary) 0 6px,transparent 6px 11px)!important}
+  .vrd-tl .lnk.dash{background:oklch(var(--line-strong))!important}
   .vrd-facts{grid-template-columns:minmax(0,1fr)!important}
   .vrd .btn{height:40px}
   .vrd .ib{width:40px;height:40px}
@@ -79,7 +79,7 @@ html[data-theme="dark"] .seg>.thumb{display:none}
 .vrd-box{border-radius:6px;border:1.5px solid oklch(var(--line));padding:16px 20px}
 .vrd-tl .node{gap:6px}
 .vrd-tl .lnk{height:0;margin-top:10px;border-radius:0;border-top:2px solid oklch(var(--positive-mid));background:none}
-.vrd-tl .lnk.dash{border-top-style:dashed;border-top-color:oklch(var(--line-strong))}
+.vrd-tl .lnk.dash{border-top-color:oklch(var(--line-strong))}
 .vrd-tl-l{font:500 13px/1.35 var(--font-sans),sans-serif;color:oklch(var(--ink))}
 .vrd-tl-w{font-size:12.5px;color:oklch(var(--ink-muted))}
 .vrd-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1.5px solid oklch(var(--line));border-radius:6px;overflow:hidden}
@@ -105,6 +105,6 @@ a.vrd-srcc:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))
 .vrd-foot{padding:10px 16px;border-top:1px solid oklch(var(--line-soft));font-size:13px}
 .vrd-foot a{color:oklch(var(--brand-text))}
 .vrd-foot a:hover{text-decoration:underline;color:oklch(var(--brand-text))}
-@media (max-width:767px){.vrd-tl .lnk{height:22px;margin-top:4px;border-top:0;background:oklch(var(--positive-mid))}.vrd-tl .lnk.dash{background:repeating-linear-gradient(180deg,oklch(var(--line-strong)) 0 6px,transparent 6px 11px)!important}.vrd .sx-btn{height:40px}.vrd .sx-ib{width:40px;height:40px}.vrd .sx-seg button{height:36px}.vrd-facts{grid-template-columns:minmax(0,1fr)!important}.vrd-facts>div{border-left:0!important;border-top:1px solid oklch(var(--line-soft))}.vrd-facts>div:first-child{border-top:0}}
+@media (max-width:767px){.vrd-tl .lnk{height:22px;margin-top:4px;border-top:0;background:oklch(var(--positive-mid))}.vrd-tl .lnk.dash{background:oklch(var(--line-strong))!important}.vrd .sx-btn{height:40px}.vrd .sx-ib{width:40px;height:40px}.vrd .sx-seg button{height:36px}.vrd-facts{grid-template-columns:minmax(0,1fr)!important}.vrd-facts>div{border-left:0!important;border-top:1px solid oklch(var(--line-soft))}.vrd-facts>div:first-child{border-top:0}}
 /* depth switch: the shared Tabs md look (1.5 px edge, 3 px padding, 28 px buttons) */
 .vrd .sx-seg{padding:3px;gap:2px;border:1.5px solid oklch(var(--line))}
