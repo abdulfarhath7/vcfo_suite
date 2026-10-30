@@ -46,6 +46,7 @@ import {
   tasks,
 } from '../src/db/schema';
 import { encryptSecrets } from '../src/lib/credentials-crypto';
+import { seedPlaceholders } from '../src/storage/demo-placeholders';
 
 const DEMO_EMAIL_DOMAIN = '@demo.vcfo.local';
 const DEMO_PASSWORD = 'demo1234';
@@ -397,6 +398,7 @@ export async function seedDemoExtras(
   /* ---- Document requests + need meta + uploaded files ---- */
   console.log('Creating document requests…');
   let requestCount = 0;
+  const requestPlaceholders: Array<{ key: string; title: string }> = [];
   for (const [i, project] of projects.entries()) {
     const requester = project.leadKey ? ids.get(project.leadKey)! : ids.get(project.managerKey)!;
     const count = 3 + (i % 4);
@@ -429,10 +431,13 @@ export async function seedDemoExtras(
       });
       if (status === 'approved' || status === 'fulfilled') {
         const fileName = `${spec.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.pdf`;
+        const objectKey = `demo/${project.slug}/requests/${req!.id}/${fileName}`;
+        // Request files are read at their object key as stored (no bucket prefix).
+        requestPlaceholders.push({ key: objectKey, title: `${project.companyName}: ${spec.title}` });
         await db.insert(documentRequestFiles).values({
           requestId: req!.id,
           engagementId: project.id,
-          objectKey: `demo/${project.slug}/requests/${req!.id}/${fileName}`,
+          objectKey,
           fileName,
           contentType: 'application/pdf',
           sizeBytes: 220_000 + r * 31_000,
@@ -444,6 +449,9 @@ export async function seedDemoExtras(
     }
   }
   console.log(`  ${requestCount} request(s)`);
+  const storedRequests = await seedPlaceholders(requestPlaceholders);
+  console.log(`  ${storedRequests.uploaded} request placeholder file(s) uploaded, ${storedRequests.existing} already in storage`);
+  if (storedRequests.failed) console.warn(`  storage not reachable, request placeholders skipped: ${storedRequests.failed}`);
 
   /* ---- Step-level file requests (staff → client) ---- */
   let fileRequestCount = 0;

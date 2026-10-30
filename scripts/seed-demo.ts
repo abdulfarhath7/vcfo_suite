@@ -38,6 +38,7 @@ import { getActiveCatalogItems } from '../src/data/checklist';
 import { systemGenerateComplianceInstances } from '../src/db/repositories/compliance';
 import type { ChecklistItemStateSlice } from '../src/lib/checklist/checklist-state-key';
 import { clearDemoExtras, seedDemoExtras } from './seed-demo-extras';
+import { documentStorageKey, seedPlaceholders } from '../src/storage/demo-placeholders';
 
 const DEMO_EMAIL_DOMAIN = '@demo.vcfo.local';
 const DEMO_SLUG_PREFIX = 'demo-';
@@ -561,6 +562,7 @@ async function main() {
 
   console.log('\nCreating documents…');
   let documentCount = 0;
+  const placeholders: Array<{ key: string; title: string }> = [];
   for (const { id, spec } of created) {
     const uploadedBy = spec.leadKey ? ids.get(spec.leadKey)! : ids.get(spec.managerKey)!;
     // Only file documents for steps the project has actually reached.
@@ -569,11 +571,13 @@ async function main() {
       return index >= 0 && index < spec.done;
     });
     for (const [i, doc] of reached.entries()) {
+      const objectKey = `demo/${spec.slug}/${doc.stepId}-${doc.fileName.replace(/\s+/g, '-').toLowerCase()}`;
+      placeholders.push({ key: documentStorageKey(objectKey), title: `${spec.companyName}: ${doc.fileName}` });
       await db.insert(documents).values({
         engagementId: id,
         category: doc.category,
         fileName: doc.fileName,
-        objectKey: `demo/${spec.slug}/${doc.stepId}-${doc.fileName.replace(/\s+/g, '-').toLowerCase()}`,
+        objectKey,
         contentType: 'application/pdf',
         sizeBytes: 180_000 + i * 42_000,
         uploadedBy,
@@ -585,6 +589,10 @@ async function main() {
     }
   }
   console.log(`  ${documentCount} document(s)`);
+  // Each document row needs a file in storage, or the Documents pages ask for a missing file.
+  const stored = await seedPlaceholders(placeholders);
+  console.log(`  ${stored.uploaded} placeholder file(s) uploaded, ${stored.existing} already in storage`);
+  if (stored.failed) console.warn(`  storage not reachable, placeholders skipped: ${stored.failed}`);
 
   console.log('\nCreating activity trail…');
   let auditCount = 0;
