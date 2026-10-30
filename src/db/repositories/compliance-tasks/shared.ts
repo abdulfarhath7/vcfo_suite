@@ -143,14 +143,14 @@ export function portalOf(role: string): string {
 /** Bell link to a task page, per the recipient's portal (docs/ui-port/COMPLIANCE-API.md section 7). */
 export function taskHref(role: string, taskId: string): string {
   const portal = portalOf(role);
-  if (portal === 'super') return '/app/super/practice';
+  if (portal === 'super') return '/app/super/practice/compliances';
   return `/app/${portal}/compliances/obligations/tasks/${taskId}`;
 }
 
 /** Bell link to a statutory detail page. */
 export function statutoryHref(role: string, obligationId: string, instanceId: string): string {
   const portal = portalOf(role);
-  if (portal === 'super') return '/app/super/practice';
+  if (portal === 'super') return '/app/super/practice/compliances';
   return `/app/${portal}/compliances/obligations/${encodeURIComponent(obligationId)}/${instanceId}`;
 }
 

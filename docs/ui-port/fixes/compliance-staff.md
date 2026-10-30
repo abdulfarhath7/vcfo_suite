@@ -74,20 +74,34 @@ Changed
 - Super admin has no obligation or task pages; on its calendar and filings a filing or task opens `/app/super/projects/<engagementId>`.
 - New task is offered to super admin too (same rights as admin in the API), wherever the Obligations list renders.
 
+## Second pass (30 Oct, after the first commit)
+
+| Item | Status | What I did |
+|---|---|---|
+| Delete checklist items | Done | A delete square on each item for admin, super admin and manager (`can.edit`), with the R-40 inline confirm; `DELETE /api/compliances/tasks/:id/checklist/:itemId`. |
+| Delete attachments | Done | The same for each file, shown to `can.edit` or the uploader; `DELETE /api/compliances/tasks/:id/attachments/:attachmentId`. |
+| Edit a task after creation | Done | "Edit" in the task head for `can.edit` opens `EditTaskDialog` (`src/views/compliances/tasks/edit-task.tsx`): name, start, end, urgency, visibility, owner, reviewer, repeats, remind before. It sends only the changed fields with `action: 'edit'`. |
+| Assign owner and reviewer (statutory) | Done | "Assign" in the Progress card when `can.assign`: owner and reviewer selects from `/api/compliances/tasks/defaults`, `PATCH` with `action: 'assign'`. |
+| Per-row reminder overrides | Done | "Edit schedule" (was "Edit days") on both detail pages now shows every row, off rows included, with an on/off box and the days from the due date (-120 to 60, saved on Enter or blur), plus "Reset" when a row is overridden; `PUT /api/compliances/reminders` with `rows` or `reset`. Off rows hide outside edit mode. |
+| Super admin nav | Done | `RoleSidebar.tsx`, Practice areas group only: "Compliances" (`/app/super/practice/compliances`) and "Filings" (`/app/super/practice/filings`) replace the firm-scope Calendar and Filings leaves; Obligations stays at `/app/admin/compliances/obligations` (it holds New task). `shell-back.ts` lists both new pages as primary destinations. |
+| Super admin bell links | Done | `taskHref` and `statutoryHref` in `src/db/repositories/compliance-tasks/shared.ts` return `/app/super/practice/compliances` for a super admin. |
+
+Files in this pass: `src/views/compliances/tasks/edit-task.tsx` (new), `TaskDetailView.tsx`, `StatDetailView.tsx`,
+`detail/detail-parts.tsx`, `detail/detail-model.ts`, `tasks/api.ts` (edit, delete, assign and override hooks),
+`src/components/compliances/NewTaskDialog.tsx` (`DateField` exported; remind before now 0 to 90 days as the route allows),
+`new-task-form.ts`, `src/components/shell/RoleSidebar.tsx`, `src/components/shell/shell-back.ts`,
+`src/db/repositories/compliance-tasks/shared.ts`, and tests in `detail-views.test.tsx` and `NewTaskDialog.test.tsx`.
+
 ## Gaps
 
-- `DELETE` of checklist items and attachments, task `edit` (name, dates, owner, urgency after creation), `assign` on a statutory item, and per-row reminder overrides (`rows`, `reset`) have routes but no screen yet.
 - `GET /api/compliances/counts` is not used: the screens count the rows they already hold, which keeps the counts in step with the client and area filters.
 
 ## Requests for the hub
 
-- Sidebar (`RoleSidebar.tsx`, super admin Practice group): add "Compliances" → `/app/super/practice/compliances` (and optionally "Filings" → `/app/super/practice/filings`).
-- `shell-back.ts`: add `/app/super/practice/compliances` and `/app/super/practice/filings` beside the other Practice pages if the back target needs them.
-- Bell links for a super admin point at `/app/super/practice`, which redirects to Incorporation; `/app/super/practice/compliances` would land on the filter.
 - `src/lib/search/staff-search.ts` still opens the cross-client obligation page; that is fine, but it could open a period's detail page now.
 
 ## Checks
 
 - `npx tsc --noEmit -p .` clean.
 - `npx eslint` on every file above: 0 errors (warnings are the existing `react-refresh` kind in older files).
-- `npx vitest run` whole suite: 354 files, 3388 tests pass (compliance views and components: 89).
+- `npx vitest run` whole suite after the second pass: 354 files, 3391 tests pass.

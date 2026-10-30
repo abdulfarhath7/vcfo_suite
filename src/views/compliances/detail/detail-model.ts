@@ -4,11 +4,29 @@ import type { ActivityEntry, ReminderState, ReminderView } from '@/views/complia
 
 /** The route's reminder rows as the card draws them (dates only, no times). */
 export function reminderViews(
-  rows: ReadonlyArray<{ key: string; label: string; to: string; date: string; state: ReminderState; internal: boolean; enabled?: boolean }>,
+  rows: ReadonlyArray<{
+    key: string;
+    label: string;
+    to: string;
+    date: string;
+    state: ReminderState;
+    internal: boolean;
+    enabled?: boolean;
+    offsetDays?: number;
+    overridden?: boolean;
+  }>,
 ): ReminderView[] {
-  return rows
-    .filter((r) => r.enabled !== false)
-    .map((r) => ({ key: r.key, label: r.label, to: r.to, dateIso: r.date, state: r.state, internal: r.internal }));
+  return rows.map((r) => ({
+    key: r.key,
+    label: r.label,
+    to: r.to,
+    dateIso: r.date,
+    state: r.state,
+    internal: r.internal,
+    enabled: r.enabled,
+    offsetDays: r.offsetDays,
+    overridden: r.overridden,
+  }));
 }
 
 /** The route's history rows as Activity entries; a row without a person reads "VCFO". */

@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { StepMark, type StepState } from '@/components/ui/step-track';
 import { cn } from '@/lib/utils';
 import { ClientTile } from '@/views/compliances/identity';
@@ -125,6 +127,17 @@ export interface ReminderView {
   state: ReminderState;
   /** Escalations are internal; the client view hides them (D-4). */
   internal: boolean;
+  /** Off rows show only while the schedule is being edited. */
+  enabled?: boolean;
+  /** Days from the due date (negative = before). */
+  offsetDays?: number;
+  /** This row differs from the default schedule. */
+  overridden?: boolean;
+}
+
+export interface ReminderRowPatch {
+  offsetDays?: number;
+  enabled?: boolean;
 }
 
 const REMINDER_WORD: Record<ReminderState, string> = { sent: 'Sent', acknowledged: 'Acknowledged', scheduled: 'Scheduled', skipped: 'Skipped', blocked: 'On hold' };
@@ -142,16 +155,24 @@ export function RemindersCard({
   saving = false,
   blocked,
   now,
+  onRow,
+  onReset,
 }: {
   rows: ReminderView[];
   days: number;
   onDays?: (n: number) => void;
+  /** Per-row override: move one reminder or turn it off. */
+  onRow?: (key: string, patch: ReminderRowPatch) => void;
+  /** Drop every override of this item. */
+  onReset?: () => void;
   canEdit: boolean;
   saving?: boolean;
   blocked?: string | null;
   now: Date;
 }) {
   const [editing, setEditing] = useState(false);
+  const rowEdit = editing && onRow ? onRow : null;
+  const shown = rowEdit ? rows : rows.filter((r) => r.enabled !== false);
   const choices = DAY_CHOICES.includes(days) ? DAY_CHOICES : [...DAY_CHOICES, days].sort((a, b) => a - b);
   const options = choices.map((n) => ({ value: String(n), label: `${n} day${n === 1 ? '' : 's'} before` }));
   return (
@@ -164,29 +185,57 @@ export function RemindersCard({
           editing ? (
             <>
               <FilterSelect aria-label="First reminder" value={String(days)} options={options} disabled={saving} onChange={(e) => onDays(Number(e.target.value))} />
+              {onReset && rows.some((r) => r.overridden) ? (
+                <Button size="sm" variant="secondary" disabled={saving} onClick={onReset}>
+                  Reset
+                </Button>
+              ) : null}
               <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
                 Done
               </Button>
             </>
           ) : (
             <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
-              Edit days
+              Edit schedule
             </Button>
           )
         ) : undefined
       }
     >
       {blocked ? <p className="border-b border-line-soft px-4 py-2.5 text-[13px] text-ink-muted md:px-5">{blocked}</p> : null}
-      {rows.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
       ) : (
         <ul>
-          {rows.map((r) => (
-            <li key={r.key} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft px-4 py-2.5 first:border-t-0 md:px-5">
+          {shown.map((r) => (
+            <li
+              key={r.key}
+              className={cn(
+                'flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-line-soft px-4 py-2.5 first:border-t-0 md:px-5',
+                r.enabled === false && 'text-ink-muted',
+              )}
+            >
+              {rowEdit ? (
+                <Checkbox
+                  checked={r.enabled !== false}
+                  disabled={saving}
+                  aria-label={`Send ${r.label.toLowerCase()} to ${r.to.toLowerCase()}`}
+                  onCheckedChange={(v) => rowEdit(r.key, { enabled: v === true })}
+                />
+              ) : null}
               <span className="min-w-0 flex-[1_1_200px]">
-                <b className="block truncate text-[14px] font-medium text-ink">{r.label}</b>
+                <b className={cn('block truncate text-[14px] font-medium', r.enabled === false ? 'text-ink-muted' : 'text-ink')}>{r.label}</b>
                 <span className="block truncate text-[12.5px] text-ink-muted">To {r.to.toLowerCase()}</span>
               </span>
+              {rowEdit && r.offsetDays !== undefined ? (
+                <OffsetInput
+                  key={`${r.key}-${r.offsetDays}`}
+                  label={`${r.label} to ${r.to.toLowerCase()}, days from the due date`}
+                  value={r.offsetDays}
+                  disabled={saving || r.enabled === false}
+                  onCommit={(n) => rowEdit(r.key, { offsetDays: n })}
+                />
+              ) : null}
               <span className="w-[64px] flex-none text-[13px] tabular-nums">{plainDate(r.dateIso, now)}</span>
               <span className={cn('w-[104px] flex-none text-[13px]', r.state === 'sent' || r.state === 'acknowledged' ? 'text-ink-2' : 'text-ink-muted')}>
                 {REMINDER_WORD[r.state] ?? r.state}
@@ -196,6 +245,39 @@ export function RemindersCard({
         </ul>
       )}
     </DashSection>
+  );
+}
+
+/** Days from the due date for one reminder: -120 to 60, saved on Enter or when the field is left. */
+function OffsetInput({ label, value, disabled, onCommit }: { label: string; value: number; disabled?: boolean; onCommit: (n: number) => void }) {
+  const [text, setText] = useState(String(value));
+  const commit = () => {
+    const n = Number(text);
+    if (text.trim() === '' || !Number.isInteger(n) || n < -120 || n > 60) {
+      setText(String(value));
+      return;
+    }
+    if (n !== value) onCommit(n);
+  };
+  return (
+    <span className="inline-flex flex-none items-center gap-1.5 text-[12.5px] text-ink-muted">
+      <Input
+        aria-label={label}
+        type="number"
+        min={-120}
+        max={60}
+        inputMode="numeric"
+        value={text}
+        disabled={disabled}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+        className="h-8 w-[72px] px-2 text-[13px] tabular-nums"
+      />
+      days
+    </span>
   );
 }
 

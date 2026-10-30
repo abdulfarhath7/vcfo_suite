@@ -64,6 +64,8 @@ const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
   '/app/super/risks',
   '/app/super/practice/incorporation',
   '/app/super/practice/registrations',
+  '/app/super/practice/compliances',
+  '/app/super/practice/filings',
   '/app/super/team',
   '/app/super/growth',
   '/app/super/reports',

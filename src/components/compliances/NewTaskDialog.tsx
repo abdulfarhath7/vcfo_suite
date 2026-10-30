@@ -71,7 +71,7 @@ const VIS_OPTIONS: Array<{ value: TaskVisibility; label: string }> = [
 ];
 
 /** R-29: the field shows "16 Oct 2026". Typing a date works; the button opens the browser's picker. */
-function DateField({
+export function DateField({
   label,
   value,
   onChange,
@@ -420,7 +420,7 @@ export function NewTaskDialog({
             aria-label="Remind before (days)"
             type="number"
             min={0}
-            max={60}
+            max={90}
             inputMode="numeric"
             aria-invalid={e('notify') ? true : undefined}
             value={f.notify}

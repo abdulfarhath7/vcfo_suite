@@ -18,6 +18,8 @@ import {
   BookMarked,
   FolderOpen,
   CalendarCheck,
+  CalendarDays,
+  FileSpreadsheet,
   BarChart3,
   Landmark,
   Users,
@@ -214,8 +216,11 @@ const superAdminItems: NavEntry[] = [
     items: [
       { to: '/app/super/practice/incorporation', label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
       { to: '/app/super/practice/registrations', label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
-      // Firm scope, like Firm / People / Email: super has no compliance routes of its own.
-      ...complianceLeaves('/app/admin'),
+      // Practice · Compliances and Filings carry the statutory and non-statutory filter across every
+      // client; Obligations (with New task) stays in the firm scope at /app/admin.
+      ...complianceLeaves('/app/admin').filter((leaf) => leaf.to.endsWith('/obligations')),
+      { to: '/app/super/practice/compliances', label: 'Compliances', icon: CalendarDays, iconTone: TONE.calendar },
+      { to: '/app/super/practice/filings', label: 'Filings', icon: FileSpreadsheet, iconTone: TONE.files },
     ],
   },
   { to: '/app/super/team', label: 'Team', icon: Users, iconTone: TONE.people },

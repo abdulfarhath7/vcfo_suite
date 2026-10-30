@@ -37,7 +37,7 @@ export function newTaskErrors(f: Pick<NewTaskForm, 'act' | 'name' | 'client' | '
     start: !f.start ? 'Pick a start date' : undefined,
     end: !f.end ? 'Pick an end date' : f.start && f.end < f.start ? 'End on or after the start' : undefined,
     owner: !f.owner ? 'Pick an owner' : undefined,
-    notify: f.notify.trim() === '' || !Number.isInteger(n) || n < 0 || n > 60 ? 'Use 0 to 60 days' : undefined,
+    notify: f.notify.trim() === '' || !Number.isInteger(n) || n < 0 || n > 90 ? 'Use 0 to 90 days' : undefined,
   };
   return err;
 }

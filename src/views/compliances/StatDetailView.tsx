@@ -31,7 +31,15 @@ import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-ac
 import { StaffFromClientCard, StaffSbcFieldsCard } from '@/views/compliances/input-cards';
 import { BeforeFilingCard, FilingThreadCard } from '@/views/compliances/record-cards';
 import { areaLabel, plainDate } from '@/views/compliances/spectrum-status';
-import { ApiError, useSetReminderDays, useStatutory, useStatutoryAction, type StatutoryDetailDto } from '@/views/compliances/tasks/api';
+import {
+  ApiError,
+  useSetReminderDays,
+  useStatutory,
+  useStatutoryAction,
+  useTaskDefaults,
+  type ReminderKey,
+  type StatutoryDetailDto,
+} from '@/views/compliances/tasks/api';
 import { STAGE_LABEL, dueText, type WorkflowStage } from '@/views/compliances/tasks/task-model';
 import { FilterSelect } from '@/components/ui/native-select';
 import { isAdminOrManager } from '@/lib/auth';
@@ -224,6 +232,8 @@ function StatDetailBody({ basePath, d, now }: { basePath: string; d: StatutoryDe
                 onDays={(n) =>
                   void run(setDays.mutateAsync({ kind: 'statutory', id: d.id, notifyDays: n }), 'Reminder days changed', `First reminder ${n} day${n === 1 ? '' : 's'} before the due date.`)
                 }
+                onRow={(key, patch) => void run(setDays.mutateAsync({ kind: 'statutory', id: d.id, rows: [{ key: key as ReminderKey, ...patch }] }), 'Reminder changed')}
+                onReset={() => void run(setDays.mutateAsync({ kind: 'statutory', id: d.id, reset: true }), 'Reminders reset', 'Back to the default schedule.')}
               />
               <DashSection title="Rule" flush>
                 <KV k="Due rule">{d.rule.dueRule || '—'}</KV>
@@ -265,6 +275,13 @@ function StatDetailBody({ basePath, d, now }: { basePath: string; d: StatutoryDe
                 note={inReview || d.stage === 'rework' ? d.reviewNote : null}
                 now={now}
               >
+                {d.can.assign ? (
+                  <AssignPeople
+                    d={d}
+                    busy={act.isPending}
+                    onSave={(ownerId, reviewerId) => run(act.mutateAsync({ action: 'assign', ownerId, reviewerId }), 'Owner and reviewer saved', d.title)}
+                  />
+                ) : null}
                 {/* Staff move the working stage by hand; filing itself stays on the filings route. */}
                 {!filed ? (
                   <div className="flex items-center justify-between gap-3 text-[14px]">
@@ -289,6 +306,76 @@ function StatDetailBody({ basePath, d, now }: { basePath: string; d: StatutoryDe
         />
       </div>
     </PageTransition>
+  );
+}
+
+/**
+ * Assign the owner and the reviewer of one period (admin, super admin, manager). The people come
+ * from the task defaults read of the same client: leads, managers and admins who may own it.
+ */
+function AssignPeople({
+  d,
+  busy,
+  onSave,
+}: {
+  d: StatutoryDetailDto;
+  busy: boolean;
+  onSave: (ownerId: string | null, reviewerId: string | null) => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [owner, setOwner] = useState(d.owner?.id ?? '');
+  const [reviewer, setReviewer] = useState(d.reviewer?.id ?? '');
+  const people = useTaskDefaults(d.engagementId, open);
+  const withCurrent = (list: Array<{ id: string; name: string }>, cur: { id: string; name: string } | null) =>
+    cur && !list.some((p) => p.id === cur.id) ? [cur, ...list] : list;
+  if (!open)
+    return (
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            setOwner(d.owner?.id ?? '');
+            setReviewer(d.reviewer?.id ?? '');
+            setOpen(true);
+          }}
+        >
+          Assign
+        </Button>
+      </div>
+    );
+  return (
+    <form
+      className="grid gap-2 rounded-md bg-surface-sunken p-3"
+      aria-label="Assign"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void onSave(owner || null, reviewer || null).then((ok) => ok && setOpen(false));
+      }}
+    >
+      <FilterSelect
+        aria-label="Owner"
+        className="w-full [&>select]:w-full"
+        value={owner}
+        onChange={(e) => setOwner(e.target.value)}
+        options={[{ value: '', label: 'No owner' }, ...withCurrent(people.data?.owners ?? [], d.owner).map((p) => ({ value: p.id, label: p.name }))]}
+      />
+      <FilterSelect
+        aria-label="Reviewer"
+        className="w-full [&>select]:w-full"
+        value={reviewer}
+        onChange={(e) => setReviewer(e.target.value)}
+        options={[{ value: '', label: 'No reviewer' }, ...withCurrent(people.data?.reviewers ?? [], d.reviewer).map((p) => ({ value: p.id, label: p.name }))]}
+      />
+      <span className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" type="button" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+        <Button size="sm" type="submit" disabled={busy}>
+          Save
+        </Button>
+      </span>
+    </form>
   );
 }
 

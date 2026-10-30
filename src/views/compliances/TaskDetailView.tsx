@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
-import { Lock, Upload } from 'lucide-react';
+import { Lock, Pencil, Trash2, Upload } from 'lucide-react';
+import { InlineConfirm } from '@/components/ui/inline-confirm';
+import { EditTaskDialog } from '@/views/compliances/tasks/edit-task';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -29,12 +31,20 @@ import {
 } from '@/views/compliances/detail/detail-parts';
 import { activityEntries, blockedLine, reminderViews } from '@/views/compliances/detail/detail-model';
 import { plainDate } from '@/views/compliances/spectrum-status';
-import { ApiError, openTaskAttachment, useSetReminderDays, useTask, useTaskActions, type TaskDetailDto } from '@/views/compliances/tasks/api';
+import {
+  ApiError,
+  openTaskAttachment,
+  useSetReminderDays,
+  useTask,
+  useTaskActions,
+  type ReminderKey,
+  type TaskDetailDto,
+} from '@/views/compliances/tasks/api';
 import { STAGE_LABEL, dueText, type WorkflowStage } from '@/views/compliances/tasks/task-model';
-
 
 /** Focus the reason field when the send-back form opens. */
 const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
+
 /**
  * NON-STATUTORY TASK — the staff detail page (prototype TaskDetail, COMPLIANCE-MODEL.md 4.3).
  *
@@ -85,6 +95,8 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
   const [draft, setDraft] = useState('');
   const [internal, setInternal] = useState(false);
   const [newItem, setNewItem] = useState('');
+  const [removing, setRemoving] = useState<{ kind: 'item' | 'file'; id: string; label: string } | null>(null);
+  const [editing, setEditing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const done = task.stage === 'completed';
@@ -120,12 +132,21 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
       {inReview ? 'Submitted' : 'Submit for review'}
     </Button>
   ) : null;
-  const sendBack =
-    inReview && task.can.review ? (
-      <Button size="sm" variant="secondary" onClick={() => setSendingBack(true)}>
-        Send back
-      </Button>
-    ) : null;
+  const sendBack = (
+    <>
+      {inReview && task.can.review ? (
+        <Button size="sm" variant="secondary" onClick={() => setSendingBack(true)}>
+          Send back
+        </Button>
+      ) : null}
+      {task.can.edit ? (
+        <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
+          <Pencil aria-hidden />
+          Edit
+        </Button>
+      ) : null}
+    </>
+  );
 
   const stageOptions = (isManager ? MANAGER_STAGES : LEAD_STAGES).includes(task.stage)
     ? (isManager ? MANAGER_STAGES : LEAD_STAGES)
@@ -199,7 +220,8 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                 <ul>
                   {task.checklistItems.map((c) => (
                     <li key={c.id} className="border-t border-line-soft first:border-t-0">
-                      <label className={cn('flex items-center gap-3 px-4 py-2.5 md:px-5', task.can.tick && 'cursor-pointer')}>
+                      <div className="flex items-center gap-1 pr-2 md:pr-3">
+                      <label className={cn('flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 md:px-5', task.can.tick && 'cursor-pointer')}>
                         <Checkbox
                           checked={c.done}
                           disabled={!task.can.tick || acts.tick.isPending}
@@ -213,6 +235,21 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                           </span>
                         ) : null}
                       </label>
+                      {task.can.edit ? (
+                        <Button size="iconSm" variant="ghost" aria-label={`Delete ${c.label}`} title="Delete" onClick={() => setRemoving({ kind: 'item', id: c.id, label: c.label })}>
+                          <Trash2 aria-hidden />
+                        </Button>
+                      ) : null}
+                      </div>
+                      {removing?.kind === 'item' && removing.id === c.id ? (
+                        <InlineConfirm
+                          question={`Delete "${c.label}"?`}
+                          confirm="Delete"
+                          busy={acts.removeItem.isPending}
+                          onCancel={() => setRemoving(null)}
+                          onConfirm={() => void run(acts.removeItem.mutateAsync(c.id), 'Item deleted', c.label).then(() => setRemoving(null))}
+                        />
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -256,9 +293,10 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                   <ul>
                     {task.attachments.map((f) => (
                       <li key={f.id} className="border-t border-line-soft first:border-t-0">
+                        <div className="flex items-center gap-1 pr-2 md:pr-3">
                         <button
                           type="button"
-                          className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-sunken/60 md:px-5"
+                          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left hover:bg-surface-sunken/60 md:px-5"
                           onClick={() => void openTaskAttachment(task.id, f.id).catch((e) => toastError(errorMessage(e, 'Could not open the file')))}
                         >
                           <FileBadge type={fileType(f.fileName)} />
@@ -270,6 +308,22 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                           </span>
                           {f.deliverable ? <Tag tone="ok">Deliverable</Tag> : null}
                         </button>
+                        {/* The route lets admin, super admin, manager and the uploader delete a file. */}
+                        {task.can.edit || (user?.id && f.uploadedBy?.id === user.id) ? (
+                          <Button size="iconSm" variant="ghost" aria-label={`Delete ${f.fileName}`} title="Delete" onClick={() => setRemoving({ kind: 'file', id: f.id, label: f.fileName })}>
+                            <Trash2 aria-hidden />
+                          </Button>
+                        ) : null}
+                        </div>
+                        {removing?.kind === 'file' && removing.id === f.id ? (
+                          <InlineConfirm
+                            question={`Delete ${f.fileName}?`}
+                            confirm="Delete"
+                            busy={acts.removeFile.isPending}
+                            onCancel={() => setRemoving(null)}
+                            onConfirm={() => void run(acts.removeFile.mutateAsync(f.id), 'File deleted', f.fileName).then(() => setRemoving(null))}
+                          />
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -337,6 +391,8 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                 onDays={(n) =>
                   void run(setDays.mutateAsync({ kind: 'task', id: task.id, notifyDays: n }), 'Reminder days changed', `First reminder ${n} day${n === 1 ? '' : 's'} before the end date.`)
                 }
+                onRow={(key, patch) => void run(setDays.mutateAsync({ kind: 'task', id: task.id, rows: [{ key: key as ReminderKey, ...patch }] }), 'Reminder changed')}
+                onReset={() => void run(setDays.mutateAsync({ kind: 'task', id: task.id, reset: true }), 'Reminders reset', 'Back to the default schedule.')}
               />
 
               <ActivityCard rows={activityEntries(task.history)} now={now} />
@@ -370,6 +426,16 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
           }
         />
       </div>
+      {task.can.edit ? (
+        <EditTaskDialog
+          open={editing}
+          onOpenChange={setEditing}
+          task={task}
+          now={now}
+          saving={acts.edit.isPending}
+          onSave={(body) => run(acts.edit.mutateAsync(body), 'Task saved', task.title)}
+        />
+      ) : null}
     </PageTransition>
   );
 }

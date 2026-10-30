@@ -181,7 +181,7 @@ describe('Non-statutory task page (4.3)', () => {
     await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'stage', stage: 'review' }));
     expect(await screen.findByRole('button', { name: 'Submitted' })).toBeDisabled();
     // A lead cannot change the reminder days.
-    expect(screen.queryByRole('button', { name: 'Edit days' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit schedule' })).toBeNull();
   });
 
   it('lets a manager approve or send back a task in review', async () => {
@@ -212,9 +212,61 @@ describe('Non-statutory task page (4.3)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
     await waitFor(() => expect(calls.find((c) => c.url.endsWith('/comments'))?.body).toEqual({ body: 'Looks fine', internal: true }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit days' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit schedule' }));
     fireEvent.change(screen.getByLabelText('First reminder'), { target: { value: '7' } });
     await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ kind: 'task', id: 't1', notifyDays: 7 }));
+  });
+
+  it('edits a task, deletes an item and a file, and overrides one reminder', async () => {
+    const defaults = { owner: null, reviewer: null, owners: [person('lead-1', 'Bharath Rao'), person('lead-2', 'Asha')], reviewers: [person('u-manager', 'Pranay')], activities: [] };
+    const overridden = reminders.map((r) => (r.key === 'initial' ? { ...r, overridden: true } : r));
+    routes = {
+      'GET /api/compliances/tasks/t1': () => ({ status: 200, body: { task: task({ reminders: overridden }) } }),
+      'GET /api/compliances/tasks/defaults': () => ({ status: 200, body: defaults }),
+      'PATCH /api/compliances/tasks/t1': () => ({ status: 200, body: { task: task({ urgency: 'Low' }) } }),
+      'DELETE /api/compliances/tasks/t1/checklist/c2': () => ({ status: 200, body: { ok: true } }),
+      'DELETE /api/compliances/tasks/t1/attachments/f1': () => ({ status: 200, body: { ok: true } }),
+      'PUT /api/compliances/reminders': () => ({ status: 200, body: { notifyDays: 5, rows: [], blockedBy: [], editable: true } }),
+    };
+    wrap(<TaskDetailView basePath="/app/manager/compliances" taskId="t1" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit task' });
+    fireEvent.change(within(dialog).getByLabelText('Urgency'), { target: { value: 'Low' } });
+    fireEvent.change(within(dialog).getByLabelText('Owner'), { target: { value: 'lead-2' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'edit', urgency: 'Low', ownerId: 'lead-2' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Draft the report' }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/checklist/c2'))).toBe(true));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete tb.xlsx' }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/attachments/f1'))).toBe(true));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit schedule' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Send escalation to compliance admin' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ kind: 'task', id: 't1', rows: [{ key: 'escalate-admin', enabled: false }] }),
+    );
+    const offset = screen.getByLabelText('First reminder to owner, days from the due date');
+    fireEvent.change(offset, { target: { value: '-7' } });
+    fireEvent.blur(offset);
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === 'PUT').at(-1)?.body).toEqual({ kind: 'task', id: 't1', rows: [{ key: 'initial', offsetDays: -7 }] }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    await waitFor(() => expect(calls.filter((c) => c.method === 'PUT').at(-1)?.body).toEqual({ kind: 'task', id: 't1', reset: true }));
+  });
+
+  it('hides edit and delete from a lead who did not upload the file', async () => {
+    appState.user = { id: 'lead-1', role: 'intern' };
+    routes = { 'GET /api/compliances/tasks/t1': () => ({ status: 200, body: { task: task({ can: { ...task().can, edit: false } }) } }) };
+    wrap(<TaskDetailView basePath="/app/intern/compliances" taskId="t1" />);
+    await screen.findByRole('region', { name: 'Header' });
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Delete / })).toBeNull();
   });
 
   it('reads a task outside the scope as not found', async () => {
@@ -329,6 +381,26 @@ describe('Statutory detail page (4.2)', () => {
     await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'approve' }));
   });
 
+  it('assigns the owner and the reviewer', async () => {
+    routes = {
+      'GET /api/compliances/statutory/i1': () => ({ status: 200, body: { detail: stat() } }),
+      'GET /api/compliances/tasks/defaults': () => ({
+        status: 200,
+        body: { owner: null, reviewer: null, owners: [person('lead-1', 'Bharath Rao'), person('lead-2', 'Asha')], reviewers: [person('u-manager', 'Pranay')], activities: [] },
+      }),
+      'PATCH /api/compliances/statutory/i1': () => ({ status: 200, body: { detail: stat({ owner: person('lead-2', 'Asha') }) } }),
+    };
+    wrap(<StatDetailView basePath="/app/manager/compliances" obligationId="gst-3b" instanceId="i1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Assign' }));
+    const form = screen.getByRole('form', { name: 'Assign' });
+    await within(form).findByRole('option', { name: 'Asha' });
+    fireEvent.change(within(form).getByLabelText('Owner'), { target: { value: 'lead-2' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'assign', ownerId: 'lead-2', reviewerId: 'u-manager' }),
+    );
+  });
+
   it('lets a lead submit for review', async () => {
     appState.user = { id: 'lead-1', role: 'intern' };
     routes = {
@@ -341,6 +413,6 @@ describe('Statutory detail page (4.2)', () => {
     wrap(<StatDetailView basePath="/app/intern/compliances" obligationId="gst-3b" instanceId="i1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit for review' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'submit' }));
-    expect(screen.queryByRole('button', { name: 'Edit days' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit schedule' })).toBeNull();
   });
 });

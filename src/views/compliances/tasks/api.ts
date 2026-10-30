@@ -363,7 +363,35 @@ export function useTaskActions(id: string) {
     },
     ...settled,
   });
-  return { stage, review, tick, addItem, comment, upload };
+  const edit = useMutation({
+    mutationFn: async (b: TaskEditBody) => (await readJson<{ task: TaskDetailDto }>(await fetch(base, json('PATCH', { action: 'edit', ...b })), 'the task')).task,
+    onSuccess: put,
+    ...settled,
+  });
+  const removeItem = useMutation({
+    mutationFn: async (itemId: string) =>
+      readJson<{ ok: true }>(await fetch(`${base}/checklist/${encodeURIComponent(itemId)}`, { method: 'DELETE' }), 'the checklist'),
+    ...settled,
+  });
+  const removeFile = useMutation({
+    mutationFn: async (attachmentId: string) =>
+      readJson<{ ok: true }>(await fetch(`${base}/attachments/${encodeURIComponent(attachmentId)}`, { method: 'DELETE' }), 'the file'),
+    ...settled,
+  });
+  return { stage, review, tick, addItem, comment, upload, edit, removeItem, removeFile };
+}
+
+/** The fields an admin, super admin or manager may change after creation. */
+export interface TaskEditBody {
+  name?: string;
+  startDate?: string;
+  dueDate?: string;
+  urgency?: TaskUrgency;
+  visibility?: TaskVisibility;
+  ownerId?: string | null;
+  reviewerId?: string | null;
+  repeats?: TaskRepeats;
+  remindBefore?: number;
 }
 
 /** Open an attachment through its short-lived signed link. */
@@ -390,7 +418,8 @@ export type StatutoryAction =
   | { action: 'submit' }
   | { action: 'approve' }
   | { action: 'send-back'; note: string }
-  | { action: 'stage'; stage: WorkflowStage };
+  | { action: 'stage'; stage: WorkflowStage }
+  | { action: 'assign'; ownerId?: string | null; reviewerId?: string | null };
 
 export function useStatutoryAction(instanceId: string) {
   const qc = useQueryClient();
@@ -413,10 +442,18 @@ export function useStatutoryAction(instanceId: string) {
 
 /* ------------------------------------------------------------------ reminders */
 
+export interface ReminderRowOverride {
+  key: ReminderKey;
+  /** Days from the due date (negative = before); null drops the override of the offset. */
+  offsetDays?: number | null;
+  enabled?: boolean;
+}
+
+/** `PUT /api/compliances/reminders`: the first-reminder days, per-row overrides, or a reset. */
 export function useSetReminderDays() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (b: { kind: 'statutory' | 'task'; id: string; notifyDays: number }) =>
+    mutationFn: async (b: { kind: 'statutory' | 'task'; id: string; notifyDays?: number; rows?: ReminderRowOverride[]; reset?: boolean }) =>
       readJson<RemindersDto>(await fetch('/api/compliances/reminders', json('PUT', b)), 'the reminders'),
     onSettled: (_d, _e, b) => qc.invalidateQueries({ queryKey: b.kind === 'task' ? TASKS_KEY : STAT_KEY }),
   });

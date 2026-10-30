@@ -53,7 +53,7 @@ describe('newTaskErrors', () => {
   it('asks for a name on Other and an end on or after the start', () => {
     expect(newTaskErrors({ ...base, act: 'other' }).name).toBe('Give the task a name');
     expect(newTaskErrors({ ...base, end: '2026-10-10' }).end).toBe('End on or after the start');
-    expect(newTaskErrors({ ...base, notify: '99' }).notify).toBe('Use 0 to 60 days');
+    expect(newTaskErrors({ ...base, notify: '99' }).notify).toBe('Use 0 to 90 days');
   });
   it('reads plain dates', () => {
     expect(parsePlain('20 Oct 2026', 2026)).toBe('2026-10-20');
