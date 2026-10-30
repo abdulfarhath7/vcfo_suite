@@ -4,7 +4,7 @@ Written in ASD-STE100. One fact in each cell. Audit of the prototype `design/spe
 
 Four read-only audits compared the markup, the classes and the CSS values on both sides, one visible element or behaviour in each row. The hub checked the greeting-card gradient in the built CSS and corrected the rows that said otherwise. No browser check was made, so a row can still be wrong where the code and the screen differ.
 
-**Key:** ✓ = present and the same. ◐ = present, but different (the row says how). ✗ = missing. "no data" = the real tool stores nothing that the part can show. "real only" or "Extra" = only VCFO Suite has it.
+**Key:** — = removed by the owner (fees, 30 Oct 2026; not counted). ✓ = present and the same. ◐ = present, but different (the row says how). ✗ = missing. "no data" = the real tool stores nothing that the part can show. "real only" or "Extra" = only VCFO Suite has it.
 
 ## Totals
 
@@ -16,8 +16,8 @@ numbers are in brackets.
 | Foundations, shared parts and the shell | 380 | 302 (176) | 78 (156) | 0 (48) |
 | Client portal | 907 | 719 (304) | 188 (540) | 0 (63) |
 | Staff screens: project lead, manager, admin | 818 | 601 (189) | 217 (456) | 0 (173) |
-| Super admin, developer console, public pages, shared staff screens | 645 | 421 (174) | 219 (330) | 5 (141) |
-| **All** | **2750** | **2043 (843)** | **702 (1482)** | **5 (425)** |
+| Super admin, developer console, public pages, shared staff screens | 645 (2 removed) | 421 (174) | 219 (330) | 3 (141) |
+| **All** | **2750 (2 removed)** | **2043 (843)** | **702 (1482)** | **3 (425)** |
 
 The status column now carries the result of the fix rounds. Each area's agent report gives the
 reason for every row that is still ◐ or ✗ (no stored data, a real feature kept on purpose, an
@@ -2291,7 +2291,7 @@ was made during the fix rounds.
 | P-097 | Super admin | Client record | Obligations tab | "Obligations": Form, Statute, Due, With, Status. Late rows red. | "Filings": Filing with period, Area pill, Due, Status. A pre-incorporation notice. No With column. | ◐ | src/components/super/project/SuperProjectRail.tsx |
 | P-098 | Super admin | Client record | Documents tab | Doc list "Latest" and "All documents ›" to the super documents page. | Table File (file badge), Category, Step (mono), Client (Shared or Internal), Filed. The link is "Firm view". | ◐ | src/components/super/project/SuperProjectDocuments.tsx |
 | P-099 | Super admin | Client record | Notes tab | Notes list (date, text, who) and an "Add a note" field with "Add". | Shared notes panel with an "Add a note" text area. | ✓ | src/components/notes/EngagementNotesPanel.tsx |
-| P-100 | Super admin | Client record | Fees tab | "Fees by service" grid and an "Outstanding" card. | No Fees tab. | ✗ | new: src/components/super/project/SuperProjectFees.tsx |
+| P-100 | Super admin | Client record | Fees tab | "Fees by service" grid and an "Outstanding" card. | No Fees tab. | — | new: src/components/super/project/SuperProjectFees.tsx |
 | P-101 | Super admin | Client record | Audit tab | "Audit" activity list. | "Activity" tab: avatar, label, actor · time ago, "Full log" link. | ✓ | src/components/super/project/SuperProjectRail.tsx |
 | P-102 | Super admin | Client record | Escalations and Team tabs | Not in the prototype. | "Escalations" and "Team" tabs. | ◐ | src/views/super/SuperProjectDetail.tsx |
 | P-103 | Super admin | Client record | Loading state | The page keeps its shape. | `SuperPageSkeleton`: four tile shapes and rows. It does not match the record layout. | ✓ | src/components/super/parts/super-parts.tsx |
@@ -2414,7 +2414,7 @@ was made during the fix rounds.
 | P-220 | Super admin | Reports | Saved reports columns | Report, Area (area pill), Period, Last run, Schedule, actions. | Report, Month, Schedule, Send to, Last sent, actions. No Area pill. | ◐ | src/components/super/reports/SavedReportsCard.tsx |
 | P-221 | Super admin | Reports | Row actions | "Run" (outline, Play icon), Schedule icon, Download icon. | Schedule icon, Download icon, Delete icon. No "Run". | ✓ | src/components/super/reports/SavedReportsCard.tsx |
 | P-222 | Super admin | Reports | Open report row | The open saved report row shows a soft blue fill (selectedKey). | No selected-row fill. Open scrolls to the top and sets the month. | ✓ | src/components/super/reports/SavedReportsCard.tsx |
-| P-223 | Super admin | Reports | Fees and late fees report | Opens below the list: KeyValue totals and three grids (fees, outstanding, late-fee exposure). | Not built. Owner decision R-37: no money in the tool. | ✗ | none |
+| P-223 | Super admin | Reports | Fees and late fees report | Opens below the list: KeyValue totals and three grids (fees, outstanding, late-fee exposure). | Not built. Owner decision R-37: no money in the tool. | — | none |
 | P-224 | Super admin | Reports | Schedule dialog | "Schedule report" with the report name as eyebrow: Repeat, Format, Send to checkboxes; ghost Cancel, primary Save. | "Save report" or "Schedule report": Name, Month (radios), Repeat, Send to (email textarea with checks); quiet Cancel, primary Save. | ◐ | src/components/super/reports/SaveReportDialog.tsx |
 | P-225 | Super admin | Reports | Format field | Format select: PDF or Excel (XLSX). | No Format field. PDF only. | ✓ | src/components/super/reports/SaveReportDialog.tsx |
 | P-226 | Super admin | Reports | Delete confirm | No delete. | Extra AlertDialog "Delete this saved report?" with a destructive Delete. | ◐ | src/views/super/SuperReports.tsx |
@@ -2863,7 +2863,7 @@ Built on 30 Oct 2026 (commits 545d99d to a02a263, migration 0030). Reports: `doc
 | X-17 | DR-01 | Activity master | ✓ | 43 rows from the owner's documents, seeded on first use |
 | X-18 | DR-02 | Entity-wise configuration | ◐ | Per occurrence; no per-client default for an activity yet |
 | X-19 | DR-03 to DR-16, DR-19, DR-21, DR-22 | Kinds, repeats, dates, reminders, roles, workflow, evidence, filters, audit, confirm, DR-22 hold | ✓ | Five activities with open owner points send no reminders until confirmed |
-| X-20 | DR-17 | Holidays and jurisdiction | ✗ | Not built; needs a holiday calendar |
+| X-20 | DR-17 | Holidays and jurisdiction | ✗ | Waiting for the owner's yearly working days and holiday calendar |
 | X-21 | DR-18 | Duplicate handling | ✓ | Applied in the data file |
 | X-22 | DR-20 | Security and retention rules | ✗ | Not built; needs the owner's retention periods |
 | X-23 | — | Activity master edit screen | ✗ | The route exists; no screen yet |
