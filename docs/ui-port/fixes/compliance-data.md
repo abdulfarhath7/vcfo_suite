@@ -77,7 +77,7 @@ Seed: the app seeds the 43 activities and the obligation links on first use
 read). For a migration-time seed, append the output of
 `node --conditions=react-server --import tsx scripts/seed-compliance-activities.ts --sql` to 0030
 (INSERT … ON CONFLICT DO NOTHING plus the link UPDATEs, with statement breakpoints). Without
-`--sql` the script seeds the database `DATABASE_URL` points at.
+`--sql` the script seeds the database `src/db/client.ts` connects to (DATABASE_URL locally, DB_SECRET_ARN and the DB_* vars through the SSM tunnel for RDS).
 
 ## Decisions
 

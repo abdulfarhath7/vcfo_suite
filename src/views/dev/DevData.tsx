@@ -9,6 +9,7 @@ import { ChangeConfirm as ChangeRow } from '@/components/ui/inline-confirm';
 import { DevCard, KeyValue, Pending, ReachChip, ReachNotice, StatusChip, useDevAction } from '@/components/dev/parts';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { useDevApi } from '@/components/dev/use-dev-api';
+import { BackupPlanBlock, NetworkCard } from '@/components/dev/SocCards';
 import { bytes, day, money, stamp } from '@/lib/dev/format';
 import type { BucketStat, CostLine, DataExtra, DataPayload, ExportRow, SnapshotRow, TableStat } from '@/lib/dev/types';
 
@@ -252,7 +253,10 @@ export default function DevData() {
         ) : (
           <ReachNotice reach={q.data.backups} service="RDS backups" />
         )}
+        {q.data ? <BackupPlanBlock plan={q.data.backupPlan} /> : null}
       </DevCard>
+
+      <NetworkCard network={q.data?.network} error={q.error} />
 
       <DevCard title="Exports" meta="Kept 30 days">
         {q.data ? (

@@ -13,6 +13,7 @@ import { Cols, Col, DevCard, KeyValue, Pending, SettingRow, StackedBar, StatusCh
 import { useDevApi } from '@/components/dev/use-dev-api';
 import { ApiTokensCard } from '@/components/dev/ApiTokensCard';
 import { ConsoleSettingsCard } from '@/components/dev/ConsoleSettingsCard';
+import { SecretsRotationCard } from '@/components/dev/SocCards';
 import { stamp } from '@/lib/dev/format';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { describeUserAgent } from '@/views/settings/account/device-label';
@@ -242,6 +243,8 @@ export default function DevAccess() {
       </DevCard>
 
       {q.data ? <ApiTokensCard tokens={q.data.tokens} /> : null}
+
+      <SecretsRotationCard rotation={q.data?.rotation} error={q.error} />
 
       <Cols>
         <Col>

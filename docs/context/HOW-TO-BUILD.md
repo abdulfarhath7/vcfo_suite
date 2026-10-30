@@ -162,8 +162,9 @@ in `src/components/client-portal/`; check that your change adds no new ones.
 ## Deploy
 
 1. Run `npm run check` and `npm run build` locally (`prebuild` regenerates the portal CSS).
-2. If the change adds a migration, migrate RDS first: export `DATABASE_URL` from Secrets Manager and
-   run `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate` (`AWS-DEPLOY.md` section 5).
+2. If the change adds a migration, migrate RDS first, from inside the VPC: `node scripts/db-env-prod.mjs`
+   prints the SSM tunnel command and the DB_* exports, then run `npm run db:migrate` (`AWS-DEPLOY.md`
+   section 11.3). RDS is private and there is no production `DATABASE_URL`; never open RDS for this.
 3. Log in to ECR, then build and push `:latest`; the exact commands are in `infra/README.md`
    (`docker build -t vcfo-suite:local .`, `docker tag`, `docker push .../vcfo-suite:latest`).
 4. App Runner auto-deploys on the new `:latest` image. Watch the service in the console.

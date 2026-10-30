@@ -69,7 +69,7 @@ export function serviceMeta(services: ServiceConfig[], env: Env = process.env, o
     },
     jobs: { account: 'vcfo-suite', endpoint: (v(env, 'INNGEST_API_BASE_URL') || 'https://api.inngest.com').replace(/^https?:\/\//, '') },
     ask: {
-      account: askBedrock ? `Bedrock ${v(env, 'ASK_VCFO_BEDROCK_REGION') || ''}`.trim() : v(env, 'ANTHROPIC_API_KEY') ? 'Anthropic API key' : null,
+      account: askBedrock ? `Bedrock ${v(env, 'ASK_VCFO_BEDROCK_REGION') || ''}`.trim() : v(env, 'ANTHROPIC_API_KEY_SECRET_ID') || v(env, 'ANTHROPIC_API_KEY') ? 'Anthropic API key' : null,
       endpoint: askBedrock ? `bedrock-runtime.${v(env, 'ASK_VCFO_BEDROCK_REGION') || 'ap-south-1'}.amazonaws.com` : 'api.anthropic.com',
     },
     outlook: {

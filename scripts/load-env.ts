@@ -2,8 +2,8 @@
  * Loads .env.local / .env into process.env for standalone CLI scripts.
  *
  * MUST be imported BEFORE anything that reads process.env at module scope —
- * notably src/db/client.ts, which builds its Pool from DATABASE_URL the moment
- * it is imported. ES module imports are hoisted and evaluated in source order,
+ * notably src/db/client.ts, which builds its Pool from DATABASE_URL (local) or
+ * DB_SECRET_ARN and the DB_* vars (RDS) the moment it is imported. ES module imports are hoisted and evaluated in source order,
  * so `import './load-env'` on the first line runs before the db import; an
  * inline loop in the consumer would NOT, because it executes after every
  * import has already been evaluated.
