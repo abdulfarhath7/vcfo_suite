@@ -26,12 +26,12 @@ import {
   type Announcement,
   type AnnouncementListFilter,
   type AnnouncementSource,
+  requestAnnouncementPopup,
 } from '@/lib/notifications/announcements';
 import { useAnnouncementSources, useAnnouncements } from '@/hooks/use-announcements';
 import { AnnouncementComposeForm } from '@/components/announcements/AnnouncementCompose';
 import { AnnouncementRow } from '@/components/announcements/AnnouncementList';
 import { OfficialPortalsDirectory } from '@/components/announcements/OfficialPortalsDirectory';
-import { AnnouncementDetailDialog } from '@/views/announcements/AnnouncementDetailDialog';
 import { cn } from '@/lib/utils';
 
 function feedErrorMessage(code: string): string {
@@ -80,10 +80,10 @@ function LatestList({
   onView: (item: Announcement) => void;
 }) {
   const [filter, setFilter] = useState<AnnouncementListFilter>('all');
-  const [openId, setOpenId] = useState<string | null>(null);
+  /* Owner, 30 Oct 2026: a row opens the live popup that flies back to the bell (as before the
+     port); the popup's Open page button leads to this page. */
   const open = (item: Announcement) => {
     onView(item);
-    setOpenId(item.id);
   };
   const shown = items.filter((item) => announcementMatchesFilter(parseAnnouncementKind(item.kind), filter));
   const count = (key: AnnouncementListFilter) =>
@@ -160,7 +160,6 @@ function LatestList({
           })}
         </ul>
       )}
-      <AnnouncementDetailDialog items={shown} currentId={openId} onGo={open} onClose={() => setOpenId(null)} />
     </DashSection>
   );
 }
@@ -440,7 +439,10 @@ export default function AnnouncementsPage() {
             readIds={readIds}
             onCompose={openCompose}
             onRemove={(id) => void remove(id)}
-            onView={(item) => markOne(item.id)}
+            onView={(item) => {
+              markOne(item.id);
+              requestAnnouncementPopup(item);
+            }}
           />
         </div>
         <div className="grid min-w-0 gap-4">
