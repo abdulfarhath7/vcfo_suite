@@ -72,6 +72,7 @@ import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-recor
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton, RecordMetaLine, RecordNumbers } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
+import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -104,6 +105,12 @@ function phasesForBucket(
   if (bucket === 'post-inc') return postInc;
   if (bucket === 'statutory') return registration;
   return null;
+}
+
+/** `/app/manager/engagements/x` → `/app/manager`: the shell root for links inside this page. */
+function shellRootOf(pathname: string | null): string {
+  const parts = (pathname ?? '').split('/').filter(Boolean);
+  return parts.length >= 2 ? `/${parts[0]}/${parts[1]}` : '/app/admin';
 }
 
 function phaseStepNumber(bucket: Bucket, itemId: string, fallback: number): number {
@@ -392,6 +399,9 @@ export default function EngagementDetail() {
                   trailingForPhase={docPackPill}
                 />
               )}
+
+              {/* Spec T6: the SPICe+ Part B attachments, under the SPICe+ steps. */}
+              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/intern" />
             </>
           )}
         </InternEngagementOverview>
@@ -522,6 +532,11 @@ export default function EngagementDetail() {
               </section>
             );
           })()}
+
+          {/* Spec T6: the SPICe+ Part B attachments, under the Pre-Incorporation steps. */}
+          {activeBucket === 'pre-inc' ? (
+            <SpiceAttachmentsCard engagementId={eng.id} shellBase={shellRootOf(pathname)} />
+          ) : null}
         </>
       )}
     </PageTransition>

@@ -88,5 +88,5 @@ a signed copy whose pre-3 is accepted.
 ## Requests for the hub
 
 - Write the migration from `src/db/schema.ts` and append the backfill SQL; apply on RDS before deploying.
-- T6 SPICe+ attachment list: no such list exists yet; add the accepted copy there when it is built.
+- T6 SPICe+ attachment list: built on 30 Oct 2026 (overnight M8). The accepted copy shows as Done with a link to the Vault copy.
 - The staff page does not draw the C8 tree itself (the client agent's tree lives in the client-portal folder under `.cp` CSS); if the hub wants the tree on staff pages too, move that tree into `src/components/board-doc/`.
