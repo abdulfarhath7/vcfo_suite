@@ -290,6 +290,8 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     const internRoute = parts[1] === 'intern';
     const list = listForEntityPage(parts, page);
     const entityHref = `${base}/${page}/${nested}`;
+    // The super admin has no step pages of its own; its step crumbs open the admin project steps.
+    const stepBase = parts[1] === 'super' ? `/app/admin/projects/${nested}` : entityHref;
     const segs: ShellCrumbSegment[] = [
       { label: list.label, href: list.href },
       {
@@ -302,7 +304,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     if (nested !== 'new' && after === 'step' && parts[5]) {
       const item = resolveChecklistItemFromStepParam(parts[5]);
       if (item) {
-        pushPhaseAndStep(segs, entityHref, item, internRoute);
+        pushPhaseAndStep(segs, stepBase, item, internRoute);
       } else {
         segs.push({ label: titleCase(parts[5]), href: null });
       }
@@ -311,7 +313,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     } else if (nested !== 'new' && after === 'board-resolution') {
       const draft = resolveChecklistItemFromStepParam('board-resolution-draft');
       if (draft) {
-        pushPhaseAndStep(segs, entityHref, draft, internRoute, 'Board Resolution');
+        pushPhaseAndStep(segs, stepBase, draft, internRoute, 'Board Resolution');
       } else {
         segs.push({ label: 'Board Resolution', href: null });
       }

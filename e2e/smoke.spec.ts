@@ -184,7 +184,7 @@ const clientBoardResolution: RouteCheck = async (page) => {
 /** R-52: the staff board resolution (NOC) page: the head, the template card and the evidence. */
 const staffBoardResolution: RouteCheck = async (page) => {
   await expect(page.getByRole('heading', { name: /Board resolution \(NOC\)/ })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('region', { name: 'Template' })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('region', { name: 'Template', exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('region', { name: 'Why VCFO chose this template' })).toBeVisible();
   await page.getByRole('button', { name: 'Compare versions' }).click();
   await expect(page.getByRole('dialog', { name: 'Compare versions' })).toBeVisible();
