@@ -346,3 +346,30 @@ export async function signedUrlFor(path: string): Promise<string> {
   if (!res.ok || !body.url) throw new Error(body.error ?? 'Could not open the file');
   return body.url;
 }
+
+/**
+ * D1 (owner, 2026-10-30): the client Incorporation page has no Registration section. This is
+ * the step model without phase 4 (Registration), with the counts the page reads rebuilt from
+ * the steps that are left. Registrations keep their own page.
+ */
+export function withoutRegistration(model: PortalIncorporationModel): PortalIncorporationModel {
+  const phases = model.phases.filter((p) => p.no !== 4);
+  if (phases.length === model.phases.length) return model;
+  const steps = phases.flatMap((p) => p.steps);
+  const done = steps.filter((s) => s.kind === 'done').length;
+  const counts = { done: 0, you: 0, prog: 0, with: 0, next: 0, up: 0, late: 0 } as PortalIncorporationModel['counts'];
+  for (const s of steps) {
+    counts[s.kind] += 1;
+    if (s.late) counts.late += 1;
+  }
+  const current = model.current && model.current.phaseNo !== 4 ? model.current : steps.find((s) => s.kind === 'you') ?? steps.find((s) => s.kind === 'prog' || s.kind === 'with');
+  return {
+    ...model,
+    phases,
+    steps,
+    byId: Object.fromEntries(steps.map((s) => [s.id, s])),
+    all: { done, total: steps.length, pct: steps.length ? Math.round((done / steps.length) * 100) : 0 },
+    counts,
+    current,
+  };
+}

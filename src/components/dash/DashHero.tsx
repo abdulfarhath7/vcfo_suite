@@ -70,6 +70,11 @@ export type DashHeroStat = {
   note?: string;
   /** Trend line points, oldest first, the last one the live count. Drawn only with two or more points. */
   trend?: number[];
+  /**
+   * The tile has a trend line but no past values yet: a flat muted line with this short label
+   * ("No history yet") is drawn instead, so every tile of a row keeps the same shape.
+   */
+  trendEmpty?: string;
   /** Trend colour; by default red for `hot`, green for `good`, blurple otherwise. */
   trendTone?: 'bad' | 'ok' | 'teal' | 'warn' | 'accent';
   /** A small share bar under the number, in percent. */
@@ -257,6 +262,13 @@ function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
         </span>
         {stat.trend && stat.trend.length > 1 ? (
           <TrendLine points={stat.trend} className={cn(TREND[tone], strip && 'max-sm:hidden')} />
+        ) : stat.trendEmpty ? (
+          <span className={cn('flex flex-none flex-col items-end gap-0.5 self-end', strip && 'max-sm:hidden')} title={stat.trendEmpty}>
+            <svg viewBox="0 0 64 26" className="h-[14px] w-12 text-line-strong sm:w-16" aria-hidden>
+              <line x1="2" y1="13" x2="62" y2="13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeDasharray="3 3" />
+            </svg>
+            <span className="whitespace-nowrap text-[10.5px] leading-none text-ink-faint">{stat.trendEmpty}</span>
+          </span>
         ) : null}
       </span>
     </>

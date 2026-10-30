@@ -267,7 +267,8 @@ export function createMobileCardsB(ctx: MobileHomeState & MobileCardsA) {
   );
 
   const actCard = (
-    <Card id="act" title="Recent activity" info="Who did what, newest first.">
+    // C1: the latest five rows in a fixed height, then "View all" opens the Audit page.
+    <Card id="act" title="Recent activity" info="Who did what, newest first." foot={['View all', () => portal.go('audit')]}>
       <MSeg
         id="act"
         tabs={[
@@ -278,9 +279,9 @@ export function createMobileCardsB(ctx: MobileHomeState & MobileCardsA) {
         sel={actTab}
         onSel={setActTab}
       />
-      <div>
+      <div style={{ height: 290, overflow: 'hidden' }}>
         {actRows.length ? (
-          actRows.map((a) => (
+          actRows.slice(0, 5).map((a) => (
             <div key={a.id} className="row" style={{ cursor: 'default' }}>
               <Si k={a.actorKind === 'client' ? 'you' : a.actorKind === 'system' ? 'late' : 'done'} tip={a.actorKind === 'client' ? company : a.actorName} />
               <span className="t">

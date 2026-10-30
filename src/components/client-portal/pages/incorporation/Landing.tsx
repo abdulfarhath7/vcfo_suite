@@ -2,14 +2,15 @@
 
 /**
  * INCORPORATION LANDING (VCFO Spectrum, prototype src/screens/client/IncorporationScreen.tsx).
- * A plain page head (days to the COI, or the incorporation date), then the ST5 card beside
- * "This week" and one "Incorporation status" card with four stacked bars (R-25, was four
- * donuts), then the phase timeline (R-21) whose rows open the step tables. Wired to the real
+ * A plain page head, then one row of stat cards (D3: Days to COI or the COI date, SPICe+
+ * steps, all steps), then the phase timeline (R-21, D2: at the top) whose rows open the step
+ * tables, then the ST5 card beside "This week" and one "Incorporation status" card with four
+ * stacked bars (R-25). Phases 1 to 3 only (D1: no Registration section). Wired to the real
  * step model; every drill, the status brief, the board resolution link and the timeline
  * editor are kept.
  */
 import { sep } from '@/lib/date-format';
-import { Download } from 'lucide-react';
+import { CalendarClock, CheckCheck, Download, ListChecks } from 'lucide-react';
 import { useHomeQuery } from '../home/useHome';
 import { PendingRequestChip } from '../home/PendingRequest';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -22,6 +23,7 @@ import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { StatCard } from '@/components/dash/StatCard';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { StepMark } from '@/components/ui/step-track';
 import { SkeletonRows } from '@/components/ui/empty-state';
@@ -29,7 +31,7 @@ import { phaseHref, portalHref } from '../../routes';
 import { usePortal, type DrillConfig, type DrillRow } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { IncFrame, addD, days, fmt, fmtY, pd, wd } from './ui';
-import { PHL, firstName, idx, kd, ownKey, phDoneEnd, phPlan, stRow, stepHrefOf, tabsFor, signedUrlFor, useIncData, type IncData } from './data';
+import { PHL, firstName, idx, kd, ownKey, phDoneEnd, phPlan, stRow, stepHrefOf, tabsFor, signedUrlFor, useIncData, withoutRegistration, type IncData } from './data';
 import { StepTable } from './StepTable';
 import { StatusBrief } from './StatusBrief';
 import { BoardResolutionLink } from './BoardLink';
@@ -298,7 +300,10 @@ function PhaseLineRow({
 }
 
 export default function IncorporationLanding() {
-  const d = useIncData();
+  const full = useIncData();
+  // D1: the page shows phases 1 to 3 only; registrations keep their own page.
+  const incModel = useMemo(() => withoutRegistration(full.model), [full.model]);
+  const d: IncData = { ...full, model: incModel };
   const portal = usePortal();
   const { after, go, toast, drill, openChat } = portal;
   const goTo = useGo();
@@ -357,26 +362,48 @@ export default function IncorporationLanding() {
     viewer.open([{ id: `cert:${c.storagePath}`, name: c.name, url: () => signedUrlFor(c.storagePath), meta: 'Certificate of Incorporation' }], 0);
   };
 
-  const headTitle = showAfter ? (
-    <button type="button" onClick={drillRing} className="text-left text-ink hover:underline" data-tt={`Certificate of Incorporation · ${wd(d.coiDate!)} ${fmtY(d.coiDate)}`} data-notip="">
-      Incorporated {fmt(d.coiDate)}
-    </button>
-  ) : coiEnd ? (
-    <button
-      type="button"
-      onClick={drillRing}
-      className="text-left text-ink hover:underline"
-      aria-label={`${daysLeft} days to COI · expected ${wd(coiEnd)} ${fmtY(coiEnd)}`}
-      data-tt={`Expected ${wd(coiEnd)} ${fmtY(coiEnd)}${d.extras?.windowSetByName ? ` · window set by ${d.extras.windowSetByName}` : ''}`}
-      data-notip=""
-    >
-      {/* C-096: plain text, no count-up. */}
-      <span className="tabular-nums">{daysLeft}</span> {daysLeft === 1 ? 'day to COI' : 'days to COI'}
-    </button>
-  ) : (
-    <button type="button" onClick={drillRing} className="text-left text-ink hover:underline">
-      Days to COI not set
-    </button>
+  // D3: the days to the COI (or the COI date) is a stat card in the top row, not head text.
+  const headTitle = 'Incorporation';
+  const early = showAfter && coiEnd ? days(d.coiDate!, coiEnd) : null;
+  const statCards = (
+    <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-3">
+      <button
+        type="button"
+        onClick={drillRing}
+        className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        aria-label={
+          showAfter
+            ? `Incorporated ${wd(d.coiDate!)} ${fmtY(d.coiDate)}`
+            : coiEnd
+              ? `${daysLeft} days to COI · expected ${wd(coiEnd)} ${fmtY(coiEnd)}`
+              : 'Days to COI not set'
+        }
+      >
+        {showAfter ? (
+          <StatCard
+            label="Incorporated"
+            value={fmt(d.coiDate)}
+            hint={early == null ? fmtY(d.coiDate) : early > 0 ? `${early} days early` : early < 0 ? `${-early} days late` : 'On the day'}
+            tone="positive"
+            icon={CheckCheck}
+          />
+        ) : (
+          <StatCard
+            label="Days to COI"
+            value={coiEnd ? daysLeft : 'Not set'}
+            hint={coiEnd ? `Expected ${wd(coiEnd)} ${fmt(coiEnd)}${d.extras?.windowSetByName ? ` · set by ${d.extras.windowSetByName}` : ''}` : undefined}
+            tone="brand"
+            icon={CalendarClock}
+          />
+        )}
+      </button>
+      <button type="button" onClick={drillRing} className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label={`SPICe+ · ${spice.done} of ${spice.total} steps`}>
+        <StatCard label="SPICe+ steps" value={`${spice.done} / ${spice.total}`} hint={`${spice.pct}%`} tone="info" icon={ListChecks} />
+      </button>
+      <button type="button" onClick={drillAll} className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label={`All steps · ${all.done} of ${all.total}`}>
+        <StatCard label="All steps" value={`${all.done} / ${all.total}`} hint={`${all.pct}%`} tone="neutral" icon={ListChecks} />
+      </button>
+    </div>
   );
 
   const headMeta = showAfter ? (
@@ -396,14 +423,6 @@ export default function IncorporationLanding() {
   ) : (
     <>
       <span>{d.companyName}</span>
-      {coiEnd ? (
-        <>
-          <Dot />
-          <span>
-            expected {wd(coiEnd)} {fmt(coiEnd)}
-          </span>
-        </>
-      ) : null}
       <Dot />
       <button type="button" onClick={drillAll} className="text-brand-text hover:underline">
         {all.done} / {all.total} steps · {all.pct}%
@@ -420,7 +439,6 @@ export default function IncorporationLanding() {
       <BoardResolutionLink br={d.extras?.boardResolution ?? null} />
       {showAfter ? (
         <>
-          {coiEnd ? <EarlyChip coi={d.coiDate!} end={coiEnd} /> : null}
           {d.certificate ? (
             <Button variant="secondary" onClick={openCert}>
               Open certificate
@@ -679,6 +697,9 @@ export default function IncorporationLanding() {
           ) : (
             <>
               <PageHead label="Certificate of Incorporation" title={headTitle} meta={headMeta} actions={headActions} />
+              {statCards}
+              {/* D2: the timeline sits at the top, under the page head and above the steps. */}
+              {timelineCard}
               <Row>
                 <St5Card
                   model={model}
@@ -692,12 +713,11 @@ export default function IncorporationLanding() {
                   <SplitCard rows={split} />
                 </Col>
               </Row>
-              {timelineCard}
             </>
           )}
         </Island>
       </div>
-      {briefOpen ? <StatusBrief d={d} onClose={() => setBriefOpen(false)} /> : null}
+      {briefOpen ? <StatusBrief d={full} onClose={() => setBriefOpen(false)} /> : null}
       {editOpen ? <TimelineEdit onClose={() => setEditOpen(false)} /> : null}
       {viewer.node}
     </IncFrame>
@@ -707,14 +727,4 @@ export default function IncorporationLanding() {
 function issuedLine(ids: { cin?: string; pan?: string; tan?: string }): string {
   const l = [ids.cin ? 'CIN' : '', ids.pan ? 'PAN' : '', ids.tan ? 'TAN' : ''].filter(Boolean);
   return l.length > 1 ? `${l.slice(0, -1).join(', ')} and ${l.at(-1)}` : l[0] ?? '';
-}
-
-function EarlyChip({ coi, end }: { coi: string; end: string }) {
-  const e = days(coi, end);
-  const txt = e > 0 ? `${e} days early` : e < 0 ? `${-e} days late` : 'On the day';
-  return (
-    <span role="img" aria-label={txt} data-tt={`Window ended ${wd(end)} ${fmt(end)}`}>
-      <Chip tone={e >= 0 ? 'ok' : 'bad'}>{txt}</Chip>
-    </span>
-  );
 }

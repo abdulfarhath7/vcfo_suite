@@ -382,6 +382,13 @@ describe('ClientActivityFeed', () => {
     expect(screen.getByText('Certificate of Incorporation delivered')).toBeInTheDocument();
   });
 
+  it('shows the latest five rows and a View all link to the Audit page (C1)', () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({ id: `e${i}`, at: '2026-04-02T10:00:00.000Z', label: `Event ${i}` }));
+    draw(<ClientActivityFeed activity={many} />);
+    expect(screen.getAllByText(/^Event \d$/)).toHaveLength(5);
+    expect(screen.getByRole('link', { name: 'View all' })).toHaveAttribute('href', '/app/client/audit');
+  });
+
   it('explains the empty feed', () => {
     draw(<ClientActivityFeed activity={[]} />);
     expect(screen.getByText('Nothing yet.')).toBeInTheDocument();

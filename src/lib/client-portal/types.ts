@@ -77,6 +77,13 @@ export interface ClientPortalShell {
   team: ClientPortalContact[];
   /** Real COI state (CIN or incorporation date recorded). */
   incorporated: boolean;
+  /** The engagement's incorporation (COI) date, `YYYY-MM-DD`, when it is recorded. */
+  coiDate?: string | null;
+  /**
+   * Who looks at the portal. A client with a COI date sees the After view only and no
+   * Before/After switch (D4); staff who preview the client view keep the switch.
+   */
+  viewer?: 'client' | 'staff';
   badges: {
     notifications: number;
     documents: number;
@@ -86,8 +93,18 @@ export interface ClientPortalShell {
   prefs: ClientPortalPrefs;
 }
 
-/** Which layout the client sees: the stored pill choice, else the real state. */
-export function effectiveAfter(shell: Pick<ClientPortalShell, 'incorporated' | 'prefs'>): boolean {
+/** D4: the Before/After switch shows unless a client looks at an engagement with a COI date. */
+export function showsBeforeAfterSwitch(shell: Pick<ClientPortalShell, 'coiDate' | 'viewer'> | null | undefined): boolean {
+  if (!shell) return false;
+  return !(shell.coiDate && shell.viewer !== 'staff');
+}
+
+/**
+ * Which layout the client sees: the stored pill choice, else the real state. Once the
+ * engagement has a COI date a client always sees After (D4).
+ */
+export function effectiveAfter(shell: Pick<ClientPortalShell, 'incorporated' | 'prefs' | 'coiDate' | 'viewer'>): boolean {
+  if (!showsBeforeAfterSwitch(shell)) return true;
   if (shell.prefs.viewState === 'after') return true;
   if (shell.prefs.viewState === 'before') return false;
   return shell.incorporated;
