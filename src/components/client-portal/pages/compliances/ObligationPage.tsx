@@ -2,16 +2,16 @@
 
 /**
  * Compliances · one obligation (VCFO Spectrum ObligationScreen): the record head with the
- * status, the area, the next due date, the step count and "n of m filed", then This period
- * (the four workflow steps of the open period as a vertical ST5 list with their dates), the
+ * status, the area, the next due date, the step count and "n of m filed", then the
  * Past periods grid, About (the text, the facts and the SBC SOP link), and the Why it applies,
  * Due rule and If filed late texts from the scoped obligation read (G-04, asked with one of
  * the client's own filing ids).
  * A period opens the same side panel as Filings (proof viewer and download, Remind me, Add
  * to my calendar, Ask VCFO). `?filing=<id>` opens that period's panel on load.
  *
- * D-4 (COMPLIANCE-MODEL.md 4.2, client view): the open period also shows Progress (the six
- * steps with who, when and evidence, the stage and the owner), Reminders without escalations,
+ * D-4 (COMPLIANCE-MODEL.md 4.2, client view): the open period shows Progress on the right (the
+ * six steps with who, when and evidence, the stage and the owner; it replaced the register's
+ * four-step "This period" list, hub decision of 30 Oct), Reminders without escalations,
  * the Rule without the confirm note, and the Activity trail, from
  * GET /api/compliances/statutory/:instanceId. No reviewer, no reviewer note, no staff controls.
  * The header's Upload takes the client to the open asks in "From the client".
@@ -24,14 +24,14 @@ import { SkeletonRows } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { portalHref } from '../../routes';
-import { AREA_FULL, focusNodes, fmtDM, fyStartOfMonth, portalFor, statusOf, todayIso, type PortalFiling, type TrackNode } from '@/lib/client-portal/compliances';
+import { AREA_FULL, fmtDM, fyStartOfMonth, portalFor, statusOf, todayIso, type PortalFiling } from '@/lib/client-portal/compliances';
 import { fetchProofs, proofHref, useAllFilings, useDownload } from './api';
 import { FiledCell, ProofCell } from './cells';
 import { CompProvider, useComp } from './ctx';
 import { RiskChip, SidePanel, longPeriod } from './Detail';
 import { groupObligations, type Obligation } from './obligations';
 import { OBLIGATIONS_BASE } from './ObligationsPage';
-import { AreaTag, Empty, FactRows, GoLink, Island, PeopleStack, PortalLink, RecordHead, SCard, StatusChip, StepList, WordPill, type ThreadStep } from './spectrum';
+import { AreaTag, Empty, FactRows, GoLink, Island, PeopleStack, PortalLink, RecordHead, SCard, StatusChip, WordPill } from './spectrum';
 import { FromClientCard, SbcFieldsCard, useRecordPeople } from './inputs';
 import { slugOf } from './obligations';
 import { useComplianceStarts, type StartedObligation } from '@/components/compliances/use-compliance-records';
@@ -136,7 +136,7 @@ function ObligationBody({ id, today }: { id: string; today: string }) {
 
 function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
   const { openChat, toast } = usePortal();
-  const { companyShort, remind, addToCalendar, openProof } = useComp();
+  const { remind, addToCalendar, openProof } = useComp();
   const download = useDownload();
   const { filing, setFiling } = usePanelParam();
   const panel = filing ? (o.instances.find((r) => r.id === filing) ?? null) : null;
@@ -189,8 +189,8 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
     </Button>
   ) : null;
   const people = useRecordPeople();
-  const curNodes = cur ? focusNodes(cur, companyShort, today) : [];
-  const stepsDone = curNodes.filter((n) => n.st === 'done').length;
+  const steps = x?.steps ?? [];
+  const stepsDone = steps.filter((n) => n.state === 'done').length;
   const past = history.filter((r) => r.id !== cur?.id && (r.filedOn || r.dueDate < today));
 
   const columns: EFilingColumn<PortalFiling>[] = [
@@ -270,26 +270,13 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
             ...(o.next && x?.daysToDue != null
               ? [{ k: x.daysToDue < 0 ? 'Overdue' : 'Due in', v: x.daysToDue < 0 ? `${-x.daysToDue} day${x.daysToDue === -1 ? '' : 's'}` : `${x.daysToDue} day${x.daysToDue === 1 ? '' : 's'}`, tone: x.daysToDue < 0 ? ('bad' as const) : undefined }]
               : []),
-            ...(curNodes.length ? [{ k: 'Steps', v: `${stepsDone} of ${curNodes.length}` }] : []),
+            ...(steps.length ? [{ k: 'Steps', v: `${stepsDone} of ${steps.length}` }] : []),
             { k: 'Filed', v: `${o.filed} of ${o.total}` },
           ]}
           actions={actions}
         />
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="grid min-w-0 gap-5">
-            {cur ? (
-              <SCard
-                title="This period"
-                meta={cur.periodLong ?? longPeriod(cur.period)}
-                right={
-                  <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => setFiling(cur.id)}>
-                    Open details
-                  </button>
-                }
-              >
-                <StepList steps={threadSteps(cur, curNodes, companyShort)} today={today} />
-              </SCard>
-            ) : null}
             {cur ? (
               <>
                 <div ref={fromClient} className="grid min-w-0 scroll-mt-4">
@@ -325,7 +312,19 @@ function ObligationRecord({ o, today }: { o: Obligation; today: string }) {
             </SCard>
           </div>
           <div className="grid min-w-0 gap-5">
-            {cur && x ? <ProgressCard steps={x.steps} stage={x.stageLabel} owner={x.owner ?? cur.ownerName} /> : null}
+            {cur && x ? (
+              <ProgressCard
+                steps={x.steps}
+                stage={x.stageLabel}
+                owner={x.owner ?? cur.ownerName}
+                period={cur.periodLong ?? longPeriod(cur.period)}
+                right={
+                  <button type="button" className="text-[13px] font-medium text-brand-text hover:underline" onClick={() => setFiling(cur.id)}>
+                    Open details
+                  </button>
+                }
+              />
+            ) : null}
             <SCard title="About" flush>
               {about.data?.about ? <p className="px-4 pb-1 pt-4 text-[13.5px] leading-relaxed text-ink-2 md:px-5">{about.data.about}</p> : null}
               <FactRows
@@ -378,24 +377,6 @@ function RuleCard({ rule, frequency }: { rule: NonNullable<StatExtras['rule']>; 
       />
     </SCard>
   );
-}
-
-/** The four steps of a period as a vertical ST5 list (prototype SideThread), with the dates the register holds. */
-function threadSteps(f: PortalFiling, nodes: TrackNode[], companyShort: string): ThreadStep[] {
-  const dates = [f.dataReceivedOn, null, f.approvedOn, f.filedOn];
-  return nodes.map((n, i) => {
-    const client = n.icon === 'file' || n.icon === 'person';
-    const state: ThreadStep['state'] = n.st === 'done' ? 'done' : n.st === 'next' ? 'next' : 'now';
-    return {
-      key: String(i),
-      title: n.label,
-      state,
-      client,
-      holder: client ? `With ${companyShort}` : 'With SBC',
-      note: state === 'done' ? (i === 3 && f.filedByName ? `${f.filedByName} · SBC` : undefined) : n.sub || undefined,
-      date: dates[i] ?? undefined,
-    };
-  });
 }
 
 /** Why it applies and Due rule, then If filed late; not drawn until loaded. The about text sits in the About card. */

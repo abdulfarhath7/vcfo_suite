@@ -143,9 +143,23 @@ export function ActivityCard({ rows }: { rows: DetailHistory[] }) {
 }
 
 /** D-3 Progress, client view: ST5 steps with who, when and evidence, then the stage and the owner (no reviewer, K-2). */
-export function ProgressCard({ steps, stage, owner }: { steps: DetailStep[]; stage: string | null; owner: string | null }) {
+export function ProgressCard({
+  steps,
+  stage,
+  owner,
+  period,
+  right,
+}: {
+  steps: DetailStep[];
+  stage: string | null;
+  owner: string | null;
+  /** The period the steps belong to ("1–30 Sep 2026"), before the count. */
+  period?: string;
+  right?: ReactNode;
+}) {
+  const count = steps.length ? `${steps.filter((s) => s.state === 'done').length} of ${steps.length}` : undefined;
   return (
-    <SCard title="Progress" meta={steps.length ? `${steps.filter((s) => s.state === 'done').length} of ${steps.length}` : undefined} flush>
+    <SCard title="Progress" meta={[period, count].filter(Boolean).join(' · ') || undefined} right={right} flush>
       {steps.length ? (
         <ol className="px-4 py-3 md:px-5">
           {steps.map((s, i) => (

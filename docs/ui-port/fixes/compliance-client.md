@@ -2,9 +2,26 @@
 
 Client screens agent for `docs/ui-port/COMPLIANCE-BRIEF.md`. Source: the prototype's
 `docs/COMPLIANCE-MODEL.md` at e86ce88 and its client screens. Every screen calls only the routes in
-`docs/ui-port/COMPLIANCE-API.md` (plus the client routes the pages already used). When this pass ended,
-the new routes under `app/api/compliances/` were not built yet, so the new screens are tested with
-mocked fetches. All parsing sits in one file (`task-api.ts`), so a change to the contract touches one place.
+`docs/ui-port/COMPLIANCE-API.md` (plus the client routes the pages already used). All parsing sits in
+one file (`task-api.ts`), so a change to the contract touches one place. The tests use mocked fetches.
+
+## Second pass (after commit 40b3745)
+
+- I checked `task-api.ts` against the real handlers (`app/api/compliances/tasks/route.ts`, `tasks/[id]/route.ts`,
+  `tasks/[id]/comments`, `tasks/[id]/attachments`, `attachments/[attachmentId]`, `statutory/[instanceId]`)
+  and their DTOs (`TaskRowDto`, `TaskDetailDto` in `src/db/repositories/compliance-tasks/read.ts`,
+  `StatutoryDetailDto` in `compliance-statutory.ts`, `ReminderRowOut` and `StepOut` in
+  `src/lib/compliance-tasks/model.ts`). Every name, wrapper and status matches: `{ tasks, today }`,
+  `{ task }`, `{ detail }`, comment body `{ body }`, multipart `file`, attachment GET `{ url, fileName }`,
+  and 404 `not_found` from `ComplianceTaskError`. A history row's `who` may be null; the page shows "SBC"
+  for it. No code change was needed.
+- Hub decision: the client statutory record keeps only the six-step Progress card. The register's
+  four-step "This period" list and its `threadSteps` helper are gone. The Progress card now carries the
+  period ("1–30 Sep 2026 · 2 of 6") and the "Open details" link that opens the period's side panel. The
+  head's "Steps n of m" fact counts the six steps.
+- `previous`: the Past periods grid already lists every earlier period of the obligation from the
+  register (not only the last six), with filed date, reference, status and proof. So the Progress
+  card does not repeat it, and `previous` stays parsed but unused.
 
 ## Spec items
 
@@ -12,7 +29,7 @@ mocked fetches. All parsing sits in one file (`task-api.ts`), so a change to the
 |---|---|---|
 | K-1 | Done | Client Obligations has the Statutory · Non-statutory · All switch with counts under the card head (after the certificate only; before it the page is unchanged). Non-statutory lists `GET /api/compliances/tasks` (the route already returns only the client's own engagement and only visibility client or both; rows with `hidden` are dropped too). The table groups by end week (This week, Next week, Later, Done) with Task, Start, End, Urgency, With and Status. It has no Visibility column and no reviewer column. On phones it keeps Task, End and Status. All shows the statutory card, then a "Non-statutory tasks" card. The rail follows the switch: Due in the next 15 days and Waiting on client add the tasks, and Progress flow adds a Tasks bar in the six words. |
 | K-2 | Done | No New task button anywhere on the client. The task page has Upload (header and Attachments card; `POST /api/compliances/tasks/:id/attachments`, one file per POST) and a comment form (`POST …/comments` with `{ body }`). Both follow `can.upload` and `can.comment`, and upload stops once the task is done. |
-| D-4 | Done | The client statutory record (`/app/client/compliances/obligations/[id]`) keeps every existing part (record head, This period, From the client with upload in place, Filled by SBC, Past periods, About, Why it applies, If filed late, side panel, Remind me, Add to my calendar). It now also reads `GET /api/compliances/statutory/:instanceId` for the open period and adds Progress (steps with who, when and evidence, the stage and the owner, no reviewer), Reminders (escalations dropped, no edit control), Rule (due rule, applies to, penalty, frequency, note; the `confirm` note is never read) and Activity. The head adds "Due in N days" or "Overdue N days" and an Upload button that scrolls to the open asks in From the client. There are no reviewer notes and no staff controls. |
+| D-4 | Done | The client statutory record (`/app/client/compliances/obligations/[id]`) keeps every existing part (record head, This period, From the client with upload in place, Filled by SBC, Past periods, About, Why it applies, If filed late, side panel, Remind me, Add to my calendar). It now also reads `GET /api/compliances/statutory/:instanceId` for the open period and adds Progress (steps with who, when and evidence, the stage and the owner, no reviewer), Reminders (escalations dropped, no edit control), Rule (due rule, applies to, penalty, frequency, note; the `confirm` note is never read) and Activity. The four-step "This period" list was removed in the second pass (hub decision). The head adds "Due in N days" or "Overdue N days" and an Upload button that scrolls to the open asks in From the client. There are no reviewer notes and no staff controls. |
 | 4.3 client task page | Done | New route `app/app/client/compliances/obligations/tasks/[id]/page.tsx` renders `TaskPage.tsx`. It has a header card with the end-date tile, the name, the urgency pill, a "Non-statutory" tag, the status chip, "Start 5 Oct · End 20 Oct · Due in 6 days" and Upload. The left column has Checklist (read only, ST5 marks), Attachments (a click opens the signed URL), Comments (internal ones dropped), Reminders (no escalations) and Activity. The right column has Progress with the stage and the owner. A 404 (a firm-only task or another client's task) shows "This task is not shared with you". |
 | C-1 | Done | The calendar has an All · Statutory · Non-statutory switch above the bar, with counts for the month in Month view and for the year in Year and Timeline views. `?cat=` keeps it on refresh. The phone calendar has the same switch. |
 | C-2 | Done | Statutory events keep their solid stripe. |
@@ -53,9 +70,8 @@ Changed: `ObligationsPage.tsx`, `ObligationPage.tsx`, `CalendarPage.tsx`, `Calen
 
 ## Gaps and requests for the hub
 
-- The new `/api/compliances/*` routes were not on disk when I finished, so nothing was checked against a live server. Run the screens once the data agent lands the routes.
-- The client statutory record still shows the register's four "This period" steps beside the API's six Progress steps. The owner may want only one.
-- `useStatExtras` is called for the open period only. Previous periods keep the existing Past periods grid; the API's `previous` field is parsed but not shown.
+- I checked the screens against the route code, not against a running server.
+- `useStatExtras` is called for the open period only. Previous periods keep the existing Past periods grid.
 
 ## Checks
 
