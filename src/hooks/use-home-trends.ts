@@ -34,3 +34,30 @@ export function trendWithLive(trends: HomeTrends | undefined, key: string, live:
   if (!past?.length || typeof live !== 'number' || !Number.isFinite(live)) return undefined;
   return [...past, live];
 }
+
+/** The label a tile shows when it has no past values yet (owner item B2). */
+export const NO_HISTORY = 'No history yet';
+
+/**
+ * A home tile's line: the past values plus the live count (`trendWithLive`). When the trends
+ * have loaded but the tile has no past values, `trendEmpty` asks the tile for a flat line and
+ * "No history yet". `add` sums a second series into the first point by point (the client
+ * Overdue tile after the COI adds the overdue filings); a shorter series trims the longer one,
+ * so no point is invented. While the trends load, nothing is drawn.
+ */
+export function tileTrend(
+  trends: HomeTrends | undefined,
+  key: string,
+  live: number | string | null | undefined,
+  add?: string,
+): { trend?: number[]; trendEmpty?: string } {
+  if (!trends) return {};
+  let past = trends[key];
+  if (past && add) {
+    const extra = trends[add] ?? [];
+    const n = Math.min(past.length, extra.length);
+    past = Array.from({ length: n }, (_, i) => past![past!.length - n + i]! + extra[extra.length - n + i]!);
+  }
+  const trend = trendWithLive(past ? { [key]: past } : {}, key, live);
+  return trend ? { trend } : { trendEmpty: NO_HISTORY };
+}

@@ -35,6 +35,15 @@ describe('DashHero (H3c)', () => {
     expect(container.querySelectorAll('svg polyline')).toHaveLength(1);
   });
 
+  it('draws a flat line and the label for a tile with no history yet (B2)', () => {
+    const { container } = render(
+      <DashHero title="Overview" stats={[{ label: 'Open', value: 4, trendEmpty: 'No history yet' }, { label: 'Filed', value: 2, trend: [1, 2], trendEmpty: 'No history yet' }]} />,
+    );
+    expect(screen.getAllByText('No history yet')).toHaveLength(1);
+    expect(container.querySelectorAll('svg line')).toHaveLength(1);
+    expect(container.querySelectorAll('svg polyline')).toHaveLength(1);
+  });
+
   it('turns the ring into one more tile, unless a stat repeats it', () => {
     const { rerender } = render(<DashHero title="Overview" stats={[{ label: 'Clients', value: 9 }]} ring={{ value: 6, caption: 'on track' }} />);
     expect(screen.getByText('On track')).toBeInTheDocument();

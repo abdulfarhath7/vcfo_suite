@@ -140,15 +140,16 @@ export function useMobileHome({ h, onEditTimeline, phases, onOpenDocs }: MobileH
         { v: h.needs.length, l: `Waiting on ${company}`, on: () => stepsDrill(1) },
         { v: overdueCount(h), l: 'Overdue', on: () => dueDrill(0) },
         { v: h.buckets.dueSoon, l: 'Due soon', on: () => dueDrill(1) },
-        { v: `${regsDone}/${h.regs.length}`, l: 'Registrations', on: () => regDrill(0) },
-        { v: h.overview?.engagement.incorporationDate ? dShort(h.overview.engagement.incorporationDate) : '—', l: 'Incorporated', on: () => portal.go('incorporation') },
+        { v: h.regs.length ? `${regsDone}/${h.regs.length}` : regsDone, l: 'Registrations', on: () => regDrill(0) },
+        { v: h.overview?.engagement.incorporationDate ? dShort(h.overview.engagement.incorporationDate) : 'Not yet', l: 'Incorporated', on: () => portal.go('incorporation') },
       ]
     : [
+        // B1: the same five tiles in the same order as the desktop home card.
         { v: h.needs.length, l: `Waiting on ${company}`, on: () => stepsDrill(1) },
-        { v: model.counts.with, l: 'With SBC', on: () => stepsDrill(2) },
         { v: overdueCount(h), l: 'Overdue', on: () => dueDrill(0) },
-        { v: reqC && reqC.total ? `${reqC.fulfilled}/${reqC.total}` : '—', l: 'Docs in', on: () => docsDrill() },
-        { v: model.coiExpected ? dShort(model.coiExpected) : '—', l: 'Expected COI', on: () => portal.go('incorporation') },
+        { v: model.counts.with, l: 'With SBC', on: () => stepsDrill(2) },
+        { v: reqC && reqC.total ? `${reqC.fulfilled}/${reqC.total}` : 0, l: 'Documents in', on: () => docsDrill() },
+        { v: `${model.spice.done}/${model.spice.total}`, l: 'Steps done', on: () => stepsDrill(0) },
       ];
   const docsDrill = () => {
     const ups = h.needs.filter((n) => n.kind === 'upload');

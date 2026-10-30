@@ -10,7 +10,8 @@ import { formatClientDate } from '@/components/client/overview/client-overview-f
  * Module 11 — recent scoped audit.
  *
  * Straight from `audit_events` under the client's own scope, so it can only
- * ever show this engagement. Momentum, not a log dump: eight rows, newest first.
+ * ever show this engagement. Momentum, not a log dump: the latest five rows, newest first, in
+ * a fixed height (owner item C1); "View all" opens the Audit page.
  */
 /**
  * Consecutive identical events collapse to the latest one plus a count.
@@ -32,6 +33,9 @@ function collapseRuns(
   return out;
 }
 
+/** C1: rows shown before the "View all" link. */
+const ACTIVITY_ROWS = 5;
+
 export function ClientActivityFeed({ activity }: { activity: ClientOverviewActivity[] }) {
   return (
     <ClientCard
@@ -41,16 +45,16 @@ export function ClientActivityFeed({ activity }: { activity: ClientOverviewActiv
           href="/app/client/audit"
           className="text-[11.5px] font-semibold text-brand hover:underline"
         >
-          Full log
+          View all
         </Link>
       }
     >
       {activity.length === 0 ? (
-        <p className="text-[12.5px] text-ink-muted">Nothing yet.</p>
+        <p className="h-[220px] text-[12.5px] text-ink-muted">Nothing yet.</p>
       ) : (
-        <ol className="space-y-2.5">
+        <ol className="h-[220px] space-y-2.5 overflow-hidden">
           {collapseRuns(activity)
-            .slice(0, 8)
+            .slice(0, ACTIVITY_ROWS)
             .map((event) => (
               <li key={event.id} className="flex min-w-0 gap-2.5">
                 <span
@@ -58,7 +62,7 @@ export function ClientActivityFeed({ activity }: { activity: ClientOverviewActiv
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] leading-snug text-ink">
+                  <p className="truncate text-[12.5px] leading-snug text-ink" title={event.label}>
                     {event.label}
                     {event.count > 1 ? (
                       <span className="ml-1.5 text-ink-muted">×{event.count}</span>

@@ -3,7 +3,9 @@ import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt, lte, min, or 
 import { db } from '@/db/client';
 import {
   auditEvents,
+  clientNeedMeta,
   complianceInstances,
+  documentRequestFiles,
   documentRequests,
   emailSendLog,
   engagementStepEvents,
@@ -13,7 +15,13 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
-import { assertEngagementAccess, getMyEngagement, listScopedEngagementIds } from '@/db/repositories/engagements';
+import {
+  assertEngagementAccess,
+  checklistStateForViewer,
+  checklistStateFromRow,
+  getMyEngagement,
+  listScopedEngagementIds,
+} from '@/db/repositories/engagements';
 import { getReviewStatus } from '@/lib/checklist/checklist-item-review';
 import { primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -25,14 +33,12 @@ import {
   type StepHistoryEvent,
 } from '@/lib/metrics/staff-home-trends';
 import { assertDeveloper } from '@/db/repositories/dev-scope';
-import { clientDocsInAsOf, type DocRequestHistoryRow } from '@/lib/metrics/client-docs-trend';
 import {
-  holderCountsAsOf,
-  indexHolderEvents,
-  modelStepIds,
-  openRequestsAsOf,
-  type HolderHistoryEvent,
-} from '@/lib/metrics/client-holder-trend';
+  clientTilesAsOf,
+  type ClientRequestHistoryRow,
+  type StepStatusHistoryEvent,
+} from '@/lib/metrics/client-home-history';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   addDaysYmd,
   engagementLiveAt,
@@ -40,7 +46,6 @@ import {
   messagesFailedAsOf,
   pastDays,
   pastMonthEnds,
-  clientDueSoonAsOf,
   superFilingsDueAsOf,
   trailingKnown,
   type EngagementDeleteEvent,
@@ -65,12 +70,11 @@ import {
  *   dev     messagesFailed  email and WhatsApp rows written in the 24 hours before each day
  *                        end that had failed by then (status, created_at, updated_at)
  *           denied       audit events with result "denied" in the 7 days before each day end
- *   client  dueSoon      filings of the year due within 15 days of each day and not filed
- *           docsIn       requests answered by each day end, from `closed_at` (migration 0027;
- *                        `src/lib/metrics/client-docs-trend.ts`)
- *           waiting      open requests + steps held by the client at each day end, and
- *           withSbc      steps held by the lead or a manager, from the step holder rows
- *                        (migration 0028; `src/lib/metrics/client-holder-trend.ts`)
+ *   client  every tile of the five fixed tiles (owner item B2): waiting, overdue (+
+ *           filingsOverdue after the COI), withSbc, docsIn, stepsDone, regs and dueSoon.
+ *           The checklist state of each past day is rebuilt by undoing the later step
+ *           events; requests close at `closed_at` or their first uploaded file; filings
+ *           read their due and filed dates (`src/lib/metrics/client-home-history.ts`).
  *   lead    doneToday    steps completed that day (status events), tasks whose
  *                        `completed_at` falls in it, filings due that day and filed by its end
  *   manager approvals    steps awaiting a manager decision at each day end, rebuilt from the
@@ -87,8 +91,7 @@ import {
  *
  * Tiles with no line and why: developer Jobs failed (the Inngest list is capped, so older days
  * would be short), Services working and Outlook mailboxes (only the current state is kept);
- * super admin Need attention and Awaiting review (step states); client Overdue (it mixes
- * late steps, late requests and late filings).
+ * super admin Need attention and Awaiting review (step states).
  *
  * >>> ACCESS CONTROL (Path A) <<<
  *   super  — firm-wide admins only (`isFirmWideAdmin`), like the super admin overview.
@@ -418,7 +421,7 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
   const periods = pastDays(now);
   const first = periods[0]!;
   const last = periods[periods.length - 1]!;
-  const [filingRows, reopenRows, requestRows, holderRows] = await Promise.all([
+  const [filingRows, reopenRows, requestRows, uploadRows, eventRows] = await Promise.all([
     db
       .select(filingColumns)
       .from(complianceInstances)
@@ -440,38 +443,78 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
           gte(auditEvents.createdAt, first.end),
         ),
       ),
-    // Documents in (C-023): every request of the engagement made before the last day end.
+    // Every request of the engagement made before the last day end, with its need details.
     db
-      .select({ status: documentRequests.status, closedAt: documentRequests.closedAt, createdAt: documentRequests.createdAt })
+      .select({
+        id: documentRequests.id,
+        status: documentRequests.status,
+        closedAt: documentRequests.closedAt,
+        createdAt: documentRequests.createdAt,
+        kind: clientNeedMeta.kind,
+        dueDate: clientNeedMeta.dueDate,
+        stepId: clientNeedMeta.stepId,
+        complianceInstanceId: clientNeedMeta.complianceInstanceId,
+      })
       .from(documentRequests)
+      .leftJoin(clientNeedMeta, eq(clientNeedMeta.requestId, documentRequests.id))
       .where(and(eq(documentRequests.engagementId, dbId), lt(documentRequests.createdAt, last.end))),
-    // Waiting on and With SBC: the step holder rows of this engagement (migration 0028).
+    // The first file of each request: the close time of a request answered before closed_at existed.
     db
-      .select({ stepId: engagementStepEvents.stepId, holder: engagementStepEvents.holder, at: engagementStepEvents.at })
+      .select({ requestId: documentRequestFiles.requestId, at: min(documentRequestFiles.uploadedAt) })
+      .from(documentRequestFiles)
+      .where(eq(documentRequestFiles.engagementId, dbId))
+      .groupBy(documentRequestFiles.requestId),
+    // Every step change since the first day end: undone to rebuild the state of each past day.
+    db
+      .select({
+        stepId: engagementStepEvents.stepId,
+        fromStatus: engagementStepEvents.fromStatus,
+        toStatus: engagementStepEvents.toStatus,
+        reviewStatus: engagementStepEvents.reviewStatus,
+        at: engagementStepEvents.at,
+      })
       .from(engagementStepEvents)
-      .where(and(eq(engagementStepEvents.engagementId, dbId), lt(engagementStepEvents.at, last.end)))
+      .where(and(eq(engagementStepEvents.engagementId, dbId), gte(engagementStepEvents.at, new Date(first.end.getTime() - 60 * DAY_MS))))
       .orderBy(asc(engagementStepEvents.at)),
   ]);
 
   const filings = filingRows as FilingHistoryRow[];
   const reopens = reopensFrom(reopenRows);
-  const requests = requestRows as DocRequestHistoryRow[];
-  const holderEvents = holderRows as HolderHistoryEvent[];
-  // Holder history starts with this engagement's first row that names a holder (the baseline).
-  const holderSince = holderEvents.find((e) => e.holder !== null)?.at ?? null;
-  const byStep = indexHolderEvents(holderEvents);
-  const stepIds = modelStepIds(access.row.checklistState as Record<string, unknown> | null);
-  const held = periods.map((p) => holderCountsAsOf({ stepIds, events: byStep, since: holderSince, period: p }));
+  const firstUpload = new Map(uploadRows.map((r) => [r.requestId, r.at ? new Date(r.at) : null]));
+  const requests: ClientRequestHistoryRow[] = requestRows.map((r) => ({
+    id: r.id,
+    status: r.status,
+    createdAt: r.createdAt,
+    closedAt: r.closedAt ?? null,
+    firstUploadAt: firstUpload.get(r.id) ?? null,
+    kind: r.kind ?? null,
+    dueDate: r.dueDate ?? null,
+    stepId: r.stepId ?? null,
+    complianceInstanceId: r.complianceInstanceId ?? null,
+  }));
+  const row = access.row as { createdAt?: Date | null; schedule?: unknown };
+  const state = checklistStateForViewer(ctx, checklistStateFromRow(access.row));
+  const tiles = periods.map((period) =>
+    clientTilesAsOf({
+      state,
+      schedule: (row.schedule ?? null) as EngagementSchedule | null,
+      engagementCreatedAt: row.createdAt ?? null,
+      events: eventRows as StepStatusHistoryEvent[],
+      requests,
+      filings,
+      reopens,
+      period,
+    }),
+  );
+  const series = (key: keyof (typeof tiles)[number]) => trailingKnown(tiles.map((t) => t[key]));
   return keep({
-    dueSoon: trailingKnown(periods.map((p) => clientDueSoonAsOf(filings, reopens, p))),
-    docsIn: trailingKnown(periods.map((p) => clientDocsInAsOf(requests, p))),
-    waiting: trailingKnown(
-      periods.map((p, i) => {
-        const open = openRequestsAsOf(requests, p);
-        const h = held[i];
-        return open === null || !h ? null : open + h.client;
-      }),
-    ),
-    withSbc: trailingKnown(held.map((h) => (h ? h.withSbc : null))),
+    waiting: series('waiting'),
+    overdue: series('overdue'),
+    filingsOverdue: series('filingsOverdue'),
+    withSbc: series('withSbc'),
+    docsIn: series('docsIn'),
+    stepsDone: series('stepsDone'),
+    regs: series('regs'),
+    dueSoon: series('dueSoon'),
   });
 }
