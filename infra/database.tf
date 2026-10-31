@@ -60,7 +60,7 @@ resource "aws_db_instance" "postgres" {
   parameter_group_name         = aws_db_parameter_group.postgres.name
   db_subnet_group_name         = aws_db_subnet_group.postgres.name
   vpc_security_group_ids       = [aws_security_group.db.id]
-  publicly_accessible          = true # option B; see main.tf header
+  publicly_accessible          = !var.db_private # private-db.tf
   skip_final_snapshot          = false
   final_snapshot_identifier    = "${var.project}-db-final"
   backup_retention_period      = 7

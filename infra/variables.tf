@@ -18,7 +18,7 @@ variable "db_username" {
 variable "db_managed_password" {
   description = "Let RDS manage and rotate the master password (app reads DB_SECRET_ARN)."
   type        = bool
-  default     = false
+  default     = true # live since 30 Oct 2026; false would bring back DATABASE_URL
 }
 
 variable "alert_emails" {
@@ -108,13 +108,22 @@ variable "ask_vcfo_anthropic_secret_name" {
 
 # People who may manage the vcfo secrets despite the Deny in database.tf. Exact
 # user or role ARNs, no wildcards (the SOC 2 scanner rejects wildcards). Keep
-# the Terraform user here, and the SOC scanner user so it can read the policy.
+# the Terraform user here, the SOC scanner user so it can read the policy, and
+# the RDS service role so RDS can rotate the managed master password.
 variable "secret_admin_arns" {
   description = "IAM user/role ARNs exempt from the deny-all policy on the vcfo secrets."
   type        = list(string)
   default = [
     "arn:aws:iam::600627321277:user/farhath_vcfo",
     "arn:aws:iam::600627321277:user/sandeep.gaja", # SOC 2 Prowler scanner
+    # RDS writes each rotated master password into its own secret with this role.
+    "arn:aws:iam::600627321277:role/aws-service-role/rds.amazonaws.com/AWSServiceRoleForRDS",
   ]
 }
 
+
+variable "db_private" {
+  description = "Make RDS private: App Runner VPC connector + NAT instance (private-db.tf). Flip during a short window."
+  type        = bool
+  default     = true # live since 30 Oct 2026; false makes the database public again
+}

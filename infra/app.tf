@@ -210,6 +210,18 @@ resource "aws_apprunner_service" "app" {
     }
   }
 
+  # With db_private, all outbound traffic leaves through the VPC connector
+  # (private-db.tf) so the app can reach the private database.
+  dynamic "network_configuration" {
+    for_each = var.db_private ? [1] : []
+    content {
+      egress_configuration {
+        egress_type       = "VPC"
+        vpc_connector_arn = aws_apprunner_vpc_connector.app[0].arn
+      }
+    }
+  }
+
   instance_configuration {
     cpu               = var.app_cpu
     memory            = var.app_memory

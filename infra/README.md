@@ -94,6 +94,42 @@ secret and rotates it every 7 days; the app reads it per new connection
    window. Turning the flag off inside that window fails on the secret name;
    restore the secret (`aws secretsmanager restore-secret`) and import it first.
 
+## Private database (db_private)
+
+`db_private = true` makes RDS private (SOC 2 #303, #85, #70): App Runner reaches it
+through a VPC connector, and the private subnets reach the internet through one
+small NAT instance (`private-db.tf`, about $7 a month). After development, swap
+the NAT instance for a NAT gateway; the rest stays.
+
+Cut-over (about 5-10 minutes of errors while App Runner moves to the connector):
+
+1. Take an RDS snapshot.
+2. `terraform apply -var db_private=true`, then set the variable's default to true
+   so later applies keep it.
+3. Log in, send one email, open Ask VCFO and an Outlook connection.
+
+Rollback: apply with `db_private = false`; RDS becomes public again and App
+Runner returns to default egress.
+
+Database access from a laptop (db:migrate) goes through an SSM tunnel on the NAT
+instance. Install the AWS Session Manager plugin once, then:
+
+```bash
+NAT=$(aws ec2 describe-instances --filters Name=tag:Name,Values=vcfo-suite-nat \
+  Name=instance-state-name,Values=running --query 'Reservations[0].Instances[0].InstanceId' --output text)
+aws ssm start-session --target "$NAT" --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters host=vcfo-suite-db.ctiq24mcyaje.ap-south-1.rds.amazonaws.com,portNumber=5432,localPortNumber=15432
+```
+
+Keep that running. TLS is verified against the RDS host name, so do not use
+`localhost`: add `127.0.0.1 vcfo-suite-db.ctiq24mcyaje.ap-south-1.rds.amazonaws.com`
+to `/etc/hosts` while you work, and use the URL from `node scripts/db-url-prod.mjs`
+with the port changed to 15432. Remove the hosts line afterwards.
+
+The NAT instance patches through `dnf` on Amazon Linux 2023. Run
+`sudo dnf upgrade -y && sudo reboot` through `aws ssm start-session --target "$NAT"`
+once a month (the reboot cuts app internet for about a minute).
+
 ## Email (SES)
 
 `EMAIL_PROVIDER=ses`, From = `var.email_from`. The domain identity's three
