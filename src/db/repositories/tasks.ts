@@ -81,6 +81,14 @@ function appEngagementId(dbId: string | null): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
+/** A board place from the client: a whole number from 0 to 100000, or null to clear it. */
+export function normalizeSortOrder(value: unknown): number | null {
+  if (value === null) return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 100_000) return null;
+  return n;
+}
+
 export function toAppTask(row: Row): TaskInstance {
   return {
     id: row.id,
@@ -94,6 +102,7 @@ export function toAppTask(row: Row): TaskInstance {
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : undefined,
     ...(row.completedAt ? { completedAt: row.completedAt.toISOString() } : {}),
     ...(row.assignedBy ? { assignedById: row.assignedBy } : {}),
+    ...(row.sortOrder != null ? { sortOrder: row.sortOrder } : {}),
   };
 }
 
@@ -223,6 +232,7 @@ export async function updateTask(
         ? { deadline: patch.dueAt ? new Date(patch.dueAt) : null }
         : {}),
       ...(patch.notes !== undefined ? { description: patch.notes ?? null } : {}),
+      ...(patch.sortOrder !== undefined ? { sortOrder: normalizeSortOrder(patch.sortOrder) } : {}),
       ...(targetEngagementDbId !== undefined ? { engagementId: targetEngagementDbId } : {}),
       updatedAt: new Date(),
     })

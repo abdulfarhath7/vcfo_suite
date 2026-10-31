@@ -47,7 +47,7 @@ export function AskPreviewPicker() {
           </li>
         ))}
         {matches.length === 0 && (
-          <li className="rounded-md border-1.5 border-dashed border-line-strong px-3 py-4 text-center text-[13px] text-ink-muted">
+          <li className="rounded-md border-dash-fine px-3 py-4 text-center text-[13px] text-ink-muted">
             No matching clients
           </li>
         )}

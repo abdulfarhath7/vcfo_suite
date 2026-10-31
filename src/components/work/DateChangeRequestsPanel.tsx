@@ -52,7 +52,7 @@ export function DateChangeRequestsPanel() {
                 <div className="mt-2 flex flex-wrap items-baseline gap-1.5 text-[12.5px] tabular-nums">
                   {r.currentWindow ? (
                     <>
-                      <span className="text-ink-muted line-through">{formatWindow(r.currentWindow)}</span>
+                      <span className="text-ink-muted">{formatWindow(r.currentWindow)}</span>
                       <ArrowRight className="h-3 w-3 shrink-0 text-ink-faint" aria-hidden />
                     </>
                   ) : null}

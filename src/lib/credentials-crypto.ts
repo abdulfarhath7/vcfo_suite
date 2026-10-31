@@ -19,12 +19,23 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, 
 let cachedKey: Buffer | null = null;
 let warned = false;
 
+/**
+ * The 32 key bytes from CREDENTIALS_ENCRYPTION_KEY, or null when it is unset. It has no dev
+ * fallback, so a caller can tell whether a real key exists (the TOTP secret box uses this).
+ * A set but malformed key throws.
+ */
+export function credentialsKeyFromEnv(env: Record<string, string | undefined> = process.env): Buffer | null {
+  const raw = env.CREDENTIALS_ENCRYPTION_KEY?.trim();
+  if (!raw) return null;
+  const buf = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
+  if (buf.length !== 32) throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (base64 or hex)');
+  return buf;
+}
+
 function loadKey(): Buffer {
   if (cachedKey) return cachedKey;
-  const raw = process.env.CREDENTIALS_ENCRYPTION_KEY?.trim();
-  if (raw) {
-    const buf = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
-    if (buf.length !== 32) throw new Error('CREDENTIALS_ENCRYPTION_KEY must be 32 bytes (base64 or hex)');
+  const buf = credentialsKeyFromEnv();
+  if (buf) {
     cachedKey = buf;
     return buf;
   }

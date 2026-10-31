@@ -149,7 +149,8 @@ export function LeadFocusCard({
 
   const checkboxClass = (done: boolean) =>
     cn(
-      'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-sm border border-line-strong transition-colors',
+      /* R-57: the same 16px box as the Checkbox primitive. */
+      'grid h-4 w-4 shrink-0 place-items-center rounded-mark border-1.5 border-line-strong bg-surface-raised transition-colors',
       done && 'border-brand bg-brand text-on-brand',
     );
   const removeClass =
@@ -230,7 +231,7 @@ export function LeadFocusCard({
                 </button>
                 {item ? (
                   <Link href={item.href} className="min-w-0 flex-1 overflow-hidden">
-                    <span className={cn('block line-clamp-2 text-[13px] font-medium leading-snug text-ink', entry.done && 'text-ink-muted line-through')}>
+                    <span className={cn('block line-clamp-2 text-[13px] font-medium leading-snug text-ink', entry.done && 'text-ink-muted')}>
                       {title}
                     </span>
                     <span className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -248,7 +249,7 @@ export function LeadFocusCard({
                     </span>
                   </Link>
                 ) : (
-                  <span className={cn('min-w-0 flex-1 truncate pt-px text-[13px] font-medium text-ink', entry.done && 'text-ink-muted line-through')}>
+                  <span className={cn('min-w-0 flex-1 truncate pt-px text-[13px] font-medium text-ink', entry.done && 'text-ink-muted')}>
                     {title}
                   </span>
                 )}

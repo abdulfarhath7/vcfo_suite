@@ -153,3 +153,15 @@ rules above), the super admin surface has no caller for it, and shipping an
 unused canonical component would have made the duplication worse rather than
 better. When the lead or client surface next needs a metric card, extract one
 shared component from those two and delete both.
+
+## Round 1 rules R-54 to R-60 (owner approved, 2026-10-30)
+
+| Rule | Subject | Do this | Do not do this | Where it lives |
+|---|---|---|---|---|
+| R-54 | Depth | Put the page on `surface`. Put every card on `surface-raised`. `surface` is one step darker than `surface-raised` in light and dark mode (light `#edf1f6` on `#ffffff`, dark `#0b0c10` on `#13151a`). | Do not put a card on a ground of its own colour. Do not give a card `bg-surface` or no background. | `docs/design/design-tokens.json`, `app/globals.css`, portal `--bg` / `--panel` |
+| R-55 | Edges | Give every card, panel and section a 2 px edge in `line`. Write `border-2 border-line` in new code. Keep 1.5 px on inputs and buttons. Keep 1 px `line-soft` dividers between table rows. | Do not use a 1 px or 1.5 px edge on a card. | `.noir-card` / `.surface`, `DashHero`, `StatCard`, `StageTrack`, the R-55 rule at the end of `app/globals.css`, the R-55 rule in portal `23-portal.css` |
+| R-56 | Dashed edges | Use one dashed style: the `border-dash-fine` class (3 px dash, 3 px gap, 1.5 px wide, gradients). Set the colour with `--dash-color`. Use it only for drop zones and empty states. | Do not write `border-dashed`, `border-dotted` or `dashed` in CSS. Do not use an SVG long dash as a box edge. Do not use dashes on chips, filters, marks or dividers. | `app/globals.css` (`.border-dash-fine`), portal `23-portal.css`, `EmptyState` |
+| R-57 | Checkboxes | Use one checkbox look: a 16 px square, 1.5 px `line-strong` edge, 4 px radius. Show it empty when the item is not done. Show a brand fill and a white tick when the item is done. | Do not draw a checkbox with a dotted or dashed edge. Do not use the browser's own checkbox look or `accent-color`. | `ui/checkbox.tsx`, native `input[type=checkbox]` rule in `app/globals.css` and portal `23-portal.css` |
+| R-58 | Step connectors | Draw the line between two step marks or checkboxes with `StepLink`. Give it the mark centre (`x`, `y`). Each row draws a half-line up to its mark centre and a half-line down from it. | Do not place a connector with a hand-tuned `left-[..px]` offset. | `ui/step-track.tsx` (`StepLink`, `StepMark`) |
+| R-59 | Done items | Show a done item with a tick (the R-57 checkbox, or a green tick where the row has no checkbox), the Done chip where the row has chips, and muted text. | Do not use `line-through` on any text. | Task rows, checklists, to-dos, change and audit diffs |
+| R-60 | No floating numbers | Put every stat in a design-system card (`DashHero` tile, `StatCard`, `.surface` band, `RecordStats`). | Do not put a number or a stat heading as a bare line on the page. | `RecordStats` in `src/components/incorporation/RecordHead.tsx` |

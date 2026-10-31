@@ -94,7 +94,7 @@ button{font-family:inherit}
 .dow.we{color:oklch(68% 0.02 255)}
 .day{position:relative;min-width:0;overflow:hidden;font:inherit;color:inherit;height:96px;border-radius:6px;background:var(--panel);border:1px solid var(--border);padding:7px;display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:transform .16s,box-shadow .16s,border-color .16s;text-align:left}
 .day:hover{transform:translateY(-2px);border-color:oklch(54.6% 0.215 263 / .35);box-shadow:var(--pop)}
-.day.out{background:transparent;border-style:dashed;border-color:oklch(var(--line));cursor:default}
+.day.out{background:transparent;border-color:oklch(var(--line-soft));cursor:default}
 .day.out:hover{transform:none;box-shadow:none}
 .day.out .dn{color:oklch(75% 0.015 255)}
 .day.we:not(.out){background:oklch(var(--surface-raised))}

@@ -18,7 +18,7 @@ import { portalHref, stepHref } from '@/components/client-portal/routes';
 import type { DrillConfig, DrillRow } from '@/components/client-portal/PortalProvider';
 import type { UploadRow } from '@/lib/client-portal/multi-upload';
 import { exactDate } from '@/lib/relative-due';
-import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import { tileTrend, useHomeTrends } from '@/hooks/use-home-trends';
 import { Bar, DateTile, Empty, HeadLink, ListRow, SCard, type BarTone } from '../incorporation/spectrum';
 import type { HomeData } from './useHome';
 import { DueWords } from './ui';
@@ -136,10 +136,12 @@ async function downloadReport(h: HomeData) {
 /**
  * R-17 (H3 tight, D-17): the shared `DashHero`. The company tile, the name, the stage chip and
  * the step count on the left; five tiles with a note, the list or drill they open (E-05) and
- * how they are counted (E-04); Report and Upload on the right. Tiles draw a trend line of the
- * last four days only where stored history rebuilds it (R-18): Waiting on and With SBC (the step
- * holder rows and the requests' `closed_at`), Documents in (`closed_at`) and Due soon (the
- * filings' due and filed dates). Overdue and the date tiles draw none.
+ * how they are counted (E-04); Report and Upload on the right. The five tiles are fixed (B1):
+ * before the COI Waiting on, Overdue, With SBC, Documents in and Steps done; after it Waiting
+ * on, Overdue, Due soon, Registrations and Incorporated. Every count tile draws a line of the
+ * last four days rebuilt from the step events, requests, uploads and filings (B2,
+ * `client-home-history.ts`); a tile with no past values draws a flat line and "No history
+ * yet". The Incorporated date tile draws none (a date has no count to follow).
  */
 export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow) => void }) {
   const { portal, after, model, company } = h;
@@ -168,7 +170,7 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow)
     value: h.needs.length,
     note: oldest != null && oldest > 0 ? `oldest ${plural(oldest, 'day')}` : undefined,
     how: `Uploads, details, corrections and approvals that SBC asked ${company} for and that are still open.`,
-    trend: trendWithLive(trends, 'waiting', h.needs.length),
+    ...tileTrend(trends, 'waiting', h.needs.length),
     trendTone: 'teal',
     onClick: after ? () => portal.drill(needsDrill(h.needs, h.today, company)) : () => openSteps(3),
   };
@@ -180,8 +182,15 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow)
     how: after
       ? `Items from ${company} past their due date or sent back, late steps and filings past their due date.`
       : `Items from ${company} past their due date or sent back, and steps past their planned date.`,
+    ...tileTrend(trends, 'overdue', overdue, after ? 'filingsOverdue' : undefined),
+    trendTone: 'bad',
     onClick: openLate,
   };
+  // B1 (owner, 2026-10-30): five fixed tiles in a fixed order. An empty value reads "0" or
+  // "Not yet"; a tile never drops out because its data is missing.
+  const regsTotal = h.regs.length;
+  const reqTotal = req?.total ?? 0;
+  const reqIn = req?.fulfilled ?? 0;
   const stats: DashHeroStat[] = after
     ? [
         waiting,
@@ -191,70 +200,61 @@ export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow)
           value: h.buckets.dueSoon,
           note: dueNext ? dueNext.title : undefined,
           how: 'Filings not yet filed that fall due in the next 15 days.',
-          trend: trendWithLive(trends, 'dueSoon', h.buckets.dueSoon),
+          ...tileTrend(trends, 'dueSoon', h.buckets.dueSoon),
           trendTone: 'accent',
           onClick: () => portal.drill(complianceDrill(h.filings, h.today, h.home?.filings.fyLabel ?? '', 2)),
         },
-        ...(h.regs.length
-          ? [
-              {
-                label: 'Registrations',
-                value: regsDone,
-                of: `/ ${h.regs.length}`,
-                bar: Math.round((regsDone / h.regs.length) * 100),
-                how: 'Registrations granted out of the ones planned for the company.',
-                onClick: () => portal.drill(regsDrill(h.regs)),
-              },
-            ]
-          : []),
-        ...(incorporatedOn
-          ? [
-              {
-                label: 'Incorporated',
-                value: dShort(incorporatedOn),
-                note: sinceCoi != null && sinceCoi > 0 ? `day ${sinceCoi}` : undefined,
-                how: 'The date on the Certificate of Incorporation.',
-                href: portalHref('incorporation'),
-              },
-            ]
-          : []),
+        {
+          label: 'Registrations',
+          value: regsDone,
+          of: regsTotal ? `/ ${regsTotal}` : undefined,
+          bar: regsTotal ? Math.round((regsDone / regsTotal) * 100) : undefined,
+          how: 'Registrations granted out of the ones planned for the company.',
+          ...tileTrend(trends, 'regs', regsDone),
+          trendTone: 'ok',
+          onClick: () => portal.drill(regsDrill(h.regs)),
+        },
+        {
+          label: 'Incorporated',
+          value: incorporatedOn ? dShort(incorporatedOn) : 'Not yet',
+          note: sinceCoi != null && sinceCoi > 0 ? `day ${sinceCoi}` : undefined,
+          how: 'The date on the Certificate of Incorporation.',
+          href: portalHref('incorporation'),
+        },
       ]
     : [
         waiting,
+        overdueStat,
         {
           label: 'With SBC',
           value: model.counts.with,
           note: sbcStep?.title,
-          trend: trendWithLive(trends, 'withSbc', model.counts.with),
+          ...tileTrend(trends, 'withSbc', model.counts.with),
           how: 'Steps that SBC or MCA holds now.',
           onClick: () => openSteps(2),
         },
-        overdueStat,
-        ...(req && req.total > 0
-          ? [
-              {
-                label: 'Documents in',
-                value: `${req.fulfilled}/${req.total}`,
-                note: req.total > req.fulfilled ? `${req.total - req.fulfilled} to go` : undefined,
-                bar: Math.round((req.fulfilled / req.total) * 100),
-                trend: trendWithLive(trends, 'docsIn', req.fulfilled),
-                trendTone: 'ok' as const,
-                how: 'Document requests answered out of all the requests SBC has sent.',
-                href: portalHref('documents'),
-              },
-            ]
-          : []),
-        ...(model.coiExpected
-          ? [
-              {
-                label: 'Expected COI',
-                value: dShort(model.coiExpected),
-                note: toCoi != null && toCoi > 0 ? `in ${plural(toCoi, 'day')}` : undefined,
-                how: 'The date MCA is expected to issue the certificate, from the current plan.',
-                href: portalHref('incorporation'),
-              },
-            ]
-          : []),
+        {
+          label: 'Documents in',
+          value: reqIn,
+          of: reqTotal ? `/ ${reqTotal}` : undefined,
+          note: reqTotal > reqIn ? `${reqTotal - reqIn} to go` : undefined,
+          bar: reqTotal ? Math.round((reqIn / reqTotal) * 100) : undefined,
+          ...tileTrend(trends, 'docsIn', reqIn),
+          trendTone: 'ok' as const,
+          how: 'Document requests answered out of all the requests SBC has sent.',
+          href: portalHref('documents'),
+        },
+        {
+          label: 'Steps done',
+          value: model.spice.done,
+          of: `/ ${model.spice.total}`,
+          bar: model.spice.pct,
+          note: toCoi != null && toCoi > 0 ? `COI in ${plural(toCoi, 'day')}` : undefined,
+          ...tileTrend(trends, 'stepsDone', model.spice.done),
+          trendTone: 'ok' as const,
+          how: 'SPICe+ steps done out of all the SPICe+ steps, up to the Certificate of Incorporation.',
+          onClick: () => openSteps(1),
+        },
       ];
 
   const ring = after
@@ -719,6 +719,9 @@ export function DocsCard({
 
 /* ------------------------------------------------------------ activity */
 
+/** C1: the Recent activity card shows this many rows, then a link to the Audit page. */
+export const ACTIVITY_ROWS = 5;
+
 export function ActivityCard({ h, className }: { h: HomeData; className?: string }) {
   const [tab, setTab] = useState('all');
   const all = h.home?.activity ?? [];
@@ -743,23 +746,33 @@ export function ActivityCard({ h, className }: { h: HomeData; className?: string
         />
       }
     >
-      {rows.length === 0 ? (
-        <Empty />
-      ) : (
-        <ul>
-          {rows.map((a) => (
-            <li key={a.id} className="grid grid-cols-[64px_minmax(0,1fr)] items-baseline gap-3 border-t border-line-soft px-4 py-2.5 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
-              <span className="text-[12.5px] text-ink-muted">
-                {dShort(istDate(a.at))}
-                {/* C-071: the time shows from 768px. */}
-                <span className="block font-mono text-[11.5px] text-ink-faint max-md:hidden">{istTime(a.at)}</span>
-              </span>
-              <span className="min-w-0 break-words text-ink">{a.label}</span>
-              <span className="truncate text-[12.5px] text-ink-muted md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* C1 (owner, 2026-10-30): the latest five rows in a fixed height, then "View all". */}
+      <div className="flex h-[264px] flex-col">
+        {rows.length === 0 ? (
+          <Empty />
+        ) : (
+          <ul className="min-h-0 flex-1 overflow-hidden">
+            {rows.slice(0, ACTIVITY_ROWS).map((a) => (
+              <li key={a.id} className="grid h-11 grid-cols-[64px_minmax(0,1fr)] items-center gap-3 border-t border-line-soft px-4 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
+                <span className="text-[12.5px] leading-tight text-ink-muted">
+                  {dShort(istDate(a.at))}
+                  {/* C-071: the time shows from 768px. */}
+                  <span className="block font-mono text-[11.5px] text-ink-faint max-md:hidden">{istTime(a.at)}</span>
+                </span>
+                <span className="min-w-0 truncate text-ink" title={a.label}>
+                  {a.label}
+                </span>
+                <span className="truncate text-[12.5px] text-ink-muted max-md:hidden md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-auto flex justify-end border-t border-line-soft px-4 py-2.5 md:px-5">
+          <HeadLink onClick={() => h.portal.go(portalHref('audit'))} label="View all activity on the Audit page">
+            View all <ChevronRight size={14} strokeWidth={1.6} aria-hidden />
+          </HeadLink>
+        </div>
+      </div>
     </SCard>
   );
 }

@@ -6,6 +6,8 @@ import { AppRunnerClient, DescribeServiceCommand } from '@aws-sdk/client-apprunn
 import { CloudWatchLogsClient, DescribeLogGroupsCommand } from '@aws-sdk/client-cloudwatch-logs';
 import type { ServiceConfig } from './types';
 import { reachError } from './reach';
+import { anthropicApiKey, azureClientSecret } from '@/lib/secrets/app-secrets';
+import type { RuntimeSecret } from '@/lib/secrets/runtime-secret';
 
 /**
  * Live checks for the Connections page ("Test"). Each probe makes one cheap, read-only call
@@ -28,6 +30,18 @@ async function getJson(url: string, init: RequestInit, signal: AbortSignal): Pro
   if (!res.ok) throw new Error(`Answered ${res.status}`);
   return res.json().catch(() => ({}));
 }
+
+/**
+ * A runtime secret's value for a probe (M7): from Secrets Manager when its `*_SECRET_ID` is
+ * set in `env` (the routes pass process.env, which the shared reader also reads), else the
+ * plain env var.
+ */
+async function secretValue(secret: RuntimeSecret, env: Env): Promise<string> {
+  if (v(env, secret.secretIdVar)) return (await secret.get()) ?? '';
+  return v(env, secret.envVar);
+}
+
+const hasSecret = (secret: RuntimeSecret, env: Env) => Boolean(v(env, secret.secretIdVar) || v(env, secret.envVar));
 
 /** The probe for one service, or null when the service has none or is not set up. */
 export function probeFor(id: ServiceConfig['id'], env: Env = process.env): Probe | null {
@@ -80,18 +94,19 @@ export function probeFor(id: ServiceConfig['id'], env: Env = process.env): Probe
         return 'Inngest answered';
       };
     case 'ask':
-      if (v(env, 'ASK_VCFO_LLM_PROVIDER').toLowerCase() === 'bedrock' || !v(env, 'ANTHROPIC_API_KEY')) return null;
+      if (v(env, 'ASK_VCFO_LLM_PROVIDER').toLowerCase() === 'bedrock' || !hasSecret(anthropicApiKey, env)) return null;
       return async (signal) => {
-        await getJson('https://api.anthropic.com/v1/models?limit=1', { headers: { 'x-api-key': v(env, 'ANTHROPIC_API_KEY'), 'anthropic-version': '2023-06-01' } }, signal);
+        const key = await secretValue(anthropicApiKey, env);
+        await getJson('https://api.anthropic.com/v1/models?limit=1', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' } }, signal);
         return 'Anthropic API answered';
       };
     case 'outlook':
-      if (!v(env, 'AZURE_AD_CLIENT_ID') || !v(env, 'AZURE_AD_CLIENT_SECRET') || !v(env, 'AZURE_AD_TENANT_ID')) return null;
+      if (!v(env, 'AZURE_AD_CLIENT_ID') || !hasSecret(azureClientSecret, env) || !v(env, 'AZURE_AD_TENANT_ID')) return null;
       return async (signal) => {
         // An app-only token proves the client id and secret still work; it is thrown away.
         const body = new URLSearchParams({
           client_id: v(env, 'AZURE_AD_CLIENT_ID'),
-          client_secret: v(env, 'AZURE_AD_CLIENT_SECRET'),
+          client_secret: await secretValue(azureClientSecret, env),
           scope: 'https://graph.microsoft.com/.default',
           grant_type: 'client_credentials',
         });

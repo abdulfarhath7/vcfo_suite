@@ -86,12 +86,12 @@ export function regDate(r: RegItem): string | undefined {
   return r.status === 'Done' ? r.doneOn : r.due;
 }
 
-/** 44px tile of that date, tinted by state; a dashed tile when the step has no date yet. */
+/** 44px tile of that date, tinted by state; an empty tile when the step has no date yet. */
 export function RegTile({ r, today }: { r: RegItem; today: string }) {
   const iso = regDate(r);
   if (!iso)
     return (
-      <span className="grid h-11 w-11 flex-none place-items-center rounded-md border-1.5 border-dashed border-line-strong text-[13px] text-ink-faint" aria-hidden>
+      <span className="grid h-11 w-11 flex-none place-items-center rounded-md border-1.5 border-line-strong text-[13px] text-ink-faint" aria-hidden>
         -
       </span>
     );

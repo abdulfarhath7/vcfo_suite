@@ -6,7 +6,7 @@ import type { Engagement } from '@/data/engagements';
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { PortalStep } from '@/lib/client-portal/step-model';
-import { StepMark, type StepTone } from '@/components/ui/step-track';
+import { StepLink, StepMark, type StepTone } from '@/components/ui/step-track';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { UserFace } from '@/components/common/UserFace';
 import { initialsOf } from '@/components/ui/avatar-stack';
@@ -42,6 +42,7 @@ export function ChecklistPhaseStepRow({
   leadName,
   onAbout,
   connector = false,
+  connectorAbove,
   today = new Date().toISOString().slice(0, 10),
 }: {
   item: ChecklistItem;
@@ -61,6 +62,8 @@ export function ChecklistPhaseStepRow({
   onAbout?: (item: ChecklistItem) => void;
   /** Draw the line down to the next row's mark. */
   connector?: boolean;
+  /** R-58: draw the line up to the mark of the row above; 'done' when that step is done. */
+  connectorAbove?: 'done' | 'todo';
   today?: string;
 }) {
   const base = stepMarkForGate(gate);
@@ -103,15 +106,7 @@ export function ChecklistPhaseStepRow({
       )}
       data-ask-focus={item.id}
     >
-      {connector ? (
-        <span
-          aria-hidden
-          className={cn(
-            'absolute bottom-[-6px] left-[20.25px] top-[30px] w-[1.5px]',
-            state === 'done' ? 'bg-positive-mid' : 'bg-line',
-          )}
-        />
-      ) : null}
+      <StepLink x={21} up={connectorAbove} down={connector && (state === 'done' ? 'done' : 'todo')} />
       <StepMark state={state} tone={tone} label={sentBack ? 'Sent back' : base.label} className="relative z-[1]" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-2">

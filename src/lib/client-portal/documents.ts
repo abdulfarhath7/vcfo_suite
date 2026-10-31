@@ -42,6 +42,8 @@ export interface DocNode {
   categoryId: DocCategoryId;
   /** Dated proof older than 2 months. */
   stale?: boolean;
+  /** A signed copy (a checklist field ending in "Signed", or the signed board resolution). */
+  signed?: boolean;
   portal?: { label: string; url: string };
   /** Missing rows (open document requests). */
   requestId?: string;

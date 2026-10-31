@@ -2866,5 +2866,13 @@ Built on 30 Oct 2026 (commits 545d99d to a02a263, migration 0030). Reports: `doc
 | X-20 | DR-17 | Holidays and jurisdiction | ✗ | Waiting for the owner's yearly working days and holiday calendar |
 | X-21 | DR-18 | Duplicate handling | ✓ | Applied in the data file |
 | X-22 | DR-20 | Security and retention rules | ✗ | Not built; needs the owner's retention periods |
-| X-23 | — | Activity master edit screen | ✗ | The route exists; no screen yet |
+| X-23 | — | Activity master edit screen | ✓ | Built in 0ae8e94 (M8). Admin and super admin open Activities from Filings; edit notify days, roles, visibility, confirm |
 | X-24 | — | WhatsApp for compliance reminders | ✗ | Needs an approved Meta template |
+
+## 6. Rules R-51 to R-53 (30 Oct 2026)
+
+| No. | Rule | Item | Status | Note |
+|---|---|---|---|---|
+| R-51 | D-29 | Practice block in every sidebar | ✓ | b4c9b34; staff Incorporation pages |
+| R-52 | BOARD-RESOLUTION-NOC.md | Board resolution (NOC) page for client and staff | ✓ | 5053b56, migration 0031. T6 SPICe+ attachments list in 6c673c5 (M8) |
+| R-53 | landing v2 | Landing page v2, 9 sections | ✓ | f4f15c0 |

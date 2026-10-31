@@ -130,7 +130,7 @@ export function DrawerChecklist({ itemKey }: { itemKey: string }) {
                 aria-label={item.label}
                 onCheckedChange={(v) => update.mutate({ id: item.id, done: v === true }, { onError: fail })}
               />
-              <span className={cn('min-w-0 flex-1 truncate', item.done ? 'text-ink-muted line-through' : 'text-ink')}>{item.label}</span>
+              <span className={cn('min-w-0 flex-1 truncate', item.done ? 'text-ink-muted' : 'text-ink')}>{item.label}</span>
               <span className="flex flex-none items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
                 <Button
                   size="icon"
@@ -327,12 +327,17 @@ export function DrawerWindow({
   );
 }
 
-function RequestChangeDialog({
+/**
+ * The lead's date-change request form. `initial` prefills the asked window (the calendar
+ * passes the window a drag asked for, M6 G2); without it the form starts on the current one.
+ */
+export function RequestChangeDialog({
   open,
   onOpenChange,
   title,
   companyName,
   window,
+  initial,
   busy,
   onSend,
 }: {
@@ -341,20 +346,31 @@ function RequestChangeDialog({
   title: string;
   companyName: string;
   window: { from: string; to: string };
+  initial?: { from: string; to: string };
   busy: boolean;
   onSend: (input: { fromDate: string; toDate: string; reason: string }) => void;
 }) {
-  const [from, setFrom] = useState(window.from);
-  const [to, setTo] = useState(window.to);
+  const [from, setFrom] = useState((initial ?? window).from);
+  const [to, setTo] = useState((initial ?? window).to);
   const [reason, setReason] = useState('');
+  // Opened by the host (a calendar drag): start on the asked window.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setFrom((initial ?? window).from);
+      setTo((initial ?? window).to);
+      setReason('');
+    }
+  }
   const valid = Boolean(from && to && from <= to && reason.trim() && (from !== window.from || to !== window.to));
   return (
     <Dialog
       open={open}
       onOpenChange={(v) => {
         if (v) {
-          setFrom(window.from);
-          setTo(window.to);
+          setFrom((initial ?? window).from);
+          setTo((initial ?? window).to);
           setReason('');
         }
         onOpenChange(v);

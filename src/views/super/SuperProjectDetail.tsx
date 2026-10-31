@@ -11,6 +11,7 @@ import { AreaPill, Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SuperProjectJourney } from '@/components/super/project/SuperProjectJourney';
+import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
 import { SuperProjectDocuments } from '@/components/super/project/SuperProjectDocuments';
 import { SuperProjectTimeline } from '@/components/super/project/SuperProjectTimeline';
 import {
@@ -264,6 +265,7 @@ export default function SuperProjectDetail() {
           <div className="flex flex-col gap-5">
             <SuperProjectTimeline detail={detail} />
             <SuperProjectJourney detail={detail} />
+            <SpiceAttachmentsCard engagementId={summary.id} shellBase="/app/super" className="" />
           </div>
         ) : null}
         {tab === 'registrations' ? <SuperRegistrationsPanel detail={detail} /> : null}

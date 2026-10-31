@@ -1,5 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { siteUrl } from '@/lib/site-url';
+import { authSecrets } from '@/auth/secrets';
+import { azureClientSecret, isInvalidClient } from '@/lib/secrets/app-secrets';
+import { withSecretRetry } from '@/lib/secrets/runtime-secret';
 
 const OUTLOOK_SCOPES = ['offline_access', 'User.Read', 'Mail.Send'].join(' ');
 
@@ -11,22 +14,27 @@ function azureClientId(): string | undefined {
   return process.env.AZURE_AD_CLIENT_ID?.trim() || undefined;
 }
 
-function azureClientSecret(): string | undefined {
-  return process.env.AZURE_AD_CLIENT_SECRET?.trim() || undefined;
-}
-
 function outlookRedirectUri(): string {
   return `${siteUrl()}/api/outlook/callback`;
 }
 
+/**
+ * The client secret is AZURE_AD_CLIENT_SECRET locally, or read at runtime from Secrets
+ * Manager when AZURE_AD_CLIENT_SECRET_SECRET_ID is set (M7), so this checks presence only.
+ */
 export function outlookConfigured(): boolean {
-  return Boolean(azureClientId() && azureClientSecret());
+  return Boolean(azureClientId() && azureClientSecret.configured());
 }
 
-function signingKey(): Buffer {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) throw new Error('AUTH_SECRET is required for Outlook OAuth state');
-  return createHmac('sha256', secret).update('outlook-oauth-state').digest();
+/**
+ * State signing keys, current first (src/auth/secrets.ts). A state is signed with
+ * AUTH_SECRET and accepted with AUTH_SECRET_PREVIOUS too, so a connect flow that started
+ * just before a rotation still finishes.
+ */
+function signingKeys(): Buffer[] {
+  const secrets = authSecrets();
+  if (secrets.length === 0) throw new Error('AUTH_SECRET is required for Outlook OAuth state');
+  return secrets.map((secret) => createHmac('sha256', secret).update('outlook-oauth-state').digest());
 }
 
 export function createOauthState(userId: string): string {
@@ -38,16 +46,19 @@ export function createOauthState(userId: string): string {
     }),
     'utf8',
   ).toString('base64url');
-  const sig = createHmac('sha256', signingKey()).update(payload).digest('base64url');
+  const sig = createHmac('sha256', signingKeys()[0]!).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
 
 export function parseOauthState(state: string, expectedUserId: string): boolean {
   const [payload, sig] = state.split('.');
   if (!payload || !sig) return false;
-  const expected = createHmac('sha256', signingKey()).update(payload).digest();
   const got = Buffer.from(sig, 'base64url');
-  if (got.length !== expected.length || !timingSafeEqual(got, expected)) return false;
+  const signed = signingKeys().some((key) => {
+    const expected = createHmac('sha256', key).update(payload).digest();
+    return got.length === expected.length && timingSafeEqual(got, expected);
+  });
+  if (!signed) return false;
   try {
     const json = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
       u?: string;
@@ -96,11 +107,30 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   });
 }
 
+/** A refused token request; `code` is Microsoft's OAuth error code (for example invalid_client). */
+export class OutlookTokenError extends Error {
+  constructor(
+    message: string,
+    readonly code: string | undefined,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'OutlookTokenError';
+  }
+}
+
+/**
+ * The token call with the current client secret. When Microsoft answers invalid_client (the
+ * secret was rotated in Azure) and the secret comes from Secrets Manager, the cached value is
+ * dropped and the call runs once more with the value read again (M7).
+ */
 async function postToken(body: Record<string, string>): Promise<TokenResponse> {
   const clientId = azureClientId();
-  const clientSecret = azureClientSecret();
-  if (!clientId || !clientSecret) throw new Error('outlook_not_configured');
+  if (!clientId || !azureClientSecret.configured()) throw new Error('outlook_not_configured');
+  return withSecretRetry(azureClientSecret, (clientSecret) => postTokenWith(clientId, clientSecret, body), isInvalidClient);
+}
 
+async function postTokenWith(clientId: string, clientSecret: string, body: Record<string, string>): Promise<TokenResponse> {
   const res = await fetch(
     `https://login.microsoftonline.com/${azureTenant()}/oauth2/v2.0/token`,
     {
@@ -116,7 +146,7 @@ async function postToken(body: Record<string, string>): Promise<TokenResponse> {
   );
   const json = (await res.json()) as TokenResponse & { error?: string; error_description?: string };
   if (!res.ok || !json.access_token) {
-    throw new Error(json.error_description || json.error || 'token_exchange_failed');
+    throw new OutlookTokenError(json.error_description || json.error || 'token_exchange_failed', json.error, res.status);
   }
   return json;
 }

@@ -219,7 +219,7 @@ export function TimelineEditor({
               <div className="relative h-3 rounded-bar bg-surface-sunken" aria-hidden>
                 {moved && before ? (
                   <i
-                    className="absolute inset-y-0 rounded-bar border border-dashed border-line-strong"
+                    className="absolute inset-y-0 rounded-bar border border-line-strong"
                     style={{ left: pct(ms(before.from)), width: width(before.from, before.to) }}
                   />
                 ) : null}

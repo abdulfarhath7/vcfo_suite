@@ -80,7 +80,10 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig[] {
   const ask = build(
     { id: 'ask', name: 'Ask VCFO', kind: 'AI', what: 'Answers from the firm library', provider: askProvider === 'bedrock' ? 'Amazon Bedrock' : 'Anthropic API' },
     env,
-    askProvider === 'bedrock' ? ['ASK_VCFO_ENABLED', 'ASK_VCFO_BEDROCK_REGION'] : ['ASK_VCFO_ENABLED', 'ANTHROPIC_API_KEY'],
+    // M7: the key is read from Secrets Manager when ANTHROPIC_API_KEY_SECRET_ID is set.
+    askProvider === 'bedrock'
+      ? ['ASK_VCFO_ENABLED', 'ASK_VCFO_BEDROCK_REGION']
+      : ['ASK_VCFO_ENABLED', has(env, 'ANTHROPIC_API_KEY_SECRET_ID') ? 'ANTHROPIC_API_KEY_SECRET_ID' : 'ANTHROPIC_API_KEY'],
     ['ASK_VCFO_LLM_PROVIDER'],
     !on(env, 'ASK_VCFO_ENABLED'),
   );
@@ -88,7 +91,7 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig[] {
   const outlook = build(
     { id: 'outlook', name: 'Outlook mail', kind: 'Email', what: 'Staff send from their own mailbox', provider: 'Microsoft Graph' },
     env,
-    ['AZURE_AD_CLIENT_ID', 'AZURE_AD_CLIENT_SECRET', 'AZURE_AD_TENANT_ID'],
+    ['AZURE_AD_CLIENT_ID', has(env, 'AZURE_AD_CLIENT_SECRET_SECRET_ID') ? 'AZURE_AD_CLIENT_SECRET_SECRET_ID' : 'AZURE_AD_CLIENT_SECRET', 'AZURE_AD_TENANT_ID'],
   );
 
   const credentials = build(

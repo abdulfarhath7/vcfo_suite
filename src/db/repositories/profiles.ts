@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -21,7 +21,7 @@ import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs
 import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { generateTotpSecret, otpauthUri } from '@/lib/totp/totp';
-import { encryptTotpSecret } from '@/lib/totp/secret-box';
+import { encryptTotpSecret, reencryptTotpSecret } from '@/lib/totp/secret-box';
 import { checkTotpCode } from '@/lib/totp/check';
 
 /**
@@ -1156,7 +1156,7 @@ export async function disableOwnTwoStep(
 
 /**
  * A firm admin or the super admin turns off another person's two-step sign-in,
- * for a lost phone or after AUTH_SECRET was rotated. A firm admin cannot reset
+ * for a lost phone or for a secret no key can open. A firm admin cannot reset
  * the super admin; nobody resets their own here (they use a code instead).
  */
 export async function resetTwoStepFor(
@@ -1183,4 +1183,49 @@ export async function resetTwoStepFor(
     metadata: { profileId },
   });
   return 'ok';
+}
+
+export interface TotpReencryptReport {
+  /** Rows with a stored two-step secret. */
+  checked: number;
+  /** Rows moved from `t1` (AUTH_SECRET key) to `t2` (CREDENTIALS_ENCRYPTION_KEY). */
+  moved: number;
+  /** Rows already on `t2`. */
+  current: number;
+  /** Profile ids whose secret no key opens; an admin resets their two-step sign-in. */
+  unreadable: string[];
+  /** Rows that changed while the script ran and were left for the next run. */
+  skipped: number;
+}
+
+/**
+ * M7 one-time move of every stored TOTP secret to the CREDENTIALS_ENCRYPTION_KEY key
+ * (`scripts/reencrypt-totp.ts`). SYSTEM: no AuthContext, because it runs from a shell
+ * inside the VPC, never from a request. Each update matches the old value too, so a person
+ * who sets up two-step sign-in during the run is not overwritten. `dryRun` writes nothing.
+ * Throws when CREDENTIALS_ENCRYPTION_KEY is unset.
+ */
+export async function systemReencryptTotpSecrets(opts: { dryRun?: boolean } = {}): Promise<TotpReencryptReport> {
+  const rows = await db
+    .select({ id: profiles.id, enc: profiles.totpSecretEnc })
+    .from(profiles)
+    .where(isNotNull(profiles.totpSecretEnc));
+  const report: TotpReencryptReport = { checked: rows.length, moved: 0, current: 0, unreadable: [], skipped: 0 };
+  for (const row of rows) {
+    if (!row.enc) continue;
+    const out = reencryptTotpSecret(row.id, row.enc);
+    if (out.state === 'current') report.current += 1;
+    else if (out.state === 'unreadable') report.unreadable.push(row.id);
+    else if (opts.dryRun) report.moved += 1;
+    else {
+      const done = await db
+        .update(profiles)
+        .set({ totpSecretEnc: out.enc })
+        .where(and(eq(profiles.id, row.id), eq(profiles.totpSecretEnc, row.enc)))
+        .returning({ id: profiles.id });
+      if (done.length) report.moved += 1;
+      else report.skipped += 1;
+    }
+  }
+  return report;
 }

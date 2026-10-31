@@ -136,3 +136,17 @@ columns, so the migration must be applied before this code runs against a databa
 
 A client calling GET before release gets the variant and an empty track (no document stamps), the
 same rule as the board resolution row.
+
+## GET `/api/engagements/:id/spice-attachments` (T6, 30 Oct 2026)
+
+Staff only (intern, manager, admin, super admin); a client or developer gets 403. The
+repository `src/db/repositories/spice-attachments.ts` scopes through `getDocPackInputs`, so an
+engagement outside the caller's scope is 403 and a missing one 404. No table: the list is
+derived by `deriveSpiceAttachments()` in `src/lib/spice-attachments/derive.ts` from the
+checklist step status, the document pack and the NOC state.
+
+Response `{ ok: true, list: { items, done, total } }`. Each item has `key`, `label`, `stepId`,
+`stepTitle`, `status` (`not-started` | `waiting` | `done`), `detail` and `vaultDocumentId`.
+When the NOC is Accepted, the `board-resolution` item is Done and carries the Vault document id
+of the accepted copy. The staff engagement page (lead, manager, admin) and the super admin
+project page show the list in a `DashSection` under the SPICe+ steps.

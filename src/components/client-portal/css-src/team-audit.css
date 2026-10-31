@@ -27,7 +27,7 @@
 .tb-chg-b,.tb-chg-a{min-width:0;padding:8px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken))}
 .tb-chg-a{border-color:oklch(var(--brand-line));background:oklch(var(--brand-soft))}
 .tb-chg-v{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tb-chg-b .tb-chg-v{color:oklch(var(--ink-2));text-decoration:line-through;text-decoration-color:oklch(var(--ink-faint))}
+.tb-chg-b .tb-chg-v{color:oklch(var(--ink-muted))}
 /* phones: every column stays, the table scrolls sideways, the first column sticks */
 @media (max-width:767px){
   .tp-audit .sx-head .sx-right{margin-left:0;width:100%}

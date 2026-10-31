@@ -86,7 +86,7 @@ export function LeadWeekStrip({
                   isPast && 'opacity-55',
                   isToday && 'bg-brand-soft outline outline-2 outline-offset-[-2px] outline-brand',
                   selected && 'ring-2 ring-focus-ring ring-offset-1 ring-offset-surface-raised',
-                  weekend && !isToday && 'border border-dashed border-line bg-transparent',
+                  weekend && !isToday && 'border border-line-soft bg-transparent',
                 )}
               >
                 {total === 0 ? (

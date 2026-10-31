@@ -191,6 +191,9 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
     me: { name: meName, email: meRow?.email ?? ctx.email, initials: initialsOf(meName), roleLabel: `${shortCompany || row.companyName} · Client` },
     team,
     incorporated,
+    coiDate: row.incorporationDate?.trim() ? row.incorporationDate.trim().slice(0, 10) : null,
+    // The portal shell is for clients only (`assertClient`), so the viewer is always the client.
+    viewer: 'client',
     badges: {
       notifications: inbox.unreadCount,
       documents: Number(openRequests[0]?.n ?? 0),

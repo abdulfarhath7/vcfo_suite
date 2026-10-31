@@ -206,7 +206,7 @@ export function VaultRequestsSection({
               <li key={r.id} className="grid gap-2 py-2.5">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {r.files.length === 0 ? (
-                    <span className="h-[18px] w-[30px] flex-none rounded-sm border-1.5 border-dashed border-line-strong" aria-label="Not sent yet" />
+                    <span className="h-[18px] w-[30px] flex-none rounded-sm border-1.5 border-line-strong" aria-label="Not sent yet" />
                   ) : (
                     <FileBadge name={r.files[0].fileName} className="h-[18px] w-[30px] text-[9px]" />
                   )}

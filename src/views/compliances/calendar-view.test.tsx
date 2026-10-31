@@ -27,6 +27,7 @@ vi.mock('@/views/compliances/use-register', () => ({ useMayWriteFilings: () => m
 const setWindow = vi.fn(async (id: string, w: { from: string; to: string } | null) => ({ id, windowFrom: w?.from ?? null, windowTo: w?.to ?? null }));
 vi.mock('@/lib/projects/engagements-db', () => ({ setFilingWindowInDb: (id: string, w: { from: string; to: string } | null) => setWindow(id, w) }));
 const toastUndo = vi.fn();
+const moveTask = vi.fn();
 vi.mock('@/components/ui/undo-toast', () => ({ toastUndo: (...a: unknown[]) => toastUndo(...a) }));
 
 function row(patch: Partial<FilingRow> & { id: string }): FilingRow {
@@ -70,6 +71,15 @@ vi.mock('@/views/compliances/tasks/api', async (orig) => ({
   useTasks: (q: Record<string, unknown>) => {
     taskQueries.push(q);
     return { data: { tasks: taskList, today: '2099-10-16' }, isPending: false, isError: false };
+  },
+  useMoveTaskDates: () => ({ mutate: (...a: unknown[]) => moveTask(...a), isPending: false }),
+}));
+// The prefilled New task dialog is the task form's own concern; here it only has to open.
+const newTaskPrefill = vi.fn();
+vi.mock('@/views/compliances/tasks/new-task', () => ({
+  NewTaskButton: ({ prefill }: { prefill?: { start: string; end: string } | null }) => {
+    newTaskPrefill(prefill ?? null);
+    return null;
   },
 }));
 const boardPack = {
@@ -129,6 +139,8 @@ beforeEach(() => {
   mayWrite = true;
   taskList = [];
   taskQueries.length = 0;
+  moveTask.mockClear();
+  newTaskPrefill.mockClear();
 });
 
 describe('ComplianceCalendarView bar', () => {
@@ -143,15 +155,21 @@ describe('ComplianceCalendarView bar', () => {
     expect(screen.getByRole('button', { name: 'Choose month' })).toHaveTextContent('December');
   });
 
-  it('opens a day popover with the filings of that day and links to the record', () => {
+  it('puts the filings of a day on the staff calendar, locked, and opens the record', () => {
     search = new URLSearchParams('date=2099-10-20');
-    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
-    const pop = screen.getByRole('dialog', { name: '20 October' });
-    expect(pop).toHaveTextContent('Tuesday 20 October');
-    expect(pop).toHaveTextContent('2 filings');
-    const link = within(pop).getAllByRole('link').find((a) => a.textContent?.includes('Birch LLP'));
+    const { container } = render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    const cell = container.querySelector('.fc-daygrid-day[data-date="2099-10-20"]')!;
+    const filings = [...cell.querySelectorAll<HTMLElement>('.vc-ev')];
+    expect(filings).toHaveLength(2);
+    // Statutory due dates never move: no drag handle, regulator colour edge, a lock mark.
+    for (const ev of filings) {
+      expect(ev.classList.contains('fc-event-draggable')).toBe(false);
+      expect(ev.classList.contains('vc-reg--gst')).toBe(true);
+    }
+    expect(filings.some((ev) => ev.classList.contains('vc-ev--done'))).toBe(true);
     // A filing opens the statutory detail page of that client's period.
-    expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/gst-3b/b');
+    act(() => filings.find((ev) => !ev.classList.contains('vc-ev--done'))!.click());
+    expect(push).toHaveBeenCalledWith('/app/manager/compliances/obligations/gst-3b/b');
   });
 
   it('groups one filing for several clients in Coming up', () => {
@@ -223,31 +241,44 @@ describe('Statutory and non-statutory filter (C-1 to C-4)', () => {
     expect(screen.getByRole('tab', { name: /^Non-statutory\s*1$/ })).toBeInTheDocument();
   });
 
-  it('shows a task on its end date with a hollow square and the start and urgency on hover', () => {
+  it('shows a task from its start to its end with a hollow square and the start and urgency on hover', () => {
     taskList = [boardPack];
     search = new URLSearchParams('date=2099-10-22');
-    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
-    const day = screen.getByRole('button', { name: '22 October, 1 filing' });
-    expect(day.querySelector('[data-hollow]')).not.toBeNull();
-    expect(within(day).getByTitle('Board pack · Starts 12 Oct 2099 · High')).toBeInTheDocument();
-    const pop = screen.getByRole('dialog', { name: '22 October' });
-    const link = within(pop).getAllByRole('link').find((a) => a.textContent?.includes('Board pack'));
-    expect(link?.getAttribute('href')).toBe('/app/manager/compliances/obligations/tasks/t1');
+    const { container } = render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    const task = [...container.querySelectorAll<HTMLElement>('.vc-ev')].find((ev) => ev.textContent?.includes('Board pack'))!;
+    expect(task.querySelector('.vc-ev__hollow')).not.toBeNull();
+    expect(task.querySelector('[title="Board pack · Starts 12 Oct 2099 · High"]')).not.toBeNull();
+    // Planned work dates move freely for a manager.
+    expect(task.classList.contains('fc-event-draggable')).toBe(true);
+    act(() => task.click());
+    expect(push).toHaveBeenCalledWith('/app/manager/compliances/obligations/tasks/t1');
+  });
+
+  it('keeps tasks still for a project lead and offers no New task on an empty day', () => {
+    mayWrite = false;
+    taskList = [boardPack];
+    search = new URLSearchParams('date=2099-10-22');
+    const { container } = render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    const task = [...container.querySelectorAll<HTMLElement>('.vc-ev')].find((ev) => ev.textContent?.includes('Board pack'))!;
+    expect(task.classList.contains('fc-event-draggable')).toBe(false);
+    expect(newTaskPrefill).not.toHaveBeenCalled();
   });
 
   it('applies the filter to the grid and the rail', () => {
     taskList = [boardPack];
     search = new URLSearchParams('date=2099-10-20');
     render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    const container = document.body;
+    const titles = () => [...container.querySelectorAll('.vc-ev')].map((ev) => ev.textContent ?? '');
     act(() => screen.getByRole('tab', { name: /^Non-statutory/ }).click());
-    expect(screen.queryByRole('button', { name: /20 October/ })).toBeNull();
+    expect(titles().some((t) => t.includes('GSTR-3B'))).toBe(false);
     const coming = screen.getByRole('region', { name: 'Coming up' });
     expect(within(coming).getByText('Board pack')).toBeInTheDocument();
     expect(within(coming).queryByText('TDS payment')).toBeNull();
     expect(screen.getByRole('region', { name: 'Next deadline' })).toHaveTextContent('Board pack');
 
     act(() => screen.getByRole('tab', { name: /^Statutory/ }).click());
-    expect(screen.queryByRole('button', { name: /22 October/ })).toBeNull();
+    expect(titles().some((t) => t.includes('Board pack'))).toBe(false);
     expect(within(screen.getByRole('region', { name: 'Coming up' })).queryByText('Board pack')).toBeNull();
   });
 });

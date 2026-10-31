@@ -228,7 +228,7 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                           aria-label={c.label}
                           onCheckedChange={(on) => void run(acts.tick.mutateAsync({ itemId: c.id, done: on === true }), on === true ? 'Ticked' : 'Unticked', c.label)}
                         />
-                        <span className={cn('min-w-0 flex-1 text-[14px]', c.done ? 'text-ink-muted line-through' : 'text-ink')}>{c.label}</span>
+                        <span className={cn('min-w-0 flex-1 text-[14px]', c.done ? 'text-ink-muted' : 'text-ink')}>{c.label}</span>
                         {c.done ? (
                           <span className="flex-none text-[12.5px] text-ink-muted">
                             {[c.doneBy?.name, c.doneAt ? plainDate(c.doneAt.slice(0, 10), now) : null].filter(Boolean).join(' · ')}

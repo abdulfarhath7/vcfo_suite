@@ -50,7 +50,7 @@ function useTableFits(wrap: RefObject<HTMLDivElement | null>, table: RefObject<H
   return { fits, width };
 }
 
-/** A native checkbox in the X4 look, with the mixed state for the head. */
+/** A native checkbox in the R-57 look (app/globals.css), with the mixed state for the head. */
 function RowBox({ checked, mixed, onChange, label }: { checked: boolean; mixed?: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <input
@@ -63,7 +63,7 @@ function RowBox({ checked, mixed, onChange, label }: { checked: boolean; mixed?:
       }}
       onChange={(e) => onChange(e.target.checked)}
       onClick={(e) => e.stopPropagation()}
-      className="block h-[18px] w-[18px] flex-none cursor-pointer rounded-mark accent-[oklch(var(--brand))]"
+      className="block flex-none cursor-pointer"
     />
   );
 }

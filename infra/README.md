@@ -2,8 +2,11 @@
 
 Not needed for the local pilot. Terraform for one production environment in
 `ap-south-1`: App Runner + RDS Postgres + S3/KMS + Secrets Manager + SES +
-Budget. Pilot network posture is **public RDS with TLS forced, no VPC
-connector, no NAT** (see `main.tf` header and `docs/context/AWS-DEPLOY.md`).
+Budget + AWS Backup. **Since the SOC 2 remediation (October 2026) RDS is private**:
+App Runner reaches it through a VPC connector, and a fck-nat NAT instance gives the VPC
+outbound internet. The Terraform for that network (`private-db.tf` and others) is only on
+the owner's laptop and not in git yet, so `network.tf` and the `main.tf` header here still
+describe the old public pilot. See `docs/context/AWS-DEPLOY.md` §11.
 
 ## One-time prerequisites
 
@@ -43,13 +46,11 @@ terraform apply
 echo 'site_url = "https://xxxx.ap-south-1.awsapprunner.com"' >> terraform.tfvars
 terraform apply
 
-# 5. Migrate + seed from this laptop (RDS is reachable; TLS required).
-export DATABASE_URL="$(aws secretsmanager get-secret-value --profile vcfo \
-  --secret-id vcfo-suite/DATABASE_URL --query SecretString --output text)"
-# pg treats sslmode=require as verify-full, so trust the RDS CA bundle; without
-# it drizzle-kit exits 1 with no message.
-export NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem
-npm run db:migrate && npm run db:seed
+# 5. Migrate from inside the VPC through the SSM tunnel on the NAT instance
+#    (AWS-DEPLOY.md §11.3). RDS is private: never open it for this.
+node scripts/db-env-prod.mjs   # prints the tunnel command and the DB_* exports
+# run the tunnel in one terminal, paste the exports in another, then:
+npm run db:migrate
 ```
 
 ## Every later deploy
@@ -60,13 +61,12 @@ Push a new `:latest` — `auto_deployments_enabled` redeploys App Runner:
 docker build -t vcfo-suite:local . && docker tag vcfo-suite:local 600627321277.dkr.ecr.ap-south-1.amazonaws.com/vcfo-suite:latest && docker push 600627321277.dkr.ecr.ap-south-1.amazonaws.com/vcfo-suite:latest
 ```
 
-Schema changes: run `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate`
-with the RDS `DATABASE_URL` before (or right after) the push. Once
-`db_managed_password` is on, get that URL with
-`export DATABASE_URL="$(node scripts/db-url-prod.mjs)"`, which reads the
-rotating RDS master secret through your AWS CLI login.
+Schema changes: run `npm run db:migrate` through the SSM tunnel (`node
+scripts/db-env-prod.mjs` prints the steps) before, or right after, the push.
+`drizzle.config.ts` reads the rotating RDS master secret through your AWS CLI login
+at connect time; there is no production `DATABASE_URL` any more.
 
-## Switching to the rotating DB password
+## Switching to the rotating DB password (done; kept for a fresh stack)
 
 SOC 2 finding #370: the `vcfo-suite/DATABASE_URL` secret never rotates. With
 `db_managed_password = true` RDS owns the master password, keeps it in its own
@@ -153,9 +153,11 @@ Azure app registration "VCFO Suite Outlook" needs redirect
 `https://app.sbctrack.in/api/outlook/callback` and delegated `Mail.Send`,
 `User.Read`, `offline_access`. Set `azure_ad_client_id`, `azure_ad_tenant_id`,
 `azure_ad_client_secret` in `terraform.tfvars` (gitignored) and apply — the
-secret lands in Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET`, the ids in
-App Runner env. Leave all three empty to deploy without the feature. When the
-Azure secret expires (max 24 months), paste the new value and re-apply.
+secret lands in Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET` (first value
+only), the ids and the secret's ARN (`AZURE_AD_CLIENT_SECRET_SECRET_ID`) in App
+Runner env. Leave all three empty to deploy without the feature. M7: rotate every 6
+months (SOC 2 exception 372) with `put-secret-value`; the app reads it at runtime,
+so no apply and no redeploy (AWS-DEPLOY.md §11.1).
 
 ## Ask VCFO (in-app assistant)
 
@@ -166,10 +168,11 @@ Terraform: you create the secret by hand, Terraform only looks it up by name.
    secret* → **Plaintext** tab → paste only the key (`sk-ant-…`, no quotes, no
    JSON) → name it `/vcfo/ask-vcfo/anthropic-api-key` → store.
 2. Migrate RDS first (Ask VCFO tables are migrations `0021`–`0023`):
-   `DATABASE_URL=<rds url> NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate`.
+   `npm run db:migrate` through the SSM tunnel (AWS-DEPLOY.md §11.3).
 3. In `terraform.tfvars` add `ask_vcfo_enabled = true`.
-4. `terraform plan` — expect only the App Runner service (two env vars, one
-   secret) and the app role policy (read the new secret) to change.
+4. `terraform plan` — expect only the App Runner service (three env vars, one of
+   them the secret's ARN as `ANTHROPIC_API_KEY_SECRET_ID`) and the app role
+   policy (read the new secret) to change.
 5. `terraform apply`. App Runner redeploys; "Ask VCFO" appears for client,
    admin and super admin.
 
@@ -179,12 +182,27 @@ C2 explain a document, C3 field help, C4 monthly status brief, C5 "what if I
 miss it", A1 question gaps (shows clients a notice that the firm can see their
 questions).
 
-Rotate the key: put a new value on the same secret, then redeploy the service
-(App Runner reads secrets at deploy time). Turn off: `ask_vcfo_enabled = false`
+Rotate the key (every 90 days, SOC 2 exception 376): put a new value on the same
+secret. M7: the app reads it at runtime (10-minute cache, re-read on a 401), so no
+redeploy is needed. Turn off: `ask_vcfo_enabled = false`
 and apply. Knowledge-source indexing runs in-process until Inngest cloud keys
 are set.
 
+## M7: console grants and rotation helpers (`soc-runtime.tf`)
+
+- `aws_iam_role_policy.app_console_soc_read`: read-only grants for the developer
+  console's SOC 2 cards (DescribeSecret on the vCFO secrets, the Backup plan and
+  vault, EC2 Describe for the NAT, the VPC connector, the RDS instance).
+- `auth_secret_previous_enabled`: makes `vcfo-suite/AUTH_SECRET_PREVIOUS` (value by
+  hand) and injects it, for an AUTH_SECRET rotation without sign-outs.
+- `credentials_key_enabled`: makes `vcfo-suite/CREDENTIALS_ENCRYPTION_KEY` (value by
+  hand) and injects it. Put the value in before you turn the flag on: App Runner
+  will not start with an empty secret.
+- `ignore_changes` on the AUTH_SECRET and Azure secret versions, so an apply never
+  puts back a value that was rotated by hand.
+
 ## Not here yet
 
-- Private RDS + VPC connector + NAT (when the pilot outgrows option B)
+- The private network files (VPC connector, NAT instance, private subnets) in git:
+  they are on the owner's laptop only
 - Inngest cloud keys (compliance digests), WhatsApp EUM number

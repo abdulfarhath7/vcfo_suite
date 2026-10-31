@@ -23,6 +23,7 @@ let results: unknown[][] = [];
 function chain(call: Call): unknown {
   const c: Record<string, unknown> = {
     from: () => c,
+    leftJoin: () => c,
     orderBy: () => c,
     limit: () => c,
     groupBy: () => c,
@@ -52,6 +53,8 @@ vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...a: unknown[]) => assertEngagementAccess(...a),
   getMyEngagement: (...a: unknown[]) => getMyEngagement(...a),
   listScopedEngagementIds: (...a: unknown[]) => listScopedEngagementIds(...a),
+  checklistStateFromRow: (row: { checklistState?: unknown }) => row.checklistState ?? {},
+  checklistStateForViewer: (_c: unknown, state: unknown) => state,
 }));
 
 const { getHomeTrends, HomeTrendsError } = await import('@/db/repositories/home-trends');
@@ -130,46 +133,48 @@ describe('client home', () => {
     expect(params()).not.toContain(OTHER);
   });
 
-  it('builds Documents in from the requests of the own engagement (closed_at)', async () => {
+  it('builds Documents in from the requests of the own engagement (closed_at or the first file)', async () => {
     results = [
       [],
       [],
       [
-        { status: 'fulfilled', closedAt: new Date('2026-10-26T05:00:00Z'), createdAt: new Date('2026-10-20T05:00:00Z') },
-        { status: 'pending', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') },
+        { id: 'a', status: 'fulfilled', closedAt: new Date('2026-10-26T05:00:00Z'), createdAt: new Date('2026-10-20T05:00:00Z') },
+        { id: 'b', status: 'fulfilled', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') },
+        { id: 'c', status: 'pending', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') },
       ],
+      [{ requestId: 'b', at: new Date('2026-10-27T05:00:00Z') }],
+      [],
     ];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
-    expect(trends.docsIn).toEqual([0, 1, 1, 1]);
-    expect(calls).toHaveLength(4);
+    expect(trends.docsIn).toEqual([0, 1, 2, 2]);
+    expect(calls).toHaveLength(5);
     expect(params()).toContain(OWN);
     expect(params()).not.toContain(OTHER);
   });
 
-  it('builds Waiting on and With SBC from the step holder rows of the own engagement', async () => {
-    const { modelStepIds } = await import('@/lib/metrics/client-holder-trend');
-    const ids = modelStepIds({});
-    const baseline = new Date('2026-10-24T05:00:00Z');
-    // Baseline: the first step with the client, the second with the lead, the rest not open.
-    const holders = ids.map((stepId, i) => ({ stepId, holder: i === 0 ? 'client' : i === 1 ? 'lead' : 'sbc', at: baseline }));
-    results = [
-      [],
-      [],
-      [{ status: 'pending', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') }],
-      [...holders, { stepId: ids[0], holder: 'lead', at: new Date('2026-10-27T05:00:00Z') }],
-    ];
+  it('draws every tile from day one, even with no stored history', async () => {
+    results = [[], [], [], [], []];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
-    expect(trends.waiting).toEqual([2, 2, 1, 1]);
-    expect(trends.withSbc).toEqual([1, 1, 2, 2]);
-    expect(params()).toContain(OWN);
-    expect(params()).not.toContain(OTHER);
+    for (const key of ['waiting', 'overdue', 'withSbc', 'docsIn', 'stepsDone', 'regs', 'dueSoon', 'filingsOverdue']) {
+      expect(trends[key]).toHaveLength(4);
+    }
   });
 
-  it('draws no Waiting on or With SBC line before the holder history starts', async () => {
-    results = [[], [], [], []];
+  it('builds Steps done and With SBC by undoing the later step events', async () => {
+    const { buildIncorporationModel } = await import('@/lib/client-portal/step-model');
+    const step = buildIncorporationModel({}).steps[0]!.id;
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: { id: OWN, checklistState: { [step]: { status: 'completed' } } } });
+    results = [[], [], [], [], [{ stepId: step, fromStatus: 'in-progress', toStatus: 'completed', reviewStatus: null, at: new Date('2026-10-27T05:00:00Z') }]];
+    const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
+    expect(trends.stepsDone).toEqual([0, 0, 1, 1]);
+  });
+
+  it('ends a line where a closed request has no close time', async () => {
+    results = [[], [], [{ id: 'x', status: 'cancelled', closedAt: null, createdAt: new Date('2026-10-20T05:00:00Z') }], [], []];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
     expect(trends.waiting).toBeUndefined();
-    expect(trends.withSbc).toBeUndefined();
+    expect(trends.docsIn).toBeUndefined();
+    expect(trends.stepsDone).toHaveLength(4);
   });
 
   it.each(['client', 'manager', 'intern'] as const)('%s asking for a foreign engagement gets nothing and no filing query', async (role) => {

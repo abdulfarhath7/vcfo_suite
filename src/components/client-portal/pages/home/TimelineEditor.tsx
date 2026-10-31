@@ -508,7 +508,7 @@ export function TimelineEditor({
                   return (
                     <tr key={p.id}>
                       <td className="rt" style={{ padding: '7px 8px' }}>{p.name}</td>
-                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, color: 'oklch(var(--ink-muted))', textDecoration: 'line-through' }}>{range(b0)}</td>
+                      <td className="mono" style={{ padding: '7px 8px', fontSize: 12, color: 'oklch(var(--ink-muted))' }}>{range(b0)}</td>
                       <td className="mono" style={{ padding: '7px 8px', fontSize: 12, fontWeight: 500 }}>{range(p)}</td>
                       <td style={{ padding: '7px 8px', textAlign: 'right' }}>
                         <Chip tone={dd > 0 ? 'bad' : 'ok'} note={false}>

@@ -19,10 +19,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAskOptional } from '@/components/ask/ask-context';
+import { ASK_PANEL_SIZES, useAskPanelSize, type AskPanelSize } from '@/components/ask/use-ask-layout';
+import { useApp } from '@/context/AppContext';
 import { AFTER_QUESTIONS, BEFORE_QUESTIONS } from '@/lib/client-portal/answers';
 import { usePortal, type WhatsThisAnswer } from './PortalProvider';
 import { VisorCharacter, VisorHead } from './Visor';
 import { activeKeyFor, stepHref } from './routes';
+
+/* The size buttons' icons: small window, large window, right-hand panel. */
+const SIZE_ICON: Record<AskPanelSize, string> = {
+  small: 'M14 10h6 M14 10V4 M10 14H4 M10 14v6 M14 10l6-6 M10 14l-6 6',
+  large: 'M15 3.5h5.5V9 M9 20.5H3.5V15 M20.5 3.5 14 10 M3.5 20.5 10 14',
+  side: 'M4 4.5h16v15H4Z M14.5 4.5v15',
+};
 
 type LogItem =
   | { r: 'u'; t: string }
@@ -69,6 +78,9 @@ export function AskLauncher() {
   const portal = usePortal();
   const { chatOpen, openChat, closeChat, pendingQuestion, after, shell, toast } = portal;
   const ask = useAskOptional();
+  const { user } = useApp();
+  /* Owner item F3: Small, Large or Side panel, kept per user (the same choice as the staff pop-up). */
+  const [size, setSize] = useAskPanelSize(user?.id);
   const launchRef = useRef<HTMLDivElement>(null);
   const winRef = useRef<HTMLElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
@@ -111,6 +123,12 @@ export function AskLauncher() {
   useEffect(() => {
     if (chatOpen && portal.prefs && !portal.prefs.botNoteSeen) portal.savePrefs({ botNoteSeen: true });
   }, [chatOpen, portal]);
+
+  /* The full Ask VCFO page (owner item F4) shows the conversation itself: the pop-up closes there. */
+  const pageOpen = Boolean(ask?.pageOpen);
+  useEffect(() => {
+    if (pageOpen && chatOpen) closeChat();
+  }, [pageOpen, chatOpen, closeChat]);
 
   const lead = shell?.team.find((p) => p.role === 'Project Lead') ?? shell?.team.find((p) => !p.support);
   const company = shell?.companyShort ?? 'your company';
@@ -343,6 +361,7 @@ export function AskLauncher() {
         ref={winRef}
         role="dialog"
         aria-label="Ask VCFO chat"
+        data-size={size}
         className={[chatOpen ? 'on' : '', thinking ? 'vpc-think' : '', moodNow === 'ok' ? 'vpc-ok' : '', moodNow === 'nan' ? 'vpc-nan' : ''].filter(Boolean).join(' ')}
         style={{ ['--vpl-lift' as string]: lift }}
         data-mood-n={moodN}
@@ -363,20 +382,45 @@ export function AskLauncher() {
             <b>Ask VCFO</b>
             <small>Answers from {company}’s project data</small>
           </span>
-          <button
-            type="button"
-            aria-label="Close chat"
-            data-close
-            onClick={() => {
-              closeChat();
-              pillRef.current?.focus({ preventScroll: true });
-            }}
-          >
-            <span className="vpc-xt">×</span>
-            <svg className="vpc-xi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
+          <span className="vpc-hb">
+            <span className="vpc-sz" role="group" aria-label="Chat size">
+              {(Object.keys(ASK_PANEL_SIZES) as AskPanelSize[]).map((k) => (
+                <button key={k} type="button" aria-pressed={size === k} aria-label={ASK_PANEL_SIZES[k].label} title={ASK_PANEL_SIZES[k].label} onClick={() => setSize(k)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d={SIZE_ICON[k]} />
+                  </svg>
+                </button>
+              ))}
+            </span>
+            <button
+              type="button"
+              className="vpc-full"
+              aria-label="Open full page"
+              title="Open full page"
+              onClick={() => {
+                closeChat();
+                router.push('/app/client/ask');
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 4.5h5.5V10 M19.5 4.5 11 13 M17 14v5.5H4.5V7H10" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              aria-label="Close chat"
+              data-close
+              onClick={() => {
+                closeChat();
+                pillRef.current?.focus({ preventScroll: true });
+              }}
+            >
+              <span className="vpc-xt">×</span>
+              <svg className="vpc-xi" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </span>
         </div>
         <div className="vpc-ms" aria-live="polite" ref={msgsRef}>
           <div className="vpc-m vpc-a">Hello. Ask me anything about {company}’s setup, or pick a question below.</div>
@@ -408,7 +452,7 @@ export function AskLauncher() {
             }
             if (m.r === 'u')
               return (
-                <div key={i} className="vpc-m vpc-u">
+                <div key={i} className="vpc-m vpc-u" data-initials={(user?.initials || '').slice(0, 2) || '·'}>
                   {m.t}
                 </div>
               );

@@ -76,7 +76,7 @@ export function ScheduleWindowControl({
         <button
           type="button"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md border border-dashed border-line px-2 py-1 text-[11px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
+            'inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[11px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
             value && 'border-solid',
             className,
           )}

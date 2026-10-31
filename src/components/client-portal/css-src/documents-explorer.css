@@ -14,7 +14,7 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .btn-o{background:oklch(var(--surface-raised));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}.btn-o:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
 .ib{width:30px;height:30px;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised));color:oklch(var(--ink-2));display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-sizing:border-box}
 .ib:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
-.tg{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;border:1.5px dashed oklch(var(--line-strong));background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
+.tg{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
 .tg.on{border-style:solid;background:oklch(var(--brand-soft));color:oklch(var(--brand-text));border-color:oklch(var(--brand-line))}
 .seg{position:relative;display:inline-flex;gap:2px;flex-wrap:nowrap;padding:2px;border-radius:6px;background:oklch(var(--surface-sunken))}
 .seg>.thumb{display:none}
@@ -28,7 +28,7 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .tr.sel{background:oklch(var(--brand-soft));color:oklch(var(--ink))}
 .tr.sel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:oklch(var(--brand))}
 .tr.hid{color:oklch(var(--ink-muted))}
-.tr.hid .lb{text-decoration:line-through;font-weight:400}
+.tr.hid .lb{color:oklch(var(--ink-muted));font-weight:400}
 .tr .main{flex:1;min-width:0;height:36px;display:flex;align-items:center;gap:8px;padding:0 0 0 12px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .tr .main:focus-visible{outline:2px solid oklch(var(--focus-ring) / .5);outline-offset:-2px}
 .gd{width:16px;align-self:stretch;flex:none;border-left:1px solid oklch(var(--line));margin-left:7px;box-sizing:border-box}
@@ -36,9 +36,9 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .ico.chev{width:16px;color:oklch(var(--ink-muted))}
 .fico{width:22px;height:22px;flex:none;border-radius:4px;display:grid;place-items:center;background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
 .tr.sel .fico{background:oklch(var(--surface-raised))}
-/* R-26 file marks: 22 x 18 soft squares; a file not uploaded yet is a dashed square */
+/* R-26 file marks: 22 x 18 soft squares; a file not uploaded yet is an empty square (R-56: no dashes) */
 .ft{width:22px;min-width:22px;height:18px;padding:0;box-sizing:border-box;border-radius:4px;font:500 7.5px/18px var(--font-sans),sans-serif;letter-spacing:-.02em;text-align:center;flex:none}
-.ft-miss{width:22px;height:18px;flex:none;box-sizing:border-box;border-radius:4px;border:1.5px dashed oklch(var(--line-strong))}
+.ft-miss{width:22px;height:18px;flex:none;box-sizing:border-box;border-radius:4px;border:1.5px solid oklch(var(--line-strong))}
 .ft-miss.lg{width:44px;height:24px;border-radius:4px}
 .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .cnt{font:400 12.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
@@ -123,11 +123,11 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-page.real{padding:0;cursor:zoom-in}
 .vdoc-page.real iframe{display:block;width:100%;height:100%;border:0;pointer-events:none;background:#fff}
 .vdoc-page.real img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
-.vdoc-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 20px;border:1.5px dashed oklch(var(--line-strong));border-radius:6px;background:oklch(var(--surface-raised));color:oklch(var(--ink));text-align:center;cursor:pointer}
-.vdoc-drop:hover{border-color:oklch(var(--brand-line))}
+.vdoc-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 20px;border:1.5px solid transparent;border-radius:6px;background-color:oklch(var(--surface-raised));color:oklch(var(--ink));text-align:center;cursor:pointer}
+.vdoc-drop:hover{--dash-color:oklch(var(--brand-line))}
 .vdoc-drop b{font:500 15px var(--font-sans),sans-serif}
 .vdoc-drop-ic{width:40px;height:40px;border-radius:6px;display:grid;place-items:center;background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
-.vdoc-drop.over{border-style:solid;border-color:oklch(var(--brand));background:oklch(var(--brand-soft));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .16)}
+.vdoc-drop.over{border-color:oklch(var(--brand));background:oklch(var(--brand-soft));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .16)}
 /* preview pane head: R-26 badge, 15 px title, status chip, square icon buttons */
 .vdoc-ph{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 12px 0 16px;box-sizing:border-box;border-bottom:1px solid oklch(var(--line-soft));flex:none}
 .vdoc-pt{flex:1;min-width:0;font:500 15px var(--font-sans),sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -152,7 +152,60 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 /* the row menu button: 30 px, horizontal dots */
 .kb{width:30px;height:30px}
 /* drop zone for a missing file: up to 340 px, the accepted types under the title, a secondary Choose file */
-.vdoc-drop{width:min(340px,100%);height:auto;min-height:200px;border-color:oklch(var(--line-strong))}
+.vdoc-drop{width:min(340px,100%);height:auto;min-height:200px;--dash-color:oklch(var(--line-strong))}
 .vdoc-drop-cap{font-size:13px;color:oklch(var(--ink-muted))}
 /* the Older and Due marks hide under 640 px only */
 @media (min-width:640px) and (max-width:767px){.vdoc-hide-sm{display:revert}}
+/* ---------- "All documents" flat table (owner item E1, 30 Oct 2026) ----------
+   One card, one table, no inner cards. The page grows with the table (no viewport-high card), so
+   the row menus are never clipped; the launcher spacer of the page host stays. */
+.vdoc:has(.vdoc-flat){height:auto;min-height:0;margin-bottom:0}
+.vdoc-flat{flex:none}
+.vdoc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.vdoc-chips .sx-filter{height:30px;gap:6px}
+.vdoc-chips .sx-filter b{font-weight:500;color:oklch(var(--ink-muted))}
+.vdoc-chips .sx-filter[aria-pressed=true] b{color:inherit}
+.vdoc-wrap{position:relative}
+.vdoc-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;color:oklch(var(--ink))}
+.vdoc-tbl col.c-ft{width:60px}.vdoc-tbl col.c-fd{width:22%}.vdoc-tbl col.c-fr{width:17%}.vdoc-tbl col.c-dt{width:116px}.vdoc-tbl col.c-st{width:124px}.vdoc-tbl col.c-mn{width:44px}
+.vdoc-tbl thead th{height:34px;padding:0 10px;text-align:left;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-faint));border-bottom:1px solid oklch(var(--line-soft))}
+.vdoc-tbl thead th:first-child{padding-left:16px}
+.vdoc-tbl td{height:40px;padding:0 10px;border-bottom:1px solid oklch(var(--line-soft));vertical-align:middle;white-space:nowrap;overflow:hidden}
+.vdoc-tbl td.c-ft{padding-left:16px}
+.vdoc-tbl td.vdoc-mc{position:relative;overflow:visible;padding:0 6px;text-align:right}
+/* the folder header row: one thin line, faint fill */
+.vdoc-grp th,.vdoc-grp td{height:32px;background:oklch(var(--surface-sunken));border-bottom:1px solid oklch(var(--line-soft))}
+.vdoc-grp th{padding:0 10px 0 10px;text-align:left;font-weight:500}
+.vdoc-gh{display:flex;align-items:center;gap:10px;min-width:0}
+.vdoc-gt{display:inline-flex;align-items:center;gap:6px;min-width:0;height:28px;padding:0 6px;border:0;border-radius:4px;background:none;color:oklch(var(--ink));font:500 13px var(--font-sans),sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vdoc-gt svg{flex:none;color:oklch(var(--ink-muted))}
+.vdoc-gt:hover{background:oklch(var(--ink) / .05)}
+.vdoc-gc{font:400 12.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
+.vdoc-gc:hover{color:oklch(var(--brand-text))}
+.vdoc-gc.tip::after{left:0;transform:translate(0,3px)}.vdoc-gc.tip:hover::after,.vdoc-gc.tip:focus-visible::after{transform:none}
+/* document rows: one line, secondary text in faint ink */
+.vdoc-row:hover td{background:oklch(var(--surface-sunken))}
+.vdoc-row.sel td{background:oklch(var(--brand-soft))}
+.vdoc-row.sel td:first-child{box-shadow:inset 3px 0 0 oklch(var(--brand))}
+.vdoc-row.over td{background:oklch(var(--brand-soft));box-shadow:inset 0 1px 0 oklch(var(--brand)),inset 0 -1px 0 oklch(var(--brand))}
+.vdoc-row.hid .lb{text-decoration:line-through;font-weight:400;color:oklch(var(--ink-muted))}
+.vdoc-row.glow td{animation:glow 2.4s ease-out 1}
+.vdoc-nm{display:flex;align-items:baseline;gap:8px;width:100%;min-width:0;height:40px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.vdoc-nm .lb{flex:0 1 auto}
+.vdoc-nm:hover .lb{color:oklch(var(--brand-text))}
+.vdoc-sub,.vdoc-tx,.vdoc-fd{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:oklch(var(--ink-faint))}
+.vdoc-sub{flex:1 1 0}
+.vdoc-nm .lb,.vdoc-nm .vdoc-sub{line-height:40px}
+.vdoc-tx{display:block;color:oklch(var(--ink-muted))}
+.vdoc-fd{display:block;max-width:100%;font-weight:400;text-align:left}
+button.vdoc-fd:hover{color:oklch(var(--brand-text));text-decoration:underline}
+.vdoc-tbl .kb{opacity:0}
+.vdoc-row:hover .kb,.vdoc-grp:hover .kb,.vdoc-tbl tr:focus-within .kb,.vdoc-tbl .kb.open{opacity:1}
+.vdoc-tbl .menu{top:36px}
+.vdoc-tbl .menu a{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;box-sizing:border-box;border-radius:4px;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-decoration:none}
+.vdoc-tbl .menu a svg{color:oklch(var(--ink-muted))}
+.vdoc-tbl .menu a:hover,.vdoc-tbl .menu a:focus-visible{background:oklch(var(--surface-sunken));outline:none}
+/* narrower screens drop From, then Folder (the phone has its own board under 700 px) */
+@media (max-width:1099px){.vdoc-tbl .c-fr{display:none}.vdoc-tbl col.c-fd{width:26%}}
+@media (max-width:859px){.vdoc-tbl .c-fd{display:none}}
+@media (prefers-reduced-motion: reduce){.vdoc-row.glow td{animation:none}}

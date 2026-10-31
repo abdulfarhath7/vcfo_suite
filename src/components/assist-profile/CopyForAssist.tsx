@@ -96,14 +96,14 @@ export function CopyForAssist({ engagementId, hrefForMissing, className }: CopyF
       </div>
 
       {open && result ? (
-        <div className="mt-2 space-y-2 border-t border-dashed border-line pt-2">
+        <div className="mt-2 space-y-2 border-t border-line-soft pt-2">
           {fillable.length > 0 ? (
             <ul className="flex flex-wrap gap-1.5" aria-label="Missing in Suite">
               {fillable.map((input) => (
                 <li key={input.key}>
                   <Link
                     href={hrefForMissing(input)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-dashed border-warning bg-surface-raised px-2 py-0.5 text-[12.5px] text-ink hover:bg-warning-soft"
+                    className="inline-flex items-center gap-1 rounded-lg border border-warning bg-surface-raised px-2 py-0.5 text-[12.5px] text-ink hover:bg-warning-soft"
                   >
                     {missingInputLabel(input)}
                     <span className="text-ink-muted">in {stepTitle(input.stepId)}</span>

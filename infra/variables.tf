@@ -11,14 +11,32 @@ variable "db_username" {
 # The DB password is generated (random_password) and stored in Secrets Manager
 # as part of DATABASE_URL — never passed on the command line.
 
-# SOC 2 finding #370: false keeps the baked DATABASE_URL secret (no rotation).
-# true hands the master password to RDS, which rotates it every 7 days, and the
-# app reads it per connection. See database.tf and the cut-over order in
+# SOC 2 finding #370: true hands the master password to RDS, which rotates it
+# every 7 days, and the app reads it per connection. false keeps the old baked
+# DATABASE_URL secret (no rotation). See database.tf and the cut-over order in
 # infra/README.md before turning it on.
+# M7: production runs with this on (the DATABASE_URL secret is deleted), so the
+# default is now true. false is only for a fresh, throwaway stack.
 variable "db_managed_password" {
   description = "Let RDS manage and rotate the master password (app reads DB_SECRET_ARN)."
   type        = bool
   default     = true # live since 30 Oct 2026; false would bring back DATABASE_URL
+}
+
+variable "credentials_key_enabled" {
+  description = "Inject vcfo-suite/CREDENTIALS_ENCRYPTION_KEY into App Runner. Put the key value in the secret by hand first."
+  type        = bool
+  default     = false
+}
+
+# M7: AUTH_SECRET rotation without sign-outs. On: App Runner also injects
+# AUTH_SECRET_PREVIOUS, and tokens signed with it still verify. Put the old
+# AUTH_SECRET value into vcfo-suite/AUTH_SECRET_PREVIOUS by hand before the apply
+# that turns this on. Turn it off again 30 days after the rotation.
+variable "auth_secret_previous_enabled" {
+  description = "Inject vcfo-suite/AUTH_SECRET_PREVIOUS (the secret before the last rotation) into App Runner."
+  type        = bool
+  default     = false
 }
 
 variable "alert_emails" {

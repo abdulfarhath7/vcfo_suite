@@ -153,7 +153,7 @@ function StageChip({ st }: { st: Stage }) {
       ? { background: 'var(--ok-light)', color: 'var(--ok-text)', border: '1px solid oklch(56% 0.13 168 / .35)' }
       : st.state === 'now'
         ? { background: 'var(--navy)', color: '#fff', border: '1px solid var(--navy)', boxShadow: '0 0 0 4px oklch(37.9% 0.146 266 / .14)' }
-        : { background: 'var(--panel)', color: 'var(--muted)', border: '1px dashed var(--border)' };
+        : { background: 'var(--panel)', color: 'var(--muted)', border: '1px solid var(--border)' };
   return (
     <div role="listitem" style={{ ...base, ...look }}>
       {st.state === 'done' ? (
@@ -346,7 +346,7 @@ export function StepPopup({
             </div>
           ))}
           {needs.map((n) => (
-            <div key={`m-${n.key}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px dashed var(--border)' }}>
+            <div key={`m-${n.key}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)' }}>
               <span style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', background: 'var(--raised)', color: 'var(--subtle)' }}>
                 <Ico n="file" size={16} />
               </span>

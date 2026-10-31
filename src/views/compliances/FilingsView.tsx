@@ -5,7 +5,7 @@ import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, BellRing, CalendarDays, ChevronLeft, ChevronRight, CircleCheck, Clock, Download, Search } from 'lucide-react';
+import { AlertTriangle, BellRing, CalendarDays, ChevronLeft, ChevronRight, CircleCheck, Clock, Download, ListChecks, Search } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
@@ -27,6 +27,7 @@ import {
   PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useApp } from '@/context/AppContext';
+import { isFirmWideAdmin } from '@/lib/auth';
 import { useFilings } from '@/hooks/use-filings';
 import { useCompFilings } from '@/components/client-portal/pages/compliances/api';
 import { errorMessage, toastError, toastInfo, toastSuccess } from '@/lib/toast-errors';
@@ -501,6 +502,15 @@ export function FilingsView({
           Calendar
         </Link>
       </Button>
+      {/* X-23: the activity master edit screen, for admin and super admin. */}
+      {scope.audience === 'staff' && isFirmWideAdmin(user?.role) ? (
+        <Button variant="outline" asChild>
+          <Link href={`${basePath}/activities`}>
+            <ListChecks aria-hidden />
+            Activities
+          </Link>
+        </Button>
+      ) : null}
     </div>
   );
 

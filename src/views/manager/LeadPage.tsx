@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { PlannerCalendar, type PlannerItem } from '@/components/work/PlannerCalendar';
 import { addDaysYmd, istYmdOf, weekOf } from '@/lib/work/planner';
-import { MoreHorizontal, Plus, Sparkles, UserMinus } from 'lucide-react';
+import { CheckCircle2, MoreHorizontal, Plus, Sparkles, UserMinus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
@@ -287,13 +287,20 @@ function LeadPlanner({ items, now, profileId, leadKey }: { items: TeamWorkItem[]
           <ul>
             {tasks.map((t) => (
               <li key={t.id} className="flex min-h-11 items-center gap-3 border-b border-line-soft px-4 py-2 text-[13.5px] last:border-b-0">
+                {t.kind === 'done' ? <CheckCircle2 className="h-4 w-4 flex-none text-positive" strokeWidth={1.8} aria-label="Done" /> : null}
                 <Link href={t.href} className="min-w-0 flex-1 hover:underline">
-                  <span className={cn('block truncate font-medium text-ink', t.kind === 'done' && 'text-ink-muted line-through')}>{t.title}</span>
+                  <span className={cn('block truncate font-medium text-ink', t.kind === 'done' && 'text-ink-muted')}>{t.title}</span>
                   <span className="block truncate text-[12px] text-ink-muted">{t.companyName}</span>
                 </Link>
-                <Chip tone={t.status === 'Overdue' ? 'bad' : 'idle'} fixed>
-                  {formatDueLabel(t.dueAt, now)}
-                </Chip>
+                {t.kind === 'done' ? (
+                  <Chip tone="ok" fixed>
+                    Done
+                  </Chip>
+                ) : (
+                  <Chip tone={t.status === 'Overdue' ? 'bad' : 'idle'} fixed>
+                    {formatDueLabel(t.dueAt, now)}
+                  </Chip>
+                )}
               </li>
             ))}
             {ownTodos
@@ -301,7 +308,12 @@ function LeadPlanner({ items, now, profileId, leadKey }: { items: TeamWorkItem[]
               .map((t) => (
                 <li key={t.id} className="flex min-h-11 items-center gap-3 border-b border-line-soft px-4 py-2 text-[13.5px] last:border-b-0">
                   <Checkbox checked={t.done} disabled aria-label={t.title} />
-                  <span className={cn('min-w-0 flex-1 truncate text-ink', t.done && 'text-ink-muted line-through')}>{t.title}</span>
+                  <span className={cn('min-w-0 flex-1 truncate text-ink', t.done && 'text-ink-muted')}>{t.title}</span>
+                  {t.done ? (
+                    <Chip tone="ok" fixed>
+                      Done
+                    </Chip>
+                  ) : null}
                   <span className="text-[12px] text-ink-muted">{t.custom ? 'Own to-do' : 'Pinned'}</span>
                 </li>
               ))}

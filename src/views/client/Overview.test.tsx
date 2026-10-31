@@ -194,7 +194,7 @@ describe('client Overview', () => {
       'href',
       '/app/client/compliances',
     );
-    expect(screen.getByRole('link', { name: 'Full log' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'View all' })).toHaveAttribute(
       'href',
       '/app/client/audit',
     );

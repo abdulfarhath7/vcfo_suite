@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toastSaved } from '@/components/ui/toast-saved';
@@ -30,13 +30,25 @@ export function NewTaskButton({
   defaultClient,
   now,
   onCreated,
+  prefill,
+  onPrefillDone,
+  hideTrigger = false,
 }: {
   engagements: Engagement[];
   defaultClient?: string;
   now: Date;
   onCreated?: (task: TaskRowDto) => void;
+  /** Open the dialog on these dates (a click on an empty calendar day, M6 G2). */
+  prefill?: { start: string; end: string } | null;
+  /** The prefilled dialog closed. */
+  onPrefillDone?: () => void;
+  /** Render the dialog only, for a host that opens it with `prefill`. */
+  hideTrigger?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (prefill) setOpen(true);
+  }, [prefill]);
   const [client, setClient] = useState(defaultClient ?? '');
   const activities = useActivities('non-statutory');
   const defaults = useTaskDefaults(client, open);
@@ -96,13 +108,19 @@ export function NewTaskButton({
 
   return (
     <>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        <Plus aria-hidden />
-        New task
-      </Button>
+      {hideTrigger ? null : (
+        <Button size="sm" onClick={() => setOpen(true)}>
+          <Plus aria-hidden />
+          New task
+        </Button>
+      )}
       <NewTaskDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(v) => {
+          setOpen(v);
+          if (!v) onPrefillDone?.();
+        }}
+        prefill={prefill}
         now={now}
         activities={options}
         clients={clients}

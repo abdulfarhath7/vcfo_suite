@@ -1,4 +1,4 @@
-import NextAuth, { CredentialsSignin } from 'next-auth';
+import NextAuth, { CredentialsSignin, type NextAuthConfig } from 'next-auth';
 import { headers } from 'next/headers';
 import Credentials from 'next-auth/providers/credentials';
 import { eq } from 'drizzle-orm';
@@ -12,7 +12,7 @@ import {
   systemRevokeSession,
 } from '@/db/repositories/user-sessions';
 import { checkTotpCode } from '@/lib/totp/check';
-import { MICROSOFT_PROVIDER_ID, microsoftEmailOf, microsoftProviders } from '@/auth/microsoft';
+import { MICROSOFT_PROVIDER_ID, microsoftEmailOf, microsoftProviders, onMicrosoftSignInError } from '@/auth/microsoft';
 import { systemResolveExternalSignIn } from '@/db/repositories/sign-in-links';
 import { systemRecordSignIn } from '@/db/repositories/client-audit';
 import { cityFromHeaders, deviceLabel } from '@/lib/sign-in-device';
@@ -64,65 +64,75 @@ function clientIp(request: Request | undefined): string | null {
  * instead. Session/JWT callbacks live in '@/auth/config.base' so both runtimes
  * share exactly one copy.
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const credentialsProvider = Credentials({
+  credentials: {
+    email: { label: 'Email', type: 'email' },
+    password: { label: 'Password', type: 'password' },
+    otp: { label: 'Code', type: 'text' },
+  },
+  async authorize(creds, request) {
+    const row = await systemCheckSignInPassword(String(creds?.email ?? ''), String(creds?.password ?? ''));
+    if (!row) return null;
+
+    if (row.twoStepOn) {
+      const otp = String(creds?.otp ?? '').trim();
+      if (!otp) throw new TwoStepRequired();
+      const check = checkTotpCode(row.id, row.totpSecretEnc, otp);
+      if (check === 'locked') throw new TwoStepLocked();
+      if (check === 'invalid') throw new TwoStepInvalid();
+    }
+
+    const userAgent = request?.headers.get('user-agent');
+    // C-851: the sign-in city when a CDN in front of the app sends a geo header.
+    const city = cityFromHeaders(request?.headers);
+    const sid = await systemCreateUserSession({
+      userId: row.id,
+      userAgent,
+      ip: clientIp(request),
+      city,
+    });
+    // C-787: the sign-in goes on the audit log (a client's on its company's). Not awaited, never throws.
+    void systemRecordSignIn({
+      userId: row.id,
+      email: row.email,
+      name: row.name,
+      role: row.role,
+      clientId: row.clientId,
+      device: deviceLabel(userAgent),
+      city,
+      method: row.twoStepOn ? 'Password and code' : 'Password',
+    });
+
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name ?? undefined,
+      role: row.role,
+      internId: row.internId ?? undefined,
+      clientId: row.clientId ?? undefined,
+      hasAvatar: Boolean(row.avatarObjectKey),
+      avatarVersion: row.updatedAt.getTime(),
+      sid: sid ?? undefined,
+    };
+  },
+});
+
+/**
+ * Auth.js error logger: the library's own format, plus the M7 hook that drops a refused
+ * Microsoft client secret from the cache.
+ */
+function logAuthError(error: Error): void {
+  const name = (error as { type?: string }).type ?? error.name;
+  console.error(`[auth][error] ${name}: ${error.message}`);
+  const cause = (error as { cause?: { err?: unknown } }).cause;
+  if (cause && typeof cause === 'object' && cause.err instanceof Error) console.error('[auth][cause]:', cause.err.stack);
+  else if (error.stack) console.error(error.stack.replace(/.*/, '').substring(1));
+  onMicrosoftSignInError(error);
+}
+
+const authConfig = {
   ...authConfigBase,
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-        otp: { label: 'Code', type: 'text' },
-      },
-      async authorize(creds, request) {
-        const row = await systemCheckSignInPassword(String(creds?.email ?? ''), String(creds?.password ?? ''));
-        if (!row) return null;
-
-        if (row.twoStepOn) {
-          const otp = String(creds?.otp ?? '').trim();
-          if (!otp) throw new TwoStepRequired();
-          const check = checkTotpCode(row.id, row.totpSecretEnc, otp);
-          if (check === 'locked') throw new TwoStepLocked();
-          if (check === 'invalid') throw new TwoStepInvalid();
-        }
-
-        const userAgent = request?.headers.get('user-agent');
-        // C-851: the sign-in city when a CDN in front of the app sends a geo header.
-        const city = cityFromHeaders(request?.headers);
-        const sid = await systemCreateUserSession({
-          userId: row.id,
-          userAgent,
-          ip: clientIp(request),
-          city,
-        });
-        // C-787: the sign-in goes on the audit log (a client's on its company's). Not awaited, never throws.
-        void systemRecordSignIn({
-          userId: row.id,
-          email: row.email,
-          name: row.name,
-          role: row.role,
-          clientId: row.clientId,
-          device: deviceLabel(userAgent),
-          city,
-          method: row.twoStepOn ? 'Password and code' : 'Password',
-        });
-
-        return {
-          id: row.id,
-          email: row.email,
-          name: row.name ?? undefined,
-          role: row.role,
-          internId: row.internId ?? undefined,
-          clientId: row.clientId ?? undefined,
-          hasAvatar: Boolean(row.avatarObjectKey),
-          avatarVersion: row.updatedAt.getTime(),
-          sid: sid ?? undefined,
-        };
-      },
-    }),
-    // S-650: Microsoft Entra ID, only when its env vars are set. It links to an existing profile
-    // by email and never creates one (see `signIn` and `jwt` below, and `src/auth/microsoft.ts`).
-    ...microsoftProviders(),
-  ],
+  logger: { error: logAuthError },
   events: {
     async signOut(message) {
       const token = 'token' in message ? message.token : null;
@@ -273,4 +283,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-});
+} satisfies Omit<NextAuthConfig, 'providers'>;
+
+/**
+ * The config is built per request (Auth.js lazy init) so the Microsoft client secret can be
+ * read from Secrets Manager at runtime and a rotation needs no redeploy (M7). The provider
+ * list is the only part that changes; everything else is the fixed object above.
+ *
+ * S-650: Microsoft Entra ID, only when its env vars are set. It links to an existing profile
+ * by email and never creates one (see `signIn` and `jwt` above, and `src/auth/microsoft.ts`).
+ */
+export const { handlers, auth, signIn, signOut } = NextAuth(
+  async (): Promise<NextAuthConfig> => ({
+    ...authConfig,
+    providers: [credentialsProvider, ...(await microsoftProviders())],
+  }),
+);

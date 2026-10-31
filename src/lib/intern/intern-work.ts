@@ -14,6 +14,7 @@ import {
   isReviewRejected,
 } from '@/lib/checklist/checklist-item-review';
 import { computeDueDate } from '@/lib/projects/deadlines';
+import { columnOfTaskStatus, orderColumn } from '@/lib/work/board-moves';
 import {
   internOverviewCurrentItemInPhase,
   internOverviewPhases,
@@ -107,6 +108,12 @@ export interface InternWorkItem {
   catalogLabel?: string;
   /** Manager-set window, as quiet mono metadata (`formatWindow`). Absent when unset. */
   windowLabel?: string;
+  /** The manager-set window itself (`YYYY-MM-DD` ends), for a date-change request from the calendar. */
+  window?: { from: string; to: string };
+  /** A task item's stored status, which picks its board column (M6 G1). */
+  taskStatus?: TaskInstance['status'];
+  /** A task item's place in its board column (`tasks.sort_order`). */
+  sortOrder?: number | null;
 }
 
 export interface InternWorkKpis {
@@ -466,7 +473,7 @@ function internWorkBoardColumn(item: InternWorkItem, now = new Date()): InternWo
     case 'filing':
       return item.isOverdue || daysLate(item.dueAt, now) >= -2 ? 'action' : 'progress';
     case 'task':
-      return 'action';
+      return columnOfTaskStatus(item.taskStatus);
     case 'overdue':
     case 'in-progress':
       return 'progress';
@@ -544,6 +551,8 @@ export function buildTaskWorkItem(
     isOverdue: overdue,
     isCritical: false,
     taskId: task.id,
+    taskStatus: task.status,
+    ...(task.sortOrder != null ? { sortOrder: task.sortOrder } : {}),
   };
 }
 
@@ -634,7 +643,7 @@ export function buildInternWorkItems(opts: {
         }),
         catalogId: def.id,
         catalogLabel: catalogShortLabel(def),
-        ...(window ? { windowLabel: formatWindow(window) } : {}),
+        ...(window ? { windowLabel: formatWindow(window), window: { from: window.from, to: window.to } } : {}),
       });
     }
   }
@@ -678,7 +687,7 @@ export function buildInternWorkItems(opts: {
       }),
       filingId: filing.id,
       ...(opts.filingWindows?.[filing.id]
-        ? { windowLabel: formatWindow(opts.filingWindows[filing.id]!) }
+        ? { windowLabel: formatWindow(opts.filingWindows[filing.id]!), window: { ...opts.filingWindows[filing.id]! } }
         : {}),
     });
   }
@@ -890,6 +899,8 @@ export function internWorkBoard(
   for (const item of sortInternWork(items)) {
     cols[internWorkBoardColumn(item, now)].push(item);
   }
+  // Task cards keep the order the lead set by dragging (M6 G1); steps and filings stay put.
+  for (const key of Object.keys(cols) as InternWorkBoardColumn[]) cols[key] = orderColumn(cols[key]);
   return cols;
 }
 

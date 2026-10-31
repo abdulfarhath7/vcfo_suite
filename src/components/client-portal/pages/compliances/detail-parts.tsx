@@ -9,7 +9,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Chip, toneFor } from '@/components/ui/spectrum-chip';
-import { StepMark } from '@/components/ui/step-track';
+import { StepLink, StepMark } from '@/components/ui/step-track';
 import { daysBetween, fmtDM } from '@/lib/client-portal/compliances';
 import { Avatar } from '../incorporation/spectrum';
 import { DateTile, Empty, SCard, urgencyTint } from './spectrum';
@@ -164,7 +164,7 @@ export function ProgressCard({
         <ol className="px-4 py-3 md:px-5">
           {steps.map((s, i) => (
             <li key={`${s.label}-${i}`} className="relative flex gap-3 pb-3.5 last:pb-0">
-              {i < steps.length - 1 ? <i className={cn('absolute bottom-0 left-[10px] top-[24px] w-[1.5px]', s.state === 'done' ? 'bg-positive-mid' : 'bg-line')} aria-hidden /> : null}
+              <StepLink x={11} y={11} up={i > 0 && (steps[i - 1].state === 'done' ? 'done' : 'todo')} down={i < steps.length - 1 && (s.state === 'done' ? 'done' : 'todo')} />
               <StepMark state={s.state} label={s.state === 'done' ? 'Done' : s.state === 'now' ? 'Current step' : 'Next'} />
               <span className="min-w-0 flex-1 pt-px">
                 <b className={cn('block text-[14px]', s.state === 'next' ? 'font-normal text-ink-2' : 'font-medium text-ink')}>{s.label}</b>

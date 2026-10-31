@@ -180,3 +180,59 @@ export function folderCounts(files: DocNode[]): { ok: number; rv: number; ms: nu
 export function stripNo(label: string): string {
   return label.replace(/^\d+ · /, '');
 }
+
+/* ---- "All documents" table filters (owner item E1) ---- */
+export type DocFilter = 'all' | 'you' | 'sbc' | 'signed';
+
+export const DOC_FILTERS: Array<{ id: DocFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'you', label: 'Waiting on you' },
+  { id: 'sbc', label: 'From SBC' },
+  { id: 'signed', label: 'Signed' },
+];
+
+/** Waiting on you: an open request (a missing file). From SBC: a file SBC sent. Signed: a signed copy. */
+export function matchesFilter(n: Pick<DocNode, 'status' | 'fromSbc' | 'signed'>, f: DocFilter): boolean {
+  switch (f) {
+    case 'you':
+      return n.status === 'Missing';
+    case 'sbc':
+      return n.fromSbc && n.status !== 'Missing';
+    case 'signed':
+      return Boolean(n.signed) && n.status !== 'Missing';
+    default:
+      return true;
+  }
+}
+
+export interface DocGroup {
+  folder: TFolder;
+  files: Array<{ node: DocNode; leaf: TFolder }>;
+}
+
+/** Top-level folders (phase or category) with every file under them and the file's own folder. */
+export function groupEntries(entries: TEntry[]): DocGroup[] {
+  const byId = new Map(entries.map((e) => [e.id, e]));
+  const groups: DocGroup[] = [];
+  const index = new Map<string, DocGroup>();
+  for (const e of entries) {
+    if (e.kind === 'folder' && e.parent === null) {
+      const g = { folder: e, files: [] };
+      groups.push(g);
+      index.set(e.id, g);
+    }
+  }
+  for (const e of entries) {
+    if (e.kind !== 'file') continue;
+    const leaf = byId.get(e.parent);
+    if (!leaf || leaf.kind !== 'folder') continue;
+    let root: TEntry = leaf;
+    while (root.parent) {
+      const up = byId.get(root.parent);
+      if (!up) break;
+      root = up;
+    }
+    index.get(root.id)?.files.push({ node: e.node, leaf });
+  }
+  return groups;
+}
