@@ -7,8 +7,10 @@ import {
   messagesFailedAsOf,
   pastDays,
   pastMonthEnds,
+  rollingDaySum,
   superFilingsDueAsOf,
   trailingKnown,
+  withSnapshots,
   type FilingHistoryRow,
   type TrendPeriod,
 } from './home-trends';
@@ -30,10 +32,16 @@ function filing(over: Partial<FilingHistoryRow> = {}): FilingHistoryRow {
 }
 
 describe('periods', () => {
-  it('lists the four India days before today, oldest first', () => {
-    expect(pastDays(NOW).map((p) => p.ymd)).toEqual(['2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28']);
+  it('lists the 30 India days before today, one per day, oldest first', () => {
+    const days = pastDays(NOW);
+    expect(days).toHaveLength(30);
+    expect(days[0]!.ymd).toBe('2026-09-29');
+    expect(days[29]!.ymd).toBe('2026-10-28');
+    expect(pastDays(NOW, 4).map((p) => p.ymd)).toEqual(['2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28']);
     // A day ends at midnight India time, 18:30 UTC.
-    expect(pastDays(NOW)[3]!.end.toISOString()).toBe('2026-10-28T18:30:00.000Z');
+    expect(days[29]!.end.toISOString()).toBe('2026-10-28T18:30:00.000Z');
+    // No day is skipped or repeated.
+    expect(new Set(days.map((p) => p.ymd)).size).toBe(30);
   });
 
   it('lists the last days of the four months before this one', () => {
@@ -42,7 +50,7 @@ describe('periods', () => {
 
   it('uses the India day near midnight UTC', () => {
     // 29 Oct 20:00 UTC is already 30 Oct in India.
-    expect(pastDays(new Date('2026-10-29T20:00:00Z'))[3]!.ymd).toBe('2026-10-29');
+    expect(pastDays(new Date('2026-10-29T20:00:00Z'))[29]!.ymd).toBe('2026-10-29');
   });
 });
 
@@ -51,6 +59,33 @@ describe('trailingKnown', () => {
     expect(trailingKnown([1, null, 3, 4])).toEqual([3, 4]);
     expect(trailingKnown([1, 2, 3, null])).toEqual([]);
     expect(trailingKnown([0, 0, 0, 0])).toEqual([0, 0, 0, 0]);
+  });
+});
+
+describe('withSnapshots', () => {
+  const periods = pastDays(NOW, 4);
+  it('uses a stored snapshot for its day and the rebuild for the other days', () => {
+    const stored = new Map([['2026-10-26', 9]]);
+    expect(withSnapshots(periods, [1, 2, 3, 4], stored)).toEqual([1, 9, 3, 4]);
+  });
+
+  it('fills an unknown rebuilt day from a snapshot and keeps the others unknown', () => {
+    expect(withSnapshots(periods, [null, null, 3, 4], new Map([['2026-10-26', 5]]))).toEqual([null, 5, 3, 4]);
+    expect(withSnapshots(periods, undefined, new Map([['2026-10-28', 2]]))).toEqual([null, null, null, 2]);
+    expect(withSnapshots(periods, [1, 2, 3, 4], undefined)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe('rollingDaySum', () => {
+  it('sums each day and the days before it', () => {
+    const periods = pastDays(NOW, 3); // 26, 27, 28 Oct
+    const byDay = new Map([
+      ['2026-10-20', 5],
+      ['2026-10-21', 1],
+      ['2026-10-27', 2],
+    ]);
+    // 26 Oct sums 20 to 26 Oct, 27 Oct sums 21 to 27 Oct, 28 Oct sums 22 to 28 Oct.
+    expect(rollingDaySum(byDay, periods, 7)).toEqual([6, 3, 2]);
   });
 });
 

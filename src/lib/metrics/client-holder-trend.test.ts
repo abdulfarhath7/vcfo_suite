@@ -12,7 +12,7 @@ import { stepHolders } from '@/lib/metrics/step-holder';
 
 const NOW = new Date('2026-10-29T04:30:00Z');
 // Days 25, 26, 27 and 28 Oct (India); each ends at 18:30Z.
-const periods = pastDays(NOW);
+const periods = pastDays(NOW, 4);
 const at = (iso: string) => new Date(iso);
 
 describe('holderCountsAsOf', () => {

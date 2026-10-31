@@ -3,7 +3,7 @@ import { pastDays, trailingKnown } from '@/lib/metrics/home-trends';
 import { clientDocsInAsOf, type DocRequestHistoryRow } from '@/lib/metrics/client-docs-trend';
 
 const NOW = new Date('2026-10-29T04:30:00Z');
-const periods = pastDays(NOW);
+const periods = pastDays(NOW, 4);
 const at = (iso: string) => new Date(iso);
 
 describe('clientDocsInAsOf', () => {

@@ -3,7 +3,7 @@ import { pastDays } from '@/lib/metrics/home-trends';
 import { awaitingApprovalAsOf, doneOnDayAsOf, indexStepEvents, type StepHistoryEvent } from './staff-home-trends';
 
 const NOW = new Date('2026-10-29T04:30:00Z');
-const periods = pastDays(NOW); // 25, 26, 27, 28 Oct (IST)
+const periods = pastDays(NOW, 4); // 25, 26, 27, 28 Oct (IST)
 const at = (d: number, hh = '06') => new Date(`2026-10-${d}T${hh}:00:00Z`);
 
 function ev(stepId: string, from: string | null, to: string, review: string | null, when: Date): StepHistoryEvent {

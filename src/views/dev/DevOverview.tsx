@@ -174,7 +174,7 @@ const COST_TONE: Record<CostGroup['group'], ChipTone | 'navy'> = {
 export default function DevOverview() {
   const q = useDevApi<OverviewPayload>('/api/dev/overview', { refetchMs: 60_000 });
   const d = q.data;
-  // R-18: the last four day ends, rebuilt from the message logs and the audit log.
+  // R-18: the last 30 day ends, rebuilt from the message logs and the audit log.
   const trends = useHomeTrends('dev');
 
   const working = d ? d.services.filter((s) => s.status === 'configured').length : 0;

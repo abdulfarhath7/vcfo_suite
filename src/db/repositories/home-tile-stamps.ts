@@ -4,13 +4,13 @@ import { db } from '@/db/client';
 import { kpiSnapshots } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
-import { istYmd, type HomeTrends } from '@/lib/metrics/home-trends';
+import { istYmd } from '@/lib/metrics/home-trends';
 import {
   STAMP_TILES,
   cleanStampValues,
   stampDays,
   stampKey,
-  stampSeries,
+  stampsByDay,
   type StampHome,
 } from '@/lib/metrics/home-tile-stamps';
 
@@ -67,8 +67,16 @@ export async function stampHomeTiles(
   return rows.length;
 }
 
-/** The caller's stamped series for one home, oldest first, without today. */
-export async function getHomeTileTrends(ctx: AuthContext, home: StampHome, now: Date = new Date()): Promise<HomeTrends> {
+/**
+ * The caller's stamped values for one home as one day-to-value map per tile, for the 30 days
+ * before today. One query, under the caller's own profile id. The trends repository
+ * (`home-trends.ts`) lays them over the rebuilt days; a stamp wins for its day.
+ */
+export async function getHomeTileStampDays(
+  ctx: AuthContext,
+  home: StampHome,
+  now: Date = new Date(),
+): Promise<Record<string, Map<string, number>>> {
   assertHome(ctx, home);
   const days = stampDays(istYmd(now));
   const keys = STAMP_TILES[home].map((tile) => stampKey(home, tile));
@@ -76,9 +84,8 @@ export async function getHomeTileTrends(ctx: AuthContext, home: StampHome, now: 
     .select({ period: kpiSnapshots.period, key: kpiSnapshots.key, value: kpiSnapshots.value })
     .from(kpiSnapshots)
     .where(and(eq(kpiSnapshots.scope, ctx.userId), inArray(kpiSnapshots.key, keys), inArray(kpiSnapshots.period, days)));
-  return stampSeries(
+  return stampsByDay(
     home,
-    days,
     rows.map((r) => ({ period: String(r.period).slice(0, 10), key: r.key, value: Number(r.value) })),
   );
 }

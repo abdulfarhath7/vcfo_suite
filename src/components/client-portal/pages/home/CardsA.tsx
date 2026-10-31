@@ -139,9 +139,10 @@ async function downloadReport(h: HomeData) {
  * how they are counted (E-04); Report and Upload on the right. The five tiles are fixed (B1):
  * before the COI Waiting on, Overdue, With SBC, Documents in and Steps done; after it Waiting
  * on, Overdue, Due soon, Registrations and Incorporated. Every count tile draws a line of the
- * last four days rebuilt from the step events, requests, uploads and filings (B2,
- * `client-home-history.ts`); a tile with no past values draws a flat line and "No history
- * yet". The Incorporated date tile draws none (a date has no count to follow).
+ * last 30 days, one point per day, rebuilt from the step events, requests, uploads and filings
+ * (B2, `client-home-history.ts`); the line starts on the engagement's creation day when that is
+ * later. A tile with no past values draws a flat line and "No history yet". The Incorporated
+ * date tile draws none (a date has no count to follow).
  */
 export function HomeCard({ h, onUpload }: { h: HomeData; onUpload: (n?: NeedRow) => void }) {
   const { portal, after, model, company } = h;

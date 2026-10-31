@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt, lte, min, or } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNotNull, isNull, lt, lte, min, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   auditEvents,
@@ -33,6 +33,8 @@ import {
   type StepHistoryEvent,
 } from '@/lib/metrics/staff-home-trends';
 import { assertDeveloper } from '@/db/repositories/dev-scope';
+import { getHomeTileStampDays } from '@/db/repositories/home-tile-stamps';
+import type { StampHome } from '@/lib/metrics/home-tile-stamps';
 import {
   clientTilesAsOf,
   type ClientRequestHistoryRow,
@@ -46,13 +48,16 @@ import {
   messagesFailedAsOf,
   pastDays,
   pastMonthEnds,
+  rollingDaySum,
   superFilingsDueAsOf,
   trailingKnown,
+  withSnapshots,
   type EngagementDeleteEvent,
   type FilingHistoryRow,
   type FilingReopen,
   type HomeTrendHome,
   type HomeTrends,
+  type TrendPeriod,
 } from '@/lib/metrics/home-trends';
 
 /**
@@ -60,7 +65,15 @@ import {
  *
  * A series is returned only where the stored rows say what the tile showed at the end of each
  * past period (the pure rules are in `src/lib/metrics/home-trends.ts`). Tiles whose past
- * cannot be known get no series and draw no line. What each home gets:
+ * cannot be known get no series and draw no line.
+ *
+ * WINDOW (owner item B2, 2026-10-31): every daily home (client, lead, manager, admin, dev)
+ * covers the 30 India days before today, one point per day (`TREND_DAYS`). Each metric is one
+ * scoped query for the whole window, never one query per day. The super admin home keeps its
+ * four month ends, because its tiles show the change against last month. On the lead, manager
+ * and admin homes a day the person's home stamped (`kpi_snapshots`, `home-tile-stamps.ts`)
+ * uses the stamped value, and a stamp wins over the rebuilt value of the same day. What each
+ * home gets:
  *
  *   super   clients      engagements that existed and were not deleted at each month end
  *                        (created_at, deleted_at, and the project.deleted / project.restored
@@ -75,6 +88,9 @@ import {
  *           The checklist state of each past day is rebuilt by undoing the later step
  *           events; requests close at `closed_at` or their first uploaded file; filings
  *           read their due and filed dates (`src/lib/metrics/client-home-history.ts`).
+ *           A day before the engagement was created is unknown, so a young engagement's
+ *           line starts on its creation day. No `kpi_snapshots` row is ever written for a
+ *           client tile (only staff homes stamp), so the rebuild alone draws these lines.
  *   lead    doneToday    steps completed that day (status events), tasks whose
  *                        `completed_at` falls in it, filings due that day and filed by its end
  *   manager approvals    steps awaiting a manager decision at each day end, rebuilt from the
@@ -128,13 +144,13 @@ export async function getHomeTrends(ctx: AuthContext, home: HomeTrendHome, opts:
   switch (home) {
     case 'lead':
       if (ctx.role !== 'intern') throw new HomeTrendsError('Only project leads have this home', 403);
-      return leadTrends(ctx, now);
+      return withStampedDays(ctx, 'lead', now, leadTrends(ctx, now));
     case 'manager':
       if (!isAdminOrManager(ctx.role)) throw new HomeTrendsError('Only managers and admins have this home', 403);
-      return approvalTrends(await listScopedEngagementIds(ctx), 'approvals', now);
+      return withStampedDays(ctx, 'manager', now, (async () => approvalTrends(await listScopedEngagementIds(ctx), 'approvals', now))());
     case 'admin':
       if (!isFirmWideAdmin(ctx.role)) throw new HomeTrendsError('Only firm admins have this home', 403);
-      return approvalTrends(null, 'awaitingApproval', now);
+      return withStampedDays(ctx, 'admin', now, approvalTrends(null, 'awaitingApproval', now));
     case 'super':
       if (!isFirmWideAdmin(ctx.role)) throw new HomeTrendsError('Only firm-wide admins have this home', 403);
       return superTrends(now);
@@ -153,6 +169,25 @@ export async function getHomeTrends(ctx: AuthContext, home: HomeTrendHome, opts:
 /** Drops empty series, so a tile without history simply has no key. */
 function keep(series: Record<string, number[]>): HomeTrends {
   return Object.fromEntries(Object.entries(series).filter(([, v]) => v.length > 0));
+}
+
+/** Rebuilt values per day (`null` = cannot be known), one array per tile, aligned with `periods`. */
+interface DailyRebuild {
+  periods: TrendPeriod[];
+  days: Record<string, Array<number | null>>;
+}
+
+/**
+ * A staff home's series: the rebuilt days with the person's stamped days laid over them (a
+ * stamp wins for its day), then the known run that reaches yesterday. The stamp read (one
+ * query) runs beside the rebuild.
+ */
+async function withStampedDays(ctx: AuthContext, home: StampHome, now: Date, rebuild: Promise<DailyRebuild>): Promise<HomeTrends> {
+  const [rebuilt, stamps] = await Promise.all([rebuild, getHomeTileStampDays(ctx, home, now)]);
+  const keys = new Set([...Object.keys(rebuilt.days), ...Object.keys(stamps)]);
+  const out: Record<string, number[]> = {};
+  for (const key of keys) out[key] = trailingKnown(withSnapshots(rebuilt.periods, rebuilt.days[key], stamps[key]));
+  return keep(out);
 }
 
 function reopensFrom(rows: Array<{ metadata: unknown; createdAt: Date }>): FilingReopen[] {
@@ -247,9 +282,9 @@ function approvalStepIds(): string[] {
  * Manager "Needs your approval" (`ids` = the manager's engagements) and admin "Awaiting
  * approval" (`ids` = null, every engagement not deleted), per past day end.
  */
-async function approvalTrends(ids: string[] | null, key: 'approvals' | 'awaitingApproval', now: Date): Promise<HomeTrends> {
-  if (ids && ids.length === 0) return {};
+async function approvalTrends(ids: string[] | null, key: 'approvals' | 'awaitingApproval', now: Date): Promise<DailyRebuild> {
   const periods = pastDays(now);
+  if (ids && ids.length === 0) return { periods, days: {} };
   const first = periods[0]!;
   const stepIds = approvalStepIds();
 
@@ -286,15 +321,14 @@ async function approvalTrends(ids: string[] | null, key: 'approvals' | 'awaiting
     }
   }
   const events = indexStepEvents(eventRows as StepHistoryEvent[]);
-  return keep({
-    [key]: trailingKnown(
-      periods.map((period) => awaitingApprovalAsOf({ steps, events, engagementCreatedAt: createdAt, period, reviewSince })),
-    ),
-  });
+  return {
+    periods,
+    days: { [key]: periods.map((period) => awaitingApprovalAsOf({ steps, events, engagementCreatedAt: createdAt, period, reviewSince })) },
+  };
 }
 
 /** Lead "Done today" per past day: their engagements, and the tasks assigned to them. */
-async function leadTrends(ctx: AuthContext, now: Date): Promise<HomeTrends> {
+async function leadTrends(ctx: AuthContext, now: Date): Promise<DailyRebuild> {
   const ids = await listScopedEngagementIds(ctx);
   const periods = pastDays(now);
   const first = periods[0]!;
@@ -354,21 +388,23 @@ async function leadTrends(ctx: AuthContext, now: Date): Promise<HomeTrends> {
   const stepEvents = indexStepEvents(eventRows as StepHistoryEvent[]);
   const filings = filingRows as FilingHistoryRow[];
   const reopens = reopensFrom(reopenRows);
-  return keep({
-    doneToday: trailingKnown(
-      periods.map((period) => doneOnDayAsOf({ period, stepEvents, statusSince, tasks: taskRows, filings, reopens })),
-    ),
-  });
+  return {
+    periods,
+    days: { doneToday: periods.map((period) => doneOnDayAsOf({ period, stepEvents, statusSince, tasks: taskRows, filings, reopens })) },
+  };
 }
 
 /* ------------------------------------------------------------------ developer */
+
+/** The India calendar day of an audit event, `YYYY-MM-DD`. */
+const deniedDay = sql<string>`to_char(${auditEvents.createdAt} at time zone 'Asia/Kolkata', 'YYYY-MM-DD')`;
 
 async function devTrends(now: Date): Promise<HomeTrends> {
   const periods = pastDays(now);
   const since = new Date(periods[0]!.end.getTime() - DAY_MS);
   const until = periods[periods.length - 1]!.end;
 
-  const [deliveries, emails, ...denied] = await Promise.all([
+  const [deliveries, emails, deniedRows] = await Promise.all([
     db
       .select({ createdAt: notificationDeliveries.createdAt, updatedAt: notificationDeliveries.updatedAt })
       .from(notificationDeliveries)
@@ -383,24 +419,26 @@ async function devTrends(now: Date): Promise<HomeTrends> {
       .select({ createdAt: emailSendLog.createdAt, updatedAt: emailSendLog.updatedAt })
       .from(emailSendLog)
       .where(and(eq(emailSendLog.status, 'failed'), gte(emailSendLog.createdAt, since), lt(emailSendLog.createdAt, until))),
-    ...periods.map((p) =>
-      db
-        .select({ n: count() })
-        .from(auditEvents)
-        .where(
-          and(
-            eq(auditEvents.result, 'denied'),
-            gte(auditEvents.createdAt, new Date(p.end.getTime() - 7 * DAY_MS)),
-            lt(auditEvents.createdAt, p.end),
-          ),
+    // Denied events per India day over the window and the 7 days before it: one query, then
+    // each day end sums its own 7 days (`rollingDaySum`).
+    db
+      .select({ day: deniedDay, n: count() })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.result, 'denied'),
+          gte(auditEvents.createdAt, new Date(periods[0]!.end.getTime() - 7 * DAY_MS)),
+          lt(auditEvents.createdAt, until),
         ),
-    ),
+      )
+      .groupBy(deniedDay),
   ]);
 
   const failed = [...deliveries, ...emails];
+  const byDay = new Map(deniedRows.map((r) => [String(r.day), Number(r.n) || 0]));
   return keep({
     messagesFailed: periods.map((p) => messagesFailedAsOf(failed, p)),
-    denied: denied.map((rows) => Number(rows[0]?.n ?? 0) || 0),
+    denied: rollingDaySum(byDay, periods, 7),
   });
 }
 
