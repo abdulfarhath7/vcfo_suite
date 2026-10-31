@@ -24,9 +24,9 @@
     --surface-raised: 100.0% 0.000 0;
     --surface-sunken: 96.6% 0.006 255;
     --hover: 97.3% 0.006 265;
-    --line: 92.9% 0.011 257;
+    --line: 88.9% 0.016 257;
     --line-soft: 95.6% 0.007 248;
-    --line-strong: 86.4% 0.018 256;
+    --line-strong: 81.5% 0.022 256;
     --rule: var(--ink);
     --ink: 26.0% 0.060 251;
     --ink-muted: 53.4% 0.041 257;

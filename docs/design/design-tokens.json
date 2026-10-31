@@ -66,12 +66,12 @@
       {
         "name": "line",
         "value": {
-          "light": "#e3e8ef",
+          "light": "#d3dae4",
           "dark": "#242830"
         },
-        "usage": "2px edge around every card, panel and section (R-55). Decorative; never the only edge of a control.",
+        "usage": "2px edge around every card, panel and section (R-55). Must stay clearly darker than the page (surface), so every card reads as a separate object.",
         "oklch": {
-          "light": "92.9% 0.011 257",
+          "light": "88.9% 0.016 257",
           "dark": "27.6% 0.016 264"
         }
       },
@@ -90,12 +90,12 @@
       {
         "name": "line-strong",
         "value": {
-          "light": "#cbd3de",
+          "light": "#b9c3d0",
           "dark": "#323742"
         },
         "usage": "Borders of inputs, checkboxes and secondary buttons. Holds 3:1 on surface and surface-raised.",
         "oklch": {
-          "light": "86.4% 0.018 256",
+          "light": "81.5% 0.022 256",
           "dark": "33.7% 0.021 266"
         }
       },

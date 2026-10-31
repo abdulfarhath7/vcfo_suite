@@ -182,3 +182,9 @@ input[type="checkbox"]:checked,input[type="checkbox"]:indeterminate{border-color
 input[type="checkbox"]:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")}
 input[type="checkbox"]:indeterminate{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E")}
 input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.5}
+
+/* R-54 / R-55 in the client portal. The portal redefines --panel and --border as full colours, so the
+   shared .surface / .noir-card rule (oklch(var(--panel))) resolved to nothing here and DashSection
+   cards (Timeline, Incorporation, This week) drew no background and no edge. Paint them with the
+   portal's own colours. */
+.surface,.surface-raised,.surface-flat,.surface-flat-raised,.noir-card,.noir-card-raised,.card-surface{background:var(--panel)!important;border:2px solid var(--border)!important}

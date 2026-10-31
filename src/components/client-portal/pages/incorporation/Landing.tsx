@@ -370,7 +370,7 @@ export default function IncorporationLanding() {
       <button
         type="button"
         onClick={drillRing}
-        className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="flex min-w-0 flex-col rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>*]:flex-1"
         aria-label={
           showAfter
             ? `Incorporated ${wd(d.coiDate!)} ${fmtY(d.coiDate)}`
@@ -391,16 +391,16 @@ export default function IncorporationLanding() {
           <StatCard
             label="Days to COI"
             value={coiEnd ? daysLeft : 'Not set'}
-            hint={coiEnd ? `Expected ${wd(coiEnd)} ${fmt(coiEnd)}${d.extras?.windowSetByName ? ` · set by ${d.extras.windowSetByName}` : ''}` : undefined}
+            hint={coiEnd ? `Expected ${wd(coiEnd)} ${fmt(coiEnd)}${d.extras?.windowSetByName ? ` · set by ${d.extras.windowSetByName}` : ''}` : 'No window yet'}
             tone="brand"
             icon={CalendarClock}
           />
         )}
       </button>
-      <button type="button" onClick={drillRing} className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label={`SPICe+ · ${spice.done} of ${spice.total} steps`}>
+      <button type="button" onClick={drillRing} className="flex min-w-0 flex-col rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>*]:flex-1" aria-label={`SPICe+ · ${spice.done} of ${spice.total} steps`}>
         <StatCard label="SPICe+ steps" value={`${spice.done} / ${spice.total}`} hint={`${spice.pct}%`} tone="info" icon={ListChecks} />
       </button>
-      <button type="button" onClick={drillAll} className="min-w-0 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label={`All steps · ${all.done} of ${all.total}`}>
+      <button type="button" onClick={drillAll} className="flex min-w-0 flex-col rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&>*]:flex-1" aria-label={`All steps · ${all.done} of ${all.total}`}>
         <StatCard label="All steps" value={`${all.done} / ${all.total}`} hint={`${all.pct}%`} tone="neutral" icon={ListChecks} />
       </button>
     </div>
