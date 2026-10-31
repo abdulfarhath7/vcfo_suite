@@ -80,9 +80,9 @@ Branch `overnight/31oct`, merged into `main`. Every milestone has its own report
 | Rollback image | ✓ | `vcfo-suite:rollback-0f34763` (the image that was live before). |
 | Image | ✓ | `vcfo-suite:0f746dfc` and `:latest`. App Runner START_DEPLOYMENT succeeded at 10:32 IST. |
 | Live check | ✓ | `/` and `/login` answer 200. No errors in the application log after the deploy. Not checked signed in. |
-| `CREDENTIALS_ENCRYPTION_KEY` secret | ✗ | Not created. The tool that runs commands blocked writes to Secrets Manager. Two-step codes keep working with the old `t1` format. |
-| `terraform apply` | ✗ | Not run. The plan is 3 to add, 1 to change, 0 to destroy: the key secret and its policy, the M7 read-only console grant, and the App Runner env and secret list. |
-| `totp:reencrypt` | ✗ | Waits for the key secret. |
+| `CREDENTIALS_ENCRYPTION_KEY` secret | ✓ | Created at about 11:00 IST on the owner's command, with a random 32-byte value and the deny-all policy. |
+| `terraform apply` | ✓ | 3 added, 1 changed, 0 destroyed: the key secret and its policy, the M7 read-only console grant, and the App Runner env and secret list. `credentials_key_enabled = true` is in `terraform.tfvars`. |
+| `totp:reencrypt` | ✗ | Not run yet. It must run before the first AUTH_SECRET rotation (31 Jan 2027). |
 
 To finish, the owner runs these from `infra/` (the plan above, nothing else):
 
@@ -93,3 +93,13 @@ terraform apply -var credentials_key_enabled=true   # then set it to true in ter
 ```
 
 Then run `npm run totp:reencrypt` through the tunnel (docs/context/AWS-DEPLOY.md §11.3).
+
+## 7. Deploy, 31 Oct 2026 12:03 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| `main` | ✓ | `b5f3f919`: the hub's fixes for A1/A2, A7/D3, E1, B2 and F4. No migration and no infra change. |
+| Gate | ✓ | 0 type errors, 0 lint errors (520 warnings), 3,702 tests pass. |
+| Rollback image | ✓ | `vcfo-suite:rollback-0f746dfc`. |
+| Image | ✓ | `vcfo-suite:b5f3f919` and `:latest`. App Runner deployment succeeded at 12:03 IST. |
+| Live check | ✓ | `/` and `/login` answer 200. No errors in the application log. Not checked signed in. |
