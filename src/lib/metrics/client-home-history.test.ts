@@ -10,8 +10,8 @@ import {
 } from '@/lib/metrics/client-home-history';
 
 const NOW = new Date('2026-10-29T04:30:00Z');
-// Days 25, 26, 27 and 28 Oct (India).
-const periods = pastDays(NOW);
+// Days 25, 26, 27 and 28 Oct (India); the 30-day window has its own test below.
+const periods = pastDays(NOW, 4);
 const at = (iso: string) => new Date(iso);
 const firstStep = buildIncorporationModel({}).steps[0]!.id;
 
@@ -94,5 +94,36 @@ describe('clientTilesAsOf', () => {
     const t = clientTilesAsOf({ ...base, engagementCreatedAt: at('2026-10-28T05:00:00Z'), state: {}, events: [], requests: [], period: periods[0]! });
     expect(t.stepsDone).toBeNull();
     expect(t.waiting).toBeNull();
+  });
+});
+
+describe('the 30-day window', () => {
+  // 29 Sep to 28 Oct (India), one period per day.
+  const window = pastDays(NOW);
+  const base = { schedule: null, filings: [], reopens: [], state: {}, requests: [] };
+
+  it('has one value per day and covers all 30 days for an older engagement', () => {
+    const events: StepStatusHistoryEvent[] = [
+      { stepId: firstStep, fromStatus: 'in-progress', toStatus: 'completed', reviewStatus: null, at: at('2026-10-08T05:00:00Z') },
+    ];
+    const state = { [firstStep]: { status: 'completed' } };
+    const values = window.map((period) =>
+      clientTilesAsOf({ ...base, state, events, engagementCreatedAt: at('2026-09-01T05:00:00Z'), period }).stepsDone,
+    );
+    expect(values).toHaveLength(30);
+    const line = trailingKnown(values);
+    expect(line).toHaveLength(30);
+    // 29 Sep to 7 Oct: not done yet. 8 Oct to 28 Oct: done.
+    expect(line.slice(0, 9)).toEqual(Array(9).fill(0));
+    expect(line.slice(9)).toEqual(Array(21).fill(1));
+  });
+
+  it('starts the line on the creation day of a young engagement', () => {
+    // Created 19 Oct, 10:30 India time: the 18 Oct day end is before it, the 19 Oct day end after.
+    const values = window.map((period) =>
+      clientTilesAsOf({ ...base, events: [], engagementCreatedAt: at('2026-10-19T05:00:00Z'), period }).stepsDone,
+    );
+    expect(values.slice(0, 20).every((v) => v === null)).toBe(true);
+    expect(trailingKnown(values)).toHaveLength(10);
   });
 });

@@ -20,8 +20,15 @@ export type HomeTrendHome = (typeof HOME_TREND_HOMES)[number];
 /** Tile key to past values, oldest first, without the live point. A tile with no history is absent. */
 export type HomeTrends = Record<string, number[]>;
 
-/** Past periods per series: the last four days (or months on the super admin home). */
-export const TREND_POINTS = 4;
+/**
+ * Past days per daily series (owner item B2, 2026-10-31): the 30 India days before today, one
+ * point per day. A line starts later when its history starts later (an engagement created 10
+ * days ago draws 10 past points), because an unknown day ends the line (`trailingKnown`).
+ */
+export const TREND_DAYS = 30;
+
+/** Past months on the super admin home, whose tiles compare against last month. */
+export const TREND_MONTHS = 4;
 
 const DAY_MS = 86_400_000;
 const IST_OFFSET_MS = 5.5 * 3_600_000;
@@ -54,8 +61,8 @@ export function istDayEnd(ymd: string): Date {
   return new Date(Date.parse(`${addDaysYmd(ymd, 1)}T00:00:00Z`) - IST_OFFSET_MS);
 }
 
-/** The `n` India days before today, oldest first. */
-export function pastDays(now: Date, n = TREND_POINTS): TrendPeriod[] {
+/** The `n` India days before today, oldest first (30 by default). */
+export function pastDays(now: Date, n = TREND_DAYS): TrendPeriod[] {
   const today = istYmd(now);
   return Array.from({ length: n }, (_, i) => {
     const ymd = addDaysYmd(today, i - n);
@@ -64,7 +71,7 @@ export function pastDays(now: Date, n = TREND_POINTS): TrendPeriod[] {
 }
 
 /** The `n` calendar months before the current India month, oldest first, each as its last day. */
-export function pastMonthEnds(now: Date, n = TREND_POINTS): TrendPeriod[] {
+export function pastMonthEnds(now: Date, n = TREND_MONTHS): TrendPeriod[] {
   const [y, m] = istYmd(now).split('-').map(Number) as [number, number];
   return Array.from({ length: n }, (_, i) => {
     // Day 0 of the next month is the last day of this one.
@@ -86,6 +93,36 @@ export function trailingKnown(values: Array<number | null>): number[] {
     out.unshift(v);
   }
   return out;
+}
+
+/**
+ * One day's value per period: the stored snapshot of that India day when there is one, else
+ * the value rebuilt from the records (`null` when it cannot be rebuilt). A stored snapshot is
+ * what the tile really showed that day, so it wins over the rebuild for the same day.
+ */
+export function withSnapshots(
+  periods: TrendPeriod[],
+  rebuilt: Array<number | null> | undefined,
+  snapshots: ReadonlyMap<string, number> | undefined,
+): Array<number | null> {
+  return periods.map((p, i) => {
+    const stored = snapshots?.get(p.ymd);
+    if (stored !== undefined && Number.isFinite(stored)) return stored;
+    return rebuilt?.[i] ?? null;
+  });
+}
+
+/**
+ * Counts per India day (`YYYY-MM-DD` to count) summed over the `days` days that end with each
+ * period's day. A period ends at midnight India time, so "the 7 days before the day end" are
+ * exactly that day and the 6 days before it.
+ */
+export function rollingDaySum(byDay: ReadonlyMap<string, number>, periods: TrendPeriod[], days: number): number[] {
+  return periods.map((p) => {
+    let n = 0;
+    for (let i = 0; i < days; i += 1) n += byDay.get(addDaysYmd(p.ymd, -i)) ?? 0;
+    return n;
+  });
 }
 
 /** Counts rows that match; `null` when any row's answer is unknown. */

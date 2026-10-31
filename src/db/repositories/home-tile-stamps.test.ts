@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
-import { stampSeries, cleanStampValues } from '@/lib/metrics/home-tile-stamps';
+import { stampDays, stampSeries, cleanStampValues } from '@/lib/metrics/home-tile-stamps';
 
 /**
  * Cross-tenant scoping for the home tile stamps (`home-tile-stamps.ts`): each home has one role
@@ -36,7 +36,7 @@ vi.mock('@/db/client', () => ({
   },
 }));
 
-const { stampHomeTiles, getHomeTileTrends, HomeTileStampError } = await import('@/db/repositories/home-tile-stamps');
+const { stampHomeTiles, getHomeTileStampDays, HomeTileStampError } = await import('@/db/repositories/home-tile-stamps');
 
 const dialect = new PgDialect();
 const ctx = (role: AuthContext['role'], userId = 'user-a'): AuthContext => ({ userId, email: 'a@x', name: 'A', role });
@@ -74,28 +74,57 @@ describe('stampHomeTiles', () => {
   });
 });
 
-describe('getHomeTileTrends', () => {
-  it('reads only the caller scope and the four days before today', async () => {
+describe('getHomeTileStampDays: the window', () => {
+  it('reads only the caller scope and the 30 days before today', async () => {
     rows = [
       { period: '2026-10-28', key: 'tile:lead:overdue', value: '2' },
       { period: '2026-10-29', key: 'tile:lead:overdue', value: '4' },
     ];
-    const out = await getHomeTileTrends(ctx('intern', 'lead-7'), 'lead', NOW);
-    expect(out).toEqual({ overdue: [2, 4] });
+    const out = await getHomeTileStampDays(ctx('intern', 'lead-7'), 'lead', NOW);
+    expect(Object.keys(out)).toEqual(['overdue']);
+    expect(out.overdue!.get('2026-10-29')).toBe(4);
     const q = dialect.sqlToQuery(lastWhere!);
     expect(q.params).toContain('lead-7');
-    expect(q.params).toContain('2026-10-26');
+    expect(q.params).toContain('2026-09-30');
     expect(q.params).toContain('2026-10-29');
+    expect(q.params).not.toContain('2026-09-29');
     expect(q.params).not.toContain('2026-10-30');
   });
 
   it('refuses another role before any read', async () => {
-    await expect(getHomeTileTrends(ctx('client'), 'lead', NOW)).rejects.toBeInstanceOf(HomeTileStampError);
+    await expect(getHomeTileStampDays(ctx('client'), 'lead', NOW)).rejects.toBeInstanceOf(HomeTileStampError);
+    expect(lastWhere).toBeUndefined();
+  });
+});
+
+describe('getHomeTileStampDays', () => {
+  it('gives one day-to-value map per tile, from the caller scope only', async () => {
+    rows = [
+      { period: '2026-10-01', key: 'tile:manager:overdue', value: '7' },
+      { period: '2026-10-29', key: 'tile:manager:overdue', value: '4' },
+    ];
+    const out = await getHomeTileStampDays(ctx('manager', 'mgr-1'), 'manager', NOW);
+    expect([...out.overdue!.entries()]).toEqual([
+      ['2026-10-01', 7],
+      ['2026-10-29', 4],
+    ]);
+    expect(dialect.sqlToQuery(lastWhere!).params).toContain('mgr-1');
+  });
+
+  it('refuses another role before any read', async () => {
+    await expect(getHomeTileStampDays(ctx('intern'), 'admin', NOW)).rejects.toBeInstanceOf(HomeTileStampError);
     expect(lastWhere).toBeUndefined();
   });
 });
 
 describe('pure rules', () => {
+  it('lists the 30 days before today', () => {
+    const days = stampDays('2026-10-30');
+    expect(days).toHaveLength(30);
+    expect(days[0]).toBe('2026-09-30');
+    expect(days[29]).toBe('2026-10-29');
+  });
+
   it('drops a series across a missing day', () => {
     const days = ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'];
     const out = stampSeries('admin', days, [

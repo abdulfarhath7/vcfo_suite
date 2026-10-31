@@ -57,7 +57,15 @@ vi.mock('@/db/repositories/engagements', () => ({
   checklistStateForViewer: (_c: unknown, state: unknown) => state,
 }));
 
+const getHomeTileStampDays = vi.fn();
+vi.mock('@/db/repositories/home-tile-stamps', () => ({
+  getHomeTileStampDays: (...a: unknown[]) => getHomeTileStampDays(...a),
+}));
+
 const { getHomeTrends, HomeTrendsError } = await import('@/db/repositories/home-trends');
+
+/** `n` zeros, then `tail`: a 30-day series whose last days are `tail`. */
+const zerosThen = (tail: number[], n = 30) => [...Array(n - tail.length).fill(0), ...tail];
 
 const dialect = new PgDialect();
 const OWN = '11111111-1111-1111-1111-111111111101';
@@ -76,6 +84,7 @@ beforeEach(() => {
   results = [];
   getMyEngagement.mockResolvedValue({ id: OWN });
   listScopedEngagementIds.mockResolvedValue([OWN]);
+  getHomeTileStampDays.mockResolvedValue({});
   assertEngagementAccess.mockImplementation(async (_c: AuthContext, id: string) =>
     id === OWN ? { ok: true, dbId: OWN, row: { id: OWN } } : { ok: false, dbId: id, forbidden: true },
   );
@@ -109,18 +118,20 @@ describe('developer home', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it('counts failed messages and denied events per day end', async () => {
+  it('counts failed messages and denied events per day end over 30 days, one query each', async () => {
     results = [
       [{ createdAt: new Date('2026-10-28T08:00:00Z'), updatedAt: new Date('2026-10-28T08:00:05Z') }],
       [],
-      [{ n: 0 }],
-      [{ n: 1 }],
-      [{ n: 1 }],
-      [{ n: 3 }],
+      // Denied events per India day; each day end sums its own 7 days.
+      [
+        { day: '2026-10-26', n: 1 },
+        { day: '2026-10-28', n: 2 },
+      ],
     ];
     const trends = await getHomeTrends(ctx('developer'), 'dev', { now: NOW });
-    expect(trends.messagesFailed).toEqual([0, 0, 0, 1]);
-    expect(trends.denied).toEqual([0, 1, 1, 3]);
+    expect(trends.messagesFailed).toEqual(zerosThen([1]));
+    expect(trends.denied).toEqual(zerosThen([1, 1, 3]));
+    expect(calls).toHaveLength(3);
   });
 });
 
@@ -128,7 +139,7 @@ describe('client home', () => {
   it('reads only the own engagement', async () => {
     results = [[], []];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
-    expect(trends.dueSoon).toEqual([0, 0, 0, 0]);
+    expect(trends.dueSoon).toEqual(zerosThen([]));
     expect(params()).toContain(OWN);
     expect(params()).not.toContain(OTHER);
   });
@@ -146,7 +157,7 @@ describe('client home', () => {
       [],
     ];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
-    expect(trends.docsIn).toEqual([0, 1, 2, 2]);
+    expect(trends.docsIn).toEqual(zerosThen([1, 2, 2]));
     expect(calls).toHaveLength(5);
     expect(params()).toContain(OWN);
     expect(params()).not.toContain(OTHER);
@@ -156,7 +167,7 @@ describe('client home', () => {
     results = [[], [], [], [], []];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
     for (const key of ['waiting', 'overdue', 'withSbc', 'docsIn', 'stepsDone', 'regs', 'dueSoon', 'filingsOverdue']) {
-      expect(trends[key]).toHaveLength(4);
+      expect(trends[key]).toHaveLength(30);
     }
   });
 
@@ -166,7 +177,16 @@ describe('client home', () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: { id: OWN, checklistState: { [step]: { status: 'completed' } } } });
     results = [[], [], [], [], [{ stepId: step, fromStatus: 'in-progress', toStatus: 'completed', reviewStatus: null, at: new Date('2026-10-27T05:00:00Z') }]];
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
-    expect(trends.stepsDone).toEqual([0, 0, 1, 1]);
+    expect(trends.stepsDone).toEqual(zerosThen([1, 1]));
+  });
+
+  it('starts every line on the creation day of an engagement younger than 30 days', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: { id: OWN, createdAt: new Date('2026-10-19T05:00:00Z') } });
+    results = [[], [], [], [], []];
+    const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
+    // 19 to 28 Oct: ten past days, then the screen adds today.
+    for (const key of ['waiting', 'overdue', 'withSbc', 'docsIn', 'stepsDone', 'regs']) expect(trends[key]).toHaveLength(10);
+    expect(calls).toHaveLength(5);
   });
 
   it('ends a line where a closed request has no close time', async () => {
@@ -174,7 +194,7 @@ describe('client home', () => {
     const trends = await getHomeTrends(ctx('client'), 'client', { now: NOW });
     expect(trends.waiting).toBeUndefined();
     expect(trends.docsIn).toBeUndefined();
-    expect(trends.stepsDone).toHaveLength(4);
+    expect(trends.stepsDone).toHaveLength(30);
   });
 
   it.each(['client', 'manager', 'intern'] as const)('%s asking for a foreign engagement gets nothing and no filing query', async (role) => {
@@ -215,9 +235,31 @@ describe('staff homes', () => {
       ],
     ];
     const trends = await getHomeTrends(ctx('manager'), 'manager', { now: NOW });
-    expect(trends.approvals).toEqual([1, 1, 0, 0]);
+    expect(trends.approvals!.slice(-4)).toEqual([1, 1, 0, 0]);
     expect(params()).toContain(OWN);
     expect(params()).not.toContain(OTHER);
+  });
+
+  it('a stored stamp wins over the rebuilt value of its day, and stamp-only tiles get their days', async () => {
+    getHomeTileStampDays.mockResolvedValue({
+      approvals: new Map([['2026-10-27', 5]]),
+      overdue: new Map([
+        ['2026-10-27', 2],
+        ['2026-10-28', 3],
+      ]),
+    });
+    results = [
+      [{ at: day(20) }],
+      [{ id: OWN, createdAt: day(1), checklistState: { 'post-1': { status: 'in-progress', reviewStatus: 'accepted' } } }],
+      [
+        { engagementId: OWN, stepId: 'post-1', fromStatus: 'in-progress', toStatus: 'in-progress', reviewStatus: 'reviewing', at: day(24) },
+        { engagementId: OWN, stepId: 'post-1', fromStatus: 'in-progress', toStatus: 'in-progress', reviewStatus: 'accepted', at: day(27) },
+      ],
+    ];
+    const trends = await getHomeTrends(ctx('manager'), 'manager', { now: NOW });
+    expect(trends.approvals!.slice(-4)).toEqual([1, 1, 5, 0]);
+    expect(trends.overdue).toEqual([2, 3]);
+    expect(getHomeTileStampDays).toHaveBeenCalledWith(expect.objectContaining({ role: 'manager' }), 'manager', NOW);
   });
 
   it('a manager with no engagements gets nothing and runs no query', async () => {
@@ -241,7 +283,7 @@ describe('staff homes', () => {
       [],
     ];
     const trends = await getHomeTrends(ctx('intern'), 'lead', { now: NOW });
-    expect(trends.doneToday).toEqual([0, 1, 1, 1]);
+    expect(trends.doneToday!.slice(-4)).toEqual([0, 1, 1, 1]);
     expect(listScopedEngagementIds).toHaveBeenCalledWith(expect.objectContaining({ role: 'intern' }));
     expect(params()).toContain(OWN);
     expect(params()).toContain('user-intern');

@@ -1,4 +1,4 @@
-import { addDaysYmd, TREND_POINTS, trailingKnown, type HomeTrends } from '@/lib/metrics/home-trends';
+import { addDaysYmd, TREND_DAYS, trailingKnown, type HomeTrends } from '@/lib/metrics/home-trends';
 
 /**
  * HOME TILE STAMPS — the trend lines of staff home tiles whose past cannot be rebuilt from
@@ -40,10 +40,26 @@ export function cleanStampValues(home: StampHome, values: Record<string, unknown
   return out;
 }
 
-/** The India days before `todayYmd` a line may use, oldest first. */
-export function stampDays(todayYmd: string, n = TREND_POINTS): string[] {
+/** The India days before `todayYmd` a line may use, oldest first (the 30-day window). */
+export function stampDays(todayYmd: string, n = TREND_DAYS): string[] {
   const out: string[] = [];
   for (let i = n; i >= 1; i -= 1) out.push(addDaysYmd(todayYmd, -i));
+  return out;
+}
+
+/** Stored rows (`period` YYYY-MM-DD, `key`, `value`) to one day-to-value map per tile. */
+export function stampsByDay(
+  home: StampHome,
+  rows: Array<{ period: string; key: string; value: number }>,
+): Record<string, Map<string, number>> {
+  const out: Record<string, Map<string, number>> = {};
+  for (const tile of STAMP_TILES[home]) {
+    const key = stampKey(home, tile);
+    for (const r of rows) {
+      if (r.key !== key || !Number.isFinite(r.value)) continue;
+      (out[tile] ??= new Map()).set(r.period, r.value);
+    }
+  }
   return out;
 }
 
