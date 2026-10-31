@@ -205,34 +205,36 @@ export function matchesFilter(n: Pick<DocNode, 'status' | 'fromSbc' | 'signed'>,
   }
 }
 
-export interface DocGroup {
-  folder: TFolder;
-  files: Array<{ node: DocNode; leaf: TFolder }>;
+export interface TreeRow {
+  e: TEntry;
+  depth: number;
+  open: boolean;
 }
 
-/** Top-level folders (phase or category) with every file under them and the file's own folder. */
-export function groupEntries(entries: TEntry[]): DocGroup[] {
+/**
+ * The rows the left folder tree shows, in tree order. A file shows when `shown` passes it. A folder
+ * shows when one file under it shows. A closed folder hides everything under it, except while the
+ * person searches (then every folder is open).
+ */
+export function treeRows(entries: TEntry[], shown: (n: DocNode) => boolean, isOpen: (id: string) => boolean, searching = false): TreeRow[] {
   const byId = new Map(entries.map((e) => [e.id, e]));
-  const groups: DocGroup[] = [];
-  const index = new Map<string, DocGroup>();
-  for (const e of entries) {
-    if (e.kind === 'folder' && e.parent === null) {
-      const g = { folder: e, files: [] };
-      groups.push(g);
-      index.set(e.id, g);
+  const ancestors = (e: TEntry): string[] => {
+    const out: string[] = [];
+    let p = e.parent;
+    while (p) {
+      out.push(p);
+      p = byId.get(p)?.parent ?? null;
     }
-  }
+    return out;
+  };
+  const live = new Set<string>();
+  for (const e of entries) if (e.kind === 'file' && shown(e.node)) for (const a of ancestors(e)) live.add(a);
+  const rows: TreeRow[] = [];
   for (const e of entries) {
-    if (e.kind !== 'file') continue;
-    const leaf = byId.get(e.parent);
-    if (!leaf || leaf.kind !== 'folder') continue;
-    let root: TEntry = leaf;
-    while (root.parent) {
-      const up = byId.get(root.parent);
-      if (!up) break;
-      root = up;
-    }
-    index.get(root.id)?.files.push({ node: e.node, leaf });
+    const anc = ancestors(e);
+    if (!searching && anc.some((a) => !isOpen(a))) continue;
+    if (e.kind === 'file' ? !shown(e.node) : !live.has(e.id)) continue;
+    rows.push({ e, depth: anc.length, open: searching || isOpen(e.id) });
   }
-  return groups;
+  return rows;
 }
