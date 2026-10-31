@@ -20,7 +20,6 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .seg>.thumb{display:none}
 .seg button{position:relative;z-index:1;border:0;background:none;height:28px;padding:0 12px;border-radius:4px;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--ink-2));cursor:pointer;white-space:nowrap}
 .seg button.on{background:oklch(var(--brand));color:#fff;box-shadow:var(--shine)}
-.vdoc-card{flex:1;min-height:0;overflow:visible}
 .vdoc-dots{display:flex;gap:2px}.vdoc-dots i{width:6px;height:6px;border-radius:2px}
 /* tree rows: 36 px; the picked file has a soft blurple fill and a 3 px blurple edge */
 .tr{position:relative;display:flex;align-items:center;height:36px;padding-right:6px;font-size:14px;color:oklch(var(--ink))}
@@ -156,56 +155,47 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-drop-cap{font-size:13px;color:oklch(var(--ink-muted))}
 /* the Older and Due marks hide under 640 px only */
 @media (min-width:640px) and (max-width:767px){.vdoc-hide-sm{display:revert}}
-/* ---------- "All documents" flat table (owner item E1, 30 Oct 2026) ----------
-   One card, one table, no inner cards. The page grows with the table (no viewport-high card), so
-   the row menus are never clipped; the launcher spacer of the page host stays. */
-.vdoc:has(.vdoc-flat){height:auto;min-height:0;margin-bottom:0}
-.vdoc-flat{flex:none}
+/* ---------- the explorer on the page (owner fix E1, 31 Oct 2026) ----------
+   No card: the toolbar, the folder tree and the preview sit on the page ground. One 2 px line
+   separates the tree from the preview; nothing else is boxed. The tree is the side panel. */
+.vdoc-ex{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;color:oklch(var(--ink))}
+.vdoc-ex .vdoc-tools{min-height:0;padding:0 0 12px;border-bottom:0}
 .vdoc-chips{display:flex;flex-wrap:wrap;gap:6px}
 .vdoc-chips .sx-filter{height:30px;gap:6px}
 .vdoc-chips .sx-filter b{font-weight:500;color:oklch(var(--ink-muted))}
 .vdoc-chips .sx-filter[aria-pressed=true] b{color:inherit}
-.vdoc-wrap{position:relative}
-.vdoc-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;color:oklch(var(--ink))}
-.vdoc-tbl col.c-ft{width:60px}.vdoc-tbl col.c-fd{width:22%}.vdoc-tbl col.c-fr{width:17%}.vdoc-tbl col.c-dt{width:116px}.vdoc-tbl col.c-st{width:124px}.vdoc-tbl col.c-mn{width:44px}
-.vdoc-tbl thead th{height:34px;padding:0 10px;text-align:left;font:500 12px var(--font-sans),sans-serif;color:oklch(var(--ink-faint));border-bottom:1px solid oklch(var(--line-soft))}
-.vdoc-tbl thead th:first-child{padding-left:16px}
-.vdoc-tbl td{height:40px;padding:0 10px;border-bottom:1px solid oklch(var(--line-soft));vertical-align:middle;white-space:nowrap;overflow:hidden}
-.vdoc-tbl td.c-ft{padding-left:16px}
-.vdoc-tbl td.vdoc-mc{position:relative;overflow:visible;padding:0 6px;text-align:right}
-/* the folder header row: one thin line, faint fill */
-.vdoc-grp th,.vdoc-grp td{height:32px;background:oklch(var(--surface-sunken));border-bottom:1px solid oklch(var(--line-soft))}
-.vdoc-grp th{padding:0 10px 0 10px;text-align:left;font-weight:500}
-.vdoc-gh{display:flex;align-items:center;gap:10px;min-width:0}
-.vdoc-gt{display:inline-flex;align-items:center;gap:6px;min-width:0;height:28px;padding:0 6px;border:0;border-radius:4px;background:none;color:oklch(var(--ink));font:500 13px var(--font-sans),sans-serif;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.vdoc-gt svg{flex:none;color:oklch(var(--ink-muted))}
-.vdoc-gt:hover{background:oklch(var(--ink) / .05)}
-.vdoc-gc{font:400 12.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
-.vdoc-gc:hover{color:oklch(var(--brand-text))}
-.vdoc-gc.tip::after{left:0;transform:translate(0,3px)}.vdoc-gc.tip:hover::after,.vdoc-gc.tip:focus-visible::after{transform:none}
-/* document rows: one line, secondary text in faint ink */
-.vdoc-row:hover td{background:oklch(var(--surface-sunken))}
-.vdoc-row.sel td{background:oklch(var(--brand-soft))}
-.vdoc-row.sel td:first-child{box-shadow:inset 3px 0 0 oklch(var(--brand))}
-.vdoc-row.over td{background:oklch(var(--brand-soft));box-shadow:inset 0 1px 0 oklch(var(--brand)),inset 0 -1px 0 oklch(var(--brand))}
-.vdoc-row.hid .lb{text-decoration:line-through;font-weight:400;color:oklch(var(--ink-muted))}
-.vdoc-row.glow td{animation:glow 2.4s ease-out 1}
-.vdoc-nm{display:flex;align-items:baseline;gap:8px;width:100%;min-width:0;height:40px;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
-.vdoc-nm .lb{flex:0 1 auto}
-.vdoc-nm:hover .lb{color:oklch(var(--brand-text))}
-.vdoc-sub,.vdoc-tx,.vdoc-fd{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:oklch(var(--ink-faint))}
-.vdoc-sub{flex:1 1 0}
-.vdoc-nm .lb,.vdoc-nm .vdoc-sub{line-height:40px}
-.vdoc-tx{display:block;color:oklch(var(--ink-muted))}
-.vdoc-fd{display:block;max-width:100%;font-weight:400;text-align:left}
-button.vdoc-fd:hover{color:oklch(var(--brand-text));text-decoration:underline}
-.vdoc-tbl .kb{opacity:0}
-.vdoc-row:hover .kb,.vdoc-grp:hover .kb,.vdoc-tbl tr:focus-within .kb,.vdoc-tbl .kb.open{opacity:1}
-.vdoc-tbl .menu{top:36px}
-.vdoc-tbl .menu a{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;box-sizing:border-box;border-radius:4px;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-decoration:none}
-.vdoc-tbl .menu a svg{color:oklch(var(--ink-muted))}
-.vdoc-tbl .menu a:hover,.vdoc-tbl .menu a:focus-visible{background:oklch(var(--surface-sunken));outline:none}
-/* narrower screens drop From, then Folder (the phone has its own board under 700 px) */
-@media (max-width:1099px){.vdoc-tbl .c-fr{display:none}.vdoc-tbl col.c-fd{width:26%}}
-@media (max-width:859px){.vdoc-tbl .c-fd{display:none}}
-@media (prefers-reduced-motion: reduce){.vdoc-row.glow td{animation:none}}
+.vdoc-ex .vdoc-tree{width:clamp(360px,48%,580px);padding:0 8px 8px 0;border-right:2px solid oklch(var(--line))}
+.vdoc-ex .tr .main{padding-left:8px}
+/* one line per document: the name, then the secondary text in faint ink, then the status chip */
+.tr .lb.fl{flex:0 1 auto}
+.vdoc-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 13px var(--font-sans),sans-serif;color:oklch(var(--ink-faint))}
+.vdoc-st{flex:none;display:inline-flex}
+.tr.fd .lb{font-weight:500}
+.tr.over{background:oklch(var(--brand-soft));box-shadow:inset 0 0 0 1.5px oklch(var(--brand))}
+.vdoc-tree .menu a{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;box-sizing:border-box;border-radius:4px;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-decoration:none}
+.vdoc-tree .menu a svg{color:oklch(var(--ink-muted))}
+.vdoc-tree .menu a:hover,.vdoc-tree .menu a:focus-visible{background:oklch(var(--surface-sunken));outline:none}
+/* the preview: on the page ground, the paper is the only sheet */
+.vdoc-ex .vdoc-pane{padding-left:24px;min-height:0}
+.vdoc-ex .vdoc-ph{min-height:44px;padding:0;border-bottom:0}
+.vdoc-ex .vdoc-pv{background:none;padding:16px 0}
+.vdoc-kv{flex:none}
+.vdoc-ex .kv{padding:0}
+.vdoc-pg-k{display:block;font:400 11.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));margin-top:4px}
+.vdoc-pg-k:first-child{margin-top:0}
+.vdoc-pg-t{display:block;font:600 18px var(--font-sans),sans-serif;margin-top:10px}
+.vdoc-pg-ln{display:block;height:6px;border-radius:3px;background:oklch(var(--surface-sunken));margin-top:9px}
+.vdoc-pg-k+.vdoc-pg-ln{margin-top:18px}
+/* the tree drop-down for narrow screens (hidden on wide screens) */
+.vdoc-tt{display:none;align-items:center;gap:8px;width:100%;min-width:0;height:44px;padding:0 4px;border:0;background:none;color:oklch(var(--ink));font:500 14px var(--font-sans),sans-serif;cursor:pointer;text-align:left}
+.vdoc-tt svg{flex:none;color:oklch(var(--ink-muted))}
+.vdoc-tt-l{flex:none}
+@keyframes vdoc-dd{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (max-width:999px){
+  .vdoc-tt{display:flex}
+  .vdoc-tt[aria-expanded=false]{border-bottom:2px solid oklch(var(--line))}
+  .vdoc-ex .vdoc-tree{width:auto;padding:4px 0 8px;border-right:0;border-bottom:2px solid oklch(var(--line));animation:vdoc-dd .16s ease-out}
+  .vdoc-ex .vdoc-tree.shut{display:none}
+  .vdoc-ex .vdoc-pane{padding:12px 0 0}
+}
+@media (prefers-reduced-motion: reduce){.vdoc-ex .vdoc-tree{animation:none}}
