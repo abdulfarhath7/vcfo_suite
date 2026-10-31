@@ -8,11 +8,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AnswerDepth, AskShell } from '@/data/ask/schema';
 import { useApp } from '@/context/AppContext';
 import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { canUseAsk, defaultShellForRole } from '@/lib/ask/access';
-import { fetchConversation, fetchTopicAnswer, streamChat } from '@/hooks/ask/ask-api';
+import { fetchConversation, fetchConversationList, recordTopicAnswer, streamChat } from '@/hooks/ask/ask-api';
 import { useAskStatus } from '@/hooks/ask/use-ask-status';
 import {
   AskContext,
@@ -27,6 +28,10 @@ import {
  * Ask VCFO state (U3): open flag, the thread and the conversation id live here,
  * above the routed page, so navigating keeps the panel as it was. The
  * conversation id is also kept in sessionStorage so a reload resumes it.
+ *
+ * The past-chat list (owner item F4) comes from `GET /api/ask/conversations` through React
+ * Query. localStorage (`vcfo.ask.history.<userId>`) is only the offline fallback: it is still
+ * written when an answer arrives, and read when the server list cannot load.
  */
 
 let seq = 0;
@@ -108,7 +113,35 @@ export function AskProvider({ children }: { children: ReactNode }) {
   }, [shell, preview, engagements, user]);
 
   const key = storageKey(shell, engagementId);
-  const history = useMemo(() => allHistory.filter((e) => e.scope === key).sort((a, b) => b.at.localeCompare(a.at)), [allHistory, key]);
+  const localHistory = useMemo(
+    () => allHistory.filter((e) => e.scope === key).sort((a, b) => b.at.localeCompare(a.at)),
+    [allHistory, key],
+  );
+
+  const queryClient = useQueryClient();
+  const listKey = useMemo(() => ['ask', 'conversations', user?.id ?? null, shell, engagementId] as const, [user?.id, shell, engagementId]);
+  const listQuery = useQuery({
+    queryKey: listKey,
+    queryFn: () => fetchConversationList({ shell: shell!, engagementId }),
+    enabled: enabled && shell !== null && (shell !== 'client' || Boolean(engagementId)),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const refreshList = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: listKey });
+  }, [queryClient, listKey]);
+
+  /** Server list first; localStorage only when the server list is not there (offline, error). */
+  const history = useMemo<AskHistoryEntry[]>(() => {
+    if (!listQuery.data) return localHistory;
+    return listQuery.data.conversations.map((c) => ({
+      id: c.id,
+      title: c.title,
+      at: c.updatedAt,
+      scope: key,
+      messageCount: c.messageCount,
+    }));
+  }, [listQuery.data, localHistory, key]);
 
   /** Adds a chat to the list, or moves it to the top; the first question stays its title. */
   const remember = useCallback(
@@ -218,6 +251,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
               writeSession(key, event.conversationId);
               hydrated.current = event.conversationId;
               remember(event.conversationId, text);
+              refreshList();
               setThread((t) => [
                 ...t,
                 { id: nextId(), kind: 'assistant', messageId: event.messageId || null, answer: event.answer },
@@ -242,15 +276,28 @@ export function AskProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [shell, busy, engagementId, conversationId, key, remember],
+    [shell, busy, engagementId, conversationId, key, remember, refreshList],
   );
 
   const showTopic = useCallback(
     async (slug: string, depth?: AnswerDepth, label?: string) => {
       if (label) setThread((t) => [...t, { id: nextId(), kind: 'user', text: label }]);
       try {
-        const { answer } = await fetchTopicAnswer(slug, { depth, engagementId: shell === 'client' ? engagementId : null });
-        setThread((t) => [...t, { id: nextId(), kind: 'assistant', messageId: null, answer }]);
+        // The server saves the question and the answer into the conversation (owner item F4).
+        const saved = await recordTopicAnswer(slug, {
+          depth,
+          engagementId: shell === 'client' ? engagementId : null,
+          conversationId,
+          question: label,
+        });
+        if (saved.conversationId) {
+          setConversationId(saved.conversationId);
+          writeSession(key, saved.conversationId);
+          hydrated.current = saved.conversationId;
+          remember(saved.conversationId, label ?? saved.topic.title);
+          refreshList();
+        }
+        setThread((t) => [...t, { id: nextId(), kind: 'assistant', messageId: saved.messageId, answer: saved.answer }]);
       } catch (error) {
         setThread((t) => [
           ...t,
@@ -258,7 +305,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
         ]);
       }
     },
-    [shell, engagementId],
+    [shell, engagementId, conversationId, key, remember, refreshList],
   );
 
   const reset = useCallback(() => {
@@ -268,7 +315,8 @@ export function AskProvider({ children }: { children: ReactNode }) {
     setBusy(false);
     setConversationId(null);
     writeSession(key, null);
-  }, [key]);
+    refreshList();
+  }, [key, refreshList]);
 
   const openConversation = useCallback(
     (id: string) => {

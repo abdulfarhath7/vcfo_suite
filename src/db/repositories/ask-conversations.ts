@@ -1,12 +1,13 @@
 import 'server-only';
 
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askConversations, askMessages } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import type { AskShell } from '@/data/ask/schema';
 import { AskForbiddenError, assertAskRole, shellAllowedForRole } from '@/lib/ask/access';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 
 /**
  * ASK VCFO CONVERSATIONS.
@@ -84,4 +85,95 @@ export async function getAskConversationWithMessages(
     .where(eq(askMessages.conversationId, conversation.id))
     .orderBy(asc(askMessages.createdAt));
   return { conversation, messages };
+}
+
+/** Page size of the full page's chat list (owner item F4). */
+export const ASK_CONVERSATION_PAGE_SIZE = 40;
+const TITLE_MAX = 80;
+
+export interface AskConversationSummary {
+  id: string;
+  /** The first question, with spaces collapsed and cut to 80 characters. */
+  title: string;
+  updatedAt: Date;
+  messageCount: number;
+  shell: string;
+  engagementId: string | null;
+}
+
+export interface ListOwnAskConversationsInput {
+  /** Only chats of this shell (the provider's current shell). */
+  shell?: AskShell;
+  /** Only chats of this engagement (app or DB id); null means chats with no engagement. */
+  engagementId?: string | null;
+  /** Zero-based page of 40. */
+  page?: number;
+}
+
+function summaryTitle(text: string | null): string {
+  const clean = (text ?? '').replace(/\s+/g, ' ').trim();
+  if (!clean) return 'Chat';
+  return clean.length > TITLE_MAX ? `${clean.slice(0, TITLE_MAX - 1).trimEnd()}…` : clean;
+}
+
+/**
+ * The caller's own chats, newest first, 40 per page (owner item F4). Keyed on
+ * `profile_id = ctx.userId` only: no role widens it, so a firm admin never sees
+ * a client's chats. Chats with no message yet are left out.
+ */
+export async function listOwnAskConversations(
+  ctx: AuthContext,
+  input: ListOwnAskConversationsInput = {},
+): Promise<{ conversations: AskConversationSummary[]; hasMore: boolean }> {
+  assertAskRole(ctx);
+  const page = Math.max(0, Math.floor(input.page ?? 0));
+  const firstQuestion = sql<string | null>`(select ${askMessages.text} from ${askMessages} where ${askMessages.conversationId} = ${askConversations.id} and ${askMessages.sender} = 'user' order by ${askMessages.createdAt} asc limit 1)`;
+  const messageCount = sql<number>`(select count(*)::int from ${askMessages} where ${askMessages.conversationId} = ${askConversations.id})`;
+
+  const filters = [eq(askConversations.profileId, ctx.userId), sql`${messageCount} > 0`];
+  if (input.shell) filters.push(eq(askConversations.shell, input.shell));
+  if (input.engagementId !== undefined) {
+    filters.push(
+      input.engagementId === null
+        ? isNull(askConversations.engagementId)
+        : eq(askConversations.engagementId, engagementDbId(input.engagementId)),
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: askConversations.id,
+      shell: askConversations.shell,
+      engagementId: askConversations.engagementId,
+      lastMessageAt: askConversations.lastMessageAt,
+      firstQuestion,
+      messageCount,
+    })
+    .from(askConversations)
+    .where(and(...filters))
+    .orderBy(desc(askConversations.lastMessageAt), desc(askConversations.id))
+    .limit(ASK_CONVERSATION_PAGE_SIZE + 1)
+    .offset(page * ASK_CONVERSATION_PAGE_SIZE);
+
+  return {
+    conversations: rows.slice(0, ASK_CONVERSATION_PAGE_SIZE).map((r) => ({
+      id: r.id,
+      title: summaryTitle(r.firstQuestion),
+      updatedAt: r.lastMessageAt,
+      messageCount: Number(r.messageCount ?? 0),
+      shell: r.shell,
+      engagementId: r.engagementId,
+    })),
+    hasMore: rows.length > ASK_CONVERSATION_PAGE_SIZE,
+  };
+}
+
+/** Owner-only delete. Messages go with it (cascade). False when not the caller's. */
+export async function deleteOwnAskConversation(ctx: AuthContext, conversationId: string): Promise<boolean> {
+  assertAskRole(ctx);
+  const rows = await db
+    .delete(askConversations)
+    .where(and(eq(askConversations.id, conversationId), eq(askConversations.profileId, ctx.userId)))
+    .returning({ id: askConversations.id });
+  return rows.length > 0;
 }

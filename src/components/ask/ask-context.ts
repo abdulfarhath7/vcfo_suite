@@ -12,9 +12,9 @@ export type ThreadItem =
 export type AskPreview = { engagementId: string; companyName: string };
 
 /**
- * One past conversation in the person's chat list (owner item F4). There is no server list of
- * conversations yet, so the list lives in localStorage per user; the messages themselves are
- * read from `/api/ask/conversations/[id]`.
+ * One past conversation in the person's chat list (owner item F4). The list comes from
+ * `GET /api/ask/conversations` (the caller's own chats); localStorage per user is only the
+ * offline fallback. The messages themselves are read from `/api/ask/conversations/[id]`.
  */
 export type AskHistoryEntry = {
   id: string;
@@ -23,6 +23,8 @@ export type AskHistoryEntry = {
   at: string;
   /** The storage key of the shell and engagement the chat belongs to. */
   scope: string;
+  /** Messages in the chat (server list only). */
+  messageCount?: number;
 };
 
 export type AskInput = {
@@ -54,7 +56,7 @@ export interface AskContextValue {
   /** Re-read a topic at another depth without a model call. */
   showTopic: (slug: string, depth?: AnswerDepth, label?: string) => Promise<void>;
   reset: () => void;
-  /** Past chats of this shell and engagement, newest first (localStorage, per user). */
+  /** Past chats of this shell and engagement, newest first (server list; localStorage offline). */
   history: AskHistoryEntry[];
   /** Show a past chat (the full page's chat list). */
   openConversation: (id: string) => void;

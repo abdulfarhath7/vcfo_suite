@@ -96,7 +96,9 @@ beforeEach(() => {
         return chain;
       },
       orderBy: () => chain,
-      limit: () => Promise.resolve(selectRows),
+      // limit() stays awaitable (the chain is a thenable) and also allows .offset().
+      limit: () => chain,
+      offset: () => Promise.resolve(selectRows),
       then: (resolve: (v: unknown[]) => unknown) => resolve(selectRows),
       getSQL: () => {
         const qb = new QueryBuilder();
@@ -204,6 +206,62 @@ describe('conversations', () => {
     selectRows = [];
     await expect(conversations.getAskConversation(admin, 'conv-of-a')).resolves.toBeNull();
     expect(whereParams()).toContain(admin.userId);
+  });
+});
+
+describe('conversation list and delete (F4)', () => {
+  it("lists only the caller's own chats — client A never sees client B's", async () => {
+    await conversations.listOwnAskConversations(clientA, { shell: 'client', engagementId: ENG_A });
+    const params = whereParams();
+    expect(params).toContain(clientA.userId);
+    expect(params).not.toContain(clientB.userId);
+    const { sql: text } = dialect.sqlToQuery(lastWhere!);
+    expect(text).toMatch(/^\("ask_conversations"\."profile_id" = \$1 and/);
+  });
+
+  it('client B listing never carries client A as a parameter', async () => {
+    await conversations.listOwnAskConversations(clientB);
+    expect(whereParams()).toContain(clientB.userId);
+    expect(whereParams()).not.toContain(clientA.userId);
+  });
+
+  it('a firm admin or super admin lists only their own chats, never a client’s', async () => {
+    await conversations.listOwnAskConversations(admin, { shell: 'admin' });
+    expect(whereParams()).toContain(admin.userId);
+    expect(whereParams()).not.toContain(clientA.userId);
+    await conversations.listOwnAskConversations(superAdmin, { shell: 'super' });
+    expect(whereParams()).toContain(superAdmin.userId);
+  });
+
+  it('refuses a developer before any query', async () => {
+    await expect(conversations.listOwnAskConversations(developer)).rejects.toBeInstanceOf(AskForbiddenError);
+    await expect(conversations.deleteOwnAskConversation(developer, 'c-1')).rejects.toBeInstanceOf(AskForbiddenError);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it('maps rows: trimmed first question, count, 40 per page with hasMore', async () => {
+    const at = new Date('2026-10-30T10:00:00Z');
+    selectRows = Array.from({ length: 41 }, (_, i) => ({
+      id: `c-${i}`,
+      shell: 'client',
+      engagementId: ENG_A,
+      lastMessageAt: at,
+      firstQuestion: i === 0 ? '  What   is GST?\n ' : i === 1 ? 'x'.repeat(200) : null,
+      messageCount: 2,
+    }));
+    const out = await conversations.listOwnAskConversations(clientA, { shell: 'client', engagementId: ENG_A });
+    expect(out.hasMore).toBe(true);
+    expect(out.conversations).toHaveLength(conversations.ASK_CONVERSATION_PAGE_SIZE);
+    expect(out.conversations[0]).toMatchObject({ id: 'c-0', title: 'What is GST?', messageCount: 2, updatedAt: at });
+    expect(out.conversations[1].title.length).toBeLessThanOrEqual(80);
+    expect(out.conversations[2].title).toBe('Chat');
+  });
+
+  it('delete is keyed on id AND the caller — B cannot delete A’s chat', async () => {
+    await expect(conversations.deleteOwnAskConversation(clientB, 'conv-of-a')).resolves.toBe(false);
+    expect(whereParams()).toEqual(['conv-of-a', clientB.userId]);
+    expect(whereParams()).not.toContain(clientA.userId);
   });
 });
 

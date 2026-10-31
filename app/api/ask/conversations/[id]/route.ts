@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAskConversationWithMessages } from '@/db/repositories/ask-conversations';
+import { deleteOwnAskConversation, getAskConversationWithMessages } from '@/db/repositories/ask-conversations';
 import { requireAsk } from '@/lib/ask/route-guard';
 
 /** GET /api/ask/conversations/[id] — owner-only resume (U3). */
@@ -28,5 +28,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   } catch (error) {
     console.error('[ask-vcfo] conversation read failed', error);
     return NextResponse.json({ error: 'Could not load the conversation' }, { status: 500 });
+  }
+}
+
+/** DELETE /api/ask/conversations/[id] — the caller's own chat only (owner item F4). */
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const gate = await requireAsk();
+  if (gate.ok === false) return gate.response;
+  const { id } = await params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  try {
+    const deleted = await deleteOwnAskConversation(gate.ctx, id);
+    if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('[ask-vcfo] conversation delete failed', error);
+    return NextResponse.json({ error: 'Could not delete the chat' }, { status: 500 });
   }
 }

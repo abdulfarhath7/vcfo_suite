@@ -116,6 +116,51 @@ export async function fetchConversation(id: string): Promise<{ messages: StoredM
   return json(res, 'Could not load the conversation');
 }
 
+export type ConversationSummaryView = { id: string; title: string; updatedAt: string; messageCount: number };
+
+/** GET /api/ask/conversations: the caller's own chats, newest first, 40 per page (owner item F4). */
+export async function fetchConversationList(opts: {
+  shell: AskShell;
+  engagementId: string | null;
+  page?: number;
+}): Promise<{ conversations: ConversationSummaryView[]; hasMore: boolean }> {
+  const params = new URLSearchParams({ shell: opts.shell });
+  if (opts.engagementId) params.set('engagementId', opts.engagementId);
+  if (opts.page) params.set('page', String(opts.page));
+  const res = await fetch(`/api/ask/conversations?${params}`, { cache: 'no-store' });
+  return json(res, 'Could not load your chats');
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  await json(await fetch(`/api/ask/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' }), 'Could not delete the chat');
+}
+
+/**
+ * POST /api/ask/topics/[slug]: the same answer as fetchTopicAnswer, and the server saves the
+ * question and the answer into the conversation. `conversationId` is null when the save failed.
+ */
+export async function recordTopicAnswer(
+  slug: string,
+  body: { depth?: AnswerDepth; engagementId?: string | null; conversationId?: string | null; question?: string },
+): Promise<{
+  topic: { slug: string; title: string; category: string; version: number };
+  answer: AnswerEnvelope;
+  conversationId: string | null;
+  messageId: string | null;
+}> {
+  const res = await fetch(`/api/ask/topics/${encodeURIComponent(slug)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      depth: body.depth,
+      engagementId: body.engagementId ?? undefined,
+      conversationId: body.conversationId ?? undefined,
+      question: body.question,
+    }),
+  });
+  return json(res, 'Could not load this explanation');
+}
+
 export type LibraryItemView = {
   id: string;
   title: string;

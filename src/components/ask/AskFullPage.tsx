@@ -18,7 +18,8 @@ function shortDate(iso: string): string {
 /**
  * The full Ask VCFO page, `/app/<role>/ask` (owner item F4, 30 Oct 2026). Past chats on the
  * left, the conversation on the right, with the same thread, answer cards and composer as the
- * pop-up. It reads and writes the same Ask provider, so "Open full page" in the pop-up shows the
+ * pop-up. The chat list comes from the server (`GET /api/ask/conversations`, React Query in the
+ * provider) and refreshes when a chat starts. It reads and writes the same Ask provider, so "Open full page" in the pop-up shows the
  * same conversation. While the page is on screen the pop-up hides (`pageOpen`).
  */
 export function AskFullPage() {
