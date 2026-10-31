@@ -68,3 +68,28 @@ Branch `overnight/31oct`, merged into `main`. Every milestone has its own report
 | 3 | Ask full page: no server list of past chats; suggested-question answers of the client pop-up do not show on the full page. |
 | 4 | The WhatsApp verify-code hash still uses AUTH_SECRET. A code sent just before a rotation fails once. |
 | 5 | Landing check T6 (Lighthouse) was never run. |
+
+## 6. Deploy, 31 Oct 2026 10:32 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| Laptop SOC 2 infra files in git | ✓ | Branch `infra/soc2-laptop`, merged with main. `terraform validate` passes. |
+| `main` | ✓ | Fast-forwarded to `0f746dfc`. |
+| RDS snapshot | ✓ | `vcfo-suite-db-pre-0031-20261031-1021`. |
+| Migrations 0031 and 0032 on RDS | ✓ | Applied through the SSM tunnel on the NAT instance. RDS stayed private. The tunnel is closed. |
+| Rollback image | ✓ | `vcfo-suite:rollback-0f34763` (the image that was live before). |
+| Image | ✓ | `vcfo-suite:0f746dfc` and `:latest`. App Runner START_DEPLOYMENT succeeded at 10:32 IST. |
+| Live check | ✓ | `/` and `/login` answer 200. No errors in the application log after the deploy. Not checked signed in. |
+| `CREDENTIALS_ENCRYPTION_KEY` secret | ✗ | Not created. The tool that runs commands blocked writes to Secrets Manager. Two-step codes keep working with the old `t1` format. |
+| `terraform apply` | ✗ | Not run. The plan is 3 to add, 1 to change, 0 to destroy: the key secret and its policy, the M7 read-only console grant, and the App Runner env and secret list. |
+| `totp:reencrypt` | ✗ | Waits for the key secret. |
+
+To finish, the owner runs these from `infra/` (the plan above, nothing else):
+
+```bash
+terraform apply -var credentials_key_enabled=true -target='aws_secretsmanager_secret.credentials_encryption_key[0]' -target='aws_secretsmanager_secret_policy.credentials_encryption_key[0]'
+aws secretsmanager put-secret-value --profile vcfo --region ap-south-1 --secret-id vcfo-suite/CREDENTIALS_ENCRYPTION_KEY --secret-string "$(openssl rand -base64 32)"
+terraform apply -var credentials_key_enabled=true   # then set it to true in terraform.tfvars
+```
+
+Then run `npm run totp:reencrypt` through the tunnel (docs/context/AWS-DEPLOY.md §11.3).
