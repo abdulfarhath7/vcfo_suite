@@ -33,6 +33,8 @@ export const MANUAL_TEMPLATES: ManualTemplate[] = [
   { event: 'compliance_due_quarterly', audience: 'client', label: 'Filing due (quarterly)', body: 'Reminder for {{1}}: {{2}} is due on {{3}}. Please check VCFO Suite for details.', fields: ['companyName', 'obligationName', 'dueDate'] },
   { event: 'compliance_overdue', audience: 'client', label: 'Filing overdue', body: 'Reminder for {{1}}: {{2}} is now overdue. Please check VCFO Suite for the next steps.', fields: ['companyName', 'obligationName'] },
   { event: 'process_notice', audience: 'client', label: 'Short update', body: 'Update for {{1}}: {{2}}. Please sign in to VCFO Suite for details.', fields: ['companyName', 'stepTitle'] },
+  // G-15 one-click Remind (origin/main, 30 Oct 2026): 1 company name, 2 the item still owed.
+  { event: 'client_reminder', audience: 'client', label: 'Reminder', body: 'Reminder for {{1}}: {{2}} is still pending with you. Please sign in to VCFO Suite to complete it.', fields: ['companyName', 'stepTitle'] },
   { event: 'staff_client_submitted', audience: 'firm', label: 'Client submitted a step', body: 'Hello {{1}}, the client has submitted "{{3}}" for {{2}}. Please review it in VCFO Suite.', fields: ['firstName', 'companyName', 'stepTitle'] },
   { event: 'staff_client_uploaded', audience: 'firm', label: 'Client uploaded a document', body: 'Hello {{1}}, the client uploaded a document for "{{3}}" ({{2}}). Please check it in VCFO Suite.', fields: ['firstName', 'companyName', 'stepTitle'] },
   { event: 'staff_change_requested', audience: 'firm', label: 'Client asked for a change', body: 'Hello {{1}}, the client asked for a change on "{{3}}" for {{2}}. Please look at it in VCFO Suite.', fields: ['firstName', 'companyName', 'stepTitle'] },

@@ -113,9 +113,8 @@ describe('ClientOverviewHero', () => {
     expect(
       screen.getByRole('heading', { name: 'Acme India Private Limited' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Incorporation not started — the first step is yours.'),
-    ).toBeInTheDocument();
+    // Owner (2026-10): pre-COI the hero carries no state line; whose turn it is arrives once, as "your step right now".
+    expect(screen.queryByText(/Incorporation not started/)).toBeNull();
     expect(screen.getByText('Foreign parent')).toBeInTheDocument();
   });
 

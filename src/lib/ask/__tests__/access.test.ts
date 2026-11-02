@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { canUseAsk, defaultShellForRole, shellAllowedForRole } from '@/lib/ask/access';
 
 describe('Ask VCFO role access', () => {
-  it.each(['client', 'manager', 'admin', 'super_admin'] as const)('%s may use Ask VCFO', (role) => {
+  it.each(['client', 'manager', 'intern', 'admin', 'super_admin'] as const)('%s may use Ask VCFO', (role) => {
     expect(canUseAsk(role)).toBe(true);
   });
 
-  it('Project Leads and unknown roles may not', () => {
-    expect(canUseAsk('intern')).toBe(false);
+  it('the developer and unknown roles may not (leads joined on 2026-10-29, F-298)', () => {
+    expect(canUseAsk('developer')).toBe(false);
     expect(canUseAsk(null)).toBe(false);
     expect(canUseAsk('')).toBe(false);
   });
