@@ -66,7 +66,7 @@ async function main() {
   await upsertUser({
     email: 'super@vcfo.local',
     password: 'super123',
-    name: 'Super Admin',
+    name: 'Mithilesh',
     role: 'super_admin',
   });
 

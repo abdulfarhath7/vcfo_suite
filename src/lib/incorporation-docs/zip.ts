@@ -6,7 +6,7 @@ import {
   type IncorpDocAudience,
 } from '@/lib/incorporation-docs/audiences';
 import { incorpDocDownloadFilename, type IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { slugifyCompanyName } from '@/lib/slug';
 
@@ -26,7 +26,7 @@ function safeSegment(value: string): string {
   return value.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Director';
 }
 
-export function incorpDraftFolder(audience: IncorpDocAudience, pre6?: ChecklistItemResponses): string {
+function incorpDraftFolder(audience: IncorpDocAudience, pre6?: ChecklistItemResponses): string {
   if (audience === 'company') return 'Company';
   const name = pre6 ? resolvePre6DisplayNameForPrefix(pre6, directorFieldPrefix(audience)) : '';
   return safeSegment(name || directorAudienceLabel(audience));

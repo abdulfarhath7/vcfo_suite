@@ -6,7 +6,7 @@ import { generateAndStoreDir2, Dir2Error, toDir2Error } from '@/lib/api/dir-2-ge
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import type { Dir2DirectorKind } from '@/lib/dir-2';
+import type { Dir2DirectorKind } from '@/lib/incorporation/dir-2';
 import {
   checklistStateFromRow,
   toAppEngagement,

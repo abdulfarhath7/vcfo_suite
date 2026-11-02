@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FileText, Pencil, Plus, Trash2 } from 'lucide-react';
-import { AccentButton } from '@/components/noir/AccentButton';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState, type KeyboardEvent } from 'react';
+import { Plus } from 'lucide-react';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { Button } from '@/components/ui/button';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   emailBrandingLabel,
@@ -52,6 +52,8 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
   const [saving, setSaving] = useState(false);
   const [editor, setEditor] = useState<'create' | EmailTemplateDto | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  /** The template whose inline delete confirm is open. */
+  const [asking, setAsking] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -123,8 +125,15 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
     }
   }
 
+  /** Esc on either confirm button closes the delete question. */
+  function cancelOnEscape(e: KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      setAsking(null);
+    }
+  }
+
   async function remove(template: EmailTemplateDto) {
-    if (!window.confirm(`Delete template “${template.name}”? This cannot be undone.`)) return;
     try {
       const res = await fetch(`/api/email-templates/${template.id}`, { method: 'DELETE' });
       const json = (await res.json()) as { ok?: boolean; error?: string };
@@ -139,123 +148,161 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
 
   return (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-serif text-xl tracking-tight">Templates</h2>
+      {/* Spectrum section card (prototype EmailScreen "Templates"): a 52px head with Create, then
+          flush rows. Delete asks first in the row itself (R-40) instead of a browser prompt. */}
+      <section className="surface min-w-0 overflow-hidden" aria-label="Templates">
+        <div className="flex min-h-[52px] items-center gap-2.5 border-b border-line-soft px-4 py-2">
+          <CardHeadTile title="Templates" />
+          <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Templates</h2>
+          <Button type="button" variant="secondary" size="sm" onClick={openCreate}>
+            <Plus aria-hidden />
+            Create
+          </Button>
         </div>
-        <AccentButton type="button" variant="outline" size="sm" onClick={openCreate}>
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          Create
-        </AccentButton>
-      </div>
 
-      {loading ? (
-        <p className="mt-6 text-[13px] text-muted-foreground">Loading templates…</p>
-      ) : templates.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-xl border border-dashed border-primary/20 bg-primary-light/30 px-5 py-10 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-primary/20 bg-panel">
-            <FileText className="h-5 w-5 text-brand" aria-hidden />
+        {loading ? (
+          <SkeletonRows rows={3} className="p-4" />
+        ) : templates.length === 0 ? (
+          <div className="p-4">
+            <EmptyState
+              title="No templates yet"
+              action={
+                <Button type="button" size="sm" onClick={openCreate}>
+                  <Plus aria-hidden />
+                  Create a template
+                </Button>
+              }
+            />
           </div>
-          <h3 className="font-serif text-lg text-foreground">No templates yet</h3>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <AccentButton type="button" variant="outline" disabled>
-              Choose a template
-            </AccentButton>
-            <AccentButton type="button" onClick={openCreate}>
-              Create a template
-            </AccentButton>
-          </div>
-        </div>
-      ) : (
-        <ul className="mt-4 space-y-2" aria-label="Email templates">
-          {templates.map((template) => {
-            const selected = selectedId === template.id;
-            return (
-              <li key={template.id}>
-                <div
-                  className={cn(
-                    'rounded-xl border px-3 py-3',
-                    selected ? 'border-primary/40 bg-primary-light/40' : 'border-border bg-panel',
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="w-full text-left"
-                    onClick={() => onApply(template)}
+        ) : (
+          <ul aria-label="Email templates">
+            <li className="border-b border-line-soft">
+              <button
+                type="button"
+                onClick={onClear}
+                aria-pressed={selectedId === null}
+                className={cn(
+                  'flex w-full items-center px-4 py-2.5 text-left text-[13.5px] text-ink-muted hover:bg-surface-sunken',
+                  selectedId === null && 'bg-brand-soft text-brand-text hover:bg-brand-soft',
+                )}
+              >
+                Write without a template
+              </button>
+            </li>
+            {templates.map((template) => {
+              const selected = selectedId === template.id;
+              return (
+                <li key={template.id} className="border-b border-line-soft last:border-b-0">
+                  <div
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken',
+                      selected && 'bg-brand-soft hover:bg-brand-soft',
+                    )}
                   >
-                    <span className="flex items-start justify-between gap-2">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13.5px] font-medium text-foreground">
-                          {template.name}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[12px] text-muted-foreground">
-                          {template.subject}
-                        </span>
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      aria-pressed={selected}
+                      onClick={() => onApply(template)}
+                    >
+                      <span className="block truncate text-[13.5px] font-medium text-ink">
+                        {template.name}
                       </span>
-                      <Badge variant={template.branding === 'sbc' ? 'soft' : 'outline'}>
+                      <span className="block truncate text-[12px] text-ink-muted">
                         {emailBrandingLabel(template.branding)}
-                      </Badge>
-                    </span>
-                  </button>
-                  <div className="mt-2 flex items-center justify-end gap-1">
+                      </span>
+                    </button>
                     {template.canMutate ? (
                       <>
-                        <Button
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="sm"
                           onClick={() => openEdit(template)}
+                          className="text-[13px] font-medium text-brand-text hover:underline"
                         >
-                          <Pencil className="mr-1 h-3.5 w-3.5" aria-hidden />
                           Edit
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void remove(template)}
+                          onClick={() => setAsking(template.id)}
+                          className="text-[13px] font-medium text-danger hover:underline"
                         >
-                          <Trash2 className="mr-1 h-3.5 w-3.5" aria-hidden />
                           Delete
-                        </Button>
+                        </button>
                       </>
                     ) : null}
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  {asking === template.id ? (
+                    // Prototype InlineConfirm (R-40): the question on a grey fill, the main
+                    // button first, Cancel after it, Esc cancels.
+                    <div
+                      role="alertdialog"
+                      aria-label={`Delete “${template.name}”?`}
+                      className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-sunken px-4 py-2.5"
+                    >
+                      <span className="min-w-0 flex-1 text-[13px] font-medium text-ink">
+                        Delete “{template.name}”?
+                      </span>
+                      <span className="flex flex-none items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onKeyDown={cancelOnEscape}
+                          onClick={() => {
+                            setAsking(null);
+                            void remove(template);
+                          }}
+                        >
+                          Delete
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onKeyDown={cancelOnEscape} onClick={() => setAsking(null)}>
+                          Cancel
+                        </Button>
+                      </span>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <Dialog open={editor !== null} onOpenChange={(open) => { if (!open) setEditor(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editor === 'create' || editor === null ? 'Create a template' : 'Edit template'}
+              {editor === 'create' || editor === null ? 'New template' : 'Edit template'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="tpl-name">Name</Label>
-              <Input
-                id="tpl-name"
-                value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                maxLength={120}
-                placeholder="Client kickoff — SBC"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="tpl-desc">Description (optional)</Label>
-              <Input
-                id="tpl-desc"
-                value={draft.description}
-                onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                maxLength={500}
-                placeholder="When to use this template"
-              />
+          {/* Prototype TemplateDialog: Name and Style side by side from sm, Subject, then the
+              message with its merge-field hint. A stored description is kept on save. */}
+          <div className="grid gap-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-[minmax(0,1fr)_160px]">
+              <div className="space-y-1">
+                <Label htmlFor="tpl-name">Name</Label>
+                <Input
+                  id="tpl-name"
+                  value={draft.name}
+                  onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tpl-style">Style</Label>
+                <Select
+                  value={draft.branding}
+                  onValueChange={(v) => setDraft((d) => ({ ...d, branding: v as EmailBranding }))}
+                >
+                  <SelectTrigger id="tpl-style" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sbc">{emailBrandingLabel('sbc')}</SelectItem>
+                    <SelectItem value="plain">{emailBrandingLabel('plain')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1">
               <Label htmlFor="tpl-subject">Subject</Label>
@@ -270,44 +317,30 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
               <Label htmlFor="tpl-body">Message</Label>
               <Textarea
                 id="tpl-body"
+                rows={9}
                 className="min-h-[140px]"
                 value={draft.bodyText}
                 onChange={(e) => setDraft((d) => ({ ...d, bodyText: e.target.value }))}
                 maxLength={20000}
+                aria-describedby="tpl-body-hint"
               />
+              <p id="tpl-body-hint" className="text-[12px] text-ink-muted">
+                Fields: {'{client}'}, {'{name}'}, {'{step}'}
+              </p>
             </div>
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Branding</legend>
-              <RadioGroup
-                value={draft.branding}
-                onValueChange={(v) =>
-                  setDraft((d) => ({ ...d, branding: v as EmailBranding }))
-                }
-                className="gap-2"
-              >
-                <div className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2">
-                  <RadioGroupItem value="sbc" id="brand-sbc" className="mt-0.5" />
-                  <Label htmlFor="brand-sbc" className="cursor-pointer font-normal">
-                    <span className="block text-[13px] font-medium">SBC branded</span>
-                  </Label>
-                </div>
-                <div className="flex items-start gap-2.5 rounded-lg border border-border px-3 py-2">
-                  <RadioGroupItem value="plain" id="brand-plain" className="mt-0.5" />
-                  <Label htmlFor="brand-plain" className="cursor-pointer font-normal">
-                    <span className="block text-[13px] font-medium">Plain</span>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </fieldset>
           </div>
 
           <DialogFooter className="gap-2">
-            <AccentButton type="button" variant="ghost" onClick={() => setEditor(null)} disabled={saving}>
+            <Button type="button" variant="ghost" onClick={() => setEditor(null)} disabled={saving}>
               Cancel
-            </AccentButton>
-            <AccentButton type="button" onClick={() => void save()} disabled={saving}>
-              {saving ? 'Saving' : editor === 'create' || editor === null ? 'Create template' : 'Save'}
-            </AccentButton>
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving || !draft.name.trim() || !draft.subject.trim()}
+            >
+              {saving ? 'Saving' : 'Save template'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

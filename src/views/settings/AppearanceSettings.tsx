@@ -1,30 +1,39 @@
 'use client';
 
-import { useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useTheme } from 'next-themes';
 import { Check, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useApp } from '@/context/AppContext';
-import { internFirstName } from '@/lib/intern-work';
+import { internFirstName } from '@/lib/intern/intern-work';
 import {
   HERO_SOLIDS,
   MOTION_STYLES,
   SIDEBAR_SOLIDS,
-  SURFACE_GRADIENTS,
   SURFACE_PRESETS,
   compressImageFile,
   surfaceCssVars,
   type MotionStyle,
   type SurfaceAppearance,
   type SurfaceKind,
-} from '@/lib/shell-appearance';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+} from '@/lib/shell/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import {
+  applyAppearanceAttributes,
+  readPersonDensity,
+  readTextSize,
+  writePersonDensity,
+  writeTextSize,
+  type Density,
+  type TextSize,
+} from '@/lib/ui/table-prefs';
+import { ProfileCard, SettingsRow } from '@/views/settings/account/settings-layout';
 
 const KINDS: { id: SurfaceKind; label: string }[] = [
   { id: 'solid', label: 'Solid' },
-  { id: 'gradient', label: 'Gradient' },
   { id: 'preset', label: 'Images' },
   { id: 'custom', label: 'Upload' },
 ];
@@ -55,8 +64,8 @@ function Swatch({
       className={
         dense
           ? cn(
-              'relative h-8 w-full overflow-hidden rounded-md ring-1 ring-black/10 transition-[transform,box-shadow] hover:-translate-y-px',
-              selected && 'ring-2 ring-primary ring-offset-1 ring-offset-popover',
+              'relative h-8 w-full overflow-hidden rounded-md ring-1 ring-line-strong transition-[transform,box-shadow] hover:-translate-y-px',
+              selected && 'ring-2 ring-brand ring-offset-1 ring-offset-popover',
             )
           : 'appear-swatch group'
       }
@@ -66,7 +75,7 @@ function Swatch({
         <span className="absolute inset-0 grid place-items-center bg-black/15">
           <span
             className={cn(
-              'grid place-items-center rounded-full bg-white text-slate-900 shadow-sm',
+              'grid place-items-center rounded-full bg-surface-raised text-ink',
               dense ? 'h-4 w-4' : 'h-5 w-5',
             )}
           >
@@ -74,7 +83,7 @@ function Swatch({
           </span>
         </span>
       ) : dense || caption ? null : (
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/35 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/90 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/35 px-1.5 py-0.5 text-[11px] font-medium text-white/90 opacity-0 transition-opacity group-hover:opacity-100">
           {label}
         </span>
       )}
@@ -89,7 +98,7 @@ function Swatch({
       <p
         className={cn(
           'truncate text-center text-[11px] tracking-tight',
-          selected ? 'font-medium text-foreground' : 'text-muted-foreground',
+          selected ? 'font-medium text-ink' : 'text-ink-muted',
         )}
       >
         {label}
@@ -101,41 +110,18 @@ function Swatch({
 function KindTabs({
   value,
   onChange,
-  dense = false,
 }: {
   value: SurfaceKind;
   onChange: (kind: SurfaceKind) => void;
   dense?: boolean;
 }) {
   return (
-    <div
-      className={
-        dense
-          ? 'flex rounded-lg bg-muted/60 p-0.5'
-          : 'grid grid-cols-4 rounded-md bg-muted/70 p-0.5'
-      }
-    >
-      {KINDS.map((kind) => (
-        <button
-          key={kind.id}
-          type="button"
-          onClick={() => onChange(kind.id)}
-          className={cn(
-            'font-semibold transition-colors',
-            dense
-              ? 'flex-1 rounded-md px-1.5 py-1 text-[10.5px] tracking-wide'
-              : 'rounded-md px-2 py-1.5 text-[12px]',
-            value === kind.id
-              ? dense
-                ? 'bg-panel text-foreground shadow-sm'
-                : 'bg-panel text-foreground shadow-sm ring-1 ring-border/70'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {kind.label}
-        </button>
-      ))}
-    </div>
+    <SpectrumTabs
+      label="Background kind"
+      items={KINDS.map((k) => ({ key: k.id, label: k.label }))}
+      value={value}
+      onChange={(k) => onChange(k as SurfaceKind)}
+    />
   );
 }
 
@@ -181,22 +167,6 @@ export function SurfacePicker({
         </div>
       ) : null}
 
-      {value.kind === 'gradient' ? (
-        <div className={dense ? 'grid grid-cols-3 gap-1.5' : 'grid grid-cols-2 gap-2.5 sm:grid-cols-3'}>
-          {SURFACE_GRADIENTS.map((g) => (
-            <Swatch
-              key={g.id}
-              dense={dense}
-              caption={!dense}
-              label={g.label}
-              selected={value.gradientId === g.id}
-              style={{ background: g.value, height: dense ? 36 : 64 }}
-              onClick={() => onChange({ kind: 'gradient', gradientId: g.id })}
-            />
-          ))}
-        </div>
-      ) : null}
-
       {value.kind === 'preset' ? (
         <div className={dense ? 'grid grid-cols-3 gap-1.5' : 'grid grid-cols-3 gap-2.5 sm:grid-cols-6'}>
           {SURFACE_PRESETS.map((preset) => (
@@ -225,9 +195,9 @@ export function SurfacePicker({
             onClick={() => fileRef.current?.click()}
             className={
               dense
-                ? 'relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted ring-1 ring-border'
+                ? 'relative flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-sunken ring-1 ring-line-strong'
                 : cn(
-                    'appear-swatch flex h-16 w-24 shrink-0 items-center justify-center text-muted-foreground',
+                    'appear-swatch flex h-16 w-24 shrink-0 items-center justify-center text-ink-muted',
                     value.customDataUrl && 'data-on',
                   )
             }
@@ -246,20 +216,20 @@ export function SurfacePicker({
             aria-label={value.customDataUrl ? 'Replace photo' : 'Upload photo'}
           >
             {!value.customDataUrl ? (
-              <Upload className={cn('text-muted-foreground', dense ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
+              <Upload className={cn('text-ink-muted', dense ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
             ) : null}
           </button>
           <div className="min-w-0">
-            <p className={cn('font-medium text-foreground', dense ? 'text-[12px]' : 'text-[13px]')}>
+            <p className={cn('font-medium text-ink', dense ? 'text-[12px]' : 'text-[13px]')}>
               Your image
             </p>
             {dense ? null : (
-              <p className="mt-0.5 text-[12px] text-muted-foreground">JPEG or PNG.</p>
+              <p className="mt-0.5 text-[12.5px] text-ink-muted">JPEG or PNG</p>
             )}
             <button
               type="button"
               className={cn(
-                'font-semibold text-primary hover:underline',
+                'font-medium text-brand-text hover:underline',
                 dense ? 'mt-0.5 text-[11.5px]' : 'mt-1.5 text-[12px]',
               )}
               onClick={() => fileRef.current?.click()}
@@ -283,110 +253,143 @@ export function SurfacePicker({
   );
 }
 
+const THEMES = [
+  { key: 'light', label: 'Light' },
+  { key: 'dark', label: 'Dark' },
+  { key: 'system', label: 'System' },
+];
+
+const DENSITIES = [
+  { key: 'comfortable', label: 'Comfortable' },
+  { key: 'compact', label: 'Compact' },
+];
+
+const TEXT_SIZES = [
+  { key: 'small', label: 'Small' },
+  { key: 'default', label: 'Default' },
+  { key: 'large', label: 'Large' },
+];
+
+/** Light, dark or the device setting (next-themes keeps the choice in the browser). */
+function ThemePicker() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  // The theme is only known in the browser; render a grey shape until then (R-48).
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <span className="block h-[30px] w-48 animate-pulse rounded-md bg-surface-sunken" aria-hidden />;
+  return <SpectrumTabs label="Theme" items={THEMES} value={theme ?? 'light'} onChange={setTheme} />;
+}
+
+/**
+ * Profile › Appearance (VCFO Spectrum, prototype AppearanceCard). The theme, the greeting card and
+ * sidebar backgrounds, density, text size and motion. Every choice saves at once.
+ */
 export function AppearanceSettings() {
   const { user } = useApp();
   const { prefs, hero, sidebar, patchHero, patchSidebar, update } = useShellAppearance();
   const first = internFirstName(user?.name);
+  // Density and text size are per person and per browser; they go on <html> at once.
+  const [density, setDensity] = useState<Density>('comfortable');
+  const [textSize, setTextSize] = useState<TextSize>('default');
+  useEffect(() => {
+    setDensity(readPersonDensity());
+    setTextSize(readTextSize());
+  }, []);
+  const pickDensity = (d: Density) => {
+    setDensity(d);
+    writePersonDensity(d);
+    applyAppearanceAttributes(d, textSize);
+  };
+  const pickTextSize = (t: TextSize) => {
+    setTextSize(t);
+    writeTextSize(t);
+    applyAppearanceAttributes(density, t);
+  };
 
   return (
-    <section id="appearance" className="scroll-mt-24">
-      <div className="overflow-hidden rounded-lg border border-border bg-panel">
-        <header className="px-5 py-4 sm:px-6">
-          <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Appearance</h2>
-        </header>
+    <ProfileCard id="appearance" title="Appearance">
+      <SettingsRow label="Theme">
+        <ThemePicker />
+      </SettingsRow>
 
-        <StudioBlock title="Greeting Card Appearance">
+      <StudioBlock title="Greeting card">
+        <div
+          className="bg-wash rounded-md border-1.5 border-line px-5 py-4"
+          data-hero-image={hero.image ? 'true' : 'false'}
+          style={hero.image ? (surfaceCssVars(hero, 'hero') as CSSProperties) : undefined}
+        >
+          <div className="min-w-0">
+            <p className="text-[12px] text-wash-ink-2">Preview</p>
+            <p className="mt-1.5 text-[20px] font-medium leading-tight text-ink">Good morning, {first}</p>
+            <div className="mt-3.5 flex gap-2.5 text-[12.5px] text-ink-2">
+              <span className="wash-tile px-3 py-2">
+                <b className="text-[15px] font-medium tabular-nums text-ink">12</b> Action
+              </span>
+              <span className="wash-tile px-3 py-2">
+                <b className="text-[15px] font-medium tabular-nums text-danger">2</b> Overdue
+              </span>
+              <span className="wash-tile hidden px-3 py-2 sm:inline">
+                <b className="text-[15px] font-medium tabular-nums text-ink">4</b> Waiting
+              </span>
+            </div>
+          </div>
+        </div>
+        <SurfacePicker value={prefs.hero} solids={HERO_SOLIDS} onChange={patchHero} />
+      </StudioBlock>
+
+      <StudioBlock title="Sidebar">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <div
-            className="lead-hero px-5 py-4 sm:px-6 sm:py-5"
-            data-hero-image={hero.image ? 'true' : 'false'}
-            style={surfaceCssVars(hero, 'hero')}
+            className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-md border-1.5 border-line"
+            data-ink={sidebar.ink}
+            style={surfaceCssVars(sidebar, 'sidebar')}
           >
-            <div className="relative z-[2] min-w-0">
-              <p className="font-mono text-[10px] tracking-[0.08em] text-white/55">Live preview</p>
-              <p className="serif mt-1.5 text-[1.45rem] font-semibold leading-tight text-white">
-                Good morning, {first}
-              </p>
-              <p className="mt-1.5 text-[12px] text-white/65">2 overdue</p>
-              <div className="mt-4 h-px bg-white/15" />
-              <div className="mt-3.5 flex gap-4 text-[12px] text-white/75">
-                <span>
-                  <b className="serif text-[15px] font-semibold text-white">12</b> Action
-                </span>
-                <span className="border-l border-white/20 pl-4">
-                  <b className="serif text-[15px] font-semibold text-white">2</b> Overdue
-                </span>
-                <span className="hidden border-l border-white/20 pl-4 sm:inline">
-                  <b className="serif text-[15px] font-semibold text-white">4</b> Waiting
-                </span>
-              </div>
+            <div className="relative z-[1] space-y-1.5 p-2.5">
+              <div className="h-1.5 w-10 rounded-full bg-current opacity-80" />
+              <div className="h-6 rounded-md bg-current opacity-[0.12] ring-1 ring-current/20" />
+              <div className="h-5 rounded-md bg-current opacity-[0.08]" />
+              <div className="h-5 rounded-md bg-current opacity-[0.08]" />
+              <div className="h-5 rounded-md bg-current opacity-[0.08]" />
             </div>
           </div>
-          <SurfacePicker value={prefs.hero} solids={HERO_SOLIDS} onChange={patchHero} />
-        </StudioBlock>
+          <div className="min-w-0 flex-1">
+            <SurfacePicker value={prefs.sidebar} solids={SIDEBAR_SOLIDS} onChange={patchSidebar} />
+          </div>
+        </div>
+      </StudioBlock>
 
-        <StudioBlock title="Sidebar Appearance">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            <div
-              className="shell-sidebar-skin relative h-[176px] w-[104px] shrink-0 overflow-hidden rounded-lg border border-border/70"
-              data-ink={sidebar.ink}
-              style={surfaceCssVars(sidebar, 'sidebar')}
-            >
-              <div className="relative z-[1] space-y-1.5 p-2.5">
-                <div className="h-1.5 w-10 rounded-full bg-current opacity-80" />
-                <div className="h-6 rounded-md bg-current opacity-[0.12] ring-1 ring-current/20" />
-                <div className="h-5 rounded-md bg-current opacity-[0.08]" />
-                <div className="h-5 rounded-md bg-current opacity-[0.08]" />
-                <div className="h-5 rounded-md bg-current opacity-[0.08]" />
-              </div>
-            </div>
-            <div className="min-w-0 flex-1">
-              <SurfacePicker value={prefs.sidebar} solids={SIDEBAR_SOLIDS} onChange={patchSidebar} />
-            </div>
-          </div>
-        </StudioBlock>
+      <SettingsRow label="Density">
+        <SpectrumTabs label="Density" items={DENSITIES} value={density} onChange={(v) => pickDensity(v as Density)} />
+      </SettingsRow>
+      <SettingsRow label="Text size">
+        <SpectrumTabs label="Text size" items={TEXT_SIZES} value={textSize} onChange={(v) => pickTextSize(v as TextSize)} />
+      </SettingsRow>
 
-        <StudioBlock title="Animations" last>
-          <SegmentedPicker
-            value={prefs.motion}
-            options={MOTION_STYLES.map((style) => ({ value: style.id, label: style.label }))}
-            onChange={(next) => update({ motion: next as MotionStyle })}
-            ariaLabel="Animations"
-            className="inline-grid"
-          />
-          <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
-            <div>
-              <p className="text-[13px] font-medium text-foreground">Reduce motion</p>
-            </div>
-            <Switch
-              checked={prefs.reduceMotion}
-              onCheckedChange={(checked) => update({ reduceMotion: checked })}
-              aria-label="Reduce motion"
-            />
-          </div>
-        </StudioBlock>
-      </div>
-    </section>
+      <SettingsRow label="Animations">
+        <SpectrumTabs
+          label="Animations"
+          items={MOTION_STYLES.map((style) => ({ key: style.id, label: style.label }))}
+          value={prefs.motion}
+          onChange={(next) => update({ motion: next as MotionStyle })}
+        />
+      </SettingsRow>
+      <SettingsRow label="Reduce motion">
+        <Switch
+          checked={prefs.reduceMotion}
+          onCheckedChange={(checked) => update({ reduceMotion: checked })}
+          aria-label="Reduce motion"
+        />
+      </SettingsRow>
+    </ProfileCard>
   );
 }
 
-function StudioBlock({
-  title,
-  description,
-  last,
-  children,
-}: {
-  title: string;
-  description?: string;
-  last?: boolean;
-  children: ReactNode;
-}) {
+/** A full-width block inside the Appearance card, for the pickers that need room. */
+function StudioBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className={cn('border-t border-border/70 px-5 py-5 sm:px-6', last && 'pb-6')}>
-      <h3 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h3>
-      {description ? (
-        <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">{description}</p>
-      ) : null}
-      <div className="mt-4">{children}</div>
+    <div className="border-t border-line-soft px-4 py-4 first:border-t-0 md:px-5">
+      <h3 className="text-[14px] font-medium text-ink">{title}</h3>
+      <div className="mt-3">{children}</div>
     </div>
   );
 }

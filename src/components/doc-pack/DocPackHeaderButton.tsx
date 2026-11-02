@@ -24,7 +24,7 @@ export function DocPackHeaderButton({
     <Link
       href={packHref}
       className={cn(
-        'inline-flex h-9 items-center gap-2 rounded-md border border-border bg-panel px-3 text-[13px] font-medium text-primary hover:border-primary/35 hover:bg-primary-light',
+        'inline-flex h-control-md items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] font-medium text-ink hover:bg-surface-sunken',
         className,
       )}
     >
@@ -33,8 +33,8 @@ export function DocPackHeaderButton({
       {summary ? (
         <Mono
           className={cn(
-            'rounded-full px-2 py-0.5 text-[11.5px] font-semibold',
-            allReady ? 'bg-success-light text-success-text' : 'bg-warning-light text-warning-text',
+            'rounded-sm px-2 py-0.5 text-[11.5px] font-semibold',
+            allReady ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning',
           )}
         >
           {ready} / {total}

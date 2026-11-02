@@ -11,7 +11,7 @@ import {
   splitDocumentDateForRuns,
 } from '@/lib/incorporation-docs/shared';
 
-export interface Dir8PriorDirectorshipRow {
+interface Dir8PriorDirectorshipRow {
   PRIOR_DIR_COMPANY: string;
   PRIOR_DIR_CIN: string;
   PRIOR_DIR_FROM: string;

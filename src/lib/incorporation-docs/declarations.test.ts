@@ -6,9 +6,9 @@ import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
 import { allIncorpDraftSlotsGenerated, signedUploadFieldForIncorpDraft } from '@/lib/incorporation-docs/share';
 import { audiencesForDoc, draftFieldIdFor } from '@/lib/incorporation-docs/types';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
-import { validatePre8Responses } from '@/lib/checklist-pre8-validation';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
+import { validatePre7Responses } from '@/lib/checklist/checklist-pre7-validation';
+import { validatePre8Responses } from '@/lib/checklist/checklist-pre8-validation';
 
 vi.mock('server-only', () => ({}));
 

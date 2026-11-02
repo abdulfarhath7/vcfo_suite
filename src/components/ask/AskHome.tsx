@@ -1,117 +1,80 @@
 'use client';
 
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { Bookmark } from 'lucide-react';
 import type { ProjectSnapshot } from '@/data/ask/schema';
-import { fetchLibrary } from '@/hooks/ask/ask-api';
 import { useAskSuggestions } from '@/hooks/ask/use-ask-suggestions';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
-import { AskNudgeCard } from './AskNudgeCard';
 
 function ProjectCard({ snapshot }: { snapshot: ProjectSnapshot }) {
   return (
-    <div className="rounded-[var(--radius)] border border-border bg-panel p-3">
-      <p className="text-[12px] text-muted-foreground">Your project</p>
-      <p className="truncate text-[14px] font-semibold text-foreground">{snapshot.companyName}</p>
-      <p className="mt-1 text-[12.5px] text-muted-foreground">
-        {snapshot.currentPhase}
-        {snapshot.currentStep ? ` · ${snapshot.currentStep.title}` : ''} · {snapshot.completedStepCount} of{' '}
-        {snapshot.totalActiveSteps} steps done
-      </p>
+    <div className="grid gap-0.5 rounded-md border-1.5 border-line px-3 py-2.5">
+      <span className="text-[12px] text-ink-muted">{snapshot.currentPhase}</span>
+      <span className="truncate text-[14px] font-medium text-ink">
+        {snapshot.currentStep ? snapshot.currentStep.title : snapshot.companyName}
+      </span>
+      <span className="text-[12px] tabular-nums text-ink-muted">
+        {snapshot.currentStep ? `${snapshot.companyName} · ` : ''}
+        {snapshot.completedStepCount} of {snapshot.totalActiveSteps} steps done
+      </span>
     </div>
   );
 }
 
-const SAVED_SHOWN = 5;
-
-/** Answers the client saved; each opens in the full-page reader. */
-function SavedAnswers({ onOpen }: { onOpen: () => void }) {
-  const query = useQuery({ queryKey: ['ask', 'library'], queryFn: fetchLibrary, retry: false });
-  const items = query.data?.items ?? [];
-  if (items.length === 0) return null;
-  return (
-    <section aria-label="Saved answers">
-      <h3 className="mb-1.5 flex items-baseline justify-between text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">
-        Saved answers
-        <span className="font-normal normal-case tracking-normal">{items.length}</span>
-      </h3>
-      <ul className="divide-y divide-border rounded-[var(--radius-md)] border border-border bg-panel">
-        {items.slice(0, SAVED_SHOWN).map((item) => (
-          <li key={item.id}>
-            <Link
-              href={`/app/client/library/${item.id}`}
-              onClick={onOpen}
-              className="flex min-h-[44px] items-center gap-2 px-3 py-2 text-[13px] text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/40"
-            >
-              <Bookmark className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 flex-1 truncate">{item.title}</span>
-              {item.updated && (
-                <span className="shrink-0 rounded-full bg-warning-light px-1.5 py-0.5 text-[10.5px] font-medium text-warning-text">Updated</span>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {items.length > SAVED_SHOWN && (
-        <p className="mt-1 text-[11.5px] text-muted-foreground">Showing the {SAVED_SHOWN} most recent of {items.length}.</p>
-      )}
-    </section>
-  );
-}
-
-/** Greeting, the client's project card, saved answers and grouped pre-kept questions. */
+/**
+ * The Ask VCFO prompt home (K-47, audit 136): "What can I do for you?" and four
+ * quick-start chips, with the client's project card (prototype AskThread home). No mascot (C-0003) and no
+ * explanation line (rule R-06). The compact form, used above the composer once a
+ * conversation has started, keeps every suggestion in one scrolling row.
+ */
 export function AskHome({ compact = false }: { compact?: boolean }) {
   const ask = useAskOptional();
   const query = useAskSuggestions(ask?.shell ?? null, ask?.engagementId ?? null, Boolean(ask?.enabled));
   if (!ask) return null;
   const suggestions = query.data?.suggestions ?? [];
-  const groups = [...new Set(suggestions.map((s) => s.group))];
   const snapshot = query.data?.snapshot ?? null;
+  const shown = compact ? suggestions : suggestions.slice(0, 4);
+  const chip = (s: (typeof suggestions)[number]) => (
+    <li key={s.id} className="shrink-0">
+      <button
+        type="button"
+        disabled={ask.busy}
+        onClick={() => void ask.ask({ suggestionId: s.id, label: s.label })}
+        className={cn(
+          'min-h-[32px] rounded-md border-1.5 border-line bg-surface-raised px-3 py-1.5 text-left text-[13px] text-ink-2 hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25 disabled:opacity-50',
+          compact && 'whitespace-nowrap',
+        )}
+      >
+        {s.label}
+      </button>
+    </li>
+  );
 
+  if (compact) {
+    return <ul className="flex gap-1.5 overflow-x-auto pb-1">{shown.map(chip)}</ul>;
+  }
   return (
-    <div className="space-y-4">
-      {!compact && (
-        <div>
-          <h2 className="font-serif text-[20px] font-semibold text-foreground">
-            {ask.shell === 'client' ? 'What would you like to understand?' : 'What do you need to know?'}
-          </h2>
-          <p className="text-[12.5px] text-muted-foreground">Pick a question or type your own.</p>
-        </div>
-      )}
-      {!compact && <AskNudgeCard />}
-      {snapshot && !compact && <ProjectCard snapshot={snapshot} />}
-      {ask.shell === 'client' && !compact && !ask.preview && <SavedAnswers onOpen={() => ask.setOpen(false)} />}
+    <div className="grid gap-4">
+      <h2 className="text-[16px] font-medium text-ink">What can I do for you?</h2>
+      {snapshot ? <ProjectCard snapshot={snapshot} /> : null}
       {query.isError && (
-        <p role="alert" className="text-[12.5px] text-danger-text">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-[13px] text-danger">
           Could not load suggestions.
         </p>
       )}
-      {groups.map((group) => (
-        <section key={group} aria-label={group}>
-          {!compact && <h3 className="mb-1.5 text-[11.5px] font-medium uppercase tracking-wide text-muted-foreground">{group}</h3>}
-          <ul className={cn(compact ? 'flex gap-1.5 overflow-x-auto pb-1' : 'space-y-1.5')}>
-            {suggestions
-              .filter((s) => s.group === group)
-              .map((s) => (
-                <li key={s.id} className={cn(compact && 'shrink-0')}>
-                  <button
-                    type="button"
-                    disabled={ask.busy}
-                    onClick={() => void ask.ask({ suggestionId: s.id, label: s.label })}
-                    className={cn(
-                      'min-h-[44px] rounded-[var(--radius-md)] border border-border bg-panel px-3 text-left text-[13px] text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50',
-                      compact ? 'whitespace-nowrap rounded-full' : 'w-full',
-                    )}
-                  >
-                    {s.label}
-                  </button>
-                </li>
-              ))}
+      <div className="grid gap-2">
+        <h3 className="text-[12px] font-medium text-ink-muted">Quick questions</h3>
+        {query.isLoading ? (
+          <div className="flex flex-wrap gap-2" aria-hidden>
+            {[0, 1, 2, 3].map((i) => (
+              <span key={i} className="block h-8 w-36 animate-pulse rounded-md bg-surface-sunken" />
+            ))}
+          </div>
+        ) : (
+          <ul aria-label="Quick start" className="flex flex-wrap gap-2">
+            {shown.map(chip)}
           </ul>
-        </section>
-      ))}
+        )}
+      </div>
     </div>
   );
 }

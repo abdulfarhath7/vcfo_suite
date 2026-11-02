@@ -1,10 +1,10 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import type { IncorpDocAudience, IncorpDocKind } from '@/lib/incorporation-docs/types';
 import type { IncorpDirectorAudience } from '@/lib/incorporation-docs/shared';
-import type { ProposedDirector } from '@/lib/proposed-directors';
+import type { ProposedDirector } from '@/lib/incorporation/proposed-directors';
 
 /**
  * PRE-INCORPORATION DOCUMENT PACK — pure read model.
@@ -18,11 +18,11 @@ import type { ProposedDirector } from '@/lib/proposed-directors';
 
 export type DocPart = 'part-a' | 'part-b';
 export type DocStatus = 'ready' | 'needs-inputs' | 'waiting-release';
-export type DocReleaseGate = 'br-finalized' | 'directors-accepted';
+type DocReleaseGate = 'br-finalized' | 'directors-accepted';
 /** `attached` = the file stored by Pre-7 / BR finalize; `generated` = rendered on demand. */
-export type DocSource = 'attached' | 'generated';
+type DocSource = 'attached' | 'generated';
 
-export type GeneratorRef =
+type GeneratorRef =
   | { kind: 'incorp'; doc: IncorpDocKind }
   | { kind: 'board-resolution' };
 

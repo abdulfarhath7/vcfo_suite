@@ -1,6 +1,43 @@
 # Design system: tokens and canonical components
 
-## Design tokens (cool blue primary)
+## Design tokens, v1 (2026-10-21)
+
+The system lives in `docs/design/`: `TOKENS.md` (the spec and the decisions),
+`design-tokens.json` (source of truth; `scripts/design-tokens-css.mjs --write`
+regenerates the block in `app/globals.css`), `COMPONENTS.md` (which component
+owns each pattern), `AUDIT.md` (what was wrong and the before counts), and
+`BRIEF.md` (the brief this was built from). `node scripts/design-tokens-check.mjs`
+is the contrast gate.
+
+The short version, which overrides everything in the "superseded" section below:
+
+- One face: Public Sans (`--font-sans`), weights 400/500/600. IBM Plex Mono for
+  identifiers only. `--font-serif` and `.serif` alias the sans until their
+  callers move to the type styles.
+- Colour tokens are semantic and themed: `surface`, `surface-raised`,
+  `surface-sunken`, `line`, `line-strong`, `ink`, `ink-muted`, `ink-faint`,
+  `brand` (action blue `#1b4f94`), `brand-strong`, `brand-soft`, `on-brand`,
+  `highlight` (the one orange, text-safe), `highlight-bright`, `highlight-soft`,
+  `positive`/`warning`/`danger`/`info` each with `-soft`, `focus-ring`, `scrim`,
+  `side*` (the navy sidebar and hero), `data-1..6` (charts only).
+- Old names (`--primary`, `--gold`, `--accent-*`, `--phase-*`, `--role-*`,
+  `--stat-*`, the portal's `--navy`/`--ok`/`--due`/`--over`...) are aliases of
+  the tokens above and are deleted on 2026-11-30.
+- Two things carry colour: a state and a client company. Each client keeps one
+  colour from the eight-hue client set on every screen (dot and initials tile;
+  owner decision, 2026-10-22). People, tags and nav items are neutral. Status
+  gets a solid chip, a soft tint or a coloured word, always with a word.
+- Pages have no title (the breadcrumb and nav name them); breadcrumb segments
+  are links; Back returns to the previous screen. Grids use the table rows with
+  28px, 6px-corner cells. Full list: `docs/design/TOKENS.md`, "v1.2".
+- Chips are 22px, 6px corners, 84px/88px minimum width in columns; buttons are
+  28/32/40 high and at least 84px wide. No pills except toggles and rings.
+- Borders before shadows (`shadow-card`, `shadow-float` only), no gradients, no
+  coloured left borders, no cards inside cards, no blur.
+- The client portal CSS (`css-src/`) points its own variables at these tokens;
+  `node scripts/cp-css.mjs` rebuilds `css/` after any edit.
+
+## Superseded: the cool-blue notes from 2026-09 (history only; the rules above win)
 
 - **Primary is professional blue** (`--primary` / `--brand` / `--blue-*` ≈ `#2563EB`,
   hover `#1D4ED8`). Buttons, links, focus rings, current-step nodes, progress,
@@ -12,7 +49,7 @@
   class names still resolve blue. Prefer `primary` / `blue-*` in new UI.
 - Phase washes (journey chips only, ~8–12% chroma): `--phase-pre` sky,
   `--phase-filing` teal, `--phase-post` teal-green, `--phase-fema` indigo,
-  `--phase-registration` violet-blue. Helper: `src/lib/phase-colors.ts`.
+  `--phase-registration` violet-blue. Helper: `src/lib/shell/phase-colors.ts`.
 - Status (chips/icons only, never page fill): teal-green done · coral waiting ·
   slate lock · rose/red overdue/error. Never khaki, ochre, or brown — waiting
   used to be muted gold and read as brown; it is now coral. Categorical
@@ -56,8 +93,8 @@ dashboard uses wins, and everything else is deprecated for new surfaces.
 | Page transition wrapper | `PageTransition` (wraps every view) + `SEO` | [src/components/shell/PageTransition.tsx](src/components/shell/PageTransition.tsx) |
 | Sidebar / shell / top bar | `AppShell` → `RoleSidebar` (`superAdminItems` nav array) + `TopBar` + `CommandPalette` | [src/components/shell/AppShell.tsx](src/components/shell/AppShell.tsx), [src/components/shell/RoleSidebar.tsx:156](src/components/shell/RoleSidebar.tsx#L156) |
 | Greeting card (hero) | `DashHero` — **the only one**. Clock line + settings popover on top, serif title with optional sub-line, ring, hairline, stat strip; hero skin, ambient motion and reduced motion from `useShellAppearance`. `LeadHero` and `ClientOverviewHero` are thin content wrappers around it. | [src/components/dash/DashHero.tsx](src/components/dash/DashHero.tsx), [src/components/dash/DashHeroSettings.tsx](src/components/dash/DashHeroSettings.tsx) |
-| Motion | `src/lib/motion.ts` — `cardHover`, `tweenShort`, `fadeUp`, `springSnappy`, `staggerKids`; `layoutId` pills via `MotionActivePill` | [src/lib/motion.ts](src/lib/motion.ts) |
-| Phase colours | `phaseKeyFromId` + `PHASE_CLASSES` + `--phase-*` tokens | [src/lib/phase-colors.ts](src/lib/phase-colors.ts) |
+| Motion | `src/lib/shell/motion.ts` — `cardHover`, `tweenShort`, `fadeUp`, `springSnappy`, `staggerKids`; `layoutId` pills via `MotionActivePill` | [src/lib/shell/motion.ts](src/lib/shell/motion.ts) |
+| Phase colours | `phaseKeyFromId` + `PHASE_CLASSES` + `--phase-*` tokens | [src/lib/shell/phase-colors.ts](src/lib/shell/phase-colors.ts) |
 | Spacing / radius / typography | Panel gap `gap-3`; panel padding `px-4 pt-3 pb-3 pt-2.5`; radius `var(--radius)`; type scale `10.5 / 11 / 11.5 / 12 / 12.5 / 13 px` with `font-extrabold` labels; serif display for numbers (`.serif`), Manrope UI, IBM Plex Mono for identifiers | [app/globals.css](app/globals.css) |
 
 ## Composition rules read off the lead dashboard
@@ -116,3 +153,15 @@ rules above), the super admin surface has no caller for it, and shipping an
 unused canonical component would have made the duplication worse rather than
 better. When the lead or client surface next needs a metric card, extract one
 shared component from those two and delete both.
+
+## Round 1 rules R-54 to R-60 (owner approved, 2026-10-30)
+
+| Rule | Subject | Do this | Do not do this | Where it lives |
+|---|---|---|---|---|
+| R-54 | Depth | Put the page on `surface`. Put every card on `surface-raised`. `surface` is one step darker than `surface-raised` in light and dark mode (light `#edf1f6` on `#ffffff`, dark `#0b0c10` on `#13151a`). | Do not put a card on a ground of its own colour. Do not give a card `bg-surface` or no background. | `docs/design/design-tokens.json`, `app/globals.css`, portal `--bg` / `--panel` |
+| R-55 | Edges | Give every card, panel and section a 2 px edge in `line`. Write `border-2 border-line` in new code. Keep 1.5 px on inputs and buttons. Keep 1 px `line-soft` dividers between table rows. | Do not use a 1 px or 1.5 px edge on a card. | `.noir-card` / `.surface`, `DashHero`, `StatCard`, `StageTrack`, the R-55 rule at the end of `app/globals.css`, the R-55 rule in portal `23-portal.css` |
+| R-56 | Dashed edges | Use one dashed style: the `border-dash-fine` class (3 px dash, 3 px gap, 1.5 px wide, gradients). Set the colour with `--dash-color`. Use it only for drop zones and empty states. | Do not write `border-dashed`, `border-dotted` or `dashed` in CSS. Do not use an SVG long dash as a box edge. Do not use dashes on chips, filters, marks or dividers. | `app/globals.css` (`.border-dash-fine`), portal `23-portal.css`, `EmptyState` |
+| R-57 | Checkboxes | Use one checkbox look: a 16 px square, 1.5 px `line-strong` edge, 4 px radius. Show it empty when the item is not done. Show a brand fill and a white tick when the item is done. | Do not draw a checkbox with a dotted or dashed edge. Do not use the browser's own checkbox look or `accent-color`. | `ui/checkbox.tsx`, native `input[type=checkbox]` rule in `app/globals.css` and portal `23-portal.css` |
+| R-58 | Step connectors | Draw the line between two step marks or checkboxes with `StepLink`. Give it the mark centre (`x`, `y`). Each row draws a half-line up to its mark centre and a half-line down from it. | Do not place a connector with a hand-tuned `left-[..px]` offset. | `ui/step-track.tsx` (`StepLink`, `StepMark`) |
+| R-59 | Done items | Show a done item with a tick (the R-57 checkbox, or a green tick where the row has no checkbox), the Done chip where the row has chips, and muted text. | Do not use `line-through` on any text. | Task rows, checklists, to-dos, change and audit diffs |
+| R-60 | No floating numbers | Put every stat in a design-system card (`DashHero` tile, `StatCard`, `.surface` band, `RecordStats`). | Do not put a number or a stat heading as a bare line on the page. | `RecordStats` in `src/components/incorporation/RecordHead.tsx` |

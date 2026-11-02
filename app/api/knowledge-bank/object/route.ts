@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
-import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank-storage';
+import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { bucketKey, deleteObject, signedDownloadUrl } from '@/storage/s3';
 
 /** GET /api/knowledge-bank/signed-url?path=&expiresIn= — short-lived download URL. */

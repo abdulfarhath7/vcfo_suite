@@ -4,17 +4,22 @@ import { db } from '@/db/client';
 import { documentRequestDetails, documentRequests } from '@/db/schema';
 import { getItem } from '@/data/checklist';
 import type { AuthContext } from '@/auth/guards';
+import { isFirmWideAdmin } from '@/lib/auth';
 import type { DocRequest } from '@/data/engagements';
 import {
   assertEngagementAccess,
   listScopedEngagementIds,
 } from '@/db/repositories/engagements';
-import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
+import { requestClosedPatch } from '@/lib/metrics/trend-stamps';
 
 /**
  * DOCUMENT REQUESTS REPOSITORY — replaces vcfo.requests localStorage.
  *
- * Access: admin all; manager via owned engagements; intern/client via scoped engagements.
+ * Access: super admin and admin all; manager via owned engagements; intern/client via scoped engagements.
+ *
+ * A status change also stamps `closed_at` (`requestClosedPatch`): set when the request is
+ * fulfilled, approved or cancelled, cleared when it opens again. The home trend lines read it.
  */
 
 type Row = typeof documentRequests.$inferSelect;
@@ -52,7 +57,7 @@ function toAppDocRequest(row: Row): DocRequest {
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
-  if (ctx.role === 'admin') return 'all';
+  if (isFirmWideAdmin(ctx.role)) return 'all';
   return listScopedEngagementIds(ctx);
 }
 
@@ -150,11 +155,13 @@ export async function updateDocumentRequest(
   if (patch.fileName) detailParts.push(`file:${patch.fileName}`);
   if (patch.uploadedAt) detailParts.push(`uploadedAt:${patch.uploadedAt}`);
 
+  const nextStatus = patch.status !== undefined ? appStatusToDb(patch.status) : undefined;
   const [row] = await db
     .update(documentRequests)
     .set({
       ...(patch.label !== undefined ? { title: patch.label } : {}),
-      ...(patch.status !== undefined ? { status: appStatusToDb(patch.status) } : {}),
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...requestClosedPatch(appStatusToDb(existing.status), nextStatus),
       ...(patch.message !== undefined || patch.fileName !== undefined || patch.uploadedAt !== undefined
         ? { detail: detailParts.filter(Boolean).join('\n') || null }
         : {}),

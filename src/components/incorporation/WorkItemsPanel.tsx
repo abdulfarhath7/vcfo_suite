@@ -11,9 +11,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { Surface } from "@/components/noir/Surface";
+import { CardHeadTile } from "@/components/common/CardHeadTile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Check } from "lucide-react";
 
 interface Item {
   id: string;
@@ -51,14 +52,19 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
 
   const items = list.data ?? [];
   return (
-    <Surface className="mt-4 p-4">
-      <h3 className="mb-1 text-sm font-semibold text-foreground">What SBC is doing (client Home)</h3>
-      <p className="mb-3 text-xs text-muted-foreground">The client sees these with % done. Without any, Home lists the steps SBC holds.</p>
+    <section className="surface mt-4 min-w-0 overflow-hidden" aria-label="What SBC is doing">
+      <div className="flex min-h-[52px] min-w-0 items-center gap-2.5 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="What SBC is doing" />
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">What SBC is doing</h2>
+        <span className="text-[12.5px] text-ink-muted">Client home</span>
+      </div>
+      <div className="p-4">
       {items.length ? (
-        <ul className="mb-3 divide-y divide-border rounded-md border border-border">
+        <ul className="mb-3 divide-y divide-line rounded-md border border-line">
           {items.map((it) => (
             <li key={it.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm">
-              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-muted-foreground line-through" : ""}`}>{it.title}</span>
+              {it.status === "done" ? <Check className="h-4 w-4 flex-none text-positive" strokeWidth={2.6} aria-label="Done" /> : null}
+              <span className={`min-w-0 flex-1 truncate ${it.status === "done" ? "text-ink-muted" : ""}`}>{it.title}</span>
               <input
                 type="range"
                 min={0}
@@ -69,8 +75,8 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
                 onMouseUp={(e) => save.mutate({ ...it, progressPct: Number((e.target as HTMLInputElement).value) })}
                 onKeyUp={(e) => save.mutate({ ...it, progressPct: Number((e.target as HTMLInputElement).value) })}
               />
-              <span className="w-10 text-right font-mono text-xs">{it.progressPct}%</span>
-              <span className="w-24 font-mono text-xs text-muted-foreground">{it.readyOn ?? "—"}</span>
+              <span className="w-10 text-right tabular-nums text-xs">{it.progressPct}%</span>
+              <span className="w-24 text-xs text-ink-muted">{it.readyOn ?? "—"}</span>
               <Button size="sm" variant="ghost" onClick={() => save.mutate({ ...it, status: it.status === "done" ? "active" : "done" })}>
                 {it.status === "done" ? "Reopen" : "Done"}
               </Button>
@@ -91,12 +97,13 @@ export function WorkItemsPanel({ engagementId }: { engagementId: string }) {
           setReadyOn("");
         }}
       >
-        <Input className="min-w-[14rem] flex-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Drafting MOA & AOA" />
+        <Input className="min-w-[14rem] flex-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Drafting MOA and AOA" />
         <Input className="w-40" type="date" value={readyOn} onChange={(e) => setReadyOn(e.target.value)} aria-label="Ready on" />
         <Button type="submit" size="sm" disabled={!title.trim() || save.isPending}>
           Add
         </Button>
       </form>
-    </Surface>
+      </div>
+    </section>
   );
 }

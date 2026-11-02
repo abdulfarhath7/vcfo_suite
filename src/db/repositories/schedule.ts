@@ -3,9 +3,10 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { complianceInstances, engagements } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { recordFilingEvent, windowEventLabel } from '@/db/repositories/filing-events';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { assertEngagementAccess, getEngagementById } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   applyScheduleWindow,
   canSetScheduleWindows,
@@ -13,7 +14,7 @@ import {
   normalizeEngagementSchedule,
   type EngagementSchedule,
   type ScheduleTarget,
-} from '@/lib/schedule-windows';
+} from '@/lib/projects/schedule-windows';
 
 /**
  * SCHEDULE REPOSITORY — manager-set date windows.
@@ -120,6 +121,11 @@ export async function setComplianceInstanceWindow(
       : 'Compliance window cleared',
     metadata: { instanceId, window },
   });
+  void recordFilingEvent(ctx, {
+    instanceId,
+    side: 'sbc',
+    label: windowEventLabel(window, 'sbc'),
+  });
   return updated;
 }
 
@@ -181,5 +187,35 @@ export async function setClientComplianceWindow(
     summary: window ? `Filing window moved ${window.from} → ${window.to}` : 'Filing window reset',
     metadata: { instanceId, window, by: 'client' },
   });
+  void recordFilingEvent(ctx, { instanceId, side: 'client', label: windowEventLabel(window, 'client') });
   return updated!;
+}
+
+/**
+ * Set (or clear, with `null`) the date the firm expects the certificate of incorporation
+ * (`engagements.expected_coi_on`, G-13). Same writers as the windows: a manager on an owned
+ * engagement, admin, super admin. Writes an audit event.
+ */
+export async function setExpectedCoi(
+  ctx: AuthContext,
+  appEngagementId: string,
+  on: string | null,
+): Promise<{ expectedCoiOn: string | null }> {
+  assertMayWrite(ctx);
+  if (on !== null && !isValidWindowRange(on, on)) throw new Error('invalid_date');
+  const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+
+  await db
+    .update(engagements)
+    .set({ expectedCoiOn: on, updatedAt: new Date() })
+    .where(eq(engagements.id, existing.id));
+
+  void recordAuditEvent(ctx, {
+    engagementId: existing.id,
+    action: on ? 'schedule.expected_coi.set' : 'schedule.expected_coi.cleared',
+    summary: on ? `Expected certificate date set to ${on}` : 'Expected certificate date cleared',
+    metadata: { before: existing.expectedCoiOn ?? null, after: on },
+  });
+  return { expectedCoiOn: on };
 }

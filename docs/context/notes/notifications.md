@@ -57,12 +57,12 @@ Gotchas already paid for once. Append when something costs more than a minute to
   (no Got it button; no “parks on the megaphone” / queue footer copy). Row click
   still marks read.
 - Official RSS/Atom: staff paste a **feed URL** (not a homepage) from an allowlisted
-  host (`src/lib/announcements.ts` `OFFICIAL_FEED_HOSTS`). Inngest `announcement-feeds`
+  host (`src/lib/notifications/announcements.ts` `OFFICIAL_FEED_HOSTS`). Inngest `announcement-feeds`
   runs once at 06:00 Asia/Kolkata. We do **not** scrape HTML listing or login pages
   (MCA/GST/EPFO portals, Income Tax “What's New”). If a department has no RSS, open
   the circular from the portals directory or post by hand. Tracking junk
   (`utm_source=chatgpt.com`, gclid) is stripped from URLs.
-- Portals catalog: `src/lib/announcement-portals.ts`, rendered on the Announcements
+- Portals catalog: `src/lib/notifications/announcement-portals.ts`, rendered on the Announcements
   page. LEI renewal uses `ccilindia-lei.co.in` (official LOU), not the ads agent at
   legalentityidentifier.in. The old once-per-IST-day dialog
   (`vcfo.announcements.daily.{userId}.{ymd}`) is only a skip-list on first popup

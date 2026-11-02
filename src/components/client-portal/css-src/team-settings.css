@@ -1,0 +1,6 @@
+/* @cp-scope page=team */
+/* Profile — the prototype's ProfileScreen (C-0027, K-16): a 220 px section menu, sticky from
+   768 px, beside one section. The sections are Tailwind islands (.cp-tw); the Team section keeps
+   the team CSS. */
+.tp-set .pf-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+@media (min-width:768px){.tp-set .pf-grid{grid-template-columns:220px minmax(0,1fr)}.tp-set .pf-nav{position:sticky;top:20px}}

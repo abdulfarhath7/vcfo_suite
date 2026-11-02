@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 import FirmProjects from "@/views/admin/FirmProjects";
 
 export const metadata = pageMetadata("Projects", "Firm-wide GCC projects");

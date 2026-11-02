@@ -4,7 +4,7 @@ import { Building2, RefreshCw } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { EmptyStateIllustrated } from '@/components/noir';
-import { useClientOverview } from '@/lib/use-client-overview';
+import { useClientOverview } from '@/hooks/use-client-overview';
 import { ClientOverviewHero } from '@/components/client/overview/ClientOverviewHero';
 import { ClientNeeds } from '@/components/client/overview/ClientNeeds';
 import { ClientPhaseBars } from '@/components/client/overview/ClientPhaseBars';

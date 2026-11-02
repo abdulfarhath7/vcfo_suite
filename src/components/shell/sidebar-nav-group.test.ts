@@ -25,11 +25,13 @@ describe('sidebar nav groups', () => {
   it('lights the Compliances group on either child, for every shell base', () => {
     for (const base of ['/app/client', '/app/intern', '/app/manager', '/app/admin']) {
       const leaves = complianceLeaves(base);
-      expect(leaves.map((leaf) => leaf.label)).toEqual(['Calendar', 'Filings']);
+      expect(leaves.map((leaf) => leaf.label)).toEqual(['Obligations', 'Calendar', 'Filings']);
       expect(leaves.map((leaf) => leaf.to)).toEqual([
+        `${base}/compliances/obligations`,
         `${base}/compliances/calendar`,
         `${base}/compliances/filings`,
       ]);
+      expect(isSidebarGroupActive(`${base}/compliances/obligations`, leaves)).toBe(true);
       expect(isSidebarGroupActive(`${base}/compliances/calendar`, leaves)).toBe(true);
       expect(isSidebarGroupActive(`${base}/compliances/filings`, leaves)).toBe(true);
       expect(isSidebarGroupActive(`${base}/compliance`, leaves)).toBe(false);

@@ -6,7 +6,7 @@
  * `profiles` / `engagements` may only be touched lazily, inside
  * `.references(() => profiles.id)` callbacks — never at module top level.
  *
- * Access (repository `src/db/repositories/credentials.ts`, Path A):
+ * Access (repository `src/db/repositories/credentials/`, Path A):
  *   client — its own engagement only; secret values only inside a live grant
  *            (manager-approved OTP, 10 minutes).
  *   staff  — the engagement's manager(s) / lead(s) (and firm admins) read and

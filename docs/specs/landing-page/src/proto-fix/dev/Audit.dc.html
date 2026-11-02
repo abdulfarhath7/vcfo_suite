@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer · Audit</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+/*@dev-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="audit" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Audit" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <section class="card" data-card="audit">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5 M12 7v5l4 2"></path></svg></span><h2 class="st">Changes made from this console</h2><span class="cnt">{{n}}</span></div>
+        <div class="sc"><table class="tbl" style="min-width: 820px"><thead><tr><th>When</th><th>Who</th><th>Change</th><th>Before</th><th>After</th></tr></thead>
+          <tbody><sc-for list="{{rows}}" as="x" hint-placeholder-count="6"><tr><td>{{x.when}}</td><td><span class="nm"><span class="pt">FA</span>{{x.who}}</span></td><td style="white-space: normal">{{x.what}}</td><td class="mono2" style="white-space: normal">{{x.before}}</td><td class="mono2" style="white-space: normal">{{x.after}}</td></tr></sc-for></tbody></table></div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, A = window.ADM, s = this.state || {}, set = (o) => this.setState(o), dd = s.dd || '';
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() })); }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const ST = { ok: ['Working', '#0f6e51'], warn: ['Needs attention', '#be4400'], down: ['Down', '#b5302a'], connected: ['Connected', '#0f6e51'], attention: ['Needs attention', '#be4400'], off: ['Not connected', '#656f7e'], missing: ['Missing', '#b5302a'], fail: ['Failed', '#b5302a'], skip: ['Skipped', '#be4400'], pending: ['Waiting for approval', '#be4400'], approved: ['Approved', '#0f6e51'], pass: ['Passing', '#0f6e51'] };
+    const chip = (k) => 'background:' + (ST[k] || ST.ok)[1];
+    const base = { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }) };
+
+    const rows = D.audit().map(a => ({ when: a[0], who: a[1], what: a[2], before: a[3], after: a[4] }));
+    return Object.assign(base, { rows, n: rows.length });
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
-import AccountSettings from "@/views/settings/AccountSettings";
+import SuperSettings from '@/views/super/SuperSettings';
 
 export default function Page() {
-  return <AccountSettings path="/app/super/settings" />;
+  return <SuperSettings />;
 }

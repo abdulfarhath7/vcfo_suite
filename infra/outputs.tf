@@ -12,8 +12,8 @@ output "documents_bucket" {
   value = aws_s3_bucket.documents.bucket
 }
 output "database_url_secret_arn" {
-  description = "aws secretsmanager get-secret-value --secret-id <arn> for local db:migrate"
-  value       = aws_secretsmanager_secret.database_url.arn
+  description = "aws secretsmanager get-secret-value --secret-id <arn> for local db:migrate (null with db_managed_password on, as in production; use scripts/db-env-prod.mjs and the SSM tunnel)"
+  value       = one(aws_secretsmanager_secret.database_url[*].arn)
 }
 output "custom_domain_dns" {
   description = "Records to add at the DNS host for var.app_domain: the app CNAME plus ACM validation CNAMEs."

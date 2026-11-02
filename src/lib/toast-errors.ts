@@ -9,7 +9,7 @@ import {
   emailDispatchToastId,
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
-import type { NotificationKind } from '@/lib/checklist-notifications';
+import type { NotificationKind } from '@/lib/checklist/checklist-notifications';
 
 const ERROR_DURATION_MS = 6000;
 const SUCCESS_DURATION_MS = 4500;

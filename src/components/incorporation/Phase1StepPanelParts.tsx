@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { incorpDraftDocSlotsFromResponses, type IncorpDraftDocLink } from '@/lib/incorporation-docs/client';
 import { draftUrlFieldFor } from '@/lib/incorporation-docs/types';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
@@ -11,7 +11,7 @@ import {
   IncorporationDraftDocsPreviewList,
 } from '@/components/incorporation/IncorporationDocInlinePreview';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { buildPre7OtherAttachmentLinks } from '@/lib/checklist-pre7-other-attachments';
+import { buildPre7OtherAttachmentLinks } from '@/lib/checklist/checklist-pre7-other-attachments';
 import type { OtherDraftDocLink } from '@/components/incorporation/phase1-step-panel-utils';
 
 export function PanelShell({
@@ -26,12 +26,12 @@ export function PanelShell({
   return (
     <div
       className={cn(
-        'rounded-md border border-primary/25 bg-primary/5 px-3 py-2.5 space-y-1.5',
+        'rounded-md border border-brand/25 bg-brand/5 px-3 py-2.5 space-y-1.5',
         className,
       )}
     >
       {title ? <p className="text-[12px] font-medium text-ink">{title}</p> : null}
-      <div className="text-[12px] leading-relaxed text-text-secondary space-y-1.5">{children}</div>
+      <div className="text-[12px] leading-relaxed text-ink-muted space-y-1.5">{children}</div>
     </div>
   );
 }
@@ -54,7 +54,7 @@ export function Pre7OtherAttachmentsList({
 
   return (
     <div className={cn('space-y-1', className)}>
-      <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Other attachments</p>
+      <p className="text-[10px] text-ink-faint">Other attachments</p>
       {links.map((link) => (
         <div key={link.fieldId}>
           <MilestoneFileDisplay storagePath={link.path} label={link.label} />

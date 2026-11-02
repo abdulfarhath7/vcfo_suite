@@ -1,0 +1,28 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "proxy.ts",
+    "app/**/{page,layout,loading,error,not-found,global-error,route,template,default}.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "tests/**/*.ts",
+    "src/jobs/*.ts",
+    "src/db/schema*.ts",
+    "src/test/*.ts"
+  ],
+  "project": [
+    "app/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,mjs}",
+    "tests/**/*.ts",
+    "e2e/**/*.ts",
+    "proxy.ts"
+  ],
+  "ignore": ["docs/**", "tools/**", "infra/**", "graphify-out/**", "src/db/migrations/**"],
+  "next": { "entry": ["next.config.mjs", "proxy.ts", "app/**/*.{ts,tsx}"] },
+  "vitest": { "config": ["vitest.config.mts"], "entry": ["src/**/*.{test,spec}.{ts,tsx}", "tests/**/*.{test,spec}.{ts,tsx}"] },
+  "playwright": { "config": ["playwright.config.ts"], "entry": ["e2e/**/*.spec.ts"] },
+  "drizzle": { "config": ["drizzle.config.ts"] },
+  "tailwind": { "config": ["tailwind.config.ts"] },
+  "postcss": { "config": ["postcss.config.mjs"] },
+  "eslint": { "config": ["eslint.config.mjs"] }
+}

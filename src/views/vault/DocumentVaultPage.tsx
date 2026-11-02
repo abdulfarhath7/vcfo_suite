@@ -1,18 +1,20 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { m } from 'framer-motion';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
-import { PageBackButton } from '@/components/shell/PageBackButton';
 import { SEO } from '@/components/SEO';
-import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
-import { toneForKey, TONE_BADGE } from '@/components/common/IconChip';
-import { EmptyStateIllustrated, Mono, NoirCard, Surface } from '@/components/noir';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 import {
   collectIndexedVaultDocuments,
   collectVaultDocuments,
@@ -21,240 +23,103 @@ import {
   mergeVaultDocuments,
   scopeVaultDocumentsToEngagements,
   vaultSearchHits,
-  type VaultDocument,
-} from '@/lib/vault-documents';
-import { internVisibleDocuments } from '@/lib/document-access';
-import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/lib/use-vault-documents';
-import { isMilestoneStoragePath } from '@/lib/milestone-document-storage';
-import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
+} from '@/lib/documents/vault-documents';
+import { internVisibleDocuments } from '@/lib/documents/document-access';
+import { useIndexedDocuments } from '@/hooks/use-vault-documents';
+import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import {
-  ArrowUpRight,
-  Building2,
-  ExternalLink,
-  FileText,
-  FolderOpen,
-  Search,
-  Vault,
-} from 'lucide-react';
+import { ArrowUpRight, Download, EyeOff, Search, Upload } from 'lucide-react';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
+import { toastUndo } from '@/components/ui/undo-toast';
+import { toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
+import { formatUploadFileSize } from '@/lib/upload-limits';
+import { vaultLocationLabel } from '@/lib/documents/vault-documents';
+import {
+  DocumentOpenLink,
+  VaultFileRow,
+  VaultFolderRow,
+  VaultPreviewPane,
+  type VaultMenuItem,
+} from '@/views/vault/vault-explorer-parts';
+import { DocViewerOverlay, type DocViewerItem } from '@/views/doc-viewer/DocViewerOverlay';
+import { formatUploadDate } from '@/views/vault/vault-tree';
+import { buildVaultTree, type VaultTreeView } from '@/views/vault/vault-tree';
+import {
+  entityDocs as allEntityDocs,
+  canDeleteDoc,
+  childFolderIds,
+  fileUrl,
+  folderDocs,
+  fromLabel,
+  indexMaps,
+  isReplacedDoc,
+  indexRowFor,
+  refFor,
+  reviewProgress,
+  viewerIdFrom,
+  viewerPath,
+  zipItems,
+  type VaultIndexRow,
+} from '@/views/vault/vault-files';
+import { useVaultActions } from '@/views/vault/use-vault-actions';
+import { VaultUploadDialog } from '@/views/vault/VaultUploadDialog';
+import { useVaultRequests, VaultRequestsSection } from '@/views/vault/VaultRequestsSection';
+import type { VaultDocument } from '@/lib/documents/vault-documents';
 
-function formatUploadDate(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
+/*
+ * Staff Vault (K-39): the client Documents explorer look with the client dropdown first. One
+ * card holds the toolbar (client, filter, Status toggle, By step / By category), the tree on the
+ * left and the preview pane on the right. No page title (R-09): the explorer card is first. The
+ * data is the same as before: checklist uploads merged with the indexed documents, scoped to the
+ * engagements the signed-in person can see.
+ *
+ * The page renders from the vault route's layout, so `<vault>/view/<id>` opens the document
+ * viewer over the same explorer without loading it again (prototype DocViewerScreen).
+ */
 
-function IndexedDocumentLink({
-  documentId,
-  fileName,
-  className,
-}: {
-  documentId: string;
-  fileName: string;
-  className?: string;
-}) {
-  const [href, setHref] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+/** R-10 toggle filter: on is the soft blurple fill, off is a plain edge (R-56). */
+const FILTER = 'inline-flex h-[30px] flex-none items-center gap-2 rounded-md border-1.5 px-2.5 text-[13px] font-medium';
+const FILTER_ON = 'border-brand-line bg-brand-soft text-brand-text';
+const FILTER_OFF = 'border-line-strong text-ink-2 hover:bg-surface-sunken';
 
-  useEffect(() => {
-    let cancelled = false;
-    void getIndexedDocumentSignedUrl(documentId).then((url) => {
-      if (!cancelled) {
-        setHref(url);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [documentId]);
+const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
 
-  if (loading) {
-    return <span className={cn('text-sm italic text-text-tertiary', className)}>Loading…</span>;
-  }
-  if (!href) {
-    return (
-      <span className={cn('text-sm text-text-tertiary', className)}>
-        {fileName} (link unavailable)
-      </span>
+function copyLink(href: string) {
+  const url = `${window.location.origin}${href}`;
+  try {
+    void navigator.clipboard?.writeText(url).then(
+      () => toastUndo('Link copied'),
+      () => toastError("Link wasn't copied"),
     );
+  } catch {
+    toastError("Link wasn't copied");
   }
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cn(
-        'inline-flex items-center gap-1.5 text-[12.5px] font-medium text-brand underline-offset-2 hover:underline',
-        className,
-      )}
-    >
-      <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-      {fileName}
-    </a>
-  );
-}
-
-function DocumentOpenLink({ doc }: { doc: VaultDocument }) {
-  if (doc.source === 'index' && doc.documentId && !isMilestoneStoragePath(doc.storagePath)) {
-    return <IndexedDocumentLink documentId={doc.documentId} fileName={doc.fileName} />;
-  }
-  return (
-    <MilestoneDocumentLink
-      storagePath={doc.storagePath}
-      label={doc.fieldLabel}
-      className="text-[12.5px] font-medium"
-    />
-  );
-}
-
-function DocumentCard({
-  doc,
-  index,
-  location,
-}: {
-  doc: VaultDocument;
-  index: number;
-  location?: string;
-}) {
-  const sectionTone = TONE_BADGE[toneForKey(doc.section)];
-  return (
-    <m.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.03 * index }}
-      className="h-full"
-    >
-      <NoirCard flat className="flex h-full flex-col p-4 sm:p-5">
-        <div className="mb-3 flex items-start gap-3">
-          <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-md', sectionTone)}>
-            <FileText className="h-4 w-4" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-[13.5px] font-medium text-ink">{doc.fileName}</h3>
-            <p className="mt-0.5 truncate text-[11.5px] text-text-tertiary">
-              {location ?? doc.fieldLabel}
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-4 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-text-tertiary">
-          <span className={cn('inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[10.5px] font-medium', sectionTone)}>
-            {location ? doc.companyName : doc.section}
-          </span>
-          <span aria-hidden className="text-border">
-            ·
-          </span>
-          <Mono>{formatUploadDate(doc.uploadedAt)}</Mono>
-        </div>
-
-        <div className="mt-auto border-t border-border pt-3">
-          <DocumentOpenLink doc={doc} />
-        </div>
-      </NoirCard>
-    </m.div>
-  );
-}
-
-function EntityPill({
-  active,
-  companyName,
-  docCount,
-  stage,
-  onClick,
-}: {
-  active: boolean;
-  companyName: string;
-  docCount: number;
-  stage: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-left transition-colors',
-        active
-          ? 'border-brand/25 bg-primary-light text-ink'
-          : 'border-border bg-panel text-ink-soft hover:border-primary/20 hover:bg-muted/40',
-      )}
-    >
-      <Building2 className={cn('h-3.5 w-3.5 shrink-0', active ? 'text-brand' : 'text-text-tertiary')} />
-      <span className="max-w-[160px] truncate text-[12px] font-medium">{companyName}</span>
-      <Mono className="text-[10.5px] text-text-tertiary">{docCount}</Mono>
-      <span className="sr-only">{stage}</span>
-    </button>
-  );
-}
-
-function EntitySidebarItem({
-  active,
-  companyName,
-  docCount,
-  stage,
-  onClick,
-}: {
-  active: boolean;
-  companyName: string;
-  docCount: number;
-  stage: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'w-full rounded-md px-3 py-2.5 text-left transition-colors',
-        active ? 'bg-primary-light' : 'hover:bg-muted/50',
-      )}
-    >
-      <div className="flex items-center gap-2.5">
-        <Building2 className={cn('h-4 w-4 shrink-0', active ? 'text-brand' : 'text-text-tertiary')} />
-        <span className="truncate text-[13px] font-medium text-ink">{companyName}</span>
-      </div>
-      <div className="mt-1.5 flex items-center justify-between pl-[26px]">
-        <span className="text-[11px] text-text-tertiary">{stage}</span>
-        <Mono className="text-[11px] text-text-tertiary">
-          {docCount} {docCount === 1 ? 'file' : 'files'}
-        </Mono>
-      </div>
-    </button>
-  );
 }
 
 export default function DocumentVaultPage() {
   return (
-    <Suspense fallback={<VaultPageSkeleton />}>
+    <Suspense fallback={<VaultPageSkeleton path="/app/intern/vault" />}>
       <DocumentVaultPageContent />
     </Suspense>
   );
 }
 
-function VaultPageSkeleton() {
+/** R-48: loading shows grey shapes in the explorer's place. */
+function VaultPageSkeleton({ path }: { path: string }) {
   return (
     <PageTransition>
-      <SEO title="Document Vault — VCFO Suite" description="Central evidence repository for GCC setup projects." path="/app/intern/vault" />
-      <PageHeader accent="teal" icon={Vault} title="Vault" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <NoirCard key={i} flat className="h-[180px] animate-pulse p-5">
-            <div className="mb-3 flex gap-3">
-              <div className="h-10 w-10 rounded-md bg-muted" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-3/4 rounded bg-muted" />
-                <div className="h-3 w-1/2 rounded bg-muted" />
-              </div>
-            </div>
-          </NoirCard>
-        ))}
-      </div>
+      <SEO title="Document Vault — VCFO Suite" description="Central evidence repository for GCC setup projects." path={path} />
+      <section className="surface overflow-hidden" aria-busy="true" aria-label="Loading documents">
+        <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3 py-2.5">
+          <span className="block h-9 w-[200px] animate-pulse rounded-md bg-surface-sunken" />
+          <span className="block h-9 w-[220px] animate-pulse rounded-md bg-surface-sunken" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[440px_minmax(0,1fr)]">
+          <SkeletonRows rows={7} className="p-3 md:border-r md:border-line-soft" />
+          <div className="hidden min-h-[320px] animate-pulse bg-surface-sunken md:block" aria-hidden />
+        </div>
+      </section>
     </PageTransition>
   );
 }
@@ -268,6 +133,24 @@ function DocumentVaultPageContent() {
   const [activeEntityId, setActiveEntityId] = useState<string | null>(null);
   const urlQ = searchParams.get('q') ?? '';
   const [q, setQ] = useState(urlQ);
+  const [view, setView] = useState<VaultTreeView>('step');
+  /** Folders the person has collapsed. Every folder starts open. */
+  const [closed, setClosed] = useState<Set<string>>(() => new Set());
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+  /** Files ticked for a ZIP of the selection (G-26). */
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(() => new Set());
+  const [uploadOpen, setUploadOpen] = useState(false);
+  /** The "Status" toggle (R-10): status glyphs on the file rows. */
+  const [showStatus, setShowStatus] = useState(true);
+  /** The "Replaced" toggle (R-10, P-575): files a newer upload replaced, struck through. Off hides them. */
+  const [showReplaced, setShowReplaced] = useState(false);
+  /** The file waiting on the delete confirm (P-596). */
+  const [deleting, setDeleting] = useState<VaultDocument | null>(null);
+  const actions = useVaultActions();
+  // `<vault>/view/<id>` opens the viewer over the explorer.
+  const viewId = viewerIdFrom(pathname);
+  const urlClient = searchParams.get('client');
+  const urlFolder = searchParams.get('folder');
 
   useEffect(() => {
     setQ(urlQ);
@@ -275,7 +158,8 @@ function DocumentVaultPageContent() {
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
 
   const isIntern = user?.role === 'intern' || pathname.startsWith('/app/intern/');
-  const vaultPath = isIntern ? '/app/intern/vault' : `${staffBase}/vault`;
+  const isSuper = user?.role === 'super_admin' || pathname.startsWith('/app/super/');
+  const vaultPath = isIntern ? '/app/intern/vault' : isSuper ? '/app/super/vault' : `${staffBase}/vault`;
   const portfolioHref = isIntern ? '/app/intern/clients' : `${staffBase}/projects`;
   const portfolioLabel = isIntern ? 'View clients' : 'View projects';
 
@@ -294,7 +178,12 @@ function DocumentVaultPageContent() {
     };
   }, [engagementIds, engagementsLoading, refreshEngagementChecklist]);
 
-  const allDocs = useMemo(() => {
+  // The index rows carry the review state and the content type; a checklist upload a staff member
+  // made has one too, matched by its object key.
+  const index = useMemo(() => indexMaps((indexedQuery.data ?? []) as VaultIndexRow[]), [indexedQuery.data]);
+  const indexFor = (doc: VaultDocument) => indexRowFor(doc, index.byKey, index.byId);
+
+  const scopedDocs = useMemo(() => {
     const milestoneDocs = collectVaultDocuments(engagements, getStateForEngagement);
     const indexedDocs = collectIndexedVaultDocuments(indexedQuery.data ?? [], engagements);
     const merged = scopeVaultDocumentsToEngagements(
@@ -306,6 +195,17 @@ function DocumentVaultPageContent() {
     }
     return merged;
   }, [engagements, getStateForEngagement, indexedQuery.data, user?.internId, user?.role]);
+
+  /** Replaced files (P-575) stay out of the tree, the counts and the ZIPs until the toggle is on. */
+  const replacedCount = useMemo(
+    () => scopedDocs.filter((d) => isReplacedDoc(d, indexRowFor(d, index.byKey, index.byId))).length,
+    [scopedDocs, index],
+  );
+  const allDocs = useMemo(
+    () =>
+      showReplaced ? scopedDocs : scopedDocs.filter((d) => !isReplacedDoc(d, indexRowFor(d, index.byKey, index.byId))),
+    [scopedDocs, index, showReplaced],
+  );
 
   const entityGroups = useMemo(
     () => groupVaultDocuments(allDocs, engagements, { includeEmpty: true }),
@@ -320,47 +220,259 @@ function DocumentVaultPageContent() {
   const searchHits = useMemo(() => vaultSearchHits(allDocs, q), [allDocs, q]);
   const isSearching = q.trim().length > 0;
 
+  // The viewer and a copied folder link name their client; the picked client wins after that.
+  const viewedDoc = viewId ? scopedDocs.find((d) => d.id === viewId) ?? null : null;
+  const linkedEntityId = viewedDoc?.engagementId ?? urlClient;
+  useEffect(() => {
+    if (linkedEntityId) setActiveEntityId(linkedEntityId);
+  }, [linkedEntityId]);
+  useEffect(() => {
+    if (viewedDoc) setSelectedDocId(viewedDoc.id);
+  }, [viewedDoc]);
+
+  // The dropdown lists every client; the filter narrows the files, not the client list.
   const selectedEntityId =
-    (activeEntityId && filteredGroups.some((g) => g.engagementId === activeEntityId)
+    (activeEntityId && entityGroups.some((g) => g.engagementId === activeEntityId)
       ? activeEntityId
       : null) ??
-    filteredGroups[0]?.engagementId ??
+    entityGroups[0]?.engagementId ??
     null;
-  const selectedEntity = filteredGroups.find((g) => g.engagementId === selectedEntityId) ?? null;
+  const selectedEntity = entityGroups.find((g) => g.engagementId === selectedEntityId) ?? null;
+
+  const treeRows = useMemo(
+    () => (selectedEntity ? buildVaultTree(selectedEntity, view, closed) : []),
+    [selectedEntity, view, closed],
+  );
+  /** The whole tree with every folder open: folder ids for Expand all, and the viewer's file order. */
+  const fullTree = useMemo(
+    () => (selectedEntity ? buildVaultTree(selectedEntity, view, new Set()) : []),
+    [selectedEntity, view],
+  );
+  const allFolderIds = useMemo(() => fullTree.flatMap((r) => (r.kind === 'folder' ? [r.id] : [])), [fullTree]);
+
+  // A copied folder link (`?client=…&folder=…`) opens that folder and closes the others.
+  useEffect(() => {
+    if (!urlFolder || allFolderIds.length === 0 || !allFolderIds.includes(urlFolder)) return;
+    const keep = new Set(allFolderIds.filter((id) => urlFolder === id || urlFolder.startsWith(`${id}:`)));
+    setClosed(new Set(allFolderIds.filter((id) => !keep.has(id))));
+  }, [urlFolder, allFolderIds]);
+
+  const { data: requests } = useVaultRequests(selectedEntity?.engagementId ?? null);
+  const requestedCount = (requests ?? []).filter((r) => r.status === 'pending').length;
+
+  // While filtering, the tree shows every matching file across the clients the person can see,
+  // as the old search did, so a link from the command palette (?q=) still finds the file.
+  const visibleDocs = isSearching
+    ? searchHits.map((h) => h.doc)
+    : treeRows.flatMap((r) => (r.kind === 'file' ? [r.doc] : []));
+  const entityDocs = useMemo(
+    () => (selectedEntity ? selectedEntity.milestones.flatMap((m) => m.sections.flatMap((s) => s.docs)) : []),
+    [selectedEntity],
+  );
+  const pool = isSearching ? searchHits.map((h) => h.doc) : entityDocs;
+  const selectedDoc =
+    pool.find((d) => d.id === selectedDocId) ?? visibleDocs[0] ?? pool[0] ?? null;
 
   const projectHref = (engagementId: string, slug?: string) => {
     const target = { id: engagementId, slug };
     return isIntern ? internEngagementPath(target) : adminProjectPath(target, staffBase);
   };
 
+  function setChecked(id: string, on: boolean) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function zipDocs(name: string, docs: VaultDocument[]) {
+    void actions.downloadZip(name, zipItems(docs, (d) => indexFor(d)?.id));
+  }
+
+  function toggleFolder(id: string) {
+    setClosed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const openViewer = useCallback((docId: string) => router.push(viewerPath(vaultPath, docId)), [router, vaultPath]);
+  const closeViewer = useCallback(() => router.push(vaultPath), [router, vaultPath]);
+
+  function downloadDoc(doc: VaultDocument) {
+    const ref = refFor(doc, indexFor(doc)?.id);
+    if (!ref) {
+      toastError("This file can't be downloaded here", 'Open it from the preview.');
+      return;
+    }
+    window.location.assign(fileUrl(ref, 'download'));
+  }
+
+  function fileMenu(doc: VaultDocument): VaultMenuItem[] {
+    return [
+      { label: 'Download', onSelect: () => downloadDoc(doc) },
+      { label: 'Open in viewer', onSelect: () => openViewer(doc.id) },
+      { label: 'Copy link', hint: 'C', separatorBefore: true, onSelect: () => copyLink(viewerPath(vaultPath, doc.id)) },
+      // D1/M1: danger sits last, after a rule. Only indexed files no step holds (P-596).
+      ...(canDeleteDoc(doc, indexFor(doc), user)
+        ? [{ label: 'Delete', danger: true, separatorBefore: true, onSelect: () => setDeleting(doc) }]
+        : []),
+    ];
+  }
+
+  function folderMenu(entity: NonNullable<typeof selectedEntity>, id: string, label: string, count: number): VaultMenuItem[] {
+    const kids = childFolderIds(allFolderIds, id);
+    return [
+      ...(count > 0
+        ? [{ label: 'Download folder as ZIP', onSelect: () => zipDocs(`${entity.companyName} ${label}`, folderDocs(entity, view, id)) }]
+        : []),
+      {
+        label: 'Expand all',
+        onSelect: () => setClosed((prev) => new Set([...prev].filter((x) => x !== id && !kids.includes(x)))),
+      },
+      ...(kids.length > 0
+        ? [{ label: 'Collapse all', onSelect: () => setClosed((prev) => new Set([...prev, ...kids])) }]
+        : []),
+      {
+        label: 'Copy link to folder',
+        hint: 'C',
+        separatorBefore: true,
+        onSelect: () =>
+          copyLink(`${vaultPath}?client=${encodeURIComponent(entity.engagementId)}&folder=${encodeURIComponent(id)}`),
+      },
+    ];
+  }
+
+  function selectFile(doc: VaultDocument) {
+    setSelectedDocId(doc.id);
+    // A phone has no room for the preview beside the tree; a tap opens the viewer.
+    if (isPhone()) openViewer(doc.id);
+  }
+
   if (engagementsLoading || checklistRefreshing) {
-    return (
-      <PageTransition>
-        <SEO title="Document Vault — VCFO Suite" description="Central evidence repository for GCC setup projects." path={vaultPath} />
-        <PageHeader
-          accent="teal"
-          icon={Vault}
-          title="Vault"
-        />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <NoirCard key={i} flat className="h-[180px] animate-pulse p-5">
-              <div className="mb-3 flex gap-3">
-                <div className="h-10 w-10 rounded-md bg-muted" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 rounded bg-muted" />
-                  <div className="h-3 w-1/2 rounded bg-muted" />
-                </div>
-              </div>
-              <div className="mt-auto space-y-2 pt-6">
-                <div className="h-3 w-2/3 rounded bg-muted" />
-              </div>
-            </NoirCard>
-          ))}
+    return <VaultPageSkeleton path={vaultPath} />;
+  }
+
+  const clientWord = isIntern ? 'client' : 'entity';
+  const clientWords = isIntern ? 'clients' : 'entities';
+
+  let treeBody: ReactNode;
+  if (isSearching) {
+    treeBody =
+      searchHits.length === 0 ? (
+        <div className="p-3">
+          <EmptyState
+            title={`No document matches “${q.trim()}”`}
+            action={
+              <Button type="button" size="sm" variant="secondary" onClick={() => setQ('')}>
+                Clear filter
+              </Button>
+            }
+          />
         </div>
-      </PageTransition>
+      ) : (
+        searchHits.map((hit) => (
+          <VaultFileRow
+            key={hit.doc.id}
+            doc={hit.doc}
+            depth={0}
+            selected={selectedDoc?.id === hit.doc.id}
+            sub={`${hit.companyName} · ${hit.location}`}
+            onSelect={() => selectFile(hit.doc)}
+            reviewStatus={indexFor(hit.doc)?.reviewStatus}
+            reviewedAt={indexFor(hit.doc)?.reviewedAt}
+            showStatus={showStatus}
+            replaced={isReplacedDoc(hit.doc, indexFor(hit.doc))}
+            menu={fileMenu(hit.doc)}
+          />
+        ))
+      );
+  } else if (!selectedEntity || selectedEntity.docCount === 0) {
+    treeBody = (
+      <div className="p-3">
+        <EmptyState
+          title="No documents yet"
+          action={
+            selectedEntity ? (
+              <Button type="button" size="sm" onClick={() => setUploadOpen(true)}>
+                <Upload aria-hidden /> Upload a document
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+    );
+  } else {
+    treeBody = treeRows.map((row) =>
+      row.kind === 'folder' ? (
+        <VaultFolderRow
+          key={row.id}
+          label={row.label}
+          depth={row.depth}
+          count={row.count}
+          open={!closed.has(row.id)}
+          onToggle={() => toggleFolder(row.id)}
+          progress={
+            // Step rows (and category rows) carry the review bar; a phase row keeps its count.
+            view === 'step' && row.depth === 0
+              ? null
+              : reviewProgress(folderDocs(selectedEntity, view, row.id).map((d) => indexFor(d)?.reviewStatus))
+          }
+          menu={folderMenu(selectedEntity, row.id, row.label, row.count)}
+        />
+      ) : (
+        <VaultFileRow
+          key={row.id}
+          doc={row.doc}
+          depth={row.depth}
+          tag={row.tag}
+          sub={row.sub}
+          selected={selectedDoc?.id === row.doc.id}
+          onSelect={() => selectFile(row.doc)}
+          checked={checkedIds.has(row.doc.id)}
+          onCheck={(on) => setChecked(row.doc.id, on)}
+          reviewStatus={indexFor(row.doc)?.reviewStatus}
+          reviewedAt={indexFor(row.doc)?.reviewedAt}
+          showStatus={showStatus}
+          replaced={isReplacedDoc(row.doc, indexFor(row.doc))}
+          menu={fileMenu(row.doc)}
+        />
+      ),
     );
   }
+
+  const checkedDocs = selectedEntity ? allEntityDocs(selectedEntity).filter((d) => checkedIds.has(d.id)) : [];
+  const selectedIndex = selectedDoc ? indexFor(selectedDoc) : null;
+  const selectedRef = selectedDoc ? refFor(selectedDoc, selectedIndex?.id) : null;
+  const reviewRef =
+    selectedRef && ('documentId' in selectedRef || 'path' in selectedRef) ? selectedRef : null;
+
+  // The viewer walks the picked client's files in tree order (every folder open), or the
+  // filter's hits while filtering; a file from a link that is in neither still opens.
+  const viewerDocs: VaultDocument[] = isSearching
+    ? searchHits.map((h) => h.doc)
+    : fullTree.flatMap((r) => (r.kind === 'file' ? [r.doc] : []));
+  if (viewedDoc && !viewerDocs.some((d) => d.id === viewedDoc.id)) viewerDocs.unshift(viewedDoc);
+  const viewerItems: DocViewerItem[] = viewId
+    ? viewerDocs.map((doc) => {
+        const row = indexFor(doc);
+        const size = row?.sizeBytes ? formatUploadFileSize(row.sizeBytes) : null;
+        return {
+          id: doc.id,
+          fileName: doc.fileName,
+          meta: [vaultLocationLabel(doc) || doc.milestoneTitle || doc.companyName, formatUploadDate(doc.uploadedAt), size]
+            .filter(Boolean)
+            .join(' · '),
+          fileRef: refFor(doc, row?.id),
+          contentType: row?.contentType,
+          fallback: <DocumentOpenLink doc={doc} className="max-w-full truncate" />,
+        };
+      })
+    : [];
 
   return (
     <PageTransition>
@@ -370,236 +482,237 @@ function DocumentVaultPageContent() {
         path={vaultPath}
       />
 
-      {/* The top bar already names this page; the back chevron sits in the
-          stats card so the header row does not spend a line on it alone. */}
-      <PageHeader accent="teal" icon={Vault} title="Vault" hideBack />
-
-      {entityGroups.length > 0 && (
-        <Surface className="mb-5 overflow-hidden">
-          <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div className="flex items-center gap-5 sm:gap-8">
-              <div className="flex items-center gap-2.5">
-                <PageBackButton className="-ml-1.5" />
-                <div className="flex h-9 w-9 items-center justify-center rounded-md role-accent-bg">
-                  <Vault className="h-4 w-4 text-role" aria-hidden />
-                </div>
-                <div>
-                  <p className="text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">Documents</p>
-                  <p className="serif text-[22px] leading-none tabular-nums text-ink">{allDocs.length}</p>
-                </div>
-              </div>
-              <div className="hidden h-10 w-px bg-border sm:block" aria-hidden />
-              <div className="hidden sm:block">
-                <p className="text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-                  {isIntern ? 'Clients' : 'Entities'}
-                </p>
-                <p className="serif text-[22px] leading-none tabular-nums text-ink">{entityGroups.length}</p>
-              </div>
-            </div>
-          </div>
-        </Surface>
-      )}
-
       {entityGroups.length === 0 && !isSearching ? (
-        <EmptyStateIllustrated
-          icon={FolderOpen}
+        <EmptyState
           title={isIntern ? 'No clients assigned yet' : 'No submitted documents yet'}
-          actionLabel={portfolioLabel}
-          onAction={() => router.push(portfolioHref)}
+          action={
+            <Button type="button" size="sm" onClick={() => router.push(portfolioHref)}>
+              {portfolioLabel}
+            </Button>
+          }
         />
       ) : (
-        <>
-          <div className="mb-4 lg:hidden">
-            <p className="mb-2 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-              {isIntern ? 'Client' : 'Entity'}
-            </p>
-            <div className="-mx-1 overflow-x-auto pb-1">
-              <div className="flex gap-2 px-1">
-                {filteredGroups.map((entity) => (
-                  <EntityPill
-                    key={entity.engagementId}
-                    active={entity.engagementId === selectedEntityId}
-                    companyName={entity.companyName}
-                    docCount={entity.docCount}
-                    stage={entity.stage}
-                    onClick={() => setActiveEntityId(entity.engagementId)}
-                  />
+        <section aria-label="Documents" className="surface min-w-0 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-3 py-2.5">
+            <Select
+              value={selectedEntityId ?? undefined}
+              onValueChange={(id) => {
+                setActiveEntityId(id);
+                setSelectedDocId(null);
+                setCheckedIds(new Set());
+              }}
+            >
+              <SelectTrigger
+                aria-label={isIntern ? 'Client' : 'Entity'}
+                className="h-9 w-full min-w-0 sm:w-[240px]"
+              >
+                <span className="truncate">{selectedEntity?.companyName ?? (isIntern ? 'Client' : 'Entity')}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {entityGroups.map((entity) => (
+                  <SelectItem key={entity.engagementId} value={entity.engagementId}>
+                    {entity.companyName} · {entity.docCount}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-          </div>
+              </SelectContent>
+            </Select>
 
-          <div className="grid gap-5 lg:grid-cols-[240px_1fr] lg:gap-6">
-            <NoirCard flat className="hidden h-fit p-2 lg:block lg:sticky lg:top-4">
-              <p className="px-2 py-2 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-                {isIntern ? 'Clients' : 'Entities'}
-              </p>
-              <div className="space-y-0.5">
-                {filteredGroups.length === 0 ? (
-                  <p className="px-3 py-3 text-[12px] text-text-tertiary">No clients match this search.</p>
-                ) : (
-                  filteredGroups.map((entity) => (
-                    <EntitySidebarItem
-                      key={entity.engagementId}
-                      active={entity.engagementId === selectedEntityId}
-                      companyName={entity.companyName}
-                      docCount={entity.docCount}
-                      stage={entity.stage}
-                      onClick={() => setActiveEntityId(entity.engagementId)}
-                    />
-                  ))
-                )}
-              </div>
-            </NoirCard>
+            <label className="flex h-9 min-w-[140px] flex-1 items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-2.5 focus-within:border-brand focus-within:ring-4 focus-within:ring-brand-line sm:w-[240px] sm:flex-none">
+              <Search className="h-[15px] w-[15px] flex-none text-ink-muted" strokeWidth={1.6} aria-hidden />
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Filter documents"
+                aria-label="Filter documents"
+                className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-faint"
+              />
+              <span className="flex-none text-[12.5px] tabular-nums text-ink-muted">
+                {isSearching ? `${searchHits.length}/${allDocs.length}` : selectedEntity?.docCount ?? 0}
+              </span>
+            </label>
 
-            <div className="min-w-0 space-y-5">
-              {isSearching ? (
-                <div className="min-w-0">
-                  <h2 className="serif text-[24px] leading-tight tracking-tight text-ink">Results</h2>
-                  <p className="mt-1 text-[12px] text-text-tertiary">
-                    <Mono>{searchHits.length}</Mono>
-                    {' file'}
-                    {searchHits.length === 1 ? '' : 's'}
-                    {' matching “'}
-                    {q.trim()}
-                    {'”'}
-                  </p>
-                </div>
-              ) : selectedEntity ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  {/* The rail on the left already names the selected client. */}
-                  <div className="min-w-0">
-                    <p className="text-[12px] text-text-tertiary">
-                      <Mono>{selectedEntity.docCount}</Mono>
-                      {' document'}
-                      {selectedEntity.docCount === 1 ? '' : 's'}
-                      {' · '}
-                      {selectedEntity.stage}
-                    </p>
-                  </div>
-                  <Link
-                    href={projectHref(
-                      selectedEntity.engagementId,
-                      selectedEntity.slug ??
-                        engagements.find((e) => e.id === selectedEntity.engagementId)?.slug,
-                    )}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-border px-3.5 text-[12px] font-medium text-brand transition-colors hover:border-brand/30 hover:bg-primary-light/50"
-                  >
-                    {isIntern ? 'Open client' : 'Open project'}
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
-                </div>
-              ) : null}
+            <button
+              type="button"
+              aria-pressed={showStatus}
+              onClick={() => setShowStatus((v) => !v)}
+              className={cn(FILTER, showStatus ? FILTER_ON : FILTER_OFF)}
+            >
+              <span className="flex gap-0.5" aria-hidden>
+                <i className="h-1.5 w-1.5 rounded-[2px] bg-positive-mid" />
+                <i className="h-1.5 w-1.5 rounded-[2px] bg-brand" />
+                <i className="h-1.5 w-1.5 rounded-[2px] bg-warning-mid" />
+              </span>
+              Status
+            </button>
 
-              <Surface className="overflow-hidden">
-                <div className="border-b border-border px-4 py-3 sm:px-5">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-tertiary" />
-                    <Input
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Search by document name…"
-                      aria-label="Search by document name"
-                      className="h-9 border-0 bg-transparent pl-8 shadow-none focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
+            <button
+              type="button"
+              aria-pressed={showReplaced}
+              onClick={() => setShowReplaced((v) => !v)}
+              className={cn(FILTER, showReplaced ? FILTER_ON : FILTER_OFF)}
+              title={replacedCount > 0 ? `${replacedCount} replaced` : 'No replaced files'}
+            >
+              <EyeOff className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden /> Replaced
+            </button>
 
-                {isSearching ? (
-                  searchHits.length === 0 ? (
-                    <div className="px-4 py-12 sm:px-5">
-                      <EmptyStateIllustrated
-                        icon={FileText}
-                        title="No documents match your search"
-                        className="border-0 bg-transparent py-6"
-                      />
-                    </div>
+            {isSearching ? null : (
+              <SpectrumTabs
+                label="Group documents"
+                items={[
+                  { key: 'step', label: 'By step' },
+                  { key: 'cat', label: 'By category' },
+                ]}
+                value={view}
+                onChange={(v) => setView(v as VaultTreeView)}
+              />
+            )}
+
+            {selectedEntity && !isSearching ? (
+              <span className="ml-auto flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={actions.zipping || selectedEntity.docCount === 0}
+                  onClick={() =>
+                    checkedDocs.length > 0
+                      ? zipDocs(`${selectedEntity.companyName} selection`, checkedDocs)
+                      : zipDocs(`${selectedEntity.companyName} documents`, allEntityDocs(selectedEntity))
+                  }
+                  aria-label={checkedDocs.length > 0 ? `Download ${checkedDocs.length} selected (ZIP)` : 'Download all (ZIP)'}
+                  title={checkedDocs.length > 0 ? `Download ${checkedDocs.length} selected (ZIP)` : 'Download all (ZIP)'}
+                >
+                  <Download aria-hidden />
+                  {checkedDocs.length > 0 ? (
+                    `${checkedDocs.length} selected`
                   ) : (
-                    <div className="grid grid-cols-1 gap-4 px-4 py-5 md:grid-cols-2 xl:grid-cols-3 sm:px-5">
-                      {searchHits.map((hit, i) => (
-                        <DocumentCard
-                          key={hit.doc.id}
-                          doc={hit.doc}
-                          index={i}
-                          location={`${hit.companyName} · ${hit.location}`}
-                        />
-                      ))}
-                    </div>
-                  )
-                ) : !selectedEntity ? (
-                  <div className="px-4 py-12 sm:px-5">
-                    <EmptyStateIllustrated
-                      icon={FileText}
-                      title="No documents match your search"
-                      className="border-0 bg-transparent py-6"
-                    />
-                  </div>
-                ) : selectedEntity.docCount === 0 ? (
-                  <div className="px-4 py-12 sm:px-5">
-                    <EmptyStateIllustrated
-                      icon={FolderOpen}
-                      title="No files for this client yet"
-                      className="border-0 bg-transparent py-6"
-                    />
-                  </div>
-                ) : (selectedEntity.phases?.length ? selectedEntity.phases : []).length === 0 ? (
-                  <div className="px-4 py-12 sm:px-5">
-                    <EmptyStateIllustrated
-                      icon={FileText}
-                      title="No documents match your search"
-                      className="border-0 bg-transparent py-6"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-10 px-4 py-5 sm:px-5">
-                    {(selectedEntity.phases ?? []).map((phase) => (
-                      <section key={phase.phaseKey} aria-labelledby={`phase-${phase.phaseKey}`}>
-                        <div className="mb-5 flex flex-wrap items-end justify-between gap-2 border-b border-border pb-3">
-                          <h3
-                            id={`phase-${phase.phaseKey}`}
-                            className="serif text-[20px] leading-snug text-ink"
-                          >
-                            {phase.phaseLabel}
-                          </h3>
-                          <Mono className="shrink-0 text-[11px] text-text-tertiary">
-                            {phase.docCount} file{phase.docCount === 1 ? '' : 's'}
-                          </Mono>
-                        </div>
-                        <div className="space-y-8">
-                          {phase.milestones.map((milestone) => (
-                            <div key={milestone.milestoneId}>
-                              <div className="mb-3 min-w-0">
-                                <p className="text-[13px] font-medium text-ink">{milestone.milestoneTitle}</p>
-                              </div>
-                              {milestone.sections.map((section) => (
-                                <div
-                                  key={`${milestone.milestoneId}-${section.section}`}
-                                  className="mb-6 last:mb-0"
-                                >
-                                  {milestone.sections.length > 1 && (
-                                    <p className="mb-3 text-[10.5px] uppercase tracking-[0.14em] text-text-tertiary">
-                                      {section.section}
-                                    </p>
-                                  )}
-                                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                    {section.docs.map((doc, i) => (
-                                      <DocumentCard key={doc.id} doc={doc} index={i} />
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-                    ))}
-                  </div>
-                )}
-              </Surface>
-            </div>
+                    <span className="sm:hidden 2xl:inline">Download all (ZIP)</span>
+                  )}
+                </Button>
+                {checkedDocs.length > 0 ? (
+                  <Button type="button" size="sm" variant="quiet" onClick={() => setCheckedIds(new Set())}>
+                    Clear
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" onClick={() => setUploadOpen(true)}>
+                  <Upload aria-hidden /> {requestedCount > 0 ? `Upload · ${requestedCount} requested` : 'Upload'}
+                </Button>
+              </span>
+            ) : null}
+
+            {selectedEntity && !isSearching ? (
+              <Button asChild size="sm" variant="secondary">
+                <Link
+                  href={projectHref(
+                    selectedEntity.engagementId,
+                    selectedEntity.slug ??
+                      engagements.find((e) => e.id === selectedEntity.engagementId)?.slug,
+                  )}
+                >
+                  {isIntern ? 'Open client' : 'Open project'}
+                  <ArrowUpRight aria-hidden />
+                </Link>
+              </Button>
+            ) : null}
           </div>
-        </>
+
+          {/* The filter searches every client, so the line names how many files and clients match. */}
+          {isSearching && filteredGroups.length > 0 ? (
+            <p className="border-b border-line-soft px-4 py-2 text-[12.5px] text-ink-muted">
+              {searchHits.length} {searchHits.length === 1 ? 'file' : 'files'} in{' '}
+              {filteredGroups.length} {filteredGroups.length === 1 ? clientWord : clientWords}
+            </p>
+          ) : null}
+
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[440px_minmax(0,1fr)]">
+            <div
+              role="tree"
+              aria-label="Folders and files"
+              // Keys bubble up from the focused row; the tree itself is not a tab stop.
+              tabIndex={-1}
+              className="min-w-0 py-2 md:border-r md:border-line-soft"
+              onKeyDown={(e) => {
+                // C copies the picked file's viewer link (the menu's key hint).
+                if (e.key.toLowerCase() !== 'c' || e.metaKey || e.ctrlKey || e.altKey) return;
+                if ((e.target as HTMLElement).closest('input, textarea, [role="menu"]')) return;
+                if (!selectedDoc) return;
+                e.preventDefault();
+                copyLink(viewerPath(vaultPath, selectedDoc.id));
+              }}
+            >
+              {treeBody}
+            </div>
+            <aside className="min-w-0 border-t border-line-soft md:border-t-0" aria-label="Preview">
+              {selectedDoc ? (
+                <VaultPreviewPane
+                  doc={selectedDoc}
+                  fileRef={selectedRef}
+                  contentType={selectedIndex?.contentType}
+                  review={
+                    selectedIndex
+                      ? {
+                          status: selectedIndex.reviewStatus ?? 'none',
+                          note: selectedIndex.reviewNote ?? null,
+                          reviewedAt: selectedIndex.reviewedAt ?? null,
+                        }
+                      : null
+                  }
+                  onReview={reviewRef ? (status, note) => actions.review(reviewRef, status, note) : undefined}
+                  viewerHref={viewerPath(vaultPath, selectedDoc.id)}
+                  from={fromLabel(selectedIndex, selectedDoc.companyName)}
+                  replaced={isReplacedDoc(selectedDoc, selectedIndex)}
+                />
+              ) : (
+                <div className="grid h-full min-h-[240px] place-items-center bg-surface-sunken p-5 text-[13px] text-ink-faint">
+                  —
+                </div>
+              )}
+            </aside>
+          </div>
+        </section>
       )}
+
+      {selectedEntity && !isSearching ? (
+        <>
+          <VaultRequestsSection
+            key={selectedEntity.engagementId}
+            engagementId={selectedEntity.engagementId}
+            companyName={selectedEntity.companyName}
+            onZip={(name, items) => void actions.downloadZip(name, items)}
+            zipping={actions.zipping}
+          />
+          <VaultUploadDialog
+            open={uploadOpen}
+            onOpenChange={setUploadOpen}
+            engagementId={selectedEntity.engagementId}
+            companyName={selectedEntity.companyName}
+            onUploaded={() => void actions.refreshIndex()}
+          />
+        </>
+      ) : null}
+
+      <DangerConfirm
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={deleting ? `Delete ${deleting.fileName}?` : 'Delete document?'}
+        body={deleting ? `${deleting.fileName} leaves the documents of ${deleting.companyName}.` : undefined}
+        word="DELETE"
+        confirm="Delete document"
+        onConfirm={async () => {
+          const doc = deleting;
+          const row = doc ? indexFor(doc) : null;
+          if (!doc || !row) return;
+          const ok = await actions.remove(row.id, doc.fileName);
+          if (ok && selectedDocId === doc.id) setSelectedDocId(null);
+        }}
+      />
+
+      {viewId && viewerItems.length > 0 ? (
+        <DocViewerOverlay items={viewerItems} currentId={viewId} onGo={openViewer} onClose={closeViewer} />
+      ) : null}
     </PageTransition>
   );
 }

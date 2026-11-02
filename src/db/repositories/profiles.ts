@@ -1,6 +1,6 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   profiles,
@@ -17,6 +17,12 @@ import type { AuthContext } from '@/auth/guards';
 import { initialsFromName, isFirmWideAdmin } from '@/lib/auth';
 import { ownAvatarSrc } from '@/lib/account-avatar';
 import { isUuid } from '@/lib/slug';
+import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs';
+import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { generateTotpSecret, otpauthUri } from '@/lib/totp/totp';
+import { encryptTotpSecret, reencryptTotpSecret } from '@/lib/totp/secret-box';
+import { checkTotpCode } from '@/lib/totp/check';
 
 /**
  * PROFILES REPOSITORY — intern provisioning + roster listing.
@@ -288,11 +294,13 @@ export type StaffPersonRow = {
   id: string;
   name: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'manager' | 'intern' | 'client';
+  role: 'super_admin' | 'admin' | 'manager' | 'intern' | 'client' | 'developer';
   internId: string | null;
   clientId: string | null;
   reportsToManagerId: string | null;
   status: string;
+  /** Two-step sign-in is on (`totp_enabled_at` is set), so a firm admin may reset it. */
+  twoStepOn?: boolean;
 };
 
 /** Firm admin / super admin: list all accounts. */
@@ -310,6 +318,7 @@ export async function listStaffPeople(ctx: AuthContext): Promise<StaffPersonRow[
       clientId: profiles.clientId,
       reportsToManagerId: profiles.reportsToManagerId,
       status: profiles.status,
+      totpEnabledAt: profiles.totpEnabledAt,
     })
     .from(profiles)
     .orderBy(asc(profiles.role), asc(profiles.name));
@@ -323,6 +332,7 @@ export async function listStaffPeople(ctx: AuthContext): Promise<StaffPersonRow[
     clientId: r.clientId,
     reportsToManagerId: r.reportsToManagerId,
     status: r.status,
+    twoStepOn: Boolean(r.totpEnabledAt),
   }));
 }
 
@@ -431,6 +441,12 @@ export async function deleteProfileAccount(
     }
   }
 
+  // Only the super admin removes a super admin or a developer account (developers are
+  // created by the super admin only).
+  if ((target.role === 'super_admin' || target.role === 'developer') && ctx.role !== 'super_admin') {
+    throw new Error('cannot_edit_super_admin');
+  }
+
   if (target.role === 'admin') {
     const admins = await db
       .select({ id: profiles.id })
@@ -448,6 +464,11 @@ export async function deleteProfileAccount(
         .update(profiles)
         .set({ reportsToManagerId: null, updatedAt: new Date() })
         .where(eq(profiles.reportsToManagerId, profileId));
+      // And the "Reports to admin" lines (G-20), which have no foreign key.
+      await tx
+        .update(profiles)
+        .set({ reportsToAdminId: null, updatedAt: new Date() })
+        .where(eq(profiles.reportsToAdminId, profileId));
 
       // RESTRICT FKs — reassign ownership to the actor deleting the account.
       await tx
@@ -512,6 +533,9 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
   whatsappStatus: string;
   role: string;
   avatarUrl: string | null;
+  /** Staff title and ICAI or ICSI membership number (P-617); null for clients and when unset. */
+  designation: string | null;
+  membershipNo: string | null;
 }> {
   const [row] = await db
     .select({
@@ -519,6 +543,8 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
       name: profiles.name,
       email: profiles.email,
       phone: profiles.phone,
+      designation: profiles.designation,
+      membershipNo: profiles.membershipNo,
       phoneE164: profiles.phoneE164,
       whatsappOptInAt: profiles.whatsappOptInAt,
       whatsappOptOutAt: profiles.whatsappOptOutAt,
@@ -542,6 +568,8 @@ export async function getOwnProfile(ctx: AuthContext): Promise<{
     whatsappStatus: row.whatsappStatus,
     role: row.role,
     avatarUrl: row.avatarObjectKey ? ownAvatarSrc(row.updatedAt) : null,
+    designation: row.designation ?? null,
+    membershipNo: row.membershipNo ?? null,
   };
 }
 
@@ -590,9 +618,12 @@ export async function updateOwnProfile(
     whatsappOptIn?: boolean;
     email?: string;
     currentPassword?: string;
+    /** Staff only (P-617). Omitted leaves it; null or "" clears it. A client's value is ignored. */
+    designation?: string | null;
+    membershipNo?: string | null;
   },
 ): Promise<
-  | { ok: true; name: string; email: string; phone: string | null }
+  | { ok: true; name: string; email: string; phone: string | null; designation?: string | null; membershipNo?: string | null }
   | { ok: false; error: 'account_not_found' | 'invalid_credentials' | 'email_already_registered' }
 > {
   const [row] = await db
@@ -602,12 +633,20 @@ export async function updateOwnProfile(
       passwordHash: profiles.passwordHash,
       phoneE164: profiles.phoneE164,
       whatsappOptInAt: profiles.whatsappOptInAt,
+      role: profiles.role,
     })
     .from(profiles)
     .where(eq(profiles.id, ctx.userId))
     .limit(1);
 
   if (!row) return { ok: false, error: 'account_not_found' };
+
+  // Designation and membership number belong to staff (and the developer); a client has neither.
+  const staffFields: { designation?: string | null; membershipNo?: string | null } = {};
+  if (row.role !== 'client') {
+    if (input.designation !== undefined) staffFields.designation = input.designation?.trim() || null;
+    if (input.membershipNo !== undefined) staffFields.membershipNo = input.membershipNo?.trim().toUpperCase() || null;
+  }
 
   const name = input.name.trim();
   if (!name) throw new Error('name_required');
@@ -663,6 +702,7 @@ export async function updateOwnProfile(
       name,
       phone,
       ...whatsappPatch,
+      ...staffFields,
       ...(emailChanging ? { email: nextEmail } : {}),
       updatedAt: new Date(),
     })
@@ -671,6 +711,8 @@ export async function updateOwnProfile(
       name: profiles.name,
       email: profiles.email,
       phone: profiles.phone,
+      designation: profiles.designation,
+      membershipNo: profiles.membershipNo,
     });
 
   return {
@@ -678,6 +720,8 @@ export async function updateOwnProfile(
     name: updated.name?.trim() || name,
     email: updated.email,
     phone: updated.phone,
+    designation: updated.designation ?? null,
+    membershipNo: updated.membershipNo ?? null,
   };
 }
 
@@ -720,7 +764,7 @@ export async function updatePersonEmail(
     }
   }
 
-  if (target.role === 'super_admin' && ctx.role !== 'super_admin') {
+  if ((target.role === 'super_admin' || target.role === 'developer') && ctx.role !== 'super_admin') {
     throw new Error('cannot_edit_super_admin');
   }
 
@@ -922,6 +966,8 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
   phoneE164: string | null;
   whatsappOptInAt: Date | null;
   whatsappOptOutAt: Date | null;
+  /** WhatsApp categories and quiet hours from `notification_prefs` (G-25). */
+  prefs: WhatsAppGatePrefs | null;
 } | null> {
   const id = profileId.trim();
   if (!id || !isUuid(id)) return null;
@@ -951,6 +997,7 @@ export async function systemGetNotifyRecipient(profileId: string): Promise<{
     phoneE164: row.phoneE164,
     whatsappOptInAt: row.whatsappOptInAt,
     whatsappOptOutAt: row.whatsappOptOutAt,
+    prefs: await systemGetWhatsAppGatePrefs(row.id),
   };
 }
 
@@ -1012,4 +1059,234 @@ export async function systemListActiveProfilesByRole(
     .orderBy(asc(profiles.email))
     .limit(2000);
   return rows.map((r) => ({ id: r.id, name: r.name?.trim() || r.email, email: r.email }));
+
+/* ------------------------------------------------------------------------ */
+/* Sign-in check and two-step sign-in (G-25)                                 */
+/* ------------------------------------------------------------------------ */
+
+/** A real bcrypt hash of a random string, so an unknown email costs the same time as a wrong password. */
+const DUMMY_BCRYPT_HASH = '$2a$10$FRW41IOXAH9HuTeeEawcDeCcuozNhUwy2EZImk8vzyoP0E7f1AlSC';
+
+export type SignInCandidate = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: (typeof profiles.$inferSelect)['role'];
+  internId: string | null;
+  clientId: string | null;
+  avatarObjectKey: string | null;
+  updatedAt: Date;
+  /** True when two-step sign-in is confirmed for this person. */
+  twoStepOn: boolean;
+  totpSecretEnc: string | null;
+};
+
+/**
+ * SYSTEM READER — sign-in (documented deviation; there is no session yet).
+ *
+ * Returns the person when the email and password match an active account that
+ * may sign in, and null otherwise. It never says which part was wrong, and an
+ * unknown email still runs one bcrypt comparison so the timing does not tell
+ * either. Used by the Credentials `authorize` and by the code pre-check route.
+ */
+export async function systemCheckSignInPassword(emailInput: string, password: string): Promise<SignInCandidate | null> {
+  const email = String(emailInput ?? '').trim().toLowerCase();
+  if (!email || !password) return null;
+  const [row] = await db
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      name: profiles.name,
+      role: profiles.role,
+      internId: profiles.internId,
+      clientId: profiles.clientId,
+      status: profiles.status,
+      passwordHash: profiles.passwordHash,
+      avatarObjectKey: profiles.avatarObjectKey,
+      updatedAt: profiles.updatedAt,
+      totpSecretEnc: profiles.totpSecretEnc,
+      totpEnabledAt: profiles.totpEnabledAt,
+    })
+    .from(profiles)
+    .where(eq(profiles.email, email))
+    .limit(1);
+
+  const ok = await bcrypt.compare(password, row?.passwordHash || DUMMY_BCRYPT_HASH);
+  if (!row?.passwordHash || !ok) return null;
+  if (row.status !== 'active') return null;
+  // Interns without a scoping key see an empty portfolio — refuse login.
+  if (row.role === 'intern' && !row.internId?.trim()) return null;
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    internId: row.internId,
+    clientId: row.clientId,
+    avatarObjectKey: row.avatarObjectKey,
+    updatedAt: row.updatedAt,
+    twoStepOn: Boolean(row.totpEnabledAt && row.totpSecretEnc),
+    totpSecretEnc: row.totpSecretEnc,
+  };
+}
+
+export type TwoStepStatus = {
+  /** Confirmed with a first code; sign-in asks for a code. */
+  enabled: boolean;
+  enabledAt: string | null;
+};
+
+async function readOwnTwoStepRow(ctx: AuthContext) {
+  const [row] = await db
+    .select({
+      email: profiles.email,
+      totpSecretEnc: profiles.totpSecretEnc,
+      totpEnabledAt: profiles.totpEnabledAt,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, ctx.userId))
+    .limit(1);
+  if (!row) throw new Error('account_not_found');
+  return row;
+}
+
+/** The caller's own two-step state. */
+export async function getOwnTwoStep(ctx: AuthContext): Promise<TwoStepStatus> {
+  const row = await readOwnTwoStepRow(ctx);
+  const enabled = Boolean(row.totpEnabledAt && row.totpSecretEnc);
+  return { enabled, enabledAt: enabled ? row.totpEnabledAt!.toISOString() : null };
+}
+
+/**
+ * Starts setup for the caller: a new secret is sealed onto their row with
+ * `totp_enabled_at` still null, so sign-in does not ask for a code until the
+ * first code confirms it. Starting again replaces an unconfirmed secret.
+ * Returns the base32 key and the `otpauth://` link, shown once.
+ */
+export async function startOwnTwoStepSetup(
+  ctx: AuthContext,
+): Promise<{ secret: string; uri: string } | 'already_on'> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (row.totpEnabledAt && row.totpSecretEnc) return 'already_on';
+  const secret = generateTotpSecret();
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: encryptTotpSecret(ctx.userId, secret), totpEnabledAt: null })
+    .where(and(eq(profiles.id, ctx.userId), isNull(profiles.totpEnabledAt)));
+  return { secret, uri: otpauthUri({ issuer: 'VCFO Suite', account: row.email, secret }) };
+}
+
+/** Confirms setup with a first code and turns two-step sign-in on. */
+export async function confirmOwnTwoStep(
+  ctx: AuthContext,
+  code: string,
+): Promise<{ ok: true; status: TwoStepStatus } | { ok: false; error: 'not_started' | 'already_on' | 'invalid_code' | 'locked' }> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (row.totpEnabledAt && row.totpSecretEnc) return { ok: false, error: 'already_on' };
+  if (!row.totpSecretEnc) return { ok: false, error: 'not_started' };
+  const check = checkTotpCode(ctx.userId, row.totpSecretEnc, code);
+  if (check === 'locked') return { ok: false, error: 'locked' };
+  if (check === 'invalid') return { ok: false, error: 'invalid_code' };
+  const now = new Date();
+  await db
+    .update(profiles)
+    .set({ totpEnabledAt: now })
+    .where(and(eq(profiles.id, ctx.userId), isNull(profiles.totpEnabledAt)));
+  await recordAuditEvent(ctx, { action: 'account.two_step_on', summary: 'Turned on two-step sign-in' });
+  return { ok: true, status: { enabled: true, enabledAt: now.toISOString() } };
+}
+
+/** Turns two-step sign-in off for the caller; needs a current code. */
+export async function disableOwnTwoStep(
+  ctx: AuthContext,
+  code: string,
+): Promise<{ ok: true } | { ok: false; error: 'not_on' | 'invalid_code' | 'locked' }> {
+  const row = await readOwnTwoStepRow(ctx);
+  if (!row.totpEnabledAt || !row.totpSecretEnc) return { ok: false, error: 'not_on' };
+  const check = checkTotpCode(ctx.userId, row.totpSecretEnc, code);
+  if (check === 'locked') return { ok: false, error: 'locked' };
+  if (check === 'invalid') return { ok: false, error: 'invalid_code' };
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: null, totpEnabledAt: null })
+    .where(eq(profiles.id, ctx.userId));
+  await recordAuditEvent(ctx, { action: 'account.two_step_off', summary: 'Turned off two-step sign-in' });
+  return { ok: true };
+}
+
+/**
+ * A firm admin or the super admin turns off another person's two-step sign-in,
+ * for a lost phone or for a secret no key can open. A firm admin cannot reset
+ * the super admin; nobody resets their own here (they use a code instead).
+ */
+export async function resetTwoStepFor(
+  ctx: AuthContext,
+  profileId: string,
+): Promise<'ok' | 'forbidden' | 'not_found' | 'self'> {
+  if (!isFirmWideAdmin(ctx.role)) return 'forbidden';
+  if (!isUuid(profileId)) return 'not_found';
+  if (profileId === ctx.userId) return 'self';
+  const [target] = await db
+    .select({ id: profiles.id, role: profiles.role, email: profiles.email, name: profiles.name })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+  if (!target) return 'not_found';
+  if (target.role === 'super_admin' && ctx.role !== 'super_admin') return 'forbidden';
+  await db
+    .update(profiles)
+    .set({ totpSecretEnc: null, totpEnabledAt: null })
+    .where(eq(profiles.id, profileId));
+  await recordAuditEvent(ctx, {
+    action: 'account.two_step_reset',
+    summary: `Reset two-step sign-in for ${target.name?.trim() || target.email}`,
+    metadata: { profileId },
+  });
+  return 'ok';
+}
+
+export interface TotpReencryptReport {
+  /** Rows with a stored two-step secret. */
+  checked: number;
+  /** Rows moved from `t1` (AUTH_SECRET key) to `t2` (CREDENTIALS_ENCRYPTION_KEY). */
+  moved: number;
+  /** Rows already on `t2`. */
+  current: number;
+  /** Profile ids whose secret no key opens; an admin resets their two-step sign-in. */
+  unreadable: string[];
+  /** Rows that changed while the script ran and were left for the next run. */
+  skipped: number;
+}
+
+/**
+ * M7 one-time move of every stored TOTP secret to the CREDENTIALS_ENCRYPTION_KEY key
+ * (`scripts/reencrypt-totp.ts`). SYSTEM: no AuthContext, because it runs from a shell
+ * inside the VPC, never from a request. Each update matches the old value too, so a person
+ * who sets up two-step sign-in during the run is not overwritten. `dryRun` writes nothing.
+ * Throws when CREDENTIALS_ENCRYPTION_KEY is unset.
+ */
+export async function systemReencryptTotpSecrets(opts: { dryRun?: boolean } = {}): Promise<TotpReencryptReport> {
+  const rows = await db
+    .select({ id: profiles.id, enc: profiles.totpSecretEnc })
+    .from(profiles)
+    .where(isNotNull(profiles.totpSecretEnc));
+  const report: TotpReencryptReport = { checked: rows.length, moved: 0, current: 0, unreadable: [], skipped: 0 };
+  for (const row of rows) {
+    if (!row.enc) continue;
+    const out = reencryptTotpSecret(row.id, row.enc);
+    if (out.state === 'current') report.current += 1;
+    else if (out.state === 'unreadable') report.unreadable.push(row.id);
+    else if (opts.dryRun) report.moved += 1;
+    else {
+      const done = await db
+        .update(profiles)
+        .set({ totpSecretEnc: out.enc })
+        .where(and(eq(profiles.id, row.id), eq(profiles.totpSecretEnc, row.enc)))
+        .returning({ id: profiles.id });
+      if (done.length) report.moved += 1;
+      else report.skipped += 1;
+    }
+  }
+  return report;
 }

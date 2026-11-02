@@ -13,6 +13,8 @@ export function roleHomePath(role: Role): string {
       return '/app/intern/today';
     case 'client':
       return '/app/client/overview';
+    case 'developer':
+      return '/app/dev/overview';
   }
 }
 
@@ -29,6 +31,8 @@ export function roleNotificationsPath(role: Role): string {
       return '/app/intern/notifications';
     case 'client':
       return '/app/client/notifications';
+    case 'developer':
+      return '/app/dev/overview';
   }
 }
 
@@ -36,7 +40,8 @@ export function roleNotificationsPath(role: Role): string {
 export function roleSettingsPath(role: Role): string {
   switch (role) {
     case 'super_admin':
-      return '/app/super/settings';
+      // The super settings page opens on the firm tab; the account row wants the profile.
+      return '/app/super/settings?tab=profile';
     case 'admin':
       return '/app/admin/settings';
     case 'manager':
@@ -45,7 +50,23 @@ export function roleSettingsPath(role: Role): string {
       return '/app/intern/settings';
     case 'client':
       return '/app/client/settings';
+    case 'developer':
+      return '/app/dev/overview';
   }
+}
+
+/**
+ * The profile page the account row opens (P-608, P-644, P-258). Every role has its own
+ * `/app/<role>/profile` (super admin: `/app/super/profile`, developer: `/app/dev/profile`). Links that
+ * point at a settings section (`#email`, `#appearance`, notification preferences, the Outlook
+ * callback) keep `roleSettingsPath`.
+ */
+export function roleProfilePath(role: Role): string {
+  if (role === 'admin' || role === 'manager' || role === 'intern') return `/app/${role}/profile`;
+  if (role === 'super_admin') return '/app/super/profile';
+  if (role === 'client') return '/app/client/profile';
+  if (role === 'developer') return '/app/dev/profile';
+  return roleSettingsPath(role);
 }
 
 /**
@@ -78,4 +99,22 @@ export function staffBasePathForRole(role: Role | undefined): StaffBasePath {
   if (role === 'super_admin') return '/app/super';
   if (role === 'admin') return '/app/admin';
   return '/app/manager';
+}
+
+/**
+ * The full Ask VCFO page of a role (owner item F4, 30 Oct 2026): `/app/<role>/ask`.
+ * Null for the developer, who has no Ask VCFO (`canUseAsk`).
+ */
+export function roleAskPath(role: Role | null | undefined): string | null {
+  switch (role) {
+    case 'super_admin':
+      return '/app/super/ask';
+    case 'admin':
+    case 'manager':
+    case 'intern':
+    case 'client':
+      return `/app/${role}/ask`;
+    default:
+      return null;
+  }
 }

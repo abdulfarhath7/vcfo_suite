@@ -1,5 +1,5 @@
 import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
-import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/proposed-directors';
+import { PROPOSED_DIRECTORS_STEP_ID } from '@/lib/incorporation/proposed-directors';
 import {
   anyDirectorName,
   authorisedShareCapital,
@@ -301,7 +301,3 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     generate: { kind: 'incorp', doc: 'aoa-subscription-sheet' },
   },
 ];
-
-export function docDefinition(id: string): DocDefinition | undefined {
-  return DOC_PACK_REGISTRY.find((d) => d.id === id);
-}

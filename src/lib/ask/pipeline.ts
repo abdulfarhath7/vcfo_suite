@@ -14,7 +14,7 @@ import {
   getAskConversationWithMessages,
 } from '@/db/repositories/ask-conversations';
 import { appendAskMessage } from '@/db/repositories/ask-messages';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
 import { askConfig, askFeatures } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
@@ -23,7 +23,7 @@ import { findDinInMessage } from '@/lib/director-lookup/din';
 import { getDinProvider } from '@/lib/director-lookup/providers';
 import type { DinLookupResult } from '@/lib/director-lookup/types';
 import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
-import { gateActiveCatalog } from '@/lib/checklist-step-gate';
+import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
 import { generateAnswer } from '@/lib/ask/generate';
 import { runGuard, type GuardResult } from '@/lib/ask/guard';
 import { askSourceCoverage } from '@/db/repositories/ask-documents';
@@ -108,7 +108,7 @@ export const chatRequestSchema = z.object({
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
-export const STATUS_LABELS = {
+const STATUS_LABELS = {
   project: 'Checking your project…',
   sources: 'Finding sources…',
   writing: 'Writing…',

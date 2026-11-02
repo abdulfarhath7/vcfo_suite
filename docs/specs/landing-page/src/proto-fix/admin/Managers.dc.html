@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin · Managers</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+.lr{display:grid;grid-template-columns:minmax(0,1fr) 54px 54px 160px 20px;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #e1e7ef;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.lr:hover{background:#eef4fb}
+.lr .n{text-align:right;font-weight:600}
+.lr svg{transition:transform .2s ease-out;color:#4b5b70}
+.lr[aria-expanded="true"] svg{transform:rotate(180deg)}
+.lt{padding:0 16px 10px 50px;background:#f7f9fc;border-top:1px solid #e1e7ef}
+.lt>div{display:grid;grid-template-columns:minmax(0,1fr) 150px 120px 80px;gap:10px;align-items:center;padding:7px 0;border-top:1px solid #e1e7ef;font-size:12.5px}
+.lt>div:first-child{border-top:0}
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="managers" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Managers" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <!-- the manager picked in the sidebar -->
+      <div class="card" style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <!--scrim-->
+        <span style="width: 40px; height: 40px; border-radius: 8px; background: #eef2f7; color: #0f2a4a; display: grid; place-items: center; font-size: 13px; font-weight: 600; flex: none">{{ini}}</span>
+        <span style="display: flex; flex-direction: column; line-height: 1.3; min-width: 0"><b style="font-size: 16px; font-weight: 600">{{name}}</b><span class="mut" style="font-size: 12px">Manager · {{nClients}} clients · {{nLeads}} project leads · {{open}} open · {{late}} overdue · {{onTime}}% on time</span></span>
+        <span style="margin-left: auto; display: flex; gap: 8px; align-items: center">
+          <button type="button" class="btn btnp" data-admin-assign="client">Assign client</button>
+          <span class="ds-ddw"><button type="button" class="ds-dd ds-icon" aria-haspopup="menu" aria-expanded="{{moreX}}" aria-label="More actions" title="More actions" onClick="{{moreTog}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></svg></button><sc-if value="{{moreOpen}}" hint-placeholder-val="{{false}}"><div class="ds-pop ds-pop-r" role="menu" aria-label="More actions"><button type="button" class="ds-opt" role="menuitem" data-admin-assign="task">Assign a task</button><button type="button" class="ds-opt" role="menuitem" onClick="{{exportIt}}">Export</button></div></sc-if></span>
+        </span>
+      </div>
+
+      <div class="cols2">
+        <section class="card" data-card="mgr-status">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.2 15.9A10 10 0 1 1 8 2.8 M22 12A10 10 0 0 0 12 2v10z"></path></svg></span><h2 class="st">{{first}} · status</h2>
+            <a href="#" class="lnk" data-go="admin-work" style="margin-left: auto">Open Work</a></div>
+          <div style="display: flex; gap: 18px; align-items: center; padding: 2px 16px 16px">
+            <div style="{{donut}}; cursor: pointer" data-donut="team-tasks" data-drill="{{drill}}" role="button" tabindex="0" title="Open the breakdown" aria-label="{{donutTip}} · open the breakdown"><div style="width: 80px; height: 80px; border-radius: 50%; background: #fff; display: grid; place-items: center; text-align: center"><div><b style="display: block; font-size: 22px; font-weight: 600; line-height: 1">{{tot}}</b><span class="mut" style="font-size: 11px">tasks</span></div></div></div>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><sc-for list="{{legend}}" as="c" hint-placeholder-count="6"><div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600"><span class="sw" style="{{c.sw}}"></span><span style="flex: 1">{{c.label}}</span><b>{{c.n}}</b></div></sc-for></div>
+          </div>
+        </section>
+        <section class="card" data-card="mgr-area">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16 M4 12h10 M4 18h7"></path></svg></span><h2 class="st">By area · Sep to Oct</h2>
+            <span class="mut" style="margin-left: auto; display: flex; gap: 12px; font-size: 11.5px"><span><i class="sw" style="display: inline-block; background: #0f6e51; vertical-align: -1px"></i> Done</span><span><i class="sw" style="display: inline-block; background: #be4400; vertical-align: -1px"></i> Pending</span><span><i class="sw" style="display: inline-block; background: #b5302a; vertical-align: -1px"></i> Overdue</span></span></div>
+          <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 16px">
+            <sc-for list="{{areas}}" as="a" hint-placeholder-count="5"><div class="br" title="{{a.tip}}"><span>{{a.name}}</span><span class="trk"><span style="{{a.done}}"></span><span style="{{a.pend}}"></span><span style="{{a.late}}"></span></span><span style="text-align: right">{{a.frac}}</span></div></sc-for>
+          </div>
+        </section>
+      </div>
+
+      <!-- the manager's clients -->
+      <section class="card" data-card="mgr-clients">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2 M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2 M10 6h4 M10 10h4 M10 14h4 M10 18h4"></path></svg></span><h2 class="st">{{first}}'s clients</h2><span class="cnt">{{nClients}}</span></div>
+        <div class="sc">
+          <table class="tbl" style="min-width: 980px">
+            <thead><tr><th>Client</th><th>Now at</th><th>Progress</th><th>Project lead</th><th>Stage</th><th>Next</th><th>Health</th></tr></thead>
+            <tbody>
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                <tr class="go" data-go="admin-overview" title="Open {{r.name}}">
+                  <td><span class="nm"><span class="ct" style="{{r.ct}}">{{r.k}}</span><b>{{r.name}}</b></span></td>
+                  <td><b style="font-weight: 600">{{r.step}}</b><span class="sub"><span class="mono">{{r.code}}</span></span></td>
+                  <td><span style="display: flex; align-items: center; gap: 8px"><span class="pb" title="{{r.pct}} of 48 steps"><sc-for list="{{r.segs}}" as="g" hint-placeholder-count="4"><span style="{{g.st}}" title="{{g.tip}}"></span></sc-for></span><span class="mut" style="font-size: 12px">{{r.pct}}</span></span></td>
+                  <td><span class="nm"><span class="pt">{{r.lIni}}</span>{{r.lead}}</span></td>
+                  <td><span class="chip" style="{{r.stS}}; min-width: 104px">{{r.stage}}</span></td>
+                  <td>{{r.next}}</td>
+                  <td><span class="chip sol" style="{{r.hlS}}">{{r.hl}}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><div class="empty">No clients yet. Assign one with Assign client.</div></sc-if>
+        </div>
+      </section>
+
+      <!-- the manager's project leads: overview only, no time blocks -->
+      <section class="card" data-card="mgr-leads">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8"></path></svg></span><h2 class="st">Project leads</h2><span class="cnt">{{nLeads}}</span>
+          </div>
+        <div class="lr" style="cursor: default; background: #eef2f7; padding-top: 7px; padding-bottom: 7px; font-size: 11px; font-weight: 600; color: #4b5b70; text-transform: uppercase; letter-spacing: .06em"><span>Project lead</span><span style="text-align: right">Open</span><span style="text-align: right">Late</span><span>Load</span><span></span></div>
+        <sc-for list="{{leads}}" as="l" hint-placeholder-count="3">
+          <div>
+            <button type="button" class="lr" aria-expanded="{{l.ex}}" onClick="{{l.tog}}"><span class="nm"><span class="pt">{{l.ini}}</span><span><b>{{l.name}}</b><span class="sub">{{l.cl}}</span></span></span><span class="n">{{l.open}}</span><span class="n" style="{{l.lateSt}}">{{l.late}}</span><span class="trk"><span style="{{l.lateBar}}"></span><span style="{{l.restBar}}"></span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+            <sc-if value="{{l.isOpen}}" hint-placeholder-val="{{false}}"><div class="lt"><sc-for list="{{l.tasks}}" as="t" hint-placeholder-count="4"><div><b style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.t}}</b><span class="nm"><span class="ct" style="{{t.ct}}; width: 22px; height: 22px; font-size: 9.5px">{{t.k}}</span>{{t.co}}</span><span class="chip sol" style="{{t.cs}}">{{t.st}}</span><span style="{{t.dueSt}}">{{t.due}}</span></div></sc-for></div></sc-if>
+          </div>
+        </sc-for>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; ['vcfo:mgr', 'vcfo:assign'].forEach(ev => window.addEventListener(ev, () => this.setState({ t: Date.now(), ex: '' }))); }
+    const mode = s.mode || 'mixed', dd = s.dd || '';
+    let id = ''; try { id = sessionStorage.getItem('vcfo.mgr') || ''; } catch (e) {} if (!A.ALLMGR[id]) id = 'pranay';
+    const m = A.ALLMGR[id], st = A.mgrStats(id), all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const ORD = ['bad', 'due', 'run', 'wait', 'none', 'done'], COL = { none: '#c4ccd8' };
+    const tasks = st.tasks, cnt = ORD.map(k => tasks.filter(t => t[3] === k).length);
+    const SO = { stuck: 0, over: 1, due: 2, wait: 3, run: 4, none: 5 };
+    const rows = st.clients.slice().sort((a, b) => SO[a.health] - SO[b.health]).map(c => ({ k: c.k, name: c.name, ct: 'background:' + c.soft + ';color:' + c.ink,
+      stage: c.stage === 'inc' ? 'Incorporating' : 'Compliance', stS: c.stage === 'inc' ? 'background:#ffeedc;color:#9b3b08' : 'background:#e1f3ec;color:#0f6e51',
+      step: c.step, code: c.code, pct: c.pct + '%', segs: A.phaseBar(c.phases), lead: c.lead, lIni: A.ini(c.lead),
+      ball: c.ball + ' · ' + c.days + 'd', ballS: A.OWN[c.ball], next: c.next, hl: A.HEALTH[c.health][0], hlS: 'background:' + A.HEALTH[c.health][1] }));
+    const seg = (n, t, c) => 'background:' + c + ';width:' + (t ? n / t * 100 : 0) + '%' + (n ? '' : ';display:none');
+    const areas = [...new Set(tasks.map(t => t[5]))].map(g => { const l = tasks.filter(t => t[5] === g), d = l.filter(t => t[3] === 'done').length, o = l.filter(t => t[3] === 'bad').length, p = l.length - d - o;
+      return { name: g, frac: d + '/' + l.length, tip: g + ': ' + d + ' done, ' + p + ' pending, ' + o + ' overdue', done: seg(d, l.length, '#0f6e51'), pend: seg(p, l.length, '#be4400'), late: seg(o, l.length, '#b5302a') }; });
+    const leadNames = [...new Set(m.leads.concat(st.clients.map(c => c.lead)))];
+    const maxO = Math.max(1, ...leadNames.map(n => tasks.filter(t => t[2] === n && t[3] !== 'done').length));
+    const ex = s.ex || '';
+    const leads = leadNames.map(n => { const mine = tasks.filter(t => t[2] === n), open = mine.filter(t => t[3] !== 'done'), late = open.filter(t => t[3] === 'bad').length;
+      const cls = [...new Set(st.clients.filter(c => c.lead === n).map(c => c.name))];
+      return { name: n, ini: A.ini(n), open: open.length, late, lateSt: late ? 'color:#b5302a' : '', cl: cls.length ? cls.join(', ') : 'No client yet',
+        lateBar: 'background:#b5302a;width:' + (late / maxO * 100) + '%', restBar: 'background:#1b4f94;width:' + ((open.length - late) / maxO * 100) + '%',
+        ex: ex === n ? 'true' : 'false', isOpen: ex === n, tog: () => set({ ex: ex === n ? '' : n }),
+        tasks: mine.slice().sort((a, b) => ORD.indexOf(a[3]) - ORD.indexOf(b[3]) || a[4] - b[4]).map(t => ({ t: t[0], k: t[1], co: byK[t[1]].name, ct: 'background:' + byK[t[1]].soft + ';color:' + byK[t[1]].ink,
+          st: A.ST[t[3]][0], cs: 'background:' + A.ST[t[3]][1], due: A.due(t[4]), dueSt: t[3] === 'bad' ? 'color:#b5302a;font-weight:600' : '' })) }; });
+    const drillTabs = ORD.map(k => ({ label: A.ST[k][0], color: A.ST[k][1], rows: tasks.filter(t => t[3] === k).map(t => [t[0] + ' · ' + byK[t[1]].name, t[2] + ' · due ' + A.due(t[4]), A.ST[k][0], A.ST[k][1], 'lead-work']) }));
+    return { mode, setMode: (x) => set({ mode: x }), ini: m.ini, name: m.name, first: m.name.split(' ')[0], nClients: st.clients.length, nLeads: leadNames.length,
+      open: st.open, late: st.overdue, onTime: m.onTime, rows, noRows: rows.length === 0, areas, leads,
+      donut: A.donut(ORD.map((k, i) => [cnt[i], COL[k] || A.ST[k][1]])), donutTip: ORD.map((k, i) => A.ST[k][0] + ' ' + cnt[i]).join(', '), tot: tasks.length,
+      legend: ORD.map((k, i) => ({ label: A.ST[k][0], n: cnt[i], sw: 'background:' + (COL[k] || A.ST[k][1]) })),
+      drill: JSON.stringify({ title: m.name + ' · tasks', sub: tasks.length + ' tasks across ' + st.clients.length + ' clients', tabs: [{ label: 'All', rows: [].concat(...drillTabs.map(t => t.rows)) }].concat(drillTabs) }),
+      ddAny: !!dd, ddClose: () => set({ dd: '' }), moreOpen: dd === 'more', moreX: dd === 'more' ? 'true' : 'false', moreTog: () => set({ dd: dd === 'more' ? '' : 'more' }),
+      exportIt: () => { set({ dd: '' }); if (window.vcfoToast) window.vcfoToast('Exported ' + m.name + "'s work · this is a prototype"); } };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

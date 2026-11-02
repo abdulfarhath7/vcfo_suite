@@ -1,0 +1,128 @@
+{
+  "screen": "Client · Home (before incorporation)",
+  "route": "/client/home",
+  "person": "Rohan Kumar, client, Northwind Technologies India Pvt Ltd",
+  "excluded": [
+    "the bottom PROTOTYPE bar",
+    "the 'Your next action' bar under the number strip (owner rule R-38: notifications go to the bell)",
+    "the sound icon in the top bar"
+  ],
+  "topBar": { "crumb": ["SBC", "Home"], "search": "Search · Ctrl K", "stateSwitch": { "options": ["Before", "After"], "active": "Before" }, "bell": 3, "themeToggle": true, "askButton": "Ask VCFO" },
+  "sidebar": {
+    "items": [
+      { "label": "Home", "icon": "layout-grid", "active": true },
+      { "label": "Incorporation", "icon": "list-checks", "count": "6/14" },
+      { "label": "Documents", "icon": "file", "count": 6 },
+      { "label": "Updates", "icon": "megaphone", "count": 3, "countTone": "bad", "chevron": true },
+      { "label": "Registrations", "icon": "id-card" },
+      { "label": "Compliances", "icon": "shield-check", "chevron": true },
+      { "label": "Credentials", "icon": "key-round" },
+      { "label": "Library", "icon": "book-open" },
+      { "label": "Team", "icon": "users" },
+      { "label": "Audit", "icon": "clock" }
+    ],
+    "teamBlock": { "title": "Northwind’s team", "people": [
+      { "initials": "PN", "name": "Pranay", "role": "Manager" },
+      { "initials": "BH", "name": "Bharath", "role": "Project lead" },
+      { "icon": "headset", "name": "Customer support", "role": "SBC help desk" } ] },
+    "you": { "initials": "RK", "name": "Rohan Kumar", "role": "Northwind · Client" }
+  },
+  "greeting": {
+    "date": "Tue 6 Oct 2026",
+    "title": "Northwind Technologies India Pvt Ltd",
+    "action": { "label": "Report", "icon": "download", "style": "secondary on navy" }
+  },
+  "numberStrip": [
+    { "label": "Waiting on Northwind", "value": "4", "icon": "user", "tone": "warn" },
+    { "label": "With SBC", "value": "1", "icon": "clipboard-list", "tone": "accent" },
+    { "label": "Overdue", "value": "1", "icon": "alert-triangle", "tone": "bad", "valueTone": "bad" },
+    { "label": "Documents in", "value": "4/6", "icon": "file", "tone": "teal" },
+    { "label": "Expected COI", "value": "28 Oct", "icon": "flag", "tone": "ok" }
+  ],
+  "layout": { "fullWidth": ["Timeline", "Steps"], "left": ["Needs from Northwind", "Recent documents", "Recent activity"], "right": ["Important alerts", "What SBC is doing"] },
+  "cards": {
+    "Timeline": {
+      "action": { "label": "Edit", "icon": "pencil", "style": "secondary" },
+      "type": "Gantt (rule R-21): rows 46 px, bars 16 px with 6 px corners, an orange today line with a 'Today 6 Oct' tag, an orange COI diamond",
+      "axis": ["12 Sep", "19 Sep", "26 Sep", "3 Oct", "10 Oct", "17 Oct", "24 Oct", "31 Oct", "7 Nov"],
+      "rows": [
+        { "label": "Phase 1 · Name Application", "state": "done", "bar": { "from": "12 Sep", "to": "26 Sep", "tone": "ok" }, "note": "Done 24 Sep" },
+        { "label": "Phase 2 · Incorporation", "state": "current", "bar": { "from": "26 Sep", "to": "24 Oct", "tone": "accent" }, "note": "22%" },
+        { "label": "MCA review", "state": "planned", "bar": { "from": "24 Oct", "to": "31 Oct", "tone": "idle" } },
+        { "label": "COI", "state": "planned", "milestone": { "at": "28 Oct", "mark": "orange diamond" }, "note": "28 Oct" }
+      ],
+      "today": "6 Oct"
+    },
+    "Steps": {
+      "link": "Open Incorporation →",
+      "phases": [
+        { "label": "Phase 1 · Name Application", "progress": 1.0, "chip": { "text": "5 of 5", "tone": "ok" }, "expanded": false },
+        { "label": "Phase 2 · Incorporation", "progress": 0.11, "chip": { "text": "1 of 9", "tone": "accent" }, "expanded": true,
+          "columns": ["#", "Step", "Owner", "Status", "Timeline", ""],
+          "rows": [
+            [6, "Capital structure", "Northwind", "Completed", "1 working day"],
+            [7, "Registered office address", "Northwind", "Waiting", "1 working day"],
+            [8, "Proposed Directors", "Northwind", "In progress", "4-5 working days"],
+            [9, "Subscriber Details", "Northwind", "In progress", "1 working day"],
+            [10, "KYC Review & DSC", "SBC", "In progress", "2-3 working days"],
+            [11, "SPICe+ Confirmation", "Northwind", "Upcoming", "2-3 working days"],
+            [12, "SPICe+ Filing", "SBC", "Upcoming", "1-2 working days"],
+            [13, "MCA Remarks", "SBC", "Upcoming", "5-7 working days"],
+            [14, "Certificate of Incorporation", "SBC", "Upcoming", "14-15 working days from filing (Phase 2 Step 6)"]
+          ],
+          "ownerChipTones": { "Northwind": "warn", "SBC": "accent" },
+          "statusChipTones": { "Completed": "ok", "Waiting": "warn", "In progress": "accent", "Upcoming": "idle" },
+          "rowEnd": "a small arrow-right link" },
+        { "label": "Phase 3 · Post-incorporation", "progress": 0, "chip": { "text": "0 of 11", "tone": "idle" }, "expanded": false }
+      ],
+      "note": "Expand toggles are plain chevrons (R-24). The expanded table is an e-Filing grid (R-07)."
+    },
+    "Needs from Northwind": {
+      "tabs": [ { "label": "Upload", "count": 2, "active": true }, { "label": "Fill", "count": 1 }, { "label": "Correct", "count": 1 }, { "label": "Sign", "count": 0 } ],
+      "rows": [
+        { "checkbox": true, "title": "Utility bill - office", "info": true, "due": { "text": "9 Oct", "tone": "warn" }, "action": "Upload" },
+        { "checkbox": true, "title": "NOC from owner", "info": true, "due": { "text": "9 Oct", "tone": "warn" }, "action": "Upload" }
+      ]
+    },
+    "Recent documents": {
+      "link": "Documents →",
+      "groups": [
+        { "label": "Last week", "rows": [ { "badge": "JPG", "title": "Director 1 - passport", "meta": "Northwind · 2 Oct", "metaTone": "warn", "action": "download" } ] },
+        { "label": "Earlier", "rows": [
+          { "badge": "PDF", "title": "Name approval letter", "meta": "SBC · 24 Sep", "action": "download" },
+          { "badge": "PDF", "title": "Signed Board resolution", "meta": "Northwind · 18 Sep", "metaTone": "warn", "action": "download" },
+          { "badge": "DOCX", "title": "Draft Board resolution", "meta": "SBC · 14 Sep", "action": "download" } ] }
+      ],
+      "badgeColours": { "PDF": "bad", "DOCX": "accent", "XLSX": "ok", "JPG": "violet", "PNG": "violet", "ZIP": "idle" }
+    },
+    "Recent activity": {
+      "tabs": [ { "label": "All", "count": 4, "active": true }, { "label": "SBC", "count": 3 }, { "label": "Northwind", "count": 1 } ],
+      "rows": [
+        { "date": "5 Oct 2026", "text": "2 documents requested", "who": "Bharath" },
+        { "date": "4 Oct 2026", "text": "Proposed Directors saved", "who": "Northwind" },
+        { "date": "3 Oct 2026", "text": "Passport copy sent back", "who": "Bharath" },
+        { "date": "1 Oct 2026", "text": "Capital structure accepted", "who": "Pranay" }
+      ]
+    },
+    "Important alerts": {
+      "tabs": [ { "label": "15 days", "count": 3, "active": true }, { "label": "30 days", "count": 3 } ],
+      "type": "attention list (R-20): 44 px date tile tinted by urgency, chip on the right, the urgent row tinted soft red with a small navy action; no coloured left edge",
+      "rows": [
+        { "tile": { "icon": "alert-circle", "tone": "bad" }, "title": "Passport copy sent back", "chip": { "text": "Overdue", "tone": "bad" }, "action": "Fix", "urgent": true },
+        { "tile": { "day": "09", "month": "Oct", "tone": "warn" }, "title": "2 office documents", "chip": { "text": "In 3 days", "tone": "warn" } },
+        { "tile": { "day": "10", "month": "Oct", "tone": "accent" }, "title": "MOA & AOA drafts", "chip": { "text": "In 4 days", "tone": "accent" } },
+        { "tile": { "day": "14", "month": "Oct", "tone": "accent" }, "title": "Approved name expires", "chip": { "text": "In 8 days", "tone": "accent" } }
+      ]
+    },
+    "What SBC is doing": {
+      "type": "progress list: label, percent on the right, a 4 px bar under each row",
+      "rows": [
+        { "label": "KYC Review & DSC", "percent": 30 },
+        { "label": "MOA & AOA drafts", "percent": 0 },
+        { "label": "DSC for both directors", "percent": 0 },
+        { "label": "File SPICe+ Part B", "percent": 0 }
+      ]
+    }
+  },
+  "mobile390": "client-home-390.png: the sidebar folds behind a menu button; the number strip wraps to two columns; the Gantt scrolls sideways; cards stack in one column."
+}

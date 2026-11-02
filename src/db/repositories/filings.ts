@@ -8,11 +8,11 @@ import {
   assertEngagementAccess,
   listScopedEngagementIds,
 } from '@/db/repositories/engagements';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import {
   financialYearMonths,
   type FilingRow,
-} from '@/lib/filings';
+} from '@/lib/compliance/filings';
 
 /**
  * FILINGS REPOSITORY — one scoped read over the existing compliance register.

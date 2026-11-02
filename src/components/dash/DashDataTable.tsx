@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils';
 /**
  * THE data table. Factored out of the lead dashboard's `MyWork` list view so
  * long lists (engagements, activity, documents) never invent a second table
- * style: same header type scale, same `border-t border-border` rows, same
- * `hover:bg-raised/70`, same 13px semibold row text.
+ * style (VCFO Spectrum R-07, Stripe T1): a 36px head in 11.5px capitals with a 1.5px line,
+ * 44px rows with one hairline, no zebra; amounts right-aligned
+ * and tabular; in a long list a state is a coloured word (TONE_TEXT), not a chip (docs/design/COMPONENTS.md).
  *
  * Wide layout is a CSS grid (not `<table>`) so columns can be sized in `fr`
  * units and a row can collapse to a stacked card below `xl`, exactly as the
@@ -50,7 +51,7 @@ export function DashDataTable<Row>({
   const template = columns.map((column) => column.width).join(' ');
 
   if (rows.length === 0) {
-    const body = <p className="px-3.5 py-6 text-center text-[12.5px] text-muted-foreground">{empty}</p>;
+    const body = <p className="px-3.5 py-6 text-center text-[12.5px] text-ink-muted">{empty}</p>;
     return bare ? body : <div className={cn('surface overflow-hidden', className)}>{body}</div>;
   }
 
@@ -58,14 +59,14 @@ export function DashDataTable<Row>({
     <>
       <div
         className={cn(
-          'hidden text-[10.5px] font-extrabold uppercase tracking-[0.07em] text-text-tertiary xl:grid',
+          'hidden h-9 items-center border-b-1.5 border-line text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted xl:grid',
         )}
         style={{ gridTemplateColumns: template }}
       >
         {columns.map((column) => (
           <div
             key={column.key}
-            className={cn('min-w-0 px-3.5 py-2.5', column.align === 'right' && 'text-right')}
+            className={cn('min-w-0 px-2.5', column.align === 'right' && 'text-right')}
           >
             {column.header}
           </div>
@@ -83,9 +84,9 @@ export function DashDataTable<Row>({
               <div
                 key={column.key}
                 className={cn(
-                  'min-w-0 overflow-hidden px-3.5 py-3',
+                  'min-w-0 overflow-hidden px-3 py-2.5',
                   column.align === 'right' && 'text-right',
-                  column.mono && 'font-mono text-[11.5px]',
+                  column.mono && 'font-mono text-[12px] text-ink-muted',
                 )}
               >
                 {column.render(row)}
@@ -106,10 +107,10 @@ export function DashDataTable<Row>({
         return (
           <div
             key={rowKey(row)}
-            className="border-t border-border text-[13px] font-semibold transition-colors first:border-t-0 hover:bg-raised/70 xl:first:border-t"
+            className="border-b border-line-soft text-[14px] text-ink-2 transition-colors last:border-b-0 hover:bg-surface-sunken/60"
           >
             {href ? (
-              <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
+              <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40">
                 {inner}
               </Link>
             ) : (

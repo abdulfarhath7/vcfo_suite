@@ -1,6 +1,6 @@
 import ProjectRecycleBin from "@/views/admin/ProjectRecycleBin";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Deleted projects", "Restore a deleted project");
 

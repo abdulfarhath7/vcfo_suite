@@ -91,15 +91,17 @@ beforeEach(() => {
 });
 
 describe('listActivity', () => {
-  it('admin reads firm-wide without a scope lookup or WHERE', async () => {
+  // Regression (2026-10-22): super_admin used to fall through to the scoped
+  // lookup (and lost unscoped rows) because the branch tested `ctx.role === 'admin'` only.
+  it.each(['admin', 'super_admin'] as const)('%s reads firm-wide without a scope lookup or WHERE', async (role) => {
     results = [[{ event: activityRow(null), actorName: 'A' }]];
-    const out = await listActivity(ctx('admin'));
+    const out = await listActivity(ctx(role));
     expect(out).toHaveLength(1);
     expect(listScopedEngagementIds).not.toHaveBeenCalled();
     expect(calls[0]!.where).toBeUndefined();
   });
 
-  it.each(['super_admin', 'manager', 'intern', 'client'] as const)(
+  it.each(['manager', 'intern', 'client'] as const)(
     '%s is filtered to its scoped engagement ids',
     async (role) => {
       await listActivity(ctx(role));
@@ -147,7 +149,7 @@ describe('createActivity', () => {
     expect(calls).toHaveLength(0);
   });
 
-  it.each(['admin', 'manager'] as const)('%s may write an unscoped row', async (role) => {
+  it.each(['super_admin', 'admin', 'manager'] as const)('%s may write an unscoped row', async (role) => {
     results = [[activityRow(null)]];
     await createActivity(ctx(role), { verb: 'x' });
     expect((calls[0]!.values as { engagementId: unknown }).engagementId).toBeNull();

@@ -9,7 +9,7 @@ import { normalizeToE164 } from '@/lib/notify/phone';
 import { cn } from '@/lib/utils';
 
 const fieldLabelClass =
-  'flex items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground';
+  'flex items-center gap-1.5 text-[12.5px] font-medium text-ink-muted';
 const fieldControlClass = 'mt-2 h-11 px-3.5 text-[14px]';
 
 /** Client portal fields — used inside the create-project accordion. */
@@ -105,7 +105,7 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
           />
           <span
             id="create-client-whatsapp-consent"
-            className="text-[12.5px] leading-snug text-muted-foreground"
+            className="text-[12.5px] leading-snug text-ink-muted"
           >
             The client agrees to receive WhatsApp updates about this engagement on
             this number. They can reply STOP at any time to withdraw.
@@ -153,7 +153,7 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-blue-700"
+            className="absolute right-2.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken/60 hover:text-blue-700"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -161,8 +161,8 @@ export function CreateProjectClientFields(props: Record<string, unknown>) {
         </div>
         <FieldError id="create-client-password-error" message={fieldError('clientPassword')} />
         {pwStrength ? (
-          <p className="mt-1.5 text-[11.5px] text-muted-foreground">
-            Strength: <span className="font-medium capitalize text-foreground">{pwStrength}</span>
+          <p className="mt-1.5 text-[11.5px] text-ink-muted">
+            Strength: <span className="font-medium capitalize text-ink">{pwStrength}</span>
           </p>
         ) : null}
       </div>

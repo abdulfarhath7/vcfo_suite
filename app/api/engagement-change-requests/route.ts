@@ -8,7 +8,7 @@ import {
   listChangeRequests,
   type ChangeRequestStatus,
 } from '@/db/repositories/engagement-change-requests';
-import { parseChangeRequestPayload } from '@/lib/project-change-requests';
+import { parseChangeRequestPayload } from '@/lib/projects/project-change-requests';
 
 const STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const;
 

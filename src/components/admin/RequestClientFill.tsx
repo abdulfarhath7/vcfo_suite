@@ -17,13 +17,13 @@ import {
   canRequestClientFill,
   clientFillLabel,
   isClientFillPending,
-} from '@/lib/checklist-client-fill';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+} from '@/lib/checklist/checklist-client-fill';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isAdminOrManager } from '@/lib/auth';
 import { getItem } from '@/data/checklist';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /**
  * Lead action: ask the client to fill this step. It goes to the project manager
@@ -107,7 +107,7 @@ export function RequestClientFill({
   return (
     <div className={cn('space-y-2', className)}>
       {statusLabel ? (
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="text-[11px] font-medium tracking-[0.14em] text-ink-muted">
           {statusLabel}
         </p>
       ) : null}

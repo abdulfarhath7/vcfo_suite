@@ -6,6 +6,7 @@ import {
 } from '@/lib/notify/types';
 import { readTemplateNames, type TemplateNameMap } from '@/lib/notify/templates';
 import { isValidE164, normalizeToE164 } from '@/lib/notify/phone';
+import { quietHoursEnd, whatsappCategoryAllows } from '@/lib/notify/prefs-gate';
 
 /**
  * Phone helpers live in `@/lib/notify/phone` so client components can import
@@ -114,11 +115,16 @@ export function isWhatsAppConfigured(config: WhatsAppConfig): boolean {
  *                       never consented does not read as "opted_out")
  *   5 opted_out       — consented once, then sent STOP
  *   6 not_allowlisted — otherwise sendable, but the rollout list leaves them out
+ *   7 muted           — the person switched this event's category off (G-25)
+ *   8 quiet_hours     — inside the person's quiet hours (G-25); the background
+ *                       job sleeps until the window ends before it calls this
  */
 export function resolveWhatsAppChannel(input: {
   recipient: NotifyRecipient;
   event: string;
   config: WhatsAppConfig;
+  /** Defaults to the current time; passed in by tests. */
+  now?: Date;
 }): ChannelDecision {
   const { recipient, event, config } = input;
 
@@ -150,6 +156,14 @@ export function resolveWhatsAppChannel(input: {
 
   if (config.allowlist.length > 0 && !config.allowlist.includes(phone)) {
     return { send: false, skipReason: 'not_allowlisted' };
+  }
+
+  if (!whatsappCategoryAllows(recipient.prefs, event as NotifyEvent)) {
+    return { send: false, skipReason: 'muted' };
+  }
+
+  if (quietHoursEnd(recipient.prefs, input.now ?? new Date())) {
+    return { send: false, skipReason: 'quiet_hours' };
   }
 
   return { send: true, toPhone: phone, templateRef };

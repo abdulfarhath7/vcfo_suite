@@ -16,15 +16,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { useApp } from '@/context/AppContext';
 import { getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import {
   extractItemResponses,
   fieldsForOwnership,
   getClientResponseFields,
-} from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { approveBoardResolutionInDb } from '@/lib/engagements-db';
+} from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { approveBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 /**
@@ -123,9 +123,9 @@ export function ManagerBoardResolutionReview({
       </a>
 
       <section aria-label="Client Details used by the board resolution" className="milestone-record-panel">
-        <p className="mb-2 text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">Client Details</p>
+        <p className="mb-2 text-[11.5px] font-semibold tracking-[0.06em] text-ink">Client Details</p>
         {clientDetails.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No Client Details yet.</p>
+          <p className="text-sm text-ink-muted">No Client Details yet.</p>
         ) : (
           <dl className="milestone-record">
             {clientDetails.map((row) => (

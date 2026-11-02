@@ -24,10 +24,10 @@ export default function ClientLearnTopic() {
     placeholderData: (prev) => prev,
   });
 
-  if (!engagementId || query.isLoading) return <p className="p-6 text-[13px] text-muted-foreground">Loading…</p>;
+  if (!engagementId || query.isLoading) return <p className="p-6 text-[13px] text-ink-muted">Loading…</p>;
   if (query.isError || !query.data) {
     return (
-      <p role="alert" className="p-6 text-[13px] text-danger-text">
+      <p role="alert" className="p-6 text-[13px] text-danger">
         This explanation is not available for your company.
       </p>
     );

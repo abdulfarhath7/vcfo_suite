@@ -17,12 +17,12 @@ import {
   togglePreviewBold,
   type PreviewFormatSelectionState,
   type PreviewTextAlignment,
-} from '@/lib/board-resolution-preview-editable';
-import type { BoardResolutionMergeFields } from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution-preview-editable';
+import type { BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 import {
   buildBoardResolutionPreviewError,
   type BoardResolutionPreviewError,
-} from '@/lib/board-resolution-preview-errors';
+} from '@/lib/board-resolution/board-resolution-preview-errors';
 import { cn } from '@/lib/utils';
 import {
   BoardResolutionPreviewErrorPanel,
@@ -349,7 +349,7 @@ function BoardResolutionDocPreviewInner({
   return (
     <div
       className={cn(
-        'mx-auto w-fit max-w-full self-start overflow-visible border border-border bg-white',
+        'mx-auto w-fit max-w-none self-start overflow-visible rounded-lg border border-line/60 bg-white shadow-md',
         className,
       )}
     >

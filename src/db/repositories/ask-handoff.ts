@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { staffAssignedBy } from '@/lib/metrics/trend-stamps';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles, tasks } from '@/db/schema';
@@ -67,7 +68,7 @@ export async function createAskHandoff(
   const title = `${TITLE_PREFIX}: ${question.replace(/\s+/g, ' ').slice(0, 80)}${question.length > 80 ? '…' : ''}`;
   const [row] = await db
     .insert(tasks)
-    .values({ engagementId: access.dbId, assignedTo, title, description, stepId: null, status: 'open' })
+    .values({ engagementId: access.dbId, assignedTo, assignedBy: staffAssignedBy(ctx.role, ctx.userId, assignedTo), title, description, stepId: null, status: 'open' })
     .returning();
   if (!row) throw new Error('Could not send the question');
 

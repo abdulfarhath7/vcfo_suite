@@ -1,5 +1,6 @@
-import { PHASE_CLASSES, type PhaseColorKey } from '@/lib/phase-colors';
-import type { ClientLegalForm } from '@/lib/client-overview';
+import { sep } from '@/lib/date-format';
+import { PHASE_CLASSES, type PhaseColorKey } from '@/lib/shell/phase-colors';
+import type { ClientLegalForm } from '@/lib/client/client-overview';
 
 /** en-IN so the dates read the way the filings do. */
 const DATE_FMT: Intl.DateTimeFormatOptions = {
@@ -12,14 +13,14 @@ export function formatClientDate(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', DATE_FMT);
+  return sep(date.toLocaleDateString('en-IN', DATE_FMT));
 }
 
 export function formatClientDayMonth(iso: string | null | undefined): string {
   if (!iso?.trim()) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return sep(date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }));
 }
 
 /** "in 6 days" / "today" / "3 days ago" — the human read of a due date. */
@@ -49,7 +50,7 @@ export const PHASE_FILL: Record<PhaseColorKey, string> = {
   post: 'oklch(var(--phase-post))',
   fema: 'oklch(var(--phase-fema))',
   registration: 'oklch(var(--phase-registration))',
-  default: 'oklch(var(--primary))',
+  default: 'oklch(var(--brand))',
 };
 
 export function phaseTone(key: PhaseColorKey) {

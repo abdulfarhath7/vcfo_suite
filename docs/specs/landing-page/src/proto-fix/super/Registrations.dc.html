@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Registrations</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="practice" sub="Registrations" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Registrations" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="ds-bar">
+        <!--scrim-->
+        <!--dd:dM:Manager-->
+        <span class="seg2" role="group" aria-label="Clients shown"><sc-for list="{{shows}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}">{{v.label}}</button></sc-for></span>
+        <span class="mut" style="margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px"><sc-for list="{{legend}}" as="l" hint-placeholder-count="5"><span><i class="sw" style="{{l.sw}}; display: inline-block; vertical-align: -1px"></i> {{l.label}}</span></sc-for></span>
+      </div>
+      <section class="card" data-card="reg-grid">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><h2 class="st">Registrations · clients by type</h2><span class="cnt">{{nRows}}</span><span class="mut" style="margin-left: auto; font-size: 12px">{{sumLine}}</span></div>
+        <div class="sc"><table class="cg" style="min-width: 980px; table-layout: fixed"><colgroup><col style="width: 220px"></colgroup>
+          <thead><tr><th>Client</th><sc-for list="{{heads}}" as="h" hint-placeholder-count="9"><th title="{{h.tip}}">{{h.t}}<span style="display: block; font-weight: 500; letter-spacing: 0; text-transform: none; color: #656f7e">{{h.n}}</span></th></sc-for></tr></thead>
+          <tbody><sc-for list="{{rows}}" as="r" hint-placeholder-count="17"><tr><td><span class="nm"><span class="ct" style="{{r.ct}}">{{r.k}}</span><span><b style="font-weight: 600; display: block">{{r.name}}</b><span class="sub">{{r.mgr}}</span></span></span></td><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="9"><td title="{{c.tip}}"><span class="c {{c.cls}}">{{c.t}}</span></td></sc-for></tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const fM = s.fM || '', show = s.show || 'all';
+    const LAB = { d: ['Done', '#0f6e51', '✓'], p: ['In progress', '#1b4f94', ''], w: ['Pending', '#be4400', '!'], n: ['After COI', '#eef2f7', ''], x: ['Not needed', '#fff', ''] };
+    const list = all.filter(c => (!fM || c.mgr === fM) && (show === 'all' || /[pw]/.test(A.REG[c.k]))).sort((a, b) => (a.stage === b.stage ? a.name.localeCompare(b.name) : (a.stage === 'cmp' ? -1 : 1)));
+    const heads = A.REGS.map((t, i) => { const d = all.filter(c => A.REG[c.k][i] === 'd').length, need = all.filter(c => /[dpw]/.test(A.REG[c.k][i])).length;
+      return { t, n: d + '/' + need, tip: t + ': ' + d + ' done of ' + need + ' needed' }; });
+    const rows = list.map(c => ({ k: c.k, name: c.name, ct: ct(c.k), mgr: M(c.mgr).name, cells: A.REG[c.k].split('').map((v, i) => ({ cls: v, t: LAB[v][2], tip: A.REGS[i] + ' · ' + LAB[v][0] })) }));
+    let p = 0, w = 0; all.forEach(c => A.REG[c.k].split('').forEach(v => { if (v === 'p') p++; if (v === 'w') w++; }));
+    return Object.assign({ mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), heads, rows, nRows: rows.length, sumLine: p + ' in progress · ' + w + ' pending on documents',
+      shows: [['all', 'All clients'], ['open', 'Only with open work']].map(([k, label]) => ({ label, on: show === k ? 'true' : 'false', pick: () => set({ show: k }) })),
+      legend: ['d', 'p', 'w', 'n', 'x'].map(k => ({ label: LAB[k][0], sw: k === 'x' ? 'background:#fff;box-shadow:inset 0 0 0 1px #c4ccd8' : 'background:' + LAB[k][1] + (k === 'n' ? ';box-shadow:inset 0 0 0 1px #c4ccd8' : '') })),
+      ddAny: !!dd, ddClose: () => set({ dd: '' }) },
+      A.dd('dM', dd, 'm', 'fM', fM, Object.keys(A.ALLMGR).map(id => [id, M(id).name]), 'All managers', set));
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice areas (client)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc><template>
+<helmet>
+<style>
+.pac{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;font-family:Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px}
+@media (max-width:900px){.pac{grid-template-columns:minmax(0,1fr)}}
+.pac-c{background:#fff;border:1px solid #e1e7ef;border-radius:10px;box-shadow:0 1px 2px rgba(15,42,74,.06);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pac-c h3{margin:0;font:700 13px Public Sans,sans-serif;display:flex;align-items:center;gap:8px}
+.pac-big{font-size:22px;font-weight:600;line-height:1.15}
+.pac-sub{font-size:12px;color:#4b5b70}
+.pac-trk{height:8px;border-radius:4px;background:#e1e7ef;overflow:hidden}
+.pac-trk>span{display:block;height:100%;background:#1b4f94}
+.pac-tags{display:flex;flex-wrap:wrap;gap:6px}
+.pac-tags>span{font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 8px;background:#eef2f7;color:#4b5b70}
+.pac-st{display:inline-flex;align-items:center;justify-content:center;min-width:88px;height:22px;border-radius:6px;font-size:11px;font-weight:600;color:#fff;margin-left:auto}
+.pac-row{display:flex;gap:14px;flex-wrap:wrap}
+.pac-row>div{display:flex;flex-direction:column}
+.pac-row b{font-size:18px;font-weight:600}
+.pac-row em{font-style:normal;font-size:11.5px;color:#4b5b70}
+</style>
+</helmet>
+<section class="pac" data-card="practice-areas" aria-label="Practice areas">
+  <div class="pac-c"><h3>Incorporation<span class="pac-st" style="{{incSt}}">{{incChip}}</span></h3><div class="pac-big">{{incBig}}</div><div class="pac-trk"><span style="{{incBar}}"></span></div><div class="pac-sub">{{incSub}}</div></div>
+  <div class="pac-c"><h3>Registrations<span class="pac-st" style="{{regSt}}">{{regChip}}</span></h3><div class="pac-big">{{regBig}}</div><div class="pac-tags"><sc-for list="{{regs}}" as="r" hint-placeholder-count="6"><span style="{{r.st}}">{{r.t}}</span></sc-for></div><div class="pac-sub">{{regSub}}</div></div>
+  <div class="pac-c"><h3>Compliances<span class="pac-st" style="{{cmpSt}}">{{cmpChip}}</span></h3><div class="pac-row"><sc-for list="{{cmp}}" as="c" hint-placeholder-count="4"><div><b style="{{c.st}}">{{c.n}}</b><em>{{c.l}}</em></div></sc-for></div><div class="pac-sub">{{cmpSub}}</div></div>
+</section>
+</template></x-dc><script>(function(){var x=document.querySelector("x-dc"),t=x&&x.firstElementChild;if(t&&t.tagName==="TEMPLATE"){x.replaceChildren(document.adoptNode(t.content));}})();</script>
+<script type="text/x-dc" data-dc-script data-props='{"after":{"editor":"text","default":"0"},"$preview":{"width":900,"height":220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const after = String(this.props.after ?? '0') === '1';
+    const tag = (t, st) => ({ t, st: st === 'd' ? 'background:#e1f3ec;color:#0f6e51' : (st === 'p' ? 'background:#e8f0fa;color:#1b4f94' : '') });
+    if (!after) return {
+      incChip: 'In progress', incSt: 'background:#1b4f94', incBig: 'Step 7 of 14', incBar: 'width:13%', incSub: 'Registered office address · certificate expected 28 Oct',
+      regChip: 'Not started', regSt: 'background:#656f7e', regBig: 'After the certificate', regs: ['GST', 'PF', 'ESI', 'Professional tax', 'Shops', 'MSME'].map(t => tag(t, '')), regSub: 'SBC starts these the day the certificate arrives.',
+      cmpChip: 'Not started', cmpSt: 'background:#656f7e', cmp: [['0', 'Filings due', '']].map(([n, l, st]) => ({ n, l, st })), cmpSub: 'Monthly GST, TDS, PF and ESI and PT filings begin after the certificate.' };
+    return {
+      incChip: 'Done', incSt: 'background:#0f6e51', incBig: 'Incorporated', incBar: 'width:100%;background:#0f6e51', incSub: 'Certificate issued 24 Oct · post-incorporation 7 of 11',
+      regChip: 'In progress', regSt: 'background:#1b4f94', regBig: '5 of 13 registered', regs: [['GST', 'd'], ['LUT', 'd'], ['PF', 'd'], ['ESI', 'd'], ['MSME', 'd'], ['PT', 'p'], ['Shops', 'p'], ['IEC', 'p']].map(([t, s]) => tag(t, s)), regSub: 'Professional tax and Shops are in progress with SBC.',
+      cmpChip: '1 overdue', cmpSt: 'background:#b5302a', cmp: [['1', 'Filed', 'color:#0f6e51'], ['3', 'Due soon', 'color:#be4400'], ['1', 'Overdue', 'color:#b5302a'], ['33', 'Upcoming', '']].map(([n, l, st]) => ({ n, l, st })), cmpSub: '38 filings this financial year.' };
+  }
+}
+</script>
+</body>
+</html>

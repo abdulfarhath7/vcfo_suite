@@ -25,10 +25,11 @@ import { listDocuments } from '@/db/repositories/documents';
 import { isClientVisibleAuditAction, scrubForClient } from '@/db/repositories/client-audit';
 import { listAuditEvents, recordAuditEvent } from '@/db/repositories/audit-events';
 import { getItem } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { identifiersFromState } from '@/lib/client-overview';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { identifiersFromState } from '@/lib/client/client-overview';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { displayName, displayPeriod } from '@/lib/client-portal/compliances';
+import { dinsFromState } from '@/lib/client-portal/identifiers';
 import {
   fyLabelOf,
   fyStartYearOf,
@@ -43,7 +44,7 @@ import {
   type NeedKind,
   type TimelinePhaseDates,
   type TimelineRequestDto,
-} from '@/lib/client-home';
+} from '@/lib/client/client-home';
 
 /**
  * CLIENT HOME REPOSITORY — the aggregate behind `GET /api/client/home`
@@ -74,7 +75,6 @@ import {
  */
 
 const STAFF_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
-const DUE_SOON_DAYS = 15;
 const HIDDEN_AUDIT_ACTIONS = new Set([
   'board_resolution.draft',
   'board_resolution.update',
@@ -267,7 +267,7 @@ async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): P
   return { fyLabel: fyLabelOf(fy), fyStartYear: fy, rows: out };
 }
 
-function toTimelineDto(r: typeof clientTimelineRequests.$inferSelect): TimelineRequestDto {
+function toTimelineDto(r: typeof clientTimelineRequests.$inferSelect, viewerId?: string): TimelineRequestDto {
   const p = (r.payload ?? {}) as { phases?: TimelinePhaseDates[]; coiFrom?: string; coiTo?: string; slipDays?: number };
   return {
     id: r.id,
@@ -279,6 +279,7 @@ function toTimelineDto(r: typeof clientTimelineRequests.$inferSelect): TimelineR
     slipDays: Number(p.slipDays) || 0,
     createdAt: r.createdAt.toISOString(),
     requestedByName: r.requestedByName ?? undefined,
+    mine: viewerId ? r.requestedBy === viewerId : undefined,
   };
 }
 
@@ -294,7 +295,7 @@ async function loadTimeline(ctx: AuthContext, dbId: string): Promise<ClientHome[
   return {
     lastChangedBy: last ? last.actor_name?.trim() || 'SBC' : undefined,
     lastChangedAt: last?.created_at,
-    pending: pending ? toTimelineDto(pending) : undefined,
+    pending: pending ? toTimelineDto(pending, ctx.userId) : undefined,
   };
 }
 
@@ -343,12 +344,11 @@ export async function getClientHome(
       panMasked: maskId(ids.pan),
       tanMasked: maskId(ids.tan),
       gstin: gstin || undefined,
+      dins: dinsFromState(state),
     },
     timeline,
   };
 }
-
-export { DUE_SOON_DAYS };
 
 /* ----------------------------------------------------------------- writes */
 
@@ -380,33 +380,53 @@ export async function recordNeedUpload(
   requestId: string,
   file: { objectKey: string; fileName: string; contentType: string | null; sizeBytes: number },
 ): Promise<{ documentId: string; title: string } | null> {
+  const out = await recordNeedUploads(ctx, requestId, [file]);
+  return out && out.documents[0] ? { documentId: out.documents[0].documentId, title: out.title } : null;
+}
+
+/**
+ * G-09: several files answer one open request at once. Every stored object is
+ * indexed as a document shared with the client, the request is marked
+ * fulfilled once, and one audit event lists every document, so the toast's
+ * Undo (which names the first document) removes the whole batch.
+ */
+export async function recordNeedUploads(
+  ctx: AuthContext,
+  requestId: string,
+  files: Array<{ objectKey: string; fileName: string; contentType: string | null; sizeBytes: number }>,
+): Promise<{ title: string; documents: Array<{ documentId: string; fileName: string }> } | null> {
+  if (files.length === 0) return null;
   const target = await needUploadTarget(ctx, requestId);
   if (!target) return null;
-  const [doc] = await db
+  const rows = await db
     .insert(documents)
-    .values({
-      engagementId: target.dbId,
-      category: 'documents',
-      fileName: file.fileName,
-      objectKey: file.objectKey,
-      contentType: file.contentType,
-      sizeBytes: file.sizeBytes,
-      uploadedBy: ctx.userId,
-      stepId: target.stepId ?? null,
-      sharedWithClient: true,
-    })
-    .returning({ id: documents.id });
+    .values(
+      files.map((file) => ({
+        engagementId: target.dbId,
+        category: 'documents',
+        fileName: file.fileName,
+        objectKey: file.objectKey,
+        contentType: file.contentType,
+        sizeBytes: file.sizeBytes,
+        uploadedBy: ctx.userId,
+        stepId: target.stepId ?? null,
+        sharedWithClient: true,
+      })),
+    )
+    .returning({ id: documents.id, fileName: documents.fileName });
   await db
     .update(documentRequests)
-    .set({ status: 'fulfilled' })
+    // closed_at feeds the staff home trend lines (migration 0027).
+    .set({ status: 'fulfilled', closedAt: new Date() })
     .where(and(eq(documentRequests.id, requestId), eq(documentRequests.engagementId, target.dbId)));
+  const documentIds = rows.map((r) => r.id);
   await recordAuditEvent(ctx, {
     engagementId: target.dbId,
     action: 'client.need_uploaded',
-    summary: `${target.title} uploaded`,
-    metadata: { requestId, documentId: doc?.id },
+    summary: rows.length > 1 ? `${target.title} uploaded · ${rows.length} files` : `${target.title} uploaded`,
+    metadata: { requestId, documentId: documentIds[0], documentIds },
   });
-  return doc ? { documentId: doc.id, title: target.title } : null;
+  return { title: target.title, documents: rows.map((r) => ({ documentId: r.id, fileName: r.fileName })) };
 }
 
 /** Undo of the upload toast: reopen the request and drop the caller's own document row. */
@@ -414,7 +434,7 @@ export async function undoNeedUpload(
   ctx: AuthContext,
   requestId: string,
   documentId: string,
-): Promise<{ objectKey: string } | null> {
+): Promise<{ objectKey: string; objectKeys: string[] } | null> {
   const [req] = await db
     .select({ engagementId: documentRequests.engagementId, title: documentRequests.title })
     .from(documentRequests)
@@ -429,7 +449,7 @@ export async function undoNeedUpload(
   if (!/^[0-9a-f-]{36}$/i.test(documentId)) return null;
   const windowStart = new Date(Date.now() - 10 * 60_000);
   const [link] = await db
-    .select({ id: auditEvents.id })
+    .select({ id: auditEvents.id, metadata: auditEvents.metadata })
     .from(auditEvents)
     .where(
       and(
@@ -445,7 +465,7 @@ export async function undoNeedUpload(
   if (!link) return null;
   const reopened = await db
     .update(documentRequests)
-    .set({ status: 'pending' })
+    .set({ status: 'pending', closedAt: null })
     .where(
       and(
         eq(documentRequests.id, requestId),
@@ -455,25 +475,34 @@ export async function undoNeedUpload(
     )
     .returning({ id: documentRequests.id });
   if (!reopened.length) return null;
-  const [doc] = await db
+  // A multi-file upload (G-09) recorded every document of the batch; Undo
+  // names the first and removes them all. Ids come from the audit row this
+  // caller wrote, and each delete is still limited to the caller's own rows.
+  const meta = (link.metadata ?? {}) as { documentIds?: unknown };
+  const batch = Array.isArray(meta.documentIds)
+    ? meta.documentIds.filter((x): x is string => typeof x === 'string' && /^[0-9a-f-]{36}$/i.test(x))
+    : [];
+  const ids = [...new Set([documentId, ...batch])];
+  const docs = await db
     .delete(documents)
     .where(
       and(
-        eq(documents.id, documentId),
+        inArray(documents.id, ids),
         eq(documents.engagementId, access.dbId),
         eq(documents.uploadedBy, ctx.userId),
         gte(documents.createdAt, windowStart),
       ),
     )
-    .returning({ objectKey: documents.objectKey });
-  if (!doc) return null;
+    .returning({ id: documents.id, objectKey: documents.objectKey });
+  const first = docs.find((d) => d.id === documentId);
+  if (!first) return null;
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,
     action: 'client.need_upload_undone',
     summary: `${req.title} upload undone`,
-    metadata: { requestId, documentId },
+    metadata: { requestId, documentId, documentIds: docs.map((d) => d.id) },
   });
-  return { objectKey: doc.objectKey };
+  return { objectKey: first.objectKey, objectKeys: docs.map((d) => d.objectKey) };
 }
 
 /** Staff: say what a request is for (step / filing / verb / due date). */

@@ -38,7 +38,7 @@ Never show the word "intern" anywhere in UI, prompts that reach users, or answer
 1. **Repository seam is sacred.** Only `src/db/repositories/*` imports `db`. Ask VCFO tools call repositories with `AuthContext`. The model never sees SQL and never receives rows outside the caller's scope.
 2. **Ask VCFO is read-only.** It never sends email, never changes checklist state, never approves, never uploads. The only write it performs on the user's behalf is creating a request to the lead (explicit button press) and saving a library item.
 3. **Never show board resolution drafts to clients.** BR content is visible to a client only after `status=finalized`. Tools enforce this in the repository, not in the prompt.
-4. **Never invent steps, forms or rules.** Step names and ids come from `src/data/checklist.ts`. Do not edit `checklist.ts`, per-step validators, docx generators, gate logic (`src/lib/checklist-step-gate.ts`) or compliance math.
+4. **Never invent steps, forms or rules.** Step names and ids come from `src/data/checklist.ts`. Do not edit `checklist.ts`, per-step validators, docx generators, gate logic (`src/lib/checklist/checklist-step-gate.ts`) or compliance math.
 5. **Due dates come only from the compliance calendar and checklist data**, never from model text or knowledge-base prose. Validation enforces this (§6.6).
 6. **The bot explains; the firm decides.** Any request for a decision ("do we need GST?", "should we choose LLP?", "can we skip X?") gets an explanation plus a hand-off to the lead. Never a yes/no on the firm's behalf.
 7. **No secrets in the client bundle.** Anthropic/AWS credentials are server-only (`import "server-only"`), loaded from Secrets Manager under `/vcfo/ask-vcfo/*` in AWS and from `.env.local` locally.
@@ -542,9 +542,9 @@ Panel structure: header (icon tile, "Ask VCFO", subline, close) · scrollable bo
 - Colour budget inside the panel: neutrals (slate) for surfaces, user bubble, chips and secondary buttons; **primary blue only on**: Send button, focus rings, the "You are here" stage, and link text. The Save button is a neutral outline; saved state is a teal-green check.
 - User bubble: `bg-muted` / slate-100 with foreground text (dark mode: slate-800 with near-white text).
 - Trust badges (U1): "Reviewed by {firmName}" (teal-green chip + check icon) for `origin=reviewed|deterministic`; "AI answer · check with your lead" (slate chip) for `origin=generated`. `firmName` comes from existing firm config, not hardcoded.
-- Phase colours in `Flow` / `NextStep` come from `src/lib/phase-colors.ts`. Status chips use the existing status tokens: coral waiting, teal-green done, rose overdue, slate locked.
+- Phase colours in `Flow` / `NextStep` come from `src/lib/shell/phase-colors.ts`. Status chips use the existing status tokens: coral waiting, teal-green done, rose overdue, slate locked.
 - Typography: Manrope UI, Space Grotesk for the panel greeting and reader H1, IBM Plex Mono for form codes (INC-20A, GSTR-3B) and ids.
-- Radius from `--radius`. Motion: panel slide 200 ms using existing `src/lib/motion.ts` presets; respect reduced motion. No `transform` on a `layoutId` host.
+- Radius from `--radius`. Motion: panel slide 200 ms using existing `src/lib/shell/motion.ts` presets; respect reduced motion. No `transform` on a `layoutId` host.
 - All colours via tokens; verify both themes. No raw hex in components.
 
 ### 7.5 Client answer card (order is fixed)
@@ -711,7 +711,7 @@ npx vitest run --reporter=dot
 npm run lint
 ```
 
-**Preservation list (every phase — do not modify):** `src/data/checklist.ts`, per-step validators, docx generators, `src/lib/checklist-step-gate.ts`, compliance calendar math, `src/lib/email/send-email.ts`, `engagement-recipients.ts`, BR finalize flow, Auth.js config, existing role routing, `useStaffBasePath` behaviour, `adminProjectPath`.
+**Preservation list (every phase — do not modify):** `src/data/checklist.ts`, per-step validators, docx generators, `src/lib/checklist/checklist-step-gate.ts`, compliance calendar math, `src/lib/email/send-email.ts`, `engagement-recipients.ts`, BR finalize flow, Auth.js config, existing role routing, `useStaffBasePath` behaviour, `adminProjectPath`.
 
 ### Phase 0 — Recon (read-only) · CHECKPOINT at end
 

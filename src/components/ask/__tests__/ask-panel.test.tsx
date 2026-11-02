@@ -9,7 +9,7 @@ vi.mock('@/context/AppContext', () => ({
   useApp: () => ({ user: { id: 'u1', role }, engagements: [{ id: 'eng-1', companyName: 'Acme' }] }),
 }));
 vi.mock('@/hooks/ask/use-ask-status', () => ({
-  useAskStatus: (r: string) => ({ enabled: ['client', 'manager', 'admin', 'super_admin'].includes(r), firmName: 'SBC' }),
+  useAskStatus: (r: string) => ({ enabled: ['client', 'admin', 'super_admin', 'manager', 'intern'].includes(r), firmName: 'SBC' }),
 }));
 vi.mock('@/hooks/ask/use-ask-suggestions', () => ({
   useAskSuggestions: () => ({
@@ -68,14 +68,14 @@ describe('VisualRenderer', () => {
 });
 
 describe('role gating', () => {
-  it.each(['intern'])('shows no launcher and no panel for %s', (r) => {
+  it.each(['developer'])('shows no launcher and no panel for %s', (r) => {
     role = r;
     render(wrap(<AskShellMount userRole={r}><AskLauncher /></AskShellMount>));
     expect(screen.queryByRole('button', { name: /ask vcfo/i })).toBeNull();
     expect(screen.queryByRole('complementary', { name: 'Ask VCFO' })).toBeNull();
   });
 
-  it.each(['client', 'manager', 'admin', 'super_admin'])('shows the launcher for %s', (r) => {
+  it.each(['client', 'admin', 'super_admin', 'manager', 'intern'])('shows the launcher for %s', (r) => {
     role = r;
     render(wrap(<AskShellMount userRole={r}><AskLauncher /></AskShellMount>));
     expect(screen.getByRole('button', { name: /ask vcfo/i })).toBeInTheDocument();
@@ -104,5 +104,71 @@ describe('keyboard', () => {
     expect(screen.getByText('What is GST, and do we need it?')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(launcher).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('pop-up size (owner item F3)', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  it('switches between Small, Large and Side panel and keeps the choice per user', async () => {
+    render(wrap(<AskShellMount userRole="admin"><AskLauncher /></AskShellMount>));
+    fireEvent.keyDown(window, { key: 'j', ctrlKey: true });
+    const panel = await screen.findByRole('complementary', { name: 'Ask VCFO' });
+    expect(panel).toHaveAttribute('data-size', 'small');
+    expect(screen.getByRole('button', { name: 'Small' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Side panel' }));
+    expect(panel).toHaveAttribute('data-size', 'side');
+    expect(window.localStorage.getItem('vcfo.ask.size.u1')).toBe('side');
+    fireEvent.click(screen.getByRole('button', { name: 'Large' }));
+    expect(panel).toHaveAttribute('data-size', 'large');
+    expect(screen.getByRole('button', { name: 'Open full page' })).toBeInTheDocument();
+  });
+});
+
+describe('avatars (owner item F2)', () => {
+  it('shows the initials beside a question and the VCFO mark beside an answer', async () => {
+    const { AskUserBubble, AskAvatar } = await import('@/components/ask/AskUserBubble');
+    const { container } = render(
+      <>
+        <AskUserBubble text="When is GST due?" initials="RK" />
+        <AskAvatar />
+      </>,
+    );
+    expect(screen.getByText('RK')).toBeInTheDocument();
+    expect(container.querySelector('img[src="/client-portal/vcfo-mark.webp"]')).not.toBeNull();
+  });
+});
+
+describe('full page path (owner item F4)', () => {
+  it('gives every Ask role its own page and the developer none', async () => {
+    const { roleAskPath } = await import('@/lib/auth-routes');
+    expect(roleAskPath('client')).toBe('/app/client/ask');
+    expect(roleAskPath('intern')).toBe('/app/intern/ask');
+    expect(roleAskPath('manager')).toBe('/app/manager/ask');
+    expect(roleAskPath('admin')).toBe('/app/admin/ask');
+    expect(roleAskPath('super_admin')).toBe('/app/super/ask');
+    expect(roleAskPath('developer')).toBeNull();
+  });
+});
+
+describe('full page (owner item F4)', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  it('lists past chats of this scope and hides the pop-up', async () => {
+    role = 'admin';
+    window.localStorage.setItem(
+      'vcfo.ask.history.u1',
+      JSON.stringify([
+        { id: 'c1', title: 'Which filings are late?', at: '2026-10-29T10:00:00.000Z', scope: 'vcfo.ask.conv.admin.firm' },
+        { id: 'c2', title: 'Another firm scope', at: '2026-10-29T11:00:00.000Z', scope: 'vcfo.ask.conv.client.eng-1' },
+      ]),
+    );
+    window.sessionStorage.setItem('vcfo.ask.open', '1');
+    const { AskFullPage } = await import('@/components/ask/AskFullPage');
+    render(wrap(<AskShellMount userRole="admin"><AskFullPage /></AskShellMount>));
+    expect(await screen.findByRole('button', { name: /Which filings are late\?/ })).toBeInTheDocument();
+    expect(screen.queryByText('Another firm scope')).toBeNull();
+    expect(screen.queryByRole('complementary', { name: 'Ask VCFO' })).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Past chats' })).toBeInTheDocument();
   });
 });

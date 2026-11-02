@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ScheduleWindowMeta } from '@/components/schedule/ScheduleWindowControl';
-import { isIncorporationWindowPhase, type EngagementSchedule } from '@/lib/schedule-windows';
+import { isIncorporationWindowPhase, type EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 /** Phase-row metadata: the incorporation window on the two SPICe+ rows, nothing elsewhere. */
 export function phaseWindowMeta(

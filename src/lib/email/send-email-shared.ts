@@ -5,6 +5,14 @@
 
 export type EmailProvider = 'resend' | 'ses';
 
+/** A file sent with the email. Both transports accept it; leave `attachments` out for none. */
+export interface EmailAttachment {
+  filename: string;
+  content: Uint8Array;
+  /** MIME type, for example `application/pdf`. */
+  contentType?: string;
+}
+
 export interface SendEmailInput {
   to: string | string[];
   subject: string;
@@ -20,6 +28,8 @@ export interface SendEmailInput {
   from?: string;
   /** Tag for console logs when skipping (e.g. 'welcome', 'progress.client_submitted.lead'). */
   purpose?: string;
+  /** Optional files (for example a report PDF). Existing callers send none. */
+  attachments?: EmailAttachment[];
 }
 
 

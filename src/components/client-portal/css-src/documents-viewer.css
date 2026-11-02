@@ -1,0 +1,40 @@
+/* @cp-scope page=docviewer */
+/* Shared document viewer overlay — prototype s/home/v7x_doc_viewer.dc.html
+   (responsive .vh-* layer, .info pop-over fit, zoom bar on phone). The markup
+   keeps the board's inline styles; only the classes it relies on live here. */
+
+@media (max-width:767px){
+ .vh-hide-sm{display:none!important}
+ .vh-under-bar{top:var(--cp-top-h,59px)!important}
+ .vh-zoom{bottom:72px!important}
+}
+.info .pop{max-width:min(280px,calc(100vw - 24px))}
+@media (pointer:coarse){.info>button{position:relative}.info>button::after{content:"";position:absolute;inset:-11px}}
+/* overlay enter: page fade (proto.js vpIn .26s) and dialog pop */
+@keyframes dvin{from{opacity:0}to{opacity:1}}
+@keyframes dvpop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.dv-scrim{animation:dvin .18s ease-out both}
+.dv-dlg{animation:dvpop .22s cubic-bezier(.22,1,.36,1) both}
+/* real file renders inside the paper island */
+.dv-frame{display:block;width:100%;height:100%;border:0;background:#fff}
+.dv-img{display:block;width:100%;height:auto}
+.dv-docx{width:100%;color:oklch(21% 0.042 264)}
+.dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
+.dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}
+.dv-line{height:7px;border-radius:3px;margin-top:10px}
+@keyframes dvsk{50%{opacity:.55}}
+.dv-line{background:oklch(var(--surface-sunken));animation:dvsk 1.4s ease-in-out infinite}
+.dv-nav:hover{background:oklch(var(--surface-sunken))!important}
+.dv-zb:hover{background:oklch(100% 0 0 / .14)!important}
+.dv-zb:disabled{opacity:.4;cursor:default!important}
+@media (prefers-reduced-motion: reduce){.dv-scrim,.dv-dlg,.dv-line{animation:none!important}[data-paper]{transition:none!important}}
+/* ---------- prototype viewer parity, round 2 ---------- */
+.dv-zb:hover{background:oklch(var(--ink) / .06)!important}
+/* phones: Previous and Next in a footer bar; the dialog fills the area under the top bar */
+.dv-pbar{display:none}
+@media (max-width:767px){
+  .dv-pbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:1px solid oklch(var(--line-soft));background:oklch(var(--surface-raised))}
+  .dv-pbar .sx-btn{height:40px}
+  .dv-dlg{width:100%!important;height:100%!important;max-width:none!important;border-radius:0!important;border:0!important}
+  .vh-zoom{bottom:16px!important}
+}

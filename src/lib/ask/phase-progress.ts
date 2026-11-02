@@ -1,7 +1,7 @@
 import { coerceStatusCode, getIncorporationPhases } from '@/data/checklist';
 import type { AskPhase } from '@/data/ask/schema';
-import { gateActiveCatalog, getStepGate, isChecklistStepSequentiallyComplete } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { gateActiveCatalog, getStepGate, isChecklistStepSequentiallyComplete } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 /**
  * Phase progress — "Where is my incorporation now?". Pure: phase and step

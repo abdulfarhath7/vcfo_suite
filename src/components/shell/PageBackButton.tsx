@@ -12,15 +12,12 @@ export function PageBackButton({
   className,
   force,
   fallbackHref,
-  label,
 }: {
   className?: string;
   /** Show even on a sidebar-home pathname (in-page drill-down). */
   force?: boolean;
   /** Parent href when history cannot go back. Overrides `shellBackFallbackPath`. */
   fallbackHref?: string;
-  /** Names the place this returns to, so the control is not only a chevron. */
-  label?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -32,7 +29,7 @@ export function PageBackButton({
       <TooltipTrigger asChild>
         <button
           type="button"
-          aria-label={label ?? "Back"}
+          aria-label="Back"
           onClick={() => {
             const action = resolveShellBackAction(pathname, window.history.length);
             if (action.kind === "history") {
@@ -42,17 +39,15 @@ export function PageBackButton({
             router.push(fallbackHref ?? action.href);
           }}
           className={cn(
-            "inline-flex h-9 shrink-0 items-center justify-center gap-1 rounded-xl text-[13px] font-medium text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-            label ? "px-2" : "w-9",
+            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-muted transition-colors hover:bg-brand-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40",
             className,
           )}
         >
           <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-          {label}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="px-2 py-1 text-xs">
-        {label ?? "Back"}
+        Back
       </TooltipContent>
     </Tooltip>
   );

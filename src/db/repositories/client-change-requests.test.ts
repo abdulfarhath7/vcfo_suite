@@ -17,12 +17,15 @@ const assertEngagementAccess = vi.fn();
 const recordAuditEvent = vi.fn();
 const dbInsert = vi.fn();
 const dbSelect = vi.fn();
+const dbUpdate = vi.fn();
+const updatedSets: Record<string, unknown>[] = [];
 let insertedValues: Record<string, unknown> | null = null;
 
 vi.mock('@/db/client', () => ({
   db: {
     insert: (...args: unknown[]) => dbInsert(...args),
     select: (...args: unknown[]) => dbSelect(...args),
+    update: (...args: unknown[]) => dbUpdate(...args),
   },
 }));
 
@@ -34,7 +37,7 @@ vi.mock('@/db/repositories/audit-events', () => ({
   recordAuditEvent: (...args: unknown[]) => recordAuditEvent(...args),
 }));
 
-const { createClientChangeRequest } = await import('@/db/repositories/client-change-requests');
+const { createClientChangeRequest, withdrawClientTimelineRequest } = await import('@/db/repositories/client-change-requests');
 const { getActiveCatalogItems } = await import('@/data/checklist');
 
 const OWN_ENGAGEMENT = '11111111-1111-1111-1111-111111111101';
@@ -52,6 +55,13 @@ const clientCtx: AuthContext = {
 beforeEach(() => {
   vi.clearAllMocks();
   insertedValues = null;
+  updatedSets.length = 0;
+  dbUpdate.mockImplementation(() => ({
+    set: (values: Record<string, unknown>) => {
+      updatedSets.push(values);
+      return { where: () => Promise.resolve() };
+    },
+  }));
 
   dbInsert.mockImplementation(() => ({
     values: (values: Record<string, unknown>) => {
@@ -162,5 +172,54 @@ describe('createClientChangeRequest', () => {
     ).rejects.toThrow(/step/i);
 
     expect(dbInsert).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * G-08: a withdraw is the requester's own, still-pending request only. It marks
+ * the request withdrawn, closes the lead's task and writes an audit event.
+ */
+describe('withdrawClientTimelineRequest', () => {
+  const REQUEST = '44444444-4444-4444-4444-444444444404';
+  const pendingRow = { id: REQUEST, engagementId: OWN_ENGAGEMENT, requestedBy: 'user-client', status: 'pending', taskId: 'task-9' };
+  const selectReturns = (row: unknown) =>
+    dbSelect.mockImplementation(() => {
+      const chain = { from: () => chain, where: () => chain, limit: () => Promise.resolve(row ? [row] : []) };
+      return chain;
+    });
+
+  it('refuses another person’s request and writes nothing', async () => {
+    selectReturns({ ...pendingRow, requestedBy: 'someone-else' });
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN_ENGAGEMENT, row: {} });
+    await expect(withdrawClientTimelineRequest(clientCtx, REQUEST)).resolves.toBe(false);
+    expect(dbUpdate).not.toHaveBeenCalled();
+    expect(recordAuditEvent).not.toHaveBeenCalled();
+  });
+
+  it('refuses a request that is already decided or missing', async () => {
+    selectReturns({ ...pendingRow, status: 'approved' });
+    await expect(withdrawClientTimelineRequest(clientCtx, REQUEST)).resolves.toBe(false);
+    selectReturns(null);
+    await expect(withdrawClientTimelineRequest(clientCtx, REQUEST)).resolves.toBe(false);
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it('refuses when the caller lost access to the engagement', async () => {
+    selectReturns(pendingRow);
+    assertEngagementAccess.mockResolvedValue({ ok: false, dbId: OWN_ENGAGEMENT, forbidden: true });
+    await expect(withdrawClientTimelineRequest(clientCtx, REQUEST)).resolves.toBe(false);
+    expect(dbUpdate).not.toHaveBeenCalled();
+  });
+
+  it('withdraws the caller’s own pending request, closes its task and audits it', async () => {
+    selectReturns(pendingRow);
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN_ENGAGEMENT, row: {} });
+    await expect(withdrawClientTimelineRequest(clientCtx, REQUEST)).resolves.toBe(true);
+    expect(updatedSets[0]).toMatchObject({ status: 'withdrawn' });
+    expect(updatedSets[1]).toMatchObject({ status: 'done' });
+    expect(recordAuditEvent).toHaveBeenCalledWith(
+      clientCtx,
+      expect.objectContaining({ action: 'client.timeline_change_request_withdrawn', engagementId: OWN_ENGAGEMENT }),
+    );
   });
 });

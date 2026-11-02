@@ -7,7 +7,7 @@
  * overdue · up = upcoming. The portal's due-soon threshold is the prototype's
  * 7 days (QUESTIONS.md · compliances); staff views keep `filings.ts` (14 days).
  */
-import { complianceGroupForAuthority } from '@/lib/client-overview';
+import { complianceGroupForAuthority } from '@/lib/client/client-overview';
 import {
   EPFO,
   ESIC,
@@ -19,9 +19,9 @@ import {
   STPI,
   TGCT,
   TRACES,
-} from '@/lib/announcement-portals';
+} from '@/lib/notifications/announcement-portals';
 
-export const PORTAL_DUE_SOON_DAYS = 7;
+const PORTAL_DUE_SOON_DAYS = 7;
 
 export type CompStatus = 'ok' | 'due' | 'over' | 'up';
 export type AreaCode = 'MCA' | 'GST' | 'IT' | 'PAY' | 'FEMA';
@@ -126,7 +126,7 @@ export function todayIso(now: Date = new Date()): string {
 export function D(iso: string): Date {
   return new Date(`${iso.slice(0, 10)}T00:00:00Z`);
 }
-export function isoOf(d: Date): string {
+function isoOf(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 export function addDays(iso: string, n: number): string {
@@ -167,9 +167,6 @@ export function fmtLong(iso: string): string {
 export function fmtLongComma(iso: string): string {
   const d = D(iso);
   return `${WD_LONG[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-}
-export function monthKeyOfIso(iso: string): string {
-  return iso.slice(0, 7);
 }
 export function monthLabel(key: string): string {
   const [y, m] = key.split('-');
@@ -215,9 +212,13 @@ export function countByStatus(rows: PortalFiling[], today: string): Record<CompS
   for (const r of rows) c[statusOf(r, today)]++;
   return c;
 }
-/** Tile colour var: upcoming tiles are navy (the donut keeps --up grey). */
+/** Date tile ground (K-30, audit 162): a soft tint of the status, never a solid block. */
 export function tileVar(s: CompStatus): string {
-  return s === 'up' ? 'var(--navy)' : `var(${ST[s].v})`;
+  return `var(${ST[s].v}-light)`;
+}
+/** Date tile text: the status's text-safe colour, paired with tileVar. */
+export function tileInk(s: CompStatus): string {
+  return `var(${ST[s].v}-text)`;
 }
 export function sortByDue<T extends { dueDate: string; name?: string }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || (a.name ?? '').localeCompare(b.name ?? ''));
@@ -460,7 +461,7 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
 
 /* --------------------------------------------------------------- csv / ics */
 
-export function csvEscape(v: string | number | null | undefined): string {
+function csvEscape(v: string | number | null | undefined): string {
   let s = v == null ? '' : String(v);
   // spreadsheet formula injection: a cell starting with = + - @ is text
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;

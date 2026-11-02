@@ -1,7 +1,7 @@
 import type { Destination } from '@/data/ask/schema';
-import { clientStepHref } from '@/lib/client-overview';
-import { adminProjectPath, adminProjectStepPath, staffProjectBase } from '@/lib/project-step-path';
-import type { StaffPathBase } from '@/lib/project-step-path';
+import { clientStepHref } from '@/lib/client/client-overview';
+import { adminProjectPath, adminProjectStepPath, staffProjectBase } from '@/lib/projects/project-step-path';
+import type { StaffPathBase } from '@/lib/projects/project-step-path';
 
 /** Query params a go-there link adds; the arrival handler strips them. */
 export const ASK_FROM_PARAM = 'from';

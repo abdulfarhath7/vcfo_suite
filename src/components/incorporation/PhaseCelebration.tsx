@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
-import { phaseClasses } from '@/lib/phase-colors';
+import { phaseClasses } from '@/lib/shell/phase-colors';
 import { cn } from '@/lib/utils';
 
 type PhaseCelebrationProps = {
@@ -38,7 +38,7 @@ export function PhaseCelebration({
     <div
       role="status"
       className={cn(
-        'flex items-center gap-3 rounded-xl border px-4 py-3 page-fade-up',
+        'flex items-center gap-3 rounded-md border-1.5 px-4 py-3 page-fade-up',
         phase.soft,
         phase.border,
         className,
@@ -53,10 +53,10 @@ export function PhaseCelebration({
         <Check className="h-4 w-4" strokeWidth={2.75} aria-hidden />
       </span>
       <div className="min-w-0">
-        <p className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', phase.label)}>
+        <p className={cn('text-[10px] font-semibold tracking-[0.16em]', phase.label)}>
           Phase complete
         </p>
-        <p className="text-sm font-semibold text-foreground">{phaseTitle}</p>
+        <p className="text-sm font-semibold text-ink">{phaseTitle}</p>
       </div>
       <span
         className={cn(

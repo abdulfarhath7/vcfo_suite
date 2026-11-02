@@ -86,7 +86,7 @@ ASK_VCFO_FEATURE_C1=true            # optional, any of C1 C2 C3 C4 C5 A1
 1. Store the key in Secrets Manager as `/vcfo/ask-vcfo/anthropic-api-key`
    (plaintext, the key only).
 2. Migrations 0021–0023 are applied on RDS (done 2026-09-30). For later ones:
-   `NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate` with the RDS `DATABASE_URL`.
+   `npm run db:migrate` through the SSM tunnel (`docs/context/AWS-DEPLOY.md` §11.3; no production `DATABASE_URL`).
 3. In `infra/terraform.tfvars`: `ask_vcfo_enabled = true`, and optionally
    `ask_vcfo_features = ["C1", "C4"]`.
 4. `terraform apply`.

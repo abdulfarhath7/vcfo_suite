@@ -4,9 +4,9 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementBoardResolutions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
-import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution/board-resolution';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   checklistStateFromRow,
   getEngagementById,
@@ -15,9 +15,9 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist-item-review';
-import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { validateBoardResolutionGeneration } from '@/lib/api/board-resolution-errors';
 
 /** Lead edits while the manager decides are refused with this text. */
@@ -40,6 +40,11 @@ function toIso(d: Date | null | undefined): string | null {
 }
 
 function mapRow(row: typeof engagementBoardResolutions.$inferSelect): BoardResolutionDoc {
+  const doc = mapRowBase(row);
+  return { ...doc, sentToClientAt: toIso(row.sentToClientAt), sentToClientBy: row.sentToClientBy ?? null };
+}
+
+function mapRowBase(row: typeof engagementBoardResolutions.$inferSelect): BoardResolutionDoc {
   return (
     parseBoardResolutionRpcPayload({
       content: row.content,
@@ -265,7 +270,7 @@ export async function repairBoardResolutionStorage(
 }
 
 /** Finalize draft → client-visible board resolution. */
-export async function finalizeBoardResolution(
+async function finalizeBoardResolution(
   ctx: AuthContext,
   appOrDbId: string,
 ): Promise<BoardResolutionDoc> {
@@ -301,11 +306,17 @@ export async function finalizeBoardResolution(
   return mapRow(row);
 }
 
+/** Who may store the signed copy: the client, and staff since S-574 (never a developer). */
+const SIGNED_UPLOAD_ROLES = new Set(['client', 'super_admin', 'admin', 'manager', 'intern']);
+
 export async function setSignedBoardResolution(
   ctx: AuthContext,
   appOrDbId: string,
   signedStoragePath: string,
 ): Promise<BoardResolutionDoc> {
+  if (!SIGNED_UPLOAD_ROLES.has(ctx.role)) {
+    throw new Error('Only the client or staff may upload the signed board resolution');
+  }
   const engagement = await requireEngagement(ctx, appOrDbId);
   const path = signedStoragePath.trim();
   if (!path) throw new Error('signed_storage_path required');
@@ -322,11 +333,53 @@ export async function setSignedBoardResolution(
       signedStoragePath: path,
       signedUploadedAt: now,
       signedUploadedBy: ctx.userId,
+      // A new copy starts the NOC receive checks again (R-52): the old ticks, the notary and
+      // apostille stamps and a send back belonged to the copy it replaces. An accepted copy
+      // stays accepted until staff look at the new one.
+      receiveChecks: {},
+      notarisedAt: null,
+      notarisedBy: null,
+      apostilledAt: null,
+      apostilledBy: null,
+      sentBackAt: null,
+      sentBackBy: null,
+      sentBackReason: null,
       updatedAt: now,
     })
     .where(eq(engagementBoardResolutions.engagementId, engagement.id))
     .returning();
 
   if (!row) throw new Error('Board resolution not found');
+  return mapRow(row);
+}
+
+const SEND_ROLES = new Set(['super_admin', 'admin', 'manager', 'intern']);
+
+/**
+ * "Send to client" (S-573): staff record that the finalized board resolution went to the client
+ * for signing. Staff only (a client never marks it); the engagement is read through
+ * `getEngagementById`, which scopes by role, so a foreign engagement is "not found". Only a
+ * finalized document can be sent. Sending again moves the date.
+ */
+export async function markBoardResolutionSentToClient(
+  ctx: AuthContext,
+  appOrDbId: string,
+): Promise<BoardResolutionDoc> {
+  if (!SEND_ROLES.has(ctx.role)) {
+    throw new Error('Only staff may send the board resolution to the client');
+  }
+  const engagement = await requireEngagement(ctx, appOrDbId);
+  const now = new Date();
+  const [row] = await db
+    .update(engagementBoardResolutions)
+    .set({ sentToClientAt: now, sentToClientBy: ctx.userId, updatedAt: now })
+    .where(
+      and(
+        eq(engagementBoardResolutions.engagementId, engagement.id),
+        eq(engagementBoardResolutions.status, 'finalized'),
+      ),
+    )
+    .returning();
+  if (!row) throw new Error('Board resolution is not finalized');
   return mapRow(row);
 }

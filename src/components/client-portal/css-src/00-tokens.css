@@ -1,0 +1,52 @@
+/* @cp-scope shared */
+/* Client portal design tokens. Light values: prototype b/ecdc…css :root.
+   Dark values (slate, K-41): prototype proto.js #vp-dark. Fonts: the
+   prototype's own woff2 files, served from /client-portal/fonts. */
+/* The prototype is plain HTML on browser defaults; the app's Tailwind
+   preflight would change box sizes, image/svg display and form controls.
+   Inside the portal every element starts from the browser's own styles again
+   (lowest specificity, so every portal rule still wins). Existing app widgets
+   reused inside the portal sit in a `.cp-tw` island and keep Tailwind. */
+:root :where(:not(.cp-tw,.cp-tw *,svg,svg *,img,video,canvas,iframe)),:root :where(:not(.cp-tw,.cp-tw *,svg,svg *,img,video,canvas,iframe))::before,:root :where(:not(.cp-tw,.cp-tw *,svg,svg *,img,video,canvas,iframe))::after{all:revert}
+:root :where(img,svg,video,canvas){display:inline;vertical-align:baseline;max-width:none}
+:root :where(svg){overflow:hidden}
+
+:root{color-scheme:light;font-family:var(--font-sans),system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:13px;color:var(--fg);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased;
+--vp-side-w:248px;--vps-w:248px}
+:root{--vpl-in:var(--vp-inset,clamp(14px,1.25vw + 8px,24px));--vpl-w:clamp(96px,4.5vw + 72px,148px);--vpk-w:clamp(96px,3vw + 72px,128px);--vpl-ph:36px;--vp-launch-h:calc(var(--vpl-ph) + 2 * var(--vpl-in))}
+@media (max-width:1279px){:root{--vp-side-w:72px;--vps-w:72px}}
+@media (max-width:767px){:root{--vp-side-w:0px;--vps-w:0px;--vpl-ph:40px}}
+html[data-theme="dark"]{color-scheme:dark;
+--bg:oklch(var(--surface));--panel:oklch(var(--surface-raised));--raised:oklch(var(--surface-sunken));--border:oklch(var(--line));--hair:oklch(var(--line));
+--fg:oklch(var(--ink));--muted:oklch(var(--ink-muted));--subtle:oklch(var(--ink-faint));
+--primary:oklch(var(--brand));--primary-dark:oklch(var(--brand-strong));--primary-light:oklch(var(--brand-soft));--primary-chip:oklch(var(--brand));
+--navy:oklch(var(--side-active));--navy-ink:oklch(var(--ink));--navy-2:oklch(var(--brand-strong));--navy-3:oklch(var(--brand));
+--navy-deep:oklch(var(--brand-soft));--navy-2-deep:oklch(var(--brand-soft));--navy-3-deep:oklch(var(--brand-soft));--primary-fill:oklch(var(--brand));--primary-fill-2:oklch(var(--brand-strong));
+--gold:oklch(var(--highlight-bright));--gold-2:oklch(var(--gold));--gold-soft:oklch(var(--highlight-soft));--gold-text:oklch(var(--highlight));
+--ok:oklch(var(--positive));--ok-light:oklch(var(--positive-soft));--ok-text:oklch(var(--positive));--ok-chip:oklch(var(--positive));--ok-mid:oklch(var(--positive-mid));
+--due:oklch(var(--warning));--due-light:oklch(var(--warning-soft));--due-text:oklch(var(--warning));--due-chip:oklch(var(--warning));--due-mid:oklch(var(--warning-mid));
+--over:oklch(var(--danger));--over-light:oklch(var(--danger-soft));--over-text:oklch(var(--danger));--over-chip:oklch(var(--danger));--over-mid:oklch(var(--danger-mid));
+--prog:oklch(var(--brand));--prog-light:oklch(var(--brand-soft));--prog-text:oklch(var(--brand));--prog-chip:oklch(var(--brand));
+--up:oklch(var(--upcoming));--up-light:oklch(var(--upcoming-soft));--up-text:oklch(var(--ink-muted));--up-chip:oklch(var(--upcoming));
+--violet:oklch(var(--identity));--violet-light:oklch(var(--identity-soft));--violet-chip:oklch(var(--identity));--violet-text:oklch(var(--identity));--violet-soft:oklch(var(--identity-soft));
+--sky:oklch(var(--brand));--sky-light:oklch(var(--brand-soft));--sky-chip:oklch(var(--brand));
+--teal:oklch(var(--info));--teal-light:oklch(var(--info-soft));--teal-chip:oklch(var(--info));
+--you:oklch(var(--owner-client));--you-light:oklch(var(--owner-client-soft));--you-text:oklch(var(--owner-client));
+--with:oklch(var(--owner-sbc));--with-light:oklch(var(--owner-sbc-soft));--with-text:oklch(var(--owner-sbc));
+--own-you:oklch(var(--owner-client-soft));--own-you-t:oklch(var(--owner-client));--own-sbc:oklch(var(--owner-sbc-soft));--own-sbc-t:oklch(var(--owner-sbc));
+--folder:oklch(var(--brand));--folder-open:oklch(var(--brand-strong));--sk:oklch(var(--surface-sunken));--cv:oklch(var(--surface-sunken));
+--shadow:var(--shadow-card);--pop:var(--shadow-float);background:var(--bg)}
+html[data-theme="dark"] .vps{background:oklch(var(--side))!important}
+html[data-theme="dark"] .vps:not(.vps-mbar){box-shadow:inset -1px 0 0 oklch(var(--side-line))}
+html[data-theme="dark"] .vps .vps-i[aria-current=page]{background:oklch(var(--side-active))}
+html[data-theme="dark"] .vps.vps-icons .vps-i .vps-b{box-shadow:0 0 0 2px oklch(var(--side))}
+html[data-theme="dark"] .tgl::after{background:oklch(92% 0.005 260)}
+html[data-theme="dark"] [data-paper]{color-scheme:light;background:#fff!important;color:oklch(21% 0.042 264);
+--fg:oklch(21% 0.042 264);--muted:oklch(46% 0.028 258);--subtle:oklch(55% 0.022 255);--hair:oklch(94.8% 0.007 255);
+--border:oklch(92.2% 0.011 255);--raised:oklch(96.6% 0.007 255);--panel:#fff;--navy:#0f2a4a;--navy-ink:#0f2a4a}
+/* no visible scrollbars anywhere; scrolling still works (prototype item 11) */
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+/* the `hidden` attribute always hides (browser rule; the reset above and the
+   boards' own display rules must not bring back file inputs or empty bars) */
+[hidden]:where(:not([hidden=until-found])){display:none!important}

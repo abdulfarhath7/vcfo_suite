@@ -3,8 +3,9 @@
 import Link from 'next/link';
 
 import { getItem } from '@/data/checklist';
-import { DocStatusDot } from '@/components/doc-pack/DocStatusChip';
-import { Mono, Surface } from '@/components/noir';
+import { DOC_STATUS_BAR, DocStatusDot } from '@/components/doc-pack/DocStatusChip';
+import { Surface } from '@/components/noir';
+import { buttonVariants } from '@/components/ui/button-variants';
 import type { DocPackMissingInput, DocPackSummary, DocStatus } from '@/lib/doc-pack/types';
 import { fastestUnblock, missingInputLabel } from '@/lib/doc-pack/unblock';
 import { cn } from '@/lib/utils';
@@ -15,11 +16,8 @@ const LEGEND: Record<DocStatus, string> = {
   'waiting-release': 'waiting for release',
 };
 
-const BAR: Record<DocStatus, string> = {
-  ready: 'bg-success',
-  'needs-inputs': 'bg-warning',
-  'waiting-release': 'bg-muted-foreground/60',
-};
+/* The same three colours as the pack page's chips: waiting for release is grey. */
+const BAR: Record<DocStatus, string> = DOC_STATUS_BAR;
 
 export type DocPackRailCardProps = {
   summary: DocPackSummary | undefined;
@@ -50,41 +48,41 @@ export function DocPackRailCard({
 
   return (
     <Surface
-      className={cn('border-primary/40 p-4', className)}
+      className={cn('p-4', className)}
       aria-labelledby="doc-pack-rail-title"
       role="region"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 id="doc-pack-rail-title" className="text-[14px] font-semibold text-foreground">
+        <h3 id="doc-pack-rail-title" className="text-[15px] font-medium text-ink">
           Pre-incorporation documents
         </h3>
         {summary ? (
-          <Mono className="text-[12px] text-muted-foreground">
+          <span className="text-[12.5px] tabular-nums text-ink-muted">
             {ready} of {total} ready
-          </Mono>
+          </span>
         ) : null}
       </div>
 
       {error ? (
-        <p className="mt-2 text-[12.5px] text-muted-foreground">Readiness could not be loaded.</p>
+        <p className="mt-2 text-[12.5px] text-ink-muted">Readiness could not be loaded.</p>
       ) : !summary ? (
-        <p className="mt-2 text-[12.5px] text-muted-foreground" aria-busy={loading}>
+        <p className="mt-2 text-[12.5px] text-ink-muted" aria-busy={loading}>
           Checking readiness…
         </p>
       ) : (
         <>
-          <div className="my-3 flex h-2 gap-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+          <div className="my-3 flex h-2 gap-0.5 overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
             {(['ready', 'needs-inputs', 'waiting-release'] as const).map((status) =>
               summary.counts[status] > 0 ? (
-                <span key={status} className={cn('block', BAR[status])} style={{ flex: summary.counts[status] }} />
+                <span key={status} className={cn('block rounded-bar', BAR[status])} style={{ flex: summary.counts[status] }} />
               ) : null,
             )}
           </div>
-          <ul className="mb-3 space-y-1 text-[12.5px] text-muted-foreground">
+          <ul className="mb-3 space-y-1 text-[12.5px] text-ink-muted">
             {(['ready', 'needs-inputs', 'waiting-release'] as const).map((status) => (
               <li key={status} className="flex items-center gap-2">
                 <DocStatusDot status={status} />
-                <b className="min-w-[1ch] font-semibold text-foreground">{summary.counts[status]}</b>
+                <b className="min-w-[1ch] font-medium tabular-nums text-ink">{summary.counts[status]}</b>
                 {LEGEND[status]}
               </li>
             ))}
@@ -94,15 +92,15 @@ export function DocPackRailCard({
 
       <Link
         href={packHref}
-        className="flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary-dark"
+        className={cn(buttonVariants({ variant: 'default' }), 'w-full')}
       >
         Open document pack
       </Link>
 
       {hint ? (
-        <p className="mt-3 border-t border-dashed border-border pt-3 text-[12.5px] text-muted-foreground">
+        <p className="mt-3 border-t border-line-soft pt-3 text-[12.5px] text-ink-muted">
           Fastest unblock:{' '}
-          <Link href={hrefForMissing(hint.input)} className="font-medium text-primary hover:underline">
+          <Link href={hrefForMissing(hint.input)} className="font-medium text-brand-text hover:underline">
             {missingInputLabel(hint.input)}
           </Link>{' '}
           {hint.input.stepId === currentStepId ? 'in this step' : `in ${getItem(hint.input.stepId)?.title ?? hint.input.stepId}`}

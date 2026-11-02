@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 
 
 
@@ -28,25 +28,32 @@ import { type BoardResolutionDocPreviewHandle } from '@/components/board-resolut
 
 
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 
-import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution-storage';
+import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
 
 import {
 
   fetchBoardResolutionInDb,
 
+  approveBoardResolutionInDb,
+
   requestBoardResolutionApprovalInDb,
 
   saveBoardResolutionDraftInDb,
 
-} from '@/lib/engagements-db';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+} from '@/lib/projects/engagements-db';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 
-import { internBoardResolutionPath, internEngagementStepPath } from '@/lib/project-step-path';
+import {
+  adminProjectStepPath,
+  internBoardResolutionPath,
+  internEngagementStepPath,
+  staffProjectBaseFromPathname,
+} from '@/lib/projects/project-step-path';
+import type { DocPackShell } from '@/lib/doc-pack/paths';
 
 import {
 
@@ -57,12 +64,13 @@ import {
 } from '@/lib/slug';
 
 import { toastError, toastSuccess } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import {
   formatBoardResolutionErrorDisplay,
   type BoardResolutionApiErrorBody,
 } from '@/lib/api/board-resolution-errors';
-import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview-errors';
+import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -115,7 +123,17 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
   const routeParam = engagementRouteParamFromParams(params);
 
-  const { engagements, getStateForEngagement, refreshEngagementChecklist } = useApp();
+  const pathname = usePathname();
+
+  const { engagements, getStateForEngagement, refreshEngagementChecklist, reviewChecklistItem, user } = useApp();
+  /**
+   * The same editor serves the project lead (`/app/intern/...`) and, since S-556, S-557 and P-112,
+   * the manager, the admin and the super admin. Staff other than the lead may edit while the draft
+   * is with the manager, and they approve it or send it back instead of sending it for approval.
+   * The server enforces the same split (`assertLeadMayEdit`, the finalize route's guard).
+   */
+  const isLead = user?.role === 'intern' || pathname?.startsWith('/app/intern/') === true;
+  const staffShell: DocPackShell = isLead ? 'intern' : staffProjectBaseFromPathname(pathname, user?.role);
   const eng = useMemo(
 
     () => resolveEngagementFromRouteParam(engagements, routeParam),
@@ -138,7 +156,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
   const [loading, setLoading] = useState(true);
 
-  const [busy, setBusy] = useState<'finalize' | 'generate' | 'apply-template' | null>(null);
+  const [busy, setBusy] = useState<'finalize' | 'generate' | 'apply-template' | 'upload-signed' | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -184,7 +202,9 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
   const sentBackNote =
     pre2State?.reviewStatus === 'rejected' ? pre2State.rejectionNote?.trim() || null : null;
   const previewStorageCorrupt = previewError?.kind === 'corrupt_xml';
-  const repairActionsDisabled = busy !== null || saveStatus === 'saving' || withManager;
+  /** Locked for the lead while the manager decides; the manager and admin keep editing. */
+  const lockedForViewer = isLead && withManager;
+  const repairActionsDisabled = busy !== null || saveStatus === 'saving' || lockedForViewer;
 
   const hasDocx = Boolean(doc?.storagePath?.trim());
 
@@ -640,7 +660,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     }
     const saved = await persistContentAndRegenerate(content);
     if (saved) {
-      toastSuccess('Changes saved', 'Board resolution draft saved to storage.');
+      toastSaved('Changes saved', { sub: 'Board resolution draft saved to storage.' });
     }
   }, [pendingContent, persistContentAndRegenerate]);
 
@@ -649,9 +669,11 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     [generateError],
   );
 
-  const pre1StepHref = eng ? internEngagementStepPath(eng, 'pre-1') : '';
-  /** The resolution date the client gave in Part A (the lead may change it there). */
-  const resolutionDateLabel = formatPre1DateDisplay(pre1Responses.boardResolutionDate) ?? null;
+  const pre1StepHref = eng
+    ? staffShell === 'intern'
+      ? internEngagementStepPath(eng, 'pre-1')
+      : adminProjectStepPath(eng, 'pre-1', staffShell)
+    : '';
 
   const saveStatusText = saveStatusLabel(saveStatus);
 
@@ -834,6 +856,70 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     isFinalized,
   ]);
 
+  /** Manager / admin / super admin: "Approve and send to client" (the finalize route). */
+  const handleApprove = useCallback(async () => {
+    if (!eng?.id) return;
+    setBusy('finalize');
+    try {
+      await flushPendingAutosave();
+      await approveBoardResolutionInDb(eng.id);
+      await refreshEngagementChecklist(eng.id);
+      await loadDoc();
+      setPreviewRefreshKey((key) => key + 1);
+      toastSuccess('Board resolution approved', eng.companyName);
+    } catch (err) {
+      showBoardResolutionFailure(err, 'Could not approve');
+    } finally {
+      setBusy(null);
+    }
+  }, [eng, flushPendingAutosave, refreshEngagementChecklist, loadDoc]);
+
+  /** Manager / admin / super admin: return the draft to the lead with a note. */
+  const handleSendBack = useCallback(
+    async (note: string): Promise<boolean> => {
+      if (!eng?.id || !note.trim()) return false;
+      setBusy('finalize');
+      try {
+        await reviewChecklistItem(eng.id, 'pre-2', 'reject', note.trim());
+        await refreshEngagementChecklist(eng.id);
+        toastSuccess('Sent back to the project lead');
+        return true;
+      } catch (err) {
+        showBoardResolutionFailure(err, 'Could not send back');
+        return false;
+      } finally {
+        setBusy(null);
+      }
+    },
+    [eng, reviewChecklistItem, refreshEngagementChecklist],
+  );
+
+  /** Staff upload of the signed copy (S-574): the same route the client uses. */
+  const handleUploadSigned = useCallback(
+    async (file: File) => {
+      if (!eng?.id) return;
+      setBusy('upload-signed');
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch(`/api/engagements/${encodeURIComponent(eng.id)}/board-resolution/upload-signed`, {
+          method: 'POST',
+          body: form,
+        });
+        const out = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) throw new Error(out.error || 'Could not upload the signed copy');
+        await loadDoc();
+        void refreshEngagementChecklist(eng.id);
+        toastSuccess('Signed copy uploaded', file.name);
+      } catch (err) {
+        toastError('Could not upload', err instanceof Error ? err.message : 'Try again.');
+      } finally {
+        setBusy(null);
+      }
+    },
+    [eng, loadDoc, refreshEngagementChecklist],
+  );
+
   return {
     BOARD_RESOLUTION_DOCX_FILENAME,
     applyLatestTemplate,
@@ -852,13 +938,18 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
     hasDocx,
     hasPre1Data,
     internBoardResolutionPath,
+    isLead,
+    lockedForViewer,
+    staffShell,
+    handleApprove,
+    handleSendBack,
+    handleUploadSigned,
     withManager,
     sentBackNote,
     isFinalized,
     loading,
     mergeFields,
     pre1StepHref,
-    resolutionDateLabel,
     previewDownloadHref,
     previewReady,
     previewRef,

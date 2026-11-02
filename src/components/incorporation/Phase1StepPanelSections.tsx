@@ -2,7 +2,7 @@
 
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { ChecklistItemState } from '@/context/AppContext';
 import {
   Phase1Pre2Panel,

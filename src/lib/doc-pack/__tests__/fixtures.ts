@@ -1,6 +1,6 @@
-import type { BoardResolutionDoc } from '@/lib/board-resolution';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
-import { repeatFieldId } from '@/lib/checklist-repeat';
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
+import { repeatFieldId } from '@/lib/checklist/checklist-repeat';
 
 /** Obviously fake directors only — the repo is public. */
 export interface FixtureDirector {
@@ -68,7 +68,7 @@ export const COMPANY_PRE1: Record<string, string> = {
 };
 
 /** The lead's subscription-sheet witness (Pre-7). */
-export const WITNESS_PRE7: Record<string, string> = {
+const WITNESS_PRE7: Record<string, string> = {
   subscriptionWitnessName: 'Test Witness',
   subscriptionWitnessAddress: '3 Witness Road, Test City',
   subscriptionWitnessOccupation: 'Practising Chartered Accountant',

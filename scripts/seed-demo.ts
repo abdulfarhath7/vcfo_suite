@@ -36,7 +36,9 @@ import {
 } from '../src/db/schema';
 import { getActiveCatalogItems } from '../src/data/checklist';
 import { systemGenerateComplianceInstances } from '../src/db/repositories/compliance';
-import type { ChecklistItemStateSlice } from '../src/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '../src/lib/checklist/checklist-state-key';
+import { clearDemoExtras, seedDemoExtras } from './seed-demo-extras';
+import { documentStorageKey, seedPlaceholders } from '../src/storage/demo-placeholders';
 
 const DEMO_EMAIL_DOMAIN = '@demo.vcfo.local';
 const DEMO_SLUG_PREFIX = 'demo-';
@@ -69,20 +71,23 @@ type PersonSpec = {
   reportsTo?: string;
 };
 
+/* The people the owner reviews in the prototype (K-35): Bharath is the lead, Pranay the
+   manager, Krishna the admin and Mithilesh the super admin (scripts/seed.ts). The keys,
+   and so the demo login emails, stay the same so saved logins and e2e specs keep working. */
 const ADMINS: PersonSpec[] = [
-  { key: 'admin-nadia', name: 'Nadia Fernandes', role: 'admin' },
+  { key: 'admin-nadia', name: 'Krishna', role: 'admin' },
   { key: 'admin-vikram', name: 'Vikram Rao', role: 'admin' },
 ];
 
 const MANAGERS: PersonSpec[] = [
-  { key: 'pm-anita', name: 'Anita Desai', role: 'manager' },
+  { key: 'pm-anita', name: 'Pranay', role: 'manager' },
   { key: 'pm-joseph', name: 'Joseph Mathew', role: 'manager' },
   { key: 'pm-leena', name: 'Leena Krishnan', role: 'manager' },
 ];
 
 const LEADS: PersonSpec[] = [
   { key: 'lead-arjun', name: 'Arjun Mehta', role: 'intern', scopeId: 'demo-lead-arjun', reportsTo: 'pm-anita' },
-  { key: 'lead-divya', name: 'Divya Nair', role: 'intern', scopeId: 'demo-lead-divya', reportsTo: 'pm-anita' },
+  { key: 'lead-divya', name: 'Bharath', role: 'intern', scopeId: 'demo-lead-divya', reportsTo: 'pm-anita' },
   { key: 'lead-rohan', name: 'Rohan Iyer', role: 'intern', scopeId: 'demo-lead-rohan', reportsTo: 'pm-joseph' },
   { key: 'lead-sneha', name: 'Sneha Kulkarni', role: 'intern', scopeId: 'demo-lead-sneha', reportsTo: 'pm-joseph' },
   { key: 'lead-tarun', name: 'Tarun Bose', role: 'intern', scopeId: 'demo-lead-tarun', reportsTo: 'pm-leena' },
@@ -445,6 +450,8 @@ async function upsertPerson(spec: PersonSpec): Promise<string> {
 }
 
 async function clearPreviousDemoRows(): Promise<void> {
+  await clearDemoExtras();
+
   const oldEngagements = await db
     .select({ id: engagements.id })
     .from(engagements)
@@ -555,6 +562,7 @@ async function main() {
 
   console.log('\nCreating documents…');
   let documentCount = 0;
+  const placeholders: Array<{ key: string; title: string }> = [];
   for (const { id, spec } of created) {
     const uploadedBy = spec.leadKey ? ids.get(spec.leadKey)! : ids.get(spec.managerKey)!;
     // Only file documents for steps the project has actually reached.
@@ -563,11 +571,13 @@ async function main() {
       return index >= 0 && index < spec.done;
     });
     for (const [i, doc] of reached.entries()) {
+      const objectKey = `demo/${spec.slug}/${doc.stepId}-${doc.fileName.replace(/\s+/g, '-').toLowerCase()}`;
+      placeholders.push({ key: documentStorageKey(objectKey), title: `${spec.companyName}: ${doc.fileName}` });
       await db.insert(documents).values({
         engagementId: id,
         category: doc.category,
         fileName: doc.fileName,
-        objectKey: `demo/${spec.slug}/${doc.stepId}-${doc.fileName.replace(/\s+/g, '-').toLowerCase()}`,
+        objectKey,
         contentType: 'application/pdf',
         sizeBytes: 180_000 + i * 42_000,
         uploadedBy,
@@ -579,6 +589,10 @@ async function main() {
     }
   }
   console.log(`  ${documentCount} document(s)`);
+  // Each document row needs a file in storage, or the Documents pages ask for a missing file.
+  const stored = await seedPlaceholders(placeholders);
+  console.log(`  ${stored.uploaded} placeholder file(s) uploaded, ${stored.existing} already in storage`);
+  if (stored.failed) console.warn(`  storage not reachable, placeholders skipped: ${stored.failed}`);
 
   console.log('\nCreating activity trail…');
   let auditCount = 0;
@@ -665,6 +679,25 @@ async function main() {
     }
     console.log(`  marked ${filed} filed, ${overdue} overdue`);
   }
+
+  await seedDemoExtras(
+    created.map(({ id, spec }) => ({
+      id,
+      slug: spec.slug,
+      companyName: spec.companyName,
+      clientName: spec.clientName,
+      stage: spec.stage,
+      done: spec.done,
+      startedDaysAgo: spec.startedDaysAgo,
+      incorporatedDaysAgo: spec.incorporatedDaysAgo,
+      leadKey: spec.leadKey,
+      managerKey: spec.managerKey,
+      clientKey: spec.clientKey,
+      clientScopeId: clientScope.get(spec.clientKey)!,
+    })),
+    ids,
+    [...ADMINS, ...MANAGERS, ...LEADS, ...CLIENTS],
+  );
 
   console.log('\nDone. Demo logins (all use the password below):');
   console.log(`  password: ${DEMO_PASSWORD}`);

@@ -4,14 +4,14 @@ import {
   boardResolutionStoragePath,
   ENGAGEMENT_DOCUMENTS_BUCKET,
   signedBoardResolutionStoragePath,
-} from '@/lib/board-resolution-storage';
+} from '@/lib/board-resolution/board-resolution-storage';
 import { EXTENSION_TO_MIME } from '@/lib/upload-limits';
 import { bucketKey, getObjectBuffer, putObject } from '@/storage/s3';
 
 /**
  * Board-resolution storage — SERVER ONLY byte I/O.
  *
- * Split out of src/lib/board-resolution-storage.ts so that client views and
+ * Split out of src/lib/board-resolution/board-resolution-storage.ts so that client views and
  * the LIFTed upload-limits test can keep importing the validators and path
  * builders without dragging the S3 client into the browser bundle.
  */

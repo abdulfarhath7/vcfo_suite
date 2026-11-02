@@ -1,13 +1,15 @@
 import 'server-only';
 
-import { and, desc, eq, gte, inArray, like, lt, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
-import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit-log';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import {
   auditCategoryOf,
+  auditResultWord,
   istParts,
   type AuditCategory,
   type AuditNode,
@@ -28,6 +30,9 @@ import {
  * by name and role only); summaries are scrubbed of e-mail addresses.
  */
 
+/** C-787: a client person signed in (written by the Auth.js sign-in, read on the Audit page). */
+export const SIGN_IN_ACTION = 'auth.sign_in';
+
 export class ClientAuditError extends Error {
   constructor(
     message: string,
@@ -38,7 +43,12 @@ export class ClientAuditError extends Error {
 }
 
 const PREFIXES = ['checklist.', 'incorporation_docs.', 'doc_pack.', 'document_request.', 'client.', 'welcome_email.', 'credentials.'];
-const EXACT = ['board_resolution.finalize', 'email_templates.fire', 'engagement.checklist.submit', 'project.client_changed'];
+const EXACT = ['board_resolution.finalize', 'email_templates.fire', 'engagement.checklist.submit', 'project.client_changed', SIGN_IN_ACTION];
+
+/** The SQL form of the client allowlist, shared with `listAuditEvents` for the client role. */
+export function clientVisibleAuditPredicate() {
+  return allowed();
+}
 
 function allowed() {
   return or(...PREFIXES.map((p) => like(auditEvents.action, `${p}%`)), inArray(auditEvents.action, EXACT));
@@ -196,15 +206,17 @@ function project(
     cta = { label: 'Open Documents', href: '/app/client/documents' };
   } else if (a.startsWith('document_request.')) {
     cat = 'Documents';
-    if (/create|request/.test(a)) {
-      node = 'req';
-      action = 'Documents requested';
-      cta = { label: 'Open request', href: '/app/client/documents' };
-    } else if (/sent_back|reject/.test(a)) {
+    // Match on the verb only: the prefix itself contains "request".
+    const verb = a.slice('document_request.'.length);
+    if (/sent_back|reject/.test(verb)) {
       node = 'back';
       action = 'Document sent back';
       cta = { label: 'Upload again', href: '/app/client/documents' };
-    } else if (/upload/.test(a)) {
+    } else if (/create|request/.test(verb)) {
+      node = 'req';
+      action = 'Documents requested';
+      cta = { label: 'Open request', href: '/app/client/documents' };
+    } else if (/upload/.test(verb)) {
       node = 'up';
       action = 'Document uploaded';
       cta = { label: 'Preview file', href: '/app/client/documents' };
@@ -268,6 +280,17 @@ function project(
     subject = 'Credentials access log';
     if (str(m.label)) facts = [{ k: 'Credential', v: str(m.label) }];
     cta = { label: 'Open Credentials', href: '/app/client/credentials' };
+  } else if (a === SIGN_IN_ACTION) {
+    cat = 'Sign-in';
+    node = 'team';
+    action = 'Signed in';
+    subject = str(m.device) || 'Signed in';
+    facts = [
+      { k: 'Device', v: str(m.device) },
+      { k: 'City', v: str(m.city) },
+      { k: 'Method', v: str(m.method) },
+    ];
+    cta = { label: 'Open Settings', href: '/app/client/settings' };
   }
 
   return {
@@ -281,6 +304,7 @@ function project(
     subject: subject || action,
     who: { name: whoName, initials: initialsOf(whoName), role: rl.role, side: rl.side },
     facts: facts.filter((f) => f.v),
+    result: auditResultWord(r.result, node),
     cta,
   };
 }
@@ -300,26 +324,96 @@ async function namesFor(rows: Raw[]): Promise<Map<string, string>> {
   return new Map(ps.filter((p) => p.name?.trim() && !p.name.includes('@')).map((p) => [p.id, p.name!.trim()]));
 }
 
+/**
+ * SYSTEM WRITER (C-787) — every accepted sign-in: the Credentials `authorize` (after the password
+ * and code) and the Microsoft branch of the `jwt` callback. The context is built from the
+ * verified profile. A client's sign-in is written on its own engagement, so it shows in that
+ * company's Audit page under "Sign-in"; a staff sign-in is written with no engagement, for the
+ * firm's own audit log. Never throws: a failed write must not block a sign-in.
+ */
+export async function systemRecordSignIn(input: {
+  userId: string;
+  email: string;
+  name?: string | null;
+  role: string;
+  clientId?: string | null;
+  device: string;
+  city?: string | null;
+  method?: string;
+}): Promise<void> {
+  try {
+    const ctx = {
+      userId: input.userId,
+      email: input.email,
+      name: input.name?.trim() || input.email,
+      role: input.role,
+      clientId: input.clientId ?? undefined,
+    } as AuthContext;
+    let engagementId: string | undefined;
+    if (input.role === 'client') {
+      const mine = await getMyEngagement(ctx);
+      if (!mine) return;
+      engagementId = mine.id;
+    }
+    await recordAuditEvent(ctx, {
+      engagementId,
+      action: SIGN_IN_ACTION,
+      summary: `Signed in on ${input.device}`,
+      metadata: { device: input.device, city: input.city || undefined, method: input.method ?? 'Password' },
+    });
+  } catch (err) {
+    console.warn('[client-audit] sign-in record failed', err instanceof Error ? err.message : err);
+  }
+}
+
+/** `created_at` to the millisecond, the precision a cursor carries (G-28). */
+const createdMs = sql`date_trunc('milliseconds', ${auditEvents.createdAt})`;
+
+/**
+ * The page cursor: `<iso>|<id>` of the last row shown. A bare ISO time (older links) still
+ * works, without the id tie-break.
+ */
+export function parseClientAuditCursor(raw: string | null | undefined): { before?: Date; beforeId?: string } {
+  if (!raw) return {};
+  const [iso, id] = raw.split('|');
+  const before = iso ? new Date(iso) : undefined;
+  if (!before || Number.isNaN(before.getTime())) return {};
+  return { before, beforeId: id && /^[0-9a-f-]{36}$/i.test(id) ? id : undefined };
+}
+
 export async function listClientAuditEvents(
   ctx: AuthContext,
-  opts: { before?: Date; limit?: number; withSummary?: boolean } = {},
+  opts: { before?: Date; beforeId?: string; limit?: number; withSummary?: boolean } = {},
 ): Promise<ClientAuditPage> {
   const { dbId, company } = await myEngagementDbId(ctx);
   const limit = Math.min(Math.max(opts.limit ?? 60, 1), 2000);
   const conds = [eq(auditEvents.engagementId, dbId), allowed()];
-  if (opts.before && !Number.isNaN(opts.before.getTime())) conds.push(lt(auditEvents.createdAt, opts.before));
+  if (opts.before && !Number.isNaN(opts.before.getTime())) {
+    if (opts.beforeId) {
+      conds.push(lt(auditEvents.createdAt, new Date(opts.before.getTime() + 1)));
+      conds.push(
+        or(
+          sql`${createdMs} < ${opts.before}`,
+          and(sql`${createdMs} = ${opts.before}`, lt(auditEvents.id, opts.beforeId)),
+        )!,
+      );
+    } else {
+      conds.push(lt(auditEvents.createdAt, opts.before));
+    }
+  }
   const rows = await db
     .select()
     .from(auditEvents)
     .where(and(...conds))
-    .orderBy(desc(auditEvents.createdAt))
+    .orderBy(desc(createdMs), desc(auditEvents.id))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
   const names = await namesFor(page);
   const events = page.map((r) => project(r, names, company));
+  const last = page[page.length - 1];
   const out: ClientAuditPage = {
     events,
-    nextBefore: rows.length > limit && page.length ? page[page.length - 1].createdAt.toISOString() : null,
+    nextBefore: rows.length > limit && last ? `${last.createdAt.toISOString()}|${last.id}` : null,
   };
   if (opts.withSummary) out.summary = await summary(dbId);
   return out;

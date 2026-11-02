@@ -73,9 +73,11 @@ describe('A1 repository scope', () => {
 });
 
 describe('A1 route', () => {
-  it('is 404 while the flag is off and 403 for a client when on', async () => {
+  it('says off while the flag is off and is 403 for a client when on', async () => {
     requireAsk.mockResolvedValue({ ok: true, ctx: ctx('admin') });
-    expect((await GET()).status).toBe(404);
+    const off = await GET();
+    expect(off.status).toBe(200);
+    expect(await off.json()).toEqual({ off: true });
     process.env.ASK_VCFO_FEATURE_A1 = 'true';
     requireAsk.mockResolvedValue({ ok: true, ctx: ctx('client') });
     expect((await GET()).status).toBe(403);

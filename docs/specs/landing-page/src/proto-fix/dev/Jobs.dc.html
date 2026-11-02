@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer · Jobs</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+/*@dev-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="jobs" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Jobs" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <section class="card" data-card="jobs">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20a10 10 0 1 0 0 20 M12 6v6l4 2"></path></svg></span><h2 class="st">Scheduled jobs</h2><span class="cnt">{{n}}</span></div>
+        <div class="sc"><table class="tbl" style="min-width: 1000px">
+          <thead><tr><th>Job</th><th>Schedule</th><th>Last run</th><th style="text-align: right">Took</th><th>Result</th><th>Next run</th><th style="text-align: right">Failures · 7 days</th><th></th></tr></thead>
+          <tbody><sc-for list="{{rows}}" as="x" hint-placeholder-count="9"><tr><td><b style="font-weight: 600">{{x.name}}</b></td><td>{{x.sch}}</td><td>{{x.last}}</td><td style="text-align: right">{{x.took}}</td><td><span class="chip" style="{{x.cs}}; color: #fff; min-width: 84px">{{x.sl}}</span></td><td>{{x.next}}</td><td style="text-align: right; {{x.fSt}}">{{x.fails}}</td>
+            <td style="text-align: right"><button type="button" class="btn" data-dev-confirm="Run now" data-what="{{x.what}}" data-before="{{x.last}}" data-after="Running now" data-toast="{{x.toast}}">Run now</button></td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+      <section class="card" data-card="job-fails">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg></span><h2 class="st">Recent failures</h2></div>
+        <sc-for list="{{fails}}" as="x" hint-placeholder-count="3"><div class="it"><i class="dot down"></i><span style="flex: 1"><b style="font-weight: 600; display: block">{{x.t}}</b><span class="sub">{{x.d}}</span></span><button type="button" class="btn" data-dev-confirm="Retry" data-what="{{x.what}}" data-before="Failed" data-after="Queued again" data-toast="{{x.toast}}">Retry</button></div></sc-for>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, A = window.ADM, s = this.state || {}, set = (o) => this.setState(o), dd = s.dd || '';
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() })); }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const ST = { ok: ['Working', '#0f6e51'], warn: ['Needs attention', '#be4400'], down: ['Down', '#b5302a'], connected: ['Connected', '#0f6e51'], attention: ['Needs attention', '#be4400'], off: ['Not connected', '#656f7e'], missing: ['Missing', '#b5302a'], fail: ['Failed', '#b5302a'], skip: ['Skipped', '#be4400'], pending: ['Waiting for approval', '#be4400'], approved: ['Approved', '#0f6e51'], pass: ['Passing', '#0f6e51'] };
+    const chip = (k) => 'background:' + (ST[k] || ST.ok)[1];
+    const base = { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }) };
+
+    const res = { ok: ['Done', 'connected'], fail: ['Failed', 'fail'], skip: ['Skipped', 'skip'] };
+    const rows = D.JOBS.map(j => ({ name: j[0], sch: j[1], last: j[2], took: j[3], sl: res[j[4]][0], cs: chip(res[j[4]][1]), next: j[5], fails: j[6], fSt: j[6] ? 'color:#b5302a;font-weight:600' : '',
+      what: 'Run "' + j[0] + '" now, outside its schedule', toast: j[0] + ' started' }));
+    const fails = [['WhatsApp nudges · Today 12:00', 'Template deadline_1d not approved; 14 messages not sent', 'Retry the WhatsApp nudges run from 12:00', 'WhatsApp nudges retry queued'],
+      ['Tally push · Yesterday 23:00', 'Connector on the office PC did not answer', 'Retry the Tally push from last night', 'Tally push retry queued'],
+      ['Portal status sync · Wed 14 Oct 10:30', 'MCA V3 portal timed out; next run succeeded', 'Retry the portal status sync from 14 Oct', 'Portal sync retry queued']]
+      .map(([t, d, what, toast]) => ({ t, d, what, toast }));
+    return Object.assign(base, { rows, n: rows.length, fails });
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

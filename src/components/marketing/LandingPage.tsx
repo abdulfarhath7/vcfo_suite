@@ -1,21 +1,6 @@
-'use client';
-
-import { LandingCta } from './sections/LandingCta';
-import { LandingHero } from './sections/LandingHero';
-import { LandingHowItWorks } from './sections/LandingHowItWorks';
-import { LandingImpact } from './sections/LandingImpact';
-import { LandingProblem } from './sections/LandingProblem';
-import { LandingRoles } from './sections/LandingRoles';
-
-export function LandingPage() {
-  return (
-    <>
-      <LandingHero />
-      <LandingImpact />
-      <LandingProblem />
-      <LandingHowItWorks />
-      <LandingRoles />
-      <LandingCta />
-    </>
-  );
-}
+/**
+ * The public landing at "/". The page lives in ./landing/ (the Spectrum port of the old v6 landing),
+ * with its own nav, footer and stylesheet, so it no longer sits inside MarketingShell.
+ * MarketingShell still frames /roles and /contact.
+ */
+export { LandingScreen as LandingPage } from './landing/LandingScreen';

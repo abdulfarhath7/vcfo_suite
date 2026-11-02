@@ -1,8 +1,8 @@
 import {
   getBoardResolutionTemplateInfo,
   type BoardResolutionTemplateInfo,
-} from '@/lib/board-resolution-docx';
-import { boardResolutionVariant, type BoardResolutionDoc } from '@/lib/board-resolution';
+} from '@/lib/board-resolution/board-resolution-docx';
+import { boardResolutionVariant, type BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 
 /** Template the project's Pre-2 renders from — follows its NOC variant. */
 export function boardResolutionTemplateInfo(

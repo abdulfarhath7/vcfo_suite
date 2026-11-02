@@ -7,7 +7,7 @@ import {
   internEngagementPath,
   internEngagementStepPath,
   type StaffPathBase,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 
 /**
  * Document pack URLs — client-safe. `shell` is `'intern'` for the lead's

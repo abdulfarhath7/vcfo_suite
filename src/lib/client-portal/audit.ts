@@ -7,10 +7,14 @@
  */
 
 export type AuditNode = 'req' | 'back' | 'up' | 'ok' | 'time' | 'mail' | 'team';
-export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials';
+export type AuditCategory = 'Documents' | 'Milestones' | 'Team' | 'Email' | 'Credentials' | 'Sign-in';
 export type AuditRoleLabel = 'Manager' | 'Lead' | 'SBC' | 'System' | 'Client';
-
-export const AUDIT_CATEGORIES: AuditCategory[] = ['Documents', 'Milestones', 'Team', 'Email', 'Credentials'];
+/**
+ * What happened to the action, from `audit_events.result` (G-28): `ok` reads
+ * "Done" (or "Sent back" when the action asked for a fix), `failed` "Failed"
+ * and `denied` "Denied".
+ */
+export type AuditResult = 'Done' | 'Sent back' | 'Failed' | 'Denied';
 
 export interface ClientAuditEvent {
   id: string;
@@ -26,6 +30,7 @@ export interface ClientAuditEvent {
   subject: string;
   who: { name: string; initials: string; role: AuditRoleLabel; side: 'sbc' | 'client' };
   facts: Array<{ k: string; v: string }>;
+  result: AuditResult;
   cta?: { label: string; href: string };
 }
 
@@ -37,7 +42,7 @@ export interface ClientAuditSummary {
 
 export interface ClientAuditPage {
   events: ClientAuditEvent[];
-  /** Pass as `before` for the next page; null = no older events. */
+  /** Pass as `before` for the next page (`<iso>|<id>`); null = no older events. */
   nextBefore: string | null;
   summary?: ClientAuditSummary;
 }
@@ -62,4 +67,9 @@ export function auditCategoryOf(action: string): AuditCategory {
   if (a.startsWith('welcome_email.') || a === 'email_templates.fire') return 'Email';
   if (a.startsWith('credentials.')) return 'Credentials';
   return 'Milestones';
+/** The Result word for a stored `audit_events.result` and the event's node. */
+export function auditResultWord(result: string | null | undefined, node: AuditNode): AuditResult {
+  if (result === 'failed') return 'Failed';
+  if (result === 'denied') return 'Denied';
+  return node === 'back' ? 'Sent back' : 'Done';
 }

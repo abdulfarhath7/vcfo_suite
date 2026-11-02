@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireAuth } from '@/auth/guards';
+import { requireOwnAccount } from '@/auth/guards';
 import { getOwnProfile, updateOwnProfile } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { emailSchema } from '@/lib/api/schemas';
@@ -16,11 +16,17 @@ const patchSchema = z.object({
   whatsappOptIn: z.boolean().optional(),
   email: emailSchema.optional(),
   currentPassword: z.string().min(1).max(128).optional(),
+  /** Staff title, such as "Senior manager" (P-617). Null clears it. */
+  designation: z.string().trim().max(80).optional().nullable(),
+  /** ICAI or ICSI membership number: letters, digits, "/" and "-". Null or "" clears it. */
+  membershipNo: z
+    .union([z.string().trim().max(24).regex(/^[A-Za-z0-9/-]*$/, 'invalid_membership_no'), z.null()])
+    .optional(),
 });
 
 /** GET /api/account/profile — own profile for settings. */
 export async function GET() {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -35,7 +41,7 @@ export async function GET() {
 
 /** PATCH /api/account/profile — update name / phone / email (email needs password). */
 export async function PATCH(request: Request) {
-  const auth = await requireAuth();
+  const auth = await requireOwnAccount();
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -58,7 +64,13 @@ export async function PATCH(request: Request) {
     }
     return NextResponse.json({
       ok: true,
-      profile: { name: result.name, email: result.email, phone: result.phone },
+      profile: {
+        name: result.name,
+        email: result.email,
+        phone: result.phone,
+        designation: result.designation ?? null,
+        membershipNo: result.membershipNo ?? null,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'update_failed';

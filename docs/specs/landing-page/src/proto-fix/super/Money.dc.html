@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Money</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="money" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Money" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="kg">
+        <sc-for list="{{kpis}}" as="k" hint-placeholder-count="4"><div class="card" style="padding: 14px 16px"><b class="money" style="{{k.st}}; display: block; font-size: 22px; font-weight: 600">{{k.n}}</b><em style="font-style: normal; font-size: 12px; color: #4b5b70">{{k.label}}</em></div></sc-for>
+      </div>
+      <div class="cols2">
+        <section class="card" data-card="m-lines">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18v12H3z M12 9.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5"></path></svg></span><h2 class="st">Fees by service line · October</h2>
+            <span class="mut" style="margin-left: auto; display: flex; gap: 12px; font-size: 12px"><span><i class="sw" style="display: inline-block; background: #c5d8f0; vertical-align: -1px"></i> Billed</span><span><i class="sw" style="display: inline-block; background: #1b4f94; vertical-align: -1px"></i> Collected</span></span></div>
+          <div class="rows" style="gap: 14px">
+            <sc-for list="{{lines}}" as="l" hint-placeholder-count="4"><div><div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 5px"><span>{{l.name}}</span><span class="money mut">{{l.coll}} of {{l.billed}}</span></div><div class="trk" style="height: 10px; position: relative; background: #e1e7ef"><span style="{{l.billBar}}"></span></div><div class="trk" style="height: 10px; margin-top: 3px; background: transparent"><span style="{{l.collBar}}"></span></div></div></sc-for>
+          </div>
+        </section>
+        <section class="card" data-card="m-age">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20a10 10 0 1 0 0 20 M12 6v6l4 2"></path></svg></span><h2 class="st">Collections ageing</h2></div>
+          <sc-for list="{{ages}}" as="a" hint-placeholder-count="3"><div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 12px 16px; border-top: 1px solid #e1e7ef; align-items: start"><span><span class="mut" style="display: block; font-size: 12px">{{a.label}}</span><b class="money" style="display: block; font-size: 20px; font-weight: 600; {{a.st}}">{{a.total}}</b><span class="sub">{{a.n}}</span></span><span style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{a.cl}}" as="c" hint-placeholder-count="3"><span class="nm" style="font-size: 12px; border: 1px solid #e1e7ef; border-radius: 8px; padding: 4px 8px 4px 4px"><span class="ct" style="{{c.ct}}; width: 22px; height: 22px; font-size: 9.5px">{{c.k}}</span>{{c.name}} <b class="money" style="font-weight: 600">{{c.amt}}</b></span></sc-for></span></div></sc-for>
+        </section>
+      </div>
+      <section class="card" data-card="m-pen">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"></path></svg></span><h2 class="st">Late-fee exposure</h2></div>
+        <div class="sc"><table class="tbl" style="min-width: 760px">
+          <thead><tr><th>Filing</th><th>Client</th><th>Manager</th><th style="text-align: right">Days late</th><th style="text-align: right">So far</th><th style="text-align: right">Per day</th></tr></thead>
+          <tbody><sc-for list="{{pen}}" as="p" hint-placeholder-count="4"><tr><td><b style="font-weight: 600">{{p.form}}</b><span class="sub">{{p.stat}} · {{p.due}}</span></td><td><span class="nm"><span class="ct" style="{{p.ct}}">{{p.k}}</span>{{p.name}}</span></td><td>{{p.mgr}}</td><td style="text-align: right">{{p.late}}</td><td class="money" style="text-align: right; color: #b5302a; font-weight: 600">{{p.sofar}}</td><td class="money" style="text-align: right">{{p.per}}</td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const billed = A.FEES.reduce((a, f) => a + f[1], 0), coll = A.FEES.reduce((a, f) => a + f[2], 0), out = A.DUES.reduce((a, d) => a + d[1], 0);
+    const pen = A.FIL.filter(f => f[4] === 'o').sort((a, b) => b[5] - a[5]).map(f => ({ form: f[2], stat: f[3], due: f[0] + ' Oct', k: f[1], ct: ct(f[1]), name: byK[f[1]].name, mgr: M(byK[f[1]].mgr).name,
+      late: 16 - f[0], sofar: A.rupees(f[5]), per: A.rupees(f[6]) }));
+    const expo = pen.length ? A.FIL.filter(f => f[4] === 'o').reduce((a, f) => a + f[5], 0) : 0;
+    const maxB = Math.max(...A.FEES.map(f => f[1]));
+    const lines = A.FEES.map(f => ({ name: f[0], billed: A.rupees(f[1]), coll: A.rupees(f[2]), billBar: 'background:#c5d8f0;width:' + f[1] / maxB * 100 + '%', collBar: 'background:#1b4f94;width:' + f[2] / maxB * 100 + '%' }));
+    const B = [['Up to 30 days', 0, 30, ''], ['31 to 60 days', 31, 60, 'color:#be4400'], ['Over 60 days', 61, 999, 'color:#b5302a']];
+    const ages = B.map(([label, a, b, st]) => { const l = A.DUES.filter(d => d[2] >= a && d[2] <= b).sort((x, y) => y[1] - x[1]);
+      return { label, st, total: A.rupees(l.reduce((x, d) => x + d[1], 0)), n: l.length + (l.length === 1 ? ' client' : ' clients'), cl: l.map(d => ({ k: d[0], ct: ct(d[0]), name: byK[d[0]].name, amt: A.rupees(d[1]) })) }; });
+    const kpis = [[A.rupees(billed), 'Billed in October', ''], [A.rupees(coll), 'Collected · ' + Math.round(coll / billed * 100) + '% of billed', 'color:#0f6e51'], [A.rupees(out), 'Outstanding from ' + A.DUES.length + ' clients', 'color:#be4400'], [A.rupees(expo), 'Late-fee exposure today', 'color:#b5302a']]
+      .map(([n, label, st]) => ({ n, label, st }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), kpis, lines, ages, pen };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -4,18 +4,18 @@ import { useMemo, useReducer, useRef } from 'react';
 import { ChecklistItem, getPreIncPhaseStep, StatusCode } from '@/data/checklist';
 import { TaskInstance, ActivityEvent } from '@/data/engagements';
 import { useApp } from '@/context/AppContext';
-import { type ChecklistItemResponses } from '@/lib/checklist-responses';
-import { hasResponseFormFields } from '@/lib/checklist-field-access';
+import { type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { hasResponseFormFields } from '@/lib/checklist/checklist-field-access';
 import { cn } from '@/lib/utils';
 import { toastSuccess } from '@/lib/toast-errors';
-import { deriveChecklistDisplayStatus } from '@/lib/checklist-display-status';
-import { useBoardResolutionProgress } from '@/lib/use-board-resolution-progress';
+import { deriveChecklistDisplayStatus } from '@/lib/checklist/checklist-display-status';
+import { useBoardResolutionProgress } from '@/hooks/use-board-resolution-progress';
 import {
   checklistGateViewerFrom,
   gateActiveCatalog,
   gateDisplayStatus,
   getStepGate,
-} from '@/lib/checklist-step-gate';
+} from '@/lib/checklist/checklist-step-gate';
 import { StepDetailContentView } from '@/components/admin/StepDetailContentSections';
 import {
   EMPTY_STEP_ACTIVITY,
@@ -23,6 +23,7 @@ import {
   stepDetailUiReducer,
   type StepProgress,
 } from '@/components/admin/step-detail-progress';
+import { UNDERLINE_TAB_TRIGGER } from '@/components/admin/step-tab-classes';
 
 export interface StepDetailContentProps {
   item: ChecklistItem;
@@ -79,33 +80,33 @@ const STATUS_TONE: Record<
 > = {
   'not-started': {
     dot: 'muted',
-    cls: 'text-paper-subtle',
-    clsLight: 'text-text-tertiary',
+    cls: 'text-ink-subtle',
+    clsLight: 'text-ink-faint',
   },
   'in-progress': {
     dot: 'info',
     cls: 'text-info',
-    clsLight: 'text-info-text',
+    clsLight: 'text-info',
   },
   'awaiting-client': {
     dot: 'warning',
     cls: 'text-warning',
-    clsLight: 'text-warning-text',
+    clsLight: 'text-warning',
   },
   completed: {
     dot: 'success',
-    cls: 'text-success',
-    clsLight: 'text-success-text',
+    cls: 'text-positive',
+    clsLight: 'text-positive',
   },
   overdue: {
     dot: 'danger',
     cls: 'text-danger',
-    clsLight: 'text-danger-text',
+    clsLight: 'text-danger',
   },
   'not-applicable': {
     dot: 'muted',
-    cls: 'text-paper-subtle',
-    clsLight: 'text-text-tertiary',
+    cls: 'text-ink-subtle',
+    clsLight: 'text-ink-faint',
   },
 };
 
@@ -239,34 +240,24 @@ function StepDetailContentInner({
 
   const rowBtn = (done: boolean) =>
     cn(
-      'w-full flex items-center gap-3 px-3 py-2.5 border rounded-sm text-left transition-all',
+      'w-full flex min-h-11 items-center gap-3 px-3 py-2 border-1.5 rounded-md text-left transition-colors',
       done
-        ? isLight
-          ? 'border-brand/30 bg-primary-light/50'
-          : 'border-primary/40 bg-primary/5'
-        : isLight
-          ? 'border-border hover:border-border/80 hover:bg-muted/40'
-          : 'border-hairline hover:border-hairline-strong',
+        ? 'border-line bg-surface-raised'
+        : 'border-line hover:border-line-strong hover:bg-surface-sunken/60',
     );
 
-  const tabTrigger = cn(
-    'relative rounded-none bg-transparent px-3 py-2.5 text-[11px] mono uppercase tracking-[0.16em]',
-    'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-    'transition-colors',
-    isLight
-      ? 'text-text-tertiary data-[state=active]:text-brand hover:text-ink'
-      : 'text-paper-muted data-[state=active]:text-blue-600 hover:text-paper',
-  );
+  /* Step tabs (rule R-11, N4): underline tabs for the views of one step. */
+  const tabTrigger = UNDERLINE_TAB_TRIGGER;
 
-  const emptyCopy = isLight ? 'text-text-tertiary' : 'text-paper-muted';
+  const emptyCopy = isLight ? 'text-ink-faint' : 'text-ink-muted';
   const bodyText = (done: boolean) =>
     isLight
       ? done
         ? 'text-ink'
-        : 'text-text-secondary'
+        : 'text-ink-muted'
       : done
-        ? 'text-paper'
-        : 'text-paper-muted';
+        ? 'text-ink'
+        : 'text-ink-muted';
 
   const viewProps = {
     item,

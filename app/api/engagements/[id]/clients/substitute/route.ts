@@ -8,7 +8,7 @@ import {
 } from '@/db/repositories/engagement-clients';
 import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
 import { getEngagementById } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { emptyEmailDispatch, type EmailDispatchResult } from '@/lib/email/email-dispatch';
 import { sendClientEmailChangedEmail } from '@/lib/email/client-email-changed';
 import { clientPasswordSchema, emailSchema } from '@/lib/api/schemas';

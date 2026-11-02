@@ -13,8 +13,8 @@ import {
 import {
   engagementDbId,
   LEGACY_ENGAGEMENT_IDS,
-} from '@/lib/legacy-engagement-ids';
-import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
+} from '@/lib/projects/legacy-engagement-ids';
+import { isAdminOrManager, isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
 import {
   canAccessPersonalTodos,
   canMutatePersonalTodo,
@@ -27,7 +27,8 @@ import {
   PERSONAL_TODO_STEP_PREFIX,
   personalTodoStepId,
   type PersonalTodoDto,
-} from '@/lib/personal-todos';
+} from '@/lib/intern/personal-todos';
+import { taskAssignmentPatch, taskCompletionPatch } from '@/lib/metrics/trend-stamps';
 
 /**
  * TASKS REPOSITORY — replaces vcfo.tasks localStorage.
@@ -40,6 +41,9 @@ import {
  * Personal todos (LeadFocusCard) reuse this table with engagement_id null,
  * assigned_to = owner, step_id prefix `todo:`. They are excluded from
  * listTasks / getTaskById. See listPersonalTodos for Path A rules.
+ *
+ * Every write that changes the status also stamps `completed_at` (`taskCompletionPatch`): set
+ * when the task moves to done, cleared when it reopens. The home trend lines read it.
  */
 
 type Row = typeof tasks.$inferSelect;
@@ -77,7 +81,15 @@ function appEngagementId(dbId: string | null): string {
   return LEGACY_ENGAGEMENT_IDS[dbId] ?? dbId;
 }
 
-function toAppTask(row: Row): TaskInstance {
+/** A board place from the client: a whole number from 0 to 100000, or null to clear it. */
+export function normalizeSortOrder(value: unknown): number | null {
+  if (value === null) return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 100_000) return null;
+  return n;
+}
+
+export function toAppTask(row: Row): TaskInstance {
   return {
     id: row.id,
     engagementId: appEngagementId(row.engagementId),
@@ -87,7 +99,21 @@ function toAppTask(row: Row): TaskInstance {
     assigneeId: row.assignedTo ?? undefined,
     dueAt: row.deadline ? row.deadline.toISOString() : undefined,
     notes: row.description ?? undefined,
+    title: row.title,
+    updatedAt: row.updatedAt ? row.updatedAt.toISOString() : undefined,
+    ...(row.completedAt ? { completedAt: row.completedAt.toISOString() } : {}),
+    ...(row.assignedBy ? { assignedById: row.assignedBy } : {}),
+    ...(row.sortOrder != null ? { sortOrder: row.sortOrder } : {}),
   };
+}
+
+/** Adds the name of whoever assigned each task ("Assigned by" in the Work drawer). One query. */
+async function withAssignerNames(list: TaskInstance[]): Promise<TaskInstance[]> {
+  const ids = [...new Set(list.map((t) => t.assignedById).filter(Boolean) as string[])];
+  if (ids.length === 0) return list;
+  const rows = await db.select({ id: profiles.id, name: profiles.name }).from(profiles).where(inArray(profiles.id, ids));
+  const names = new Map(rows.map((r) => [r.id, r.name ?? '']));
+  return list.map((t) => (t.assignedById && names.get(t.assignedById) ? { ...t, assignedByName: names.get(t.assignedById) } : t));
 }
 
 async function scopedEngagementIds(ctx: AuthContext): Promise<string[] | 'all'> {
@@ -113,7 +139,7 @@ export async function listTasks(ctx: AuthContext): Promise<TaskInstance[]> {
           .where(and(inArray(tasks.engagementId, scope), notPersonalTodo))
           .orderBy(desc(tasks.updatedAt));
 
-  return rows.map(toAppTask);
+  return withAssignerNames(rows.map(toAppTask));
 }
 
 export async function getTaskById(
@@ -126,7 +152,7 @@ export async function getTaskById(
   if (row.engagementId) {
     const access = await assertEngagementAccess(ctx, row.engagementId);
     if (!access.ok) return null;
-  } else if (ctx.role !== 'admin' && ctx.role !== 'manager') {
+  } else if (!isAdminOrManager(ctx.role)) {
     return null;
   }
   return toAppTask(row);
@@ -153,14 +179,17 @@ export async function createTask(
   if (!access.ok) throw new Error('Engagement not found or not permitted');
 
   const title = input.title?.trim() || input.checklistKey?.trim() || 'Task';
+  const status = appStatusToDb(input.status ?? 'not-started');
   const [row] = await db
     .insert(tasks)
     .values({
       engagementId: access.dbId,
       title,
       stepId: input.checklistKey ?? null,
-      status: appStatusToDb(input.status ?? 'not-started'),
+      status,
+      ...taskCompletionPatch(null, status),
       assignedTo: input.assigneeId ?? null,
+      ...taskAssignmentPatch(ctx.userId, undefined, input.assigneeId ?? null, true),
       deadline: input.dueAt ? new Date(input.dueAt) : null,
       description: input.notes ?? null,
     })
@@ -191,16 +220,20 @@ export async function updateTask(
     }
   }
 
+  const nextStatus = patch.status !== undefined ? appStatusToDb(patch.status) : undefined;
   const [row] = await db
     .update(tasks)
     .set({
       ...(patch.checklistKey !== undefined ? { stepId: patch.checklistKey } : {}),
-      ...(patch.status !== undefined ? { status: appStatusToDb(patch.status) } : {}),
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...taskCompletionPatch(appStatusToDb(existing.status), nextStatus),
       ...(patch.assigneeId !== undefined ? { assignedTo: patch.assigneeId ?? null } : {}),
+      ...taskAssignmentPatch(ctx.userId, existing.assigneeId ?? null, patch.assigneeId === undefined ? undefined : (patch.assigneeId ?? null)),
       ...(patch.dueAt !== undefined
         ? { deadline: patch.dueAt ? new Date(patch.dueAt) : null }
         : {}),
       ...(patch.notes !== undefined ? { description: patch.notes ?? null } : {}),
+      ...(patch.sortOrder !== undefined ? { sortOrder: normalizeSortOrder(patch.sortOrder) } : {}),
       ...(targetEngagementDbId !== undefined ? { engagementId: targetEngagementDbId } : {}),
       updatedAt: new Date(),
     })
@@ -371,6 +404,7 @@ export async function upsertPersonalTodo(
       .set({
         title,
         status,
+        ...taskCompletionPatch(existing.status, status),
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, existing.id))
@@ -389,6 +423,7 @@ export async function upsertPersonalTodo(
       title,
       stepId,
       status,
+      ...taskCompletionPatch(null, status),
       description: custom ? 'custom' : 'pin',
     })
     .returning();
@@ -413,11 +448,13 @@ export async function updatePersonalTodo(
     patch.title !== undefined ? patch.title.trim().slice(0, INTERN_FOCUS_TITLE_MAX) : undefined;
   if (title !== undefined && !title) throw new Error('title_required');
 
+  const nextStatus = patch.done !== undefined ? (patch.done ? 'done' : 'open') : undefined;
   const [row] = await db
     .update(tasks)
     .set({
       ...(title !== undefined ? { title } : {}),
-      ...(patch.done !== undefined ? { status: patch.done ? 'done' : 'open' } : {}),
+      ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+      ...taskCompletionPatch(existing.task.status, nextStatus),
       updatedAt: new Date(),
     })
     .where(eq(tasks.id, id))

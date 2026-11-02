@@ -81,7 +81,7 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
             : (isPre1 || isPre6)
               ? 'mx-auto w-full max-w-3xl space-y-6'
               : 'space-y-4 rounded-md border p-4 sm:p-5',
-        !internWorkspace && !compactChrome && !(isPre1 || isPre6) && 'border-border bg-panel',
+        !internWorkspace && !compactChrome && !(isPre1 || isPre6) && 'border-line bg-surface-raised',
         className,
       )}
     >
@@ -91,15 +91,15 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           animate={{ opacity: 1, y: 0 }}
           className="surface-raised px-5 py-6 text-center"
         >
-          <CheckCircle2 className="w-10 h-10 mx-auto text-success mb-3" aria-hidden />
-          <p className="serif text-xl text-foreground">Submitted for review</p>
+          <CheckCircle2 className="w-10 h-10 mx-auto text-positive mb-3" aria-hidden />
+          <p className="text-[20px] font-medium text-ink">Submitted for review</p>
           {isClient && (
             <TrustBadge className="mt-4 mx-auto w-fit">Received by VCFO · under review</TrustBadge>
           )}
         </motion.div>
       )}
 
-      {internSectionNav && structuredSectionLabels.length > 1 ? (
+      {internSectionNav ? (
         <InternSectionHeadingNav
           sections={structuredSectionLabels.map((title, index) => ({
             title,
@@ -127,19 +127,19 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       >
       {isPre6 && !pre1SubmittedForPre6 && (
         <output
-          className="rounded-lg border border-primary/30 bg-primary-light px-4 py-3 text-sm text-foreground block"
+          className="rounded-md border border-brand/30 bg-brand-soft px-4 py-3 text-sm text-ink block"
         >
           <p className="font-medium">Phase 1 Step 1 required first</p>
         </output>
       )}
 
       {provenanceNote ? (
-        <p className="font-mono text-[11px] text-muted-foreground">{provenanceNote} — edit anything that changed.</p>
+        <p className="text-[12px] text-ink-muted">{provenanceNote} — edit anything that changed.</p>
       ) : null}
 
       {isPre6 && pre1SubmittedForPre6 && pre6DirectorSlots.length === 0 && (
         <output
-          className="rounded-lg border border-warning/25 bg-warning-light/40 px-4 py-3 text-sm text-foreground block"
+          className="rounded-md border border-warning/25 bg-warning-soft/40 px-4 py-3 text-sm text-ink block"
         >
           <p className="font-medium">No director KYC sections yet</p>
         </output>
@@ -159,16 +159,16 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
       <div className={isPre1 || isPhase2StructuredStep ? 'space-y-1.5 px-0.5' : undefined}>
         {isPre1 || isPhase2StructuredStep ? (
           <div className="space-y-1">
-            <p className="eyebrow text-blue-700">
+            <p className="eyebrow text-brand-text">
               {isPre1
                 ? 'Phase 1 — Name Application'
                 : 'Phase 2 — Incorporation'}
             </p>
-            <h2 className="display-md text-foreground">{item.title}</h2>
+            <h2 className="display-md text-ink">{item.title}</h2>
           </div>
         ) : (
           <>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-[12px] font-semibold text-ink-muted">
               {readOnly ? 'Client submission' : 'Your answers'}
             </p>
           </>
@@ -181,11 +181,11 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
           className={cn(
             'milestone-review-banner',
             reviewBanner.tone === 'rejected' &&
-              'border-danger/30 bg-danger-light/80',
+              'border-danger/30 bg-danger-soft/80',
             reviewBanner.tone === 'reviewing' &&
-              'border-primary/30 bg-primary-light',
+              'border-brand/30 bg-brand-soft',
             reviewBanner.tone === 'accepted' &&
-              'border-success/25 bg-success-light',
+              'border-positive/25 bg-positive-soft',
           )}
         >
           {(() => {
@@ -195,18 +195,18 @@ export function MilestoneResponseFormView(p: MilestoneResponseFormViewModel) {
                 className={cn(
                   'h-4 w-4 shrink-0 mt-0.5',
                   reviewBanner.tone === 'rejected' && 'text-danger',
-                  reviewBanner.tone === 'reviewing' && 'text-blue-700',
-                  reviewBanner.tone === 'accepted' && 'text-success',
+                  reviewBanner.tone === 'reviewing' && 'text-brand-text',
+                  reviewBanner.tone === 'accepted' && 'text-positive',
                 )}
                 aria-hidden
               />
             );
           })()}
-          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <p className="font-semibold text-foreground">{reviewBanner.title}</p>
-            {reviewBanner.body ? (
-              <p className="text-muted-foreground">{reviewBanner.body}</p>
-            ) : null}
+          <div className="min-w-0 space-y-1">
+            <p className="font-semibold text-ink">{reviewBanner.title}</p>
+            {reviewBanner.body && (
+              <p className="text-ink-muted leading-relaxed">{reviewBanner.body}</p>
+            )}
           </div>
         </div>
       )}

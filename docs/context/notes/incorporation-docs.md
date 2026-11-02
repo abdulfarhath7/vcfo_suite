@@ -54,7 +54,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `--incremental false` for a gate you trust — a stale build info once hid a test
   typing error.
 - Pre-2 board resolution picks its template by NOC variant (`boardResolutionVariant`
-  in `src/lib/board-resolution.ts`): foreign → `boardResolution.docx`, Indian
+  in `src/lib/board-resolution/board-resolution.ts`): foreign → `boardResolution.docx`, Indian
   investing / name use → `boardResolution-indian-*.docx`. Those are built from the
   firm's blank `noc-indian-*.docx` (kept as supplied) by
   `node scripts/prepare-noc-board-resolution-docx.mjs`; both prepare scripts share

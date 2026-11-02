@@ -1,6 +1,6 @@
 import { coerceStatusCode } from '@/data/checklist';
-import { isChecklistStepSequentiallyComplete } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { isChecklistStepSequentiallyComplete } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 /**
  * INCORPORATION STATE — the one read-only answer to "is this company

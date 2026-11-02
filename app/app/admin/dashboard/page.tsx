@@ -1,4 +1,4 @@
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 import FirmDashboard from "@/views/admin/FirmDashboard";
 
 export const metadata = pageMetadata("Admin home", "Firm-wide portfolio pulse and attention queue");

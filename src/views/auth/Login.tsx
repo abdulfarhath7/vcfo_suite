@@ -123,18 +123,10 @@ function LoginForm({
       <LoginHero variant="compact" />
       <LoginHero variant="full" />
 
-      <div className="relative flex w-full flex-1 items-center justify-center bg-background px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:min-h-screen lg:flex-none lg:bg-raised lg:p-12 xl:p-14">
+      <div className="relative flex w-full flex-1 items-center justify-center bg-surface px-4 py-6 sm:px-6 sm:py-8 md:px-8 md:py-10 lg:min-h-screen lg:flex-none lg:bg-surface-raised lg:p-12 xl:p-14">
         <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
           <ThemeToggle />
         </div>
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70 lg:opacity-55"
-          aria-hidden
-          style={{
-            background:
-              'radial-gradient(ellipse 80% 50% at 50% 0%, oklch(var(--blue-600) / 0.07) 0%, transparent 55%), radial-gradient(ellipse 50% 40% at 100% 100%, oklch(var(--blue-100) / 0.35) 0%, transparent 50%)',
-          }}
-        />
         <div className="relative z-10 w-full max-w-[min(100%,420px)] sm:max-w-md md:max-w-lg lg:max-w-[420px] page-fade-up">
         <LoginFormCard
           email={email}

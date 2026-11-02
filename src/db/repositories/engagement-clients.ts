@@ -6,7 +6,7 @@ import { engagementClients, engagements, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 import bcrypt from 'bcryptjs';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 

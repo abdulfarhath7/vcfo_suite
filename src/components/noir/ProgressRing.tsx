@@ -51,7 +51,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="oklch(var(--border))"
+          stroke="oklch(var(--line))"
           strokeWidth={stroke}
         />
         <circle
@@ -68,7 +68,7 @@ export function ProgressRing({
         />
       </svg>
       {center ?? (
-        <span className="absolute mono text-[10px] font-medium text-primary">{clamped}%</span>
+        <span className="absolute mono text-[10px] font-medium text-brand">{clamped}%</span>
       )}
     </div>
   );

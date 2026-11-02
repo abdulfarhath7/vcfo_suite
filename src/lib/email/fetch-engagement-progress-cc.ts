@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
 import { getEngagementById } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 
 function normalizeEmails(value: unknown): string[] {
   if (!Array.isArray(value)) return [];

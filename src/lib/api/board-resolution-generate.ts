@@ -1,8 +1,8 @@
 import 'server-only';
 
 import type { Engagement } from '@/data/engagements';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
-import { boardResolutionVariant, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
+import { boardResolutionVariant, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 import {
   BoardResolutionError,
   BOARD_RESOLUTION_ERROR_CODES,
@@ -14,12 +14,12 @@ import {
   generateBoardResolutionArtifacts,
   getBoardResolutionTemplateFingerprint,
   sanitizeBoardResolutionDocxBuffer,
-} from '@/lib/board-resolution-docx';
+} from '@/lib/board-resolution/board-resolution-docx';
 import {
   downloadBoardResolutionDocx,
   uploadBoardResolutionDocx,
 } from '@/storage/board-resolution';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 export async function generateAndStoreBoardResolution(
   engagement: Engagement,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { createTask, listTasks } from '@/db/repositories/tasks';
 import type { StatusCode } from '@/data/checklist';
+import { assignTaskSchema, handleAssignTask } from '@/lib/work/assign-task';
 
 /** GET /api/tasks — list tasks scoped by role. */
 export async function GET() {
@@ -18,13 +19,33 @@ export async function GET() {
   }
 }
 
-/** POST /api/tasks — create a task (manager/intern). */
+/**
+ * POST /api/tasks — create a task (manager/intern).
+ *
+ * With `leadId` in the body it is the manager's "Assign task" (G-12):
+ * `{ engagementId, leadId, title, description?, deadline? }`. The lead must be on the
+ * engagement; they get a bell notification and an email, and an audit event is written.
+ */
 export async function POST(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
-  let body: {
+  const raw: unknown = await request.json().catch(() => undefined);
+  if (raw === undefined) {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
+  if (raw && typeof raw === 'object' && 'leadId' in raw) {
+    const parsed = assignTaskSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? 'invalid_body' },
+        { status: 400 },
+      );
+    }
+    return handleAssignTask(guard.ctx, parsed.data);
+  }
+  type CreateBody = {
     engagementId?: string;
     title?: string;
     checklistKey?: string;
@@ -33,11 +54,7 @@ export async function POST(request: Request) {
     dueAt?: string | null;
     notes?: string | null;
   };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-  }
+  const body = (raw ?? {}) as CreateBody;
   if (!body.engagementId?.trim()) {
     return NextResponse.json({ error: 'engagementId_required' }, { status: 400 });
   }

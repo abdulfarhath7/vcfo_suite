@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import { requestClosedPatch, staffAssignedBy, taskAssignmentPatch, taskCompletionPatch } from './trend-stamps';
+
+const NOW = new Date('2026-10-29T06:00:00Z');
+
+describe('taskCompletionPatch', () => {
+  it('stamps the time when a task moves to done', () => {
+    expect(taskCompletionPatch('open', 'done', NOW)).toEqual({ completedAt: NOW });
+    expect(taskCompletionPatch(null, 'done', NOW)).toEqual({ completedAt: NOW });
+  });
+
+  it('clears it when the task reopens', () => {
+    expect(taskCompletionPatch('done', 'open', NOW)).toEqual({ completedAt: null });
+  });
+
+  it('leaves it alone when the status does not cross the line', () => {
+    expect(taskCompletionPatch('done', 'done', NOW)).toEqual({});
+    expect(taskCompletionPatch('open', 'in-progress', NOW)).toEqual({});
+    expect(taskCompletionPatch('done', undefined, NOW)).toEqual({});
+  });
+});
+
+describe('requestClosedPatch', () => {
+  it('stamps the time when a request is fulfilled, approved or cancelled', () => {
+    expect(requestClosedPatch('pending', 'fulfilled', NOW)).toEqual({ closedAt: NOW });
+    expect(requestClosedPatch('pending', 'cancelled', NOW)).toEqual({ closedAt: NOW });
+    expect(requestClosedPatch('pending', 'approved', NOW)).toEqual({ closedAt: NOW });
+  });
+
+  it('clears it when the request opens again', () => {
+    expect(requestClosedPatch('fulfilled', 'pending', NOW)).toEqual({ closedAt: null });
+  });
+
+  it('keeps the first close time between closed states', () => {
+    expect(requestClosedPatch('fulfilled', 'approved', NOW)).toEqual({});
+    expect(requestClosedPatch('pending', undefined, NOW)).toEqual({});
+  });
+});
+
+
+describe('taskAssignmentPatch', () => {
+  it('stamps the caller when a task goes to someone else', () => {
+    expect(taskAssignmentPatch('me', undefined, 'lead', true)).toEqual({ assignedBy: 'me' });
+    expect(taskAssignmentPatch('me', 'lead-a', 'lead-b')).toEqual({ assignedBy: 'me' });
+  });
+  it('keeps none for a self-assigned or unassigned task', () => {
+    expect(taskAssignmentPatch('me', undefined, 'me', true)).toEqual({ assignedBy: null });
+    expect(taskAssignmentPatch('me', 'lead', null)).toEqual({ assignedBy: null });
+  });
+  it('leaves the column alone when the assignee does not change', () => {
+    expect(taskAssignmentPatch('me', 'lead', 'lead')).toEqual({});
+    expect(taskAssignmentPatch('me', 'lead', undefined)).toEqual({});
+  });
+});
+
+describe('staffAssignedBy', () => {
+  it('stamps staff who give the task to someone else, never a client', () => {
+    expect(staffAssignedBy('manager', 'm1', 'lead')).toBe('m1');
+    expect(staffAssignedBy('client', 'c1', 'lead')).toBeNull();
+    expect(staffAssignedBy('intern', 'l1', 'l1')).toBeNull();
+    expect(staffAssignedBy('admin', 'a1', null)).toBeNull();
+  });
+});

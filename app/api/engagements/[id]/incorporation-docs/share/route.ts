@@ -6,9 +6,9 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
 import {
   allIncorpDraftSlotsGenerated,
   isIncorpSlotSetFrozen,
@@ -17,7 +17,7 @@ import {
 } from '@/lib/incorporation-docs/share';
 import { incorpDocRowKey } from '@/lib/incorporation-docs/paths';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { draftUrlFieldFor, INCORP_DOC_KINDS } from '@/lib/incorporation-docs/types';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';

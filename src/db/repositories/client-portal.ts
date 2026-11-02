@@ -13,8 +13,8 @@ import {
 } from '@/db/repositories/engagements';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { getNotificationInboxHead } from '@/db/repositories/notifications';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
-import { buildProgress, identifiersFromState } from '@/lib/client-overview';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
+import { buildProgress, identifiersFromState } from '@/lib/client/client-overview';
 import {
   CLIENT_PORTAL_DEFAULT_PREFS,
   normalizePortalPrefsPatch,
@@ -191,6 +191,9 @@ export async function getClientPortalShell(ctx: AuthContext): Promise<ClientPort
     me: { name: meName, email: meRow?.email ?? ctx.email, initials: initialsOf(meName), roleLabel: `${shortCompany || row.companyName} · Client` },
     team,
     incorporated,
+    coiDate: row.incorporationDate?.trim() ? row.incorporationDate.trim().slice(0, 10) : null,
+    // The portal shell is for clients only (`assertClient`), so the viewer is always the client.
+    viewer: 'client',
     badges: {
       notifications: inbox.unreadCount,
       documents: Number(openRequests[0]?.n ?? 0),

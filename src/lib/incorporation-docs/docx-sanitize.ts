@@ -1,6 +1,6 @@
 import PizZip from 'pizzip';
 
-import { dedupeXmlAttributes } from '@/lib/board-resolution-docx-body';
+import { dedupeXmlAttributes } from '@/lib/board-resolution/board-resolution-docx-body';
 
 /** Remove duplicate XML attributes (e.g. repeated xml:space) from word/document.xml. */
 export function sanitizeIncorpDocumentXml(documentXml: string): string {

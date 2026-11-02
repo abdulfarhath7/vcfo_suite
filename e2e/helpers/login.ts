@@ -6,7 +6,7 @@ import { expect, type Page } from '@playwright/test';
  * the defaults below are the ones present in a demo-seeded database. Override
  * any of them with E2E_<ROLE>_EMAIL / E2E_<ROLE>_PASSWORD.
  */
-export const USERS = {
+const USERS = {
   client: {
     email: process.env.E2E_CLIENT_EMAIL ?? 'client-kestrel@demo.vcfo.local',
     password: process.env.E2E_CLIENT_PASSWORD ?? 'demo1234',

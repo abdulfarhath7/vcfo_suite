@@ -30,6 +30,7 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { AccentButton } from '@/components/noir';
 
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 
 
 
@@ -37,7 +38,7 @@ import { Button } from '@/components/ui/button';
 
 
 
-import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution';
+import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
 
 
@@ -45,7 +46,7 @@ import { type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/
 
 
 
-import { internBoardResolutionPath } from '@/lib/project-step-path';
+import { internBoardResolutionPath } from '@/lib/projects/project-step-path';
 
 
 
@@ -57,8 +58,9 @@ import {
   type BoardResolutionApiErrorBody,
   type BoardResolutionErrorDisplay,
 } from '@/lib/api/board-resolution-errors';
-import type { BoardResolutionPreviewError } from '@/lib/board-resolution-preview-errors';
+import type { BoardResolutionPreviewError } from '@/lib/board-resolution/board-resolution-preview-errors';
 import type { Engagement } from '@/data/engagements';
+import type { DocPackShell } from '@/lib/doc-pack/paths';
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -89,7 +91,7 @@ function FormatToolbar({ disabled, previewRef, onFormatChange }: FormatToolbarPr
 export interface BoardResolutionEditorProps {
   BOARD_RESOLUTION_DOCX_FILENAME: string;
   applyLatestTemplate: () => Promise<void>;
-  busy: 'finalize' | 'generate' | 'apply-template' | null;
+  busy: 'finalize' | 'generate' | 'apply-template' | 'upload-signed' | null;
   doc: BoardResolutionDoc | null;
   downloadHref: string;
   eng: Engagement;
@@ -107,13 +109,23 @@ export interface BoardResolutionEditorProps {
   isFinalized: boolean;
   /** Sent to the manager and not decided yet — the draft is locked for the lead. */
   withManager: boolean;
+  /** True on the lead's editor; false for the manager, admin and super admin (S-556, S-557, P-112). */
+  isLead: boolean;
+  /** The draft is with the manager and the viewer is the lead, so editing is locked. */
+  lockedForViewer: boolean;
+  /** Which shell's step links the editor builds. */
+  staffShell: DocPackShell;
+  /** Manager / admin / super admin: approve and release to the client. */
+  handleApprove: () => Promise<void>;
+  /** Manager / admin / super admin: send the draft back to the lead with a note. */
+  handleSendBack: (note: string) => Promise<boolean>;
+  /** Staff upload of the signed copy (S-574). */
+  handleUploadSigned: (file: File) => Promise<void>;
   /** The manager's note when they sent the draft back. */
   sentBackNote: string | null;
   loading: boolean;
   mergeFields: BoardResolutionMergeFields;
   pre1StepHref: string;
-  /** Part A's date of board resolution, formatted for display; null when not set. */
-  resolutionDateLabel: string | null;
   previewDownloadHref: string;
   previewReady: boolean;
   previewRef: React.RefObject<BoardResolutionDocPreviewHandle | null>;
@@ -142,7 +154,8 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
     handleManualSave,
     hasDocx,
     isFinalized,
-    withManager,
+    isLead,
+    lockedForViewer,
     loading,
     mergeFields,
     previewDownloadHref,
@@ -161,7 +174,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
     <>
         {loading ? (
 
-          <div className="flex items-center gap-2 text-[12px] text-text-tertiary py-12">
+          <div className="flex items-center gap-2 text-[12px] text-ink-faint py-12">
 
             <HexgridLoader size="sm" />
 
@@ -177,12 +190,14 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
               <>
 
-                <div className="mb-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[12.5px] font-semibold text-foreground">Document</p>
+                <div className="mb-4">
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="text-[15px] font-medium text-ink">
+                      Document preview
+                    </p>
                     {!isFinalized && saveStatusText && (
                       <p
-                        className="text-[12px] text-muted-foreground"
+                        className="text-[11px] text-ink-faint"
                         aria-live="polite"
                         aria-atomic="true"
                       >
@@ -191,7 +206,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     )}
                   </div>
 
-                  {!isFinalized && !withManager && (
+                  {!isFinalized && !lockedForViewer && (
                     <FormatToolbar
                       disabled={!previewReady || isFinalized || !hasDocx || saveStatus === 'saving'}
                       previewRef={previewRef}
@@ -202,13 +217,13 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                     />
                   )}
 
-                  <div className="overflow-x-auto bg-muted/40 px-4 py-6 sm:px-10">
+                  <div className="flex items-start justify-center overflow-x-auto">
                     <BoardResolutionDocPreview
                       ref={previewRef}
                       engagementId={eng.id}
                       downloadUrl={previewDownloadHref}
                       refreshKey={previewRefreshKey}
-                      editable={!isFinalized && !withManager}
+                      editable={!isFinalized && !lockedForViewer}
                       mergeFields={mergeFields}
                       previewLabel="Draft Word document"
                       docMeta={{
@@ -236,11 +251,13 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                <div className="mb-6 rounded-md border-1.5 border-line bg-surface-raised p-5">
+
+                  <p className="mb-3 text-[15px] font-medium text-ink">Word document ready</p>
+
+                  {/* R-06: no helper sentence; only the repair case keeps one line. */}
                   {previewStorageCorrupt && isFinalized ? (
-                    <p className="mr-auto text-[12px] text-warning-text">
-                      The stored file needs a rebuild. Re-generate or apply the latest template.
-                    </p>
+                    <p className="mb-4 max-w-lg text-[13px] text-ink-muted">The stored file could not be previewed. Re-generate to rebuild it.</p>
                   ) : null}
 
                   <div className="flex flex-wrap gap-2">
@@ -251,7 +268,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                       download={BOARD_RESOLUTION_DOCX_FILENAME}
 
-                      className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-foreground px-3 text-[13px] font-semibold text-background hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                      className={buttonVariants({ variant: 'default' })}
 
                     >
 
@@ -313,17 +330,17 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             ) : (
 
-              <div className="mb-6 rounded-md border border-warning/25 bg-warning/10 px-4 py-4 text-[13px] text-warning-text">
+              <div className="mb-6 rounded-md border border-warning/25 bg-warning/10 px-4 py-4 text-[13px] text-warning">
 
                 <p className="flex items-start gap-2 font-medium text-ink mb-2">
 
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-text" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
 
                   Generate the Word document first
 
                 </p>
 
-                <p className="mb-4 pl-6 text-text-secondary">
+                <p className="mb-4 pl-6 text-ink-muted">
 
                   Inline editing and client release require a `.docx` from the board resolution
 
@@ -335,7 +352,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                   type="button"
 
-                  disabled={isFinalized || withManager || busy !== null}
+                  disabled={isFinalized || lockedForViewer || busy !== null}
 
                   onClick={() => void handleGenerate()}
 
@@ -355,7 +372,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             <div className="flex flex-wrap gap-2 mt-5">
 
-              {!isFinalized && !withManager && hasDocx && (
+              {!isFinalized && !lockedForViewer && hasDocx && (
                 <AccentButton
                   type="button"
                   size="sm"
@@ -368,19 +385,19 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
               {/* The lead sends the draft to the manager; the manager approves it
                   and releases it to the client. No lead release button. */}
-              {!isFinalized ? (
+              {!isFinalized && isLead ? (
                 <Button
                   type="button"
                   variant="success"
                   disabled={
-                    withManager ||
+                    lockedForViewer ||
                     busy !== null ||
                     saveStatus === 'saving' ||
                     saveStatus === 'pending'
                   }
                   onClick={() => setFinalizeOpen(true)}
                 >
-                  {withManager ? 'Sent for manager approval' : 'Send for manager approval'}
+                  {lockedForViewer ? 'Sent for manager approval' : 'Send for manager approval'}
                 </Button>
               ) : null}
 
@@ -388,7 +405,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
             {doc?.finalizedAt && (
 
-              <p className="text-[11.5px] text-text-tertiary mt-4">
+              <p className="text-[11.5px] text-ink-faint mt-4">
 
                 Finalized{' '}
 

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer · Logs</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+/*@dev-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="logs" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Logs" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="ds-bar">
+        <!--scrim-->
+        <!--dd:dL:Level-->
+        <!--dd:dS:Source-->
+        <sc-if value="{{anyF}}" hint-placeholder-val="{{false}}"><button type="button" class="lnk" onClick="{{clearF}}">Clear</button></sc-if>
+        
+      </div>
+      <section class="card" data-card="logs">
+        <div class="lg2" style="cursor: default; background: #eef2f7; font-size: 11px; font-weight: 600; color: #4b5b70; text-transform: uppercase; letter-spacing: .06em"><span>Time</span><span>Level</span><span>Source</span><span>Message</span><span></span></div>
+        <sc-for list="{{rows}}" as="x" hint-placeholder-count="9"><div>
+          <button type="button" class="lg2" aria-expanded="{{x.ex}}" onClick="{{x.tog}}"><span class="mono2">{{x.t}}</span><span><span class="chip" style="{{x.cs}}; color: #fff">{{x.lv}}</span></span><span>{{x.src}}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{x.msg}}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+          <sc-if value="{{x.open}}" hint-placeholder-val="{{false}}"><div class="lgd">{{x.detail}}</div></sc-if>
+        </div></sc-for>
+        <sc-if value="{{none}}" hint-placeholder-val="{{false}}"><div class="empty">Nothing matches these filters.</div></sc-if>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, A = window.ADM, s = this.state || {}, set = (o) => this.setState(o), dd = s.dd || '';
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() })); }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const ST = { ok: ['Working', '#0f6e51'], warn: ['Needs attention', '#be4400'], down: ['Down', '#b5302a'], connected: ['Connected', '#0f6e51'], attention: ['Needs attention', '#be4400'], off: ['Not connected', '#656f7e'], missing: ['Missing', '#b5302a'], fail: ['Failed', '#b5302a'], skip: ['Skipped', '#be4400'], pending: ['Waiting for approval', '#be4400'], approved: ['Approved', '#0f6e51'], pass: ['Passing', '#0f6e51'] };
+    const chip = (k) => 'background:' + (ST[k] || ST.ok)[1];
+    const base = { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }) };
+
+    const fL = s.fL || '', fS = s.fS || '', ex = s.ex;
+    const LV = { error: ['Error', '#b5302a'], warn: ['Warning', '#be4400'], info: ['Info', '#1b4f94'] };
+    const rows = D.LOGS.map((l, i) => [l, i]).filter(([l]) => (!fL || l[1] === fL) && (!fS || l[2] === fS)).map(([l, i]) => ({ t: l[0], lv: LV[l[1]][0], cs: 'background:' + LV[l[1]][1], src: l[2], msg: l[3], detail: l[4],
+      ex: ex === i ? 'true' : 'false', open: ex === i, tog: () => set({ ex: ex === i ? -1 : i }) }));
+    return Object.assign(base, { rows, none: !rows.length, anyF: !!(fL || fS), clearF: () => set({ fL: '', fS: '' }), ddAny: !!dd, ddClose: () => set({ dd: '' }) },
+      A.dd('dL', dd, 'l', 'fL', fL, [['error', 'Errors'], ['warn', 'Warnings'], ['info', 'Info']], 'All levels', set),
+      A.dd('dS', dd, 's', 'fS', fS, [...new Set(D.LOGS.map(l => l[2]))].map(x => [x, x]), 'All sources', set));
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

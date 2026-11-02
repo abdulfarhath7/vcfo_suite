@@ -7,11 +7,8 @@ import { AdminDashboardView } from '@/views/admin/DashboardSections';
 import { checklist, type Bucket } from '@/data/checklist';
 import type { TaskInstance } from '@/data/engagements';
 import type { Phase } from '@/components/admin/PhaseTimeline';
-import { primaryPhaseItems } from '@/lib/project-stuck';
-import { isAwaitingReview } from '@/lib/checklist-item-review';
-import { adminProjectStepPath } from '@/lib/project-step-path';
-import { YourStepNotice } from '@/components/shell/YourStepNotice';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { primaryPhaseItems } from '@/lib/projects/project-stuck';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
 
 const PROCESS_KEYS = [
   { key: 'pre-inc', label: 'Pre-incorp', buckets: ['pre-inc'] as Bucket[] },
@@ -62,21 +59,6 @@ export default function AdminDashboard() {
   }, [engagements, getStateForEngagement]);
 
   const approvalsToSend = pendingClientActions;
-
-  const managerStep = useMemo(() => {
-    for (const eng of engagements) {
-      const state = getStateForEngagement(eng);
-      for (const item of primaryPhaseItems()) {
-        if (!isAwaitingReview(state[item.id])) continue;
-        return {
-          key: `manager:${eng.id}:${item.id}`,
-          title: item.title,
-          href: adminProjectStepPath(eng, item, '/app/manager'),
-        };
-      }
-    }
-    return null;
-  }, [engagements, getStateForEngagement]);
 
   const keysByBucket = useMemo(() => {
     const map = new Map<Bucket, string[]>();
@@ -142,10 +124,6 @@ export default function AdminDashboard() {
   }, [tasks]);
 
   return (
-    <>
-    {managerStep ? (
-      <YourStepNotice stepKey={managerStep.key} stepTitle={managerStep.title} href={managerStep.href} />
-    ) : null}
     <AdminDashboardView
       userId={user?.id ?? ''}
       engagements={engagements}
@@ -161,7 +139,7 @@ export default function AdminDashboard() {
       portfolioPhases={portfolioPhases}
       completionRate={completionRate}
       tasksByEngagement={tasksByEngagement}
+      filings={allFilings}
     />
-    </>
   );
 }

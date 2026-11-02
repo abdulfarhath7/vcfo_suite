@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Font specimen · VCFO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&family=Manrope:wght@400;500;600;800&family=Inter:wght@400;500;600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface: #f6f8fb;
+    --raised: #ffffff;
+    --line: #dfe5ee;
+    --ink: #0f2a4a;
+    --muted: #5a6b82;
+    --brand: #1b4f94;
+    --accent: #d9731f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #0b1624; --raised: #12213a; --line: #22355a;
+      --ink: #eef3f9; --muted: #9fb0c6; --brand: #6aa2e8; --accent: #f0a052;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink); padding: 16px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font: 800 22px/1.2 'Plus Jakarta Sans', sans-serif; margin: 8px 0 0; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0; }
+  .card { background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .tag { font: 600 11px/1 'IBM Plex Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .name { font-size: 20px; font-weight: 800; margin: 6px 0 14px; }
+  .name small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+  .h { font-size: 28px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; margin: 0 0 8px; }
+  .body { font-size: 15px; line-height: 1.55; margin: 0 0 14px; color: var(--ink); }
+  .weights { display: flex; gap: 18px; flex-wrap: wrap; font-size: 15px; color: var(--muted); margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 8px; border-bottom: 2px solid var(--ink); }
+  td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .fig { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .id { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 8px; background: var(--brand); color: #fff; font-weight: 600; font-size: 14px; border: 0; }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fbeedd; color: #8a4410; font-size: 12px; font-weight: 600; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Four fonts for VCFO Suite</h1>
+    <p class="sub">Same sample text in each. Check headings, body, and the table figures. Mono (IBM Plex Mono) stays for IDs in all four.</p>
+  </div>
+
+  <!-- 1 Plus Jakarta Sans -->
+  <section class="card" style="font-family:'Plus Jakarta Sans',sans-serif">
+    <div class="tag">1 · Plus Jakarta Sans <span style="text-transform:none;letter-spacing:0">(matches logo)</span></div>
+    <div class="name">Plus Jakarta Sans<small>400 · 500 · 600 · 800</small></div>
+    <div class="h">Northwind Ltd, incorporation on track</div>
+    <p class="body">Eleven of fourteen filings are done. Next: board resolution due 24 Oct. Pay ₹1,26,000 before the 30th to keep the timeline.</p>
+    <div class="row">
+      <button class="btn" style="font-family:inherit">Approve ₹9,05,178</button>
+      <span class="chip">Due 24 Oct</span>
+    </div>
+    <table style="margin-top:14px">
+      <thead><tr><th>Client</th><th>Step</th><th class="n">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Northwind Ltd</td><td>Board resolution</td><td class="n fig">₹1,26,000</td></tr>
+        <tr><td>Sahyadri Foods</td><td>DIN filing</td><td class="n fig">₹24,600</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2 Manrope -->
+  <section class="card" style="font-family:Manrope,sans-serif">
+    <div class="tag">2 · Manrope <span style="text-transform:none;letter-spacing:0">(used in Lead Dashboard)</span></div>
+    <div class="name">Manrope<small>400 · 500 · 600 · 800</small></div>
+    <div class="h">Northwind Ltd, incorporation on track</div>
+    <p class="body">Eleven of fourteen filings are done. Next: board resolution due 24 Oct. Pay ₹1,26,000 before the 30th to keep the timeline.</p>
+    <div class="row">
+      <button class="btn" style="font-family:inherit">Approve ₹9,05,178</button>
+      <span class="chip">Due 24 Oct</span>
+    </div>
+    <table style="margin-top:14px">
+      <thead><tr><th>Client</th><th>Step</th><th class="n">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Northwind Ltd</td><td>Board resolution</td><td class="n fig">₹1,26,000</td></tr>
+        <tr><td>Sahyadri Foods</td><td>DIN filing</td><td class="n fig">₹24,600</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 3 Inter -->
+  <section class="card" style="font-family:Inter,sans-serif">
+    <div class="tag">3 · Inter</div>
+    <div class="name">Inter<small>400 · 500 · 600 · 800</small></div>
+    <div class="h">Northwind Ltd, incorporation on track</div>
+    <p class="body">Eleven of fourteen filings are done. Next: board resolution due 24 Oct. Pay ₹1,26,000 before the 30th to keep the timeline.</p>
+    <div class="row">
+      <button class="btn" style="font-family:inherit">Approve ₹9,05,178</button>
+      <span class="chip">Due 24 Oct</span>
+    </div>
+    <table style="margin-top:14px">
+      <thead><tr><th>Client</th><th>Step</th><th class="n">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Northwind Ltd</td><td>Board resolution</td><td class="n fig">₹1,26,000</td></tr>
+        <tr><td>Sahyadri Foods</td><td>DIN filing</td><td class="n fig">₹24,600</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 4 IBM Plex Sans -->
+  <section class="card" style="font-family:'IBM Plex Sans',sans-serif">
+    <div class="tag">4 · IBM Plex Sans <span style="text-transform:none;letter-spacing:0">(used in Interico)</span></div>
+    <div class="name">IBM Plex Sans<small>400 · 500 · 600 · 700</small></div>
+    <div class="h">Northwind Ltd, incorporation on track</div>
+    <p class="body">Eleven of fourteen filings are done. Next: board resolution due 24 Oct. Pay ₹1,26,000 before the 30th to keep the timeline.</p>
+    <div class="row">
+      <button class="btn" style="font-family:inherit">Approve ₹9,05,178</button>
+      <span class="chip">Due 24 Oct</span>
+    </div>
+    <table style="margin-top:14px">
+      <thead><tr><th>Client</th><th>Step</th><th class="n">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Northwind Ltd</td><td>Board resolution</td><td class="n fig">₹1,26,000</td></tr>
+        <tr><td>Sahyadri Foods</td><td>DIN filing</td><td class="n fig">₹24,600</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<title>VCFO Suite Design System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400..700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a fixed left index, one long reading column of sections, every preview drawn from the tokens themselves so the theme toggle restyles the whole book. v1.5 carries the Portal refresh palette. */
+:root{
+  --surface:#f3f5f9;--surface-raised:#ffffff;--surface-sunken:#f5f6f8;--line:#e3e6eb;--line-soft:#eef0f3;--line-strong:#8a94a2;
+  --ink:#16212f;--ink-2:#3f4a59;--ink-muted:#667180;--ink-faint:#98a1ae;
+  --brand:#2563a8;--brand-strong:#1e5290;--brand-soft:#e6effa;--brand-line:#b9d0ec;--on-brand:#ffffff;
+  --navy-action:#1f3b5c;--navy-hover:#18304c;--navy-tint:#eef2f8;--navy-tint-ink:#1f3b5c;--on-navy-faint:#afc3da;
+  --highlight:#e9792f;
+  --positive:#1e7f55;--positive-soft:#e2f3ea;--positive-mid:#46a87a;--warning:#a35f00;--warning-soft:#fcefd8;--danger:#be3434;--danger-soft:#fbe6e6;--danger-mid:#dd6262;--upcoming:#56627a;--upcoming-soft:#eceff4;
+  --violet:#6a4fb6;--violet-soft:#efeafb;--teal:#0f7c86;--teal-soft:#e0f3f4;
+  --own-client:#a35f00;--own-client-soft:#fcefd8;--own-sbc:#2563a8;--own-sbc-soft:#e6effa;--own-mca:#6a4fb6;--own-mca-soft:#efeafb;
+  --bar-done:#46a87a;--bar-cur:#2563a8;--bar-plan:#eceff4;--ring-idle:#d5dbe3;
+  --focus-ring:#3b82f6;--scrim:rgba(21,38,59,.55);
+  --side:#15263b;--side-2:#1b3049;--side-ink:#c9d4e2;--side-muted:#7f93ab;--side-active:rgba(110,160,230,.18);--side-line:rgba(255,255,255,.08);
+  --hero-gradient:linear-gradient(100deg,#1b3049,#15263b 70%);
+  --data-1:#2563a8;--data-2:#6a4fb6;--data-3:#0f7c86;--data-4:#46a87a;--data-5:#e3a040;--data-6:#b33f6a;
+  --shadow-float:0 12px 32px -12px rgba(21,38,59,.28);
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --surface:#111821;--surface-raised:#18202b;--surface-sunken:#1f2935;--line:#2c3745;--line-soft:#263140;--line-strong:#5a6878;
+  --ink:#e6eaf0;--ink-2:#c5cdd8;--ink-muted:#9aa7b8;--ink-faint:#6e7b8c;
+  --brand:#6fa3e0;--brand-strong:#9cc3ef;--brand-soft:#1b2f47;--brand-line:#34557a;--on-brand:#111821;
+  --navy-action:#2b4766;--navy-hover:#335274;--navy-tint:#1f2935;--navy-tint-ink:#9aa7b8;--on-navy-faint:#afc3da;
+  --highlight:#f08a3a;
+  --positive:#83b9a2;--positive-soft:#193534;--positive-mid:#46a87a;--warning:#cca773;--warning-soft:#372e22;--danger:#db8f8f;--danger-soft:#3d242d;--danger-mid:#dd6262;--upcoming:#a2a9b6;--upcoming-soft:#262f3c;
+  --violet:#ad9ed7;--violet-soft:#2a2a4a;--teal:#7bb7bc;--teal-soft:#16343f;
+  --own-client:#f2c27a;--own-client-soft:rgba(227,160,64,.16);--own-sbc:#9cc3ef;--own-sbc-soft:rgba(111,163,224,.16);--own-mca:#c4b2f2;--own-mca-soft:rgba(160,130,230,.16);
+  --bar-done:#46a87a;--bar-cur:#2563a8;--bar-plan:#2a3442;--ring-idle:#3a4656;
+  --focus-ring:#86b6ef;--scrim:rgba(0,0,0,.65);
+  --side:#15263b;--side-2:#1b3049;--side-ink:#c9d4e2;--side-muted:#7f93ab;--side-active:rgba(110,160,230,.18);--side-line:rgba(255,255,255,.08);
+  --hero-gradient:linear-gradient(100deg,#1b3049,#15263b 70%);
+  --data-1:#6fa3e0;--data-2:#a58fe6;--data-3:#4fb8c1;--data-4:#6cc79a;--data-5:#e8b060;--data-6:#de7fa2;
+  --shadow-float:0 16px 40px -12px rgba(0,0,0,.7);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --surface:#111821;--surface-raised:#18202b;--surface-sunken:#1f2935;--line:#2c3745;--line-soft:#263140;--line-strong:#5a6878;
+  --ink:#e6eaf0;--ink-2:#c5cdd8;--ink-muted:#9aa7b8;--ink-faint:#6e7b8c;
+  --brand:#6fa3e0;--brand-strong:#9cc3ef;--brand-soft:#1b2f47;--brand-line:#34557a;--on-brand:#111821;
+  --navy-action:#2b4766;--navy-hover:#335274;--navy-tint:#1f2935;--navy-tint-ink:#9aa7b8;--on-navy-faint:#afc3da;
+  --highlight:#f08a3a;
+  --positive:#83b9a2;--positive-soft:#193534;--positive-mid:#46a87a;--warning:#cca773;--warning-soft:#372e22;--danger:#db8f8f;--danger-soft:#3d242d;--danger-mid:#dd6262;--upcoming:#a2a9b6;--upcoming-soft:#262f3c;
+  --violet:#ad9ed7;--violet-soft:#2a2a4a;--teal:#7bb7bc;--teal-soft:#16343f;
+  --own-client:#f2c27a;--own-client-soft:rgba(227,160,64,.16);--own-sbc:#9cc3ef;--own-sbc-soft:rgba(111,163,224,.16);--own-mca:#c4b2f2;--own-mca-soft:rgba(160,130,230,.16);
+  --bar-done:#46a87a;--bar-cur:#2563a8;--bar-plan:#2a3442;--ring-idle:#3a4656;
+  --focus-ring:#86b6ef;--scrim:rgba(0,0,0,.65);
+  --side:#15263b;--side-2:#1b3049;--side-ink:#c9d4e2;--side-muted:#7f93ab;--side-active:rgba(110,160,230,.18);--side-line:rgba(255,255,255,.08);
+  --hero-gradient:linear-gradient(100deg,#1b3049,#15263b 70%);
+  --data-1:#6fa3e0;--data-2:#a58fe6;--data-3:#4fb8c1;--data-4:#6cc79a;--data-5:#e8b060;--data-6:#de7fa2;
+  --shadow-float:0 16px 40px -12px rgba(0,0,0,.7);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);font:400 15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--brand);text-decoration:none}a:hover{color:var(--brand-strong);text-decoration:underline}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+svg.g{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:12px;height:52px;background:var(--surface-raised);border-bottom:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top .name{font-weight:600;font-size:14px}.top .name span{color:var(--ink-muted);font-weight:400}
+.top .sp{flex:1}
+/* Tabs (segmented control): small inline buttons on a quiet track; the picked one is navy; no sliding highlight. */
+.seg{display:inline-flex;flex-wrap:nowrap;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface-sunken);max-width:100%}
+.seg button{flex:none;height:28px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--ink-muted);font:600 12.5px var(--sans);cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--navy-action);color:#fff}
+.seg .n{margin-left:5px;font-size:11.5px;font-weight:600;color:var(--ink-faint)}.seg button[aria-pressed="true"] .n{color:var(--on-navy-faint)}
+.seg.tight .n{display:none}
+.wrap{display:grid;grid-template-columns:200px minmax(0,1fr);gap:32px;max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+nav.idx{position:sticky;top:76px;align-self:start;font-size:13px}
+nav.idx a{display:block;padding:4px 0;color:var(--ink-muted)}nav.idx a:hover{color:var(--ink);text-decoration:none}
+nav.idx .grp{margin:14px 0 4px;font-size:12px;font-weight:600;color:var(--ink-faint)}
+main{min-width:0}
+section{padding-block:32px;border-top:1px solid var(--line)}section:first-child{border-top:0;padding-top:0}
+h1{font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.015em;margin:0 0 8px;text-wrap:balance}
+h2{font-size:22px;line-height:28px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px;padding-bottom:10px;border-bottom:2px solid var(--ink);text-wrap:balance}
+h3{font-size:15px;line-height:20px;font-weight:600;margin:28px 0 8px}
+p{margin:0 0 10px;max-width:68ch}p.lead{font-size:17px;line-height:24px;color:var(--ink-muted);max-width:60ch}
+ul{padding-left:18px;margin:0 0 10px;max-width:70ch}li{margin:3px 0}
+code,.mono{font-family:var(--mono);font-size:12px}
+code{background:var(--surface-sunken);border:1px solid var(--line-soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.label{font-size:12px;font-weight:600;color:var(--ink-muted)}
+blockquote{margin:0 0 12px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised);max-width:68ch;font-size:14px}
+blockquote span{display:block;font-size:12px;color:var(--ink-muted);margin-top:4px}
+.cover{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start}
+.strip{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:18px}
+.strip i{display:block;height:34px;border-radius:6px;border:1px solid var(--line)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sw{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sw .face{height:64px;display:flex;align-items:flex-end;padding:8px;gap:6px;border-bottom:1px solid var(--line)}
+.sw .face b{font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px}
+.sw .meta{padding:10px 12px}.sw .n{font-weight:600;font-size:13px}.sw .n span{font-weight:400;color:var(--ink-muted)}.sw .v{display:flex;gap:10px;margin:2px 0 6px;color:var(--ink-muted)}.sw .u{font-size:12px;line-height:1.45;color:var(--ink-muted)}
+/* Table: navy-tint head, navy text, one hairline under it; cells 11px 20px. */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--navy-tint-ink);background:var(--navy-tint);padding:10px 20px;border-bottom:1px solid var(--line)}
+td{padding:11px 20px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--surface-sunken) 55%,transparent)}
+tbody tr:hover td{background:var(--surface-sunken)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+td .s{display:block;font-size:12px;color:var(--ink-muted)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised)}
+.tbl table{min-width:560px}
+.type-row td:first-child{width:36%}
+.demo{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.demo.col{flex-direction:column;flex-wrap:nowrap;align-items:stretch}
+.demo .note{width:100%;font-size:12px;color:var(--ink-muted)}
+/* Buttons: the main button is navy-action, 36px; small 30px. */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:84px;height:36px;padding:0 14px;border-radius:8px;border:1px solid var(--navy-action);background:var(--navy-action);color:#fff;font:600 13.5px var(--sans);cursor:pointer;white-space:nowrap;flex:none}
+.btn:hover{background:var(--navy-hover);border-color:var(--navy-hover)}.btn.sm{height:30px;padding:0 10px;font-size:12.5px;min-width:0}.btn.xs{height:28px;padding:0 12px;border-radius:6px;font-size:12.5px;min-width:0}.btn.lg{height:40px;padding:0 16px;font-size:14px}
+.btn.secondary{background:var(--surface-raised);border-color:var(--line);color:var(--ink-2)}.btn.secondary:hover{background:var(--surface-sunken)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--ink-muted)}.btn.ghost:hover{background:var(--surface-sunken);color:var(--ink)}
+.btn.danger{background:#be3434;border-color:#be3434;color:#fff}.btn.danger:hover{background:#a32c2c}.btn:disabled{opacity:.45;cursor:default}
+/* Chips: a soft tint with a 6px dot, 22px tall, 5px corners. Status chips in tables 108px, owner chips 96px. */
+.chip{--c:var(--upcoming);--cs:var(--upcoming-soft);display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:5px;font:600 12px/16px var(--sans);white-space:nowrap;color:var(--c);background:var(--cs);flex:none}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.chip.nodot::before{display:none}
+.chip.ok{--c:var(--positive);--cs:var(--positive-soft)}.chip.prog{--c:var(--brand);--cs:var(--brand-soft)}.chip.warn{--c:var(--warning);--cs:var(--warning-soft)}.chip.bad{--c:var(--danger);--cs:var(--danger-soft)}.chip.vio{--c:var(--violet);--cs:var(--violet-soft)}.chip.teal{--c:var(--teal);--cs:var(--teal-soft)}
+.chip.st{width:108px;justify-content:center}.chip.own{width:96px;justify-content:center}
+.chip.o-client{--c:var(--own-client);--cs:var(--own-client-soft)}.chip.o-sbc{--c:var(--own-sbc);--cs:var(--own-sbc-soft)}.chip.o-mca{--c:var(--own-mca);--cs:var(--own-mca-soft)}
+.chip.cnt{--c:var(--ink-2);--cs:var(--surface-sunken);padding:0 7px}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:5px;border:1px solid var(--line);font:600 11.5px/16px var(--sans);color:var(--ink-2);background:var(--surface-raised);white-space:nowrap}
+.w{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--sans);color:var(--c)}.w::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.dot{display:inline-block;width:8px;height:8px;border-radius:2px;flex:none}
+.inp{height:36px;width:100%;max-width:280px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-raised);color:var(--ink);font:400 13.5px var(--sans)}
+.inp::placeholder{color:var(--ink-faint)}.inp:focus{border-color:var(--brand);outline:2px solid var(--focus-ring);outline-offset:2px}
+.field{display:grid;gap:6px;font-size:12px;color:var(--ink-muted)}.field b{color:var(--ink);font-weight:600}
+/* Icon tiles: 28px in a card head, 30px in a number strip; tinted ground, the glyph in the tone. */
+.hic{--ts:var(--brand-soft);--tc:var(--brand);width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--ts);color:var(--tc);flex:none}
+.hic svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hic.k{width:30px;height:30px}.hic.k svg{width:16px;height:16px}
+.t-blue{--ts:var(--brand-soft);--tc:var(--brand)}.t-teal{--ts:var(--teal-soft);--tc:var(--teal)}.t-amber{--ts:var(--warning-soft);--tc:var(--warning)}.t-green{--ts:var(--positive-soft);--tc:var(--positive)}.t-violet{--ts:var(--violet-soft);--tc:var(--violet)}.t-red{--ts:var(--danger-soft);--tc:var(--danger)}
+/* Section card: 10px corners, hairline frame, 52px head with a hairline under it. */
+.sec{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;min-width:0;overflow:hidden}
+.sec .hd{display:flex;align-items:center;gap:10px;min-height:52px;padding:12px 20px;border-bottom:1px solid var(--line-soft)}
+.sec .hd .t{min-width:0;font-size:14.5px;line-height:1.3;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec .hd .m{font-size:12.5px;color:var(--ink-muted);white-space:nowrap}
+.sec .hd .r{margin-left:auto;display:flex;gap:8px;align-items:center;flex:none}
+.sec .bd{padding:16px 20px}.sec .bd.flush{padding:0}
+.row{display:flex;align-items:center;gap:12px;min-height:46px;padding:10px 20px;border-top:1px solid var(--line-soft);font-size:13.5px}.row:first-child{border-top:0}
+.row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--ink)}.row .sub{font-size:12px;font-weight:400;color:var(--ink-muted)}
+.av{width:26px;height:26px;border-radius:8px;background:var(--surface-sunken);color:var(--ink-2);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.cb{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line-strong);background:var(--surface-raised);flex:none}
+.cb.on{background:var(--positive);border-color:var(--positive);position:relative}.cb.on::after{content:"";position:absolute;left:5px;top:1.5px;width:4px;height:9px;border:solid var(--surface-raised);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;width:100%}
+/* Number strip: tinted icon tile, label above the number, hairline dividers; no colour line. */
+.kpis{display:flex;flex-wrap:wrap;background:var(--surface-raised)}
+.kpi{flex:1 0 auto;display:grid;grid-template-columns:30px auto;column-gap:10px;row-gap:1px;align-items:center;padding:12px 22px 12px 20px;border-left:1px solid var(--line-soft)}
+.kpi:first-child{border-left:0}
+.kpi .hic{grid-row:1 / span 2}
+.kpi .l{grid-column:2;font-size:12px;color:var(--ink-muted);white-space:nowrap}
+.kpi b{grid-column:2;font-size:20px;line-height:24px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}.kpi b.hot{color:var(--danger)}
+.kpi b small{font-size:12px;font-weight:600;margin-left:6px}
+.kpis.boxed{border:1px solid var(--line);border-radius:10px;overflow:hidden;width:100%}
+/* Greeting card: navy band with the date and the name, then the white number strip. */
+.hero{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-raised);width:100%}
+.hero .band{background:var(--hero-gradient);color:#fff;padding:16px 20px 18px}
+.hero .when{font-size:12.5px;color:#9fb2c8}.hero h4{margin:4px 0 0;font-size:20px;line-height:26px;font-weight:600;letter-spacing:-.01em;color:#fff}
+.hero .band .btn{margin-top:12px;background:#fff;border-color:#fff;color:#15263b}
+/* Sidebar */
+.side{background:linear-gradient(180deg,var(--side-2),var(--side));color:var(--side-ink);border-radius:10px;padding:10px;width:220px;max-width:100%;font-size:13px}
+.side .it{display:flex;align-items:center;gap:10px;min-height:34px;padding:0 10px;border-radius:6px;color:var(--side-ink);font-weight:500}
+.side .it.on{background:var(--side-active);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--highlight)}
+.side .it .cnt{margin-left:auto;background:rgba(255,255,255,.08);color:var(--side-ink);border-radius:10px;padding:1px 7px;font:600 11.5px var(--sans)}.side .it .cnt.alert{background:rgba(194,65,65,.2);color:#ffb4b4}
+.side .it.sub{padding-left:30px;min-height:30px;font-weight:400}.side .it .cdot{width:8px;height:8px;border-radius:2px;flex:none}.side .acct{width:auto;margin-top:10px;padding:10px 6px 2px;border-top:1px solid var(--side-line);border-radius:0;background:transparent}
+.side .grp{padding:12px 10px 4px;font-size:11.5px;font-weight:600;color:var(--side-muted)}
+.callout{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--teal-soft);width:100%}
+.callout b{display:block;font-size:13px;font-weight:600;color:var(--ink)}.callout span{font-size:13px;color:var(--ink-2)}
+/* Phase progress: one 6px bar per phase with the count under it. */
+.php{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.php div{font-size:12px;font-weight:600;color:var(--ink-2)}
+.php div::before{content:"";display:block;height:6px;border-radius:3px;margin-bottom:4px;background:linear-gradient(90deg,var(--pc,var(--bar-cur)) var(--p,0%),var(--line-soft) var(--p,0%))}
+.php div.done{color:var(--positive)}.php div.done::before{--pc:var(--bar-done)}.php div.late::before{--pc:var(--danger-mid)}
+/* Stacked bar with a legend instead of a donut. */
+.sbar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;width:100%}.sbar i{display:block}
+.legend{display:grid;gap:6px;width:100%}.legend div{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}.legend i{width:8px;height:8px;border-radius:2px;flex:none}.legend b{margin-left:auto;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.empty{padding:28px;text-align:center;color:var(--ink-muted);font-size:13px;width:100%;border:1px dashed var(--line-strong);border-radius:10px}
+/* Attention list: full-width rows with hairlines, a 44px date tile tinted by urgency. */
+.att{display:flex;gap:12px;align-items:center;padding:13px 20px;border-top:1px solid var(--line-soft)}
+.att:first-child{border-top:0}
+.att .tx{flex:1;min-width:0}.att .tx b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}.att .tx span{display:block;font-size:12.5px;color:var(--ink-muted);margin-top:1px}
+.att.urgent{background:linear-gradient(90deg,var(--danger-soft),transparent 65%);box-shadow:inset 3px 0 0 var(--danger)}
+.date{--c:var(--brand);width:44px;flex:none;text-align:center;border:1px solid color-mix(in srgb,var(--c) 30%,var(--surface-raised));border-radius:6px;padding:5px 0 4px;line-height:1.1;background:color-mix(in srgb,var(--c) 10%,var(--surface-raised));color:var(--c)}
+.date b{display:block;font-size:16px;font-weight:650}.date span{display:block;font-size:10.5px;font-weight:600;opacity:.85}
+.date.bad{--c:var(--danger)}.date.warn{--c:var(--warning)}.date.prog{--c:var(--brand)}.date.idle{--c:var(--upcoming)}
+/* Timeline (Gantt) */
+.gantt{padding:4px 0 8px;width:100%;min-width:0;overflow-x:auto}
+.g-head,.g-row{display:grid;grid-template-columns:minmax(150px,210px) minmax(220px,1fr) 88px;align-items:center;padding:0 20px;min-width:560px}
+.g-head{height:34px;font-size:11.5px;color:var(--ink-faint)}
+.g-head .ticks{display:grid;grid-template-columns:repeat(3,1fr);position:relative;height:100%;align-items:center}
+.g-row{height:46px;border-top:1px solid var(--line-soft)}
+.g-name{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13.5px;color:var(--ink);min-width:0;white-space:nowrap}
+.gs{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none}
+.gs svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gs.done{background:var(--positive-soft);color:var(--positive)}
+.gs.cur{box-shadow:inset 0 0 0 2px var(--brand);background:var(--brand-soft)}.gs.cur::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand)}
+.gs.todo{box-shadow:inset 0 0 0 1.5px var(--ring-idle);background:var(--surface-raised)}
+.g-exp{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;border:1px solid var(--line);color:var(--ink-muted);flex:none}.g-exp svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.g-track{position:relative;height:100%}
+.g-bar{position:absolute;top:50%;height:16px;margin-top:-8px;border-radius:6px}
+.g-bar.done{background:var(--bar-done)}.g-bar.cur{background:var(--bar-cur)}.g-bar.plan{background:var(--bar-plan)}
+.g-bar.late{background:repeating-linear-gradient(45deg,#dd6262 0 4px,#e98c8c 4px 8px);border-radius:0 6px 6px 0}
+.g-bar.cur.cut{border-radius:6px 0 0 6px}
+.g-ms{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;transform:rotate(45deg);background:var(--highlight);border-radius:2px}
+.g-today{position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid var(--highlight)}
+.g-head .g-today span{position:absolute;bottom:4px;left:-22px;font-size:10.5px;font-weight:600;color:#fff;background:#e9792f;border-radius:4px;padding:1px 6px;white-space:nowrap}
+.g-meta{text-align:right;font-size:12.5px;color:var(--ink-muted);white-space:nowrap}.g-meta b{color:var(--ink);font-weight:600}.g-meta .late{color:var(--danger);font-weight:600}
+/* Developer console in the lcc Settings shape */
+.cs{display:grid;grid-template-columns:200px minmax(0,1fr);background:var(--surface-raised);border:1px solid var(--line);border-radius:12px;overflow:hidden;width:100%;font-size:13px;line-height:20px;color:var(--ink)}
+.cs-rail{border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.cs-rt{padding:0 10px 10px;font-size:15px;font-weight:600}
+.cs-ri{height:32px;padding:0 10px;border-radius:6px;display:flex;align-items:center;gap:8px;color:var(--ink-muted)}
+.cs-ri[aria-current="true"]{background:var(--line-soft);color:var(--ink);font-weight:500}
+.cs-ri b{margin-left:auto;font-weight:500;font-size:11.5px;color:var(--ink-faint)}
+.cs-ri.grp{height:28px;margin-top:10px;font-size:11.5px;font-weight:600;color:var(--ink-faint)}
+.cs-body{padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px;min-width:0;background:var(--surface)}
+.cs-h h5{margin:0;font-size:16px;font-weight:600}.cs-h div{color:var(--ink-muted)}
+.cs-card{border:1px solid var(--line);border-radius:10px;background:var(--surface-raised)}
+.cs-ch{display:flex;align-items:baseline;gap:8px;padding:10px 20px;border-bottom:1px solid var(--line)}.cs-ch b{font-weight:600}.cs-ch span{font-size:12px;color:var(--ink-muted)}
+.cs-card.danger{border-color:color-mix(in srgb,var(--danger) 35%,var(--surface-raised))}.cs-card.danger .cs-ch b{color:var(--danger)}
+.cs-row{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;padding:14px 20px;border-bottom:1px solid var(--line-soft)}.cs-row:last-child{border-bottom:0}
+.cs-l div{font-weight:500}.cs-l small{display:block;font-size:12px;color:var(--ink-muted);line-height:17px;margin-top:2px}
+.cs-val{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0}
+.cs-in{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12.5px;color:var(--ink);background:var(--surface-raised);width:220px;max-width:100%}
+.toast{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;background:var(--side);color:#fff;font-size:12.5px;font-weight:500;box-shadow:var(--shadow-float)}.toast::before{content:"";width:6px;height:6px;border-radius:50%;background:#46a87a}
+/* Screens */
+.screen{display:grid;grid-template-columns:200px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-height:420px}
+.screen .side{border-radius:0;width:auto}
+.screen .pg{padding:14px;display:grid;gap:12px;align-content:start;min-width:0}
+.screen .two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+.next{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 20px;background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;font-size:13.5px}.next .tx{flex:1;min-width:0}.next .tx b{font-weight:600}.next .tx span{color:var(--ink-muted)}
+.dep{font-size:12px}.dep td{padding:6px 10px}
+.nope{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.nope .x{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-raised);font-size:13px}.nope .x b{display:block;color:var(--danger);font-size:12px;font-weight:600;margin-bottom:4px}
+.scale{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}.scale div{text-align:center;font-size:11px;color:var(--ink-muted)}.scale i{display:block;background:var(--brand-soft);border:1px solid var(--brand);margin:0 auto 4px}
+.radii{display:flex;flex-wrap:wrap;gap:16px}.radii i{display:block;width:72px;height:48px;background:var(--surface-raised);border:1px solid var(--line-strong);margin-bottom:4px}
+.data{display:flex;gap:10px;flex-wrap:wrap}.data div{width:88px;font-size:11px;color:var(--ink-muted)}.data i{display:block;height:40px;border-radius:6px;margin-bottom:4px}
+.cl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}@media (max-width:860px){.cl{grid-template-columns:repeat(2,1fr)}}.cl>div{background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink-muted)}.cl .cd{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:600;color:var(--ink)}.cl .cd i{width:8px;height:8px;border-radius:2px;flex:none}.cl .ct{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;font-size:11px;font-weight:600}
+/* Grids: tinted cells inside table rows. */
+.cgrid{width:100%;border-collapse:collapse;font-size:12px}.cgrid th{text-align:center;padding:10px 3px}.cgrid th:first-child,.cgrid td:first-child{text-align:left;padding-left:20px}.cgrid td{border-bottom:0;border-top:1px solid var(--line-soft);padding:5px 3px;background:transparent!important}.cgrid td>span{display:grid;place-items:center;height:28px;border-radius:6px;font-weight:600;font-size:12px}
+.cgrid .f{background:var(--positive-soft);color:var(--positive)}.cgrid .d{background:var(--warning-soft);color:var(--warning)}.cgrid .o{background:var(--danger-soft);color:var(--danger)}.cgrid .p{background:var(--brand-soft);color:var(--brand)}.cgrid .u{background:var(--surface-sunken);color:var(--ink-faint)}.cgrid .x{color:var(--ink-faint);font-weight:500}
+.crumbbar{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;background:var(--surface-raised);border:1px solid var(--line);border-radius:10px;font-size:13px;flex-wrap:wrap}.crumbbar .bk{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink)}.crumbbar a{color:var(--ink-muted)}.crumbbar a:hover{color:var(--brand)}.crumbbar b{font-weight:600}.crumbbar .sl{color:var(--ink-faint)}
+.search{margin-left:auto;display:flex;align-items:center;gap:8px;width:240px;max-width:100%;height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;color:var(--ink-faint);font-size:13px;background:var(--surface-raised)}.search kbd{margin-left:auto;font:500 11px var(--sans);color:var(--ink-muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.launch{display:flex;align-items:flex-end;gap:6px}.launch .pil{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px 0 12px;border-radius:8px;background:#15263b;color:#fff;font:600 13px var(--sans)}.launch .pil i{width:8px;height:8px;border-radius:50%;background:#2dd4bf;box-shadow:0 0 0 3px rgba(45,212,191,.22)}
+.acct{display:flex;align-items:center;gap:10px;width:260px;padding:10px 12px;background:var(--side);border-radius:10px;color:var(--side-ink)}.acct .a{width:30px;height:30px;border-radius:8px;background:#2e5a8e;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:600}.acct .n{flex:1;font-size:13px;font-weight:600;line-height:1.25;color:#fff}.acct .n span{display:block;font-size:11px;font-weight:400;color:var(--side-muted)}.acct .so{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--side-muted);border:1px solid var(--side-line);font-size:14px}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.fdd{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 10px 0 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface-raised);color:var(--ink-2);font:600 13px var(--sans)}.fdd.on{background:var(--navy-tint);color:var(--navy-tint-ink);border-color:var(--line)}.fdd i{font-style:normal;font-size:11px;opacity:.7}.fpop{width:220px;border:1px solid var(--line);border-radius:8px;background:var(--surface-raised);box-shadow:var(--shadow-float);padding:6px;font-size:13px}.fpop div{display:flex;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:6px}.fpop .h{justify-content:space-between;height:24px;font-size:12px;font-weight:600;color:var(--ink-muted)}.fpop .h a{font-size:12px}.fpop b{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--line-strong);flex:none}.fpop .on b{background:var(--navy-action);border-color:var(--navy-action)}.fpop s{width:8px;height:8px;border-radius:2px;text-decoration:none}
+.shadow-demo{display:flex;gap:24px;flex-wrap:wrap}.shadow-demo div{width:140px;height:70px;border-radius:10px;background:var(--surface-raised);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--ink-muted)}
+@media (max-width:860px){.wrap{grid-template-columns:1fr}nav.idx{position:static;display:flex;flex-wrap:wrap;gap:4px 14px}nav.idx .grp{width:100%;margin:8px 0 0}.cover{grid-template-columns:1fr}.screen{grid-template-columns:1fr}.screen .side{display:none}.screen .two{grid-template-columns:1fr}.cs{grid-template-columns:1fr}.cs-rail{display:none}.cs-row{grid-template-columns:1fr;gap:8px}.kpi{padding:10px 16px}.kpi:nth-child(n){border-left:0;border-top:1px solid var(--line-soft)}.kpi:first-child{border-top:0}}
+@media (prefers-reduced-motion:no-preference){.btn,.chip,.inp,.seg button{transition:background-color .15s ease,color .15s ease,border-color .15s ease}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="g-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="g-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="g-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="g-file" viewBox="0 0 24 24"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/></symbol>
+  <symbol id="g-clip" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="m9 13 2 2 4-4"/></symbol>
+  <symbol id="g-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="g-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2.5"/><path d="M14 10h4M14 14h4"/></symbol>
+  <symbol id="g-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="g-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-7A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1z"/></symbol>
+  <symbol id="g-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="g-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="g-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="g-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
+  <symbol id="g-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="g-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="g-book" viewBox="0 0 24 24"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-4a3 3 0 0 0-3 3"/><path d="M20 4v14h-5"/></symbol>
+  <symbol id="g-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/></symbol>
+  <symbol id="g-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+  <symbol id="g-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></symbol>
+  <symbol id="g-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></symbol>
+  <symbol id="g-tick" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="g-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="g-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+</svg>
+
+<header class="top">
+  <span class="name">VCFO Suite <span>design system, v1.5</span></span>
+  <span class="sp"></span>
+  <span class="label" style="margin-right:6px">Theme</span>
+  <span class="seg" role="group" aria-label="Theme">
+    <button type="button" id="th-light" aria-pressed="false">Light</button>
+    <button type="button" id="th-system" aria-pressed="true">System</button>
+    <button type="button" id="th-dark" aria-pressed="false">Dark</button>
+  </span>
+</header>
+
+<div class="wrap">
+<nav class="idx" aria-label="Sections">
+  <div class="grp">Book</div>
+  <a href="#about">About</a><a href="#content">Content</a><a href="#foundations">Foundations</a><a href="#rules">Rules</a>
+  <div class="grp">Tokens</div>
+  <a href="#color">Colour</a><a href="#clients">Client colours</a><a href="#type">Type</a><a href="#space">Space, radius, size</a><a href="#charts">Charts</a>
+  <div class="grp">Components</div>
+  <a href="#frame">Page frame</a><a href="#buttons">Buttons</a><a href="#tabs">Tabs</a><a href="#chips">Chips</a><a href="#inputs">Inputs</a><a href="#cards">Section card</a><a href="#stat">Number strip</a><a href="#table">Table</a><a href="#hero">Greeting card</a><a href="#attention">Attention list</a><a href="#timeline">Timeline</a><a href="#sidebar">Sidebar</a><a href="#ask">Ask VCFO launcher</a><a href="#callout">Callout, progress, empty</a>
+  <div class="grp">Screens</div>
+  <a href="#screen-today">Lead Today</a><a href="#screen-client">Client home</a><a href="#console">Developer console</a>
+  <div class="grp">Housekeeping</div>
+  <a href="#changes">Changes in v1.5</a><a href="#refs">References</a><a href="#build">Build a dashboard</a><a href="#never">Never</a><a href="#deprecated">Deprecated names</a>
+</nav>
+
+<main>
+<section id="about">
+  <div class="cover">
+    <div>
+      <div class="label">Brand book · v1.5, the Portal refresh</div>
+      <h1>VCFO Suite</h1>
+      <p class="lead">Incorporation and compliance for Indian companies, run by SBC for its clients. A calm grey canvas, white cards on thin neutral hairlines, a navy for the main action, and colour only where it tells you something.</p>
+      <p>Every swatch, control and screen on this page is drawn from the tokens at the top of this file, which carry the Portal refresh values. Switch the theme above; every part follows. <code>docs/design/design-tokens.json</code> still holds the v1.4 values until the token merge, and the deprecated-names table at the end lists what moves.</p>
+      <div class="strip" aria-hidden="true">
+        <i style="background:var(--side)"></i><i style="background:var(--navy-action)"></i><i style="background:var(--brand)"></i><i style="background:var(--brand-soft)"></i><i style="background:var(--positive)"></i><i style="background:var(--warning)"></i><i style="background:var(--danger)"></i><i style="background:var(--highlight)"></i>
+      </div>
+    </div>
+    <div class="hero" style="align-self:stretch">
+      <div class="band"><div class="when">Wednesday · 22 Oct 2026 · 09:14 am</div><h4>Good morning, Arjun</h4></div>
+      <div class="kpis">
+        <div class="kpi"><span class="hic k t-blue"><svg><use href="#g-list"/></svg></span><span class="l">Action</span><b>9</b></div>
+        <div class="kpi"><span class="hic k t-red"><svg><use href="#g-alert"/></svg></span><span class="l">Overdue</span><b class="hot">2</b></div>
+        <div class="kpi"><span class="hic k t-amber"><svg><use href="#g-user"/></svg></span><span class="l">Waiting</span><b>2</b></div>
+        <div class="kpi"><span class="hic k t-teal"><svg><use href="#g-calendar"/></svg></span><span class="l">This week</span><b>4</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="content">
+  <h2>Content</h2>
+  <p>Six people use the product: the <b>lead</b> (an SBC associate who runs a client's incorporation), the <b>manager</b>, the <b>firm admin</b>, the <b>super admin</b>, the <b>developer</b> who runs SBC's setup, and the <b>client</b> (a founder, often on a phone). The sample data throughout is Northwind Analytics India Pvt Ltd and its lead, Arjun Mehta.</p>
+  <ul>
+    <li><b>Plain English.</b> Say what happened: "Waiting for Northwind", "Due 24 Oct", "11 of 14 steps done". No jargon, no "Submit", no exclamation marks, no emoji.</li>
+    <li><b>Sentence case</b> for titles, buttons, chips, labels, table heads and group titles. Nothing is set in capitals by a style; acronyms (COI, GSTR-1, TDS) and names keep their own case.</li>
+    <li><b>Buttons are verbs with their object</b>: "Approve request", "Email manager", "Open incorporation". Two words where possible, never a wrapped label.</li>
+    <li><b>Dates are real dates</b>, <code>D Mon</code> ("24 Oct", "Wed 21 Oct 2026"); times as "10:42 am". A late date is the plain date in red, not "3 d overdue". Never "in 5 days" for a statutory deadline.</li>
+    <li><b>No money on dashboards.</b> Amounts appear only on the pages that are about them, with the rupee sign and Indian grouping (₹9,05,178) in tabular figures, right-aligned in tables.</li>
+    <li><b>Identifiers</b> (CIN, PAN, DIN, GSTIN, SRN, file names) are the only text that may be set in the mono face.</li>
+    <li><b>Status is a word.</b> A colour never carries meaning alone; a chip always has its word beside its dot.</li>
+  </ul>
+</section>
+
+<section id="foundations">
+  <h2>Foundations</h2>
+  <h3>Colour</h3>
+  <p>The page is a cool grey canvas (<code>surface</code>, #F3F5F9). Cards are white (<code>surface-raised</code>) inside a neutral <code>line</code> (#E3E6EB); rows inside a card are split by the lighter <code>line-soft</code> (#EEF0F3). Text is <code>ink</code> (#16212F) for titles and figures, <code>ink-2</code> for row text, <code>ink-muted</code> for meta and labels, and <code>ink-faint</code> only for counts, ticks and placeholders.</p>
+  <p>Navy carries the weight. The sidebar and the greeting band are navy (#15263B and #1B3049). The main button and the picked tab are <code>navy-action</code> (#1F3B5C), and table heads sit on <code>navy-tint</code> (#EEF2F8). The blue <code>brand</code> (#2563A8, soft #E6EFFA) is for links, the current step, the current Gantt bar and blue chips; it is not the main button.</p>
+  <p>Status colours each come with a soft tint: green done (#1E7F55 on #E2F3EA), amber waiting or due (#A35F00 on #FCEFD8), red overdue (#BE3434 on #FBE6E6), grey planned or idle (#56627A on #ECEFF4). Violet (#6A4FB6) and teal (#0F7C86) are category colours for icon tiles, the MCA owner chip and chart series. The brand orange (#E9792F) is for small highlights only: the today line, the COI diamond and the active nav rail.</p>
+  <p>Colour is information, never decoration. It sits in small shapes: a chip, a dot, an icon tile, a date tile, a bar. There are no gradient or gold bars on cards, strips or heads, and no coloured accent borders; every frame and divider is a thin neutral hairline.</p>
+  <h3>Type</h3>
+  <p>Public Sans for everything, weights 400, 500 and 600, with 650 only for the day in a date tile and a large countdown. Figures are tabular. The scale runs 10.5, 12, 12.5, 13.5, 14.5, 16, 20, 22, 28px. IBM Plex Mono is allowed for identifiers only.</p>
+  <h3>Shape</h3>
+  <p>Radii 5 (chips), 6 (date tiles, small buttons, the picked tab), 8 (buttons, icon tiles, the tab track), 10 (cards), 12 (sheets and screens). Dots and status circles are round; everything else is a rounded rectangle. Cards have a hairline and no shadow; <code>shadow-float</code> is for things that really float: menus, popovers, toasts.</p>
+  <h3>Weight</h3>
+  <p>The navy sidebar, the navy greeting band and the navy main button are the only heavy elements. They give the screen its weight so nothing else has to.</p>
+  <h3>Client colours</h3>
+  <p>Each client company owns one colour, the same on every screen: the dot beside its name, its initials tile, its rows in Work, Vault and the calendar. A project lead running eight companies recognises a company by its colour before reading the name. People, tags and nav items stay neutral, and a client colour never carries a state. This is the owner's decision and holds in the refresh.</p>
+</section>
+
+<section id="rules">
+  <h2>Rules</h2>
+  <blockquote>"I don't like the border line colours, they don't look professional."<span>The owner, 26 October 2026, on the coloured top edges and accent lines of v1.4.</span></blockquote>
+  <ul>
+    <li><b>Colour only as information.</b> Two kinds of colour carry meaning: a state, and a client company. Category colours (violet, teal) only tint icon tiles, owner chips and chart series.</li>
+    <li><b>No decorative colour lines.</b> No gradient or gold bar on a card, a strip or a head. No coloured top edge on a number, no coloured left border on a card or a notice. Frames and dividers are thin neutral hairlines (<code>line</code>, <code>line-soft</code>).</li>
+    <li>The two coloured edges that remain are information: the 3px red edge of the one urgent row in an attention list, and the orange rail on the active sidebar item.</li>
+    <li>Status is a soft chip with a dot and a word. No solid status blocks anywhere, in cards or in tables.</li>
+    <li>The main button is navy. One main button per region; everything else is secondary or ghost.</li>
+    <li>Buttons in one row share one height; chips in one column share one width (status 108px, owner 96px). Labels never wrap.</li>
+    <li>Every card has the same head: 52px, a hairline under it, a 28px tinted icon tile chosen from the title, the title at 14.5px, controls on the right. Rows inside a card run the full width with hairlines between them. No cards inside cards.</li>
+    <li>Tabs never wrap. When a head is too narrow, the counts drop out first, then the title shortens with an ellipsis.</li>
+    <li>Hover goes one step darker or to the <code>surface-sunken</code> tint. Disabled is 45% opacity, never a different colour. Motion is 150ms ease on hover and toggles only.</li>
+    <li>Every interactive element gets the 2px <code>focus-ring</code> outline, offset 2px.</li>
+    <li>Pages have no title. The breadcrumb and the active nav item already name the page; the first row of the page is its controls, starting at the left edge.</li>
+    <li>Every breadcrumb segment except the current page is a link. Back goes to the previous screen, never out of the product.</li>
+    <li>Sidebar items are sorted by priority: what the person opens most comes first.</li>
+    <li>Dark mode is slate, not black. Chips and tiles mix their colour with the panel instead of switching to a new hue.</li>
+  </ul>
+</section>
+
+<section id="color">
+  <h2>Colour tokens</h2>
+  <p>Light and dark are two values of one name. Each card shows the token name used in code, the name the Portal refresh document gives it, and both values. Muted text holds 4.9:1 on white and 4.5:1 on the canvas. On their own tints, the blue, red, violet and grey chip texts hold 4.7 to 5.3:1; the green, amber and teal chip texts sit at 4.3 to 4.4:1, which is under the 4.5:1 line for small text, so those three need a check before the token merge. Faint text is 2.6:1 and is never body text.</p>
+  <div class="swatches" id="swatches"></div>
+</section>
+
+<section id="clients">
+  <h2>Client colours</h2>
+  <p>Eight hues, one per client, assigned when the engagement is created and never changed. Each has a dot and text colour and a soft tile ground. They mark identity only: a status is always a status chip with a word, never a client colour.</p>
+  <div class="cl">
+    <div><div class="cd"><i style="background:#7c3aed"></i>Violet</div><span class="ct" style="background:#ebe5ff;color:#5b21b6">NT</span> #7c3aed</div>
+    <div><div class="cd"><i style="background:#4f46e5"></i>Indigo</div><span class="ct" style="background:#e3e9ff;color:#3730a3">OL</span> #4f46e5</div>
+    <div><div class="cd"><i style="background:#16a34a"></i>Green</div><span class="ct" style="background:#daf5e3;color:#166534">LA</span> #16a34a</div>
+    <div><div class="cd"><i style="background:#64748b"></i>Slate</div><span class="ct" style="background:#eef1f5;color:#334155">JB</span> #64748b</div>
+    <div><div class="cd"><i style="background:#db2777"></i>Pink</div><span class="ct" style="background:#fde2ec;color:#9d174d">BR</span> #db2777</div>
+    <div><div class="cd"><i style="background:#0d9488"></i>Teal</div><span class="ct" style="background:#ccf3ec;color:#0f5f55">TL</span> #0d9488</div>
+    <div><div class="cd"><i style="background:#0284c7"></i>Sky</div><span class="ct" style="background:#dbeefe;color:#0b5c8f">KH</span> #0284c7</div>
+    <div><div class="cd"><i style="background:#a16207"></i>Amber</div><span class="ct" style="background:#fdf0d2;color:#8a5a06">HF</span> #a16207</div>
+  </div>
+  <p style="margin-top:12px">Dot: 8px, 2px corners, beside the company name. Tile: 26px, 8px corners, soft ground with the dark text. A ninth client reuses the set from the start.</p>
+</section>
+
+<section id="type">
+  <h2>Type styles</h2>
+  <div class="tbl"><table id="type-table">
+    <thead><tr><th>Style</th><th>Size / line / weight</th><th>Use</th></tr></thead><tbody></tbody>
+  </table></div>
+</section>
+
+<section id="space">
+  <h2>Space, radius, size</h2>
+  <h3>Spacing, 4px base</h3>
+  <div class="scale" id="space-scale"></div>
+  <h3>Radius</h3>
+  <div class="radii" id="radii"></div>
+  <h3>Control sizes</h3>
+  <div class="tbl"><table id="size-table"><thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead><tbody></tbody></table></div>
+  <h3>Lines and shadows</h3>
+  <div class="shadow-demo">
+    <div style="border-color:var(--line)">line, card frame</div>
+    <div style="border:0;border-top:1px solid var(--line-soft);border-radius:0;background:transparent">line-soft, between rows</div>
+    <div style="box-shadow:var(--shadow-float)">shadow-float</div>
+  </div>
+  <p style="margin-top:12px;font-size:13px;color:var(--ink-muted)">There is no card shadow and no coloured rule. The 2px ink rule under table heads and the 3px stat edge of v1.4 are gone.</p>
+</section>
+
+<section id="charts">
+  <h2>Charts</h2>
+  <p>Six hues in a fixed order, assigned in sequence and never cycled: blue, violet, teal and green (the four bars of "What SBC is doing"), then amber and rose. A series that means good or bad wears the status tokens, never a data slot. Chart text is <code>ink-2</code> and <code>ink-muted</code>, never the series colour.</p>
+  <div class="data">
+    <div><i style="background:var(--data-1)"></i>data-1 blue</div><div><i style="background:var(--data-2)"></i>data-2 violet</div><div><i style="background:var(--data-3)"></i>data-3 teal</div>
+    <div><i style="background:var(--data-4)"></i>data-4 green</div><div><i style="background:var(--data-5)"></i>data-5 amber</div><div><i style="background:var(--data-6)"></i>data-6 rose</div>
+  </div>
+  <h3>A split is one stacked bar, not a donut</h3>
+  <p>Where a card shows how a total splits (compliance status, task status), it shows the total, one stacked bar 10px tall with 5px corners and 2px gaps, and a legend with the counts. Where a card shows progress by phase, each phase gets its own 6px bar with its count under it.</p>
+  <div class="demo col">
+    <div class="sec" style="max-width:420px"><div class="hd"><span class="hic t-green"><svg><use href="#g-shield"/></svg></span><span class="t">Compliance status</span><span class="r"><span class="m">This quarter</span></span></div>
+      <div class="bd" style="display:grid;gap:12px">
+        <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:24px;line-height:1;font-weight:600">18</b><span style="font-size:12.5px;color:var(--ink-muted)">filings</span></div>
+        <div class="sbar" aria-hidden="true"><i style="flex:11;background:var(--bar-done)"></i><i style="flex:4;background:var(--bar-cur)"></i><i style="flex:2;background:#e3a040"></i><i style="flex:1;background:var(--danger-mid)"></i></div>
+        <div class="legend"><div><i style="background:var(--bar-done)"></i>Filed<b>11</b></div><div><i style="background:var(--bar-cur)"></i>In progress<b>4</b></div><div><i style="background:#e3a040"></i>Due soon<b>2</b></div><div><i style="background:var(--danger-mid)"></i>Overdue<b>1</b></div></div>
+      </div></div>
+    <div class="php" style="max-width:420px"><div class="done" style="--p:100%">Part A · 9/9</div><div style="--p:60%">Part B · 6/10</div><div style="--p:0%">Post-inc · 0/6</div></div>
+    <span class="note">Bars use the mid tones (green #46A87A, blue #2563A8, amber #E3A040, red #DD6262) so they read as fills; the legend text stays ink.</span>
+  </div>
+</section>
+
+<section id="frame">
+  <h2>Page frame</h2>
+  <p>Every page below the greeting-card dashboards opens on its controls, not on a title. The top bar carries a back button, the logo, the breadcrumb, the preview switch, search with its "Ctrl K" shortcut, the bells and the theme toggle.</p>
+  <div class="demo col">
+    <div class="crumbbar"><span class="bk">‹</span><b style="font-size:14px">SBC</b><span class="sl">/</span><a href="#frame">Today</a><span class="sl">›</span><a href="#frame">Clients</a><span class="sl">›</span><a href="#frame">Larkspur Analytics</a><span class="sl">›</span><b>Board resolution</b><span class="search"><svg class="g"><use href="#g-search"/></svg>Search<kbd>Ctrl K</kbd></span></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="chip cnt nodot">14 open · 8 companies</span><span class="seg" role="group" aria-label="View"><button type="button" aria-pressed="false">Planner</button><button type="button" aria-pressed="false">List</button><button type="button" aria-pressed="true">Board</button></span><span style="flex:1"></span><button class="btn secondary">Templates</button><button class="btn secondary">Export</button><button class="btn">New to-do</button></div>
+    <span class="note">Breadcrumb segments are links to their pages; the last one is the current page in 600. Back returns to the screen you came from; on the first screen it stays put. The first row starts at the left edge with the page's counts and view switch; actions sit on the right. No page title, because the nav, the breadcrumb and the tab already name the page.</span>
+  </div>
+</section>
+
+<section id="buttons">
+  <h2>Buttons</h2>
+  <p>The main button is navy-action (#1F3B5C, hover #18304C) with white text, 36px tall, 8px corners, 13.5px at 600. It is never blue. Small buttons are 30px for rows and dense toolbars; 40px is for every button on a phone. Every text button is at least 84px wide except small row actions. One main button per region.</p>
+  <div class="demo">
+    <button class="btn">Approve</button><button class="btn secondary">Compare with v2</button><button class="btn ghost">Cancel</button><button class="btn danger">Reject</button><button class="btn" disabled>Approve</button>
+    <span class="note">Main (navy), secondary (white with a hairline, ink-2 text), ghost, danger (only for destructive actions), disabled (45% opacity).</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <button class="btn sm">Open step</button><button class="btn">Open step</button><button class="btn lg">Open step</button>
+    <span class="note">control-sm 30, control-md 36, control-lg 40. Same label, three contexts.</span>
+  </div>
+  <div class="demo col" style="margin-top:12px;padding:0;overflow:hidden;background:var(--surface-raised)">
+    <div class="row"><span class="av">MH</span><span class="nm">Meridian Health India Pvt Ltd</span><span class="chip st warn">Filing due</span><button class="btn sm secondary">Open</button></div>
+    <div class="row"><span class="av">NA</span><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="chip st prog">In progress</span><button class="btn sm secondary">Open</button></div>
+    <div class="row"><span class="av">KS</span><span class="nm">Kestrel Software</span><span class="chip st ok">Completed</span><button class="btn sm secondary">Open</button></div>
+  </div>
+  <p style="margin-top:8px;font-size:12px;color:var(--ink-muted)">In a column, chips and buttons share one width so the column reads as one block.</p>
+</section>
+
+<section id="tabs">
+  <h2>Tabs</h2>
+  <p>One segmented control for every switch: views, filters inside a card, the theme toggle at the top of this page. Small inline buttons sit on a quiet track (#F5F6F8, a 1px <code>line</code>, 2px padding, 8px corners). Each button is 28px tall, 12.5px at 600, in <code>ink-muted</code>. The picked one is navy-action with white text. A count follows the label in faint grey (#98A1AE), and in #AFC3DA on the picked one. There is no sliding highlight; the picked button changes colour in place.</p>
+  <div class="demo">
+    <span class="seg" role="group" aria-label="Needs"><button type="button" aria-pressed="true">Open<span class="n">3</span></button><button type="button" aria-pressed="false">Done<span class="n">12</span></button><button type="button" aria-pressed="false">All<span class="n">15</span></button></span>
+    <span class="seg tight" role="group" aria-label="Needs, narrow head"><button type="button" aria-pressed="true">Open<span class="n">3</span></button><button type="button" aria-pressed="false">Done<span class="n">12</span></button><button type="button" aria-pressed="false">All<span class="n">15</span></button></span>
+    <span class="note">Tabs never wrap. In a card head, the tabs sit on the right and their buttons tighten to 8px side padding; when the head is still too narrow the counts drop out (right), then the title shortens with an ellipsis.</span>
+  </div>
+</section>
+
+<section id="chips">
+  <h2>Chips</h2>
+  <p>One chip shape for every mark: a soft tint behind text of the same hue, a 6px round dot, 22px tall, 8px side padding, 5px corners, 12px at 600. There are no solid status chips. Status chips in a table column are 108px wide; owner chips are 96px wide. Labels are centred and never wrap.</p>
+  <div class="demo">
+    <span class="chip st ok">Completed</span><span class="chip st prog">In progress</span><span class="chip st warn">Waiting</span><span class="chip st bad">Overdue</span><span class="chip st">Not started</span>
+    <span class="note">Status chips at the 108px column width: green done, blue in progress, amber waiting or due, red overdue, grey planned.</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <span class="chip own o-client">Northwind</span><span class="chip own o-sbc">SBC</span><span class="chip own o-mca">MCA</span>
+    <span class="note">Owner chips at 96px, who holds the step now: the client amber, SBC blue, MCA (or another authority) violet. Any other owner is a neutral tag.</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <span class="tag">Tag</span><span class="tag">New</span><span class="chip cnt nodot">3</span><span class="chip nodot">Private</span><span class="tag"><span class="mono">U72900TG2026PTC184211</span></span>
+    <span class="note">A neutral tag, the one "New" tag, a neutral count, a quiet "Private" mark (grey, never solid navy), an identifier.</span>
+  </div>
+  <div class="demo" style="margin-top:12px">
+    <span class="w" style="--c:var(--positive)">Completed</span><span class="w" style="--c:var(--brand)">In progress</span><span class="w" style="--c:var(--warning)">Waiting</span><span class="w" style="--c:var(--danger)">Overdue</span><span class="w" style="--c:var(--upcoming)">Upcoming</span>
+    <span class="note">The coloured word with a dot and no ground, for long lists where a chip on every row is too loud. The busier the list, the lighter the mark.</span>
+  </div>
+</section>
+
+<section id="inputs">
+  <h2>Inputs</h2>
+  <div class="demo col">
+    <label class="field"><b>Company name</b><input class="inp" id="in-1" placeholder="Northwind Analytics India Pvt Ltd"></label>
+    <label class="field"><b>CIN</b><input class="inp mono" id="in-2" placeholder="U72900TG2026PTC184211" style="font-family:var(--mono);font-size:12.5px"><span>21 characters, from the certificate of incorporation.</span></label>
+    <span class="note">36px, the same height as a button. Label above, helper below, line-strong border, brand border and the focus ring on focus. Error text goes under the field in danger with the problem itself.</span>
+  </div>
+  <h3>Filters</h3>
+  <p>Show only the filters a person needs every time, usually one or two, as compact dropdowns beside the view switch. The label names the current choice ("All clients", "Brightwave", "3 clients"); a filter off its default takes the navy-tint look. A multi-select list has a Clear link and keeps client dots; a single choice closes on pick. Everything else (templates, export) goes into a More menu. Never a row of chips for every value, never a date chip that repeats the page.</p>
+  <div class="demo col">
+    <div class="fbar"><span class="seg" role="group" aria-label="View"><button type="button" aria-pressed="true">Planner</button><button type="button" aria-pressed="false">List</button><button type="button" aria-pressed="false">Board</button></span><span class="fdd on">Brightwave <i>▾</i></span><span class="fdd">Steps + filings <i>▾</i></span><span style="flex:1"></span><button class="btn secondary">Plan the week</button><button class="btn">Assign to-do</button><span class="fdd" style="padding:0 10px">···</span></div>
+    <div class="fpop"><div class="h"><span>Clients</span><a href="#inputs">Clear</a></div><div class="on"><b></b><s style="background:#db2777"></s>Brightwave</div><div><b></b><s style="background:#0d9488"></s>Tidewater</div><div><b></b><s style="background:#0284c7"></s>Kestrel</div></div>
+    <span class="note">Escape or a click outside closes the popover. Filters filter: the timeline and the lists change with them.</span>
+  </div>
+</section>
+
+<section id="cards">
+  <h2>Section card</h2>
+  <p>Every panel on every screen: white, a 1px <code>line</code> frame, 10px corners, no shadow. The head is at least 52px tall with a <code>line-soft</code> hairline under it. It holds a 28px icon tile (8px corners, a 15px glyph in the tone, the tint behind it), the title at 14.5px/600 in ink, an optional meta in muted 12.5px, and the controls on the right (tabs, a link, a small button). The body has 16px by 20px padding; lists inside it run the full card width with hairlines between rows. When two cards always sit together and talk about the same thing, they become one card with tabs.</p>
+  <div class="demo col">
+    <div class="sec"><div class="hd"><span class="hic t-blue"><svg><use href="#g-list"/></svg></span><span class="t">Action queue</span><span class="m">6 open</span><span class="r"><span class="seg" role="group" aria-label="Queue"><button type="button" aria-pressed="true">Mine<span class="n">6</span></button><button type="button" aria-pressed="false">Team<span class="n">14</span></button></span></span></div>
+      <div class="bd flush">
+        <div class="row"><span class="av">MH</span><span class="nm">Meridian Health India Pvt Ltd</span><span class="chip st warn">Filing due</span></div>
+        <div class="row"><span class="av">NA</span><span class="nm">Northwind Analytics India Pvt Ltd</span><span class="chip st prog">In progress</span></div>
+        <div class="row"><span class="av">KS</span><span class="nm">Kestrel Software</span><span class="chip st bad">2 overdue</span></div>
+      </div></div>
+  </div>
+  <h3>The icon tile comes from the title</h3>
+  <p>The tile is not chosen per screen. The title is read against the list below, top to bottom, and the first match sets the glyph; each glyph has one tone, so a card means the same thing on every screen. A title that matches nothing gets the blue grid. A head that already draws its own tile keeps it, recoloured by the same rule.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tile</th><th>Tone</th><th>Titles that pick it</th></tr></thead>
+    <tbody id="hic-table"></tbody>
+  </table></div>
+</section>
+
+<section id="stat">
+  <h2>Number strip</h2>
+  <p>Headline numbers sit in one white strip, never in a band of separate KPI cards. Each number has a 30px tinted icon tile (8px corners, a 16px glyph), the label in 12px muted above it, and the figure at 20px/600 in ink, red when it counts something overdue. Numbers are split by <code>line-soft</code> hairlines. There is no coloured top edge and no gradient line. The strip sits under the greeting band, or on its own where a page has no greeting.</p>
+  <div class="demo">
+    <div class="kpis boxed">
+      <div class="kpi"><span class="hic k t-blue"><svg><use href="#g-user"/></svg></span><span class="l">Clients</span><b>24</b></div>
+      <div class="kpi"><span class="hic k t-green"><svg><use href="#g-check"/></svg></span><span class="l">Filed on time</span><b>68%</b></div>
+      <div class="kpi"><span class="hic k t-amber"><svg><use href="#g-user"/></svg></span><span class="l">Waiting on client</span><b>7</b></div>
+      <div class="kpi"><span class="hic k t-red"><svg><use href="#g-alert"/></svg></span><span class="l">Overdue</span><b class="hot">3</b></div>
+    </div>
+    <span class="note">The label picks the tile: waiting is an amber person, overdue a red alert, due soon an amber calendar, registrations a violet ID card, COI a green flag, action a blue list, done a green tick, with SBC a blue building, documents a teal file, this week a teal calendar.</span>
+  </div>
+</section>
+
+<section id="table">
+  <h2>Table</h2>
+  <p>The head sits on navy tint (#EEF2F8) with navy text (#1F3B5C), 12px at 600, in sentence case, with a 1px <code>line</code> hairline under it, never a dark rule. Cells have 11px by 20px padding, 13.5px text, and a <code>line-soft</code> hairline between rows; every second row takes a faint tint. Amounts are right-aligned and tabular, identifiers in mono. The state in a table is the 108px soft chip with a dot; owners are the 96px owner chips. Task rows use a checkbox and one status icon instead, with the due date in red when late. Wide tables fit their card: cells wrap before a column is cut off.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Step</th><th>Owner</th><th>Status</th><th>Due</th><th style="text-align:right">Days</th></tr></thead>
+    <tbody>
+      <tr><td>Draft board resolution</td><td><span class="chip own o-sbc">SBC</span></td><td><span class="chip st ok">Completed</span></td><td>12 Oct</td><td class="num">2</td></tr>
+      <tr><td>Signed board resolution</td><td><span class="chip own o-client">Northwind</span></td><td><span class="chip st warn">Waiting</span></td><td>23 Oct</td><td class="num">4</td></tr>
+      <tr><td>SPICe+ Part B</td><td><span class="chip own o-mca">MCA</span></td><td><span class="chip st prog">In progress</span></td><td>28 Oct</td><td class="num">3</td></tr>
+      <tr><td>DIN for two directors</td><td><span class="chip own o-sbc">SBC</span></td><td><span class="chip st bad">Overdue</span></td><td style="color:var(--danger);font-weight:600">09 Oct</td><td class="num">3</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Grids: clients by filings, heatmaps</h3>
+  <p>A grid is the same table: the same head and the same hairline rows. Each cell holds a 28px box with 6px corners, tinted like a chip: soft green with a tick for filed, soft blue for current, soft amber for due, soft red for overdue, a light grey box for upcoming. A cell that does not apply is blank with a faint dash, never hatched.</p>
+  <div class="tbl"><table class="cgrid">
+    <thead><tr><th>Client</th><th>GSTR-1</th><th>GSTR-3B</th><th>TDS</th><th>PF ECR</th><th>ESI</th><th>FC-GPR</th></tr></thead>
+    <tbody>
+      <tr><td><i class="dot" style="background:#db2777"></i> Brightwave Robotics</td><td><span class="f">✓</span></td><td><span class="f">✓</span></td><td><span class="d">7</span></td><td><span class="f">✓</span></td><td><span class="u"></span></td><td><span class="x">–</span></td></tr>
+      <tr><td><i class="dot" style="background:#0d9488"></i> Tidewater Logistics</td><td><span class="f">✓</span></td><td><span class="f">✓</span></td><td><span class="f">✓</span></td><td><span class="f">✓</span></td><td><span class="u"></span></td><td><span class="o">!</span></td></tr>
+      <tr><td><i class="dot" style="background:#7c3aed"></i> Northwind Technologies</td><td><span class="p">1/9</span></td><td><span class="u">0/11</span></td><td><span class="x">–</span></td><td><span class="x">–</span></td><td><span class="u"></span></td><td><span class="u"></span></td></tr>
+    </tbody>
+  </table></div>
+  <p style="margin-top:8px;font-size:12px;color:var(--ink-muted)">Filed green, current blue, due amber, overdue red, upcoming grey, not applicable blank. The legend sits on the right of the card head and names exactly these.</p>
+</section>
+
+<section id="hero">
+  <h2>Greeting card</h2>
+  <p>One component on every dashboard, staff and client. A navy band (a gradient from #1B3049 to #15263B) holds the date in #9FB2C8 and the name at 20px/600 in white; the client's band holds the company name. Under it, a white strip of numbers, each with its 30px tinted icon tile, the label (12px muted) above the number (20px ink, red when overdue), split by hairlines. There is no colour line, no ring and no marker on the card. The numbers roll in once when the page opens. Where a month-on-month change matters (super admin), it follows the number in green or red. On a phone the band and the strip stack the same way, two numbers to a row.</p>
+  <div class="demo">
+    <div class="hero">
+      <div class="band"><div class="when">Wednesday · 22 Oct 2026 · 09:14 am</div><h4>Good morning, Anita</h4></div>
+      <div class="kpis">
+        <div class="kpi"><span class="hic k t-blue"><svg><use href="#g-building"/></svg></span><span class="l">Projects</span><b>14<small style="color:var(--positive)">+2</small></b></div>
+        <div class="kpi"><span class="hic k t-red"><svg><use href="#g-alert"/></svg></span><span class="l">Need attention</span><b class="hot">3<small>+1</small></b></div>
+        <div class="kpi"><span class="hic k t-green"><svg><use href="#g-check"/></svg></span><span class="l">Awaiting approval</span><b>5</b></div>
+        <div class="kpi"><span class="hic k t-teal"><svg><use href="#g-calendar"/></svg></span><span class="l">This week</span><b>9</b></div>
+      </div>
+    </div>
+    <span class="note">The developer console has no greeting; it opens in the settings shape (see Developer console).</span>
+  </div>
+</section>
+
+<section id="attention">
+  <h2>Attention list</h2>
+  <p>Important alerts and What is next share one list. Rows run the full width of the card with hairlines between them, 13px by 20px padding. Each row starts with a 44px date tile tinted by urgency: red overdue, amber due soon, blue later, grey idle. The day is 16px/650, the month 10.5px under it, both in the tile's colour on a 10% tint inside a 30% border. Then the title (13.5px/600) with a muted line under it, and the chip on the right. The one urgent row has a soft red wash from the left and a 3px red edge, and carries a small navy action button (28px). When an alert has no date, its tile shows the alert mark instead.</p>
+  <div class="demo col">
+    <div class="sec"><div class="hd"><span class="hic t-amber"><svg><use href="#g-bell"/></svg></span><span class="t">Important alerts</span><span class="m">4</span></div>
+      <div class="bd flush">
+        <div class="att urgent"><span class="date bad"><b>14</b><span>Oct</span></span><span class="tx"><b>DIN application returned by MCA</b><span>Two directors · resubmit with the corrected address proof</span></span><span class="chip st bad">Overdue</span><button class="btn xs">Resubmit</button></div>
+        <div class="att"><span class="date warn"><b>24</b><span>Oct</span></span><span class="tx"><b>Signed board resolution</b><span>Waiting for Northwind · step 3</span></span><span class="chip st warn">Due soon</span></div>
+        <div class="att"><span class="date prog"><b>28</b><span>Oct</span></span><span class="tx"><b>Expected certificate of incorporation</b><span>SPICe+ Part B with MCA</span></span><span class="chip st prog">Later</span></div>
+        <div class="att"><span class="date idle"><b>15</b><span>Nov</span></span><span class="tx"><b>First board meeting</b><span>Within 30 days of the COI</span></span><span class="chip st">Planned</span></div>
+      </div></div>
+  </div>
+</section>
+
+<section id="timeline">
+  <h2>Timeline</h2>
+  <p>The Gantt for a plan over dates. Rows are 46px with a <code>line-soft</code> hairline between them. Each phase starts with a 20px status circle: a green tick on a green tint when done, a blue ring with a blue centre when current, a grey ring when planned. Bars are 16px tall with 6px corners: green (#46A87A) done, blue (#2563A8) current, light grey (#ECEFF4) planned. When a phase runs past its plan, the part after the planned end is hatched red. The today line is orange, with an orange "Today" label in the head, and the expected COI is an orange diamond. The right column gives the count and the plain end date, red when late. Each row has an expand arrow that opens its steps; there are no "Steps" or "Open" buttons.</p>
+  <div class="demo col" style="padding:0;background:var(--surface-raised);overflow:hidden">
+    <div class="sec" style="border:0;border-radius:0"><div class="hd"><span class="hic t-teal"><svg><use href="#g-calendar"/></svg></span><span class="t">Timeline</span><span class="m">15 of 25 steps · Sep to Nov 2026</span></div>
+      <div class="gantt">
+        <div class="g-head"><span></span><div class="g-track"><div class="ticks"><span>Sep</span><span>Oct</span><span>Nov</span></div><div class="g-today" style="left:55%"><span>Today</span></div></div><span></span></div>
+        <div class="g-row"><span class="g-name"><span class="g-exp" aria-hidden="true"><svg><use href="#g-chev"/></svg></span><span class="gs done"><svg><use href="#g-tick"/></svg></span>Part A</span><div class="g-track"><div class="g-bar done" style="left:1%;width:27%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>9/9</b> · 26 Sep</span></div>
+        <div class="g-row"><span class="g-name"><span class="g-exp" aria-hidden="true"><svg><use href="#g-chev"/></svg></span><span class="gs cur"></span>Part B</span><div class="g-track"><div class="g-bar cur cut" style="left:31%;width:17%"></div><div class="g-bar late" style="left:48%;width:7%"></div><div class="g-ms" style="left:63%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>6/10</b> · <span class="late">14 Oct</span></span></div>
+        <div class="g-row"><span class="g-name"><span class="g-exp" aria-hidden="true"><svg><use href="#g-chev"/></svg></span><span class="gs todo"></span>Post-incorporation</span><div class="g-track"><div class="g-bar plan" style="left:64%;width:35%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>0/6</b> · 30 Nov</span></div>
+      </div></div>
+  </div>
+  <p style="margin-top:12px">Two other timelines keep their v1.4 jobs: the vertical stepper for the steps inside one incorporation step, and the two-sided thread (authority left, SBC right, date tiles on a spine) for a registration or an obligation.</p>
+  <h3>Incorporation: the COI card</h3>
+  <p>The incorporation page opens on one navy card: the countdown or the expected COI date in white, a quiet label in #C9D4E2, a soft status chip (green or amber tint on the navy), and under it one bar split by phase, each part as wide as its share of the 25 steps, with its label and count under it. Done parts are green, the current part a lighter blue (#6FA3E0) on a 12% white track. There is no SPICe+ ring and no info button.</p>
+</section>
+
+<section id="sidebar">
+  <h2>Sidebar</h2>
+  <p>A navy ground (a gradient from #1B3049 at the top to #15263B), labels in #C9D4E2, group titles in #7F93AB in sentence case. Items are sorted by priority: what the person opens most comes first. The active item sits on a soft blue wash in white with a 3px orange rail on its left, the sidebar's one orange mark. Icons take the colour of their label; nothing in the nav has a colour of its own except a client's dot. Counts are quiet pills; an overdue count turns red.</p>
+  <div class="demo">
+    <div class="side">
+      <div class="it on">▢ Today</div><div class="it">▤ Work <span class="cnt alert">9</span></div><div class="it">▣ Clients <span class="cnt">8</span></div><div class="it sub"><i class="cdot" style="background:#7c3aed"></i>Northwind Technologies</div><div class="it sub"><i class="cdot" style="background:#db2777"></i>Brightwave Robotics</div><div class="it">✉ Email</div>
+      <div class="grp">Docs</div><div class="it">▥ Vault</div><div class="it">▦ Knowledge bank</div>
+      <div class="grp">Tools</div><div class="it">▧ Analytics</div><div class="it">▨ Audit</div><div class="it">⚙ Settings</div>
+    <div class="acct"><span class="a">KI</span><span class="n">Kavya Iyer<span>Project lead</span></span><span class="so" title="Sign out">⇥</span></div>
+    </div>
+    <span class="note">Clients under the Clients item carry their client dot. When a child item is active it takes the wash and the rail; its parent stays plain. The account row ends in a Sign out button on every portal, and Settings is a nav item. A group with children ends in a 14px chevron that folds it; the choice is remembered between screens.</span>
+  </div>
+</section>
+
+<section id="ask">
+  <h2>Ask VCFO launcher</h2>
+  <p>One small launcher everywhere, on the landing page and in every portal: a navy pill with a teal dot at the bottom of the viewport. The pill opens the chat panel; the visor character lives inside the panel, as the 38px avatar in its header, and no longer grips the edge of the screen.</p>
+  <div class="demo"><div class="launch"><span class="pil"><i></i>Ask VCFO</span></div><span class="note">On the landing page the panel offers scripted questions only; inside the portal it answers from the engagement's data.</span></div>
+</section>
+
+<section id="callout">
+  <h2>Callout, progress, empty state</h2>
+  <div class="demo col">
+    <div class="callout"><span class="hic t-teal" style="background:var(--surface-raised)"><svg><use href="#g-book"/></svg></span><div><b>Compliance begins after incorporation</b><span>Filings appear here once the certificate of incorporation is in. Until then this page lists what SBC is preparing.</span></div></div>
+    <div><div class="label" style="margin-bottom:8px">Phase progress · Northwind</div><div class="php"><div class="done" style="--p:100%">Part A · 9/9</div><div class="late" style="--p:60%">Part B · 6/10</div><div style="--p:0%">Post-inc · 0/6</div></div><div style="font-size:12px;color:var(--ink-muted);margin-top:8px">One 6px bar per phase on a line-soft track, with the count under it: green when the phase is done, blue while it runs, red when it is late.</div></div>
+    <div class="empty">Nothing needs you right now.</div>
+    <span class="note">A callout is a soft ground inside a hairline with an icon tile, never a coloured left edge. Empty states say what will appear and, where there is one, the action that fills them.</span>
+  </div>
+</section>
+
+<section id="screen-today">
+  <h2>Lead Today</h2>
+  <p>The reference staff screen. Every other staff dashboard is built from the same parts in the same skeleton: shell, greeting card with its number strip, then a grid of section cards with a 318px side rail.</p>
+  <div class="screen">
+    <div class="side"><div class="it on">▢ Today</div><div class="it">▤ Work <span class="cnt alert">9</span></div><div class="it">▣ Clients <span class="cnt">4</span></div><div class="it">✉ Email</div><div class="grp">Docs</div><div class="it">▥ Vault</div><div class="it">▦ Knowledge bank</div></div>
+    <div class="pg">
+      <div class="hero"><div class="band"><div class="when">Friday · 16 Oct 2026 · 12:31 pm</div><h4>Good afternoon, Kavya</h4></div>
+        <div class="kpis"><div class="kpi"><span class="hic k t-blue"><svg><use href="#g-list"/></svg></span><span class="l">Action</span><b>11</b></div><div class="kpi"><span class="hic k t-red"><svg><use href="#g-alert"/></svg></span><span class="l">Overdue</span><b class="hot">4</b></div><div class="kpi"><span class="hic k t-amber"><svg><use href="#g-user"/></svg></span><span class="l">Waiting</span><b>6</b></div><div class="kpi"><span class="hic k t-teal"><svg><use href="#g-calendar"/></svg></span><span class="l">This week</span><b>12</b></div></div></div>
+      <div class="two">
+        <div class="sec"><div class="hd"><span class="hic t-blue"><svg><use href="#g-list"/></svg></span><span class="t">Action queue</span><span class="r"><a href="#screen-today" style="font-size:13px;font-weight:600">View all</a></span></div><div class="bd flush">
+          <div class="row"><span class="av" style="background:#dbeefe;color:#0b5c8f">KH</span><span class="nm">Kestrel Health</span><span class="chip st warn">Filing due</span></div>
+          <div class="row"><span class="av" style="background:#ebe5ff;color:#5b21b6">NT</span><span class="nm">Northwind Technologies</span><span class="chip st prog">In progress</span></div>
+          <div class="row"><span class="av" style="background:#fde2ec;color:#9d174d">BR</span><span class="nm">Brightwave Robotics</span><span class="chip st bad">2 overdue</span></div>
+        </div></div>
+        <div class="sec"><div class="hd"><span class="hic t-blue"><svg><use href="#g-inbox"/></svg></span><span class="t">Inbox</span><span class="r"><span class="seg" role="group" aria-label="Inbox"><button type="button" aria-pressed="true">Triage<span class="n">5</span></button><button type="button" aria-pressed="false">My to-dos<span class="n">4</span></button></span></span></div><div class="bd flush">
+          <div class="row"><span class="nm">Mei Tanaka replied: "FIRMS login sent"<div class="sub">Tidewater · email · 10:12</div></span></div>
+          <div class="row"><span class="nm">MCA: SRN AB1234 approved<div class="sub">Orchid Lane · MCA mail · 09:40</div></span><button class="btn sm">Make task</button></div>
+          <div class="row"><span class="nm">Pranay: "Push Kestrel GST today"<div class="sub">Manager note · 09:05</div></span></div>
+        </div></div>
+      </div>
+      <div class="sec"><div class="hd"><span class="hic t-blue"><svg><use href="#g-chart"/></svg></span><span class="t">Phase progress</span><span class="r"><span class="legend" style="display:flex;gap:12px;width:auto"><div><i style="background:var(--bar-done)"></i>Done</div><div><i style="background:var(--bar-cur)"></i>Running</div><div><i style="background:var(--danger-mid)"></i>Late</div></span></span></div><div class="bd flush">
+        <div class="row"><span class="nm" style="flex:0 0 38%">Northwind Analytics India Pvt Ltd</span><div class="php" style="flex:1"><div class="done" style="--p:100%">9/9</div><div style="--p:60%">6/10</div><div style="--p:0%">0/6</div></div></div>
+        <div class="row"><span class="nm" style="flex:0 0 38%">Meridian Health India Pvt Ltd</span><div class="php" style="flex:1"><div class="done" style="--p:100%">9/9</div><div class="late" style="--p:30%">3/10</div><div style="--p:0%">0/6</div></div></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="screen-client">
+  <h2>Client home</h2>
+  <p>The same system on the client's side: their company name in the navy band with the number strip under it, then one next action with one button, then what needs the client and what is coming, then the timeline. Owner chips tell the client and SBC apart; status chips tell the state. There is no money on the home screen.</p>
+  <div class="screen">
+    <div class="side"><div class="it on">▢ Home</div><div class="it">▤ Incorporation</div><div class="it">▣ Compliances</div><div class="it">▥ Documents</div><div class="it">▦ Library</div><div class="it">▧ Team</div></div>
+    <div class="pg">
+      <div class="hero"><div class="band"><div class="when">Wed 21 Oct 2026</div><h4>Northwind Analytics India Pvt Ltd</h4></div>
+        <div class="kpis"><div class="kpi"><span class="hic k t-amber"><svg><use href="#g-user"/></svg></span><span class="l">Waiting on Northwind</span><b>1</b></div><div class="kpi"><span class="hic k t-blue"><svg><use href="#g-building"/></svg></span><span class="l">With SBC</span><b>3</b></div><div class="kpi"><span class="hic k t-red"><svg><use href="#g-alert"/></svg></span><span class="l">Overdue</span><b class="hot">1</b></div><div class="kpi"><span class="hic k t-teal"><svg><use href="#g-file"/></svg></span><span class="l">Documents in</span><b>2/2</b></div><div class="kpi"><span class="hic k t-green"><svg><use href="#g-flag"/></svg></span><span class="l">Expected COI</span><b>28 Oct</b></div></div></div>
+      <div class="next"><span class="hic t-blue"><svg><use href="#g-list"/></svg></span><span class="tx"><b>Sign the board resolution</b> <span>· step 3, due 24 Oct</span></span><button class="btn sm">Continue</button></div>
+      <div class="two">
+        <div class="sec"><div class="hd"><span class="hic t-amber"><svg><use href="#g-file"/></svg></span><span class="t">Needs from Northwind</span><span class="r"><span class="seg" role="group" aria-label="Needs"><button type="button" aria-pressed="true">Open<span class="n">1</span></button><button type="button" aria-pressed="false">Done<span class="n">3</span></button></span></span></div><div class="bd flush">
+          <div class="row"><span class="cb"></span><span class="nm">Signed board resolution<div class="sub">Step 3 · due 24 Oct</div></span><span class="chip own o-client">Northwind</span></div>
+          <div class="row"><span class="cb on"></span><span class="nm">Director address proofs<div class="sub">Step 2 · done 12 Oct</div></span><span class="chip own o-sbc">SBC</span></div>
+        </div></div>
+        <div class="sec"><div class="hd"><span class="hic t-teal"><svg><use href="#g-calendar"/></svg></span><span class="t">What is next</span></div><div class="bd flush">
+          <div class="att urgent"><span class="date bad"><b>14</b><span>Oct</span></span><span class="tx"><b>DIN resubmission</b><span>Returned by MCA</span></span><button class="btn xs">Review</button></div>
+          <div class="att"><span class="date prog"><b>28</b><span>Oct</span></span><span class="tx"><b>Expected COI</b><span>SPICe+ Part B</span></span><span class="chip st prog">Later</span></div>
+        </div></div>
+      </div>
+      <div class="sec"><div class="hd"><span class="hic t-teal"><svg><use href="#g-calendar"/></svg></span><span class="t">Timeline</span><span class="m">15 of 25 steps</span></div>
+        <div class="gantt">
+          <div class="g-row" style="border-top:0"><span class="g-name"><span class="gs done"><svg><use href="#g-tick"/></svg></span>Part A</span><div class="g-track"><div class="g-bar done" style="left:1%;width:27%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>9/9</b></span></div>
+          <div class="g-row"><span class="g-name"><span class="gs cur"></span>Part B</span><div class="g-track"><div class="g-bar cur cut" style="left:31%;width:17%"></div><div class="g-bar late" style="left:48%;width:7%"></div><div class="g-ms" style="left:63%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>6/10</b></span></div>
+          <div class="g-row"><span class="g-name"><span class="gs todo"></span>Post-incorporation</span><div class="g-track"><div class="g-bar plan" style="left:64%;width:35%"></div><div class="g-today" style="left:55%"></div></div><span class="g-meta"><b>0/6</b></span></div>
+        </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="console">
+  <h2>Developer console</h2>
+  <p>The developer's pages take the lcc Settings shape instead of a dashboard. A section rail on the left lists the areas (Overview, Connections and each connection, Messages, Jobs, Logs, Deploys, Access, Data and costs, Audit), with group titles in faint grey and the current item on a <code>line-soft</code> ground. To the right, each area is a stack of cards. A card has a plain head (the name and a muted line) and rows: a 220px column on the left with the setting and a one-line hint, then the value or the control on the right. There is no greeting card.</p>
+  <p>Settings save as they change, and a small "Saved" toast confirms it; there is no Save button. A risky action (rotate a key, disconnect, redeploy, purge) asks first in a dialog that names what will change, before and after, and waits for a clear yes. Risky actions sit together in a last card with a red title and a red-tinted frame.</p>
+  <div class="cs">
+    <div class="cs-rail">
+      <div class="cs-rt">Developer</div>
+      <div class="cs-ri">Overview</div>
+      <div class="cs-ri grp">Connections</div>
+      <div class="cs-ri" aria-current="true"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:#46a87a"></span>WhatsApp<b>ok</b></div>
+      <div class="cs-ri"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:#46a87a"></span>Email</div>
+      <div class="cs-ri"><span class="dot" style="width:7px;height:7px;border-radius:50%;background:#e3a040"></span>Outlook<b>1</b></div>
+      <div class="cs-ri grp">Operations</div>
+      <div class="cs-ri">Jobs</div><div class="cs-ri">Logs</div><div class="cs-ri">Deploys</div><div class="cs-ri">Access</div>
+    </div>
+    <div class="cs-body">
+      <div class="cs-h"><h5>WhatsApp</h5><div>AWS End User Messaging. Outbound only; email stays the system of record.</div></div>
+      <div class="cs-card"><div class="cs-ch"><b>Connection</b><span>Checked 09:40</span></div>
+        <div class="cs-row"><div class="cs-l"><div>Status</div><small>Last message delivered at 09:38.</small></div><div class="cs-val"><span class="chip ok">Connected</span></div></div>
+        <div class="cs-row"><div class="cs-l"><div>Sender number</div><small>The number clients see.</small></div><div class="cs-val"><span class="mono">+91 40 4852 1100</span></div></div>
+        <div class="cs-row"><div class="cs-l"><div>Reminders</div><small>Send due-date reminders on WhatsApp as well as email.</small></div><div class="cs-val"><span class="seg" role="group" aria-label="Reminders"><button type="button" aria-pressed="true">On</button><button type="button" aria-pressed="false">Off</button></span><span class="toast">Saved</span></div></div>
+        <div class="cs-row"><div class="cs-l"><div>Daily limit</div><small>Messages per client per day.</small></div><div class="cs-val"><input class="cs-in" value="3" aria-label="Daily limit"></div></div>
+      </div>
+      <div class="cs-card danger"><div class="cs-ch"><b>Risky actions</b><span>Each one asks first</span></div>
+        <div class="cs-row"><div class="cs-l"><div>Disconnect WhatsApp</div><small>Reminders go by email only until you connect again.</small></div><div class="cs-val"><button class="btn sm secondary">Disconnect</button></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="changes">
+  <h2>Changes in v1.5</h2>
+  <p>From the "VCFO Portal Refresh" document and the owner's review on 26 October 2026 ("follow the rules for each and every card"). The clickable prototype follows these rules through <code>docs/specs/landing-page/src/proto-fix/patch.mjs</code> and <code>ds.css</code>; what is still open is listed in <code>docs/specs/landing-page/REFRESH-DIFF.md</code>.</p>
+  <ul>
+    <li><b>Refresh palette.</b> Canvas #F3F5F9, white cards, hairlines #E3E6EB and #EEF0F3, ink #16212F, accent blue #2563A8, statuses green, amber and red with soft tints, violet and teal as category colours, navy #15263B for the sidebar and the greeting. The brand orange #E9792F is for small marks only. Gold is gone.</li>
+    <li><b>No decorative colour lines.</b> The gradient bars on cards and strips, the gold underline, the 3px top edge on stat cards and the 2px ink rule under table heads are removed. Colour is information only.</li>
+    <li><b>Navy main button.</b> The main button is navy-action #1F3B5C, 36px (small 30px), not blue.</li>
+    <li><b>Soft chips everywhere.</b> No solid status blocks. A chip is a soft tint with a 6px dot, 22px, 5px corners; status chips in tables are 108px, owner chips 96px (client amber, SBC blue, MCA violet).</li>
+    <li><b>Card heads with icon tiles.</b> This reverses v1.3. Every head is 52px with a hairline, a 28px tinted icon tile chosen from the title, a 14.5px title and the controls on the right.</li>
+    <li><b>New tabs.</b> Small inline buttons on a quiet track, the picked one navy, counts in faint grey, no sliding highlight, never wrapping.</li>
+    <li><b>Greeting card.</b> The navy band stays; the numbers in the white strip each get a 30px icon tile, label above the number, red when overdue. No ring and no marker.</li>
+    <li><b>Attention list</b> for Important alerts and What is next: 44px date tiles tinted by urgency, an urgent row with a red wash, a red edge and a small navy button.</li>
+    <li><b>Timeline</b> in the refresh Gantt shape: status circles, 16px rounded bars, a hatched late part, an orange today line and an orange COI diamond.</li>
+    <li><b>Charts.</b> One stacked bar with a legend instead of a donut; phase progress as a 6px bar per phase with the count under it.</li>
+    <li><b>Incorporation</b> counts 25 steps in 3 phases; registrations have their own page. The COI card is navy with one bar split by phase and no ring.</li>
+    <li><b>Dark mode is slate</b> (#111821, #18202B, #1F2935), not black; chips and tiles mix their colour with the panel.</li>
+    <li><b>Developer console</b> in the lcc Settings shape: a section rail, cards of label and value rows, settings that save as they change.</li>
+    <li><b>Smaller things.</b> Search shows "Ctrl K"; sidebar items are sorted by priority; the Ask VCFO character moved inside the chat panel; sentence case everywhere, including group titles and table heads.</li>
+  </ul>
+  <h3>Changes in v1.4</h3>
+  <p>From the owner's review on 26 October 2026. Rules that v1.5 replaces are marked.</p>
+  <ul>
+    <li><b>Navy greeting is back</b> on every portal, with the numbers in a white strip under the band.</li>
+    <li><b>Tables:</b> pale navy head in sentence case; state as a soft pill with a dot. (v1.5 drops the 2px ink rule under the head.)</li>
+    <li><b>Tasks:</b> checkbox and one status icon; a late task shows a red date, not the word "Overdue".</li>
+    <li><b>Three timelines, one per job:</b> the Gantt for a plan over dates; the vertical stepper for the steps of an incorporation step; the two-sided thread (authority left, SBC right, date tiles on a spine) for a registration or an obligation.</li>
+    <li><b>Detail pages</b> open with a deadline band: a ring, two or three dates, who is on it, and one action that shows working, then done.</li>
+    <li><b>Words:</b> "Remind" and "Reminder", never "Nudge". No money on any dashboard.</li>
+    <li><b>Motion, three moments only:</b> numbers roll in, a new Inbox item slides in, the live status pill at the top while work runs. Reduced motion turns all three off.</li>
+    <li><b>Settings live in Profile</b>, opened from the account row; firm-wide settings stay with the admin as Firm settings.</li>
+  </ul>
+  <h3>Earlier versions</h3>
+  <ul>
+    <li><b>v1.3</b> (23 October, "the site looks like a slide deck"): quiet card heads without icon tiles (reversed in v1.5), fewer cards, denser 36px rows, row actions on hover, one next action on the client home. The white staff greeting was reverted in v1.4.</li>
+    <li><b>v1.2</b> (22 and 23 October): client colours, no page titles, working breadcrumbs and Back, one table look for grids, a Sign out button on every portal, one Ask VCFO launcher, compact filters, a neutral "New" tag and real dates.</li>
+  </ul>
+</section>
+
+<section id="refs">
+  <h2>What this takes from the references</h2>
+  <p>v1.5 follows the "VCFO Portal Refresh" document and its stylesheet (the calm ledger theme with its v2 to v5 layers). Three earlier references were read for v1.1: the Lead Dashboard prototype v8, the SBC-Track repository and LeetCode's problem list.</p>
+  <ul>
+    <li><b>From the Portal refresh:</b> the palette and its soft tints; the 52px card head with the 28px icon tile; the segmented control; the attention list with date tiles; the Gantt with status circles; the stats strip that replaced donuts; the phase rows; the 96px owner chips and 108px status chips; the navy band from v5; navy-action for the main button and the picked tab; navy-tint table heads.</li>
+    <li><b>Left behind from the refresh:</b> its gradient line across the top of the summary card and the KPI strip, and the coloured top edge on the COI card. The owner rejected coloured lines on 26 October.</li>
+    <li><b>From the prototype v8:</b> soft owner tints; 8px status dots on the week strip; the navy sidebar and greeting. Its gold underline, gold ring and solid status chips are gone in v1.5.</li>
+    <li><b>From SBC-Track:</b> status triples (text, soft ground, mid fill) at matched lightness; the 6px dot inside a soft chip; colour only where it carries meaning.</li>
+    <li><b>From LeetCode:</b> colour in words and small icons, never in blocks; neutral counts; long tables stripe every second row.</li>
+  </ul>
+</section>
+
+<section id="build">
+  <h2>Build a dashboard from this system</h2>
+  <p class="lead">This page is the brief. A session asked for a manager, admin or super admin screen reads it and builds the screen from the parts above, without a separate spec.</p>
+  <h3>Where the parts live</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Import</th><th>Props that matter</th></tr></thead>
+    <tbody>
+      <tr><td>Shell (sidebar, top bar)</td><td class="mono">app/app/&lt;role&gt;/layout.tsx wraps every page in AppShell</td><td style="color:var(--ink-muted)">Nothing to pass. Nav items live in <span class="mono">src/components/shell/RoleSidebar.tsx</span>, in priority order.</td></tr>
+      <tr><td>Greeting card</td><td class="mono">DashHero from @/components/dash/DashHero</td><td style="color:var(--ink-muted)"><span class="mono">title</span>, <span class="mono">subtitle</span>, <span class="mono">stats [{label,value,href,hot}]</span>. Each stat gets its icon tile from its label; <span class="mono">hot</span> paints the figure red. No ring in v1.5.</td></tr>
+      <tr><td>Section card</td><td class="mono">DashSection from @/components/dash/DashSection</td><td style="color:var(--ink-muted)"><span class="mono">icon</span>, <span class="mono">title</span>, <span class="mono">meta</span>, <span class="mono">href</span>, <span class="mono">hrefLabel</span>, <span class="mono">tone</span>. Pick icon and tone from the table under Section card. Tabs go in the head on the right.</td></tr>
+      <tr><td>Number strip</td><td class="mono">StatCard from @/components/dash/StatCard</td><td style="color:var(--ink-muted)"><span class="mono">label</span>, <span class="mono">value</span>, <span class="mono">tone</span>, <span class="mono">icon</span>, <span class="mono">href</span>. Render several in one strip with hairline dividers; no top edge.</td></tr>
+      <tr><td>Table</td><td class="mono">DashDataTable from @/components/dash/DashDataTable</td><td style="color:var(--ink-muted)"><span class="mono">columns [{key,header,width,align,mono,render}]</span>, <span class="mono">rows</span>, <span class="mono">rowKey</span>, <span class="mono">rowHref</span>, <span class="mono">mobile</span>, <span class="mono">bare</span> inside a DashSection.</td></tr>
+      <tr><td>Chips</td><td class="mono">CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE from @/components/common/IconChip</td><td style="color:var(--ink-muted)"><span class="mono">cn(CHIP_CLASS, CHIP_COLUMN_CLASS, TONE_BADGE.success)</span>. Soft tint and a dot only. Or <span class="mono">Badge</span> from <span class="mono">@/components/ui/badge</span>.</td></tr>
+      <tr><td>Buttons, inputs</td><td class="mono">Button from @/components/ui/button; Input, Select, Textarea from @/components/ui</td><td style="color:var(--ink-muted)"><span class="mono">variant</span> default (navy) | secondary | ghost | destructive | link; <span class="mono">size</span> sm | default | lg | icon.</td></tr>
+      <tr><td>Icon tile</td><td class="mono">IconChip from @/components/common/IconChip</td><td style="color:var(--ink-muted)"><span class="mono">icon</span>, <span class="mono">tone</span>, <span class="mono">size</span> sm | md | lg (28px in heads, 30px in strips).</td></tr>
+      <tr><td>Tokens</td><td class="mono">docs/design/design-tokens.json → scripts/design-tokens-css.mjs --write → app/globals.css; classes in tailwind.config.ts</td><td style="color:var(--ink-muted)">Use the class names on this page (<span class="mono">bg-surface-raised</span>, <span class="mono">text-ink-muted</span>, <span class="mono">border-line</span>, <span class="mono">bg-brand-soft</span>, <span class="mono">h-control-md</span>, <span class="mono">min-w-control</span>, <span class="mono">h-chip</span>). Never a hex or oklch literal. The v1.5 values land in the JSON with the token merge.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>The skeleton</h3>
+  <p>Copy <code>src/views/intern/Today.tsx</code>. Every dashboard is this, with different sections:</p>
+<pre class="mono" style="background:var(--surface-sunken);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:12px;line-height:1.5;margin:0 0 12px">&lt;PageTransition&gt;
+  &lt;SEO title="…" path="…" /&gt;
+  &lt;div className="flex flex-col gap-3"&gt;
+    &lt;DashHero title={`Good ${greet}, ${first}`}
+              stats={[{ label: 'Projects', value: n, href }, { label: 'Need attention', value: m, href, hot: m &gt; 0 }, …]} /&gt;
+    &lt;div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]"&gt;
+      &lt;div className="flex min-w-0 flex-col gap-3"&gt;
+        &lt;DashSection icon={List} tone="primary" title="Action queue"&gt;…rows…&lt;/DashSection&gt;
+        &lt;DashSection icon={Building} tone="primary" title="Projects" href="/app/admin/projects" hrefLabel="All projects"&gt;
+          &lt;DashDataTable bare columns={…} rows={…} rowKey={r =&gt; r.id} /&gt;
+        &lt;/DashSection&gt;
+      &lt;/div&gt;
+      &lt;div className="flex min-w-0 flex-col gap-3"&gt;
+        &lt;DashSection icon={ShieldCheck} tone="success" title="Compliance status"&gt;…total, stacked bar, legend…&lt;/DashSection&gt;
+        &lt;DashSection icon={User} tone="warning" title="Waiting on"&gt;…rows…&lt;/DashSection&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/PageTransition&gt;</pre>
+  <h3>Order of sections</h3>
+  <p>The screen answers questions in reading order: what needs me, what is late, what is coming, who is waiting, then the long lists. The headline numbers go in the greeting strip and never again as a band of tiles under it. The side rail holds the status split (a stacked bar) and the waiting list.</p>
+  <h3>Rows and lists</h3>
+  <p>A row inside a section runs the full card width: <code>flex items-center gap-3 min-h-row px-5 border-t border-line-soft first:border-0</code>, a neutral 26px tile with initials, the name at 13.5px/500, meta at 12px <code>ink-muted</code> under it, a chip at the column width, an optional 30px secondary button. More than eight rows: a <code>DashDataTable</code> or a link to the full page. A list with nothing in it says what will appear there.</p>
+  <h3>Before calling it done</h3>
+  <ul>
+    <li>Only tokens on this page (client colours come from the client set); <code>rg "oklch\([0-9]|accent-(amber|rose|violet|emerald|sky|teal|pink|cyan|lime)|border-l-|border-t-\[3px\]|bg-gradient-to-r|rounded-full px-|font-extrabold"</code> over the new files returns nothing.</li>
+    <li><code>npm run typecheck</code> green, <code>npx eslint --quiet</code> clean, <code>npm run test</code> passing.</li>
+    <li>Screenshots in light and dark at 1440px and 375px look like the screens above, with slate (not black) in dark.</li>
+    <li>One navy main button per region; every status has a word; no colour line on any card, strip or head.</li>
+    <li>No page title; every breadcrumb segment links; Back returns to the previous screen.</li>
+  </ul>
+</section>
+
+<section id="never">
+  <h2>Never</h2>
+  <div class="nope">
+    <div class="x"><b>Decorative colour lines</b>No gradient or gold bar on a card, a strip or a head; no coloured top edge on a number; no coloured underline. Frames and dividers are neutral hairlines.</div>
+    <div class="x"><b>Coloured accent borders</b>No coloured left or top border on a card, a notice or a tile. The one urgent row in an attention list is the only red edge.</div>
+    <div class="x"><b>Solid status blocks</b>A state is a soft chip with a dot and a word, in cards and in tables alike. No white text on a status fill.</div>
+    <div class="x"><b>Blue main buttons</b>The main button is navy-action. Blue is for links and the current step.</div>
+    <div class="x"><b>Orange as text or action</b>The brand orange marks the today line, the COI diamond and the active nav rail. It is never text, a button or a fill behind words.</div>
+    <div class="x"><b>Sliding tab highlights</b>The picked tab changes colour in place. Tabs never wrap onto a second line.</div>
+    <div class="x"><b>Donuts for a split</b>A split is one stacked bar with a legend.</div>
+    <div class="x"><b>Black dark mode</b>Dark mode is slate (#111821). Chips and tiles mix with the panel; they do not glow.</div>
+    <div class="x"><b>Colour on people and tags</b>People, tags and nav items are neutral. Only states and client companies are coloured, and a client colour never stands in for a state.</div>
+    <div class="x"><b>Page titles</b>A heading that repeats the nav item and the breadcrumb. The page opens on its controls.</div>
+    <div class="x"><b>Dead breadcrumbs</b>A breadcrumb segment that is not a link, or a Back that leaves the product.</div>
+    <div class="x"><b>Cards inside cards</b>Rows inside a panel are hairline-separated. One raised surface per panel.</div>
+    <div class="x"><b>Zig-zag columns</b>Chips and buttons in a column share one width and centred labels. Labels never wrap.</div>
+    <div class="x"><b>Capitals and weight 700</b>No uppercase labels or heads. Public Sans stops at 600, with 650 only for date-tile days and a countdown.</div>
+  </div>
+</section>
+
+<section id="deprecated">
+  <h2>Deprecated names</h2>
+  <p>Old token and class names resolve to the new tokens until 30 November 2026, then they are deleted. The full map is in <code>docs/design/TOKENS.md</code>; the v1.5 rows below are new and still need to be added there.</p>
+  <div class="tbl"><table class="dep">
+    <thead><tr><th>Old</th><th>New</th></tr></thead>
+    <tbody>
+      <tr><td><code>--gold</code>, <code>--gold-text</code>, the gold ring and gold rail</td><td>v1.5: <code>highlight</code> (brand orange) for the active nav rail; removed everywhere else</td></tr>
+      <tr><td><code>--highlight-bright</code>, <code>--highlight-soft</code></td><td>v1.5: <code>highlight</code> for marks; no orange grounds</td></tr>
+      <tr><td><code>--info</code>, <code>--info-soft</code></td><td>v1.5: <code>teal</code>, <code>teal-soft</code></td></tr>
+      <tr><td><code>--owner-client*</code>, <code>--owner-sbc*</code>, <code>--owner-mca*</code>, <code>--owner-manager*</code></td><td>v1.5: <code>own-client</code> (amber), <code>own-sbc</code> (blue), <code>own-mca</code> (violet); a manager is a neutral tag</td></tr>
+      <tr><td><code>--shadow-card</code>, stat-rule 3px, table rule 2px, <code>--on-status</code></td><td>v1.5: removed; hairlines only, soft chips only</td></tr>
+      <tr><td>Primary button on <code>brand</code></td><td>v1.5: <code>navy-action</code>, hover <code>navy-hover</code></td></tr>
+      <tr><td><code>--primary</code>, <code>--brand</code>, <code>--blue-600</code>, <code>--orange-*</code>, <code>--role-accent</code>, <code>--ring</code></td><td><code>brand</code></td></tr>
+      <tr><td><code>--primary-light</code>, <code>--blue-50</code>, <code>--sidebar-active</code>, <code>--role-accent-soft</code></td><td><code>brand-soft</code></td></tr>
+      <tr><td><code>--accent-orange</code> (UI)</td><td><code>highlight</code></td></tr>
+      <tr><td><code>--accent-amber</code>, <code>-rose</code>, <code>-violet</code>, <code>-emerald</code>, <code>-sky</code>, <code>-teal</code>, <code>-pink</code>, <code>-cyan</code>, <code>-lime</code></td><td>removed; neutral chips, <code>violet</code> and <code>teal</code> for tiles, <code>data-1..6</code> for charts</td></tr>
+      <tr><td><code>--success*</code></td><td><code>positive</code>, <code>positive-soft</code></td></tr>
+      <tr><td><code>--danger-light</code>, <code>--error*</code>, <code>--destructive</code></td><td><code>danger</code>, <code>danger-soft</code></td></tr>
+      <tr><td><code>--phase-*</code></td><td><code>brand</code> current, <code>positive</code> done, <code>warning</code> waiting, <code>ink-faint</code> locked</td></tr>
+      <tr><td><code>--stat-gst</code> … <code>--stat-labour</code></td><td><code>data-1</code> … <code>data-6</code></td></tr>
+      <tr><td><code>--super-gold*</code>, hero gradient skins, Manrope, Space Grotesk, Poppins</td><td>removed</td></tr>
+      <tr><td>portal <code>--bg --panel --fg --muted --navy --gold --ok --due --over --prog --up</code></td><td><code>surface</code>, <code>surface-raised</code>, <code>ink</code>, <code>ink-muted</code>, <code>side</code>/<code>navy-action</code>, <code>highlight</code>, <code>positive</code>, <code>warning</code>, <code>danger</code>, <code>brand</code>, <code>upcoming</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btns={light:document.getElementById('th-light'),system:document.getElementById('th-system'),dark:document.getElementById('th-dark')};
+  function set(mode){
+    if(mode==='system'){root.removeAttribute('data-theme');}else{root.setAttribute('data-theme',mode);}
+    Object.keys(btns).forEach(function(k){btns[k].setAttribute('aria-pressed',String(k===mode));});
+    try{localStorage.setItem('vcfo-ds-theme',mode);}catch(e){}
+    render();
+  }
+  Object.keys(btns).forEach(function(k){btns[k].addEventListener('click',function(){set(k);});});
+  var saved=null;try{saved=localStorage.getItem('vcfo-ds-theme');}catch(e){}
+
+  /* [token, light, dark, refresh name, use, sample] sample: 'text' = Aa in the colour on white; 'fill' = white Aa on the colour; a token name = Aa in that token on this ground; null = no sample. */
+  var C=[
+    ['surface','#f3f5f9','#111821','canvas','Page ground. A cool grey, never white; slate in dark mode, never black.',null],
+    ['surface-raised','#ffffff','#18202b','surface','Cards, tables, dialogs, the top bar, the greeting strip.','ink'],
+    ['surface-sunken','#f5f6f8','#1f2935','track','The tab track, hover rows, wells and empty states.','ink'],
+    ['line','#e3e6eb','#2c3745','line','Card frames, the line under a table head, the tab track border.',null],
+    ['line-soft','#eef0f3','#263140','line-soft','Hairlines between rows, under a card head, between numbers in a strip.',null],
+    ['line-strong','#8a94a2','#5a6878','(book)','Input and checkbox borders, where a control needs 3:1.',null],
+    ['ink','#16212f','#e6eaf0','ink','Titles, figures, primary text. Never pure black.','text'],
+    ['ink-2','#3f4a59','#c5cdd8','ink-2','Row text, secondary button labels, legend labels.','text'],
+    ['ink-muted','#667180','#9aa7b8','muted','Meta, labels above numbers, idle tab labels.','text'],
+    ['ink-faint','#98a1ae','#6e7b8c','faint','Tab counts, axis ticks, placeholders, rail group titles. Never body text.','text'],
+    ['brand','#2563a8','#6fa3e0','accent','Links, the current step, the current Gantt bar, blue chips and tiles. Not the main button.','text'],
+    ['brand-strong','#1e5290','#9cc3ef','accent-hover','Link hover.','text'],
+    ['brand-soft','#e6effa','#1b2f47','accent-soft','Ground of blue chips and tiles; today in the calendar.','brand'],
+    ['navy-action','#1f3b5c','#2b4766','navy-action','The main button and the picked tab, with white text (11.4:1).','fill'],
+    ['navy-hover','#18304c','#335274','navy-hover','Hover and pressed main button.','fill'],
+    ['navy-tint','#eef2f8','#1f2935','navy-tint','Table heads and the calendar weekday row, with navy-action text.','navy-tint-ink'],
+    ['side','#15263b','#15263b','navy','The sidebar and the foot of the greeting band.','side-ink'],
+    ['side-2','#1b3049','#1b3049','navy-2','The top of the sidebar and of the greeting gradient.','side-ink'],
+    ['highlight','#e9792f','#f08a3a','brand orange','Small marks only: the today line, the COI diamond, the active nav rail. Never text or a button.',null],
+    ['positive','#1e7f55','#83b9a2','ok','Done, filed. Chip, tile and tick colour. Always with a word.','text'],
+    ['positive-soft','#e2f3ea','#193534','ok-soft','Ground of green chips, tiles and the done status circle.','positive'],
+    ['positive-mid','#46a87a','#46a87a','ok-mid','Done bars in the Gantt, phase bars and charts.',null],
+    ['warning','#a35f00','#cca773','warn','Due soon, waiting on someone. Chip and tile colour.','text'],
+    ['warning-soft','#fcefd8','#372e22','warn-soft','Ground of amber chips, tiles and date tiles.','warning'],
+    ['danger','#be3434','#db8f8f','bad','Overdue, failed; the overdue figure; the urgent row edge.','text'],
+    ['danger-soft','#fbe6e6','#3d242d','bad-soft','Ground of red chips and tiles; the urgent row wash.','danger'],
+    ['danger-mid','#dd6262','#dd6262','bad-mid','Late bars and the hatched late part of a Gantt bar.',null],
+    ['upcoming','#56627a','#a2a9b6','idle','Not started, planned, idle date tiles.','text'],
+    ['upcoming-soft','#eceff4','#262f3c','idle-soft','Ground of grey chips; planned Gantt bars.','upcoming'],
+    ['violet','#6a4fb6','#ad9ed7','violet','The MCA owner chip; registration, people and activity tiles.','text'],
+    ['violet-soft','#efeafb','#2a2a4a','violet-soft','Ground of violet chips and tiles.','violet'],
+    ['teal','#0f7c86','#7bb7bc','teal','Calendar, document and library tiles; callouts.','text'],
+    ['teal-soft','#e0f3f4','#16343f','teal-soft','Ground of teal tiles and callouts.','teal'],
+    ['focus-ring','#3b82f6','#86b6ef','(book)','2px outline, 2px offset, on every interactive element.',null]
+  ];
+  function render(){
+    var dark=root.getAttribute('data-theme')==='dark'||(!root.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var h='';
+    C.forEach(function(t){
+      var name=t[0],lv=t[1],dv=t[2],rn=t[3],use=t[4],s=t[5],sample='';
+      if(s==='text'){sample='<b style="background:var(--surface-raised);color:var(--'+name+')">Aa</b>';}
+      else if(s==='fill'){sample='<b style="color:#fff">Aa</b>';}
+      else if(s){sample='<b style="color:var(--'+s+')">Aa</b>';}
+      h+='<div class="sw"><div class="face" style="background:var(--'+name+')">'+sample+'</div><div class="meta"><div class="n">'+name+' <span>· '+rn+'</span></div><div class="v mono"><span>'+lv+'</span><span>'+dv+'</span>'+(dark?'<span>dark</span>':'<span>light</span>')+'</div><div class="u">'+use+'</div></div></div>';
+    });
+    document.getElementById('swatches').innerHTML=h;
+  }
+  if(saved==='light'||saved==='dark'){set(saved);}else{var cur=root.getAttribute('data-theme');Object.keys(btns).forEach(function(k){btns[k].setAttribute('aria-pressed',String((cur||'system')===k));});render();}
+  try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);}catch(e){}
+
+  /* Card-head icon tiles: the first rule whose words match the title wins (from proto-fix/patch.mjs, section 45). */
+  var HIC=[
+    ['alert','red','risk, stuck, overdue, incident, escalation, broken'],
+    ['bell','amber','alerts, updates, notifications, announcements'],
+    ['check','green','approvals, decisions, granted'],
+    ['calendar','teal','timeline, week, calendar, what is next, coming up, deadlines, schedule, renewals, plan'],
+    ['inbox','blue','inbox, triage, messages'],
+    ['file','amber','needs, documents, vault, uploads, files'],
+    ['shield','green','compliance, filings, obligations, statutes, status'],
+    ['clip','teal','what SBC is doing, who holds it, pending with, progress flow'],
+    ['user','violet','waiting, clients, people, leads, managers, team, who'],
+    ['id','violet','registrations, IDs, identity, credentials'],
+    ['clock','violet','activity, audit, recent, history, log'],
+    ['list','blue','steps, queue, work, tasks, actions, post-incorporation'],
+    ['chart','blue','phases, practice, analytics, growth, reports, charts, health, areas, services'],
+    ['mail','blue','email, mail'],
+    ['book','teal','library, knowledge, SOPs, books'],
+    ['grid','blue','anything else']
+  ];
+  var hb='';HIC.forEach(function(r){hb+='<tr><td><span style="display:inline-flex;align-items:center;gap:10px"><span class="hic t-'+r[1]+'"><svg><use href="#g-'+r[0]+'"/></svg></span><span class="mono">'+r[0]+'</span></span></td><td>'+r[1]+'</td><td style="color:var(--ink-muted)">'+r[2]+'</td></tr>';});
+  document.getElementById('hic-table').innerHTML=hb;
+
+  var T=[
+    ['display-xl','28 / 34 / 600','One per screen at most: a step name on its own page. Dashboards open on the greeting instead.',28,'Board resolution'],
+    ['greeting','20 / 26 / 600, white','The name or company name in the navy greeting band.',20,'Good morning, Kavya'],
+    ['display','22 / 28 / 600','Drawer and dialog titles. Pages carry no title; the breadcrumb names them.',22,'Board resolution'],
+    ['console-title','16 / 22 / 600','The area title in the developer console.',16,'WhatsApp'],
+    ['title','14.5 / 19 / 600','Card titles, in every card head.',14.5,'Important alerts'],
+    ['body','13.5 / 20 / 400','Default UI text, rows, table cells.',13.5,'Eleven of fourteen filings are done.'],
+    ['row-title','13.5 / 18 / 600','The title of a row in an attention list or a Gantt phase.',13.5,'Signed board resolution'],
+    ['tab','12.5 / 16 / 600','Tab labels, small buttons, meta in a card head.',12.5,'My to-dos'],
+    ['meta','12 / 16 / 400','The line under a row title, captions, helper text.',12,'Updated 24 Oct, 10:42 am'],
+    ['label','12 / 16 / 600, sentence case','Labels above numbers, table heads, group titles. Never capitals.',12,'Waiting on Northwind'],
+    ['chip','12 / 16 / 600','Status and owner chips. Sentence case.',12,'Due 24 Oct'],
+    ['figure-lg','20 / 24 / 600, tabular','The numbers in a greeting strip or number strip.',20,'14'],
+    ['date-day','16 / 18 / 650, tabular','The day in a 44px date tile.',16,'24'],
+    ['date-month','10.5 / 12 / 600','The month under it.',10.5,'Oct'],
+    ['mono','12 / 16 / 500, IBM Plex Mono','Identifiers only: CIN, PAN, DIN, GSTIN, SRN, file names.',12,'U72900TG2026PTC184211']
+  ];
+  var tb=document.querySelector('#type-table tbody'),th='';
+  T.forEach(function(r){var m=/\/ (\d{3})/.exec(r[1]);var w=m?m[1]:600;var fam=r[0]==='mono'?'var(--mono)':'var(--sans)';var tn=/figure|date|mono/.test(r[0])?'font-variant-numeric:tabular-nums;':'';var bg=r[0]==='greeting'?'background:var(--hero-gradient);color:#fff;padding:4px 8px;border-radius:6px;display:inline-block;':'';
+    th+='<tr class="type-row"><td><span style="font:'+w+' '+r[3]+'px/1.2 '+fam+';'+tn+bg+'">'+r[4]+'</span><div class="mono" style="color:var(--ink-muted);margin-top:4px">'+r[0]+'</div></td><td class="mono">'+r[1]+'</td><td style="color:var(--ink-muted)">'+r[2]+'</td></tr>';});
+  tb.innerHTML=th;
+
+  var S=[['space-1',4,'Icon-to-label gap'],['space-2',8,'Between chips, inside inputs'],['space-3',12,'Between cards, row gaps'],['space-4',16,'Card body top and bottom, mobile gutter'],['space-5',20,'Card side padding, row side padding'],['space-6',24,'Section gaps, page margins'],['space-8',32,'Between page regions'],['space-12',48,'Top of auth pages']];
+  var sh='';S.forEach(function(s){sh+='<div><i style="width:'+s[1]+'px;height:'+s[1]+'px"></i>'+s[0]+'<br>'+s[1]+'px<br><span style="color:var(--ink-faint)">'+s[2]+'</span></div>';});
+  document.getElementById('space-scale').innerHTML=sh;
+  var R=[['radius-xs',5,'Chips'],['radius-sm',6,'Date tiles, small buttons, the picked tab'],['radius-md',8,'Buttons, icon tiles, the tab track, inputs'],['radius-lg',10,'Cards, dialogs, popovers'],['radius-xl',12,'Sheets, screens'],['radius-pill',999,'Dots and status circles only']];
+  var rh='';R.forEach(function(r){rh+='<div style="font-size:11px;color:var(--ink-muted)"><i style="border-radius:'+r[1]+'px"></i>'+r[0]+' '+(r[1]===999?'':r[1]+'px')+'<br><span style="color:var(--ink-faint)">'+r[2]+'</span></div>';});
+  document.getElementById('radii').innerHTML=rh;
+  var Z=[['control-sm','30px','Small buttons in rows and dense toolbars'],['control-md','36px','The default button, input and search height'],['control-lg','40px','Every button on a phone'],['action-xs','28px','The small navy action in an urgent row'],['tab','28px','A tab button inside its 2px track'],['control-min-width','84px','Minimum width of a text button'],['chip-height','22px','Every chip'],['chip-status','108px','Status chips in a table or list column'],['chip-owner','96px','Owner chips'],['card-head','52px','Minimum card head height'],['row','46px','Gantt rows and list rows'],['tile-head','28px','Icon tile in a card head, 15px glyph'],['tile-number','30px','Icon tile in a number strip, 16px glyph'],['tile-date','44px','Date tile in an attention list'],['status-circle','20px','Before each phase in a Gantt'],['bar','16 / 10 / 6px','Gantt bar / stacked bar / phase bar'],['console-label','220px','Label-and-hint column in the developer console']];
+  var zh='';Z.forEach(function(z){zh+='<tr><td class="mono">'+z[0]+'</td><td class="mono">'+z[1]+'</td><td style="color:var(--ink-muted)">'+z[2]+'</td></tr>';});
+  document.querySelector('#size-table tbody').innerHTML=zh;
+})();
+</script>

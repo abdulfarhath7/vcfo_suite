@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from 'next-auth';
+import { authSecrets } from '@/auth/secrets';
 
 /**
  * EDGE-SAFE Auth.js config: session strategy, pages, and the JWT/session
@@ -15,8 +16,13 @@ import type { NextAuthConfig } from 'next-auth';
  * callbacks below must live here rather than in the Node config, so the role
  * and scoping ids are present on `req.auth` when middleware does its role
  * routing.
+ *
+ * ROTATION (M7): `secret` is AUTH_SECRET and, when set, AUTH_SECRET_PREVIOUS
+ * (src/auth/secrets.ts). New tokens are signed with AUTH_SECRET; tokens signed
+ * with the previous secret still verify, so a rotation signs nobody out.
  */
 export const authConfigBase = {
+  secret: authSecrets(),
   session: { strategy: 'jwt' },
   trustHost: true,
   pages: {

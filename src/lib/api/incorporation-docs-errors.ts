@@ -1,14 +1,14 @@
 import type { Engagement } from '@/data/engagements';
 import { checklist } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   directorResponsesFromState,
   PROPOSED_DIRECTORS_STEP_ID,
   readProposedDirectors,
-} from '@/lib/proposed-directors';
-import type { EngagementChecklistState } from '@/lib/engagements-db';
+} from '@/lib/incorporation/proposed-directors';
+import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import { collectAcceptanceLetterMissingFields } from '@/lib/incorporation-docs/acceptance-letter';
 import { collectAuthorisationLetterMissingFields } from '@/lib/incorporation-docs/authorisation-letter';
 import { collectAoaMissingFields } from '@/lib/incorporation-docs/aoa';
@@ -331,7 +331,7 @@ function stepResponses(
 }
 
 /** True when the directors come from `pre-15` entries rather than the legacy slots. */
-export function directorsFromPre15(checklistState: EngagementChecklistState | null | undefined): boolean {
+function directorsFromPre15(checklistState: EngagementChecklistState | null | undefined): boolean {
   return readProposedDirectors(checklistState).some((d) => !d.id.startsWith('legacy-'));
 }
 

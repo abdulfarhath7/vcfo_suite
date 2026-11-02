@@ -15,7 +15,7 @@ import {
   resolveParentEntityState,
 } from '@/lib/incorporation-docs/parent-entity';
 import { resolveSignatoryDisplayName } from '@/lib/person-name';
-import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
+import { parentCountryAnswer } from '@/lib/incorporation/parent-jurisdiction';
 
 export interface AuthorisationLetterMergeFields {
   DOCUMENT_DATE: string;

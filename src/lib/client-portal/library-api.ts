@@ -12,7 +12,7 @@ import { toLibraryView, UPDATED_SINCE_SAVED } from '@/lib/ask/library';
 import { briefFilename, renderBriefPdf } from '@/lib/ask/pdf-brief';
 import { loadProjectSnapshot } from '@/lib/ask/snapshot';
 import { applicabilityFromSnapshot, getTopic, resolveTopicForViewer, topicToAnswer } from '@/lib/ask/topics';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 
 /**
  * Library read/save handlers shared by the client-portal routes
@@ -32,7 +32,7 @@ function forbidden(error: unknown): NextResponse | null {
 }
 
 /** What the Library page may offer beside the saved books. */
-export function libraryFeatures() {
+function libraryFeatures() {
   const enabled = askConfig().enabled;
   return { askEnabled: enabled, statusBrief: enabled && askFeatures().C4 };
 }

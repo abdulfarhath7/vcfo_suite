@@ -11,7 +11,7 @@ import {
   resolveParentEntityCountry,
   resolveParentEntityName,
 } from '@/lib/incorporation-docs/parent-entity';
-import { parentCountryAnswer } from '@/lib/parent-jurisdiction';
+import { parentCountryAnswer } from '@/lib/incorporation/parent-jurisdiction';
 
 export interface AcceptanceLetterMergeFields {
   DOCUMENT_DATE: string;

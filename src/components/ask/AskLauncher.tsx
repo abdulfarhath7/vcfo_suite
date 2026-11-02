@@ -1,38 +1,82 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { MessageCircleQuestion } from 'lucide-react';
+import { MessageCircleQuestion, Sparkles } from 'lucide-react';
 import { isAskShortcut } from '@/lib/ask/shortcut';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
 
+/** True when the person is typing, so "/" stays a character. */
+function isTyping(t: EventTarget | null) {
+  const el = t as HTMLElement | null;
+  return !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+}
 
-/** Top-bar "Ask VCFO" + ⌘J / Ctrl+J toggle (U4). Renders nothing without Ask VCFO. */
-export function AskLauncher({ placement = 'fixed' }: { placement?: 'fixed' | 'inline' }) {
+/**
+ * "Ask VCFO" + ⌘J / Ctrl+J toggle (U4); "/" opens it too (R-45). Renders nothing without
+ * Ask VCFO. `variant="sidebar"` is the VCFO Spectrum sidebar button at the bottom of the
+ * navy rail (R-45: never a floating bubble). Mount the shortcut once per page: pass
+ * `withShortcut={false}` on every copy but one.
+ */
+export function AskLauncher({
+  variant = 'top',
+  expanded = true,
+  withShortcut = true,
+}: {
+  variant?: 'top' | 'sidebar';
+  expanded?: boolean;
+  withShortcut?: boolean;
+} = {}) {
   const ask = useAskOptional();
-  const pathname = usePathname();
   const enabled = Boolean(ask?.enabled);
   const toggle = ask?.toggle;
-  // The client home draws this button in the page, beside Team, so the
-  // fixed copy does not sit on top of the dashboard.
-  const parked = placement === 'fixed' && pathname === '/app/client/overview';
+  const isOpen = Boolean(ask?.open);
 
   useEffect(() => {
-    if (parked || !enabled || !toggle) return;
+    if (!enabled || !toggle || !withShortcut) return;
     const onKey = (e: KeyboardEvent) => {
-      if (!isAskShortcut(e)) return;
-      e.preventDefault();
-      toggle();
+      if (isAskShortcut(e)) {
+        e.preventDefault();
+        toggle();
+        return;
+      }
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !isOpen && !isTyping(e.target)) {
+        e.preventDefault();
+        toggle();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [parked, enabled, toggle]);
-
-  if (parked) return null;
+  }, [enabled, toggle, withShortcut, isOpen]);
 
   if (!ask || !enabled) return null;
-  if (ask.backPill && !ask.open) return null;
+  if (variant === 'sidebar') {
+    return (
+      <button
+        type="button"
+        onClick={ask.toggle}
+        aria-expanded={ask.open}
+        aria-controls="ask-panel"
+        aria-keyshortcuts="/ Meta+J Control+J"
+        title="Ask VCFO (/)"
+        className={cn(
+          'flex h-[38px] w-full items-center gap-2.5 rounded-md border-1.5 border-side-line px-2.5 text-[14px] font-medium text-side-ink transition-colors hover:bg-side-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
+          !expanded && 'justify-center px-0',
+          ask.open && 'bg-side-active text-side-active-ink',
+        )}
+      >
+        <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-mark bg-brand text-on-brand" aria-hidden>
+          <Sparkles className="h-[13px] w-[13px]" strokeWidth={1.6} />
+        </span>
+        <span className={cn('flex-1 text-left', !expanded && 'sr-only')}>Ask VCFO</span>
+        {expanded ? (
+          <kbd className="rounded-sm border border-side-line bg-side-hover px-[5px] font-sans text-[11px] font-medium leading-[18px] text-side-muted">
+            /
+          </kbd>
+        ) : null}
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -42,14 +86,13 @@ export function AskLauncher({ placement = 'fixed' }: { placement?: 'fixed' | 'in
       aria-keyshortcuts="Meta+J Control+J"
       title="Ask VCFO (⌘J / Ctrl+J)"
       className={cn(
-        placement === 'inline'
-          ? 'inline-flex h-10 items-center gap-2 rounded-full bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
-          : 'fixed bottom-5 right-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground shadow-lg transition-colors hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
-        ask.open && 'bg-primary-dark',
+        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-2 text-[13px] text-ink-2 transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
+        ask.open && 'bg-brand-soft text-ink',
       )}
     >
-      <MessageCircleQuestion className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-      Ask VCFO
+      <MessageCircleQuestion className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+      <span className="hidden sm:inline">Ask VCFO</span>
+      <span className="sr-only sm:hidden">Ask VCFO</span>
     </button>
   );
 }

@@ -110,11 +110,12 @@ export function DashBarChart({
                 stackId={entry.stackId}
                 fill={entry.color}
                 maxBarSize={chartBarProps.maxBarSize}
+                isAnimationActive={false}
                 radius={
                   stacked && !last
                     ? [0, 0, 0, 0]
                     : isRows
-                      ? [0, 4, 4, 0]
+                      ? [0, 3, 3, 0]
                       : chartBarProps.radius
                 }
               />

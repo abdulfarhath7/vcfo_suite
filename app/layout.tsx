@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Roboto, Roboto_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-/** UI body — clean geometric sans (matches Graphite Violet card typography). */
-const fontSans = Manrope({
+/** One face for the interface (VCFO Spectrum, R-28): Roboto 400, 500 and 700. --font-serif,
+ *  the legacy display hook, aliases --font-sans in globals.css until the .serif call sites move. */
+const fontSans = Roboto({
   subsets: ["latin"],
+  weight: ["400", "500", "700"],
   variable: "--font-sans",
   display: "swap",
 });
 
-/** Display / titles — Space Grotesk (bound to --font-serif for existing class hooks). */
-const fontDisplay = Space_Grotesk({
+/** Identifiers only: CIN, PAN, DIN, GSTIN, SRN, step and form codes. */
+const fontMono = Roboto_Mono({
   subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
-const fontMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["500"],
   variable: "--font-mono",
   display: "swap",
 });
@@ -36,8 +32,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
-      lang="en"
-      className={`${fontSans.variable} ${fontDisplay.variable} ${fontMono.variable}`}
+      lang="en-IN"
+      className={`${fontSans.variable} ${fontMono.variable}`}
       suppressHydrationWarning
     >
       <body className={`${fontSans.className} font-sans antialiased`}>

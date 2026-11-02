@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   applySidebarCollapsed,
-  cycleSidebarMode,
   isInternClientsListPath,
+  isTypingTarget,
+  parseSavedSidebarMode,
+  readSavedSidebarMode,
+  saveSidebarMode,
   shellDesktopNavExpanded,
+  sidebarIsPinned,
   sidebarPinCopy,
+  SIDEBAR_MODE_STORAGE_KEY,
+  toggleSidebarPin,
 } from './intern-sidebar';
 
 describe('isInternClientsListPath', () => {
@@ -70,27 +76,64 @@ describe('applySidebarCollapsed', () => {
   });
 });
 
-describe('cycleSidebarMode', () => {
-  it('cycles Auto → pin open → pin closed → Auto', () => {
-    expect(cycleSidebarMode('auto')).toBe('open');
-    expect(cycleSidebarMode('open')).toBe('closed');
-    expect(cycleSidebarMode('closed')).toBe('auto');
+describe('toggleSidebarPin', () => {
+  it('switches between pinned and the rail (R-49), and the old pinned-closed rail pins', () => {
+    expect(toggleSidebarPin('open')).toBe('auto');
+    expect(toggleSidebarPin('auto')).toBe('open');
+    expect(toggleSidebarPin('closed')).toBe('open');
+    expect(sidebarIsPinned('open')).toBe(true);
+    expect(sidebarIsPinned('auto')).toBe(false);
+    expect(sidebarIsPinned('closed')).toBe(false);
   });
 });
 
 describe('sidebarPinCopy', () => {
-  it('names the current pin and the next click', () => {
-    expect(sidebarPinCopy('auto')).toEqual({
-      label: 'Auto',
-      hint: 'Auto (hover). Click to pin open',
-    });
+  it('names what the click does, with the "[" key', () => {
     expect(sidebarPinCopy('open')).toEqual({
-      label: 'Pin',
-      hint: 'Pinned open. Click to pin closed',
+      label: 'Collapse sidebar',
+      hint: 'Collapse sidebar ([)',
+    });
+    expect(sidebarPinCopy('auto')).toEqual({
+      label: 'Pin sidebar',
+      hint: 'Pin sidebar ([)',
     });
     expect(sidebarPinCopy('closed')).toEqual({
-      label: 'Closed',
-      hint: 'Pinned closed. Click for auto (hover)',
+      label: 'Pin sidebar',
+      hint: 'Pin sidebar ([)',
     });
+  });
+});
+
+describe('saved sidebar mode', () => {
+  it('reads the R-49 values and the older mode names', () => {
+    expect(parseSavedSidebarMode('pinned')).toBe('open');
+    expect(parseSavedSidebarMode('rail')).toBe('auto');
+    expect(parseSavedSidebarMode('open')).toBe('open');
+    expect(parseSavedSidebarMode('auto')).toBe('auto');
+    expect(parseSavedSidebarMode('closed')).toBe('auto');
+    expect(parseSavedSidebarMode(null)).toBeNull();
+    expect(parseSavedSidebarMode('wide')).toBeNull();
+  });
+
+  it('saves pinned or rail per browser', () => {
+    window.localStorage.removeItem(SIDEBAR_MODE_STORAGE_KEY);
+    expect(readSavedSidebarMode()).toBeNull();
+    saveSidebarMode('auto');
+    expect(window.localStorage.getItem(SIDEBAR_MODE_STORAGE_KEY)).toBe('rail');
+    expect(readSavedSidebarMode()).toBe('auto');
+    saveSidebarMode('open');
+    expect(window.localStorage.getItem(SIDEBAR_MODE_STORAGE_KEY)).toBe('pinned');
+    expect(readSavedSidebarMode()).toBe('open');
+    window.localStorage.removeItem(SIDEBAR_MODE_STORAGE_KEY);
+  });
+});
+
+describe('isTypingTarget', () => {
+  it('treats fields and editable text as typing', () => {
+    expect(isTypingTarget(document.createElement('input'))).toBe(true);
+    expect(isTypingTarget(document.createElement('textarea'))).toBe(true);
+    expect(isTypingTarget(document.createElement('select'))).toBe(true);
+    expect(isTypingTarget(document.createElement('button'))).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
   });
 });

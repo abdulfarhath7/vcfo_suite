@@ -41,10 +41,15 @@ export const documentRequestDetails = pgTable(
     /** "Bill is older than 2 months. Please send the latest one." — re-upload reason. */
     reviewNote: text('review_note'),
     reviewNoteBy: uuid('review_note_by').references(() => profiles.id, { onDelete: 'set null' }),
+    /** What the request is for on the compliance records: 'obligation' or 'registration'; null for other requests (0029). */
+    subjectKind: text('subject_kind'),
+    /** The compliance instance id (obligation) or the registration step id ('reg-4') the request belongs to (0029). */
+    subjectKey: text('subject_key'),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     engIdx: index('document_request_details_engagement_idx').on(t.engagementId),
+    subjectIdx: index('document_request_details_subject_idx').on(t.engagementId, t.subjectKind, t.subjectKey),
   }),
 );
 

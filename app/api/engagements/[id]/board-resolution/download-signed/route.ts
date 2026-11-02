@@ -7,7 +7,7 @@ import { requireAnyRole } from '@/auth/guards';
 import {
   contentTypeForSignedBoardResolutionPath,
   downloadFilenameForSignedBoardResolution,
-} from '@/lib/board-resolution-storage';
+} from '@/lib/board-resolution/board-resolution-storage';
 import { downloadSignedBoardResolution } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };

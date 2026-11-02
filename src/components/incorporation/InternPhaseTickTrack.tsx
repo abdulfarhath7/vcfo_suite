@@ -1,7 +1,7 @@
 'use client';
 
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
-import { getStepGate } from '@/lib/checklist-step-gate';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import { getStepGate } from '@/lib/checklist/checklist-step-gate';
 import { cn } from '@/lib/utils';
 import styles from './intern-engagement-overview.module.css';
 

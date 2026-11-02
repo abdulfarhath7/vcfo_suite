@@ -2,140 +2,393 @@
 
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import { BarChart3, Briefcase, CheckCircle2, Clock, Users } from 'lucide-react';
+import { AlertTriangle, Building2, CircleCheck, Timer, User, type LucideIcon } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { PageHeader } from '@/components/admin/PageHeader';
-import { AccentKpi } from '@/components/admin/AccentKpi';
+import { DashDonut, DashSection } from '@/components/dash/DashSection';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
+import { CHART_STATUS, ChartLegend } from '@/components/charts';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { ProgressList } from '@/components/dash/progress-list';
+import { useLeadHours } from '@/hooks/use-lead-hours';
+import { useAnalyticsMetrics } from '@/components/metrics/use-metrics';
+import { useQuery } from '@tanstack/react-query';
+import { analyticsKpis, kpiChange, type KpiKey } from '@/lib/metrics/analytics-kpis';
+import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
+import type { StepTimeMetric } from '@/lib/metrics/practice-metrics';
+import { shortCompany } from '@/components/super/parts/super-text';
+import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';
 import { checklist } from '@/data/checklist';
+import {
+  clientHealthCounts,
+  stepsCompletedPerWeek,
+  workloadByLead,
+  type AnalyticsProject,
+} from '@/views/admin/analytics/analytics-stats';
+
+const chartLoading = () => <div className="h-full animate-pulse rounded-md bg-surface-sunken" />;
 
 const AnalyticsCompletionChart = dynamic(
   () => import('@/views/admin/AnalyticsCharts').then((m) => m.AnalyticsCompletionChart),
-  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-muted/40" /> },
+  { ssr: false, loading: chartLoading },
 );
 const AnalyticsDelayChart = dynamic(
   () => import('@/views/admin/AnalyticsCharts').then((m) => m.AnalyticsDelayChart),
-  { ssr: false, loading: () => <div className="h-full animate-pulse rounded-md bg-muted/40" /> },
+  { ssr: false, loading: chartLoading },
+);
+const AnalyticsStepsChart = dynamic(
+  () => import('@/views/admin/AnalyticsCharts').then((m) => m.AnalyticsStepsChart),
+  { ssr: false, loading: chartLoading },
 );
 
-const data6 = [
-  { m: 'Oct 25', completion: 88, target: 95, delay: 3.2, benchmark: 2.0 },
-  { m: 'Nov 25', completion: 91, target: 95, delay: 2.8, benchmark: 2.0 },
-  { m: 'Dec 25', completion: 87, target: 95, delay: 3.6, benchmark: 2.0 },
-  { m: 'Jan 26', completion: 93, target: 95, delay: 2.0, benchmark: 2.0 },
-  { m: 'Feb 26', completion: 94, target: 95, delay: 1.7, benchmark: 2.0 },
-  { m: 'Mar 26', completion: 96, target: 95, delay: 1.5, benchmark: 2.0 },
-];
+const ITEM_IDS = checklist.map((item) => item.id);
 
-const data12 = [
-  { m: 'Apr 25', completion: 82, target: 95, delay: 4.4, benchmark: 2.0 },
-  { m: 'May 25', completion: 84, target: 95, delay: 4.0, benchmark: 2.0 },
-  { m: 'Jun 25', completion: 86, target: 95, delay: 3.6, benchmark: 2.0 },
-  { m: 'Jul 25', completion: 85, target: 95, delay: 3.8, benchmark: 2.0 },
-  { m: 'Aug 25', completion: 87, target: 95, delay: 3.4, benchmark: 2.0 },
-  { m: 'Sep 25', completion: 89, target: 95, delay: 3.1, benchmark: 2.0 },
-  ...data6,
-];
+/* R-25: status colours only. Waiting is teal, overdue red, not started grey. */
+const HEALTH_ROWS = [
+  { key: 'progress', label: 'In progress', color: CHART_STATUS.active },
+  { key: 'waiting', label: 'Waiting', color: CHART_STATUS.waiting },
+  { key: 'overdue', label: 'Overdue', color: CHART_STATUS.overdue },
+  { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked },
+  { key: 'done', label: 'Done', color: CHART_STATUS.done },
+] as const;
 
-function SampleBadge() {
+interface Kpi {
+  label: string;
+  value: number | string;
+  /** Small muted text after the number, for example "/ 120". */
+  of?: string;
+  Icon: LucideIcon;
+  /** An overdue number above zero is red (R-18). */
+  bad?: boolean;
+  /** Change against last month's stored snapshot (S-618); null hides the tag. */
+  change?: number | null;
+  /** True when a rise is good news (green), false when it is bad news (amber). */
+  upIsGood?: boolean;
+}
+
+/**
+ * Last month-end's stored tile values for the caller's own scope (`kpi_snapshots`, written by
+ * the month-end job). Empty until the job has run once, and then no change tag shows.
+ */
+function useKpiSnapshot() {
+  return useQuery({
+    queryKey: ['metrics', 'kpi-snapshot'],
+    queryFn: async () => {
+      const res = await fetch('/api/metrics/kpi-snapshot', { cache: 'no-store' });
+      if (!res.ok) return { period: null, values: {} as Partial<Record<KpiKey, number>> };
+      return (await res.json()) as { period: string | null; values: Partial<Record<KpiKey, number>> };
+    },
+    staleTime: 10 * 60_000,
+  });
+}
+
+/** The change tag after a tile number: "+1" or "−2", green for good news and amber for bad. */
+function ChangeTag({ change, upIsGood = true }: { change: number; upIsGood?: boolean }) {
+  if (change === 0) return null;
+  const good = change > 0 === upIsGood;
   return (
-    <span className="rounded-full bg-warning-light px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning-text">
-      Sample data
+    <span
+      className={cn(
+        'ml-2 inline-flex h-5 items-center rounded-sm px-1.5 align-middle text-[11.5px] font-medium tabular-nums',
+        good ? 'bg-positive-soft text-positive' : 'bg-warning-soft text-warning',
+      )}
+      title="Change since the end of last month"
+    >
+      {change > 0 ? `+${change}` : `−${Math.abs(change)}`}
     </span>
   );
 }
 
+/**
+ * KP1 number tiles on a plain page (R-18, prototype NumberStrip): a 13px label after a 15px
+ * muted icon, a 26px number, a 1.5px edge. Two tiles a row on a phone, auto-fit from sm.
+ */
+function KpiStrip({ items }: { items: Kpi[] }) {
+  return (
+    <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
+      {items.map((k) => (
+        <div key={k.label} className="flex min-w-0 flex-col gap-1.5 rounded-md border-1.5 border-line bg-surface-raised px-4 py-3.5">
+          <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[13px] font-medium text-ink-2">
+            <k.Icon className="h-[15px] w-[15px] flex-none text-ink-muted" strokeWidth={1.6} aria-hidden />
+            <span className="truncate">{k.label}</span>
+          </span>
+          <b className={cn('text-[26px] font-medium leading-none tabular-nums', k.bad ? 'text-danger' : 'text-ink')}>
+            {k.value}
+            {k.of ? <small className="ml-1 text-[14px] font-medium text-ink-muted">{k.of}</small> : null}
+            {k.change !== null && k.change !== undefined ? <ChangeTag change={k.change} upIsGood={k.upIsGood} /> : null}
+          </b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const STEP_TIME_COLUMNS: EFilingColumn<StepTimeMetric>[] = [
+  { key: 'step', header: 'Step', render: (s) => <span className="font-medium text-ink">{s.title}</span> },
+  {
+    key: 'median',
+    header: 'Median days',
+    width: '110px',
+    align: 'right',
+    render: (s) => <span className="tabular-nums">{s.medianDays ?? '–'}</span>,
+  },
+  {
+    key: 'longest',
+    header: 'Longest',
+    width: '90px',
+    align: 'right',
+    render: (s) => (
+      <span className={cn('tabular-nums', (s.longestDays ?? 0) > 7 && 'font-medium text-danger')}>{s.longestDays ?? '–'}</span>
+    ),
+  },
+  {
+    key: 'client',
+    header: 'Longest client',
+    width: '140px',
+    render: (s) => (s.longestCompany ? shortCompany(s.longestCompany) : <span className="text-ink-faint">–</span>),
+  },
+];
+
+/**
+ * Analytics (prototype AnalyticsScreen). The monthly charts, filings on time and time in step
+ * come from `/api/metrics/analytics` (G-27): the filed-against-due history in the compliance
+ * rows and the step events. The live counts below them still come from the checklist state the
+ * app already holds.
+ */
 export default function Analytics() {
   const [period, setPeriod] = useState<'6' | '12'>('6');
-  const data = period === '6' ? data6 : data12;
-  const { engagements, getStateForEngagement } = useApp();
+  const metrics = useAnalyticsMetrics(period === '6' ? 6 : 12);
+  const months = metrics.data?.months ?? [];
+  const data = months.map((m) => ({ m: m.label, completion: m.completionPct, delay: m.avgDelayDays }));
+  // Month words only ("Oct"); twelve months never repeat one, and the tooltip keeps the counts.
+  const filingRows = months.map((m) => ({ key: m.key, label: m.label.split(' ')[0] ?? m.label, onTime: m.onTime, late: m.late }));
+  const filedTotal = months.reduce((n, m) => n + m.onTime + m.late, 0);
+  const onTimeTotal = months.reduce((n, m) => n + m.onTime, 0);
+  const lastRated = [...months].reverse().find((m) => m.completionPct !== null);
+  const hasRates = months.some((m) => m.completionPct !== null);
+  const hasDelay = months.some((m) => m.avgDelayDays !== null);
+  const stepTime = metrics.data?.stepTime ?? [];
+  const { engagements, getStateForEngagement, internOptions, teamMembers, role, engagementsLoading } = useApp();
 
-  /** Live portfolio KPIs computed from real engagement state. */
-  const live = useMemo(() => {
-    let projects = 0;
-    let stepsDone = 0;
-    let stepsTotal = 0;
-    let awaitingClient = 0;
-    let overdue = 0;
-    for (const eng of engagements) {
-      projects += 1;
-      const state = getStateForEngagement(eng);
-      for (const item of checklist) {
-        const s = state[item.id]?.status ?? 'not-started';
-        if (s === 'not-applicable') continue;
-        stepsTotal += 1;
-        if (s === 'completed') stepsDone += 1;
-        if (s === 'awaiting-client') awaitingClient += 1;
-        if (s === 'overdue') overdue += 1;
-      }
-    }
-    const pct = stepsTotal > 0 ? Math.round((stepsDone / stepsTotal) * 100) : 0;
-    return { projects, pct, awaitingClient, overdue };
-  }, [engagements, getStateForEngagement]);
+  const projects = useMemo<AnalyticsProject[]>(
+    () => engagements.map((eng) => ({ internId: eng.internId, state: getStateForEngagement(eng) })),
+    [engagements, getStateForEngagement],
+  );
+
+  /** Live portfolio KPIs computed from real engagement state (the same rule as the month-end job). */
+  const live = useMemo(() => analyticsKpis(projects.map((p) => p.state), ITEM_IDS), [projects]);
+  const snapshot = useKpiSnapshot();
+  const prev = snapshot.data?.values ?? {};
+  const onTimePct = metrics.data?.onTime.pct ?? null;
+
+  const weeks = useMemo(() => stepsCompletedPerWeek(projects, ITEM_IDS, new Date()), [projects]);
+  const weeksTotal = weeks.reduce((sum, w) => sum + w.steps, 0);
+  const health = useMemo(() => clientHealthCounts(projects, ITEM_IDS), [projects]);
+  const healthRows = HEALTH_ROWS.filter((h) => health[h.key] > 0);
+
+  const leads = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string }>();
+    for (const p of [...internOptions, ...teamMembers]) if (!seen.has(p.id)) seen.set(p.id, p);
+    return [...seen.values()];
+  }, [internOptions, teamMembers]);
+  const workload = useMemo(() => workloadByLead(projects, ITEM_IDS, leads), [projects, leads]);
+  /** Projects each lead leads, for the "N clients" line under the name. */
+  const clientsByLead = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const p of projects) if (p.internId) out.set(p.internId, (out.get(p.internId) ?? 0) + 1);
+    return out;
+  }, [projects]);
+  // Planned hours per lead this week (F-163), keyed by intern id like the workload rows.
+  const leadHours = useLeadHours(role !== 'intern');
+  const hoursByLead = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const l of leadHours.data?.leads ?? []) if (l.internId) out.set(l.internId, l.hours);
+    return out;
+  }, [leadHours.data]);
+  const hoursMax = Math.max(0, ...hoursByLead.values());
+  const showWorkload = role !== 'intern' && workload.length > 0;
+
 
   return (
     <PageTransition>
       <SEO title="Analytics — VCFO Suite" description="Portfolio performance charts." path="/app/manager/analytics" />
 
-      <PageHeader
-        accent="sky"
-        icon={BarChart3}
-        title="Analytics"
-        actions={
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as '6' | '12')}
-            className="h-9 px-3 rounded-md border border-border bg-surface text-[12.5px] text-ink"
-          >
-            <option value="6">Last 6 Months</option>
-            <option value="12">Last 12 Months</option>
-          </select>
-        }
+      {/* Plain page head (R-02, R-09): no back link; the period switch on the right. */}
+      <header className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-[1_1_240px]">
+          <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Analytics</h1>
+          <p className="text-[13.5px] text-ink-muted">{period === '6' ? 'Last 6 months' : 'Last 12 months'}</p>
+        </div>
+        <SpectrumTabs
+          size="md"
+          label="Period"
+          items={[
+            { key: '6', label: 'Last 6 months' },
+            { key: '12', label: 'Last 12 months' },
+          ]}
+          value={period}
+          onChange={(key) => setPeriod(key as '6' | '12')}
+        />
+      </header>
+
+      <KpiStrip
+        items={[
+          { label: 'Projects', value: live.projects, Icon: Building2, change: kpiChange(live.projects, prev.projects) },
+          {
+            label: 'Steps completed',
+            value: live.stepsDone,
+            of: live.stepsTotal ? `/ ${live.stepsTotal}` : undefined,
+            Icon: CircleCheck,
+            change: kpiChange(live.stepsDone, prev.steps_done),
+          },
+          {
+            label: 'Waiting on client',
+            value: live.awaitingClient,
+            Icon: User,
+            change: kpiChange(live.awaitingClient, prev.awaiting_client),
+            upIsGood: false,
+          },
+          {
+            label: 'Filed on time · 12 months',
+            value: onTimePct === null ? '–' : `${onTimePct}%`,
+            Icon: Timer,
+            // Compared only on the 12-month view, the window the snapshot stores.
+            change: period === '12' ? kpiChange(onTimePct, prev.on_time_pct) : null,
+          },
+          {
+            label: 'Overdue steps',
+            value: live.overdue,
+            Icon: AlertTriangle,
+            bad: live.overdue > 0,
+            change: kpiChange(live.overdue, prev.overdue_steps),
+            upIsGood: false,
+          },
+        ]}
       />
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <AccentKpi label="Projects" value={live.projects} tone="primary" icon={Briefcase} />
-        <AccentKpi
-          label="Steps completed"
-          value={`${live.pct}%`}
-          tone="success"
-          icon={CheckCircle2}
-        />
-        <AccentKpi
-          label="Waiting on client"
-          value={live.awaitingClient}
-          tone="warning"
-          icon={Users}
-        />
-        <AccentKpi
-          label="Overdue steps"
-          value={live.overdue}
-          tone={live.overdue > 0 ? 'warning' : 'success'}
-          icon={Clock}
-        />
-      </div>
+      <div className="grid gap-5">
+        <div className="grid items-start gap-5 md:grid-cols-2">
+          <DashSection
+            title="Compliance completion rate"
+            meta={lastRated ? `${lastRated.completionPct}% in ${lastRated.label} · target 95%` : 'Target 95%'}
+            loading={metrics.isPending}
+            loadingVariant="block"
+          >
+            {hasRates ? (
+              <div className="h-[232px]">
+                <AnalyticsCompletionChart data={data} />
+              </div>
+            ) : (
+              <EmptyState title="No filing has fallen due yet" />
+            )}
+          </DashSection>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <div className="surface p-5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[13px] font-semibold text-ink">Compliance completion rate</div>
-            <SampleBadge />
-          </div>
-          <div className="text-[11.5px] text-text-tertiary mt-0.5 mb-3">Monthly actuals vs 95% target</div>
-          <div className="h-[260px]">
-            <AnalyticsCompletionChart data={data} />
-          </div>
+          <DashSection
+            title="Average filing delay"
+            meta="Days past due date · benchmark 2 days"
+            loading={metrics.isPending}
+            loadingVariant="block"
+          >
+            {hasDelay ? (
+              <div className="h-[232px]">
+                <AnalyticsDelayChart data={data} />
+              </div>
+            ) : (
+              <EmptyState title="No filing date recorded yet" />
+            )}
+          </DashSection>
         </div>
 
-        <div className="surface p-5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[13px] font-semibold text-ink">Average filing delay</div>
-            <SampleBadge />
-          </div>
-          <div className="text-[11.5px] text-text-tertiary mt-0.5 mb-3">Days past statutory due date (benchmark 2d)</div>
-          <div className="h-[260px]">
-            <AnalyticsDelayChart data={data} />
+        <div className="grid items-start gap-5 md:grid-cols-2">
+          <DashSection
+            title="Filings on time"
+            meta={filedTotal ? `${Math.round((onTimeTotal / filedTotal) * 100)}%` : undefined}
+            loading={metrics.isPending}
+            loadingVariant="block"
+          >
+            {/* C4 (B-23): the same on-time and late columns as the Filings rail. */}
+            {filedTotal ? (
+              <OnTimeColumns data={filingRows} height={180} />
+            ) : (
+              <EmptyState title="No filing recorded yet" />
+            )}
+          </DashSection>
+
+          <DashSection title="Steps completed per week" meta={`${weeksTotal} in 8 weeks`}>
+            {engagementsLoading ? (
+              <div className="h-[232px] animate-pulse rounded-md bg-surface-sunken" aria-hidden />
+            ) : weeksTotal === 0 ? (
+              <EmptyState title="No steps completed yet" />
+            ) : (
+              <div className="h-[232px]">
+                <AnalyticsStepsChart data={weeks} />
+              </div>
+            )}
+          </DashSection>
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <DashSection title="Time in step" meta="Open and finished steps" loading={metrics.isPending} bodyClassName="px-2 pb-2 pt-1">
+            <EFilingGrid
+              caption="Time in step"
+              columns={STEP_TIME_COLUMNS}
+              rows={stepTime}
+              rowKey={(s) => s.stepId}
+              empty="No step has been timed yet"
+              pageSize={8}
+              minWidth={480}
+            />
+          </DashSection>
+
+          <div className="grid min-w-0 grid-cols-1 gap-5">
+            <DashSection title="Client health" meta={`${projects.length} clients`}>
+              {healthRows.length === 0 ? (
+                engagementsLoading ? (
+                  <SkeletonRows rows={3} />
+                ) : (
+                  <EmptyState title="No clients yet" />
+                )
+              ) : (
+                <div className="flex flex-wrap items-center gap-6 py-2">
+                  <DashDonut
+                    size={96}
+                    segments={healthRows.map((h) => ({ n: health[h.key], color: h.color }))}
+                    centerLabel={projects.length}
+                    centerCaption="clients"
+                  />
+                  <ChartLegend
+                    layout="stack"
+                    className="flex-1"
+                    items={healthRows.map((h) => ({ label: h.label, color: h.color, count: health[h.key] }))}
+                  />
+                </div>
+              )}
+            </DashSection>
+
+            {showWorkload ? (
+              <DashSection title="Workload" meta="Hours planned this week" flush loading={leadHours.isPending}>
+                {/* Prototype ProgressList (F-163): the hours each lead put in their planner this
+                    week (time blocks), the bar sized against the busiest lead; the line under the
+                    name keeps the open and overdue step counts. */}
+                <ProgressList
+                  items={workload.map((w) => {
+                    const clients = clientsByLead.get(w.id) ?? 0;
+                    const hours = hoursByLead.get(w.id) ?? 0;
+                    const pct = hoursMax > 0 ? (hours / hoursMax) * 100 : 0;
+                    return {
+                      id: w.id,
+                      name: w.name,
+                      sub: `${clients} client${clients === 1 ? '' : 's'} · ${w.open} open · ${w.overdue} overdue`,
+                      pct,
+                      value: `${hours} h`,
+                      tone: w.overdue > 0 ? 'warn' : 'accent',
+                    };
+                  })}
+                />
+              </DashSection>
+            ) : null}
           </div>
         </div>
       </div>

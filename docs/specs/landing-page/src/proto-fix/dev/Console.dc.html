@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer console</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./devdetail.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/* Developer console in the lcc Settings shape (owner, 26 Oct): a section rail on the left, then cards of
+   rows; each row has the setting and a one-line hint on the left and the value or control on the right. */
+.cs{display:grid;grid-template-columns:220px minmax(0,1fr);gap:0;min-height:calc(100vh - 56px);font-size:13px;line-height:20px;color:#16212f}
+.cs .hide{display:none!important}
+.cs-rail{border-right:1px solid #e3e6eb;padding:20px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;box-sizing:border-box}
+.cs-rt{padding:0 10px 10px;font-size:16px;font-weight:600}
+.cs-ri{all:unset;box-sizing:border-box;height:32px;padding:0 10px;border-radius:6px;display:flex;align-items:center;gap:8px;color:#667180;cursor:pointer;font-size:13px}
+.cs-ri:hover{background:#f5f6f8;color:#16212f}
+.cs-ri:focus-visible{outline:2px solid #2563a8;outline-offset:1px}
+.cs-ri[aria-current="true"]{background:#eef0f3;color:#16212f;font-weight:500}
+.cs-ri span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-ri b{font-weight:500;font-size:11.5px;color:#98a1ae}
+.cs-ri b:empty{display:none}
+.cs-ri .dot{width:7px;height:7px}
+.cs-ri .dot.none{display:none}
+.cs-ri.grp{cursor:default;height:28px;margin-top:10px;font-size:11.5px;font-weight:600;color:#98a1ae;background:none}
+.cs-ri.grp:first-of-type{margin-top:0}
+.cs-body{padding:24px 32px 120px;display:flex;flex-direction:column;gap:16px;max-width:920px;min-width:0}
+.cs-h{display:flex;flex-direction:column;gap:2px}
+.cs-h h1{margin:0;font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.cs-h div{color:#667180}
+.cs-card{border:1px solid #e3e6eb;border-radius:10px;background:#fff;display:flex;flex-direction:column;scroll-margin-top:72px}
+.cs-ch{display:flex;align-items:baseline;gap:8px;padding:10px 20px;border-bottom:1px solid #e3e6eb}
+.cs-ch b{font-weight:600}
+.cs-ch span{font-size:12px;color:#667180}
+.cs-card.danger{border-color:#f0c9c9}
+.cs-card.danger .cs-ch b{color:#be3434}
+.cs-row{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;padding:14px 20px;border-bottom:1px solid #eef0f3}
+.cs-row:last-child{border-bottom:0}
+.cs-l div{font-weight:500}
+.cs-l small{display:block;font-size:12px;color:#667180;line-height:17px;margin-top:2px}
+.cs-val{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0}
+.cs-v{min-width:0;overflow-wrap:anywhere}
+.cs-v.mono,.cs-t .mono{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3f4a59}
+.cs-chip{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:5px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 11%,#fff)}
+.cs-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.cs-list{display:flex;flex-direction:column;gap:2px;flex-basis:100%}
+.cs-list .cs-li{font-size:12.5px;color:#3f4a59;padding-left:14px;position:relative}
+.cs-list .cs-li::before{content:"";position:absolute;left:2px;top:9px;width:4px;height:4px;border-radius:50%;background:#98a1ae}
+.cs-list.mono .cs-li{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.cs-seg{display:inline-flex;padding:2px;gap:2px;border:1px solid #e3e6eb;border-radius:6px;background:#fff;width:fit-content}
+.cs-seg button{height:28px;padding:0 12px;border:0;border-radius:4px;background:transparent;color:#667180;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.cs-seg button[aria-checked="true"]{background:#eef0f3;color:#16212f;font-weight:500}
+.cs-in{height:30px;padding:0 10px;border:1px solid #e3e6eb;border-radius:6px;font:inherit;font-size:12.5px;color:#16212f;width:220px;box-sizing:border-box}
+.cs .btn{height:30px;padding:0 12px;font-size:12.5px}
+.cs .btn[data-danger]{color:#be3434;border-color:#f0c9c9;background:#fff}
+.cs .sw3[aria-checked="true"]{background:#1f3b5c}
+.cs-go{color:#2563a8;font-weight:500;font-size:12.5px;white-space:nowrap}
+.cs-ub{display:flex;gap:2px;height:16px;flex-basis:100%;max-width:420px}
+.cs-ub i{flex:1;border-radius:2px}
+.cs-t{margin:0;overflow:hidden}
+.cs-tr{display:grid;gap:12px;padding:0 20px;min-height:40px;align-items:center;border-bottom:1px solid #eef0f3;font-size:12.5px}
+.cs-tr:last-child{border-bottom:0}
+.cs-th{min-height:32px;background:#f5f6f8;font-size:11.5px;color:#667180;font-weight:500}
+.cs-tr > span{min-width:0;overflow:hidden;text-overflow:ellipsis;padding:6px 0}
+.cs-tr > span.chip-c{overflow:visible}
+.cs-tr small{display:block;font-size:11.5px;color:#667180;line-height:16px;white-space:normal}
+.cs-tr small:empty{display:none}
+.cs-bar{display:block;height:6px;border-radius:3px;background:#eef0f3;overflow:hidden;margin-top:4px}
+.cs-bar i{display:block;height:100%;border-radius:3px}
+</style>
+</helmet>
+<div class="cs">
+  <nav class="cs-rail" aria-label="{{title}} sections">
+    <div class="cs-rt">{{title}}</div>
+    <sc-for list="{{rail}}" as="i" hint-placeholder-count="6"><button type="button" class="cs-ri {{i.cls}}" aria-current="{{i.cur}}" onClick="{{i.pick}}"><i class="dot {{i.dot}}"></i><span>{{i.t}}</span><b>{{i.n}}</b></button></sc-for>
+  </nav>
+  <div class="cs-body">
+    <div class="cs-h {{hc}}"><h1>{{h1}}<span class="cs-chip {{h1cc}}" style="{{h1cs}}">{{h1chip}}</span></h1><div>{{desc}}</div></div>
+    <sc-for list="{{secs}}" as="c" hint-placeholder-count="4"><section class="cs-card {{c.cls}}" id="{{c.id}}" aria-label="{{c.t}}">
+      <div class="cs-ch"><b>{{c.t}}</b><span>{{c.m}}</span></div>
+      <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="3"><div class="cs-row">
+        <div class="cs-l"><div>{{r.l}}</div><small>{{r.h}}</small></div>
+        <div class="cs-val">
+          <span class="cs-chip {{r.cc}}" style="{{r.cs}}">{{r.chip}}</span>
+          <span class="cs-v {{r.vc}}">{{r.v}}</span>
+          <span class="cs-ub {{r.ubc}}"><sc-for list="{{r.bars}}" as="b" hint-placeholder-count="0"><i style="{{b.st}}" title="{{b.tip}}"></i></sc-for></span>
+          <div class="cs-list {{r.lc}}"><sc-for list="{{r.list}}" as="x" hint-placeholder-count="0"><div class="cs-li">{{x.t}}</div></sc-for></div>
+          <span class="cs-seg {{r.segc}}" role="radiogroup" aria-label="{{r.l}}"><sc-for list="{{r.seg}}" as="o" hint-placeholder-count="0"><button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}">{{o.t}}</button></sc-for></span>
+          <input class="cs-in {{r.inc}}" value="{{r.inv}}" aria-label="{{r.l}}">
+          <button type="button" class="sw3 {{r.swc}}" role="switch" aria-checked="{{r.on}}" aria-label="{{r.l}}" onClick="{{r.tog}}"></button>
+          <button type="button" class="btn {{r.bc}}" data-dev-confirm="{{r.b}}" data-what="{{r.bw}}" data-before="{{r.bb}}" data-after="{{r.ba}}" data-toast="{{r.bt}}">{{r.b}}</button>
+          <button type="button" class="btn {{r.dc}}" data-danger data-dev-confirm="{{r.b}}" data-what="{{r.bw}}" data-before="{{r.bb}}" data-after="{{r.ba}}" data-toast="{{r.bt}}">{{r.b}}</button>
+          <a href="#" class="cs-go {{r.gc}}" data-go="{{r.go}}" data-dev-conn="{{r.gk}}">{{r.gl}}</a>
+        </div>
+      </div></sc-for>
+      <div class="cs-t {{c.tc}}">
+        <div class="cs-tr cs-th" style="{{c.cols}}"><sc-for list="{{c.head}}" as="x" hint-placeholder-count="0"><span>{{x.t}}</span></sc-for></div>
+        <sc-for list="{{c.trs}}" as="tr" hint-placeholder-count="0"><div class="cs-tr" style="{{tr.cols}}"><sc-for list="{{tr.cells}}" as="td" hint-placeholder-count="0"><span class="{{td.c}}"><span class="{{td.ic}}" style="{{td.s}}">{{td.t}}</span><span class="cs-bar {{td.barc}}"><i style="{{td.bar}}"></i></span><small>{{td.sub}}</small><button type="button" class="btn {{td.bc}}" data-dev-confirm="{{td.b}}" data-what="{{td.bw}}" data-before="{{td.bb}}" data-after="{{td.ba}}" data-toast="{{td.bt}}">{{td.b}}</button><button type="button" class="btn {{td.dc}}" data-danger data-dev-confirm="{{td.b}}" data-what="{{td.bw}}" data-before="{{td.bb}}" data-after="{{td.ba}}" data-toast="{{td.bt}}">{{td.b}}</button></span></sc-for></div></sc-for>
+      </div>
+    </section></sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sec":{"editor":"text","default":"overview"},"$preview":{"width":1192,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, XD = window.DEVX || { X: {}, used: () => null }, s = this.state || {}, set = (o) => this.setState(o);
+    const sec = this.props.sec ?? 'overview';
+    if (!this.__l) {
+      this.__l = 1;
+      window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() }));
+      window.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-dev-conn]'); if (a && a.getAttribute('data-dev-conn')) { try { sessionStorage.setItem('vcfo.devconn', a.getAttribute('data-dev-conn')); } catch (x) {} } }, true);
+    }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const TONE = { ok: '#1e7f55', warn: '#a35f00', bad: '#be3434', idle: '#56627a', info: '#2563a8' };
+    const ST = { ok: ['Working', 'ok'], warn: ['Needs attention', 'warn'], down: ['Down', 'bad'], connected: ['Connected', 'ok'], attention: ['Needs attention', 'warn'], off: ['Not connected', 'idle'], missing: ['Missing', 'bad'], fail: ['Failed', 'bad'], skip: ['Skipped', 'warn'], pending: ['Waiting for approval', 'warn'], approved: ['Approved', 'ok'], pass: ['Passing', 'ok'], error: ['Error', 'bad'], info: ['Info', 'info'] };
+    const store = () => { try { return JSON.parse(sessionStorage.getItem('vcfo.devset') || '{}'); } catch (e) { return {}; } };
+    const save = (k, v) => { const o = store(); o[k] = v; try { sessionStorage.setItem('vcfo.devset', JSON.stringify(o)); } catch (e) {} };
+    const H = 'hide';
+    // One row, every slot present and hidden unless used (no sc-if inside the grid).
+    const row = (l, h, v, o) => {
+      o = o || {}; const st = store();
+      const r = { l, h: h || '', v: v || '', vc: v ? (o.mono && !o.list ? 'mono' : '') : H, chip: '', cc: H, cs: '', bars: [], ubc: H, list: [], lc: H, seg: [], segc: H, inv: '', inc: H, on: 'false', swc: H, tog: null, b: '', bw: '', bb: '', ba: '', bt: '', bc: H, dc: H, go: '', gk: '', gl: '', gc: H };
+      if (o.chip) { r.chip = o.chip[0]; r.cc = ''; r.cs = '--c:' + (TONE[o.chip[1]] || TONE.idle); }
+      if (o.bars) { r.bars = o.bars; r.ubc = ''; }
+      if (o.list) { r.list = o.list.map(t => ({ t })); r.lc = o.mono ? 'mono' : ''; }
+      if (o.seg) { const k = o.seg.k, cur = k in st ? st[k] : o.seg.sel; r.segc = ''; r.seg = o.seg.opts.map((t, i) => ({ t, on: i === cur ? 'true' : 'false', pick: () => { if (i === cur) return; save(k, i); D.log(l + ': ' + t, o.seg.opts[cur], t); toast(l + ' saved · ' + t); set({ t: Date.now() }); } })); }
+      if (o.inp) { r.inv = (o.inp.k in st) ? st[o.inp.k] : o.inp.v; r.inc = ''; }
+      if (o.sw) { const k = o.sw, on = k in st ? st[k] : !!o.on; r.swc = ''; r.on = on ? 'true' : 'false'; r.tog = () => { save(k, !on); D.log(l + (on ? ' turned off' : ' turned on'), on ? 'On' : 'Off', on ? 'Off' : 'On'); toast(l + (on ? ' off' : ' on') + ' · saved'); set({ t: Date.now() }); }; }
+      if (o.flag) { const f = D.flags().find(x => x[0] === o.flag); const on = !!(f && f[2]); r.swc = ''; r.on = on ? 'true' : 'false'; r.tog = () => { let m = {}; try { m = JSON.parse(sessionStorage.getItem('vcfo.devflags') || '{}'); } catch (e) {} m[o.flag] = !on; try { sessionStorage.setItem('vcfo.devflags', JSON.stringify(m)); } catch (e) {} D.log((on ? 'Turned off ' : 'Turned on ') + l, on ? 'On' : 'Off', on ? 'Off' : 'On'); toast(l + (on ? ' off' : ' on')); set({ t: Date.now() }); }; }
+      if (o.btn) { const b = o.btn; r.b = b.t; r.bw = b.w || b.t; r.bb = b.b || '-'; r.ba = b.a || 'Done'; r.bt = b.toast || (b.t + ' · done · this is a prototype'); if (b.danger) r.dc = ''; else r.bc = ''; }
+      if (o.go) { r.gl = o.go[0]; r.go = o.go[1]; r.gk = o.go[2] || ''; r.gc = ''; }
+      return r;
+    };
+    const cell = (x, cols) => {
+      if (x && typeof x === 'object') {
+        const c = { t: x.t || '', c: x.tone ? 'chip-c' : '', ic: x.tone ? 'cs-chip' : (x.mono ? 'mono' : ''), s: x.tone ? '--c:' + (TONE[x.tone] || TONE.idle) : (x.st || ''), sub: x.sub || '', bar: '', barc: H, b: '', bw: '', bb: '', ba: '', bt: '', bc: H, dc: H };
+        if (x.bar != null) { c.bar = 'width:' + x.bar + '%;background:' + (x.barTone ? TONE[x.barTone] : '#2563a8'); c.barc = ''; }
+        if (x.btn) { const b = x.btn; c.b = b.t; c.bw = b.w || b.t; c.bb = b.b || '-'; c.ba = b.a || 'Done'; c.bt = b.toast || (b.t + ' · done · this is a prototype'); if (b.danger) c.dc = ''; else c.bc = ''; }
+        if (!x.t && !x.tone) c.ic = H;
+        return c;
+      }
+      return { t: x == null ? '' : String(x), c: '', ic: '', s: '', sub: '', bar: '', barc: H, b: '', bw: '', bb: '', ba: '', bt: '', bc: H, dc: H };
+    };
+    const card = (id, t, m, rows, table, cls) => {
+      const cols = table ? 'grid-template-columns:' + table.cols : '';
+      return { id: 'cs-' + id, t, m: m || '', cls: cls || '', rows: rows || [], tc: table ? '' : H, cols, head: table ? table.head.map(t => ({ t })) : [], trs: table ? table.rows.map(rw => ({ cols, cells: rw.map(x => cell(x)) })) : [] };
+    };
+    const ofSpec = (k, i, x) => {
+      if (!x) return null;
+      if (typeof x === 'string') {
+        const [kind, arg] = x.split(':');
+        if (kind === 'used') { const u = XD.used(arg); return u ? card(k + '-used', u.t, u.m, [], u.table) : null; }
+        if (kind === 'events') { const l = D.LOGS.filter(z => z[2] === arg); return l.length ? card(k + '-ev', 'Recent events', 'from Logs', [], { cols: '120px 110px minmax(0,1fr)', head: ['Time', 'Level', 'Event'], rows: l.map(z => [z[0], { t: ST[z[1]] ? ST[z[1]][0] : z[1], tone: ST[z[1]] ? ST[z[1]][1] : 'idle' }, { t: z[3], sub: z[4] }]) }) : null; }
+        return null;
+      }
+      return card(k + '-' + i, x.t, x.m, (x.rows || []).map(rw => row(rw[0], rw[1], rw[2], rw[3])), x.table, x.danger ? 'danger' : '');
+    };
+    const scrollTo = (id) => () => { const el = document.getElementById('cs-' + id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); set({ at: id }); };
+    const railOf = (list) => list.map(([id, t, n]) => ({ t, n: n == null ? '' : String(n), dot: 'none', cls: '', cur: (s.at || list[0][0]) === id ? 'true' : 'false', pick: scrollTo(id) }));
+    const out = { title: '', rail: [], hc: H, h1: '', h1chip: '', h1cc: H, h1cs: '', desc: '', secs: [] };
+
+    if (sec === 'overview') {
+      const BAD = { web: { 15: 'p' }, email: { 22: 'p' }, wa: { 25: 'p', 28: 'p', 29: 'p' }, m365: { 27: 'p' }, jobs: { 26: 'p', 29: 'p' }, ext: { 27: 'o' } };
+      const day = (i) => i < 14 ? (17 + i) + ' Sep' : (i - 13) + ' Oct';
+      const att = [['bad', 'Encryption key missing', 'CREDENTIALS_ENCRYPTION_KEY is not set on App Runner, so portal credentials fail to decrypt in production.', 'Open secrets', 'dev-access'],
+        ['warn', 'Teams webhook token', 'Expires on 25 Oct. Daily digests and escalations stop after that.', 'Open Teams', 'dev-connections', 'teams'],
+        ['warn', 'WhatsApp templates', '3 are waiting for Meta approval. Deadline reminders and payment links on WhatsApp are blocked.', 'Open WhatsApp', 'dev-connections', 'wa'],
+        ['warn', 'WhatsApp nudges job', 'Failed 3 times this week, same cause as the pending template.', 'Open jobs', 'dev-jobs'],
+        ['warn', 'Demo passwords', 'Seeded demo passwords still work on the production database.', 'Open access', 'dev-access'],
+        ['warn', 'Tally connector', 'Offline since 13 Oct; 6 invoices are waiting.', 'Open accounting', 'dev-connections', 'acct']];
+      out.title = 'Overview';
+      out.rail = railOf([['health', 'Health', D.SERVICES.length], ['attention', 'Needs attention', att.length], ['incidents', 'Incidents', 4], ['env', 'Environments', D.ENVS.length]]);
+      out.secs = [
+        card('health', 'Health', 'last 30 days, 17 Sep to 16 Oct', D.SERVICES.map(x => row(x[1], x[2], x[4] + '% uptime · ' + (x[5] ? 'p95 ' + x[5] + ' ms · ' : '') + x[6], { chip: ST[x[3]], bars: Array.from({ length: 30 }, (_, i) => { const b = (BAD[x[0]] || {})[i]; return { st: 'background:' + (b === 'o' ? '#be3434' : b === 'p' ? '#e3a040' : '#46a87a'), tip: day(i) + ' · ' + (b === 'o' ? 'outage' : b === 'p' ? 'slow or partly down' : 'working') }; }) }))),
+        card('attention', 'Needs attention', 'most urgent first', att.map(a => row(a[1], a[2], '', { chip: [a[0] === 'bad' ? 'Broken' : 'Soon', a[0]], go: [a[3], a[4], a[5]] }))),
+        card('incidents', 'Incidents', 'last 30 days', [], { cols: '80px minmax(0,1fr) 120px', head: ['Date', 'What happened', 'Status'], rows: [['14 Oct', { t: 'MCA portal timed out for VCFO Assist', sub: 'Portal extension · 38 minutes' }, { t: 'Resolved', tone: 'ok' }], ['12 Oct', { t: '3 WhatsApp templates waiting for Meta approval', sub: 'WhatsApp · open 4 days' }, { t: 'Open', tone: 'warn' }], ['9 Oct', { t: 'Amazon SES throttled sending', sub: 'Email · 12 minutes' }, { t: 'Resolved', tone: 'ok' }], ['2 Oct', { t: 'Deploy 2026.10.02 rolled back', sub: 'Web app · 4 minutes' }, { t: 'Resolved', tone: 'ok' }]] }),
+        card('env', 'Environments', '', [], { cols: '110px minmax(0,1fr) 150px 100px 130px', head: ['Name', 'Address', 'Version', 'Commit', 'Deployed'], rows: D.ENVS.map(e => [e[0], { t: e[1], mono: 1 }, { t: e[2], mono: 1 }, { t: e[3], mono: 1 }, e[4]]) })
+      ];
+    } else if (sec === 'connections') {
+      let cur = s.conn; if (!cur) { try { cur = sessionStorage.getItem('vcfo.devconn'); } catch (e) {} } if (!D.CONN.find(c => c[0] === cur)) cur = 'wa';
+      const groups = [...new Set(D.CONN.map(c => c[1]))];
+      out.title = 'Connections';
+      out.rail = []; groups.forEach(g => { out.rail.push({ t: g, n: '', dot: 'none', cls: 'grp', cur: 'false', pick: null }); D.CONN.filter(c => c[1] === g).forEach(c => out.rail.push({ t: c[2], n: '', dot: c[4] === 'connected' ? 'ok' : c[4] === 'attention' ? 'warn' : 'off', cls: '', cur: c[0] === cur ? 'true' : 'false', pick: () => { try { sessionStorage.setItem('vcfo.devconn', c[0]); } catch (e) {} set({ conn: c[0] }); } })); });
+      const c = D.CONN.find(x => x[0] === cur);
+      out.hc = ''; out.h1 = c[2]; out.h1chip = ST[c[4]][0]; out.h1cc = ''; out.h1cs = '--c:' + TONE[ST[c[4]][1]]; out.desc = c[3] + ' · ' + c[5] + ' · last check ' + c[6];
+      const spec = XD.X[c[0]];
+      if (spec) out.secs = spec.map((x, i) => ofSpec(c[0], i, x)).filter(Boolean);
+      else out.secs = [card(c[0] + '-0', 'Connection', '', [row('Status', '', c[5], { chip: ST[c[4]] }), row('Provider', '', c[3])].concat(c[7].map((t, i) => row(i ? '' : 'Settings and health', '', t)))),
+        card(c[0] + '-1', c[4] === 'off' ? 'Connect' : 'Disconnect', '', [row(c[4] === 'off' ? 'Connect ' + c[2] : 'Disconnect ' + c[2], c[4] === 'off' ? 'Opens the provider\'s sign-in in a new window.' : 'Anything that uses it stops until it is connected again.', '', { btn: { t: c[4] === 'off' ? 'Connect' : 'Disconnect', w: (c[4] === 'off' ? 'Connect ' : 'Disconnect ') + c[2], b: ST[c[4]][0], a: c[4] === 'off' ? 'Connected' : 'Not connected', danger: c[4] !== 'off' } })], null, c[4] === 'off' ? '' : 'danger')];
+    } else if (sec === 'messages') {
+      out.title = 'Messages';
+      out.rail = railOf([['routes', 'Routes', D.ROUTES.length], ['rules', 'Timing and channels'], ['templates', 'Templates'], ['domain', 'Email domain']]);
+      out.secs = [
+        card('routes', 'Message routes', 'which message goes from which address or number', [], { cols: 'minmax(0,1.4fr) 84px minmax(0,1fr) 150px 60px 70px', head: ['Message', 'Channel', 'Template', 'Status', 'Sent', 'Delivered'], rows: D.ROUTES.map(r => [{ t: r[0], sub: r[1] + ' · to ' + r[6] }, r[2], { t: r[4], mono: 1, sub: r[3] }, { t: ST[r[5]][0], tone: ST[r[5]][1] }, String(r[7]), r[8] ? r[8] + '%' : '-']) }),
+        card('rules', 'Timing and channels', '', [
+          row('Order', 'Email is the record. WhatsApp and SMS only follow it as reminders.', 'Email, then WhatsApp, then SMS'),
+          row('Deadline reminders', 'Days before a filing date.', '', { seg: { k: 'msg-dl', opts: ['7, 3, 1', '10, 5, 1', '3, 1'], sel: 0 } }),
+          row('Renewal reminders', 'Registrations that renew (LUT, IEC, LEI, trade licence).', '', { seg: { k: 'msg-rn', opts: ['60, 30, 7', '30, 7'], sel: 0 } }),
+          row('Staff daily digest', 'Teams and email, working days.', '', { seg: { k: 'msg-dg', opts: ['08:30', '09:00', '09:30'], sel: 1 } }),
+          row('Quiet hours', 'WhatsApp and SMS wait for the morning.', '', { seg: { k: 'wa-quiet', opts: ['Off', '21:00 to 09:00', '20:00 to 10:00'], sel: 1 } }),
+          row('Monthly client report', '1st of the month.', '08:00 from reports@sbcllp.in', { sw: 'msg-report', on: 1 })]),
+        card('templates', 'Templates', '', [
+          row('WhatsApp', 'Meta approves each template.', '11 approved · 3 waiting', { chip: ['3 waiting', 'warn'], go: ['Open WhatsApp', 'dev-connections', 'wa'] }),
+          row('SMS (DLT)', 'Registered on the DLT portal.', '6 registered', { chip: ['All registered', 'ok'], go: ['Open SMS', 'dev-connections', 'sms'] }),
+          row('Email', 'Kept in the app; no approval needed.', '9 templates', { go: ['Open email', 'dev-connections', 'ses'] })]),
+        card('domain', 'Email domain sbcllp.in', '', [], { cols: '120px 150px minmax(0,1fr)', head: ['Record', 'Status', 'Value'], rows: D.DOMAIN.map(d => [d[0], { t: d[1] === 'pass' ? 'Passing' : 'Needs a change', tone: d[1] === 'pass' ? 'ok' : 'warn' }, { t: d[2], mono: 1 }]) })
+      ];
+    } else if (sec === 'jobs') {
+      out.title = 'Jobs';
+      out.rail = railOf([['sched', 'Schedules', D.JOBS.length], ['fail', 'Failures', D.JOBS.filter(j => j[6]).length], ['queue', 'Queue']]);
+      out.secs = [
+        card('sched', 'Schedules', 'Inngest · times in IST', [], { cols: 'minmax(0,1.2fr) minmax(0,1fr) 130px 120px 130px 90px', head: ['Job', 'Runs', 'Last run', 'Result', 'Next run', ''], rows: D.JOBS.map(j => [j[0], j[1], { t: j[2], sub: j[3] }, { t: ST[j[4]] ? ST[j[4]][0] : 'Done', tone: j[4] === 'ok' ? 'ok' : j[4] === 'fail' ? 'bad' : 'warn' }, j[5], { btn: { t: 'Run now', w: 'Run ' + j[0] + ' now', a: 'Started', toast: j[0] + ' started' } }]) }),
+        card('fail', 'Failures this week', '', D.JOBS.filter(j => j[6]).map(j => row(j[0], j[6] + (j[4] === 'skip' ? ' skipped' : ' failed') + ' in 7 days', j[0] === 'WhatsApp nudges' ? 'Template deadline_1d is not approved yet; retry after Meta approves it.' : j[0] === 'Tally push' ? 'The office PC running the Tally connector is offline.' : 'MCA portal timed out once at 10:30.', { chip: [j[4] === 'fail' ? 'Failing' : 'Skipped', j[4] === 'fail' ? 'bad' : 'warn'], btn: { t: 'Retry', w: 'Retry ' + j[0], a: 'Queued' } }))),
+        card('queue', 'Queue', '', [row('App', '', 'vcfo-suite-prod on Inngest Cloud', { mono: 1 }), row('Running now', '', '1 · Outlook calendar sync'), row('Waiting', '', '0'), row('Retries', 'A failed step is retried with growing gaps.', '3 times, up to 1 hour apart'), row('Pause all jobs', 'For a maintenance window. Reminders wait until resumed.', '', { sw: 'jobs-pause', on: 0 })])
+      ];
+    } else if (sec === 'logs') {
+      const lv = s.lv || '';
+      const L = D.LOGS.filter(l => !lv || l[1] === lv);
+      out.title = 'Logs';
+      out.rail = [['', 'All', D.LOGS.length], ['error', 'Errors'], ['warn', 'Warnings'], ['info', 'Info']].map(([k, t, n]) => ({ t, n: String(n != null ? n : D.LOGS.filter(l => l[1] === k).length), dot: k === 'error' ? 'down' : k === 'warn' ? 'warn' : k === 'info' ? 'ok' : 'none', cls: '', cur: lv === k ? 'true' : 'false', pick: () => set({ lv: k }) }));
+      out.secs = [card('log', 'Log', 'last 24 hours · newest first', [], { cols: '120px 110px 120px minmax(0,1fr)', head: ['Time', 'Level', 'Source', 'Event'], rows: L.map(l => [l[0], { t: ST[l[1]][0], tone: ST[l[1]][1] }, l[2], { t: l[3], sub: l[4] }]) }),
+        card('keep', 'Keeping logs', '', [row('Keep logs for', 'CloudWatch, then deleted.', '', { seg: { k: 'log-keep', opts: ['14 days', '30 days', '90 days'], sel: 1 } }), row('Errors to Teams', 'Each new error posts to Compliance alerts.', '', { sw: 'log-teams', on: 1 })])];
+    } else if (sec === 'deploys') {
+      out.title = 'Deploys';
+      out.rail = railOf([['env', 'Environments', D.ENVS.length], ['rel', 'Releases', D.DEPLOYS.length], ['mig', 'Migrations', D.MIGRATIONS.length], ['flags', 'Feature flags', D.flags().length]]);
+      out.secs = [
+        card('env', 'Environments', '', [], { cols: '110px minmax(0,1fr) 150px 100px 130px', head: ['Name', 'Address', 'Version', 'Commit', 'Deployed'], rows: D.ENVS.map(e => [e[0], { t: e[1], mono: 1 }, { t: e[2], mono: 1 }, { t: e[3], mono: 1 }, e[4]]) }),
+        card('rel', 'Releases', 'App Runner · from main', [], { cols: '110px 90px 120px minmax(0,1fr) 100px', head: ['Version', 'Commit', 'When', 'What changed', ''], rows: D.DEPLOYS.map((d, i) => [{ t: d[0], mono: 1 }, { t: d[1], mono: 1 }, d[2], { t: d[4], sub: 'by ' + d[3] }, i ? { btn: { t: 'Roll back', w: 'Roll production back to ' + d[0], b: D.DEPLOYS[0][0], a: d[0], danger: 1 } } : { t: 'Live', tone: 'ok' }]) }),
+        card('mig', 'Migrations', '2 waiting for the next deploy', D.MIGRATIONS.map(m => row(m[0], m[2], '', { chip: [m[1], 'warn'] })).concat([row('Run migrations', 'Runs on the next deploy, or now on production.', '', { btn: { t: 'Run now', w: 'Run 2 pending migrations on production', b: '2 pending', a: 'Applied' } })])),
+        card('flags', 'Feature flags', 'saves as you change it', D.flags().map(f => row(f[1], f[3], '', { flag: f[0] })))
+      ];
+    } else if (sec === 'access') {
+      out.title = 'Access';
+      out.rail = railOf([['signin', 'Sign-in', D.SIGNIN.length], ['sessions', 'Sessions', D.SESSIONS.length], ['secrets', 'Secrets', D.SECRETS.length], ['roles', 'Roles', 6]]);
+      out.secs = [
+        card('signin', 'Sign-in', '', D.SIGNIN.map(x => row(x[0], x[2], x[1] + ' people use it')).concat([row('Two-step check', 'An SMS code after the password.', '', { seg: { k: 'acc-2fa', opts: ['Staff only', 'Everyone'], sel: 0 } }), row('Session length', 'Signed out after this long without use.', '', { seg: { k: 'acc-sess', opts: ['8 hours', '24 hours', '7 days'], sel: 1 } })])),
+        card('sessions', 'Signed in now', '', [], { cols: 'minmax(0,1fr) 110px minmax(0,1.3fr) 100px 100px', head: ['Person', 'Role', 'Device', 'Active', ''], rows: D.SESSIONS.map(x => [x[0], x[1], x[2], x[3], x[0] === 'Farhath' ? { t: 'You', tone: 'info' } : { btn: { t: 'Sign out', w: 'Sign ' + x[0] + ' out of every device', a: 'Signed out', danger: 1 } }]) }),
+        card('secrets', 'Secrets', 'values never shown', [], { cols: 'minmax(0,1.4fr) 130px 110px 150px 90px', head: ['Secret', 'Kept in', 'Created', 'Status', ''], rows: D.SECRETS.map(x => [{ t: x[0], mono: 1 }, x[1], x[2], x[4] === 'missing' ? { t: 'Missing', tone: 'bad' } : x[4] === 'warn' ? { t: x[3] ? 'Expires in ' + x[3] + ' days' : 'Change before launch', tone: 'warn' } : { t: x[3] ? x[3] + ' days left' : 'No expiry', tone: 'ok' }, { btn: { t: x[4] === 'missing' ? 'Set' : 'Rotate', w: (x[4] === 'missing' ? 'Set ' : 'Rotate ') + x[0], b: x[4] === 'missing' ? 'Not set' : 'Current value', a: 'New value' } }]) }),
+        card('roles', 'Roles', 'what each role can open', [], { cols: '130px 70px minmax(0,1fr)', head: ['Role', 'People', 'Can'], rows: [['Super admin', '1', 'Everything, firm settings, every client'], ['Admin', '1', 'Every client, managers, firm settings'], ['Manager', '3', 'Their leads\' clients, approvals'], ['Project lead', '6', 'Their own clients and work'], ['Client', '14', 'Their own company only'], ['Developer', '1', 'This console; no client data']] })
+      ];
+    } else if (sec === 'data') {
+      const maxC = Math.max(...D.COSTS.map(c => c[2]));
+      out.title = 'Data and costs';
+      out.rail = railOf([['store', 'Storage and backups', D.DATA.length], ['costs', 'Costs this month', D.COSTS.length], ['vol', 'Volume', D.VOLUME.length]]);
+      out.secs = [
+        card('store', 'Storage and backups', '', D.DATA.map(x => row(x[0], x[2], x[1])).concat([row('Restore test', 'Restores last night\'s backup to a scratch database.', '', { btn: { t: 'Run a restore test', w: 'Restore last night\'s backup to a scratch database', a: 'Started' } })])),
+        card('costs', 'Costs this month', 'AWS and providers, in rupees', [], { cols: 'minmax(0,1fr) 100px 100px minmax(0,1fr)', head: ['Service', 'Spent', 'Budget', 'Used'], rows: D.COSTS.map(c => [c[0], '₹' + c[1].toLocaleString('en-IN'), '₹' + c[2].toLocaleString('en-IN'), { t: Math.round(c[1] / c[2] * 100) + '%', bar: Math.round(c[1] / c[2] * 100), barTone: c[1] / c[2] > .9 ? 'warn' : 'info' }]) }),
+        card('vol', 'Volume', '', D.VOLUME.map(v => row(v[0], v[2], v[1].toLocaleString('en-IN'))))
+      ];
+    } else if (sec === 'audit') {
+      const A = D.audit();
+      out.title = 'Audit';
+      out.rail = railOf([['all', 'Every change', A.length]]);
+      out.secs = [card('all', 'Every change', 'newest first · kept 8 years', [], { cols: '130px 90px minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', head: ['When', 'Who', 'Change', 'Before', 'After'], rows: A.map(a => [a[0], a[1], a[2], { t: a[3], mono: 1 }, { t: a[4], mono: 1 }]) })];
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>

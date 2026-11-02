@@ -2,8 +2,8 @@
 
 import { m, useReducedMotion } from 'framer-motion';
 import { ReactNode } from 'react';
-import { pageEnter, pageEnterAmbient, pageEnterDynamic, pageEnterReduced } from '@/lib/motion';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { pageEnter, pageEnterAmbient, pageEnterDynamic, pageEnterReduced } from '@/lib/shell/motion';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 
 export { Stagger } from '@/components/shell/Stagger';
 export { StaggerItem } from '@/components/shell/StaggerItem';

@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Incorporation Documents Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout: the step timeline first, then one wide ER-style canvas in a horizontal
+     scroller. Tokens follow docs/design/design-tokens.json. */
+  :root {
+    --surface: #f3f5f9; --surface-raised: #ffffff; --surface-sunken: #f5f6f8;
+    --line: #e3e6eb; --line-strong: #7a8ca2;
+    --ink: #16212f; --ink-muted: #626d7b; --ink-faint: #838c99;
+    --brand: #2563a8; --brand-soft: #e6effa;
+    --client: #a05d00; --client-soft: #fcefd8;
+    --lead: #2563a8; --lead-soft: #e6effa;
+    --font-ui: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #111821; --surface-raised: #18202b; --surface-sunken: #1f2935;
+      --line: #2c3745; --line-strong: #596c8c;
+      --ink: #e6eaf0; --ink-muted: #9aa7b8; --ink-faint: #6f7c8d;
+      --brand: #6fa3e0; --brand-soft: #263548;
+      --client: #f2a35b; --client-soft: #3f2a16;
+      --lead: #6fa3e0; --lead-soft: #263548;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: #111821; --surface-raised: #18202b; --surface-sunken: #1f2935;
+    --line: #2c3745; --line-strong: #596c8c;
+    --ink: #e6eaf0; --ink-muted: #9aa7b8; --ink-faint: #6f7c8d;
+    --brand: #6fa3e0; --brand-soft: #263548;
+    --client: #f2a35b; --client-soft: #3f2a16;
+    --lead: #6fa3e0; --lead-soft: #263548;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--surface); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+    padding-block: 28px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  header, section, figure { max-width: 1640px; margin-inline: auto; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; margin-bottom: 22px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .lede { color: var(--ink-muted); margin: 4px 0 0; max-width: 78ch; }
+  .controls { margin-left: auto; display: flex; gap: 14px; align-items: center; color: var(--ink-muted); font-size: 13px; }
+  .controls label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin: 0 0 10px; }
+
+  /* timeline */
+  .timeline { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); }
+  .step { position: relative; background: var(--surface-raised); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; display: grid; gap: 3px; min-width: 0; }
+  .step.hot { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+  .step-eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .step-title { font-weight: 600; font-size: 13px; }
+  .step-note { font-size: 12px; color: var(--ink-muted); }
+  .who { justify-self: start; margin-top: 4px; font-size: 10.5px; font-weight: 500; padding: 2px 7px; border-radius: 4px; }
+  .who-client { background: var(--client-soft); color: var(--client); }
+  .who-lead { background: var(--lead-soft); color: var(--lead); }
+  .who-neutral { background: var(--surface-sunken); color: var(--ink-muted); }
+
+  /* figure */
+  figure { margin: 0; }
+  .scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-raised); }
+  .scroller svg { display: block; max-width: none; }
+  .scroller.fit svg { width: 100%; height: auto; }
+  figcaption { color: var(--ink-muted); font-size: 13px; margin: 10px 2px 0; max-width: 100ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; color: var(--ink-muted); font-size: 13px; margin-top: 8px; }
+  .legend svg { vertical-align: middle; }
+
+  /* SVG */
+  .box-bg { fill: var(--surface-raised); stroke: var(--line-strong); stroke-width: 1; }
+  .box-rule { stroke: var(--line); stroke-width: 1; }
+  .box-title { font: 600 12.5px var(--font-ui); fill: var(--ink); }
+  .box-where { font: 400 9.5px var(--font-ui); fill: var(--ink-muted); }
+  .row { font: 400 10.5px var(--font-ui); fill: var(--ink-muted); }
+  .t-lead { font-weight: 500; fill: var(--ink); }
+  .chip { stroke: none; }
+  .chip-text { font: 500 8.5px var(--font-ui); letter-spacing: 0.02em; }
+  .chip.chip-client { fill: var(--client-soft); } .chip-text.chip-client { fill: var(--client); }
+  .chip.chip-lead { fill: var(--lead-soft); } .chip-text.chip-lead { fill: var(--lead); }
+  .chip.chip-neutral { fill: var(--surface-sunken); } .chip-text.chip-neutral { fill: var(--ink-muted); }
+  .group { fill: var(--surface-sunken); stroke: var(--line); stroke-dasharray: 5 4; }
+  .group-title { font: 600 12px var(--font-ui); fill: var(--ink); }
+  .group-sub { font: 400 10px var(--font-ui); fill: var(--ink-muted); }
+  .lane { font: 600 11px var(--font-ui); fill: var(--ink); text-transform: uppercase; letter-spacing: 0.08em; }
+  .lane-sub { font: 400 10px var(--font-ui); fill: var(--ink-muted); }
+  .ln { fill: none; stroke: var(--line-strong); stroke-width: 1.25; }
+  .ln-flow { stroke: var(--brand); stroke-dasharray: 5 3.5; }
+  .mk { fill: none; stroke: var(--line-strong); stroke-width: 1.25; }
+  .mk-fill { fill: var(--surface-raised); }
+  .mk-arrow { fill: var(--brand); stroke: none; }
+  .ln-label { font: 400 10px var(--font-ui); fill: var(--ink-muted); paint-order: stroke; stroke: var(--surface-raised); stroke-width: 4px; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Incorporation Documents Map</h1>
+    <p class="lede">The details the client and the project lead enter during incorporation, the step each one comes from, and the documents the app fills in from them. Nobody retypes a detail: it is entered once and printed wherever it is needed.</p>
+  </div>
+  <div class="controls">
+    <label><input type="checkbox" id="fit"> Fit to width</label>
+  </div>
+</header>
+
+<section>
+  <h2>The steps, in order</h2>
+  <ol class="timeline">
+<li class="step">
+    <span class="step-eyebrow">Before</span>
+    <span class="step-title">Project created</span>
+    <span class="step-note">Company name, type, parent, client login</span>
+    <span class="who who-neutral">SBC team</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 1 · Step 1</span>
+    <span class="step-title">Client Details</span>
+    <span class="step-note">Parent, signatory, names, capital, directors</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 1 · Step 2</span>
+    <span class="step-title">Draft Board Resolution</span>
+    <span class="step-note">The app drafts it; the lead reviews</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 1 · Step 3</span>
+    <span class="step-title">Signed Board Resolution</span>
+    <span class="step-note">Signed on the parent’s letterhead</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 1 · Step 4</span>
+    <span class="step-title">Name Application</span>
+    <span class="step-note">Filed with the ROC</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 1 · Step 5</span>
+    <span class="step-title">Name Approval</span>
+    <span class="step-note">Approved name and MCA letter</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 1</span>
+    <span class="step-title">Capital Structure</span>
+    <span class="step-note">Share classes, counts, values</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 2</span>
+    <span class="step-title">Registered Office</span>
+    <span class="step-note">Address, owner NOC, utility bill</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 3</span>
+    <span class="step-title">Proposed Directors</span>
+    <span class="step-note">One entry per director, with KYC</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 4</span>
+    <span class="step-title">Subscriber Details</span>
+    <span class="step-note">Who takes the shares</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step hot">
+    <span class="step-eyebrow">Phase 2 · Step 5</span>
+    <span class="step-title">KYC Review &amp; DSC</span>
+    <span class="step-note">Documents are generated and shared here; signed copies come back</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 6</span>
+    <span class="step-title">SPICe+ Confirmation</span>
+    <span class="step-note">Client confirms the filing</span>
+    <span class="who who-client">Client</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 7</span>
+    <span class="step-title">SPICe+ Filing</span>
+    <span class="step-note">Filed on the MCA portal</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 8</span>
+    <span class="step-title">MCA Remarks</span>
+    <span class="step-note">Resubmission, if asked</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+<li class="step">
+    <span class="step-eyebrow">Phase 2 · Step 9</span>
+    <span class="step-title">Certificate of Incorporation</span>
+    <span class="step-note">CIN, PAN, TAN shared with the client</span>
+    <span class="who who-lead">Project lead</span>
+  </li>
+  </ol>
+</section>
+
+<figure>
+  <div class="scroller" id="scroller">
+<svg class="er" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1636 1390" width="1636" height="1390" role="img" aria-label="Map of the details the incorporation checklist collects, the step each comes from, and the documents the app writes from them: three parent-company documents, one set of up to six documents per director, and four company documents.">
+<defs>
+  <marker id="m-one" viewBox="0 0 22 16" refX="22" refY="8" markerWidth="22" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M13 2 V14" class="mk"/></marker>
+  <marker id="m-many" viewBox="0 0 22 16" refX="22" refY="8" markerWidth="22" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M4 8 L22 2 M4 8 L22 8 M4 8 L22 14" class="mk"/></marker>
+  <marker id="m-zero-one" viewBox="0 0 26 16" refX="26" refY="8" markerWidth="26" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><circle cx="6" cy="8" r="3.6" class="mk mk-fill"/><path d="M17 2 V14" class="mk"/></marker>
+  <marker id="m-arrow" viewBox="0 0 22 16" refX="22" refY="8" markerWidth="22" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M12 3 L22 8 L12 13 Z" class="mk-arrow"/></marker>
+</defs>
+<text class="lane" x="36" y="30">Details we collect</text>
+<text class="lane-sub" x="36" y="44">what the client and the project lead fill in, and at which step</text>
+<text class="lane" x="846" y="30">Documents the app writes</text>
+<text class="lane-sub" x="846" y="44">each one is filled from the details on the left, with the signature line left empty</text>
+<rect class="group" x="832" y="92" width="328" height="637" rx="12"/>
+<text class="group-title" x="846" y="112">Needs the parent company</text>
+<text class="group-sub" x="846" y="127">Only when the company has a parent. An independent company skips all three.</text>
+<rect class="group" x="832" y="773" width="328" height="577" rx="12"/>
+<text class="group-title" x="846" y="793">Once for the company</text>
+<text class="group-sub" x="846" y="808">One set per company, whatever the number of directors.</text>
+<rect class="group" x="1282" y="92" width="328" height="986" rx="12"/>
+<text class="group-title" x="1296" y="112">One set for every director</text>
+<text class="group-sub" x="1296" y="127">Made again for each director entry: up to six documents each.</text>
+<path class="ln ln-rel" d="M696 148 L832 148" marker-start="url(#m-one)" marker-end="url(#m-one)"/>
+<text class="ln-label" x="764" y="141" text-anchor="middle">only when there is a parent</text>
+<path class="ln ln-rel" d="M696 428 L771 428 L771 58 L1221 58 L1221 116 L1282 116" marker-start="url(#m-one)" marker-end="url(#m-many)"/>
+<text class="ln-label" x="996" y="72" text-anchor="middle">one set of documents for every director</text>
+<path class="ln ln-rel" d="M696 911 L771 911 L771 1165 L846 1165" marker-start="url(#m-many)" marker-end="url(#m-one)"/>
+<text class="ln-label" x="771" y="1032" text-anchor="middle">every subscriber is listed</text>
+<path class="ln ln-rel" d="M456 811 L456 855" marker-start="url(#m-one)" marker-end="url(#m-zero-one)"/>
+<text class="ln-label" x="468" y="837" text-anchor="start">an individual subscriber is one of the directors</text>
+<g class="box">
+<rect class="box-bg" x="36" y="92" width="300" height="182" rx="8"/>
+<text class="box-title" x="48" y="110">Project</text>
+<text class="box-where" x="48" y="125">Created by the SBC team when the engagement starts</text>
+<rect class="chip chip-neutral" x="271.9" y="99" width="52.1" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="298.0" y="109.5" text-anchor="middle">SBC team</text>
+<line class="box-rule" x1="36" y1="134" x2="336" y2="134"/>
+<text class="row" x="48" y="152"><tspan class="t-lead">Company name</tspan><tspan> </tspan><tspan class="t-rest">as proposed at the start</tspan></text>
+<text class="row" x="48" y="171"><tspan class="t-lead">Type of company</tspan><tspan> </tspan><tspan class="t-rest">Indian parent · foreign parent ·</tspan></text>
+<text class="row" x="48" y="187"><tspan class="t-rest">independent (no parent)</tspan></text>
+<text class="row" x="48" y="206"><tspan class="t-lead">Parent company</tspan><tspan> </tspan><tspan class="t-rest">name, address, registration number</tspan></text>
+<text class="row" x="48" y="225"><tspan class="t-lead">Indian parent: relationship</tspan><tspan> </tspan><tspan class="t-rest">investing · name use</tspan></text>
+<text class="row" x="48" y="241"><tspan class="t-rest">only</tspan></text>
+<text class="row" x="48" y="260"><tspan class="t-lead">Client contact</tspan><tspan> </tspan><tspan class="t-rest">the person who gets the portal login</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="36" y="318" width="300" height="201" rx="8"/>
+<text class="box-title" x="48" y="336">Proposed company</text>
+<text class="box-where" x="48" y="351">Step 1 Client Details, then Step 5 Name Approval</text>
+<rect class="chip chip-client" x="229.1" y="325" width="94.9" height="15" rx="4"/>
+<text class="chip-text chip-client" x="276.5" y="335.5" text-anchor="middle">Client, then lead</text>
+<line class="box-rule" x1="36" y1="360" x2="336" y2="360"/>
+<text class="row" x="48" y="378"><tspan class="t-lead">Two proposed names</tspan><tspan> </tspan><tspan class="t-rest">ending “India Private Limited”</tspan></text>
+<text class="row" x="48" y="397"><tspan class="t-lead">Business description</tspan><tspan> </tspan><tspan class="t-rest">up to 100 words</tspan></text>
+<text class="row" x="48" y="416"><tspan class="t-lead">NIC codes</tspan><tspan> </tspan><tspan class="t-rest">the main objects of the company</tspan></text>
+<text class="row" x="48" y="435"><tspan class="t-lead">Company email and mobile number</tspan></text>
+<text class="row" x="48" y="454"><tspan class="t-lead">Approved name</tspan><tspan> </tspan><tspan class="t-rest">Step 5 · recorded by the lead from the</tspan></text>
+<text class="row" x="48" y="470"><tspan class="t-rest">MCA letter</tspan></text>
+<text class="row" x="48" y="489"><tspan class="t-lead">Approval date and expiry</tspan><tspan> </tspan><tspan class="t-rest">20-day validity · MCA</tspan></text>
+<text class="row" x="48" y="505"><tspan class="t-rest">approval letter attached</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="36" y="563" width="300" height="150" rx="8"/>
+<text class="box-title" x="48" y="581">Share capital</text>
+<text class="box-where" x="48" y="596">Step 1 Client Details, then Phase 2 · Step 1 Capital Structure</text>
+<rect class="chip chip-client" x="252.9" y="570" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-client" x="288.4" y="580.5" text-anchor="middle">Client fills</text>
+<line class="box-rule" x1="36" y1="605" x2="336" y2="605"/>
+<text class="row" x="48" y="623"><tspan class="t-lead">Authorised capital</tspan><tspan> </tspan><tspan class="t-rest">INR</tspan></text>
+<text class="row" x="48" y="642"><tspan class="t-lead">Initial paid-up capital</tspan><tspan> </tspan><tspan class="t-rest">INR</tspan></text>
+<text class="row" x="48" y="661"><tspan class="t-lead">Value of one equity share</tspan><tspan> </tspan><tspan class="t-rest">INR</tspan></text>
+<text class="row" x="48" y="680"><tspan class="t-lead">Share classes</tspan><tspan> </tspan><tspan class="t-rest">equity · preference</tspan></text>
+<text class="row" x="48" y="699"><tspan class="t-lead">Number of shares in each class</tspan><tspan> </tspan><tspan class="t-rest">Phase 2 · Step 1</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="36" y="757" width="300" height="147" rx="8"/>
+<text class="box-title" x="48" y="775">Registered office</text>
+<text class="box-where" x="48" y="790">Phase 2 · Step 2 Registered Office Address</text>
+<rect class="chip chip-client" x="252.9" y="764" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-client" x="288.4" y="774.5" text-anchor="middle">Client fills</text>
+<line class="box-rule" x1="36" y1="799" x2="336" y2="799"/>
+<text class="row" x="48" y="817"><tspan class="t-lead">Full address of the proposed office</tspan></text>
+<text class="row" x="48" y="836"><tspan class="t-lead">State or union territory</tspan></text>
+<text class="row" x="48" y="855"><tspan class="t-lead">No-objection certificate from the owner</tspan><tspan> </tspan><tspan class="t-rest">file</tspan></text>
+<text class="row" x="48" y="874"><tspan class="t-lead">Utility bill</tspan><tspan> </tspan><tspan class="t-rest">type, number and a copy not older than</tspan></text>
+<text class="row" x="48" y="890"><tspan class="t-rest">two months</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="36" y="948" width="300" height="198" rx="8"/>
+<text class="box-title" x="48" y="966">Signing details</text>
+<text class="box-where" x="48" y="981">Phase 2 · Step 5 KYC Review &amp; DSC · documents made here</text>
+<rect class="chip chip-lead" x="224.3" y="955" width="99.7" height="15" rx="4"/>
+<text class="chip-text chip-lead" x="274.2" y="965.5" text-anchor="middle">Project lead fills</text>
+<line class="box-rule" x1="36" y1="990" x2="336" y2="990"/>
+<text class="row" x="48" y="1008"><tspan class="t-lead">KYC review</tspan><tspan> </tspan><tspan class="t-rest">approved · corrections requested</tspan></text>
+<text class="row" x="48" y="1027"><tspan class="t-lead">DSC success proof</tspan><tspan> </tspan><tspan class="t-rest">one per director, from eMudhra</tspan></text>
+<text class="row" x="48" y="1046"><tspan class="t-lead">Date of signing</tspan><tspan> </tspan><tspan class="t-rest">printed on every draft · blank = the</tspan></text>
+<text class="row" x="48" y="1062"><tspan class="t-rest">day it is generated</tspan></text>
+<text class="row" x="48" y="1081"><tspan class="t-lead">Place of signing for resident directors</tspan><tspan> </tspan><tspan class="t-rest">blank =</tspan></text>
+<text class="row" x="48" y="1097"><tspan class="t-rest">India</tspan></text>
+<text class="row" x="48" y="1116"><tspan class="t-lead">Witness to the subscribers</tspan><tspan> </tspan><tspan class="t-rest">name, address,</tspan></text>
+<text class="row" x="48" y="1132"><tspan class="t-rest">occupation, membership number</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="396" y="92" width="300" height="236" rx="8"/>
+<text class="box-title" x="408" y="110">Parent company and signatory</text>
+<text class="box-where" x="408" y="125">Step 1 Client Details · only for companies with a parent</text>
+<rect class="chip chip-client" x="612.9" y="99" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-client" x="648.4" y="109.5" text-anchor="middle">Client fills</text>
+<line class="box-rule" x1="396" y1="134" x2="696" y2="134"/>
+<text class="row" x="408" y="152"><tspan class="t-lead">Parent company</tspan><tspan> </tspan><tspan class="t-rest">name, address, registration</tspan></text>
+<text class="row" x="408" y="168"><tspan class="t-rest">number, confirmed</tspan></text>
+<text class="row" x="408" y="187"><tspan class="t-lead">Country and state of incorporation</tspan></text>
+<text class="row" x="408" y="206"><tspan class="t-lead">Certificate of incorporation of the parent</tspan><tspan> </tspan><tspan class="t-rest">file</tspan></text>
+<text class="row" x="408" y="225"><tspan class="t-lead">Trademark, if any</tspan><tspan> </tspan><tspan class="t-rest">file</tspan></text>
+<text class="row" x="408" y="244"><tspan class="t-lead">Authorised signatory</tspan><tspan> </tspan><tspan class="t-rest">first, middle and last name ·</tspan></text>
+<text class="row" x="408" y="260"><tspan class="t-rest">designation · gender</tspan></text>
+<text class="row" x="408" y="279"><tspan class="t-lead">Signatory KYC</tspan><tspan> </tspan><tspan class="t-rest">passport · driving licence · utility</tspan></text>
+<text class="row" x="408" y="295"><tspan class="t-rest">bill</tspan></text>
+<text class="row" x="408" y="314"><tspan class="t-lead">Date of the board resolution</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="396" y="372" width="300" height="439" rx="8"/>
+<text class="box-title" x="408" y="390">Director</text>
+<text class="box-where" x="408" y="405">One entry per director · Phase 2 · Step 3 Proposed Directors</text>
+<rect class="chip chip-client" x="612.9" y="379" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-client" x="648.4" y="389.5" text-anchor="middle">Client fills</text>
+<line class="box-rule" x1="396" y1="414" x2="696" y2="414"/>
+<text class="row" x="408" y="432"><tspan class="t-lead">Full name and gender</tspan><tspan> </tspan><tspan class="t-rest">names are first asked at Step 1</tspan></text>
+<text class="row" x="408" y="451"><tspan class="t-lead">Resident of India?</tspan><tspan> </tspan><tspan class="t-rest">and nationality</tspan></text>
+<text class="row" x="408" y="470"><tspan class="t-lead">DIN</tspan><tspan> </tspan><tspan class="t-rest">if they already hold one</tspan></text>
+<text class="row" x="408" y="489"><tspan class="t-lead">DSC token</tspan><tspan> </tspan><tspan class="t-rest">has one? expiry date · two slots for video</tspan></text>
+<text class="row" x="408" y="505"><tspan class="t-rest">verification</tspan></text>
+<text class="row" x="408" y="524"><tspan class="t-lead">Date of birth · father’s name</tspan></text>
+<text class="row" x="408" y="543"><tspan class="t-lead">Occupation · highest education</tspan></text>
+<text class="row" x="408" y="562"><tspan class="t-lead">Mobile · personal and official email</tspan></text>
+<text class="row" x="408" y="581"><tspan class="t-lead">Resident: PAN and Aadhaar</tspan><tspan> </tspan><tspan class="t-rest">numbers and copies</tspan></text>
+<text class="row" x="408" y="600"><tspan class="t-lead">Non-resident: passport, driving licence</tspan><tspan> </tspan><tspan class="t-rest">numbers</tspan></text>
+<text class="row" x="408" y="616"><tspan class="t-rest">and copies</tspan></text>
+<text class="row" x="408" y="635"><tspan class="t-lead">Place of signing</tspan><tspan> </tspan><tspan class="t-rest">non-resident · “City, Country”</tspan></text>
+<text class="row" x="408" y="654"><tspan class="t-lead">Proof of identity and proof of residence</tspan><tspan> </tspan><tspan class="t-rest">attached</tspan></text>
+<text class="row" x="408" y="670"><tspan class="t-rest">to DIR-2</tspan></text>
+<text class="row" x="408" y="689"><tspan class="t-lead">Utility bill and the address on it</tspan><tspan> </tspan><tspan class="t-rest">this address is</tspan></text>
+<text class="row" x="408" y="705"><tspan class="t-rest">printed on every document</tspan></text>
+<text class="row" x="408" y="724"><tspan class="t-lead">Other companies or LLPs they are part of</tspan><tspan> </tspan><tspan class="t-rest">name,</tspan></text>
+<text class="row" x="408" y="740"><tspan class="t-rest">CIN, designation, dates</tspan></text>
+<text class="row" x="408" y="759"><tspan class="t-lead">CS membership or COP number</tspan><tspan> </tspan><tspan class="t-rest">if any</tspan></text>
+<text class="row" x="408" y="778"><tspan class="t-lead">Passport-size photograph</tspan><tspan> </tspan><tspan class="t-rest">file</tspan></text>
+<text class="row" x="408" y="797"><tspan class="t-lead">Notary and apostille</tspan><tspan> </tspan><tspan class="t-rest">self · consultant</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="396" y="855" width="300" height="182" rx="8"/>
+<text class="box-title" x="408" y="873">Subscriber</text>
+<text class="box-where" x="408" y="888">One entry per subscriber · Phase 2 · Step 4 Subscriber Details</text>
+<rect class="chip chip-client" x="612.9" y="862" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-client" x="648.4" y="872.5" text-anchor="middle">Client fills</text>
+<line class="box-rule" x1="396" y1="897" x2="696" y2="897"/>
+<text class="row" x="408" y="915"><tspan class="t-lead">Type</tspan><tspan> </tspan><tspan class="t-rest">individual (must be a proposed director) ·</tspan></text>
+<text class="row" x="408" y="931"><tspan class="t-rest">company or LLP</tspan></text>
+<text class="row" x="408" y="950"><tspan class="t-lead">Name · CIN or LLPIN · registered address</tspan></text>
+<text class="row" x="408" y="969"><tspan class="t-lead">Authorised person signing for the company</tspan></text>
+<text class="row" x="408" y="988"><tspan class="t-lead">Number of shares and their value</tspan></text>
+<text class="row" x="408" y="1007"><tspan class="t-lead">Parent’s authorised person and nominee</tspan><tspan> </tspan><tspan class="t-rest">for INC-35</tspan></text>
+<text class="row" x="408" y="1023"><tspan class="t-rest">· nominee holds one share</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="152" width="300" height="217" rx="8"/>
+<text class="box-title" x="858" y="170">Board Resolution / NOC</text>
+<text class="box-where" x="858" y="185">Drafted at Step 2 · signed on the parent’s letterhead at Step 3</text>
+<rect class="chip chip-neutral" x="1062.9" y="159" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1098.4" y="169.5" text-anchor="middle">Parent signs</text>
+<line class="box-rule" x1="846" y1="194" x2="1146" y2="194"/>
+<text class="row" x="858" y="212"><tspan class="t-lead">Parent</tspan><tspan> </tspan><tspan class="t-rest">company name, country and state, signatory</tspan></text>
+<text class="row" x="858" y="228"><tspan class="t-rest">name and designation</tspan></text>
+<text class="row" x="858" y="247"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">proposed names, NIC codes</tspan></text>
+<text class="row" x="858" y="266"><tspan class="t-lead">Capital</tspan><tspan> </tspan><tspan class="t-rest">authorised and paid-up capital</tspan></text>
+<text class="row" x="858" y="285"><tspan class="t-lead">Directors</tspan><tspan> </tspan><tspan class="t-rest">names, as the persons authorised to</tspan></text>
+<text class="row" x="858" y="301"><tspan class="t-rest">incorporate</tspan></text>
+<text class="row" x="858" y="320"><tspan class="t-lead">Date</tspan><tspan> </tspan><tspan class="t-rest">the board resolution date from Step 1</tspan></text>
+<text class="row" x="858" y="339"><tspan class="t-lead">Wording</tspan><tspan> </tspan><tspan class="t-rest">picked by parent type: foreign · Indian</tspan></text>
+<text class="row" x="858" y="355"><tspan class="t-rest">investing · Indian name use</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="387" width="300" height="163" rx="8"/>
+<text class="box-title" x="858" y="405">Authorisation Letter</text>
+<text class="box-where" x="858" y="420">The parent authorises its representative director</text>
+<rect class="chip chip-neutral" x="1062.9" y="394" width="71.1" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1098.4" y="404.5" text-anchor="middle">Parent signs</text>
+<line class="box-rule" x1="846" y1="429" x2="1146" y2="429"/>
+<text class="row" x="858" y="447"><tspan class="t-lead">Parent</tspan><tspan> </tspan><tspan class="t-rest">name, address, country and state, signatory</tspan></text>
+<text class="row" x="858" y="463"><tspan class="t-rest">name and designation</tspan></text>
+<text class="row" x="858" y="482"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">the non-resident director’s name,</tspan></text>
+<text class="row" x="858" y="498"><tspan class="t-rest">address, passport number</tspan></text>
+<text class="row" x="858" y="517"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="858" y="536"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="568" width="300" height="147" rx="8"/>
+<text class="box-title" x="858" y="586">Acceptance Letter</text>
+<text class="box-where" x="858" y="601">The representative accepts the appointment</text>
+<rect class="chip chip-neutral" x="1053.4" y="575" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1093.7" y="585.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="846" y1="610" x2="1146" y2="610"/>
+<text class="row" x="858" y="628"><tspan class="t-lead">Parent</tspan><tspan> </tspan><tspan class="t-rest">name and address</tspan></text>
+<text class="row" x="858" y="647"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">the non-resident director’s name,</tspan></text>
+<text class="row" x="858" y="663"><tspan class="t-rest">father’s name, passport number, address</tspan></text>
+<text class="row" x="858" y="682"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name · date of the authorisation</tspan></text>
+<text class="row" x="858" y="701"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="833" width="300" height="128" rx="8"/>
+<text class="box-title" x="858" y="851">MOA · INC-33</text>
+<text class="box-where" x="858" y="866">Memorandum of Association</text>
+<rect class="chip chip-neutral" x="1043.8" y="840" width="90.2" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1088.9" y="850.5" text-anchor="middle">Subscribers sign</text>
+<line class="box-rule" x1="846" y1="875" x2="1146" y2="875"/>
+<text class="row" x="858" y="893"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="858" y="912"><tspan class="t-lead">Office</tspan><tspan> </tspan><tspan class="t-rest">state of the registered office</tspan></text>
+<text class="row" x="858" y="931"><tspan class="t-lead">Capital</tspan><tspan> </tspan><tspan class="t-rest">authorised and paid-up capital, value per</tspan></text>
+<text class="row" x="858" y="947"><tspan class="t-rest">share, number of shares</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="979" width="300" height="93" rx="8"/>
+<text class="box-title" x="858" y="997">AOA · INC-34</text>
+<text class="box-where" x="858" y="1012">Articles of Association</text>
+<rect class="chip chip-neutral" x="1043.8" y="986" width="90.2" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1088.9" y="996.5" text-anchor="middle">Subscribers sign</text>
+<line class="box-rule" x1="846" y1="1021" x2="1146" y2="1021"/>
+<text class="row" x="858" y="1039"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="858" y="1058"><tspan class="t-lead">Directors</tspan><tspan> </tspan><tspan class="t-rest">the list of directors, with Mr. or Ms.</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="846" y="1090" width="300" height="246" rx="8"/>
+<text class="box-title" x="858" y="1108">Subscription Sheets</text>
+<text class="box-where" x="858" y="1123">MOA and AOA · two sheets with the same content</text>
+<rect class="chip chip-neutral" x="1043.8" y="1097" width="90.2" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1088.9" y="1107.5" text-anchor="middle">Subscribers sign</text>
+<line class="box-rule" x1="846" y1="1132" x2="1146" y2="1132"/>
+<text class="row" x="858" y="1150"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="858" y="1169"><tspan class="t-lead">Subscribers</tspan><tspan> </tspan><tspan class="t-rest">the subscribing company (parent or</tspan></text>
+<text class="row" x="858" y="1185"><tspan class="t-rest">body corporate) with its representative director,</tspan></text>
+<text class="row" x="858" y="1201"><tspan class="t-rest">or each individual subscriber</tspan></text>
+<text class="row" x="858" y="1220"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">for each person listed: name, father’s</tspan></text>
+<text class="row" x="858" y="1236"><tspan class="t-rest">name, address, date of birth, occupation,</tspan></text>
+<text class="row" x="858" y="1252"><tspan class="t-rest">nationality</tspan></text>
+<text class="row" x="858" y="1271"><tspan class="t-lead">Capital</tspan><tspan> </tspan><tspan class="t-rest">shares taken by each subscriber, and the</tspan></text>
+<text class="row" x="858" y="1287"><tspan class="t-rest">total</tspan></text>
+<text class="row" x="858" y="1306"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">witness name, address, occupation,</tspan></text>
+<text class="row" x="858" y="1322"><tspan class="t-rest">membership number · date</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="152" width="300" height="182" rx="8"/>
+<text class="box-title" x="1308" y="170">DIR-2 · Consent to act as director</text>
+<text class="box-where" x="1308" y="185">One per director</text>
+<rect class="chip chip-neutral" x="1503.4" y="159" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="169.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="194" x2="1596" y2="194"/>
+<text class="row" x="1308" y="212"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="1308" y="231"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name, DIN, father’s name, address, email,</tspan></text>
+<text class="row" x="1308" y="247"><tspan class="t-rest">mobile, PAN, occupation, date of birth, nationality</tspan></text>
+<text class="row" x="1308" y="266"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">count of other directorships · CS</tspan></text>
+<text class="row" x="1308" y="282"><tspan class="t-rest">membership number</tspan></text>
+<text class="row" x="1308" y="301"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">proof of identity · proof of residence</tspan></text>
+<text class="row" x="1308" y="320"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="352" width="300" height="163" rx="8"/>
+<text class="box-title" x="1308" y="370">DIR-8 · Not disqualified</text>
+<text class="box-where" x="1308" y="385">Intimation of disqualification · one per director</text>
+<rect class="chip chip-neutral" x="1503.4" y="359" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="369.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="394" x2="1596" y2="394"/>
+<text class="row" x="1308" y="412"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="1308" y="431"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name, son or daughter of, father’s name,</tspan></text>
+<text class="row" x="1308" y="447"><tspan class="t-rest">address</tspan></text>
+<text class="row" x="1308" y="466"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">table of other directorships: company,</tspan></text>
+<text class="row" x="1308" y="482"><tspan class="t-rest">CIN, from, to</tspan></text>
+<text class="row" x="1308" y="501"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="533" width="300" height="112" rx="8"/>
+<text class="box-title" x="1308" y="551">INC-9 · Director declaration</text>
+<text class="box-where" x="1308" y="566">Declaration by the first director · one per director</text>
+<rect class="chip chip-neutral" x="1503.4" y="540" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="550.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="575" x2="1596" y2="575"/>
+<text class="row" x="1308" y="593"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="1308" y="612"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name</tspan></text>
+<text class="row" x="1308" y="631"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="663" width="300" height="128" rx="8"/>
+<text class="box-title" x="1308" y="681">ID &amp; Address Declaration</text>
+<text class="box-where" x="1308" y="696">Only directors who already hold a DIN</text>
+<rect class="chip chip-neutral" x="1503.4" y="670" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="680.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="705" x2="1596" y2="705"/>
+<text class="row" x="1308" y="723"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="1308" y="742"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name, son or daughter of, father’s name,</tspan></text>
+<text class="row" x="1308" y="758"><tspan class="t-rest">address, DIN</tspan></text>
+<text class="row" x="1308" y="777"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="809" width="300" height="128" rx="8"/>
+<text class="box-title" x="1308" y="827">Deposit Declaration</text>
+<text class="box-where" x="1308" y="842">Optional · one per director</text>
+<rect class="chip chip-neutral" x="1503.4" y="816" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="826.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="851" x2="1596" y2="851"/>
+<text class="row" x="1308" y="869"><tspan class="t-lead">Company</tspan><tspan> </tspan><tspan class="t-rest">approved name</tspan></text>
+<text class="row" x="1308" y="888"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name, son or daughter of, father’s name,</tspan></text>
+<text class="row" x="1308" y="904"><tspan class="t-rest">address, DIN</tspan></text>
+<text class="row" x="1308" y="923"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+<g class="box">
+<rect class="box-bg" x="1296" y="955" width="300" height="109" rx="8"/>
+<text class="box-title" x="1308" y="973">PAN Undertaking</text>
+<text class="box-where" x="1308" y="988">Non-resident directors only</text>
+<rect class="chip chip-neutral" x="1503.4" y="962" width="80.6" height="15" rx="4"/>
+<text class="chip-text chip-neutral" x="1543.7" y="972.5" text-anchor="middle">Director signs</text>
+<line class="box-rule" x1="1296" y1="997" x2="1596" y2="997"/>
+<text class="row" x="1308" y="1015"><tspan class="t-lead">Director</tspan><tspan> </tspan><tspan class="t-rest">name, father’s name, nationality,</tspan></text>
+<text class="row" x="1308" y="1031"><tspan class="t-rest">passport number</tspan></text>
+<text class="row" x="1308" y="1050"><tspan class="t-lead">Signing</tspan><tspan> </tspan><tspan class="t-rest">date and place</tspan></text>
+</g>
+</svg>
+  </div>
+  <figcaption>Each box on the left is a set of details and says which step collects it. Each box on the right is one document and lists what gets printed in it, and from which set of details. A line with a fork means “many”: one director entry gives a whole set of documents, and every subscriber is listed on the subscription sheets. A subsidiary with one non-resident and one resident director, both holding a DIN, ends up with 18 documents.</figcaption>
+  <div class="legend">
+    <span><svg width="64" height="16" viewBox="0 0 64 16"><path d="M2 8 H62" class="ln"/><path d="M8 2 V14" class="mk"/><path d="M44 8 L62 2 M44 8 L62 8 M44 8 L62 14" class="mk"/></svg> one — many</span>
+    <span><svg width="64" height="16" viewBox="0 0 64 16"><path d="M2 8 H62" class="ln"/><path d="M8 2 V14" class="mk"/><path d="M56 2 V14" class="mk"/></svg> one — one</span>
+    <span><svg width="64" height="16" viewBox="0 0 64 16"><path d="M2 8 H62" class="ln"/><path d="M8 2 V14" class="mk"/><circle cx="46" cy="8" r="3.6" class="mk mk-fill"/><path d="M57 2 V14" class="mk"/></svg> one — maybe one</span>
+    <span><svg width="64" height="16" viewBox="0 0 64 16"><rect x="2" y="1" width="60" height="14" rx="4" class="group"/></svg> a group of documents</span>
+  </div>
+</figure>
+
+<script>
+  (function () {
+    var box = document.getElementById('fit');
+    var scroller = document.getElementById('scroller');
+    function apply() { scroller.classList.toggle('fit', box.checked); }
+    box.addEventListener('change', apply);
+    apply();
+  })();
+</script>
+</body>
+</html>

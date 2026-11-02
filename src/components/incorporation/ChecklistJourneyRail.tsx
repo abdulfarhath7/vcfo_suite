@@ -5,7 +5,8 @@ import type { ChecklistItem } from '@/data/checklist';
 import type { StatusCode } from '@/data/checklist';
 import { ChecklistStatusBadge } from '@/components/incorporation/ChecklistStatusBadge';
 import { JourneyNode } from '@/components/incorporation/JourneyNode';
-import { ResponsibleRoleBadge } from '@/components/incorporation/ResponsibleRoleBadge';
+import { StepLink } from '@/components/ui/step-track';
+import { RESPONSIBLE_ROLE_LABEL } from '@/lib/checklist/checklist-field-access';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
@@ -15,12 +16,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { StepAttachmentRequirement } from '@/lib/checklist-step-attachments';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
-import { gateDisplayStatus } from '@/lib/checklist-step-gate';
+import type { StepAttachmentRequirement } from '@/lib/checklist/checklist-step-attachments';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
+import { gateDisplayStatus } from '@/lib/checklist/checklist-step-gate';
 import { toastInfo } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, Circle, Clock, MoreVertical } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, MoreVertical, User } from 'lucide-react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';
 
@@ -40,8 +41,8 @@ function ChecklistLockedHint({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-3">
         <div className="flex gap-2.5">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          <p className="text-sm leading-relaxed text-foreground">{message}</p>
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+          <p className="text-sm leading-relaxed text-ink">{message}</p>
         </div>
       </PopoverContent>
     </Popover>
@@ -70,7 +71,26 @@ interface ChecklistJourneyRailProps {
   hideStatus?: boolean;
   /** Kebab → Attachments required (intern step rail). */
   showAttachmentMenu?: boolean;
+  /** Staff step rail (prototype `StepView`): "Step n" in a 50px mono column after the mark. */
+  showStepCode?: boolean;
   className?: string;
+}
+
+/**
+ * Who holds the step (prototype rail): a 14px person icon, faint for a client step and ink-2
+ * for a firm step. The role name is the icon's label.
+ */
+function HolderIcon({ role }: { role: ChecklistItem['responsibleRole'] }) {
+  if (!role) return null;
+  return (
+    <User
+      size={14}
+      strokeWidth={1.6}
+      className={cn('mt-[3px] shrink-0', role === 'client' ? 'text-ink-faint' : 'text-ink-2')}
+      role="img"
+      aria-label={RESPONSIBLE_ROLE_LABEL[role]}
+    />
+  );
 }
 
 function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmentRequirement[] }) {
@@ -79,7 +99,7 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-raised hover:text-foreground"
+          className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink"
           aria-label="Step actions"
           onClick={(event) => event.stopPropagation()}
           onPointerDown={(event) => event.stopPropagation()}
@@ -92,20 +112,20 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
           <DropdownMenuSubTrigger>Attachments required</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-64 p-1.5">
             {attachments.length === 0 ? (
-              <p className="px-1.5 py-1 text-[12px] text-muted-foreground">None</p>
+              <p className="px-1.5 py-1 text-[12px] text-ink-muted">None</p>
             ) : (
               <ul className="space-y-1">
                 {attachments.map((file) => (
                   <li key={file.fieldId} className="flex items-start gap-2 px-1.5 py-1 text-[12px]">
                     {file.uploaded ? (
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-positive" aria-hidden />
                     ) : (
-                      <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                      <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
                     )}
                     <span className="min-w-0 leading-snug">
-                      <span className="block text-foreground">{file.label}</span>
+                      <span className="block text-ink">{file.label}</span>
                       {file.uploaded && file.fileName ? (
-                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
                           {file.fileName}
                         </span>
                       ) : null}
@@ -121,7 +141,7 @@ function JourneyRailAttachmentMenu({ attachments }: { attachments: StepAttachmen
   );
 }
 
-/** Sticky vertical stepper: solid connector through done, dashed through locked. */
+/** Sticky vertical stepper: a green connector through done steps, a grey one through the rest (R-58: centred on the nodes). */
 export function ChecklistJourneyRail({
   items,
   selectedId,
@@ -129,6 +149,7 @@ export function ChecklistJourneyRail({
   allowLockedOpen = false,
   hideStatus = false,
   showAttachmentMenu = false,
+  showStepCode = false,
   className,
 }: ChecklistJourneyRailProps) {
   const reduceMotion = useReducedMotion();
@@ -148,13 +169,15 @@ export function ChecklistJourneyRail({
           const visuallyLocked = gate.kind === 'locked' && !allowLockedOpen;
           const canSelect = allowLockedOpen || gate.canOpen;
 
-          const compactConnector = !isLast && (
-            <span
-              className={cn(
-                'absolute left-[1.125rem] top-9 bottom-[-0.35rem] w-px',
-                connectorSolid ? 'bg-success' : 'border-l border-dashed border-border',
-              )}
-              aria-hidden
+          const prev = items[index - 1];
+          const prevSolid = prev ? prev.gate.kind === 'done' && gate.kind !== 'locked' : false;
+          /* R-58: half-lines join the 20px node centres (8px row padding + 10px). */
+          const compactConnector = (
+            <StepLink
+              x={18}
+              y={18}
+              up={prev && (prevSolid ? 'done' : 'todo')}
+              down={!isLast && (connectorSolid ? 'done' : 'todo')}
             />
           );
 
@@ -172,15 +195,14 @@ export function ChecklistJourneyRail({
               <div className="flex items-start gap-1.5">
                 <p
                   className={cn(
-                    'min-w-0 text-[13px] font-medium leading-snug',
-                    visuallyLocked ? 'text-muted-foreground' : 'text-foreground',
-                    selected && 'text-foreground',
-                    gate.kind === 'active' && 'text-primary',
+                    'min-w-0 text-[13.5px] leading-snug',
+                    visuallyLocked ? 'text-ink-muted' : gate.kind === 'locked' ? 'text-ink-2' : 'text-ink',
+                    (selected || gate.kind === 'active') && 'font-medium text-ink',
                   )}
                 >
                   {item.title}
                 </p>
-                <ResponsibleRoleBadge role={item.responsibleRole} iconOnly className="mt-0.5" />
+                <HolderIcon role={item.responsibleRole} />
               </div>
               {!visuallyLocked && (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 empty:hidden">
@@ -191,10 +213,10 @@ export function ChecklistJourneyRail({
                 </div>
               )}
               {gate.kind === 'waiting' && gate.message && (
-                <p className="mt-1 text-[11px] text-muted-foreground">{gate.message}</p>
+                <p className="mt-1 text-[12px] text-waiting">{gate.message}</p>
               )}
               {windowLabel ? (
-                <p className="mt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                <p className="mt-0.5 text-[12px] tabular-nums text-ink-muted">
                   {windowLabel}
                 </p>
               ) : null}
@@ -203,10 +225,10 @@ export function ChecklistJourneyRail({
 
           const rowShell = cn(
             'relative flex w-full items-start text-left transition-colors',
-            'gap-2 rounded-lg py-2.5 pl-2 pr-1',
-            selected && canSelect && !animateSelected && 'bg-primary-light/50',
+            'gap-2 rounded-md py-2 pl-2 pr-1',
+            selected && canSelect && !animateSelected && 'bg-surface-sunken',
             visuallyLocked && 'opacity-70',
-            canSelect && 'hover:bg-raised/60',
+            canSelect && 'hover:bg-surface-sunken/60',
             gate.kind === 'active' && 'journey-unlock',
           );
 
@@ -215,7 +237,7 @@ export function ChecklistJourneyRail({
               <MotionActivePill
                 layoutId="intern-journey-selected"
                 reduced={reduceMotion}
-                className="absolute inset-0 rounded-lg bg-primary-light/50"
+                className="absolute inset-0 rounded-md bg-surface-sunken"
               />
             ) : null;
 
@@ -228,6 +250,9 @@ export function ChecklistJourneyRail({
           const stepCopy = (
             <>
               <div className="relative z-[1] shrink-0">{node}</div>
+              {showStepCode ? (
+                <span className="w-[50px] flex-none pt-[3px] font-mono text-[12px] text-ink-muted">Step {stepNumber}</span>
+              ) : null}
               {labelBlock}
             </>
           );

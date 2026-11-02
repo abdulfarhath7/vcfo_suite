@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PgDialect } from 'drizzle-orm/pg-core';
+import { PgDialect, QueryBuilder } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 
 import type { AuthContext } from '@/auth/guards';
@@ -7,7 +7,8 @@ import type { AnswerEnvelope } from '@/data/ask/schema';
 
 /**
  * Cross-tenant rules for the Ask VCFO tables (Path A — enforced here, not RLS):
- *   - managers and Project Leads are refused before any query runs,
+ *   - a developer is refused before any query runs; managers and Project Leads
+ *     use the staff shell only and never manage sources,
  *   - conversations, messages and library items are private to one profile,
  *   - a client conversation / library item needs an engagement the caller can
  *     access, and is written against the approved id,
@@ -58,6 +59,7 @@ const admin = ctx('admin', 'user-admin');
 const superAdmin = ctx('super_admin', 'user-super');
 const manager = ctx('manager', 'user-manager');
 const lead = ctx('intern', 'user-lead');
+const developer = ctx('developer', 'user-dev');
 
 const ENG_A = '11111111-1111-1111-1111-111111111111';
 const ENG_B = '22222222-2222-2222-2222-222222222222';
@@ -75,18 +77,37 @@ beforeEach(() => {
   lastWhere = undefined;
   selectRows = [];
   inserted = null;
-  const chain = {
-    from: () => chain,
-    innerJoin: () => chain,
-    where: (w: SQL) => {
-      lastWhere = w;
-      return chain;
-    },
-    orderBy: () => chain,
-    limit: () => Promise.resolve(selectRows),
-    then: (resolve: (v: unknown[]) => unknown) => resolve(selectRows),
-  };
-  dbSelect.mockImplementation(() => chain);
+  // One fresh chain per db.select() call. A chain that is embedded in another
+  // query (for example `notExists(db.select()...)`) must render as SQL, the way a
+  // real Drizzle select does; without `getSQL()` PgDialect would bind the mock
+  // object itself as a query parameter.
+  dbSelect.mockImplementation((fields?: Record<string, unknown>) => {
+    let fromTable: unknown;
+    let ownWhere: SQL | undefined;
+    const chain = {
+      from: (table: unknown) => {
+        fromTable = table;
+        return chain;
+      },
+      innerJoin: () => chain,
+      where: (w: SQL) => {
+        ownWhere = w;
+        lastWhere = w;
+        return chain;
+      },
+      orderBy: () => chain,
+      // limit() stays awaitable (the chain is a thenable) and also allows .offset().
+      limit: () => chain,
+      offset: () => Promise.resolve(selectRows),
+      then: (resolve: (v: unknown[]) => unknown) => resolve(selectRows),
+      getSQL: () => {
+        const qb = new QueryBuilder();
+        const base = (fields ? qb.select(fields as never) : qb.select()).from(fromTable as never);
+        return (ownWhere ? base.where(ownWhere) : base).getSQL();
+      },
+    };
+    return chain;
+  });
   dbInsert.mockImplementation(() => ({
     values: (values: Record<string, unknown>) => {
       inserted = values;
@@ -105,7 +126,7 @@ beforeEach(() => {
 });
 
 describe('role gate', () => {
-  it.each([manager, lead])('refuses $role before touching the database', async (who) => {
+  it.each([developer])('refuses $role before touching the database', async (who) => {
     await expect(conversations.createAskConversation(who, { shell: 'admin' })).rejects.toBeInstanceOf(
       AskForbiddenError,
     );
@@ -118,6 +139,18 @@ describe('role gate', () => {
     await expect(
       documents.searchAskChunks(who, { query: 'gst', persona: 'staff', limit: 5 }),
     ).rejects.toBeInstanceOf(AskForbiddenError);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(dbInsert).not.toHaveBeenCalled();
+  });
+
+  it.each([manager, lead])('keeps $role to the staff shell and away from sources', async (who) => {
+    await expect(
+      conversations.createAskConversation(who, { shell: 'client', engagementId: ENG_A }),
+    ).rejects.toBeInstanceOf(AskForbiddenError);
+    await expect(conversations.createAskConversation(who, { shell: 'super' })).rejects.toBeInstanceOf(
+      AskForbiddenError,
+    );
+    await expect(documents.listAskDocuments(who)).rejects.toBeInstanceOf(AskForbiddenError);
     expect(dbSelect).not.toHaveBeenCalled();
     expect(dbInsert).not.toHaveBeenCalled();
   });
@@ -176,10 +209,82 @@ describe('conversations', () => {
   });
 });
 
+describe('conversation list and delete (F4)', () => {
+  it("lists only the caller's own chats — client A never sees client B's", async () => {
+    await conversations.listOwnAskConversations(clientA, { shell: 'client', engagementId: ENG_A });
+    const params = whereParams();
+    expect(params).toContain(clientA.userId);
+    expect(params).not.toContain(clientB.userId);
+    const { sql: text } = dialect.sqlToQuery(lastWhere!);
+    expect(text).toMatch(/^\("ask_conversations"\."profile_id" = \$1 and/);
+  });
+
+  it('client B listing never carries client A as a parameter', async () => {
+    await conversations.listOwnAskConversations(clientB);
+    expect(whereParams()).toContain(clientB.userId);
+    expect(whereParams()).not.toContain(clientA.userId);
+  });
+
+  it('a firm admin or super admin lists only their own chats, never a client’s', async () => {
+    await conversations.listOwnAskConversations(admin, { shell: 'admin' });
+    expect(whereParams()).toContain(admin.userId);
+    expect(whereParams()).not.toContain(clientA.userId);
+    await conversations.listOwnAskConversations(superAdmin, { shell: 'super' });
+    expect(whereParams()).toContain(superAdmin.userId);
+  });
+
+  it('refuses a developer before any query', async () => {
+    await expect(conversations.listOwnAskConversations(developer)).rejects.toBeInstanceOf(AskForbiddenError);
+    await expect(conversations.deleteOwnAskConversation(developer, 'c-1')).rejects.toBeInstanceOf(AskForbiddenError);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(dbDelete).not.toHaveBeenCalled();
+  });
+
+  it('maps rows: trimmed first question, count, 40 per page with hasMore', async () => {
+    const at = new Date('2026-10-30T10:00:00Z');
+    selectRows = Array.from({ length: 41 }, (_, i) => ({
+      id: `c-${i}`,
+      shell: 'client',
+      engagementId: ENG_A,
+      lastMessageAt: at,
+      firstQuestion: i === 0 ? '  What   is GST?\n ' : i === 1 ? 'x'.repeat(200) : null,
+      messageCount: 2,
+    }));
+    const out = await conversations.listOwnAskConversations(clientA, { shell: 'client', engagementId: ENG_A });
+    expect(out.hasMore).toBe(true);
+    expect(out.conversations).toHaveLength(conversations.ASK_CONVERSATION_PAGE_SIZE);
+    expect(out.conversations[0]).toMatchObject({ id: 'c-0', title: 'What is GST?', messageCount: 2, updatedAt: at });
+    expect(out.conversations[1].title.length).toBeLessThanOrEqual(80);
+    expect(out.conversations[2].title).toBe('Chat');
+  });
+
+  it('delete is keyed on id AND the caller — B cannot delete A’s chat', async () => {
+    await expect(conversations.deleteOwnAskConversation(clientB, 'conv-of-a')).resolves.toBe(false);
+    expect(whereParams()).toEqual(['conv-of-a', clientB.userId]);
+    expect(whereParams()).not.toContain(clientA.userId);
+  });
+});
+
 describe('client library', () => {
   it('lists only the caller’s items', async () => {
     await library.listLibraryItems(clientB);
     expect(whereParams()).toEqual([clientB.userId]);
+  });
+
+  it('the soft-removal filter only narrows the caller’s own items', async () => {
+    await library.listLibraryItems(clientB);
+    const { sql: text, params } = dialect.sqlToQuery(lastWhere!);
+    // profile_id = caller AND NOT EXISTS (a removal row for this item): the
+    // subquery joins on the item id only, so it can hide rows but never add any.
+    expect(text).toMatch(/"client_library_items"\."profile_id" = \$1 and not exists \(select/);
+    expect(text).toContain('"client_library_removals"."item_id" = "client_library_items"."id"');
+    expect(params).toEqual([clientB.userId]);
+    expect(params).not.toContain(clientA.userId);
+  });
+
+  it('a single item read is keyed on id AND the caller', async () => {
+    await expect(library.getLibraryItem(clientB, 'item-of-a')).resolves.toBeNull();
+    expect(whereParams()).toEqual(['item-of-a', clientB.userId]);
   });
 
   it('only a client saves; super admin preview is read-only', async () => {

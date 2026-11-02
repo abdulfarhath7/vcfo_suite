@@ -23,7 +23,7 @@ export interface ChartTooltipProps {
 }
 
 /**
- * The one tooltip. Panel surface, 1px border, the dashboard's own type scale
+ * The one tooltip. Raised surface, 1.5px edge, the float shadow (R-02), the dashboard's own type scale
  * and a token swatch per series — so a hover on any chart anywhere reads the
  * same. Pass as `<Tooltip content={<ChartTooltip />} />`; recharts injects
  * `active`, `label` and `payload`.
@@ -44,9 +44,9 @@ export function ChartTooltip({
   if (rows.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-border bg-panel px-3 py-2 shadow-layered">
+    <div className="rounded-md border-1.5 border-line bg-surface-raised px-3 py-2 shadow-float">
       {label !== undefined && label !== '' ? (
-        <p className="mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">
+        <p className="mb-1.5 text-[12.5px] font-medium text-ink">
           {label}
         </p>
       ) : null}
@@ -54,14 +54,14 @@ export function ChartTooltip({
         {rows.map((entry, index) => (
           <li
             key={`${String(entry.dataKey ?? entry.name ?? index)}`}
-            className="flex items-center gap-2 text-[12px] font-semibold text-ink"
+            className="flex items-center gap-2 text-[12.5px] font-medium text-ink"
           >
             <i
-              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              className="h-2 w-2 shrink-0 rounded-[2px]"
               style={{ background: entry.color ?? CHART_CHROME.muted }}
               aria-hidden
             />
-            <span className="min-w-0 flex-1 truncate text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate text-ink-muted">
               {labelFor ? labelFor(entry) : String(entry.name ?? entry.dataKey ?? '')}
             </span>
             <span className="shrink-0 tabular-nums">

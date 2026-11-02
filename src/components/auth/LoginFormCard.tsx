@@ -1,7 +1,8 @@
 'use client';
 
-import { m, useReducedMotion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,9 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { AccentButton, GoldDivider, Eyebrow } from '@/components/noir';
-import { springGentle, pressScale } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import { DEMO_ACCOUNTS, DEMO_HINT, demoLoginsOn } from './demo-accounts';
 
 export interface LoginFormCardProps {
   email: string;
@@ -34,27 +34,63 @@ export interface LoginFormCardProps {
   onForgotEmailChange: (value: string) => void;
   onForgotSubmit: (e: React.FormEvent) => void;
   onOpenForgot: () => void;
+  /** Sits at the right of the logo row, for example the theme toggle. */
+  headerAction?: React.ReactNode;
+  /** Where "Book a demo" goes for people without an account, when no dialog opener is given. */
+  demoHref?: string;
+  /** Opens the Book a demo dialog. When set, "Book a demo" is a button, not a link. */
+  onBookDemo?: () => void;
+  /** Shows the demo account buttons. Defaults to the `NEXT_PUBLIC_DEMO_LOGINS` flag. */
+  showDemoAccounts?: boolean;
+  /** Two-step sign-in (G-25): `code` swaps the password form for the code form. */
+  step?: 'password' | 'code';
+  code?: string;
+  onCodeChange?: (value: string) => void;
+  onCodeSubmit?: (e: React.FormEvent) => void;
+  onBackToPassword?: () => void;
+  /** Starts the Microsoft sign-in; the button shows only when this is set (the provider is configured). */
+  onMicrosoft?: () => void;
 }
 
-function AlertBanner({
+/** Plain words for the `?error=microsoft_*` codes the Auth.js `signIn` callback sends back. */
+export const MICROSOFT_ERRORS: Record<string, string> = {
+  microsoft_no_profile: 'No VCFO Suite account uses this Microsoft email. Ask your firm admin to add you.',
+  microsoft_not_allowed: 'This account cannot sign in with Microsoft. Use your email and password.',
+  microsoft_linked_elsewhere: 'Your VCFO Suite account is linked to a different Microsoft account.',
+  microsoft_two_step_on: 'Your account uses a two-step code. Sign in with your email, password and code.',
+};
+
+/** The four-square Microsoft mark (brand colours are the mark itself, so they stay literal). */
+function MicrosoftMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <rect x="0" y="0" width="7.5" height="7.5" fill="#F25022" />
+      <rect x="8.5" y="0" width="7.5" height="7.5" fill="#7FBA00" />
+      <rect x="0" y="8.5" width="7.5" height="7.5" fill="#00A4EF" />
+      <rect x="8.5" y="8.5" width="7.5" height="7.5" fill="#FFB900" />
+    </svg>
+  );
+}
+
+/* The peak band along the bottom of the card, as in the prototype's sign-in card. */
+const CARD_PEAKS = 'polygon(0 66%, 12% 44%, 24% 61%, 38% 33%, 52% 56%, 67% 29%, 81% 53%, 100% 38%, 100% 100%, 0 100%)';
+
+function Notice({
   children,
   variant,
 }: {
   children: React.ReactNode;
-  variant: 'error' | 'success' | 'info' | 'warning';
+  variant: 'error' | 'success' | 'info';
 }) {
+  /* Soft ground and a text-safe colour; the words carry the state. */
   const styles = {
-    error: 'border-l-danger bg-danger-light border-destructive/20 text-destructive',
-    success: 'border-l-success bg-success-light border-success/20 text-success-text',
-    info: 'border-l-border bg-raised border-border text-muted-foreground',
-    warning: 'border-l-warning bg-warning-light border-warning/20 text-warning-text',
+    error: 'bg-danger-soft text-danger',
+    success: 'bg-positive-soft text-positive',
+    info: 'bg-surface-sunken text-ink-muted',
   };
   return (
     <p
-      className={cn(
-        'mb-4 rounded-md border border-l-[3px] px-3 py-2.5 text-[12px] leading-relaxed',
-        styles[variant],
-      )}
+      className={cn('rounded-md px-3 py-2.5 text-[13px] leading-relaxed', styles[variant])}
       role={variant === 'error' ? 'alert' : 'status'}
     >
       {children}
@@ -62,6 +98,11 @@ function AlertBanner({
   );
 }
 
+/**
+ * The sign-in card in the VCFO Spectrum look (prototype `SignInScreen.tsx`, C-0112): the logo row,
+ * "Sign in to your workspace", work email and password, the main button and a short foot.
+ * The form, its ids (`#email`, `#password`) and the forgot-password dialog are the real ones.
+ */
 export function LoginFormCard({
   email,
   password,
@@ -81,126 +122,227 @@ export function LoginFormCard({
   onForgotEmailChange,
   onForgotSubmit,
   onOpenForgot,
+  headerAction,
+  demoHref = '/contact',
+  onBookDemo,
+  showDemoAccounts = demoLoginsOn(),
+  step = 'password',
+  code = '',
+  onCodeChange,
+  onCodeSubmit,
+  onBackToPassword,
+  onMicrosoft,
 }: LoginFormCardProps) {
-  const reduceMotion = useReducedMotion();
-
+  const codeDigits = code.replace(/[\s-]/g, '');
+  const footLink =
+    'rounded-sm font-semibold text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring';
+  /* A demo button fills the work email only; the password field takes the focus next. */
+  const pickDemo = (address: string) => {
+    onEmailChange(address);
+    document.getElementById('password')?.focus();
+  };
   return (
-    <m.div
-      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...springGentle, delay: reduceMotion ? 0 : 0.15 }}
-      className="auth-glass w-full p-6 sm:p-8 md:p-9 lg:p-10"
-    >
-      <Eyebrow>Sign in</Eyebrow>
-      <h2 className="mt-1 font-serif text-[clamp(22px,4.5vw,36px)] font-semibold leading-tight tracking-tight text-foreground">
-        Welcome back
-      </h2>
-      <GoldDivider className="my-6 max-w-[60px]" />
-
-      {profileError === 'no_profile' && (
-        <AlertBanner variant="error">
-          No profile is linked to this account. Ask your firm admin to complete setup.
-        </AlertBanner>
-      )}
-      {resetNotice === 'check-email' && (
-        <AlertBanner variant="info">
-          Check your email for a password reset link. After updating your password, sign in here.
-        </AlertBanner>
-      )}
-      {resetNotice === 'success' && (
-        <AlertBanner variant="success">Password updated. Sign in with your new password.</AlertBanner>
-      )}
-
-      <form onSubmit={onSubmit} className="space-y-5">
-        <div>
-          <Label htmlFor="email" className="text-[11.5px] text-muted-foreground">
-            Email
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            placeholder="you@company.com"
-            className="auth-input mt-1.5"
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
-            autoFocus
-            autoComplete="email"
-          />
-        </div>
-        <div>
-          <Label htmlFor="password" className="text-[11.5px] text-muted-foreground">
-            Password
-          </Label>
-          <div className="relative mt-1.5">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => onPasswordChange(e.target.value)}
-              className="auth-input pr-12"
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              onClick={onToggleShowPassword}
-              className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          <div className="mt-2 text-right">
-            <button
-              type="button"
-              onClick={onOpenForgot}
-              className="rounded-sm text-[11.5px] text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            >
-              Forgot password?
-            </button>
-          </div>
+    <div className="relative z-[1] w-full max-w-[420px] overflow-hidden rounded-[14px] border border-line bg-surface-raised px-[18px] py-[22px] text-ink shadow-dialog sm:p-7">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[90px] bg-brand-text opacity-[.07]"
+        style={{ clipPath: CARD_PEAKS }}
+      />
+      <div className="relative z-[1] grid gap-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2.5">
+            <span className="grid h-[30px] w-[30px] place-items-center rounded-lg bg-highlight-bright text-[14px] font-bold text-on-brand">
+              V
+            </span>
+            <span>
+              <b className="text-[16px] font-semibold">VCFO Suite</b>{' '}
+              <small className="text-[12px] text-ink-muted">by SBC</small>
+            </span>
+          </span>
+          {headerAction}
         </div>
 
-        {error && (
-          <p className="text-[12px] leading-relaxed text-destructive" role="alert">
-            {error}
-          </p>
+        <h1 id="sign-in-title" className="mt-1.5 text-[22px] font-semibold tracking-[-0.01em]">
+          {step === 'code' ? 'Enter your code' : 'Sign in to your workspace'}
+        </h1>
+        <p className="-mt-1.5 mb-1 text-[14px] text-ink-muted">
+          {step === 'code'
+            ? `Open your authenticator app for ${email}.`
+            : 'Use the account your firm created for you.'}
+        </p>
+
+        {profileError === 'no_profile' && (
+          <Notice variant="error">No profile is linked to this account. Ask your firm admin to complete setup.</Notice>
+        )}
+        {profileError && MICROSOFT_ERRORS[profileError] ? <Notice variant="error">{MICROSOFT_ERRORS[profileError]}</Notice> : null}
+        {resetNotice === 'check-email' && (
+          <Notice variant="info">Check your email for a password reset link, then sign in here.</Notice>
+        )}
+        {resetNotice === 'success' && <Notice variant="success">Password updated. Sign in with your new password.</Notice>}
+
+        {step === 'code' ? (
+          <form onSubmit={onCodeSubmit} className="grid gap-3.5" aria-labelledby="sign-in-title">
+            <div className="grid gap-1.5">
+              <Label htmlFor="otp" className="text-[13px] font-medium text-ink-2">
+                Code from the app
+              </Label>
+              <Input
+                id="otp"
+                value={code}
+                onChange={(e) => onCodeChange?.(e.target.value)}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={7}
+                className="font-mono text-[16px] tracking-[0.3em]"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the code field when this step opens
+                autoFocus
+                required
+              />
+            </div>
+
+            {error && (
+              <p className="-mt-1 text-[13px] text-danger" role="alert">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="h-10 w-full" disabled={codeDigits.length !== 6 || loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+                  Checking
+                </>
+              ) : (
+                'Verify'
+              )}
+            </Button>
+            <Button type="button" variant="quiet" className="h-9 w-full" onClick={onBackToPassword} disabled={loading}>
+              Use another account
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={onSubmit} className="grid gap-3.5" aria-labelledby="sign-in-title">
+            <div className="grid gap-1.5">
+              <Label htmlFor="email" className="text-[13px] font-medium text-ink-2">
+                Work email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => onEmailChange(e.target.value)}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: focuses the first field when this form opens
+                autoFocus
+                autoComplete="username"
+                required
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="password" className="text-[13px] font-medium text-ink-2">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => onPasswordChange(e.target.value)}
+                  className="pr-11"
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={onToggleShowPassword}
+                  className="absolute right-1 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-ink-muted transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" strokeWidth={1.6} /> : <Eye className="h-4 w-4" strokeWidth={1.6} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <p className="-mt-1 text-[13px] text-danger" role="alert">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="h-10 w-full dark:border dark:border-brand-line" disabled={!email || !password || loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+                  Signing in
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+            {onMicrosoft ? (
+              <Button type="button" variant="secondary" className="h-10 w-full" onClick={onMicrosoft} disabled={loading}>
+                <MicrosoftMark />
+                Sign in with Microsoft
+              </Button>
+            ) : null}
+          </form>
         )}
 
-        <m.div {...(reduceMotion ? {} : pressScale)}>
-          <AccentButton
-            type="submit"
-            size="lg"
-            className="mt-2 w-full"
-            disabled={!email || !password || loading}
+        {showDemoAccounts && step === 'password' ? (
+          <div className="grid grid-cols-3 gap-2 border-t border-line pt-3">
+            <span className="col-span-full text-[12px] text-ink-muted">Demo accounts</span>
+            {DEMO_ACCOUNTS.map((a) => (
+              <Button
+                key={a.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full min-w-0"
+                title={a.email}
+                onClick={() => pickDemo(a.email)}
+              >
+                {a.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+
+        <p className="text-[13px] leading-relaxed text-ink-muted">
+          <button
+            type="button"
+            onClick={onOpenForgot}
+            className={footLink}
           >
-            {loading ? (
-              <>
-                <Loader2 className={cn('h-4 w-4', !reduceMotion && 'animate-spin')} aria-hidden />
-                Signing in…
-              </>
-            ) : (
-              <>
-                Sign in
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </AccentButton>
-        </m.div>
-      </form>
+            Forgot your password?
+          </button>{' '}
+          Ask your firm&apos;s admin to reset it.
+          <br />
+          No account yet?{' '}
+          {onBookDemo ? (
+            <button type="button" onClick={onBookDemo} className={footLink} aria-haspopup="dialog">
+              Book a demo
+            </button>
+          ) : (
+            <Link href={demoHref} className={footLink}>
+              Book a demo
+            </Link>
+          )}
+        </p>
+        {/* P-470: the same demo hint as the top bar, under the form on phones. */}
+        {showDemoAccounts ? <p className="font-mono text-[12px] text-ink-muted sm:hidden">{DEMO_HINT}</p> : null}
+      </div>
 
       <Dialog open={forgotOpen} onOpenChange={onForgotOpenChange}>
-        <DialogContent className="border-border bg-background text-foreground sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="font-medium text-foreground">Need a new password?</DialogTitle>
-            <DialogDescription className="text-[13px] text-muted-foreground">
-              Email reset links are not enabled on this pilot. Ask your firm manager for a temporary
-              password, then change it from Account settings after you sign in.
+            <DialogTitle>Need a new password?</DialogTitle>
+            <DialogDescription className="text-[13px] text-ink-muted">
+              Email reset links are not enabled on this pilot. Ask your firm manager for a temporary password, then
+              change it from Account settings after you sign in.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={onForgotSubmit} className="mt-2 space-y-4">
-            <div>
-              <Label htmlFor="forgot-email" className="text-[11.5px] text-muted-foreground">
+          <form onSubmit={onForgotSubmit} className="mt-2 grid gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="forgot-email" className="text-[13px] font-medium text-ink-2">
                 Your account email
               </Label>
               <Input
@@ -208,24 +350,23 @@ export function LoginFormCard({
                 type="email"
                 value={forgotEmail}
                 onChange={(e) => onForgotEmailChange(e.target.value)}
-                className="auth-input mt-1.5"
                 autoComplete="email"
                 required
               />
             </div>
-            <AccentButton type="submit" size="lg" className="w-full" disabled={!forgotEmail.trim() || forgotLoading}>
+            <Button type="submit" className="h-10 w-full" disabled={!forgotEmail.trim() || forgotLoading}>
               {forgotLoading ? (
                 <>
-                  <Loader2 className={cn('h-4 w-4', !reduceMotion && 'animate-spin')} aria-hidden />
-                  Opening help…
+                  <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+                  Opening help
                 </>
               ) : (
-                'Got it — back to sign in'
+                'Back to sign in'
               )}
-            </AccentButton>
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
-    </m.div>
+    </div>
   );
 }

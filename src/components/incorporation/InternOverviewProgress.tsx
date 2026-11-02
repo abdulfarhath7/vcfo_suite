@@ -1,32 +1,30 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, LayoutGroup, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
-import { InternStepDoneMark } from '@/components/incorporation/InternStepDoneMark';
+import { StepMark } from '@/components/ui/step-track';
+import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { RecordPhaseTrack } from '@/components/incorporation/RecordPhaseTrack';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ProgressBar } from '@/components/common/ProgressBar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ChecklistItem } from '@/data/checklist';
-import type { ChecklistStepGate } from '@/lib/checklist-step-gate';
+import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import {
   internEngagementPhaseTabDefault,
   internNodeKind,
   internOverviewPhaseTitle,
   internPhaseProgressFraction,
   internPhaseProgressLabel,
-  internPhaseProgressPercent,
   internPhaseStepCounts,
   internRegistrationHeadingGroups,
   readInternEngagementPhaseTab,
   writeInternEngagementPhaseTab,
   type InternOverviewNow,
   type InternOverviewPhase,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import { cn } from '@/lib/utils';
-import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/motion';
-import { MotionActivePill } from '@/components/shell/MotionActivePill';
+import { fadeSwap, fadeSwapReduced, fadeUp, fadeUpReduced } from '@/lib/shell/motion';
 import { InternPhaseTickTrack } from '@/components/incorporation/InternPhaseTickTrack';
 import styles from './intern-engagement-overview.module.css';
 
@@ -50,33 +48,33 @@ export function InternNowStrip({
       animate="show"
       className={cn(
         'relative sticky top-[var(--shell-sticky-top)] z-10 mb-5 overflow-hidden',
-        'rounded-xl border border-border bg-background/95 px-4 py-3 shadow-sm backdrop-blur-md',
+        'rounded-xl border border-line bg-background/95 px-4 py-3 shadow-sm',
       )}
     >
       <span
         aria-hidden
         className={cn(
           'absolute inset-y-0 left-0 w-0.5',
-          now.waiting ? 'bg-warning' : 'bg-primary',
+          now.waiting ? 'bg-warning' : 'bg-brand',
         )}
       />
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="min-w-0 text-[13px] leading-snug text-foreground">
-          <span className="font-medium text-muted-foreground">You are here</span>
-          <span className="text-muted-foreground"> · </span>
+        <p className="min-w-0 text-[13px] leading-snug text-ink">
+          <span className="font-medium text-ink-muted">You are here</span>
+          <span className="text-ink-muted"> · </span>
           <span className="font-medium">{now.phaseTitle}</span>
-          <span className="text-muted-foreground"> · </span>
+          <span className="text-ink-muted"> · </span>
           <span className="tabular-nums">
             {now.stepNumber} of {now.stepTotal}
           </span>
-          <span className="text-muted-foreground"> · </span>
+          <span className="text-ink-muted"> · </span>
           <span>{now.stepTitle}</span>
         </p>
         <div className="flex shrink-0 items-center gap-3">
           <span
             className={cn(
               'text-[12px] font-medium',
-              now.waiting ? 'text-warning-text' : 'text-primary',
+              now.waiting ? 'text-warning' : 'text-brand',
             )}
           >
             {now.waiting ? 'Waiting on the client' : 'Your step'}
@@ -93,8 +91,12 @@ export function InternNowStrip({
 /**
  * Intern overview phase tabs + in-card checklist. Off: four entry cards
  * replace this UI. Flip to true to restore tabs; persist is unchanged.
+ *
+ * VCFO Spectrum (C-0108, R-22, R-36): on. The record shows the ST5 phase track and the picked
+ * phase's step list in place, as the prototype's client record does. The entry cards' window
+ * meta and document pack pill move into the step card's head, so nothing is lost.
  */
-export const INTERN_PHASE_TABS_ENABLED = false;
+export const INTERN_PHASE_TABS_ENABLED = true;
 
 function internPhaseCardSubtitle(phaseId: string): string | null {
   if (phaseId === 'pre-inc-phase-1' || phaseId === 'pre-inc-phase-2') {
@@ -144,7 +146,7 @@ export function InternPhaseEntryCards({
           >
             <span className={styles.rowLead}>
               <span className={styles.rowMark}>
-                <InternStepDoneMark done={done} decorative className="h-5 w-5" />
+                <StepMark state={done ? 'done' : current ? 'now' : 'next'} />
               </span>
               <span className={styles.rowCopy}>
                 <span className={styles.phaseTitle}>{title}</span>
@@ -177,29 +179,40 @@ export function InternPhaseEntryCards({
   );
 }
 
-const internPhaseTabTrigger = cn(
-  'relative shrink-0 rounded-none bg-transparent px-3 py-2.5 text-[12px] font-medium',
-  'data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-  'text-text-tertiary transition-colors data-[state=active]:text-brand hover:text-ink',
-);
-
 export type InternPhaseTab = {
   id: string;
   title: string;
   done: number;
   total: number;
+  /** "Steps 1–5" under the phase bar. */
+  range?: string;
 };
 
-/** One intern overview tab row + selected phase panel. Last tab is per engagement. */
+/**
+ * The step card of a lead's client record: the ST5 phase track picks a phase in place and the
+ * card lists its steps. The last picked phase is kept per engagement.
+ */
 export function InternPhaseTabs({
   engagementId,
   currentPhaseId,
   phases,
+  metaForPhase,
+  trailingForPhase,
+  headAction,
+  headMeta,
   children,
 }: {
   engagementId: string;
   currentPhaseId: string | null;
   phases: readonly InternPhaseTab[];
+  /** Quiet metadata in the card head for the picked phase (the manager's window). */
+  metaForPhase?: (phaseId: string) => ReactNode;
+  /** A link in the card head for the picked phase (the document pack pill). */
+  trailingForPhase?: (phaseId: string) => ReactNode;
+  /** Right-hand head action, such as "Open current step". */
+  headAction?: ReactNode;
+  /** The head's muted count; "x of y done" by default. */
+  headMeta?: ReactNode;
   children: (phaseId: string) => ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
@@ -229,46 +242,43 @@ export function InternPhaseTabs({
     ? tab
     : internEngagementPhaseTabDefault(null, currentPhaseId, phaseIds);
   const selected = phases.find((phase) => phase.id === value) ?? phases[0]!;
-  const pct = internPhaseProgressPercent(selected.done, selected.total);
   const panelMotion = reduceMotion ? fadeSwapReduced : fadeSwap;
+  const totalDone = phases.reduce((n, p) => n + p.done, 0);
+  const total = phases.reduce((n, p) => n + p.total, 0);
 
   const onValueChange = (next: string) => {
     setTab(next);
     writeInternEngagementPhaseTab(engagementId, next);
   };
 
+  const meta = metaForPhase?.(selected.id) ?? null;
+  const trailing = trailingForPhase?.(selected.id) ?? null;
+
   return (
-    <Tabs value={value} onValueChange={onValueChange} className="surface overflow-hidden">
-      <LayoutGroup id={`intern-phase-tabs-${engagementId}`}>
-      <TabsList
-        aria-label="Incorporation phases"
-        className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-none border-b border-border bg-transparent p-0"
-      >
-        {phases.map((phase) => {
-          const active = value === phase.id;
-          return (
-            <TabsTrigger key={phase.id} value={phase.id} className={internPhaseTabTrigger}>
-              {internOverviewPhaseTitle(phase.id, phase.title)}
-              {active ? (
-                <MotionActivePill
-                  layoutId={`${engagementId}-phase-tab-underline`}
-                  reduced={reduceMotion}
-                  className="absolute left-2 right-2 -bottom-px h-[2px] bg-brand"
-                />
-              ) : null}
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
-      </LayoutGroup>
-      <div className="flex flex-col items-stretch gap-2 border-b border-border bg-muted/25 px-4 py-2.5">
-        <span className="text-[11px] font-medium tabular-nums text-foreground">
-          {internPhaseProgressLabel(selected.done, selected.total)}
+    <section className="surface min-w-0 overflow-hidden" aria-label="Incorporation phases">
+      <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="Steps" />
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">Steps</h2>
+        <span className="shrink-0 text-[12.5px] tabular-nums text-ink-muted">
+          {headMeta ?? `${totalDone} of ${total} done`}
         </span>
-        <ProgressBar value={pct} className="h-1 bg-primary/25 [&>div]:bg-primary" />
+        {headAction}
       </div>
-      <TabsContent value={value} className="mt-0 focus-visible:ring-0">
-        <AnimatePresence mode="wait">
+      <div className="px-4 pb-3 pt-4">
+        <RecordPhaseTrack
+          phases={phases.map((p) => ({ id: p.id, label: internOverviewPhaseTitle(p.id, p.title), done: p.done, total: p.total, range: p.range }))}
+          picked={selected.id}
+          onPick={onValueChange}
+        />
+        {meta || trailing ? (
+          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-3 text-[12.5px] text-ink-muted">
+            <span className="min-w-0 flex-1">{meta}</span>
+            {trailing}
+          </div>
+        ) : null}
+      </div>
+      <div className="border-t border-line-soft" role="region" aria-label={internOverviewPhaseTitle(selected.id, selected.title)}>
+        <AnimatePresence mode="wait" initial={false}>
           <m.div
             key={value}
             initial={panelMotion.initial}
@@ -279,8 +289,8 @@ export function InternPhaseTabs({
             {children(value)}
           </m.div>
         </AnimatePresence>
-      </TabsContent>
-    </Tabs>
+      </div>
+    </section>
   );
 }
 
@@ -299,7 +309,7 @@ export function InternRegistrationGroupedRows({
         <div key={group.heading} role="group" aria-label={group.heading}>
           <h3
             className={cn(
-              'px-4 pb-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary',
+              'border-b border-line-soft px-4 pb-1.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted',
               index === 0 ? 'pt-2.5' : 'pt-3',
             )}
           >

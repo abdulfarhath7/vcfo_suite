@@ -1,12 +1,12 @@
-import { CalendarDays, FileSpreadsheet } from 'lucide-react';
+import { CalendarDays, FileSpreadsheet, ListChecks } from 'lucide-react';
 import { TONE } from '@/components/shell/nav-tones';
 import type { SidebarNavLeaf } from '@/components/shell/SidebarNavGroup';
 
 /**
  * COMPLIANCES NAV — the one place that knows where each shell's
- * Compliances → Calendar / Filings pages live.
+ * Compliances → Obligations / Calendar / Filings pages live.
  *
- * Every role has the same two children under `{base}/compliances/`. The base
+ * Every role has the same three children under `{base}/compliances/`. The base
  * is the shell's own segment for client, intern, admin and manager; the
  * super admin has no compliance routes of its own and, like its Firm / People
  * / Email entries, jumps into the firm scope at `/app/admin`.
@@ -22,9 +22,10 @@ export function complianceCalendarPath(role: string | undefined, staffBase: stri
   return `${compliancesBasePath(role, staffBase)}/compliances/calendar`;
 }
 
-/** The two leaves of the Compliances disclosure, in nav order. */
+/** The leaves of the Compliances disclosure, in nav order (R-33: Obligations, Calendar, Filings). */
 export function complianceLeaves(base: string): SidebarNavLeaf[] {
   return [
+    { to: `${base}/compliances/obligations`, label: 'Obligations', icon: ListChecks, iconTone: TONE.work },
     { to: `${base}/compliances/calendar`, label: 'Calendar', icon: CalendarDays, iconTone: TONE.calendar },
     { to: `${base}/compliances/filings`, label: 'Filings', icon: FileSpreadsheet, iconTone: TONE.files },
   ];

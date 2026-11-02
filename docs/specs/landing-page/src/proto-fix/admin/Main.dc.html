@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin · Today</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="today" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Today" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <!-- greeting: the firm in one line -->
+      <section class="hero" data-card="greeting">
+        <div class="when">FRI 16 OCT 2026 · 12:31 PM</div>
+        <h1>Good afternoon, Krishna</h1>
+        <div class="kp"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="6"><span title="{{k.tip}}"><b style="{{k.st}}">{{k.n}}</b><em>{{k.label}}</em></span></sc-for></div>
+      </section>
+
+      <!-- practice areas: incorporation, registrations and compliances for Krishna's clients -->
+      <dc-import name="Practice" scope="krishna" hint-size="100%,280px"></dc-import>
+
+        <!-- every client, where it is now -->
+      <section class="card" data-card="clients">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2 M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2 M10 6h4 M10 10h4 M10 14h4 M10 18h4"></path></svg></span><h2 class="st">Clients · where each one is</h2><span class="cnt">{{nRows}}</span>
+            <span class="ds-bar" style="margin-left: auto">
+              <!--scrim-->
+              <!--dd:dM:Manager-->
+              <!--dd:dS:Stage-->
+              <sc-if value="{{anyF}}" hint-placeholder-val="{{false}}"><button type="button" class="lnk" onClick="{{clearF}}">Clear</button></sc-if>
+            </span>
+          </div>
+          <div class="sc">
+            <table class="tbl" style="min-width: 1040px">
+              <thead><tr><th>Client</th><th>Now at</th><th>Progress</th><th>Manager</th><th>Stage</th><th>Next</th><th>Health</th></tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                  <tr class="go" data-go="admin-overview" title="Open {{r.name}}">
+                    <td><span class="nm"><span class="ct" style="{{r.ct}}">{{r.k}}</span><b>{{r.name}}</b></span></td>
+                    <td><b style="font-weight: 600">{{r.step}}</b><span class="sub"><span class="mono">{{r.code}}</span> · {{r.lead}}</span></td>
+                    <td><span style="display: flex; align-items: center; gap: 8px"><span class="pb" title="{{r.pct}} of 48 steps"><sc-for list="{{r.segs}}" as="g" hint-placeholder-count="4"><span style="{{g.st}}" title="{{g.tip}}"></span></sc-for></span><span class="mut" style="font-size: 12px">{{r.pct}}</span></span></td>
+                    <td><span class="nm"><span class="pt">{{r.mIni}}</span>{{r.mgr}}</span></td>
+                    <td><span class="chip" style="{{r.stS}}; min-width: 104px">{{r.stage}}</span></td>
+                    <td>{{r.next}}</td>
+                    <td><span class="chip sol" style="{{r.hlS}}">{{r.hl}}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <sc-if value="{{noRows}}" hint-placeholder-val="{{false}}"><div class="empty">No client matches these filters. Clear a filter to see more.</div></sc-if>
+          </div>
+        </section>
+      <!-- phase progress: every incorporating client, phase by phase -->
+      <section class="card" data-card="phase-progress">
+        <div class="ch"><h2 class="st">Phase progress</h2><span class="cnt">{{nInc}}</span>
+          <span class="mut" style="margin-left: auto; display: flex; gap: 12px; font-size: 12px"><span><i class="sw" style="display: inline-block; background: #0f6e51; vertical-align: -1px"></i> Done</span><span><i class="sw" style="display: inline-block; background: #1b4f94; vertical-align: -1px"></i> Current</span><span><i class="sw" style="display: inline-block; background: #b5302a; vertical-align: -1px"></i> Stuck</span><span><i class="sw" style="display: inline-block; background: #fff; box-shadow: inset 0 0 0 1.5px #a8b4c4; vertical-align: -1px"></i> Next</span></span></div>
+        <div class="sc"><table class="cg" style="min-width: 900px">
+          <thead><tr><th>Client</th><th>Name approval</th><th>Incorporation</th><th>Post-incorporation</th><th>Days to COI</th><th>Manager</th></tr></thead>
+          <tbody><sc-for list="{{pp}}" as="r" hint-placeholder-count="7"><tr class="go" data-go="admin-overview" style="cursor: pointer"><td><span class="nm"><span class="ct" style="{{r.ct}}">{{r.k}}</span><b>{{r.name}}</b></span></td><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><td title="{{c.tip}}"><span class="c {{c.cls}}">{{c.t}}</span></td></sc-for><td style="{{r.dSt}}">{{r.days}}</td><td>{{r.mgr}}</td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+
+      <div class="cols2">
+        <section class="card" data-card="managers">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><h2 class="st">Managers</h2>
+            <button type="button" class="btn" data-admin-assign="client" style="margin-left: auto">Assign client</button></div>
+          <div class="mr" style="cursor: default; padding-top: 6px; padding-bottom: 6px; background: #eef2f7"><span class="h" style="text-align: left">Manager</span><span class="h">Clients</span><span class="h">Open</span><span class="h">Late</span></div>
+          <sc-for list="{{mgrs}}" as="m" hint-placeholder-count="3">
+            <button type="button" class="mr" data-pick-mgr="{{m.id}}" data-go="admin-managers" title="Open {{m.name}}">
+              <span style="min-width: 0"><span class="nm"><span class="pt">{{m.ini}}</span><span><b>{{m.name}}</b><span class="sub">{{m.leads}} leads · {{m.onTime}}% on time</span></span></span><span class="ld"><span style="{{m.load}}"></span></span></span>
+              <span class="n">{{m.clients}}</span><span class="n">{{m.open}}</span><span class="n" style="{{m.lateSt}}">{{m.late}}</span>
+            </button>
+          </sc-for>
+        </section>
+        <section class="card" data-card="decide">
+          <div class="ch"><h2 class="st">Needs your decision</h2><span class="cnt">{{nDec}}</span></div>
+          <sc-for list="{{dec}}" as="x" hint-placeholder-count="4">
+            <div class="it"><span class="ct" style="{{x.ct}}">{{x.k}}</span><span style="flex: 1; min-width: 0"><b style="font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{x.t}}</b><span class="sub">{{x.who}}</span></span>
+              <sc-if value="{{x.isNew}}" hint-placeholder-val="{{false}}"><button type="button" class="btn btnp" data-admin-assign="client" data-client="LD" data-client-name="Lotus Dental" style="height: 28px">Assign</button></sc-if>
+              <sc-if value="{{x.isEsc}}" hint-placeholder-val="{{true}}"><button type="button" class="btn" onClick="{{x.decide}}" style="height: 28px">Decide</button></sc-if></div>
+          </sc-for>
+          <sc-if value="{{noDec}}" hint-placeholder-val="{{false}}"><div class="it sub">Nothing is waiting for you.</div></sc-if>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const mode = s.mode || 'mixed', dd = s.dd || '', fM = s.fM || '', fS = s.fS || '', fP = s.fP || '';
+    const all = A.clients(), M = (id) => A.MGR[id] || { name: '', ini: '' };
+    const ORD = { stuck: 0, over: 1, due: 2, wait: 3, run: 4, none: 5 };
+    const pick = all.filter(c => (!fM || c.mgr === fM) && (!fS || c.stage === fS) && (!fP || c.pipe === fP)).sort((a, b) => ORD[a.health] - ORD[b.health]);
+    const rows = pick.map(c => ({ k: c.k, name: c.name, ct: 'background:' + c.soft + ';color:' + c.ink,
+      stage: c.stage === 'inc' ? 'Incorporating' : 'Compliance', stS: c.stage === 'inc' ? 'background:#ffeedc;color:#9b3b08' : 'background:#e1f3ec;color:#0f6e51',
+      step: c.step, code: c.code, lead: c.lead, pct: c.pct + '%', segs: A.phaseBar(c.phases), mgr: M(c.mgr).name, mIni: M(c.mgr).ini,
+      ball: c.ball + ' · ' + c.days + 'd', ballS: A.OWN[c.ball], next: c.next, hl: A.HEALTH[c.health][0], hlS: 'background:' + A.HEALTH[c.health][1] }));
+    const tasks = A.TASKS, late = tasks.filter(t => t[3] === 'bad').length, dueWk = tasks.filter(t => t[3] === 'due').length;
+    const stuckN = all.filter(c => c.health === 'stuck').length;
+    const kpis = [[all.length, 'Clients'], [all.filter(c => c.stage === 'inc').length, 'Incorporating'], [all.filter(c => c.stage === 'cmp').length, 'In compliance'],
+      [late, 'Overdue', 1], [stuckN, 'Stuck', 1], [dueWk, 'Due this week']].map(([n, label, hot]) => ({ n, label, tip: n + ' ' + label.toLowerCase(), st: hot && n ? 'color:#ff9b8f' : '' }));
+    const stats = Object.keys(A.MGR).map(id => [id, A.mgrStats(id)]);
+    const maxOpen = Math.max(1, ...stats.map(([, x]) => x.open));
+    const mgrs = stats.map(([id, x]) => ({ id, name: M(id).name, ini: M(id).ini, leads: A.MGR[id].leads.length, onTime: A.MGR[id].onTime, clients: x.clients.length, open: x.open,
+      late: x.overdue, lateSt: x.overdue ? 'color:#b5302a' : '', load: 'width:' + Math.round(x.open / maxOpen * 100) + '%' }));
+    const pipe = A.PIPE.map(([k, label], i) => { const cs = all.filter(c => c.pipe === k);
+      return { n: cs.length, label, on: fP === k ? 'true' : 'false', arrow: i < A.PIPE.length - 1, tip: cs.map(c => c.name).join(', ') || 'No client here today',
+        dots: cs.map(c => ({ st: 'background:' + c.dot })), pick: () => set({ fP: fP === k ? '' : k }) }; });
+    const F = [[38, 'Filed', '#0f6e51'], [9, 'Due soon', '#be4400'], [3, 'Overdue', '#b5302a'], [21, 'Upcoming', '#c4ccd8']];
+    const EXPD = { ML: 14, OL: 19, SV: 21, NT: 24, QM: 27, LA: 41, BW: 47, JB: 54 };
+    const pp = all.filter(c => c.stage === 'inc').sort((a, b) => (EXPD[a.k] || 99) - (EXPD[b.k] || 99)).map(c => {
+      const cur = c.phases.findIndex((d, i) => d < A.TOT[i]);
+      return { k: c.k, name: c.name, ct: 'background:' + c.soft + ';color:' + c.ink, mgr: M(c.mgr).name, days: (EXPD[c.k] || '-') + ' days', dSt: c.health === 'stuck' ? 'color:#b5302a;font-weight:600' : '',
+        cells: c.phases.slice(0, 3).map((d, i) => { const t = A.TOT[i], cls = d >= t ? 'd' : (i === cur ? (c.health === 'stuck' ? 'o' : 'p') : 'n');
+          return { cls, t: cls === 'd' ? '✓' : d + '/' + t, tip: ['Name approval', 'Incorporation', 'Post-incorporation', 'Registrations'][i] + ' · ' + d + ' of ' + t + (cls === 'o' ? ' · stuck' : '') }; }) }; });
+    // Needs your decision: a newly won client without a manager, then escalations raised by Krishna's managers.
+    const decided = s.decided || {}, ldMgr = A.overrides().LD;
+    const dec = (ldMgr ? [] : [{ k: 'LD', ct: 'background:#eef2f7;color:#0f2a4a', t: 'Lotus Dental has no manager', who: 'Incorporation · won 2 days ago', isNew: true, isEsc: false }])
+      .concat(A.MTASKS.filter(t => A.MGR[t[2]] && t[5] === 'Escalation' && t[3] !== 'done' && !decided[t[0]]).map(t => { const c = A.C[t[1]];
+        return { k: t[1], ct: 'background:' + c[2] + ';color:' + c[3], t: t[0], who: c[0] + ' · ' + M(t[2]).name + ' · ' + A.due(t[4]), isNew: false, isEsc: true,
+          decide: () => { set({ decided: Object.assign({}, decided, { [t[0]]: 1 }) }); if (window.vcfoToast) window.vcfoToast('Decision sent to ' + M(t[2]).name + ': ' + t[0] + ' · ' + c[0]); } }; }));
+    const mOpts = Object.keys(A.MGR).map(id => [id, M(id).name]);
+    return Object.assign({ mode, setMode: (m) => set({ mode: m }), kpis, rows, nRows: rows.length, noRows: rows.length === 0, mgrs, pipe,
+      nCmp: all.filter(c => c.stage === 'cmp').length, anyF: !!(fM || fS || fP), clearF: () => set({ fM: '', fS: '', fP: '' }),
+      ddAny: !!dd, ddClose: () => set({ dd: '' }),
+      fDonut: A.donut(F.map(f => [f[0], f[2]])), fTot: F.reduce((a, f) => a + f[0], 0), fTip: F.map(f => f[1] + ' ' + f[0]).join(', '),
+      fLegend: F.map(f => ({ label: f[1], n: f[0], sw: 'background:' + f[2] })),
+      pp, nInc: pp.length, dec, nDec: dec.length, noDec: dec.length === 0 },
+      A.dd('dM', dd, 'm', 'fM', fM, mOpts, 'All managers', set),
+      A.dd('dS', dd, 's', 'fS', fS, [['inc', 'Incorporating'], ['cmp', 'Compliance']], 'All stages', set));
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -10,8 +10,6 @@ import { getFilings } from '@/db/repositories/filings';
 import { buildSnapshot, type SnapshotEngagement } from '@/lib/ask/snapshot-build';
 import type { ProjectSnapshot } from '@/data/ask/schema';
 
-export { buildSnapshot } from '@/lib/ask/snapshot-build';
-
 export interface LoadedProjectSnapshot {
   snapshot: ProjectSnapshot;
   engagementDbId: string;

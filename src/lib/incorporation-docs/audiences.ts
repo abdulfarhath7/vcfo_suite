@@ -1,4 +1,4 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 
 /**
  * DIRECTOR AUDIENCES — who a director-level incorporation draft is written for.
@@ -89,13 +89,6 @@ export function directorAudienceLabel(audience: IncorpDirectorAudience): string 
 /** Slot-1 audiences are the only ones that existed before per-director generation. */
 export function isLegacyDirectorAudience(audience: IncorpDocAudience): boolean {
   return audience === 'company' || (LEGACY_DIRECTOR_AUDIENCES as readonly string[]).includes(audience);
-}
-
-/** Whether `fieldId` is a per-director field of `audience` (`nrDirector` must not match `nrDirector2*`). */
-export function fieldBelongsToAudience(fieldId: string, audience: IncorpDirectorAudience): boolean {
-  const prefix = directorFieldPrefix(audience);
-  if (!fieldId.startsWith(prefix)) return false;
-  return /^[A-Z]/.test(fieldId.slice(prefix.length));
 }
 
 /** The director audience a per-director field id belongs to, if any. */

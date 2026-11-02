@@ -1,17 +1,17 @@
 import 'server-only';
-import { and, desc, eq, inArray, lt, or } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditEvents } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import { checklistItemLabel } from '@/lib/audit-log';
-import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit-log';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import { auditResultOf, checklistItemLabel } from '@/lib/audit/audit-log';
+import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit/audit-log';
 
 /**
- * AUDIT EVENTS REPOSITORY — the write/read half of src/lib/audit-log.ts.
+ * AUDIT EVENTS REPOSITORY — the write/read half of src/lib/audit/audit-log.ts.
  *
  * >>> ACCESS CONTROL (Path A) <<<
- * Predicate: `src/lib/audit-event-access.ts`.
+ * Predicate: `src/lib/audit/audit-event-access.ts`.
  *   admin / super_admin — unrestricted (firm-wide)
  *   manager — events whose engagement_id is in owned/assigned set
  *             (`manager_id` + `engagement_managers` + legacy admin_id).
@@ -36,6 +36,7 @@ function toRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
     action: r.action,
     summary: r.summary,
     metadata: (r.metadata ?? {}) as Record<string, unknown>,
+    result: auditResultOf({ result: r.result as AuditEventRow['result'] }),
   };
 }
 
@@ -63,6 +64,7 @@ export async function recordAuditEvent(
       action: input.action,
       summary: input.summary,
       metadata: input.metadata ?? {},
+      result: input.result ?? 'ok',
     });
   } catch (err) {
     console.warn('[audit] record threw', err instanceof Error ? err.message : err);
@@ -73,8 +75,19 @@ export interface ListAuditEventsOptions {
   engagementId?: string | null;
   /** Keyset pagination cursor — return events strictly older than this. */
   before?: Date;
+  /**
+   * Tie-break for `before`: the id of the last row already shown. With it, rows in the same
+   * millisecond as the cursor are split by id, so a page boundary never skips or repeats one.
+   */
+  beforeId?: string;
   limit?: number;
 }
+
+/**
+ * `created_at` to the millisecond. A JS Date carries milliseconds and Postgres keeps
+ * microseconds, so the cursor compares and orders on the truncated value, then on id.
+ */
+const createdMs = sql`date_trunc('milliseconds', ${auditEvents.createdAt})`;
 
 /** Admin/super (all), manager (owned clients), intern (own actor + shared clients). */
 export async function listAuditEvents(
@@ -95,7 +108,7 @@ export async function listAuditEvents(
 
   // Dynamic import avoids circular init with engagements → auditChecklistItemPatch.
   const { listScopedEngagementIds } = await import('@/db/repositories/engagements');
-  const { engagementDbId } = await import('@/lib/legacy-engagement-ids');
+  const { engagementDbId } = await import('@/lib/projects/legacy-engagement-ids');
 
   const conds = [];
   if (options.engagementId) {
@@ -121,16 +134,44 @@ export async function listAuditEvents(
     conds.push(inArray(auditEvents.engagementId, ids));
   }
 
-  if (options.before) conds.push(lt(auditEvents.createdAt, options.before));
+  // A client sees only the client-visible actions, the same allowlist as the portal's own
+  // Audit page (`client-audit.ts`), never staff-only actions on their engagement.
+  const clientAudit = ctx.role === 'client' ? await import('@/db/repositories/client-audit') : null;
+  if (clientAudit) conds.push(clientAudit.clientVisibleAuditPredicate());
 
-  const limit = Math.min(Math.max(options.limit ?? 100, 1), 500);
+  if (options.before && !Number.isNaN(options.before.getTime())) {
+    if (options.beforeId) {
+      // Sargable bound first, then the exact (millisecond, id) keyset.
+      conds.push(lt(auditEvents.createdAt, new Date(options.before.getTime() + 1)));
+      conds.push(
+        or(
+          sql`${createdMs} < ${options.before}`,
+          and(sql`${createdMs} = ${options.before}`, lt(auditEvents.id, options.beforeId)),
+        ),
+      );
+    } else {
+      conds.push(lt(auditEvents.createdAt, options.before));
+    }
+  }
+
+  // 501 so a route can ask for one more than its page and know whether an older page exists.
+  const limit = Math.min(Math.max(options.limit ?? 100, 1), 501);
   const rows = await db
     .select()
     .from(auditEvents)
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(desc(auditEvents.createdAt))
+    .orderBy(desc(createdMs), desc(auditEvents.id))
     .limit(limit);
 
+  if (clientAudit) {
+    // Client-safe projection: no staff e-mail addresses, ids or metadata.
+    return rows.map((r) => ({
+      ...toRow(r),
+      actor_email: null,
+      summary: clientAudit.scrubForClient(r.summary),
+      metadata: {},
+    }));
+  }
   return rows.map(toRow);
 }
 

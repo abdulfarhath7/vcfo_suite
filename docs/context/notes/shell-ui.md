@@ -68,7 +68,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - Lead dashboard motion lives in intern-only surfaces (Today, My work, Clients, InternClientsNav,
   InternPhaseTabs, intern journey rail via `allowLockedOpen`). Shared
   Analytics / Compliance / Mail / Audit keep their existing PageTransition only.
-- Reuse `src/lib/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
+- Reuse `src/lib/shell/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
   Prefer `m` (LazyMotion) over `motion`.
 - `LazyMotion` in `app/providers.tsx` must use `domMax`, not `domAnimation`.
   `m` + `layoutId` is a silent no-op without the layout feature — the sidebar pill

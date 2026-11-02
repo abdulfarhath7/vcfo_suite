@@ -7,7 +7,7 @@ export default function BoardResolutionEditor() {
   const vm = useBoardResolutionEditorState({});
   if (!vm.eng) {
     return (
-      <div className="p-6 text-[13px] text-text-secondary">
+      <div className="p-6 text-[13px] text-ink-muted">
         This project isn&apos;t in your portfolio — it may have been removed or you don&apos;t have
         access.
       </div>

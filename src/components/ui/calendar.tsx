@@ -30,7 +30,7 @@ function Calendar({
           defaults.dropdowns,
         ),
         dropdown_root: cn(
-          "relative inline-flex items-center rounded-md border border-input bg-background shadow-sm has-[:focus]:border-ring has-[:focus]:ring-2 has-[:focus]:ring-ring/40",
+          "relative inline-flex items-center rounded-md border border-input bg-background shadow-sm has-[:focus]:border-ring has-[:focus]:ring-2 has-[:focus]:ring-focus-ring/40",
           defaults.dropdown_root,
         ),
         dropdown: cn("absolute inset-0 cursor-pointer opacity-0", defaults.dropdown),
@@ -40,7 +40,7 @@ function Calendar({
           "select-none font-medium",
           captionLayout === "label"
             ? "text-sm"
-            : "flex h-8 items-center gap-1 rounded-md px-2 text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
+            : "flex h-8 items-center gap-1 rounded-md px-2 text-sm [&>svg]:size-3.5 [&>svg]:text-ink-muted",
           defaults.caption_label,
         ),
         nav: cn("space-x-1 flex items-center", defaults.nav),
@@ -56,7 +56,7 @@ function Calendar({
         ),
         month_grid: cn("w-full border-collapse space-y-1", defaults.month_grid),
         weekdays: cn("flex", defaults.weekdays),
-        weekday: cn("text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]", defaults.weekday),
+        weekday: cn("text-ink-muted rounded-md w-9 font-normal text-[0.8rem]", defaults.weekday),
         week: cn("flex w-full mt-2", defaults.week),
         day: cn(
           "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].range_end)]:rounded-r-md [&:has([aria-selected].outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
@@ -69,11 +69,11 @@ function Calendar({
         ),
         range_end: cn("day-range-end", defaults.range_end),
         selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+          "bg-brand text-on-brand hover:bg-brand hover:text-on-brand focus:bg-brand focus:text-on-brand",
         today: "bg-accent text-accent-foreground",
         outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-        disabled: "text-muted-foreground opacity-50",
+          "day-outside text-ink-muted opacity-50 aria-selected:bg-accent/50 aria-selected:text-ink-muted aria-selected:opacity-30",
+        disabled: "text-ink-muted opacity-50",
         range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
         hidden: "invisible",
         ...classNames,

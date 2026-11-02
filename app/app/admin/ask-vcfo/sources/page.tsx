@@ -1,6 +1,6 @@
 import AskSources from "@/views/admin/ask/AskSources";
 
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Ask VCFO sources", "Knowledge sources for Ask VCFO");
 

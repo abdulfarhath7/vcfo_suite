@@ -1,0 +1,152 @@
+/* @cp-scope page=documents */
+/* Verbatim from the Documents boards, each prefixed with its board root so the
+   boards' same-named classes (.row, .ft, .btn, .seg…) never clash on one page:
+     .dd-root  s/docs/docs_a_drill.dc.html          (progress drill-down)
+     .vds-root s/docs/docs_a_loading / docs_a_empty (states)
+     .vdm      s/docs/docs_a_mobile.dc.html         (phone)
+     .vmp      s/docs/docs_mobile_preview.dc.html   (phone preview sheet)
+     .vup      s/docs/docs_upload.dc.html           (upload flow)
+   Board :root token blocks are not copied (shared tokens + dark theme). */
+
+/* ---------------- progress drill-down (docs_a_drill), VCFO Spectrum ---------------- */
+.dd-root .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.dd-root .cnt{font-size:12.5px;color:oklch(var(--ink-muted))}
+.dd-root .row{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px 0 16px;border-top:1px solid oklch(var(--line-soft));color:oklch(var(--ink));font-size:14px}
+.dd-root .row:hover{background:oklch(var(--surface-sunken))}
+.dd-root .ft{width:22px;min-width:22px;height:18px;padding:0;border-radius:4px;font:500 7.5px/18px var(--font-sans),sans-serif;letter-spacing:-.02em;text-align:center;flex:none}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+.dd-root .dlg{width:640px;max-width:100%;box-sizing:border-box;background:oklch(var(--surface-raised));border:1.5px solid oklch(var(--line));border-radius:6px;box-shadow:var(--shadow-dialog);overflow:hidden;font:400 14px var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink));animation:pop .22s cubic-bezier(.22,1,.36,1) both}
+.dd-root .dd-top{display:flex;align-items:center;gap:8px;padding:10px 16px;background:oklch(var(--surface-sunken));border-bottom:1px solid oklch(var(--line-soft));font-size:13px;color:oklch(var(--ink-2));flex:none}
+.dd-root .dd-hd{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 12px 0 16px;border-bottom:1px solid oklch(var(--line-soft));flex:none}
+.dd-root .dd-hd h2{margin:0;flex:1;min-width:0;font:500 15px var(--font-sans),sans-serif;color:oklch(var(--ink));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dd-root .dd-trk{display:flex;gap:1px;width:80px;height:4px;border-radius:3px;overflow:hidden;background:oklch(var(--surface-sunken));flex:none}
+.dd-root button:focus-visible,.dd-root a:focus-visible{outline:2px solid oklch(var(--focus-ring) / .5);outline-offset:2px}
+.dd-scrim{position:fixed;inset:0;z-index:2147482000;background:oklch(var(--side) / .55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+.dd-root .dlg{max-height:min(720px,calc(100dvh - 24px));display:flex;flex-direction:column}
+.dd-list{overflow:auto;min-height:0;padding-bottom:6px}
+/* phone: the drill-down is a bottom sheet (DECISIONS "Mobile drill-downs") */
+@media (max-width:700px){
+ .dd-scrim{align-items:flex-end;padding:0}
+ .dd-root .dlg{width:100%!important;border-radius:6px 6px 0 0!important;max-height:86vh;animation:up .25s cubic-bezier(.22,1,.36,1) both}
+ .dd-root .row{min-height:52px;height:auto}
+ .dd-root .sx-ib{width:40px;height:40px}
+ .dd-root .row .mono{display:none}
+}
+@media (prefers-reduced-motion: reduce){.dd-root .dlg{animation:none!important}}
+
+/* ---------------- states (docs_a_loading / docs_a_empty) ---------------- */
+/* R-48: loading shows grey shapes */
+@keyframes sh{50%{opacity:.55}}
+.vds-root .sk{display:block;border-radius:4px;background:oklch(var(--surface-sunken));animation:sh 1.4s ease-in-out infinite}
+.vds-root .r{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px}
+@media (max-width:999px){.vds-root .vds-tree{width:auto!important;border-right:0!important;border-bottom:1px solid oklch(var(--line-soft))}.vds-root .vds-body{flex-direction:column}.vds-root .vds-pane{min-height:320px}.vds-root .vds-hide-md{display:none!important}}
+@media (prefers-reduced-motion: reduce){.vds-root .sk{animation:none}}
+
+/* phone upload dialog: footer clears the floating Ask VCFO pill */
+@media (max-width:700px){.vup .vup-foot{padding-bottom:calc(12px + var(--vp-launch-h,0px))!important}}
+
+/* ---------------- phone (docs_a_mobile) ---------------- */
+.vdm{position:relative;width:100%;min-height:calc(100dvh - var(--cp-top-h,59px) - var(--vp-launch-h,0px));background:oklch(var(--surface));font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px;display:flex;flex-direction:column}
+.vdm a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}
+.vdm-n{font-size:12.5px;color:oklch(var(--ink-muted))}
+.vdm .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.vdm .tbb{width:44px;height:44px;border-radius:6px;border:0;background:none;color:oklch(var(--ink-2));display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;padding:0}
+.vdm .row{display:flex;align-items:center;min-height:56px;border-top:1px solid oklch(var(--line-soft))}
+.vdm .row:first-child{border-top:0}
+.vdm .row .main{flex:1;min-width:0;min-height:56px;display:flex;align-items:center;gap:10px;padding:0 0 0 14px;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.vdm .row .main:active{background:oklch(var(--surface-sunken))}
+.vdm .ft{width:22px;min-width:22px;height:18px;padding:0;border-radius:4px;font:500 7.5px/18px var(--font-sans),sans-serif;letter-spacing:-.02em;text-align:center;flex:none;box-sizing:border-box}
+.vdm .trk{display:flex;gap:1px;width:64px;height:4px;border-radius:3px;overflow:hidden;background:oklch(var(--surface-sunken))}
+.vdm .kb{width:44px;height:44px;border:0;background:none;color:oklch(var(--ink-2));display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;border-radius:6px;padding:0;opacity:1}
+.vdm-sheet button{display:flex;align-items:center;gap:12px;width:100%;height:52px;padding:0 20px;border:0;background:none;font:400 15px var(--font-sans),sans-serif;color:oklch(var(--ink));text-align:left;cursor:pointer}
+.vdm-sheet button:active,.vdm-sheet button:focus-visible{background:oklch(var(--surface-sunken));outline:none}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.vdm-sheet{animation:up .25s cubic-bezier(.22,1,.36,1) both}
+@keyframes sl{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.vdm .lvl{animation:sl .2s cubic-bezier(.22,1,.36,1) both}
+.vdm button:focus-visible,.vdm a:focus-visible{outline:2px solid oklch(var(--focus-ring) / .5);outline-offset:-2px}
+.vdm .sx-in input:focus-visible{outline:0}
+@media (prefers-reduced-motion: reduce){.vdm-sheet,.vdm .lvl{animation:none}}
+
+/* ---------------- phone preview sheet (docs_mobile_preview) ---------------- */
+.vmp .chip{display:inline-flex;align-items:center;height:24px;box-sizing:border-box;border-radius:6px;padding:0 8px;font-size:12px;font-weight:500;white-space:nowrap}
+.vmp .mono{font-variant-numeric:tabular-nums}
+.vmp .btn{height:44px}
+@keyframes sheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.vmp .sheet{animation:sheet .28s cubic-bezier(.22,1,.36,1) both}
+.vmp-pages{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;width:100%;height:100%}
+.vmp-pages>*{scroll-snap-align:center;flex:none}
+.vmp-paper iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+.vmp-paper img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}
+@media (prefers-reduced-motion: reduce){.vmp .sheet{animation:none}}
+
+/* ---------------- upload flow (docs_upload), VCFO Spectrum ---------------- */
+.vup .lbl,.vup .vup-lbl{font-size:13px;font-weight:500;color:oklch(var(--ink-muted))}
+.vup .cap{font-size:12.5px;color:oklch(var(--ink-muted))}
+.vup .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.vup .bar{height:4px;border-radius:3px;background:oklch(var(--surface-sunken));overflow:hidden}
+.vup .bar>span{display:block;height:100%;border-radius:3px;background:oklch(var(--brand));transition:width .2s}
+.vup-scrim{position:fixed;inset:0;z-index:2147482000;background:oklch(var(--side) / .55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+.vup-dlg{width:min(560px,100%);max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;background:oklch(var(--surface-raised));border:1.5px solid oklch(var(--line));border-radius:6px;box-shadow:var(--shadow-dialog);font:400 14px var(--font-sans),system-ui,sans-serif;color:oklch(var(--ink));animation:pop .22s cubic-bezier(.22,1,.36,1) both}
+.vup-hd{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 12px 0 20px;border-bottom:1px solid oklch(var(--line-soft))}
+.vup-hd h2{margin:0;flex:1;font:500 16px var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.vup-bd{padding:20px;display:flex;flex-direction:column;gap:16px}
+/* the requests: one bordered radio list, a due chip on the right */
+.vup-for{border:1.5px solid oklch(var(--line));border-radius:6px;overflow:hidden}
+.vup-for>button{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:8px 12px;box-sizing:border-box;border:0;border-top:1px solid oklch(var(--line-soft));background:none;font:500 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-align:left;cursor:pointer}
+.vup-for>button:first-child{border-top:0}
+.vup-for>button:hover{background:oklch(var(--surface-sunken))}
+.vup-for>button[aria-checked=true]{background:oklch(var(--brand-soft))}
+.vup-for>button:disabled{cursor:default}
+.vup-radio{width:16px;height:16px;flex:none;box-sizing:border-box;border-radius:50%;border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised))}
+.vup-for>button[aria-checked=true] .vup-radio{border:5px solid oklch(var(--brand))}
+.vup-rl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vup-note{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:6px;background:oklch(var(--surface-sunken));font-size:13px;color:oklch(var(--ink-2))}
+.vup-ini{width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:6px;background:oklch(var(--brand-soft));color:oklch(var(--brand-text));font:500 11px var(--font-mono),monospace}
+/* file rows: R-26 badge, name, progress; a refused file is a soft red row with Try again */
+.vup-file{border:1.5px solid oklch(var(--line));border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:12px}
+.vup-file.up{flex-direction:column;align-items:stretch;gap:10px}
+.vup-file.err{background:oklch(var(--danger-soft));border-color:oklch(var(--danger) / .3);color:oklch(var(--danger))}
+.vup-fn{flex:1;min-width:0;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vup-file.err .vup-fn{white-space:normal;overflow-wrap:anywhere}
+/* drop zone: a dashed area (R-56); dragging turns it blurple */
+.vup-big{border:1.5px solid transparent;border-radius:6px;background-color:oklch(var(--surface-sunken));padding:28px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;cursor:pointer}
+.vup-big:hover{--dash-color:oklch(var(--brand-line))}
+.vup-big:focus-visible{outline:none;--dash-color:oklch(var(--brand));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+.vup-big.over{border-color:oklch(var(--brand));background:oklch(var(--brand-soft))}
+.vup-up{color:oklch(var(--ink-muted))}
+.vup-big.over .vup-up{color:oklch(var(--brand-text))}
+.vup-dt{font-size:14px;font-weight:500}
+.vup-browse{color:oklch(var(--brand-text))}
+.vup-cap{font:400 12px var(--font-mono),monospace;color:oklch(var(--ink-faint))}
+.vup-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid oklch(var(--line-soft))}
+.vup button:focus-visible,.vup a:focus-visible{outline:2px solid oklch(var(--focus-ring) / .5);outline-offset:2px}
+@media (max-width:700px){.vup-scrim{align-items:flex-end;padding:0}.vup-dlg{border-radius:6px 6px 0 0;animation:up .25s cubic-bezier(.22,1,.36,1) both}.vup .sx-btn{height:44px}}
+@media (prefers-reduced-motion: reduce){.vup-dlg{animation:none}.vup .bar>span{transition:none}}
+/* docx render inside the phone preview paper */
+.vmp .dv-docx{width:100%;color:oklch(21% 0.042 264)}
+.vmp .dv-docx .docx-wrapper{background:transparent!important;padding:0!important}
+.vmp .dv-docx section.docx{box-shadow:none!important;margin:0 0 24px!important;width:auto!important;min-height:0!important;padding:0!important}
+/* phone preview: who sent the file, as an owner chip (R-14: client amber, SBC blue) */
+.vmp-from{display:inline-flex;align-items:center;height:24px;padding:0 8px;box-sizing:border-box;border-radius:6px;background:oklch(var(--owner-client-soft));color:oklch(var(--owner-client));font:500 12px var(--font-sans),sans-serif;white-space:nowrap}
+.vmp-from[data-sbc]{background:oklch(var(--owner-sbc-soft));color:oklch(var(--owner-sbc))}
+/* ---------- prototype upload Modal parity, round 2: 1 px edge, 15 px title, 32 px close, lighter "For" list ---------- */
+.vup-dlg{border-width:1px}
+.vup-hd h2{font-size:15px}
+.vup-hd .sx-ib{width:32px;height:32px}
+.vup-for{border-width:1px}
+.vup-for>button{font-size:13.5px}
+.vup-big{--dash-color:oklch(var(--line-strong))}
+.vup-dt{font-size:13.5px}
+.vup-cap{font-size:11.5px}
+
+/* C-618: the phone toolbar under the filter (Status, Replaced, By step / By category, Download
+   all, Upload). One row that scrolls sideways; 40 px touch targets. */
+.vdm-tools{display:flex;align-items:center;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px 2px;scrollbar-width:none}
+.vdm-tools::-webkit-scrollbar{display:none}
+.vdm-tools>*{flex:none}
+.vdm-tools .sx-filter,.vdm-tools .sx-btn{height:40px}
+.vdm-tools .sx-seg{padding:3px;border:1.5px solid oklch(var(--line))}
+.vdm-tools .sx-seg button{height:32px}
+.vdm-dots{display:inline-flex;gap:3px}
+.vdm-dots i{display:block;width:6px;height:6px;border-radius:2px}

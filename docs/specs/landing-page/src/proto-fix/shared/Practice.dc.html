@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Practice areas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+.pa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch;font-family:Public Sans,system-ui,sans-serif;color:#0f2a4a;font-size:13px}
+@media (max-width:1100px){.pa{grid-template-columns:minmax(0,1fr)}}
+.pa-c{background:#fff;border:1px solid #e1e7ef;border-radius:10px;box-shadow:0 1px 2px rgba(15,42,74,.06),0 1px 1px rgba(15,42,74,.04);display:flex;flex-direction:column;min-width:0}
+.pa-h{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.pa-h h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.pa-t{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:none;background:#eef2f7;color:#0f2a4a}
+.pa-n{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:#1b4f94;color:#fff;font-size:11px;font-weight:600}
+.pa-rows{display:flex;flex-direction:column;gap:9px;padding:0 16px 14px}
+.pa-bar{display:grid;grid-template-columns:118px minmax(0,1fr) 30px;gap:10px;align-items:center;font-size:12.5px;font-weight:600}
+.pa-trk{height:8px;border-radius:4px;background:#e1e7ef;overflow:hidden;display:flex;gap:2px}
+.pa-trk>span{display:block;height:100%}
+.pa-big{display:flex;gap:18px;padding:0 16px 12px;flex-wrap:wrap}
+.pa-big>div{display:flex;flex-direction:column}
+.pa-big b{font-size:24px;font-weight:600;line-height:1.1}
+.pa-big em{font-style:normal;font-size:12px;color:#4b5b70}
+.pa-dn{display:flex;gap:14px;align-items:center;padding:0 16px 14px}
+.pa-lg{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600}
+.pa-sw{width:10px;height:10px;border-radius:3px;flex:none}
+.pa-stk{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px;margin:8px 0 4px}
+.pa-stk i{display:block;height:100%}
+.pa-f{display:flex;align-items:center;gap:8px;padding:10px 16px 14px;border-top:1px solid #e1e7ef;font-size:12.5px;margin-top:auto;color:#4b5b70}
+.pa-f b{color:#0f2a4a;font-weight:600}
+.pa-f a{margin-left:auto;font-size:12px;font-weight:600;color:#1b4f94;text-decoration:none}
+.pa-s{display:flex;flex-wrap:wrap;background:#fff;border:1px solid #e1e7ef;border-radius:8px;font-family:Public Sans,system-ui,sans-serif;color:#0f2a4a}
+.pa-s a{display:flex;align-items:baseline;gap:8px;padding:10px 18px;border-right:1px solid #e1e7ef;color:inherit;text-decoration:none;font-size:12.5px}
+.pa-s a:last-child{border-right:0}
+.pa-s a:hover{background:#f7f9fc}
+.pa-s b{font-size:18px;font-weight:600}
+.pa-s span{color:#4b5b70}
+</style>
+</helmet>
+<sc-if value="{{slim}}" hint-placeholder-val="{{false}}"><section class="pa-s" data-card="practice-strip" aria-label="Practice areas">
+  <a href="#" data-go="lead-clients"><b>{{nInc}}</b><span>Incorporating</span></a><a href="#" data-go="lead-registrations"><b style="{{regSt}}">{{regOpen}}</b><span>Registrations pending</span></a><a href="#" data-go="lead-compliances"><b style="{{filSt}}">{{filOver}}</b><span>Filings overdue</span></a>
+</section></sc-if>
+<sc-if value="{{full}}" hint-placeholder-val="{{true}}"><section class="pa" data-card="practice-areas" aria-label="Practice areas">
+  <div class="pa-c">
+    <div class="pa-h"><span class="pa-t"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18 M5 21V7l7-4 7 4v14 M9 21v-6h6v6"></path></svg></span><h2>Incorporation</h2><span class="pa-n">{{nInc}}</span></div>
+    <div class="pa-rows"><sc-for list="{{incStages}}" as="b" hint-placeholder-count="4"><div class="pa-bar" title="{{b.tip}}"><span>{{b.label}}</span><span class="pa-trk"><span style="{{b.bar}}"></span></span><span style="text-align: right">{{b.n}}</span></div></sc-for></div>
+    <div class="pa-f"><span>Average <b>{{avgCoi}} days</b> to COI · target 30</span><a href="#" data-go="lead-clients">Open clients</a></div>
+  </div>
+  <div class="pa-c">
+    <div class="pa-h"><span class="pa-t"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8 M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><h2>Registrations</h2></div>
+    <div class="pa-big"><sc-for list="{{regBig}}" as="x" hint-placeholder-count="3"><div><b style="{{x.st}}">{{x.n}}</b><em>{{x.label}}</em></div></sc-for></div>
+    <div class="pa-rows"><sc-for list="{{regTop}}" as="b" hint-placeholder-count="3"><div class="pa-bar" title="{{b.tip}}"><span>{{b.label}}</span><span class="pa-trk"><span style="{{b.d}}"></span><span style="{{b.p}}"></span><span style="{{b.w}}"></span></span><span style="text-align: right">{{b.n}}</span></div></sc-for></div>
+    <div class="pa-f"><span>Most pending: <b>{{regWorst}}</b></span><a href="#" data-go="lead-clients">Open clients</a></div>
+  </div>
+  <div class="pa-c">
+    <div class="pa-h"><span class="pa-t"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M16 2v4 M8 2v4 M3 10h18 M9 16l2 2 4-4"></path></svg></span><h2>Compliances · October</h2></div>
+    <div style="padding: 0 16px 6px"><div style="display: flex; align-items: baseline; gap: 6px"><b style="font-size: 22px; font-weight: 600">{{fTot}}</b><span style="font-size: 12px; color: #667180">filings</span></div>
+      <div class="pa-stk" role="img" aria-label="{{fTip}}"><sc-for list="{{fLegend}}" as="l" hint-placeholder-count="5"><i style="{{l.seg}}"></i></sc-for></div></div>
+    <div class="pa-dn" style="flex-direction: column; align-items: stretch; gap: 5px"><sc-for list="{{fLegend}}" as="l" hint-placeholder-count="5"><div class="pa-lg"><span class="pa-sw" style="{{l.sw}}"></span><span style="flex: 1">{{l.label}}</span><b>{{l.n}}</b></div></sc-for></div>
+    <div class="pa-f"><span>Worst statute: <b>{{worstStat}}</b></span><a href="#" data-go="lead-compliances">Open calendar</a></div>
+  </div>
+</section></sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scope":{"editor":"text","default":"pranay"},"slim":{"editor":"text","default":"0"},"$preview":{"width":1200,"height":280}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, scope = this.props.scope ?? 'pranay';
+    const firm = A.allClients();
+    const all = scope === 'firm' ? firm : (scope === 'krishna' ? A.clients() : firm.filter(c => c.mgr === scope));
+    const ks = all.map(c => c.k), inc = all.filter(c => c.stage === 'inc');
+    const STG = [['name', 'Name approval'], ['spice', 'SPICe+ forms'], ['mca', 'MCA review'], ['coi', 'Certificate']];
+    const maxS = Math.max(1, ...STG.map(([k]) => inc.filter(c => c.pipe === k).length));
+    const incStages = STG.map(([k, label]) => { const l = inc.filter(c => c.pipe === k); return { label, n: l.length, tip: l.map(c => c.name).join(', ') || 'None', bar: 'background:#1b4f94;width:' + l.length / maxS * 100 + '%' }; });
+    const ids = scope === 'firm' ? Object.keys(A.DAYS) : (scope === 'krishna' ? Object.keys(A.MGR) : [scope]);
+    const avgCoi = Math.round(ids.reduce((a, id) => a + (A.DAYS[id] || 0), 0) / Math.max(1, ids.length));
+    let rd = 0, rp = 0, rw = 0;
+    ks.forEach(k => A.REG[k].split('').forEach(v => { if (v === 'd') rd++; if (v === 'p') rp++; if (v === 'w') rw++; }));
+    const byType = A.REGS.map((t, i) => { let d = 0, p = 0, w = 0; ks.forEach(k => { const v = A.REG[k][i]; if (v === 'd') d++; if (v === 'p') p++; if (v === 'w') w++; }); return { t, d, p, w, open: p + w }; });
+    const regTop = byType.slice().sort((a, b) => b.open - a.open).slice(0, 3).map(x => { const tt = x.d + x.p + x.w || 1;
+      return { label: x.t, n: x.open, tip: x.t + ': ' + x.d + ' done, ' + x.p + ' in progress, ' + x.w + ' pending', d: 'background:#0f6e51;width:' + x.d / tt * 100 + '%', p: 'background:#1b4f94;width:' + x.p / tt * 100 + '%', w: 'background:#be4400;width:' + x.w / tt * 100 + '%' }; });
+    const top = byType.slice().sort((a, b) => b.w - a.w)[0];
+    const fil = A.FIL.filter(f => ks.indexOf(f[1]) > -1);
+    const FS = ['o', 'l', 'd', 'u', 'f'], COLF = { o: '#b5302a', l: '#be4400', d: '#1b4f94', u: '#c4ccd8', f: '#0f6e51' };
+    const cnt = FS.map(k => fil.filter(f => f[4] === k).length);
+    const stat = {}; fil.forEach(f => { if (f[4] === 'o' || f[4] === 'l') stat[f[3]] = (stat[f[3]] || 0) + 1; });
+    const slim = String(this.props.slim ?? '0') === '1';
+    return { slim, full: !slim, regOpen: rp + rw, regSt: rw ? 'color:#be4400' : '', filOver: cnt[0], filSt: cnt[0] ? 'color:#b5302a' : '', nInc: inc.length, incStages, avgCoi,
+      regBig: [[rd, 'Done', '#0f6e51'], [rp, 'In progress', '#1b4f94'], [rw, 'Pending', '#be4400']].map(([n, label, c]) => ({ n, label, st: 'color:' + c })), regTop,
+      regWorst: top && top.w ? top.t : 'Nothing pending',
+      fDonut: A.donut(FS.map((k, i) => [cnt[i], COLF[k]])), fTot: fil.length, fTip: FS.map((k, i) => A.FST[k][0] + ' ' + cnt[i]).join(', '),
+      fLegend: FS.map((k, i) => ({ label: A.FST[k][0], n: cnt[i], sw: 'background:' + COLF[k], seg: 'flex:' + cnt[i] + ';background:' + COLF[k] + (cnt[i] ? '' : ';display:none') })),
+      worstStat: Object.keys(stat).sort((a, b) => stat[b] - stat[a])[0] || 'None late' };
+  }
+}
+</script>
+</body>
+</html>

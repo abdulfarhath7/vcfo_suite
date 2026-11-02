@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
-import { isDeliveredToClient } from '@/lib/checklist-state-key';
-import { isInternEngagementPathname } from '@/lib/project-step-path';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
+import { isDeliveredToClient } from '@/lib/checklist/checklist-state-key';
+import { isInternEngagementPathname } from '@/lib/projects/project-step-path';
 
 
 

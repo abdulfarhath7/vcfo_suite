@@ -431,10 +431,12 @@ describe('admin-only surfaces', () => {
     expect(wheres).toHaveLength(1);
   });
 
-  it('getClientProfileForEngagement: admin stays firm-wide (no engagement scope check)', async () => {
+  // Regression (2026-10-22): super_admin used to get null here (the guard tested
+  // `admin` and `manager` only), so "Resend welcome email" failed for super admin.
+  it.each(['admin', 'super_admin'] as const)('getClientProfileForEngagement: %s stays firm-wide (no engagement scope check)', async (role) => {
     const profile = { id: 'user-x', email: 'x@client.test', name: 'X' };
     selectRows = [profile];
-    await expect(repo.getClientProfileForEngagement(ctx('admin'), 'user-x')).resolves.toEqual(profile);
+    await expect(repo.getClientProfileForEngagement(ctx(role), 'user-x')).resolves.toEqual(profile);
     expect(wheres).toHaveLength(1);
     expect(listClientMemberEngagementIds).not.toHaveBeenCalled();
   });

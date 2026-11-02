@@ -8,7 +8,7 @@
  */
 
 /** Dates are `DD/MM/YYYY`; numbers are numbers; booleans are booleans. */
-export interface AssistPerson {
+interface AssistPerson {
   firstName?: string;
   middleName?: string;
   surName?: string;
@@ -80,7 +80,7 @@ export interface AssistSubscriber extends Omit<AssistDirector, 'id' | 'index'> {
   place?: string;
 }
 
-export interface AssistCapitalClass {
+interface AssistCapitalClass {
   classes?: number;
   className?: string;
   authorizedShares?: number;
@@ -125,16 +125,16 @@ export interface AssistRegisteredOffice {
   rocOffice?: string;
 }
 
-export interface AssistAgile {
+interface AssistAgile {
   numberOfDirectors?: number;
 }
 
 /** INC-33. Only the subscription witness Suite holds on pre-7 (QUESTIONS Q2). */
-export interface AssistMoa {
+interface AssistMoa {
   witness?: { name?: string; address?: string };
 }
 /** INC-34. Only the subscription witness Suite holds on pre-7 (QUESTIONS Q2). */
-export interface AssistAoa {
+interface AssistAoa {
   witness?: { name?: string; addressDescriptionOccupation?: string; dinPanMembership?: string };
 }
 
@@ -152,7 +152,7 @@ export interface AssistProfile {
 }
 
 /** Why a field is absent. Omitted = the Suite field exists and is blank. */
-export type AssistMissingReason = string;
+type AssistMissingReason = string;
 
 /** Mirrors doc-pack's `DocPackMissingInput`, same `key` naming. */
 export interface AssistProfileMissing {

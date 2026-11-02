@@ -1,6 +1,6 @@
 import { checklist, StatusCode } from './checklist';
 import type { EntityLegalForm } from '@/lib/compliance/types';
-import type { EngagementSchedule } from '@/lib/schedule-windows';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 export type CompanyType = 'domestic' | 'foreign';
 /**
@@ -17,21 +17,6 @@ export type { EntityLegalForm };
  * Only meaningful for subsidiary + domestic; null everywhere else.
  */
 export type ParentIndianRelationship = 'name_only' | 'investing';
-
-export const COMPANY_TYPE_LABEL: Record<CompanyType, string> = {
-  domestic: 'Domestic',
-  foreign: 'Foreign',
-};
-
-export const OWNERSHIP_TYPE_LABEL: Record<OwnershipType, string> = {
-  subsidiary: 'Subsidiary',
-  independent: 'Standalone',
-};
-
-export const PARENT_INDIAN_RELATIONSHIP_LABEL: Record<ParentIndianRelationship, string> = {
-  name_only: 'Name use only',
-  investing: 'Investing',
-};
 
 export function coerceOwnershipType(value: unknown): OwnershipType {
   return value === 'independent' ? 'independent' : 'subsidiary';
@@ -66,7 +51,7 @@ export function normalizeParentIndianRelationship(e: {
 
 /**
  * Ownership as shown on headers and pickers. Standalone rows are stored as
- * `domestic`, so `COMPANY_TYPE_LABEL` alone cannot tell "Indian parent" from
+ * `domestic`, so `companyType` alone cannot tell "Indian parent" from
  * "no parent" — this can.
  */
 export function ownershipDisplayLabel(
@@ -101,6 +86,8 @@ export interface Engagement {
   parentIndianRelationship?: ParentIndianRelationship | null;
   /** Manager-set date windows (incorporation + per step). See `schedule-windows.ts`. */
   schedule?: EngagementSchedule;
+  /** The date the firm expects the certificate of incorporation (YYYY-MM-DD; G-13). */
+  expectedCoiOn?: string | null;
   /** Indian legal form for compliance calendar filtering */
   entityLegalForm?: EntityLegalForm;
   /** Synced from checklist pre-12 */
@@ -143,6 +130,17 @@ export interface TaskInstance {
   assigneeId?: string;
   dueAt?: string;
   notes?: string;
+  /** Stored task title; set on rows from `/api/tasks` (an assigned task has no checklist key). */
+  title?: string;
+  /** Last change, ISO; set on rows from `/api/tasks`. */
+  updatedAt?: string;
+  /** When the task moved to done, ISO (`tasks.completed_at`); absent while open or when done before it was kept. */
+  completedAt?: string;
+  /** Who assigned the task to its holder (`tasks.assigned_by`, migration 0028); absent when self-assigned or older. */
+  assignedById?: string;
+  assignedByName?: string;
+  /** The card's place in its Work board column (`tasks.sort_order`); absent keeps the default order. */
+  sortOrder?: number | null;
 }
 
 export interface DocRequest {

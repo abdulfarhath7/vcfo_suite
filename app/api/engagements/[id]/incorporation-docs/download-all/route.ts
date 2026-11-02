@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import { assertEngagementBoardResolutionAccess } from '@/lib/api/board-resolution-access';
 import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { normalizeChecklistItemSlice } from '@/lib/checklist-state-key';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/paths';
 import { filterClientVisibleIncorpDrafts } from '@/lib/incorporation-docs/share';
@@ -15,7 +15,7 @@ import {
   incorpDraftZipEntries,
 } from '@/lib/incorporation-docs/zip';
 import { checklistStateFromRow, toAppEngagement } from '@/db/repositories/engagements';
-import { directorResponsesFromState } from '@/lib/proposed-directors';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

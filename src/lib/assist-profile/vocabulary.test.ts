@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { PRE1_GENDER_OPTIONS } from '@/lib/checklist-pre1-validation';
-import { PRE6_OCCUPATION_OPTIONS, PRE6_QUALIFICATION_OPTIONS } from '@/lib/checklist-pre6-validation';
+import { PRE1_GENDER_OPTIONS } from '@/lib/checklist/checklist-pre1-validation';
+import { PRE6_OCCUPATION_OPTIONS, PRE6_QUALIFICATION_OPTIONS } from '@/lib/checklist/checklist-pre6-validation';
 import {
   COMPANY_CATEGORY,
   COMPANY_CLASS,

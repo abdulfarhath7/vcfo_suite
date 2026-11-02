@@ -2,9 +2,9 @@
 
 import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { listPendingApprovals, type PendingApprovalRow } from '@/lib/pending-approvals';
+import { listPendingApprovals, type PendingApprovalRow } from '@/lib/projects/pending-approvals';
 
-export { pendingApprovalKind, type PendingApprovalRow } from '@/lib/pending-approvals';
+export { pendingApprovalKind, type PendingApprovalRow } from '@/lib/projects/pending-approvals';
 
 export type PendingApprovalScope = 'firm' | 'manager';
 

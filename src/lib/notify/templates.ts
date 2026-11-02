@@ -62,6 +62,7 @@ export function readTemplateNames(
  *   staff_client_uploaded    1 first name, 2 company name, 3 step title
  *   staff_change_requested   1 first name, 2 company name, 3 step title
  *   process_notice           1 company name, 2 short notice
+ *   client_reminder          1 company name, 2 item title (step, filing or request)
  */
 function orderedVariables(
   event: NotifyEvent,
@@ -94,6 +95,7 @@ function orderedVariables(
     case 'documents_shared':
       return [vars.firstName ?? '', vars.companyName ?? ''];
     case 'process_notice':
+    case 'client_reminder':
       return [vars.companyName ?? '', vars.stepTitle ?? ''];
   }
 }

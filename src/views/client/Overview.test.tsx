@@ -7,16 +7,16 @@ import {
   buildMilestones,
   buildProgress,
   type ClientOverview,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 
 const useClientOverview = vi.fn();
 
-vi.mock('@/lib/use-client-overview', () => ({
+vi.mock('@/hooks/use-client-overview', () => ({
   useClientOverview: () => useClientOverview(),
 }));
 
 /** The shell appearance hook reads localStorage + matchMedia; a stub keeps this a unit test. */
-vi.mock('@/lib/use-shell-appearance', () => ({
+vi.mock('@/hooks/use-shell-appearance', () => ({
   useShellAppearance: () => ({
     hero: {},
     motion: 'default',
@@ -46,9 +46,6 @@ const base: ClientOverview = {
     href: '/app/client/incorporation?step=pre-1',
     needsCorrection: false,
   },
-  needs: [
-    { stepId: 'pre-1', title: 'Client Details', action: 'fill', href: '/app/client/incorporation?step=pre-1' },
-  ],
   ballInCourt: { waitingOnClient: 1, waitingOnFirm: 0 },
   documents: { deliverables: [], counts: { requested: 1, submitted: 0, delivered: 0 } },
   compliance: { upcoming: [] },
@@ -129,24 +126,22 @@ describe('client Overview', () => {
     expect(screen.getByText('No active engagement')).toBeInTheDocument();
   });
 
-  it('pre-COI: leads with the path, the forming entity, and taxes', () => {
+  it('pre-COI: leads with progress and keeps the entity card off the page', () => {
     useClientOverview.mockReturnValue(ok(base));
 
     const { container } = draw();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Acme India Private Limited' })).toBeInTheDocument();
-    expect(screen.queryByText(/the next step is yours/)).toBeNull();
-    expect(screen.getByRole('status')).toHaveTextContent(/your step right now/i);
-    expect(screen.getByText('Needs from you')).toBeInTheDocument();
-    expect(screen.getByText('Your entity')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Acme India Private Limited' })).toBeInTheDocument();
+    expect(screen.getByText('We need this from you')).toBeInTheDocument();
     expect(container.querySelector('.client-idcard')).toBeNull();
-    expect(screen.getByText('Who holds it now')).toBeInTheDocument();
-    expect(screen.getByText('Important alerts')).toBeInTheDocument();
-    expect(screen.getByText('Taxes')).toBeInTheDocument();
-    expect(screen.getAllByText('After incorporation').length).toBeGreaterThan(0);
+    // "Whose turn it is" restates the hero pre-COI, so it is not rendered yet.
+    expect(screen.queryByText('Whose turn it is')).toBeNull();
+    expect(
+      screen.getByText(/Your compliance calendar begins once your Certificate of Incorporation is issued\./),
+    ).toBeInTheDocument();
   });
 
-  it('post-COI: keeps the path, then the entity card and taxes', () => {
+  it('post-COI: raises the entity ID card and the compliance runway above progress', () => {
     useClientOverview.mockReturnValue(
       ok({
         ...base,
@@ -154,7 +149,6 @@ describe('client Overview', () => {
         identifiers: { cin: 'U74999KA2026PTC123456' },
         engagement: { ...base.engagement, incorporationDate: '2026-04-01' },
         nextAction: undefined,
-        needs: [],
         ballInCourt: { waitingOnClient: 0, waitingOnFirm: 2 },
       }),
     );
@@ -164,10 +158,11 @@ describe('client Overview', () => {
     const idCard = container.querySelector('.client-idcard');
     const phaseBars = screen.getByText('Where we are');
     expect(idCard).not.toBeNull();
-    // The path comes first. The entity card follows it.
-    expect(phaseBars.compareDocumentPosition(idCard!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(screen.getByText('Taxes')).toBeInTheDocument();
-    expect(screen.getByText(/Nothing needed from you/)).toBeInTheDocument();
+    // Document order decides the mood: identity sits above the phase bars.
+    expect(idCard!.compareDocumentPosition(phaseBars)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.getByText(/You’re all set/)).toBeInTheDocument();
   });
 
   it('never exposes the code role word "intern" to a client', () => {
@@ -187,11 +182,7 @@ describe('client Overview', () => {
 
     draw();
 
-    expect(screen.getByRole('link', { name: /Fill in Client Details/ })).toHaveAttribute(
-      'href',
-      '/app/client/incorporation?step=pre-1',
-    );
-    expect(screen.getByRole('link', { name: /Continue Client Details/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Open this step/ })).toHaveAttribute(
       'href',
       '/app/client/incorporation?step=pre-1',
     );
@@ -202,6 +193,10 @@ describe('client Overview', () => {
     expect(screen.getByRole('link', { name: 'All filings' })).toHaveAttribute(
       'href',
       '/app/client/compliances',
+    );
+    expect(screen.getByRole('link', { name: 'View all' })).toHaveAttribute(
+      'href',
+      '/app/client/audit',
     );
   });
 });

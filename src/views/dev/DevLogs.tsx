@@ -1,0 +1,168 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
+import { FilterChip } from '@/components/ui/filter-chip';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ChangeConfirm as ChangeRow } from '@/components/ui/inline-confirm';
+import { CloseButton, DevCard, KeyValue, Pending, ReachChip, ReachNotice, SettingRow, StatusChip, pickedRow, useDevAction } from '@/components/dev/parts';
+import { useDevApi } from '@/components/dev/use-dev-api';
+import { bytes, stampSec } from '@/lib/dev/format';
+import { toastError, toastSuccess } from '@/lib/toast-errors';
+import type { LogLine, LogRetention, LogsPayload, Reach } from '@/lib/dev/types';
+
+const KEEP = ['14', '30', '90'] as const;
+const keepWord = (d: number | null) => (d ? `${d} days` : 'Never expire');
+
+/** "Keeping logs": how long CloudWatch keeps the lines; a change asks first (R-40). */
+function KeepingLogs() {
+  const q = useDevApi<Reach<LogRetention>>('/api/dev/logs/retention');
+  const save = useDevAction<{ days: number }>('/api/dev/logs/retention');
+  const [next, setNext] = useState<number | null>(null);
+  const cur = q.data?.state === 'ok' ? q.data.data : null;
+
+  const doSave = async () => {
+    if (!next) return;
+    const out = await save.run({ days: next });
+    if (out.ok === false) {
+      toastError('Not changed', out.error);
+      return;
+    }
+    toastSuccess('Saved', `Logs kept for ${next} days`);
+    setNext(null);
+  };
+
+  return (
+    <DevCard title="Keeping logs" meta={cur ? <span className="font-mono">{cur.group}</span> : undefined}>
+      {!q.data ? (
+        <Pending error={q.error} rows={2} />
+      ) : cur ? (
+        <>
+          <SettingRow label="Keep logs for" sub={cur.storedBytes !== null ? `${bytes(cur.storedBytes)} stored` : undefined}>
+            <SpectrumTabs
+              label="Keep logs for"
+              items={KEEP.map((d) => ({ key: d, label: `${d} days` }))}
+              value={String(next ?? cur.days ?? '')}
+              onChange={(k) => setNext(Number(k) === cur.days ? null : Number(k))}
+            />
+          </SettingRow>
+          {next ? (
+            <ChangeRow
+              question={`Keep logs for ${next} days?`}
+              now={keepWord(cur.days)}
+              after={keepWord(next)}
+              confirm="Save"
+              busy={save.busy}
+              onConfirm={() => void doSave()}
+              onCancel={() => setNext(null)}
+            />
+          ) : null}
+        </>
+      ) : (
+        <ReachNotice reach={q.data as Exclude<Reach<LogRetention>, { state: 'ok' }>} service="CloudWatch Logs" />
+      )}
+    </DevCard>
+  );
+}
+
+/**
+ * Logs: CloudWatch log lines from APP_LOG_GROUP, newest first. The text filter runs in
+ * CloudWatch; the level is read from each line. Emails and phones arrive masked.
+ */
+
+const LEVELS = ['all', 'error', 'warn', 'info'] as const;
+const HOURS = ['1', '6', '24', '72'] as const;
+
+export default function DevLogs() {
+  const [level, setLevel] = useState<(typeof LEVELS)[number]>('all');
+  const [hours, setHours] = useState<(typeof HOURS)[number]>('6');
+  const [text, setText] = useState('');
+  const [search, setSearch] = useState('');
+  const [picked, setPicked] = useState<string | null>(null);
+  const [source, setSource] = useState('');
+
+  // Search after typing stops, so each key press is not a CloudWatch call.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(text.trim()), 400);
+    return () => clearTimeout(t);
+  }, [text]);
+
+  const sp = new URLSearchParams({ level, hours });
+  if (search) sp.set('q', search);
+  const q = useDevApi<LogsPayload>(`/api/dev/logs?${sp.toString()}`);
+
+  const all = q.data?.lines.state === 'ok' ? q.data.lines.data : [];
+  // The source is read from each line, so its filter runs on the lines already loaded.
+  const sources = [...new Set(all.map((l) => l.source).filter(Boolean))].sort();
+  const lines = source ? all.filter((l) => l.source === source) : all;
+  const cur = all.find((l) => l.id === picked) ?? null;
+  const any = level !== 'all' || !!text || !!source;
+
+  const columns: EFilingColumn<LogLine>[] = [
+    { key: 'at', header: 'Time', width: '170px', render: (l) => stampSec(l.at) },
+    { key: 'level', header: 'Level', width: '148px', render: (l) => <StatusChip status={l.level} /> },
+    { key: 'source', header: 'Source', width: '120px', render: (l) => <span className="font-mono text-[12px] text-ink-muted">{l.source || '-'}</span> },
+    { key: 'msg', header: 'Message', render: (l) => <span className="font-mono text-[12.5px] text-ink-2">{l.message}</span> },
+    { key: 'req', header: 'Request ID', width: '130px', render: (l) => <span className="font-mono text-[12px] text-ink-muted">{l.requestId ? l.requestId.slice(0, 12) : '-'}</span> },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 gap-5">
+      <DevCard
+        title="Log lines"
+        meta={q.data?.group ? <span className="font-mono">{q.data.group}</span> : undefined}
+        right={q.data ? <ReachChip reach={q.data.lines} /> : null}
+        filters={
+          <>
+            <SpectrumTabs label="Level" items={LEVELS.map((l) => ({ key: l, label: l === 'all' ? 'All' : l.charAt(0).toUpperCase() + l.slice(1) }))} value={level} onChange={(k) => setLevel(k as typeof level)} />
+            <SpectrumTabs label="Period" items={HOURS.map((h) => ({ key: h, label: `${h} h` }))} value={hours} onChange={(k) => setHours(k as typeof hours)} />
+            <FilterChip label="Source" value={source} onChange={setSource} options={sources.map((x) => ({ value: x, label: x }))} />
+            <Input aria-label="Search" type="search" placeholder="Search" value={text} onChange={(e) => setText(e.target.value)} className="h-[30px] w-[180px] text-[13px]" />
+            {any ? (
+              <Button size="sm" variant="ghost" onClick={() => { setLevel('all'); setText(''); setSource(''); }}>
+                Clear
+              </Button>
+            ) : null}
+          </>
+        }
+      >
+        {!q.data ? (
+          <Pending error={q.error} rows={8} />
+        ) : q.data.lines.state === 'ok' ? (
+          <div className="px-2 pb-2">
+            <EFilingGrid
+              columns={columns}
+              rows={lines}
+              rowKey={(l) => l.id}
+              pageSize={25}
+              minWidth={980}
+              empty="No log lines match"
+              stickyFirstColumn
+              onRowClick={(l) => setPicked((p) => (p === l.id ? null : l.id))}
+              rowClassName={pickedRow((l: LogLine) => l.id, picked)}
+            />
+          </div>
+        ) : (
+          <ReachNotice reach={q.data.lines} service="CloudWatch Logs" />
+        )}
+      </DevCard>
+
+      {cur ? (
+        <DevCard title="Log line" meta={stampSec(cur.at)} right={<CloseButton onClick={() => setPicked(null)} />}>
+          <KeyValue
+            rows={[
+              { k: 'Level', v: <StatusChip status={cur.level} /> },
+              { k: 'Source', v: cur.source || '-', mono: true },
+              { k: 'Request ID', v: cur.requestId || '-', mono: true },
+              { k: 'Instance', v: cur.stream || '-', mono: true },
+            ]}
+          />
+          <pre className="mx-4 mb-4 max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-md border-1.5 border-line bg-surface-sunken p-3 font-mono text-[12.5px] text-ink-2">{cur.message}</pre>
+        </DevCard>
+      ) : null}
+      <KeepingLogs />
+    </div>
+  );
+}

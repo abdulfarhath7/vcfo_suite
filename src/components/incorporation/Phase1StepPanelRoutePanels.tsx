@@ -7,12 +7,12 @@ import {
   computeMcaNameApprovalExpiryDate,
   extractItemResponses,
   type ChecklistItemResponses,
-} from '@/lib/checklist-responses';
-import { formatPre1DateDisplay } from '@/lib/checklist-pre1-validation';
-import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { isLeadRequestPending } from '@/lib/checklist-item-review';
+} from '@/lib/checklist/checklist-responses';
+import { formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation';
+import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
 import {
   filterClientVisibleIncorpDrafts,
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { IncorporationDraftsZipLink } from '@/components/incorporation/IncorporationDraftsZipLink';
 import { IncorporationDocsBulkShareBar } from '@/components/incorporation/IncorporationDocsBulkShareBar';
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
-import { hasPre7OtherAttachments } from '@/lib/checklist-pre7-other-attachments';
+import { hasPre7OtherAttachments } from '@/lib/checklist/checklist-pre7-other-attachments';
 import {
   PanelShell,
   Pre7OtherAttachmentsList,
@@ -42,14 +42,14 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
       return (
         <div className={className}>
           <PanelShell title="Draft Board Resolution">
-            {brStatus === 'loading' && <p className="text-text-tertiary">Checking status…</p>}
+            {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
             {brStatus === 'none' && (
-              <p className="text-text-tertiary">
+              <p className="text-ink-faint">
                 Not generated yet — assigned project lead drafts from Pre-1 client data in Step 2.
               </p>
             )}
             {brStatus === 'draft' && (
-              <p className="flex items-center gap-1.5 text-text-secondary">
+              <p className="flex items-center gap-1.5 text-ink-muted">
                 <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {isLeadRequestPending(itemState as ChecklistItemStateSlice | undefined)
                   ? 'Sent for your approval. Read the document and the Client Details, then approve or send it back.'
@@ -57,13 +57,13 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
               </p>
             )}
             {brStatus === 'finalized' && (
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Finalized and shared with client for review.
               </p>
             )}
             {brStatus === 'signed' && (
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Client has uploaded a signed copy (Step 3).
               </p>
@@ -86,19 +86,19 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
       <div className={className}>
         <PanelShell title="Draft Board Resolution">
           {brStatus === 'loading' && (
-            <p className="text-text-tertiary">Checking status…</p>
+            <p className="text-ink-faint">Checking status…</p>
           )}
           {brStatus === 'none' || brStatus === 'draft' ? (
             <p>Not finalized yet.</p>
           ) : (
             <>
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Draft board resolution released — download and review before signing in Step 3.
               </p>
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-brand-text hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 View draft board resolution
@@ -120,12 +120,12 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
         <div className={className}>
           <PanelShell title="Signed Board Resolution">
             {brStatus === 'signed' ? (
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Signed copy uploaded — your engagement team has received it.
               </p>
             ) : (
-              <p className="flex items-center gap-1.5 text-text-tertiary">
+              <p className="flex items-center gap-1.5 text-ink-faint">
                 <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Signed copy not uploaded yet.
               </p>
@@ -133,14 +133,14 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
             {(brStatus === 'finalized' || brStatus === 'signed') && (
               <Link
                 href={clientBoardResolutionPath()}
-                className="inline-flex items-center gap-1.5 text-blue-700 hover:underline font-medium"
+                className="inline-flex items-center gap-1.5 text-brand-text hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {brStatus === 'signed' ? 'View or replace signed copy' : 'Upload signed copy'}
               </Link>
             )}
             {brStatus === 'none' || brStatus === 'draft' ? (
-              <p className="text-text-tertiary">
+              <p className="text-ink-faint">
                 Available once your engagement team finalizes the draft board resolution.
               </p>
             ) : null}
@@ -152,19 +152,19 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
     return (
       <div className={className}>
         <PanelShell title="Signed Board Resolution">
-          {brStatus === 'loading' && <p className="text-text-tertiary">Checking status…</p>}
+          {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
           {brStatus === 'signed' ? (
-            <p className="flex items-center gap-1.5 text-success-text">
+            <p className="flex items-center gap-1.5 text-positive">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
               Signed copy received from client.
             </p>
           ) : brStatus === 'finalized' ? (
-            <p className="flex items-center gap-1.5 text-text-tertiary">
+            <p className="flex items-center gap-1.5 text-ink-faint">
               <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
               Draft released — awaiting client upload of signed copy.
             </p>
           ) : (
-            <p className="text-text-tertiary">
+            <p className="text-ink-faint">
               Finalize the draft board resolution in Step 2 before the client can sign.
             </p>
           )}
@@ -184,7 +184,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="Name Application">
             {deliveredToClient && ack ? (
               <>
-                <p className="flex items-center gap-1.5 text-success-text">
+                <p className="flex items-center gap-1.5 text-positive">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Your name application has been filed with ROC.
                 </p>
@@ -196,7 +196,7 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
             ) : (
               <p>Name application is being filed. Acknowledgement appears here when delivered.</p>
             )}
-            {deliveredToClient && notes && <p className="text-text-tertiary">{notes}</p>}
+            {deliveredToClient && notes && <p className="text-ink-faint">{notes}</p>}
           </PanelShell>
         </div>
       );
@@ -206,9 +206,9 @@ export function Phase1Pre4Panel(props: Phase1StepPanelRoutesProps) {
       <div className={className}>
         <PanelShell>
           {brStatus === 'signed' ? (
-            <p className="text-success-text">Signed board resolution is on file.</p>
+            <p className="text-positive">Signed board resolution is on file.</p>
           ) : (
-            <p className="text-text-tertiary">
+            <p className="text-ink-faint">
               Awaiting signed board resolution from the client (Step 3).
             </p>
           )}
@@ -235,7 +235,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
             <dl className="space-y-2">
               {approvedName && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                  <dt className="text-[10px] text-ink-faint">
                     Approved name
                   </dt>
                   <dd className="text-ink font-medium">{approvedName}</dd>
@@ -243,7 +243,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {approvalDate && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                  <dt className="text-[10px] text-ink-faint">
                     Approval date
                   </dt>
                   <dd>{formatPre1DateDisplay(approvalDate) ?? approvalDate}</dd>
@@ -251,7 +251,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {expiryDate && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                  <dt className="text-[10px] text-ink-faint">
                     Expiry date
                   </dt>
                   <dd>{formatPre1DateDisplay(expiryDate) ?? expiryDate}</dd>
@@ -259,7 +259,7 @@ export function Phase1Pre5Panel(props: Phase1StepPanelRoutesProps) {
               )}
               {letter && (
                 <div>
-                  <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                  <dt className="text-[10px] text-ink-faint">
                     Approval letter
                   </dt>
                   <dd>
@@ -296,13 +296,13 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="KYC Review & DSC">
             {hasDeliveredContent ? (
               <>
-                <p className="flex items-center gap-1.5 text-success-text">
+                <p className="flex items-center gap-1.5 text-positive">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Your engagement team has completed KYC review and shared DSC proof.
                 </p>
                 {kycStatus && (
                   <div>
-                    <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <p className="text-[10px] text-ink-faint">
                       KYC review status
                     </p>
                     <p className="text-ink font-medium capitalize">
@@ -312,10 +312,10 @@ export function Phase1Pre7Panel(props: Phase1StepPanelRoutesProps) {
                     </p>
                   </div>
                 )}
-                {kycNotes && <p className="text-text-tertiary">{kycNotes}</p>}
+                {kycNotes && <p className="text-ink-faint">{kycNotes}</p>}
                 {hasDsc && (
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <p className="text-[10px] text-ink-faint">
                       DSC success messages
                     </p>
                     {nrDsc && (
@@ -381,13 +381,13 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="Document Execution">
             {hasClientVisibleDrafts ? (
               <>
-                <p className="flex items-center gap-1.5 text-success-text">
+                <p className="flex items-center gap-1.5 text-positive">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Draft incorporation forms are ready — download, sign, notarize, and upload executed
                   copies below.
                 </p>
                 <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                  <p className="text-[10px] text-ink-faint">
                     Draft incorporation documents
                   </p>
                   <DraftDocLinksList
@@ -406,12 +406,12 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
               <p>Draft DIR-2, DIR-8, INC-9, and PAN files appear here when shared.</p>
             )}
             {clientSubmitted ? (
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Signed documents submitted — your engagement team is reviewing.
               </p>
             ) : hasClientVisibleDrafts ? (
-              <p className="flex items-center gap-1.5 text-text-tertiary">
+              <p className="flex items-center gap-1.5 text-ink-faint">
                 <Upload className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Download, sign, notarize, and upload executed copies below.
               </p>
@@ -435,7 +435,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
           {hasClientVisibleDrafts ? (
             <>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                <p className="text-[10px] text-ink-faint">
                   Shared draft documents (from Step 2)
                 </p>
                 {engagement?.id ? (
@@ -448,7 +448,7 @@ export function Phase1Pre8Panel(props: Phase1StepPanelRoutesProps) {
               </div>
             </>
           ) : hasCoreDrafts ? (
-            <p className="flex items-center gap-1.5 text-text-tertiary">
+            <p className="flex items-center gap-1.5 text-ink-faint">
               <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {coreDraftDocs.length} draft document{coreDraftDocs.length === 1 ? '' : 's'} generated
               on Step 2 — use <strong>Share with client</strong> on Pre-7 before they appear here.
@@ -476,18 +476,18 @@ export function Phase1Pre9Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="SPICe+ Confirmation">
           {clientSubmitted ? (
             <>
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Your Spice Part B confirmation has been submitted.
               </p>
               {confirmation === 'changes-recommended' && (
-                <p className="text-text-tertiary">
+                <p className="text-ink-faint">
                   You recommended changes — your project lead will update the application before
                   filing.
                 </p>
               )}
               {confirmation === 'confirmed' && (
-                <p className="text-text-tertiary">
+                <p className="text-ink-faint">
                   You confirmed the application — your project lead will proceed to MCA filing.
                 </p>
               )}
@@ -507,7 +507,7 @@ export function Phase1Pre9Panel(props: Phase1StepPanelRoutesProps) {
     <div className={className}>
       <PanelShell title="SPICe+ Confirmation">
         {clientSubmitted && (
-          <p className="flex items-center gap-1.5 text-success-text">
+          <p className="flex items-center gap-1.5 text-positive">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
             Client submitted their Spice Part B confirmation.
           </p>
@@ -527,11 +527,11 @@ export function Phase1Pre10Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="SPICe+ Filing">
           {deliveredToClient && filedNotes ? (
             <>
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 SPICe+ Part B and AGILE-PRO-S have been filed with MCA.
               </p>
-              <p className="text-text-tertiary">{filedNotes}</p>
+              <p className="text-ink-faint">{filedNotes}</p>
             </>
           ) : (
             <p>SPICe+ filing details appear here when delivered.</p>
@@ -555,11 +555,11 @@ export function Phase1Pre11Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="MCA Remarks">
           {deliveredToClient && remarks ? (
             <>
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Your project lead has addressed MCA remarks and resubmitted the application.
               </p>
-              <p className="text-text-tertiary">{remarks}</p>
+              <p className="text-ink-faint">{remarks}</p>
               {clarification && (
                 <MilestoneFileDisplay storagePath={clarification} label="Clarification letter" />
               )}
@@ -599,14 +599,14 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="Certificate of Incorporation">
           {hasDeliveredContent ? (
             <>
-              <p className="flex items-center gap-1.5 text-success-text">
+              <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Your company has been incorporated — MCA approval details are below.
               </p>
               <dl className="space-y-2">
                 {companyName && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       Company name
                     </dt>
                     <dd className="text-ink font-medium">{companyName}</dd>
@@ -614,7 +614,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {incorporationDate && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       Date of incorporation
                     </dt>
                     <dd>{formatPre1DateDisplay(incorporationDate) ?? incorporationDate}</dd>
@@ -622,7 +622,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {cin && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       CIN
                     </dt>
                     <dd className="font-mono text-[11px]">{cin}</dd>
@@ -630,7 +630,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {pan && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       PAN
                     </dt>
                     <dd className="font-mono text-[11px]">{pan}</dd>
@@ -638,7 +638,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {tan && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       TAN
                     </dt>
                     <dd className="font-mono text-[11px]">{tan}</dd>
@@ -646,7 +646,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {pfCode && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       PF Code
                     </dt>
                     <dd className="font-mono text-[11px]">{pfCode}</dd>
@@ -654,7 +654,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {esiCode && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                    <dt className="text-[10px] text-ink-faint">
                       ESI Code
                     </dt>
                     <dd className="font-mono text-[11px]">{esiCode}</dd>
@@ -662,7 +662,7 @@ export function Phase1Pre12Panel(props: Phase1StepPanelRoutesProps) {
                 )}
                 {(cert || panCard || tanCard) && (
                   <div>
-                    <dt className="text-[10px] uppercase tracking-wide text-text-tertiary mb-1">
+                    <dt className="text-[10px] text-ink-faint mb-1">
                       Documents
                     </dt>
                     <dd className="space-y-1">

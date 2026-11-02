@@ -4,13 +4,13 @@ import {
   createClientChangeRequest,
   createClientTimelineRequest,
 } from '@/db/repositories/client-change-requests';
-import type { TimelinePhaseDates } from '@/lib/client-home';
+import type { TimelinePhaseDates } from '@/lib/client/client-home';
 import {
   checklistStateForViewer,
   clientRequestStepChange,
 } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
-import { isDirectFlowStep } from '@/lib/pre-inc-direct-flow';
+import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
 /**
  * POST /api/client/change-requests — the client asks the firm to change

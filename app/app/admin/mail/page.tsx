@@ -1,4 +1,4 @@
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 import ComposeMail from '@/views/staff/ComposeMail';
 
 export const metadata = pageMetadata('Send email', 'Send from your Outlook mailbox');

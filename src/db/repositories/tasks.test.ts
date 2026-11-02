@@ -172,7 +172,7 @@ describe('getTaskById', () => {
     expect(await repo.getTaskById(ctx(role), 't-1')).toBeNull();
   });
 
-  it.each(['admin', 'manager'] as const)('%s can read an unscoped task', async (role) => {
+  it.each(['super_admin', 'admin', 'manager'] as const)('%s can read an unscoped task', async (role) => {
     results = [[taskRow(null)]];
     expect(await repo.getTaskById(ctx(role), 't-1')).not.toBeNull();
   });
@@ -244,6 +244,46 @@ describe('createTask / updateTask', () => {
     expect(assertEngagementAccess).toHaveBeenCalledWith(expect.anything(), TARGET);
     const update = calls.find((c) => c.op === 'update');
     expect((update!.set as { engagementId: string }).engagementId).toBe(TARGET);
+  });
+
+  it('stamps completed_at when a task moves to done, and clears it when it reopens', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[taskRow(OWN, null)], [{ ...taskRow(OWN, null), status: 'done' }]];
+    await repo.updateTask(ctx('intern'), 't-1', { status: 'completed' });
+    const done = calls.find((c) => c.op === 'update')!.set as { status: string; completedAt: Date };
+    expect(done.status).toBe('done');
+    expect(done.completedAt).toBeInstanceOf(Date);
+
+    calls.length = 0;
+    results = [[{ ...taskRow(OWN, null), status: 'done' }], [taskRow(OWN, null)]];
+    await repo.updateTask(ctx('intern'), 't-1', { status: 'in-progress' });
+    expect((calls.find((c) => c.op === 'update')!.set as { completedAt: Date | null }).completedAt).toBeNull();
+  });
+
+  it('a second done keeps the first completion time', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[{ ...taskRow(OWN, null), status: 'done' }], [{ ...taskRow(OWN, null), status: 'done' }]];
+    await repo.updateTask(ctx('manager'), 't-1', { status: 'completed' });
+    expect(calls.find((c) => c.op === 'update')!.set).not.toHaveProperty('completedAt');
+  });
+
+  it('a task created as done is stamped at once', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[{ ...taskRow(OWN), status: 'done' }]];
+    await repo.createTask(ctx('manager'), { engagementId: 'e1', status: 'completed' });
+    expect((calls[0]!.values as { completedAt: Date }).completedAt).toBeInstanceOf(Date);
+  });
+
+  it('stamps assigned_by with the caller when the task goes to someone else', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: {} });
+    results = [[{ ...taskRow(OWN), assignedTo: 'lead-1', assignedBy: 'user-manager' }]];
+    await repo.createTask(ctx('manager'), { engagementId: 'e1', assigneeId: 'lead-1' });
+    expect((calls[0]!.values as { assignedBy: string }).assignedBy).toBe('user-manager');
+
+    calls.length = 0;
+    results = [[taskRow(OWN, null)], [taskRow(OWN, null)]];
+    await repo.updateTask(ctx('manager'), 't-1', { assigneeId: 'lead-2' });
+    expect((calls.find((c) => c.op === 'update')!.set as { assignedBy: string }).assignedBy).toBe('user-manager');
   });
 
   it('client may not update, even a visible task', async () => {

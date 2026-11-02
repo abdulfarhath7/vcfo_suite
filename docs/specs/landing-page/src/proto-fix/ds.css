@@ -1,0 +1,487 @@
+/* VCFO Suite design system v1.2, applied on top of every prototype screen.
+   Appended last by proto.js, so it wins over each screen's own stylesheet; inline styles that
+   carry their own colours were already rewritten to the tokens by patch.mjs. */
+:root {
+  --ds-font: Public Sans, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ds-line: #e1e7ef; --ds-sunken: #eef2f7; --ds-ink: #0f2a4a; --ds-ink-muted: #4b5b70;
+}
+html, body { font-family: var(--ds-font); }
+
+/* Links in navigation never underline (fixes the leak on Analytics, Chat and the Work views). */
+aside a, nav a, aside a *, nav a * { text-decoration: none !important; }
+
+/* Tables: uppercase label heads on surface-sunken under a 2px ink rule, 40px rows with hairlines,
+   every second row striped. Mono never sets a table head. */
+table th {
+  font-family: var(--ds-font) !important; font-size: 11px !important; font-weight: 600 !important;
+  letter-spacing: .06em !important; text-transform: uppercase; color: var(--ds-ink-muted) !important;
+}
+table.tbl, table.ds-table { border-collapse: collapse !important; }
+table.tbl > thead th, table.ds-table > thead th {
+  background: var(--ds-sunken) !important; border-bottom: 1px solid #e3e6eb !important; padding: 8px 12px !important;
+}
+table.tbl > tbody td, table.ds-table > tbody td {
+  height: 40px; padding-top: 4px !important; padding-bottom: 4px !important;
+  border-top: 1px solid var(--ds-line) !important; border-bottom: 0 !important;
+}
+table.tbl > tbody > tr:nth-child(even) > td, table.ds-table > tbody > tr:nth-child(even) > td { background-color: rgba(238, 242, 247, .55); }
+
+/* Chips: 6px corners on the 6 / 8 / 10 / 12 scale; chips in a column share one width. */
+.chip, .tag, .new { border-radius: 6px !important; }
+td .chip { min-width: 88px; justify-content: center; }
+
+/* Buttons: at least 84px wide, labels never wrap. */
+.btn, .btnp { min-width: 84px; white-space: nowrap; }
+.btn:not(.btn-sm) { height: 32px; }
+
+/* Shadows: the two tokens only. */
+.card { box-shadow: 0 1px 2px rgba(15, 42, 74, .06), 0 1px 1px rgba(15, 42, 74, .04) !important; }
+
+/* The heatmap and the filings grid sit on the same rows as every other table (see patch.mjs). */
+.ds-rows > .ds-row { border-top: 1px solid var(--ds-line); }
+.ds-rows > .ds-row:nth-child(odd) { background: rgba(238, 242, 247, .55); }
+.ds-head { background: var(--ds-sunken); border-bottom: 1px solid #e3e6eb; }
+.ds-head > span { font: 600 11px/16px var(--ds-font) !important; letter-spacing: .06em !important; text-transform: uppercase; color: var(--ds-ink-muted) !important; }
+
+/* Mono only on identifiers: proto.js marks every other mono element. */
+[data-ds-sans], [data-ds-sans] * { font-family: var(--ds-font) !important; font-variant-numeric: tabular-nums; letter-spacing: 0 !important; }
+
+/* Breadcrumb segments that lead somewhere. */
+.ds-crumb { cursor: pointer; border-radius: 4px; }
+.ds-crumb:hover, .ds-crumb:focus-visible { text-decoration: underline; color: #1b4f94 !important; }
+
+/* Buttons on a navy ground (the client page header) keep their light-on-dark style: proto.js marks them
+   data-ds-ondark. Buttons follow the book (lead and manager screens carry html.ds-staff; the client portal has its own button CSS): 8px corners, 13px labels, brand blue primary, white secondary on a hairline.
+   The lead and manager screens drew primaries in navy (the ink colour); proto.js marks every navy-filled
+   control so these rules can recolour it: data-ds-primary for an action, data-ds-on for the selected
+   option of a segmented control or filter row, data-ds-count for a count pill. */
+.btn { border-radius: 8px !important; font-size: 13px !important; }
+html.ds-staff .btn:not(.btnp):not([data-ds-primary]):not([data-ds-on]):not([data-ds-ondark]) { background: #fff; border-color: #e1e7ef !important; box-shadow: 0 1px 2px rgba(15, 42, 74, .06), 0 1px 1px rgba(15, 42, 74, .04); }
+html.ds-staff .btnp, [data-ds-primary] { background: #1f3b5c !important; border-color: #1f3b5c !important; color: #fff !important; }
+html.ds-staff .btnp:hover, [data-ds-primary]:hover { background: #18304c !important; border-color: #18304c !important; }
+[data-ds-on] { background: #1f3b5c !important; border-color: #1f3b5c !important; color: #fff !important; box-shadow: none !important; }
+[data-ds-count] { background: #e6effa !important; color: #2563a8 !important; }
+
+/* Compact filters: a dropdown per filter that matters, its label naming the choice; brand-soft when not on
+   its default. One popover style for filters and the More menu. */
+.ds-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: relative; }
+.ds-bar-in { border-top: 1px solid #e1e7ef; padding-top: 10px; }
+.ds-ddw { position: relative; display: inline-flex; }
+.ds-dd { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 12px; border-radius: 8px; border: 1px solid #e1e7ef; background: #fff; color: #0f2a4a; font: 600 13px var(--ds-font); cursor: pointer; white-space: nowrap; box-shadow: 0 1px 2px rgba(15, 42, 74, .06); }
+.ds-dd:hover { background: #f7f9fc; }
+.ds-dd[data-active="true"] { background: #e8f0fa; border-color: #c5d8f0; color: #1b4f94; }
+.ds-chev { color: #4b5b70; transition: transform .2s ease-out; }
+.ds-dd[data-active="true"] .ds-chev { color: #1b4f94; }
+.ds-dd[aria-expanded="true"] .ds-chev { transform: rotate(180deg); }
+.ds-icon { width: 32px; padding: 0; justify-content: center; }
+.ds-dd:focus-visible, .ds-opt:focus-visible, .ds-lnk:focus-visible { outline: 2px solid #1b4f94; outline-offset: 2px; }
+.ds-pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 41; min-width: 220px; background: #fff; border: 1px solid #e1e7ef; border-radius: 8px; box-shadow: 0 12px 32px -12px rgba(15, 42, 74, .35), 0 2px 6px rgba(15, 42, 74, .08); padding: 6px; display: flex; flex-direction: column; gap: 1px; }
+.ds-pop-r { left: auto; right: 0; }
+.ds-pop-h { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 6px; font: 600 11px var(--ds-font); letter-spacing: .06em; text-transform: uppercase; color: #4b5b70; }
+.ds-lnk { border: 0; background: none; color: #1b4f94; font: 600 12px var(--ds-font); cursor: pointer; padding: 2px 4px; border-radius: 4px; text-transform: none; letter-spacing: 0; }
+.ds-opt { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0 8px; border: 0; border-radius: 6px; background: none; color: #0f2a4a; font: 500 13px var(--ds-font); cursor: pointer; text-align: left; white-space: nowrap; }
+.ds-opt:hover { background: #f7f9fc; }
+.ds-opt i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.ds-opt[aria-pressed="true"] { font-weight: 600; }
+.ds-cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #a8b4c4; flex: none; display: grid; place-items: center; }
+.ds-opt[aria-pressed="true"] .ds-cb { background: #1b4f94; border-color: #1b4f94; }
+.ds-opt[aria-pressed="true"] .ds-cb::after { content: ""; width: 8px; height: 4px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: translateY(-1px) rotate(-45deg); }
+.ds-rd { width: 16px; height: 16px; flex: none; display: grid; place-items: center; color: #1b4f94; font-size: 13px; font-weight: 700; }
+.ds-opt[aria-pressed="true"] .ds-rd::after { content: "\2713"; }
+.ds-scrim { position: fixed; inset: 0; z-index: 40; }
+
+/* Sidebar folds: the real app's chevron, turned when the group is open. */
+.ds-fold { position: absolute; right: 6px; top: 6px; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: none; color: #9fb0c6; cursor: pointer; padding: 0; }
+.ds-fold:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.ds-fold svg { transition: transform .3s ease-out; }
+.ds-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ds-fold:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+/* Team tasks legend rows filter by status; the picked row takes the same selected look as a filter. */
+.mt-lg[aria-pressed="true"] { background: #e8f0fa !important; box-shadow: inset 0 0 0 1px #c5d8f0 !important; color: #1b4f94; }
+
+/* Admin assign dialog (admin/assign.js): one dialog, the float shadow, 8px fields. */
+.ds-dlg-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(15, 42, 74, .32); display: grid; place-items: center; padding: 16px; }
+.ds-dlg { width: min(460px, 100%); background: #fff; border-radius: 12px; box-shadow: 0 24px 60px -20px rgba(15, 42, 74, .5); padding: 20px; display: flex; flex-direction: column; gap: 12px; font: 13px var(--ds-font); color: #0f2a4a; }
+.ds-dlg h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.ds-dlg-p { margin: -6px 0 2px; color: #4b5b70; font-size: 12.5px; }
+.ds-f { display: flex; flex-direction: column; gap: 6px; }
+.ds-f > span { font-size: 12px; font-weight: 600; color: #4b5b70; }
+.ds-f select, .ds-f input { height: 36px; border: 1px solid #c5ced9; border-radius: 8px; padding: 0 10px; font: 13px var(--ds-font); color: #0f2a4a; background: #fff; }
+.ds-f select:focus, .ds-f input:focus { outline: 2px solid #1b4f94; outline-offset: 1px; border-color: #1b4f94; }
+.ds-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ds-mgrs { display: flex; flex-direction: column; gap: 6px; }
+.ds-mc { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e1e7ef; border-radius: 8px; cursor: pointer; }
+.ds-mc:has(input:checked) { border-color: #1b4f94; background: #e8f0fa; }
+.ds-mc input { accent-color: #1b4f94; }
+.ds-mc b { display: block; font-weight: 600; }
+.ds-mc em { font-style: normal; font-size: 12px; color: #4b5b70; }
+.ds-mc .pt { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: #eef2f7; font-size: 10.5px; font-weight: 600; }
+.ds-dlg-f { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+/* Calm, professional surfaces on every staff portal (owner, 23 Oct: "looks like a slide deck").
+   Card titles read like product headings, not slide titles: sentence case, 14px, no icon tile.
+   Cards are flat with a hairline. */
+html.ds-staff .ch > .tile, html.ds-staff .pa-t { display: grid !important; place-items: center; width: 28px !important; height: 28px !important; border-radius: 8px !important; flex: none; }
+html.ds-staff .ch > .tile svg, html.ds-staff .pa-t svg { width: 15px; height: 15px; }
+html.ds-staff h2.st, html.ds-staff .pa-h h2 { text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important; font-weight: 600 !important; color: #0f2a4a !important; }
+html.ds-staff .card, html.ds-staff .pa-c { box-shadow: none !important; border-radius: 8px !important; }
+html.ds-staff .ch > .new, html.ds-staff .ch .new { display: none !important; }
+/* Greeting (owner, 26 Oct, from the font-options artifact): a navy band holds the date and the name;
+   the numbers sit in a white strip under it, label above the number. Faint layered peaks (Haikei) add depth. */
+html.ds-staff [data-card="greeting"], html.ds-staff .hero { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 90 L70 60 L140 80 L230 40 L310 70 L400 30 L480 62 L600 36 L600 120 L0 120Z' fill='%23fff' fill-opacity='.05'/%3E%3Cpath d='M0 104 L90 78 L170 96 L260 70 L350 92 L440 64 L520 86 L600 72 L600 120 L0 120Z' fill='%23fff' fill-opacity='.06'/%3E%3C/svg%3E") right bottom / 70% 100% no-repeat, linear-gradient(100deg, #1b3049, #15263b 70%) !important; color: #fff !important; border: 1px solid #15263b !important; box-shadow: none !important; border-radius: 10px !important; padding-bottom: 0 !important; overflow: hidden !important; }
+html.ds-staff [data-card="greeting"] h1, html.ds-staff .hero h1 { font-size: 20px !important; color: #fff !important; }
+html.ds-staff [data-card="greeting"] .mono, html.ds-staff .hero .when { color: #9fb2c8 !important; opacity: 1 !important; }
+html.ds-staff [data-card="greeting"] > div[style*="height: 1px"] { display: none !important; }
+html.ds-staff .gk, html.ds-staff .hero .kp { background: #fff !important; margin: 14px -20px 0 !important; padding: 0 20px !important; border-top: 0 !important; display: flex !important; flex-wrap: wrap; }
+html.ds-staff .gk > a, html.ds-staff .hero .kp > span { flex-direction: column-reverse !important; align-items: flex-start !important; gap: 2px !important; padding: 10px 22px 10px 0 !important; margin-right: 22px !important; border-right: 1px solid #e1e7ef !important; color: #0f2a4a !important; text-decoration: none !important; }
+html.ds-staff .gk > a:last-child, html.ds-staff .hero .kp > span:last-child { border-right: 0 !important; }
+html.ds-staff .gk > a > span, html.ds-staff .hero .kp em { color: #4b5b70 !important; font-size: 12px !important; }
+html.ds-staff .gk b, html.ds-staff .hero .kp b { color: #0f2a4a !important; font-size: 20px !important; font-weight: 600 !important; }
+html.ds-staff .gk b[style*="ff9b8f"], html.ds-staff .hero .kp b[style*="ff9b8f"] { color: #b5302a !important; }
+html.ds-staff .hero .kp i.dl { order: -1; }
+html.ds-staff [data-card="greeting"] .new { display: none !important; }
+html.ds-staff .ch > .tag { display: none !important; }
+
+/* Denser tables: 36px rows on every staff table and grid. */
+html.ds-staff .tbl td, html.ds-staff table.tbl > tbody td { padding-top: 10px !important; padding-bottom: 10px !important; font-size: 13.5px; }
+html.ds-staff table.tbl > tbody tr:hover td { background: #fafbfc; }
+html.ds-staff .cg td { height: 36px !important; padding-top: 4px !important; padding-bottom: 4px !important; }
+html.ds-staff .cg td > span.c, html.ds-staff .fg tbody td > span.fc { height: 26px !important; }
+/* A long list shows its state as a coloured word with a dot, not a filled chip (book: the busier the list, the lighter the mark). */
+.stw { display: inline-flex !important; align-items: center; justify-content: center; gap: 6px; width: auto; min-width: 108px !important; max-width: 160px; height: 22px !important; padding: 0 6px !important; border-radius: 5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 600 11.5px var(--ds-font) !important; color: var(--c, #0f2a4a) !important; background: color-mix(in srgb, var(--c, #0f2a4a) 12%, #fff) !important; }
+.stw::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+/* This week: one thin strip; each day shows its count and its first item. */
+html.ds-staff [data-card="week"] .wk > button { min-height: 0 !important; padding: 8px 10px !important; gap: 4px !important; }
+html.ds-staff [data-card="week"] .wk > button > span ~ span ~ span { display: none !important; }
+/* Team tasks and Task status read as one card. */
+html.ds-staff [data-card="team-tasks"].mt { background: #fff; border: 1px solid #e1e7ef; border-radius: 8px; gap: 0 !important; overflow: hidden; }
+html.ds-staff [data-card="team-tasks"].mt > .card { border: 0 !important; border-radius: 0 !important; }
+html.ds-staff [data-card="team-tasks"].mt > .card + .card { border-left: 1px solid #e1e7ef !important; }
+/* Inbox: triage and to-dos in one card with tabs; a triage row shows its actions when it is hovered or focused. */
+.ds-tabs { display: inline-flex; gap: 2px; margin-left: auto; padding: 2px; border-radius: 8px; background: #eef2f7; }
+.ds-tabs button { border: 0; background: none; height: 28px; padding: 0 10px; border-radius: 6px; font: 600 12.5px var(--ds-font); color: #4b5b70; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ds-tabs button b { font-weight: 600; font-size: 11px; background: #fff; border-radius: 6px; padding: 0 6px; color: #0f2a4a; }
+.ds-tabs button[aria-selected="true"] { background: #fff; color: #1b4f94; box-shadow: 0 1px 2px rgba(15, 42, 74, .12); }
+.ds-tabs button[aria-selected="true"] b { background: #e8f0fa; color: #1b4f94; }
+.ds-tabs button:focus-visible { outline: 2px solid #1b4f94; outline-offset: 1px; }
+section[data-inbox="triage"] [data-inbox-pane="todos"], section[data-inbox="todos"] [data-inbox-pane="triage"] { display: none; }
+[data-inbox-pane="triage"] .tri-act { display: none !important; }
+[data-inbox-pane="triage"] .tri-row:hover .tri-act, [data-inbox-pane="triage"] .tri-row:focus-within .tri-act { display: flex !important; }
+[data-inbox-pane="triage"] .tri-row { cursor: default; }
+[data-inbox-pane="triage"] .tri-row:hover { background: #f7f9fc; }
+[data-inbox-pane="triage"] .tri-row > .mut { margin-bottom: 0 !important; }
+[data-inbox-pane="triage"] .tri-row:hover > .mut, [data-inbox-pane="triage"] .tri-row:focus-within > .mut { margin-bottom: 7px !important; }
+/* A stuck step is one red mark in the Action queue header, not a card of its own. */
+.ds-stuck { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 6px; background: #fdeceb; color: #b5302a !important; font: 600 12px var(--ds-font); text-decoration: none !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; margin-left: 4px; }
+.ds-stuck::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #b5302a; flex: none; }
+.ds-stuck:hover { background: #f9dcda; }
+.ds-stuck:focus-visible { outline: 2px solid #b5302a; outline-offset: 1px; }
+/* Task rows (owner, 26 Oct, Linear style): a checkbox ticks the task done; one 14px icon gives its state;
+   a late task shows a red due date instead of the word "Overdue". */
+.tsi { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #8593a6; display: inline-block; position: relative; flex: none; box-sizing: border-box; vertical-align: -2px; }
+.tsi[data-s="run"] { border-color: #1b4f94; background: linear-gradient(90deg, #1b4f94 50%, transparent 50%); }
+.tsi[data-s="wait"] { border-color: #be4400; }
+.tsi[data-s="wait"]::before { content: ""; position: absolute; left: 4.5px; top: 1.5px; width: 1.5px; height: 4px; background: #be4400; }
+.tsi[data-s="wait"]::after { content: ""; position: absolute; left: 4.5px; top: 5px; width: 3.5px; height: 1.5px; background: #be4400; }
+.tsi[data-s="done"] { border-color: #0f6e51; background: #0f6e51; }
+.tsi[data-s="done"]::after { content: ""; position: absolute; left: 3.5px; top: 1.5px; width: 3px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+td.tk { width: 52px; white-space: nowrap; }
+td.tk input { width: 15px; height: 15px; margin: 0 8px 0 0; accent-color: #0f6e51; vertical-align: -3px; }
+
+/* Table heads (owner, 26 Oct, from the font-options artifact): pale navy, navy text, sentence case. */
+html.ds-staff table > thead th, html.ds-staff .ds-head, html.ds-staff .cg thead th { background: #eef2f8 !important; color: #1f3b5c !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 600 !important; }
+html.ds-staff .ds-head > span, html.ds-staff .ds-head > span > span, html.ds-staff .mr .h, html.ds-staff .rk.h > span { color: #1f3b5c !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; }
+html.ds-staff .mr[style*="background: #eef2f7"], html.ds-staff .rk.h { background: #eef2f8 !important; }
+html.ds-staff .cnt { white-space: pre; }
+/* Live status pill (owner pick, 26 Oct): one calm place at the top of the screen for work that is running. */
+#ds-island { position: fixed; top: 10px; left: 50%; transform: translateX(-50%) scale(.9); opacity: 0; z-index: 2147482000; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 999px; background: #0f2a4a; color: #fff; font: 600 12.5px var(--ds-font); box-shadow: 0 6px 20px rgba(15, 42, 74, .25); transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap; }
+#ds-island.on { opacity: 1; transform: translateX(-50%) scale(1); }
+#ds-island .sp { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #fff; animation: dsspin .7s linear infinite; }
+#ds-island .ok { width: 14px; height: 14px; border-radius: 50%; background: #2fb37f; position: relative; }
+#ds-island .ok::after { content: ""; position: absolute; left: 4.5px; top: 2px; width: 3px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+@keyframes dsspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #ds-island { transition: none; } #ds-island .sp { animation: none; } }
+/* A new Inbox item slides in at the top and fades its highlight (owner pick: animated list). */
+.tri-row.nw { animation: dsin .45s ease, dshl 1.6s ease; }
+@keyframes dsin { from { transform: translateY(-8px); opacity: 0; } }
+@keyframes dshl { from { background: #e8f0fa; } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .tri-row.nw { animation: none; } }
+/* Client record tabs (owner pick from lcc Client 360): one row of tabs with counts under the client header. */
+.ds-rtabs { display: flex; gap: 2px; border-bottom: 1px solid #e1e7ef; margin-top: -4px; overflow-x: auto; }
+.ds-rtabs a { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; font: 600 13px var(--ds-font); color: #4b5b70 !important; text-decoration: none !important; border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer; }
+.ds-rtabs a b { font-weight: 600; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: #eef2f7; color: #4b5b70; }
+.ds-rtabs a[aria-current="page"] { color: #1b4f94 !important; border-bottom-color: #1b4f94; }
+.ds-rtabs a[aria-current="page"] b { background: #e8f0fa; color: #1b4f94; }
+
+/* ===== Portal refresh (owner, 26 Oct: claude.ai/artifact/RhNoYnFXSJgV1TU4fFrFws) =====
+   Colour lives in small shapes; each colour means one thing; one navy focus per screen; one typeface. */
+:root { --rf-canvas: #f5f6f8; --rf-line: #e3e6eb; --rf-line-soft: #eef0f3; --rf-ink: #16212f; --rf-ink-2: #3f4a59; --rf-muted: #667180;
+  --rf-accent: #2563a8; --rf-accent-soft: #e6effa; --rf-navy: #15263b; --rf-navy-2: #1b3049; --rf-navy-action: #1f3b5c; --rf-navy-tint: #eef2f8; --rf-brand: #e9792f;
+  --rf-ok: #1e7f55; --rf-ok-soft: #e2f3ea; --rf-warn: #a35f00; --rf-warn-soft: #fcefd8; --rf-bad: #be3434; --rf-bad-soft: #fbe6e6; --rf-idle: #56627a; --rf-idle-soft: #eceff4; }
+/* One typeface: Public Sans everywhere, with tabular figures; no mono, no display faces. */
+.mono, [data-ds-sans], [style*="Plex Mono"], [style*="monospace"], .sg, [style*="Space Grotesk"], [style*="Manrope"], [class*="mono"] { font-family: var(--ds-font) !important; letter-spacing: 0 !important; }
+body, table, td, th, .mono { font-variant-numeric: tabular-nums; }
+/* Sentence case: no uppercase labels anywhere. */
+.lbl, .cap, .eyebrow, .kicker, [style*="text-transform: uppercase"], [style*="text-transform:uppercase"], .vps .vps-lbl, .vps small { text-transform: none !important; letter-spacing: 0 !important; }
+/* Status as quiet chips: soft tint behind text of the same hue, with a dot (the design layer marks them). */
+.ds-soft { background: color-mix(in srgb, var(--c) 13%, #fff) !important; color: var(--c) !important; border-color: color-mix(in srgb, var(--c) 28%, #fff) !important; box-shadow: none !important; }
+.ds-soft * { color: inherit !important; }
+/* Cards: white, hairline, 10px corners, a calm head with a tinted 28px icon tile. */
+html.ds-staff .card, html.ds-staff .pa-c { border-radius: 10px !important; border-color: #e3e6eb !important; }
+html.ds-staff .ch { min-height: 52px; }
+/* Greeting: navy band, then a plain white number strip. No colour lines or markers (owner, 26 Oct). */
+html.ds-staff .gk, html.ds-staff .hero .kp { background: #fff !important; }
+html.ds-staff [data-card="greeting"], html.ds-staff .hero, html.ds-staff .gk { border-color: #e3e6eb !important; }
+/* Floating layers: one small Ask VCFO launcher; the mascot lives inside the chat panel. */
+#vp-launch .vpl-char, .botup { display: none !important; }
+/* Dark mode is slate, not black. */
+:root[data-theme="dark"] body, html.dark body { background: #111821; }
+/* Sentence case everywhere (refresh: "replace uppercase mono headings with sentence case"). */
+.st, .lbl, .h, th, .cg th, .tbl th, .mr .h, .page h3, .kcol h3, .cal7 .h, .v7c th, .v7c .st, .grp, .v7c .lbl, .v7c .dtile small, .v7c .dtile .m, .hd, .gh, .v7c .dow, .tlabel, .sth, .rh .k, .rd-g, .now .k, .eb, .sub-h, .pa-h h2, .h b, .asg-h, .vps .vps-lbl, .vps .vps-fh, .upper, .tlv-n > div.ar, .sec td, .scap, .narail h2, .ft-eye, .eye, .dtile small, .ds-head > span, .vh-crumb li { text-transform: none !important; letter-spacing: 0 !important; }
+/* Client summary card (refresh "one summary card"): navy name band, then the five numbers in a white strip;
+   one progress number only, so the SPICe+ ring goes (the sidebar keeps 6/14). */
+.vh-greet { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 90 L70 60 L140 80 L230 40 L310 70 L400 30 L480 62 L600 36 L600 120 L0 120Z' fill='%23fff' fill-opacity='.05'/%3E%3C/svg%3E") right bottom / 70% 100% no-repeat, linear-gradient(100deg, #1b3049, #15263b 70%) !important; padding-bottom: 0 !important; border: 1px solid #15263b; }
+.vh-greet .vh-gtop > div:last-child, .vh-greet > div[style*="height:1px"], .vh-greet > span[style*="height:3px"], .vh-greet > span[style*="height: 3px"] { display: none !important; }
+.vh-greet { border-color: #e3e6eb !important; }
+.vh-greet .mono { color: #9fb2c8 !important; opacity: 1 !important; }
+.vh-greet .vh-stats { background: #fff; border-top: 0 !important; margin: 12px calc(-1 * clamp(14px, 2vw, 18px)) 0; padding: 0 clamp(14px, 2vw, 18px); }
+.vh-greet .vh-stat { flex-direction: column-reverse; align-items: flex-start !important; gap: 2px !important; padding: 10px 22px 10px 0 !important; border-right-color: #e3e6eb !important; }
+.vh-greet .vh-stat .metric { color: #16212f !important; font-size: 20px !important; }
+.vh-greet .vh-stat:nth-child(3) .metric { color: #be3434 !important; }
+.vh-greet .vh-stat > span:last-child { color: #667180; opacity: 1 !important; font-size: 12px !important; }
+.vp-pop small, #vp-chat *, .vps * { font-family: var(--ds-font) !important; letter-spacing: 0 !important; }
+/* 45 · Every card in the refresh's shape (owner, 26 Oct). */
+/* Card head: 52px, a hairline under it, 14.5px title in ink; the icon tile comes from the design layer. */
+section.card > div:first-of-type:has(> h3) { padding: 12px 20px !important; min-height: 52px; box-sizing: border-box; border-bottom: 1px solid #eef0f3; align-items: center !important; }
+section.card > div:first-of-type > h3 { font: 600 14.5px/1.3 var(--ds-font, 'Public Sans'), sans-serif !important; color: #16212f !important; }
+section.card > div:first-of-type ~ div { padding-left: 20px !important; padding-right: 20px !important; }
+section.card > div:first-of-type > .info, section.card > div:first-of-type > span.info { display: none !important; }
+html.ds-staff .ch h2, html.ds-staff .ch .st, html.ds-staff .pa-h h2, html.ds-staff section.ap h2 { font-size: 14.5px !important; font-weight: 600 !important; color: #16212f !important; }
+/* Segmented controls: small inline buttons on a quiet track; the picked one is navy; no sliding thumb. */
+.seg { display: inline-flex !important; width: auto !important; max-width: 100%; flex-wrap: wrap; gap: 2px; padding: 2px !important; border-radius: 8px !important; background: #f5f6f8 !important; box-shadow: none !important; border: 1px solid #e3e6eb; grid-template-columns: none !important; }
+.seg > .thumb, .seg > .th { display: none !important; }
+.seg button { flex: none; height: 28px !important; padding: 0 10px !important; border-radius: 6px !important; font: 600 12.5px var(--ds-font, 'Public Sans'), sans-serif !important; color: #667180 !important; background: none !important; gap: 5px !important; }
+.seg button.on, .seg button[aria-selected="true"], .seg button[aria-pressed="true"] { background: #1f3b5c !important; color: #fff !important; }
+.seg .cnt, .seg .c { font: 600 11.5px var(--ds-font, 'Public Sans'), sans-serif !important; color: #98a1ae !important; }
+.seg button.on .cnt, .seg button[aria-selected="true"] .c, .seg button[aria-selected="true"] .cnt { color: #afc3da !important; }
+/* Needs from the client: the tabs sit in the card head, on the right, as in the refresh. */
+[data-sc-name^="v7c_needs"] section.card, [data-sc-name="v7c_reg"] section.card { position: relative; }
+[data-sc-name^="v7c_needs"] section.card > div:nth-of-type(2) > .seg:first-child, [data-sc-name="v7c_reg"] section.card > div:nth-of-type(2) > .seg:first-child { position: absolute; top: 11px; right: 20px; }
+[data-sc-name^="v7c_needs"] section.card > div:nth-of-type(2) > .seg:first-child + div, [data-sc-name="v7c_reg"] section.card > div:nth-of-type(2) > .seg:first-child + div { margin-top: 0 !important; }
+[data-sc-name^="v7c_needs"] section.card > div:nth-of-type(2) > div > div:first-child, [data-sc-name="v7c_reg"] section.card > div:nth-of-type(2) > div > div:first-child { border-top: 0 !important; }
+/* What SBC is doing: soft bars in category colours; no info icons or link buttons in the rows. */
+[data-sc-name^="v7c_sbc"] .info, [data-sc-name^="v7c_sbc"] a[aria-label^="Open"] { display: none !important; }
+[data-sc-name^="v7c_sbc"] section.card > div:nth-of-type(2) > div:first-child { border-top: 0 !important; }
+[data-sc-name^="v7c_sbc"] section.card > div:nth-of-type(2) > div:nth-child(5n+1) .bar > span { background: #2563a8 !important; }
+[data-sc-name^="v7c_sbc"] section.card > div:nth-of-type(2) > div:nth-child(5n+2) .bar > span { background: #6a4fb6 !important; }
+[data-sc-name^="v7c_sbc"] section.card > div:nth-of-type(2) > div:nth-child(5n+3) .bar > span { background: #0f7c86 !important; }
+[data-sc-name^="v7c_sbc"] section.card > div:nth-of-type(2) > div:nth-child(5n+4) .bar > span { background: #46a87a !important; }
+/* Rows inside cards: the first row under a head has no extra rule. */
+section.card > div:first-of-type + div > div:first-child[style*="border-top"] { border-top: 0 !important; }
+/* Greeting numbers with an icon: the label sits above the number. */
+.vh-greet .vh-stat[data-ds-kic] { padding: 12px 24px 12px 0 !important; margin-right: 22px !important; }
+html.ds-staff .gk > a[data-ds-kic], html.ds-staff .hero .kp > span[data-ds-kic] { padding: 12px 24px 12px 0 !important; }
+/* Card heads never wrap: the title gives way before the tabs do. */
+section.card > div:first-of-type:has(> h3) { flex-wrap: nowrap !important; }
+section.card > div:first-of-type > h3 { min-width: 0; white-space: nowrap; }
+section.card > div:first-of-type .seg button { padding: 0 8px !important; }
+/* Steps: phase rows are flat rows with a 6px bar and the count chip (refresh "phase accordion"). */
+details.stp-g { border: 0 !important; border-top: 1px solid #eef0f3 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; margin: 0 -20px !important; padding: 0 20px !important; }
+details.stp-g:first-child { border-top: 0 !important; }
+details.stp-g[open] { background: #fafbfd !important; }
+details.stp-g > summary { display: flex !important; align-items: center; gap: 12px !important; min-height: 46px; padding: 0 !important; background: none !important; border: 0 !important; }
+details.stp-g > summary > .rt { order: 1; }
+details.stp-g > summary::after { content: ""; order: 2; flex: none; width: 140px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--ds-pc, #2563a8) var(--ds-p, 0%), #eef0f3 var(--ds-p, 0%)); }
+details.stp-g > summary > .chip { order: 3; width: 108px !important; }
+section.card > div:has(> details.stp-g) { gap: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+/* Table heads: navy tint with a hairline under them, never a dark rule (owner, 26 Oct). */
+thead th, .ds-head, .cg th, .tbl th, .v7c th { border-bottom: 1px solid #e3e6eb !important; }
+/* Wide staff tables scroll inside their card instead of spilling past it. */
+html.ds-staff section.card > table, html.ds-staff section.card > div > table { max-width: 100%; }
+/* No accent line on top of cards (owner, 26 Oct). */
+.card.acc::before, .card.acc::after { display: none !important; }
+/* Incorporation: the four charts sit in one strip with hairline dividers (refresh "stats strip"). */
+.dg { gap: 0 !important; border: 1px solid #e3e6eb; border-radius: 10px; overflow: hidden; background: #fff; }
+.dg > .card { border: 0 !important; border-left: 1px solid #eef0f3 !important; border-radius: 0 !important; box-shadow: none !important; }
+.dg > .card:first-child { border-left: 0 !important; }
+/* Incorporation timeline rows: a small chevron opens the steps; the name opens the phase; no Open button. */
+.phh .stb { width: 24px !important; height: 24px !important; min-width: 0 !important; padding: 0 !important; font-size: 0 !important; gap: 0 !important; justify-content: center !important; border-radius: 6px !important; }
+.phh .stb svg { width: 14px; height: 14px; }
+.phh .ob { display: none !important; }
+.phh .pnm { cursor: pointer; }
+.phh .pnm:hover .tx { color: #2563a8; }
+/* Compliance calendar: hairline grid, navy-tint weekday row, today in soft blue with a blue inset (refresh calendar). */
+.cal .day { border-color: #e3e6eb !important; }
+.cal .day.today, .cal .day[aria-current="date"] { box-shadow: inset 0 0 0 2px #2563a8 !important; background: #e6effa !important; }
+.cal .dow { background: #eef2f8 !important; color: #1f3b5c !important; border-color: #e3e6eb !important; }
+.cal-scroll, .cal { border-color: #e3e6eb !important; }
+/* Important alerts and What is next, as in the refresh "attention list": full-width rows with hairlines,
+   a 44px date tile tinted by urgency, the title, the chip on the right; the urgent row has a soft red wash
+   from the left with a red edge and a small navy action. */
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) { padding: 0 20px !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > * { margin: 0 -20px !important; padding: 13px 20px !important; border: 0 !important; border-top: 1px solid #eef0f3 !important; border-radius: 0 !important; gap: 12px !important; flex-wrap: nowrap !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > :first-child { border-top: 0 !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > .tipw:first-child { background: linear-gradient(90deg, #fbe6e6, rgba(251, 230, 230, 0) 65%) !important; box-shadow: inset 3px 0 0 #be3434 !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) .info { display: none !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) .rt { font: 600 13.5px/1.35 var(--ds-font, 'Public Sans'), sans-serif !important; color: #16212f !important; }
+/* Date tiles */
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) { width: 44px !important; height: auto !important; padding: 5px 0 4px !important; border: 1px solid color-mix(in srgb, var(--c) 30%, #fff) !important; border-radius: 6px !important; background: color-mix(in srgb, var(--c) 10%, #fff) !important; gap: 1px !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) .metric { font: 650 16px/1.1 var(--ds-font, 'Public Sans'), sans-serif !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) > span:last-child { font: 600 10.5px/1.1 var(--ds-font, 'Public Sans'), sans-serif !important; opacity: .85; }
+/* The urgent row's tile: the date (What is next) or the alert mark (Important alerts) in red. */
+[data-sc-name="v7c_next"] section.card > div:nth-of-type(2) > .tipw:first-child > div:nth-of-type(1) { flex: none; width: 44px; box-sizing: border-box; text-align: center !important; padding: 5px 0 4px; border: 1px solid #f2c6c6; border-radius: 6px; background: #fbe6e6; }
+[data-sc-name="v7c_next"] section.card > div:nth-of-type(2) > .tipw:first-child > div:nth-of-type(1) .metric { font: 650 16px/1.1 var(--ds-font, 'Public Sans'), sans-serif !important; color: #be3434 !important; }
+[data-sc-name="v7c_next"] section.card > div:nth-of-type(2) > .tipw:first-child > div:nth-of-type(1) .lbl { font: 600 10.5px/1.1 var(--ds-font, 'Public Sans'), sans-serif !important; color: #be3434 !important; opacity: .85; }
+[data-sc-name^="v7c_alerts"] section.card > div:nth-of-type(2) > .tipw:first-child > svg { flex: none; width: 44px !important; height: 40px !important; padding: 11px 13px; box-sizing: border-box; border: 1px solid #f2c6c6; border-radius: 6px; background: #fbe6e6; color: #be3434; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > .tipw:first-child > div { min-width: 0 !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) .tipw:first-child .btn-p { flex: none; height: 28px !important; padding: 0 12px !important; border-radius: 6px !important; background: #1f3b5c !important; border-color: #1f3b5c !important; color: #fff !important; font: 600 12.5px var(--ds-font, 'Public Sans'), sans-serif !important; box-shadow: none !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) .chip { flex: none; }
+/* Tabs in a card head never wrap; when the head is too narrow the counts give way (design layer adds .ds-tight). */
+section.card > div:first-of-type .seg { flex-wrap: nowrap !important; flex: none; }
+.seg.ds-tight .cnt, .seg.ds-tight .c { display: none !important; }
+section.card > div:first-of-type > h3 { overflow: hidden; text-overflow: ellipsis; }
+/* Date tile colour by urgency, read from the tile's own colour variable. */
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) { --c: #2563a8; color: var(--c) !important; box-shadow: none !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"])[style*="var(--due"] { --c: #a35f00; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"])[style*="var(--over"] { --c: #be3434; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"])[style*="var(--up"], :is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"])[style*="var(--muted"] { --c: #56627a; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) * { color: var(--c) !important; }
+/* Recent activity: the same full-width rows with hairlines. */
+[data-sc-name^="v7c_activity"] section.card > div:nth-of-type(2) { padding: 0 20px !important; }
+[data-sc-name^="v7c_activity"] section.card > div:nth-of-type(2) > div { margin: 0 -20px !important; padding: 11px 20px !important; border-top: 1px solid #eef0f3 !important; }
+[data-sc-name^="v7c_activity"] section.card > div:nth-of-type(2) > div:first-child { border-top: 0 !important; }
+:is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) .tipw:first-child .btn-p { width: auto !important; min-width: 0 !important; }
+/* ---- Fixes for the ✗ and ◐ items in REFRESH-DIFF.md (owner, 26 Oct: "fix everything") ---- */
+/* 9, 47 · Main buttons are navy. */
+[data-ds-blue] { background: #1f3b5c !important; border-color: #1f3b5c !important; color: #fff !important; box-shadow: none !important; }
+[data-ds-blue]:hover { background: #18304c !important; }
+/* Owner chips: 96px, soft, with a dot. */
+[data-ds-own] { width: 96px !important; min-width: 0 !important; justify-content: center !important; display: inline-flex !important; align-items: center; gap: 6px; height: 22px; border-radius: 5px !important; font: 600 12px var(--ds-font, 'Public Sans'), sans-serif !important; box-sizing: border-box; flex: none; border: 0 !important; box-shadow: none !important; }
+[data-ds-own]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+[data-ds-own="client"] { background: #fcefd8 !important; color: #a35f00 !important; }
+[data-ds-own="firm"] { background: #e6effa !important; color: #2563a8 !important; }
+[data-ds-own="mca"] { background: #efeafb !important; color: #6a4fb6 !important; }
+.chip.stw[data-ds-own]::before { margin: 0; }
+/* 25 · Company IDs: "Private" is a quiet chip; the show button is soft navy. */
+[data-sc-name="v7c_ids"] .chip[style*="var(--navy)"] { background: #eceff4 !important; color: #56627a !important; }
+[data-sc-name="v7c_ids"] button[aria-label^="Show"], [data-sc-name="v7c_ids"] button[aria-label^="Hide"] { background: #eef2f8 !important; color: #1f3b5c !important; }
+/* 26, 28 and every client card: rows run the full width with a hairline between them. */
+section.card > div:first-of-type ~ div > [style*="border-top"][style*="var(--hair)"] { margin-left: -20px !important; margin-right: -20px !important; padding-left: 20px !important; padding-right: 20px !important; border-top-color: #eef0f3 !important; }
+section.card > div:first-of-type ~ div > [style*="var(--hair)"]:first-child, section.card > div:first-of-type ~ div > .lbl + [style*="var(--hair)"] { border-top-color: transparent !important; }
+.rd-r { margin: 0 -20px !important; padding: 10px 20px !important; border-radius: 0 !important; border-top: 1px solid #eef0f3; }
+.rd-g + .rd-r { border-top: 0; }
+.rd-g { margin: 10px 0 2px !important; font: 600 11.5px var(--ds-font, 'Public Sans'), sans-serif !important; color: #98a1ae !important; }
+.rd-ft { background: #fbe6e6 !important; color: #be3434 !important; border-radius: 5px !important; }
+/* 28 · Post-incorporation setup: 6px bars on a quiet track. */
+[data-sc-name="v7c_postinc"] .tipw { height: 6px !important; border-radius: 3px !important; box-shadow: none !important; background: #eef0f3 !important; }
+[data-sc-name="v7c_postinc"] .tipw > span:not(.tt) { border-radius: 3px !important; }
+[data-sc-name="v7c_postinc"] .lbl { color: #667180 !important; font: 600 11.5px var(--ds-font, 'Public Sans'), sans-serif !important; }
+/* 40 · Action queue: empty cells are blank, counts are soft chips. */
+.ds-row button[style*="cursor: default"] { background: transparent !important; }
+.ds-row button[style*="cursor: default"]::after { content: "–"; color: #d5dbe3; font-weight: 500; }
+.ds-row button.ds-soft { font-weight: 650 !important; height: 26px !important; max-width: 64px; margin: 0 auto; }
+/* 45 · Phase progress: a 6px bar per phase with the count under it. */
+.ds-pcell { background: none !important; border: 0 !important; height: auto !important; display: flex !important; flex-direction: column; align-items: flex-start !important; gap: 4px; color: #3f4a59 !important; font: 600 12px var(--ds-font, 'Public Sans'), sans-serif !important; }
+.ds-pcell::before { content: ""; align-self: stretch; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--pc) var(--p), #eef0f3 var(--p)); }
+.ds-pcell[data-done] { color: #1e7f55 !important; }
+/* 46 · Clients × filings: not applicable is blank; upcoming is a light cell. */
+.fc[style*="repeating-linear-gradient"] { background: transparent !important; box-shadow: none !important; }
+.fc[style*="repeating-linear-gradient"]::after { content: "–"; color: #d5dbe3; }
+.fc[style*="236, 239, 244"] { background: #f5f6f8 !important; }
+/* 49 · Wide tables fit their card. */
+html.ds-staff .tbl { width: 100% !important; min-width: 0 !important; margin-left: 0 !important; margin-right: 0 !important; }
+html.ds-staff .tbl td, html.ds-staff .tbl th { padding-left: 10px !important; padding-right: 10px !important; }
+html.ds-staff .tbl .chip.sol { width: auto !important; min-width: 0 !important; max-width: 128px; }
+/* 17 · Client home timeline in the refresh Gantt shape: 46px rows with hairlines, a status circle before each
+   phase, 16px rounded bars (green done, blue current, grey planned) and an orange COI diamond. */
+.vh-tl div[style*="grid-template-columns: 150px"] { grid-template-columns: 210px minmax(0, 1fr) !important; }
+.vh-tl div[style*="inset: 0px 0px 0px 150px"] { left: 210px !important; }
+.vh-tl div[style*="grid-template-columns: 150px"][style*="height: 30px"] { height: 46px !important; border-top: 1px solid #eef0f3; }
+.vh-tl div[style*="grid-template-columns: 150px"][style*="height: 30px"] > div { height: 46px !important; }
+.vh-tl .rt { display: flex !important; align-items: center; gap: 10px; font: 600 13.5px var(--ds-font, 'Public Sans'), sans-serif !important; color: #16212f !important; }
+.vh-tl .rt::before { content: ""; flex: none; width: 20px; height: 20px; border-radius: 50%; box-sizing: border-box; box-shadow: inset 0 0 0 1.5px #d5dbe3; background: #fff center / 12px no-repeat; }
+.vh-tl div:has(> div > .tipw[style*="var(--ok)"]) > .rt::before { box-shadow: none; background-color: #e2f3ea; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e7f55' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E"); }
+.vh-tl div:has(> div > .tipw[style*="var(--prog)"]) > .rt::before { box-shadow: inset 0 0 0 2px #2563a8; background: #e6effa radial-gradient(circle, #2563a8 0 3px, transparent 3.5px); }
+.vh-tl .tipw[style*="top: 5px"] { top: 50% !important; bottom: auto !important; height: 16px !important; margin-top: -8px; border-radius: 6px !important; }
+.vh-tl .tipw[style*="var(--ok)"] { background: #46a87a !important; }
+.vh-tl .tipw[style*="var(--prog)"] { background: #2563a8 !important; }
+.vh-tl .tipw[style*="var(--up)"] { background: #eceff4 !important; }
+.vh-tl .tipw[aria-label="COI"] { width: 12px !important; height: 12px !important; margin: -6px 0 0 -6px; border-radius: 2px !important; transform: rotate(45deg); background: #e9792f !important; }
+.vh-tl .cap { font: 600 12.5px var(--ds-font, 'Public Sans'), sans-serif !important; color: #667180 !important; }
+.vh-tl .mono.cap { font-size: 11.5px !important; color: #98a1ae !important; }
+html.ds-staff section.card > .sc { padding-left: 0 !important; padding-right: 0 !important; }
+html.ds-staff section.card > .sc .tbl td:first-child, html.ds-staff section.card > .sc .tbl th:first-child { padding-left: 20px !important; }
+html.ds-staff section.card > .sc .tbl td:last-child, html.ds-staff section.card > .sc .tbl th:last-child { padding-right: 20px !important; }
+/* Card heads with an icon tile keep the title on one line. */
+[data-ds-ic] { white-space: nowrap; }
+/* Wide staff tables: cells wrap so every column fits in the card. */
+html.ds-staff .tbl td { white-space: normal !important; }
+html.ds-staff .tbl .pb, html.ds-staff .tbl .prog { min-width: 0 !important; }
+/* Team cards: contact buttons are soft, not solid. */
+.btn.wa, a[aria-label^="WhatsApp"][style*="var(--ok)"] { background: #e2f3ea !important; color: #1e7f55 !important; border-color: #c9e7d6 !important; }
+.btn.wa:hover { background: #d3ecdf !important; }
+/* 12 · Dark mode: slate surfaces, and every colour the refresh layer fixes in light mode has a dark twin. */
+html[data-theme="dark"] { --ds-dk-ink: #e6eaf0; --ds-dk-mut: #9aa7b8; --ds-dk-line: #263140; --ds-dk-panel: #18202b; --ds-dk-raised: #1f2935; }
+html[data-theme="dark"] :is(section.card > div:first-of-type > h3, .vh-tl .rt, .rt, .stp-ph, details.stp-g > summary, .vh-greet .vh-stat .metric, .cs-v, .cs-l div) { color: var(--ds-dk-ink) !important; }
+html[data-theme="dark"] :is(.vh-greet .vh-stat > span:last-child, .vh-tl .cap, .rd-g, [data-sc-name="v7c_postinc"] .lbl) { color: var(--ds-dk-mut) !important; }
+html[data-theme="dark"] section.card > div:first-of-type:has(> h3), html[data-theme="dark"] .rd-r, html[data-theme="dark"] details.stp-g, html[data-theme="dark"] .vh-tl div[style*="height: 30px"], html[data-theme="dark"] .phr, html[data-theme="dark"] thead th, html[data-theme="dark"] .ds-head { border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] section.card > div:first-of-type ~ div > [style*="var(--hair)"], html[data-theme="dark"] :is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"], [data-sc-name^="v7c_activity"]) section.card > div:nth-of-type(2) > * { border-top-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] .vh-greet { border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] .vh-greet .vh-stats { background: var(--ds-dk-panel) !important; }
+html[data-theme="dark"] .vh-greet .vh-stat { border-right-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] details.stp-g[open] { background: var(--ds-dk-raised) !important; }
+html[data-theme="dark"] details.stp-g > summary::after, html[data-theme="dark"] [data-sc-name="v7c_postinc"] .tipw { background-color: #2a3442 !important; }
+html[data-theme="dark"] details.stp-g > summary::after { background: linear-gradient(90deg, var(--ds-pc, #6fa3e0) var(--ds-p, 0%), #2a3442 var(--ds-p, 0%)) !important; }
+/* Tabs */
+html[data-theme="dark"] .seg { background: var(--ds-dk-raised) !important; border-color: #2a3442 !important; }
+html[data-theme="dark"] .seg button { color: var(--ds-dk-mut) !important; }
+html[data-theme="dark"] .seg button.on, html[data-theme="dark"] .seg button[aria-selected="true"] { background: #2b4766 !important; color: #fff !important; }
+/* Chips, tiles and soft blocks mix with the dark panel, and their text is lifted so it reads. */
+html[data-theme="dark"] .ds-soft, html[data-theme="dark"] .stw { background: color-mix(in srgb, var(--c) 22%, #18202b) !important; color: color-mix(in srgb, var(--c) 55%, #fff) !important; border-color: color-mix(in srgb, var(--c) 40%, #18202b) !important; }
+html[data-theme="dark"] [data-ds-own="client"] { background: rgba(227, 160, 64, .16) !important; color: #f2c27a !important; }
+html[data-theme="dark"] [data-ds-own="firm"] { background: rgba(111, 163, 224, .16) !important; color: #9cc3ef !important; }
+html[data-theme="dark"] [data-ds-own="mca"] { background: rgba(160, 130, 230, .16) !important; color: #c4b2f2 !important; }
+html[data-theme="dark"] :is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) { background: color-mix(in srgb, var(--c) 18%, #18202b) !important; border-color: color-mix(in srgb, var(--c) 40%, #18202b) !important; }
+html[data-theme="dark"] :is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > div > :is(.tipw, div[style*="width: 44px"]) * { color: color-mix(in srgb, var(--c) 55%, #fff) !important; }
+html[data-theme="dark"] :is([data-sc-name^="v7c_alerts"], [data-sc-name="v7c_next"]) section.card > div:nth-of-type(2) > .tipw:first-child { background: linear-gradient(90deg, rgba(190, 52, 52, .22), rgba(190, 52, 52, 0) 65%) !important; }
+html[data-theme="dark"] [data-sc-name="v7c_next"] section.card > div:nth-of-type(2) > .tipw:first-child > div:nth-of-type(1), html[data-theme="dark"] [data-sc-name^="v7c_alerts"] section.card > div:nth-of-type(2) > .tipw:first-child > svg { background: rgba(190, 52, 52, .2) !important; border-color: rgba(221, 98, 98, .45) !important; }
+html[data-theme="dark"] [data-sc-name="v7c_next"] section.card > div:nth-of-type(2) > .tipw:first-child > div:nth-of-type(1) * { color: #f29b9b !important; }
+html[data-theme="dark"] [data-sc-name="v7c_ids"] .chip[style*="var(--navy)"] { background: #2a3442 !important; color: var(--ds-dk-mut) !important; }
+html[data-theme="dark"] [data-sc-name="v7c_ids"] button[aria-label^="Show"], html[data-theme="dark"] [data-sc-name="v7c_ids"] button[aria-label^="Hide"] { background: #2a3442 !important; color: var(--ds-dk-ink) !important; }
+html[data-theme="dark"] .rd-ft { background: rgba(190, 52, 52, .2) !important; color: #f29b9b !important; }
+/* Timelines */
+html[data-theme="dark"] .vh-tl .rt::before { background-color: var(--ds-dk-panel); box-shadow: inset 0 0 0 1.5px #3a4656; }
+html[data-theme="dark"] .vh-tl .tipw[style*="var(--up)"], html[data-theme="dark"] .gbar.s-up { background: #2a3442 !important; }
+html[data-theme="dark"] .gbar.s-active { background: rgba(37, 99, 168, .2) !important; box-shadow: inset 0 0 0 1px rgba(111, 163, 224, .45) !important; }
+html[data-theme="dark"] .si.up { background: transparent !important; box-shadow: inset 0 0 0 1.5px #3a4656 !important; }
+html[data-theme="dark"] .si.done { background: rgba(70, 168, 122, .2) !important; color: #8fdcb4 !important; }
+html[data-theme="dark"] .dg { background: var(--ds-dk-panel) !important; border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] .dg > .card { border-left-color: var(--ds-dk-line) !important; }
+/* Calendar */
+html[data-theme="dark"] .cal .day { border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] .cal .day.today, html[data-theme="dark"] .cal .day[aria-current="date"] { background: rgba(37, 99, 168, .2) !important; box-shadow: inset 0 0 0 2px #6fa3e0 !important; }
+html[data-theme="dark"] .cal .dow { background: var(--ds-dk-raised) !important; color: var(--ds-dk-mut) !important; border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] .cal-scroll, html[data-theme="dark"] .cal { border-color: var(--ds-dk-line) !important; }
+/* Icon tiles sit a little quieter on slate. */
+html[data-theme="dark"] [data-ds-ic]::before, html[data-theme="dark"] [data-ds-kic]::before { filter: saturate(.85) brightness(.92); }
+html[data-theme="dark"] section.ctd { background: var(--ds-dk-panel) !important; border-color: var(--ds-dk-line) !important; color: var(--ds-dk-ink) !important; }
+html[data-theme="dark"] section.ctd * { color: inherit; }
+/* 14 · Phone screens: card heads in sentence case; the client greeting is a navy band with a white number strip. */
+.ch h2 { text-transform: none !important; letter-spacing: 0 !important; font-weight: 600 !important; font-size: 14.5px !important; color: #16212f; }
+section.greet { display: flex; flex-direction: column; padding-bottom: 0 !important; }
+section.greet::before { display: none !important; }
+section.greet .ring { display: none !important; }
+section.greet .top { order: 0; }
+section.greet .rep { order: 1; margin: 12px 0 14px !important; }
+section.greet .stats { order: 2; background: #fff; margin: 0 -14px !important; gap: 0 !important; }
+section.greet .stats + .stats { margin-top: 0 !important; }
+section.greet .stat { background: transparent !important; border: 0 !important; border-radius: 0 !important; border-top: 1px solid #eef0f3 !important; border-right: 1px solid #eef0f3 !important; padding: 10px 14px !important; text-align: left; display: flex !important; flex-direction: column-reverse; align-items: flex-start; gap: 2px; box-shadow: none !important; }
+section.greet .stats .stat:last-child { border-right: 0 !important; }
+section.greet .stat b { color: #16212f !important; font-size: 18px !important; }
+section.greet .stat span { color: #667180 !important; }
+section.greet .btn-g { background: #fff !important; color: #15263b !important; border-color: #fff !important; }
+html[data-theme="dark"] section.greet .stats { background: var(--ds-dk-panel); }
+html[data-theme="dark"] section.greet .stat { border-color: var(--ds-dk-line) !important; }
+html[data-theme="dark"] section.greet .stat b, html[data-theme="dark"] .ch h2 { color: var(--ds-dk-ink) !important; }
+.card.t::before { display: none !important; }
+.vh-tl [data-ds-done] > .rt::before { box-shadow: none; background-color: #e2f3ea; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e7f55' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E"); }

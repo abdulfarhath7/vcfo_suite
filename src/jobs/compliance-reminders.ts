@@ -6,6 +6,7 @@ import {
 } from '@/db/repositories/client-compliances';
 import { sendEmail } from '@/lib/email/send-email';
 import { todayIso } from '@/lib/client-portal/compliances';
+import { PAUSED, skipWhenPaused, withRunNow } from '@/jobs/dev-controls';
 
 /**
  * Scheduled: the client portal "Remind me" on a filing (compliance_reminders).
@@ -19,8 +20,9 @@ import { todayIso } from '@/lib/client-portal/compliances';
  */
 export const complianceReminders = inngest.createFunction(
   { id: 'compliance-reminders' },
-  { cron: '0 7 * * *' },
+  withRunNow('compliance-reminders', '0 7 * * *'),
   async ({ step }) => {
+    if (await skipWhenPaused(step)) return PAUSED;
     const due = await step.run('load-due', async () => systemListDueComplianceReminders(todayIso()));
     let sent = 0;
     for (const r of due) {

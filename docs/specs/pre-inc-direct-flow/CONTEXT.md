@@ -16,7 +16,7 @@ If `HEAD` is different, do the Phase 0 audit before you trust a file path or a l
 4. Each repository function takes an `AuthContext` and limits data by role.
 5. Never show the word "intern" to a user. The UI label is "Project Lead".
 6. No new database table. No migration. All new state goes into `engagements.checklist_state` (jsonb).
-7. A new key on a step slice has three mandatory edits in `src/lib/checklist-state-key.ts`: `ITEM_META_KEYS`, `ChecklistItemStateSlice`, and the object that `normalizeChecklistItemSlice` returns. If one edit is missing, the key is silently deleted on the next save.
+7. A new key on a step slice has three mandatory edits in `src/lib/checklist/checklist-state-key.ts`: `ITEM_META_KEYS`, `ChecklistItemStateSlice`, and the object that `normalizeChecklistItemSlice` returns. If one edit is missing, the key is silently deleted on the next save.
 8. Do not change post-incorporation, registration, FEMA or compliance behaviour. All new rules apply only to the step ids in section 3.
 9. Do not change `src/data/checklist.ts` step ids, order or phases.
 10. Do not show a board resolution draft to a client. Do not send an email or a notification on autosave.
@@ -53,25 +53,25 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 | Topic | Fact | Where |
 |---|---|---|
 | Active pre-incorporation steps | Part A: `pre-1` to `pre-5`. Part B: `pre-13`, `pre-14`, `pre-15`, `pre-16`, `pre-7`, `pre-9`, `pre-10`, `pre-11`, `pre-12`. `pre-6` and `pre-8` are legacy and are in no phase. | `src/data/checklist.ts` `PRE_INC_PHASES` |
-| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist-responses.ts`, `src/lib/checklist-pre1-validation.ts`, `src/lib/nic-2008.ts` |
-| Client edit | The client cannot edit a step today. `isMilestoneFormReadOnly` returns true for `variant === 'client'`. | `src/lib/checklist-field-access.ts` |
-| Client fields | `filterFieldsByViewer` removes each `filledBy: 'intern'` field from the client form. | `src/lib/checklist-field-access.ts` |
+| NIC code | `nicCode` (5 digits, required) and `nicBusinessType` (derived) are in `pre-1`, section "Business Description". This is the "Name Application" phase. | `src/lib/checklist/checklist-responses.ts`, `src/lib/checklist/checklist-pre1-validation.ts`, `src/lib/incorporation/nic-2008.ts` |
+| Client edit | The client cannot edit a step today. `isMilestoneFormReadOnly` returns true for `variant === 'client'`. | `src/lib/checklist/checklist-field-access.ts` |
+| Client fields | `filterFieldsByViewer` removes each `filledBy: 'intern'` field from the client form. | `src/lib/checklist/checklist-field-access.ts` |
 | Server | `POST /api/engagements/:id/checklist` accepts client `responses`. `POST …/checklist/submit` accepts only the client role. No server route does step validation. | `app/api/engagements/[id]/checklist/**` |
-| Approvals today | Four mechanisms: lead request to manager (`lead_manager_request`), manager Accept / Reject (`reviewChecklistItem`), client Approve / Request a change (`approval` sub-state), "Request client to fill" (`clientFillRequest`). | `src/lib/checklist-item-review.ts`, `checklist-step-approval.ts`, `checklist-client-fill.ts`, `src/db/repositories/engagements.ts` |
-| Visibility | A lead draft is hidden from the firm until the lead requests approval. A step is hidden from the client until the manager accepts. | `src/lib/checklist-visibility.ts` |
-| Gate | `gateChecklistSteps` gives edit access to one owner party for each step. The lead can open and edit all steps. | `src/lib/checklist-step-gate.ts` |
+| Approvals today | Four mechanisms: lead request to manager (`lead_manager_request`), manager Accept / Reject (`reviewChecklistItem`), client Approve / Request a change (`approval` sub-state), "Request client to fill" (`clientFillRequest`). | `src/lib/checklist/checklist-item-review.ts`, `checklist-step-approval.ts`, `checklist-client-fill.ts`, `src/db/repositories/engagements.ts` |
+| Visibility | A lead draft is hidden from the firm until the lead requests approval. A step is hidden from the client until the manager accepts. | `src/lib/checklist/checklist-visibility.ts` |
+| Gate | `gateChecklistSteps` gives edit access to one owner party for each step. The lead can open and edit all steps. | `src/lib/checklist/checklist-step-gate.ts` |
 | Accept side effects | Manager Accept sets `status: 'completed'`, `deliveredToClientAt`, copies `dateOfIncorporation` from `pre-12` to the engagement, and starts the WhatsApp `coi_issued` message for `pre-12`. | `reviewChecklistItem`, `src/lib/email/notify-engagement-event.ts` |
 | BR | One row for each engagement in `engagement_board_resolutions`, status `draft` or `finalized`. The lead can finalize with no manager. Finalize releases the BR to the client. | `src/db/repositories/board-resolution.ts`, `app/api/engagements/[id]/board-resolution/finalize/route.ts` |
 | BR generation checks | Generation stops when `pre-1` is not submitted (`STEP1_INCOMPLETE`) or when a field is missing (`MISSING_FIELDS`). NIC code is not in the missing-field list. | `src/lib/api/board-resolution-errors.ts` |
-| BR and empty NIC | When `nicCode` is empty, the BR prints `DEFAULT_NIC_CODES` (62099 and 62020). This is a silent wrong value. | `src/lib/board-resolution.ts` `resolveNicCodesClause` |
+| BR and empty NIC | When `nicCode` is empty, the BR prints `DEFAULT_NIC_CODES` (62099 and 62020). This is a silent wrong value. | `src/lib/board-resolution/board-resolution.ts` `resolveNicCodesClause` |
 | BR for manager | A manager cannot open the BR editor. The `pre-2` panel shows status text only. | `src/components/incorporation/Phase1StepPanelRoutePanels.tsx` |
 | Form errors | Red border classes exist (`border-danger`). They show only after a failed lead Submit. Tabs have no error marker. `FormErrorSummary` is off in the tab layout (`SHOW_INTERN_FORM_ERROR_SUMMARY = false`). There is no `aria-invalid`. "Request manager approval" does no validation. | `src/views/incorporation/*` |
 | Validators | `runStepValidation` is an if-chain in `src/views/incorporation/milestone-response-form-utils.ts`. A copy is in `useMilestoneResponseFormState.tsx`. Steps with no validator return `ok: true`. | same |
-| Repeat lists | `type: 'repeat'` exists. Storage: `responses[groupId] = "e1a2b3c4,e5f6a7b8"` and `responses["groupId.entryId.fieldId"]`. Used by `pre-15` `directors` and `pre-16` `subscribers`. | `src/lib/checklist-repeat.ts`, `src/views/incorporation/RepeatGroupEditor.tsx` |
+| Repeat lists | `type: 'repeat'` exists. Storage: `responses[groupId] = "e1a2b3c4,e5f6a7b8"` and `responses["groupId.entryId.fieldId"]`. Used by `pre-15` `directors` and `pre-16` `subscribers`. | `src/lib/checklist/checklist-repeat.ts`, `src/views/incorporation/RepeatGroupEditor.tsx` |
 | Notifications | Bell rows are made on the server in `notifyEngagementEvent`. The `notifications` table has no actor column. The payload is JSON in `description`. | `src/lib/email/notify-engagement-event.ts`, `src/db/repositories/notifications.ts` |
 | Recipients | `resolveEngagementRecipients` returns all clients, leads, managers, firm admins and progress-CC addresses. | `src/db/repositories/engagement-recipients.ts` |
-| Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client-overview.ts`, `src/db/repositories/client-overview.ts` |
-| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist-responses.ts` |
+| Client dashboard | Home is `/app/client/overview`. It shows no directors, capital or subscribers. | `src/views/client/Overview.tsx`, `src/lib/client/client-overview.ts`, `src/db/repositories/client-overview.ts` |
+| Data for the dashboard | Capital: `pre-1` `authorisedShareCapital`, `paidUpShareCapital`, `nominalValuePerEquityShare`. Share classes: `pre-13`. Directors: `readProposedDirectors(state)` in `src/lib/incorporation/proposed-directors.ts`. Subscribers: `pre-16` repeat group `subscribers`. | `src/lib/checklist/checklist-responses.ts` |
 
 ---
 
@@ -79,7 +79,7 @@ These facts replace the older text in the Claude Project file `CLAUDE-CONTEXT.md
 
 ### 3.1 One policy module
 
-Make `src/lib/pre-inc-direct-flow.ts` (pure, no imports from `src/db` or `src/views`). All other files read the policy from this module. Do not write a step id list in a second file.
+Make `src/lib/incorporation/pre-inc-direct-flow.ts` (pure, no imports from `src/db` or `src/views`). All other files read the policy from this module. Do not write a step id list in a second file.
 
 ```ts
 /** Steps that the client and the project lead fill and submit with no approval. */
@@ -196,7 +196,7 @@ Manager view of `pre-2` (new UI in `Phase1StepPanelRoutePanels.tsx`): reuse `Boa
 
 ### 3.6 Missing-field behaviour
 
-Make `src/lib/checklist-step-validation.ts`. Move `runStepValidation` there. The form hook and the server both import it. Delete the copy in the hook.
+Make `src/lib/checklist/checklist-step-validation.ts`. Move `runStepValidation` there. The form hook and the server both import it. Delete the copy in the hook.
 
 | Rule | Detail |
 |---|---|
@@ -234,7 +234,7 @@ Also change the `STEP1_INCOMPLETE` text to: "Submit Client Details first. The bo
 | Do not use the id `nicCodes` | `pre1.nicCodes` is an old free-text key that `resolveNicCodesClause` reads. |
 | Auto-fill | In `setField`, when the id is `additionalNicCodes.<entry>.code`, fill `additionalNicCodes.<entry>.businessType` from `nicBusinessType()`. Give the input `inputMode="numeric"`, `maxLength={5}`. |
 | Validation | Each code: 5 digits (error). Code not in NIC-2008 (warning). A code equal to the main code or to a second entry (error "This NIC code is already in the list."). |
-| Reader | Add `readNicCodes(pre1): Array<{ code: string; description: string }>` to `src/lib/nic-2008.ts`. Main code first. |
+| Reader | Add `readNicCodes(pre1): Array<{ code: string; description: string }>` to `src/lib/incorporation/nic-2008.ts`. Main code first. |
 | BR | `resolveNicCodesClause` joins all codes: `62011- Description, & 62020- Description` (same format as `DEFAULT_NIC_CODES`). |
 | Assist profile | `src/lib/assist-profile/build.ts` and `types.ts`: keep `company.nicCode`. Add `company.additionalNicCodes`. Update the parity test. |
 | Other documents | Search `src/lib/incorporation-docs/` and `src/lib/doc-pack/` for a NIC or main-object placeholder. If one exists, use `readNicCodes`. |
@@ -242,7 +242,7 @@ Also change the `STEP1_INCOMPLETE` text to: "Submit Client Details first. The bo
 
 ### 3.9 Visibility
 
-In `src/lib/checklist-visibility.ts`: a direct-flow step is released to the firm and to the client at all times. Drafts are shared, because both parties fill the step.
+In `src/lib/checklist/checklist-visibility.ts`: a direct-flow step is released to the firm and to the client at all times. Drafts are shared, because both parties fill the step.
 
 - Keep the redaction of the slice key `notes` (staff notes) for the client.
 - `pre-2` keeps the current rules.
@@ -250,7 +250,7 @@ In `src/lib/checklist-visibility.ts`: a direct-flow step is released to the firm
 
 ### 3.10 Gate
 
-In `src/lib/checklist-step-gate.ts`, for a direct-flow step:
+In `src/lib/checklist/checklist-step-gate.ts`, for a direct-flow step:
 
 | Viewer | Current step | Later step |
 |---|---|---|
@@ -272,7 +272,7 @@ Hide these on a direct-flow step. Keep them on all other steps.
 
 Server: `requestClientFill`, `decideClientFillRequest`, `clientApproveStep` and `reviewChecklistItem` refuse a direct-flow step with a clear error.
 
-Every reader of a pending manager decision must use `isAwaitingManagerDecision(itemId, slice)`. It returns false for a direct-flow step. Readers: `src/lib/pending-approvals.ts`, `src/lib/project-stuck.ts`, `src/lib/intern-work.ts`, `src/lib/intern-dashboard.ts`, `src/lib/client-progress-board.ts`, `src/views/admin/FirmDashboard.tsx`, `src/lib/ask/tools/staff.ts`.
+Every reader of a pending manager decision must use `isAwaitingManagerDecision(itemId, slice)`. It returns false for a direct-flow step. Readers: `src/lib/projects/pending-approvals.ts`, `src/lib/projects/project-stuck.ts`, `src/lib/intern/intern-work.ts`, `src/lib/intern/intern-dashboard.ts`, `src/lib/client/client-progress-board.ts`, `src/views/admin/FirmDashboard.tsx`, `src/lib/ask/tools/staff.ts`.
 
 ### 3.12 Steps that are in approval now (old data)
 
@@ -313,7 +313,7 @@ New event `step_submitted` for a direct-flow step. It replaces `client_submitted
 |---|---|
 | Component | New `src/components/client/overview/ClientCompanySnapshot.tsx`, built with `ClientCard`. |
 | Position | In `src/views/client/Overview.tsx`, main column, first card, before `ClientPhaseBars`. Shown before and after incorporation. |
-| Data | Add `company` to `ClientOverview` in `src/lib/client-overview.ts`. Build it in `src/db/repositories/client-overview.ts` from the state after `checklistStateForViewer`. |
+| Data | Add `company` to `ClientOverview` in `src/lib/client/client-overview.ts`. Build it in `src/db/repositories/client-overview.ts` from the state after `checklistStateForViewer`. |
 | Design | Do the design-system audit in `docs/context/notes/design-system.md` first. Use existing tokens and `ClientCard`. No new colours. |
 
 ```ts
@@ -354,8 +354,8 @@ Commit: `docs(pre-inc): audit for direct flow`
 
 ### Phase 1 — Policy module and shared validation
 
-1. Add `src/lib/pre-inc-direct-flow.ts` with tests (`pre-inc-direct-flow.test.ts`).
-2. Add `src/lib/checklist-step-validation.ts`. Move `runStepValidation`. Add the generic required check. Remove the copy in the hook.
+1. Add `src/lib/incorporation/pre-inc-direct-flow.ts` with tests (`pre-inc-direct-flow.test.ts`).
+2. Add `src/lib/checklist/checklist-step-validation.ts`. Move `runStepValidation`. Add the generic required check. Remove the copy in the hook.
 3. Add the new slice keys (rule 0.7).
 
 Preserve: all validator results for current test fixtures. `src/data/checklist.ts`.
@@ -468,6 +468,6 @@ Commit: `docs(pre-inc): record direct flow and close the spec`
 - Do not send an email or a bell row on autosave.
 - Do not remove the client sequence lock on the server.
 - Do not change approvals outside the pre-incorporation steps in section 3.1.
-- Do not write a step id list outside `src/lib/pre-inc-direct-flow.ts`.
+- Do not write a step id list outside `src/lib/incorporation/pre-inc-direct-flow.ts`.
 - Do not import `db` in a view, a component or a `src/lib` file.
 - Do not delete `pre-6`, `pre-8` or `reg-2` from the catalog.

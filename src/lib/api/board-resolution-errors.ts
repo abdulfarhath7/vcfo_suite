@@ -1,14 +1,14 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   parseDirectorCount,
   parsePre1BoardResolutionDate,
   PRE1_DIRECTOR_FIRST_NAME_IDS,
   PRE1_DIRECTOR_INDIA_RESIDENT_IDS,
   PRE1_DIRECTOR_LAST_NAME_IDS,
-} from '@/lib/checklist-pre1-validation';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { BoardResolutionSaveError } from '@/lib/engagements-db';
+} from '@/lib/checklist/checklist-pre1-validation';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { BoardResolutionSaveError } from '@/lib/projects/engagements-db';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
 
 export const BOARD_RESOLUTION_ERROR_CODES = {
@@ -293,7 +293,7 @@ export function validateBoardResolutionGeneration(
   }
 }
 
-export const STEP1_INCOMPLETE_MESSAGE =
+const STEP1_INCOMPLETE_MESSAGE =
   'Submit Client Details first. The board resolution uses this data.';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {

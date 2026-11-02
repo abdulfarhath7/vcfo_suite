@@ -1,93 +1,121 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { createElement, type CSSProperties, type ReactNode } from 'react';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import {
+  Award,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  CheckCheck,
+  CheckCircle2,
+  CircleAlert,
+  CircleDashed,
+  Gauge,
+  KeyRound,
+  ListChecks,
+  MessageSquareWarning,
+  Rocket,
+  TrendingUp,
+  Trophy,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { surfaceCssVars } from '@/lib/shell-appearance';
-import { DashHeroSettings } from '@/components/dash/DashHeroSettings';
 import { ClientLocaleNowLabel } from '@/hooks/use-client-locale-date';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { surfaceCssVars } from '@/lib/shell/shell-appearance';
+import { CARD_HEAD_ICONS } from '@/components/common/CardHeadTile';
+import { tileIconName, type TileIconName } from '@/lib/ui/card-head-icon';
 
 /**
- * THE greeting card. One component, one look, every dashboard — lead, manager,
- * firm admin, super admin and client all render this.
+ * THE home card (VCFO Spectrum "H3 tight", rules R-17 and R-18, owner decision D-17). One
+ * component, one look, every dashboard: lead, manager, firm admin, super admin, developer and
+ * client all render this. About 160px tall on the colour wash, in two rows:
+ *   1. The greeting at 22px with the live date on the same line (staff), or the 36px company
+ *      tile, the name, the stage tag and the step count (client, through `lead`, `stage` and
+ *      `steps`). The scope switch (`scope`) and the actions (children) sit on the right. The
+ *      card has no settings button (the prototype has none): the skin, sidebar and motion
+ *      settings live in Profile > Appearance, and the card reads the skin from there. On a phone the client name
+ *      takes the first line and the rest share the second (M-30).
+ *   2. The number tiles (KP1 on the wash): a 14px icon and 12.5px label, the number at 22px, a
+ *      12px note, and a 64 x 26 trend line beside the number when `trend` is given (48 x 22 on
+ *      phones). Tiles sit in a grid with a 170px minimum; on a phone they go two in a row and an
+ *      odd last tile spans both columns as one short line. A tile with `href` is a link to the
+ *      list behind it (E-05), `onClick` opens a drill instead, and `how` shows a white "How is
+ *      this counted?" card on hover and focus (E-04).
  *
- * Anatomy, top to bottom, is the lead dashboard's and does not vary by role:
- *   1. the live local time on the left, the settings popover on the right,
- *   2. serif title, with an optional line under it, and an optional ring,
- *   3. a white hairline,
- *   4. the stat strip — serif value + small label, hairline separators.
- *
- * The headline numbers belong in that strip. Do not add a band of metric cards
- * under the hero: it prints the same numbers twice and is the drift the client
- * dashboard was called out for.
- *
- * Hero skin (solid / gradient / custom image), ambient motion and reduced
- * motion all come from `useShellAppearance`, so a user's greeting-card
- * preference follows them across every dashboard rather than applying to one.
+ * The headline numbers belong in those tiles. Do not add a band of metric cards under the
+ * card: it prints the same numbers twice. The old progress ring is shown as one more tile,
+ * so callers that pass `ring` keep the information without the decoration.
  */
-
-function DashHeroRing({
-  value,
-  total,
-  caption,
-  display,
-}: {
-  value: number;
-  /** Ring fills value/total; omit for a full ring. */
-  total?: number;
-  caption: string;
-  /** Text inside the ring when it should differ from `value` (e.g. "85%"). */
-  display?: string;
-}) {
-  const pct = !total || total <= 0 ? 1 : Math.min(1, value / total);
-  const c = 2 * Math.PI * 18;
-  return (
-    <div
-      className="flex shrink-0 flex-col items-center"
-      role="img"
-      aria-label={`${display ?? value}${total ? ` of ${total}` : ''} ${caption}`}
-    >
-      <svg width="52" height="52" viewBox="0 0 44 44" className="shrink-0" aria-hidden>
-        <circle cx="22" cy="22" r="18" fill="none" stroke="rgb(255 255 255 / 0.16)" strokeWidth="3.5" />
-        <circle
-          cx="22"
-          cy="22"
-          r="18"
-          fill="none"
-          stroke="white"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeDasharray={`${pct * c} ${c}`}
-          transform="rotate(-90 22 22)"
-          className="transition-[stroke-dasharray] duration-700 ease-out"
-        />
-        <text
-          x="22"
-          y="26"
-          textAnchor="middle"
-          fill="white"
-          fontSize="11"
-          fontWeight="700"
-          fontFamily="var(--font-serif)"
-        >
-          {display ?? value}
-        </text>
-      </svg>
-      <p className="mt-1 text-[9px] font-medium uppercase tracking-[0.14em] text-white/55">
-        {caption}
-      </p>
-    </div>
-  );
-}
 
 export type DashHeroStat = {
   label: string;
   value: number | string;
+  /** The 14px glyph before the label. By default it comes from the label (`tileIconName`). */
+  icon?: LucideIcon;
+  /** Small text right after the number: "/ 6", "+2", "−3", "+4 pts". */
+  of?: string;
   href?: string;
-  /** Paint the value at full strength when it demands attention. */
+  /** Opens a drill or panel instead of a page (client home). Ignored when `href` is set. */
+  onClick?: () => void;
+  /** Paint the value in the danger colour when it demands attention. */
   hot?: boolean;
+  /** Paint the value in the done colour (R-18). */
+  good?: boolean;
+  /** Short line under the number ("3 new today", "2 clients"). `note` wins when both are given. */
+  sub?: string;
+  /** Short line under the number. */
+  note?: string;
+  /** Trend line points, oldest first, the last one the live count. Drawn only with two or more points. */
+  trend?: number[];
+  /**
+   * The tile has a trend line but no past values yet: a flat muted line with this short label
+   * ("No history yet") is drawn instead, so every tile of a row keeps the same shape.
+   */
+  trendEmpty?: string;
+  /** Trend colour; by default red for `hot`, green for `good`, blurple otherwise. */
+  trendTone?: 'bad' | 'ok' | 'teal' | 'warn' | 'accent';
+  /** A small share bar under the number, in percent. */
+  bar?: number;
+  /** E-04: one sentence on how the number is counted, shown in a white card on hover and focus. */
+  how?: string;
 };
+
+const TREND: Record<NonNullable<DashHeroStat['trendTone']>, string> = {
+  bad: 'text-danger-mid',
+  ok: 'text-positive-mid',
+  teal: 'text-waiting-mid',
+  warn: 'text-warning-mid',
+  accent: 'text-brand',
+};
+
+/** The tile glyphs beyond the card-head set (prototype home tiles). */
+const TILE_ICONS: Record<Exclude<TileIconName, keyof typeof CARD_HEAD_ICONS>, LucideIcon> = {
+  building: Building2,
+  rocket: Rocket,
+  'list-checks': ListChecks,
+  'calendar-days': CalendarDays,
+  'calendar-check': CalendarCheck,
+  'check-check': CheckCheck,
+  'check-circle': CheckCircle2,
+  'circle-alert': CircleAlert,
+  'message-warning': MessageSquareWarning,
+  award: Award,
+  key: KeyRound,
+  gauge: Gauge,
+  'trending-up': TrendingUp,
+  trophy: Trophy,
+  'circle-dashed': CircleDashed,
+};
+
+function tileIcon(label: string): LucideIcon {
+  const name = tileIconName(label);
+  return name in CARD_HEAD_ICONS
+    ? CARD_HEAD_ICONS[name as keyof typeof CARD_HEAD_ICONS]
+    : TILE_ICONS[name as keyof typeof TILE_ICONS];
+}
 
 export function DashHero({
   title,
@@ -95,123 +123,280 @@ export function DashHero({
   subtitle,
   stats,
   ring,
+  lead,
+  stage,
+  steps,
+  scope,
   children,
 }: {
-  /** The big line — a greeting or the page's identity. */
+  /** The big line: a greeting, or the company's name on the client home. */
   title: string;
-  /** Extra chips appended after the time, on the top line. */
+  /** Extra chips after the date on the first row. */
   meta?: ReactNode;
-  /** Small line under the title (scope, state, who owns it). */
+  /** Small text after the title row's date (scope, state, who owns it). */
   subtitle?: ReactNode;
   stats?: DashHeroStat[];
-  /** Right-side ring; render anything else via children instead. */
+  /** Shown as one more number tile (no ring is drawn). */
   ring?: { value: number; total?: number; caption: string; display?: string };
+  /** Client home: the company tile before the name (see `DashHeroCompanyTile`). The date is not shown then. */
+  lead?: ReactNode;
+  /** Client home: the stage chip after the name. */
+  stage?: ReactNode;
+  /** Client home: the step count after the stage chip ("6 of 25 steps"). */
+  steps?: ReactNode;
+  /** The scope switch (All / Incorporating / Compliance), on the right of the first row (D-17). */
+  scope?: ReactNode;
+  /** The main action, on the right of the first row. */
   children?: ReactNode;
+  /**
+   * Kept so older callers still compile. The card no longer shows a settings button (the
+   * prototype has none); every setting it held is in Profile > Appearance.
+   * @deprecated
+   */
+  settings?: boolean;
 }) {
-  const { hero, motion, reduceMotion } = useShellAppearance();
-  const showAmbient = motion === 'ambient' && !reduceMotion && !hero.image;
+  /* The old ring becomes the last number, unless a stat already shows it. A "% complete"
+     caption reads "Complete" with the value as a percentage. */
+  const ringStat: DashHeroStat | null = ring
+    ? ring.caption.trim().startsWith('%')
+      ? { label: sentence(ring.caption.replace('%', '')), value: `${ring.display ?? ring.value}%`, good: true }
+      : { label: sentence(ring.caption), value: ring.display ?? ring.value, good: true }
+    : null;
+  const repeats = ringStat && (stats ?? []).some((st) => st.label.trim().toLowerCase() === ringStat.label.toLowerCase());
+  const strip: DashHeroStat[] = [...(stats ?? []), ...(ringStat && !repeats ? [ringStat] : [])];
+  /* The skin from Profile > Appearance: the colour wash by default, or a photo under a veil. */
+  const { hero } = useShellAppearance();
+  const skin = hero.image ? (surfaceCssVars(hero, 'hero') as CSSProperties) : undefined;
+  const actions =
+    scope || children ? (
+      <div className={cn('flex flex-wrap items-center gap-2 sm:gap-2.5', lead && 'ml-auto')}>
+        {scope}
+        {children}
+      </div>
+    ) : null;
 
   return (
-    <section
-      className="lead-hero px-5 py-4 sm:px-6 sm:py-5"
-      data-hero-image={hero.image ? 'true' : 'false'}
-      style={surfaceCssVars(hero, 'hero')}
-    >
-      {showAmbient ? (
-        <div className="lead-hero-fx" aria-hidden>
-          {Array.from({ length: 14 }, (_, i) => (
-            <span
-              key={i}
-              className={i % 3 === 0 ? 'twinkle' : ''}
-              style={{
-                left: `${(i * 37 + 11) % 100}%`,
-                width: 4 + (i % 3),
-                height: 4 + (i % 3),
-                borderRadius: '50%',
-                background: `rgba(255,255,255,${0.22 + (i % 5) * 0.06})`,
-                animationDuration: `${5 + (i % 5) * 0.8}s`,
-                animationDelay: `${-((i * 0.41) % 6)}s`,
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      <div className="relative z-[2]">
-        <div className="flex items-center justify-between gap-3">
-          <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] font-medium tracking-[0.04em] text-white/65">
-            <ClientLocaleNowLabel />
-            {meta}
-          </p>
-          <DashHeroSettings />
-        </div>
-
-        <div className="mt-1 flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="serif min-w-0 break-words text-[1.7rem] font-semibold leading-[1.15] tracking-tight text-white [text-shadow:0_1px_16px_rgb(15_23_42_/_0.35)] sm:text-[1.95rem]">
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[13px] leading-snug text-white/85">
-                {subtitle}
-              </p>
-            ) : null}
+    <section style={skin} data-hero-image={hero.image ? 'true' : undefined} className="bg-wash flex flex-col gap-3 rounded-md border-2 border-line px-4 pb-4 pt-3.5 md:px-5" aria-label="Summary">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        {lead ? (
+          // M-30: on a phone the name takes the first line; the chip, step count and actions share the second.
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-2 sm:gap-x-3">
+            <span className="flex min-w-0 max-w-full items-center gap-3 max-sm:basis-full">
+              {lead}
+              <h1 className="min-w-0 truncate text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
+            </span>
+            {stage}
+            {steps ? <span className="whitespace-nowrap text-[12.5px] text-wash-ink-2">{steps}</span> : null}
+            {meta ? <span className="flex items-center gap-2 text-[12.5px] text-wash-ink-2">{meta}</span> : null}
+            {subtitle ? <span className="flex min-w-0 items-center gap-1.5 truncate text-[12.5px] text-wash-ink-2">{subtitle}</span> : null}
+            {actions}
           </div>
-          {ring ? (
-            <DashHeroRing
-              value={ring.value}
-              total={ring.total}
-              caption={ring.caption}
-              display={ring.display}
-            />
-          ) : null}
-          {children}
-        </div>
+        ) : (
+          <>
+            <div className="flex min-w-0 flex-[1_1_300px] flex-wrap items-baseline gap-x-3 gap-y-1">
+              <h1 className="min-w-0 truncate whitespace-nowrap text-[22px] font-medium leading-7 tracking-[-0.01em] text-ink">{title}</h1>
+              <span className="whitespace-nowrap text-[12.5px] text-wash-ink-2">
+                <ClientLocaleNowLabel />
+              </span>
+              {meta ? <span className="flex items-center gap-2 self-center text-[12.5px] text-wash-ink-2">{meta}</span> : null}
+              {subtitle ? <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-wash-ink-2">{subtitle}</span> : null}
+            </div>
+            {actions}
+          </>
+        )}
       </div>
 
-      {stats && stats.length > 0 ? (
-        <>
-          <div className="relative z-[2] mt-3.5 h-px bg-white/12" />
-          <div className="relative z-[2] mt-2.5 flex min-w-0 flex-wrap items-baseline gap-y-1 text-white">
-            {stats.map((stat, i) => {
-              const body = (
-                <>
-                  <span
-                    className={cn(
-                      'serif text-[1.05rem] font-semibold leading-none tabular-nums',
-                      stat.hot ? 'text-white' : 'text-white/95',
-                    )}
-                  >
-                    {stat.value}
-                  </span>
-                  <span
-                    className={cn(
-                      'text-[11px] font-medium tracking-wide',
-                      stat.hot ? 'text-white/90' : 'text-white/58',
-                    )}
-                  >
-                    {stat.label}
-                  </span>
-                </>
-              );
-              const statClass = cn(
-                'inline-flex items-baseline gap-1.5 py-0.5 pr-3.5 text-[12px]',
-                i > 0 && 'border-l border-white/20 pl-3.5',
-                stat.href && 'transition-opacity hover:opacity-80',
-              );
-              return stat.href ? (
-                <Link key={stat.label} href={stat.href} className={statClass}>
-                  {body}
-                </Link>
-              ) : (
-                <span key={stat.label} className={statClass}>
-                  {body}
-                </span>
-              );
-            })}
+      {strip.length > 0 ? (
+        <TooltipPrimitive.Provider delayDuration={350} skipDelayDuration={200}>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
+            {strip.map((stat, i) => (
+              <WashTile key={stat.label} stat={stat} strip={strip.length % 2 === 1 && i === strip.length - 1} />
+            ))}
           </div>
-        </>
+        </TooltipPrimitive.Provider>
       ) : null}
     </section>
   );
+}
+
+/**
+ * R-18 (home card tile): KP1 on the wash. A 14px icon and 12.5px label, the number at 22px, a
+ * 12px note, and a 64 x 26 trend line beside the number when given (48 x 22 on phones).
+ * `strip` is the odd last tile on a phone: it spans both columns as one short line (M-30).
+ */
+function WashTile({ stat, strip }: { stat: DashHeroStat; strip?: boolean }) {
+  const note = stat.note ?? stat.sub;
+  const label = capFirst(stat.label);
+  const tone = stat.trendTone ?? (stat.hot ? 'bad' : stat.good ? 'ok' : 'accent');
+  const glyph = createElement(stat.icon ?? tileIcon(stat.label), {
+    width: 14,
+    height: 14,
+    strokeWidth: 1.6,
+    className: 'flex-none text-ink-muted',
+    'aria-hidden': true,
+  });
+  const inner = (
+    <>
+      <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12.5px] font-medium text-ink-2">
+        {glyph}
+        <span className="truncate">{label}</span>
+      </span>
+      <span className={cn('flex min-w-0 items-start gap-2 sm:gap-2.5', strip && 'max-sm:flex-none')}>
+        <span className={cn('flex min-w-0 flex-1 flex-col gap-1', strip && 'max-sm:flex-row max-sm:items-baseline max-sm:gap-2')}>
+          <b
+            className={cn(
+              'whitespace-nowrap text-[22px] font-medium leading-none tabular-nums',
+              strip && 'max-sm:text-[18px]',
+              stat.hot ? 'text-danger' : stat.good ? 'text-positive' : 'text-ink',
+            )}
+          >
+            {stat.value}
+            {stat.of ? <small className="ml-1 text-[13px] font-medium text-ink-muted">{stat.of}</small> : null}
+          </b>
+          {stat.bar !== undefined ? (
+            <span className="block h-1 w-full max-w-[96px] overflow-hidden rounded-bar bg-surface-sunken" aria-hidden>
+              <i className="block h-full rounded-bar bg-positive-mid" style={{ width: `${Math.max(0, Math.min(100, stat.bar))}%` }} />
+            </span>
+          ) : null}
+          {note ? <span className="truncate text-[12px] text-ink-muted">{note}</span> : null}
+        </span>
+        {stat.trend && stat.trend.length > 1 ? (
+          <TrendLine points={stat.trend} className={cn(TREND[tone], strip && 'max-sm:hidden')} />
+        ) : stat.trendEmpty ? (
+          <span className={cn('flex flex-none flex-col items-end gap-0.5 self-end', strip && 'max-sm:hidden')} title={stat.trendEmpty}>
+            <svg viewBox="0 0 64 26" className="h-[14px] w-12 text-line-strong sm:w-16" aria-hidden>
+              <line x1="2" y1="13" x2="62" y2="13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeDasharray="3 3" />
+            </svg>
+            <span className="whitespace-nowrap text-[10.5px] leading-none text-ink-faint">{stat.trendEmpty}</span>
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+  const cls = cn(
+    'wash-tile flex min-w-0 flex-col gap-1 px-3 py-2.5 text-left sm:px-3.5',
+    strip && 'max-sm:col-span-2 max-sm:flex-row max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:py-2',
+    (stat.href || stat.onClick) &&
+      'transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25',
+  );
+  const aria = `${label}: ${stat.value}${stat.of ? ` ${stat.of}` : ''}${note ? `, ${note}` : ''}. Open the list`;
+  const tile = stat.href ? (
+    <Link href={stat.href} className={cls} aria-label={aria}>
+      {inner}
+    </Link>
+  ) : stat.onClick ? (
+    <button type="button" onClick={stat.onClick} className={cls} aria-label={aria}>
+      {inner}
+    </button>
+  ) : (
+    // A tile with `how` takes focus so keyboard users can open its info card; it does nothing on activation.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+    <div className={cls} tabIndex={stat.how ? 0 : undefined}>
+      {inner}
+    </div>
+  );
+  if (!stat.how) return tile;
+  // E-04 (TP2): a white card says how the number is counted and, for a link, that it opens the list (E-05).
+  return (
+    <TooltipPrimitive.Root>
+      <TooltipPrimitive.Trigger asChild>{tile}</TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content
+          side="bottom"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          className="z-50 max-w-[260px] rounded-md border-1.5 border-line bg-surface-raised px-3 py-2.5 text-[13px] text-ink shadow-float"
+        >
+          <b className="block text-[12px] font-medium text-ink-muted">How is this counted?</b>
+          <span className="mt-0.5 block leading-snug">{stat.how}</span>
+          {stat.href || stat.onClick ? (
+            <span className="mt-1.5 block text-[12px] font-medium text-brand-text">Click to open the list</span>
+          ) : null}
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
+}
+
+/** 64 x 26 trend line (48 x 22 on phones) with a soft area and a dot on the last point. */
+function TrendLine({ points, className }: { points: number[]; className?: string }) {
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const xy = points.map((p, i) => [2 + (i / (points.length - 1)) * 60, 22 - ((p - min) / (max - min || 1)) * 18] as const);
+  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const [lx, ly] = xy[xy.length - 1]!;
+  return (
+    <svg viewBox="0 0 64 26" className={cn('mb-0.5 h-[22px] w-12 flex-none self-end sm:h-[26px] sm:w-16', className)} aria-hidden>
+      <path d={`M2,26 L${line.split(' ').join(' L')} L62,26 Z`} fill="currentColor" fillOpacity=".14" />
+      <polyline points={line} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={lx} cy={ly} r="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * The client home's 36px company tile (R-17): a 6px square with the company's initials in
+ * blurple text on the soft blurple ground (13px, weight 700), or its logo when there is one.
+ * Pass it as `lead`.
+ */
+export function DashHeroCompanyTile({ name, src }: { name: string; src?: string | null }) {
+  const initials =
+    name
+      .replace(/\b(private|pvt|limited|ltd|llp|inc|india)\b\.?/gi, '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]!.toUpperCase())
+      .join('') || name.slice(0, 1).toUpperCase();
+  return (
+    <span
+      className="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-md bg-brand-soft text-[13px] font-bold text-brand-text"
+      aria-hidden
+    >
+      {src ? (
+        // A company logo from our own storage, not a remote CDN, so <img> is correct.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initials
+      )}
+    </span>
+  );
+}
+
+const STAGE_TONE = {
+  done: 'bg-positive-soft text-positive',
+  accent: 'bg-brand-soft text-brand-text',
+  warn: 'bg-warning-soft text-warning',
+  idle: 'bg-upcoming-soft text-upcoming',
+} as const;
+
+/**
+ * The client home's stage tag after the name (R-17): a 20px soft tag at 11.5px with no dot.
+ * Green "Incorporated" (`tone="done"`) or blurple "Incorporating" (`tone="accent"`). Pass it as `stage`.
+ */
+export function DashHeroStage({ children, tone = 'accent' }: { children: ReactNode; tone?: keyof typeof STAGE_TONE }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex h-5 flex-none items-center whitespace-nowrap rounded-md px-2 text-[11.5px] font-medium',
+        STAGE_TONE[tone],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Sentence case for a label that arrives in lower case ("projects" becomes "Projects"). */
+function capFirst(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** "DONE TODAY" or "done today" becomes "Done today" for the strip label. */
+function sentence(s: string): string {
+  const t = s.trim().toLowerCase();
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }

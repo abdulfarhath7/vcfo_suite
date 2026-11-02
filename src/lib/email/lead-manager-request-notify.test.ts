@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   internPatchAsksManagerEmail,
   leadManagerRequestNotifyPlan,

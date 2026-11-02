@@ -24,7 +24,7 @@ function terms(text: string): string[] {
 }
 
 /** Keyword overlap score of a topic against a query (topics are few; no index needed). */
-export function scoreTopic(topic: Topic, query: string): number {
+function scoreTopic(topic: Topic, query: string): number {
   const q = new Set(terms(query));
   if (q.size === 0) return 0;
   const hay = new Set(terms(`${topic.title} ${topic.question} ${topic.body.normal}`));
@@ -33,7 +33,7 @@ export function scoreTopic(topic: Topic, query: string): number {
   return score / q.size;
 }
 
-export function matchTopics(
+function matchTopics(
   query: string,
   ctx: ApplicabilityContext | null,
   audience: 'client' | 'staff',

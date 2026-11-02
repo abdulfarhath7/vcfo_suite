@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -47,9 +47,9 @@ import {
 import type { Engagement } from '@/data/engagements';
 import { ChangeClientDialog } from '@/components/admin/ChangeClientDialog';
 import { DeleteProjectDialog } from '@/components/admin/DeleteProjectDialog';
-import { createChangeRequestInDb } from '@/lib/project-admin-db';
-import { changeRequestDiffValue } from '@/lib/project-change-request-types';
-import { projectEditAccess } from '@/lib/project-edit-policy';
+import { createChangeRequestInDb } from '@/lib/projects/project-admin-db';
+import { changeRequestDiffValue } from '@/lib/projects/project-change-request-types';
+import { projectEditAccess } from '@/lib/projects/project-edit-policy';
 
 type DialogKind =
   | 'add-manager'
@@ -298,14 +298,14 @@ export function ProjectActionsMenu({
             onClick={(ev) => ev.stopPropagation()}
             className={
               className ??
-              'rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground'
+              'rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink data-[state=open]:bg-surface-sunken data-[state=open]:text-ink'
             }
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52" onClick={(ev) => ev.stopPropagation()}>
-          <DropdownMenuLabel className="max-w-48 truncate text-[11px] font-normal text-muted-foreground">
+          <DropdownMenuLabel className="max-w-48 truncate text-[11px] font-normal text-ink-muted">
             {engagement.companyName}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -317,7 +317,7 @@ export function ProjectActionsMenu({
                   router.push(`${adminProjectPath(engagement, staffBase)}/edit`)
                 }
               >
-                <Pencil className="mr-2 h-3.5 w-3.5 text-accent-emerald" />
+                <Pencil className="mr-2 h-3.5 w-3.5 text-ink-muted" />
                 Edit project details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -328,12 +328,12 @@ export function ProjectActionsMenu({
             <>
               {hasManager ? (
                 <DropdownMenuItem onSelect={() => open('change-manager')}>
-                  <UserRoundCog className="mr-2 h-3.5 w-3.5 text-accent-violet" />
+                  <UserRoundCog className="mr-2 h-3.5 w-3.5 text-ink-muted" />
                   {approvalLabel('Change manager', managerAccess)}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem onSelect={() => open('add-manager')}>
-                  <UserPlus className="mr-2 h-3.5 w-3.5 text-accent-violet" />
+                  <UserPlus className="mr-2 h-3.5 w-3.5 text-ink-muted" />
                   {approvalLabel('Add manager', managerAccess)}
                 </DropdownMenuItem>
               )}
@@ -354,13 +354,13 @@ export function ProjectActionsMenu({
 
           {/* Leads — always allow Add (multi-lead). Change/Delete when any exist. */}
           <DropdownMenuItem onSelect={() => open('add-lead')}>
-            <UserRoundPlus className="mr-2 h-3.5 w-3.5 text-accent-sky" />
+            <UserRoundPlus className="mr-2 h-3.5 w-3.5 text-ink-muted" />
             Add lead
           </DropdownMenuItem>
           {hasLeads ? (
             <>
               <DropdownMenuItem onSelect={() => open('change-lead')}>
-                <UserRoundCog className="mr-2 h-3.5 w-3.5 text-accent-sky" />
+                <UserRoundCog className="mr-2 h-3.5 w-3.5 text-ink-muted" />
                 Change lead
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -377,7 +377,7 @@ export function ProjectActionsMenu({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setStandalone('change-client')}>
-                <UserRoundCog className="mr-2 h-3.5 w-3.5 text-accent-amber" />
+                <UserRoundCog className="mr-2 h-3.5 w-3.5 text-ink-muted" />
                 {approvalLabel('Change client', clientAccess)}
               </DropdownMenuItem>
             </>
@@ -499,7 +499,7 @@ export function ProjectActionsMenu({
                   </SelectContent>
                 </Select>
                 {availableLeads.length === 0 && !internsQuery.isLoading ? (
-                  <p className="mt-2 text-[11px] text-muted-foreground">
+                  <p className="mt-2 text-[11px] text-ink-muted">
                     Every available lead is already on this project.
                   </p>
                 ) : null}

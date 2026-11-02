@@ -1,14 +1,16 @@
 'use client';
 
+import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, Users } from 'lucide-react';
+import { DashSection } from '@/components/dash/DashSection';
 import type { DirectoryPerson } from '@/lib/email/directory-filter';
 import {
   internManagerComposeHref,
   resolveLeadManagers,
   type LeadManagerEngagement,
-} from '@/lib/lead-managers';
+} from '@/lib/intern/lead-managers';
 
 async function fetchInternDirectory(): Promise<DirectoryPerson[]> {
   const res = await fetch('/api/outlook/directory');
@@ -35,46 +37,39 @@ export function LeadManagersCard({
   );
 
   return (
-    <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex min-w-0 items-center gap-2 px-3 pt-2.5">
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
-          <Users className="h-3 w-3" aria-hidden />
-        </span>
-        <h2 className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-[0.06em] text-ink">
-          My managers
-        </h2>
-      </div>
-      <div className="px-3 pb-2.5 pt-1.5">
-        {directoryQuery.isPending ? (
-          <p className="py-1 text-[12px] text-muted-foreground">Loading...</p>
-        ) : directoryQuery.isError ? (
-          <p className="py-1 text-[12px] text-muted-foreground">Could not load.</p>
-        ) : managers.length === 0 ? (
-          <p className="py-1 text-[12px] text-muted-foreground">None assigned.</p>
-        ) : (
-          <ul className="max-h-[11rem] space-y-0.5 overflow-y-auto">
-            {managers.map((manager) => (
-              <li key={manager.id} className="flex min-w-0 items-center gap-2 py-1">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-extrabold leading-tight text-ink">
-                    {manager.name}
-                  </p>
-                  <p className="truncate text-[11px] leading-tight text-muted-foreground">
-                    {manager.email}
-                  </p>
-                </div>
-                <Link
-                  href={internManagerComposeHref(manager.email)}
-                  aria-label={`Email ${manager.name}`}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-primary ring-1 ring-primary/25 transition-colors hover:bg-primary-light"
-                >
-                  <Mail className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+    <DashSection icon={Users} title="My managers" meta={managers.length ? String(managers.length) : undefined} className="h-fit" bodyClassName="p-0">
+      {directoryQuery.isPending ? (
+        <p className="px-4 py-3 text-[13px] text-ink-muted">Loading...</p>
+      ) : directoryQuery.isError ? (
+        <p className="px-4 py-3 text-[13px] text-ink-muted">Could not load.</p>
+      ) : managers.length === 0 ? (
+        <EmptyState title="No manager yet" className="m-4" />
+      ) : (
+        <ul className="max-h-[14rem] overflow-y-auto">
+          {managers.map((manager) => (
+            <li
+              key={manager.id}
+              className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-2.5 first:border-t-0"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13.5px] font-medium leading-tight text-ink">
+                  {manager.name}
+                </p>
+                <p className="mt-0.5 truncate text-[12.5px] leading-tight text-ink-muted">
+                  {manager.email}
+                </p>
+              </div>
+              <Link
+                href={internManagerComposeHref(manager.email)}
+                aria-label={`Email ${manager.name}`}
+                className="grid h-control-sm w-control-sm shrink-0 place-items-center rounded-md border-1.5 border-line-strong bg-surface-raised text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+              >
+                <Mail className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </DashSection>
   );
 }

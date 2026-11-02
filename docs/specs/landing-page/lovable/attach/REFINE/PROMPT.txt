@@ -1,0 +1,6 @@
+Fix only these on /lead/today, nothing else:
+1. 
+2. 
+3. 
+
+(Replace the route and list only the misses after comparing with the old screenshot. Spacing and colour nudges go through Visual Edits instead, free. A wrong hex or size is cheaper to fix by hand in the code view.)

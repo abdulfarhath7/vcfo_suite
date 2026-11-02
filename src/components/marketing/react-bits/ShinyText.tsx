@@ -11,29 +11,14 @@ type ShinyTextProps = {
   shineColor?: string;
 };
 
-/** React Bits–style metallic sheen across text. */
-export default function ShinyText({
-  text,
-  disabled = false,
-  speed = 3,
-  className = '',
-  color = '#78716c',
-  shineColor = '#EFF6FF',
-}: ShinyTextProps) {
+/**
+ * Flat text. The metallic sheen was a text-clipped gradient, which the
+ * token rules forbid; `disabled`, `speed` and `shineColor` are accepted so
+ * existing call sites compile, and `color` is the one thing that still applies.
+ */
+export default function ShinyText({ text, className = '', color = 'oklch(var(--ink-muted))' }: ShinyTextProps) {
   return (
-    <span
-      className={cn('inline-block bg-clip-text text-transparent', className)}
-      style={
-        {
-          backgroundImage: `linear-gradient(120deg, ${color} 0%, ${color} 40%, ${shineColor} 50%, ${color} 60%, ${color} 100%)`,
-          backgroundSize: '200% auto',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          animation: disabled ? undefined : `mkt-shine ${speed}s linear infinite`,
-        } as React.CSSProperties
-      }
-    >
+    <span className={cn('inline-block', className)} style={{ color }}>
       {text}
     </span>
   );

@@ -15,6 +15,8 @@
  * DB columns are text, not enums, on purpose).
  */
 
+import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
+
 /** Chosen events. All Meta category "utility", all outbound-only. */
 export const NOTIFY_EVENTS = [
   'welcome',
@@ -34,6 +36,9 @@ export const NOTIFY_EVENTS = [
   'staff_change_requested',
   /** Every other process email. Variables: company, then the short notice. */
   'process_notice',
+  // G-15: a staff "Remind" on an item the client still owes. Template body
+  // variables: 1 company name, 2 item title.
+  'client_reminder',
 ] as const;
 
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
@@ -59,7 +64,11 @@ export type SkipReason =
   | 'no_template'
   | 'disabled'
   /** The rollout list (WHATSAPP_ALLOWLIST_E164) is on and this number is not on it. */
-  | 'not_allowlisted';
+  | 'not_allowlisted'
+  /** The person switched this event's WhatsApp category off (G-25). */
+  | 'muted'
+  /** Inside the person's quiet hours; the background job waits instead (G-25). */
+  | 'quiet_hours';
 
 /**
  * The slice of a person the WhatsApp guards need.
@@ -73,6 +82,12 @@ export type NotifyRecipient = {
   phoneE164: string | null;
   whatsappOptInAt: Date | null;
   whatsappOptOutAt: Date | null;
+  /**
+   * The person's own WhatsApp categories and quiet hours (`notification_prefs`).
+   * Absent or null means nothing was saved, so every category is on and there
+   * are no quiet hours to respect.
+   */
+  prefs?: WhatsAppGatePrefs | null;
 };
 
 /**

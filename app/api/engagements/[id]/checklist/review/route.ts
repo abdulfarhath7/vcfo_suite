@@ -5,7 +5,7 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { checklistStateForViewer, reviewChecklistItem } from '@/db/repositories/engagements';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { approveBoardResolution } from '@/db/repositories/board-resolution';
-import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

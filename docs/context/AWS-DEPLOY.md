@@ -31,11 +31,11 @@ This file is the engineering deploy checklist. (The Finance architecture pack, `
 
 | Piece | Status |
 |---|---|
-| `infra/*.tf` | Complete for one environment: default VPC + SG, RDS (public, TLS forced), S3 + KMS, Secrets Manager, ECR, IAM, App Runner, SES identity, Budget. Runbook in `infra/README.md`. |
+| `infra/*.tf` | One environment: RDS, S3 + KMS, Secrets Manager (deny-all resource policy on every secret), ECR, IAM, App Runner, SES identity, Budget, AWS Backup plan, and the M7 read-only console grants (`soc-runtime.tf`). Runbook in `infra/README.md`. **Note (M7):** the private network files (`private-db.tf` and others: private subnets, VPC connector, fck-nat NAT instance) exist only on the owner's laptop and are not in git yet; `network.tf` and the RDS comments in git still describe the old public pilot. The live account is private (§11). |
 | `Dockerfile` | Multi-stage, `output: 'standalone'`, RDS CA bundle baked in |
 | App ↔ DB / S3 / Auth | Ready via env (see §4) |
 
-Deployed 2026-09-11 (option B network posture). Every later deploy = push `:latest` to ECR.
+Deployed 2026-09-11 (option B network posture). Since the SOC 2 remediation (October 2026) RDS is private, see §11. Every later deploy = push `:latest` to ECR.
 
 ---
 
@@ -45,11 +45,14 @@ Deployed 2026-09-11 (option B network posture). Every later deploy = push `:late
 Internet
    │
    ▼
-App Runner (or Lightsail container)  ← Next.js (`npm run build` + `next start`)
-   │
-   ├── RDS Postgres 16 (private if possible; public + SG lock for first pilot OK)
+App Runner  ← Next.js (`npm run build` + `next start`)
+   │  VPC connector (private subnets)
+   ├── RDS Postgres 16 — private (PubliclyAccessible=false), TLS forced,
+   │                     password = RDS-managed secret, rotated every 7 days
+   ├── NAT instance (fck-nat t4g.nano, role vcfo-suite-nat) — outbound internet for the
+   │                     VPC (Secrets Manager, Anthropic, Microsoft, Resend)
    ├── S3 private bucket (documents)
-   └── Resend (external HTTPS) — SES later
+   └── Resend / SES (external HTTPS)
 ```
 
 **Backup if App Runner is unavailable for new accounts:** Lightsail container or a single small EC2 + Docker. Same image, same env.
@@ -62,8 +65,8 @@ App Runner (or Lightsail container)  ← Next.js (`npm run build` + `next start`
 
 ### 3.1 Networking (minimum for pilot)
 
-- [ ] Default VPC is fine for first pilot **if** RDS SG only allows the app’s SG / your IP
-- [ ] Later: private subnets + no public RDS (`infra/database.tf` already sets `publicly_accessible = false` — that requires VPC wiring first)
+- [x] Private subnets + no public RDS + App Runner VPC connector + NAT instance (SOC 2, October 2026; files on the owner's laptop, see §1)
+- [ ] Never add `0.0.0.0/0` on 5432 and never set `publicly_accessible = true`, not even for a migration (§11.3)
 
 ### 3.2 RDS Postgres
 
@@ -73,13 +76,12 @@ App Runner (or Lightsail container)  ← Next.js (`npm run build` + `next start`
 - [ ] DB name: `vcfo`
 - [ ] Master user: `vcfo` (password in Secrets Manager / strong random)
 - [ ] Backup retention ≥ 7 days
-- [ ] Security group: inbound **5432** only from app (or your laptop IP for migrate)
+- [ ] Security group: inbound **5432** only from the VPC connector and the NAT instance
+- [x] Master password managed by RDS (`manage_master_user_password`), rotated every 7 days
 
-Connection string shape:
-
-```text
-postgresql://vcfo:PASSWORD@HOST:5432/vcfo?sslmode=require
-```
+There is no connection string in production. The app gets `DB_SECRET_ARN`, `DB_HOST`,
+`DB_PORT`, `DB_NAME` and `DB_USER` and reads the password per new connection
+(`src/db/client.ts`, `src/db/db-password.ts`). `DATABASE_URL` is for local dev only.
 
 ### 3.3 S3 documents bucket
 
@@ -102,10 +104,15 @@ postgresql://vcfo:PASSWORD@HOST:5432/vcfo?sslmode=require
 
 Store in **Secrets Manager** or App Runner encrypted env (not in git / not in image):
 
-- `DATABASE_URL`
-- `AUTH_SECRET`
+- The RDS-managed master secret (`DB_SECRET_ARN`, rotated by RDS every 7 days)
+- `vcfo-suite/AUTH_SECRET` (and `vcfo-suite/AUTH_SECRET_PREVIOUS` during a rotation)
+- `vcfo-suite/CREDENTIALS_ENCRYPTION_KEY`
+- `vcfo-suite/AZURE_AD_CLIENT_SECRET`, `/vcfo/ask-vcfo/anthropic-api-key` (read at runtime, §11.2)
 - `RESEND_API_KEY`
 - S3 keys **only if** not using instance role
+
+The old `vcfo-suite/DATABASE_URL` secret is deleted. Every vCFO secret has a deny-all
+resource policy; only the app role, the admins, the SOC scanner and the RDS role are exempt.
 
 ---
 
@@ -115,8 +122,12 @@ Copy from `.env.example`. Production values:
 
 | Variable | Local | AWS |
 |---|---|---|
-| `DATABASE_URL` | docker Postgres | RDS URL + `?sslmode=require` (from Secrets Manager `vcfo-suite/DATABASE_URL`; process must trust `certs/rds-global-bundle.pem` via `NODE_EXTRA_CA_CERTS` — the Dockerfile does) |
-| `AUTH_SECRET` | random | **new** random (`openssl rand -base64 32`) |
+| `DATABASE_URL` | docker Postgres | **not set** (local dev only) |
+| `DB_SECRET_ARN` / `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` | unset | set by Terraform; the password is read from the RDS-managed secret per connection. The process trusts `certs/rds-global-bundle.pem` via `NODE_EXTRA_CA_CERTS` (the Dockerfile does) |
+| `DB_SSL_SERVERNAME` | unset | unset on App Runner; the RDS endpoint for a laptop script through the SSM tunnel (§11.3) |
+| `AUTH_SECRET` | random | Secrets Manager `vcfo-suite/AUTH_SECRET` (rotate every 90 days, §11.1) |
+| `AUTH_SECRET_PREVIOUS` | unset | only during a rotation: `vcfo-suite/AUTH_SECRET_PREVIOUS` (`auth_secret_previous_enabled`) |
+| `CREDENTIALS_ENCRYPTION_KEY` | optional | Secrets Manager `vcfo-suite/CREDENTIALS_ENCRYPTION_KEY` (`credentials_key_enabled`) |
 | `AUTH_URL` | `http://localhost:3000` | `https://app.yourdomain.com` |
 | `AUTH_TRUST_HOST` | `true` | `true` |
 | `NEXT_PUBLIC_SITE_URL` | localhost | same public HTTPS URL as `AUTH_URL` |
@@ -129,7 +140,11 @@ Copy from `.env.example`. Production values:
 | `RESEND_FROM_EMAIL` | resend.dev OK for tests | `Name <info@sbctrack.in>` |
 | `RESEND_DEV_REDIRECT_TO` | optional locally | **must be unset** |
 | `AZURE_AD_CLIENT_ID` / `AZURE_AD_TENANT_ID` | Azure app values | same (tfvars `azure_ad_*` → App Runner env) |
-| `AZURE_AD_CLIENT_SECRET` | Azure secret value | Secrets Manager `vcfo-suite/AZURE_AD_CLIENT_SECRET` (tfvars `azure_ad_client_secret`, gitignored) |
+| `AZURE_AD_CLIENT_SECRET` | Azure secret value | **not set**; `AZURE_AD_CLIENT_SECRET_SECRET_ID` = the ARN of `vcfo-suite/AZURE_AD_CLIENT_SECRET`, read at runtime |
+| `ANTHROPIC_API_KEY` | API key | **not set**; `ANTHROPIC_API_KEY_SECRET_ID` = the ARN of `/vcfo/ask-vcfo/anthropic-api-key`, read at runtime |
+| `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Entra secret value | **not set**; `AUTH_MICROSOFT_ENTRA_ID_SECRET_ID` (name or ARN) when Microsoft sign-in is on |
+| `BACKUP_PLAN_ID` / `BACKUP_VAULT_NAME` / `RDS_INSTANCE_ID` | unset | set by Terraform for the console's SOC 2 cards |
+| `APP_RUNNER_VPC_CONNECTOR_ARN` / `NAT_INSTANCE_ID` | unset | optional; the console finds both on its own |
 | `NEXT_PUBLIC_ENABLE_DEMO_AUTH` | off | **must be unset / not `true`** |
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `50` | same unless you raise intentionally |
 
@@ -145,15 +160,15 @@ Code already expects this swap:
 
 1. [ ] Provision RDS + S3 + App Runner/Lightsail
 2. [ ] Set production env on the service (§4)
-3. [ ] From a trusted machine with `DATABASE_URL` pointing at RDS:
+3. [ ] Migrate from inside the VPC through the SSM tunnel (§11.3), never by opening RDS:
    ```bash
-   export DATABASE_URL="$(aws secretsmanager get-secret-value --profile vcfo --secret-id vcfo-suite/DATABASE_URL --query SecretString --output text)"
-   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:migrate
-   # optional demo users (weak passwords — change or purge before real users):
-   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run db:seed
+   node scripts/db-env-prod.mjs      # prints the tunnel command and the DB_* exports
+   # terminal 1: run the printed `aws ssm start-session ...` command
+   # terminal 2: paste the exports, then
+   npm run db:migrate
    # compliance calendar stays empty until the generator runs; Inngest cron is
    # not wired on App Runner yet, so run it by hand after creating engagements:
-   NODE_EXTRA_CA_CERTS=certs/rds-global-bundle.pem npm run compliance:generate
+   npm run compliance:generate
    ```
 4. [ ] Open `AUTH_URL` → login as seeded admin
 5. [ ] Smoke test:
@@ -162,7 +177,7 @@ Code already expects this swap:
    - [ ] Manager/admin Accept/Reject
    - [ ] Upload a document (hits S3)
    - [ ] Trigger one progress email (Resend dashboard shows delivery)
-6. [ ] Turn off any public RDS once migrate is done (or lock SG to app only)
+6. [x] RDS is private; nothing to turn off
 
 ---
 
@@ -170,8 +185,8 @@ Code already expects this swap:
 
 Current stubs live under `infra/`. Suggested finish order:
 
-1. [ ] `network.tf` — VPC / subnets / SGs (required for private RDS)
-2. [ ] Wire `database.tf` to those subnets + SG
+1. [x] Private network (VPC connector, NAT instance, private RDS) — on the owner's laptop; commit it to git
+2. [x] `database.tf` on the private subnets (same)
 3. [ ] Keep `storage.tf` (already useful)
 4. [ ] Flesh out `app.tf` — ECR + App Runner + IAM role + secret ARNs
 5. [ ] Uncomment S3 backend in `main.tf` for remote state
@@ -212,3 +227,71 @@ Rough ballpark if you stay small: **~$15–40 / month** (micro RDS + small conta
 **Go to AWS when:** local/LAN pilot is boringly reliable and you need offsite access.
 
 **Stay local when:** still changing KYC/assignment flows daily — deploy churn will slow you down more than hosting helps.
+
+---
+
+## 11. SOC 2 posture, rotation and migrations (M7, 2026-10-30)
+
+Prowler scan, account 600627321277, ap-south-1. What is in place:
+
+| Control | State |
+|---|---|
+| RDS | Private (`PubliclyAccessible=false`). App Runner reaches it through a VPC connector. Outbound internet goes through the fck-nat NAT instance (t4g.nano, role `vcfo-suite-nat`). |
+| DB password | The RDS-managed master secret, rotated every 7 days. The app reads it per new connection and drops the cached value on a login failure (`28P01`). `vcfo-suite/DATABASE_URL` is deleted. |
+| Secrets | Every secret has a deny-all resource policy. Exempt: the app role, the admins, the scanner and the RDS role. |
+| App Runner roles | The trust policies require `aws:SourceAccount`. |
+| Backups | AWS Backup plan `vcfo-suite-db`: daily at 02:00 IST, kept 30 days, in a KMS vault. RDS automated backups stay at 7 days. |
+| Console | Access › Secrets and rotation; Data and costs › Backups (AWS Backup part) and Network. Read-only grants in `infra/soc-runtime.tf`. A card says "Not connected" when the role cannot read the control. |
+
+### 11.1 Accepted exceptions with manual rotation
+
+| Finding | Secret | Every | Next review | How to rotate (no redeploy unless stated) |
+|---|---|---|---|---|
+| 371 | `vcfo-suite/AUTH_SECRET` | 90 days | 31 Jan 2027 | See the steps below. Nobody is signed out. |
+| 372 | `vcfo-suite/AZURE_AD_CLIENT_SECRET` | 6 months | 30 Apr 2027 | Make a new client secret in Entra, then `aws secretsmanager put-secret-value --secret-id vcfo-suite/AZURE_AD_CLIENT_SECRET --secret-string <value>`. The app uses it within 10 minutes, or at once on the first `invalid_client`. Delete the old secret in Entra after a day. |
+| 376 | `/vcfo/ask-vcfo/anthropic-api-key` | 90 days | 31 Jan 2027 | Make a new key in the Anthropic console, `put-secret-value`, then revoke the old key. The app reads the new key within 10 minutes, or at once on the first 401. |
+
+AUTH_SECRET rotation (finding 371):
+
+1. Put the current AUTH_SECRET value into `vcfo-suite/AUTH_SECRET_PREVIOUS` (`put-secret-value`).
+2. Set `auth_secret_previous_enabled = true` and `terraform apply` (App Runner now injects both).
+3. Put a new random value (`openssl rand -base64 32`) into `vcfo-suite/AUTH_SECRET` and redeploy
+   (App Runner reads runtime secrets at deploy time). New tokens use the new secret; old
+   tokens still verify and are re-issued with the new one on the next request.
+4. After 30 days (the longest session), set the flag back to false and apply.
+
+Two-step (TOTP) secrets no longer depend on AUTH_SECRET: they are sealed with
+CREDENTIALS_ENCRYPTION_KEY. Run `npm run totp:reencrypt` once (§11.3) after that key is set,
+and before the first AUTH_SECRET rotation. Outlook tokens and connect states still use
+AUTH_SECRET, but they open with AUTH_SECRET_PREVIOUS too and are re-sealed at the next refresh.
+
+### 11.2 Runtime secrets
+
+`ANTHROPIC_API_KEY_SECRET_ID`, `AZURE_AD_CLIENT_SECRET_SECRET_ID` and
+`AUTH_MICROSOFT_ENTRA_ID_SECRET_ID` name a secret (ARN or name). When one is set, the app
+reads that secret from Secrets Manager (`src/lib/secrets/`), keeps it in memory for about
+10 minutes, and reads it again at once when the provider answers 401 or `invalid_client`.
+Locally, the plain env vars (`ANTHROPIC_API_KEY`, `AZURE_AD_CLIENT_SECRET`,
+`AUTH_MICROSOFT_ENTRA_ID_SECRET`) still work.
+
+### 11.3 Migrations and one-off scripts: from inside the VPC only
+
+RDS has no public endpoint. Never set `publicly_accessible = true` or open 5432 to
+`0.0.0.0/0` for a migration. Use the SSM port forward through the NAT instance:
+
+```bash
+node scripts/db-env-prod.mjs     # your AWS profile; prints the two blocks below, no password
+# Terminal 1 (Session Manager plugin installed):
+aws ssm start-session --region ap-south-1 --target <nat-instance-id> \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["<rds-endpoint>"],"portNumber":["5432"],"localPortNumber":["15432"]}'
+# Terminal 2: the printed exports (DB_SECRET_ARN, DB_HOST=127.0.0.1, DB_PORT=15432,
+# DB_NAME, DB_USER, DB_SSL_SERVERNAME=<rds-endpoint>, NODE_EXTRA_CA_CERTS), then:
+npm run db:migrate
+npm run totp:reencrypt -- --dry-run   # needs CREDENTIALS_ENCRYPTION_KEY and AUTH_SECRET in this shell
+```
+
+The traffic leaves the VPC nowhere: the tunnel ends on the NAT instance, which connects to
+RDS on the private network. The password is read from the rotating secret with your own
+credentials at connect time and is never printed. `DB_HOST` must be the IP `127.0.0.1`
+(not `localhost`), so the TLS check uses `DB_SSL_SERVERNAME`, the real RDS name.

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isEngagementRouteParam } from '@/lib/slug';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 

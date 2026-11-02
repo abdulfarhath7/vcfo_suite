@@ -23,6 +23,8 @@ export interface WelcomeEmailParams {
   portalUrl: string;
   /** One-time credential for welcome email only — never log, persist to DB, or include in error payloads. */
   clientPassword?: string;
+  /** C-899: the invitee's set-password link (seven days); used in place of a temporary password. */
+  setPasswordUrl?: string;
   /** Resend from project detail — password not available. */
   isResend?: boolean;
   /** Engagement-specific CC (merged with RESEND_PROGRESS_CC; excludes primary recipient). */
@@ -54,9 +56,16 @@ function buildDueListText(lines: DueLine[]): string {
 }
 
 function buildCredentialsHtml(params: WelcomeEmailParams): string {
+  if (params.setPasswordUrl) {
+    return (
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;color:#78716c;font-weight:700;">Sign-in</p>` +
+      emailMetaTable([{ label: 'Login email', value: params.clientEmail }]) +
+      emailParagraph(`<a href="${escapeHtml(params.setPasswordUrl)}">Set your password</a>. The link works for 7 days.`)
+    );
+  }
   if (params.clientPassword) {
     return (
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
       emailMetaTable([
         { label: 'Login email', value: params.clientEmail },
         { label: 'Temporary password', value: params.clientPassword },
@@ -72,6 +81,13 @@ function buildCredentialsHtml(params: WelcomeEmailParams): string {
 }
 
 function buildCredentialsText(params: WelcomeEmailParams): string {
+  if (params.setPasswordUrl) {
+    return `Sign-in:
+Login email: ${params.clientEmail}
+Set your password: ${params.setPasswordUrl} (works for 7 days)
+
+`;
+  }
   if (params.clientPassword) {
     return `Sign-in credentials:
 Login email: ${params.clientEmail}
@@ -107,11 +123,11 @@ function buildWelcomeEmail(params: WelcomeEmailParams): {
       emailParagraph(
         `We have set up your <strong>${escapeHtml(params.companyName)}</strong> engagement on VCFO Suite. Sign in to track documents, tasks, and upcoming compliance milestones.`,
       ) +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Project summary</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Project summary</p>` +
       `<ul style="padding-left:20px;margin:0 0 18px;">${contextLines
         .map((line) => `<li style="margin-bottom:6px;">${escapeHtml(line)}</li>`)
         .join('')}</ul>` +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;font-weight:700;">Upcoming milestones (${escapeHtml(params.stage)})</p>` +
+      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Upcoming milestones (${escapeHtml(params.stage)})</p>` +
       buildDueListHtml(dueLines) +
       credentialsHtml +
       emailParagraph(

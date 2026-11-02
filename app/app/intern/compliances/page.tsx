@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { pageMetadata } from "@/lib/page-metadata";
+import { pageMetadata } from "@/lib/shell/page-metadata";
 
 export const metadata = pageMetadata("Compliances", "Compliance calendar and filings");
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FIELD_HELP, FIELD_HELP_MAX_CHARS, fieldHelp } from '@/data/ask/field-help';
-import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist-responses';
+import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
 
 describe('C3 field help', () => {
   it('every line is at most 140 characters', () => {

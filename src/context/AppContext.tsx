@@ -3,8 +3,8 @@
 import { use, type SetStateAction } from 'react';
 import type { Client } from '@/data/client';
 import { StatusCode } from '@/data/checklist';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
-import type { ClientFillRequest } from '@/lib/checklist-state-key';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import type { ClientFillRequest } from '@/lib/checklist/checklist-state-key';
 import {
   Engagement,
   TaskInstance,
@@ -18,11 +18,11 @@ import {
   type CreateProjectInput,
   type InternOption,
   type UpdateEngagementInput,
-} from '@/lib/engagements-db';
+} from '@/lib/projects/engagements-db';
 import {
   type AppNotification,
   type NotificationKind,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import type { SidebarMode } from '@/components/shell/intern-sidebar';
 
 export type { SidebarMode };
@@ -49,7 +49,7 @@ export interface ChecklistItemState {
   workflowStage?: 'collection' | 'filing' | 'approval';
   /** Lead → manager → client "please fill this step" request. */
   clientFillRequest?: ClientFillRequest;
-  /** Pre-incorporation direct flow stamps (see `src/lib/pre-inc-direct-flow.ts`). */
+  /** Pre-incorporation direct flow stamps (see `src/lib/incorporation/pre-inc-direct-flow.ts`). */
   submittedByName?: string;
   submittedByRole?: string;
   waitingOnLeadAt?: string;

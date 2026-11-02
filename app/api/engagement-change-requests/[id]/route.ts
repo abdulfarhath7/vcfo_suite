@@ -9,7 +9,7 @@ import {
   reopenChangeRequest,
   type ChangeRequestKind,
 } from '@/db/repositories/engagement-change-requests';
-import { applyChangeRequest } from '@/lib/project-change-requests';
+import { applyChangeRequest } from '@/lib/projects/project-change-requests';
 import { isFirmWideAdmin } from '@/lib/auth';
 
 type RouteContext = { params: Promise<{ id: string }> };

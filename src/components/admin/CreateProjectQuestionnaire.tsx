@@ -34,7 +34,7 @@ function QuestionRow({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
-      <p className="min-w-0 flex-1 text-[13px] leading-snug text-foreground">{question.label}</p>
+      <p className="min-w-0 flex-1 text-[13px] leading-snug text-ink">{question.label}</p>
 
       {question.kind === 'boolean' ? (
         <SegmentedPicker
@@ -97,7 +97,7 @@ export function CreateProjectQuestionnaire({
       <div
         role="tablist"
         aria-label="Questionnaire sections"
-        className="flex flex-wrap gap-1 rounded-lg bg-muted/40 p-1 ring-1 ring-border/80"
+        className="flex flex-wrap gap-1 rounded-lg bg-surface-sunken/40 p-1 ring-1 ring-line/80"
       >
         {QUESTIONNAIRE_SECTIONS.map((section) => {
           const isActive = section.id === active.id;
@@ -113,15 +113,15 @@ export function CreateProjectQuestionnaire({
                 'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
-                  ? 'bg-panel text-ink shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
+                  ? 'bg-surface-raised text-ink shadow-sm'
+                  : 'text-ink-muted hover:text-ink',
               )}
             >
               {section.title}
               {progress.complete ? (
-                <Check className="h-3 w-3 text-success" strokeWidth={3} aria-hidden />
+                <Check className="h-3 w-3 text-positive" strokeWidth={3} aria-hidden />
               ) : (
-                <span className="tabular-nums text-[10.5px] text-muted-foreground">
+                <span className="tabular-nums text-[10.5px] text-ink-muted">
                   {progress.answered}/{progress.total}
                 </span>
               )}
@@ -130,7 +130,7 @@ export function CreateProjectQuestionnaire({
         })}
       </div>
 
-      <div className="divide-y divide-border/60 rounded-xl border border-border/70 px-4">
+      <div className="divide-y divide-line/60 rounded-xl border border-line/70 px-4">
         {questions.map((question) => (
           <QuestionRow
             key={question.id}

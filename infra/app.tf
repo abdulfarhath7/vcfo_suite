@@ -37,6 +37,12 @@ data "aws_iam_policy_document" "apprunner_build_assume" {
       type        = "Service"
       identifiers = ["build.apprunner.amazonaws.com"]
     }
+    # Confused-deputy guard: only App Runner acting for this account may assume it.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
   }
 }
 
@@ -51,7 +57,8 @@ resource "aws_iam_role_policy_attachment" "apprunner_access_ecr" {
 }
 
 # --- IAM: the running app assumes this role (S3 + KMS + SES + secrets) -------
-# Least privilege: this bucket, this key, these two secrets. No static keys —
+# Least privilege: this bucket, this key, the vcfo secrets. The read-only grants
+# for the developer console's SOC 2 cards are in soc-runtime.tf. No static keys —
 # src/storage/s3.ts and send-via-ses.ts fall through to the instance role when
 # S3_ACCESS_KEY_ID is unset.
 data "aws_iam_policy_document" "apprunner_tasks_assume" {
@@ -60,6 +67,12 @@ data "aws_iam_policy_document" "apprunner_tasks_assume" {
     principals {
       type        = "Service"
       identifiers = ["tasks.apprunner.amazonaws.com"]
+    }
+    # Confused-deputy guard: only App Runner acting for this account may assume it.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
   }
 }
@@ -94,10 +107,10 @@ data "aws_iam_policy_document" "app" {
     sid     = "RuntimeSecrets"
     actions = ["secretsmanager:GetSecretValue"]
     resources = concat(
-      [
-        aws_secretsmanager_secret.database_url.arn,
-        aws_secretsmanager_secret.auth_secret.arn,
-      ],
+      [aws_secretsmanager_secret.auth_secret.arn],
+      aws_secretsmanager_secret.database_url[*].arn,
+      # The RDS-managed master secret, read by src/db/db-password.ts.
+      local.db_rotating ? [local.db_master_secret_arn] : [],
       aws_secretsmanager_secret.azure_ad_client_secret[*].arn,
       data.aws_secretsmanager_secret.anthropic_api_key[*].arn,
     )
@@ -138,17 +151,38 @@ locals {
       AUTH_URL             = var.site_url
       NEXT_PUBLIC_SITE_URL = var.site_url
     },
-    # Outlook Graph connect flow (secret comes via runtime_environment_secrets).
-    local.outlook_enabled ? {
-      AZURE_AD_CLIENT_ID = var.azure_ad_client_id
-      AZURE_AD_TENANT_ID = var.azure_ad_tenant_id
+    # Rotating DB password (database.tf): the app builds its connection from
+    # these and reads the password from DB_SECRET_ARN instead of DATABASE_URL.
+    # The user name is not a secret; the variable is only marked sensitive.
+    local.db_rotating ? {
+      DB_HOST       = aws_db_instance.postgres.address
+      DB_PORT       = tostring(aws_db_instance.postgres.port)
+      DB_NAME       = aws_db_instance.postgres.db_name
+      DB_USER       = nonsensitive(var.db_username)
+      DB_SECRET_ARN = local.db_master_secret_arn
     } : {},
-    # Ask VCFO (key comes via runtime_environment_secrets). Model ids and
-    # limits use the app defaults (.env.example); override here if needed.
+    # Outlook Graph connect flow. M7: the client secret is read at runtime from
+    # Secrets Manager (src/lib/secrets/), so a rotation in Azure needs only a
+    # put-secret-value, not a redeploy. The env var holds the ARN, not the value.
+    local.outlook_enabled ? {
+      AZURE_AD_CLIENT_ID               = var.azure_ad_client_id
+      AZURE_AD_TENANT_ID               = var.azure_ad_tenant_id
+      AZURE_AD_CLIENT_SECRET_SECRET_ID = aws_secretsmanager_secret.azure_ad_client_secret[0].arn
+    } : {},
+    # M7 developer console SOC 2 cards (soc-runtime.tf). Ids, not secrets.
+    {
+      BACKUP_PLAN_ID    = aws_backup_plan.db.id
+      BACKUP_VAULT_NAME = aws_backup_vault.db.name
+      RDS_INSTANCE_ID   = aws_db_instance.postgres.identifier
+    },
+    # Ask VCFO. M7: the API key is read at runtime from Secrets Manager (the env
+    # var holds the ARN), so a rotation needs no redeploy. Model ids and limits
+    # use the app defaults (.env.example); override here if needed.
     var.ask_vcfo_enabled ? merge(
       {
-        ASK_VCFO_ENABLED      = "true"
-        ASK_VCFO_LLM_PROVIDER = "anthropic"
+        ASK_VCFO_ENABLED            = "true"
+        ASK_VCFO_LLM_PROVIDER       = "anthropic"
+        ANTHROPIC_API_KEY_SECRET_ID = data.aws_secretsmanager_secret.anthropic_api_key[0].arn
       },
       { for id in var.ask_vcfo_features : "ASK_VCFO_FEATURE_${id}" => "true" },
     ) : {},
@@ -173,17 +207,34 @@ resource "aws_apprunner_service" "app" {
         port                          = "3000"
         runtime_environment_variables = local.app_env
         runtime_environment_secrets = merge(
-          {
-            DATABASE_URL = aws_secretsmanager_secret.database_url.arn
-            AUTH_SECRET  = aws_secretsmanager_secret.auth_secret.arn
+          { AUTH_SECRET = aws_secretsmanager_secret.auth_secret.arn },
+          # Only while db_managed_password is off. Production runs with it on, so
+          # the app reads DB_SECRET_ARN and DATABASE_URL is never injected.
+          local.db_rotating ? {} : {
+            DATABASE_URL = aws_secretsmanager_secret.database_url[0].arn
           },
-          local.outlook_enabled ? {
-            AZURE_AD_CLIENT_SECRET = aws_secretsmanager_secret.azure_ad_client_secret[0].arn
+          # M7: AZURE_AD_CLIENT_SECRET and ANTHROPIC_API_KEY are no longer injected
+          # at deploy time; see the *_SECRET_ID env vars above.
+          # AUTH_SECRET rotation without sign-outs (soc-runtime.tf).
+          var.auth_secret_previous_enabled ? {
+            AUTH_SECRET_PREVIOUS = aws_secretsmanager_secret.auth_secret_previous[0].arn
           } : {},
-          var.ask_vcfo_enabled ? {
-            ANTHROPIC_API_KEY = data.aws_secretsmanager_secret.anthropic_api_key[0].arn
+          var.credentials_key_enabled ? {
+            CREDENTIALS_ENCRYPTION_KEY = aws_secretsmanager_secret.credentials_encryption_key[0].arn
           } : {},
         )
+      }
+    }
+  }
+
+  # With db_private, all outbound traffic leaves through the VPC connector
+  # (private-db.tf) so the app can reach the private database.
+  dynamic "network_configuration" {
+    for_each = var.db_private ? [1] : []
+    content {
+      egress_configuration {
+        egress_type       = "VPC"
+        vpc_connector_arn = aws_apprunner_vpc_connector.app[0].arn
       }
     }
   }
@@ -205,7 +256,7 @@ resource "aws_apprunner_service" "app" {
     unhealthy_threshold = 5
   }
 
-  depends_on = [aws_iam_role_policy.app, aws_iam_role_policy_attachment.apprunner_access_ecr]
+  depends_on = [aws_iam_role_policy.app, aws_iam_role_policy.app_console_soc_read, aws_iam_role_policy_attachment.apprunner_access_ecr]
 }
 
 # Custom domain (e.g. app.sbctrack.in). Apply once to get the DNS records

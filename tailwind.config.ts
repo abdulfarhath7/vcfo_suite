@@ -23,13 +23,126 @@ export default {
         ring: "oklch(var(--ring) / <alpha-value>)",
         background: "oklch(var(--background) / <alpha-value>)",
         foreground: "oklch(var(--foreground) / <alpha-value>)",
-        surface: "oklch(var(--surface) / <alpha-value>)",
 
-        /* Noir surfaces */
+        /* ---- Design tokens v1 (docs/design/TOKENS.md). Everything below this group is a
+           legacy alias that resolves to one of these and goes away on 2026-11-30. ---- */
+        /* Hovered rows and the live step row (prototype `hover`). Lighter than the card in dark mode. */
+        hover: "oklch(var(--hover) / <alpha-value>)",
+        "wash-ink-2": "oklch(var(--wash-ink-2) / <alpha-value>)",
+        surface: {
+          DEFAULT: "oklch(var(--surface) / <alpha-value>)",
+          raised: "oklch(var(--surface-raised) / <alpha-value>)",
+          sunken: "oklch(var(--surface-sunken) / <alpha-value>)",
+        },
+        line: {
+          DEFAULT: "oklch(var(--line) / <alpha-value>)",
+          strong: "oklch(var(--line-strong) / <alpha-value>)",
+          soft: "oklch(var(--line-soft) / <alpha-value>)",
+        },
+        rule: "oklch(var(--rule) / <alpha-value>)",
         ink: {
           DEFAULT: "oklch(var(--ink) / <alpha-value>)",
-          soft: "oklch(var(--muted-paper) / <alpha-value>)",
+          muted: "oklch(var(--ink-muted) / <alpha-value>)",
+          faint: "oklch(var(--ink-faint) / <alpha-value>)",
+          soft: "oklch(var(--ink-muted) / <alpha-value>)" /* legacy name for ink-muted */,
+          2: "oklch(var(--ink-2) / <alpha-value>)",
         },
+        brand: {
+          DEFAULT: "oklch(var(--brand) / <alpha-value>)",
+          strong: "oklch(var(--brand-strong) / <alpha-value>)",
+          soft: "oklch(var(--brand-soft) / <alpha-value>)",
+          deep: "oklch(var(--brand-strong) / <alpha-value>)" /* legacy name for brand-strong */,
+          text: "oklch(var(--brand-text) / <alpha-value>)",
+          /* Alpha blurple like the prototype's accent-line (28 % light, 40 % dark), so a tinted
+             ground shows through. --brand-line-alpha is set in app/globals.css. */
+          line: "oklch(var(--brand) / calc(<alpha-value> * var(--brand-line-alpha)))",
+        },
+        "on-brand": "oklch(var(--on-brand) / <alpha-value>)",
+        navy: {
+          DEFAULT: "oklch(var(--navy-fill) / <alpha-value>)",
+          hover: "oklch(var(--navy-fill-hover) / <alpha-value>)",
+        },
+        "on-navy": "oklch(var(--on-navy) / <alpha-value>)",
+        identity: {
+          DEFAULT: "oklch(var(--identity) / <alpha-value>)",
+          soft: "oklch(var(--identity-soft) / <alpha-value>)",
+          mid: "oklch(var(--identity-mid) / <alpha-value>)",
+        },
+        highlight: {
+          DEFAULT: "oklch(var(--highlight) / <alpha-value>)",
+          bright: "oklch(var(--highlight-bright) / <alpha-value>)",
+          soft: "oklch(var(--highlight-soft) / <alpha-value>)",
+        },
+        positive: {
+          DEFAULT: "oklch(var(--positive) / <alpha-value>)",
+          soft: "oklch(var(--positive-soft) / <alpha-value>)",
+          mid: "oklch(var(--positive-mid) / <alpha-value>)",
+        },
+        upcoming: {
+          DEFAULT: "oklch(var(--upcoming) / <alpha-value>)",
+          soft: "oklch(var(--upcoming-soft) / <alpha-value>)",
+          mid: "oklch(var(--upcoming-mid) / <alpha-value>)",
+        },
+        /* VCFO Spectrum (2026-10-29): Waiting is teal; banners use caution; regulators have a colour each. */
+        waiting: {
+          DEFAULT: "oklch(var(--waiting) / <alpha-value>)",
+          soft: "oklch(var(--waiting-soft) / <alpha-value>)",
+          mid: "oklch(var(--waiting-mid) / <alpha-value>)",
+        },
+        caution: {
+          DEFAULT: "oklch(var(--caution) / <alpha-value>)",
+          soft: "oklch(var(--caution-soft) / <alpha-value>)",
+          line: "oklch(var(--caution-line) / <alpha-value>)",
+        },
+        reg: {
+          gst: "oklch(var(--data-1) / <alpha-value>)",
+          it: "oklch(var(--data-2) / <alpha-value>)",
+          mca: "oklch(var(--data-3) / <alpha-value>)",
+          fema: "oklch(var(--data-4) / <alpha-value>)",
+          payroll: "oklch(var(--data-5) / <alpha-value>)",
+          labour: "oklch(var(--data-6) / <alpha-value>)",
+        },
+        "on-status": "oklch(var(--on-status) / <alpha-value>)",
+        gold: {
+          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
+          text: "oklch(var(--gold-text) / <alpha-value>)",
+          /* legacy names, still blue aliases in globals.css until 2026-11-30 */
+          hi: "oklch(var(--gold-hi) / <alpha-value>)",
+          deep: "oklch(var(--gold-deep) / <alpha-value>)",
+        },
+        owner: {
+          client: "oklch(var(--owner-client) / <alpha-value>)",
+          "client-soft": "oklch(var(--owner-client-soft) / <alpha-value>)",
+          sbc: "oklch(var(--owner-sbc) / <alpha-value>)",
+          "sbc-soft": "oklch(var(--owner-sbc-soft) / <alpha-value>)",
+          mca: "oklch(var(--owner-mca) / <alpha-value>)",
+          "mca-soft": "oklch(var(--owner-mca-soft) / <alpha-value>)",
+          manager: "oklch(var(--owner-manager) / <alpha-value>)",
+          "manager-soft": "oklch(var(--owner-manager-soft) / <alpha-value>)",
+        },
+        "focus-ring": "oklch(var(--focus-ring) / <alpha-value>)",
+        scrim: "var(--scrim)",
+        side: {
+          DEFAULT: "oklch(var(--side) / <alpha-value>)",
+          /* One step off the navy ground: the sign-in page's front mountain. */
+          deep: "oklch(var(--side-deep) / <alpha-value>)",
+          ink: "oklch(var(--side-ink) / <alpha-value>)",
+          muted: "oklch(var(--side-muted) / <alpha-value>)",
+          active: "oklch(var(--side-active) / <alpha-value>)",
+          "active-ink": "oklch(var(--side-active-ink) / <alpha-value>)",
+          hover: "oklch(var(--side-hover) / <alpha-value>)",
+          line: "oklch(var(--side-line) / <alpha-value>)",
+        },
+        data: {
+          1: "oklch(var(--data-1) / <alpha-value>)",
+          2: "oklch(var(--data-2) / <alpha-value>)",
+          3: "oklch(var(--data-3) / <alpha-value>)",
+          4: "oklch(var(--data-4) / <alpha-value>)",
+          5: "oklch(var(--data-5) / <alpha-value>)",
+          6: "oklch(var(--data-6) / <alpha-value>)",
+        },
+
+        /* Noir surfaces (legacy) */
         panel: "oklch(var(--panel) / <alpha-value>)",
         raised: "oklch(var(--raised) / <alpha-value>)",
 
@@ -40,12 +153,6 @@ export default {
           subtle: "oklch(var(--subtle-paper) / <alpha-value>)",
         },
 
-        /* Gold aliases → blue (deprecated names, blue values) */
-        gold: {
-          DEFAULT: "oklch(var(--gold) / <alpha-value>)",
-          hi: "oklch(var(--gold-hi) / <alpha-value>)",
-          deep: "oklch(var(--gold-deep) / <alpha-value>)",
-        },
         blue: {
           DEFAULT: "oklch(var(--blue-600) / <alpha-value>)",
           50: "oklch(var(--blue-50) / <alpha-value>)",
@@ -92,10 +199,6 @@ export default {
         },
         hairline: "oklch(var(--border) / <alpha-value>)",
 
-        brand: {
-          DEFAULT: "oklch(var(--brand) / <alpha-value>)",
-          deep: "oklch(var(--brand-deep) / <alpha-value>)",
-        },
         primary: {
           DEFAULT: "oklch(var(--primary) / <alpha-value>)",
           foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
@@ -134,17 +237,25 @@ export default {
         },
         warning: {
           DEFAULT: "oklch(var(--warning) / <alpha-value>)",
+          soft: "oklch(var(--warning-soft) / <alpha-value>)",
+          mid: "oklch(var(--warning-mid) / <alpha-value>)",
           foreground: "oklch(var(--warning-foreground) / <alpha-value>)",
           light: "oklch(var(--warning-light) / <alpha-value>)",
           text: "oklch(var(--warning-text) / <alpha-value>)",
         },
         danger: {
           DEFAULT: "oklch(var(--danger) / <alpha-value>)",
+          soft: "oklch(var(--danger-soft) / <alpha-value>)",
+          mid: "oklch(var(--danger-mid) / <alpha-value>)",
           light: "oklch(var(--danger-light) / <alpha-value>)",
           text: "oklch(var(--danger-text) / <alpha-value>)",
+          fill: "oklch(var(--danger-fill) / <alpha-value>)",
         },
         info: {
           DEFAULT: "oklch(var(--info) / <alpha-value>)",
+          soft: "oklch(var(--info-soft) / <alpha-value>)",
+          line: "oklch(var(--info-line) / <alpha-value>)",
+          mid: "oklch(var(--info-mid) / <alpha-value>)",
           foreground: "oklch(var(--info-foreground) / <alpha-value>)",
           light: "oklch(var(--info-light) / <alpha-value>)",
           text: "oklch(var(--info-text) / <alpha-value>)",
@@ -213,14 +324,71 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
+        DEFAULT: "var(--radius-sm)",
+        lg: "var(--radius-lg)",
         md: "var(--radius-md)",
-        sm: "var(--radius-sm)",
+        /* Prototype `rounded-sm` is 4px (small marks and badges); `rounded` stays 6px. */
+        sm: "var(--radius-mark)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
         "3xl": "var(--radius-3xl)",
-        pill: "1rem",
-        card: "var(--radius)",
+        pill: "var(--radius-pill)",
+        card: "var(--radius-lg)",
+        mark: "var(--radius-mark)",
+        bar: "var(--radius-bar)",
+      },
+      /* R-28: Roboto 400, 500, 700. 500 does the work of bold; 700 is for display sizes and the logo. */
+      fontWeight: {
+        semibold: "500",
+        bold: "500",
+        display: "700",
+      },
+      borderWidth: {
+        "1.5": "1.5px",
+      },
+      /* Two shadows only (K-03): every Tailwind size resolves to one of them. */
+      boxShadow: {
+        card: "var(--shadow-card)",
+        float: "var(--shadow-float)",
+        sm: "var(--shadow-card)",
+        DEFAULT: "var(--shadow-card)",
+        md: "var(--shadow-card)",
+        lg: "var(--shadow-float)",
+        xl: "var(--shadow-float)",
+        "2xl": "var(--shadow-float)",
+        dialog: "var(--shadow-dialog)",
+        tile: "var(--shadow-tile)",
+        shine: "var(--shine)",
+        /* Faint drop under secondary buttons, inputs and the switch thumb (light only). */
+        control: "var(--shadow-control)",
+        /* The deep shadow under the sign-in card on navy. */
+        signin: "var(--shadow-signin)",
+      },
+      /* No `wash` or `hero` background image here: the gradient ends in a bare colour, which
+         `background-image` rejects, so a utility would wipe the wash. `.bg-wash` in
+         app/globals.css draws it with the `background` shorthand (R-17). */
+      spacing: {
+        "control-sm": "var(--control-sm)",
+        "control-md": "var(--control-md)",
+        "control-lg": "var(--control-lg)",
+        chip: "var(--chip-height)",
+        row: "var(--row-height)",
+        tile: "var(--tile)",
+        "icon-sm": "var(--icon-sm)",
+        "icon-md": "var(--icon-md)",
+        "icon-lg": "var(--icon-lg)",
+        /* Prototype layout names: card head, sidebar width, top bar. */
+        "4.5": "18px",
+        head: "52px",
+        side: "248px",
+        top: "60px",
+      },
+      maxWidth: {
+        page: "1440px",
+      },
+      minWidth: {
+        control: "var(--control-min-width)",
+        chip: "var(--chip-min-width)",
       },
       fontSize: {
         badge: "11px",
@@ -230,6 +398,25 @@ export default {
         "section-head": "14px",
         "page-title": "22px",
         metric: "26px",
+        /* Prototype type steps (text-11 to text-44), each with its line height. */
+        "11": ["11px", "1.3"],
+        "11.5": ["11.5px", "1.3"],
+        "12": ["12px", "1.4"],
+        "12.5": ["12.5px", "1.4"],
+        "13": ["13px", "1.45"],
+        "13.5": ["13.5px", "1.45"],
+        "14": ["14px", "1.5"],
+        "14.5": ["14.5px", "1.4"],
+        "15": ["15px", "22px"],
+        "16": ["16px", "1.3"],
+        "18": ["18px", "1.3"],
+        "20": ["20px", "28px"],
+        "22": ["22px", "1.25"],
+        "24": ["24px", "1.2"],
+        "26": ["26px", "1"],
+        "28": ["28px", "36px"],
+        "40": ["40px", "48px"],
+        "44": ["44px", "1"],
       },
       keyframes: {
         "accordion-down": {
@@ -256,6 +443,10 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 oklch(var(--blue-600) / 0.55)" },
           "50%": { boxShadow: "0 0 0 6px oklch(var(--blue-600) / 0)" },
         },
+        "sidebar-peek-in": {
+          from: { transform: "translateX(-10px)", opacity: "0" },
+          to: { transform: "none", opacity: "1" },
+        },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
@@ -270,6 +461,7 @@ export default {
         "orange-pulse": "blue-pulse 2.4s ease-out infinite",
         "gold-pulse": "blue-pulse 2.4s ease-out infinite",
         "shimmer": "shimmer 2.8s linear infinite",
+        "sidebar-peek": "sidebar-peek-in 160ms cubic-bezier(.2,.8,.2,1)",
       },
     },
   },

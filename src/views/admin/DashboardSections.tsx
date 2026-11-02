@@ -1,25 +1,46 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
-import { useRouter, usePathname } from 'next/navigation';
-import { m } from 'framer-motion';
+import { usePathname } from 'next/navigation';
+import { AlertTriangle, Briefcase, CalendarDays, Inbox, ListPlus, Plus, ShieldCheck, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
-import { DashSection } from '@/components/dash/DashSection';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
-import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
-import { initialsFromName } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
-import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { useApp } from '@/context/AppContext';
+import { isAdminOrManager } from '@/lib/auth';
+import { primaryPhaseItems } from '@/lib/projects/project-stuck';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
+import { staffNewProjectPath, staffProjectBaseFromPathname, adminProjectPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import { useStampHomeTiles } from '@/hooks/use-stamp-home-tiles';
+import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
 import type { TaskInstance } from '@/data/engagements';
 import type { Engagement } from '@/data/engagements';
+import type { ComplianceFiling } from '@/data/compliance';
 import { AdminDashboardFilingsPanel } from '@/views/admin/DashboardSecondaryRow';
 import { DashboardApprovalsPanel } from '@/views/admin/DashboardApprovalsPanel';
-import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
+import { LeadInboxCard } from '@/components/intern/LeadInboxCard';
+import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
+import { LeadSideRail } from '@/components/intern/LeadSideRail';
+import { FilingsMatrix } from '@/components/intern/FilingsMatrix';
+import { useTeamWork } from '@/views/manager/use-team-work';
+import { deriveStuckReason } from '@/lib/projects/project-stuck';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
-import { Briefcase, Clock, Plus, Inbox } from 'lucide-react';
+import { TeamTasksCard, useTeamTaskTools } from '@/components/staff/today/TeamTasksCard';
+import { AssignTaskDialog } from '@/components/staff/today/AssignTaskDialog';
+import { TaskStatusCard, WorkloadByLeadCard } from '@/components/staff/today/TodayCharts';
+import { PhaseProgressGrid } from '@/components/staff/today/PhaseProgressGrid';
+import { PersonCell, TodayScopeTabs } from '@/components/staff/today/today-parts';
+import {
+  buildPhaseProgressRows,
+  buildTeamTaskRows,
+  engagementInScope,
+  type TodayScope,
+} from '@/components/staff/today/today-rows';
 
 export type AdminDashboardViewProps = {
   userId?: string;
@@ -43,56 +64,177 @@ export type AdminDashboardViewProps = {
   portfolioPhases: Phase[];
   completionRate: number;
   tasksByEngagement: Record<string, TaskInstance[]>;
+  /** Every filing the dashboard computed, for the team task rows. */
+  filings?: ComplianceFiling[];
 };
 
+/** A home card action that shrinks to a 36px icon button on a phone (M-30). */
+const PHONE_ICON = 'max-sm:w-9 max-sm:px-0';
+
+/** Main column and a rail, as on every staff Today (prototype TodayScreen GRID). */
+const GRID = 'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
+
+/**
+ * Manager Today as the board (prototype TodayScreen, C-0107, C-0114): the compact home card with
+ * the scope switch and the five numbers, Team tasks beside the approvals, Task
+ * status and Workload by lead, then Phase progress beside the upcoming filings and the to-do cards. "Assign task"
+ * gives one of the leads on the manager's engagements a task (G-12); it shows in Team tasks
+ * and in the lead's Work list.
+ */
 export function AdminDashboardView({
   userId,
   engagements,
+  tasks,
   teamMembers,
   blockers,
-  pendingClientActions,
-  overdueTasks,
   dueInTwoDays,
-  approvalsToSend,
   approvalsReceived,
   dueSoon,
   portfolioPhases,
   completionRate,
-  tasksByEngagement,
+  filings = [],
 }: AdminDashboardViewProps) {
-  const router = useRouter();
+  const { user, requests, getStateForEngagement, engagementsLoading } = useApp();
   const pathname = usePathname();
   const staffBase = useStaffBasePath();
   const projectBase = staffProjectBaseFromPathname(pathname, staffBase);
   const newProjectHref = staffNewProjectPath(projectBase);
+  const [scope, setScope] = useState<TodayScope>('all');
+  const [assignOpen, setAssignOpen] = useState(false);
+  const now = useMemo(() => new Date(), []);
 
+  const active = useMemo(() => engagements.filter((e) => e.stage !== 'Operational Readiness'), [engagements]);
+  const scopeCounts = useMemo(() => {
+    const incorporating = active.filter((e) => engagementInScope('incorporating', e, getStateForEngagement(e))).length;
+    return { all: active.length, incorporating, compliance: active.length - incorporating };
+  }, [active, getStateForEngagement]);
+  const scoped = useMemo(
+    () => active.filter((e) => engagementInScope(scope, e, getStateForEngagement(e))),
+    [active, scope, getStateForEngagement],
+  );
+  const scopedIds = useMemo(() => new Set(scoped.map((e) => e.id)), [scoped]);
+
+  const teamRows = useMemo(
+    () =>
+      buildTeamTaskRows({
+        engagements: scoped,
+        getState: getStateForEngagement,
+        filings,
+        requests,
+        tasks,
+        leads: teamMembers,
+        projectBase,
+        now,
+      }),
+    [scoped, getStateForEngagement, filings, requests, tasks, teamMembers, projectBase, now],
+  );
+  const phaseRows = useMemo(
+    () =>
+      buildPhaseProgressRows({
+        engagements: scoped,
+        getState: getStateForEngagement,
+        href: (e) => adminProjectPath(e, projectBase),
+        now,
+      }).filter((r) => !r.incorporated),
+    [scoped, getStateForEngagement, projectBase, now],
+  );
+  const scopedDueSoon = dueSoon.filter((f) => scopedIds.has(f.engagementId));
+  // The leads' items for the Action queue and Waiting on cards (same builder as manager Work).
+  const team = useTeamWork({ projectBase: projectBase === '/app/manager' ? '/app/manager' : '/app/admin' });
+  const teamItems = useMemo(() => team.items.filter((i) => scopedIds.has(i.engagementId)), [team.items, scopedIds]);
+  const engById = useMemo(() => new Map(scoped.map((e) => [e.id, e])), [scoped]);
+  const stuck = useMemo(
+    () =>
+      scoped
+        .filter((e) => deriveStuckReason(e, getStateForEngagement(e)) !== 'on_track')
+        .map((e) => ({ engagementId: e.id, companyName: e.companyName, href: adminProjectPath(e, projectBase) })),
+    [scoped, getStateForEngagement, projectBase],
+  );
+  const scopedFilings = filings.filter((f) => scopedIds.has(f.engagementId));
+
+  /* Five numbers (R-18, E-04, E-05). Overdue, Waiting on clients and Due this week count the
+     Team tasks rows, and each opens Team tasks on the matching saved view. */
+  const open = teamRows.filter((r) => r.status !== 'Done');
+  const overdueRows = teamRows.filter((r) => r.status === 'Overdue');
+  const overdue = overdueRows.length;
+  const overdueClients = new Set(overdueRows.map((r) => r.engagementId)).size;
+  const waitingRows = teamRows.filter((r) => r.status === 'Waiting' && r.withClient);
+  const waitingOnClients = waitingRows.length;
+  const waitingClients = new Set(waitingRows.map((r) => r.engagementId)).size;
+  const dueWeek = teamRows.filter((r) => r.status === 'Due soon').length;
+  const approvalClients = engagements.filter((e) => {
+    const state = getStateForEngagement(e);
+    return primaryPhaseItems().some((item) => isAwaitingManagerDecision(item.id, state[item.id]));
+  }).length;
+  const tasksHref = (view: string) => `${staffBase}/dashboard?view=${view}#team-tasks`;
+  // "Needs your approval" is rebuilt from the review history; the other four lines come from
+  // the values this home showed on earlier days, stored only for the whole home (scope All).
+  const trends = useHomeTrends('manager', { enabled: isAdminOrManager(user?.role) });
+  useStampHomeTiles(
+    'manager',
+    { activeProjects: scoped.length, overdue, waitingClients: waitingOnClients, dueWeek },
+    scope === 'all' && !engagementsLoading && isAdminOrManager(user?.role),
+  );
   const heroStats: DashHeroStat[] = [
-    { label: 'active projects', value: engagements.length, href: `${projectBase}/projects` },
     {
-      label: 'due in 2 days',
-      value: dueInTwoDays,
-      href: `${projectBase}/compliances/calendar`,
-      hot: dueInTwoDays > 0,
+      label: 'Active projects',
+      icon: Briefcase,
+      value: scoped.length,
+      href: `${projectBase}/projects`,
+      trend: trendWithLive(trends, 'activeProjects', scoped.length),
+      note: blockers > 0 && scope === 'all' ? `${blockers} at risk` : `${open.length} open tasks`,
+      how: 'Your projects that are still being set up, in the clients shown.',
     },
-    { label: 'approvals to send', value: approvalsToSend, href: `${projectBase}/approvals` },
     {
-      label: 'approvals received',
+      label: 'Needs your approval',
+      icon: ShieldCheck,
       value: approvalsReceived,
       href: `${projectBase}/approvals`,
       hot: approvalsReceived > 0,
+      trend: trendWithLive(trends, 'approvals', approvalsReceived),
+      trendTone: 'warn',
+      note: approvalClients > 0 ? `${approvalClients} ${approvalClients === 1 ? 'client' : 'clients'}` : undefined,
+      how: 'Steps a lead or a client sent you to approve before they move on.',
+    },
+    {
+      label: 'Overdue',
+      icon: AlertTriangle,
+      value: overdue,
+      hot: overdue > 0,
+      href: tasksHref('overdue'),
+      trend: trendWithLive(trends, 'overdue', overdue),
+      trendTone: 'bad',
+      note: overdueClients > 0 ? `${overdueClients} ${overdueClients === 1 ? 'client' : 'clients'}` : undefined,
+      how: 'Team tasks past their due date: steps, filings, document requests and assigned tasks.',
+    },
+    {
+      label: 'Waiting on clients',
+      icon: User,
+      value: waitingOnClients,
+      href: tasksHref('waiting'),
+      trend: trendWithLive(trends, 'waitingClients', waitingOnClients),
+      trendTone: 'teal',
+      note: waitingClients > 0 ? `${waitingClients} ${waitingClients === 1 ? 'client' : 'clients'}` : undefined,
+      how: 'Team tasks the client still owes: a step to fill or a document to upload.',
+    },
+    {
+      label: 'Due this week',
+      icon: CalendarDays,
+      value: dueWeek,
+      href: tasksHref('week'),
+      trend: trendWithLive(trends, 'dueWeek', dueWeek),
+      note: dueInTwoDays > 0 ? `${dueInTwoDays} filings in 2 days` : undefined,
+      how: 'Open team tasks due in the next seven days.',
     },
   ];
-  if (blockers > 0) {
-    heroStats.push({
-      label: 'at risk',
-      value: blockers,
-      href: `${projectBase}/projects`,
-      hot: true,
-    });
-  }
-  if (overdueTasks > 0) {
-    heroStats.push({ label: 'overdue', value: overdueTasks, hot: true });
-  }
+  const tools = useTeamTaskTools({
+    storageScope: user?.id ?? 'manager',
+    leads: teamMembers,
+    canReassign: isAdminOrManager(user?.role),
+  });
+
+  const greet = internGreeting(internGreetingHour(now));
+  const first = internFirstName(user?.name ?? '');
 
   return (
     <PageTransition>
@@ -102,132 +244,90 @@ export function AdminDashboardView({
         path={`${staffBase}/dashboard`}
       />
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
         <DashHero
-          title="Dashboard"
-          ring={{ value: completionRate, total: 100, caption: '% complete' }}
+          title={first ? `Good ${greet}, ${first}` : 'Dashboard'}
           stats={heroStats}
-        />
+          scope={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
+        >
+          {/* M-30: on a phone the actions are 36px icon buttons, so they fit beside the switch. */}
+          <Button variant="secondary" asChild className={PHONE_ICON}>
+            <Link href={`${projectBase}/approvals`} title="Approvals">
+              <Inbox aria-hidden />
+              <span className="max-sm:sr-only">Approvals</span>
+            </Link>
+          </Button>
+          <Button variant="secondary" onClick={() => setAssignOpen(true)} className={PHONE_ICON} title="Assign task">
+            <ListPlus aria-hidden />
+            <span className="max-sm:sr-only">Assign task</span>
+          </Button>
+          <Button asChild className={PHONE_ICON}>
+            <Link href={newProjectHref} title="New project">
+              <Plus aria-hidden />
+              <span className="max-sm:sr-only">New project</span>
+            </Link>
+          </Button>
+        </DashHero>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link
-            href={`${projectBase}/approvals`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3.5 py-1.5 text-[12px] font-extrabold text-primary transition-opacity hover:opacity-80"
-          >
-            <Inbox className="h-3.5 w-3.5" aria-hidden />
-            Approvals
-          </Link>
-          <Link
-            href={newProjectHref}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-extrabold text-white transition-opacity hover:opacity-90"
-          >
-            <Plus className="h-3.5 w-3.5" aria-hidden />
-            New project
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            {userId ? (
-              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-                <LeadFocusCard userId={userId} items={[]} />
-                <TeamTodosPanel userId={userId} />
-              </div>
-            ) : null}
-
-            <DashSection
-              icon={Briefcase}
-              tone="primary"
-              title="Process"
-              meta={`${completionRate}% tasks complete`}
-              href={`${projectBase}/projects`}
-              hrefLabel="All projects"
-            >
-              <PhaseTimeline phases={portfolioPhases} variant="journey" />
-
-              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-muted-foreground">
-                  By project
-                </span>
-                <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
-                  {engagements.length}
-                </span>
-              </div>
-
-              <div className="divide-y divide-border">
-                {engagements.map((e, i) => {
-                  const eTasks = tasksByEngagement[e.id] ?? [];
-                  const eDone = eTasks.filter((t) => t.status === 'completed').length;
-                  const epct = eTasks.length ? Math.round((eDone / eTasks.length) * 100) : 0;
-                  const intern = teamMembers.find((t) => t.id === e.internId);
-                  const stuck = eTasks.filter(
-                    (t) => t.status === 'awaiting-client' || t.status === 'overdue',
-                  ).length;
-
-                  return (
-                    <m.button
-                      key={e.id}
-                      type="button"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.03 * i, duration: 0.24 }}
-                      onClick={() => router.push(adminProjectPath(e, projectBase))}
-                      className="group flex w-full items-center gap-3 py-2.5 text-left transition-colors hover:bg-muted/30"
-                    >
-                      <span
-                        className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(e.id)]}`}
-                      >
-                        {initialsFromName(e.companyName).slice(0, 2)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[12.5px] font-semibold text-ink transition-colors group-hover:text-primary">
-                          {e.companyName}
-                        </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-px text-[10px] font-extrabold ${TONE_BADGE[toneForKey(e.stage)]}`}
-                          >
-                            {stageDisplayLabel(e.stage)}
-                          </span>
-                          {intern && <span>{intern.name}</span>}
-                          {stuck > 0 && (
-                            <span className="inline-flex items-center gap-1 font-semibold text-warning-text">
-                              <Clock className="h-3 w-3" aria-hidden />
-                              {stuck} blocked
-                            </span>
-                          )}
-                          {pendingClientActions > 0 &&
-                            eTasks.some((t) => t.status === 'awaiting-client') && (
-                              <span className="font-semibold text-info-text">Client pending</span>
-                            )}
-                        </span>
-                      </span>
-                      <span className="hidden w-28 items-center gap-2 sm:flex">
-                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                          <m.span
-                            initial={{ width: 0 }}
-                            animate={{ width: `${epct}%` }}
-                            transition={{ duration: 0.6, delay: 0.08 + 0.04 * i }}
-                            className="block h-full rounded-full bg-primary"
-                          />
-                        </span>
-                        <span className="w-8 shrink-0 text-right text-[11px] font-bold tabular-nums text-muted-foreground">
-                          {epct}%
-                        </span>
-                      </span>
-                    </m.button>
-                  );
-                })}
-              </div>
-            </DashSection>
+        <div className={GRID}>
+          <div id="team-tasks" className="min-w-0 scroll-mt-24">
+            <TeamTasksCard rows={teamRows} tools={tools} loading={engagementsLoading} />
           </div>
-
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-5">
             <DashboardApprovalsPanel />
-            <AdminDashboardFilingsPanel engagements={engagements} dueSoon={dueSoon} />
+            <TaskStatusCard rows={teamRows} />
+            <WorkloadByLeadCard rows={teamRows} rebalanceHref={`${projectBase}/team`} />
           </div>
         </div>
+
+        <div className={GRID}>
+          <LeadActionQueue
+            userId={user?.id ?? ''}
+            items={teamItems}
+            now={now}
+            statusOf={(i) => team.byId.get(i.id)?.status ?? 'In progress'}
+            stuck={stuck}
+            loading={engagementsLoading}
+            workHref={projectBase === '/app/manager' ? '/app/manager/work' : `${projectBase}/projects?tab=leads`}
+            companyHref={(id) => {
+              const e = engById.get(id);
+              return e ? adminProjectPath(e, projectBase) : `${projectBase}/projects`;
+            }}
+          />
+          <div className="flex min-w-0 flex-col gap-5">
+            {userId ? <LeadInboxCard userId={userId} items={teamItems} engagementIds={scopedIds} /> : null}
+            <LeadSideRail items={teamItems} title="Waiting on client" mailHref={`${staffBase}/mail`} />
+          </div>
+        </div>
+
+        <div className={GRID}>
+          <PhaseProgressGrid
+            rows={phaseRows}
+            meta={`${completionRate}% tasks complete`}
+            href={`${projectBase}/projects`}
+            hrefLabel="All projects"
+            before={<PhaseTimeline phases={portfolioPhases} variant="journey" />}
+            extraColumns={[
+              {
+                key: 'lead',
+                header: 'Lead',
+                width: '120px',
+                render: (r) => {
+                  const lead = teamMembers.find((t) => t.id === r.leadId);
+                  return lead ? <PersonCell name={lead.name} /> : <span className="text-ink-faint">—</span>;
+                },
+              },
+            ]}
+          />
+          <div className="flex min-w-0 flex-col gap-5">
+            <AdminDashboardFilingsPanel engagements={engagements} dueSoon={scopedDueSoon} />
+            {userId ? <TeamTodosPanel userId={userId} /> : null}
+          </div>
+        </div>
+
+        {scope !== 'incorporating' ? <FilingsMatrix filings={scopedFilings} engagements={scoped} now={now} /> : null}
       </div>
+      <AssignTaskDialog open={assignOpen} onOpenChange={setAssignOpen} engagements={active} teamMembers={teamMembers} />
     </PageTransition>
   );
 }

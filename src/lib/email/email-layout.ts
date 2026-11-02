@@ -60,7 +60,7 @@ function brandHeaderHtml(
   }
 
   return `<td style="padding:22px 32px;background:#0F172A;">
-              <p style="margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#93C5FD;font-weight:700;">
+              <p style="margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:12px;letter-spacing:0.16em;text-transform:;color:#93C5FD;font-weight:700;">
                 ${escapeHtml(brand.mark)}
               </p>
               <p style="margin:6px 0 0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px;color:#94A3B8;">
@@ -93,7 +93,7 @@ export function renderEmailDocument(input: EmailLayoutInput): string {
   const brandKey = input.brand ?? 'vcfo';
   const brand = DOCUMENT_BRAND[brandKey];
   const eyebrow = input.eyebrow
-    ? `<p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#64748B;font-weight:600;">${escapeHtml(input.eyebrow)}</p>`
+    ? `<p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:;color:#64748B;font-weight:600;">${escapeHtml(input.eyebrow)}</p>`
     : '';
   const cta = input.cta
     ? `<p style="margin:28px 0 0;">

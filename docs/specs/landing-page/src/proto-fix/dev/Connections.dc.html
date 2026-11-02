@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Developer · Connections</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+<script src="./devdata.js"></script>
+<script src="./confirm.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+/*@dev-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="connections" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Connections" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="ds-bar">
+        <sc-for list="{{tabs}}" as="k" hint-placeholder-count="4"><button type="button" class="chipf" aria-pressed="{{k.on}}" onClick="{{k.pick}}">{{k.label}} <b>{{k.n}}</b></button></sc-for>
+      </div>
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+        <div class="grp">{{g.name}}</div>
+        <div class="cgrid"><sc-for list="{{g.items}}" as="c" hint-placeholder-count="3"><button type="button" class="cc" onClick="{{c.open}}" aria-label="{{c.name}} · {{c.sl}} · open details"><span class="top"><i class="dot {{c.dot}}"></i><b>{{c.name}}</b><span class="chip" style="{{c.cs}}; color: #fff; margin-left: auto">{{c.sl}}</span></span><span class="sub">{{c.prov}}</span><span style="font-size: 12.5px">{{c.acct}}</span><span class="sub">Last check: {{c.last}}</span></button></sc-for></div>
+      </sc-for>
+      <sc-if value="{{hasOpen}}" hint-placeholder-val="{{false}}">
+        <div class="drawer-scrim" onClick="{{closeIt}}" aria-hidden="true"></div>
+        <aside class="drawer" role="dialog" aria-modal="true" aria-label="{{o.name}}">
+          <div class="dh"><i class="dot {{o.dot}}"></i><h2>{{o.name}}</h2><button type="button" class="ibtn" onClick="{{closeIt}}" aria-label="Close">✕</button></div>
+          <div class="db"><span class="chip" style="{{o.cs}}; color: #fff; align-self: flex-start">{{o.sl}}</span><div class="kv" style="padding: 0; border: 0"><span class="mut">Provider</span><b style="font-weight: 600">{{o.prov}}</b></div><div class="kv" style="padding: 0; border: 0"><span class="mut">Account</span><b style="font-weight: 600">{{o.acct}}</b></div><div class="kv" style="padding: 0; border: 0"><span class="mut">Last check</span><b style="font-weight: 600">{{o.last}}</b></div>
+            <h3 class="st" style="margin-top: 8px">Settings and health</h3><sc-for list="{{o.lines}}" as="l" hint-placeholder-count="4"><div class="it" style="padding: 8px 0">{{l.t}}</div></sc-for>
+            <h3 class="st" style="margin-top: 8px">Secret</h3><div class="dv-box mono2">{{o.secret}}</div></div>
+          <div class="df"><button type="button" class="btn btnp" data-dev-confirm="Send a test" data-what="{{o.testWhat}}" data-before="-" data-after="{{o.testAfter}}" data-toast="{{o.testToast}}">Send a test</button><button type="button" class="btn" data-dev-confirm="{{o.editLabel}}" data-what="{{o.editWhat}}" data-before="{{o.acct}}" data-after="New value entered in this panel" data-toast="Saved · this is a prototype">{{o.editLabel}}</button><button type="button" class="btn" data-dev-confirm="{{o.offLabel}}" data-what="{{o.offWhat}}" data-before="{{o.sl}}" data-after="{{o.offAfter}}" data-toast="{{o.offToast}}" data-danger>{{o.offLabel}}</button></div>
+        </aside>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = window.DEV, A = window.ADM, s = this.state || {}, set = (o) => this.setState(o), dd = s.dd || '';
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:devaudit', () => this.setState({ t: Date.now() })); }
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const ST = { ok: ['Working', '#0f6e51'], warn: ['Needs attention', '#be4400'], down: ['Down', '#b5302a'], connected: ['Connected', '#0f6e51'], attention: ['Needs attention', '#be4400'], off: ['Not connected', '#656f7e'], missing: ['Missing', '#b5302a'], fail: ['Failed', '#b5302a'], skip: ['Skipped', '#be4400'], pending: ['Waiting for approval', '#be4400'], approved: ['Approved', '#0f6e51'], pass: ['Passing', '#0f6e51'] };
+    const chip = (k) => 'background:' + (ST[k] || ST.ok)[1];
+    const base = { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }) };
+
+    const f = s.f || '', op = s.op || '';
+    const list = D.CONN.filter(c => !f || c[4] === f);
+    const names = [...new Set(list.map(c => c[1]))];
+    const mk = (c) => ({ key: c[0], name: c[2], prov: c[3], acct: c[5], last: c[6], dot: c[4] === 'connected' ? 'ok' : (c[4] === 'attention' ? 'warn' : 'off'), sl: ST[c[4]][0], cs: chip(c[4]), open: () => set({ op: c[0] }) });
+    const groups = names.map(g => ({ name: g, items: list.filter(c => c[1] === g).map(mk) }));
+    const tabs = [['', 'All'], ['connected', 'Connected'], ['attention', 'Needs attention'], ['off', 'Not connected']].map(([k, label]) => ({ label, n: k ? D.CONN.filter(c => c[4] === k).length : D.CONN.length, on: f === k ? 'true' : 'false', pick: () => set({ f: k }) }));
+    const c = D.CONN.find(x => x[0] === op);
+    const o = c ? Object.assign(mk(c), { lines: c[7].map(t => ({ t })), secret: c[4] === 'off' ? 'Not set' : '•••• •••• •••• ' + (c[0].charCodeAt(0) * 37 % 9000 + 1000),
+      testWhat: 'Send a test through ' + c[2] + ' to farhath@sbcllp.in', testAfter: 'Test sent', testToast: 'Test sent through ' + c[2],
+      editLabel: c[4] === 'off' ? 'Connect' : 'Edit settings', editWhat: (c[4] === 'off' ? 'Connect ' : 'Change the settings of ') + c[2],
+      offLabel: c[4] === 'off' ? 'Remove' : 'Disconnect', offWhat: 'Disconnect ' + c[2] + '. Messages that use it stop until it is connected again.', offAfter: 'Not connected', offToast: c[2] + ' disconnected · this is a prototype' }) : {};
+    return Object.assign(base, { tabs, groups, hasOpen: !!c, o, closeIt: () => set({ op: '' }) });
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

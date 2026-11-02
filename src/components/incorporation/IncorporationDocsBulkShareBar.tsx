@@ -1,13 +1,13 @@
 'use client';
 
 import { CheckCircle2, Loader2, Share2 } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { IncorpDraftLabelOptions } from '@/lib/incorporation-docs/paths';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   allIncorpDraftSlotsGenerated,
   generatedIncorpDraftRowKeys,
@@ -97,7 +97,7 @@ export function IncorporationDocsBulkShareBar({
   return (
     <div
       className={cn(
-        'rounded-md border border-primary/40 bg-panel px-4 py-3 space-y-2',
+        'rounded-md border border-brand/40 bg-surface-raised px-4 py-3 space-y-2',
         className,
       )}
     >
@@ -106,7 +106,7 @@ export function IncorporationDocsBulkShareBar({
           <p className="text-[12px] font-medium text-ink">Share all drafts with client</p>
         </div>
         {shareComplete ? (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-success-text shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-positive shrink-0">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
             Shared with client
           </span>
@@ -132,14 +132,14 @@ export function IncorporationDocsBulkShareBar({
         )}
       </div>
       {!shareComplete && (
-        <p className="text-[10px] text-text-tertiary">
+        <p className="text-[10px] text-ink-faint">
           {allGenerated
             ? `${totalSlots}/${totalSlots} drafts ready — click Share when edits are saved.`
             : `${generatedCount}/${totalSlots} drafts generated — generate the remaining forms before sharing.`}
         </p>
       )}
       {shareComplete && sharedAt && (
-        <p className="text-[10px] text-text-tertiary">
+        <p className="text-[10px] text-ink-faint">
           Shared{' '}
           {new Date(sharedAt).toLocaleString(undefined, {
             dateStyle: 'medium',
@@ -149,26 +149,4 @@ export function IncorporationDocsBulkShareBar({
       )}
     </div>
   );
-}
-
-/** Register inline preview flush handlers keyed by `doc:director`. */
-export function useIncorpDocFlushRegistry() {
-  const mapRef = useRef<Map<string, () => Promise<boolean>> | null>(null);
-  if (mapRef.current === null) {
-    mapRef.current = new Map();
-  }
-
-  const register: IncorpDocFlushRegistrar = useCallback((key, flush) => {
-    const map = mapRef.current!;
-    if (flush) map.set(key, flush);
-    else map.delete(key);
-  }, []);
-
-  const flushAll = useCallback(async (): Promise<boolean> => {
-    const map = mapRef.current!;
-    const results = await Promise.all([...map.values()].map((flush) => flush()));
-    return results.every(Boolean);
-  }, []);
-
-  return { register, flushAll };
 }

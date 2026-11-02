@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Firm settings</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="settings" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Settings" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="set">
+        <section class="card" data-card="s-people">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8"></path></svg></span><h2 class="st">People and roles</h2><span class="cnt">{{nPeople}}</span><button type="button" class="btn btnp" style="margin-left: auto" onClick="{{addPerson}}">Add person</button></div>
+          <table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Reports to</th></tr></thead>
+            <tbody><sc-for list="{{people}}" as="p" hint-placeholder-count="12"><tr><td><span class="nm"><span class="pt">{{p.ini}}</span>{{p.name}}</span></td><td><span class="chip" style="{{p.rs}}">{{p.role}}</span></td><td class="mut">{{p.to}}</td></tr></sc-for></tbody></table>
+        </section>
+        <div class="stack">
+          <section class="card" data-card="s-sla">
+            <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20a10 10 0 1 0 0 20 M12 6v6l4 2"></path></svg></span><h2 class="st">Service targets</h2><button type="button" class="btn" style="margin-left: auto" onClick="{{editIt}}">Edit</button></div>
+            <sc-for list="{{sla}}" as="x" hint-placeholder-count="5"><div class="kv"><span>{{x.k}}</span><b style="font-weight: 600">{{x.v}}</b></div></sc-for>
+          </section>
+          <section class="card" data-card="s-brand">
+            <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.1 13.9 3 20 M14 4l6 6-8.5 8.5-6-6z"></path></svg></span><h2 class="st">Branding</h2><button type="button" class="btn" style="margin-left: auto" onClick="{{editIt}}">Edit</button></div>
+            <div class="kv"><span>Firm name</span><b style="font-weight: 600">SBC</b></div>
+            <div class="kv"><span>Portal address</span><b style="font-weight: 600">app.sbctrack.in</b></div>
+            <div class="kv"><span>Brand colours</span><span style="display: flex; gap: 6px"><span class="sw2" style="background: #1b4f94" title="Brand #1b4f94"></span><span class="sw2" style="background: #0f2a4a" title="Navy #0f2a4a"></span><span class="sw2" style="background: #c9a24b" title="Gold #c9a24b"></span></span></div>
+            <div class="kv"><span>Client emails sent from</span><b style="font-weight: 600">updates@sbcllp.in</b></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const RS = { 'Super admin': 'background:#0f2a4a;color:#fff', Admin: 'background:#e5f4ff;color:#0a4f94', Manager: 'background:#eef2f7;color:#0f2a4a', 'Project lead': 'background:#f7f9fc;color:#4b5b70;box-shadow:inset 0 0 0 1px #e1e7ef' };
+    const people = [['Mithilesh', 'Super admin', '-', 'MI']];
+    Object.keys(A.ADMINS).forEach(a => { people.push([AD(a).name, 'Admin', 'Mithilesh', AD(a).ini]); A.ADMINS[a].mgrs.forEach(m => { people.push([M(m).name, 'Manager', AD(a).name, M(m).ini]); A.ALLMGR[m].leads.forEach(l => people.push([l, 'Project lead', M(m).name, l === 'Bharath' ? 'BH' : A.ini(l)])); }); });
+    const sla = [['Days to certificate (COI)', '30 days'], ['File statutory returns before the due date', '2 days ahead'], ['Reply to a client', 'Within 4 working hours'], ['Escalate a stuck step to the admin', 'After 3 days'], ['Monthly partner report', '1st of the month']]
+      .map(([k, v]) => ({ k, v }));
+    const cat = [['Private limited incorporation', 'Name to certificate, 14 steps', 65000], ['Post-incorporation pack', 'Commencement, auditor, share certificates', 35000], ['GST and payroll registrations', 'GST, PF, ESI, PT', 25000],
+      ['Monthly compliance', 'GST, TDS, PF and ESI, PT returns', 18000], ['Annual ROC filings', 'AOC-4, MGT-7, DIR-3 KYC', 30000], ['FEMA advisory', 'FC-GPR, FLA, ECB', 40000]]
+      .map(([k, d, v]) => ({ k, d, v: A.rupees(v) + (k === 'Monthly compliance' ? ' a month' : '') }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), people: people.map(([name, role, to, ini]) => ({ name, role, to, ini, rs: RS[role] })), nPeople: people.length, sla, cat,
+      addPerson: () => toast('Invite sent · this is a prototype'), editIt: () => toast('Editing is not part of this prototype') };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

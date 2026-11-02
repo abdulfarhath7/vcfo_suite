@@ -9,7 +9,7 @@ import {
   type ChartRow,
   type ChartSeries,
 } from '@/components/charts';
-import { SUPER_PROJECTS_HREF, type SuperOverview } from '@/lib/super-overview';
+import { SUPER_PROJECTS_HREF, type SuperOverview } from '@/lib/super/super-overview';
 
 /**
  * The two portfolio charts. Both go through the shared chart layer, so their

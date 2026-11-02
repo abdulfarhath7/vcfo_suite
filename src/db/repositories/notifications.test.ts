@@ -121,7 +121,7 @@ describe('reads are self-scoped for every role', () => {
 });
 
 describe('create', () => {
-  it.each(['admin', 'manager'] as const)('%s may target another user', async (role) => {
+  it.each(['super_admin', 'admin', 'manager'] as const)('%s may target another user', async (role) => {
     results = [[row(OTHER_USER)]];
     await repo.createNotification(ctx(role), { ...notif, userId: OTHER_USER });
     expect((calls[0]!.values as { userId: string }).userId).toBe(OTHER_USER);
@@ -181,5 +181,30 @@ describe('mutations never touch another user’s rows', () => {
     expect(await repo.dismissNotifications(ctx('client'), [])).toEqual([]);
     expect(await repo.restoreNotifications(ctx('client'), [])).toEqual([]);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('sender (C-759)', () => {
+  const notif = { kind: 'checklist.deliver' as const, title: 'Hi', body: 'b', engagementId: 'e', companyName: 'Co', href: '#' };
+
+  it('createNotification stamps the caller as the sender', async () => {
+    results = [[row('user-manager')]];
+    await repo.createNotification(ctx('manager'), notif);
+    const stored = JSON.parse((calls[0]!.values as { description: string }).description);
+    expect(stored.actorId).toBe('user-manager');
+    expect(stored.actorName).toBe('manager');
+  });
+
+  it('reads the stored sender back', async () => {
+    results = [[{ ...row('user-client'), description: JSON.stringify({ body: 'b', kind: 'checklist.deliver', actorId: 'p-1', actorName: 'Bharath K' }) }]];
+    const [n] = await repo.listNotifications(ctx('client'));
+    expect(n!.actorName).toBe('Bharath K');
+    expect(n!.actorId).toBe('p-1');
+  });
+
+  it('an old row without a sender has none', async () => {
+    results = [[row('user-client')]];
+    const [n] = await repo.listNotifications(ctx('client'));
+    expect(n!.actorName).toBeUndefined();
   });
 });

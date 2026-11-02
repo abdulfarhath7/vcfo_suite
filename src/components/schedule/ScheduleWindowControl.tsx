@@ -5,8 +5,9 @@ import { CalendarRange, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
-import { formatWindow, isValidWindowRange } from '@/lib/schedule-windows';
-import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { formatWindow, isValidWindowRange } from '@/lib/projects/schedule-windows';
+import { errorMessage, toastError } from '@/lib/toast-errors';
+import { toastSaved } from '@/components/ui/toast-saved';
 import { cn } from '@/lib/utils';
 
 type WindowValue = { from: string; to: string } | null | undefined;
@@ -50,7 +51,9 @@ export function ScheduleWindowControl({
     setBusy(true);
     try {
       await onSave(next);
-      toastSuccess(next ? `${label} window saved` : `${label} window cleared`, next ? formatWindow(next) : undefined, {
+      // M-28 (A1): a save with no Undo shows the white toast with the green tick.
+      toastSaved(next ? `${label} window saved` : `${label} window cleared`, {
+        sub: next ? formatWindow(next) : undefined,
         id: `schedule-window:${label}`,
       });
       setOpen(false);
@@ -73,7 +76,7 @@ export function ScheduleWindowControl({
         <button
           type="button"
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-2 py-1 font-mono text-[11px] tabular-nums text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground',
+            'inline-flex items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[11px] tabular-nums text-ink-muted transition-colors hover:border-brand/40 hover:text-ink',
             value && 'border-solid',
             className,
           )}
@@ -84,13 +87,13 @@ export function ScheduleWindowControl({
         </button>
       </PopoverTrigger>
       <PopoverContent align={align} className="w-[19rem] p-3">
-        <p className="mb-2 text-[12px] font-semibold text-foreground">{label} window</p>
+        <p className="mb-2 text-[12px] font-semibold text-ink">{label} window</p>
         <div className="grid grid-cols-1 gap-2">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[11px] text-ink-muted">
             <span id={`window-from-label-${slug}`}>From</span>
             <NoirDatePicker id={`window-from-${slug}`} value={from} onChange={setFrom} className="mt-1" />
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[11px] text-ink-muted">
             <span id={`window-to-label-${slug}`}>To</span>
             <NoirDatePicker id={`window-to-${slug}`} value={to} onChange={setTo} className="mt-1" />
           </div>
@@ -106,7 +109,7 @@ export function ScheduleWindowControl({
               variant="ghost"
               disabled={busy}
               onClick={() => void commit(null)}
-              className="mr-auto cursor-pointer text-muted-foreground"
+              className="mr-auto cursor-pointer text-ink-muted"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
               Clear
@@ -142,7 +145,7 @@ export function ScheduleWindowMeta({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 font-mono text-[11px] tabular-nums text-muted-foreground',
+        'inline-flex items-center gap-1 text-[11px] tabular-nums text-ink-muted',
         className,
       )}
     >

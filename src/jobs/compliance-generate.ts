@@ -5,6 +5,9 @@ import {
 } from '@/db/repositories/compliance';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
+import { systemGetRemindDays } from '@/db/repositories/notification-prefs';
+import { dueNudgeToday } from '@/lib/notify/reminder-days';
+import { withRunNow } from '@/jobs/dev-controls';
 
 /**
  * Scheduled: expand compliance obligations into dated instances.
@@ -16,7 +19,7 @@ import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
  */
 export const complianceGenerate = inngest.createFunction(
   { id: 'compliance-generate' },
-  { cron: '0 6 * * *' }, // daily 06:00
+  withRunNow('compliance-generate', '0 6 * * *'), // daily 06:00
   async ({ step }) => {
     const result = await step.run('generate-instances', async () => {
       return systemGenerateComplianceInstances(new Date());
@@ -39,7 +42,9 @@ export const complianceGenerate = inngest.createFunction(
      * day. Every enqueue carries a deterministic id keyed on the instance and
      * the recipient, so a re-run cannot message anyone twice.
      *
-     * Due reminders go to clients. Overdue also goes to the project leads.
+     * Due reminders go to clients, on each client's own reminder days when they chose some
+     * (notification_prefs.remind_days), else on the default days (monthly 5, quarterly 7).
+     * Overdue also goes to the project leads.
      */
     const nudges = await step.run('queue-whatsapp-nudges', async () => {
       const rows = await systemListComplianceNudges(new Date());
@@ -49,12 +54,17 @@ export const complianceGenerate = inngest.createFunction(
         const recipients = await resolveEngagementRecipients(row.engagementDbId);
         if (!recipients) continue;
 
-        const clients =
+        const allClients =
           recipients.clients.length > 0
             ? recipients.clients
             : recipients.client
               ? [recipients.client]
               : [];
+        let clients = allClients;
+        if (row.kind !== 'compliance_overdue') {
+          const own = await systemGetRemindDays(allClients.map((c) => c.userId));
+          clients = allClients.filter((c) => dueNudgeToday(own.get(c.userId), row.frequency, row.daysToDue));
+        }
 
         const leads =
           row.kind === 'compliance_overdue'

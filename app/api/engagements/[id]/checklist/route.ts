@@ -8,12 +8,12 @@ import {
   getEngagementById,
   patchChecklistItem,
 } from '@/db/repositories/engagements';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
-import { leadWritablePatch } from '@/lib/checklist-item-review';
+import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
 import {
   isDirectFlowStep,
   isDirectFlowStepComplete,
@@ -22,7 +22,7 @@ import {
   MANAGER_APPROVAL_STEP_ID,
   stripLeadOnlyResponses,
   stripResponsesNotEditableBy,
-} from '@/lib/pre-inc-direct-flow';
+} from '@/lib/incorporation/pre-inc-direct-flow';
 
 type RouteContext = { params: Promise<{ id: string }> };
 

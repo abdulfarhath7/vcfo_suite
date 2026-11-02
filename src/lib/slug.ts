@@ -1,6 +1,6 @@
 import type { Engagement } from '@/data/engagements';
 import { checklist } from '@/data/checklist';
-import { APP_ID_TO_DB_ID, LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { APP_ID_TO_DB_ID, LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

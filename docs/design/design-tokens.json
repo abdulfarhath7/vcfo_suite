@@ -1,0 +1,1368 @@
+{
+  "name": "VCFO Spectrum",
+  "version": 2,
+  "generated": "2026-10-29",
+  "note": "Hex is the design value. oklch is the channel triplet for app/globals.css (oklch(var(--token) / <alpha-value>)). {ink} means the token aliases ink.",
+  "color": {
+    "themes": [
+      {
+        "id": "light",
+        "name": "Light"
+      },
+      {
+        "id": "dark",
+        "name": "Dark"
+      }
+    ],
+    "tokens": [
+      {
+        "name": "surface",
+        "value": {
+          "light": "#edf1f6",
+          "dark": "#0b0c10"
+        },
+        "usage": "Page canvas behind everything. One step darker than surface-raised in both themes, so every card reads as raised (R-54). Cool grey; deep navy in dark. Never pure white, never pure black.",
+        "oklch": {
+          "light": "95.7% 0.008 254",
+          "dark": "15.5% 0.009 274"
+        }
+      },
+      {
+        "name": "surface-raised",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#13151a"
+        },
+        "usage": "Cards, tables, dialogs, popovers, the top bar. Sits on surface with a 2px line edge (R-55). A card never sits on a ground of its own colour (R-54).",
+        "oklch": {
+          "light": "100.0% 0.000 0",
+          "dark": "19.6% 0.011 268"
+        }
+      },
+      {
+        "name": "surface-sunken",
+        "value": {
+          "light": "#f1f4f8",
+          "dark": "#0f1115"
+        },
+        "usage": "Wells: table header rows, input backgrounds on raised cards, empty-state grounds, skeleton blocks.",
+        "oklch": {
+          "light": "96.6% 0.006 255",
+          "dark": "17.7% 0.009 264"
+        }
+      },
+      {
+        "name": "hover",
+        "value": {
+          "light": "#f4f6fa",
+          "dark": "#1a1d23"
+        },
+        "usage": "Hovered table and list rows and the live step row. Lighter than the card in dark mode, so a hovered row lifts instead of sinking.",
+        "oklch": {
+          "light": "97.3% 0.006 265",
+          "dark": "23.0% 0.012 264"
+        }
+      },
+      {
+        "name": "line",
+        "value": {
+          "light": "#d3dae4",
+          "dark": "#242830"
+        },
+        "usage": "2px edge around every card, panel and section (R-55). Must stay clearly darker than the page (surface), so every card reads as a separate object.",
+        "oklch": {
+          "light": "88.9% 0.016 257",
+          "dark": "27.6% 0.016 264"
+        }
+      },
+      {
+        "name": "line-soft",
+        "value": {
+          "light": "#edf1f5",
+          "dark": "#1d2027"
+        },
+        "usage": "Hairlines between rows inside a card and between list items. Lighter than line, which frames cards and grid cells.",
+        "oklch": {
+          "light": "95.6% 0.007 248",
+          "dark": "24.4% 0.014 267"
+        }
+      },
+      {
+        "name": "line-strong",
+        "value": {
+          "light": "#b9c3d0",
+          "dark": "#323742"
+        },
+        "usage": "Borders of inputs, checkboxes and secondary buttons. Holds 3:1 on surface and surface-raised.",
+        "oklch": {
+          "light": "81.5% 0.022 256",
+          "dark": "33.7% 0.021 266"
+        }
+      },
+      {
+        "name": "rule",
+        "value": {
+          "light": "{ink}",
+          "dark": "{ink}"
+        },
+        "usage": "2px structural rule under page heads and table heads, above totals rows. Same colour as ink in both themes."
+      },
+      {
+        "name": "ink",
+        "value": {
+          "light": "#0a2540",
+          "dark": "#f2f4f8"
+        },
+        "usage": "Primary text and figures on every surface and every -soft ground. Navy, never black.",
+        "oklch": {
+          "light": "26.0% 0.060 251",
+          "dark": "96.7% 0.006 265"
+        }
+      },
+      {
+        "name": "ink-muted",
+        "value": {
+          "light": "#5e6e85",
+          "dark": "#8e97a5"
+        },
+        "usage": "Secondary text: meta, captions, helper text, table head text. 4.5:1 on every ground it is used on.",
+        "oklch": {
+          "light": "53.4% 0.041 257",
+          "dark": "67.4% 0.023 259"
+        }
+      },
+      {
+        "name": "ink-faint",
+        "value": {
+          "light": "#8896a8",
+          "dark": "#6b7482"
+        },
+        "usage": "Placeholders, disabled labels, locked steps, the Other series. 3:1 only; never body text.",
+        "oklch": {
+          "light": "66.8% 0.031 255",
+          "dark": "55.6% 0.024 259"
+        }
+      },
+      {
+        "name": "ink-2",
+        "value": {
+          "light": "#3c4f69",
+          "dark": "#b6beca"
+        },
+        "usage": "Secondary text that still reads as content: row meta, card body copy (Spectrum ink-2).",
+        "oklch": {
+          "light": "42.3% 0.050 256",
+          "dark": "79.9% 0.019 258"
+        }
+      },
+      {
+        "name": "wash-ink-2",
+        "value": {
+          "light": "#3c4f69",
+          "dark": "#c9cdf5"
+        },
+        "usage": "Secondary text on the home card wash: the date and the step count. Lilac in dark mode so it reads on the violet wash.",
+        "oklch": {
+          "light": "42.3% 0.050 256",
+          "dark": "85.8% 0.056 281"
+        }
+      },
+      {
+        "name": "brand",
+        "value": {
+          "light": "#635bff",
+          "dark": "#7a72ff"
+        },
+        "usage": "The one action colour: primary buttons, links, active navigation, selection, progress, the current step. Text-safe in both themes.",
+        "oklch": {
+          "light": "57.8% 0.235 278",
+          "dark": "63.2% 0.203 281"
+        }
+      },
+      {
+        "name": "brand-strong",
+        "value": {
+          "light": "#5249f0",
+          "dark": "#8c85ff"
+        },
+        "usage": "Hover and pressed state of brand; link hover.",
+        "oklch": {
+          "light": "52.7% 0.239 277",
+          "dark": "67.9% 0.175 283"
+        }
+      },
+      {
+        "name": "brand-soft",
+        "value": {
+          "light": "#efeeff",
+          "dark": "#23243f"
+        },
+        "usage": "Selected rows, the current step ground, active nav ground, the brand wash behind a callout.",
+        "oklch": {
+          "light": "95.5% 0.023 289",
+          "dark": "27.3% 0.050 281"
+        }
+      },
+      {
+        "name": "brand-text",
+        "value": {
+          "light": "#4a3fe0",
+          "dark": "#aba6ff"
+        },
+        "usage": "Text-safe blurple: links and the In progress chip word (Spectrum accent).",
+        "oklch": {
+          "light": "49.3% 0.232 277",
+          "dark": "76.4% 0.126 286"
+        }
+      },
+      {
+        "name": "brand-line",
+        "value": {
+          "light": "#d3d1ff",
+          "dark": "#3c3a76"
+        },
+        "usage": "Edge of the In progress chip, the hatch stripes of the remaining Gantt part.",
+        "oklch": {
+          "light": "87.7% 0.063 287",
+          "dark": "38.3% 0.100 282"
+        }
+      },
+      {
+        "name": "on-brand",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#ffffff"
+        },
+        "usage": "Text and icons on a brand fill. White in light; navy on the lighter dark-mode blue.",
+        "oklch": {
+          "light": "100.0% 0.000 0",
+          "dark": "100.0% 0.000 0"
+        }
+      },
+      {
+        "name": "navy-fill",
+        "value": {
+          "light": "#0a2540",
+          "dark": "#f2f4f8"
+        },
+        "usage": "The one main-button fill (one per card), the picked tab, the greeting band and e-Filing table heads. Same in both themes.",
+        "oklch": {
+          "light": "26.0% 0.060 251",
+          "dark": "96.7% 0.006 265"
+        }
+      },
+      {
+        "name": "navy-fill-hover",
+        "value": {
+          "light": "#0f2d4d",
+          "dark": "#dfe3ea"
+        },
+        "usage": "Hover and pressed state of navy fills.",
+        "oklch": {
+          "light": "29.3% 0.069 252",
+          "dark": "91.5% 0.010 262"
+        }
+      },
+      {
+        "name": "on-navy",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#0a2540"
+        },
+        "usage": "Text and icons on a navy fill.",
+        "oklch": {
+          "light": "100.0% 0.000 0",
+          "dark": "26.0% 0.060 251"
+        }
+      },
+      {
+        "name": "highlight",
+        "value": {
+          "light": "#b54708",
+          "dark": "#ff7a2e"
+        },
+        "usage": "Text-safe orange, the one highlight per screen region: what needs the user, the next payment, a new-item count, the version chip. Never a button, never page atmosphere.",
+        "oklch": {
+          "light": "53.9% 0.156 43",
+          "dark": "72.5% 0.182 46"
+        }
+      },
+      {
+        "name": "highlight-bright",
+        "value": {
+          "light": "#f26b1d",
+          "dark": "#ff7a2e"
+        },
+        "usage": "Orange for marks with no small text: a 3px top edge, a dot beside a label. 3:1 on surface-raised.",
+        "oklch": {
+          "light": "68.4% 0.185 45",
+          "dark": "72.5% 0.182 46"
+        }
+      },
+      {
+        "name": "highlight-soft",
+        "value": {
+          "light": "#fff0d9",
+          "dark": "#2f291b"
+        },
+        "usage": "Ground of small orange chips only. Never a large block; it turns muddy in dark mode.",
+        "oklch": {
+          "light": "96.1% 0.034 79",
+          "dark": "28.3% 0.025 87"
+        }
+      },
+      {
+        "name": "positive",
+        "value": {
+          "light": "#0b7a43",
+          "dark": "#5be08e"
+        },
+        "usage": "Done, filed, paid, on track. Text-safe on surfaces and on positive-soft. Always with a word.",
+        "oklch": {
+          "light": "51.0% 0.125 154",
+          "dark": "81.3% 0.165 153"
+        }
+      },
+      {
+        "name": "positive-soft",
+        "value": {
+          "light": "#dff5e7",
+          "dark": "#1a2d26"
+        },
+        "usage": "Ground of positive chips and compare-table rows.",
+        "oklch": {
+          "light": "95.0% 0.030 158",
+          "dark": "27.8% 0.028 169"
+        }
+      },
+      {
+        "name": "positive-mid",
+        "value": {
+          "light": "#16a34a",
+          "dark": "#4ade80"
+        },
+        "usage": "Bar and dot fill for done or filed. Marks only, never text.",
+        "oklch": {
+          "light": "62.7% 0.170 149",
+          "dark": "80.0% 0.182 152"
+        }
+      },
+      {
+        "name": "warning",
+        "value": {
+          "light": "#9a4d00",
+          "dark": "#ffcb5c"
+        },
+        "usage": "Due soon, waiting on someone, at risk. The prototype orange: a solid chip with on-status text, or text on a surface. Always with a word.",
+        "oklch": {
+          "light": "50.6% 0.126 55",
+          "dark": "86.8% 0.140 84"
+        }
+      },
+      {
+        "name": "warning-soft",
+        "value": {
+          "light": "#fff0d9",
+          "dark": "#2f291b"
+        },
+        "usage": "Ground of warning chips and the changed rows of a compare table.",
+        "oklch": {
+          "light": "96.1% 0.034 79",
+          "dark": "28.3% 0.025 87"
+        }
+      },
+      {
+        "name": "warning-mid",
+        "value": {
+          "light": "#f59e0b",
+          "dark": "#fbbf24"
+        },
+        "usage": "Bar and dot fill for due soon or with the client. Marks only, never text.",
+        "oklch": {
+          "light": "76.9% 0.165 70",
+          "dark": "83.7% 0.164 84"
+        }
+      },
+      {
+        "name": "danger",
+        "value": {
+          "light": "#c0182f",
+          "dark": "#ff7f8e"
+        },
+        "usage": "Overdue, failed, rejected, destructive actions. Always with a word.",
+        "oklch": {
+          "light": "51.9% 0.197 22",
+          "dark": "74.6% 0.156 14"
+        }
+      },
+      {
+        "name": "danger-soft",
+        "value": {
+          "light": "#ffe6e9",
+          "dark": "#342128"
+        },
+        "usage": "Ground of danger chips and removed rows.",
+        "oklch": {
+          "light": "94.6% 0.028 9",
+          "dark": "27.4% 0.031 356"
+        }
+      },
+      {
+        "name": "danger-mid",
+        "value": {
+          "light": "#e11d48",
+          "dark": "#fb5468"
+        },
+        "usage": "Bar and dot fill for overdue or failed. Marks only, never text.",
+        "oklch": {
+          "light": "58.6% 0.222 18",
+          "dark": "67.8% 0.202 18"
+        }
+      },
+      {
+        "name": "danger-fill",
+        "value": {
+          "light": "#d92d20",
+          "dark": "#f04452"
+        },
+        "usage": "Fill of the danger button only. Overdue text uses danger.",
+        "oklch": {
+          "light": "57.6% 0.209 29",
+          "dark": "64.1% 0.208 21"
+        }
+      },
+      {
+        "name": "info",
+        "value": {
+          "light": "#0a5fc2",
+          "dark": "#7cb4f5"
+        },
+        "usage": "Notes, internal-only bands, neutral callouts. Teal, so it never reads as the brand.",
+        "oklch": {
+          "light": "50.0% 0.172 257",
+          "dark": "75.7% 0.111 253"
+        }
+      },
+      {
+        "name": "info-soft",
+        "value": {
+          "light": "#e8f1fd",
+          "dark": "#172237"
+        },
+        "usage": "Ground of info callouts and the lock-marked internal band.",
+        "oklch": {
+          "light": "95.5% 0.019 256",
+          "dark": "25.3% 0.043 263"
+        }
+      },
+      {
+        "name": "info-line",
+        "value": {
+          "light": "#bfd8f7",
+          "dark": "#1e396e"
+        },
+        "usage": "Edge of an info banner.",
+        "oklch": {
+          "light": "87.4% 0.051 254",
+          "dark": "35.4% 0.098 262"
+        }
+      },
+      {
+        "name": "info-mid",
+        "value": {
+          "light": "#2f6feb",
+          "dark": "#5b8ff0"
+        },
+        "usage": "Blue dots and bars: the SBC owner dot and info marks. Marks only, never text.",
+        "oklch": {
+          "light": "57.3% 0.199 262",
+          "dark": "65.9% 0.155 262"
+        }
+      },
+      {
+        "name": "upcoming",
+        "value": {
+          "light": "#4e5d73",
+          "dark": "#a9b2bf"
+        },
+        "usage": "The fifth state: not started, upcoming, queued. A solid chip with on-status text, or a grey mark. Not for prose.",
+        "oklch": {
+          "light": "47.4% 0.040 258",
+          "dark": "76.1% 0.021 257"
+        }
+      },
+      {
+        "name": "upcoming-soft",
+        "value": {
+          "light": "#edf0f5",
+          "dark": "#24272d"
+        },
+        "usage": "Ground of upcoming chips, empty heatmap cells, the track of a progress bar.",
+        "oklch": {
+          "light": "95.4% 0.007 261",
+          "dark": "27.2% 0.012 264"
+        }
+      },
+      {
+        "name": "upcoming-mid",
+        "value": {
+          "light": "#94a3b8",
+          "dark": "#6b7482"
+        },
+        "usage": "Dot and bar fill for Not started.",
+        "oklch": {
+          "light": "71.1% 0.035 257",
+          "dark": "55.6% 0.024 259"
+        }
+      },
+      {
+        "name": "identity",
+        "value": {
+          "light": "#5b3fc4",
+          "dark": "#c4b2f2"
+        },
+        "usage": "MCA and identity: the MCA owner chip, ID and credential tiles, activity tiles.",
+        "oklch": {
+          "light": "48.0% 0.196 286",
+          "dark": "80.1% 0.091 297"
+        }
+      },
+      {
+        "name": "identity-soft",
+        "value": {
+          "light": "#efeafc",
+          "dark": "#26203d"
+        },
+        "usage": "Ground of violet chips and tiles.",
+        "oklch": {
+          "light": "94.6% 0.025 299",
+          "dark": "26.6% 0.053 292"
+        }
+      },
+      {
+        "name": "identity-mid",
+        "value": {
+          "light": "#8b5cf6",
+          "dark": "#a78bfa"
+        },
+        "usage": "Violet dots and bars: the MCA owner dot, the violet chip dot. Marks only, never text (prototype violet-mid).",
+        "oklch": {
+          "light": "60.6% 0.219 293",
+          "dark": "70.9% 0.159 294"
+        }
+      },
+      {
+        "name": "on-status",
+        "value": {
+          "light": "#ffffff",
+          "dark": "#0b0c10"
+        },
+        "usage": "Text on a solid status fill (positive, warning, danger, brand, upcoming). White in light; navy on the lighter dark fills.",
+        "oklch": {
+          "light": "100.0% 0.000 0",
+          "dark": "15.5% 0.009 274"
+        }
+      },
+      {
+        "name": "gold",
+        "value": {
+          "light": "#f26b1d",
+          "dark": "#ff7a2e"
+        },
+        "usage": "The brand mark, as marks only: the 3px underline in the greeting card, the ring around the current step, the sidebar active rail, a card top tab. 3:1 on navy, not on white, so it never carries text.",
+        "oklch": {
+          "light": "68.4% 0.185 45",
+          "dark": "72.5% 0.182 46"
+        }
+      },
+      {
+        "name": "gold-text",
+        "value": {
+          "light": "#9a4d00",
+          "dark": "#ffcb5c"
+        },
+        "usage": "The only gold that touches words: a version chip, a \"you own this\" label. 4.5:1 on surfaces.",
+        "oklch": {
+          "light": "50.6% 0.126 55",
+          "dark": "86.8% 0.140 84"
+        }
+      },
+      {
+        "name": "owner-client",
+        "value": {
+          "light": "#9a4d00",
+          "dark": "#ffcb5c"
+        },
+        "usage": "Owner chip text: the client holds this step. Soft tint only, never a solid fill.",
+        "oklch": {
+          "light": "50.6% 0.126 55",
+          "dark": "86.8% 0.140 84"
+        }
+      },
+      {
+        "name": "owner-client-soft",
+        "value": {
+          "light": "#fff0d9",
+          "dark": "#2f291b"
+        },
+        "usage": "Ground of the client owner chip.",
+        "oklch": {
+          "light": "96.1% 0.034 79",
+          "dark": "28.3% 0.025 87"
+        }
+      },
+      {
+        "name": "owner-sbc",
+        "value": {
+          "light": "#0a5fc2",
+          "dark": "#7cb4f5"
+        },
+        "usage": "Owner chip text: SBC holds this step.",
+        "oklch": {
+          "light": "50.0% 0.172 257",
+          "dark": "75.7% 0.111 253"
+        }
+      },
+      {
+        "name": "owner-sbc-soft",
+        "value": {
+          "light": "#e8f1fd",
+          "dark": "#172237"
+        },
+        "usage": "Ground of the SBC owner chip.",
+        "oklch": {
+          "light": "95.5% 0.019 256",
+          "dark": "25.3% 0.043 263"
+        }
+      },
+      {
+        "name": "owner-mca",
+        "value": {
+          "light": "#5b3fc4",
+          "dark": "#c4b2f2"
+        },
+        "usage": "Owner chip text: with the MCA or another authority.",
+        "oklch": {
+          "light": "48.0% 0.196 286",
+          "dark": "80.1% 0.091 297"
+        }
+      },
+      {
+        "name": "owner-mca-soft",
+        "value": {
+          "light": "#efeafc",
+          "dark": "#26203d"
+        },
+        "usage": "Ground of the MCA owner chip.",
+        "oklch": {
+          "light": "94.6% 0.025 299",
+          "dark": "26.6% 0.053 292"
+        }
+      },
+      {
+        "name": "owner-manager",
+        "value": {
+          "light": "#06708c",
+          "dark": "#6ad4ee"
+        },
+        "usage": "Owner chip text: with a manager.",
+        "oklch": {
+          "light": "50.7% 0.093 223",
+          "dark": "81.7% 0.104 216"
+        }
+      },
+      {
+        "name": "owner-manager-soft",
+        "value": {
+          "light": "#dff3f9",
+          "dark": "#172935"
+        },
+        "usage": "Ground of the manager owner chip.",
+        "oklch": {
+          "light": "95.1% 0.023 218",
+          "dark": "27.1% 0.033 239"
+        }
+      },
+      {
+        "name": "hero-gradient",
+        "value": {
+          "light": "radial-gradient(55% 140% at 0% 0%, rgba(99, 91, 255, 0.62), transparent 62%), radial-gradient(45% 130% at 42% 0%, rgba(14, 159, 142, 0.42), transparent 62%), radial-gradient(45% 140% at 100% 0%, rgba(242, 107, 29, 0.48), transparent 62%), radial-gradient(55% 110% at 78% 100%, rgba(232, 69, 122, 0.4), transparent 62%), radial-gradient(45% 100% at 20% 100%, rgba(47, 111, 235, 0.34), transparent 62%), #e9e7ff",
+          "dark": "radial-gradient(55% 140% at 0% 0%, rgba(122, 114, 255, 0.55), transparent 62%), radial-gradient(45% 130% at 42% 0%, rgba(14, 159, 142, 0.34), transparent 62%), radial-gradient(45% 140% at 100% 0%, rgba(242, 107, 29, 0.32), transparent 62%), radial-gradient(55% 110% at 78% 100%, rgba(232, 69, 122, 0.3), transparent 62%), #15132e"
+        },
+        "usage": "The home card colour wash (R-17). The only gradient in the product."
+      },
+      {
+        "name": "focus-ring",
+        "value": {
+          "light": "#635bff",
+          "dark": "#7a72ff"
+        },
+        "usage": "2px solid outline, offset 2px, on every interactive element. Holds 3:1 on every surface including the navy sidebar.",
+        "oklch": {
+          "light": "57.8% 0.235 278",
+          "dark": "63.2% 0.203 281"
+        }
+      },
+      {
+        "name": "scrim",
+        "value": {
+          "light": "rgba(10, 37, 64, 0.42)",
+          "dark": "rgba(0, 0, 0, 0.6)"
+        },
+        "usage": "Behind dialogs and bottom sheets. The only translucent colour; nothing uses blur."
+      },
+      {
+        "name": "side",
+        "value": {
+          "light": "#0a2540",
+          "dark": "#0b1424"
+        },
+        "usage": "Desktop sidebar ground. Navy gives the app its weight; in dark mode it matches the surface and side-line separates it.",
+        "oklch": {
+          "light": "26.0% 0.060 251",
+          "dark": "19.2% 0.035 261"
+        }
+      },
+      {
+        "name": "side-deep",
+        "value": {
+          "light": "#0f2d4d",
+          "dark": "#111c30"
+        },
+        "usage": "The front mountain on the sign-in page, one step off the navy ground (prototype navy-2).",
+        "oklch": {
+          "light": "29.3% 0.069 252",
+          "dark": "22.7% 0.042 262"
+        }
+      },
+      {
+        "name": "side-ink",
+        "value": {
+          "light": "#c6d1e0",
+          "dark": "#c6d1e0"
+        },
+        "usage": "Sidebar labels and icons.",
+        "oklch": {
+          "light": "85.7% 0.024 256",
+          "dark": "85.7% 0.024 256"
+        }
+      },
+      {
+        "name": "side-muted",
+        "value": {
+          "light": "#8fa3bf",
+          "dark": "#8fa3bf"
+        },
+        "usage": "Sidebar group titles and meta. 4.5:1 on side.",
+        "oklch": {
+          "light": "71.0% 0.047 257",
+          "dark": "71.0% 0.047 257"
+        }
+      },
+      {
+        "name": "side-active",
+        "value": {
+          "light": "#273972",
+          "dark": "#282c5d"
+        },
+        "usage": "Ground of the active sidebar item; its icon is side-ink.",
+        "oklch": {
+          "light": "36.2% 0.101 268",
+          "dark": "31.8% 0.086 277"
+        }
+      },
+      {
+        "name": "side-line",
+        "value": {
+          "light": "#17375c",
+          "dark": "#1c2a40"
+        },
+        "usage": "Hairline between sidebar groups and along the sidebar edge.",
+        "oklch": {
+          "light": "33.3% 0.076 254",
+          "dark": "28.4% 0.045 259"
+        }
+      },
+      {
+        "name": "side-active-ink",
+        "value": {
+          "light": "#d9d6ff",
+          "dark": "#d9d6ff"
+        },
+        "usage": "Label of the active sidebar row (lilac).",
+        "oklch": {
+          "light": "89.2% 0.056 289",
+          "dark": "89.2% 0.056 289"
+        }
+      },
+      {
+        "name": "side-hover",
+        "value": {
+          "light": "#19324b",
+          "dark": "#1a2231"
+        },
+        "usage": "Ground of a hovered sidebar row.",
+        "oklch": {
+          "light": "31.0% 0.055 250",
+          "dark": "25.2% 0.031 263"
+        }
+      },
+      {
+        "name": "data-1",
+        "value": {
+          "light": "#0e9f8e",
+          "dark": "#0e9f8e"
+        },
+        "usage": "Chart series 1 (blue). Categorical slots are assigned in fixed order, never cycled, and never used for UI chips.",
+        "oklch": {
+          "light": "63.1% 0.111 182",
+          "dark": "63.1% 0.111 182"
+        }
+      },
+      {
+        "name": "data-2",
+        "value": {
+          "light": "#8b5cf6",
+          "dark": "#8b5cf6"
+        },
+        "usage": "Chart series 2 (orange).",
+        "oklch": {
+          "light": "60.6% 0.219 293",
+          "dark": "60.6% 0.219 293"
+        }
+      },
+      {
+        "name": "data-3",
+        "value": {
+          "light": "#2f6feb",
+          "dark": "#2f6feb"
+        },
+        "usage": "Chart series 3 (aqua). Below 3:1 on the light surface: needs direct labels or a table view.",
+        "oklch": {
+          "light": "57.3% 0.199 262",
+          "dark": "57.3% 0.199 262"
+        }
+      },
+      {
+        "name": "data-4",
+        "value": {
+          "light": "#e8457a",
+          "dark": "#e8457a"
+        },
+        "usage": "Chart series 4 (yellow). Below 3:1 on the light surface: needs direct labels or a table view.",
+        "oklch": {
+          "light": "63.7% 0.202 5",
+          "dark": "63.7% 0.202 5"
+        }
+      },
+      {
+        "name": "data-5",
+        "value": {
+          "light": "#f29d12",
+          "dark": "#f29d12"
+        },
+        "usage": "Chart series 5 (violet).",
+        "oklch": {
+          "light": "76.3% 0.162 70",
+          "dark": "76.3% 0.162 70"
+        }
+      },
+      {
+        "name": "data-6",
+        "value": {
+          "light": "#6ba815",
+          "dark": "#6ba815"
+        },
+        "usage": "Chart series 6 (green). Past six series, fold to Other (ink-faint) or facet.",
+        "oklch": {
+          "light": "66.5% 0.176 131",
+          "dark": "66.5% 0.176 131"
+        }
+      },
+      {
+        "name": "waiting",
+        "value": {
+          "light": "#06708c",
+          "dark": "#6ad4ee"
+        },
+        "usage": "Waiting: the step sits with someone outside SBC. Teal, text-safe.",
+        "oklch": {
+          "light": "50.7% 0.093 223",
+          "dark": "81.7% 0.104 216"
+        }
+      },
+      {
+        "name": "waiting-soft",
+        "value": {
+          "light": "#dff3f9",
+          "dark": "#172935"
+        },
+        "usage": "Ground of Waiting chips.",
+        "oklch": {
+          "light": "95.1% 0.023 218",
+          "dark": "27.1% 0.033 239"
+        }
+      },
+      {
+        "name": "waiting-mid",
+        "value": {
+          "light": "#0ea5c6",
+          "dark": "#38bdf8"
+        },
+        "usage": "Dot and bar fill for Waiting.",
+        "oklch": {
+          "light": "66.8% 0.119 219",
+          "dark": "75.4% 0.139 233"
+        }
+      },
+      {
+        "name": "caution",
+        "value": {
+          "light": "#7a4100",
+          "dark": "#ffcb5c"
+        },
+        "usage": "Text of a warning banner.",
+        "oklch": {
+          "light": "43.7% 0.103 59",
+          "dark": "86.8% 0.140 84"
+        }
+      },
+      {
+        "name": "caution-soft",
+        "value": {
+          "light": "#fff6e0",
+          "dark": "#2a261b"
+        },
+        "usage": "Ground of a warning banner.",
+        "oklch": {
+          "light": "97.4% 0.030 88",
+          "dark": "26.9% 0.020 90"
+        }
+      },
+      {
+        "name": "caution-line",
+        "value": {
+          "light": "#f5dc9c",
+          "dark": "#5d4b1d"
+        },
+        "usage": "Edge of a warning banner.",
+        "oklch": {
+          "light": "90.0% 0.086 89",
+          "dark": "42.1% 0.068 88"
+        }
+      }
+    ]
+  },
+  "type": {
+    "fonts": [
+      {
+        "family": "ui",
+        "name": "Roboto",
+        "source": "next/font/google Roboto, subsets latin, weights 400 500 700",
+        "note": "One face for the interface. 500 does the work of bold; 700 is for display sizes and the logo (R-28)."
+      },
+      {
+        "family": "mono",
+        "name": "Roboto Mono",
+        "source": "next/font/google Roboto_Mono, weight 500",
+        "note": "Identifiers only: CIN, PAN, GSTIN, DIN, SRN, ARN, step and form codes."
+      }
+    ],
+    "families": {
+      "ui": "var(--font-sans), 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif",
+      "mono": "var(--font-mono), 'Roboto Mono', ui-monospace, SFMono-Regular, monospace"
+    },
+    "groups": [
+      {
+        "name": "Display",
+        "family": "ui",
+        "styles": [
+          {
+            "name": "display-xl",
+            "fontSize": "28px",
+            "lineHeight": "34px",
+            "fontWeight": 600,
+            "letterSpacing": "-0.015em",
+            "sample": "Good morning, Priya",
+            "usage": "One per screen at most: the greeting on Today, the company name on a client home."
+          },
+          {
+            "name": "display",
+            "fontSize": "22px",
+            "lineHeight": "28px",
+            "fontWeight": 600,
+            "letterSpacing": "-0.01em",
+            "sample": "Compliance calendar",
+            "usage": "Page titles. Sits above a 2px rule."
+          }
+        ]
+      },
+      {
+        "name": "Text",
+        "family": "ui",
+        "styles": [
+          {
+            "name": "title",
+            "fontSize": "15px",
+            "lineHeight": "20px",
+            "fontWeight": 600,
+            "letterSpacing": "0",
+            "sample": "Board resolution",
+            "usage": "Card, dialog and drawer titles."
+          },
+          {
+            "name": "heading",
+            "fontSize": "13px",
+            "lineHeight": "18px",
+            "fontWeight": 600,
+            "letterSpacing": "0",
+            "sample": "Pre-incorporation",
+            "usage": "Group headers inside cards; table group rows."
+          },
+          {
+            "name": "body",
+            "fontSize": "13px",
+            "lineHeight": "18px",
+            "fontWeight": 400,
+            "letterSpacing": "0",
+            "sample": "Eleven of fourteen filings are done.",
+            "usage": "Default UI text and table cells on desktop."
+          },
+          {
+            "name": "body-lg",
+            "fontSize": "15px",
+            "lineHeight": "22px",
+            "fontWeight": 400,
+            "letterSpacing": "0",
+            "sample": "Your incorporation is on track.",
+            "usage": "Client portal reading text and phone screens."
+          },
+          {
+            "name": "body-sm",
+            "fontSize": "12px",
+            "lineHeight": "16px",
+            "fontWeight": 400,
+            "letterSpacing": "0",
+            "sample": "Updated 24 Oct, 10:42 am",
+            "usage": "Meta, captions, timestamps, helper text; usually ink-muted."
+          },
+          {
+            "name": "label",
+            "fontSize": "11px",
+            "lineHeight": "16px",
+            "fontWeight": 600,
+            "letterSpacing": "0.06em",
+            "sample": "DUE DATE",
+            "usage": "Section heads, table heads, stat labels. Uppercase is applied by the style; write sentence case.",
+            "textTransform": "uppercase"
+          },
+          {
+            "name": "chip",
+            "fontSize": "11px",
+            "lineHeight": "16px",
+            "fontWeight": 600,
+            "letterSpacing": "0",
+            "sample": "Due 24 Oct",
+            "usage": "Status and count chips. Sentence case, never uppercase."
+          }
+        ]
+      },
+      {
+        "name": "Figures",
+        "family": "ui",
+        "styles": [
+          {
+            "name": "figure",
+            "fontSize": "13px",
+            "lineHeight": "18px",
+            "fontWeight": 600,
+            "letterSpacing": "0",
+            "sample": "₹1,26,000",
+            "usage": "Amounts and counts inside tables; tabular numerals, right-aligned.",
+            "fontVariantNumeric": "tabular-nums"
+          },
+          {
+            "name": "figure-lg",
+            "fontSize": "20px",
+            "lineHeight": "24px",
+            "fontWeight": 600,
+            "letterSpacing": "-0.01em",
+            "sample": "₹9,05,178",
+            "usage": "Totals rows and the figure on a KPI card.",
+            "fontVariantNumeric": "tabular-nums"
+          },
+          {
+            "name": "figure-xl",
+            "fontSize": "28px",
+            "lineHeight": "32px",
+            "fontWeight": 600,
+            "letterSpacing": "-0.015em",
+            "sample": "11 of 14",
+            "usage": "The one headline number in a hero stat row.",
+            "fontVariantNumeric": "tabular-nums"
+          }
+        ]
+      },
+      {
+        "name": "Mono",
+        "family": "mono",
+        "styles": [
+          {
+            "name": "mono",
+            "fontSize": "12px",
+            "lineHeight": "16px",
+            "fontWeight": 500,
+            "letterSpacing": "0",
+            "sample": "U72900TG2026PTC184211",
+            "usage": "Identifiers and codes. Never for prose or amounts."
+          }
+        ]
+      }
+    ]
+  },
+  "spacing": {
+    "tokens": [
+      {
+        "name": "space-1",
+        "value": "4px",
+        "usage": "Icon-to-label gap, chip vertical padding."
+      },
+      {
+        "name": "space-2",
+        "value": "8px",
+        "usage": "Between chips, inside inputs, icon tile padding."
+      },
+      {
+        "name": "space-3",
+        "value": "12px",
+        "usage": "Table cell padding, gaps between panels in a grid."
+      },
+      {
+        "name": "space-4",
+        "value": "16px",
+        "usage": "Card padding on desktop, the mobile gutter."
+      },
+      {
+        "name": "space-5",
+        "value": "20px",
+        "usage": "Card padding on phone screens, dialog padding."
+      },
+      {
+        "name": "space-6",
+        "value": "24px",
+        "usage": "Gap between page sections, desktop page margins."
+      },
+      {
+        "name": "space-8",
+        "value": "32px",
+        "usage": "Between page regions, below the page head."
+      },
+      {
+        "name": "space-12",
+        "value": "48px",
+        "usage": "Top of marketing and auth pages."
+      }
+    ]
+  },
+  "radius": {
+    "tokens": [
+      {
+        "name": "radius-sm",
+        "value": "6px",
+        "usage": "Chips, inputs, small buttons. One radius: 6px on every box (R-44)."
+      },
+      {
+        "name": "radius-md",
+        "value": "6px",
+        "usage": "Buttons, nav rows, icon tiles."
+      },
+      {
+        "name": "radius-lg",
+        "value": "6px",
+        "usage": "Cards, dialogs, popovers, menus."
+      },
+      {
+        "name": "radius-xl",
+        "value": "6px",
+        "usage": "The home card and bottom sheets."
+      },
+      {
+        "name": "radius-mark",
+        "value": "4px",
+        "usage": "Marks of 12 to 23px: checkboxes, step squares, swatches, small count badges. Tailwind rounded-sm and rounded-mark both read it."
+      },
+      {
+        "name": "radius-bar",
+        "value": "3px",
+        "usage": "Bars under 12px: progress, Gantt, phase track."
+      },
+      {
+        "name": "radius-pill",
+        "value": "999px",
+        "usage": "Switch knobs and people avatars only. Nothing else is a pill."
+      }
+    ]
+  },
+  "size": {
+    "tokens": [
+      {
+        "name": "control-sm",
+        "value": "30px",
+        "usage": "Small buttons and inputs: inside table rows, card heads and dense toolbars; icon buttons in rows."
+      },
+      {
+        "name": "control-md",
+        "value": "36px",
+        "usage": "Default button and input height on desktop. One main (navy) button per card."
+      },
+      {
+        "name": "control-lg",
+        "value": "42px",
+        "usage": "Primary actions on forms, dialogs, and every button on phone screens."
+      },
+      {
+        "name": "control-min-width",
+        "value": "84px",
+        "usage": "Minimum width of any button with a text label. Labels are two words at most and never wrap."
+      },
+      {
+        "name": "chip-height",
+        "value": "24px",
+        "usage": "Every status, owner and count chip. Text is the chip style, padding 0 8px, radius-sm."
+      },
+      {
+        "name": "chip-min-width",
+        "value": "104px",
+        "usage": "Status chips inside a table column are 108px wide, so the column reads as one block and labels sit centred. Chips in running text hug their content."
+      },
+      {
+        "name": "row-height",
+        "value": "44px",
+        "usage": "Table rows (R-07, Stripe T1). Chips sit vertically centred with 10px above and below."
+      },
+      {
+        "name": "tile",
+        "value": "32px",
+        "usage": "Icon tiles in section heads and list rows, radius-md."
+      },
+      {
+        "name": "icon-sm",
+        "value": "14px",
+        "usage": "Icons inside chips and 12px meta."
+      },
+      {
+        "name": "icon-md",
+        "value": "16px",
+        "usage": "Icons in buttons, table cells and inputs."
+      },
+      {
+        "name": "icon-lg",
+        "value": "20px",
+        "usage": "Sidebar navigation and phone screens."
+      }
+    ]
+  },
+  "shadow": {
+    "tokens": [
+      {
+        "name": "shadow-card",
+        "value": {
+          "light": "0 0 #0000",
+          "dark": "0 0 #0000"
+        },
+        "usage": "Cards have no shadow (R-02); the 1.5px line is the edge."
+      },
+      {
+        "name": "shadow-float",
+        "value": {
+          "light": "0 16px 40px -12px rgba(10, 37, 64, 0.28), 0 4px 10px -4px rgba(10, 37, 64, 0.1)",
+          "dark": "0 16px 40px -12px rgba(0, 0, 0, 0.7)"
+        },
+        "usage": "Menus, tooltips, toasts, popovers."
+      },
+      {
+        "name": "shadow-dialog",
+        "value": {
+          "light": "0 32px 64px -16px rgba(10, 37, 64, 0.4), 0 12px 24px -12px rgba(10, 37, 64, 0.18)",
+          "dark": "0 32px 64px -16px rgba(0, 0, 0, 0.75)"
+        },
+        "usage": "Dialogs and the command bar."
+      },
+      {
+        "name": "shadow-tile",
+        "value": {
+          "light": "0 8px 22px -12px rgba(10, 37, 64, 0.45)",
+          "dark": "0 8px 22px -12px rgba(0, 0, 0, 0.6)"
+        },
+        "usage": "Number tiles floating on the home card wash."
+      },
+      {
+        "name": "shine",
+        "value": {
+          "light": "inset 0 1px 0 rgba(255, 255, 255, 0.22)",
+          "dark": "inset 0 1px 0 rgba(255, 255, 255, 0.14)"
+        },
+        "usage": "The faint top shine of the main button."
+      },
+      {
+        "name": "shadow-control",
+        "value": {
+          "light": "0 1px 2px rgba(10, 37, 64, 0.05)",
+          "dark": "none"
+        },
+        "usage": "The faint drop under secondary buttons, inputs and the switch thumb. Light mode only."
+      },
+      {
+        "name": "wash-tile",
+        "value": {
+          "light": "rgba(255, 255, 255, 0.9)",
+          "dark": "rgba(19, 21, 26, 0.8)"
+        },
+        "usage": "Ground of a number tile on the wash."
+      },
+      {
+        "name": "wash-tile-line",
+        "value": {
+          "light": "rgba(255, 255, 255, 0.95)",
+          "dark": "rgba(255, 255, 255, 0.08)"
+        },
+        "usage": "Edge of a number tile on the wash."
+      },
+      {
+        "name": "hero-image-veil",
+        "value": {
+          "light": "rgba(244, 243, 255, 0.72)",
+          "dark": "rgba(21, 19, 46, 0.74)"
+        },
+        "usage": "Veil over a photo skin on the greeting card (Profile > Appearance), so its dark text stays readable."
+      },
+      {
+        "name": "shadow-signin",
+        "value": {
+          "light": "0 30px 80px -30px rgba(0, 0, 0, 0.6)",
+          "dark": "0 30px 80px -30px rgba(0, 0, 0, 0.6)"
+        },
+        "usage": "The deep shadow under the sign-in card on the navy ground."
+      }
+    ]
+  },
+  "borderWidth": {
+    "tokens": [
+      {
+        "name": "hairline",
+        "value": "1.5px",
+        "usage": "Rows, card frames, inputs."
+      },
+      {
+        "name": "rule-width",
+        "value": "2px",
+        "usage": "Structural rules: page head, table head, totals, focus outline."
+      },
+      {
+        "name": "stat-rule",
+        "value": "3px",
+        "usage": "The coloured top edge of a KPI card or the next-payment card, in its tone."
+      }
+    ]
+  }
+}

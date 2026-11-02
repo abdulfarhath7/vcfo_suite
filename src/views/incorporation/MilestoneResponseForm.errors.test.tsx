@@ -36,6 +36,7 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/components/ask/FieldHelpButton', () => ({ FieldHelpButton: () => null }));
 vi.mock('@/components/ask/WhatsThisButton', () => ({ WhatsThisButton: () => null }));
+vi.mock('@/views/incorporation/milestone-form/field-review', () => ({ FieldReviewMark: () => null, FieldReviewControls: () => null }));
 
 const { MilestoneResponseForm } = await import('@/views/incorporation/MilestoneResponseForm');
 

@@ -42,6 +42,8 @@ export interface DocNode {
   categoryId: DocCategoryId;
   /** Dated proof older than 2 months. */
   stale?: boolean;
+  /** A signed copy (a checklist field ending in "Signed", or the signed board resolution). */
+  signed?: boolean;
   portal?: { label: string; url: string };
   /** Missing rows (open document requests). */
   requestId?: string;
@@ -142,7 +144,7 @@ export function portalForField(fieldId: string): { label: string; url: string } 
 
 /** Stale-proof rule: dated proofs (bills, statements) older than 60 days. */
 const STALE_LABEL = /utility|electricity|telephone|phone bill|gas bill|water bill|bank statement|address proof/i;
-export const STALE_MAX_DAYS = 60;
+const STALE_MAX_DAYS = 60;
 
 export function isStaleProof(label: string, dateIso: string | undefined, today = new Date()): boolean {
   if (!dateIso || !STALE_LABEL.test(label)) return false;

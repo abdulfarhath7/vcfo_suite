@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import type { ComplianceFiling } from '@/data/compliance';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { computeAllFilings } from '@/lib/compliance/compliance-store';
 
 export function useComplianceFilings(

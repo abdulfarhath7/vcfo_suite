@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Compliances</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="practice" sub="Compliances" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Compliances" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <div class="colsW">
+        <section class="card" data-card="cmp-cal">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z M16 2v4 M8 2v4 M3 10h18"></path></svg></span><h2 class="st">October 2026 · filings by day</h2>
+            <span class="mut" style="margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px"><sc-for list="{{legend}}" as="l" hint-placeholder-count="5"><span><i class="sw" style="{{l.sw}}; display: inline-block; vertical-align: -1px"></i> {{l.label}}</span></sc-for></span></div>
+          <div class="cal7">
+            <sc-for list="{{dows}}" as="w" hint-placeholder-count="7"><span class="h">{{w.t}}</span></sc-for>
+            <sc-for list="{{cells}}" as="d" hint-placeholder-count="35"><button type="button" class="{{d.cls}}" aria-pressed="{{d.on}}" onClick="{{d.pick}}" title="{{d.tip}}" aria-label="{{d.tip}}"><span class="dn2">{{d.n}}</span><sc-if value="{{d.has}}" hint-placeholder-val="{{false}}"><span class="ct2" style="{{d.cs}}">{{d.c}}</span></sc-if></button></sc-for>
+          </div>
+        </section>
+        <section class="card" data-card="cmp-day">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4 M3 7l2 2 4-4 M13 6h8 M13 12h8 M13 18h8"></path></svg></span><h2 class="st">{{dayTitle}}</h2><span class="cnt">{{dayN}}</span></div>
+          <sc-for list="{{dayList}}" as="f" hint-placeholder-count="6">
+            <div class="it"><span class="ct" style="{{f.ct}}">{{f.k}}</span><span style="flex: 1; min-width: 0"><b style="font-weight: 600; display: block">{{f.form}}</b><span class="sub">{{f.sub}}</span></span><span class="chip sol" style="{{f.cs}}">{{f.st}}</span></div>
+          </sc-for>
+          <sc-if value="{{dayNone}}" hint-placeholder-val="{{false}}"><div class="empty">No filings fall on this day.</div></sc-if>
+        </section>
+      </div>
+      <section class="card" data-card="cmp-stat">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path></svg></span><h2 class="st">By statute · October</h2></div>
+        <div class="sc"><table class="tbl" style="min-width: 820px">
+          <thead><tr><th>Statute</th><th style="text-align: right">Filings</th><th style="text-align: right">Filed on time</th><th style="text-align: right">Filed late</th><th style="text-align: right">Overdue</th><th style="text-align: right">Still to file</th><th style="text-align: right">Late fees</th><th>On-time rate</th></tr></thead>
+          <tbody><sc-for list="{{stats}}" as="r" hint-placeholder-count="6"><tr><td><b style="font-weight: 600">{{r.t}}</b></td><td style="text-align: right">{{r.n}}</td><td style="text-align: right">{{r.f}}</td><td style="text-align: right; {{r.lSt}}">{{r.l}}</td><td style="text-align: right; {{r.oSt}}">{{r.o}}</td><td style="text-align: right">{{r.left}}</td><td class="money" style="text-align: right">{{r.fee}}</td><td><span style="display: flex; align-items: center; gap: 8px"><span class="trk" style="width: 120px"><span style="{{r.bar}}"></span></span>{{r.pct}}</span></td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const COLF = { o: '#b5302a', l: '#be4400', d: '#1b4f94', u: '#c4ccd8', f: '#0f6e51' };
+    const RANK = ['o', 'l', 'd', 'u', 'f'];
+    const sel = s.day || Math.max(...A.FIL.filter(f => f[4] === 'o').map(f => f[0]));
+    const cells = [];
+    for (let i = 0; i < 3; i++) cells.push({ n: '', cls: 'dy blank', on: 'false', pick: () => {}, has: false, tip: '', c: '', cs: '' });
+    for (let d = 1; d <= 31; d++) {
+      const l = A.FIL.filter(f => f[0] === d), worst = RANK.find(k => l.some(f => f[4] === k));
+      cells.push({ n: d, cls: 'dy' + (d === 16 ? ' today' : ''), on: d === sel ? 'true' : 'false', pick: () => set({ day: d }), has: l.length > 0, c: l.length + (l.length === 1 ? ' filing' : ' filings'),
+        cs: worst ? 'background:' + COLF[worst] + ';color:' + (worst === 'u' ? '#0f2a4a' : '#fff') : '', tip: d + ' Oct' + (l.length ? ': ' + l.length + ' filings, worst ' + A.FST[worst][0].toLowerCase() : ': no filings') });
+    }
+    while (cells.length % 7) cells.push({ n: '', cls: 'dy blank', on: 'false', pick: () => {}, has: false, tip: '', c: '', cs: '' });
+    const dayL = A.FIL.filter(f => f[0] === sel).sort((a, b) => RANK.indexOf(a[4]) - RANK.indexOf(b[4]));
+    const dayList = dayL.map(f => ({ k: f[1], ct: ct(f[1]), form: f[2], sub: byK[f[1]].name + ' · ' + M(byK[f[1]].mgr).name + (f[5] ? ' · late fee ' + A.rupees(f[5]) : ''), st: A.FST[f[4]][0], cs: 'background:' + COLF[f[4]] + (f[4] === 'u' ? ';color:#0f2a4a' : '') }));
+    const STATS = ['GST', 'TDS', 'ROC', 'PF and ESI', 'PT', 'FEMA'];
+    const stats = STATS.map(t => { const l = A.FIL.filter(f => f[3] === t), f = l.filter(x => x[4] === 'f').length, la = l.filter(x => x[4] === 'l').length, o = l.filter(x => x[4] === 'o').length;
+      const pct = f + la + o ? Math.round(f / (f + la + o) * 100) : 100;
+      return { t, n: l.length, f, l: la, o, left: l.filter(x => x[4] === 'd' || x[4] === 'u').length, fee: A.rupees(l.reduce((a, x) => a + x[5], 0)), pct: pct + '%', lSt: la ? 'color:#be4400;font-weight:600' : '', oSt: o ? 'color:#b5302a;font-weight:600' : '',
+        bar: 'width:' + pct + '%;background:' + (pct >= 90 ? '#0f6e51' : (pct >= 75 ? '#be4400' : '#b5302a')) }; });
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), dows: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(t => ({ t })), cells, stats,
+      legend: RANK.map(k => ({ label: A.FST[k][0], sw: 'background:' + COLF[k] })),
+      dayTitle: (sel === 16 ? 'Today, ' : '') + sel + ' Oct', dayN: dayL.length, dayList, dayNone: !dayL.length };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

@@ -1,0 +1,3072 @@
+{
+  "issues": [
+    {
+      "file": "src/lib/ask/topics.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "topicTextForDepth",
+          "line": 112,
+          "col": 17,
+          "pos": 3676
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/topic-publish.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "MIN_REVIEWER_CHARS",
+          "line": 19,
+          "col": 14,
+          "pos": 613
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/config.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ASK_FEATURE_IDS",
+          "line": 28,
+          "col": 14,
+          "pos": 962
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "AskProviderName",
+          "line": 7,
+          "col": 13,
+          "pos": 192
+        },
+        {
+          "name": "AskFeatureId",
+          "line": 29,
+          "col": 13,
+          "pos": 1039
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/generate.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "RENDER_ANSWER_TOOL",
+          "line": 38,
+          "col": 14,
+          "pos": 2177
+        },
+        {
+          "name": "buildSystem",
+          "line": 134,
+          "col": 17,
+          "pos": 7121
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/guard.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "IN_SCOPE_DEFINITION",
+          "line": 8,
+          "col": 14,
+          "pos": 237
+        },
+        {
+          "name": "GUARD_INTENTS",
+          "line": 11,
+          "col": 14,
+          "pos": 782
+        },
+        {
+          "name": "guardResultSchema",
+          "line": 21,
+          "col": 14,
+          "pos": 937
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/provider/index.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "LlmUnavailableError",
+          "line": 40,
+          "col": 14,
+          "pos": 1240
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "LlmContentBlock",
+          "line": 13,
+          "col": 13,
+          "pos": 451
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/tools/client.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "upcomingCompliances",
+          "line": 40,
+          "col": 17,
+          "pos": 1654
+        },
+        {
+          "name": "stepTitle",
+          "line": 104,
+          "col": 17,
+          "pos": 4210
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/tools/staff.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "projectSummary",
+          "line": 133,
+          "col": 17,
+          "pos": 5010
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "e2e/helpers/login.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "USERS",
+          "line": 9,
+          "col": 14,
+          "pos": 358
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/board-resolution.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DEFAULT_PARENT_STATE",
+          "line": 19,
+          "col": 10,
+          "pos": 662
+        },
+        {
+          "name": "formatDirectorBulletLines",
+          "line": 377,
+          "col": 17,
+          "pos": 15203
+        },
+        {
+          "name": "formatProposedNames",
+          "line": 388,
+          "col": 17,
+          "pos": 15722
+        },
+        {
+          "name": "resolveNicCodesClause",
+          "line": 428,
+          "col": 17,
+          "pos": 17348
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/checklist-pre1-validation.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PRE1_DEFAULT_DIRECTOR_COUNT",
+          "line": 84,
+          "col": 14,
+          "pos": 2575
+        },
+        {
+          "name": "validateAdditionalNicCodes",
+          "line": 278,
+          "col": 17,
+          "pos": 8963
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/part-a-sections.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "isParentEntityField",
+          "line": 64,
+          "col": 17,
+          "pos": 2466
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/api/schemas.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PARENT_INDIAN_RELATIONSHIP_REQUIRED",
+          "line": 65,
+          "col": 14,
+          "pos": 2043
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorp-director-slots.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DIRECTOR_SLOT_STEP_IDS",
+          "line": 25,
+          "col": 14,
+          "pos": 877
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/checklist-repeat.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "REPEAT_SEP",
+          "line": 17,
+          "col": 14,
+          "pos": 779
+        },
+        {
+          "name": "repeatEntryIds",
+          "line": 25,
+          "col": 17,
+          "pos": 1059
+        },
+        {
+          "name": "newRepeatEntryId",
+          "line": 32,
+          "col": 17,
+          "pos": 1259
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/data/engagements.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "COMPANY_TYPE_LABEL",
+          "line": 21,
+          "col": 14,
+          "pos": 877
+        },
+        {
+          "name": "OWNERSHIP_TYPE_LABEL",
+          "line": 26,
+          "col": 14,
+          "pos": 992
+        },
+        {
+          "name": "PARENT_INDIAN_RELATIONSHIP_LABEL",
+          "line": 31,
+          "col": 14,
+          "pos": 1122
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/nic-2008.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "NIC_CODE_RE",
+          "line": 13,
+          "col": 14,
+          "pos": 559
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/pre-inc-direct-flow.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "LEAD_ONLY_FIELD_IDS",
+          "line": 39,
+          "col": 14,
+          "pos": 1315
+        },
+        {
+          "name": "isBoardResolutionPendingManager",
+          "line": 247,
+          "col": 17,
+          "pos": 8743
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/proposed-directors.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "REGISTERED_OFFICE_STEP_ID",
+          "line": 39,
+          "col": 14,
+          "pos": 1805
+        },
+        {
+          "name": "proposedDirectorsGroup",
+          "line": 52,
+          "col": 17,
+          "pos": 2235
+        },
+        {
+          "name": "directorsAsPre1Responses",
+          "line": 188,
+          "col": 17,
+          "pos": 7803
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/schedule-windows.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "isIsoDate",
+          "line": 34,
+          "col": 17,
+          "pos": 1150
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/shell-appearance.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "SURFACE_GRADIENTS",
+          "line": 39,
+          "col": 14,
+          "pos": 1444
+        },
+        {
+          "name": "normaliseSolidId",
+          "line": 45,
+          "col": 17,
+          "pos": 1723
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/data/ask/schema.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "LEGAL_FORMS",
+          "line": 9,
+          "col": 14,
+          "pos": 337
+        },
+        {
+          "name": "RESIDENCIES",
+          "line": 10,
+          "col": 14,
+          "pos": 426
+        },
+        {
+          "name": "TOPIC_CATEGORIES",
+          "line": 11,
+          "col": 14,
+          "pos": 487
+        },
+        {
+          "name": "ANSWER_ORIGINS",
+          "line": 21,
+          "col": 14,
+          "pos": 766
+        },
+        {
+          "name": "flowStageStateSchema",
+          "line": 45,
+          "col": 14,
+          "pos": 1512
+        },
+        {
+          "name": "appliesToSchema",
+          "line": 175,
+          "col": 14,
+          "pos": 4664
+        },
+        {
+          "name": "citationSchema",
+          "line": 181,
+          "col": 14,
+          "pos": 4855
+        },
+        {
+          "name": "destinationSchema",
+          "line": 232,
+          "col": 14,
+          "pos": 6904
+        },
+        {
+          "name": "answerCitationSchema",
+          "line": 265,
+          "col": 14,
+          "pos": 8666
+        },
+        {
+          "name": "STAFF_QUERIES",
+          "line": 300,
+          "col": 14,
+          "pos": 9994
+        },
+        {
+          "name": "ASK_PHASES",
+          "line": 338,
+          "col": 14,
+          "pos": 11203
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "TopicCategory",
+          "line": 35,
+          "col": 13,
+          "pos": 1122
+        },
+        {
+          "name": "Citation",
+          "line": 186,
+          "col": 13,
+          "pos": 5011
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/ask-conversations.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "getLatestAskConversation",
+          "line": 90,
+          "col": 23,
+          "pos": 3089
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/ask-documents.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "audiencesForPersona",
+          "line": 143,
+          "col": 17,
+          "pos": 4578
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/access.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ASK_ROLES",
+          "line": 8,
+          "col": 14,
+          "pos": 279
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/board-resolution.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "finalizeBoardResolution",
+          "line": 268,
+          "col": 23,
+          "pos": 9244
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/doc-pack/__tests__/fixtures.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "WITNESS_PRE7",
+          "line": 71,
+          "col": 14,
+          "pos": 2262
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/doc-pack/evaluate.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "renderableDirectors",
+          "line": 51,
+          "col": 17,
+          "pos": 1808
+        },
+        {
+          "name": "docPackItemRowKey",
+          "line": 233,
+          "col": 17,
+          "pos": 8211
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/engagements-db.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "finalizeBoardResolutionInDb",
+          "line": 572,
+          "col": 23,
+          "pos": 19988
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/pipeline.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "STATUS_LABELS",
+          "line": 75,
+          "col": 14,
+          "pos": 2812
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/api/board-resolution-errors.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "STEP1_INCOMPLETE_MESSAGE",
+          "line": 296,
+          "col": 14,
+          "pos": 10673
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/api/incorporation-docs-errors.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "directorsFromPre15",
+          "line": 334,
+          "col": 17,
+          "pos": 11724
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/paths.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "incorpDirectorAudiences",
+          "line": 55,
+          "col": 17,
+          "pos": 1772
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/api/doc-pack.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DocPackError",
+          "line": 33,
+          "col": 14,
+          "pos": 1667
+        },
+        {
+          "name": "docPackZipFilename",
+          "line": 153,
+          "col": 17,
+          "pos": 5874
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/assist-profile/vocabulary.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "COMPANY_SUBCATEGORY",
+          "line": 33,
+          "col": 14,
+          "pos": 1650
+        },
+        {
+          "name": "COMPANY_STRUCTURE_BY_NAME_SUFFIX",
+          "line": 67,
+          "col": 14,
+          "pos": 2956
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/shared.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "INCORP_SIGNING_DATE_FIELD",
+          "line": 43,
+          "col": 14,
+          "pos": 1590
+        },
+        {
+          "name": "documentPlaceForDirector",
+          "line": 160,
+          "col": 17,
+          "pos": 5441
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "IncorpDirectorKind",
+          "line": 22,
+          "col": 39,
+          "pos": 759
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/declarations.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "directorHoldsDin",
+          "line": 41,
+          "col": 17,
+          "pos": 1220
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/moa.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "paidUpEquityShareCount",
+          "line": 127,
+          "col": 17,
+          "pos": 5064
+        },
+        {
+          "name": "registeredOfficeState",
+          "line": 178,
+          "col": 17,
+          "pos": 7008
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/other-company-interests.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PRE6_MAX_OTHER_INTERESTS",
+          "line": 12,
+          "col": 14,
+          "pos": 494
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/types.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "SUBSIDIARY_ONLY_INCORP_DOCS",
+          "line": 196,
+          "col": 14,
+          "pos": 6624
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/audiences.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "fieldBelongsToAudience",
+          "line": 95,
+          "col": 17,
+          "pos": 3884
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/zip.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "incorpDraftFolder",
+          "line": 29,
+          "col": 17,
+          "pos": 1142
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/documents/library/LibraryPage.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "RecentDrill",
+          "line": 274,
+          "col": 17,
+          "pos": 13465
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/HomePage.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [
+        [
+          {
+            "name": "HomePage",
+            "line": 98,
+            "col": 17,
+            "pos": 3927
+          },
+          {
+            "name": "default",
+            "line": 255,
+            "col": 16,
+            "pos": 11126
+          }
+        ]
+      ],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "default",
+          "line": 255,
+          "col": 16,
+          "pos": 11126
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/brand.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DEFAULT_FIRM_NAME",
+          "line": 6,
+          "col": 14,
+          "pos": 194
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/snapshot.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "buildSnapshot",
+          "line": 13,
+          "col": 10,
+          "pos": 407
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/library-api.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "libraryFeatures",
+          "line": 35,
+          "col": 17,
+          "pos": 1720
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/auth/config.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "signIn",
+          "line": 27,
+          "col": 32,
+          "pos": 1143
+        },
+        {
+          "name": "signOut",
+          "line": 27,
+          "col": 40,
+          "pos": 1151
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/client-compliances.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ComplianceNotFoundError",
+          "line": 52,
+          "col": 14,
+          "pos": 1941
+        },
+        {
+          "name": "ComplianceForbiddenError",
+          "line": 57,
+          "col": 14,
+          "pos": 2049
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/compliances.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PORTAL_DUE_SOON_DAYS",
+          "line": 24,
+          "col": 14,
+          "pos": 697
+        },
+        {
+          "name": "isoOf",
+          "line": 121,
+          "col": 17,
+          "pos": 4274
+        },
+        {
+          "name": "monthKeyOfIso",
+          "line": 163,
+          "col": 17,
+          "pos": 5798
+        },
+        {
+          "name": "csvEscape",
+          "line": 453,
+          "col": 17,
+          "pos": 18241
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-home.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "NEED_KINDS",
+          "line": 139,
+          "col": 14,
+          "pos": 3795
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "HomeIdentifiers",
+          "line": 78,
+          "col": 18,
+          "pos": 2120
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/client-documents.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "resolveClientDocumentFile",
+          "line": 473,
+          "col": 23,
+          "pos": 18496
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/client-home.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DUE_SOON_DAYS",
+          "line": 351,
+          "col": 10,
+          "pos": 13985
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/notification-prefs.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "EMAIL_LOCKED",
+          "line": 10,
+          "col": 14,
+          "pos": 396
+        },
+        {
+          "name": "EMAIL_OPTIONAL",
+          "line": 11,
+          "col": 14,
+          "pos": 477
+        },
+        {
+          "name": "WHATSAPP_CATEGORIES",
+          "line": 12,
+          "col": 14,
+          "pos": 559
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/ask/visuals/visual-text.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "stepsText",
+          "line": 22,
+          "col": 17,
+          "pos": 981
+        },
+        {
+          "name": "compareText",
+          "line": 26,
+          "col": 17,
+          "pos": 1143
+        },
+        {
+          "name": "timelineText",
+          "line": 30,
+          "col": 17,
+          "pos": 1308
+        },
+        {
+          "name": "keyFactsText",
+          "line": 34,
+          "col": 17,
+          "pos": 1492
+        },
+        {
+          "name": "nextStepText",
+          "line": 38,
+          "col": 17,
+          "pos": 1611
+        },
+        {
+          "name": "projectRowsText",
+          "line": 42,
+          "col": 17,
+          "pos": 1775
+        },
+        {
+          "name": "metricsText",
+          "line": 47,
+          "col": 17,
+          "pos": 2020
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/ingest/chunk.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "CHUNK_MIN_CHARS",
+          "line": 7,
+          "col": 14,
+          "pos": 233
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/ingest/extract.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "pdfToText",
+          "line": 63,
+          "col": 23,
+          "pos": 2353
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/retrieve.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "scoreTopic",
+          "line": 27,
+          "col": 17,
+          "pos": 911
+        },
+        {
+          "name": "matchTopics",
+          "line": 36,
+          "col": 17,
+          "pos": 1223
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/question-gaps.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "questionTokens",
+          "line": 31,
+          "col": 17,
+          "pos": 1032
+        },
+        {
+          "name": "questionSimilarity",
+          "line": 41,
+          "col": 17,
+          "pos": 1299
+        },
+        {
+          "name": "GAP_SIMILARITY_THRESHOLD",
+          "line": 48,
+          "col": 14,
+          "pos": 1534
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/doc-pack/registry.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "docDefinition",
+          "line": 305,
+          "col": 17,
+          "pos": 10669
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/parent-jurisdiction.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PARENT_COUNTRY_FIELD_ID",
+          "line": 12,
+          "col": 14,
+          "pos": 499
+        },
+        {
+          "name": "PARENT_STATE_FIELD_ID",
+          "line": 13,
+          "col": 14,
+          "pos": 561
+        },
+        {
+          "name": "LEGACY_PARENT_JURISDICTION",
+          "line": 15,
+          "col": 14,
+          "pos": 620
+        },
+        {
+          "name": "parentCountryFromAddress",
+          "line": 28,
+          "col": 17,
+          "pos": 1198
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/hooks/use-assist-profile.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ASSIST_PROFILE_QUERY_KEY",
+          "line": 9,
+          "col": 14,
+          "pos": 267
+        },
+        {
+          "name": "fetchAssistProfile",
+          "line": 11,
+          "col": 23,
+          "pos": 335
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/routes.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "CP_BASE",
+          "line": 5,
+          "col": 14,
+          "pos": 176
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/incorporation/PhasePage.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "PhaseBar",
+          "line": 40,
+          "col": 17,
+          "pos": 969
+        },
+        {
+          "name": "JourneyRail",
+          "line": 113,
+          "col": 17,
+          "pos": 3868
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/credentials.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "cellKey",
+          "line": 285,
+          "col": 17,
+          "pos": 9099
+        },
+        {
+          "name": "rowName",
+          "line": 338,
+          "col": 17,
+          "pos": 10837
+        },
+        {
+          "name": "directorName",
+          "line": 348,
+          "col": 17,
+          "pos": 11197
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "ColKind",
+          "line": 14,
+          "col": 13,
+          "pos": 674
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/hooks.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "useMyEngagement",
+          "line": 18,
+          "col": 17,
+          "pos": 743
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/documents.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "STALE_MAX_DAYS",
+          "line": 145,
+          "col": 14,
+          "pos": 5426
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/documents/shared-ui.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "fetchClientDocuments",
+          "line": 19,
+          "col": 23,
+          "pos": 790
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/documents/model.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "OTHER_STEP_ID",
+          "line": 34,
+          "col": 14,
+          "pos": 991
+        },
+        {
+          "name": "tagOf",
+          "line": 133,
+          "col": 17,
+          "pos": 5588
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "TFile",
+          "line": 25,
+          "col": 18,
+          "pos": 863
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/hooks/ask/ask-api.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "AskApiError",
+          "line": 5,
+          "col": 14,
+          "pos": 196
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/credentials/IdsRevealDialog.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [
+        [
+          {
+            "name": "IdsRevealDialog",
+            "line": 107,
+            "col": 17,
+            "pos": 4523
+          },
+          {
+            "name": "default",
+            "line": 387,
+            "col": 16,
+            "pos": 15367
+          }
+        ]
+      ],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "REVEAL_MS",
+          "line": 25,
+          "col": 14,
+          "pos": 1226
+        },
+        {
+          "name": "hideRevealedIdentifier",
+          "line": 47,
+          "col": 17,
+          "pos": 2026
+        },
+        {
+          "name": "default",
+          "line": 387,
+          "col": 16,
+          "pos": 15367
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/step-model.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "STEP_KIND_LABEL",
+          "line": 92,
+          "col": 14,
+          "pos": 3679
+        },
+        {
+          "name": "STEP_KIND_COLOR",
+          "line": 102,
+          "col": 14,
+          "pos": 3876
+        },
+        {
+          "name": "shortDate",
+          "line": 254,
+          "col": 17,
+          "pos": 9826
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "StepKind",
+          "line": 34,
+          "col": 13,
+          "pos": 2095
+        },
+        {
+          "name": "StepOwner",
+          "line": 35,
+          "col": 13,
+          "pos": 2168
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/useHome.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "useHomeQuery",
+          "line": 26,
+          "col": 17,
+          "pos": 781
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/ui.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "Duo",
+          "line": 19,
+          "col": 17,
+          "pos": 792
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/CardsA.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "sbcDrill",
+          "line": 488,
+          "col": 17,
+          "pos": 23763
+        },
+        {
+          "name": "phaseHref",
+          "line": 682,
+          "col": 10,
+          "pos": 31585
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/CardsB.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "nextDrill",
+          "line": 300,
+          "col": 17,
+          "pos": 13244
+        },
+        {
+          "name": "areaDrill",
+          "line": 583,
+          "col": 17,
+          "pos": 27538
+        },
+        {
+          "name": "chipBg",
+          "line": 883,
+          "col": 10,
+          "pos": 43581
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/Popups.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "Dialog",
+          "line": 31,
+          "col": 17,
+          "pos": 1009
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/home/derive.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "ymd",
+          "line": 24,
+          "col": 17,
+          "pos": 1389
+        },
+        {
+          "name": "chipTone",
+          "line": 74,
+          "col": 17,
+          "pos": 3206
+        },
+        {
+          "name": "STEP_STATUS",
+          "line": 91,
+          "col": 14,
+          "pos": 3827
+        },
+        {
+          "name": "stepOwnerLabel",
+          "line": 105,
+          "col": 17,
+          "pos": 4249
+        },
+        {
+          "name": "stepDateLabel",
+          "line": 113,
+          "col": 17,
+          "pos": 4483
+        },
+        {
+          "name": "DUE_SOON_DAYS",
+          "line": 230,
+          "col": 14,
+          "pos": 9168
+        },
+        {
+          "name": "PORTALS",
+          "line": 257,
+          "col": 14,
+          "pos": 10389
+        },
+        {
+          "name": "complianceDrill",
+          "line": 285,
+          "col": 17,
+          "pos": 11494
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/audit.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "AUDIT_CATEGORIES",
+          "line": 13,
+          "col": 14,
+          "pos": 578
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/ask/GlossaryTerm.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "GlossaryTerm",
+          "line": 11,
+          "col": 17,
+          "pos": 431
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/ask/glossary.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "glossaryFor",
+          "line": 6,
+          "col": 17,
+          "pos": 300
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/hooks/use-doc-pack.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "DOC_PACK_QUERY_KEY",
+          "line": 9,
+          "col": 14,
+          "pos": 244
+        },
+        {
+          "name": "docPackQueryKey",
+          "line": 11,
+          "col": 17,
+          "pos": 294
+        },
+        {
+          "name": "fetchDocPack",
+          "line": 15,
+          "col": 23,
+          "pos": 440
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/compliances/CalendarPage.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "useNarrow",
+          "line": 64,
+          "col": 17,
+          "pos": 1817
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/Sidebar.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "bpOf",
+          "line": 20,
+          "col": 17,
+          "pos": 872
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/team/common.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "IST",
+          "line": 110,
+          "col": 14,
+          "pos": 4248
+        },
+        {
+          "name": "Bot",
+          "line": 242,
+          "col": 17,
+          "pos": 8525
+        },
+        {
+          "name": "TPortal",
+          "line": 359,
+          "col": 17,
+          "pos": 12020
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/incorporation/data.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "KCOL",
+          "line": 69,
+          "col": 14,
+          "pos": 3887
+        },
+        {
+          "name": "KORD",
+          "line": 70,
+          "col": 14,
+          "pos": 4012
+        },
+        {
+          "name": "shortLabel",
+          "line": 128,
+          "col": 17,
+          "pos": 6546
+        },
+        {
+          "name": "phState",
+          "line": 190,
+          "col": 17,
+          "pos": 9065
+        },
+        {
+          "name": "shortCompany",
+          "line": 298,
+          "col": 17,
+          "pos": 13088
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/incorporation/ui.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "BOTI",
+          "line": 97,
+          "col": 14,
+          "pos": 2774
+        },
+        {
+          "name": "isoD",
+          "line": 150,
+          "col": 17,
+          "pos": 4561
+        },
+        {
+          "name": "useIncFrame",
+          "line": 213,
+          "col": 17,
+          "pos": 6537
+        },
+        {
+          "name": "useSkeleton",
+          "line": 415,
+          "col": 17,
+          "pos": 13551
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/incorporation/StepTable.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "viewerDocsFor",
+          "line": 49,
+          "col": 17,
+          "pos": 1571
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/compliances/bits.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "Glyph",
+          "line": 101,
+          "col": 17,
+          "pos": 3958
+        },
+        {
+          "name": "DateTile",
+          "line": 208,
+          "col": 17,
+          "pos": 6992
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/pages/compliances/Detail.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "longPeriod",
+          "line": 28,
+          "col": 17,
+          "pos": 699
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/client-portal/icons.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "LU",
+          "line": 58,
+          "col": 14,
+          "pos": 3415
+        },
+        {
+          "name": "RawSvg",
+          "line": 96,
+          "col": 17,
+          "pos": 6518
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/incorporation/IncorporationDocsBulkShareBar.tsx",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "useIncorpDocFlushRegistry",
+          "line": 155,
+          "col": 17,
+          "pos": 5381
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/components/incorporation/phase1-step-panel-utils.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [
+        {
+          "name": "buildPre7NonIncorpDraftDocLinks",
+          "line": 5,
+          "col": 17,
+          "pos": 156
+        }
+      ],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-overview.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "ClientShareClass",
+          "line": 186,
+          "col": 18,
+          "pos": 5517
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/assist-profile/types.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "AssistPerson",
+          "line": 11,
+          "col": 18,
+          "pos": 436
+        },
+        {
+          "name": "AssistCapitalClass",
+          "line": 83,
+          "col": 18,
+          "pos": 2623
+        },
+        {
+          "name": "AssistAgile",
+          "line": 128,
+          "col": 18,
+          "pos": 3642
+        },
+        {
+          "name": "AssistMoa",
+          "line": 133,
+          "col": 18,
+          "pos": 3788
+        },
+        {
+          "name": "AssistAoa",
+          "line": 137,
+          "col": 18,
+          "pos": 3950
+        },
+        {
+          "name": "AssistMissingReason",
+          "line": 155,
+          "col": 13,
+          "pos": 4570
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/api/incorporation-docs-generate.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "IncorpDocsRowFailure",
+          "line": 52,
+          "col": 18,
+          "pos": 1787
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/doc-pack/types.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "DocReleaseGate",
+          "line": 21,
+          "col": 13,
+          "pos": 1064
+        },
+        {
+          "name": "DocSource",
+          "line": 23,
+          "col": 13,
+          "pos": 1226
+        },
+        {
+          "name": "GeneratorRef",
+          "line": 25,
+          "col": 13,
+          "pos": 1277
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/dir8.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "Dir8PriorDirectorshipRow",
+          "line": 14,
+          "col": 18,
+          "pos": 339
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/incorporation-docs/subscription-sheet.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "PlannedIndividual",
+          "line": 143,
+          "col": 18,
+          "pos": 5296
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/db/repositories/client-team.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "ClientTeamPerson",
+          "line": 40,
+          "col": 18,
+          "pos": 1491
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    },
+    {
+      "file": "src/lib/client-portal/types.ts",
+      "binaries": [],
+      "catalog": [],
+      "catalogReferences": [],
+      "dependencies": [],
+      "devDependencies": [],
+      "duplicates": [],
+      "enumMembers": [],
+      "exports": [],
+      "files": [],
+      "namespaceMembers": [],
+      "optionalPeerDependencies": [],
+      "types": [
+        {
+          "name": "PortalTheme",
+          "line": 8,
+          "col": 13,
+          "pos": 270
+        },
+        {
+          "name": "PortalDocGrouping",
+          "line": 9,
+          "col": 13,
+          "pos": 325
+        }
+      ],
+      "unlisted": [],
+      "unresolved": []
+    }
+  ]
+}

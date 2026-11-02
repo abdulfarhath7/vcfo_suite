@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
-import { validatePre7Responses } from '@/lib/checklist-pre7-validation';
-import { getClientResponseFields } from '@/lib/checklist-responses';
+import { validatePre7Responses } from '@/lib/checklist/checklist-pre7-validation';
+import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { checklist } from '@/data/checklist';
-import { fieldIdMatchesPre6Prefix } from '@/lib/checklist-pre6-validation';
-import { fieldsForDirectorAudiences } from '@/lib/incorp-director-slots';
+import { fieldIdMatchesPre6Prefix } from '@/lib/checklist/checklist-pre6-validation';
+import { fieldsForDirectorAudiences } from '@/lib/incorporation/incorp-director-slots';
 import {
   audienceForDirectorFieldId,
   directorAudiencesFromPre6,
@@ -24,7 +24,7 @@ import {
   signedUploadFieldForIncorpDraft,
 } from '@/lib/incorporation-docs/share';
 import { audiencesForDoc, draftFieldIdFor } from '@/lib/incorporation-docs/types';
-import { directorResponsesFromState, resolveDirectorEntries } from '@/lib/proposed-directors';
+import { directorResponsesFromState, resolveDirectorEntries } from '@/lib/incorporation/proposed-directors';
 
 const NR = director('e1', 'no', 'Alpha');
 const R1 = director('e2', 'yes', 'Beta');

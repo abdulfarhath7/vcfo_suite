@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
@@ -8,15 +8,28 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashHero } from '@/components/dash/DashHero';
 import { DashSection, DashDonut, DashLegendRow } from '@/components/dash/DashSection';
-import { TONE_BADGE, toneForKey } from '@/components/common/IconChip';
-import { Activity, Users } from 'lucide-react';
-import { deriveStuckReason, primaryPhaseItems } from '@/lib/project-stuck';
+import { EFilingGrid } from '@/components/dash/EFilingGrid';
+import { Activity, AlertTriangle, Building2, Clock, ListPlus, Rocket, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AssignTaskDialog } from '@/components/staff/today/AssignTaskDialog';
+import { deriveStuckReason, primaryPhaseItems } from '@/lib/projects/project-stuck';
 import { FirmProjectsPanel } from '@/views/admin/FirmProjectsPanel';
+import { FirmDecisionsCard } from '@/views/admin/FirmDecisionsCard';
+import { PhaseProgressGrid } from '@/components/staff/today/PhaseProgressGrid';
+import { buildPhaseProgressRows } from '@/components/staff/today/today-rows';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
+import { cn } from '@/lib/utils';
 import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
 import { TeamTodosPanel } from '@/components/staff/TeamTodosPanel';
-import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern-work';
-import { initialsFromName } from '@/lib/auth';
-import { isAwaitingManagerDecision } from '@/lib/pre-inc-direct-flow';
+import { internFirstName, internGreeting, internGreetingHour } from '@/lib/intern/intern-work';
+import { isAwaitingManagerDecision } from '@/lib/incorporation/pre-inc-direct-flow';
+import { AdminPracticeCards } from '@/components/metrics/practice-cards';
+import { CapacityControl, LastSeenCell, LoadCell, OnTimeCell } from '@/components/metrics/people-cells';
+import { indexPeople, usePeopleMetrics, usePracticeMetrics } from '@/components/metrics/use-metrics';
+import { isFirmWideAdmin } from '@/lib/auth';
+import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
+import { useStampHomeTiles } from '@/hooks/use-stamp-home-tiles';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -28,7 +41,7 @@ async function fetchManagers(): Promise<ManagerOption[]> {
 }
 
 export default function FirmDashboard() {
-  const { user, engagements, getStateForEngagement } = useApp();
+  const { user, engagements, getStateForEngagement, teamMembers, engagementsLoading } = useApp();
   const greet = internGreeting(internGreetingHour(new Date()));
   const first = internFirstName(user?.name ?? '');
   /**
@@ -39,42 +52,83 @@ export default function FirmDashboard() {
    * carries the same on-track / stuck / awaiting-PM counts and the total.
    */
   const showGreeting = user?.role !== 'super_admin';
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const managersQuery = useQuery({
     queryKey: ['admin-managers'],
     queryFn: fetchManagers,
     staleTime: 5 * 60_000,
   });
+  // Practice cards (G-13, G-29) and the managers' On time, Load and Last active (G-14).
+  const practiceQuery = usePracticeMetrics();
+  const peopleQuery = usePeopleMetrics();
+  const people = useMemo(() => indexPeople(peopleQuery.data), [peopleQuery.data]);
+  const canSetCapacity = isFirmWideAdmin(user?.role);
+  // "Awaiting approval" is rebuilt from the review history; the other tiles use stamped values.
+  const trends = useHomeTrends('admin', { enabled: showGreeting && isFirmWideAdmin(user?.role) });
 
   const pulse = useMemo(() => {
     let total = 0;
     let pending = 0;
     let good = 0;
+    let incorporating = 0;
+    let overdue = 0;
+    let waitingClient = 0;
     for (const eng of engagements) {
       if (eng.stage === 'Operational Readiness') continue;
       total += 1;
-      const reason = deriveStuckReason(eng, getStateForEngagement(eng));
+      const state = getStateForEngagement(eng);
+      const reason = deriveStuckReason(eng, state);
       if (reason === 'on_track') good += 1;
       else pending += 1;
+      if (reason === 'waiting_client') waitingClient += 1;
+      if (eng.health === 'overdue') overdue += 1;
+      if (!isIncorporated(eng, state)) incorporating += 1;
     }
-    return { total, pending, good };
+    return { total, pending, good, incorporating, overdue, waitingClient };
+  }, [engagements, getStateForEngagement]);
+  // Clients, Incorporating, In compliance and Stuck keep no history (stage and stuck reason are
+  // current state only), so their lines come from the values this home showed on earlier days.
+  useStampHomeTiles(
+    'admin',
+    { clients: pulse.total, incorporating: pulse.incorporating, inCompliance: pulse.total - pulse.incorporating, stuck: pulse.pending },
+    showGreeting && !engagementsLoading && isFirmWideAdmin(user?.role),
+  );
+
+  /* Phase progress: the companies still incorporating, the nearest incorporation date first. */
+  const phaseRows = useMemo(() => {
+    const now = new Date();
+    return buildPhaseProgressRows({
+      engagements,
+      getState: getStateForEngagement,
+      href: (e) => adminProjectPath(e, '/app/admin'),
+      now,
+    })
+      .filter((r) => !r.incorporated)
+      .sort((a, b) => (a.daysToCoi ?? 9999) - (b.daysToCoi ?? 9999) || a.companyName.localeCompare(b.companyName));
   }, [engagements, getStateForEngagement]);
 
-  const pendingApprovals = useMemo(() => {
+  const { pendingApprovals, approvalClients } = useMemo(() => {
     let n = 0;
+    let clients = 0;
     for (const eng of engagements) {
       const state = getStateForEngagement(eng);
+      let here = 0;
       for (const item of primaryPhaseItems()) {
-        if (isAwaitingManagerDecision(item.id, state[item.id])) n += 1;
+        if (isAwaitingManagerDecision(item.id, state[item.id])) here += 1;
       }
+      n += here;
+      if (here > 0) clients += 1;
     }
-    return n;
+    return { pendingApprovals: n, approvalClients: clients };
   }, [engagements, getStateForEngagement]);
+  const practice = practiceQuery.data;
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
   const managerStrip = useMemo(() => {
     const byManager = new Map<
       string,
-      { managerId: string; open: number; stuck: number; awaitingPm: number }
+      { managerId: string; open: number; stuck: number; awaitingPm: number; overdue: number; leads: Set<string> }
     >();
     for (const eng of engagements) {
       if (eng.stage === 'Operational Readiness') continue;
@@ -84,8 +138,12 @@ export default function FirmDashboard() {
         open: 0,
         stuck: 0,
         awaitingPm: 0,
+        overdue: 0,
+        leads: new Set<string>(),
       };
       row.open += 1;
+      if (eng.health === 'overdue') row.overdue += 1;
+      if (eng.internId) row.leads.add(eng.internId);
       const state = getStateForEngagement(eng);
       const reason = deriveStuckReason(eng, state);
       if (reason !== 'on_track') row.stuck += 1;
@@ -106,110 +164,183 @@ export default function FirmDashboard() {
     <PageTransition>
       <SEO title="Admin home — VCFO Suite" description="Firm-wide portfolio pulse." path="/app/admin/dashboard" />
 
-      <div className="flex flex-col gap-3">
+      {/* Admin Today (prototype TodayScreen, admin branch): the home card, the clients grid,
+          phase progress, then the managers beside the decisions and the portfolio health. */}
+      <div className="flex flex-col gap-5">
         {showGreeting ? (
           <DashHero
             title={first ? `Good ${greet}, ${first}` : 'Firm home'}
-            ring={{ value: pulse.good, total: pulse.total, caption: 'on track' }}
             stats={[
-              { label: 'projects', value: pulse.total, href: '/app/admin/projects' },
               {
-                label: 'need attention',
-                value: pulse.pending + pendingApprovals,
-                href: '/app/admin/approvals',
-                hot: pulse.pending + pendingApprovals > 0,
+                label: 'Clients',
+                icon: Building2,
+                value: pulse.total,
+                href: '/app/admin/projects',
+                trend: trendWithLive(trends, 'clients', pulse.total),
+                note: pulse.overdue > 0 ? `${pulse.overdue} overdue` : `${pulse.good} on track`,
+                how: 'Every client of the firm still being set up, incorporating or in compliance.',
               },
-              { label: 'awaiting approval', value: pendingApprovals, href: '/app/admin/approvals' },
-              { label: 'on track', value: pulse.good },
+              {
+                label: 'Incorporating',
+                icon: Rocket,
+                value: pulse.incorporating,
+                href: '/app/admin/projects?view=incorporating',
+                trend: trendWithLive(trends, 'incorporating', pulse.incorporating),
+                note: practice?.incorporation.avgDaysToCoi != null ? `avg ${practice.incorporation.avgDaysToCoi}d to COI` : undefined,
+                how: 'Clients that do not have the certificate of incorporation yet.',
+              },
+              {
+                label: 'In compliance',
+                icon: ShieldCheck,
+                value: pulse.total - pulse.incorporating,
+                href: '/app/admin/projects?view=compliance',
+                trend: trendWithLive(trends, 'inCompliance', pulse.total - pulse.incorporating),
+                trendTone: 'ok',
+                note: practice && practice.compliances.overdue > 0 ? `${plural(practice.compliances.overdue, 'filing', 'filings')} overdue` : undefined,
+                how: 'Incorporated clients with a filing calendar.',
+              },
+              {
+                label: 'Stuck',
+                icon: AlertTriangle,
+                value: pulse.pending,
+                href: '/app/admin/projects?view=stuck',
+                hot: pulse.pending > 0,
+                trend: trendWithLive(trends, 'stuck', pulse.pending),
+                note: pulse.waitingClient > 0 ? `${pulse.waitingClient} on clients` : undefined,
+                how: 'Clients whose current step waits on the client, the manager or the lead, or is blocked.',
+              },
+              {
+                label: 'Awaiting approval',
+                icon: Clock,
+                value: pendingApprovals,
+                href: '/app/admin/approvals',
+                hot: pendingApprovals > 0,
+                trend: trendWithLive(trends, 'awaitingApproval', pendingApprovals),
+                trendTone: 'warn',
+                note: approvalClients > 0 ? plural(approvalClients, 'client', 'clients') : undefined,
+                how: 'Steps waiting for a manager decision before they move on.',
+              },
             ]}
-          />
+          >
+            <Button onClick={() => setAssignOpen(true)}>
+              <ListPlus className="h-4 w-4" strokeWidth={1.6} /> Assign task
+            </Button>
+          </DashHero>
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <FirmProjectsPanel />
-            {user?.id ? (
-              <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-                <LeadFocusCard userId={user.id} items={[]} />
-                <TeamTodosPanel userId={user.id} />
-              </div>
-            ) : null}
-          </div>
+        <AdminPracticeCards practice={practiceQuery.data} loading={practiceQuery.isPending} base="/app/admin" />
 
-          <div className="flex min-w-0 flex-col gap-3">
+        <FirmProjectsPanel title="Clients · where each one is" />
+
+        <PhaseProgressGrid
+          rows={phaseRows}
+          meta={`${phaseRows.length} incorporating`}
+          empty="No company is incorporating."
+          extraColumns={[
+            {
+              key: 'manager',
+              header: 'Manager',
+              width: '120px',
+              render: (r) => nameFor(r.managerId ?? 'unassigned'),
+            },
+          ]}
+        />
+
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
+          {/* Managers (K-37, C-0034): a T1 grid. */}
+          <DashSection title="Managers" meta={managerStrip.length || undefined} bodyClassName="px-2 pb-3 pt-1">
+            <EFilingGrid
+              caption="Managers"
+              rows={managerStrip}
+              rowKey={(row) => row.managerId}
+              empty="No open Pre/Post projects."
+              minWidth={canSetCapacity ? 1000 : 900}
+              columns={[
+                {
+                  key: 'name',
+                  header: 'Manager',
+                  render: (row) =>
+                    row.managerId === 'unassigned' ? (
+                      <span className="font-medium">{nameFor(row.managerId)}</span>
+                    ) : (
+                      <Link href={`/app/admin/managers#${row.managerId}`} className="font-medium text-ink hover:underline">
+                        {nameFor(row.managerId)}
+                      </Link>
+                    ),
+                },
+                { key: 'leads', header: 'Project leads', width: '120px', align: 'right', render: (row) => <span className="tabular-nums">{row.leads.size}</span> },
+                { key: 'open', header: 'Clients', width: '84px', align: 'right', render: (row) => <span className="tabular-nums">{row.open}</span> },
+                {
+                  key: 'overdue',
+                  header: 'Overdue',
+                  width: '88px',
+                  align: 'right',
+                  render: (row) => <span className={cn('tabular-nums', row.overdue > 0 && 'font-medium text-danger')}>{row.overdue || ''}</span>,
+                },
+                {
+                  key: 'stuck',
+                  header: 'Stuck',
+                  width: '80px',
+                  align: 'right',
+                  render: (row) => <span className={cn('tabular-nums', row.stuck > 0 && 'font-medium text-danger')}>{row.stuck}</span>,
+                },
+                { key: 'awaiting', header: 'Awaiting PM', width: '112px', align: 'right', render: (row) => <span className="tabular-nums">{row.awaitingPm}</span> },
+                { key: 'ontime', header: 'On time', width: '80px', align: 'right', render: (row) => <OnTimeCell person={people.byProfileId.get(row.managerId)} /> },
+                { key: 'load', header: 'Load', width: '150px', render: (row) => <LoadCell person={people.byProfileId.get(row.managerId)} /> },
+                { key: 'seen', header: 'Last active', width: '104px', render: (row) => (row.managerId === 'unassigned' ? null : <LastSeenCell person={people.byProfileId.get(row.managerId)} />) },
+                ...(canSetCapacity
+                  ? [
+                      {
+                        key: 'capacity',
+                        header: 'Capacity',
+                        width: '96px',
+                        render: (row: (typeof managerStrip)[number]) => {
+                          const person = people.byProfileId.get(row.managerId);
+                          return person ? <CapacityControl person={person} /> : null;
+                        },
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </DashSection>
+
+          <div className="flex min-w-0 flex-col gap-5">
+            <FirmDecisionsCard engagements={engagements} />
             <DashSection icon={Activity} tone="success" title="Portfolio health">
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 items-center gap-4">
                 <DashDonut
                   segments={[
-                    { n: pulse.good, color: 'oklch(var(--success))' },
-                    { n: pulse.pending, color: 'oklch(var(--warning))' },
-                    { n: pendingApprovals, color: 'oklch(var(--accent-cyan))' },
+                    { n: pulse.good, color: 'oklch(var(--positive-mid))' },
+                    { n: pulse.pending, color: 'oklch(var(--danger-mid))' },
+                    { n: pendingApprovals, color: 'oklch(var(--waiting-mid))' },
                   ]}
                   centerLabel={pulse.total}
                   centerCaption="projects"
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <DashLegendRow swatchClassName="bg-success" label="On track" count={pulse.good} />
-                  <DashLegendRow swatchClassName="bg-warning" label="Stuck" count={pulse.pending} />
-                  <DashLegendRow
-                    swatchClassName="bg-accent-cyan"
-                    label="Awaiting PM"
-                    count={pendingApprovals}
-                  />
+                  <DashLegendRow swatchClassName="bg-positive-mid" label="On track" count={pulse.good} />
+                  <DashLegendRow swatchClassName="bg-danger-mid" label="Stuck" count={pulse.pending} />
+                  <DashLegendRow swatchClassName="bg-waiting-mid" label="Awaiting PM" count={pendingApprovals} />
                 </div>
               </div>
             </DashSection>
-
-            <DashSection
-              icon={Users}
-              tone="violet"
-              title="Managers"
-              meta={managerStrip.length || undefined}
-            >
-              {managerStrip.length === 0 ? (
-                <p className="py-3 text-center text-[12.5px] text-muted-foreground">
-                  No open Pre/Post projects.
-                </p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {managerStrip.map((row) => {
-                    const name = nameFor(row.managerId);
-                    return (
-                      <li key={row.managerId} className="flex min-w-0 items-center gap-2.5 py-2.5">
-                        <span
-                          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-extrabold ${TONE_BADGE[toneForKey(row.managerId)]}`}
-                        >
-                          {initialsFromName(name).slice(0, 2)}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          {row.managerId === 'unassigned' ? (
-                            <span className="block truncate text-[12.5px] font-semibold text-ink">
-                              {name}
-                            </span>
-                          ) : (
-                            <Link
-                              href={`/app/admin/people?managerId=${row.managerId}`}
-                              className="block truncate text-[12.5px] font-semibold text-ink hover:text-primary hover:underline"
-                            >
-                              {name}
-                            </Link>
-                          )}
-                          <span className="block text-[11px] text-muted-foreground">
-                            {row.open} open · {row.stuck} stuck · {row.awaitingPm} awaiting
-                          </span>
-                        </span>
-                        <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full bg-primary-light px-1.5 text-[11px] font-extrabold tabular-nums text-primary">
-                          {row.open}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </DashSection>
           </div>
         </div>
+
+        {user?.id ? (
+          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <LeadFocusCard userId={user.id} items={[]} />
+            <TeamTodosPanel userId={user.id} />
+          </div>
+        ) : null}
       </div>
+      <AssignTaskDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        engagements={engagements.filter((e) => e.stage !== 'Operational Readiness')}
+        teamMembers={teamMembers}
+      />
     </PageTransition>
   );
 }

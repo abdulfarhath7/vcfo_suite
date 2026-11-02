@@ -1,0 +1,246 @@
+/*
+ * FullCalendar restyled with the design tokens (M6 G2). Every colour is a token from
+ * app/globals.css, so light and dark follow the theme on their own. Scoped under .vc-cal.
+ */
+.vc-cal {
+  --fc-border-color: oklch(var(--line-soft));
+  --fc-page-bg-color: oklch(var(--surface-raised));
+  --fc-neutral-bg-color: oklch(var(--surface-sunken));
+  --fc-neutral-text-color: oklch(var(--ink-muted));
+  --fc-today-bg-color: oklch(var(--brand-soft) / 0.35);
+  --fc-now-indicator-color: oklch(var(--brand));
+  --fc-highlight-color: oklch(var(--brand-soft) / 0.7);
+  --fc-non-business-color: oklch(var(--surface-sunken) / 0.6);
+  --fc-bg-event-color: oklch(var(--brand-soft));
+  --fc-bg-event-opacity: 0.5;
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: oklch(var(--ink-2));
+  --fc-event-selected-overlay-color: oklch(var(--ink) / 0.08);
+  --fc-more-link-bg-color: transparent;
+  --fc-more-link-text-color: oklch(var(--ink-muted));
+  --fc-small-font-size: 11.5px;
+  color: oklch(var(--ink));
+  font-size: 13px;
+}
+
+.vc-cal .fc-theme-standard td,
+.vc-cal .fc-theme-standard th,
+.vc-cal .fc-theme-standard .fc-scrollgrid {
+  border-color: oklch(var(--line-soft));
+}
+.vc-cal .fc-scrollgrid {
+  border-left: 0;
+  border-right: 0;
+}
+.vc-cal .fc-col-header-cell {
+  padding: 6px 0;
+  background: oklch(var(--surface-raised));
+  color: oklch(var(--ink-muted));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.vc-cal .fc-col-header-cell-cushion,
+.vc-cal .fc-daygrid-day-number {
+  color: inherit;
+  text-decoration: none;
+}
+.vc-cal .fc-day-today .fc-col-header-cell-cushion,
+.vc-cal .fc-day-today .fc-daygrid-day-number {
+  color: oklch(var(--brand-text));
+  font-weight: 600;
+}
+.vc-cal .fc-daygrid-day-number {
+  padding: 4px 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.vc-cal .fc-day-other .fc-daygrid-day-top {
+  opacity: 0.55;
+}
+.vc-cal .fc-timegrid-slot-label,
+.vc-cal .fc-timegrid-axis {
+  color: oklch(var(--ink-faint));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.vc-cal .fc-timegrid-slot {
+  height: 22px;
+}
+.vc-cal .fc-timegrid-slot-minor {
+  border-top-style: dotted;
+}
+/* The today line (R-21) in brand, with a square head. */
+.vc-cal .fc-timegrid-now-indicator-line {
+  border-width: 2px 0 0;
+  border-color: oklch(var(--brand));
+}
+.vc-cal .fc-timegrid-now-indicator-arrow {
+  border: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 1px;
+  background: oklch(var(--brand));
+}
+.vc-cal .fc-highlight {
+  background: oklch(var(--brand-soft) / 0.7);
+}
+.vc-cal .fc-daygrid-more-link {
+  font-size: 11px;
+  color: oklch(var(--ink-muted));
+}
+.vc-cal .fc-popover {
+  border: 1.5px solid oklch(var(--line));
+  border-radius: var(--radius-mark);
+  background: oklch(var(--surface-raised));
+  box-shadow: 0 8px 24px oklch(var(--ink) / 0.12);
+}
+.vc-cal .fc-popover-header {
+  background: oklch(var(--surface-sunken));
+  color: oklch(var(--ink));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.vc-dayhead {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.vc-dayhead__extra {
+  min-height: 14px;
+  color: oklch(var(--ink-faint));
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Events: a soft fill and a 3px left edge whose colour carries the meaning. */
+.vc-cal .vc-ev {
+  border: 0;
+  border-left: 3px solid oklch(var(--line-strong));
+  border-radius: var(--radius-mark);
+  background: oklch(var(--surface-sunken));
+  color: oklch(var(--ink-2));
+  box-shadow: inset 0 0 0 1px oklch(var(--line-soft));
+  cursor: pointer;
+}
+.vc-cal .vc-ev.fc-event-draggable {
+  cursor: grab;
+}
+.vc-cal .vc-ev.fc-event-dragging {
+  cursor: grabbing;
+  box-shadow: 0 8px 24px oklch(var(--ink) / 0.16);
+}
+.vc-cal .vc-ev:focus-visible {
+  outline: 2px solid oklch(var(--focus-ring));
+  outline-offset: 1px;
+}
+.vc-cal .vc-ev:hover {
+  background: oklch(var(--hover));
+}
+.vc-cal .vc-ev .fc-event-main {
+  color: inherit;
+}
+.vc-cal .vc-ev--block {
+  border-left-color: oklch(var(--line-strong));
+  background: oklch(var(--surface-sunken));
+}
+.vc-cal .vc-ev--item,
+.vc-cal .vc-ev--planned,
+.vc-cal .vc-ev--agreed {
+  border-left-color: oklch(var(--brand));
+  background: oklch(var(--brand-soft));
+  color: oklch(var(--brand-text));
+}
+.vc-cal .vc-ev--statutory {
+  border-left-color: oklch(var(--danger-mid));
+  background: oklch(var(--surface-raised));
+}
+.vc-cal .vc-ev--upcoming {
+  border-left-color: oklch(var(--upcoming-mid));
+}
+.vc-cal .vc-ev--due-soon {
+  border-left-color: oklch(var(--warning-mid));
+  background: oklch(var(--warning-soft));
+  color: oklch(var(--warning));
+}
+.vc-cal .vc-ev--overdue {
+  border-left-color: oklch(var(--danger-mid));
+  background: oklch(var(--danger-soft));
+  color: oklch(var(--danger));
+}
+.vc-cal .vc-ev--done {
+  border-left-color: oklch(var(--positive-mid));
+  background: oklch(var(--positive-soft));
+  color: oklch(var(--positive));
+}
+/* R-43 regulator colours win the left edge on statutory filings. */
+.vc-cal .vc-reg--mca { border-left-color: oklch(var(--reg-mca)); }
+.vc-cal .vc-reg--gst { border-left-color: oklch(var(--reg-gst)); }
+.vc-cal .vc-reg--it { border-left-color: oklch(var(--reg-it)); }
+.vc-cal .vc-reg--payroll { border-left-color: oklch(var(--reg-payroll)); }
+.vc-cal .vc-reg--fema { border-left-color: oklch(var(--reg-fema)); }
+.vc-cal .vc-reg--labour { border-left-color: oklch(var(--reg-labour)); }
+.vc-cal .vc-ev--locked {
+  cursor: pointer;
+}
+.vc-cal .fc-event-resizer-end {
+  cursor: ns-resize;
+}
+
+.vc-ev__body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 1px 4px;
+  overflow: hidden;
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+.vc-ev__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+.vc-ev__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vc-ev__sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+.vc-ev__lock {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: oklch(var(--ink-faint));
+}
+.vc-ev__hollow {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border: 1.5px solid currentColor;
+  border-radius: 1px;
+}
+
+/* External Work items that drag onto the calendar. */
+.vc-plan-chip {
+  cursor: grab;
+}
+.vc-plan-chip:active {
+  cursor: grabbing;
+}

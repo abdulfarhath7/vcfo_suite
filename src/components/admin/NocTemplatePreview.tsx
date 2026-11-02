@@ -28,7 +28,7 @@ export function NocTemplateLine({ variant }: { variant: NocVariant }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <p className="text-[11.5px] text-muted-foreground">
+      <p className="text-[11.5px] text-ink-muted">
         NOC: {shortLabel}
         {previewUrl ? null : ' · template not provided yet'}
       </p>
@@ -47,13 +47,13 @@ export function NocTemplateLine({ variant }: { variant: NocVariant }) {
       {previewUrl ? (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-h-[90vh] w-[min(96vw,60rem)] max-w-none overflow-hidden p-0 sm:max-w-none">
-            <DialogHeader className="border-b border-border px-5 py-4">
+            <DialogHeader className="border-b border-line px-5 py-4">
               <DialogTitle className="text-[16px]">{def.label}</DialogTitle>
               <DialogDescription>
                 The firm&apos;s blank template, picked from the ownership answers. The Pre-2 board resolution fills it in from the Name Application answers.
               </DialogDescription>
             </DialogHeader>
-            <div className="max-h-[calc(90vh-5.5rem)] overflow-auto bg-muted/30 p-4">
+            <div className="max-h-[calc(90vh-5.5rem)] overflow-auto bg-surface-sunken/30 p-4">
               {open ? (
                 <IncorporationDocxPreview
                   downloadUrl={previewUrl}

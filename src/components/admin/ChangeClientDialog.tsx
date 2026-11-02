@@ -22,8 +22,8 @@ import {
   substituteClientInDb,
   createChangeRequestInDb,
   type EngagementClientRow,
-} from '@/lib/project-admin-db';
-import { changeRequestDiffValue } from '@/lib/project-change-request-types';
+} from '@/lib/projects/project-admin-db';
+import { changeRequestDiffValue } from '@/lib/projects/project-change-request-types';
 import { clientPasswordSchema, emailSchema, DEFAULT_CLIENT_TEMP_PASSWORD } from '@/lib/api/schemas';
 import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
@@ -179,9 +179,9 @@ export function ChangeClientDialog({
           <div className="space-y-2">
             <Label htmlFor="change-client-replace">Replace</Label>
             {clientsQuery.isLoading ? (
-              <p className="text-[12.5px] text-muted-foreground">Loading the client list…</p>
+              <p className="text-[12.5px] text-ink-muted">Loading the client list…</p>
             ) : clients.length === 0 ? (
-              <p className="text-[12.5px] text-muted-foreground">
+              <p className="text-[12.5px] text-ink-muted">
                 No client is on this project yet.
               </p>
             ) : (
@@ -189,7 +189,7 @@ export function ChangeClientDialog({
                 id="change-client-replace"
                 value={replaceUserId}
                 onChange={(e) => setReplaceUserId(e.target.value)}
-                className="h-9 w-full rounded-md border border-border bg-panel px-2 text-[13px] text-ink"
+                className="h-9 w-full rounded-md border border-line bg-surface-raised px-2 text-[13px] text-ink"
               >
                 <option value="">Choose a client…</option>
                 {clients.map((c) => (
@@ -257,8 +257,8 @@ export function ChangeClientDialog({
 
           <div
             className={cn(
-              'flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-light p-3',
-              'text-[12px] text-warning-text',
+              'flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-3',
+              'text-[12px] text-warning',
             )}
           >
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />

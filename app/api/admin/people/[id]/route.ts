@@ -96,12 +96,14 @@ export async function DELETE(_request: Request, ctx: Ctx) {
         : message === 'cannot_delete_self' ||
             message === 'cannot_delete_last_admin' ||
             message === 'managers_may_only_delete_leads' ||
-            message === 'lead_not_in_your_roster'
+            message === 'lead_not_in_your_roster' ||
+            message === 'cannot_edit_super_admin'
           ? 403
           : 400;
     const friendly: Record<string, string> = {
       cannot_delete_self: 'You cannot delete your own account.',
       cannot_delete_last_admin: 'Cannot delete the last firm admin.',
+      cannot_edit_super_admin: 'Only a super admin can remove that account.',
       managers_may_only_delete_leads: 'Managers can only delete project leads.',
       lead_not_in_your_roster: 'That project lead is not on your roster.',
       not_found: 'Account not found.',

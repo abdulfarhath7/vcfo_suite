@@ -35,18 +35,18 @@ import {
   sendEmail,
   type SendEmailResult,
 } from '@/lib/email/send-email';
-import type { NotificationKind } from '@/lib/checklist-notifications';
 import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { whatsappDedupeId, whatsappEventFor } from '@/lib/notify/process-event-whatsapp';
+import type { NotificationKind } from '@/lib/checklist/checklist-notifications';
 import {
   adminProjectStepPath,
   clientBoardResolutionPath,
   clientIncorporationPath,
   internBoardResolutionPath,
   internEngagementStepPath,
-} from '@/lib/project-step-path';
+} from '@/lib/projects/project-step-path';
 import { siteUrl } from '@/lib/site-url';
-import { directFlowRoleLabel } from '@/lib/pre-inc-direct-flow';
+import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
 
 export type { EmailDispatchResult };
 
@@ -411,6 +411,9 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         companyName: company,
         itemId: input.itemId,
         href,
+        // C-759: the bell names who did it.
+        actorId: input.actorUserId,
+        actorName: input.actorName?.trim() || findPartyByUserId(recipients, input.actorUserId)?.name?.trim() || undefined,
       });
     };
 

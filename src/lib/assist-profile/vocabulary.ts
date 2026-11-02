@@ -30,7 +30,7 @@ export const COMPANY_CATEGORY = { limitedByShares: 'Company limited by shares' }
  * picking a wrong one. Replace with the captured text once
  * `tools/mca-field-capture.js` has been run on that dropdown.
  */
-export const COMPANY_SUBCATEGORY = {
+const COMPANY_SUBCATEGORY = {
   indianNonGovernment: 'Indian non-government company',
   foreignSubsidiary: 'Subsidiary of company incorporated outside India',
 } as const;
@@ -64,7 +64,7 @@ export interface CompanyStructure {
  * (`checklist-pre1-validation.ts`), so the suffix is a Suite fact, not a guess.
  * Longest suffix first; a name matching none has no MCA equivalent mapped.
  */
-export const COMPANY_STRUCTURE_BY_NAME_SUFFIX: ReadonlyArray<readonly [suffix: string, structure: CompanyStructure]> = [
+const COMPANY_STRUCTURE_BY_NAME_SUFFIX: ReadonlyArray<readonly [suffix: string, structure: CompanyStructure]> = [
   [
     'private limited',
     {

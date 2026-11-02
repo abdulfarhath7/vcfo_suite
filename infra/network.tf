@@ -9,6 +9,11 @@ data "aws_subnets" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
+  # Only the three default subnets; the private ones in private-db.tf stay out.
+  filter {
+    name   = "default-for-az"
+    values = ["true"]
+  }
 }
 
 resource "aws_db_subnet_group" "postgres" {
@@ -25,12 +30,28 @@ resource "aws_security_group" "db" {
   description = "Postgres for ${var.project} (pilot: public with TLS forced)"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    description = "Postgres over TLS from App Runner + trusted laptops for migrate"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  # Public pilot: open to the internet with TLS forced. Private (db_private):
+  # only the App Runner connector and the NAT instance (SSM tunnel) may connect.
+  dynamic "ingress" {
+    for_each = var.db_private ? [] : [1]
+    content {
+      description = "Postgres over TLS from App Runner + trusted laptops for migrate"
+      from_port   = 5432
+      to_port     = 5432
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.db_private ? [1] : []
+    content {
+      description     = "Postgres from the App Runner VPC connector and the NAT instance"
+      from_port       = 5432
+      to_port         = 5432
+      protocol        = "tcp"
+      security_groups = [aws_security_group.connector[0].id, aws_security_group.nat[0].id]
+    }
   }
 
   egress {

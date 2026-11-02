@@ -3,7 +3,8 @@
  * (prototype proto.js `QA`). Built from the client's real overview, so they
  * work whether or not the Ask VCFO model is switched on. Pure.
  */
-import type { ClientOverview } from '@/lib/client-overview';
+import { sep } from '@/lib/date-format';
+import type { ClientOverview } from '@/lib/client/client-overview';
 import { getActiveCatalogItems, getIncorporationPhases } from '@/data/checklist';
 
 export const BEFORE_QUESTIONS = ['What is my next step?', 'Where is my incorporation now?', 'Which documents are missing?'] as const;
@@ -19,7 +20,7 @@ function fmt(d: string | undefined): string {
   if (!d) return '';
   const date = new Date(d.length === 10 ? `${d}T00:00:00` : d);
   if (Number.isNaN(date.getTime())) return d;
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return sep(date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
 }
 
 function stepNumber(stepId: string): number | null {

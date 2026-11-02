@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -69,6 +70,21 @@ export async function getObjectBuffer(key: string): Promise<Buffer | null> {
   } catch (error) {
     const name = (error as { name?: string })?.name;
     if (name === 'NoSuchKey' || name === 'NotFound') return null;
+    throw error;
+  }
+}
+
+/**
+ * True when an object exists at the key. A missing object is false, not an error; any other
+ * failure (no bucket, no access) is thrown so the caller sees it.
+ */
+export async function objectExists(key: string): Promise<boolean> {
+  try {
+    await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return true;
+  } catch (error) {
+    const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+    if (e?.name === 'NotFound' || e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return false;
     throw error;
   }
 }

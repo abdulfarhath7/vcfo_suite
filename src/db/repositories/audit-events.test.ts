@@ -108,7 +108,10 @@ describe('listAuditEvents — manager and client', () => {
     const q = where()!;
     expect(q.sql).toContain('"audit_events"."engagement_id" in');
     expect(q.sql).not.toContain('actor_user_id');
-    expect(q.params).toEqual([OWN]);
+    expect(q.params[0]).toEqual(OWN);
+    if (role === 'manager') expect(q.params).toEqual([OWN]);
+    // A client also gets the client-visible action allowlist (client-audit.ts).
+    else expect(q.params).toContain('checklist.%');
   });
 
   it.each(['manager', 'client'] as const)(
@@ -130,7 +133,14 @@ describe('listAuditEvents — manager and client', () => {
 
   it('an in-scope engagement filter narrows to that engagement', async () => {
     await listAuditEvents(ctx('client'), { engagementId: OWN });
-    expect(where()!.params).toEqual([OWN]);
+    expect(where()!.params[0]).toEqual(OWN);
+  });
+
+  it('a client never gets staff-only actions or metadata', async () => {
+    await listAuditEvents(ctx('client'), { engagementId: OWN });
+    const q = where()!;
+    expect(q.sql).toContain(' like ');
+    expect(q.params).toContain('board_resolution.finalize');
   });
 });
 
@@ -172,5 +182,25 @@ describe('recordAuditEvent', () => {
       recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y' }),
     ).resolves.toBeUndefined();
     warn.mockRestore();
+  });
+});
+
+describe('audit result and cursor (G-28)', () => {
+  it('writes ok by default and the given result otherwise', async () => {
+    await recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y' });
+    await recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y', result: 'denied' });
+    expect((calls[0]!.values as { result: string }).result).toBe('ok');
+    expect((calls[1]!.values as { result: string }).result).toBe('denied');
+  });
+
+  it('pages on the millisecond and the id, still inside the scope', async () => {
+    const before = new Date('2026-10-01T10:00:00.123Z');
+    const beforeId = '33333333-3333-3333-3333-333333333303';
+    await listAuditEvents(ctx('manager'), { before, beforeId });
+    const q = where()!;
+    expect(q.sql).toContain("date_trunc('milliseconds'");
+    expect(q.params).toContain(OWN);
+    expect(q.params).toContain(beforeId);
+    expect(q.params).not.toContain(OTHER);
   });
 });

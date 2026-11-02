@@ -36,8 +36,8 @@ describe('PreIncorporationNotice', () => {
   it('is a tinted callout, not a page fill', () => {
     render(<PreIncorporationNotice scope={{ audience: 'client' }} />);
     const status = screen.getByRole('status');
-    expect(status.className).toContain('bg-info-light');
-    expect(status.className).toContain('border-l-info');
+    expect(status.className).toContain('bg-info-soft');
+    expect(status.className).toContain('bg-info-soft');
   });
 });
 

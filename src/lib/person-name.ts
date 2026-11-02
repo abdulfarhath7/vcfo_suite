@@ -1,4 +1,4 @@
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 
 /** Build a display name from first, optional middle, and last name parts. */
 export function formatDisplayName(

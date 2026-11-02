@@ -15,16 +15,16 @@ export function StepIndicator({ current, total, labels, className }: StepIndicat
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between gap-3 text-xs">
-        <span className="mono text-muted-foreground">
+        <span className="mono text-ink-muted">
           Step {current} of {total}
         </span>
-        <span className={cn("font-medium", almostThere ? "text-role-foreground" : "text-muted-foreground")}>
+        <span className={cn("font-medium", almostThere ? "text-brand" : "text-ink-muted")}>
           {almostThere ? "Almost there" : `${pct}% complete`}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-primary-light overflow-hidden">
+      <div className="h-1.5 rounded-full bg-brand-soft overflow-hidden">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-brand transition-all duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -39,9 +39,9 @@ export function StepIndicator({ current, total, labels, className }: StepIndicat
                 key={label}
                 className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] mono",
-                  done && "bg-success-light text-success-text",
-                  active && "border border-primary/30 bg-primary-light text-primary font-medium",
-                  !done && !active && "text-muted-foreground",
+                  done && "bg-positive-soft text-positive",
+                  active && "border border-brand/30 bg-brand-soft text-brand font-medium",
+                  !done && !active && "text-ink-muted",
                 )}
               >
                 {done && <Check className="w-3 h-3" aria-hidden />}

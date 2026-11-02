@@ -1,0 +1,170 @@
+/* @cp-scope page=team */
+/* v7 responsive contract shared by the five team boards (team_redesign.dc.html:13-55,
+   byte-identical in ann/notif/audit/settings). The board's sidebar/launcher placeholders
+   (.tb-root/.tb-side/.tb-launch) are the shell's job and are left out; .tb-ov keeps the
+   runtime's stacking (21-runtime.css .ov) instead of z-index 60 so it sits above the shell. */
+.pg.tb-wrap{width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,24px) clamp(16px,2vw,24px) 96px}
+.tb-segx{max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-radius:6px;-webkit-overflow-scrolling:touch}
+.tb-segx::-webkit-scrollbar{display:none}
+.tb-segx>.seg{width:max-content;min-width:100%;box-sizing:border-box}
+.tb-m{display:none!important}
+/* no text under 11 px */
+html .lbl{font-size:11px}
+html .seg .cnt,html .kbd{font-size:11px}
+html .dtile .m{font-size:11px;letter-spacing:.06em}
+/* pop-ups fit the viewport */
+.tb-ov{position:fixed!important;inset:0;overflow:auto;padding:var(--ovt,12px) 12px 12px;box-sizing:border-box}
+.tb-ov.tb-top{--ovt:min(140px,16vh);align-items:flex-start!important}
+.tb-ov>.dlg{max-width:calc(100vw - 24px);max-height:calc(100dvh - var(--ovt,12px) - 12px);overflow:auto;flex:none;box-sizing:border-box}
+@media (max-width:767px){
+  .pg.tb-wrap{padding:16px 16px 104px}
+  .tb-d{display:none!important}
+  .tb-m{display:revert!important}
+  .tb-m.tb-flex{display:flex!important}
+  .tb-m.tb-iflex{display:inline-flex!important}
+  .tb-ov.tb-top{--ovt:12px;align-items:center!important}
+  .tb-hd>.tb-segx{flex:1 1 100%;margin-left:0!important}
+  /* touch targets >= 40 px */
+  html .btn,html .btn-sm{height:40px;min-height:40px}
+  html .ibtn{width:40px;height:40px}
+  html .seg button{height:40px}
+  html .tgl{position:relative}
+  html .tgl::before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;bottom:-9px}
+  html .info>button{width:40px;height:40px;margin:-11px}
+  /* DECISIONS "Mobile drill-downs = bottom sheet" (gap G11) */
+  .tb-ov.tb-sheet{--ovt:0px;padding:0;align-items:flex-end!important}
+  .tb-ov.tb-sheet>.dlg{width:100%!important;max-width:100vw;max-height:92dvh;border-radius:6px 16px 0 0;animation:tbsheet .26s cubic-bezier(.22,1,.36,1)}
+}
+@keyframes tbsheet{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.tb-ov.tb-sheet>.dlg{animation:none}}
+.tb-dlgin{animation:tbdlg .2s cubic-bezier(.22,1,.36,1)}
+@keyframes tbdlg{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.tb-dlgin{animation:none}}
+/* Settings › Reduce motion (until the shell applies data-reduce-motion portal-wide) */
+html[data-reduce-motion="true"] *,html[data-reduce-motion="true"] *::before,html[data-reduce-motion="true"] *::after{animation:none!important;transition:none!important}
+
+/* ---------------- VCFO Spectrum (C-0106, C-0110) ----------------
+   The five team boards keep their markup; these rules redraw the shared board classes
+   as Spectrum parts on every team page and in their pop-ups (R-02, R-07, R-11, R-12,
+   R-13, R-15, R-16, R-44, R-47, R-48). Colours are shared tokens only. */
+.card{border:1.5px solid oklch(var(--line));box-shadow:none;animation:none;transition:none}
+.card:hover{transform:none;box-shadow:none;border-color:oklch(var(--line))}
+.ch{min-height:52px;margin:0;padding:8px 16px;gap:10px;border-bottom:1px solid oklch(var(--line-soft))}
+.h3,.ch .h3{margin:0;font:500 15px/1.3 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.st{font:500 15px/1.3 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.rt{font-size:14px;font-weight:400;color:oklch(var(--ink))}
+.cap{font-size:12.5px;color:oklch(var(--ink-muted))}
+.lbl{font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted))}
+.btn{height:36px;padding:0 14px;box-sizing:border-box;border:1.5px solid transparent;font:500 14px var(--font-sans),sans-serif;transition:background-color .15s}
+.btn:active{transform:none}
+.btn-n{background:oklch(var(--brand));color:oklch(var(--on-brand));box-shadow:var(--shine)}
+.btn-n:hover{background:oklch(var(--brand-strong));color:oklch(var(--on-brand))}
+.btn-o{background:oklch(var(--surface-raised));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}
+.btn-o:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
+.btn-g{background:oklch(var(--ink) / .06);color:oklch(var(--ink));border-color:transparent}
+.btn-g:hover{background:oklch(var(--ink) / .1);color:oklch(var(--ink))}
+.btn-d{background:oklch(var(--danger-fill));color:#fff;box-shadow:var(--shine)}
+.btn-d:hover{color:#fff;opacity:.92}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.5;cursor:default}
+.btn:focus-visible,.ibtn:focus-visible,.seg button:focus-visible,.tgl:focus-visible{outline:none;box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+/* icon-only buttons are 6 px squares (R-12) */
+.ibtn{width:30px;height:30px;box-sizing:border-box;border:1.5px solid oklch(var(--line-strong));border-radius:6px;background:oklch(var(--surface-raised));color:oklch(var(--ink-2))}
+.ibtn:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}
+.ibtn:disabled{opacity:.5;cursor:default}
+.ibtn.ghost{border-color:transparent;background:none}
+.ibtn.ghost:hover{background:oklch(var(--ink) / .06)}
+.wa,.ibtn.wa,.btn.wa{background:oklch(var(--positive-soft));color:oklch(var(--positive));border-color:transparent}
+.wa:hover,.ibtn.wa:hover,.btn.wa:hover{background:oklch(var(--positive-soft));color:oklch(var(--positive));opacity:.85}
+/* switch (R-47): a 44 x 24 track with 6 px corners, blurple when on */
+.tgl{width:44px;height:24px;border-radius:6px;background:oklch(var(--line-strong))}
+.tgl::after{top:3px;left:3px;width:18px;height:18px;border-radius:4px;box-shadow:0 1px 2px oklch(var(--ink) / .2)}
+.tgl.on{background:oklch(var(--brand))}
+.tgl.on::after{transform:translateX(20px)}
+/* inputs (R-47): 40 px, 1.5 px edge, blurple edge and 4 px glow on focus */
+.inp{height:40px;padding:0 12px;border:1.5px solid oklch(var(--line-strong));font:400 14px var(--font-sans),sans-serif;background:oklch(var(--surface-raised));color:oklch(var(--ink))}
+.inp::placeholder{color:oklch(var(--ink-faint))}
+.inp:focus{outline:none;border-color:oklch(var(--brand));box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+.fl{gap:6px;font-size:13px;font-weight:500;color:oklch(var(--ink-2))}
+input[type="checkbox"]{width:16px;height:16px;border-radius:4px}
+/* segmented switch for filters (R-11): quiet track, the picked option blurple with white text */
+.seg{padding:2px;border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:none}
+.seg button{height:28px;padding:0 12px;border-radius:4px;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--ink-2))}
+.seg button.on,.seg button[aria-selected=true]{background:oklch(var(--brand));color:#fff;box-shadow:var(--shine)}
+.seg .cnt{font-size:12px;color:oklch(var(--ink-muted))}
+.seg button.on .cnt,.seg button[aria-selected=true] .cnt{color:oklch(100% 0 0 / .8)}
+/* list rows run the full card width with a hairline between them (R-19) */
+.row{min-height:44px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft))}
+.row.unread{background:none}
+.row.unread .rt{font-weight:500}
+:where(a,button).row:hover{background:oklch(var(--surface-sunken))}
+.udot{width:8px;height:8px;border-radius:2px;background:oklch(var(--brand))}
+/* status chips (R-13): 24 px, 6 px corners, 12 px weight 500 */
+.chip{height:24px;padding:0 9px;gap:7px;border-radius:6px;font-size:12px;font-weight:500;line-height:24px}
+.chip.fx{width:104px;min-width:104px;justify-content:flex-start;overflow:hidden}
+.chip i{width:7px;height:7px;border-radius:2px;flex:none;background:currentColor}
+/* people avatars are circles (R-44) */
+.av{border-radius:50%;box-shadow:none}
+/* date tile (R-20): 44 px, tinted by urgency */
+.dtile{width:44px;height:44px}
+.dtile .d{font:500 16px/1 var(--font-sans),sans-serif}
+.dtile .m{font:500 11px var(--font-sans),sans-serif;margin-top:2px}
+/* loading shows grey shapes (R-48) */
+@keyframes tbsk{50%{opacity:.55}}
+.sk{background:oklch(var(--surface-sunken));animation:tbsk 1.4s ease-in-out infinite}
+/* dialogs float (R-02) */
+.dlg{border-radius:6px;box-shadow:var(--shadow-dialog);background:oklch(var(--surface-raised))}
+.dlg-h{min-height:56px;padding:12px 16px;box-sizing:border-box;border-bottom:1px solid oklch(var(--line-soft))}
+.dlg-h h2{font:500 16px/1.3 var(--font-sans),sans-serif!important;color:oklch(var(--ink))!important}
+.dlg-b{padding:16px}
+.dlg-f{padding:12px 16px;border-top:1px solid oklch(var(--line-soft));background:oklch(var(--surface-raised))}
+/* T1 clean rows (R-07) on the team pages: page-scoped so the base th/td rules do not win */
+.sx-t1 th{height:36px;padding:0 16px;font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted));border-bottom:1.5px solid oklch(var(--line))}
+.sx-t1 td{height:44px;padding:6px 16px;border-top:1px solid oklch(var(--line-soft));white-space:normal}
+.tb-tw{overflow-x:auto}
+/* a soft banner inside the card it is about (R-48) */
+.tb-note{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken));font-size:13px;color:oklch(var(--ink-2))}
+.tb-note.bad{border-color:oklch(var(--danger) / .3);background:oklch(var(--danger-soft));color:oklch(var(--danger))}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+
+/* ---------------- prototype parts shared by the team pages (2c978c5) ----------------
+   Segmented switch (Tabs): a 1.5 px line edge, grey track, 3 px padding, 22 px buttons;
+   pages that use the md size set `.seg.md`. */
+.seg{padding:3px;gap:2px;border:1.5px solid oklch(var(--line));box-shadow:none}
+.seg button{height:22px;padding:0 12px;border-radius:4px}
+.seg.md button{height:28px}
+/* SidePanel: 440 px from the right over the scrim, full width on phones */
+.tb-sp-scrim{position:fixed;inset:0;z-index:2147482000;background:var(--scrim);display:flex;justify-content:flex-end;animation:tbspf .18s ease-out}
+.tb-sp{display:flex;flex-direction:column;width:100%;height:100%;box-sizing:border-box;border-left:1px solid oklch(var(--line));background:oklch(var(--surface-raised));color:oklch(var(--ink));box-shadow:var(--shadow-dialog);outline:none;animation:tbspi .24s cubic-bezier(.22,1,.36,1)}
+.tb-sp-h{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-bottom:1px solid oklch(var(--line-soft))}
+.tb-sp-eb{display:flex;align-items:center;gap:8px;min-width:0;font-size:12.5px;color:oklch(var(--ink-muted));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sp-t{margin:2px 0 0;font:500 15px/1.35 var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.tb-sp-sub{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.tb-sp-b{flex:1;min-height:0;overflow-y:auto}
+.tb-sp-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid oklch(var(--line-soft))}
+.tb-sp-sec{padding:16px 20px;border-bottom:1px solid oklch(var(--line-soft))}
+.tb-sp-sec:last-child{border-bottom:0}
+.tb-sp-st{margin:0 0 8px}
+.tb-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;margin:0}
+.tb-kv.one{grid-template-columns:minmax(0,1fr)}
+.tb-kv dt{font-size:12px;color:oklch(var(--ink-muted))}
+.tb-kv dd{margin:0;font-size:13.5px;font-weight:500;color:oklch(var(--ink));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes tbspf{from{opacity:0}to{opacity:1}}
+@keyframes tbspi{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion: reduce){.tb-sp-scrim,.tb-sp{animation:none}}
+@media (max-width:639px){.tb-kv{grid-template-columns:minmax(0,1fr)}}
+/* Select in a card head: 30 px, 1.5 px edge, a chevron at the right */
+.tb-sel{position:relative;display:inline-flex;flex:none;align-items:center}
+.tb-sel select.inp{height:30px;padding:0 30px 0 10px;font-size:13px;appearance:none;-webkit-appearance:none;cursor:pointer}
+.tb-sel svg{position:absolute;right:9px;pointer-events:none;color:oklch(var(--ink-muted))}
+@media (max-width:767px){.tb-sel select.inp{height:40px}}
+/* grid footer: count, extra buttons, page numbers (the picked page blurple) */
+.tb-pager{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 16px;border-top:1px solid oklch(var(--line-soft));font-size:13px;color:oklch(var(--ink-muted))}
+.tb-pages{display:flex;align-items:center;gap:4px;margin-left:auto}
+.tb-pg{display:grid;place-items:center;height:28px;min-width:28px;padding:0 6px;border:0;border-radius:6px;background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
+.tb-pg:hover{background:oklch(var(--ink) / .06)}
+.tb-pg:disabled{opacity:.4;cursor:default}
+.tb-pg[aria-current=page]{background:oklch(var(--brand));color:oklch(var(--on-brand))}
+@media (max-width:767px){.tb-pg{height:40px;min-width:40px}}
+/* card heads: 16 px side padding on phones, 20 px from 768 px (prototype SectionCard) */
+@media (min-width:768px){.cp-team .sx-card>.sx-head{padding-left:20px;padding-right:20px}}

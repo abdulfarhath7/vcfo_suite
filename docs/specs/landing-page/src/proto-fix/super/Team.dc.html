@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Super admin · Team</title>
+<script src="./support.js"></script>
+<script src="./data.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+/*@admin-css*/
+/*@super-css*/
+</style>
+</helmet>
+<div class="L" style="display: flex; flex-wrap: wrap; min-height: 100vh; position: relative">
+  <div style="flex: 1 1 248px; max-width: 248px; background: #0f2a4a"><dc-import name="Side" active="team" mode="{{mode}}" hint-size="248px,1000px"></dc-import></div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Top" crumb="Overview › Team" mode="{{mode}}" on-mode="{{setMode}}" hint-size="100%,56px"></dc-import>
+    <main style="max-width: 1400px; width: 100%; margin: 0 auto; padding: 18px clamp(12px, 2vw, 28px) 110px; display: flex; flex-direction: column; gap: 16px">
+
+      <section class="card" data-card="team-admins">
+        <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"></path></svg></span><h2 class="st">Admins · this month</h2></div>
+        <div class="sc"><table class="tbl" style="min-width: 900px">
+          <thead><tr><th>Admin</th><th>Managers</th><th style="text-align: right">Clients</th><th style="text-align: right">Assigned</th><th style="text-align: right">Reassigned</th><th style="text-align: right">Approvals</th><th style="text-align: right">Escalations resolved</th><th style="text-align: right">Open</th><th style="text-align: right">Median response</th></tr></thead>
+          <tbody><sc-for list="{{admins}}" as="a" hint-placeholder-count="2"><tr><td><span class="nm"><span class="pt">{{a.ini}}</span><b>{{a.name}}</b></span></td><td>{{a.mgrs}}</td><td style="text-align: right">{{a.clients}}</td><td style="text-align: right">{{a.assigned}}</td><td style="text-align: right">{{a.reassigned}}</td><td style="text-align: right">{{a.approvals}}</td><td style="text-align: right">{{a.resolved}}</td><td style="text-align: right; {{a.openSt}}">{{a.open}}</td><td style="text-align: right">{{a.response}}</td></tr></sc-for></tbody>
+        </table></div>
+      </section>
+      <div class="colsW">
+        <section class="card" data-card="team-mgrs">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 3a4 4 0 1 0 0 8a4 4 0 1 0 0-8 M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span><h2 class="st">Managers</h2></div>
+          <div class="sc"><table class="tbl" style="min-width: 760px">
+            <thead><tr><th>Manager</th><th>Admin</th><th style="text-align: right">Clients</th><th style="text-align: right">Open</th><th style="text-align: right">Late</th><th style="text-align: right">On time</th><th style="text-align: right">Days to COI</th><th>Load</th></tr></thead>
+            <tbody><sc-for list="{{mgrs}}" as="m" hint-placeholder-count="4"><tr class="go" data-pick-mgr="{{m.id}}" data-go="admin-managers" title="Open {{m.name}}"><td><span class="nm"><span class="pt">{{m.ini}}</span><span><b>{{m.name}}</b><span class="sub">{{m.leads}} project leads</span></span></span></td><td>{{m.admin}}</td><td style="text-align: right">{{m.clients}}</td><td style="text-align: right">{{m.open}}</td><td style="text-align: right; {{m.lateSt}}">{{m.late}}</td><td style="text-align: right">{{m.onTime}}%</td><td style="text-align: right; {{m.dSt}}">{{m.days}}</td><td><span class="trk" style="width: 110px"><span style="{{m.load}}"></span></span></td></tr></sc-for></tbody>
+          </table></div>
+        </section>
+        <section class="card" data-card="team-feed">
+          <div class="ch"><span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"></path></svg></span><h2 class="st">What admins did</h2></div>
+          <sc-for list="{{feed}}" as="f" hint-placeholder-count="8"><div class="it" style="align-items: flex-start"><span class="pt">{{f.ini}}</span><span style="flex: 1; min-width: 0"><span style="display: block">{{f.what}}</span><span class="sub">{{f.who}} · {{f.when}}</span></span></div></sc-for>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = window.ADM, s = this.state || {}, set = (o) => this.setState(o);
+    if (!this.__l) { this.__l = 1; window.addEventListener('vcfo:assign', () => this.setState({ t: Date.now() })); }
+    const all = A.allClients(), byK = {}; all.forEach(c => { byK[c.k] = c; });
+    const M = (id) => A.ALLMGR[id] || { name: '', ini: '' };
+    const AD = (id) => A.ADMINS[id] || { name: '', ini: '' };
+    const ct = (k) => byK[k] ? 'background:' + byK[k].soft + ';color:' + byK[k].ink : 'background:#eef2f7;color:#4b5b70';
+    const toast = (m) => { if (window.vcfoToast) window.vcfoToast(m); };
+    const dd = s.dd || '';
+
+    const admins = Object.keys(A.ADMINS).map(id => { const a = A.ADMINS[id];
+      return Object.assign({}, a, { mgrs: a.mgrs.map(m => M(m).name).join(', '), clients: all.filter(c => c.admin === id).length, openSt: a.open ? 'color:#b5302a;font-weight:600' : '' }); });
+    const mgrs = Object.keys(A.ALLMGR).map(id => { const x = A.allStats(id), adm = A.ADMINS[A.adminOf(id)], days = A.DAYS[id];
+      return { id, name: M(id).name, ini: M(id).ini, leads: A.ALLMGR[id].leads.length, admin: adm ? adm.name : '', clients: x.clients.length, open: x.open, late: x.overdue, lateSt: x.overdue ? 'color:#b5302a;font-weight:600' : '',
+        onTime: A.ALLMGR[id].onTime, days: days + ' days', dSt: days > 35 ? 'color:#be4400;font-weight:600' : '',
+        load: 'width:' + Math.min(100, x.clients.length / A.CAP * 100) + '%;background:' + (x.clients.length > A.CAP * .8 ? '#be4400' : '#1b4f94') }; });
+    const feed = A.FEED.map(f => ({ ini: AD(f[0]).ini, who: AD(f[0]).name, when: f[1], what: f[2] }));
+    return { mode: s.mode || 'mixed', setMode: (m) => set({ mode: m }), admins, mgrs, feed, cap: A.CAP };
+  }
+}
+</script>
+<script src="../../routes.js"></script><script src="../../proto.js"></script>
+</body>
+</html>

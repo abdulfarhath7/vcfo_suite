@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { ClientAuditError, listClientAuditEvents } from '@/db/repositories/client-audit';
+import { recordExport } from '@/lib/exports/record-export';
 
 /**
  * GET /api/client/audit/export?cat=Documents&who=sbc|client&q=text — CSV of the
@@ -27,17 +28,20 @@ export async function GET(request: Request) {
       return /[",\n']/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
     };
     const lines = [
-      ['Date', 'Time (IST)', 'Type', 'What', 'Subject', 'Who', 'Role', 'Details'].join(','),
+      ['Date', 'Time (IST)', 'Type', 'What', 'Subject', 'Who', 'Role', 'Result', 'Details'].join(','),
       ...rows.map((e) =>
-        [e.day, e.time, e.cat, e.action, e.subject, e.who.name, e.who.role, e.facts.map((f) => `${f.k}: ${f.v}`).join(' · ')]
+        [e.day, e.time, e.cat, e.action, e.subject, e.who.name, e.who.role, e.result, e.facts.map((f) => `${f.k}: ${f.v}`).join(' · ')]
           .map(esc)
           .join(','),
       ),
     ];
-    return new NextResponse(`﻿${lines.join('\n')}\n`, {
+    const csv = `\uFEFF${lines.join('\n')}\n`;
+    const fileName = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    await recordExport(guard.ctx, { kind: 'client_audit', format: 'csv', fileName, body: csv });
+    return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="audit-log-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
         'Cache-Control': 'no-store',
       },
     });

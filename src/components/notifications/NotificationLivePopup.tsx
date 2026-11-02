@@ -4,15 +4,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { m, useReducedMotion } from 'framer-motion';
-import { Bell, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { NotificationKindTile } from '@/components/notifications/notification-kind';
+import { NOTIFICATION_KIND_LOOK } from '@/components/notifications/notification-kind-look';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
-import { measureGenieDock, type GenieBox } from '@/lib/genie-dock';
+import { roleNotificationsPath } from '@/lib/auth-routes';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
+import { measureGenieDock, type GenieBox } from '@/lib/notifications/genie-dock';
 import {
   formatNotificationWhen,
   notificationHrefIsNavigable,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 import {
   NOTIFICATION_BELL_SELECTOR,
   NOTIFICATION_BELL_TARGET_SELECTOR,
@@ -23,8 +28,8 @@ import {
   readNotificationPopupIds,
   selectNotificationPopups,
   type NotificationShowDetail,
-} from '@/lib/notification-popup';
-import type { AppNotification } from '@/lib/checklist-notifications';
+} from '@/lib/notifications/notification-popup';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { cn } from '@/lib/utils';
 
 const sessionPopupQueue = new Map<string, AppNotification[]>();
@@ -105,6 +110,9 @@ function NotificationGenieCard({
   const message = item.body.trim() || item.title;
   const extraTitle = Boolean(item.title && item.body && item.title !== item.body);
   const canOpen = notificationHrefIsNavigable(item.href);
+  const { user } = useApp();
+  /* The popup stays the first stop; only this button goes to the full Notifications page. */
+  const pageHref = user && user.role !== 'developer' ? roleNotificationsPath(user.role) : null;
 
   const finish = useCallback(() => {
     window.dispatchEvent(new Event(NOTIFICATION_GENIE_LAND_EVENT));
@@ -138,8 +146,8 @@ function NotificationGenieCard({
     card.style.zIndex = '101';
     card.style.transform = 'none';
     card.style.overflow = 'hidden';
-    card.style.backgroundColor = 'oklch(var(--primary))';
-    card.style.borderColor = 'oklch(var(--primary))';
+    card.style.backgroundColor = 'oklch(var(--brand))';
+    card.style.borderColor = 'oklch(var(--brand))';
     const animation = card.animate(
       [
         {
@@ -147,7 +155,7 @@ function NotificationGenieCard({
           top: `${origin.top}px`,
           width: `${origin.width}px`,
           height: `${origin.height}px`,
-          borderRadius: '18px',
+          borderRadius: '6px',
           opacity: 1,
           offset: 0,
         },
@@ -156,7 +164,7 @@ function NotificationGenieCard({
           top: `${origin.top + (to.top - origin.top) * 0.2}px`,
           width: `${origin.width * 0.38}px`,
           height: `${origin.height * 0.58}px`,
-          borderRadius: '22px',
+          borderRadius: '12px',
           opacity: 1,
           offset: 0.4,
         },
@@ -197,7 +205,7 @@ function NotificationGenieCard({
       <m.button
         type="button"
         aria-label="Dismiss notification"
-        className="pointer-events-auto absolute inset-0 cursor-default bg-ink/45 backdrop-blur-[6px]"
+        className="pointer-events-auto absolute inset-0 cursor-default bg-ink/45"
         initial={{ opacity: reduceMotion ? 1 : 0 }}
         animate={{ opacity: flying ? 0 : 1 }}
         transition={{ duration: reduceMotion ? 0 : flying ? 0.4 : 0.28 }}
@@ -209,73 +217,68 @@ function NotificationGenieCard({
         aria-modal="true"
         aria-labelledby="notification-live-title"
         className={cn(
-          'pointer-events-auto relative w-[min(100vw-2rem,26.5rem)] overflow-hidden rounded-[1.15rem] border border-border/80 bg-background shadow-[0_32px_80px_-28px_oklch(18%_0.06_260_/_0.55)]',
+          'pointer-events-auto relative w-[min(100vw-2rem,30rem)] overflow-hidden rounded-md border-1.5 border-line bg-surface-raised shadow-dialog',
           !reduceMotion && !flying && 'notification-live-enter',
         )}
       >
         <div className={cn('relative', flying && 'pointer-events-none opacity-0 transition-opacity duration-150')}>
-          <div className="h-[3px] w-full bg-primary" />
-          <div className="flex items-start justify-between gap-3 px-5 pb-3.5 pt-4">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary-light text-primary">
-                <Bell className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
-              </span>
+          <div className="flex items-start justify-between gap-3 border-b border-line-soft px-5 pb-3 pt-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <NotificationKindTile kind={item.kind} size={36} />
               <div className="min-w-0">
-                <p
-                  id="notification-live-title"
-                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-                >
+                <p id="notification-live-title" className="text-[12.5px] font-medium text-ink-muted">
                   {replay ? 'Notification' : 'New notification'}
                 </p>
-                <div className="mt-1">
-                  <span className="notif-kind">{NOTIFICATION_KIND_LABEL[item.kind]}</span>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <Chip fixed tone={NOTIFICATION_KIND_LOOK[item.kind]?.tone}>
+                    {NOTIFICATION_KIND_LABEL[item.kind]}
+                  </Chip>
+                  <time dateTime={item.createdAt} className="text-[12.5px] tabular-nums text-ink-muted">
+                    {formatNotificationWhen(item.createdAt)}
+                  </time>
                 </div>
               </div>
             </div>
             <button
               type="button"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-raised hover:text-ink"
+              className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
               aria-label="Close"
               onClick={park}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="px-5 pb-5 pt-1">
-            {extraTitle ? (
-              <p className="mb-2 text-[12px] font-medium text-muted-foreground">{item.title}</p>
-            ) : null}
-            <p className="text-[17px] font-semibold leading-snug tracking-tight text-ink">{message}</p>
-            <p className="mt-4 text-[13px] text-muted-foreground">
-              {item.companyName ? (
-                <>
-                  {item.companyName}
-                  <span className="mx-1.5 text-border">·</span>
-                </>
-              ) : null}
-              <time dateTime={item.createdAt}>{formatNotificationWhen(item.createdAt)}</time>
-            </p>
-            {canOpen ? (
-              <Link href={item.href} className="mt-2.5 inline-block text-[12px] font-medium text-primary hover:underline">
-                Open
-              </Link>
+          <div className="px-5 pb-4 pt-4">
+            {extraTitle ? <p className="mb-1.5 text-[13px] font-medium text-ink-2">{item.title}</p> : null}
+            <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{message}</p>
+            {item.companyName ? (
+              <p className="mt-4 border-t border-line-soft pt-3 text-[13px] text-ink-muted">{item.companyName}</p>
             ) : null}
           </div>
-          {remaining > 0 ? (
-            <div className="flex items-center justify-between gap-3 border-t border-border/70 bg-raised/40 px-5 py-2.5">
-              <p className="text-[12px] text-muted-foreground">
-                {remaining} more notification{remaining === 1 ? '' : 's'} waiting
-              </p>
-              <button
-                type="button"
-                className="rounded-md px-2 py-1 text-[12px] font-medium text-primary transition-colors hover:bg-primary-light"
-                title="Skip all (Shift+Esc)"
-                onClick={skipAll}
-              >
-                Skip all
-              </button>
-            </div>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2 border-t border-line-soft px-5 py-3">
+            {remaining > 0 ? (
+              <>
+                <span className="text-[12.5px] text-ink-muted">{remaining} more waiting</span>
+                <Button type="button" variant="quiet" size="sm" title="Skip all (Shift+Esc)" onClick={skipAll}>
+                  Skip all
+                </Button>
+              </>
+            ) : null}
+            <span className="mr-auto" />
+            {pageHref ? (
+              <Button asChild variant="quiet">
+                <Link href={pageHref}>Open page</Link>
+              </Button>
+            ) : null}
+            {canOpen ? (
+              <Button asChild variant="outline">
+                <Link href={item.href}>Open</Link>
+              </Button>
+            ) : null}
+            <Button type="button" onClick={park}>
+              Got it
+            </Button>
+          </div>
         </div>
       </div>
     </div>

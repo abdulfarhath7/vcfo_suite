@@ -3,20 +3,22 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
+import { isAdminOrManager } from '@/lib/auth';
 import type {
   AppNotification,
   NotificationKind,
-} from '@/lib/checklist-notifications';
+} from '@/lib/checklist/checklist-notifications';
 import {
   NOTIFICATION_HISTORY_LIMIT,
   NOTIFICATION_INBOX_LIMIT,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 
 /**
  * NOTIFICATIONS REPOSITORY — replaces vcfo.notifications localStorage.
  *
  * Access: each user only sees/updates their own rows (user_id = ctx.userId).
- * Extra AppNotification fields are JSON-encoded in `description` for round-trip.
+ * Extra AppNotification fields are JSON-encoded in `description` for round-trip, including the
+ * sender (`actorId`, `actorName`, C-759): `createNotification` stamps the caller, fan-outs pass it.
  * Clear/dismiss sets dismissed_at (inbox hide). History lists all rows including
  * dismissed. Destroying rows is not part of the bell/history product.
  */
@@ -30,6 +32,8 @@ type StoredPayload = {
   companyName?: string;
   itemId?: string;
   href?: string;
+  actorId?: string;
+  actorName?: string;
 };
 
 function parsePayload(description: string | null): StoredPayload & { body: string } {
@@ -56,6 +60,8 @@ function encodePayload(n: Omit<AppNotification, 'id' | 'read' | 'createdAt' | 'd
     companyName: n.companyName,
     itemId: n.itemId,
     href: n.href,
+    actorId: n.actorId || undefined,
+    actorName: n.actorName?.trim() || undefined,
   } satisfies StoredPayload);
 }
 
@@ -73,6 +79,7 @@ function toAppNotification(row: Row): AppNotification {
     createdAt: row.createdAt.toISOString(),
     read: row.status === 'read',
     dismissedAt: row.dismissedAt ? row.dismissedAt.toISOString() : null,
+    ...(payload.actorName ? { actorId: payload.actorId, actorName: payload.actorName } : {}),
   };
 }
 
@@ -126,9 +133,9 @@ export async function createNotification(
   ctx: AuthContext,
   input: Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { userId?: string },
 ): Promise<AppNotification> {
-  // Admin/manager may create notifications for another user; otherwise force self.
+  // Super admin, admin and manager may create notifications for another user; otherwise force self.
   const userId =
-    (ctx.role === 'admin' || ctx.role === 'manager') && input.userId
+    isAdminOrManager(ctx.role) && input.userId
       ? input.userId
       : ctx.userId;
 
@@ -137,7 +144,8 @@ export async function createNotification(
     .values({
       userId,
       title: input.title,
-      description: encodePayload(input),
+      // The caller is the sender unless it names someone else.
+      description: encodePayload({ ...input, actorId: input.actorId ?? ctx.userId, actorName: input.actorName ?? ctx.name }),
       status: 'unread',
     })
     .returning();

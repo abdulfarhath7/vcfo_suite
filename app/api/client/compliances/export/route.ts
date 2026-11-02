@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { getPortalFilings } from '@/db/repositories/client-compliances';
-import { parseFyParam } from '@/lib/filings';
+import { parseFyParam } from '@/lib/compliance/filings';
 import {
   AREAS,
   fyLabelOf,

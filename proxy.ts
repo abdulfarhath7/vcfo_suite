@@ -19,6 +19,7 @@ const roleHome: Record<string, string> = {
   manager: '/app/manager/dashboard',
   intern: '/app/intern/today',
   client: '/app/client/overview',
+  developer: '/app/dev/overview',
 };
 
 const roleSegment: Record<string, string> = {
@@ -27,9 +28,10 @@ const roleSegment: Record<string, string> = {
   manager: 'manager',
   intern: 'intern',
   client: 'client',
+  developer: 'dev',
 };
 
-const ALL_SEGMENTS = new Set(['super', 'admin', 'manager', 'intern', 'client']);
+const ALL_SEGMENTS = new Set(['super', 'admin', 'manager', 'intern', 'client', 'dev']);
 
 export default auth((req) => {
   const { nextUrl } = req;
@@ -59,7 +61,7 @@ export default auth((req) => {
   }
 
   if (isApp && role) {
-    const seg = path.split('/')[2]; // admin | manager | intern | client | super
+    const seg = path.split('/')[2]; // admin | manager | intern | client | super | dev
     if (seg && ALL_SEGMENTS.has(seg)) {
       if (role === 'super_admin') {
         // Bird's-eye: may enter any workspace segment.

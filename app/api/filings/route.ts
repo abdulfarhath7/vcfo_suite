@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { getFilings } from '@/db/repositories/filings';
-import { parseFyParam } from '@/lib/filings';
+import { parseFyParam } from '@/lib/compliance/filings';
 
 /**
  * GET /api/filings — the compliance register for whatever this caller may see.

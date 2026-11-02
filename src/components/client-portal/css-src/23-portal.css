@@ -1,0 +1,190 @@
+/* @cp-scope shared */
+/* Portal layout (the prototype's board frame): side placeholder + content column.
+   Plus the Search ⌘K filter chips; the palette frame itself is a Tailwind island. */
+body{margin:0}
+.cp-body{display:flex;min-height:100vh;min-width:0;background:var(--bg)}
+.cp-sidepad{width:var(--vp-side-w,248px);flex:none}
+.cp-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.cp-page-host{flex:1;min-width:0;display:block}
+/* bottom spacer: content scrolls clear of the floating Ask VCFO pill */
+.cp-page-host::after{content:"";display:block;height:var(--vp-launch-h)}
+/* Room for the phone tab bar (R-45). */
+@media (max-width:767px){.cp-page-host{padding-bottom:64px}}
+#vp-side{height:100vh}
+@supports (height:100dvh){#vp-side,#vp-drawer{height:100dvh}}
+.cp-search-chips{position:relative;z-index:3;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-bottom:1.5px solid oklch(var(--line))}
+.cp-ssheet .cp-search-chips{padding:0 14px 10px;border-bottom:0}
+.cp-chipw{position:relative;display:inline-flex;align-items:center}
+.cp-chipw .sx-filter{height:28px;font-size:13px;gap:6px}
+.cp-chipw .sx-filter b{font-weight:500}
+.cp-chipw .sx-filter.on{padding-right:28px}
+.cp-chipw .sx-filter.on svg{display:none}
+.cp-chipx{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:20px;height:20px;display:grid;place-items:center;padding:0;border:0;border-radius:4px;background:none;color:oklch(var(--brand-text));cursor:pointer}
+.cp-chipx:hover{background:oklch(var(--brand) / .12)}
+.cp-chipm{position:absolute;left:0;top:calc(100% + 4px);z-index:5;display:flex;flex-direction:column;min-width:180px;padding:4px;box-sizing:border-box;border-radius:6px;border:1px solid oklch(var(--line));background:oklch(var(--surface-raised));box-shadow:var(--shadow-float)}
+.cp-chipm button{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border:0;border-radius:4px;background:none;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-align:left;cursor:pointer;white-space:nowrap}
+.cp-chipm button span{flex:1}
+.cp-chipm button svg{color:oklch(var(--brand-text))}
+.cp-chipm button:hover,.cp-chipm button:focus-visible{outline:none;background:oklch(var(--surface-sunken))}
+.cp-search-clear{height:28px;padding:0 6px;border:0;background:none;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--brand-text));cursor:pointer}
+.cp-search-clear:hover{text-decoration:underline}
+/* phone drawer and chat lock the page under them */
+html.vp-chat-on{overscroll-behavior:contain}
+/* chat: 👍/👎 row (board v7chat_answer "Helpful?") and the Ask stream status line */
+#vp-chat .vpc-fb{display:flex;align-items:center;gap:6px;margin-top:8px}
+#vp-chat .vpc-fb>span{margin-right:2px;font-size:11.5px;color:var(--muted)}
+#vp-chat .vpc-m.vpc-a .vpc-fb button{width:30px;height:30px;min-height:30px;margin:0;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+#vp-chat .vpc-m.vpc-a .vpc-fb button[aria-pressed=true]{background:var(--primary-light);color:var(--primary);border-color:oklch(54.6% 0.215 263 / .35)}
+#vp-chat .vpc-fb button:disabled{cursor:default}
+#vp-chat .vpc-st{margin-left:6px;font-size:12px;color:var(--muted)}
+/* first-visit note above the launcher (board v7chat_launcher .botup bubble, once per client) */
+.vpl-note{position:fixed;right:var(--vpl-in);bottom:calc(var(--vpl-ph) + var(--vpl-in) + 14px);z-index:2147482500;width:300px;max-width:calc(100vw - 2 * var(--vpl-in));box-sizing:border-box;border-radius:6px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--pop);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:var(--fg);animation:v7up .35s cubic-bezier(.22,1,.36,1) .9s both}
+.vpl-note-h{display:flex;gap:8px;align-items:flex-start}
+.vpl-note-h span{flex:1;font-size:13px;line-height:1.45}
+.vpl-note-h button{width:24px;height:24px;border:0;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;padding:0}
+.vpl-note-q{display:flex;flex-wrap:wrap;gap:6px}
+.vpl-note-q button{min-height:30px;padding:0 10px;border-radius:6px;border:1px solid oklch(54.6% 0.215 263 / .35);background:var(--primary-light);color:var(--primary);font:500 12px var(--font-sans),sans-serif;cursor:pointer}
+/* a page with a sticky bottom action bar lifts the launcher: set --vp-launch-lift on .cp */
+#vp-launch{bottom:var(--vp-launch-lift,0px)}
+/* page enter (proto.js vpIn: 0.26 s) */
+@keyframes cpPageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cp-page-in{animation:cpPageIn .26s cubic-bezier(.22,1,.36,1) backwards}
+@media (prefers-reduced-motion: reduce){.cp-page-in,.vpl-note{animation:none}}
+/* rule 16 — the bot speaks (prototype s/comp/index.html botSay(): .botsay .bface .bubble) */
+.cp-botsay{display:flex;align-items:flex-end;gap:10px;text-align:left}
+.cp-botsay .bface{border-radius:6px;background:oklch(var(--surface-sunken));box-shadow:var(--pop),0 0 0 1px var(--border);display:grid;place-items:center;flex:none;animation:v7bob 2.6s ease-in-out infinite;overflow:hidden}
+.cp-botsay .bface svg{display:block}
+.cp-botsay .bubble{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:6px 10px 10px 4px;padding:9px 12px;font:500 13px/1.4 var(--font-sans);color:var(--fg);box-shadow:var(--shadow);max-width:300px}
+.cp-botsay .bubble::before{content:"";position:absolute;left:-6px;bottom:10px;width:10px;height:10px;background:var(--panel);border-left:1px solid var(--border);border-bottom:1px solid var(--border);transform:rotate(45deg)}
+.cp-botsay .btn-s{height:28px;padding:0 10px;font-size:12px}
+@media (prefers-reduced-motion: reduce){.cp-botsay .bface{animation:none}}
+/* phone Search: bottom sheet (s/home/mobile.html .scrim/.sheet + M-25 search sheet; rows = mobile .row) — SH-09 */
+@keyframes cpSsIn{from{transform:translate(-50%,105%)}to{transform:translate(-50%,0)}}
+@keyframes cpSsFade{from{opacity:0}to{opacity:1}}
+.cp-ss-scrim{position:fixed;inset:0;z-index:2147482600;background:oklch(20% .05 258 / .45);animation:cpSsFade .2s both}
+.cp-ssheet{position:fixed;left:50%;bottom:0;z-index:2147482601;width:min(100%,560px);max-height:min(82vh,calc(100dvh - 24px));display:flex;flex-direction:column;box-sizing:border-box;background:oklch(var(--surface-raised));border-radius:6px 14px 0 0;box-shadow:var(--pop);color:var(--fg);font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;transform:translate(-50%,0);animation:cpSsIn .38s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004) both}
+.cp-ssheet .grab{display:flex;justify-content:center;padding:8px 0 4px}.cp-ssheet .grab i{width:40px;height:4px;border-radius:2px;background:var(--border)}
+.cp-ssheet .sh{display:flex;align-items:center;gap:8px;padding:4px 6px 10px 14px}
+.cp-ssheet .sh h3{margin:0;font:500 16px var(--font-sans),system-ui,sans-serif;color:var(--navy-ink,var(--navy));flex:1}
+.cp-ssheet .x{width:44px;height:44px;border:0;background:none;border-radius:6px;display:grid;place-items:center;color:var(--muted);cursor:pointer;padding:0}
+.cp-ssheet .in{padding:0 14px 10px}
+.cp-ssheet .in input{display:block;width:100%;box-sizing:border-box;height:44px;border-radius:6px;border:1px solid var(--border);padding:0 12px;font:500 16px var(--font-sans),system-ui,sans-serif;background:var(--panel);color:var(--fg)}
+.cp-ssheet .body{overflow:auto;overscroll-behavior:contain;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.cp-ssheet .none{padding:12px 14px;color:var(--muted)}
+.cp-ssheet .row{box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px;border-top:1px solid var(--hair);color:inherit;font-weight:500;text-decoration:none}
+.cp-ssheet .row:active,.cp-ssheet .row[aria-selected=true]{background:var(--raised)}
+.cp-ssheet .row .si{width:22px;height:22px;border-radius:6px;flex:none;display:grid;place-items:center;background:var(--primary-light);color:var(--primary)}
+.cp-ssheet .row .t{flex:1;min-width:0}
+.cp-ssheet .row .t b{display:block;font:500 13.5px/1.3 var(--font-sans),system-ui,sans-serif;overflow-wrap:anywhere}
+.cp-ssheet .row .t span{font-size:11.5px;color:var(--muted)}
+.cp-ssheet .row>svg{flex:none;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){.cp-ss-scrim,.cp-ssheet{animation:none}}
+
+/* ---------------- VCFO Spectrum parts for the portal pages ----------------
+   One set of classes for cards, card heads, T1 tables, buttons, inputs, filter chips,
+   segmented switches and empty states, so the Documents, Library, Credentials and Team
+   pages draw them the same way (R-07, R-10, R-11, R-12, R-15, R-16, R-47, R-48).
+   Status chips, file badges and area pills come from the shared React parts inside a
+   `.cp-tw` island. Colours are shared tokens only. */
+.sx-card{position:relative;min-width:0;display:flex;flex-direction:column;box-sizing:border-box;background:oklch(var(--surface-raised));border:1.5px solid oklch(var(--line));border-radius:6px;color:oklch(var(--ink))}
+.sx-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;min-height:52px;padding:8px 16px;box-sizing:border-box;border-bottom:1px solid oklch(var(--line-soft))}
+.sx-head>h2,.sx-head>h3,.sx-head .sx-title{margin:0;min-width:0;font:500 15px/1.3 var(--font-sans),sans-serif;color:oklch(var(--ink));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sx-head .sx-meta{font-size:13px;color:oklch(var(--ink-muted));white-space:nowrap}
+.sx-head .sx-right{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:8px;min-width:0}
+.sx-body{padding:16px}
+.sx-tile{width:28px;height:28px;border-radius:6px;flex:none;display:grid;place-items:center;background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
+.sx-tile svg{width:15px;height:15px}
+.sx-tile[data-tone=amber]{background:oklch(var(--warning-soft));color:oklch(var(--warning))}
+.sx-tile[data-tone=green]{background:oklch(var(--positive-soft));color:oklch(var(--positive))}
+.sx-tile[data-tone=teal]{background:oklch(var(--waiting-soft));color:oklch(var(--waiting))}
+.sx-tile[data-tone=blue]{background:oklch(var(--info-soft));color:oklch(var(--info))}
+.sx-tile[data-tone=violet]{background:oklch(var(--identity-soft));color:oklch(var(--identity))}
+.sx-tile[data-tone=red]{background:oklch(var(--danger-soft));color:oklch(var(--danger))}
+/* list rows that run the full card width with a hairline between them (R-19) */
+.sx-row{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 16px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft));font-size:14px;color:oklch(var(--ink))}
+.sx-row:first-child{border-top:0}
+:where(a,button).sx-row{width:100%;border-left:0;border-right:0;border-bottom:0;background:none;text-align:left;font:inherit;font-size:14px;cursor:pointer;text-decoration:none}
+:where(a,button).sx-row:hover{background:oklch(var(--surface-sunken))}
+/* T1 clean rows (R-07): 36 px head in 11.5 px capitals, 1.5 px line under it, 44 px rows, hairlines only */
+.sx-t1{width:100%;border-collapse:collapse;border-spacing:0;font-size:13.5px;color:oklch(var(--ink))}
+.sx-t1 th{height:36px;padding:0 16px;box-sizing:border-box;text-align:left;font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted));background:none;border:0;border-bottom:1.5px solid oklch(var(--line));white-space:nowrap}
+.sx-t1 td{height:44px;padding:6px 16px;box-sizing:border-box;border:0;border-top:1px solid oklch(var(--line-soft));vertical-align:middle;background:none}
+.sx-t1 tbody tr:first-child td{border-top:0}
+.sx-t1 tbody tr:hover td{background:oklch(var(--surface-sunken))}
+.sx-t1 .num{text-align:right;font-variant-numeric:tabular-nums}
+/* buttons (R-12): blurple main with a faint top shine, strong navy, secondary white with a 1.5 px edge, ghost, soft */
+.sx-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;box-sizing:border-box;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised));color:oklch(var(--ink));font:500 14px var(--font-sans),sans-serif;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background-color .15s}
+.sx-btn:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
+.sx-btn.p{border-color:transparent;background:oklch(var(--brand));color:oklch(var(--on-brand));box-shadow:var(--shine)}
+.sx-btn.p:hover{background:oklch(var(--brand-strong));color:oklch(var(--on-brand))}
+.sx-btn.strong{border-color:transparent;background:oklch(var(--navy-fill));color:oklch(var(--surface-raised));box-shadow:var(--shine)}
+.sx-btn.strong:hover{background:oklch(var(--navy-fill-hover));color:oklch(var(--surface-raised))}
+.sx-btn.ghost{border-color:transparent;background:oklch(var(--ink) / .06)}
+.sx-btn.ghost:hover{background:oklch(var(--ink) / .1)}
+.sx-btn.soft{border-color:transparent;background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
+.sx-btn.danger{border-color:transparent;background:oklch(var(--danger-fill));color:#fff;box-shadow:var(--shine)}
+.sx-btn.sm{height:30px;padding:0 10px;font-size:13px}
+.sx-btn.lg{height:42px;padding:0 18px;font-size:15px}
+.sx-btn:disabled,.sx-btn[aria-disabled=true]{opacity:.5;cursor:default;pointer-events:none}
+.sx-btn:focus-visible,.sx-ib:focus-visible,.sx-in:focus-within,.sx-filter:focus-visible{outline:none;box-shadow:0 0 0 4px oklch(var(--focus-ring) / .24)}
+/* icon-only buttons are 6 px squares (R-12) */
+.sx-ib{position:relative;width:36px;height:36px;flex:none;display:inline-grid;place-items:center;box-sizing:border-box;padding:0;border-radius:6px;border:0;background:none;color:oklch(var(--ink-2));cursor:pointer;text-decoration:none}
+.sx-ib:hover{background:oklch(var(--ink) / .06);color:oklch(var(--ink))}
+.sx-ib.sm{width:30px;height:30px}
+.sx-ib.edge{border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised))}
+.sx-ib.edge:hover{background:oklch(var(--surface-sunken))}
+/* inputs (R-47): 40 px, 1.5 px edge, blurple edge and 4 px glow on focus */
+.sx-in{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;box-sizing:border-box;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised));color:oklch(var(--ink-muted))}
+.sx-in.sm{height:36px;padding:0 10px}
+.sx-in:focus-within{border-color:oklch(var(--brand))}
+.sx-in input,.sx-in select,.sx-in textarea{flex:1;min-width:0;border:0;outline:0;background:none;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink))}
+.sx-in input::placeholder,.sx-in textarea::placeholder{color:oklch(var(--ink-faint))}
+.sx-in .n{flex:none;font-size:12.5px;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
+/* filter chips (R-10): set = soft blurple fill, addable = a plain 1.5px edge (R-56: dashes only for drop zones and empty states) */
+.sx-filter{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 10px;box-sizing:border-box;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;white-space:nowrap;cursor:pointer}
+.sx-filter:hover{background:oklch(var(--surface-sunken))}
+.sx-filter.on,.sx-filter[aria-pressed=true]{border-style:solid;border-color:oklch(var(--brand-line));background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
+/* segmented switch for filters (R-11): quiet track, the picked option blurple with white text */
+.sx-seg{display:inline-flex;align-items:center;gap:2px;flex-wrap:nowrap;max-width:100%;overflow-x:auto;padding:2px;box-sizing:border-box;border-radius:6px;background:oklch(var(--surface-sunken))}
+.sx-seg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;height:28px;padding:0 12px;border:0;border-radius:4px;background:none;font:500 13px var(--font-sans),sans-serif;color:oklch(var(--ink-2));white-space:nowrap;cursor:pointer}
+.sx-seg button:hover{color:oklch(var(--ink))}
+.sx-seg button.on,.sx-seg button[aria-selected=true],.sx-seg button[aria-pressed=true]{background:oklch(var(--brand));color:#fff;box-shadow:var(--shine)}
+.sx-seg .cnt{font-size:12px;color:oklch(var(--ink-muted))}
+.sx-seg button.on .cnt,.sx-seg button[aria-selected=true] .cnt,.sx-seg button[aria-pressed=true] .cnt{color:oklch(100% 0 0 / .8)}
+/* underline tabs for views of one record (R-11) */
+.sx-tabs{display:flex;align-items:flex-end;gap:20px;overflow-x:auto;border-bottom:1px solid oklch(var(--line-soft))}
+.sx-tabs button{position:relative;height:44px;padding:0 2px;border:0;background:none;font:500 14px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));white-space:nowrap;cursor:pointer}
+.sx-tabs button:hover{color:oklch(var(--ink))}
+.sx-tabs button[aria-selected=true]{color:oklch(var(--ink))}
+.sx-tabs button[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:oklch(var(--brand))}
+/* empty state (R-48): a dashed area with the action; loading: grey shapes */
+.sx-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;margin:16px;padding:24px 16px;box-sizing:border-box;border-radius:6px;border:1.5px solid transparent;text-align:center;font-size:14px;color:oklch(var(--ink-muted))}
+.sx-sk{display:block;border-radius:6px;background:oklch(var(--surface-sunken));animation:sxPulse 1.4s ease-in-out infinite}
+@keyframes sxPulse{50%{opacity:.55}}
+/* label over a value, small muted caps for table groups */
+.sx-cap{font:500 11.5px var(--font-sans),sans-serif;letter-spacing:.07em;text-transform:uppercase;color:oklch(var(--ink-muted))}
+.sx-kv{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 16px;box-sizing:border-box;border-top:1px solid oklch(var(--line-soft));font-size:14px}
+.sx-kv>:first-child{flex:none;color:oklch(var(--ink-muted))}
+.sx-kv>:last-child{min-width:0;text-align:right;font-weight:500;overflow-wrap:anywhere}
+@media (prefers-reduced-motion: reduce){.sx-sk{animation:none}}
+/* R-55: every card, panel and section has a 2px edge. The page boards still carry the
+   prototype's 1px or 1.5px frame on these classes; this one rule sets the width for all of them. */
+.card,.kpi,.cr-wb,.cr-ctile,.vrd-visual,.vrd-box,.vrd-facts,.tb-note,.tb-chg-b,.tb-chg-a,.dtile.tb-dt,.dtile.tb-dt-warn{border-width:2px!important}
+/* R-56: the one dashed edge, 3px dash and 3px gap, drawn with gradients so every browser shows the
+   same dash. Only drop zones and empty states use it. A rule sets the colour in --dash-color and
+   keeps a transparent solid border for the width; a drag-over state sets its own background. */
+.border-dash-fine,.sx-empty,.vdoc-drop,.vup-big,.drop{background-image:repeating-linear-gradient(90deg,var(--dash-color,oklch(var(--line-strong))) 0 3px,transparent 3px 6px),repeating-linear-gradient(90deg,var(--dash-color,oklch(var(--line-strong))) 0 3px,transparent 3px 6px),repeating-linear-gradient(180deg,var(--dash-color,oklch(var(--line-strong))) 0 3px,transparent 3px 6px),repeating-linear-gradient(180deg,var(--dash-color,oklch(var(--line-strong))) 0 3px,transparent 3px 6px);background-size:100% 1.5px,100% 1.5px,1.5px 100%,1.5px 100%;background-position:0 0,0 100%,0 0,100% 0;background-repeat:no-repeat;background-origin:border-box}
+.border-dash-fine{border:1.5px solid transparent}
+/* R-57: one checkbox look (the same as app/globals.css): 16px, 1.5px edge, small radius, empty
+   when not done, brand fill with a white tick when done. */
+input[type="checkbox"]{appearance:none;-webkit-appearance:none;display:inline-grid;place-content:center;flex:none;box-sizing:border-box;width:16px;height:16px;margin:0;border:1.5px solid oklch(var(--line-strong));border-radius:4px;background:oklch(var(--surface-raised)) center/12px 12px no-repeat;cursor:pointer}
+input[type="checkbox"]:checked,input[type="checkbox"]:indeterminate{border-color:oklch(var(--brand));background-color:oklch(var(--brand))}
+input[type="checkbox"]:checked{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")}
+input[type="checkbox"]:indeterminate{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E")}
+input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.5}
+
+/* R-54 / R-55 in the client portal. The portal redefines --panel and --border as full colours, so the
+   shared .surface / .noir-card rule (oklch(var(--panel))) resolved to nothing here and DashSection
+   cards (Timeline, Incorporation, This week) drew no background and no edge. Paint them with the
+   portal's own colours. */
+.surface,.surface-raised,.surface-flat,.surface-flat-raised,.noir-card,.noir-card-raised,.card-surface{background:var(--panel)!important;border:2px solid var(--border)!important}

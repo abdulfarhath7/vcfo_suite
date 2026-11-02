@@ -3,7 +3,7 @@ import 'server-only';
 import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { engagementClients, engagements, profiles } from '@/db/schema';
-import { engagementDbId, LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { engagementDbId, LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 import { getProgressCcRecipients } from '@/lib/email/merge-cc';
 import { isUuid } from '@/lib/slug';
 import { listLeadIdsByEngagementIds } from '@/db/repositories/engagement-leads-membership';

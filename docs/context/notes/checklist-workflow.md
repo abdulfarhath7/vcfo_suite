@@ -10,7 +10,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   does not either: the step reads `waiting` (“Waiting on your manager…” for the lead,
   “Waiting on your approval…” for staff) until the manager accepts. Green tick = accepted.
 - Rejected or unlocked-for-correction steps re-lock everything after them.
-- Helper: `src/lib/checklist-step-gate.ts`. Server save path: `patchChecklistItem`.
+- Helper: `src/lib/checklist/checklist-step-gate.ts`. Server save path: `patchChecklistItem`.
 - Copy: “This opens after {title} is complete.” / “Waiting on the client…” — never “access denied”.
 - Overdue badges only on the current (active/waiting) step, never on locked future steps.
 - Client **Progress** nav (`/app/client/progress`) was removed; the gated catalog
@@ -19,7 +19,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 ## Step visibility (who reads what)
 
-- Policy is pure in `src/lib/checklist-visibility.ts` and applied **server-side** in
+- Policy is pure in `src/lib/checklist/checklist-visibility.ts` and applied **server-side** in
   every route that returns `checklist_state` (`checklistStateForViewer(ctx, state)` in
   the engagements repository, incl. `/api/checklist-index`). Do not add a route that
   returns the raw blob. Viewers: `lead` (intern, full) · `firm` (admin / manager /
@@ -71,7 +71,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 ## Part A (pre-1), NIC code, manager windows, lead compliance gate (CR 2026-09-15)
 
-- **Part A sections** live in one helper: `src/lib/part-a-sections.ts` — `PART_A_SECTION_ORDER`
+- **Part A sections** live in one helper: `src/lib/checklist/part-a-sections.ts` — `PART_A_SECTION_ORDER`
   (MCA order), `partAsectionsFor(ownershipType)`, `partAFieldsFor(fields, ownershipType)`,
   `isParentEntityField`. `fieldsForOwnership` in `checklist-responses.ts` delegates to it for
   pre-1 only. The form hook, client preview, rail attachments and completeness all read the
@@ -82,10 +82,10 @@ Gotchas already paid for once. Append when something costs more than a minute to
   treats `parentEntityName/Address` as optional seeds. Generators still read
   `resolveParentEntity*` (Part A first, engagement row fallback).
 - **NIC**: `nicCode` (5 digits, required, `PRE1_BASE_REQUIRED_TEXT_IDS`), `nicBusinessType`
-  auto-filled in `setField` from `src/lib/nic-2008.ts` (1,302 sub-classes, official MSME PDF
+  auto-filled in `setField` from `src/lib/incorporation/nic-2008.ts` (1,302 sub-classes, official MSME PDF
   parse — `src/data/nic-2008.json` is `[code, subclass, class]`). Unknown code = warning, not
   error. `nicBusinessType` renders read-only (like pre-5 expiry) and is stored in responses.
-- **Windows**: `src/lib/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
+- **Windows**: `src/lib/projects/schedule-windows.ts` (`windowForStep`, `applyScheduleWindow`,
   `formatWindow`, `canSetScheduleWindows`). Repo `src/db/repositories/schedule.ts`
   (`setEngagementWindow`, `setComplianceInstanceWindow`; manager/admin/super only, throws
   otherwise). Routes `POST /api/engagements/:id/schedule`, `POST /api/filings/:id/window`.
@@ -119,7 +119,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
 
-- **One policy module:** `src/lib/pre-inc-direct-flow.ts`. `DIRECT_FLOW_STEP_IDS` = every
+- **One policy module:** `src/lib/incorporation/pre-inc-direct-flow.ts`. `DIRECT_FLOW_STEP_IDS` = every
   active pre-incorporation step except `pre-2`. Lead-only fields: `pre-1` `nicCode`,
   `nicBusinessType`, `additionalNicCodes` (and its dotted entry ids). Never write a step id
   list for this rule anywhere else.
@@ -128,7 +128,7 @@ Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
   a direct-flow step — lead-only fields show the client a read-only row "Your project lead
   fills this." The server strips lead-only keys from client patches and submits.
 - **Submit** (`POST …/checklist/submit`, `submitDirectFlowStep`): merge → shared validator
-  (`src/lib/checklist-step-validation.ts`, the same function the form runs) → 422
+  (`src/lib/checklist/checklist-step-validation.ts`, the same function the form runs) → 422
   `fieldErrors` for a field the caller can fix → client with only lead-only gaps gets
   `waitingOnLeadPatch` (gate `waiting` for the client, `active` for the lead) → otherwise
   `directSubmitPatch` (`completed`, `reviewStatus: 'accepted'`, `clientSubmittedAt`,

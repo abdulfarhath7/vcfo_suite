@@ -5,7 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import {
   getMilestoneDocumentSignedUrl,
   fileNameFromStoragePath,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 
 interface MilestoneFileDisplayProps {
   storagePath: string;
@@ -33,7 +33,7 @@ export function MilestoneFileDisplay({
     };
   }, [storagePath]);
 
-  if (!href) return <span className="text-sm text-muted-foreground">{name}</span>;
+  if (!href) return <span className="text-sm text-ink-muted">{name}</span>;
 
   return (
     <a
@@ -42,8 +42,8 @@ export function MilestoneFileDisplay({
       rel="noopener noreferrer"
       className={
         variant === 'card'
-          ? 'inline-flex max-w-full items-center gap-1 truncate text-xs text-blue-700 underline-offset-2 hover:underline'
-          : 'inline-flex items-center gap-1.5 text-sm text-role-foreground underline-offset-2 hover:underline'
+          ? 'inline-flex max-w-full items-center gap-1 truncate text-xs text-brand-text underline-offset-2 hover:underline'
+          : 'inline-flex items-center gap-1.5 text-sm text-brand underline-offset-2 hover:underline'
       }
     >
       <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />

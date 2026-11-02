@@ -53,7 +53,7 @@ Wording rule visible in FINAL: the client is always addressed as the company nam
 | `home-chat` | v7_before#chat / mobile.html#chat | `/app/client/overview` + open Ask panel | real: `AskProvider` / `AskLauncher` open state (`src/components/ask/*`) |
 | `incorporation` | s/inc/incorporation.html | `/app/client/incorporation` | |
 | `inc-phase-a` / `inc-phase` / `inc-phase-3` / `inc-phase-4` | s/inc/phase.html#p=1..4 | `/app/client/incorporation?phase=pre-inc-phase-1` … (or a phase sub-route; incorporation agent decides) | Phase 1 Name Application, 2 Incorporation, 3 Post-Incorporation, 4 Registration |
-| `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client-overview.ts) | N → checklist id table in 5.10 |
+| `inc-step-N` (N = 1…48) | s/inc/step.html#n=N | `/app/client/incorporation/step/...` (folder `app/app/client/incorporation/step` exists) or `clientStepHref(stepId)` = `/app/client/incorporation?step=<id>` (src/lib/client/client-overview.ts) | N → checklist id table in 5.10 |
 | `compliances` | s/comp/index.html#cal-redesign | `/app/client/compliances/calendar` (folder exists) | |
 | `filings` | s/comp/index.html#fil-redesign | `/app/client/compliances/filings` | |
 | `documents` | s/docs/docs_a_refined | `/app/client/documents` | |
@@ -171,14 +171,14 @@ Data → real app
 | field | example | source in real app |
 |---|---|---|
 | date | TUE 6 OCT 2026 | client clock; `src/hooks/use-client-locale-date.ts` |
-| company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/lib/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
+| company name | Northwind Technologies India Pvt Ltd | `overview.engagement.companyName` (GET `/api/client/overview`, `useClientOverview()` in `src/hooks/use-client-overview.ts`, repo `getClientOverview` in `src/db/repositories/client-overview.ts`) |
 | ring % before | 43% = 6/14 | `overview.progress.byPhase` → sum of phases `pre-inc-phase-1` + `pre-inc-phase-2` (done/total). Existing. |
 | ring % after | 64% = 7/11 | `overview.progress.byPhase` `post-inc-phase-3`. Existing. |
 | Waiting on Northwind | 4 | prototype = number of open items in "Needs from Northwind" (2 upload + 1 fill + 1 correct). Real `overview.ballInCourt.waitingOnClient` counts ACTIVE STEPS, not items → **NEW: item-level needs list (see 5.2); count = its length.** |
 | With SBC | 1 | `overview.ballInCourt.waitingOnFirm` (existing; step-level). |
-| Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client-overview.ts`). |
+| Overdue | 1 | `overview.progress.byStatus.overdue` (steps) + overdue items; after COI also overdue `compliance_instances` (status `overdue`). Partially existing; needs one combined count (NEW derivation in `src/lib/client/client-overview.ts`). |
 | Documents in | 4/6 | NEW: requested-documents fulfilled/total. Closest existing: `overview.documents.counts` (requested/submitted are STEP counts). Needs per-file requests (`document_requests` table + repo `src/db/repositories/document-requests.ts` exist; requests are not yet linked to steps → add `step_id`, `due_date`, `kind` columns, see 5.2). |
-| Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
+| Expected COI | 28 Oct | engagement `schedule.incorporation.to` (manager-set window; `normalizeEngagementSchedule`, `src/lib/projects/schedule-windows.ts`). DECISIONS: "Days to COI before COI count down to the manager-set incorporation window end". Not in overview payload → **add `expectedCoiDate` to `ClientOverview`** (repo already loads `row.schedule`). |
 | Incorporated | 24 Oct | `overview.engagement.incorporationDate` (existing). |
 | Due soon | 3 | `overview.compliance.upcoming` filtered to due within 15 days and not filed (existing data, new derivation). |
 | Registrations | 5/13 | `overview.progress.byPhase['registration-phase-4']` gives done/23 (catalog has 23 phase-4 steps). The prototype's 13 = the curated registrations list of `v7c_reg` (section 5.15). Decide denominator (open question Q3). |
@@ -205,7 +205,7 @@ Data → real app
 
 | field | example | source |
 |---|---|---|
-| item title | Utility bill - office | **NEW**: there is no item-level "need" today. Closest: (a) `document_requests` rows (title, detail, status pending/fulfilled, requested_by) — table + repo exist but no step link, due date or kind; (b) per-step required documents from `src/data/checklist.ts` (`infoRequired`) + `src/lib/checklist-responses.ts` field ids (e.g. pre-14 `registeredOfficeUtilityBill…`); (c) `clientFillRequest` on a step slice (`requestClientFill` in engagements repo); (d) rejected steps (`isReviewRejected`, `rejectionNote`) → "Correct"; (e) after COI: `compliance_instances` needing client input. Proposal: extend `document_requests` with `step_id text`, `compliance_instance_id uuid`, `kind text ('upload'|'fill'|'correct'|'sign')`, `due_date date`, `field_id text`, and add `listOpenClientNeeds(ctx, engagementId)` returning a unified list (requests + fill requests + rejected steps) → include as `overview.needs[]` in `/api/client/overview`. |
+| item title | Utility bill - office | **NEW**: there is no item-level "need" today. Closest: (a) `document_requests` rows (title, detail, status pending/fulfilled, requested_by) — table + repo exist but no step link, due date or kind; (b) per-step required documents from `src/data/checklist.ts` (`infoRequired`) + `src/lib/checklist/checklist-responses.ts` field ids (e.g. pre-14 `registeredOfficeUtilityBill…`); (c) `clientFillRequest` on a step slice (`requestClientFill` in engagements repo); (d) rejected steps (`isReviewRejected`, `rejectionNote`) → "Correct"; (e) after COI: `compliance_instances` needing client input. Proposal: extend `document_requests` with `step_id text`, `compliance_instance_id uuid`, `kind text ('upload'|'fill'|'correct'|'sign')`, `due_date date`, `field_id text`, and add `listOpenClientNeeds(ctx, engagementId)` returning a unified list (requests + fill requests + rejected steps) → include as `overview.needs[]` in `/api/client/overview`. |
 | subtitle/(i) | Registered Office Address | step title via `getItem(stepId).title` or obligation `particular` + period. |
 | date chip | 9 Oct / Overdue 3d / In 5 days | `due_date` (NEW column) or step schedule window `windowForStep(schedule, stepId).to`; label = relative ("In N days", "Overdue Nd") or absolute date. |
 | counts per tab | 2·1·1·0 | group by `kind`. |
@@ -231,11 +231,11 @@ Data → real app
 |---|---|---|
 | holders by party | Northwind 3 / SBC 1 / MCA 0 | `overview.milestones` (kind + `ownedByClient`) + statuses; MCA = steps `pre-10` SPICe+ Filing and `pre-11` MCA Remarks when filed and awaiting MCA (NEW derivation: "with MCA" = SPICe+ filed, COI not issued). |
 | caption "due 9 Oct · 2 files missing" | | due = `windowForStep(schedule,'pre-14').to`; files missing = count of open needs for that step (NEW needs list). |
-| "Director 2 details · Northwind fills this" | | NEW per-step summary line; can be derived from missing required fields (`src/lib/checklist-responses.ts` + validation modules `src/lib/checklist-*-validation.ts`). |
+| "Director 2 details · Northwind fills this" | | NEW per-step summary line; can be derived from missing required fields (`src/lib/checklist/checklist-responses.ts` + validation modules `src/lib/checklist-*-validation.ts`). |
 | "Arjun Mehta · 30% · ready 13 Oct" | | lead name: `overview.team` (role Project Lead); % NEW (lead-side progress per step — not stored; could be fields filled / required); ready date = schedule window. |
 | step N label | Step 7 | global catalog index (table in 5.10). |
 | Continue → | inc-step-7 | `clientStepHref('pre-14')`. |
-| **Conflict** | steps 7, 8, 9 all "In progress" for the client at once and step 10 with SBC | the real gate (`gateActiveCatalog`, `src/lib/checklist-step-gate.ts`) is SEQUENTIAL: one active step; later steps are `locked`. See Q1. |
+| **Conflict** | steps 7, 8, 9 all "In progress" for the client at once and step 10 with SBC | the real gate (`gateActiveCatalog`, `src/lib/checklist/checklist-step-gate.ts`) is SEQUENTIAL: one active step; later steps are `locked`. See Q1. |
 
 ---
 
@@ -280,7 +280,7 @@ Data → real app
 | MOA & AOA drafts 10 Oct | SBC deliverable with a date: step `pre-9` SPICe+ Confirmation / incorporation docs (`app/api/engagements/[id]/incorporation-docs/share`) + schedule window. NEW: "dated item" derivation. |
 | Approved name expires 14 Oct | `pre-5` response `nameApprovalExpiryDate` (exists in `checklist-responses.ts`). Existing data, NEW derivation. |
 | TDS overdue / payroll / FC-GPR / SH-1 | `compliance_instances` (status, due_date) + post-inc statutory windows (5.17). |
-| Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
+| Proposal | NEW pure function `buildAlerts(state, schedule, compliance, needs, now)` in `src/lib/client/client-overview.ts` → `overview.alerts[] {id,title,meta,date,severity:'over'|'due'|'prog',href}`. |
 
 ---
 
@@ -322,7 +322,7 @@ Data → real app
 
 | field | source |
 |---|---|
-| phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
+| phase windows | engagement `schedule` jsonb `{ incorporation?: Window, steps?: {[itemId]: Window} }` (`src/lib/projects/schedule-windows.ts`; repo `setEngagementWindow` in `src/db/repositories/schedule.ts`; route `PUT/PATCH /api/engagements/[id]/schedule`). Phase window = min(from)/max(to) of its steps' windows (DECISIONS: "Phase end date = latest step date in the phase"). MCA review = windows of `pre-10`/`pre-11`; COI = `schedule.incorporation.to` (before) or `incorporationDate` (after). |
 | % in Phase 2 | `progress.byPhase` pct. |
 | "Last changed by …" | latest audit event of action `schedule.*` (`listAuditEvents`), or NEW `schedule_updated_by/at` inside the schedule jsonb. |
 | Client change request | **NEW**: `engagement_change_requests.kind` today = delete_project/change_client/change_manager (`src/db/repositories/engagement-change-requests.ts`, routes `/api/engagement-change-requests`). Add kind **`timeline`** with payload `{ phases:[{id,from,to}], coiFrom, coiTo, slipDays }`, `reason` (required), status pending→approved/rejected by the manager; on approve call `setEngagementWindow`. Pending request exposed in overview (`overview.timelineRequest`). Manager direct edit = existing schedule write (role-gated by `canSetScheduleWindows`). Notifications on save: "email and WhatsApp to admin, manager, lead and client" (manager board) → `notifyEngagementEvent` + WhatsApp templates (NEW event `timeline_changed`). |
@@ -474,7 +474,7 @@ Data → real app
 | field | source |
 |---|---|
 | CIN, PAN, TAN | `overview.identifiers` (`identifiersFromState`: pre-12 responses `cin`, `pan`, `tan`, also `pfCode`, `esiCode`). Existing. **Security change needed:** the overview currently ships PAN/TAN in clear to the browser. For the reveal design, the API must return masked PAN/TAN and expose a NEW `POST /api/client/identifiers/reveal {field:'pan'|'tan', password}` that re-verifies the session user's password (bcrypt against `profiles.password_hash`, same check as `app/api/account/password/route.ts`), rate-limits (3 tries → lock; v7p_ids_password shows "Wrong password. 2 tries left."), writes an audit event (`identifiers.reveal`), and returns the clear value once. Client hides it after 60 s. |
-| GSTIN | reg-4 response `gstinNumber` (`src/lib/checklist-responses.ts`) — not in `identifiersFromState` today → **add `gstin`** (also `iecCode`, `leiNumber`, `pfRegistrationNumber`, `esiRegistrationNumber` for the Registrations card). |
+| GSTIN | reg-4 response `gstinNumber` (`src/lib/checklist/checklist-responses.ts`) — not in `identifiersFromState` today → **add `gstin`** (also `iecCode`, `leiNumber`, `pfRegistrationNumber`, `esiRegistrationNumber` for the Registrations card). |
 | COI → | `overview.documents.deliverables` entry `pre-12:certificateOfIncorporationFinalUrl` → milestone signed URL. |
 | portal ↗ | static map. |
 
@@ -490,7 +490,7 @@ Data → real app
 | CA-04 | Single-area tab | Summary line: metric 22px area name + caption "<n> filings this FY · f filed · d due soon · o overdue"; table Filing · Period · Due / filed · Status: MCA: ADT-1 (auditor appointment) FY 2026-27 "Filed 5 Nov 2026" Filed; Commencement (INC-20A) One-time 22 Apr 2027 Upcoming. GST: GSTR-1 Nov 2026 11 Dec 2026; GSTR-3B Nov 2026 20 Dec 2026. Income tax: TDS Payment Oct 2026 7 Nov 2026 Overdue; TDS Payment Nov 2026 7 Dec 2026 Upcoming. Payroll: EPF Return & Payment / ESI Payment Oct 2026 15 Nov 2026 Due soon; PT Payment 20 Nov 2026 Due soon. FEMA: FC-GPR Filing "Share allotment" 2 Dec 2026 Upcoming. Footer caption "Showing k of n · full list in Filings" or "Showing all n". |
 | CA-05 | Drills | 5 configs (one per area): tabs All · Filed · Due soon · Overdue · Upcoming with area totals; 20 openers (area × status 1..4). Link strip → Filings. |
 
-Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped by `complianceGroupForAuthority(authority)` (exists in `src/lib/client-overview.ts`: GST, Income tax, Payroll, MCA, FEMA, Other). Status buckets from `status` + due date. Source `GET /api/filings` / `getFilings` (existing, FY filter) → NEW grouping helper (pure). "Other" group is not in the design (5 areas) — fold or hide (Q5).
+Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped by `complianceGroupForAuthority(authority)` (exists in `src/lib/client/client-overview.ts`: GST, Income tax, Payroll, MCA, FEMA, Other). Status buckets from `status` + due date. Source `GET /api/filings` / `getFilings` (existing, FY filter) → NEW grouping helper (pure). "Other" group is not in the design (5 areas) — fold or hide (Q5).
 
 ---
 
@@ -503,7 +503,7 @@ Data → real app: `compliance_instances` ⋈ `compliance_obligations` grouped b
 | RG-03 | Table | `.vh-x` `--tmin:720px`: Registration · Category · Authority (caption) · Number (mono 11.5px/600, "-" when none) · Date (mono right) · Status chip · download icon (only when Registered; aria "Download certificate", title "Certificate"). Rows: GST Registration · Tax · GSTN · 29AAKCN4821M1Z5 · 1 Nov 2026 · Registered / LUT Filing · Tax · GSTN · AD291126001234X · 3 Nov 2026 · Registered / PF Registration · Labour · EPFO · KNBNG2954118000 · 2 Nov 2026 · Registered / ESI Registration · Labour · ESIC · 53001234560001001 · 3 Nov 2026 · Registered / PT Registration · Labour · Karnataka CTD · – · Est. 12 Nov 2026 · In progress / Shops & Establishment · Labour · Karnataka Labour Dept · – · Est. 15 Nov 2026 · In progress / MSME Registration · Business · Ministry of MSME · UDYAM-KR-03-0123456 · 30 Oct 2026 · Registered / IEC Registration · Business · DGFT · – · Est. 14 Nov 2026 · In progress / Trade Licence · Business · BBMP · Dec 2026 · Upcoming / LEI Registration · Business · LEIL · Dec 2026 · Upcoming / Trademark Registration · IP · IP India · Jan 2027 · Upcoming / FCGPR Filing · FEMA · RBI · FIRMS · By 2 Dec 2026 · Upcoming / FLA Return · FEMA · RBI · By 15 Jul 2027 · Upcoming. |
 | RG-04 | Phone | "Registrations" (i) "Every registration with its portal ↗ and its proof 📎." Rows: status glyph · name · "<authority> · <date>" · "📎 Proof" chip button (→ doc-viewer) or amber "Proof pending" chip (filed, no proof) or nothing (not filed) · ↗ portal. Rows: GST (GSTN · 1 Nov, done, proof) · PF (EPFO · 2 Nov, done, proof) · ESI (ESIC · 3 Nov, done, Proof pending) · PT (Karnataka CTD · est. 12 Nov, with SBC) · IEC (DGFT · est. 14 Nov, with SBC) · Trademark (IP India · Jan 2027, upcoming). Rule 15 asks for the same ↗ / 📎 on desktop → add. |
 
-Data → real app: registration steps `reg-*` (phase 4) in `checklist_state`: status (gate), numbers from responses (`gstinNumber`, `lutArn`, `pfRegistrationNumber`, `esiRegistrationNumber`, `iecCode`, `leiNumber`…; MSME/Udyam, PT, S&E have no number fields yet — **NEW fields** in `src/lib/checklist-responses.ts` for reg-7/reg-9/reg-10/reg-12/reg-15), dates (`gstRegistrationDate`, `pfRegistrationDate`, …), estimated dates = schedule window. Category/authority = NEW static map per step id (front-end). Certificate = step file (e.g. `gstCertificateUrl`, `iecCertificateUrl`) via milestone signed URL. **NEW pure builder `buildRegistrations(state, schedule)` → `overview.registrations[]`.**
+Data → real app: registration steps `reg-*` (phase 4) in `checklist_state`: status (gate), numbers from responses (`gstinNumber`, `lutArn`, `pfRegistrationNumber`, `esiRegistrationNumber`, `iecCode`, `leiNumber`…; MSME/Udyam, PT, S&E have no number fields yet — **NEW fields** in `src/lib/checklist/checklist-responses.ts` for reg-7/reg-9/reg-10/reg-12/reg-15), dates (`gstRegistrationDate`, `pfRegistrationDate`, …), estimated dates = schedule window. Category/authority = NEW static map per step id (front-end). Certificate = step file (e.g. `gstCertificateUrl`, `iecCertificateUrl`) via milestone signed URL. **NEW pure builder `buildRegistrations(state, schedule)` → `overview.registrations[]`.**
 
 ---
 
@@ -624,7 +624,7 @@ Not routed in the prototype (design board). Real use: step detail pop-up opened 
 | SP-05 | What was provided | 2-column definition grid: Address (span 2) "4th Floor, Prestige Tech Park, Outer Ring Road, Bengaluru 560103" · State Karnataka · Premises Leased · Owner "—" (i "Not given yet. Northwind adds this when the step is completed.") · Proof of address "—" (same i). |
 | SP-06 | Footer | Primary "Continue step →" (→ step page) · outline "🤖 Ask VCFO about this step" (opens chat) · outline "✉ Message Arjun (lead)". |
 
-Data: step slice from `checklist_state` (status, `clientSubmittedAt`, `reviewedAt/By`, `completedOn`), responses via `extractItemResponses` (`src/lib/checklist-responses.ts`), required docs/needs (NEW needs list), step files (`listDocuments` with `step_id` / milestone paths), schedule window. "Message Arjun" → NEW or existing messaging (`app/app/client/messages` folder exists) / `POST /api/ask/handoff`.
+Data: step slice from `checklist_state` (status, `clientSubmittedAt`, `reviewedAt/By`, `completedOn`), responses via `extractItemResponses` (`src/lib/checklist/checklist-responses.ts`), required docs/needs (NEW needs list), step files (`listDocuments` with `step_id` / milestone paths), schedule window. "Message Arjun" → NEW or existing messaging (`app/app/client/messages` folder exists) / `POST /api/ask/handoff`.
 
 ### 8.2 Compliance pop-up (`v7p_compliance`, 760px, over v7_after)
 
@@ -864,7 +864,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | need | provider |
 |---|---|
-| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/lib/use-client-overview.ts`), pure builders in `src/lib/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
+| One scoped read for the dashboard | `GET /api/client/overview` → `getClientOverview(ctx, engagementId?)` (`src/db/repositories/client-overview.ts`), hook `useClientOverview()` (`src/hooks/use-client-overview.ts`), pure builders in `src/lib/client/client-overview.ts` (`buildProgress`, `buildNextAction`, `buildBallInCourt`, `buildDeliverables`, `buildDocumentCounts`, `buildMilestones`, `identifiersFromState`, `complianceGroupForAuthority`, `journeyStations`, `heroStateLine`). |
 | Company name, legal form, incorporation date, registered office | `overview.engagement` |
 | Before/after switch | `overview.incorporated` |
 | Phase progress (ring, Steps card chips, timeline %) | `overview.progress.byPhase` |
@@ -873,7 +873,7 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 | Upcoming filings (+90 days) | `overview.compliance.upcoming` |
 | Full filings register / FY | `GET /api/filings` (`getFilings`), `useComplianceFilings` |
 | Filing working windows | `compliance_instances.window_from/to`, `PATCH /api/filings/[id]/window` |
-| Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
+| Manager date windows (timeline, expected COI) | `engagements.schedule`, `src/lib/projects/schedule-windows.ts`, `/api/engagements/[id]/schedule`, `setEngagementWindow` |
 | Team (PM / PL names, email) | `overview.team` |
 | Activity | `overview.activity` (audit events) / `GET /api/activity` |
 | Documents + preview | `GET /api/documents`, `GET /api/documents/[id]/signed-url`, `GET /api/milestone-documents/signed-url`, deliverables |
@@ -909,10 +909,10 @@ Full verbatim markup of every card is in Appendix B; the phone CSS in Appendix C
 
 | # | issue | suggestion |
 |---|---|---|
-| Q1 | Prototype shows several client steps in progress at once (7 Waiting, 8 and 9 In progress) and step 10 with SBC, while the real gate (`src/lib/checklist-step-gate.ts`) is strictly sequential (one `active`, the rest `locked`). | Owner to confirm: either the Home shows "1 current + upcoming locked" (real data), or the gate relaxes for Phase 2 client steps. |
+| Q1 | Prototype shows several client steps in progress at once (7 Waiting, 8 and 9 In progress) and step 10 with SBC, while the real gate (`src/lib/checklist/checklist-step-gate.ts`) is strictly sequential (one `active`, the rest `locked`). | Owner to confirm: either the Home shows "1 current + upcoming locked" (real data), or the gate relaxes for Phase 2 client steps. |
 | Q2 | PAN/TAN reveal uses the **account password, 60 s** on Home (`v7c_ids`, `v7p_ids_password`, phone sheet) but a **manager OTP, 10 min** on the Credentials page for the same PAN. | Pick one model (or keep both and say why). |
 | Q3 | Totals disagree: "6 of 14 SPICe+" (greeting, runtime chat) vs "7 of 38 steps" (chat board) vs 48 rows in the Steps card; Registration phase "0 of 23" (Steps) vs "0 of 13" (chat drill, Registrations card 13 rows, greeting "5/13"). | Use catalog counts (5/9/11/23 = 48) everywhere; registrations card = curated subset only if labelled so. |
-| Q4 | Steps card shows the playbook "Timeline" text ("2–3 working days"); `src/lib/client-overview.ts` says the working-days SLA is no longer shown (replaced by manager windows). | Show `formatWindow(windowForStep(...))` when set, else the playbook text? Owner call. |
+| Q4 | Steps card shows the playbook "Timeline" text ("2–3 working days"); `src/lib/client/client-overview.ts` says the working-days SLA is no longer shown (replaced by manager windows). | Show `formatWindow(windowForStep(...))` when set, else the playbook text? Owner call. |
 | Q5 | Compliance areas: design = 5 (MCA, GST, Income tax, Payroll, FEMA); real grouping adds "Other". | Fold Other into the closest area or show a 6th row only when non-empty. |
 | Q6 | Many desktop controls are unwired in the board (fallback toasts): needs Upload/Fill/Correct/Sign, Report, Documents →, COI →, Show PAN/TAN, Copy, donut parts/legend/centre, drill rows and "Open full list", SBC (after) link icons, registrations download. | Real targets are given per control in sections 5.x. |
 | Q7 | Empty Needs tab text is always "Nothing to sign." before COI (bug) and plain text instead of the bot bubble. | Use the bot bubble "Nothing to <verb> right now…". |
@@ -1002,7 +1002,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2653,7 +2653,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2788,7 +2788,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -2918,7 +2918,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3081,7 +3081,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3215,7 +3215,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3347,7 +3347,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */
@@ -3479,7 +3479,7 @@ tbody tr:first-child td{border-top:0}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 <style>
-/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/motion.ts springSnappy (420/32/0.8) */
+/* v7.1 - matches src/views/admin/ProjectsSections.tsx proj-view-pill + src/lib/shell/motion.ts springSnappy (420/32/0.8) */
 .seg{padding:2px;border-radius:8px;background:light-dark(oklch(96.5% 0.008 250), oklch(18.3% 0.008 250));box-shadow:inset 0 0 0 1px var(--border)}
 .seg>.thumb{top:2px;bottom:2px;left:2px;border-radius:5px;background:var(--navy);box-shadow:0 1px 2px oklch(21% 0.042 264 / .25);transition:transform .42s linear(0,0.0637,0.2021,0.3619,0.5141,0.6451,0.7506,0.8315,0.8909,0.9328,0.9613,0.9799,0.9914,0.9981,1.0016,1.0032,1.0036,1.0034,1.0029,1.0023,1.0018,1.0013,1.0009,1.0006,1.0004)}
 /* dark theme: #0f2a4a vanishes on a dark track, so the pill steps up to --navy-3 */

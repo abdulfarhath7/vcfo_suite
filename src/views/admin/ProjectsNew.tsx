@@ -6,7 +6,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { CreateProjectForm } from '@/components/admin/CreateProjectForm';
-import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 
 export default function ProjectsNew() {

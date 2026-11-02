@@ -56,22 +56,22 @@ export function CompanyPicker({
           aria-expanded={open}
           aria-haspopup="listbox"
           className={cn(
-            'inline-flex h-9 min-w-[13.5rem] max-w-[22rem] items-center gap-2 rounded-lg border border-border bg-panel px-2.5 text-left shadow-sm transition-colors',
-            'hover:border-role/35 hover:bg-role-soft/35',
-            open && 'border-role/40 bg-role-soft/40 ring-2 ring-role/15',
+            'inline-flex h-9 min-w-[13.5rem] max-w-[22rem] items-center gap-2 rounded-lg border border-line bg-surface-raised px-2.5 text-left shadow-sm transition-colors',
+            'hover:border-brand/35 hover:bg-brand-soft/35',
+            open && 'border-brand/40 bg-brand-soft/40 ring-2 ring-brand/15',
           )}
         >
           {selected ? (
             <span
               className={cn(
-                'grid h-6 w-6 shrink-0 place-items-center rounded-md text-[9.5px] font-bold',
+                'grid h-6 w-6 shrink-0 place-items-center rounded-md text-[9.5px] font-semibold',
                 TONE_BADGE[toneForKey(selected.id)],
               )}
             >
               {initialsFromName(selected.companyName).slice(0, 2)}
             </span>
           ) : (
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary-light text-primary">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-brand-soft text-brand">
               <Building2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             </span>
           )}
@@ -79,11 +79,11 @@ export function CompanyPicker({
             <span className="block truncate text-[12.5px] font-semibold leading-tight text-ink">
               {triggerLabel}
             </span>
-            <span className="mt-px block truncate text-[10px] leading-tight text-muted-foreground">
+            <span className="mt-px block truncate text-[10px] leading-tight text-ink-muted">
               {triggerHint}
             </span>
           </span>
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" sideOffset={6} className="w-[min(22rem,calc(100vw-2rem))] p-0">
@@ -92,7 +92,7 @@ export function CompanyPicker({
             <CommandInput placeholder="Search companies…" className="h-9 text-[13px]" />
           ) : null}
           <CommandList className="max-h-72">
-            <CommandEmpty className="py-4 text-center text-[13px] text-muted-foreground">
+            <CommandEmpty className="py-4 text-center text-[13px] text-ink-muted">
               No matching companies.
             </CommandEmpty>
             <CommandGroup className="p-1">
@@ -101,16 +101,16 @@ export function CompanyPicker({
                 onSelect={() => pick('all')}
                 className="items-center gap-2 rounded-md px-2 py-1.5"
               >
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-primary-light text-primary">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-brand-soft text-brand">
                   <Building2 className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-medium text-ink">{allLabel}</span>
-                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{allHint}</span>
+                  <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{allHint}</span>
                 </span>
                 <Check
                   className={cn(
-                    'h-3.5 w-3.5 shrink-0 text-primary',
+                    'h-3.5 w-3.5 shrink-0 text-brand',
                     value === 'all' ? 'opacity-100' : 'opacity-0',
                   )}
                   aria-hidden
@@ -127,7 +127,7 @@ export function CompanyPicker({
                   >
                     <span
                       className={cn(
-                        'grid h-7 w-7 shrink-0 place-items-center rounded-md text-[10px] font-bold',
+                        'grid h-7 w-7 shrink-0 place-items-center rounded-md text-[10px] font-semibold',
                         TONE_BADGE[toneForKey(e.id)],
                       )}
                     >
@@ -135,10 +135,10 @@ export function CompanyPicker({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] font-medium text-ink">{e.companyName}</span>
-                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{hint}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{hint}</span>
                     </span>
                     <Check
-                      className={cn('h-3.5 w-3.5 shrink-0 text-primary', on ? 'opacity-100' : 'opacity-0')}
+                      className={cn('h-3.5 w-3.5 shrink-0 text-brand', on ? 'opacity-100' : 'opacity-0')}
                       aria-hidden
                     />
                   </CommandItem>

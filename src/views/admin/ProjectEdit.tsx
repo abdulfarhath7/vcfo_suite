@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/admin/PageHeader';
 import { SEO } from '@/components/SEO';
 import { CreateProjectForm } from '@/components/admin/CreateProjectForm';
 import { HexgridLoader } from '@/components/common/HexgridLoader';
-import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/project-step-path';
+import { adminProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
 
@@ -39,7 +39,7 @@ export default function ProjectEdit() {
   if (!eng) {
     return (
       <PageTransition>
-        <p className="py-16 text-center text-sm text-muted-foreground">
+        <p className="py-16 text-center text-sm text-ink-muted">
           Project not found.
         </p>
       </PageTransition>

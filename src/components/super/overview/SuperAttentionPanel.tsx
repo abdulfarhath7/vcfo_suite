@@ -3,99 +3,109 @@
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
-import { TONE_BADGE } from '@/components/common/IconChip';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/spectrum-chip';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ClientTile, DateTile } from '@/components/super/parts/super-parts';
+import { superStateChip } from '@/components/super/overview/super-overview-format';
 import {
-  attentionReason,
-  idleLabel,
-  phaseFill,
-  STATE_TONE,
-} from '@/components/super/overview/super-overview-format';
-import {
-  SUPER_ATTENTION_HREF,
+  SUPER_PROJECTS_HREF,
   type SuperEngagementSummary,
   type SuperOverview,
-} from '@/lib/super-overview';
+} from '@/lib/super/super-overview';
 import { cn } from '@/lib/utils';
 
 /**
- * What needs a human, most urgent first. This is the launchpad half of the
- * observatory: every row drills to the engagement behind it.
+ * What needs a human, most urgent first. Every row drills to the engagement behind it.
  *
- * Row anatomy is the lead dashboard's phase-progress row — company name, a
- * status chip pushed right, and the four-segment phase track underneath — so a
- * project reads the same here as it does on the lead's own dashboard.
+ * Row anatomy follows the prototype's attention list (R-20): the 44px date tile tinted by
+ * urgency, the name with "<step> · <manager>, <lead>" under it, and the status chip on the
+ * right. The date is the end of the manager-set window on the current step, else the
+ * earliest open filing; a client with neither keeps its initials tile. An overdue or blocked
+ * row is tinted soft red and carries a navy Open button instead of being one big link.
  */
-export function SuperAttentionPanel({ overview }: { overview: SuperOverview }) {
+export function SuperAttentionPanel({
+  overview,
+  dueOf,
+}: {
+  overview: SuperOverview;
+  /** Next date per engagement id (YYYY-MM-DD), from the insights read when it has landed. */
+  dueOf?: Map<string, string>;
+}) {
   const rows = overview.needsAttention;
 
   return (
     <DashSection
       icon={AlertTriangle}
       tone="danger"
-      title="Needs attention"
+      title="Clients needing attention"
       meta={`${overview.kpis.needsAttention} of ${overview.kpis.engagements}`}
-      href={SUPER_ATTENTION_HREF}
+      href={SUPER_PROJECTS_HREF}
+      hrefLabel="Clients"
+      bodyClassName={rows.length === 0 ? 'p-4' : 'p-0'}
     >
       {rows.length === 0 ? (
-        <p className="py-3 text-center text-[12.5px] text-muted-foreground">
-          Nothing is stuck. Every project is moving.
-        </p>
+        <EmptyState title="None" />
       ) : (
-        <div className="flex flex-col">
+        <ul className="flex flex-col">
           {rows.map((summary) => (
-            <AttentionRow key={summary.id} summary={summary} />
+            <AttentionRow key={summary.id} summary={summary} due={dueOf?.get(summary.id) ?? null} />
           ))}
-        </div>
+        </ul>
       )}
     </DashSection>
   );
 }
 
-function AttentionRow({ summary }: { summary: SuperEngagementSummary }) {
-  const idle = idleLabel(summary);
+/** Overdue and blocked rows are the urgent ones (prototype: Overdue and Stuck). */
+export function isUrgentAttention(summary: SuperEngagementSummary): boolean {
+  return summary.stateKey === 'overdue' || summary.stuckReason === 'blocked';
+}
+
+/** "<step> · <manager>, <lead>", dropping the parts nobody holds. */
+export function attentionSubLine(summary: SuperEngagementSummary): string {
+  const step = summary.currentStep?.title ?? 'Every step is complete';
+  const people = [summary.managerName, summary.leadName].filter(Boolean).join(', ');
+  return people ? `${step} · ${people}` : step;
+}
+
+function AttentionRow({ summary, due }: { summary: SuperEngagementSummary; due: string | null }) {
+  const chip = superStateChip(summary);
+  const urgent = isUrgentAttention(summary);
+
+  const body = (
+    <>
+      {due ? <DateTile ymd={due} /> : <ClientTile id={summary.id} name={summary.companyName} className="h-11 w-11 text-[13px]" />}
+      <span className="min-w-0 flex-1">
+        <b className="block min-w-0 truncate text-[13.5px] font-semibold text-ink">{summary.companyName}</b>
+        <span className="block min-w-0 truncate text-[12.5px] text-ink-muted">{attentionSubLine(summary)}</span>
+      </span>
+      <span className="flex flex-none items-center gap-2">
+        <Chip fixed tone={chip.tone} title={chip.title}>
+          {chip.word}
+        </Chip>
+        {urgent ? (
+          <Button asChild variant="strong" size="sm">
+            <Link href={summary.href}>Open</Link>
+          </Button>
+        ) : null}
+      </span>
+    </>
+  );
+  const cls = cn(
+    'flex min-w-0 items-center gap-3 px-4 py-3 md:px-5',
+    urgent ? 'bg-danger-soft' : 'hover:bg-surface-sunken',
+  );
 
   return (
-    <Link
-      href={summary.href}
-      title={summary.companyName}
-      className="border-t border-border py-2.5 first:border-t-0 first:pt-0.5 last:pb-0.5"
-    >
-      <div className="mb-1.5 flex min-w-0 items-center gap-2 text-[12.5px]">
-        <b className="min-w-0 truncate font-extrabold text-ink">{summary.companyName}</b>
-        {idle ? (
-          <span className="shrink-0 font-mono text-[10.5px] font-semibold text-text-tertiary">
-            {idle}
-          </span>
-        ) : null}
-        <span
-          className={cn(
-            'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
-            TONE_BADGE[STATE_TONE[summary.stateKey]],
-          )}
-        >
-          {summary.stateLabel}
-        </span>
-      </div>
-
-      <div className="flex h-2.5 gap-1">
-        {summary.phases.map((phase) => (
-          <div
-            key={phase.id}
-            className="relative overflow-hidden rounded-full bg-raised"
-            style={{ flex: Math.max(phase.total, 1) }}
-          >
-            <i
-              className="absolute inset-y-0 left-0 rounded-full"
-              style={{ width: `${phase.pct}%`, background: phaseFill(phase.id) }}
-            />
-          </div>
-        ))}
-      </div>
-
-      <p className="mt-1.5 min-w-0 truncate text-[11.5px] font-semibold text-muted-foreground">
-        {attentionReason(summary)}
-        {summary.leadName ? ` · ${summary.leadName}` : ''}
-      </p>
-    </Link>
+    <li className="border-t border-line-soft first:border-t-0" title={summary.companyName}>
+      {urgent ? (
+        <div className={cls}>{body}</div>
+      ) : (
+        <Link href={summary.href} className={cls}>
+          {body}
+        </Link>
+      )}
+    </li>
   );
 }

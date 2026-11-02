@@ -1,27 +1,15 @@
 'use client';
 
-import Link from 'next/link';
-import { TrendingUp } from 'lucide-react';
-import { internCompanyPhaseProgress } from '@/lib/intern-work';
+import { useMemo } from 'react';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { internToneBadge } from '@/components/intern/intern-tones';
-import { cn } from '@/lib/utils';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { PhaseProgressGrid } from '@/components/staff/today/PhaseProgressGrid';
+import { buildPhaseProgressRows } from '@/components/staff/today/today-rows';
 
-const PHASE_FILL = [
-  'bg-[oklch(var(--phase-pre))]',
-  'bg-[oklch(var(--phase-filing))]',
-  'bg-[oklch(var(--phase-post))]',
-  'bg-[oklch(var(--phase-registration))]',
-];
-
-const PHASE_KEY = [
-  { flex: 5, label: 'Part A', color: 'bg-[oklch(var(--phase-pre))]', text: 'text-[oklch(var(--phase-pre-text))]' },
-  { flex: 7, label: 'Part B', color: 'bg-[oklch(var(--phase-filing))]', text: 'text-[oklch(var(--phase-filing-text))]' },
-  { flex: 11, label: 'Post-inc', color: 'bg-[oklch(var(--phase-post))]', text: 'text-[oklch(var(--phase-post-text))]' },
-  { flex: 23, label: 'Registration', color: 'bg-[oklch(var(--phase-registration))]', text: 'text-[oklch(var(--phase-registration-text))]' },
-];
-
+/* The lead's Phase progress (prototype PhaseProgress): one row per company with the ST5 phase
+   track (R-22), the current step, steps done and days to the incorporation date. Each row
+   opens the company. Only companies still incorporating are listed (nearest COI first), and
+   the card is left out when there are none. */
 export function LeadPhaseProgress({
   engagements,
   getState,
@@ -29,71 +17,14 @@ export function LeadPhaseProgress({
   engagements: Engagement[];
   getState: (engagement: Engagement) => Record<string, ChecklistItemStateSlice>;
 }) {
-  const rows = engagements.map((eng) => internCompanyPhaseProgress(eng, getState(eng)));
-  const dense = rows.length > 5;
-
-  return (
-    <section className="surface h-fit min-w-0 overflow-hidden">
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 px-4 pt-3">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-success text-white">
-          <TrendingUp className="h-3.5 w-3.5" />
-        </span>
-        <h2 className="min-w-0 truncate text-[11.5px] font-extrabold uppercase tracking-[0.06em] text-ink">
-          My companies · phase progress
-        </h2>
-      </div>
-      <div className={cn('px-4 pb-3 pt-2.5', dense && 'max-h-[22rem] overflow-y-auto pr-3')}>
-        {rows.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">No companies assigned yet.</p>
-        ) : (
-          rows.map((row) => {
-            const complete = row.phases.length > 0 && row.phases.every((phase) => phase.pct >= 100);
-            const chip = row.stuck ? 'Stuck' : complete ? 'Complete' : 'In progress';
-            return (
-              <Link
-                key={row.engagementId}
-                href={row.href}
-                title={row.currentLabel}
-                className="mt-2.5 block first:mt-0.5"
-              >
-                <div className="mb-1.5 flex min-w-0 items-center gap-2 text-[12.5px]">
-                  <b className="min-w-0 truncate font-extrabold text-ink">{row.companyName}</b>
-                  <span
-                    className={cn(
-                      'ml-auto inline-flex shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] font-extrabold',
-                      row.stuck ? internToneBadge('danger') : complete ? internToneBadge('success') : internToneBadge('sky'),
-                    )}
-                  >
-                    {chip}
-                  </span>
-                </div>
-                <div className="flex h-2.5 gap-1">
-                  {row.phases.map((phase, i) => (
-                    <div
-                      key={phase.id}
-                      className="relative overflow-hidden rounded-full bg-raised"
-                      style={{ flex: Math.max(phase.total, 1) }}
-                    >
-                      <i
-                        className={cn('absolute inset-y-0 left-0 rounded-full', PHASE_FILL[i] ?? 'bg-primary')}
-                        style={{ width: `${phase.pct}%` }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Link>
-            );
-          })
-        )}
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] font-bold">
-          {PHASE_KEY.map((k) => (
-            <span key={k.label} className="inline-flex items-center gap-1.5">
-              <i className={cn('h-2 w-2 shrink-0 rounded-sm', k.color)} />
-              <span className={k.text}>{k.label}</span>
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
+  const now = useMemo(() => new Date(), []);
+  const rows = useMemo(
+    () =>
+      buildPhaseProgressRows({ engagements, getState, now })
+        .filter((r) => !r.incorporated)
+        .sort((a, b) => (a.daysToCoi ?? 9999) - (b.daysToCoi ?? 9999) || a.companyName.localeCompare(b.companyName)),
+    [engagements, getState, now],
   );
+  if (rows.length === 0) return null;
+  return <PhaseProgressGrid rows={rows} meta={`${rows.length} incorporating`} empty="No company is incorporating." />;
 }

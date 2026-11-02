@@ -11,8 +11,8 @@ import {
   MOTION_STYLES,
   SIDEBAR_SOLIDS,
   type MotionStyle,
-} from '@/lib/shell-appearance';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+} from '@/lib/shell/shell-appearance';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { SurfacePicker } from '@/views/settings/AppearanceSettings';
 
@@ -36,19 +36,19 @@ export function DashHeroSettings() {
         <button
           type="button"
           aria-label="Greeting card settings"
-          className="grid h-7 w-7 place-items-center rounded-lg text-white/70 transition-colors hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+          className="grid h-9 w-9 place-items-center rounded-md text-ink-2 transition-colors hover:bg-ink/[.06] hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2} />
+          <SlidersHorizontal className="h-4 w-4" strokeWidth={1.6} />
         </button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-[21rem] overflow-hidden rounded-xl border-border/80 p-0 shadow-lg"
+        className="w-[21rem] overflow-hidden rounded-lg border-line p-0 shadow-float"
       >
         <div className="max-h-[min(70vh,32rem)] space-y-3.5 overflow-y-auto overscroll-contain p-3.5">
           <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Greeting card
             </p>
             <div className="mt-2">
@@ -57,7 +57,7 @@ export function DashHeroSettings() {
           </div>
 
           <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Sidebar
             </p>
             <div className="mt-2">
@@ -66,7 +66,7 @@ export function DashHeroSettings() {
           </div>
 
           <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+            <p className="text-[11px] font-semibold tracking-[0.06em] text-ink-muted">
               Animations
             </p>
             <SegmentedPicker
@@ -77,8 +77,8 @@ export function DashHeroSettings() {
               size="sm"
               className="mt-2"
             />
-            <div className="mt-2.5 flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-2.5 py-2">
-              <span className="text-[12px] font-medium text-foreground">Reduce motion</span>
+            <div className="mt-2.5 flex items-center justify-between gap-3 rounded-md bg-surface-sunken px-2.5 py-2">
+              <span className="text-[12px] font-medium text-ink">Reduce motion</span>
               <Switch
                 checked={prefs.reduceMotion}
                 onCheckedChange={(checked) => update({ reduceMotion: checked })}
@@ -89,7 +89,7 @@ export function DashHeroSettings() {
 
           <Link
             href={settingsHref}
-            className="block border-t border-border/60 pt-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:underline"
+            className="block border-t border-line pt-2 text-[11px] font-medium text-ink-muted hover:text-ink hover:underline"
           >
             More in Settings
           </Link>

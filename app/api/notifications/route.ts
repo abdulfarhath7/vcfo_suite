@@ -10,12 +10,12 @@ import {
   markNotificationRead,
   restoreNotifications,
 } from '@/db/repositories/notifications';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import {
   isPersistedNotificationId,
   parseNotificationIds,
   parseRestoreNotifications,
-} from '@/lib/notification-dismiss';
+} from '@/lib/notifications/notification-dismiss';
 
 function historyRequested(request: Request): boolean {
   const url = new URL(request.url);

@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { and, eq } from 'drizzle-orm';
+import { staffAssignedBy } from '@/lib/metrics/trend-stamps';
+import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { clientTimelineRequests, profiles, tasks } from '@/db/schema';
-import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client-home';
+import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client/client-home';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -84,6 +85,7 @@ export async function createClientChangeRequest(
     .values({
       engagementId: access.dbId,
       assignedTo,
+      assignedBy: staffAssignedBy(ctx.role, ctx.userId, assignedTo),
       title: `${TITLE_PREFIX}: ${item.title}`,
       description: note,
       stepId: item.id,
@@ -158,6 +160,7 @@ export async function createClientTimelineRequest(
     .values({
       engagementId: access.dbId,
       assignedTo,
+      assignedBy: staffAssignedBy(ctx.role, ctx.userId, assignedTo),
       title: `${TITLE_PREFIX}: Timeline`,
       description: `${reason}\n\n${summary}`,
       stepId: 'pre-12',
@@ -226,8 +229,9 @@ export async function withdrawClientTimelineRequest(ctx: AuthContext, id: string
   if (row.taskId) {
     await db
       .update(tasks)
-      .set({ status: 'done', updatedAt: new Date() })
-      .where(and(eq(tasks.id, row.taskId), eq(tasks.engagementId, access.dbId)));
+      // completed_at feeds the staff home trend lines (migration 0027).
+      .set({ status: 'done', completedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tasks.id, row.taskId), eq(tasks.engagementId, access.dbId), ne(tasks.status, 'done')));
   }
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,
@@ -319,7 +323,12 @@ export async function decideTimelineRequest(
       updatedAt: new Date(),
     })
     .where(eq(clientTimelineRequests.id, row.id));
-  if (row.taskId) await db.update(tasks).set({ status: 'done' }).where(eq(tasks.id, row.taskId));
+  if (row.taskId) {
+    await db
+      .update(tasks)
+      .set({ status: 'done', completedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(tasks.id, row.taskId), ne(tasks.status, 'done')));
+  }
 
   await recordAuditEvent(ctx, {
     engagementId: access.dbId,

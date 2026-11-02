@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { m, useReducedMotion } from "framer-motion";
-import { Bell, CheckCheck, History, MessageCircle } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getToastVariantStyle } from "@/components/ui/hot-toast";
@@ -13,7 +13,7 @@ import {
   notificationsInDirection,
   type AppNotification,
   type NotificationDirection,
-} from "@/lib/checklist-notifications";
+} from "@/lib/checklist/checklist-notifications";
 import {
   NOTIFICATION_ROW_EXIT_MS,
   NOTIFICATION_ROW_EXIT_STAGGER_MS,
@@ -21,15 +21,15 @@ import {
   mergeNotificationsByCreatedAt,
   notificationsMatchingClearScope,
   type NotificationClearScope,
-} from "@/lib/notification-dismiss";
-import { roleNotificationsPath, roleSettingsPath } from "@/lib/auth-routes";
+} from "@/lib/notifications/notification-dismiss";
+import { roleNotificationsPath } from "@/lib/auth-routes";
 import {
   NOTIFICATION_GENIE_LAND_EVENT,
   requestNotificationPopup,
-} from "@/lib/notification-popup";
+} from "@/lib/notifications/notification-popup";
 import { toast } from "@/lib/toast-errors";
 import { cn } from "@/lib/utils";
-import { SegmentedPicker } from "@/components/admin/SegmentedPicker";
+import { SpectrumTabs } from "@/components/ui/spectrum-tabs";
 
 const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
   { id: "received", label: "Received" },
@@ -37,6 +37,9 @@ const FILTERS: Array<{ id: NotificationDirection; label: string }> = [
 ];
 
 const UNDO_TOAST_ID = "notification-undo";
+
+/** The footer links of the menu (prototype StaffBellMenu `FOOT`). */
+const FOOT = "text-[13px] font-medium text-brand-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring rounded-sm";
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -56,10 +59,10 @@ function offerUndoToast(message: string, onUndo: () => void) {
           maxWidth: "280px",
         }}
       >
-        <span className="min-w-0 text-[12px] leading-snug text-foreground">{message}</span>
+        <span className="min-w-0 text-[12px] leading-snug text-ink">{message}</span>
         <button
           type="button"
-          className="shrink-0 rounded px-1.5 py-0.5 text-[12px] font-semibold text-primary hover:bg-primary-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="shrink-0 rounded px-1.5 py-0.5 text-[12px] font-semibold text-brand hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40"
           onClick={() => {
             onUndo();
             toast.dismiss(t.id);
@@ -75,16 +78,6 @@ function offerUndoToast(message: string, onUndo: () => void) {
       position: "top-right",
     },
   );
-}
-
-function dayLabel(createdAt: string, now: Date): string {
-  const at = new Date(createdAt);
-  if (Number.isNaN(at.getTime())) return "Earlier";
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const t = at.getTime();
-  if (t >= startOfToday) return "Today";
-  if (t >= startOfToday - 86_400_000) return "Yesterday";
-  return "Earlier";
 }
 
 function clearCopy(scope: NotificationClearScope, count: number, filter: NotificationDirection): string {
@@ -155,10 +148,6 @@ export function NotificationsBell() {
 
   const tabCount = filter === "sent" ? counts.sent : counts.received;
   const hasUnread = unreadNotificationCount > 0;
-  const emptyCopy =
-    filter === "sent"
-      ? "No outbound email activity yet."
-      : "No received notifications yet.";
 
   const now = useMemo(() => new Date(), [notifications, filter, open]);
   const todayCount = notificationsMatchingClearScope(tabItems, "today", now).length;
@@ -268,6 +257,11 @@ export function NotificationsBell() {
     }
   };
 
+  // F-329: the developer console has no notifications page and gets no bell notifications, so
+  // the developer has only the Announcements bell (prototype). Super admin keeps both: it has a
+  // real notification history page.
+  if (user?.role === "developer") return null;
+
   return (
     <Popover
       modal={false}
@@ -280,9 +274,8 @@ export function NotificationsBell() {
       <PopoverTrigger
         data-notifications-bell=""
         className={cn(
-          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary-light hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 sm:min-h-9 sm:min-w-9",
-          hasUnread && "text-foreground",
-          (catching || open) && "bg-primary-light text-primary",
+          "relative flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 sm:min-h-9 sm:min-w-9",
+          catching && "text-ink",
         )}
         aria-label={
           hasUnread
@@ -291,7 +284,7 @@ export function NotificationsBell() {
         }
       >
         {catching ? (
-          <span className="pointer-events-none absolute inset-1 rounded-lg bg-primary/20" aria-hidden />
+          <span className="pointer-events-none absolute inset-1 rounded-md bg-surface-sunken" aria-hidden />
         ) : null}
         <m.span
           data-notifications-bell-target=""
@@ -299,11 +292,11 @@ export function NotificationsBell() {
           animate={catching && !osReduce ? { scale: [1, 1.38, 0.94, 1.08, 1] } : { scale: 1 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         >
-          <Bell className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
+          <Bell className="h-4 w-4 shrink-0" strokeWidth={1.6} aria-hidden />
         </m.span>
         {hasUnread && (
           <span
-            className="absolute -top-0.5 -right-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold leading-none text-white ring-2 ring-panel"
+            className="absolute right-[5px] top-[5px] flex h-4 min-w-4 items-center justify-center rounded-sm bg-danger-mid px-1 text-[10.5px] font-medium leading-none text-white ring-2 ring-surface-raised"
             aria-hidden
           >
             {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
@@ -313,160 +306,99 @@ export function NotificationsBell() {
       <PopoverContent
         align="end"
         sideOffset={6}
-        className="flex w-[min(100vw-1.5rem,26rem)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-panel p-0 text-foreground shadow-[0_12px_40px_-18px_oklch(22%_0.04_260_/_0.38)]"
+        className="flex w-[min(100vw-1.5rem,380px)] max-h-[min(74vh,520px)] flex-col overflow-hidden rounded-md border-1.5 border-line bg-surface-raised p-0 text-ink shadow-float"
         onPointerDownOutside={guardOutside}
         onInteractOutside={guardOutside}
       >
-        <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-1.5">
-          <p className="p-0 text-[14px] font-semibold leading-tight tracking-tight text-foreground">
-            Notifications
-            {hasUnread ? (
-              <span className="ml-1.5 text-[12px] font-medium text-danger-text tabular-nums">
-                {unreadNotificationCount} new
-              </span>
-            ) : null}
-          </p>
-          {hasUnread && (
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
-              onClick={() => markAllNotificationsRead()}
-            >
-              <CheckCheck className="h-3 w-3" aria-hidden />
-              Mark all read
-            </button>
-          )}
+        {/* Prototype StaffNotificationsBell: the title with Received and Sent at the right. */}
+        <div className="flex h-[52px] flex-none items-center gap-2 border-b border-line-soft px-4">
+          <p className="text-[15px] font-medium leading-tight text-ink">Notifications</p>
+          <SpectrumTabs
+            className="ml-auto"
+            label="Filter notifications"
+            items={FILTERS.map((tab) => {
+              const unread = tab.id === "sent" ? counts.sentUnread : counts.receivedUnread;
+              return { key: tab.id, label: tab.label, count: unread > 0 ? unread : undefined };
+            })}
+            value={filter}
+            onChange={(next) => setFilter(next as NotificationDirection)}
+          />
         </div>
 
-        <SegmentedPicker
-          value={filter}
-          options={FILTERS.map((tab) => {
-            const count = tab.id === "sent" ? counts.sent : counts.received;
-            const unread =
-              tab.id === "sent" ? counts.sentUnread : counts.receivedUnread;
-            return {
-              value: tab.id,
-              label: (
-                <>
-                  {tab.label}
-                  <span className="tabular-nums opacity-75">
-                    {count}
-                    {unread > 0 ? ` · ${unread}` : ""}
-                  </span>
-                </>
-              ),
-            };
-          })}
-          onChange={(next) => setFilter(next)}
-          ariaLabel="Filter notifications"
-          size="sm"
-          className="mx-2 mb-1"
-        />
-
-        {tabCount > 0 && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 pb-2 text-[10px]">
-            {todayCount > 0 && (
-              <button
-                type="button"
-                className="font-medium text-muted-foreground hover:text-primary"
-                onClick={() => handleClearScope("today")}
-              >
-                Clear today
-              </button>
-            )}
-            {weekCount > 0 && (
-              <button
-                type="button"
-                className="font-medium text-muted-foreground hover:text-primary"
-                onClick={() => handleClearScope("week")}
-              >
-                Clear this week
-              </button>
-            )}
-            <button
-              type="button"
-              className="font-medium text-muted-foreground hover:text-primary"
-              aria-label={`Clear all ${filter} notifications`}
-              onClick={() => handleClearScope("all")}
-            >
-              Clear all
-            </button>
-          </div>
-        )}
-
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-border px-1 py-1">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           {filtered.length === 0 ? (
-            <p className="px-2 py-8 text-center text-[11px] text-muted-foreground">
-              {emptyCopy}
-            </p>
+            <p className="px-4 py-4 text-[13px] text-ink-faint">None</p>
           ) : (
-            filtered.map((n, index) => {
+            filtered.map((n) => {
               const exiting = exitingIds.has(n.id);
               const exitDelayMs = exiting ? (exitDelayMsById[n.id] ?? 0) : 0;
-              const day = dayLabel(n.createdAt, now);
-              const showDay = index === 0 || dayLabel(filtered[index - 1].createdAt, now) !== day;
 
               return (
-                <div key={n.id}>
-                  {showDay ? (
-                    <p className="px-2 pb-1 pt-2 text-[11px] font-semibold text-muted-foreground first:pt-1">
-                      {day}
-                    </p>
-                  ) : null}
-                  <div
-                    className={cn(
-                      "transition-[transform,opacity] ease motion-reduce:transition-none",
-                      exiting
-                        ? "translate-x-full opacity-0"
-                        : "translate-x-0 opacity-100",
-                    )}
-                    style={{
-                      transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
-                      transitionDelay: `${exitDelayMs}ms`,
+                <div
+                  key={n.id}
+                  className={cn(
+                    "transition-[transform,opacity] ease motion-reduce:transition-none",
+                    exiting
+                      ? "translate-x-full opacity-0"
+                      : "translate-x-0 opacity-100",
+                  )}
+                  style={{
+                    transitionDuration: `${NOTIFICATION_ROW_EXIT_MS}ms`,
+                    transitionDelay: `${exitDelayMs}ms`,
+                  }}
+                >
+                  <NotificationItem
+                    item={n}
+                    expanded={selectedId === n.id}
+                    exiting={exiting}
+                    showOpenLink
+                    onOpen={() => {
+                      markNotificationRead(n.id);
+                      if (notificationDirection(n.kind) === "received") {
+                        requestNotificationPopup(n);
+                        setOpen(false);
+                        return;
+                      }
+                      setSelectedId((current) => (current === n.id ? null : n.id));
                     }}
-                  >
-                    <NotificationItem
-                      item={n}
-                      expanded={selectedId === n.id}
-                      exiting={exiting}
-                      showOpenLink
-                      onOpen={() => {
-                        markNotificationRead(n.id);
-                        if (notificationDirection(n.kind) === "received") {
-                          requestNotificationPopup(n);
-                          setOpen(false);
-                          return;
-                        }
-                        setSelectedId((current) => (current === n.id ? null : n.id));
-                      }}
-                      onDismiss={() => handleDeleteOne(n)}
-                    />
-                  </div>
+                    onDismiss={() => handleDeleteOne(n)}
+                  />
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2">
-          <Link
-            href={historyHref}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary hover:text-primary-dark"
-            onClick={() => setOpen(false)}
-          >
-            <History className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-            Notification history
-          </Link>
-          {user ? (
-            <Link
-              href={roleSettingsPath(user.role)}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
-              onClick={() => setOpen(false)}
-            >
-              <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-              Get these on WhatsApp
-            </Link>
+        {/* Footer row of 13px blurple links (prototype). A clear link shows only when it has rows to clear. */}
+        <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-soft px-4 py-2.5">
+          {hasUnread ? (
+            <button type="button" className={FOOT} onClick={() => markAllNotificationsRead()}>
+              Mark all read
+            </button>
           ) : null}
+          {todayCount > 0 ? (
+            <button type="button" className={FOOT} onClick={() => handleClearScope("today")}>
+              Clear today
+            </button>
+          ) : null}
+          {weekCount > 0 ? (
+            <button type="button" className={FOOT} onClick={() => handleClearScope("week")}>
+              Clear this week
+            </button>
+          ) : null}
+          {tabCount > 0 ? (
+            <button
+              type="button"
+              className={FOOT}
+              aria-label={`Clear all ${filter} notifications`}
+              onClick={() => handleClearScope("all")}
+            >
+              Clear all
+            </button>
+          ) : null}
+          <Link href={historyHref} className={cn(FOOT, "ml-auto")} onClick={() => setOpen(false)}>
+            Notification history ›
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

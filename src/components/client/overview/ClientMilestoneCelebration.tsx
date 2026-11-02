@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PhaseCelebration } from '@/components/incorporation/PhaseCelebration';
-import { latestCompletedPhase, type ClientOverviewProgress } from '@/lib/client-overview';
+import { latestCompletedPhase, type ClientOverviewProgress } from '@/lib/client/client-overview';
 
 const STORAGE_PREFIX = 'vcfo.client.phaseCelebrated.';
 

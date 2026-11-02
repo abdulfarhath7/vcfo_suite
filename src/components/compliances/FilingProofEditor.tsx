@@ -9,9 +9,10 @@
  * Data: /api/client/compliances?id=, /[id]/proofs, /[id]/proofs/[proofId],
  * /[id]/details (repository `client-compliances.ts`; writes are staff-only).
  */
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { toastSaved } from "@/components/ui/toast-saved";
 import { Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -51,16 +52,18 @@ export function FilingProofEditor({ instanceId, label }: { instanceId: string; l
         <Paperclip className="h-3.5 w-3.5" aria-hidden />
         Proof
       </Button>
-      {open ? <EditorDialog instanceId={instanceId} label={label} onClose={() => setOpen(false)} /> : null}
+      {open ? <FilingProofEditorDialog instanceId={instanceId} label={label} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
 
-function EditorDialog({ instanceId, label, onClose }: { instanceId: string; label: string; onClose: () => void }) {
+/** The edit dialog on its own, for a caller that keeps its own trigger (the read dialog's Edit, the Proof pending chip). */
+export function FilingProofEditorDialog({ instanceId, label, onClose }: { instanceId: string; label: string; onClose: () => void }) {
   const qc = useQueryClient();
   const base = `/api/client/compliances/${encodeURIComponent(instanceId)}`;
   const fileRef = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState("acknowledgement");
+  const fid = useId();
   const [draft, setDraft] = useState<Details | null>(null);
 
   const proofs = useQuery({
@@ -92,7 +95,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
       if (!res.ok) throw new Error("Upload failed");
     },
     onSuccess: () => {
-      toast.success("Proof uploaded");
+      toastSaved("Proof uploaded", { kind: "uploaded" });
       refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -120,7 +123,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
       if (!res.ok) throw new Error("Could not save the details");
     },
     onSuccess: () => {
-      toast.success("Filing details saved");
+      toastSaved("Filing details saved");
       refresh();
       onClose();
     },
@@ -136,13 +139,13 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
           <DialogTitle>{label} · proof and details</DialogTitle>
         </DialogHeader>
         <section className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proofs (the client sees them)</h4>
-          {(proofs.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No proof yet — the client sees “Proof pending” once filed.</p> : null}
-          <ul className="divide-y divide-border rounded-md border border-border">
+          <h4 className="text-xs font-semibold text-ink-muted">Proofs (the client sees them)</h4>
+          {(proofs.data ?? []).length === 0 ? <p className="text-sm text-ink-muted">No proof yet — the client sees “Proof pending” once filed.</p> : null}
+          <ul className="divide-y divide-line rounded-md border border-line">
             {(proofs.data ?? []).map((p) => (
               <li key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">{p.fileName}</span>
-                <span className="text-xs text-muted-foreground">{p.kind}</span>
+                <span className="text-xs text-ink-muted">{p.kind}</span>
                 {!p.legacy ? (
                   <Button size="sm" variant="ghost" onClick={() => remove.mutate(p.id)} disabled={remove.isPending}>
                     Remove
@@ -152,7 +155,7 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
             ))}
           </ul>
           <div className="flex items-center gap-2">
-            <select className="h-9 rounded-md border border-border bg-background px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
+            <select className="h-9 rounded-md border border-line bg-background px-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="acknowledgement">Acknowledgement</option>
               <option value="challan">Challan</option>
               <option value="certificate">Certificate</option>
@@ -174,18 +177,18 @@ function EditorDialog({ instanceId, label, onClose }: { instanceId: string; labe
           </div>
         </section>
         <section className="mt-4 grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-xs font-medium">
+          <label htmlFor={`${fid}-ack`} className="flex flex-col gap-1 text-xs font-medium">
             ARN / acknowledgement no.
-            <Input value={d.acknowledgementNo ?? ""} onChange={(e) => set("acknowledgementNo", e.target.value)} />
+            <Input id={`${fid}-ack`} value={d.acknowledgementNo ?? ""} onChange={(e) => set("acknowledgementNo", e.target.value)} />
           </label>
-          <label className="flex flex-col gap-1 text-xs font-medium">
+          <label htmlFor={`${fid}-paid`} className="flex flex-col gap-1 text-xs font-medium">
             Tax paid (₹)
-            <Input inputMode="decimal" value={d.amountPaid ?? ""} onChange={(e) => set("amountPaid", e.target.value)} />
+            <Input id={`${fid}-paid`} inputMode="decimal" value={d.amountPaid ?? ""} onChange={(e) => set("amountPaid", e.target.value)} />
           </label>
           {DATE_FIELDS.map(([k, l]) => (
-            <label key={k} className="flex flex-col gap-1 text-xs font-medium">
+            <label key={k} htmlFor={`${fid}-${k}`} className="flex flex-col gap-1 text-xs font-medium">
               {l}
-              <Input type="date" value={(d[k] as string | null | undefined) ?? ""} onChange={(e) => set(k, e.target.value)} />
+              <Input id={`${fid}-${k}`} type="date" value={(d[k] as string | null | undefined) ?? ""} onChange={(e) => set(k, e.target.value)} />
             </label>
           ))}
         </section>

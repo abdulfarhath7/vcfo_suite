@@ -3,28 +3,34 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink } from 'lucide-react';
+import { Check, ExternalLink, ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { AnswerEnvelope } from '@/data/ask/schema';
 import { saveToLibrary } from '@/hooks/ask/ask-api';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { getTopic } from '@/lib/ask/topics';
-import { clientStepHref } from '@/lib/client-overview';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { clientStepHref } from '@/lib/client/client-overview';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { reminderComposeHref } from '@/lib/ask/reminder';
+import { buttonVariants } from '@/components/ui/button-variants';
+import { Tag } from '@/components/ui/spectrum-chip';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
 import { AskLinkButton } from './AskLinkButton';
 import { TrustBadge } from './TrustBadge';
 import { VisualRenderer } from './visuals/VisualRenderer';
 
-const secondary =
-  'inline-flex min-h-[36px] items-center gap-1 rounded-[var(--radius-md)] border border-border px-2.5 text-[12px] font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50';
+const secondary = buttonVariants({ variant: 'secondary', size: 'sm' });
+
+const voteButton =
+  'grid h-7 w-7 place-items-center rounded-mark hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25 disabled:pointer-events-none';
 
 
 /**
  * Answer card (§7.5): badge · line · visual · why · sources · actions ·
- * related. Staff cards drop the client-only rows.
+ * related. Staff cards drop the client-only rows. Spectrum look from the
+ * prototype AskThread: a 1.5px card, numbered sources, and "Helpful?" votes
+ * on every answer (clients through `/api/client/portal/feedback`, staff through
+ * `/api/ask/feedback`, G-24).
  */
 export function AskAnswerCard({
   answer,
@@ -38,10 +44,10 @@ export function AskAnswerCard({
   const ask = useAskOptional();
   const router = useRouter();
   const staffBase = useStaffBasePath();
-  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [vote, setVote] = useState<'up' | 'down' | null>(null);
   if (!ask) return null;
   const client = ask.shell === 'client';
   const has = (a: AnswerEnvelope['actions'][number]) => answer.actions.includes(a);
@@ -50,51 +56,67 @@ export function AskAnswerCard({
   // Go-there links replace the older open-step / open-project buttons.
   const hasLinks = Boolean(answer.links && answer.links.length > 0);
 
+  const canVote = !ask.preview && answer.origin !== 'refusal';
+  const sendVote = (v: 'up' | 'down') => {
+    if (vote) return;
+    setVote(v);
+    void fetch(client ? '/api/client/portal/feedback' : '/api/ask/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ vote: v, messageId: messageId ?? undefined, question: lastQuestion, answer: answer.line }),
+    }).catch(() => undefined);
+  };
+
   const changeDepth = (depth: 'simple' | 'detail') => {
     if (answer.topicSlug) void ask.showTopic(answer.topicSlug, depth, depth === 'simple' ? 'Simpler, please' : 'More detail, please');
     else void ask.ask({ message: depth === 'simple' ? 'Explain that more simply.' : 'Tell me more detail.', depth });
   };
 
   return (
-    <article className="space-y-2.5 rounded-[var(--radius)] border border-border bg-panel p-3.5">
+    <article className="grid gap-3 rounded-md border-1.5 border-line bg-surface-raised px-3 py-3 text-[13px]">
       <div className="flex flex-wrap items-center gap-1.5">
         <TrustBadge answer={answer} firmName={ask.firmName} />
-        {answer.depth !== 'normal' && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-            {answer.depth === 'simple' ? 'Simpler' : 'More detail'}
-          </span>
-        )}
+        {answer.depth !== 'normal' && <Tag>{answer.depth === 'simple' ? 'Simpler' : 'More detail'}</Tag>}
       </div>
 
-      <p className="max-w-[60ch] text-[15px] leading-relaxed text-foreground">{answer.line}</p>
+      <p className="max-w-[60ch] text-[14px] leading-relaxed text-ink">{answer.line}</p>
 
       {answer.visual && <VisualRenderer visual={answer.visual} />}
 
       {answer.why && client && (
         <div>
-          <p className="text-[12px] font-semibold text-foreground">Why it matters to you</p>
-          <p className="text-[13px] text-muted-foreground">{answer.why}</p>
+          <h4 className="text-[12px] font-medium text-ink-muted">Why it matters to you</h4>
+          <p className="text-[13px] text-ink-2">{answer.why}</p>
         </div>
       )}
 
       {answer.citations.length > 0 && (
-        <p className="text-[11.5px] text-muted-foreground">
-          Source:{' '}
-          {answer.citations.map((c, i) => (
-            <span key={c.id}>
-              {i > 0 && ' · '}
-              {c.url ? (
-                <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline">
-                  {c.label}
-                  <ExternalLink className="h-3 w-3" aria-hidden />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
-              ) : (
-                c.label
-              )}
-            </span>
-          ))}
-        </p>
+        <div>
+          <h4 className="mb-1 text-[12px] font-medium text-ink-muted">Sources</h4>
+          <ol className="grid gap-1">
+            {answer.citations.map((c, i) => (
+              <li key={c.id} className="flex min-w-0 items-center gap-2 text-[12.5px]">
+                <span className="grid h-4 w-4 flex-none place-items-center rounded-[3px] bg-brand-soft text-[11px] font-medium tabular-nums text-brand-text" aria-hidden>
+                  {i + 1}
+                </span>
+                {c.url ? (
+                  <a
+                    href={c.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-w-0 items-center gap-0.5 font-medium text-brand-text underline-offset-2 hover:underline"
+                  >
+                    <span className="truncate">{c.label}</span>
+                    <ExternalLink className="h-3 w-3 flex-none" aria-hidden />
+                    <span className="sr-only">(opens in a new tab)</span>
+                  </a>
+                ) : (
+                  <span className="truncate text-ink-2">{c.label}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
       )}
 
       {answer.links && answer.links.length > 0 && (
@@ -109,7 +131,7 @@ export function AskAnswerCard({
         {canSave && (
           <button
             type="button"
-            className={cn(secondary, saved && 'border-success/40 text-success-text')}
+            className={cn(secondary, saved && 'border-positive-mid text-positive')}
             disabled={saving || saved}
             onClick={async () => {
               setSaving(true);
@@ -120,7 +142,6 @@ export function AskAnswerCard({
                   ...(answer.topicSlug ? { topicSlug: answer.topicSlug, answer } : { messageId: messageId! }),
                 });
                 setSaved(true);
-                void queryClient.invalidateQueries({ queryKey: ['ask', 'library'] });
               } catch (err) {
                 setSaveError((err as Error).message);
               } finally {
@@ -130,10 +151,10 @@ export function AskAnswerCard({
           >
             {saved ? (
               <>
-                <Check className="h-3.5 w-3.5" aria-hidden /> Saved
+                <Check aria-hidden /> Saved to library
               </>
             ) : (
-              'Save answer'
+              'Save to library'
             )}
           </button>
         )}
@@ -174,13 +195,39 @@ export function AskAnswerCard({
         )}
       </div>
       {saveError && (
-        <p role="alert" className="text-[12px] text-danger-text">
+        <p role="alert" className="text-[12.5px] text-danger">
           {saveError}
         </p>
       )}
 
+      {canVote && (
+        <div className="flex items-center gap-1 border-t border-line-soft pt-2">
+          <span className="ml-auto text-[12px] text-ink-muted">{vote ? 'Thanks' : 'Helpful?'}</span>
+          <button
+            type="button"
+            aria-label="Helpful"
+            aria-pressed={vote === 'up'}
+            disabled={vote !== null}
+            onClick={() => sendVote('up')}
+            className={cn(voteButton, vote === 'up' ? 'text-positive' : 'text-ink-muted')}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" strokeWidth={1.6} />
+          </button>
+          <button
+            type="button"
+            aria-label="Not helpful"
+            aria-pressed={vote === 'down'}
+            disabled={vote !== null}
+            onClick={() => sendVote('down')}
+            className={cn(voteButton, vote === 'down' ? 'text-danger' : 'text-ink-muted')}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" strokeWidth={1.6} />
+          </button>
+        </div>
+      )}
+
       {answer.related && answer.related.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-t border-border pt-2">
+        <div className="flex flex-wrap gap-1.5 border-t border-line-soft pt-2">
           {answer.related.slice(0, 2).map((slug) => {
             const topic = getTopic(slug);
             if (!topic) return null;
@@ -189,7 +236,7 @@ export function AskAnswerCard({
                 key={slug}
                 type="button"
                 onClick={() => void ask.showTopic(slug, undefined, topic.question)}
-                className="rounded-full bg-muted px-2.5 py-1 text-[12px] text-foreground hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                className="rounded-md border-1.5 border-line px-2.5 py-1 text-left text-[12.5px] text-ink-2 hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
               >
                 {topic.question}
               </button>

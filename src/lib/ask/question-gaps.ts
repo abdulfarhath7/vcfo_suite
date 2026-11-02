@@ -28,7 +28,7 @@ const STOP = new Set([
   'has', 'be', 'this', 'that', 'with', 'about', 'please', 'me', 'tell', 'explain',
 ]);
 
-export function questionTokens(question: string): Set<string> {
+function questionTokens(question: string): Set<string> {
   return new Set(
     question
       .toLowerCase()
@@ -38,14 +38,14 @@ export function questionTokens(question: string): Set<string> {
 }
 
 /** Jaccard similarity of two questions' meaningful words. */
-export function questionSimilarity(a: Set<string>, b: Set<string>): number {
+function questionSimilarity(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let shared = 0;
   for (const t of a) if (b.has(t)) shared += 1;
   return shared / (a.size + b.size - shared);
 }
 
-export const GAP_SIMILARITY_THRESHOLD = 0.5;
+const GAP_SIMILARITY_THRESHOLD = 0.5;
 
 /** How far back the gaps page looks. */
 export const GAPS_WINDOW_DAYS = 30;

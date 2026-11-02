@@ -15,8 +15,6 @@ import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolut
 import { StepWorkspaceRail } from '@/components/admin/StepWorkspaceRail';
 import { Eyebrow, Mono, GoldDivider, StatusDot, AccentButton } from '@/components/noir';
 import {
-  CheckCircle2,
-  Circle,
   FileText,
   Upload,
   Activity as ActivityIcon,
@@ -24,7 +22,9 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fadeUp, staggerKids } from '@/lib/motion';
+import { fadeUp, staggerKids } from '@/lib/shell/motion';
+import { UNDERLINE_TAB_LIST } from '@/components/admin/step-tab-classes';
+import { StepMark } from '@/components/ui/step-track';
 
 const PHASE1_PANEL_IDS = [
   'pre-2',
@@ -94,12 +94,12 @@ export function StepDetailContentView(props: any) {
           className={cn(
             'flex items-center gap-2 border px-3 py-2 rounded-md',
             isLight
-              ? 'mb-3 border-brand/30 bg-primary-light text-ink'
-              : 'mt-4 border-primary/40 bg-primary/5 rounded-sm',
+              ? 'mb-3 border-brand/30 bg-brand-soft text-ink'
+              : 'mt-4 border-brand/40 bg-brand/5 rounded-sm',
           )}
         >
-          <Sparkles className="w-3.5 h-3.5 text-gold" />
-          <span className={cn('text-[12px]', isLight ? 'text-ink' : 'text-paper')}>
+          <Sparkles className="w-3.5 h-3.5 text-brand-strong" />
+          <span className={cn('text-[12px]', isLight ? 'text-ink' : 'text-ink')}>
             All requirements met — step marked complete.
           </span>
         </motion.div>
@@ -181,12 +181,7 @@ export function StepDetailContentView(props: any) {
   const legacyChecklist = showLegacyChecklist ? (
     <>
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList
-          className={cn(
-            'bg-transparent rounded-none h-auto p-0 w-full justify-start gap-1 mb-4',
-            isLight ? 'border-b border-border' : 'border-b border-hairline',
-          )}
-        >
+        <TabsList className={UNDERLINE_TAB_LIST}>
           {[
             { v: 'forms' as const, icon: FileCheck, label: 'Forms', n: item.forms.length },
             ...(!hideDocumentsTab
@@ -195,31 +190,15 @@ export function StepDetailContentView(props: any) {
             { v: 'activity' as const, icon: ActivityIcon, label: 'Activity', n: stepActivity.length },
           ].map((t) => {
             const Icon = t.icon;
-            const active = tab === t.v;
             return (
               <TabsTrigger key={t.v} value={t.v} className={tabTrigger}>
-                <span className="flex items-center gap-2">
-                  <Icon className="w-3 h-3" />
+                <span className="flex items-center gap-1.5">
+                  <Icon className="h-4 w-4" strokeWidth={1.6} aria-hidden />
                   {t.label}
-                  <span
-                    className={cn(
-                      'tabular-nums',
-                      isLight ? 'text-text-tertiary' : 'text-paper-subtle',
-                    )}
-                  >
+                  <span className="rounded-sm bg-surface-sunken px-1.5 text-[12px] font-medium tabular-nums text-ink-2">
                     {t.n}
                   </span>
                 </span>
-                {active && (
-                  <motion.span
-                    layoutId={isLight ? 'step-tab-underline-page' : 'step-tab-underline'}
-                    className={cn(
-                      'absolute left-2 right-2 -bottom-px h-[2px]',
-                      isLight ? 'bg-brand' : 'bg-gold',
-                    )}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                )}
               </TabsTrigger>
             );
           })}
@@ -240,34 +219,19 @@ export function StepDetailContentView(props: any) {
                 return (
                   <motion.li key={f} variants={fadeUp}>
                     <button type="button" onClick={() => toggleForm(f)} className={rowBtn(done)}>
-                      {done ? (
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                      ) : (
-                        <Circle
-                          className={cn(
-                            'w-4 h-4 shrink-0',
-                            isLight ? 'text-text-tertiary' : 'text-paper-subtle',
-                          )}
-                        />
-                      )}
+                      <StepMark state={done ? 'done' : 'next'} size={20} label={done ? 'Filed' : 'To file'} />
                       <Mono
                         className={cn(
                           'text-[12px] tracking-[0.06em] flex-1',
-                          done
-                            ? isLight
-                              ? 'text-brand'
-                              : 'text-blue-500'
-                            : isLight
-                              ? 'text-ink'
-                              : 'text-paper',
+                          'text-ink',
                         )}
                       >
                         {f}
                       </Mono>
                       <span
                         className={cn(
-                          'text-[10px] mono uppercase tracking-[0.16em]',
-                          isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                          'text-[12px] font-medium',
+                          done ? 'text-positive' : 'text-ink-muted',
                         )}
                       >
                         {done ? 'Filed' : 'To file'}
@@ -299,22 +263,21 @@ export function StepDetailContentView(props: any) {
                     <motion.li key={d} variants={fadeUp}>
                       <button type="button" onClick={() => toggleDoc(d)} className={cn(rowBtn(done), 'group items-start')}>
                         {done ? (
-                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                          <StepMark state="done" size={20} label="On file" className="mt-0.5" />
                         ) : (
                           <Upload
-                            className={cn(
-                              'w-4 h-4 shrink-0 mt-0.5 transition-colors group-hover:text-blue-600',
-                              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
-                            )}
+                            className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted transition-colors group-hover:text-brand-text"
+                            strokeWidth={1.6}
+                            aria-hidden
                           />
                         )}
-                        <span className={cn('text-[12.5px] flex-1 leading-relaxed', bodyText(done))}>
+                        <span className={cn('text-[14px] flex-1 leading-relaxed', bodyText(done))}>
                           {d}
                         </span>
                         <span
                           className={cn(
-                            'text-[10px] mono uppercase tracking-[0.16em] shrink-0 mt-0.5',
-                            isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                            'mt-0.5 shrink-0 text-[12px] font-medium',
+                            done ? 'text-positive' : 'text-ink-muted',
                           )}
                         >
                           {done ? 'On file' : 'Outstanding'}
@@ -340,20 +303,20 @@ export function StepDetailContentView(props: any) {
                   key={a.id}
                   className={cn(
                     'text-[12.5px] leading-relaxed border-l pl-3',
-                    isLight ? 'border-border' : 'border-hairline',
+                    isLight ? 'border-line' : 'border-line',
                   )}
                 >
-                  <span className={isLight ? 'text-ink' : 'text-paper'}>{a.actor}</span>{' '}
-                  <span className={isLight ? 'text-text-secondary' : 'text-paper-muted'}>
+                  <span className={isLight ? 'text-ink' : 'text-ink'}>{a.actor}</span>{' '}
+                  <span className={isLight ? 'text-ink-muted' : 'text-ink-muted'}>
                     {a.verb}
                   </span>{' '}
                   {a.target && (
-                    <span className={isLight ? 'text-brand' : 'text-blue-500'}>{a.target}</span>
+                    <span className="text-brand-text">{a.target}</span>
                   )}
                   <div
                     className={cn(
-                      'text-[10px] mono uppercase tracking-[0.14em] mt-1',
-                      isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                      'text-[10px] mono tracking-[0.14em] mt-1',
+                      isLight ? 'text-ink-faint' : 'text-ink-subtle',
                     )}
                   >
                     {a.at}
@@ -370,8 +333,8 @@ export function StepDetailContentView(props: any) {
           <GoldDivider className="mb-3" />
           <Mono
             className={cn(
-              'text-[10px] uppercase tracking-[0.18em] block',
-              isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+              'text-[10px] tracking-[0.18em] block',
+              isLight ? 'text-ink-faint' : 'text-ink-subtle',
             )}
           >
             Deadline · {item.deadline.kind.replace(/-/g, ' ')}
@@ -382,8 +345,8 @@ export function StepDetailContentView(props: any) {
           {showDeadline && (
             <Mono
               className={cn(
-                'text-[10px] uppercase tracking-[0.18em] mt-2 block',
-                isLight ? 'text-text-tertiary' : 'text-paper-subtle',
+                'text-[10px] tracking-[0.18em] mt-2 block',
+                isLight ? 'text-ink-faint' : 'text-ink-subtle',
               )}
             >
               Deadline · {item.deadline.kind.replace(/-/g, ' ')}
@@ -399,7 +362,7 @@ export function StepDetailContentView(props: any) {
 
   if (isLight) {
     const internPageFooter = internFooterFallback ? (
-      <div className="sticky bottom-0 z-20 mt-4 border-t border-border/70 bg-panel/95 px-4 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-panel/80">
+      <div className="sticky bottom-0 z-20 mt-4 border-t border-line/70 bg-surface-raised/95 px-4 py-3 supports-[backdrop-filter]:bg-surface-raised/80">
         <div className="flex flex-wrap items-center gap-2">{internActionBar}</div>
       </div>
     ) : null;
@@ -482,14 +445,14 @@ export function StepDetailContentView(props: any) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="space-y-3 px-6 pt-6 pb-4 text-left border-b border-hairline">
+      <header className="space-y-3 px-6 pt-6 pb-4 text-left border-b border-line">
         <div className="flex items-center justify-between">
           <Eyebrow>Step · {item.bucket.replace('-', ' ')}</Eyebrow>
-          <Mono className="text-[10px] uppercase tracking-[0.18em] text-paper-subtle">
+          <Mono className="text-[10px] tracking-[0.18em] text-ink-subtle">
             {String(preIncPhaseStep?.stepNumber ?? item.order).padStart(2, '0')} / {item.id}
           </Mono>
         </div>
-        <h1 className="serif leading-tight font-normal text-paper text-[22px]">{item.title}</h1>
+        <h1 className="serif leading-tight font-normal text-ink text-[22px]">{item.title}</h1>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <ResponsibleRoleBadge role={item.responsibleRole} />
         </div>
@@ -497,24 +460,24 @@ export function StepDetailContentView(props: any) {
           {!hideStatus && (
             <>
               <StatusDot tone={tone.dot} size={8} pulse={status === 'in-progress'} />
-              <span className={cn('text-[10.5px] mono uppercase tracking-[0.18em]', statusCls)}>
+              <span className={cn('text-[10.5px] mono tracking-[0.18em]', statusCls)}>
                 {STATUS_LABEL[status]}
               </span>
             </>
           )}
           {showLegacyChecklist && (
             <>
-              <span className="text-paper-subtle">·</span>
-              <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-paper-muted">
+              <span className="text-ink-subtle">·</span>
+              <Mono className="text-[10.5px] tracking-[0.18em] text-ink-muted">
                 {totals.done}/{totals.total} items
               </Mono>
             </>
           )}
         </div>
         {showLegacyChecklist && (
-          <div className="relative h-[3px] overflow-hidden rounded-full mt-2 bg-raised">
+          <div className="relative h-[3px] overflow-hidden rounded-full mt-2 bg-surface-sunken">
             <motion.div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-gold to-gold-hi"
+              className="absolute inset-y-0 left-0 bg-brand"
               initial={false}
               animate={{ width: `${totals.pct}%` }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -550,7 +513,7 @@ export function StepDetailContentView(props: any) {
               </>
             )}
             {stepGate?.kind === 'waiting' && stepGate.message && (
-              <div className="rounded-lg border border-warning/30 bg-warning-light/60 px-3 py-2.5 text-sm text-warning-text">
+              <div className="rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2.5 text-[13.5px] text-warning">
                 {stepGate.message}
               </div>
             )}
@@ -560,8 +523,8 @@ export function StepDetailContentView(props: any) {
         {legacyChecklist}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-hairline px-6 py-4 bg-panel">
-        <Mono className="text-[10.5px] uppercase tracking-[0.18em] text-paper-muted">
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-6 py-4 bg-surface-raised">
+        <Mono className="text-[10.5px] tracking-[0.18em] text-ink-muted">
           {showLegacyChecklist ? `${totals.pct}% of requirements met` : ''}
         </Mono>
         <div className="flex items-center gap-2">

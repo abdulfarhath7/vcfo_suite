@@ -1,13 +1,13 @@
 import { getActiveCatalogItems, getIncorporationPhases, getItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import { gateActiveCatalog, getStepGate } from '@/lib/checklist-step-gate';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import type { FilingRow } from '@/lib/filings';
-import { buildProgress } from '@/lib/client-overview';
-import { internOverviewPhaseTitle } from '@/lib/intern-overview-progress';
+import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import type { FilingRow } from '@/lib/compliance/filings';
+import { buildProgress } from '@/lib/client/client-overview';
+import { internOverviewPhaseTitle } from '@/lib/intern/intern-overview-progress';
 import { buildPhaseProgress } from '@/lib/ask/phase-progress';
-import { listPendingApprovals } from '@/lib/pending-approvals';
-import { deriveStuckReason, STUCK_LABEL } from '@/lib/project-stuck';
+import { listPendingApprovals } from '@/lib/projects/pending-approvals';
+import { deriveStuckReason, STUCK_LABEL } from '@/lib/projects/project-stuck';
 import { numberArg, type AskTool } from './types';
 
 /**
@@ -130,7 +130,7 @@ function currentStepFor(e: StaffEngagement) {
   return { stepId: item.id, title: item.title, phase: phase ? internOverviewPhaseTitle(phase.id, phase.title) : null };
 }
 
-export function projectSummary(data: StaffData, query: string) {
+function projectSummary(data: StaffData, query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return { error: 'no_match' as const };
   const match =

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, count, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, count, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
 import {
@@ -10,12 +10,19 @@ import {
   complianceObligations,
   complianceReminders,
   engagements,
+  notificationPrefs,
   profiles,
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { listScopedEngagementIds } from '@/db/repositories/engagements';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { recordFilingEvent } from '@/db/repositories/filing-events';
+import { reminderIsDue } from '@/lib/notify/reminder-days';
+import { createNotificationsForUsers } from '@/db/repositories/notifications';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { bucketKey, putObject, signedDownloadUrl, deleteObject } from '@/storage/s3';
+import { systemGetReminderDays } from '@/db/repositories/firm-settings';
+import { systemGetRemindDays } from '@/db/repositories/notification-prefs';
 import {
   addDays,
   areaOf,
@@ -43,18 +50,23 @@ import {
  *  - WRITE proofs / details: staff only (super_admin, admin, manager, intern)
  *    and only inside the same scope ("write via assigned engagement"). Clients
  *    are read-only on the register, exactly as compliance_instances RLS.
+ *  - CLIENT PROOF (G-03): `addClientFilingProof` lets a client ADD a file to a
+ *    filing of their own engagement (same scope check). The row is never the
+ *    primary proof, it is shown as uploaded by the client, and it never changes
+ *    the filing's status: staff still decide whether it is filed. The lead is
+ *    told through the notifications repository.
  *  - REMINDERS: any role inside scope, and only ever the caller's own row
  *    (`user_id = ctx.userId`). Nobody can read or change another user's reminder.
  *  - Filing windows stay manager-only (POST /api/filings/[id]/window) — the
  *    portal timeline is read-only for clients.
  */
 
-export class ComplianceNotFoundError extends Error {
+class ComplianceNotFoundError extends Error {
   constructor() {
     super('Filing not found');
   }
 }
-export class ComplianceForbiddenError extends Error {
+class ComplianceForbiddenError extends Error {
   constructor(msg = 'Only SBC staff can change filings') {
     super(msg);
   }
@@ -209,6 +221,8 @@ export interface FilingProof {
   isPrimary: boolean;
   uploadedAt: string;
   uploadedBy: string | null;
+  /** True when the client uploaded it (G-03); staff review it before it counts. */
+  byClient?: boolean;
   /** Legacy `compliance_instances.evidence_url` entry (external link or storage path). */
   legacy?: boolean;
 }
@@ -227,6 +241,7 @@ export async function listFilingProofs(ctx: AuthContext, instanceId: string): Pr
       isPrimary: complianceInstanceProofs.isPrimary,
       uploadedAt: complianceInstanceProofs.uploadedAt,
       uploadedBy: profiles.name,
+      uploaderRole: profiles.role,
     })
     .from(complianceInstanceProofs)
     .leftJoin(profiles, eq(profiles.id, complianceInstanceProofs.uploadedBy))
@@ -242,6 +257,7 @@ export async function listFilingProofs(ctx: AuthContext, instanceId: string): Pr
       isPrimary: r.isPrimary,
       uploadedAt: r.uploadedAt.toISOString(),
       uploadedBy: r.uploadedBy ?? null,
+      byClient: r.uploaderRole === 'client',
     }))
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   if (inst.evidenceUrl?.trim()) {
@@ -319,6 +335,7 @@ export async function addFilingProof(
       uploadedBy: ctx.userId,
     })
     .returning();
+  void recordFilingEvent(ctx, { instanceId: inst.id, side: 'sbc', label: 'Proof uploaded' });
   return {
     id: row!.id,
     fileName: row!.fileName,
@@ -328,6 +345,104 @@ export async function addFilingProof(
     isPrimary: row!.isPrimary,
     uploadedAt: row!.uploadedAt.toISOString(),
     uploadedBy: ctx.name,
+  };
+}
+
+const CLIENT_PROOF_KINDS = new Set(['acknowledgement', 'challan', 'other']);
+
+/**
+ * G-03: the client adds a proof file (a challan they paid, an acknowledgement
+ * they hold) to one filing of their OWN engagement. The scope check is the same
+ * `scopedInstance` read every other proof call uses, so a filing of another
+ * company reads as not found. The row is never primary, the filing's status and
+ * filed date are not touched, and the engagement's lead gets a bell
+ * notification so staff can check it.
+ */
+export async function addClientFilingProof(
+  ctx: AuthContext,
+  instanceId: string,
+  file: { name: string; type: string; bytes: Uint8Array },
+  kind = 'other',
+): Promise<FilingProof> {
+  if (ctx.role !== 'client') throw new ComplianceForbiddenError('Only the client adds proof here');
+  const inst = await scopedInstance(ctx, instanceId);
+  if (file.bytes.byteLength === 0 || file.bytes.byteLength > MAX_PROOF_BYTES) throw new Error('File must be 1 byte – 15 MB');
+  const safe = file.name.replace(/[^\w.\- ()]+/g, '_').slice(0, 120) || 'proof';
+  const storagePath = `${inst.engagementId}/compliance-proofs/${inst.id}/client-${Date.now()}-${safe}`;
+  await putObject(bucketKey('engagement-documents', storagePath), file.bytes, file.type || undefined);
+  const [row] = await db
+    .insert(complianceInstanceProofs)
+    .values({
+      instanceId: inst.id,
+      engagementId: inst.engagementId,
+      storagePath,
+      fileName: safe,
+      mime: file.type || null,
+      sizeBytes: file.bytes.byteLength,
+      kind: CLIENT_PROOF_KINDS.has(kind) ? kind : 'other',
+      isPrimary: false,
+      uploadedBy: ctx.userId,
+    })
+    .returning();
+  if (!row) throw new Error('Could not save the file');
+
+  const [about] = await db
+    .select({
+      companyName: engagements.companyName,
+      internId: engagements.internId,
+      particular: complianceObligations.particular,
+      periodLabel: complianceInstances.periodLabel,
+    })
+    .from(complianceInstances)
+    .innerJoin(engagements, eq(engagements.id, complianceInstances.engagementId))
+    .innerJoin(complianceObligations, eq(complianceObligations.id, complianceInstances.obligationId))
+    .where(eq(complianceInstances.id, inst.id))
+    .limit(1);
+  const filingName = about
+    ? `${displayName(about.particular)}${about.periodLabel ? ` · ${about.periodLabel}` : ''}`
+    : 'a filing';
+
+  await recordAuditEvent(ctx, {
+    engagementId: inst.engagementId,
+    action: 'client.compliance_proof_uploaded',
+    summary: `Proof uploaded for ${filingName}`,
+    metadata: { instanceId: inst.id, proofId: row.id, kind: row.kind },
+  });
+  void recordFilingEvent(ctx, { instanceId: inst.id, side: 'client', label: 'Proof sent' });
+
+  const leadKey = about?.internId?.trim();
+  if (leadKey) {
+    try {
+      const [lead] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.internId, leadKey)).limit(1);
+      if (lead) {
+        await createNotificationsForUsers([
+          {
+            userId: lead.id,
+            kind: 'request.uploaded',
+            title: `${about!.companyName}: proof uploaded`,
+            body: `${ctx.name || 'The client'} added ${safe} to ${filingName}. Check it before marking the filing.`,
+            engagementId: inst.engagementId,
+            companyName: about!.companyName,
+            href: '/app/intern/compliances/filings',
+          },
+        ]);
+      }
+    } catch (error) {
+      // The proof row is the record; a missed bell must not lose the upload.
+      console.warn('[client-compliances] proof notification failed', error);
+    }
+  }
+
+  return {
+    id: row.id,
+    fileName: row.fileName,
+    mime: row.mime,
+    sizeBytes: row.sizeBytes,
+    kind: row.kind,
+    isPrimary: false,
+    uploadedAt: row.uploadedAt.toISOString(),
+    uploadedBy: ctx.name,
+    byClient: true,
   };
 }
 
@@ -370,7 +485,11 @@ export async function upsertFilingDetails(ctx: AuthContext, instanceId: string, 
 
 export type ReminderChannel = 'email' | 'whatsapp';
 
-/** The caller's own reminder: due − 3 days (today when the due date is closer). */
+/**
+ * The caller's own reminder: their own reminder days when they chose some (Settings), else
+ * the earliest of the firm's default reminder days (Firm settings, G-02) that is still ahead,
+ * else due − 3 days; today when the due date is closer.
+ */
 export async function setFilingReminder(
   ctx: AuthContext,
   instanceId: string,
@@ -379,8 +498,14 @@ export async function setFilingReminder(
   const inst = await scopedInstance(ctx, instanceId);
   if (inst.filedOn) throw new Error('Already filed');
   const today = todayIso();
-  const lead = addDays(inst.dueDate, -3);
-  const remindOn = daysBetween(today, lead) > 0 ? lead : today;
+  // The caller's own reminder days (Settings, 7, 3 or 1) win over the firm default.
+  const own = (await systemGetRemindDays([ctx.userId])).get(ctx.userId);
+  const firmDays = own ? [own] : await systemGetReminderDays();
+  const ahead = (firmDays ?? [3])
+    .map((d) => addDays(inst.dueDate, -d))
+    .filter((on) => daysBetween(today, on) > 0)
+    .sort();
+  const remindOn = ahead[0] ?? today;
   const ch = channels.filter((c) => c === 'email' || c === 'whatsapp');
   await db
     .insert(complianceReminders)
@@ -403,11 +528,17 @@ export async function clearFilingReminder(ctx: AuthContext, instanceId: string):
  * SYSTEM (Inngest only — no AuthContext): reminders whose day has come and
  * that were not sent yet, with what the email needs. Re-checks the filing is
  * still unfiled at send time.
+ *
+ * The day: a person who chose their own reminder days (notification_prefs.remind_days,
+ * 7, 3 or 1) is reminded that many days before the due date; everyone else on the
+ * stored remind_on, which came from the firm default (`reminderIsDue`).
  */
 export async function systemListDueComplianceReminders(today: string) {
-  return db
+  const rows = await db
     .select({
       id: complianceReminders.id,
+      remindOn: complianceReminders.remindOn,
+      remindDays: notificationPrefs.remindDays,
       channels: complianceReminders.channels,
       email: profiles.email,
       name: profiles.name,
@@ -418,12 +549,15 @@ export async function systemListDueComplianceReminders(today: string) {
     })
     .from(complianceReminders)
     .innerJoin(profiles, eq(profiles.id, complianceReminders.userId))
+    .leftJoin(notificationPrefs, eq(notificationPrefs.profileId, complianceReminders.userId))
     .innerJoin(complianceInstances, eq(complianceInstances.id, complianceReminders.instanceId))
     .innerJoin(complianceObligations, eq(complianceObligations.id, complianceInstances.obligationId))
     .innerJoin(engagements, eq(engagements.id, complianceInstances.engagementId))
     .where(
       and(
-        lte(complianceReminders.remindOn, today),
+        // The stored day has come, or the filing is close enough for a personal choice
+        // (at most 7 days) to apply; `reminderIsDue` below decides which day counts.
+        or(lte(complianceReminders.remindOn, today), lte(complianceInstances.dueDate, addDays(today, 7))),
         isNull(complianceReminders.sentAt),
         // removed people get no more reminders (security review L6)
         eq(profiles.status, 'active'),
@@ -431,6 +565,9 @@ export async function systemListDueComplianceReminders(today: string) {
         gte(complianceInstances.dueDate, addDays(today, -1)),
       ),
     );
+  return rows.filter((r) =>
+    reminderIsDue({ remindOn: String(r.remindOn ?? ''), dueDate: String(r.dueDate ?? ''), remindDays: r.remindDays }, today),
+  );
 }
 
 export async function systemMarkComplianceReminderSent(id: string): Promise<void> {

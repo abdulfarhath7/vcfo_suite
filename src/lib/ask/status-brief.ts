@@ -1,7 +1,7 @@
 import { getActiveCatalogItems } from '@/data/checklist';
 import type { ProjectSnapshot } from '@/data/ask/schema';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { buildProgress } from '@/lib/client-overview';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { buildProgress } from '@/lib/client/client-overview';
 import { indiaDay } from '@/lib/ask/nudge';
 
 /**

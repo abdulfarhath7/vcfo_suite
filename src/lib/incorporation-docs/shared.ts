@@ -1,16 +1,16 @@
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
   PRE6_OCCUPATION_OPTIONS,
   PRE6_UTILITY_BILL_OPTIONS,
-} from '@/lib/checklist-pre6-validation';
+} from '@/lib/checklist/checklist-pre6-validation';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
-import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/other-company-interests';
+import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/incorporation/other-company-interests';
 import {
   DIRECTOR_IDENTITY_PROOF_OPTIONS,
   DIRECTOR_RESIDENCE_PROOF_OPTIONS,
   proofDocumentName,
-} from '@/lib/director-proofs';
+} from '@/lib/incorporation/director-proofs';
 import {
   directorAudienceKind,
   directorFieldPrefix,
@@ -40,7 +40,7 @@ export interface IncorpMergeInput {
 }
 
 /** Pre-7 ids for the signing block every generated draft shares. */
-export const INCORP_SIGNING_DATE_FIELD = 'incorpDocsSigningDate';
+const INCORP_SIGNING_DATE_FIELD = 'incorpDocsSigningDate';
 export const INCORP_SIGNING_PLACE_FIELD = 'incorpDocsSigningPlace';
 
 /** The lead's signing date (ISO `YYYY-MM-DD` on pre-7), else today — exactly as before. */
@@ -157,7 +157,7 @@ function isResidentAudience(director: IncorpDirectorAudience): boolean {
   return directorAudienceKind(director) === 'resident';
 }
 
-export function documentPlaceForDirector(director: IncorpDirectorAudience): string {
+function documentPlaceForDirector(director: IncorpDirectorAudience): string {
   return isResidentAudience(director) ? 'India' : 'Foreign';
 }
 

@@ -3,7 +3,7 @@ import 'server-only';
 import {
   MILESTONE_DOCUMENTS_BUCKET,
   milestoneDocumentObjectPath,
-} from '@/lib/milestone-document-storage';
+} from '@/lib/documents/milestone-document-storage';
 import { incorpDocDownloadFilename } from '@/lib/incorporation-docs/paths';
 import type { IncorpDraftLabelOptions } from '@/lib/incorporation-docs/paths';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';

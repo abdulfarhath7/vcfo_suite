@@ -49,6 +49,8 @@ export const roleEnum = pgEnum('trak_role', [
   'manager',
   'intern',
   'client',
+  /** Engineering access to the developer console only; no client data (G-01). */
+  'developer',
 ]);
 export const stageEnum = pgEnum('engagement_stage', [
   'Pre-Incorporation',
@@ -101,6 +103,20 @@ export const profiles = pgTable('profiles', {
   reportsToManagerId: uuid('reports_to_manager_id'),
   /** S3 object key for the user’s chosen photo (upload or Outlook Graph). */
   avatarObjectKey: text('avatar_object_key'),
+  /** Firm Admin a Project Manager reports to (super admin's Admin column, G-20). */
+  reportsToAdminId: uuid('reports_to_admin_id'),
+  /** How many open items a person can carry at once; null means not set (G-14). */
+  capacity: integer('capacity'),
+  /** Last signed-in request, written at most every few minutes (G-14). */
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  /** AES-256-GCM of the base32 TOTP secret; set while two-step sign-in is on or pending (G-25). */
+  totpSecretEnc: text('totp_secret_enc'),
+  /** When two-step sign-in was confirmed with a first code; null means it is off. */
+  totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
+  /** Job title shown on Profile and Team, for example "Director" or "Senior associate" (P-617, C-821). */
+  designation: text('designation'),
+  /** ICAI or ICSI membership number for staff, shown in mono on Profile (P-617, S-653). */
+  membershipNo: text('membership_no'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -149,10 +165,12 @@ export const engagements = pgTable(
     complianceQuestionnaire: jsonb('compliance_questionnaire').notNull().default({}),
     /**
      * Manager-set date windows: `{ incorporation?: Window, steps?: { [itemId]: Window } }`
-     * (`src/lib/schedule-windows.ts`). Its own column rather than a key inside
+     * (`src/lib/projects/schedule-windows.ts`). Its own column rather than a key inside
      * `checklist_state`, whose normaliser treats every top-level key as a step.
      */
     schedule: jsonb('schedule'),
+    /** The date the firm expects the certificate of incorporation (G-13). */
+    expectedCoiOn: date('expected_coi_on'),
     // SQL type is text[], not jsonb — merge-cc.ts treats it as a string array.
     progressCcEmails: text('progress_cc_emails').array().notNull().default([]),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -282,8 +300,59 @@ export const engagementBoardResolutions = pgTable('engagement_board_resolutions'
   signedUploadedBy: uuid('signed_uploaded_by').references(() => profiles.id, {
     onDelete: 'set null',
   }),
+  /** When the finalized draft was sent to the client for signing (S-573); null until then. */
+  sentToClientAt: timestamp('sent_to_client_at', { withTimezone: true }),
+  sentToClientBy: uuid('sent_to_client_by').references(() => profiles.id, { onDelete: 'set null' }),
+  /*
+   * Board resolution (NOC) receive steps (R-52, docs/ui-port/BR-NOC-API.md). Notarised and
+   * Apostilled apply to a foreign parent only; staff stamp them by ticking the matching receive
+   * check. Accepted closes the document; a copy received before this build is backfilled.
+   */
+  notarisedAt: timestamp('notarised_at', { withTimezone: true }),
+  notarisedBy: uuid('notarised_by').references(() => profiles.id, { onDelete: 'set null' }),
+  apostilledAt: timestamp('apostilled_at', { withTimezone: true }),
+  apostilledBy: uuid('apostilled_by').references(() => profiles.id, { onDelete: 'set null' }),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  acceptedBy: uuid('accepted_by').references(() => profiles.id, { onDelete: 'set null' }),
+  sentBackAt: timestamp('sent_back_at', { withTimezone: true }),
+  sentBackBy: uuid('sent_back_by').references(() => profiles.id, { onDelete: 'set null' }),
+  sentBackReason: text('sent_back_reason'),
+  /** Receive checklist ticks: `{ [checkKey]: { by: profileId, at: iso } }`. Cleared by a new signed upload. */
+  receiveChecks: jsonb('receive_checks').notNull().default({}),
+  /** D1: SBC turned the notary and apostille steps off for this client. */
+  notaryStepsOff: boolean('notary_steps_off').notNull().default(false),
+  /** Staff "Change template" override (a NocVariant); null follows the project answers. */
+  templateVariant: text('template_variant'),
+  templateChangedAt: timestamp('template_changed_at', { withTimezone: true }),
+  templateChangedBy: uuid('template_changed_by').references(() => profiles.id, { onDelete: 'set null' }),
+  templateChangeReason: text('template_change_reason'),
+  /** The Vault row the accepted signed copy was filed as (T6). */
+  vaultDocumentId: uuid('vault_document_id'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One row per generated board resolution draft (T4 Compare versions, T3 out-of-date mark).
+ * `fields` is the merge-value snapshot from `nocSnapshotFields()` (answers only, never inline
+ * edits). Additive; written by the generate route through the board-resolution repository.
+ */
+export const engagementBoardResolutionVersions = pgTable(
+  'engagement_board_resolution_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    variant: text('variant').notNull(),
+    fields: jsonb('fields').notNull().default({}),
+    createdBy: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueVersion: uniqueIndex('engagement_br_versions_unique').on(t.engagementId, t.version),
+  }),
+);
 
 /**
  * Uploaded .docx templates. Reconciled against
@@ -330,6 +399,19 @@ export const documents = pgTable(
     uploadedBy: uuid('uploaded_by').references(() => profiles.id),
     stepId: text('step_id'), // checklist step this belongs to, if any
     sharedWithClient: boolean('shared_with_client').notNull().default(false),
+    /** none | pending | approved | changes — the vault review state (G-26). */
+    reviewStatus: text('review_status').notNull().default('none'),
+    reviewedBy: uuid('reviewed_by').references(() => profiles.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
+    /** When a newer upload to the same checklist field took this file's place (vault "Replaced", P-575). */
+    replacedAt: timestamp('replaced_at', { withTimezone: true }),
+    /** The documents row of the newer upload that replaced this one (no FK: rows may be removed). */
+    replacedById: uuid('replaced_by_id'),
+    /** Soft delete from the vault (P-596); a deleted row is hidden everywhere and Undo clears it. */
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** Who deleted the file from the vault. */
+    deletedBy: uuid('deleted_by').references(() => profiles.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -400,7 +482,7 @@ export const knowledgeBankFiles = pgTable(
  * Reconciled against 20260529120000_audit_events.sql — note the actor
  * email/name are DENORMALISED onto the row so the log still reads correctly
  * after a profile is renamed or deleted, and `summary` is a required
- * human-readable sentence (formatAuditActionLabel in src/lib/audit-log.ts).
+ * human-readable sentence (formatAuditActionLabel in src/lib/audit/audit-log.ts).
  */
 export const auditEvents = pgTable(
   'audit_events',
@@ -419,6 +501,8 @@ export const auditEvents = pgTable(
     action: text('action').notNull(),
     summary: text('summary').notNull(),
     metadata: jsonb('metadata').notNull().default({}),
+    /** ok | failed | denied — what happened to the action (G-28). */
+    result: text('result').notNull().default('ok'),
   },
   (t) => ({
     engIdx: index('audit_events_engagement_idx').on(t.engagementId),
@@ -554,6 +638,8 @@ export const complianceObligations = pgTable('compliance_obligations', {
   applicabilityNote: text('applicability_note'),
   isConditional: boolean('is_conditional').notNull().default(false),
   penaltyRisk: text('penalty_risk').notNull().default('low'),
+  /** The activity master row (compliance_activities.id) this obligation belongs to; null when the master has none (0030). */
+  activityId: text('activity_id'),
 });
 
 /** One row per engagement — the anchor dates that drive instance generation. */
@@ -657,11 +743,20 @@ export const tasks = pgTable(
       onDelete: 'cascade',
     }),
     assignedTo: uuid('assigned_to').references(() => profiles.id),
+    /** Who assigned the task; null for tasks a person made for themself or made before 0028 (S-217). */
+    assignedBy: uuid('assigned_by').references(() => profiles.id, { onDelete: 'set null' }),
     title: text('title').notNull(),
     description: text('description'),
     stepId: text('step_id'),
     deadline: timestamp('deadline', { withTimezone: true }),
     status: text('status').notNull().default('open'), // open|in-progress|done
+    /**
+     * The card's place in its Work board column (M6 G1); null keeps the default order.
+     * Needs the migration in docs/ui-port/fixes/overnight-m6.md (not generated yet).
+     */
+    sortOrder: integer('sort_order'),
+    /** When the task moved to done; cleared when it reopens (home trend lines). */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -680,6 +775,8 @@ export const documentRequests = pgTable('document_requests', {
   title: text('title').notNull(),
   detail: text('detail'),
   status: text('status').notNull().default('pending'), // pending|fulfilled|cancelled
+  /** When the request was fulfilled or cancelled; null while pending (home trend lines). */
+  closedAt: timestamp('closed_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -802,6 +899,10 @@ export const outlookConnections = pgTable('outlook_connections', {
   accessTokenEnc: text('access_token_enc').notNull(),
   refreshTokenEnc: text('refresh_token_enc').notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  /** Add the signature below to every message sent from the app (K-40, G-23). */
+  signatureEnabled: boolean('signature_enabled').notNull().default(false),
+  /** The signature as plain text; line breaks are kept. */
+  signatureText: text('signature_text'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -840,6 +941,8 @@ export const announcements = pgTable(
     sourceId: uuid('source_id').references(() => announcementSources.id, { onDelete: 'set null' }),
     externalId: text('external_id'),
     sourceUrl: text('source_url'),
+    /** In-app client portal page the announcement points to (`/app/client/...`); drives the detail "Open" button (C-741). */
+    linkPath: text('link_path'),
     authorId: uuid('author_id').references(() => profiles.id, { onDelete: 'set null' }),
     authorName: text('author_name').notNull(),
     authorRole: text('author_role'),
@@ -1142,3 +1245,6 @@ export * from './schema-portal-team';
 export * from './schema-portal-credentials';
 export * from './schema-registered-office-noc';
 export * from './schema-planner';
+export * from './schema-firm';
+export * from './schema-work';
+export * from './schema-compliance-tasks';

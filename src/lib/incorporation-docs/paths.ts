@@ -15,7 +15,7 @@ import {
   type IncorpDirectorAudience,
   type IncorpDocAudience,
 } from '@/lib/incorporation-docs/audiences';
-import type { ChecklistItemResponses } from '@/lib/checklist-responses';
+import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { slugifyCompanyName } from '@/lib/slug';
 
@@ -52,7 +52,7 @@ function directorDisplayName(
  * Director audiences to lay out slots for: the directors on file plus any
  * audience that already holds a stored draft, so nothing generated disappears.
  */
-export function incorpDirectorAudiences(
+function incorpDirectorAudiences(
   responses: ChecklistItemResponses,
   options?: IncorpDraftLabelOptions,
 ): IncorpDirectorAudience[] {

@@ -8,7 +8,7 @@ function TabsTrigger({ ref, className, ...props }: React.ComponentPropsWithoutRe
       <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-primary-light data-[state=active]:text-primary data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
+      "inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-mark px-3 text-[13px] font-medium text-ink-2 ring-offset-background transition-colors hover:text-ink data-[state=active]:bg-brand data-[state=active]:text-on-brand data-[state=active]:shadow-shine focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
       className,
     )}
     {...props}

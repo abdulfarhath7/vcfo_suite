@@ -21,6 +21,12 @@ import {
   repairBoardResolutionStorage,
   saveBoardResolutionDraft,
 } from '@/db/repositories/board-resolution';
+import {
+  currentNocSnapshot,
+  getNocTemplateOverride,
+  recordBoardResolutionVersion,
+} from '@/db/repositories/board-resolution-noc';
+import { withNocVariantOverride } from '@/lib/noc/receive';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -48,7 +54,10 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(boardResolutionAuthErrorResponse('forbidden', 403), { status: 403 });
   }
 
-  const engagement = toAppEngagement(access.row);
+  // A staff "Change template" override (R-52, T2) replaces the three ownership answers that
+  // pick the template, so generation renders the chosen variant without touching the generator.
+  const templateOverride = await getNocTemplateOverride(auth.ctx, access.dbId).catch(() => null);
+  const engagement = withNocVariantOverride(toAppEngagement(access.row), templateOverride);
   const checklistState = checklistStateFromRow(access.row);
   try {
     assertLeadMayEdit(auth.ctx, checklistState);
@@ -122,6 +131,16 @@ export async function POST(request: Request, context: RouteContext) {
           storagePath,
           templateFingerprint,
         );
+
+    // T4: a fresh render from the answers is a version; saving inline edits is not.
+    if (!editedContent || forceTemplateRefresh) {
+      try {
+        const fields = currentNocSnapshot(access.row, templateOverride);
+        await recordBoardResolutionVersion(auth.ctx, access.dbId, { variant: fields.__variant ?? '', fields });
+      } catch (err) {
+        console.error('[board-resolution] could not record the draft version', err);
+      }
+    }
 
     await recordAuditEvent(auth.ctx, {
       engagementId: engagement.id,

@@ -3,7 +3,7 @@ import { resolveChecklistItemFromStepParam, slugifyCompanyName } from '@/lib/slu
 import {
   internOverviewPhaseForItem,
   internRegistrationHeadingGroups,
-} from '@/lib/intern-overview-progress';
+} from '@/lib/intern/intern-overview-progress';
 import type { ChecklistItem } from '@/data/checklist';
 
 /** Section chip in the top-bar location trail. */
@@ -61,11 +61,12 @@ const PAGE_LABEL: Record<string, string> = {
   inbox: 'Inbox',
   incorporation: 'Incorporation',
   documents: 'Documents',
-  settings: 'Account',
+  settings: 'Profile',
   engagements: 'Clients',
   'board-resolution': 'Board Resolution',
   library: 'Library',
   'ask-vcfo': 'Ask VCFO',
+  ask: 'Ask VCFO',
   learn: 'Library',
 };
 
@@ -95,6 +96,7 @@ const PAGE_ICON: Record<string, ShellCrumbIcon> = {
   incorporation: 'briefcase',
   library: 'book',
   'ask-vcfo': 'book',
+  ask: 'book',
   learn: 'book',
 };
 
@@ -290,6 +292,8 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     const internRoute = parts[1] === 'intern';
     const list = listForEntityPage(parts, page);
     const entityHref = `${base}/${page}/${nested}`;
+    // The super admin has no step pages of its own; its step crumbs open the admin project steps.
+    const stepBase = parts[1] === 'super' ? `/app/admin/projects/${nested}` : entityHref;
     const segs: ShellCrumbSegment[] = [
       { label: list.label, href: list.href },
       {
@@ -302,7 +306,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     if (nested !== 'new' && after === 'step' && parts[5]) {
       const item = resolveChecklistItemFromStepParam(parts[5]);
       if (item) {
-        pushPhaseAndStep(segs, entityHref, item, internRoute);
+        pushPhaseAndStep(segs, stepBase, item, internRoute);
       } else {
         segs.push({ label: titleCase(parts[5]), href: null });
       }
@@ -311,7 +315,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     } else if (nested !== 'new' && after === 'board-resolution') {
       const draft = resolveChecklistItemFromStepParam('board-resolution-draft');
       if (draft) {
-        pushPhaseAndStep(segs, entityHref, draft, internRoute, 'Board Resolution');
+        pushPhaseAndStep(segs, stepBase, draft, internRoute, 'Board Resolution');
       } else {
         segs.push({ label: 'Board Resolution', href: null });
       }
@@ -401,7 +405,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail(path, pageIcon(page, group), rest);
   }
 
-  return trail(path, pageIcon(page, group), [
-    { label: pageLabel(page), href: `${base}/${page}` },
-  ]);
+  // The super admin's project list is called Clients (K-45).
+  const label = parts[1] === 'super' && page === 'projects' ? 'Clients' : pageLabel(page);
+  return trail(path, pageIcon(page, group), [{ label, href: `${base}/${page}` }]);
 }

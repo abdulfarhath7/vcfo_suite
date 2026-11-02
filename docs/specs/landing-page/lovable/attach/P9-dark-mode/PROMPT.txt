@@ -1,0 +1,1 @@
+Add dark mode to every screen with the dark column of the token table in the project instructions: slate surfaces, never black. Chips and tiles mix their colour with the surface at 16 percent. The main button lifts to the dark --btn value. The toggle in the top bar switches it and remembers the choice. Change nothing else.

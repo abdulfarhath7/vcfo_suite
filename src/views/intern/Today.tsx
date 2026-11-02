@@ -1,53 +1,74 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { NewTodoDialog } from '@/components/work/PlannerTodos';
+import { useOwnFocusTodos } from '@/hooks/use-personal-todos';
+import { createCustomInternFocus, internQueueCompanyHref } from '@/lib/intern/intern-work';
+import { deriveStuckReason } from '@/lib/projects/project-stuck';
+import { toastSuccess } from '@/lib/toast-errors';
 import { useApp } from '@/context/AppContext';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { LeadHero } from '@/components/intern/LeadHero';
-import { LeadFocusCard } from '@/components/intern/LeadFocusCard';
-import { LeadWeekStrip } from '@/components/intern/LeadWeekStrip';
+import { LeadInboxCard } from '@/components/intern/LeadInboxCard';
 import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
 import { LeadPhaseProgress } from '@/components/intern/LeadPhaseProgress';
-import { LeadManagersCard } from '@/components/intern/LeadManagersCard';
+import { LeadOverdueFilings } from '@/components/intern/LeadOverdueFilings';
+import { FilingsMatrix } from '@/components/intern/FilingsMatrix';
 import { LeadSideRail } from '@/components/intern/LeadSideRail';
-import {
-  formatIstWeekdayDay,
-  internActionQueueByCompany,
-  internWorkItemsForDay,
-  ymdInIst,
-  type InternWorkKind,
-} from '@/lib/intern-work';
-import { cn } from '@/lib/utils';
-import { YourStepNotice } from '@/components/shell/YourStepNotice';
+import { LeadManagersCard } from '@/components/intern/LeadManagersCard';
+import { TodayScopeTabs } from '@/components/staff/today/today-parts';
+import { engagementInScope, todayStatusOf, type TodayScope } from '@/components/staff/today/today-rows';
+import type { InternWorkItem } from '@/lib/intern/intern-work';
 
-const LEAD_STEP: ReadonlySet<InternWorkKind> = new Set([
-  'rejected',
-  'review',
-  'deliver',
-  'overdue',
-  'in-progress',
-]);
+/** Main column and a rail, as on every staff Today (prototype TodayScreen GRID). */
+const GRID = 'grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]';
 
+/**
+ * The lead's Today (prototype TodayScreen, C-0103, C-0114): the compact home card with five
+ * numbers, then the Action queue, Phase progress and the overdue filings beside the rail
+ * (Todos, Waiting on, My managers). The practice strip left the page; its numbers are in the
+ * home card and the cards below. The scope switch sits in the home card (D-17) and narrows
+ * the cards below it to the incorporating companies or the incorporated ones. The home card numbers follow the scope too. The rail's Inbox holds the client messages to triage
+ * (G-11) beside the lead's own to-dos.
+ */
 export default function InternToday() {
-  const { user, getStateForEngagement } = useApp();
-  const { myEngagements, workItems, kpis, filings } = useInternPortfolio();
+  const { user, getStateForEngagement, engagementsLoading } = useApp();
+  const { myEngagements, workItems, filings } = useInternPortfolio();
   const now = useMemo(() => new Date(), []);
-  const todayYmd = ymdInIst(now);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const dayItems = selectedDay ? internWorkItemsForDay(workItems, selectedDay, todayYmd) : null;
-  const queueSource = dayItems ?? workItems;
-  const queueGroups = internActionQueueByCompany(queueSource, now);
-  const leadStep = workItems.find((item) => LEAD_STEP.has(item.kind));
-  const queueLeads = queueGroups.length >= Math.max(myEngagements.length, 1) && queueGroups.length > 0;
+  const [scope, setScope] = useState<TodayScope>('all');
+  const [todoOpen, setTodoOpen] = useState(false);
+  // One to-do state for the home card's "New to-do" and the Inbox's My to-dos.
+  const todos = useOwnFocusTodos(user?.id ?? '', workItems);
 
-  const selectDay = useCallback((ymd: string) => {
-    setSelectedDay((prev) => (prev === ymd ? null : ymd));
-    window.requestAnimationFrame(() => {
-      document.getElementById('intern-week-related')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }, []);
+  const scopeCounts = useMemo(() => {
+    const incorporating = myEngagements.filter((e) => engagementInScope('incorporating', e, getStateForEngagement(e))).length;
+    return { all: myEngagements.length, incorporating, compliance: myEngagements.length - incorporating };
+  }, [myEngagements, getStateForEngagement]);
+  const engagements = useMemo(
+    () => myEngagements.filter((e) => engagementInScope(scope, e, getStateForEngagement(e))),
+    [myEngagements, scope, getStateForEngagement],
+  );
+  const ids = useMemo(() => new Set(engagements.map((e) => e.id)), [engagements]);
+  const items = useMemo(() => workItems.filter((i) => ids.has(i.engagementId)), [workItems, ids]);
+  const scopedFilings = useMemo(() => filings.filter((f) => ids.has(f.engagementId)), [filings, ids]);
+
+  const byId = useMemo(() => new Map(myEngagements.map((e) => [e.id, e])), [myEngagements]);
+  const stuck = useMemo(
+    () =>
+      engagements
+        .filter((e) => e.stage !== 'Operational Readiness' && deriveStuckReason(e, getStateForEngagement(e)) !== 'on_track')
+        .map((e) => ({ engagementId: e.id, companyName: e.companyName, href: internQueueCompanyHref(e.id, workItems) })),
+    [engagements, getStateForEngagement, workItems],
+  );
+  const statusOf = (item: InternWorkItem) => {
+    const eng = byId.get(item.engagementId);
+    const slice = eng && item.catalogId ? getStateForEngagement(eng)[item.catalogId] : undefined;
+    return todayStatusOf(item, slice, now);
+  };
 
   return (
     <PageTransition>
@@ -57,67 +78,52 @@ export default function InternToday() {
         path="/app/intern/today"
       />
 
-      <div className="flex flex-col gap-3">
-        {leadStep ? (
-          <YourStepNotice
-            stepKey={`lead:${leadStep.engagementId}:${leadStep.catalogId ?? leadStep.id}`}
-            stepTitle={leadStep.title}
-            href={leadStep.href}
-          />
-        ) : null}
+      <div className="flex flex-col gap-5">
         <LeadHero
           name={user?.name ?? ''}
-          kpis={kpis}
-        />
+          items={items}
+          now={now}
+          stamp={scope === 'all' && !engagementsLoading}
+          scope={<TodayScopeTabs value={scope} onChange={setScope} counts={scopeCounts} />}
+        >
+          <Button onClick={() => setTodoOpen(true)}>
+            <Plus className="h-4 w-4" strokeWidth={1.6} /> New to-do
+          </Button>
+        </LeadHero>
 
-        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_318px]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <LeadWeekStrip
-              items={workItems}
+        <div className={GRID}>
+          <div className="flex min-w-0 flex-col gap-5">
+            <LeadActionQueue
+              userId={user?.id ?? ''}
+              items={items}
               now={now}
-              selectedYmd={selectedDay}
-              onSelectDay={selectDay}
+              statusOf={statusOf}
+              stuck={stuck}
+              loading={engagementsLoading}
             />
-            {selectedDay ? (
-              <p className="px-0.5 text-[12px] font-semibold text-muted-foreground">
-                Showing {formatIstWeekdayDay(selectedDay).label}
-                {selectedDay === todayYmd ? ' (today)' : ''}
-                {' · '}
-                {dayItems?.length ?? 0} item{(dayItems?.length ?? 0) === 1 ? '' : 's'}
-                {' · '}
-                <button
-                  type="button"
-                  className="font-extrabold text-primary hover:underline"
-                  onClick={() => setSelectedDay(null)}
-                >
-                  Show all
-                </button>
-              </p>
+            {scope !== 'compliance' ? <LeadPhaseProgress engagements={engagements} getState={getStateForEngagement} /> : null}
+            {scope !== 'incorporating' ? (
+              <>
+                <FilingsMatrix filings={scopedFilings} engagements={engagements} now={now} />
+                <LeadOverdueFilings filings={scopedFilings} engagements={engagements} now={now} />
+              </>
             ) : null}
-            <div
-              id="intern-week-related"
-              className={cn(
-                'grid grid-cols-1 items-start gap-3',
-                queueLeads
-                  ? 'lg:grid-cols-[minmax(0,1.28fr)_minmax(17rem,0.82fr)]'
-                  : 'lg:grid-cols-[minmax(0,1fr)_minmax(17.5rem,1fr)]',
-              )}
-            >
-              <LeadActionQueue userId={user?.id ?? ''} items={queueSource} now={now} />
-              <div className="flex min-w-0 flex-col gap-3">
-                <LeadFocusCard userId={user?.id ?? ''} items={workItems} />
-                <LeadPhaseProgress engagements={myEngagements} getState={getStateForEngagement} />
-                <LeadManagersCard engagements={myEngagements} />
-              </div>
-            </div>
           </div>
-          <LeadSideRail
-            items={queueSource}
-            filings={filings}
-            now={now}
-          />
+          <div className="flex min-w-0 flex-col gap-5" aria-label="Inbox">
+            <LeadInboxCard userId={user?.id ?? ''} items={workItems} todos={todos} engagementIds={ids} />
+            <LeadSideRail items={items} />
+            <LeadManagersCard engagements={myEngagements} />
+          </div>
         </div>
       </div>
+      <NewTodoDialog
+        open={todoOpen}
+        onOpenChange={setTodoOpen}
+        onAdd={(title) => {
+          todos.persist([createCustomInternFocus(title), ...todos.focus]);
+          toastSuccess('To-do added', title);
+        }}
+      />
     </PageTransition>
   );
 }
