@@ -1,15 +1,16 @@
-import { Suspense } from "react";
-import { RegistrationPage } from "@/views/compliances/CompliancePages";
-import { pageMetadata } from "@/lib/shell/page-metadata";
+import { RegistrationOpen } from '@/components/console/pages/lead/RegistrationOpen';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Registration", "One registration for one client");
+export const metadata = pageMetadata('Registration', 'Opening the registration step');
 
-/** Route shell only. `id` is `{engagementId}~{stepId}`. */
+/** `id` is `{engagementId}~{stepId}`; the registration is worked on its step page. */
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-ink-muted">Loading registration…</div>}>
-      <RegistrationPage shellBase="/app/manager" recordKey={decodeURIComponent(id)} />
-    </Suspense>
-  );
+  let key = id;
+  try {
+    key = decodeURIComponent(id);
+  } catch {
+    /* keep the raw segment */
+  }
+  return <RegistrationOpen recordKey={key} />;
 }

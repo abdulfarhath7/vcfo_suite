@@ -12,7 +12,8 @@
  * `section` intents are handled here (scroll once the shell has loaded);
  * every other kind is handled by the section that owns it (useIntent) once its
  * data is ready: step / phase / board → Incorporation (its walkthrough holds the
- * real step form), notes / anns → Updates, reader → Library, filing → Filings. Anything
+ * real step form), notes / anns → Updates, reader → Library, filing → Filings,
+ * task → Obligations (the task view). Anything
  * no section picks up within a few seconds falls back to scrolling to the
  * closest section, so a link never leaves the client stranded.
  */
@@ -53,6 +54,7 @@ const FALLBACK: Record<Exclude<Intent['kind'], 'section'>, SectionKey> = {
   anns: 'home',
   reader: 'library',
   filing: 'calendar',
+  task: 'obligations',
 };
 
 /** Mounted once inside the portal root: runs `section` intents and the fallback for unclaimed ones. */

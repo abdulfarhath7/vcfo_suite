@@ -249,6 +249,11 @@ function StepBody({ eng, item }: { eng: Engagement; item: ChecklistItem }) {
           </div>
         </div>
         <div className="mx-chr">
+          {item.id === 'pre-2' || item.id === 'pre-3' ? (
+            <Btn cls="sm" ico="doc" onClick={() => go(paths.boardResolution(eng))}>
+              Open the board resolution
+            </Btn>
+          ) : null}
           {docPackHref ? (
             <Btn cls="sm" ico="folder" onClick={() => go(docPackHref)}>
               Open in document pack

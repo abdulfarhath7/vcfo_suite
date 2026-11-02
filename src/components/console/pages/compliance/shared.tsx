@@ -18,23 +18,29 @@ import { financialYearMonths, financialYearLabel } from '@/lib/compliance/filing
 import { fmtL } from '@/components/portal/dates';
 import { useConsole } from '../../runtime';
 import { ModalBody, PopHead } from '../../overlays';
-import { Btn, GoArrow, Icon, Select, lawVar } from '../../ui';
+import type { StatusWord } from '@/lib/compliance-tasks/model';
+import { Btn, GoArrow, Icon, Seg, Select, lawVar } from '../../ui';
 import { dShort, plural } from '../today/model';
 import {
   C_LABEL,
   C_PILL,
   C_TIP,
+  CATEGORIES,
+  CATEGORY_LABEL,
+  WORD_PILL,
   fallbackLine,
   formsIn,
   whenText,
   winShort,
   type Book,
   type BookClient,
+  type Category,
   type CRow,
   type CSt,
   type SRow,
+  type TRow,
 } from './model';
-import { deleteProof, patchDetails, postFiled, postReminder, useBook, useProofs, useRefreshFilings } from './data';
+import { deleteProof, patchDetails, postFiled, postReminder, taskAttachmentUrl, useBook, useProofs, useRefreshFilings } from './data';
 import '../../css/96-compliance.css';
 
 /* ---------------------------------------------------------------- marks */
@@ -57,6 +63,62 @@ export function StPill({ st, label }: { st: CSt; label?: string }) {
 
 export function CompanySelect({ clients, value, onChange }: { clients: BookClient[]; value: string; onChange: (v: string) => void }) {
   return <Select<string> label="Company" value={value} onChange={onChange} options={[['all', 'All companies'], ...clients.map((c): [string, string] => [c.id, c.name])]} />;
+}
+
+/** C-3: the mark of a non-statutory task — a hollow square (green once done) and the word "Task" in place of a law tag. */
+export function TaskMark({ done, title, word = true }: { done?: boolean; title?: string; word?: boolean }) {
+  return (
+    <span className="cf-ttag" title={title ?? 'Non-statutory task · shown on its end date'}>
+      <i className={'cf-tsq' + (done ? ' done' : '')} aria-hidden="true" />
+      {word ? 'Task' : null}
+    </span>
+  );
+}
+
+/** The six-word status chip of a task (Overdue, Due soon, Waiting, In progress, Not started, Done). */
+export function WordPill({ word, title }: { word: StatusWord; title?: string }) {
+  return (
+    <span className={'pill ' + WORD_PILL[word]} title={title ?? `Task status · ${word}`}>
+      {word}
+    </span>
+  );
+}
+
+/** C-1 / F-1: All · Statutory · Non-statutory with counts for the window in view. */
+export function CategorySeg({ value, counts, onChange }: { value: Category; counts: Record<Category, number | string>; onChange: (c: Category) => void }) {
+  return (
+    <Seg<Category>
+      className="sm"
+      ariaLabel="Statutory or non-statutory"
+      value={value}
+      onChange={onChange}
+      options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABEL[c], n: counts[c] }))}
+    />
+  );
+}
+
+/** F-2: the deliverable of a done task opens through its short-lived signed link. */
+export function DeliverableBtn({ t, small }: { t: TRow; small?: boolean }) {
+  const { toast } = useConsole();
+  const [busy, setBusy] = useState(false);
+  if (!t.deliverable) return <span className="small">No deliverable</span>;
+  const open = async () => {
+    setBusy(true);
+    try {
+      const { url } = await taskAttachmentUrl(t.taskId, t.deliverable!.id);
+      window.open(url, '_blank', 'noopener');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not open the file');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" className={'pill ok cf-pb' + (small ? ' sm' : '')} title={`Open the deliverable · ${t.deliverable.fileName}`} disabled={busy} onClick={() => void open()}>
+      <Icon name="doc" />
+      Deliverable
+    </button>
+  );
 }
 
 

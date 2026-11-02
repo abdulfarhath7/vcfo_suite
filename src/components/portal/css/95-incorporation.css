@@ -64,3 +64,12 @@
 .cpx .sw-tw :where(input, select, textarea) { color: oklch(var(--foreground)); }
 .cpx .sw-form { border-radius: 16px; background: oklch(var(--card)); border: 1px solid var(--line); padding: 16px; min-width: 0; overflow-x: auto; }
 .cpx .sw-paper { margin-top: 10px; border-radius: 14px; overflow: auto; max-height: 520px; background: #fff; border: 1px solid var(--line); }
+
+/* ---------------------------------------------------------------- BoardStage (NOC) */
+.cpx .sw-noc-var { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: -2px 0 6px; }
+.cpx .sw-board .pill.sm { padding: 4px 8px; font-size: 11px; }
+.cpx .sw-board .banner.sw-noc-back { margin-top: 6px; }
+.cpx .sw-board .banner span { display: block; }
+.cpx .sw-noc-next { margin-top: 4px; color: var(--ink-2); font-size: 13.5px; }
+.cpx .sw-board .need.sw-now { border-color: var(--ice); background: var(--ice-soft); }
+.cpx .sw-board .need .sw-now-pill { margin-left: auto; flex: none; }

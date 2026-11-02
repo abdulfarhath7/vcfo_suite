@@ -7,7 +7,7 @@ describe('manager console navigation', () => {
   it('lists every manager page once', () => {
     const keys = navLeaves(mgr).map((i) => i.key);
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(['today', 'approvals', 'requests', 'work', 'leads', 'load', 'clients', 'calendar', 'filings', 'email', 'whatsapp', 'vault', 'knowledge', 'anns', 'notes', 'regulatory', 'analytics', 'audit', 'settings']);
+    expect(keys).toEqual(['today', 'approvals', 'requests', 'work', 'leads', 'load', 'clients', 'incorporation', 'registrations', 'calendar', 'filings', 'email', 'whatsapp', 'vault', 'knowledge', 'anns', 'notes', 'regulatory', 'analytics', 'audit', 'settings']);
   });
 
   it('finds the current page from the path, including pages below it and old addresses', () => {
@@ -32,7 +32,7 @@ describe('project lead console navigation', () => {
     const items = navLeaves(lead);
     const keys = items.map((i) => i.key);
     expect(new Set(keys).size).toBe(keys.length);
-    expect(keys).toEqual(['today', 'tasks', 'reviews', 'clients', 'registrations', 'calendar', 'filings', 'team', 'email', 'whatsapp', 'vault', 'knowledge', 'anns', 'notes', 'analytics', 'audit', 'settings']);
+    expect(keys).toEqual(['today', 'tasks', 'reviews', 'clients', 'incorporation', 'registrations', 'calendar', 'filings', 'team', 'email', 'whatsapp', 'vault', 'knowledge', 'anns', 'notes', 'analytics', 'audit', 'settings']);
     expect(items.every((i) => i.href.startsWith('/app/intern/'))).toBe(true);
   });
 

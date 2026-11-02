@@ -20,6 +20,7 @@ const ICON: Partial<Record<SectionKey, IconName>> = {
   home: 'home',
   incorporation: 'build',
   registrations: 'key',
+  obligations: 'notes',
   master: 'gantt',
   documents: 'folder',
   library: 'lib',
@@ -115,7 +116,7 @@ function Sidebar() {
       {badge}
     </button>
   );
-  const inCmp = active === 'calendar' || active === 'filings';
+  const inCmp = active === 'obligations' || active === 'calendar' || active === 'filings';
   return (
     <aside className="side" aria-label="Sections">
       <div className="logo">
@@ -147,6 +148,10 @@ function Sidebar() {
         {item('registrations', <Badge v={badges.registrations} />)}
         {item('master')}
         <Group id="g-cmp" icon="calc" label="Compliances" childOn={inCmp} extra={<span className="gcur">{inCmp ? SECTION_LABEL[active] : ''}</span>}>
+          <button type="button" className={active === 'obligations' ? 'on' : ''} data-go="obligations" onClick={() => go('obligations')}>
+            Obligations
+            <Badge v={badges.obligations} />
+          </button>
           <button type="button" className={active === 'calendar' ? 'on' : ''} data-go="calendar" onClick={() => go('calendar')}>
             Calendar
             <Badge v={badges.calendar} />

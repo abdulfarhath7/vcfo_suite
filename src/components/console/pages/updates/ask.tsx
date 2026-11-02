@@ -21,6 +21,9 @@ import { adminProjectPath } from '@/lib/projects/project-step-path';
 import type { StaffBasePath } from '@/lib/auth-routes';
 import { Icon } from '../../ui';
 
+/** The "Past chats" fold the panel mounts under its greeting (owner item F4). */
+export { PastChats } from './ask-history';
+
 function Trust({ answer, firmName }: { answer: AnswerEnvelope; firmName: string }) {
   if (answer.origin === 'refusal') return null;
   if (answer.draft)

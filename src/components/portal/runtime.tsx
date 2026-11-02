@@ -39,6 +39,7 @@ export type SectionKey =
   | 'home'
   | 'incorporation'
   | 'registrations'
+  | 'obligations'
   | 'master'
   | 'calendar'
   | 'filings'
@@ -66,6 +67,7 @@ export const PORTAL_SECTIONS: SectionKey[] = [
   'nmd',
   'nsign',
   'registrations',
+  'obligations',
   'master',
   'calendar',
   'filings',
@@ -81,6 +83,7 @@ export const SECTION_LABEL: Record<SectionKey, string> = {
   home: 'Home',
   incorporation: 'Incorporation',
   registrations: 'Registrations',
+  obligations: 'Obligations',
   master: 'Master calendar',
   calendar: 'Calendar',
   filings: 'Filings',
@@ -97,6 +100,7 @@ export const SECTION_LABEL: Record<SectionKey, string> = {
 
 /** Crumb text when it differs from the label. */
 export const SECTION_CRUMB: Partial<Record<SectionKey, string>> = {
+  obligations: 'Compliances / Obligations',
   calendar: 'Compliances / Calendar',
   filings: 'Compliances / Filings',
 };
@@ -114,7 +118,8 @@ export type Intent =
   | { kind: 'notes' }
   | { kind: 'anns' }
   | { kind: 'reader'; mode: 'saved' | 'learn'; id: string }
-  | { kind: 'filing'; id: string };
+  | { kind: 'filing'; id: string }
+  | { kind: 'task'; id: string };
 
 /* ---------------------------------------------------------------- search palette */
 

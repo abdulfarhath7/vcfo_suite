@@ -20,9 +20,52 @@ import { isFirmWideAdmin } from '@/lib/auth';
 import { useConsole, useConsoleBadge } from '../../runtime';
 import { useBookLeads, useTodayIso } from '../today/useToday';
 import { filingSt } from '../today/model';
-import { buildBook, type Book } from './model';
+import { buildBook, taskRows, type Book, type ConsoleTask, type TRow } from './model';
 
 export const portalKey = (fy: number) => ['client-compliances', 'console', fy] as const;
+
+/* ---------------------------------------------------------------- non-statutory tasks (COMPLIANCE-API.md section 2) */
+
+/** Under the key Farhath's task hooks invalidate (`['compliance-tasks', …]`), so a task write anywhere refreshes these pages. */
+export const tasksKey = (fy: number) => ['compliance-tasks', 'console', fy] as const;
+
+/** `GET /api/compliances/tasks?from=&to=` — the FY's tasks by END date, under the caller's scope (manager: book; lead: own clients). */
+export function useFyTasksQuery(fy: number) {
+  return useQuery({
+    queryKey: tasksKey(fy),
+    queryFn: async (): Promise<ConsoleTask[]> => {
+      const res = await fetch(`/api/compliances/tasks?from=${fy}-04-01&to=${fy + 1}-03-31`, { cache: 'no-store' });
+      const body = (await res.json().catch(() => ({}))) as { tasks?: ConsoleTask[]; error?: string };
+      if (!res.ok) throw new Error(body.error ?? 'Could not load the non-statutory tasks');
+      return body.tasks ?? [];
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export interface TaskData {
+  /** every task of the FY in the Stage filter, as rows on their end date */
+  tasks: TRow[];
+  loading: boolean;
+  error: boolean;
+  retry: () => void;
+}
+
+/** The FY's tasks as rows, scoped like the book (a task of a client the Stage filter leaves out is dropped). */
+export function useFyTasks(fy: number, book: Book): TaskData {
+  const q = useFyTasksQuery(fy);
+  const tasks = useMemo(() => taskRows(q.data ?? [], book.today, (id) => !book.byId[id] || book.byId[id]!.inScope), [q.data, book.today, book.byId]);
+  return { tasks, loading: q.isPending, error: q.isError, retry: () => void q.refetch() };
+}
+
+/** F-2: the signed link of a task's deliverable (`GET /api/compliances/tasks/:id/attachments/:attachmentId`). */
+export async function taskAttachmentUrl(taskId: string, attachmentId: string): Promise<{ url: string; fileName: string }> {
+  const res = await fetch(`/api/compliances/tasks/${encodeURIComponent(taskId)}/attachments/${encodeURIComponent(attachmentId)}`);
+  const body = (await res.json().catch(() => ({}))) as { url?: string; fileName?: string; error?: string };
+  if (!res.ok || !body.url) throw new Error(body.error === 'not_found' ? 'The file is not in your clients' : body.error ?? 'Could not open the file');
+  return { url: body.url, fileName: body.fileName ?? '' };
+}
 
 export function usePortalRows(fy: number) {
   return useQuery({

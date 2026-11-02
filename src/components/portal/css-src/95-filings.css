@@ -7,3 +7,27 @@
   .donut-row { gap: 12px; }
   .donut-row svg { width: 120px; height: 120px; }
 }
+
+/* Non-statutory tasks (compliance-client C-1..C-4, F-1..F-3). A task has no law:
+   it carries a hollow square where a filing carries its law colour. */
+.tsq { display: inline-block; width: 8px; height: 8px; flex: none; box-sizing: border-box; border: 1.5px solid currentColor; border-radius: 2px; background: transparent; }
+.ttag { display: inline-flex; align-items: center; gap: 6px; font: 700 10.5px/1 var(--f-disp); letter-spacing: .06em; padding: 4px 7px; border-radius: 7px; border: 1px solid var(--line); background: var(--hi); color: var(--ink-2); white-space: nowrap; }
+.ttag.sm, .cu .ss .ttag { font-size: 9.5px; padding: 3px 6px; }
+.pill.tiny { font-size: 10.5px; padding: 3px 7px; }
+.catbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+/* the month grid: a task chip is outlined, not law-coloured */
+.chip.task { --lc: var(--ink-3); background: transparent; border-left-style: dashed; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); }
+.chip.task.due { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--due) 60%, transparent); color: var(--due-ink); }
+.chip.task.over { background: var(--over-bg); color: var(--over-ink); border-left-color: var(--over); box-shadow: none; }
+.chip.task.ok { opacity: .55; }
+/* the ribbon: one outlined bar for the month's tasks */
+.rb .bars i.task { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+/* the year wall: a task line is tagged TASK and its date dot is outlined */
+.wp-r .tg.task { border-style: dashed; }
+/* the timeline: hollow bars from start to end */
+.lane-task { cursor: pointer; }
+.lane-task:hover rect, .lane-task:focus-visible rect { stroke-width: 2.5; }
+@media (max-width: 640px) {
+  .chip.task { border-left: 0; background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+  .chip.task.over { background: var(--over); box-shadow: none; }
+}

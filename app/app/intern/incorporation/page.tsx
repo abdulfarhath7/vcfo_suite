@@ -1,9 +1,8 @@
-import StaffPracticeIncorporation from '@/views/practice/StaffPracticeIncorporation';
+import { IncorporationPage } from '@/components/console/pages/clients/IncorporationPage';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata('Incorporation', 'Clients in incorporation, by phase and current step');
+export const metadata = pageMetadata('Incorporation', 'Clients in incorporation: current step, progress, who holds it and status');
 
-/** Route shell only (R-51). The scoped read decides the rows. */
 export default function Page() {
-  return <StaffPracticeIncorporation base="/app/intern" />;
+  return <IncorporationPage />;
 }

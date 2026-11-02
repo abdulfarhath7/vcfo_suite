@@ -1,0 +1,20 @@
+/* Ask VCFO in the console chat — the "Past chats" fold under the greeting (owner item F4). Not from the prototype.
+   Section sheets bundle before the prototype sheet (30-console.css): rules that could tie double a class. */
+
+.upd-past { align-self: stretch; max-width: 100%; border: 1px solid var(--line-2); border-radius: 14px; background: var(--solid-2); }
+.upd-past summary { display: flex; gap: 8px; align-items: center; padding: 9px 12px; cursor: pointer; list-style: none; border-radius: inherit; font: 600 13px var(--f-disp); color: var(--ink-2); }
+.upd-past summary::-webkit-details-marker { display: none; }
+.upd-past summary:hover { color: var(--ink); }
+.upd-past summary:focus-visible { outline: 2px solid var(--ice); outline-offset: -2px; }
+.upd-past summary > svg { width: 15px; height: 15px; color: var(--ink-3); flex: none; }
+.upd-past summary > b { flex: 1; min-width: 0; font: inherit; color: inherit; }
+.upd-past summary > .small { flex: none; }
+.upd-past summary > .upd-past-cv { transition: transform .2s var(--ease); }
+.upd-past[open] summary > .upd-past-cv { transform: rotate(180deg); }
+.upd-past-b { display: flex; flex-direction: column; gap: 8px; padding: 0 8px 10px; }
+.upd-past-b > .btn { align-self: flex-start; margin-left: 4px; }
+.upd-past-b .mx-drows { max-height: 240px; }
+.upd-past-l { list-style: none; margin: 0; padding: 0; }
+.upd-past-b .mx-drow[aria-current="true"] { background: var(--ice-soft); }
+.upd-past-b .mx-drow .mx-dt > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upd-past-b > .small { padding: 0 4px; }

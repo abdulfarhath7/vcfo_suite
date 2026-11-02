@@ -64,6 +64,57 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-11-02 — origin/main (Farhath, 29–31 Oct) merged into `portal-redesign`; functionality ported, our portals kept
+
+Owner, 2026-11-02: "the whole app.sbctrack.in got changes" — Farhath deployed `main` three times
+(29 Oct 72d2d7f, 30 Oct 34169d0, 31 Oct 0f746dfc and b5f3f919; migrations 0026–0032 on RDS). Instruction:
+bring ALL of his functionality into our branch, keep OUR portals' look exactly (Northwind client portal,
+manager + lead console), ask before removing anything, and check the board-meeting (board resolution NOC)
+work against the owner's Excel (not yet received — ask for it).
+
+- **Commits:** `d91f31d5` checkpoint of everything that was uncommitted (backup branch
+  `backup/portal-redesign-pre-main-merge-2026-11-02`), `7a0e85fb` the merge (238 conflicts),
+  `8be20d03` post-merge fixes (typecheck 0), `4471abca` tests green (441 files / 4139 tests).
+- **Resolution policy (reuse it for the next merge):** backend (schema, repositories, API routes, jobs,
+  `src/lib`, auth) = theirs plus our additions; `app/app/{client,manager,intern}/**`, `src/components/portal`,
+  `src/components/console` = ours; the old admin / super admin shell views (`src/views/*`, `src/components/shell`,
+  `src/components/ask`) = theirs (they are the admin and super admin portals until those are redesigned);
+  `src/components/client-portal` (his v7 client portal, which we had deleted) is RESTORED as a library only —
+  his staff views and the super admin "preview as client" import from it; clients never see it.
+- **Module moves:** he grouped `src/lib/*` into folders (`@/lib/projects/…`, `@/lib/checklist/…`,
+  `@/lib/incorporation/…`, hooks to `@/hooks/…`). Our new files were rewritten by a script (163 files,
+  272 imports). Rename map: `git diff -M --name-status 090e6dc origin/main -- src/lib`.
+- **Migrations:** his 0026–0032 kept; our five (whatsapp variables, ask official updates, ask review,
+  registered_office_nocs, planner_blocks) became ONE generated `0033_portal_redesign_merge` (purely additive)
+  so RDS can take it after his 0032. Local Docker DB: his seven applied by psql, `drizzle.__drizzle_migrations`
+  rewritten to rows 0026–0033 (hash = sha256 of the file, created_at = journal `when`); a pg_dump was taken
+  first (scratchpad). `npm run db:migrate` now says nothing to do.
+- **Lost-and-re-applied (his split modules replaced our files):** client-intake direct-flow rules in
+  `src/views/incorporation/milestone-form/*` (lead waits for the client, fields read-only, submit blocked text,
+  searchable long selects); board-resolution date line in the lead's editor; lead waiting notice on the step page;
+  parent-entity note on New project; WhatsApp send log on the staff project page; "Regulatory updates" in the
+  admin/manager sidebars; Announcements page back on the one review road (his RSS "Official feeds" box removed
+  again; `WatchedSourcesPanel` shown instead).
+- **Ask VCFO roles:** his policy wins — client, manager, lead (intern), admin, super admin may use it; the
+  developer may not. Tests updated.
+- **New client routes from main** (`/app/client/compliances/obligations/**`, `/registrations/**`, `/profile`,
+  `/ask`) are portal intents; his pages stay as the `legacy=` super admin preview.
+- **Scripts:** `css:portal` builds both CSS bundles (`scripts/cp-css.mjs` for his v7 library — fixed to use
+  `fileURLToPath` on Windows — then `scripts/portal-css.mjs` for ours). New deps installed: `@aws-sdk/client-*`,
+  `@dnd-kit/*`, `@fullcalendar/*`.
+- **Functionality port (seven light-mode agents, this session):** console Obligations / task / statutory detail
+  pages + nav; console and portal Calendar + Filings statutory/non-statutory switch with tasks on their end date;
+  portal Obligations section + task view; board resolution NOC track, signed copy, receive checklist and
+  Accept / Send back on both portals; Ask VCFO past chats from the server on both chat surfaces; SPICe+
+  attachments card; client home trends; his leftover manager/lead routes (ask, incorporation, profile,
+  knowledge-bank/[id], vault/view, team/[leadId], registrations) redirected or wrapped in console pages.
+  Results and gaps are recorded below this section once the agents report.
+- **Still his look inside our frame (not redesigned, by decision pending the owner):** admin and super admin
+  portals (Spectrum restyle by Farhath), and the developer console (`/app/dev`).
+- **Open for the owner:** the board-meeting Excel to verify the NOC flow against; whether the admin and super
+  admin portals should also move to the prototype console design (they currently show Farhath's Spectrum look);
+  production env for his features (STATE.md lists the App Runner variables he left unset).
+
 ## Session 2026-10-29 — staff portals from the prototype (branch `portal-redesign`, in progress)
 
 Owner, 2026-10-29: after the client portal, bring the prototype's other portals into localhost — Manager,

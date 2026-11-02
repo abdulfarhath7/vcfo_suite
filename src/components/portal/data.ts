@@ -70,6 +70,8 @@ export function useRefreshPortal(): () => void {
   return () => {
     void qc.invalidateQueries({ queryKey: [PK] });
     void qc.invalidateQueries({ queryKey: ['client-overview'] });
+    // the non-statutory tasks and statutory extras (client-portal/pages/compliances/task-api.ts) key off 'client-compliances'
+    void qc.invalidateQueries({ queryKey: ['client-compliances'] });
     if (engagement?.id) void refreshEngagementChecklist(engagement.id);
   };
 }

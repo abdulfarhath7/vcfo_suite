@@ -1,0 +1,17 @@
+/* SPICe+ attachments panel on the client overview (spec T6) — not from the prototype. Section sheets bundle before
+   the prototype sheet (30-console.css): rules that could tie double a class. */
+
+.cx-sp.mx-th, .cx-sp.mx-tr { grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1.2fr) 96px 84px; }
+.cx-sp.mx-tr { padding-top: 9px; padding-bottom: 9px; }
+.cx-sp .cx-ell { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-sp .cx-sp-doc { font: 600 13.5px/1.3 var(--f-disp); color: var(--ink); }
+.cx-sp .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-sp .pill { justify-self: start; }
+.cx-sp .link { justify-self: end; font-size: 12.5px; white-space: nowrap; }
+.cx-sp-note { margin: 10px 0 0; }
+@media (max-width: 760px) {
+  .cx-sp.mx-th { display: none; }
+  .cx-sp.mx-tr { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .cx-sp.mx-tr > .cx-sp-from, .cx-sp.mx-tr > .cx-sp-state { grid-column: 1 / -1; }
+  .cx-sp .link { justify-self: start; }
+}

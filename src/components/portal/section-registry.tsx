@@ -6,6 +6,7 @@ import type { SectionKey } from './runtime';
 import { HomeSection } from './sections/home/HomeSection';
 import { IncorporationSection } from './sections/incorporation/IncorporationSection';
 import { RegistrationsSection } from './sections/registrations/RegistrationsSection';
+import { ObligationsSection } from './sections/obligations/ObligationsSection';
 import { MasterSection } from './sections/master/MasterSection';
 import { CalendarSection } from './sections/calendar/CalendarSection';
 import { FilingsSection } from './sections/filings/FilingsSection';
@@ -23,6 +24,7 @@ export const SECTION_COMPONENTS: Record<SectionKey, ComponentType> = {
   home: HomeSection,
   incorporation: IncorporationSection,
   registrations: RegistrationsSection,
+  obligations: ObligationsSection,
   master: MasterSection,
   calendar: CalendarSection,
   filings: FilingsSection,

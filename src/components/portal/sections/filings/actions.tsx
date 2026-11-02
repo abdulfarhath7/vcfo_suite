@@ -6,7 +6,8 @@
  *     openFiling(f, anchor?, opts?)  the small filing card popover (prototype filingCard / openFiling);
  *                                    opts.push keeps the current card under a Back button;
  *     openFilingWizard(f)            the filing's step-by-step walkthrough (prototype openWizardFor);
- *     openDay(iso, anchor?)          the day card listing that day's filings (prototype openDay);
+ *     openDay(iso, anchor?, opts?)   the day card listing that day's filings (prototype openDay);
+ *                                    opts.tasks also lists the non-statutory tasks ending that day (C-3);
  *   }
  *
  * Every card is a component that reads the live register (useFilings), so an
@@ -26,11 +27,16 @@ import { addDays, daysTo, fmt, fmtL, fmtY, MON, P, rel, todayIso } from '../../d
 import { PopHead, WizardView, type WizStep } from '../../overlays';
 import { Btn, GoArrow, Icon, IconBtn, LAW_BY, LawChip, ST_LABEL, StatusPill } from '../../ui';
 import { useDocActions } from '../documents/actions';
+import { StatExtrasBlock } from './StatExtras';
+import { taskAsRow, taskHint } from '@/components/client-portal/pages/compliances/tasks';
+import { useClientTasks } from '@/components/client-portal/pages/compliances/task-api';
+import { TaskTag, TaskWordPill, useOpenTask } from './task-bits';
+import { rowWords, taskTitle } from './tasks-model';
 
 export interface FilingActions {
   openFiling: (f: PortalFiling, anchor?: Element | null, opts?: { push?: boolean }) => void;
   openFilingWizard: (f: PortalFiling) => void;
-  openDay: (iso: string, anchor?: Element | null) => void;
+  openDay: (iso: string, anchor?: Element | null, opts?: { tasks?: boolean }) => void;
 }
 
 export function useFilingActions(): FilingActions {
@@ -44,7 +50,10 @@ export function useFilingActions(): FilingActions {
     (f: PortalFiling) => (f.fromCalendar ? openPop(null, <FilingCard f={f} />, { kind: 'filing' }) : openWizard(<FilingWizard f={f} />)),
     [openPop, openWizard],
   );
-  const openDay = useCallback((iso: string, anchor?: Element | null) => openPop(anchor ?? null, <DayCard iso={iso} />, { kind: 'day' }), [openPop]);
+  const openDay = useCallback(
+    (iso: string, anchor?: Element | null, opts?: { tasks?: boolean }) => openPop(anchor ?? null, <DayCard iso={iso} tasks={opts?.tasks} />, { kind: 'day' }),
+    [openPop],
+  );
   return useMemo(() => ({ openFiling, openFilingWizard, openDay }), [openFiling, openFilingWizard, openDay]);
 }
 
@@ -290,6 +299,7 @@ function RegisterFilingCard({ f: f0 }: { f: PortalFiling }) {
           </button>
         </div>
       ) : null}
+      <StatExtrasBlock f={f} />
       {pen ? (
         <div className="fc-pen">
           <Icon name="alert" />
@@ -344,20 +354,24 @@ function inr(v: string): string {
 
 /* ---------------------------------------------------------------- day card */
 
-export function DayCard({ iso }: { iso: string }) {
+export function DayCard({ iso, tasks }: { iso: string; tasks?: boolean }) {
   const q = useFilings();
+  // C-3: the tasks that end this day, only when the calendar shows tasks (never under Statutory or an area pick)
+  const tq = useClientTasks(Boolean(tasks));
+  const openTask = useOpenTask();
   const { openPop } = usePortal();
   const today = todayIso();
   const list = byStatus((q.data?.rows ?? []).filter((r) => r.dueDate.slice(0, 10) === iso), today);
+  const dayTasks = tasks ? (tq.data ?? []).filter((t) => t.endDate === iso).map(taskAsRow) : [];
   const d = P(iso);
   const n = daysTo(iso, today);
-  const worst = list.length ? worstOf(list, today) : null;
+  const worst = list.length || dayTasks.length ? worstOf([...list, ...dayTasks], today) : null;
   const co = useCompanyShort();
   return (
     <div>
       <PopHead
         title={fmtL(iso)}
-        sub={list.length ? `${list.length} filing${list.length > 1 ? 's' : ''} · ${rel(n)}` : q.isPending ? 'Loading…' : 'Nothing due'}
+        sub={list.length || dayTasks.length ? `${rowWords([...list, ...dayTasks])} · ${rel(n)}` : q.isPending ? 'Loading…' : 'Nothing due'}
         lead={
           <div className={'dtile' + (worst ? ' s-' + worst : '')}>
             <b>{d.getUTCDate()}</b>
@@ -385,11 +399,24 @@ export function DayCard({ iso }: { iso: string }) {
             </button>
           );
         })
-      ) : q.isPending ? null : (
+      ) : q.isPending || dayTasks.length ? null : (
         <p className="small" style={{ marginTop: 12 }}>
           Nothing due on this date.
         </p>
       )}
+      {dayTasks.map((r) => (
+        <button key={r.id} type="button" className="pi" title={taskTitle(r, today)} onClick={() => openTask(r)}>
+          <TaskTag task={r.task} />
+          <div style={{ minWidth: 0 }}>
+            <b>{r.name}</b>
+            <div className="s" style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TaskWordPill task={r.task} today={today} tiny />
+              {taskHint(r.task)}
+            </div>
+          </div>
+          <Icon name="chev" size={16} />
+        </button>
+      ))}
     </div>
   );
 }

@@ -30,7 +30,7 @@ import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
 import { staffBasePathForRole, type StaffBasePath } from '@/lib/auth-routes';
 import { useConsole, useFx } from './runtime';
 import { Icon, Sym } from './ui';
-import { AnswerCard, PreviewPicker } from './pages/updates/ask';
+import { AnswerCard, PastChats, PreviewPicker } from './pages/updates/ask';
 import { UpdatesLive } from './pages/updates/LiveCards';
 import './css/96-updates.css';
 
@@ -223,6 +223,7 @@ export function ConsoleAsk() {
             {enabled && ask ? (
               <>
                 <div className="msg bot">{greeting}</div>
+                <PastChats />
                 {sugg.isError ? (
                   <div className="msg bot upd-merr" role="alert">
                     Could not load the suggested questions. You can still type one.

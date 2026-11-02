@@ -35,6 +35,7 @@ import { Btn, ClientAv, Donut, Icon, Panel, Seg, StageTag, hueOf } from '../../u
 import { buildClientView, companyInitials, dayDiff, PHASE_SHORT, plural, stepCode, STEP_STATE_COLOR, STEP_STATE_LABEL, stepStateOf, type ClientView } from './model';
 import { dShort, NotFound, ProjectMenu, stamp, StatusBrief, StepWhatDrawer, useFullChecklist, usePeople, useRouteEngagement, useToday, WindowEditor, useClientPaths } from './shared';
 import { NocPanel } from './noc';
+import { SpiceAttachmentsPanel } from './SpiceAttachmentsPanel';
 
 export function ClientOverviewPage() {
   const paths = useClientPaths();
@@ -197,7 +198,7 @@ function Overview({ eng }: { eng: Engagement }) {
           <Btn ico="brief" onClick={() => openModal(<StatusBrief v={v} />, { cls: 'wide', label: 'Status brief' })}>
             Status brief
           </Btn>
-          <Btn ico="doc" onClick={() => go(isLead ? paths.boardResolution(eng) : paths.step(eng, 'pre-2'))}>
+          <Btn ico="doc" onClick={() => go(paths.boardResolution(eng))}>
             Board resolution
           </Btn>
           <Btn ico="folder" onClick={() => go(`${base}/documents`)}>
@@ -224,6 +225,7 @@ function Overview({ eng }: { eng: Engagement }) {
           </div>
         )}
         <NocPanel eng={eng} />
+        <SpiceAttachmentsPanel eng={eng} />
         {user?.role === 'manager' || user?.role === 'admin' || user?.role === 'super_admin' ? <SendLog eng={eng} /> : null}
       </div>
     </div>

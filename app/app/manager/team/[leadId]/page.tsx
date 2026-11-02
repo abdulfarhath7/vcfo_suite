@@ -1,10 +1,16 @@
-import LeadPage from "@/views/manager/LeadPage";
+import { redirect } from 'next/navigation';
 
-import { pageMetadata } from "@/lib/shell/page-metadata";
-
-export const metadata = pageMetadata("Project lead", "One project lead's work, status and planner");
-
+/**
+ * Old-shell "one project lead" page (/app/manager/team/<lead>). The console's Project leads page
+ * shows one lead at a time and takes the lead in `?lead=`, so this address only forwards there.
+ */
 export default async function Page({ params }: { params: Promise<{ leadId: string }> }) {
   const { leadId } = await params;
-  return <LeadPage leadKey={decodeURIComponent(leadId)} />;
+  let key = leadId;
+  try {
+    key = decodeURIComponent(leadId);
+  } catch {
+    /* keep the raw segment */
+  }
+  redirect(`/app/manager/leads?lead=${encodeURIComponent(key)}`);
 }

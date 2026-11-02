@@ -15,24 +15,27 @@
  * queued in `chat.ask` is sent once. Answer buttons navigate inside the portal
  * (intents, the step walkthrough). The log is kept per tab in sessionStorage.
  * The floating button shrinks to `.mini` after 260 px of scrolling.
+ *
+ * Past chats (owner item F4): the clock button in the header lists the client's
+ * earlier Ask VCFO conversations from the server (`ask.history`, which is
+ * `GET /api/ask/conversations` through the provider, with localStorage only when
+ * the server list fails). Opening one resumes it the way the provider resumes a
+ * stored conversation (`openConversation` → `/api/ask/conversations/[id]`), and its
+ * messages replace this tab's log. "New chat" clears the log and the conversation.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AnswerEnvelope, Destination } from '@/data/ask/schema';
 import { useAskOptional } from '@/components/ask/ask-context';
 import { saveToLibrary } from '@/hooks/ask/ask-api';
 import { AFTER_QUESTIONS, BEFORE_QUESTIONS } from '@/lib/client-portal/answers';
 import { effectiveAfter } from '@/lib/client-portal/types';
-import { useFx, usePortal, type Intent } from '../../runtime';
+import { useFx, usePortal } from '../../runtime';
 import { Btn, Icon, Sym } from '../../ui';
 import { useStepActions } from '../incorporation/actions';
+import { answerToLog, chatDate, threadToLog, type Act, type LogItem } from './history';
 import { useMascot } from './mascot';
+import '../../css/95-ask.css';
 
 /* ---------------------------------------------------------------- log */
-
-type Act = { label: string; intent?: Intent; stepId?: string };
-type LogItem =
-  | { r: 'u'; t: string }
-  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; acts?: Act[]; q?: string; mid?: string | null; fb?: 'up' | 'down'; save?: { topicSlug?: string; answer?: AnswerEnvelope; messageId?: string }; saved?: boolean };
 
 const LOG_KEY = 'vcfo.chat.v2';
 
@@ -41,30 +44,6 @@ function readLog(): LogItem[] {
     return JSON.parse(sessionStorage.getItem(LOG_KEY) ?? '[]') as LogItem[];
   } catch {
     return [];
-  }
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** An Ask VCFO go-there link → what the portal does with it. */
-export function destToAct(label: string, dest: Destination): Act {
-  switch (dest.to) {
-    case 'step':
-      return { label, stepId: dest.stepId };
-    case 'incorporation':
-      return dest.focusStepId ? { label, stepId: dest.focusStepId } : { label, intent: { kind: 'section', key: 'incorporation' } };
-    case 'inbox':
-      return { label, intent: { kind: 'notes' } };
-    case 'compliances':
-      return { label, intent: dest.itemId && UUID.test(dest.itemId) ? { kind: 'filing', id: dest.itemId } : { kind: 'section', key: 'calendar' } };
-    case 'documents':
-      return { label, intent: { kind: 'section', key: 'documents' } };
-    case 'library':
-      return { label, intent: dest.itemId ? { kind: 'reader', mode: 'saved', id: dest.itemId } : { kind: 'section', key: 'library' } };
-    case 'learn':
-      return { label, intent: { kind: 'reader', mode: 'learn', id: dest.slug } };
-    default:
-      return { label, intent: { kind: 'section', key: 'home' } };
   }
 }
 
@@ -81,7 +60,12 @@ export function AskChat() {
   const [log, setLog] = useState<LogItem[]>([]);
   const [thinking, setThinking] = useState(false);
   const [mini, setMini] = useState(false);
+  /** 'past' shows the list of earlier chats in place of the messages. */
+  const [view, setView] = useState<'chat' | 'past'>('chat');
+  /** The past chat being loaded, until its messages are in the log. */
+  const [loadingPast, setLoadingPast] = useState<string | null>(null);
   const awaitingAsk = useRef<number | null>(null);
+  const pastChats = ask?.enabled ? ask.history : [];
 
   const company = shell?.companyShort ?? 'your company';
   const first = shell?.me.name.trim().split(/\s+/)[0] ?? '';
@@ -117,15 +101,61 @@ export function AskChat() {
   }, []);
 
   useEffect(() => {
-    if (bodyRef.current) bodyRef.current.scrollTop = 1e6;
-  }, [log, thinking, chat.open]);
+    if (view === 'chat' && bodyRef.current) bodyRef.current.scrollTop = 1e6;
+  }, [log, thinking, chat.open, view]);
   useEffect(() => {
     if (chat.open) window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 80);
+    else setView('chat');
   }, [chat.open]);
+
+  /* the provider's open flag follows this panel, so a stored or chosen conversation loads its messages */
+  const askSetOpen = ask?.setOpen;
+  useEffect(() => {
+    askSetOpen?.(chat.open);
+  }, [chat.open, askSetOpen]);
+
+  /* ---------- past chats */
+  const openPast = useCallback(
+    (id: string) => {
+      if (!ask) return;
+      awaitingAsk.current = null;
+      setThinking(false);
+      save([]);
+      setLoadingPast(id);
+      setView('chat');
+      ask.openConversation(id);
+    },
+    [ask, save],
+  );
+
+  /* the chosen chat's messages arrive in the provider thread; they become this tab's log */
+  useEffect(() => {
+    if (!loadingPast || !ask) return;
+    if (ask.conversationId === loadingPast) {
+      if (!ask.thread.length) return;
+      save(threadToLog(ask.thread, Boolean(ask.preview)));
+      setLoadingPast(null);
+    } else if (ask.conversationId === null) {
+      // the provider dropped it (gone, or not this person's)
+      setLoadingPast(null);
+      toast('That chat is no longer available');
+    }
+  }, [loadingPast, ask, ask?.conversationId, ask?.thread, save, toast]);
+
+  const newChat = useCallback(() => {
+    awaitingAsk.current = null;
+    setThinking(false);
+    setLoadingPast(null);
+    save([]);
+    ask?.reset();
+    setView('chat');
+    window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 40);
+  }, [ask, save]);
 
   /* ---------- ask */
   const send = useCallback(
     async (q: string) => {
+      setView('chat');
       const base = [...readLog(), { r: 'u', t: q } as LogItem];
       save(base);
       setThinking(true);
@@ -161,22 +191,7 @@ export function AskChat() {
     setThinking(false);
     const lastQ = [...ask.thread].reverse().find((i) => i.kind === 'user');
     if (last.kind === 'assistant') {
-      const a = last.answer;
-      const refusal = a.origin === 'refusal';
-      const canSave = a.actions.includes('save') && !ask.preview && (a.topicSlug || last.messageId);
-      save([
-        ...readLog(),
-        {
-          r: 'a',
-          t: a.line + (a.why ? `\n${a.why}` : ''),
-          k: refusal ? 'nan' : 'ok',
-          h: refusal || a.actions.includes('askLead'),
-          acts: (a.links ?? []).map((l) => destToAct(l.label, l.dest)).concat(!a.links?.length && a.actions.includes('openStep') && a.target?.stepId ? [{ label: 'Open the step', stepId: a.target.stepId }] : []),
-          mid: last.messageId,
-          q: lastQ && lastQ.kind === 'user' ? lastQ.text : undefined,
-          save: canSave ? (a.topicSlug ? { topicSlug: a.topicSlug, answer: a } : { messageId: last.messageId! }) : undefined,
-        },
-      ]);
+      save([...readLog(), answerToLog(last.answer, last.messageId, lastQ && lastQ.kind === 'user' ? lastQ.text : undefined, Boolean(ask.preview))]);
     } else {
       save([...readLog(), { r: 'a', t: `I can’t answer that one yet. I can pass it to ${company}’s project lead.`, h: true, k: 'nan' }]);
     }
@@ -265,18 +280,65 @@ export function AskChat() {
         <section className={'chat fx' + (shown && chat.open ? ' show' : '')} aria-label="Ask VCFO" role="dialog">
           <div className="ch-h">
             <Sym id={`m-${mascot}`} width={38} height={38} />
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <b>Ask VCFO</b>
               <span>Answers from {company}’s live data</span>
             </div>
+            {ask?.enabled ? (
+              <button
+                type="button"
+                className="ib"
+                aria-label="Past chats"
+                title={view === 'past' ? 'Back to the chat' : 'Past chats'}
+                aria-pressed={view === 'past'}
+                onClick={() => setView((v) => (v === 'past' ? 'chat' : 'past'))}
+              >
+                <Icon name={view === 'past' ? 'chat' : 'hist'} />
+              </button>
+            ) : null}
             <button type="button" className="ib" aria-label="Close" onClick={closeChat}>
               <Icon name="x" />
             </button>
           </div>
+          {view === 'past' && ask ? (
+            <div className="ch-b ask-past" ref={bodyRef} aria-label="Past chats">
+              <div className="ask-past-h">
+                <b>Past chats</b>
+                <span className="sp" />
+                <Btn cls="sm" ico="chat" onClick={newChat}>
+                  New chat
+                </Btn>
+              </div>
+              {pastChats.length ? (
+                <ul className="ask-past-l">
+                  {pastChats.map((h) => (
+                    <li key={h.id}>
+                      <button type="button" className="ask-past-r" aria-current={h.id === ask.conversationId ? 'true' : undefined} onClick={() => openPast(h.id)}>
+                        <span className="ask-past-t" title={h.title}>
+                          {h.title}
+                        </span>
+                        <span className="ask-past-d">
+                          {h.messageCount ? `${h.messageCount} · ` : ''}
+                          {chatDate(h.at)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="lede">No past chats yet. Every conversation you have here is kept, so you can open it again later.</p>
+              )}
+            </div>
+          ) : (
           <div className="ch-b" ref={bodyRef} aria-live="polite">
             <div className="msg bot">
               Hello{first ? ` ${first}` : ''}. I keep track of {company}’s set-up, registrations and every filing. Ask me anything in plain words.
             </div>
+            {loadingPast ? (
+              <div className="msg bot" style={{ color: 'var(--ink-3)' }}>
+                Opening that chat…
+              </div>
+            ) : null}
             {log.map((m, i) =>
               m.r === 'u' ? (
                 <div key={i} className="msg me">
@@ -335,22 +397,16 @@ export function AskChat() {
               </div>
             ) : null}
           </div>
+          )}
           <div className="ch-chips">
             {chips.map((q) => (
               <button key={q} type="button" onClick={() => void send(q)} disabled={thinking}>
                 {q}
               </button>
             ))}
-            {log.length ? (
-              <button
-                type="button"
-                onClick={() => {
-                  save([]);
-                  ask?.reset();
-                }}
-                title="Start a new conversation"
-              >
-                Clear
+            {log.length || ask?.conversationId ? (
+              <button type="button" onClick={newChat} title="Start a new conversation">
+                New chat
               </button>
             ) : null}
           </div>

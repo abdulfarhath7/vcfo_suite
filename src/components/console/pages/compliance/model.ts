@@ -14,6 +14,13 @@
  * Status vocabulary is Today's (README): Filed on time, Filed late, Overdue,
  * Due this week (0–6 days), Upcoming — plus "SBC calendar" for a calendar line
  * that is not on a register yet (never overdue or filed).
+ *
+ *   tasks  NON-STATUTORY TASKS (docs/ui-port/COMPLIANCE-API.md section 2, spec
+ *          rows C-1..C-4 and F-1..F-3): `GET /api/compliances/tasks?from=&to=`
+ *          for the FY. A task sits on its END date, carries the server's
+ *          six-word status (`word`) and, once done, its deliverable file. It
+ *          has no regulator, so an area pick hides tasks and the "Task" mark
+ *          (hollow square) replaces the law tag.
  */
 import type { Engagement } from '@/data/engagements';
 import {
@@ -42,6 +49,8 @@ import { statutoryFilings } from '@/lib/client-portal/statutory-fallback';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { financialYearLabel, financialYearMonths, quarterForMonthKey, type FilingRow } from '@/lib/compliance/filings';
+import type { Stage as TaskStage, StatusWord, Urgency, Visibility } from '@/lib/compliance-tasks/model';
+import { showStat, showTasks, STATUS_WORDS, type Category } from '@/components/client-portal/pages/compliances/tasks';
 import {
   addDays,
   daysBetween,
@@ -413,7 +422,11 @@ export interface CalItem {
   tag: string;
   title: string;
   sub: string;
-  kind: 'filing' | 'line' | 'sbc';
+  kind: 'filing' | 'line' | 'sbc' | 'task';
+  /** task only: "Starts 12 Oct · High" (C-3 hover) */
+  hint?: string;
+  /** task only: the six-word status chip */
+  word?: StatusWord;
 }
 
 export function rowItem(r: CRow, withClient: boolean): CalItem {
@@ -479,6 +492,214 @@ export function moveDay(iso: string, key: string): string | null {
   if (key === 'Home') return `${mk}-01`;
   if (key === 'End') return `${mk}-${String(monthDays(mk)).padStart(2, '0')}`;
   return null;
+}
+
+/* ================================================================ non-statutory tasks (C-1..C-4, F-1..F-3) */
+
+export { showStat, showTasks, STATUS_WORDS, type Category };
+export const CATEGORIES: Category[] = ['all', 'statutory', 'non-statutory'];
+export const CATEGORY_LABEL: Record<Category, string> = { all: 'All', statutory: 'Statutory', 'non-statutory': 'Non-statutory' };
+/** `?cat=` — `statutory` | `non-statutory`; anything else is All. */
+export const parseCat = (v?: string | null): Category => (v === 'statutory' || v === 'non-statutory' ? v : 'all');
+export const catParam = (c: Category): string | null => (c === 'all' ? null : c);
+
+/** The fields of a `TaskRow` (COMPLIANCE-API.md section 2) the console reads. */
+export interface ConsoleTask {
+  id: string;
+  engagementId: string;
+  companyName: string;
+  activityName: string | null;
+  name: string;
+  periodLabel: string | null;
+  title: string;
+  startDate: string;
+  /** the end date */
+  dueDate: string;
+  urgency: Urgency;
+  urgencyBars: 1 | 2 | 3 | 4;
+  visibility: Visibility;
+  stage: TaskStage;
+  stageLabel: string;
+  word: StatusWord;
+  hidden: boolean;
+  owner: { id: string; name: string } | null;
+  attachmentCount: number;
+  deliverable: { id: string; fileName: string } | null;
+  completedAt: string | null;
+}
+
+export const TASK_ID_PREFIX = 'task:';
+/** The task page under the console base (`/app/manager/compliances/obligations/tasks/<id>`). */
+export const taskPath = (base: string, taskId: string): string => `${base}/compliances/obligations/tasks/${encodeURIComponent(taskId)}`;
+
+/** Pill class and colour of each of the six status words (README vocabulary colours). */
+export const WORD_PILL: Record<StatusWord, string> = { Overdue: 'over', 'Due soon': 'due', Waiting: 'mut', 'In progress': 'up', 'Not started': 'na', Done: 'ok' };
+export const WORD_COLOR: Record<StatusWord, string> = {
+  Overdue: 'var(--over)',
+  'Due soon': 'var(--due)',
+  Waiting: 'var(--mx-wait)',
+  'In progress': 'var(--mx-run)',
+  'Not started': 'var(--mx-none)',
+  Done: 'var(--mx-ok)',
+};
+
+/** A task on the calendar or the register, keyed like a row: it sits on its END date. */
+export interface TRow {
+  /** `task:<id>` — never collides with a register row id */
+  id: string;
+  taskId: string;
+  clientId: string;
+  clientName: string;
+  /** the end date (C-3) */
+  due: string;
+  start: string;
+  /** the calendar colour, by the filing rule: done = filed, past = overdue, 0–6 days = due this week, else upcoming */
+  st: CSt;
+  /** the six-word chip */
+  word: StatusWord;
+  stageLabel: string;
+  urgency: Urgency;
+  bars: number;
+  name: string;
+  /** name · period */
+  title: string;
+  period: string | null;
+  owner: string | null;
+  deliverable: { id: string; fileName: string } | null;
+  /** the day it was completed (India) */
+  completedOn?: string;
+  done: boolean;
+  /** due − today, in days */
+  days: number;
+  /** "Starts 12 Oct · High" */
+  hint: string;
+  task: ConsoleTask;
+}
+
+/** The calendar colour of a task: a done task counts as filed (the prototype's donut). */
+export function taskSt(stage: TaskStage, due: string, today: string): CSt {
+  if (stage === 'completed') return 'f';
+  const d = daysBetween(today, due);
+  return d < 0 ? 'o' : d <= 6 ? 'd' : 'u';
+}
+
+export const taskHint = (t: Pick<ConsoleTask, 'startDate' | 'urgency'>, today: string): string => `Starts ${dShort(t.startDate, today)} · ${t.urgency}`;
+
+export function taskRow(t: ConsoleTask, today: string): TRow {
+  const due = t.dueDate.slice(0, 10);
+  return {
+    id: `${TASK_ID_PREFIX}${t.id}`,
+    taskId: t.id,
+    clientId: t.engagementId,
+    clientName: t.companyName,
+    due,
+    start: t.startDate.slice(0, 10),
+    st: taskSt(t.stage, due, today),
+    word: t.word,
+    stageLabel: t.stageLabel,
+    urgency: t.urgency,
+    bars: t.urgencyBars,
+    name: t.name,
+    title: t.title,
+    period: t.periodLabel,
+    owner: t.owner?.name ?? null,
+    deliverable: t.deliverable,
+    completedOn: istDay(t.completedAt),
+    done: t.stage === 'completed',
+    days: daysBetween(today, due),
+    hint: taskHint(t, today),
+    task: t,
+  };
+}
+
+/**
+ * The FY's tasks as rows: not-applicable rows (`hidden`) are dropped, a task of
+ * a client the Stage filter leaves out is dropped, the rest sort by end date.
+ */
+export function taskRows(tasks: ConsoleTask[], today: string, inScope?: (clientId: string) => boolean): TRow[] {
+  return tasks
+    .filter((t) => !t.hidden && (!inScope || inScope(t.engagementId)))
+    .map((t) => taskRow(t, today))
+    .sort((a, b) => a.due.localeCompare(b.due) || a.clientName.localeCompare(b.clientName) || a.title.localeCompare(b.title));
+}
+
+export interface TaskFilter {
+  company?: string;
+  /** YYYY-MM of the end date */
+  month?: string;
+  done?: boolean;
+  /** the register's status filter: a done task is Filed; Due this week / Overdue / Upcoming follow the end date; SBC calendar never */
+  status?: StatusFilter;
+}
+export function filterTasks(tasks: TRow[], f: TaskFilter): TRow[] {
+  return tasks.filter(
+    (t) =>
+      (!f.company || f.company === 'all' || t.clientId === f.company) &&
+      (!f.month || t.due.slice(0, 7) === f.month) &&
+      (f.done === undefined || t.done === f.done) &&
+      (!f.status || matchStatus(t.st, f.status)),
+  );
+}
+
+/** C-1 / F-1: the counts on the switch, from the lists already filtered to the window in view. */
+export function catCounts(rows: ArrayLike<unknown>, tasks: ArrayLike<unknown>): Record<Category, number> {
+  return { all: rows.length + tasks.length, statutory: rows.length, 'non-statutory': tasks.length };
+}
+
+export function taskItem(t: TRow, withClient: boolean): CalItem {
+  return {
+    id: t.id,
+    due: t.due,
+    st: t.st,
+    area: null,
+    tag: 'Task',
+    title: t.title,
+    sub: [withClient ? t.clientName : '', t.owner].filter(Boolean).join(' · '),
+    kind: 'task',
+    hint: t.hint,
+    word: t.word,
+  };
+}
+
+/** Open tasks ending from today to today + n days (the Coming up agenda). */
+export function comingUpTasks(tasks: TRow[], today: string, n = 14): TRow[] {
+  const end = addDays(today, n);
+  return tasks.filter((t) => !t.done && t.due >= today && t.due <= end);
+}
+
+export type NextItem = { kind: 'filing'; r: CRow } | { kind: 'task'; t: TRow };
+/** C-4: the next deadline is the earlier of the next unfiled filing and the next open task (a filing wins a tie). */
+export function nextItem(rows: CRow[], tasks: TRow[], today: string): NextItem | undefined {
+  const r = nextDeadline(rows, today);
+  const t = tasks.find((x) => !x.done && x.due >= today);
+  if (r && (!t || r.due <= t.due)) return { kind: 'filing', r };
+  return t ? { kind: 'task', t } : undefined;
+}
+
+export interface TaskBar {
+  t: TRow;
+  /** first and last day of the bar inside the month (1-based) */
+  from: number;
+  to: number;
+  /** the task starts before / ends after this month */
+  cutStart: boolean;
+  cutEnd: boolean;
+}
+/** The timeline's non-statutory lane: a bar from the start date to the end date, clipped to the month. */
+export function taskBars(tasks: TRow[], monthKey: string): TaskBar[] {
+  const first = `${monthKey}-01`;
+  const n = monthDays(monthKey);
+  const last = `${monthKey}-${String(n).padStart(2, '0')}`;
+  return tasks
+    .filter((t) => t.start <= last && t.due >= first)
+    .map((t) => ({
+      t,
+      from: t.start < first ? 1 : Number(t.start.slice(8, 10)),
+      to: t.due > last ? n : Number(t.due.slice(8, 10)),
+      cutStart: t.start < first,
+      cutEnd: t.due > last,
+    }))
+    .sort((a, b) => a.from - b.from || a.to - b.to);
 }
 
 /* ================================================================ SBC's master calendar */

@@ -20,10 +20,19 @@
  *
  * Never-empty rule: a client whose register has no rows this FY shows SBC's
  * calendar lines for it, marked SBC calendar, with a banner saying who and why.
+ *
+ * Non-statutory tasks (30 Oct 2026, spec rows C-1..C-4): an All · Statutory ·
+ * Non-statutory switch above the calendar (`?cat=`, counts for the month in
+ * Month view, for the year otherwise); tasks from `GET /api/compliances/tasks`
+ * sit on their END date as a hollow "Task" square with the hover "Starts
+ * <date> · <urgency>" and the six-word status chip, and a click opens the task
+ * page. The switch applies to the month grid, the year, the timeline (a
+ * Non-statutory lane with bars from start to end), the donut, Next deadline
+ * and Coming up. An area pick hides tasks; Non-statutory hides the area switch.
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AREA_LABEL, AREA_ORDER, fyStartOfMonth, mondayMonthGrid, monthLabel as monthLong, stepMonth, MON } from '@/lib/client-portal/compliances';
 import { ACT_META, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
 import { readCalendarViewPrefs, writeCalendarViewPrefs } from '@/components/admin/statutory-calendar-utils';
@@ -41,30 +50,45 @@ import {
   C_COLOR,
   C_LABEL,
   C_ORDER,
+  TASK_ID_PREFIX,
+  WORD_COLOR,
   actCounts,
   byDay,
+  catCounts,
+  catParam,
   comingUp,
+  comingUpTasks,
   countSt,
   filterRows,
+  filterTasks,
   lanes,
   monthDays,
   moveDay,
-  nextDeadline,
+  nextItem,
   overdueRows,
+  parseCat,
   rowItem,
   sbcItem,
   sbcRows,
+  showStat,
+  showTasks,
+  taskBars,
+  taskItem,
+  taskPath,
   whenText,
   worstOf,
   yearCards,
   type AreaFilter,
   type CalItem,
+  type Category,
   type CRow,
   type CSt,
   type SRow,
+  type TaskBar,
+  type TRow,
 } from './model';
-import { useBook, useComplianceBadges, type BookData } from './data';
-import { ComplianceBanners, CompanySelect, FilingPop, LawTag, MonthPick, ReminderBtn, SbcPop, StPill } from './shared';
+import { useBook, useComplianceBadges, useFyTasks, type BookData, type TaskData } from './data';
+import { CategorySeg, ComplianceBanners, CompanySelect, FilingPop, LawTag, MonthPick, ReminderBtn, SbcPop, StPill, TaskMark, WordPill } from './shared';
 
 type Source = 'book' | 'sbc';
 type View = 'month' | 'year' | 'timeline';
@@ -101,10 +125,21 @@ const isoDay = (v: string | null): string | null => (v && /^\d{4}-\d{2}-\d{2}$/.
 function Calendar() {
   const params = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname() ?? '';
   const { base, go, openPop, pop, modal, drawer } = useConsole();
   useComplianceBadges();
 
   const dateParam = isoDay(params.get('date'));
+  /* C-1: All · Statutory · Non-statutory, kept in `?cat=` so a refresh keeps it */
+  const cat = parseCat(params.get('cat'));
+  const setCat = (c: Category) => {
+    const s = new URLSearchParams(params.toString());
+    const v = catParam(c);
+    if (v) s.set('cat', v);
+    else s.delete('cat');
+    const q = s.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  };
   const [month, setMonth] = useState<string>(() => (dateParam ?? new Date(Date.now() + 330 * 60_000).toISOString()).slice(0, 7));
   const [picked, setPicked] = useState<string>(() => params.get('company') ?? 'all');
   const [area, setArea] = useState<AreaFilter>('all');
@@ -148,7 +183,14 @@ function Calendar() {
 
   /* ---------- rows of each source */
   const scoped = useMemo(() => filterRows(book.rows, { company }), [book.rows, company]);
-  const shown = useMemo(() => filterRows(scoped, { area }), [scoped, area]);
+  const shownAreaRows = useMemo(() => filterRows(scoped, { area }), [scoped, area]);
+  /** the statutory rows on screen: none when the switch says Non-statutory */
+  const shown = useMemo(() => (showStat(cat) ? shownAreaRows : []), [shownAreaRows, cat]);
+  /* C-3 / C-4: the FY's non-statutory tasks on their end date; an area pick hides them (a task has no regulator) */
+  const td = useFyTasks(fy, book);
+  const scopedTasks = useMemo(() => filterTasks(td.tasks, { company }), [td.tasks, company]);
+  const shownTasks = useMemo(() => (showTasks(cat) && area === 'all' ? scopedTasks : []), [scopedTasks, cat, area]);
+  const monthTasks = useMemo(() => shownTasks.filter((t) => t.due.slice(0, 7) === month), [shownTasks, month]);
   const sbcAll = useMemo(() => sbcRows({ today, clients: book.clients, company, firmWide: data.firmWide }), [today, book.clients, company, data.firmWide]);
   const sbcShown = useMemo(
     () => sbcAll.filter((s) => (area === 'all' || s.area === area) && !muted.has(s.act) && (sbcScope === 'all' || s.st === 'o')),
@@ -156,10 +198,16 @@ function Calendar() {
   );
   const showClient = company === 'all';
   const items: CalItem[] = useMemo(
-    () => (source === 'book' ? shown.map((r) => rowItem(r, showClient)) : sbcShown.map(sbcItem)),
-    [source, shown, sbcShown, showClient],
+    () => (source === 'book' ? [...shown.map((r) => rowItem(r, showClient)), ...shownTasks.map((t) => taskItem(t, showClient))].sort((a, b) => a.due.localeCompare(b.due)) : sbcShown.map(sbcItem)),
+    [source, shown, shownTasks, sbcShown, showClient],
   );
   const monthItems = useMemo(() => items.filter((i) => i.due.slice(0, 7) === month), [items, month]);
+  /* C-1 counts: the month in Month view, the financial year in Year and Timeline (before the area pick, like the area counts) */
+  const catN = useMemo(() => {
+    const inView = (d: string) => view !== 'month' || d.slice(0, 7) === month;
+    return catCounts(scoped.filter((r) => inView(r.due)), scopedTasks.filter((t) => inView(t.due)));
+  }, [scoped, scopedTasks, view, month]);
+  const bars = useMemo(() => (source === 'book' ? taskBars(shownTasks, month) : []), [source, shownTasks, month]);
   const areaCounts = useMemo(() => {
     const base0: Array<{ due: string; area: string | null }> =
       source === 'book' ? scoped : sbcAll.filter((s) => !muted.has(s.act) && (sbcScope === 'all' || s.st === 'o'));
@@ -170,6 +218,7 @@ function Calendar() {
   }, [source, scoped, sbcAll, muted, sbcScope, month]);
 
   /* ---------- opening things */
+  const openTask = useCallback((taskId: string) => go(taskPath(base, taskId)), [go, base]);
   const openItem = useCallback(
     (it: CalItem, el: Element | null, push = false) => {
       if (it.kind === 'sbc') {
@@ -177,9 +226,13 @@ function Calendar() {
         if (s) openPop(el, <SbcPop s={s} names={s.clients.map((id) => book.byId[id]?.short ?? id)} />, { push, cls: 'mx-wide' });
         return;
       }
+      if (it.kind === 'task') {
+        openTask(it.id.slice(TASK_ID_PREFIX.length));
+        return;
+      }
       openPop(el, <FilingPop id={it.id} fy={fy} />, { push, cls: 'mx-wide' });
     },
-    [openPop, sbcAll, book.byId, fy],
+    [openPop, sbcAll, book.byId, fy, openTask],
   );
   const openDay = useCallback(
     (day: string, el: Element | null) => {
@@ -190,9 +243,9 @@ function Calendar() {
         requestAnimationFrame(() => document.getElementById(`cf-ag-${day}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
         return;
       }
-      openPop(el, <DayPop day={day} fy={fy} company={company} area={area} onOpen={(it, e) => openItem(it, e, true)} />);
+      openPop(el, <DayPop day={day} fy={fy} company={company} area={area} stat={showStat(cat)} tasks={shownTasks.filter((t) => t.due === day)} onOpen={(it, e) => openItem(it, e, true)} />);
     },
-    [source, sbcShown, openPop, openItem, fy, company, area],
+    [source, sbcShown, openPop, openItem, fy, company, area, cat, shownTasks],
   );
 
   /* ?date= opens that day once the book is in */
@@ -201,8 +254,8 @@ function Calendar() {
     if (opened.current || !dateParam || data.loading) return;
     opened.current = true;
     const el = document.querySelector(`[data-day="${dateParam}"]`);
-    if (el && shown.some((r) => r.due === dateParam)) openDay(dateParam, el);
-  }, [dateParam, data.loading, shown, openDay]);
+    if (el && (shown.some((r) => r.due === dateParam) || shownTasks.some((t) => t.due === dateParam))) openDay(dateParam, el);
+  }, [dateParam, data.loading, shown, shownTasks, openDay]);
 
   /* full screen: Esc leaves (after any open card), the page behind does not scroll */
   useEffect(() => {
@@ -219,10 +272,10 @@ function Calendar() {
     };
   }, [full, pop, modal, drawer, setFullMode]);
 
-  /* search: the FY's register filings */
+  /* search: the FY's register filings and non-statutory tasks */
   const palette = useMemo<PaletteItem[]>(
-    () =>
-      book.rows
+    () => [
+      ...book.rows
         .filter((r) => !r.cal)
         .slice(0, 300)
         .map((r) => ({
@@ -232,7 +285,15 @@ function Calendar() {
           sw: C_COLOR[r.st],
           go: () => go(`${base}/compliances/calendar?date=${r.due}&company=${r.clientId}`),
         })),
-    [book.rows, book.byId, today, go, base],
+      ...td.tasks.slice(0, 100).map((t) => ({
+        id: t.id,
+        label: `${t.title} · ${book.byId[t.clientId]?.short ?? t.clientName}`,
+        kind: `Task · ends ${dShort(t.due, today)} · ${t.word}`,
+        sw: WORD_COLOR[t.word],
+        go: () => openTask(t.taskId),
+      })),
+    ],
+    [book.rows, book.byId, today, go, base, td.tasks, openTask],
   );
   useConsolePalette('compliance-calendar', palette);
 
@@ -261,13 +322,16 @@ function Calendar() {
           Today
         </Btn>
       ) : null}
-      <Seg<AreaFilter>
-        className="sm"
-        ariaLabel="Filter by area"
-        value={area}
-        onChange={setArea}
-        options={[{ value: 'all', label: 'All', n: areaCounts.all }, ...AREA_ORDER.map((a) => ({ value: a, label: AREA_LABEL[a], n: areaCounts[a] }))]}
-      />
+      {source === 'book' ? <CategorySeg value={cat} counts={td.loading && !td.tasks.length ? { all: '–', statutory: catN.statutory, 'non-statutory': '–' } : catN} onChange={setCat} /> : null}
+      {source === 'sbc' || cat !== 'non-statutory' ? (
+        <Seg<AreaFilter>
+          className="sm"
+          ariaLabel="Filter by area"
+          value={area}
+          onChange={setArea}
+          options={[{ value: 'all', label: 'All', n: areaCounts.all }, ...AREA_ORDER.map((a) => ({ value: a, label: AREA_LABEL[a], n: areaCounts[a] }))]}
+        />
+      ) : null}
       <span className="sp" />
       <Seg<Source>
         className="sm"
@@ -313,13 +377,21 @@ function Calendar() {
           onDay={openDay}
         />
       ) : (
-        <TimelineView month={month} today={today} items={items} area={area} onDay={openDay} />
+        <TimelineView month={month} today={today} items={items.filter((i) => i.kind !== 'task')} bars={bars} area={area} stat={source === 'sbc' || showStat(cat)} onDay={openDay} onTask={openTask} />
       )}
       {source === 'sbc' && !data.loading ? (
         <ActLegend rows={sbcAll.filter((s) => s.due.slice(0, 7) === month && (sbcScope === 'all' || s.st === 'o'))} muted={muted} setMuted={setMuted} />
       ) : (
-        <StatusLegend />
+        <StatusLegend tasks={showTasks(cat)} />
       )}
+      {source === 'book' && showTasks(cat) && td.error ? (
+        <p className="small cf-note" role="status">
+          The non-statutory tasks could not load.{' '}
+          <button type="button" className="link" onClick={td.retry}>
+            Try again
+          </button>
+        </p>
+      ) : null}
       {source === 'sbc' && month.slice(0, 4) !== '2026' && !(month.slice(0, 4) === '2027' && month < '2027-04') ? (
         <p className="small cf-note">SBC’s compliance calendar covers FY 2026-27 (April 2026 to March 2027).</p>
       ) : null}
@@ -346,8 +418,8 @@ function Calendar() {
       <div className="mx-ctop">
         {source === 'book' ? (
           <>
-            <NextPanel d={data} rows={scoped} onOpen={(r, el) => openItem(rowItem(r, true), el)} filingsHref={filingsHref} />
-            <MixPanel d={data} rows={shown.filter((r) => r.due.slice(0, 7) === month)} month={month} onOpen={(r) => openItem(rowItem(r, true), null)} filingsHref={filingsHref} />
+            <NextPanel d={data} td={td} rows={showStat(cat) ? scoped : []} tasks={showTasks(cat) && area === 'all' ? scopedTasks : []} onOpen={(r, el) => openItem(rowItem(r, true), el)} onTask={openTask} filingsHref={filingsHref} />
+            <MixPanel d={data} rows={shown.filter((r) => r.due.slice(0, 7) === month)} tasks={monthTasks} month={month} onOpen={(r) => openItem(rowItem(r, true), null)} onTask={openTask} filingsHref={filingsHref} cat={cat} />
           </>
         ) : (
           <>
@@ -365,7 +437,11 @@ function Calendar() {
           <Agenda
             loading={data.loading}
             title={side === 'soon' ? 'Coming up' : monthLong(month)}
-            sub={side === 'soon' ? 'Next 14 days · not filed yet' : plural(shown.filter((r) => r.due.slice(0, 7) === month).length, 'filing')}
+            sub={
+              side === 'soon'
+                ? `Next 14 days · ${showTasks(cat) && !showStat(cat) ? 'open tasks' : showTasks(cat) ? 'not filed or done yet' : 'not filed yet'}`
+                : [showStat(cat) ? plural(shown.filter((r) => r.due.slice(0, 7) === month).length, 'filing') : '', showTasks(cat) ? plural(monthTasks.length, 'task') : ''].filter(Boolean).join(' · ')
+            }
             act={
               <Seg<'soon' | 'month'>
                 className="sm"
@@ -378,10 +454,17 @@ function Calendar() {
                 ]}
               />
             }
-            items={(side === 'soon' ? comingUp(shown, today) : shown.filter((r) => r.due.slice(0, 7) === month)).map((r) => rowItem(r, showClient))}
+            items={[
+              ...(side === 'soon' ? comingUp(shown, today) : shown.filter((r) => r.due.slice(0, 7) === month)).map((r) => rowItem(r, showClient)),
+              ...(side === 'soon' ? comingUpTasks(shownTasks, today) : monthTasks).map((t) => taskItem(t, showClient)),
+            ].sort((a, b) => a.due.localeCompare(b.due))}
             today={today}
             sel={sel}
-            empty={side === 'soon' ? ['A quiet fortnight', 'Nothing unfiled falls due in the next 14 days.'] : ['Nothing falls due in this month', 'Filings due this month appear here as the register fills.']}
+            empty={
+              side === 'soon'
+                ? ['A quiet fortnight', showTasks(cat) ? 'Nothing unfiled and no open task falls due in the next 14 days.' : 'Nothing unfiled falls due in the next 14 days.']
+                : ['Nothing falls due in this month', showStat(cat) ? 'Filings due this month appear here as the register fills.' : 'Tasks ending this month appear here once a manager creates them.']
+            }
             onOpen={openItem}
           />
         ) : (
@@ -487,7 +570,10 @@ function MonthGrid({
         const list = days.get(c.iso) ?? [];
         const worst = worstOf(list.map((i) => i.st));
         const wk = ['Sat', 'Sun'].includes(new Date(`${c.iso}T00:00:00Z`).toUTCString().slice(0, 3));
-        const tip = `${fmtL(c.iso)}${c.iso === today ? ' · today' : ''} · ${list.length ? plural(list.length, sbc ? 'deadline' : 'filing') : 'nothing due'}`;
+        const nTasks = list.filter((i) => i.kind === 'task').length;
+        const tip = `${fmtL(c.iso)}${c.iso === today ? ' · today' : ''} · ${
+          list.length ? [list.length - nTasks ? plural(list.length - nTasks, sbc ? 'deadline' : 'filing') : '', nTasks ? plural(nTasks, 'task') : ''].filter(Boolean).join(' · ') : 'nothing due'
+        }`;
         return (
           <div
             key={c.iso}
@@ -514,15 +600,15 @@ function MonthGrid({
                 key={it.id}
                 type="button"
                 tabIndex={-1}
-                className={'mx-fchip cf-chip' + (it.st === 'c' ? ' cf-cal' : '')}
+                className={'mx-fchip cf-chip' + (it.st === 'c' ? ' cf-cal' : '') + (it.kind === 'task' ? ' cf-task' : '')}
                 style={{ ['--cc' as string]: C_COLOR[it.st] }}
-                title={`${it.title}${it.sub ? ` · ${it.sub}` : ''} · ${C_LABEL[it.st]}`}
+                title={it.kind === 'task' ? `${it.title}${it.sub ? ` · ${it.sub}` : ''} · ${it.hint} · ${it.word}` : `${it.title}${it.sub ? ` · ${it.sub}` : ''} · ${C_LABEL[it.st]}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onOpen(it, e.currentTarget);
                 }}
               >
-                <LawTag area={it.area} tag={it.tag} />
+                {it.kind === 'task' ? <TaskMark done={it.word === 'Done'} title={it.hint} /> : <LawTag area={it.area} tag={it.tag} />}
                 <span className="cf-ell">{it.title}</span>
               </button>
             ))}
@@ -587,13 +673,71 @@ function YearView({ fy, today, items, onMonth, onDay }: { fy: number; today: str
 
 /* ================================================================ timeline */
 
-function TimelineView({ month, today, items, area, onDay }: { month: string; today: string; items: CalItem[]; area: AreaFilter; onDay: (day: string, el: Element | null) => void }) {
+/** Bars that overlap share no row: the first row with room takes the bar (the lane grows by one row per overlap). */
+function stackBars(bars: TaskBar[]): Array<TaskBar & { row: number }> {
+  const ends: number[] = [];
+  return bars.map((b) => {
+    let row = ends.findIndex((e) => e < b.from);
+    if (row < 0) row = ends.length;
+    ends[row] = b.to;
+    return { ...b, row };
+  });
+}
+
+function TimelineView({
+  month,
+  today,
+  items,
+  bars,
+  area,
+  stat,
+  onDay,
+  onTask,
+}: {
+  month: string;
+  today: string;
+  items: CalItem[];
+  /** C-4: the non-statutory lane, a bar per task from its start date to its end date */
+  bars: TaskBar[];
+  area: AreaFilter;
+  /** statutory lanes on (off when the switch says Non-statutory) */
+  stat: boolean;
+  onDay: (day: string, el: Element | null) => void;
+  onTask: (taskId: string) => void;
+}) {
   const n = monthDays(month);
-  const ls = useMemo(() => lanes(items, month, area), [items, month, area]);
+  const ls = useMemo(() => (stat ? lanes(items, month, area) : []), [items, month, area, stat]);
+  const stacked = useMemo(() => stackBars(bars), [bars]);
+  const rows = stacked.reduce((m, b) => Math.max(m, b.row + 1), 0);
   const nowDay = today.slice(0, 7) === month ? Number(today.slice(8, 10)) : 0;
   const ticks = [1, 5, 10, 15, 20, 25, n];
   return (
     <div className="mx-ftl">
+      {!ls.length && !bars.length ? <Empty title={`Nothing in ${monthLong(month)}`} sub={stat ? 'Filings and tasks of this month appear here by day.' : 'Tasks that run through this month appear here as bars from start to end.'} /> : null}
+      {bars.length ? (
+        <div className="mx-ftr">
+          <span className="mx-ftn">
+            <TaskMark word={false} />
+            Non-statutory
+          </span>
+          <div className="mx-ftt cf-tlane" style={{ gridTemplateColumns: `repeat(${n}, 1fr)`, height: `${Math.max(36, 10 + rows * 16)}px` }}>
+            {Array.from({ length: n }, (_, i) => (
+              <i key={i} className={'mx-tlc' + (i + 1 === nowDay ? ' now' : '')} />
+            ))}
+            {stacked.map((b) => (
+              <button
+                key={b.t.id}
+                type="button"
+                className={'cf-tbar' + (b.cutStart ? ' cut-s' : '') + (b.cutEnd ? ' cut-e' : '')}
+                style={{ left: `${((b.from - 1) / n) * 100}%`, width: `${((b.to - b.from + 1) / n) * 100}%`, top: `${5 + b.row * 16}px`, ['--cc' as string]: WORD_COLOR[b.t.word] }}
+                title={`${b.t.title} · ${b.t.clientName} · ${b.t.hint} · ends ${dDay(b.t.due, today)} · ${b.t.word}`}
+                aria-label={`${b.t.title} · ${b.t.clientName} · ${b.t.hint} · ends ${dDay(b.t.due, today)} · ${b.t.word} · open the task`}
+                onClick={() => onTask(b.t.taskId)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
       {ls.map((l) => (
         <div key={l.key} className="mx-ftr">
           <span className="mx-ftn">
@@ -637,15 +781,21 @@ function TimelineView({ month, today, items, area, onDay }: { month: string; tod
 
 /* ================================================================ legends */
 
-function StatusLegend() {
+function StatusLegend({ tasks }: { tasks: boolean }) {
   return (
-    <div className="mx-phleg cf-leg" aria-label="What the colours mean">
+    <div className="mx-phleg cf-leg" aria-label="What the colours and marks mean">
       {C_ORDER.map((s) => (
         <span key={s} title={C_LABEL[s]}>
           <i className="cf-sw" style={{ background: C_COLOR[s] }} />
           {C_LABEL[s]}
         </span>
       ))}
+      {tasks ? (
+        <span title="A non-statutory task, shown on its end date; hover for its start date and urgency, click to open it. Green once done.">
+          <i className="cf-tsq" />
+          Task · on its end date
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -721,19 +871,19 @@ function Agenda({
           <div key={d} id={`cf-ag-${d}`} className={'mx-agd' + (d === sel ? ' cf-flash' : '')}>
             <b className="mx-agh">{`${dDay(d, today)}${d === today ? ' · today' : ''}`}</b>
             {list.map((it) => (
-              <button key={it.id} type="button" className="mx-agi" onClick={(e) => onOpen(it, e.currentTarget)}>
-                <LawTag area={it.area} tag={it.tag} />
+              <button key={it.id} type="button" className="mx-agi" title={it.kind === 'task' ? `${it.hint} · open the task` : undefined} onClick={(e) => onOpen(it, e.currentTarget)}>
+                {it.kind === 'task' ? <TaskMark done={it.word === 'Done'} title={it.hint} /> : <LawTag area={it.area} tag={it.tag} />}
                 <span className="mx-dt">
                   <b className="cf-ell" title={it.title}>
                     {it.title}
                   </b>
-                  {it.sub ? (
-                    <span className="cf-ell" title={it.sub}>
-                      {it.sub}
+                  {it.sub || it.hint ? (
+                    <span className="cf-ell" title={it.kind === 'task' ? [it.sub, it.hint].filter(Boolean).join(' · ') : it.sub}>
+                      {it.kind === 'task' ? [it.sub, it.hint].filter(Boolean).join(' · ') : it.sub}
                     </span>
                   ) : null}
                 </span>
-                <StPill st={it.st} label={it.st === 'd' ? 'Due' : undefined} />
+                {it.kind === 'task' && it.word ? <WordPill word={it.word} /> : <StPill st={it.st} label={it.st === 'd' ? 'Due' : undefined} />}
               </button>
             ))}
           </div>
@@ -747,11 +897,33 @@ function Agenda({
 
 /* ================================================================ next deadline + month mix (your clients) */
 
-function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]; onOpen: (r: CRow, el: Element | null) => void; filingsHref: string }) {
+function NextPanel({
+  d,
+  td,
+  rows,
+  tasks,
+  onOpen,
+  onTask,
+  filingsHref,
+}: {
+  d: BookData;
+  td: TaskData;
+  rows: CRow[];
+  /** C-4: the open tasks in view; the next deadline is the earlier of the next filing and the next task */
+  tasks: TRow[];
+  onOpen: (r: CRow, el: Element | null) => void;
+  onTask: (taskId: string) => void;
+  filingsHref: string;
+}) {
   const { openPop, go } = useConsole();
   const today = d.book.today;
-  const next = nextDeadline(rows, today);
+  const ni = nextItem(rows, tasks, today);
+  const next = ni?.kind === 'filing' ? ni.r : undefined;
+  const nextTask = ni?.kind === 'task' ? ni.t : undefined;
   const over = overdueRows(rows);
+  const overTasks = tasks.filter((t) => t.st === 'o');
+  const nOver = over.length + overTasks.length;
+  const first = over[0] && (!overTasks[0] || over[0].due <= overTasks[0].due) ? { title: `${over[0].name} · ${over[0].clientName}`, days: -over[0].days } : overTasks[0] ? { title: `${overTasks[0].title} · ${overTasks[0].clientName}`, days: -overTasks[0].days } : undefined;
   if (d.loading)
     return (
       <Panel title="Next deadline">
@@ -759,8 +931,31 @@ function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]
       </Panel>
     );
   return (
-    <Panel title="Next deadline" sub={next ? dDay(next.due, today) : undefined}>
-      {next ? (
+    <Panel title="Next deadline" sub={ni ? dDay(ni.kind === 'filing' ? ni.r.due : ni.t.due, today) : undefined}>
+      {nextTask ? (
+        <div className="mx-nd">
+          <div className="mx-ndh">
+            <b className="mx-ndn">{nextTask.days === 0 ? 'Today' : plural(nextTask.days, 'day')}</b>
+            <span className="mx-dt">
+              <b className="cf-ell" title={nextTask.title}>
+                {nextTask.title}
+              </b>
+              <span className="cf-ell">{[nextTask.clientName, nextTask.owner ? `with ${nextTask.owner}` : ''].filter(Boolean).join(' · ')}</span>
+            </span>
+          </div>
+          <div className="mx-chips">
+            <TaskMark done={nextTask.done} title={nextTask.hint} />
+            <WordPill word={nextTask.word} />
+            <span className="pill mut" title={`Urgency ${nextTask.urgency} · ${nextTask.bars} of 4`}>{`Urgency · ${nextTask.urgency}`}</span>
+            <span className="pill mut" title="The task runs from its start date to its end date">{nextTask.hint}</span>
+          </div>
+          <div className="mx-apa">
+            <Btn cls="sm pri" ico="step" onClick={() => onTask(nextTask.taskId)}>
+              Open task
+            </Btn>
+          </div>
+        </div>
+      ) : next ? (
         <div className="mx-nd">
           <div className="mx-ndh">
             <b className="mx-ndn">{next.days === 0 ? 'Today' : plural(next.days, 'day')}</b>
@@ -788,9 +983,13 @@ function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]
           </div>
         </div>
       ) : (
-        <Empty title="Nothing due from today" sub="Every filing on the register this year is filed or past its date." />
+        <Empty
+          title="Nothing due from today"
+          sub={rows.length && tasks.length ? 'Every filing this year is filed or past its date, and every task is done or past its end date.' : tasks.length || !rows.length ? 'Every task this year is done or past its end date.' : 'Every filing on the register this year is filed or past its date.'}
+        />
       )}
-      {over.length ? (
+      {td.loading && !rows.length ? <div className="sec-load">Loading the tasks…</div> : null}
+      {nOver && first ? (
         <button
           type="button"
           className="banner over cf-banbtn"
@@ -798,10 +997,13 @@ function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]
             openPop(
               e.currentTarget,
               <Drill
-                title="Overdue filings"
-                sub={plural(over.length, 'filing')}
-                tabs={[{ label: 'Overdue', color: C_COLOR.o, rows: over.map((r) => ({ id: r.id, title: `${r.name} · ${r.clientName}`, meta: `Was due ${dShort(r.due, today)}`, state: late(-r.days), color: C_COLOR.o, onOpen: () => onOpen(r, null) })) }]}
-                link={{ text: 'Open filings', onClick: () => go(filingsHref.replace(/cadence=monthly&period=[^&]+&/, '') + '&status=overdue') }}
+                title={over.length && overTasks.length ? 'Overdue filings and tasks' : over.length ? 'Overdue filings' : 'Overdue tasks'}
+                sub={[over.length ? plural(over.length, 'filing') : '', overTasks.length ? plural(overTasks.length, 'task') : ''].filter(Boolean).join(' · ')}
+                tabs={[
+                  ...(over.length ? [{ label: 'Filings', color: C_COLOR.o, rows: over.map((r) => ({ id: r.id, title: `${r.name} · ${r.clientName}`, meta: `Was due ${dShort(r.due, today)}`, state: late(-r.days), color: C_COLOR.o, onOpen: () => onOpen(r, null) })) }] : []),
+                  ...(overTasks.length ? [{ label: 'Tasks', color: C_COLOR.o, rows: overTasks.map((t) => ({ id: t.id, title: `${t.title} · ${t.clientName}`, meta: `Ended ${dShort(t.due, today)} · ${t.hint}`, state: late(-t.days), color: C_COLOR.o, onOpen: () => onTask(t.taskId) })) }] : []),
+                ]}
+                link={over.length ? { text: 'Open filings', onClick: () => go(filingsHref.replace(/cadence=monthly&period=[^&]+&/, '') + '&status=overdue') } : undefined}
               />,
               { cls: 'mx-wide' },
             )
@@ -809,8 +1011,8 @@ function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]
         >
           <Icon name="alert" />
           <div>
-            <b>{`${over[0]!.name} · ${over[0]!.clientName}`}</b>
-            {`${late(-over[0]!.days)}${over.length > 1 ? ` · ${over.length - 1} more overdue` : ''}`}
+            <b>{first.title}</b>
+            {`${late(first.days)}${nOver > 1 ? ` · ${nOver - 1} more overdue` : ''}`}
           </div>
         </button>
       ) : null}
@@ -818,28 +1020,55 @@ function NextPanel({ d, rows, onOpen, filingsHref }: { d: BookData; rows: CRow[]
   );
 }
 
-function MixPanel({ d, rows, month, onOpen, filingsHref }: { d: BookData; rows: CRow[]; month: string; onOpen: (r: CRow) => void; filingsHref: string }) {
+function MixPanel({
+  d,
+  rows,
+  tasks,
+  month,
+  onOpen,
+  onTask,
+  filingsHref,
+  cat,
+}: {
+  d: BookData;
+  rows: CRow[];
+  /** C-4: the month's tasks join the donut (a done task counts as filed) */
+  tasks: TRow[];
+  month: string;
+  onOpen: (r: CRow) => void;
+  onTask: (taskId: string) => void;
+  filingsHref: string;
+  cat: Category;
+}) {
   const { openPop, go } = useConsole();
   const today = d.book.today;
-  const n = countSt(rows);
+  const n = countSt([...rows, ...tasks]);
   const parts = C_ORDER.map((s) => ({ n: n[s], color: C_COLOR[s], label: C_LABEL[s] }));
-  const dr = (list: CRow[]) => list.map((r) => ({ id: r.id, title: `${r.name} · ${r.clientName}`, meta: whenText(r, today), state: C_LABEL[r.st], color: C_COLOR[r.st], onOpen: () => onOpen(r) }));
+  const dr = (list: CRow[], tl: TRow[]) => [
+    ...list.map((r) => ({ id: r.id, title: `${r.name} · ${r.clientName}`, meta: whenText(r, today), state: C_LABEL[r.st], color: C_COLOR[r.st], onOpen: () => onOpen(r) })),
+    ...tl.map((t) => ({ id: t.id, title: `${t.title} · ${t.clientName}`, meta: `Task · ${t.hint} · ends ${dShort(t.due, today)}`, state: t.word, color: WORD_COLOR[t.word], onOpen: () => onTask(t.taskId) })),
+  ];
+  const all = rows.length + tasks.length;
   const drill = (i: number, el: Element | null) =>
     openPop(
       el,
       <Drill
-        title={`Filings · ${monthLong(month)}`}
-        sub={`${plural(rows.length, 'item')} across ${plural(new Set(rows.map((r) => r.clientId)).size, 'client')}`}
+        title={`${showStat(cat) ? (showTasks(cat) ? 'Filings and tasks' : 'Filings') : 'Tasks'} · ${monthLong(month)}`}
+        sub={`${plural(all, 'item')} across ${plural(new Set([...rows.map((r) => r.clientId), ...tasks.map((t) => t.clientId)]).size, 'client')}`}
         active={i + 1}
-        tabs={[{ label: 'All', rows: dr(rows) }, ...C_ORDER.map((s) => ({ label: C_LABEL[s], color: C_COLOR[s], rows: dr(rows.filter((r) => r.st === s)) }))]}
-        link={{ text: 'Open this month’s filings', onClick: () => go(filingsHref) }}
+        tabs={[{ label: 'All', rows: dr(rows, tasks) }, ...C_ORDER.map((s) => ({ label: C_LABEL[s], color: C_COLOR[s], rows: dr(rows.filter((r) => r.st === s), tasks.filter((t) => t.st === s)) }))]}
+        link={showStat(cat) ? { text: 'Open this month’s filings', onClick: () => go(filingsHref) } : undefined}
       />,
       { cls: 'mx-wide' },
     );
   return (
     <Panel
       title={monthLong(month)}
-      sub={d.loading ? 'Loading…' : `${plural(rows.filter((r) => !r.cal).length, 'filing')}${n.c ? ` · ${n.c} on SBC calendar` : ''}`}
+      sub={
+        d.loading
+          ? 'Loading…'
+          : [showStat(cat) ? plural(rows.filter((r) => !r.cal).length, 'filing') : '', n.c ? `${n.c} on SBC calendar` : '', showTasks(cat) ? plural(tasks.length, 'task') : ''].filter(Boolean).join(' · ')
+      }
       act={
         <button type="button" className="link" onClick={() => go(filingsHref)}>
           This month’s filings
@@ -848,7 +1077,7 @@ function MixPanel({ d, rows, month, onOpen, filingsHref }: { d: BookData; rows: 
       }
     >
       <div className="mx-ts">
-        <Donut parts={parts} size={108} onPick={(i, el) => drill(i, el)} center={[n.f + n.l, 'filed']} />
+        <Donut parts={parts} size={108} onPick={(i, el) => drill(i, el)} center={[n.f + n.l, showStat(cat) ? (showTasks(cat) ? 'filed · done' : 'filed') : 'done']} />
         <Legend parts={parts} onPick={(i) => drill(i, null)} />
       </div>
     </Panel>
@@ -921,7 +1150,19 @@ function SbcMixPanel({ rows, month, onOpen }: { rows: SRow[]; month: string; onO
 
 /* ================================================================ day pop-overs (as the sidebar mini calendar's) */
 
-function DayPop(props: { day: string; fy: number; company: string; area: AreaFilter; onOpen: (it: CalItem, el: Element | null) => void }) {
+interface DayPopProps {
+  day: string;
+  fy: number;
+  company: string;
+  area: AreaFilter;
+  /** statutory rows on (the switch is All or Statutory) */
+  stat: boolean;
+  /** C-3: the day's non-statutory tasks (ending on it) */
+  tasks: TRow[];
+  onOpen: (it: CalItem, el: Element | null) => void;
+}
+
+function DayPop(props: DayPopProps) {
   const { seat } = useConsole();
   return seat === 'mgr' ? <DayPopMgr {...props} /> : <DayPopBody {...props} extra={[]} />;
 }
@@ -937,7 +1178,7 @@ interface Extra {
 }
 
 /** Manager seat: the day's step deadlines and team tasks too, from Today's model (what the mini calendar shows). */
-function DayPopMgr(props: { day: string; fy: number; company: string; area: AreaFilter; onOpen: (it: CalItem, el: Element | null) => void }) {
+function DayPopMgr(props: DayPopProps) {
   const { model: m } = useToday();
   const { go, base, closePop, openDrawer } = useConsole();
   const extra: Extra[] = datedItems(m, props.day, props.day)
@@ -962,15 +1203,28 @@ function DayPopMgr(props: { day: string; fy: number; company: string; area: Area
   return <DayPopBody {...props} extra={extra} />;
 }
 
-function DayPopBody({ day, fy, company, area, onOpen, extra }: { day: string; fy: number; company: string; area: AreaFilter; onOpen: (it: CalItem, el: Element | null) => void; extra: Extra[] }) {
+function DayPopBody({ day, fy, company, area, stat, tasks: trows, onOpen, extra }: DayPopProps & { extra: Extra[] }) {
   const { book } = useBook(fy);
-  const rows = filterRows(book.rows, { company, area }).filter((r) => r.due === day);
+  const rows = stat ? filterRows(book.rows, { company, area }).filter((r) => r.due === day) : [];
   const steps = extra.filter((x) => x.lane === 'step').length;
   const tasks = extra.length - steps;
   return (
     <div>
-      <PopHead title={fmtL(day)} sub={[plural(rows.length, 'filing'), steps ? plural(steps, 'step deadline') : '', tasks ? plural(tasks, 'team task') : ''].filter(Boolean).join(' · ')} />
+      <PopHead
+        title={fmtL(day)}
+        sub={[stat || !trows.length ? plural(rows.length, 'filing') : '', trows.length ? plural(trows.length, 'task') : '', steps ? plural(steps, 'step deadline') : '', tasks ? plural(tasks, 'team task') : ''].filter(Boolean).join(' · ')}
+      />
       <div className="mx-drows">
+        {trows.map((t) => (
+          <button key={t.id} type="button" className="mx-drow" title={`${t.hint} · open the task`} onClick={(e) => onOpen(taskItem(t, true), e.currentTarget)}>
+            <i className={'cf-tsq' + (t.done ? ' done' : '')} />
+            <span className="mx-dt">
+              <b className="cf-ell">{t.title}</b>
+              <span>{`${t.clientName} · Task · ${t.hint}`}</span>
+            </span>
+            <span className="mx-ds">{t.word}</span>
+          </button>
+        ))}
         {rows.map((r) => (
           <button key={r.id} type="button" className="mx-drow" onClick={(e) => onOpen(rowItem(r, true), e.currentTarget)}>
             <i style={{ background: C_COLOR[r.st] }} />
@@ -991,7 +1245,7 @@ function DayPopBody({ day, fy, company, area, onOpen, extra }: { day: string; fy
             <span className="mx-ds">{x.state}</span>
           </button>
         ))}
-        {!rows.length && !extra.length ? <Empty title="A clear day" sub="No filings, step deadlines or team tasks fall on it." /> : null}
+        {!rows.length && !trows.length && !extra.length ? <Empty title="A clear day" sub="No filings, tasks, step deadlines or team tasks fall on it." /> : null}
       </div>
     </div>
   );

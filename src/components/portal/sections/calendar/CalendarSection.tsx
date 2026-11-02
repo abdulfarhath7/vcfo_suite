@@ -8,23 +8,34 @@
  * coming up. Every filing comes from /api/client/compliances (useFilings);
  * each chip, dot and row opens the shared filing card (filings/actions.tsx).
  *
+ * Non-statutory tasks (compliance-client C-1..C-4): the All · Statutory ·
+ * Non-statutory switch above the bar (kept in `?cat=`) adds the tasks SBC
+ * shares with the client (GET /api/compliances/tasks) on their END date as a
+ * hollow-square "Task" marker, with a Non-statutory lane on the timeline and a
+ * place in the donut, Next deadline and Coming up. An area pick hides tasks;
+ * Non-statutory hides the area switch. A click opens the task (portal intent
+ * `task`). Tasks never enter the nav badge, the overdue list or the search.
+ *
  * Also owns: the Calendar nav badge (overdue count), the search items for every
  * filing of the current FY, and the `filing` route intent (old email links).
  */
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { statusOf, fyLabelOf, fyMonths, fyStartOfMonth, type PortalFiling } from '@/lib/client-portal/compliances';
 import { byStatus, fyRange, groupsByDay, worstOf } from '@/lib/client-portal/filing-track';
+import { isTaskRow, showStat, showTasks, taskAsRow, taskHint, type TaskRow } from '@/components/client-portal/pages/compliances/tasks';
+import { useClientTasks } from '@/components/client-portal/pages/compliances/task-api';
 import { useIntent, useNavBadge, usePaletteItems, usePortal, type PaletteItem } from '../../runtime';
 import { getJson, useFilings } from '../../data';
 import { daysTo, fmt, fmtL, fyOf, iso as isoOf, MON, MONL, P, rel, todayIso } from '../../dates';
 import { Btn, DateTile, Icon, LAWS, LawChip, lawVar, Seg, SecError, SecHead, SecLoading, ST_LABEL, type FilingSt, type LawKey } from '../../ui';
 import { useFilingActions, useFyFilings, useReminder } from '../filings/actions';
 import { Donut, lawShort, statusSegs } from '../filings/charts';
+import { CategorySeg, TaskTag, TaskWordPill, useCategory, useOpenTask } from '../filings/task-bits';
+import { mergeRows, rowWords, statOnly, taskNextLine, tasksInFy, taskTitle, type CalRow, type Category } from '../filings/tasks-model';
 import '../../css/95-filings.css';
 
 type View = 'month' | 'year' | 'timeline';
 type Law = LawKey | 'all';
-
 
 function stepYm(ym: string, k: number): string {
   const [y, m] = ym.split('-').map(Number) as [number, number];
@@ -32,9 +43,13 @@ function stepYm(ym: string, k: number): string {
   return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
 }
 
+/** A filing's law, or `all` for a task row (it has no regulator and only shows under "All laws"). */
+const lawOkFor = (r: CalRow, law: Law): boolean => (isTaskRow(r) ? law === 'all' : law === 'all' || r.area === law);
+
 export function CalendarSection() {
   const { shell, go, toast } = usePortal();
   const { openFiling, openDay } = useFilingActions();
+  const openTask = useOpenTask();
   const today = todayIso();
   const curFy = fyOf(today).start;
 
@@ -42,22 +57,38 @@ export function CalendarSection() {
   const [view, setView] = useState<View>('month');
   const [law, setLaw] = useState<Law>('all');
   const [status, setStatus] = useState<FilingSt | null>(null);
+  const [cat, setCat] = useCategory();
 
   const fy = fyStartOfMonth(ym);
   const FYM = useMemo(() => fyMonths(fy), [fy]);
   const q = useFyFilings(`${ym}-01`);
   // the whole register (no fy: every year) — the rail, the badge, search, route intents and the month range
   const cur = useFilings();
+  // C-3: the tasks shared with the client, as register-shaped rows on their end date
+  const tq = useClientTasks();
+  const taskRows = useMemo<TaskRow[]>(() => (tq.data ?? []).map(taskAsRow), [tq.data]);
   const all = useMemo(() => q.data?.rows ?? [], [q.data]);
   const curRows = useMemo(() => cur.data?.rows ?? [], [cur.data]);
   const span = useMemo(() => fyRange(curRows, curFy), [curRows, curFy]);
   const minYm = `${span.lo}-04`;
   const maxYm = `${span.hi + 1}-03`;
   const setYm = (v: string) => setYmState(v < minYm ? minYm : v > maxYm ? maxYm : v);
-  const railRows = useMemo(() => {
+
+  // C-4: what the switch and the area pick let through
+  const statOn = showStat(cat);
+  const tasksOn = showTasks(cat) && law === 'all';
+  const fyTasks = useMemo(() => tasksInFy(taskRows, fy), [taskRows, fy]);
+  /** the FY on screen: register rows and task rows, as the switch allows */
+  const rows = useMemo<CalRow[]>(() => mergeRows(all, fyTasks, cat, law), [all, fyTasks, cat, law]);
+  const railRows = useMemo<CalRow[]>(() => {
     const seen = new Set(curRows.map((r) => r.id));
-    return [...curRows, ...all.filter((r) => !seen.has(r.id))];
-  }, [curRows, all]);
+    const stat = statOn ? [...curRows, ...all.filter((r) => !seen.has(r.id))] : [];
+    return [...stat, ...(tasksOn ? taskRows : [])];
+  }, [curRows, all, statOn, tasksOn, taskRows]);
+  const pickCat = (c: Category) => {
+    setCat(c);
+    if (c === 'non-statutory') setLaw('all');
+  };
 
   // SBC-calendar rows start after incorporation: open on the first month that has one, once
   const jumped = useRef(false);
@@ -69,7 +100,7 @@ export function CalendarSection() {
     setYmState(first.dueDate.slice(0, 7));
   }, [cur.data?.fromCalendar, curRows, ym]);
 
-  /* ---------- badge (every overdue filing), search items (this FY + anything overdue), route intent */
+  /* ---------- badge (every overdue filing), search items (this FY + anything overdue), route intent — statutory only */
   const overdue = curRows.filter((r) => statusOf(r, today) === 'over').length;
   useNavBadge('calendar', overdue || undefined);
   const items = useMemo<PaletteItem[]>(
@@ -77,15 +108,15 @@ export function CalendarSection() {
       curRows
         .filter((r) => fyStartOfMonth(r.dueDate.slice(0, 7)) === curFy || statusOf(r, today) === 'over')
         .map((r) => ({
-        id: 'filing-' + r.id,
-        label: r.name,
-        kind: `${fmt(r.dueDate)} · ${ST_LABEL[statusOf(r, today)]}`,
-        sw: lawVar(r.area),
-        go: () => {
-          go('calendar');
-          openFiling(r, null);
-        },
-      })),
+          id: 'filing-' + r.id,
+          label: r.name,
+          kind: `${fmt(r.dueDate)} · ${ST_LABEL[statusOf(r, today)]}`,
+          sw: lawVar(r.area),
+          go: () => {
+            go('calendar');
+            openFiling(r, null);
+          },
+        })),
     [curRows, curFy, today, go, openFiling],
   );
   usePaletteItems('filings', items);
@@ -111,9 +142,14 @@ export function CalendarSection() {
   });
 
   /* ---------- derived */
-  const lawOk = (r: PortalFiling) => law === 'all' || r.area === law;
-  const vis = (r: PortalFiling) => lawOk(r) && (!status || statusOf(r, today) === status);
-  const scope = view === 'month' ? all.filter((r) => r.dueDate.startsWith(ym)) : all;
+  const vis = (r: CalRow) => lawOkFor(r, law) && (!status || statusOf(r, today) === status);
+  const scope = view === 'month' ? rows.filter((r) => r.dueDate.startsWith(ym)) : rows;
+  const scopeStat = statOnly(scope);
+  // C-1: the switch counts the month in Month view, the year otherwise (before the area and status picks)
+  const winStat = view === 'month' ? all.filter((r) => r.dueDate.startsWith(ym)) : all;
+  const winTasks = view === 'month' ? fyTasks.filter((r) => r.dueDate.startsWith(ym)) : fyTasks;
+  const onOpen: OpenRow = (r, el) => (isTaskRow(r) ? openTask(r) : openFiling(r, el));
+  const onDay: OpenDay = (iso, el) => openDay(iso, el, { tasks: tasksOn });
 
   if (q.isError) return (
     <>
@@ -127,7 +163,7 @@ export function CalendarSection() {
       <SecLoading label="Loading your compliance calendar…" />
     </>
   );
-  if (!all.length && !curRows.length && fy === curFy && shell && !shell.incorporated) {
+  if (!all.length && !curRows.length && !taskRows.length && fy === curFy && shell && !shell.incorporated) {
     return (
       <>
         <SecHead title="Compliance calendar" />
@@ -144,7 +180,7 @@ export function CalendarSection() {
   return (
     <>
       <SecHead title="Compliance calendar" />
-      {cur.data?.fromCalendar ? (
+      {cur.data?.fromCalendar && statOn ? (
         <div className="banner info" style={{ margin: '0 0 14px' }}>
           <Icon name="cal" />
           <div>
@@ -155,6 +191,10 @@ export function CalendarSection() {
           </div>
         </div>
       ) : null}
+      <div className="catbar">
+        <CategorySeg value={cat} onChange={pickCat} stat={winStat.length} ns={winTasks.length} />
+        {tq.isError && cat !== 'statutory' ? <span className="small">Your tasks could not load.</span> : null}
+      </div>
       <div className="glass ctool">
         <div className="mpick">
           <button type="button" className="ib" aria-label="Previous month" disabled={ym <= minYm} onClick={() => setYm(stepYm(ym, -1))}>
@@ -179,15 +219,17 @@ export function CalendarSection() {
           </button>
         </div>
         <span className="fy">{fyLabelOf(fy)}</span>
-        <Seg<Law>
-          ariaLabel="Area of law"
-          value={law}
-          onChange={setLaw}
-          options={[
-            { value: 'all', label: 'All laws', n: scope.length },
-            ...LAWS.map((l) => ({ value: l.k as Law, label: lawShort(l.k), dot: lawVar(l.k), n: scope.filter((r) => r.area === l.k).length })),
-          ]}
-        />
+        {cat === 'non-statutory' ? null : (
+          <Seg<Law>
+            ariaLabel="Area of law"
+            value={law}
+            onChange={setLaw}
+            options={[
+              { value: 'all', label: 'All laws', n: scope.length },
+              ...LAWS.map((l) => ({ value: l.k as Law, label: lawShort(l.k), dot: lawVar(l.k), n: scopeStat.filter((r) => r.area === l.k).length })),
+            ]}
+          />
+        )}
         <span className="sp" />
         <Seg<View>
           ariaLabel="View"
@@ -203,7 +245,7 @@ export function CalendarSection() {
 
       <Ribbon
         months={FYM}
-        rows={all}
+        rows={rows}
         today={today}
         law={law}
         sel={view === 'month' ? ym : null}
@@ -218,7 +260,7 @@ export function CalendarSection() {
           {view === 'month' ? (
             <MonthView
               ym={ym}
-              rows={all.filter((r) => r.dueDate.startsWith(ym))}
+              rows={rows.filter((r) => r.dueDate.startsWith(ym))}
               vis={vis}
               today={today}
               law={law}
@@ -227,18 +269,18 @@ export function CalendarSection() {
                 setLaw('all');
                 setStatus(null);
               }}
-              onFiling={openFiling}
-              onDay={openDay}
+              onOpen={onOpen}
+              onDay={onDay}
             />
           ) : view === 'year' ? (
-            <YearView months={FYM} rows={all.filter(vis)} today={today} onMonth={(k) => (setYm(k), setView('month'))} onFiling={openFiling} onDay={openDay} />
+            <YearView months={FYM} rows={rows.filter(vis)} today={today} tasks={tasksOn} onMonth={(k) => (setYm(k), setView('month'))} onOpen={onOpen} onDay={onDay} />
           ) : (
             <div className="glass mg-wrap">
-              <Lanes fy={fy} months={FYM} rows={all.filter((r) => !status || statusOf(r, today) === status)} today={today} ym={ym} onFiling={openFiling} onDay={openDay} />
+              <Lanes fy={fy} months={FYM} rows={rows.filter((r) => !status || statusOf(r, today) === status)} today={today} ym={ym} taskLane={tasksOn} onOpen={onOpen} onDay={onDay} />
             </div>
           )}
         </div>
-        <Rail view={view} ym={ym} scope={scope.filter(lawOk)} rows={railRows} law={law} today={today} status={status} setStatus={setStatus} />
+        <Rail view={view} ym={ym} scope={scope.filter((r) => lawOkFor(r, law))} rows={railRows} law={law} today={today} status={status} setStatus={setStatus} />
       </div>
     </>
   );
@@ -246,8 +288,8 @@ export function CalendarSection() {
 
 /* ---------------------------------------------------------------- ribbon */
 
-function Ribbon({ months, rows, today, law, sel, onPick }: { months: string[]; rows: PortalFiling[]; today: string; law: Law; sel: string | null; onPick: (ym: string) => void }) {
-  const per = months.map((k) => rows.filter((r) => r.dueDate.startsWith(k) && (law === 'all' || r.area === law)));
+function Ribbon({ months, rows, today, law, sel, onPick }: { months: string[]; rows: CalRow[]; today: string; law: Law; sel: string | null; onPick: (ym: string) => void }) {
+  const per = months.map((k) => rows.filter((r) => r.dueDate.startsWith(k) && lawOkFor(r, law)));
   const max = Math.max(...per.map((l) => l.length), 1);
   const now = today.slice(0, 7);
   return (
@@ -256,17 +298,19 @@ function Ribbon({ months, rows, today, law, sel, onPick }: { months: string[]; r
         const list = per[i]!;
         const hasOver = list.some((r) => statusOf(r, today) === 'over');
         const hasDue = list.some((r) => statusOf(r, today) === 'due');
+        const tasks = list.filter(isTaskRow).length;
         return (
-          <button key={k} type="button" className={'rb' + (k === sel ? ' sel' : '') + (k === now ? ' now' : '')} title={`${MONL[Number(k.slice(5)) - 1]} ${k.slice(0, 4)}: ${list.length} filing${list.length === 1 ? '' : 's'}`} onClick={() => onPick(k)}>
+          <button key={k} type="button" className={'rb' + (k === sel ? ' sel' : '') + (k === now ? ' now' : '')} title={`${MONL[Number(k.slice(5)) - 1]} ${k.slice(0, 4)}: ${rowWords(list)}`} onClick={() => onPick(k)}>
             <div className="flag">
               {hasOver ? <em style={{ background: 'var(--over)' }} /> : null}
               {hasDue ? <em style={{ background: 'var(--due)' }} /> : null}
             </div>
             <div className="bars">
               {LAWS.map((l) => {
-                const n = list.filter((r) => r.area === l.k).length;
+                const n = list.filter((r) => !isTaskRow(r) && r.area === l.k).length;
                 return n ? <i key={l.k} style={{ height: `${(n / max) * 100}%`, background: lawVar(l.k), opacity: k < now ? 0.45 : 1 }} /> : null;
               })}
+              {tasks ? <i className="task" style={{ height: `${(tasks / max) * 100}%`, opacity: k < now ? 0.45 : 1 }} /> : null}
             </div>
             <b>{MON[Number(k.slice(5)) - 1]}</b>
             <span>{list.length}</span>
@@ -279,7 +323,7 @@ function Ribbon({ months, rows, today, law, sel, onPick }: { months: string[]; r
 
 /* ---------------------------------------------------------------- month */
 
-type OpenFiling = (f: PortalFiling, anchor?: Element | null) => void;
+type OpenRow = (r: CalRow, anchor?: Element | null) => void;
 type OpenDay = (iso: string, anchor?: Element | null) => void;
 
 function MonthView({
@@ -290,25 +334,27 @@ function MonthView({
   law,
   status,
   onReset,
-  onFiling,
+  onOpen,
   onDay,
 }: {
   ym: string;
-  rows: PortalFiling[];
-  vis: (r: PortalFiling) => boolean;
+  rows: CalRow[];
+  vis: (r: CalRow) => boolean;
   today: string;
   law: Law;
   status: FilingSt | null;
   onReset: () => void;
-  onFiling: OpenFiling;
+  onOpen: OpenRow;
   onDay: OpenDay;
 }) {
   const [y, m] = ym.split('-').map(Number) as [number, number];
   const vlist = rows.filter(vis);
   const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
   const nd = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const over = vlist.filter((r) => statusOf(r, today) === 'over').length;
-  const due = vlist.filter((r) => statusOf(r, today) === 'due').length;
+  // the head pills count filings only: tasks stay out of the overdue / due counts (C-4)
+  const stat = statOnly(vlist);
+  const over = stat.filter((r) => statusOf(r, today) === 'over').length;
+  const due = stat.filter((r) => statusOf(r, today) === 'due').length;
   const cells = Math.ceil((lead + nd) / 7) * 7;
   const lawName = law === 'all' ? '' : LAWS.find((l) => l.k === law)!.name;
   const key = (e: KeyboardEvent<HTMLDivElement>, ds: string) => {
@@ -325,7 +371,7 @@ function MonthView({
             {MONL[m - 1]} {y}
           </h3>
           <div className="small">
-            {vlist.length} filing{vlist.length === 1 ? '' : 's'}
+            {rowWords(vlist)}
             {lawName ? ` in ${lawName}` : ''}
             {status ? ` · showing ${ST_LABEL[status].toLowerCase()} only` : ''}
           </div>
@@ -365,13 +411,15 @@ function MonthView({
           );
           const st = list.length ? worstOf(list, today) : null;
           const we = i % 7 > 4;
+          const lead0 = list[0];
+          const glowCol = st === 'over' ? 'var(--over)' : lead0 && !isTaskRow(lead0) ? lawVar(lead0.area) : 'var(--ink-3)';
           return (
             <div
               key={i}
               className={'cell' + (we ? ' we' : '') + (st === 'over' || st === 'due' ? ' s-' + st : '') + (ds === today ? ' today' : '')}
               role="button"
               tabIndex={0}
-              aria-label={`${fmtL(ds)}: ${list.length} filing${list.length === 1 ? '' : 's'}`}
+              aria-label={`${fmtL(ds)}: ${rowWords(list)}`}
               onClick={(e) => onDay(ds, e.currentTarget)}
               onKeyDown={(e) => key(e, ds)}
             >
@@ -379,7 +427,7 @@ function MonthView({
                 <div
                   className="glow"
                   style={{
-                    background: `radial-gradient(130% 90% at 0% 0%, color-mix(in srgb, ${st === 'over' ? 'var(--over)' : lawVar(list[0]!.area)} ${st === 'ok' ? 10 : 24}%, transparent), transparent 70%)`,
+                    background: `radial-gradient(130% 90% at 0% 0%, color-mix(in srgb, ${glowCol} ${st === 'ok' ? 10 : 24}%, transparent), transparent 70%)`,
                   }}
                 />
               ) : null}
@@ -390,24 +438,25 @@ function MonthView({
                     TODAY
                   </span>
                 ) : null}
-                {list.length > 1 ? <span className="ct">{list.length} filings</span> : null}
+                {list.length > 1 ? <span className="ct">{rowWords(list)}</span> : null}
               </div>
               {list.slice(0, 3).map((r) => {
                 const s = statusOf(r, today);
+                const task = isTaskRow(r);
                 return (
                   <button
                     key={r.id}
                     type="button"
                     data-fid={r.id}
-                    className={'chip ' + s}
-                    style={{ ['--lc' as string]: lawVar(r.area) }}
-                    title={`${r.name} · ${r.period}`}
+                    className={'chip ' + s + (task ? ' task' : '')}
+                    style={task ? undefined : { ['--lc' as string]: lawVar(r.area) }}
+                    title={task ? taskTitle(r, today) : `${r.name} · ${r.period}`}
                     onClick={(e: MouseEvent<HTMLButtonElement>) => {
                       e.stopPropagation();
-                      onFiling(r, e.currentTarget);
+                      onOpen(r, e.currentTarget);
                     }}
                   >
-                    {s === 'over' ? <Icon name="alert" /> : s === 'ok' ? <Icon name="check" /> : null}
+                    {task ? <i className="tsq" aria-hidden="true" /> : s === 'over' ? <Icon name="alert" /> : s === 'ok' ? <Icon name="check" /> : null}
                     <span>{r.name}</span>
                   </button>
                 );
@@ -440,15 +489,18 @@ function YearView({
   months,
   rows,
   today,
+  tasks,
   onMonth,
-  onFiling,
+  onOpen,
   onDay,
 }: {
   months: string[];
-  rows: PortalFiling[];
+  rows: CalRow[];
   today: string;
+  /** C-4: tasks are on, so the key explains the TASK tag */
+  tasks: boolean;
   onMonth: (ym: string) => void;
-  onFiling: OpenFiling;
+  onOpen: OpenRow;
   onDay: OpenDay;
 }) {
   return (
@@ -488,6 +540,12 @@ function YearView({
           <span className="tg">GST</span>
           Each line names its law
         </span>
+        {tasks ? (
+          <span>
+            <span className="tg task">TASK</span>
+            A task, on the day it ends
+          </span>
+        ) : null}
         <span className="small" style={{ marginLeft: 'auto' }}>
           Click a date, a line, or a month name
         </span>
@@ -498,7 +556,7 @@ function YearView({
           const nd = new Date(Date.UTC(y, m, 0)).getUTCDate();
           const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
           const list = rows.filter((r) => r.dueDate.startsWith(k));
-          const late = list.filter((r) => statusOf(r, today) === 'over').length;
+          const late = statOnly(list).filter((r) => statusOf(r, today) === 'over').length;
           const days = groupsByDay(list, today);
           return (
             <section key={k} className={'wpage' + (k === today.slice(0, 7) ? ' now' : '')}>
@@ -508,7 +566,7 @@ function YearView({
                 </button>
                 <span>{y}</span>
                 <em className={late ? 'r' : ''}>
-                  {list.length} filing{list.length === 1 ? '' : 's'}
+                  {rowWords(list)}
                   {late ? ` · ${late} late` : ''}
                 </em>
               </div>
@@ -545,14 +603,15 @@ function YearView({
                       key={g.d}
                       type="button"
                       className="wp-r"
-                      onClick={(e) => (g.items.length > 1 ? onDay(g.d, e.currentTarget) : onFiling(g.lead, e.currentTarget))}
+                      title={isTaskRow(g.lead) ? taskTitle(g.lead, today) : undefined}
+                      onClick={(e) => (g.items.length > 1 ? onDay(g.d, e.currentTarget) : onOpen(g.lead, e.currentTarget))}
                     >
                       <span className={'dn s-' + g.st}>{P(g.d).getUTCDate()}</span>
                       <span className={'t' + (g.st === 'ok' ? ' ok' : '')}>
                         {g.lead.name}
                         {g.items.length > 1 ? `  +${g.items.length - 1}` : ''}
                       </span>
-                      <span className="tg">{LAW_TAG[g.lead.area]}</span>
+                      {isTaskRow(g.lead) ? <span className="tg task">TASK</span> : <span className="tg">{LAW_TAG[g.lead.area]}</span>}
                     </button>
                   ))}
                   {days.length > 6 ? (
@@ -580,15 +639,18 @@ function Lanes({
   rows,
   today,
   ym,
-  onFiling,
+  taskLane,
+  onOpen,
   onDay,
 }: {
   fy: number;
   months: string[];
-  rows: PortalFiling[];
+  rows: CalRow[];
   today: string;
   ym: string;
-  onFiling: OpenFiling;
+  /** C-4: a "Non-statutory" lane with hollow bars from start to end */
+  taskLane: boolean;
+  onOpen: OpenRow;
   onDay: OpenDay;
 }) {
   const W = 1000;
@@ -596,16 +658,19 @@ function Lanes({
   const Rr = 20;
   const top = 34;
   const LH = 58;
-  const H = top + LAWS.length * LH + 10;
+  const H = top + (LAWS.length + (taskLane ? 1 : 0)) * LH + 10;
   const FY0 = P(`${fy}-04-01`).getTime();
   const FY1 = P(`${fy + 1}-04-01`).getTime();
   const x = (s: string) => L + ((P(s).getTime() - FY0) / (FY1 - FY0)) * (W - L - Rr);
   const clampX = (s: string) => Math.min(Math.max(x(s), L), W - Rr);
   const showToday = today >= `${fy}-04-01` && today < `${fy + 1}-04-01`;
   const tx = x(today);
+  const stat = statOnly(rows);
+  const tasks = rows.filter(isTaskRow);
+  const ty = top + LAWS.length * LH + LH / 2;
   return (
     <div className="lanes-sc">
-      <svg id="lanesvg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Filings in one lane per area of law across the year">
+      <svg id="lanesvg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={taskLane ? 'Filings in one lane per area of law, and tasks in a lane of their own, across the year' : 'Filings in one lane per area of law across the year'}>
         {months.map((k) => {
           const x0 = x(`${k}-01`);
           return (
@@ -619,7 +684,7 @@ function Lanes({
         })}
         {LAWS.map((l, li) => {
           const yy = top + li * LH + LH / 2;
-          const list = rows.filter((r) => r.area === l.k);
+          const list = stat.filter((r) => r.area === l.k);
           return (
             <g key={l.k}>
               <rect x="8" y={yy - 14} width={L - 20} height="28" rx="8" style={{ fill: `color-mix(in srgb, ${lawVar(l.k)} 16%, transparent)` }} />
@@ -652,12 +717,12 @@ function Lanes({
                       role="button"
                       aria-label={`${fmt(g.d)} · ${g.lead.name}${g.items.length > 1 ? ` and ${g.items.length - 1} more` : ''}`}
                       style={{ fill: col, fillOpacity: g.st === 'ok' ? 0.55 : 1, cursor: 'pointer' }}
-                      onClick={(e) => (g.items.length > 1 ? onDay(g.d, e.currentTarget) : onFiling(g.lead, e.currentTarget))}
+                      onClick={(e) => (g.items.length > 1 ? onDay(g.d, e.currentTarget) : onOpen(g.lead, e.currentTarget))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
                           if (g.items.length > 1) onDay(g.d, e.currentTarget);
-                          else onFiling(g.lead, e.currentTarget);
+                          else onOpen(g.lead, e.currentTarget);
                         }
                       }}
                     >
@@ -672,6 +737,43 @@ function Lanes({
             </g>
           );
         })}
+        {taskLane ? (
+          <g>
+            <rect x="8" y={ty - 14} width={L - 20} height="28" rx="8" style={{ fill: 'var(--hi)', stroke: 'var(--line)' }} />
+            <text x="18" y={ty + 4.5} style={{ fill: 'var(--ink)', font: '600 12.5px var(--f-disp)' }}>
+              Non-statutory
+            </text>
+            <line x1={L} y1={ty} x2={W - Rr} y2={ty} style={{ stroke: 'var(--line-2)' }} strokeWidth="2" />
+            {tasks.map((r) => {
+              const s = statusOf(r, today);
+              const col = s === 'ok' ? 'var(--done)' : s === 'over' ? 'var(--over)' : s === 'due' ? 'var(--due-ink)' : 'var(--ink-2)';
+              const x0 = clampX(r.task.startDate);
+              const x1 = clampX(r.task.endDate);
+              const label = `${taskTitle(r, today)} · ${fmt(r.task.startDate)} – ${fmt(r.task.endDate)}`;
+              const open = (el: Element) => onOpen(r, el);
+              return (
+                <g
+                  key={r.id}
+                  className="lane-task"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={label}
+                  onClick={(e) => open(e.currentTarget)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      open(e.currentTarget);
+                    }
+                  }}
+                >
+                  <rect x={x0} y={ty - 9} width={Math.max(10, x1 - x0)} height="18" rx="6" fill="none" style={{ stroke: col, opacity: s === 'ok' ? 0.6 : 1 }} strokeWidth="1.5" />
+                  <rect x={x1 - 5} y={ty - 5} width="10" height="10" rx="2" style={{ fill: 'var(--solid)', stroke: col }} strokeWidth="1.5" />
+                  <title>{label}</title>
+                </g>
+              );
+            })}
+          </g>
+        ) : null}
         {showToday ? (
           <g>
             <line x1={tx} y1={top - 8} x2={tx} y2={H - 6} style={{ stroke: 'var(--ice)' }} strokeWidth="2" />
@@ -701,23 +803,28 @@ function Rail({
   view: View;
   ym: string;
   /** what the donut counts: the month (or year) on screen, law-filtered */
-  scope: PortalFiling[];
-  /** the current FY plus the FY on screen: the next deadline and the list run from today */
-  rows: PortalFiling[];
+  scope: CalRow[];
+  /** the current FY plus the FY on screen (and the tasks, when on): the next deadline and the list run from today */
+  rows: CalRow[];
   law: Law;
   today: string;
   status: FilingSt | null;
   setStatus: (s: FilingSt | null) => void;
 }) {
   const { openFiling } = useFilingActions();
-  const live = rows.filter((r) => law === 'all' || r.area === law);
+  const openTask = useOpenTask();
+  const live = rows.filter((r) => lawOkFor(r, law));
   const up = live
     .filter((r) => !r.filedOn && r.dueDate >= today)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.name.localeCompare(b.name));
   // the countdown card is for the company's own deadlines; SBC-calendar lines (before the register exists) stay in Coming up
   const nd = up.find((r) => !r.fromCalendar) ?? null;
-  const over = live.filter((r) => statusOf(r, today) === 'over').sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  // the overdue list under it is filings only: tasks never enter the overdue counts (C-4)
+  const over = statOnly(live)
+    .filter((r) => statusOf(r, today) === 'over')
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const in30 = up.filter((r) => daysTo(r.dueDate, today) <= 30).length;
+  const open = (r: CalRow, el: Element) => (isTaskRow(r) ? openTask(r) : openFiling(r, el));
   return (
     <div className="rail">
       <section className="glass panel">
@@ -730,10 +837,14 @@ function Rail({
         <div className="ph" style={{ marginBottom: 0 }}>
           <h3>Next deadline</h3>
           <span className="sp" />
-          {nd ? <LawChip law={nd.area} /> : null}
+          {nd ? isTaskRow(nd) ? <TaskTag task={nd.task} /> : <LawChip law={nd.area} /> : null}
         </div>
         {nd ? (
-          <NextDeadline f={nd} today={today} />
+          isTaskRow(nd) ? (
+            <NextTask r={nd} today={today} />
+          ) : (
+            <NextDeadline f={nd} today={today} />
+          )
         ) : (
           <p className="small" style={{ marginTop: 10 }}>
             {up.length ? 'No deadline on your register yet. Your first filings start after incorporation.' : 'Nothing coming up.'}
@@ -763,13 +874,21 @@ function Rail({
         {up.length ? (
           up.slice(0, 6).map((r) => {
             const st = statusOf(r, today);
+            const task = isTaskRow(r);
             return (
-              <button key={r.id} type="button" className="cu" onClick={(e) => openFiling(r, e.currentTarget)}>
+              <button key={r.id} type="button" className="cu" title={task ? taskTitle(r, today) : undefined} onClick={(e) => open(r, e.currentTarget)}>
                 <DateTile iso={r.dueDate} st={st === 'due' ? 'due' : null} />
                 <div style={{ minWidth: 0 }}>
                   <div className="tt">{r.name}</div>
                   <div className="ss">
-                    <LawChip law={r.area} />
+                    {task ? (
+                      <>
+                        <TaskTag task={r.task} small />
+                        <TaskWordPill task={r.task} today={today} tiny />
+                      </>
+                    ) : (
+                      <LawChip law={r.area} />
+                    )}
                     <span className="small">{rel(daysTo(r.dueDate, today))}</span>
                   </div>
                 </div>
@@ -812,6 +931,35 @@ function NextDeadline({ f, today }: { f: PortalFiling; today: string }) {
         <Btn cls="sm" ico="bell" disabled={reminder.busy} onClick={() => void reminder.toggle()}>
           {f.reminderOn ? `Reminder ${fmt(f.reminderOn)}` : 'Remind me'}
         </Btn>
+      </div>
+    </>
+  );
+}
+
+/** C-4: the Next deadline card for a task — "Open task", no reminder, "Your inputs needed" when it waits on the client. */
+function NextTask({ r, today }: { r: TaskRow; today: string }) {
+  const openTask = useOpenTask();
+  const n = daysTo(r.dueDate, today);
+  return (
+    <>
+      <div className="big">
+        <div className="bigday">
+          <b>{n}</b>
+          <span>{n === 1 ? 'DAY' : 'DAYS'}</span>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ font: '700 16px/1.3 var(--f-disp)' }}>{r.name}</div>
+          <div className="small">
+            {fmtL(r.dueDate)} · {taskNextLine(r)}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Btn cls="sm pri" ico="doc" onClick={() => openTask(r)}>
+          Open task
+        </Btn>
+        <TaskWordPill task={r.task} today={today} />
+        <span className="small">{taskHint(r.task)}</span>
       </div>
     </>
   );

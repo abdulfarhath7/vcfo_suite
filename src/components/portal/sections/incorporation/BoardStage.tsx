@@ -1,36 +1,48 @@
 'use client';
 
 /**
- * The board-resolution document stage (steps 2–3, intent 'board'): the
- * Drafted → Released → Signed → Received tracker, the Word draft and the signed
- * copy, the signed-copy upload / replace, and an inline preview of the draft —
- * what the previous portal's BoardPage did, in the new look.
+ * The board-resolution (NOC) document stage (steps 2–3, intent 'board'): the
+ * track with the real step states (Drafted → Released → Signed → Notarised →
+ * Apostilled → Accepted for a foreign parent; four steps for an Indian parent),
+ * the status words (released / signed copy sent / sent back with the reason /
+ * accepted), the variant label and version, the Word draft and the signed copy,
+ * the signed-copy upload / replace until SBC accepts it, and an inline preview
+ * of the draft — in the portal's own look.
  *
- * Real data: `GET /api/engagements/:id/board-resolution` (fetchBoardResolutionInDb),
- * the download / download-signed routes, `uploadSignedBoardResolution`
+ * Real data: `GET /api/engagements/:id/board-resolution/noc` (docs/ui-port/
+ * BR-NOC-API.md; a client response never carries the staff block),
+ * `GET /api/engagements/:id/board-resolution` (fetchBoardResolutionInDb), the
+ * download / download-signed routes, `uploadSignedBoardResolution`
  * (upload-signed route) and `/api/client/incorporation` for names and dates.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import { BOARD_RESOLUTION_DOCX_FILENAME, uploadSignedBoardResolution, validateSignedBoardResolutionFile } from '@/lib/board-resolution/board-resolution-storage';
 import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
+import type { NocState } from '@/lib/noc/state';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { usePortal } from '../../runtime';
 import { Btn, Icon, Pill } from '../../ui';
 import { fmt, fmtStamp } from '../../dates';
-import { useIncorporationExtras, usePortalIncorporation, useRefreshPortal } from '../../data';
+import { PK, getJson, useIncorporationExtras, usePortalIncorporation, useRefreshPortal } from '../../data';
 import { FileRow, fileKind } from './FileRow';
 import { firstName, openInTab, signedUrlFor } from './files';
+import { canUploadSigned, nocPhase, nocStageRows, nocStatus, nocVariantLabel, signedCopyChip } from './noc';
+
+/** The NOC state query key; it starts with PK so `useRefreshPortal()` refetches it too. */
+const nocKey = (engId: string) => [PK, 'board-resolution-noc', engId] as const;
 
 export function BoardStage() {
   const { toast, shell, isLight } = usePortal();
   const { model, engagement } = usePortalIncorporation();
   const extras = useIncorporationExtras();
   const refresh = useRefreshPortal();
+  const qc = useQueryClient();
   const { getStateForEngagement } = useApp();
   const engId = engagement?.id;
   const short = shell?.companyShort || 'Your company';
@@ -54,7 +66,26 @@ export function BoardStage() {
   useEffect(() => {
     void load();
   }, [load]);
-  useRealtimeBoardResolution({ appEngagementId: engId, onRemoteChange: () => void load() });
+
+  const nocQ = useQuery({
+    queryKey: nocKey(engId ?? ''),
+    queryFn: async () => (await getJson<{ noc?: NocState }>(`/api/engagements/${encodeURIComponent(engId!)}/board-resolution/noc`))?.noc ?? null,
+    enabled: Boolean(engId),
+    staleTime: 30_000,
+    retry: false,
+  });
+  const noc = nocQ.data ?? null;
+  const reloadNoc = useCallback(() => {
+    if (engId) void qc.invalidateQueries({ queryKey: nocKey(engId) });
+  }, [qc, engId]);
+
+  useRealtimeBoardResolution({
+    appEngagementId: engId,
+    onRemoteChange: () => {
+      void load();
+      reloadNoc();
+    },
+  });
 
   const mergeFields = useMemo(() => {
     const pre1 = checklist.find((c) => c.id === 'pre-1');
@@ -70,14 +101,34 @@ export function BoardStage() {
   const signedHref =
     engId && doc?.signedStoragePath ? `/api/engagements/${engId}/board-resolution/download-signed?v=${encodeURIComponent(doc.signedUploadedAt ?? doc.signedStoragePath)}` : '';
   const s3Path = useMemo(() => (s3 ? String(extractItemResponses(s3.item, s3.slice).signedBoardResolutionUrl ?? '').trim() : ''), [s3]);
-  const showBody = visible || s2?.kind === 'done';
   const day = (ts?: string | null) => (ts ? fmtStamp(ts) : undefined);
-  const drafted = day(doc?.draftedAt);
-  const released = day(doc?.finalizedAt) ?? (s2?.kind === 'done' && s2.doneOn ? fmt(s2.doneOn) : undefined);
-  const signed = day(doc?.signedUploadedAt) ?? day(s3?.slice?.clientSubmittedAt) ?? (s3Path && s3?.kind === 'done' && s3.doneOn ? fmt(s3.doneOn) : undefined);
-  const received = day(ex?.receivedAt) ?? (s3?.kind === 'done' && s3.doneOn ? fmt(s3.doneOn) : undefined);
+
+  // Fallback dates (the route has nothing yet): the board-resolution row, then steps 2 and 3.
+  const fbReleased = day(doc?.finalizedAt) ?? (s2?.kind === 'done' && s2.doneOn ? fmt(s2.doneOn) : undefined);
+  const fbSigned = day(doc?.signedUploadedAt) ?? day(s3?.slice?.clientSubmittedAt) ?? (s3Path && s3?.kind === 'done' && s3.doneOn ? fmt(s3.doneOn) : undefined);
+  const fbAccepted = day(ex?.receivedAt) ?? (s3?.kind === 'done' && s3.doneOn ? fmt(s3.doneOn) : undefined);
+  const rows = nocStageRows(
+    noc,
+    { drafted: day(doc?.draftedAt), released: fbReleased, signed: fbSigned, signedBy: ex?.signedUploadedByName, accepted: fbAccepted, acceptedBy: ex?.receivedByName, onFile: visible },
+    { company: short, day, firstName },
+  );
+  const sentBack = noc?.sentBack ?? null;
+  const phase = nocPhase(rows, Boolean(sentBack));
+  const accepted = phase === 'accepted';
+  const status = nocStatus(phase, rows, day(sentBack?.at));
+  const signedDone = rows.some((r) => r.key === 'signed' && r.done);
+  const releasedDone = rows.some((r) => r.key === 'released' && r.done);
+  const answers = noc?.answers ?? {
+    ownershipType: engagement?.ownershipType ?? null,
+    companyType: engagement?.companyType ?? null,
+    parentIndianRelationship: engagement?.parentIndianRelationship ?? null,
+  };
+  const variantLabel = nocVariantLabel(noc, answers);
+  const showBody = visible || releasedDone || s2?.kind === 'done';
   const signedName = (doc?.signedStoragePath || s3Path).split('/').pop()?.replace(/^\d+-/, '') || 'Signed copy';
   const signedUrl: (() => Promise<string>) | null = signedHref ? async () => signedHref : s3Path ? () => signedUrlFor(s3Path) : null;
+  const signedRow = rows.find((r) => r.key === 'signed');
+  const signedChip = signedCopyChip(phase);
 
   const replace = async (file: File) => {
     if (!engId) return;
@@ -91,6 +142,7 @@ export function BoardStage() {
       const body = await uploadSignedBoardResolution(engId, file);
       setDoc((p) => (p ? { ...p, signedUploadedAt: body.signedUploadedAt ?? p.signedUploadedAt, signedStoragePath: body.signedStoragePath ?? p.signedStoragePath } : p));
       refresh();
+      reloadNoc();
       toast(`Signed copy uploaded · ${firstName(lead) || 'your team'} will check it`);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Upload failed');
@@ -99,33 +151,22 @@ export function BoardStage() {
     }
   };
 
-  const stages: Array<[string, string, boolean]> = [
-    ['Drafted', drafted ? `SBC · ${drafted}` : drafted || visible || released ? 'By SBC, from your details in step 1' : 'SBC drafts it from your details in step 1', Boolean(drafted || visible || released)],
-    ['Released', released ? `Released to ${short} · ${released}` : 'SBC releases it here to sign', Boolean(released)],
-    ['Signed', signed ? `${ex?.signedUploadedByName ? firstName(ex.signedUploadedByName) : short} · ${signed}` : received ? `Signed by ${short}` : 'Print on letterhead, a director signs, upload it', Boolean(signed || received)],
-    ['Received', received ? `Received by SBC${ex?.receivedByName ? ` · ${firstName(ex.receivedByName)}` : ''} · ${received}` : 'SBC checks the signed copy', Boolean(received)],
-  ];
-
   if (!loaded && engId) return <div className="sw-note">Loading the board resolution…</div>;
 
   return (
     <div className="sw-blk sw-board">
       <div className="sw-h">
-        <span className="eyebrow">Board resolution</span>
+        <span className="eyebrow">Board resolution (NOC)</span>
         <span className="sp" />
-        {received ? (
-          <Pill kind="ok" icon="check">
-            Received {received}
-          </Pill>
-        ) : signed ? (
-          <Pill kind="up" icon="clock">
-            Signed copy sent {signed}
-          </Pill>
-        ) : visible ? (
-          <Pill kind="due" icon="clock">
-            Waiting for the signed copy
+        {status ? (
+          <Pill kind={status.kind} icon={status.icon}>
+            {status.text}
           </Pill>
         ) : null}
+      </div>
+      <div className="sw-noc-var">
+        <span className="small">{variantLabel}</span>
+        {noc?.version ? <span className="pill mut sm">Version {noc.version}</span> : null}
       </div>
       {!showBody ? (
         <div className="banner info">
@@ -137,16 +178,30 @@ export function BoardStage() {
         </div>
       ) : (
         <>
-          <div className="needs">
-            {stages.map(([t, sub, ok]) => (
-              <div key={t} className="need" aria-pressed={ok}>
+          {sentBack ? (
+            <div className="banner over sw-noc-back" role="status">
+              <Icon name="alert" />
+              <div>
+                <b>
+                  Sent back{sentBack.byName ? ` by ${firstName(sentBack.byName)}` : ''}
+                  {day(sentBack.at) ? ` · ${day(sentBack.at)}` : ''}
+                </b>
+                <span>{sentBack.reason}</span>
+                <span className="sw-noc-next">Fix it and upload the signed copy again below.</span>
+              </div>
+            </div>
+          ) : null}
+          <div className="needs" aria-label="Progress of the board resolution">
+            {rows.map((r) => (
+              <div key={r.key} className={'need' + (r.now ? ' sw-now' : '')} aria-pressed={r.done} aria-current={r.now ? 'step' : undefined}>
                 <span className="bx">
                   <Icon name="check" />
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <b className="sw-need-t">{t}</b>
-                  <div className="small">{sub}</div>
+                  <b className="sw-need-t">{r.label}</b>
+                  <div className="small">{r.sub}</div>
                 </div>
+                {r.now ? <span className="pill mut sm sw-now-pill">Now</span> : null}
               </div>
             ))}
           </div>
@@ -154,7 +209,7 @@ export function BoardStage() {
             {visible ? (
               <FileRow
                 name="Draft · Word"
-                meta={`${BOARD_RESOLUTION_DOCX_FILENAME} · SBC${released ? ` · ${released}` : ''}`}
+                meta={`${BOARD_RESOLUTION_DOCX_FILENAME} · SBC${fbReleased ? ` · ${fbReleased}` : ''}`}
                 kind="DOCX"
                 chip={<Pill kind="done">Released</Pill>}
                 onDownload={() => {
@@ -166,16 +221,16 @@ export function BoardStage() {
             {signedUrl ? (
               <FileRow
                 name="Signed copy"
-                meta={`${signedName}${signed ? ` · ${signed}` : ''}`}
+                meta={`${signedName}${signedDone && signedRow?.sub ? ` · ${signedRow.sub}` : ''}`}
                 kind={fileKind(signedName)}
-                chip={<Pill kind="done">{received ? 'Received' : 'Sent'}</Pill>}
+                chip={<Pill kind={signedChip.kind}>{signedChip.text}</Pill>}
                 onOpen={() => openInTab(signedUrl, toast)}
               />
             ) : null}
             {!visible && !signedUrl ? <div className="sw-note">The board resolution file is not on file here yet. Ask SBC for a copy.</div> : null}
           </div>
-          {visible || signedUrl ? (
-            <label className={'drop' + (busy ? ' sw-busy' : '') + (received ? ' sent' : '')}>
+          {(visible || signedUrl) && canUploadSigned(phase) ? (
+            <label className={'drop' + (busy ? ' sw-busy' : '') + (signedUrl && phase !== 'sent_back' ? ' sent' : '')}>
               <input
                 type="file"
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -188,9 +243,10 @@ export function BoardStage() {
                 }}
               />
               <b>{busy ? 'Uploading…' : signedUrl ? 'Replace the signed copy' : 'Upload the signed copy'}</b>
-              <span>PDF or DOCX · signed on letterhead</span>
+              <span>PDF or DOCX · signed on letterhead{noc?.foreignParent && !noc.notaryStepsOff ? ' · notarised and apostilled' : ''}</span>
             </label>
           ) : null}
+          {accepted ? <div className="sw-note">SBC accepted the signed copy. It is filed in your documents.</div> : null}
           {visible && engId ? (
             <div style={{ marginTop: 12 }}>
               <Btn cls="sm" ico={preview ? 'x' : 'eye'} onClick={() => setPreview((p) => !p)}>

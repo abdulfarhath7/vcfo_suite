@@ -1,0 +1,25 @@
+/* Incorporation (practice page: the clients still incorporating, one table) — not from the prototype.
+   The tiles are the console's .mx-kpi tiles, four across; the table is the console's .mx-table grid. */
+.inc-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px; }
+.inc-kpis .mx-kpi { cursor: pointer; }
+.inc-kpis .mx-kpi[aria-pressed="true"] { border-color: var(--ice); }
+.inc-kpis .mx-kpi[disabled] { cursor: default; }
+.inc-kpis .mx-kpi[disabled]:hover { transform: none; border-color: var(--line); }
+
+.inc-scroll { overflow-x: auto; }
+.inc-tbl { min-width: 940px; }
+.inc-tbl .mx-th, .inc-tbl .mx-tr { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.6fr) 150px 140px 150px 170px; }
+.inc-tbl .mx-tr > span { min-width: 0; }
+.inc-cl { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.inc-cl .mx-av { flex: none; }
+.inc-ell { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inc-prog { display: flex; align-items: center; gap: 8px; }
+.inc-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line-2); overflow: hidden; }
+.inc-bar i { display: block; height: 100%; background: var(--mx-ok); border-radius: 3px; }
+.inc-prog .small { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inc-over { color: var(--over); }
+.inc-st { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+
+@media (max-width: 1024px) {
+  .inc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

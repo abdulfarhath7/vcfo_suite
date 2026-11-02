@@ -108,8 +108,24 @@ export function Donut<K extends string>({
 const LAWSHORT: Record<LawKey, string> = { MCA: 'MCA', GST: 'GST', PAY: 'Payroll', IT: 'Income tax', FEMA: 'FEMA · RBI' };
 export const lawShort = (k: LawKey): string => LAWSHORT[k];
 
-/** One ring per area of law: filled = share filed, a red dot when any is late. */
-export function LawRings({ rows, today, sel, onPick }: { rows: PortalFiling[]; today: string; sel: LawKey | 'all'; onPick: (k: LawKey | 'all') => void }) {
+/**
+ * One ring per area of law: filled = share filed, a red dot when any is late.
+ * `tasks` (F-3) adds a "Tasks" legend row for the non-statutory tasks of the
+ * window: they have no law, so they get a row and no ring.
+ */
+export function LawRings({
+  rows,
+  today,
+  sel,
+  onPick,
+  tasks,
+}: {
+  rows: PortalFiling[];
+  today: string;
+  sel: LawKey | 'all';
+  onPick: (k: LawKey | 'all') => void;
+  tasks?: { n: number; ok: number } | null;
+}) {
   const [hl, setHl] = useState<LawKey | null>(null);
   const data = LAWS.map((l, i) => {
     const list = rows.filter((r) => r.area === l.k);
@@ -187,6 +203,16 @@ export function LawRings({ rows, today, sel, onPick }: { rows: PortalFiling[]; t
             </em>
           </button>
         ))}
+        {tasks && tasks.n ? (
+          <div role="note" aria-label={`Tasks: ${tasks.ok} of ${tasks.n} done`} style={{ display: 'grid', gridTemplateColumns: 'subgrid', gridColumn: '1 / -1', padding: '6px 8px', alignItems: 'center', font: '500 13.5px var(--f-disp)' }}>
+            <i className="tsq" style={{ color: 'var(--ink-2)' }} />
+            <span>Tasks</span>
+            <span />
+            <em>
+              <b>{tasks.ok}</b> / {tasks.n}
+            </em>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -41,6 +41,32 @@
 /* timeline: one dot per day per lane, a count when several share it */
 .cpx .mx-fdot.cf-fdot { display: grid; place-items: center; font: 700 9px var(--f-mono); color: #06101f; cursor: pointer; }
 
+/* non-statutory tasks (C-3 / F-2): a hollow 8 px square in ink-2 marks a task on its END date; green once done.
+   Chips and matrix cells stay hollow (no regulator colour); the timeline lane draws a bar from start to end. */
+.cpx .cf-tsq { display: inline-block; width: 8px; height: 8px; border: 1.5px solid var(--ink-2); border-radius: 2px; background: transparent; flex: none; }
+.cpx .cf-tsq.done { border-color: var(--mx-ok); }
+.cpx .cf-ttag { display: inline-flex; align-items: center; gap: 5px; font: 700 10.5px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; flex: none; }
+.cpx .mx-fchip .cf-ttag { font-size: 8.5px; gap: 4px; }
+.cpx .mx-fchip .cf-ttag .cf-tsq { width: 7px; height: 7px; }
+.cpx .mx-fchip.cf-chip.cf-task.cf-task { background: transparent; box-shadow: none; border: 1px solid color-mix(in srgb, var(--ink-2) 55%, transparent); }
+.cpx .mx-fchip.cf-chip.cf-task.cf-task:hover { background: color-mix(in srgb, var(--ink-2) 12%, transparent); }
+.cpx .mx-drow i.cf-tsq,
+.cpx .mx-agi .cf-ttag { align-self: center; }
+/* the bar's left, width and top (one row per overlap) come from the page; the colour (--cc) is the six-word status */
+.cpx .cf-tbar { position: absolute; height: 10px; border-radius: 5px; border: 1.5px solid var(--cc, var(--ink-2)); background: color-mix(in srgb, var(--cc, var(--ink-2)) 16%, transparent); cursor: pointer; z-index: 1; min-width: 10px; transition: background .15s; }
+.cpx .cf-tbar:hover,
+.cpx .cf-tbar:focus-visible { background: color-mix(in srgb, var(--cc, var(--ink-2)) 34%, transparent); }
+.cpx .cf-tbar:focus-visible { outline: 2px solid var(--ice); outline-offset: 1px; }
+.cpx .cf-tbar.cut-s { border-left-style: dashed; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.cpx .cf-tbar.cut-e { border-right-style: dashed; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.cpx .mx-ftt.cf-tlane .mx-tlc { grid-row: 1; }
+.cpx .mx-phleg.cf-leg .cf-tsq { width: 10px; height: 10px; }
+.cpx .pill.cf-pb.sm { padding: 3px 7px; font-size: 10.5px; }
+.cpx .cf-fd .cf-win.ro.cf-tspan { color: var(--ink-3); }
+.cpx .mx-fra.cf-tcard .cf-tsq { width: 12px; height: 12px; }
+.cpx .cf-tblock { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-2); }
+.cpx .cf-tblock > .eyebrow { display: block; margin-bottom: 4px; }
+
 /* SBC calendar: the act legend toggles */
 .cpx .cf-acts2 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line-2); }
 .cpx .mx-lg.cf-act { width: auto; gap: 6px; }

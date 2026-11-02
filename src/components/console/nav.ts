@@ -56,6 +56,8 @@ const MANAGER: NavGroup[] = [
     icon: 'grid',
     items: [
       { key: 'clients', label: 'Clients', icon: 'grid', href: `${M}/projects`, also: [`${M}/engagements`] },
+      { key: 'incorporation', label: 'Incorporation', icon: 'brief', href: `${M}/incorporation` },
+      { key: 'registrations', label: 'Registrations', icon: 'build', href: `${M}/registrations` },
       {
         key: 'compliance',
         label: 'Compliances',
@@ -128,6 +130,7 @@ const LEAD: NavGroup[] = [
     icon: 'grid',
     items: [
       { key: 'clients', label: 'Clients', icon: 'grid', href: `${L}/clients`, also: [`${L}/projects`, `${L}/engagements`] },
+      { key: 'incorporation', label: 'Incorporation', icon: 'brief', href: `${L}/incorporation` },
       { key: 'registrations', label: 'Registrations', icon: 'build', href: `${L}/registrations` },
       {
         key: 'compliance',

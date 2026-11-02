@@ -1,14 +1,9 @@
-import { Suspense } from "react";
-import { RegistrationsPage } from "@/views/compliances/CompliancePages";
-import { pageMetadata } from "@/lib/shell/page-metadata";
+import { RegistrationsPage } from '@/components/console/pages/lead/RegistrationsPage';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Registrations", "Statutory registrations across your clients");
+export const metadata = pageMetadata('Registrations', 'Registrations across your clients');
 
-/** Route shell only. `?company=` / `?view=grid` / `?state=` carry the state on refresh; the scoped roster decides the rows. */
+/** The console's Registrations page (shared with the project lead); the Today model scopes it to the manager's book. */
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-ink-muted">Loading registrations…</div>}>
-      <RegistrationsPage shellBase="/app/manager" />
-    </Suspense>
-  );
+  return <RegistrationsPage />;
 }
