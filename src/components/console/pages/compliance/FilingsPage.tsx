@@ -20,7 +20,7 @@
 import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AREA_LABEL, filingsIcs, fyStartOfMonth, MON, monthLabel as monthLong } from '@/lib/client-portal/compliances';
-import { financialYearLabel, financialYearMonths, financialYearQuarters, parseFyParam, parseMonthParam, quarterForMonthKey } from '@/lib/filings';
+import { financialYearLabel, financialYearMonths, financialYearQuarters, parseFyParam, parseMonthParam, quarterForMonthKey } from '@/lib/compliance/filings';
 import { SecError } from '@/components/portal/ui';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Btn, ClientAv, Empty, Icon, Seg } from '../../ui';

@@ -23,11 +23,11 @@ import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from '
 import { useSearchParams } from 'next/navigation';
 import { getItem } from '@/data/checklist';
 import { useApp } from '@/context/AppContext';
-import { internVisibleDocuments } from '@/lib/document-access';
-import { engagementIdAliases } from '@/lib/legacy-engagement-ids';
-import { getMilestoneDocumentSignedUrl, isMilestoneStoragePath } from '@/lib/milestone-document-storage';
+import { internVisibleDocuments } from '@/lib/documents/document-access';
+import { engagementIdAliases } from '@/lib/projects/legacy-engagement-ids';
+import { getMilestoneDocumentSignedUrl, isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { stepSlugForItemId } from '@/lib/slug';
-import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/lib/use-vault-documents';
+import { getIndexedDocumentSignedUrl, useIndexedDocuments } from '@/hooks/use-vault-documents';
 import {
   collectIndexedVaultDocuments,
   collectVaultDocuments,
@@ -39,7 +39,7 @@ import {
   vaultSearchHits,
   type VaultDocument,
   type VaultEntityGroup,
-} from '@/lib/vault-documents';
+} from '@/lib/documents/vault-documents';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Btn, ClientAv, Icon, Seg, hueOf } from '../../ui';
 import { companyInitials, stageOf, stepCode } from '../clients/model';

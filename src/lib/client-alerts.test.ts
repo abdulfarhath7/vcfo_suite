@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { alertDueLabel, alertsWithin, buildClientAlerts } from '@/lib/client-alerts';
-import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client-overview';
+import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client/client-overview';
 
 const NOW = new Date(2026, 8, 12);
 

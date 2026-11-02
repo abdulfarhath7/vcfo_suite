@@ -3,10 +3,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Info, Pencil, Redo2, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ClientOverviewMilestone, ClientOverviewTeamMember } from '@/lib/client-overview';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import type { ChecklistGateViewer } from '@/lib/checklist-step-gate';
-import type { EngagementSchedule } from '@/lib/schedule-windows';
+import type { ClientOverviewMilestone, ClientOverviewTeamMember } from '@/lib/client/client-overview';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import type { ChecklistGateViewer } from '@/lib/checklist/checklist-step-gate';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   buildClientTimeline,
   labelForDayOffset,

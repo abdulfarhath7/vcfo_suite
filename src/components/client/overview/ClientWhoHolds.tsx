@@ -11,7 +11,7 @@ import {
   stepHolder,
   type ClientOverviewMilestone,
   type ClientStepHolder,
-} from '@/lib/client-overview';
+} from '@/lib/client/client-overview';
 import { CardTabs, firstFilledTab, type CardTab } from '@/components/client/overview/CardTabs';
 import { CardHeading } from '@/components/client/overview/CardHeading';
 

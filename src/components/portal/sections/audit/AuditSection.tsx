@@ -22,10 +22,10 @@ import { Btn, Icon, SecError, SecHead, SecLoading, Seg, type IconName } from '..
 import { hrefToIntent } from '../updates/links';
 import '../../css/95-audit.css';
 
-const CATS: Array<'all' | AuditCategory> = ['all', 'Documents', 'Milestones', 'Team', 'Email', 'Credentials'];
-const CAT_LABEL: Record<(typeof CATS)[number], string> = { all: 'All', Documents: 'Documents', Milestones: 'Steps', Team: 'Team', Email: 'Email', Credentials: 'Credentials' };
+const CATS: Array<'all' | AuditCategory> = ['all', 'Documents', 'Milestones', 'Team', 'Email', 'Credentials', 'Sign-in'];
+const CAT_LABEL: Record<(typeof CATS)[number], string> = { all: 'All', Documents: 'Documents', Milestones: 'Steps', Team: 'Team', Email: 'Email', Credentials: 'Credentials', 'Sign-in': 'Sign-in' };
 /** Dot colour per category (prototype KC). */
-const KC: Record<AuditCategory, string> = { Documents: 'var(--due)', Milestones: 'var(--ice)', Team: 'var(--ok-green)', Email: 'var(--law-MCA)', Credentials: 'var(--ink-3)' };
+const KC: Record<AuditCategory, string> = { Documents: 'var(--due)', Milestones: 'var(--ice)', Team: 'var(--ok-green)', Email: 'var(--law-MCA)', Credentials: 'var(--ink-3)', 'Sign-in': 'var(--ink-3)' };
 /** Icon tile per node (prototype AIC): [icon, background, colour]. */
 const AIC: Record<AuditNode, [IconName, string, string]> = {
   req: ['doc', 'var(--due-bg)', 'var(--due-ink)'],

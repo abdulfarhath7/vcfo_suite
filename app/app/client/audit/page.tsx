@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import AuditLog from '@/views/admin/AuditLog';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Audit", "Who did what, and when");
 

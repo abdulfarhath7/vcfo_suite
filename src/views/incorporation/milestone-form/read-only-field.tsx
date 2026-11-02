@@ -16,7 +16,12 @@ import { IncorporationDraftDocLink } from '@/components/incorporation/Incorporat
 import { MilestoneFileDisplay } from '@/components/incorporation/MilestoneFileDisplay';
 import { getMilestoneFormFieldLayout } from '@/views/incorporation/milestone-response-form-utils';
 import { FieldUnlockControl } from '@/views/incorporation/MilestoneResponseFormParts';
-import { isLeadOnlyField, LEAD_ONLY_FIELD_HELPER } from '@/lib/incorporation/pre-inc-direct-flow';
+import {
+  canRoleEditField,
+  CLIENT_FILLS_FIELD_HELPER,
+  isLeadOnlyField,
+  LEAD_ONLY_FIELD_HELPER,
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import type { FieldEditActions } from './field-edits';
 import type { MilestoneFormCtx } from './types';
 import { FieldReviewControls, FieldReviewMark } from './field-review';
@@ -28,16 +33,26 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
     engagementId,
     isClient,
     directFlow,
+    leadOnIntakeStep,
+    clientSubmittedIntake,
     isFieldUnlockedForAdmin,
     displayValues,
     toggleFieldUnlock,
   } = ctx;
 
-  /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
-  const leadOnlyNote = (fieldId: string) =>
-    isClient && directFlow && isLeadOnlyField(item.id, fieldId) ? (
-      <p className="text-[12px] text-ink-muted">{LEAD_ONLY_FIELD_HELPER}</p>
-    ) : null;
+  /**
+   * Who fills a field the viewer cannot edit: a lead-only field on the
+   * client's form, or a client field on the lead's form of an intake step.
+   */
+  const leadOnlyNote = (fieldId: string) => {
+    if (isClient && directFlow && isLeadOnlyField(item.id, fieldId)) {
+      return <p className="text-[12px] text-ink-muted">{LEAD_ONLY_FIELD_HELPER}</p>;
+    }
+    if (leadOnIntakeStep && !clientSubmittedIntake && !canRoleEditField('intern', item.id, fieldId)) {
+      return <p className="text-[12px] text-ink-muted">{CLIENT_FILLS_FIELD_HELPER}</p>;
+    }
+    return null;
+  };
 
   const fieldShellClass = (field: ChecklistField, stacked: string) =>
     cn(

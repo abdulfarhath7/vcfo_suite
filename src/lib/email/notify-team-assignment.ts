@@ -18,9 +18,8 @@ import {
   pushEmailSubject,
   type EmailDispatchResult,
 } from '@/lib/email/email-dispatch';
-import { adminProjectPath, internEngagementPath } from '@/lib/project-step-path';
-import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
+import { queueWhatsAppForMailHandlers } from '@/lib/notify/queue-mail-handlers';
 import { siteUrl } from '@/lib/site-url';
 
 export type TeamRoleLabel = 'project manager' | 'project lead';

@@ -6,7 +6,7 @@ import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { listBookLeads } from '@/db/repositories/book-leads';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { LEGACY_ENGAGEMENT_IDS } from '@/lib/legacy-engagement-ids';
+import { LEGACY_ENGAGEMENT_IDS } from '@/lib/projects/legacy-engagement-ids';
 import {
   cleanBlockInput,
   cleanBlockPatch,

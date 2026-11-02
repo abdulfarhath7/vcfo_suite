@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 import { briefFilename, renderStatusBriefPdf } from '@/lib/ask/pdf-brief';
 import { loadProjectSnapshot } from '@/lib/ask/snapshot';
 import { buildStatusBrief } from '@/lib/ask/status-brief';

@@ -11,7 +11,7 @@
  */
 import { useEffect, useState, type CSSProperties } from 'react';
 import { getItem } from '@/data/checklist';
-import { coerceRegistrationWorkflowStage, REGISTRATION_WORKFLOW_STAGES, registrationWorkflowShortLabel } from '@/lib/registration-workflow';
+import { coerceRegistrationWorkflowStage, REGISTRATION_WORKFLOW_STAGES, registrationWorkflowShortLabel } from '@/lib/incorporation/registration-workflow';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import { SecLoading } from '@/components/portal/ui';
 import { Btn, Empty, GoArrow, Seg, hueOf } from '../../ui';

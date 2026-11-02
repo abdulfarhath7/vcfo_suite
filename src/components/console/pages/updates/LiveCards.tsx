@@ -19,9 +19,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { useAnnouncements } from '@/lib/use-announcements';
-import { measureGenieDock, type GenieBox } from '@/lib/genie-dock';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import { useAnnouncements } from '@/hooks/use-announcements';
+import { measureGenieDock, type GenieBox } from '@/lib/notifications/genie-dock';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import {
   NOTIFICATION_GENIE_LAND_EVENT,
   NOTIFICATION_KIND_LABEL,
@@ -30,7 +30,7 @@ import {
   readNotificationPopupIds,
   selectNotificationPopups,
   type NotificationShowDetail,
-} from '@/lib/notification-popup';
+} from '@/lib/notifications/notification-popup';
 import {
   ANNOUNCEMENT_GENIE_LAND_EVENT,
   ANNOUNCEMENT_SHOW_EVENT,
@@ -42,7 +42,7 @@ import {
   selectAnnouncementPopups,
   type Announcement,
   type AnnouncementShowDetail,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 import { useConsole } from '../../runtime';
 import { Btn, GoArrow, Icon } from '../../ui';
 import { AnnKind, annFrom } from './bits';

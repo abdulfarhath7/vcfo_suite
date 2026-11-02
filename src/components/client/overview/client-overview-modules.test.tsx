@@ -31,6 +31,7 @@ const preCoi: ClientOverview = {
     parentEntityName: 'Acme Holdings LLC',
   },
   identifiers: {},
+  needs: [],
   incorporated: false,
   progress: buildProgress({}),
   nextAction: {

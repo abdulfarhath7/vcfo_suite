@@ -27,8 +27,8 @@ import {
   parseInternWorkFocus,
   parseInternWorkKindFilter,
   parseInternWorkTag,
-} from '@/lib/intern-work';
-import { useOwnFocusTodos, usePersonalTodos } from '@/lib/use-personal-todos';
+} from '@/lib/intern/intern-work';
+import { useOwnFocusTodos, usePersonalTodos } from '@/hooks/use-personal-todos';
 import { useConsole } from '../../../runtime';
 import { Drill, Menu } from '../../../overlays';
 import { Btn, Empty, Icon, hueOf as hueOfId, type IconName } from '../../../ui';

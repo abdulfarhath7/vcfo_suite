@@ -29,11 +29,11 @@ import type { DocRequest, Engagement, TaskInstance } from '@/data/engagements';
 import { buildIncorporationModel, type PortalIncorporationModel, type PortalPhase, type PortalStep } from '@/lib/client-portal/step-model';
 import { companyShortName } from '@/lib/client-portal/company';
 import { areaOf, AREA_LABEL, type AreaCode } from '@/lib/client-portal/compliances';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
-import type { FilingRow } from '@/lib/filings';
-import { MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
-import type { PendingApprovalRow } from '@/lib/pending-approvals';
+import type { FilingRow } from '@/lib/compliance/filings';
+import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import type { PendingApprovalRow } from '@/lib/projects/pending-approvals';
 import { stepSlugForItemId } from '@/lib/slug';
 import { stepCode as clientsStepCode } from '../clients/model';
 

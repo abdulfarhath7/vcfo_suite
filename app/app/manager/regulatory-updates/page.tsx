@@ -1,5 +1,5 @@
 import { RegulatoryPage } from '@/components/console/pages/updates/RegulatoryPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Regulatory updates", "Official updates waiting for your review");
 

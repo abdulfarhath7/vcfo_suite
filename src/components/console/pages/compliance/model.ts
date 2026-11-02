@@ -23,7 +23,7 @@ import {
   deadlineAppliesTo,
   type StatutoryAct,
 } from '@/data/statutory-calendar-fy2627';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   AREA_LABEL,
   AREA_ORDER,
@@ -41,7 +41,7 @@ import { projectedWindow } from '@/lib/client-portal/master-plan';
 import { statutoryFilings } from '@/lib/client-portal/statutory-fallback';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
-import { financialYearLabel, financialYearMonths, quarterForMonthKey, type FilingRow } from '@/lib/filings';
+import { financialYearLabel, financialYearMonths, quarterForMonthKey, type FilingRow } from '@/lib/compliance/filings';
 import {
   addDays,
   daysBetween,

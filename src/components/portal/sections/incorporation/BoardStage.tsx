@@ -13,10 +13,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { checklist } from '@/data/checklist';
-import { extractItemResponses } from '@/lib/checklist-responses';
-import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution';
-import { BOARD_RESOLUTION_DOCX_FILENAME, uploadSignedBoardResolution, validateSignedBoardResolutionFile } from '@/lib/board-resolution-storage';
-import { fetchBoardResolutionInDb } from '@/lib/engagements-db';
+import { extractItemResponses } from '@/lib/checklist/checklist-responses';
+import { buildBoardResolutionMergeFields, type BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+import { BOARD_RESOLUTION_DOCX_FILENAME, uploadSignedBoardResolution, validateSignedBoardResolutionFile } from '@/lib/board-resolution/board-resolution-storage';
+import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { usePortal } from '../../runtime';

@@ -14,7 +14,7 @@
  * means a manager set the dates (a step's or filing's schedule window): the
  * planner shows them read-only with a lock.
  */
-import type { InternWorkItem, InternWorkKind } from '@/lib/intern-work';
+import type { InternWorkItem, InternWorkKind } from '@/lib/intern/intern-work';
 import type { TaskInstance } from '@/data/engagements';
 import type { AreaCode } from '@/lib/client-portal/compliances';
 import type { PlannerBlockDto } from '@/lib/planner-blocks';
@@ -122,7 +122,7 @@ export interface WorkCtx {
   lockFor: (w: InternWorkItem) => { from: string; to: string; setBy?: string } | undefined;
   areaForFiling: (filingId: string) => AreaCode;
   board: (w: InternWorkItem) => BoardCol;
-  cta: (w: InternWorkItem) => { label: string; action: 'open' | 'nudge-manager' | 'remind-client' };
+  cta: (w: InternWorkItem) => { label: string; action: 'open' | 'nudge-manager' | 'remind-client' | 'complete-task' };
   leadOf?: (engagementId: string) => string | undefined;
 }
 
@@ -134,7 +134,11 @@ export function fromWork(w: InternWorkItem, c: WorkCtx): PlanItem {
   const title = kind === 'step' && w.catalogId ? c.stepTitle(w.catalogId) : w.title;
   const area = kind === 'filing' && w.filingId ? c.areaForFiling(w.filingId) : stepArea(title);
   const live = c.cta(w);
-  let cta: PlanItem['cta'] = { label: live.label, action: live.action === 'remind-client' ? 'remind' : live.action };
+  // A task's 'complete-task' is the planner's 'done' (Mark done).
+  let cta: PlanItem['cta'] = {
+    label: live.label,
+    action: live.action === 'remind-client' ? 'remind' : live.action === 'complete-task' ? 'done' : live.action,
+  };
   if (c.seat === 'mgr' && live.action === 'nudge-manager') cta = { label: 'Review', action: 'open' };
   const holder: Holder = WAIT_KINDS.includes(w.kind) ? 'client' : w.kind === 'waiting-manager' ? 'manager' : 'you';
   const startRaw = lock?.from ?? istDay(w.startedAt);

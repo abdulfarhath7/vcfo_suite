@@ -17,15 +17,21 @@ import { buildManagerApproval } from '@/lib/checklist/checklist-step-approval';
 import { responseFieldIdsForItem } from '@/lib/checklist/checklist-responses';
 import {
   canRoleEditField,
+  CLIENT_HAS_NOT_FILLED_MESSAGE,
   directReopenPatch,
   directSubmitPatch,
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
   lastEditedPatch,
-  stripLeadOnlyResponses,
+  stripResponsesNotEditableBy,
   waitingOnLeadPatch,
 } from '@/lib/incorporation/pre-inc-direct-flow';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { engagements } from '@/db/schema';
 import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
@@ -118,6 +124,43 @@ export async function submitChecklistItem(
   });
 }
 
+/**
+ * The parent entity now reaches the engagement through the client's Part A
+ * answers (a Pre-Incorporation project no longer asks the manager for it at
+ * creation). After a pre-1 submit, copy name / address / registration number
+ * onto the engagement row wherever the row is still empty, so the client
+ * overview, the NOC and the statutory calendar read it as before. Written
+ * straight to the table: the actor may be the client, who may not call
+ * `updateEngagement`.
+ */
+async function syncParentEntityFromPre1(
+  existing: {
+    id: string;
+    ownershipType: string | null;
+    parentEntityName: string | null;
+    parentEntityAddress: string | null;
+    parentEntityRegistrationNumber: string | null;
+  },
+  itemId: string,
+  responses: Record<string, string> | undefined,
+): Promise<void> {
+  if (itemId !== 'pre-1' || !responses || existing.ownershipType === 'independent') return;
+  const patch: Partial<typeof engagements.$inferInsert> = {};
+  const name = responses.parentEntityName?.trim();
+  const address = responses.parentEntityAddress?.trim();
+  const registration = responses.parentEntityRegistrationNumber?.trim();
+  if (name && !existing.parentEntityName?.trim()) patch.parentEntityName = name;
+  if (address && !existing.parentEntityAddress?.trim()) patch.parentEntityAddress = address;
+  if (registration && !existing.parentEntityRegistrationNumber?.trim()) {
+    patch.parentEntityRegistrationNumber = registration;
+  }
+  if (Object.keys(patch).length === 0) return;
+  await db
+    .update(engagements)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(engagements.id, existing.id));
+}
+
 export type DirectSubmitOutcome =
   | { outcome: 'submitted'; checklistState: EngagementChecklistState }
   | { outcome: 'waiting_on_lead'; checklistState: EngagementChecklistState }
@@ -159,8 +202,16 @@ export async function submitDirectFlowStep(
     if (isDirectFlowStepComplete(itemId, slice)) throw new Error('step_already_submitted');
     if (isWaitingOnLead(itemId, slice)) throw new Error('step_waiting_on_lead');
   }
+  // Client-intake step: the lead completes it only after the client submitted
+  // their part (owner, 2026-10-21). Before that the lead's copy is empty.
+  const leadOnIntake = ctx.role === 'intern' && isClientIntakeStep(itemId);
+  if (leadOnIntake && !hasClientSubmittedIntake(itemId, slice)) {
+    throw new Error('step_waiting_on_client');
+  }
 
-  const sent = ctx.role === 'client' ? stripLeadOnlyResponses(itemId, responses) : responses;
+  // A client never sends a lead-only key; a lead on a client-intake step sends
+  // only their own keys (their copy hides the client's answers).
+  const sent = stripResponsesNotEditableBy(ctx.role, itemId, responses);
   const merged: Record<string, string> = { ...(slice?.responses ?? {}) };
   for (const [key, value] of Object.entries(sent)) merged[key] = value;
 
@@ -171,8 +222,15 @@ export async function submitDirectFlowStep(
     engagement: toAppEngagement(existing),
   });
   const blocking: Record<string, string> = {};
+  const notMine: Record<string, string> = {};
   for (const [key, message] of Object.entries(validation.errors)) {
     if (canRoleEditField(ctx.role, itemId, key)) blocking[key] = message;
+    else notMine[key] = message;
+  }
+  // A lead cannot fill the client's part: a gap there is shown as an error,
+  // never silently left "waiting on the lead".
+  if (leadOnIntake) {
+    for (const key of Object.keys(notMine)) blocking[key] = CLIENT_HAS_NOT_FILLED_MESSAGE;
   }
 
   const now = new Date().toISOString();
@@ -193,6 +251,7 @@ export async function submitDirectFlowStep(
       ...answers,
       ...waitingOnLeadPatch({ actorId: ctx.userId, actorName: ctx.name, now }),
     });
+    await syncParentEntityFromPre1(existing, itemId, checklistState[itemId]?.responses);
     return { outcome: 'waiting_on_lead', checklistState };
   }
 
@@ -200,6 +259,7 @@ export async function submitDirectFlowStep(
     ...answers,
     ...directSubmitPatch({ actorId: ctx.userId, actorName: ctx.name, actorRole: ctx.role, now }),
   });
+  await syncParentEntityFromPre1(existing, itemId, checklistState[itemId]?.responses);
   // Moved here from the manager's Accept: the certificate step carries the
   // date of incorporation onto the engagement.
   const incorporationDate = checklistState[itemId]?.responses?.dateOfIncorporation?.trim();

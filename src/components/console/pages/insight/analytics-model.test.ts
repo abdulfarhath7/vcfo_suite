@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checklist } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { FilingRow } from '@/lib/filings';
+import type { FilingRow } from '@/lib/compliance/filings';
 import type { TodayModel } from '../today/model';
 import { buildKpis, buildTrends, filingMonths, leadCards, monthsBack, rateColor } from './analytics-model';
 

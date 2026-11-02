@@ -124,8 +124,6 @@ export interface TaskInstance {
   id: string;
   engagementId: string;
   checklistKey: string;
-  /** `tasks.title` as stored (absent on locally seeded rows). */
-  title?: string;
   status: StatusCode;
   assigneeId?: string;
   dueAt?: string;

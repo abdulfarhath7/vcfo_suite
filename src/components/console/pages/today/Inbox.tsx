@@ -18,10 +18,10 @@
  */
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { notificationDirection, type AppNotification } from '@/lib/checklist-notifications';
-import { createCustomInternFocus, isCustomInternFocus } from '@/lib/intern-work';
-import { groupOpenPersonalTodosByOwner } from '@/lib/personal-todos';
-import { useOwnFocusTodos, usePersonalTodos } from '@/lib/use-personal-todos';
+import { notificationDirection, type AppNotification } from '@/lib/checklist/checklist-notifications';
+import { createCustomInternFocus, isCustomInternFocus } from '@/lib/intern/intern-work';
+import { groupOpenPersonalTodosByOwner } from '@/lib/intern/personal-todos';
+import { useOwnFocusTodos, usePersonalTodos } from '@/hooks/use-personal-todos';
 import { ROLE_UI_LABEL } from '@/lib/auth';
 import { Empty, Icon, LeadAv, Panel, Seg } from '../../ui';
 import { Menu } from '../../overlays';

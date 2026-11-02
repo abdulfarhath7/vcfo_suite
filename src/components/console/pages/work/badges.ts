@@ -7,7 +7,7 @@
  *   tasks  (lead seat) open items in the lead's queue; red when any is overdue
  */
 import { useApp } from '@/context/AppContext';
-import { usePersonalTodos } from '@/lib/use-personal-todos';
+import { usePersonalTodos } from '@/hooks/use-personal-todos';
 import { useConsoleBadge } from '../../runtime';
 import { addDays, weekOf } from '../today/model';
 import { usePlan } from './planner/data';

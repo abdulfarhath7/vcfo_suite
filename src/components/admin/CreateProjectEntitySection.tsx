@@ -132,13 +132,21 @@ export function renderEntitySection(ctx: CreateProjectFormViewProps & CreateProj
 
     <CreateProjectStartingPhasePicker stage={stage} onChange={setStage} />
 
+    {/* Starting at a phase with SPICe+ Part A: the client names the parent there, not the staff here. */}
+    {!needsParent && ownershipType !== 'independent' ? (
+      <p className="rounded-xl border border-line bg-surface-sunken px-4 py-3 text-[12px] text-ink-muted">
+        Parent entity details are entered by the client in SPICe+ Part A (Foreign
+        Entity tab) and copied here when they submit.
+      </p>
+    ) : null}
+
     {needsParent ? (
       <div className="space-y-5 rounded-xl border border-brand/20 bg-brand-soft/50 p-4 sm:p-5">
         <div>
           <p className="text-[13px] font-medium text-ink">Parent entity details</p>
           <p className="mt-1 text-[11.5px] text-ink-muted">
-            The company that owns this subsidiary. SPICe+ Part A is prefilled from
-            these details.
+            The company that owns this subsidiary. There is no SPICe+ Part A at this
+            starting phase, so the parent is named here.
           </p>
         </div>
         <div>

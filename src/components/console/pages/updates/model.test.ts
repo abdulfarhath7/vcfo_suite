@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { AppNotification } from '@/lib/checklist-notifications';
-import type { FilingRow } from '@/lib/filings';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
+import type { FilingRow } from '@/lib/compliance/filings';
 import {
   annMark,
   annStripe,

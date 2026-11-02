@@ -11,12 +11,12 @@
 import type { ChecklistField } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import type { PortalStep } from '@/lib/client-portal/step-model';
-import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist-responses';
-import { filterFieldsByViewer } from '@/lib/checklist-field-access';
-import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, resolveFieldLabels } from '@/lib/checklist-repeat';
-import { withoutUnusedDirectorSlots } from '@/lib/incorp-director-slots';
-import { getStepAttachmentRequirements } from '@/lib/checklist-step-attachments';
-import { fileNameFromStoragePath, isMilestoneStoragePath } from '@/lib/milestone-document-storage';
+import { extractItemResponses, fieldsForOwnership, getClientResponseFields } from '@/lib/checklist/checklist-responses';
+import { filterFieldsByViewer } from '@/lib/checklist/checklist-field-access';
+import { applyShowWhen, expandRepeatFields, isRepeatField, repeatFieldLabel, resolveFieldLabels } from '@/lib/checklist/checklist-repeat';
+import { withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
+import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
+import { fileNameFromStoragePath, isMilestoneStoragePath } from '@/lib/documents/milestone-document-storage';
 import { fmt, fmtL } from '../../dates';
 
 export interface StepFile {

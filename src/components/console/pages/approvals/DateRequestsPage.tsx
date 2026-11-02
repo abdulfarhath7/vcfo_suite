@@ -15,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Btn, ClientAv, Icon, Seg, hueOf } from '../../ui';
 import { companyInitials } from '../clients/model';

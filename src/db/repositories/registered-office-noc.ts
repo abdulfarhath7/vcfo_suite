@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { registeredOfficeNocs } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { assertEngagementAccess, listScopedEngagementIds } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { coerceNocInput, type NocInput } from '@/lib/registered-office-noc/model';

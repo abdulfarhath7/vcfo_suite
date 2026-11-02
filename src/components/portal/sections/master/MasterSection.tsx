@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client-home';
+import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client/client-home';
 import {
   addPlanDays,
   buildMasterPlan,

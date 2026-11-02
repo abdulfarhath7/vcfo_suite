@@ -6,7 +6,7 @@ import { complianceInstances } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
-import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { todayIso } from '@/lib/client-portal/compliances';
 
 /**

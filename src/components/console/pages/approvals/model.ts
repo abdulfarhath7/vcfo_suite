@@ -17,16 +17,16 @@
  */
 import type { Engagement, OwnershipType } from '@/data/engagements';
 import { getItem } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import type { PendingApprovalRow } from '@/lib/pending-approvals';
-import { primaryPhaseItems } from '@/lib/project-stuck';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/pre-inc-direct-flow';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import type { PendingApprovalRow } from '@/lib/projects/pending-approvals';
+import { primaryPhaseItems } from '@/lib/projects/project-stuck';
+import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
 import { buildTimelineBlocks } from '@/lib/client-portal/master-plan';
-import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client-home';
+import type { TimelinePhaseDates, TimelineRequestDto } from '@/lib/client/client-home';
 import type { BookTimelineRequest } from '@/lib/timeline-request-history';
-import { extractItemResponses, fieldsForOwnership, getClientResponseFields, isStepRemarksField } from '@/lib/checklist-responses';
-import { isRepeatField, repeatEntries } from '@/lib/checklist-repeat';
+import { extractItemResponses, fieldsForOwnership, getClientResponseFields, isStepRemarksField } from '@/lib/checklist/checklist-responses';
+import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
 import { stageOf, stepCode, type ClientStage } from '../clients/model';
 
 /* ---------------------------------------------------------------- days */

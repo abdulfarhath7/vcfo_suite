@@ -6,6 +6,7 @@ import {
   Inbox,
   LockOpen,
   Mail,
+  ScrollText,
   Send,
   Upload,
   Users,
@@ -38,6 +39,9 @@ export const NOTIFICATION_KIND_LOOK: Record<
   'compliance.reminder': { Icon: CalendarClock, tone: 'warn', group: 'Steps' },
   'compliance.task': { Icon: CircleCheck, tone: 'prog', group: 'Steps' },
   'team.assigned': { Icon: Users, tone: 'prog', group: 'Team' },
+  // Official regulatory updates: a new one waits for a manager; an approved one is posted to all.
+  'regulatory.review': { Icon: ScrollText, tone: 'warn', group: 'Steps' },
+  'regulatory.approved': { Icon: ScrollText, tone: 'ok', group: 'Steps' },
   'team.removed': { Icon: Users, tone: 'idle', group: 'Team' },
   'email.sent': { Icon: Mail, tone: 'ok', group: 'Email' },
   'email.skipped': { Icon: Mail, tone: 'warn', group: 'Email' },

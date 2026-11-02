@@ -6,7 +6,7 @@ import { RotateCcw, Send } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { DashDataTable, type DashColumn } from '@/components/dash/DashDataTable';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
-import { apiFetch } from '@/lib/engagements-db';
+import { apiFetch } from '@/lib/projects/engagements-db';
 import { maskPhone } from '@/lib/notify/phone';
 import { skipReasonText, whatsappErrorText } from '@/lib/notify/whatsapp-error-text';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';

@@ -22,10 +22,10 @@ import {
   requestAnnouncementPopup,
   type Announcement,
   type AnnouncementListFilter,
-} from '@/lib/announcements';
-import { useAnnouncements } from '@/lib/use-announcements';
-import { useFilings } from '@/lib/use-filings';
-import { groupedVcfoPortalTasks, type VcfoPortalHead } from '@/lib/announcement-portals';
+} from '@/lib/notifications/announcements';
+import { useAnnouncements } from '@/hooks/use-announcements';
+import { useFilings } from '@/hooks/use-filings';
+import { groupedVcfoPortalTasks, type VcfoPortalHead } from '@/lib/notifications/announcement-portals';
 import { useAskOptional } from '@/components/ask/ask-context';
 import { useConsole, useCrumbs } from '../../runtime';
 import { Menu } from '../../overlays';

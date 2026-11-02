@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useIsFetching, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { usePendingApprovals } from '@/hooks/use-pending-approvals';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import { todayIso } from '@/components/portal/dates';
 import { useConsole } from '../../runtime';
 import { buildToday, type LeadPerson, type TodayModel } from './model';

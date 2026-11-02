@@ -1,5 +1,5 @@
 import { WorkPage } from '@/components/console/pages/work/WorkPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("My work", "Your to-dos, timeline and calendar");
 

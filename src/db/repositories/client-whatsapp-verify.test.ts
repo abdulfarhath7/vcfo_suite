@@ -53,6 +53,9 @@ const me: AuthContext = { userId: '11111111-1111-1111-1111-111111111111', email:
 const PHONE = '+919876543210';
 const config: WhatsAppConfig = {
   enabled: true,
+  provider: 'eum',
+  allowlist: [],
+  doubletick: { apiKey: '', fromNumber: '' } as WhatsAppConfig['doubletick'],
   eum: { region: 'ap-south-1', phoneNumberId: 'phone-number-id-1', templateLanguage: 'en', metaApiVersion: 'v21.0', templateNames: {} as WhatsAppConfig['eum']['templateNames'] },
 };
 const env = { WHATSAPP_TEMPLATE_NAME_VERIFY_CODE: 'vcfo_code' } as unknown as NodeJS.ProcessEnv;

@@ -18,7 +18,7 @@ import { useApp } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
 import { stageDisplayLabel } from '@/components/admin/create-project-form-utils';
 import type { DirectoryPerson } from '@/lib/email/directory-filter';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Icon, Seg, hueOf } from '../../ui';
 import { buildClientView, companyInitials, plural, stepCode, type ClientView, type HealthKey } from './model';

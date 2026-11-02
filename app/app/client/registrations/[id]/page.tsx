@@ -1,14 +1,20 @@
-import { Suspense } from "react";
-import { ClientRegistrationRoute } from "@/components/client-portal/pages/registrations";
-import { pageMetadata } from "@/lib/shell/page-metadata";
+import { Suspense } from 'react';
+import { ClientRoute } from '@/components/portal/Intent';
+import { ClientRegistrationRoute } from '@/components/client-portal/pages/registrations';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Registration", "One registration of the company");
+export const metadata = pageMetadata('Registration', 'One registration of the company');
 
-/** Client portal registration record (the id is the checklist step slug). */
+/** One registration: the portal's Registrations section owns the record (the id is the step slug). */
 export default function Page() {
   return (
-    <Suspense fallback={null}>
-      <ClientRegistrationRoute />
-    </Suspense>
+    <ClientRoute
+      intent={{ kind: 'section', key: 'registrations' }}
+      legacy={
+        <Suspense fallback={null}>
+          <ClientRegistrationRoute />
+        </Suspense>
+      }
+    />
   );
 }

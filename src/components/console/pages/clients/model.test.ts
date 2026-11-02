@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { buildClientView, clientPaths, companyInitials, healthOf, holderText, isListedOnClients, stageOf, stepCode } from './model';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
 

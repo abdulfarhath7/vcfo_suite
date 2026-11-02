@@ -89,6 +89,8 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-ke
 import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import {
   directFlowRoleLabel,
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
@@ -426,7 +428,15 @@ export default function EngagementStepDetail() {
   const leadWaitingNotice =
     directFlow && isIntern && isWaitingOnLead(item.id, stepSlice)
       ? `${stepSlice?.waitingOnLeadByName?.trim() || 'The client'} submitted their part. Fill the NIC codes, then submit to complete this step.`
-      : null;
+      : directFlow &&
+          isIntern &&
+          isClientIntakeStep(item.id) &&
+          !directFlowComplete &&
+          !hasClientSubmittedIntake(item.id, stepSlice)
+        ? item.id === 'pre-1'
+          ? 'Waiting for the client to fill and submit this step. Their answers appear here once they submit; you can add the NIC codes meanwhile.'
+          : 'Waiting for the client to fill and submit this step. Their answers appear here once they submit.'
+        : null;
 
   const docPackHref = docPackVisible
     ? docPackPagePath(eng, docPackShell, internPhase?.id === 'pre-inc-phase-1' ? 'part-a' : 'part-b')
@@ -479,7 +489,8 @@ export default function EngagementStepDetail() {
     editedLine || gateNotice || leadWaitingNotice ? (
       <div className="-mt-2 mb-4 space-y-2">
         {editedLine ? <p className="text-[12.5px] text-ink-muted">{editedLine}</p> : null}
-        {gateNotice ? (
+        {/* The lead notice already says who is being waited on; do not stack the short gate line above it. */}
+        {gateNotice && !leadWaitingNotice ? (
           <p role="status" className="rounded-md border-1.5 border-line bg-surface-sunken px-3 py-2 text-[13.5px] text-ink">
             {gateNotice}
           </p>

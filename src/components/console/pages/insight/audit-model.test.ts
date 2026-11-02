@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AuditEventRow } from '@/lib/audit-log';
+import type { AuditEventRow } from '@/lib/audit/audit-log';
 import { mergeAuditPages, nextAuditBefore, parseAuditBefore } from '@/lib/audit-paging';
 import { auditCsv, dayStrip, eventLinks, facetCounts, filterEvents, groupByDay, inStage, metadataFacts, NO_FILTERS, roleLabel } from './audit-model';
 import { csvCell, timeIst } from './fmt';

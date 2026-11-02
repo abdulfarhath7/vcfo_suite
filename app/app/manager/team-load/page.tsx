@@ -1,5 +1,5 @@
 import { TeamLoadPage } from '@/components/console/pages/leads/TeamLoadPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Team load", "Your project leads side by side");
 

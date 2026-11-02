@@ -8,6 +8,8 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { TimelineRequestsPanel } from '@/components/incorporation/TimelineRequestsPanel';
 import { WorkItemsPanel } from '@/components/incorporation/WorkItemsPanel';
+import { SendLogPanel } from '@/components/admin/SendLogPanel';
+import { isFirmWideAdmin } from '@/lib/auth';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { RecordStat, RecordStats, RecordTile } from '@/components/incorporation/RecordHead';
 import { STAGE_LABEL, type Stage } from '@/components/admin/create-project-form-utils';
@@ -175,6 +177,8 @@ export default function ProjectDetail() {
             onOpenRegistrations={() => setRecordTab('registrations')}
           />
           <WorkItemsPanel engagementId={eng.id} />
+          {/* WhatsApp send log: managers and firm-wide admins only. */}
+          {user?.role === 'manager' || isFirmWideAdmin(user?.role) ? <SendLogPanel engagementId={eng.id} /> : null}
         </div>
       ) : (
         <RecordTabPanel tab={recordTab} engagement={eng} shellBase={staffBase} />

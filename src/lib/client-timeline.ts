@@ -1,12 +1,12 @@
 import { getPreIncPhases } from '@/data/checklist';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   gateActiveCatalog,
   getStepGate,
   type ChecklistGateViewer,
   type ChecklistStepGateKind,
-} from '@/lib/checklist-step-gate';
-import { windowForStep, type EngagementSchedule } from '@/lib/schedule-windows';
+} from '@/lib/checklist/checklist-step-gate';
+import { windowForStep, type EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 /**
  * Client home timeline — the prototype's four-bar chart

@@ -23,6 +23,7 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     internAutoSaveStatusText,
     internFooterAction,
     internSectionNextLabel,
+    internSubmitBlockedText,
     isClient,
     isPhase2StructuredStep,
     isPre1,
@@ -210,25 +211,34 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                       )}
                     </>
                   )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={
-                      internFooterAction === 'submit'
-                        ? () => void handleInternSubmit()
-                        : handleInternSectionNext
-                    }
-                    disabled={
-                      internFooterAction === 'submit'
-                        ? submitting || saving || autoSaveStatus === 'saving'
-                        : submitting
-                    }
-                    className="cursor-pointer"
-                  >
-                    {internFooterAction === 'submit' && submitting
-                      ? 'Submitting…'
-                      : internSectionNextLabel}
-                  </Button>
+                  {internFooterAction === 'submit' && internSubmitBlockedText ? (
+                    <span
+                      role="status"
+                      className="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-[12px] text-muted-foreground"
+                    >
+                      {internSubmitBlockedText}
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={
+                        internFooterAction === 'submit'
+                          ? () => void handleInternSubmit()
+                          : handleInternSectionNext
+                      }
+                      disabled={
+                        internFooterAction === 'submit'
+                          ? submitting || saving || autoSaveStatus === 'saving'
+                          : submitting
+                      }
+                      className="cursor-pointer"
+                    >
+                      {internFooterAction === 'submit' && submitting
+                        ? 'Submitting…'
+                        : internSectionNextLabel}
+                    </Button>
+                  )}
                 </div>
               </>
             ) : (

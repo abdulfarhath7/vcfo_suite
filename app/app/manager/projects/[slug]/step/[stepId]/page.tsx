@@ -1,5 +1,5 @@
 import { ClientStepPage } from '@/components/console/pages/clients/ClientStepPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Step", "One checklist step");
 

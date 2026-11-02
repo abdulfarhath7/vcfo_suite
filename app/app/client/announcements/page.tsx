@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import AnnouncementsPage from '@/views/announcements/AnnouncementsPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Announcements", "Firm-wide news and official tax updates");
 

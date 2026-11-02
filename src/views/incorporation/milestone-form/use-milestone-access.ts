@@ -14,7 +14,13 @@ import {
   getClientReviewBanner,
   isReviewAccepted,
 } from '@/lib/checklist/checklist-item-review';
-import { isDirectFlowStep, stripLeadOnlyResponses } from '@/lib/incorporation/pre-inc-direct-flow';
+import {
+  canRoleEditField,
+  hasClientSubmittedIntake,
+  isClientIntakeStep,
+  isDirectFlowStep,
+  stripResponsesNotEditableBy,
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import type { MilestoneSources } from './use-milestone-sources';
 
 interface MilestoneAccessParams {
@@ -22,10 +28,19 @@ interface MilestoneAccessParams {
   variant: 'admin' | 'client';
   readOnly: boolean;
   itemState: MilestoneSources['itemState'];
+  user: MilestoneSources['user'];
+  fields: MilestoneSources['fields'];
 }
 
 /** Who may change what: client locks, the direct flow, review state and staff field unlocks. */
-export function useMilestoneAccess({ item, variant, readOnly, itemState }: MilestoneAccessParams) {
+export function useMilestoneAccess({
+  item,
+  variant,
+  readOnly,
+  itemState,
+  user,
+  fields,
+}: MilestoneAccessParams) {
   const isClient = variant === 'client';
   /**
    * Pre-incorporation direct flow: the client and the lead fill one form and
@@ -34,16 +49,39 @@ export function useMilestoneAccess({ item, variant, readOnly, itemState }: Miles
    */
   const directFlow = isDirectFlowStep(item.id);
   const enforceClientLock = isClient && !directFlow;
-  /** What this viewer may send: a client never sends a lead-only field. */
+  /**
+   * What this viewer may send: a client never sends a lead-only field; a lead
+   * on a client-intake step sends only their own fields (their copy hides the
+   * client's answers until the client submits).
+   */
+  const actorRole = isClient ? 'client' : (user?.role ?? 'intern');
   const writableForViewer = useCallback(
     (partial: ChecklistItemResponses): ChecklistItemResponses =>
       filterResponsesToEditableFields(
         itemState,
-        isClient && directFlow ? stripLeadOnlyResponses(item.id, partial) : partial,
+        directFlow && (actorRole === 'client' || actorRole === 'intern')
+          ? stripResponsesNotEditableBy(actorRole, item.id, partial)
+          : partial,
         enforceClientLock,
       ),
-    [itemState, isClient, directFlow, item.id, enforceClientLock],
+    [itemState, actorRole, directFlow, item.id, enforceClientLock],
   );
+  /** Lead on a client-intake step: the client's fields are read-only on the lead's form. */
+  const leadOnIntakeStep = actorRole === 'intern' && isClientIntakeStep(item.id);
+  const clientSubmittedIntake = hasClientSubmittedIntake(item.id, itemState);
+  /**
+   * Lead on a client-intake step: Submit is the lead's only once the client
+   * has submitted their part, and only if the step has a field of the lead's
+   * to fill (the NIC codes on Part A). Otherwise the client's submit already
+   * completes the step and the footer says what is being waited on.
+   */
+  const internSubmitBlockedText = (() => {
+    if (!leadOnIntakeStep) return null;
+    if (!clientSubmittedIntake) return 'Waiting for the client to fill and submit this step.';
+    const leadHasField = fields.some((field) => canRoleEditField('intern', item.id, field.id));
+    if (!leadHasField) return 'The client submits this step. Nothing to add here.';
+    return null;
+  })();
   const submissionLocked = isClientSubmissionLocked(itemState);
   const reviewBanner = isClient ? getClientReviewBanner(itemState) : null;
   const clientResubmit = canClientResubmit(itemState);
@@ -94,6 +132,10 @@ export function useMilestoneAccess({ item, variant, readOnly, itemState }: Miles
     isClient,
     directFlow,
     enforceClientLock,
+    actorRole,
+    leadOnIntakeStep,
+    clientSubmittedIntake,
+    internSubmitBlockedText,
     writableForViewer,
     submissionLocked,
     reviewBanner,

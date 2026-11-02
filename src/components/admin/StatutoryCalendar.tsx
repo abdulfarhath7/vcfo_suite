@@ -47,8 +47,8 @@ import {
 } from '@/components/admin/statutory-calendar-utils';
 import { StatutoryMaxiCalendar } from '@/components/admin/StatutoryMaxiCalendar';
 import { StatutoryYearGrid } from '@/components/admin/StatutoryYearGrid';
-import { monthPaneMotion } from '@/lib/motion';
-import { useShellAppearance } from '@/lib/use-shell-appearance';
+import { monthPaneMotion } from '@/lib/shell/motion';
+import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import { cn } from '@/lib/utils';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 

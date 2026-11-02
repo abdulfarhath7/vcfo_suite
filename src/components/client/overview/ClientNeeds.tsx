@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
 import { AskAboutThis } from '@/components/ask/AskAboutThis';
 import { alertDueLabel } from '@/lib/client-alerts';
-import type { ClientNeedAction, ClientOverviewNeed } from '@/lib/client-overview';
+import type { ClientNeedAction, ClientOverviewNeed } from '@/lib/client/client-overview';
 import { formatClientDayMonth } from '@/components/client/overview/client-overview-format';
 import { CardTabs, firstFilledTab, type CardTab } from '@/components/client/overview/CardTabs';
 import { CardHeading } from '@/components/client/overview/CardHeading';

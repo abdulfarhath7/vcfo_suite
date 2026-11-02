@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "ask:feeds:once": "node --env-file=.env.local --conditions=react-server --import tsx scripts/ask-feeds-once.ts",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "css:portal": "node scripts/portal-css.mjs",
+    "css:portal": "node scripts/cp-css.mjs && node scripts/portal-css.mjs",
     "tokens": "node scripts/design-tokens-css.mjs --write",
     "tokens:check": "node scripts/design-tokens-check.mjs",
     "ask:topics:report": "node --conditions=react-server --import tsx scripts/ask-topics-report.ts",

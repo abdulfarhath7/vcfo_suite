@@ -12,8 +12,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { ANNOUNCEMENT_READ_EVENT, readAnnouncementIds, writeAnnouncementReadIds } from '@/lib/announcements';
-import { isPersistedNotificationId } from '@/lib/notification-dismiss';
+import { ANNOUNCEMENT_READ_EVENT, readAnnouncementIds, writeAnnouncementReadIds } from '@/lib/notifications/announcements';
+import { isPersistedNotificationId } from '@/lib/notifications/notification-dismiss';
 import { canSeeRegulatory, needsPolling, type RegUpdate, type ReviewStatus } from './model';
 
 async function readJson<T>(res: Response, fallback: string): Promise<T> {

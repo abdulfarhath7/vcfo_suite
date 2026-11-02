@@ -67,6 +67,8 @@ export function auditCategoryOf(action: string): AuditCategory {
   if (a.startsWith('welcome_email.') || a === 'email_templates.fire') return 'Email';
   if (a.startsWith('credentials.')) return 'Credentials';
   return 'Milestones';
+}
+
 /** The Result word for a stored `audit_events.result` and the event's node. */
 export function auditResultWord(result: string | null | undefined, node: AuditNode): AuditResult {
   if (result === 'failed') return 'Failed';

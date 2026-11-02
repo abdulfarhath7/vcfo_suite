@@ -52,6 +52,8 @@ const SKIP_TEXT: Record<SkipReason, string> = {
   no_consent: 'Has not opted in to WhatsApp',
   opted_out: 'Replied STOP on WhatsApp',
   not_allowlisted: 'Not on the WhatsApp test list yet',
+  muted: 'Switched this kind of WhatsApp message off',
+  quiet_hours: 'Inside their quiet hours; sent later',
 };
 
 export function skipReasonText(reason: string | null | undefined): string | null {

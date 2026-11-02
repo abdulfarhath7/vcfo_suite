@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Engagement } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { listPendingApprovals } from '@/lib/pending-approvals';
-import type { TimelineRequestDto } from '@/lib/client-home';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { listPendingApprovals } from '@/lib/projects/pending-approvals';
+import type { TimelineRequestDto } from '@/lib/client/client-home';
 import type { BookTimelineRequest } from '@/lib/timeline-request-history';
 import { buildApprovals, buildDateRequests, countPendingTimelineRequests, kindOf, slipText, visibleInInbox } from './model';
 

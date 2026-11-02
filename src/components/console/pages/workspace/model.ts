@@ -9,7 +9,7 @@
  */
 import { fmt, fmtY, todayIso } from '@/components/portal/dates';
 import { clientRecipientsForProject, type DirectoryPerson } from '@/lib/email/directory-filter';
-import { knowledgeBankFileMatchesQuery } from '@/lib/knowledge-bank-search';
+import { knowledgeBankFileMatchesQuery } from '@/lib/knowledge-bank/knowledge-bank-search';
 import type { KnowledgeBankFile, KnowledgeBankFolder } from '@/views/knowledge-bank/knowledge-bank-ui-state';
 
 /* ================================================================ words and dates */

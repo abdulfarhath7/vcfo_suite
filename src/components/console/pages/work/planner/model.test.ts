@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { InternWorkItem } from '@/lib/intern-work';
+import type { InternWorkItem } from '@/lib/intern/intern-work';
 import type { PlannerBlockDto } from '@/lib/planner-blocks';
 import { blockTimesError, cleanBlockInput, cleanBlockPatch, isMissingTableError } from '@/lib/planner-blocks';
 import {

@@ -1059,6 +1059,7 @@ export async function systemListActiveProfilesByRole(
     .orderBy(asc(profiles.email))
     .limit(2000);
   return rows.map((r) => ({ id: r.id, name: r.name?.trim() || r.email, email: r.email }));
+}
 
 /* ------------------------------------------------------------------------ */
 /* Sign-in check and two-step sign-in (G-25)                                 */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
-import type { EngagementSchedule } from '@/lib/schedule-windows';
+import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 import { buildMasterPlan, buildTimelineBlocks, cascadeBlocks, isCriticalStep, projectedWindow, weekOf } from './master-plan';
 
 const TODAY = '2026-10-28';

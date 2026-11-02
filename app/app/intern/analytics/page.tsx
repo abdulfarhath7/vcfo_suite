@@ -1,5 +1,5 @@
 import { AnalyticsPage } from '@/components/console/pages/insight/AnalyticsPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Analytics", "How your clients are doing over time");
 

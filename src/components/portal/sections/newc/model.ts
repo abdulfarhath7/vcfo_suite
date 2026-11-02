@@ -16,20 +16,20 @@
  */
 import { coerceStatusCode, getItem, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
-import { extractItemResponses, fieldsForOwnership, getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist-responses';
-import { applyShowWhen, isRepeatField, repeatEntries, repeatFieldId, repeatFieldLabel } from '@/lib/checklist-repeat';
-import { validateStepAgainstState } from '@/lib/checklist-step-validation';
-import { approvalStateOf } from '@/lib/checklist-step-approval';
-import { CLIENT_INTAKE_STEP_IDS, isLeadOnlyField } from '@/lib/pre-inc-direct-flow';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
+import { extractItemResponses, fieldsForOwnership, getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { applyShowWhen, isRepeatField, repeatEntries, repeatFieldId, repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
+import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
+import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
+import { CLIENT_INTAKE_STEP_IDS, isLeadOnlyField } from '@/lib/incorporation/pre-inc-direct-flow';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { PortalIncorporationModel, PortalStep, StepOwner } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto, IncorporationBoardResolution } from '@/lib/client-portal/incorporation-types';
-import type { HomeNeedRequest } from '@/lib/client-home';
+import type { HomeNeedRequest } from '@/lib/client/client-home';
 import { directorAudienceKind } from '@/lib/incorporation-docs/audiences';
 import { incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
 import { isIncorpDraftSharedWithClient, isIncorpSlotSetFrozen, signedUploadFieldForIncorpDraft } from '@/lib/incorporation-docs/share';
 import { INCORP_DOC_DEFINITIONS, incorpDocAppliesToEngagement, type IncorpDocAudience, type IncorpDocKind } from '@/lib/incorporation-docs/types';
-import { directorResponsesFromState, resolveDirectorEntries, type StepStateMap } from '@/lib/proposed-directors';
+import { directorResponsesFromState, resolveDirectorEntries, type StepStateMap } from '@/lib/incorporation/proposed-directors';
 
 export type StateMap = Record<string, ChecklistItemStateSlice | undefined>;
 

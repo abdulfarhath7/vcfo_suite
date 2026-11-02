@@ -38,6 +38,7 @@ const base: ClientOverview = {
     startDate: '2026-01-05T00:00:00.000Z',
   },
   identifiers: {},
+  needs: [],
   incorporated: false,
   progress: buildProgress({}),
   nextAction: {

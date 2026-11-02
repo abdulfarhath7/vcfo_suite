@@ -35,7 +35,7 @@ import {
   monthKeyOf,
   monthLabelOf,
   type FilingRow,
-} from '@/lib/filings';
+} from '@/lib/compliance/filings';
 import { cn } from '@/lib/utils';
 import { ALL_COMPANIES, type ComplianceScope } from '@/views/compliances/compliance-scope';
 

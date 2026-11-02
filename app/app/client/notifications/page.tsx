@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Notifications", "Every notification for your account");
 

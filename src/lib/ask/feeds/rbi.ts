@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { fetchOfficialFeedXml, parseRssOrAtom, type ParsedFeedItem } from '@/lib/announcements';
+import { fetchOfficialFeedXml, parseRssOrAtom, type ParsedFeedItem } from '@/lib/notifications/announcements';
 import { fetchPdf, fetchText } from './govt-fetch';
 import { ManualFetchError, toYmd, type FeedContent, type FeedItem, type FeedWatcher } from './types';
 

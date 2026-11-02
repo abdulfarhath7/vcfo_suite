@@ -12,7 +12,7 @@ import { summarizeOfficialUpdate } from './summarize';
 import { notifyManagersOfPendingUpdate } from '@/lib/regulatory/notify';
 import { watcherById } from '@/lib/ask/feeds/registry';
 import { renderReviewPdf } from '@/lib/ask/feeds/review-pdf';
-import { firmDisplayName } from '@/lib/brand';
+import { firmDisplayName } from '@/lib/shell/brand';
 import { bucketKey, getObjectBuffer, putObject } from '@/storage/s3';
 import { askConfig } from '@/lib/ask/config';
 import { getAskProvider } from '@/lib/ask/provider';

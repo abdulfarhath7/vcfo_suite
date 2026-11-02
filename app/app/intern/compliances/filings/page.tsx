@@ -1,5 +1,5 @@
 import { FilingsPage } from '@/components/console/pages/compliance/FilingsPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Filings register", "Statutory filing register across your clients");
 

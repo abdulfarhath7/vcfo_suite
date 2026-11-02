@@ -27,8 +27,8 @@ import {
   knowledgeBankFilesInFolder,
   knowledgeBankFolderAncestors,
   knowledgeBankFolderPath,
-} from '@/lib/knowledge-bank-folders';
-import { removeKnowledgeBankStorageObject, uploadKnowledgeBankFile, validateKnowledgeBankUploadFile } from '@/lib/knowledge-bank-storage';
+} from '@/lib/knowledge-bank/knowledge-bank-folders';
+import { removeKnowledgeBankStorageObject, uploadKnowledgeBankFile, validateKnowledgeBankUploadFile } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { isUuid } from '@/lib/slug';
 import { errorMessage } from '@/lib/toast-errors';
 import { KNOWLEDGE_BANK_EXTENSIONS, maxUploadSizeLabel, resolveUploadContentType } from '@/lib/upload-limits';

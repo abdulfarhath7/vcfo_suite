@@ -17,7 +17,7 @@ import { visualText } from '@/components/ask/visuals/visual-text';
 import { getTopic } from '@/lib/ask/topics';
 import { resolveHref } from '@/lib/ask/resolve-href';
 import { reminderComposeHref } from '@/lib/ask/reminder';
-import { adminProjectPath } from '@/lib/project-step-path';
+import { adminProjectPath } from '@/lib/projects/project-step-path';
 import type { StaffBasePath } from '@/lib/auth-routes';
 import { Icon } from '../../ui';
 

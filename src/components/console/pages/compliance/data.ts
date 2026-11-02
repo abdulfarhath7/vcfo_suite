@@ -12,10 +12,10 @@
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
-import { canSetScheduleWindows } from '@/lib/schedule-windows';
+import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { useConsole, useConsoleBadge } from '../../runtime';
 import { useBookLeads, useTodayIso } from '../today/useToday';

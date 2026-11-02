@@ -1,5 +1,5 @@
 import { TodayPage } from '@/components/console/pages/today/TodayPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Today", "Your book today: what needs you, what is late and what is next");
 

@@ -1,14 +1,20 @@
-import { Suspense } from "react";
-import { ClientRegistrationsRoute } from "@/components/client-portal/pages/registrations";
-import { pageMetadata } from "@/lib/shell/page-metadata";
+import { Suspense } from 'react';
+import { ClientRoute } from '@/components/portal/Intent';
+import { ClientRegistrationsRoute } from '@/components/client-portal/pages/registrations';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Registrations", "Registrations of the company");
+export const metadata = pageMetadata('Registrations', 'Registrations of the company');
 
-/** Client portal registrations: the registration phase of the checklist with the stored numbers. */
+/** Scrolls to Registrations; a super admin preview keeps the v7 registrations page. */
 export default function Page() {
   return (
-    <Suspense fallback={null}>
-      <ClientRegistrationsRoute />
-    </Suspense>
+    <ClientRoute
+      intent={{ kind: 'section', key: 'registrations' }}
+      legacy={
+        <Suspense fallback={null}>
+          <ClientRegistrationsRoute />
+        </Suspense>
+      }
+    />
   );
 }

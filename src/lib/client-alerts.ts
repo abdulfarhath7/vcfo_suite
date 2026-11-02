@@ -1,4 +1,4 @@
-import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client-overview';
+import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client/client-overview';
 
 /**
  * IMPORTANT ALERTS — the dated things a client must not miss: their own open

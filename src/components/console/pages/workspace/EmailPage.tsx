@@ -23,7 +23,7 @@ import { useApp } from '@/context/AppContext';
 import { emailBrandingLabel, htmlFromPlainText, wrapComposeBodyHtml, type EmailTemplateDto } from '@/lib/email/compose-branding';
 import { matchDirectoryPersonByToParam, type DirectoryPerson } from '@/lib/email/directory-filter';
 import { isEmailAddress } from '@/lib/email/recipient-input';
-import { engagementIdAliases } from '@/lib/legacy-engagement-ids';
+import { engagementIdAliases } from '@/lib/projects/legacy-engagement-ids';
 import { errorMessage } from '@/lib/toast-errors';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Btn, Icon } from '../../ui';

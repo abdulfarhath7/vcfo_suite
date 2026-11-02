@@ -16,7 +16,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useFilings } from '@/lib/use-filings';
+import { useFilings } from '@/hooks/use-filings';
 import { useConsole, useCrumbs } from '../../runtime';
 import { Drill, type DrillRow, type DrillTab } from '../../overlays';
 import { LeadAv, Panel, Seg, hueOf } from '../../ui';

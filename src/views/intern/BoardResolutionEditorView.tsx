@@ -154,7 +154,12 @@ function BrStageList({ stages }: { stages: BrStage[] }) {
   );
 }
 
-export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
+export function BoardResolutionEditorView(
+  p: BoardResolutionEditorProps & {
+    /** The resolution date the client gave in Part A, formatted; null when not set. */
+    resolutionDateLabel: string | null;
+  },
+) {
   const router = useRouter();
   const pathname = usePathname();
   const {
@@ -172,6 +177,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
     loading,
     hasPre1Data,
     pre1StepHref,
+    resolutionDateLabel,
     generateErrorDisplay,
     generateError,
     doc,
@@ -276,6 +282,26 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
         {sentBackNote && !withManager && !isFinalized ? (
           <p role="status" className="mb-4 rounded-md border-1.5 border-warning-mid bg-warning-soft px-3 py-2 text-[13.5px] text-ink">
             <span className="font-medium">{isLead ? 'Your manager sent this back:' : 'Sent back to the lead:'}</span> {sentBackNote}
+          </p>
+        ) : null}
+
+        {/* The resolution date comes from Part A (Share Capital Details); the lead changes it there. */}
+        {hasPre1Data && !loading && !isFinalized ? (
+          <p className="mb-4 flex flex-wrap items-center gap-x-2 text-[12.5px] text-ink-muted">
+            <span>
+              Date of board resolution:{' '}
+              <span className="font-medium text-ink">{resolutionDateLabel ?? 'not set'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                router.push(docPackStepPath(eng, staffShell, 'pre-1', sectionSlug('Share Capital Details')))
+              }
+              className="font-medium text-brand-text hover:underline"
+            >
+              Change date
+            </button>
+            <span className="text-[11.5px]">Then use Re-generate from Pre-1.</span>
           </p>
         ) : null}
 

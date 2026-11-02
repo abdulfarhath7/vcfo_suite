@@ -25,10 +25,10 @@
  */
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist-step-approval';
-import { isStepReleasedToClient } from '@/lib/checklist-visibility';
-import { isDirectFlowStep, isDirectFlowStepComplete, isWaitingOnLead } from '@/lib/pre-inc-direct-flow';
-import { validateMilestoneUploadFile, fileNameFromStoragePath } from '@/lib/milestone-document-storage';
+import { approvalStateOf, clientApproveBlockedReason, isAwaitingClientApproval } from '@/lib/checklist/checklist-step-approval';
+import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
+import { isDirectFlowStep, isDirectFlowStepComplete, isWaitingOnLead } from '@/lib/incorporation/pre-inc-direct-flow';
+import { validateMilestoneUploadFile, fileNameFromStoragePath } from '@/lib/documents/milestone-document-storage';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto, ClientIncorporationExtras } from '@/lib/client-portal/incorporation-types';
 import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';

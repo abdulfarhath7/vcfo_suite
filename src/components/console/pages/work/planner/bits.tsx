@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
 import { stepSlugForItemId } from '@/lib/slug';
-import { internLeadManagerRequestPatch } from '@/lib/checklist-item-review';
+import { internLeadManagerRequestPatch } from '@/lib/checklist/checklist-item-review';
 import { companyShortName } from '@/lib/client-portal/company';
 import { useConsole } from '../../../runtime';
 import { hueOf } from '../../../ui';

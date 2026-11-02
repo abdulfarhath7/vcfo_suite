@@ -49,7 +49,6 @@ export const whatsappSend = inngest.createFunction(
   { id: 'whatsapp-send', retries: MAX_RETRIES, throttle: { limit: 20, period: '1m' } },
   { event: WHATSAPP_SEND_EVENT },
   async ({ event, step, attempt }) => {
-  async ({ event, step }) => {
     if (await skipWhenPaused(step)) return PAUSED;
     const data = event.data as WhatsAppSendEventData;
 

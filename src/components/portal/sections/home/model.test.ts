@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
-import type { ClientHome } from '@/lib/client-home';
+import type { ClientHome } from '@/lib/client/client-home';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
 import { briefText, buildDock, cityOf, companySubLine, dueWithin, groupsOf, nextDeadlineOf, overdueOf, readyBy, stageLabel } from './model';
 

@@ -15,8 +15,8 @@
 import type { Engagement } from '@/data/engagements';
 import { getIncorporationPhases } from '@/data/checklist';
 import { buildIncorporationModel, type PortalIncorporationModel, type PortalStep } from '@/lib/client-portal/step-model';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import { listPendingApprovals, pendingApprovalKind } from '@/lib/pending-approvals';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { listPendingApprovals, pendingApprovalKind } from '@/lib/projects/pending-approvals';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { stepSlugForItemId } from '@/lib/slug';
 

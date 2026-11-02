@@ -30,7 +30,7 @@
  * A step with no window keeps its row (the table says "no planned dates"); it
  * gets no bar, no schedule word and no week numbers — we never invent dates.
  */
-import type { DeadlineRule } from '@/lib/deadlines';
+import type { DeadlineRule } from '@/lib/projects/deadlines';
 import type { PortalIncorporationModel, PortalPhase, PortalStep } from './step-model';
 
 export type PlanStatus = 'done' | 'wip' | 'todo' | 'over' | 'na';

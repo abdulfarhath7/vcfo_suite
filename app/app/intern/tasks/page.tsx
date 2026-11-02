@@ -1,5 +1,5 @@
 import { LeadTasksPage } from '@/components/console/pages/work/LeadTasksPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Tasks", "Your tasks across your clients");
 

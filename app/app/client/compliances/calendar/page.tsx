@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import { LegacyCalendar } from '@/components/portal/legacy';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 

@@ -28,7 +28,6 @@ import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipi
 import { listStaffPeople, type StaffPersonRow } from '@/db/repositories/profiles';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
-import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
 import {
   buildJourney,
   buildSuperOverview,

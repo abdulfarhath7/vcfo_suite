@@ -16,11 +16,11 @@
  */
 import { Fragment, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { notificationsInDirection, type AppNotification, type NotificationDirection } from '@/lib/checklist-notifications';
-import { notificationsMatchingClearScope, type NotificationClearScope } from '@/lib/notification-dismiss';
-import { requestNotificationPopup } from '@/lib/notification-popup';
-import { announcementMatchesFilter, canWriteAnnouncements, requestAnnouncementPopup, type AnnouncementListFilter } from '@/lib/announcements';
-import { useAnnouncements } from '@/lib/use-announcements';
+import { notificationsInDirection, type AppNotification, type NotificationDirection } from '@/lib/checklist/checklist-notifications';
+import { notificationsMatchingClearScope, type NotificationClearScope } from '@/lib/notifications/notification-dismiss';
+import { requestNotificationPopup } from '@/lib/notifications/notification-popup';
+import { announcementMatchesFilter, canWriteAnnouncements, requestAnnouncementPopup, type AnnouncementListFilter } from '@/lib/notifications/announcements';
+import { useAnnouncements } from '@/hooks/use-announcements';
 import { useConsole } from '../../runtime';
 import { PopHead } from '../../overlays';
 import { Empty, GoArrow, Icon } from '../../ui';

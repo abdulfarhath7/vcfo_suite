@@ -16,8 +16,8 @@
 import { Suspense, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { internAssignedToEngagement } from '@/lib/intern-work';
-import { windowForStep } from '@/lib/schedule-windows';
+import { internAssignedToEngagement } from '@/lib/intern/intern-work';
+import { windowForStep } from '@/lib/projects/schedule-windows';
 import { checklist } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';

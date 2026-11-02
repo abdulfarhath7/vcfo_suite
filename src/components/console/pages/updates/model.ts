@@ -5,10 +5,10 @@
  * staff link goes in the console, the next filing deadline, and the review
  * queue's states.
  */
-import { notificationDirection, type AppNotification, type NotificationKind } from '@/lib/checklist-notifications';
-import { isCreatedAtIstToday, isCreatedAtThisIstWeek } from '@/lib/notification-dismiss';
-import type { AnnouncementKind } from '@/lib/announcements';
-import type { FilingRow } from '@/lib/filings';
+import { notificationDirection, type AppNotification, type NotificationKind } from '@/lib/checklist/checklist-notifications';
+import { isCreatedAtIstToday, isCreatedAtThisIstWeek } from '@/lib/notifications/notification-dismiss';
+import type { AnnouncementKind } from '@/lib/notifications/announcements';
+import type { FilingRow } from '@/lib/compliance/filings';
 import type { IconName, LawKey } from '@/components/portal/ui';
 
 /* ================================================================ dates (India time) */
@@ -151,6 +151,10 @@ export const NOTE_META: Record<NotificationKind, NoteMeta> = {
   'request.uploaded': { type: 'docs', icon: 'up', tone: 'mut', what: 'A client uploaded a document' },
   'team.assigned': { type: 'team', icon: 'team', tone: 'mut', what: 'You were added to a project team' },
   'team.removed': { type: 'team', icon: 'team', tone: 'mut', what: 'You were taken off a project team' },
+  'message.received': { type: 'docs', icon: 'doc', tone: 'due', what: 'A client sent a message on a project' },
+  'schedule.window': { type: 'steps', icon: 'step', tone: 'due', what: 'A date change request waits for a decision' },
+  'compliance.reminder': { type: 'steps', icon: 'bell', tone: 'due', what: 'A compliance item is due soon or overdue' },
+  'compliance.task': { type: 'steps', icon: 'check', tone: 'mut', what: 'A compliance task was assigned or changed' },
   'email.sent': { type: 'email', icon: 'send', tone: 'ok', what: 'An email the tool sent for you' },
   'email.skipped': { type: 'email', icon: 'mail', tone: 'mut', what: 'An email the tool did not send' },
   'email.failed': { type: 'email', icon: 'alert', tone: 'over', what: 'An email that could not be sent' },

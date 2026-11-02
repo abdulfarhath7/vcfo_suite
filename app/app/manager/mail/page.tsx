@@ -1,5 +1,5 @@
 import { EmailPage } from '@/components/console/pages/workspace/EmailPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Email", "Write to clients and your team from your mailbox");
 

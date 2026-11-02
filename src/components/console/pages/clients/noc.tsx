@@ -34,7 +34,7 @@ import {
   type NocInput,
   type NocRun,
 } from '@/lib/registered-office-noc/model';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { useConsole } from '../../runtime';
 import { DrawerHead, ModalBody } from '../../overlays';
 import { Btn, Icon, Panel, Seg } from '../../ui';

@@ -1,5 +1,5 @@
 import { NotificationsPage } from '@/components/console/pages/updates/NotificationsPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Notifications", "Every notification for your account");
 

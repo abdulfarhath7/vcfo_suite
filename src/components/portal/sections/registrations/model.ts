@@ -12,7 +12,7 @@
  *   na      not applicable to this company
  */
 import type { ChecklistField } from '@/data/checklist';
-import { extractItemResponses, getClientResponseFields } from '@/lib/checklist-responses';
+import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import type { PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { REGISTRATION_GROUPS, type RegistrationSop, type SopWho } from '@/data/registration-sops';

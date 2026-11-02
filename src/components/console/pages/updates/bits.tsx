@@ -18,7 +18,7 @@ import {
   announcementAuthorName,
   type Announcement,
   type AnnouncementKind,
-} from '@/lib/announcements';
+} from '@/lib/notifications/announcements';
 import { useConsole } from '../../runtime';
 import { ModalBody } from '../../overlays';
 import { Btn, Field, LawChip, Select } from '../../ui';

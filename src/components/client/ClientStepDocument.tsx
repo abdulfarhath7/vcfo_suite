@@ -7,8 +7,8 @@ import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardRe
 import {
   fileNameFromStoragePath,
   getMilestoneDocumentSignedUrl,
-} from '@/lib/milestone-document-storage';
-import { clientBoardResolutionPath } from '@/lib/project-step-path';
+} from '@/lib/documents/milestone-document-storage';
+import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 
 function fileKind(path: string): 'pdf' | 'image' | 'other' {
   if (/\.pdf($|\?)/i.test(path)) return 'pdf';

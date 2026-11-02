@@ -3,8 +3,8 @@
  * Decided). Client-safe: the type the page reads and the pure mapper the
  * repository (`src/db/repositories/timeline-requests.ts`) uses.
  */
-import type { TimelinePhaseDates } from '@/lib/client-home';
-import { appEngagementId } from '@/lib/legacy-engagement-ids';
+import type { TimelinePhaseDates } from '@/lib/client/client-home';
+import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 
 export type TimelineRequestStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 

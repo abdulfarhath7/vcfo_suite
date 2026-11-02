@@ -15,13 +15,13 @@
  */
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { useNotificationHistory } from '@/lib/use-notification-history';
-import { groupNotificationsForHistory, mergeNotificationsByCreatedAt } from '@/lib/notification-dismiss';
-import { NOTIFICATION_KIND_LABEL } from '@/lib/notification-popup';
-import { createCustomInternFocus } from '@/lib/intern-work';
-import { useOwnFocusTodos } from '@/lib/use-personal-todos';
+import { useNotificationHistory } from '@/hooks/use-notification-history';
+import { groupNotificationsForHistory, mergeNotificationsByCreatedAt } from '@/lib/notifications/notification-dismiss';
+import { NOTIFICATION_KIND_LABEL } from '@/lib/notifications/notification-popup';
+import { createCustomInternFocus } from '@/lib/intern/intern-work';
+import { useOwnFocusTodos } from '@/hooks/use-personal-todos';
 import { maskPhone } from '@/lib/notify/phone';
-import type { AppNotification } from '@/lib/checklist-notifications';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
 import { useConsole, useCrumbs } from '../../runtime';
 import { Drill, type DrillTab } from '../../overlays';
 import { Btn, Donut, Empty, Icon, Legend, Seg, Select } from '../../ui';

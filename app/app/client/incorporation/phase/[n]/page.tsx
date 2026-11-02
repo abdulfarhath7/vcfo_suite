@@ -6,7 +6,7 @@ function phaseNo(raw: string): number {
   const n = PHASE_KEYS[raw] ?? Number.parseInt(raw, 10);
   return n >= 1 && n <= 4 ? n : 1;
 }
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Phase", "Incorporation phase");
 

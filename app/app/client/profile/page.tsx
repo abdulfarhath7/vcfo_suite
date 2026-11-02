@@ -1,7 +1,10 @@
+import { ClientRoute } from '@/components/portal/Intent';
 import AccountSettings from '@/views/settings/AccountSettings';
-import { ClientSettingsEntry } from '@/components/client-portal/pages/team';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-/** The client Profile page (prototype `/client/profile`); `/app/client/settings` shows the same page. */
+export const metadata = pageMetadata('Profile', 'Your profile and settings');
+
+/** Profile = the portal's Settings section; a super admin preview gets the account settings page. */
 export default function Page() {
-  return <ClientSettingsEntry legacy={<AccountSettings path="/app/client/settings" />} />;
+  return <ClientRoute intent={{ kind: 'section', key: 'settings' }} legacy={<AccountSettings path="/app/client/settings" />} />;
 }

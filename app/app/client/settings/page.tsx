@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import AccountSettings from '@/views/settings/AccountSettings';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Settings", "Your account, notifications and appearance");
 

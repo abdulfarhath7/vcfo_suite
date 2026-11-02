@@ -1,5 +1,5 @@
 import { ReviewsPage } from '@/components/console/pages/lead/ReviewsPage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Reviews", "Drafts and client uploads waiting for your review");
 

@@ -1,6 +1,6 @@
 import { ClientRoute } from '@/components/portal/Intent';
 import { LegacyLibrary } from '@/components/portal/legacy';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Library", "A saved explanation");
 

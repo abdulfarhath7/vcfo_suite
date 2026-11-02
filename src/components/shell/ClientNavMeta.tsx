@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { useClientOverview } from '@/lib/use-client-overview';
+import { useClientOverview } from '@/hooks/use-client-overview';
 import { SidebarNavCountBadge, SidebarRailBadge } from '@/components/shell/SidebarNavGroup';
 import { cn } from '@/lib/utils';
 

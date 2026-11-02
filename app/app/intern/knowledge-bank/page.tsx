@@ -1,5 +1,5 @@
 import { KnowledgePage } from '@/components/console/pages/workspace/KnowledgePage';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Knowledge bank", "The firm library");
 

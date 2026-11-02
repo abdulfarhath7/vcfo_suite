@@ -9,13 +9,13 @@
  * a2_home.js groupsOf / monthStats, a6_rest.js briefText.
  */
 import { statusOf, type AreaCode, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
-import type { ClientHome, HomeNeedRequest, NeedKind } from '@/lib/client-home';
+import type { ClientHome, HomeNeedRequest, NeedKind } from '@/lib/client/client-home';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
 import type { ClientPortalContact } from '@/lib/client-portal/types';
-import type { ClientOverviewEngagement } from '@/lib/client-overview';
-import { approvalStateOf } from '@/lib/checklist-step-approval';
-import { isClientFillAwaitingClient } from '@/lib/checklist-client-fill';
-import { isReviewRejected } from '@/lib/checklist-item-review';
+import type { ClientOverviewEngagement } from '@/lib/client/client-overview';
+import { approvalStateOf } from '@/lib/checklist/checklist-step-approval';
+import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fill';
+import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { daysTo, fmt, fmtL, fyOf, rel } from '../../dates';
 
 export const ST_RANK: Record<CompStatus, number> = { over: 0, due: 1, up: 2, ok: 3 };

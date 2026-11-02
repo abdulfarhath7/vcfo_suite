@@ -8,8 +8,8 @@
  */
 import { useMemo } from 'react';
 import type { ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
-import type { HomeNeedRequest } from '@/lib/client-home';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import type { HomeNeedRequest } from '@/lib/client/client-home';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { usePortal } from '../../runtime';
 import { useClientHome, useIncorporationExtras, useMyEngagement, usePortalIncorporation } from '../../data';
 import {

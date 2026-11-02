@@ -20,7 +20,7 @@
  */
 import { checklist } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
-import type { FilingRow } from '@/lib/filings';
+import type { FilingRow } from '@/lib/compliance/filings';
 import { MON } from '@/components/portal/dates';
 import { filingName, type TItem, type TodayModel } from '../today/model';
 import { istDayOf } from './fmt';

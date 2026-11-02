@@ -29,7 +29,7 @@ import { ACT_META, type StatutoryAct } from '@/data/statutory-calendar-fy2627';
 import { readCalendarViewPrefs, writeCalendarViewPrefs } from '@/components/admin/statutory-calendar-utils';
 import { fmtL } from '@/components/portal/dates';
 import { SecError } from '@/components/portal/ui';
-import { adminProjectStepPath } from '@/lib/project-step-path';
+import { adminProjectStepPath } from '@/lib/projects/project-step-path';
 import { useConsole, useConsolePalette, useCrumbs, type PaletteItem } from '../../runtime';
 import { Drill, PopHead } from '../../overlays';
 import { Btn, Donut, Empty, Icon, Legend, Panel, Seg } from '../../ui';

@@ -73,7 +73,14 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const sources = useMilestoneSources({ item, clientId, engagementId, responsesOverride, variant });
   const draftState = useMilestoneDraft({ item, ...sources });
   const ui = useMilestoneUiState();
-  const access = useMilestoneAccess({ item, variant, readOnly, itemState: sources.itemState });
+  const access = useMilestoneAccess({
+    item,
+    variant,
+    readOnly,
+    itemState: sources.itemState,
+    user: sources.user,
+    fields: sources.fields,
+  });
   const autoSave = useMilestoneAutoSave({
     item,
     variant,
@@ -133,6 +140,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internFooterAction,
     internSectionNav,
     internSectionNextLabel,
+    internSubmitBlockedText,
     isClient,
     directFlow,
     isPhase2StructuredStep,
@@ -214,6 +222,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     internFooterAction,
     internSectionNav,
     internSectionNextLabel,
+    internSubmitBlockedText,
     isClient,
     directFlow,
     isPhase2StructuredStep,

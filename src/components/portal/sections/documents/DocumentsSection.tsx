@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import type { DocNode, OpenRequest } from '@/lib/client-portal/documents';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { useNavBadge, usePaletteItems, usePortal, type PaletteItem } from '../../runtime';
 import { useClientDocuments, usePortalIncorporation, useRefreshPortal } from '../../data';
 import { fmt, fmtY, todayIso } from '../../dates';

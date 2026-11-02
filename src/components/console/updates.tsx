@@ -14,8 +14,8 @@
  */
 import { useCallback, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
-import { requestAnnouncementPopup } from '@/lib/announcements';
-import { useAnnouncements } from '@/lib/use-announcements';
+import { requestAnnouncementPopup } from '@/lib/notifications/announcements';
+import { useAnnouncements } from '@/hooks/use-announcements';
 import { useConsole, useConsoleBadge, useConsolePalette, type PaletteItem } from './runtime';
 import { AnnsPop, NotesPop } from './pages/updates/pops';
 import { useAnnouncementReads, useRegulatoryPending } from './pages/updates/data';

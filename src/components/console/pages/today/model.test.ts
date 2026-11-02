@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { DocRequest, Engagement, TaskInstance } from '@/data/engagements';
-import type { ChecklistItemStateSlice } from '@/lib/checklist-state-key';
-import type { FilingRow } from '@/lib/filings';
-import type { PendingApprovalRow } from '@/lib/pending-approvals';
+import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import type { FilingRow } from '@/lib/compliance/filings';
+import type { PendingApprovalRow } from '@/lib/projects/pending-approvals';
 import { buildToday, datedItems, filingName, filingSt, isoWeek, phaseSpan, weekOf, type TodayInput } from './model';
 
 /**

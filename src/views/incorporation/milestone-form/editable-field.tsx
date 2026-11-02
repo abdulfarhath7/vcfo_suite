@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +36,9 @@ import type { FieldEditActions } from './field-edits';
 import type { ReadOnlyFieldRenderers } from './read-only-field';
 import type { MilestoneFormCtx } from './types';
 import { FieldReviewControls, FieldReviewMark } from './field-review';
+
+/** A select with this many options or more gets a type-to-filter picker. */
+const SEARCHABLE_SELECT_MIN_OPTIONS = 12;
 
 /** The editable control for one field, by field type (repeat groups render recursively). */
 export function createEditableFieldRenderer(
@@ -210,6 +214,23 @@ export function createEditableFieldRenderer(
                 field.id === 'shareholderNominee')
                 ? getPre6DirectorNameOptions(draft, pre1Responses)
                 : field.options ?? [];
+            // Long lists (countries, states, nationalities) get a type-to-filter
+            // picker; short ones keep the plain select.
+            if (dynamicOptions.length >= SEARCHABLE_SELECT_MIN_OPTIONS) {
+              return (
+                <SearchableSelect
+                  id={`${item.id}-${field.id}`}
+                  value={draft[field.id] ?? ''}
+                  options={dynamicOptions}
+                  onValueChange={(v) => setField(field.id, v)}
+                  placeholder="Select…"
+                  searchPlaceholder={`Type to search ${field.label.toLowerCase()}…`}
+                  invalid={Boolean(error)}
+                  describedBy={error ? errorId : undefined}
+                  className={cn('milestone-form-input', error && 'border-danger')}
+                />
+              );
+            }
             return (
           <Select
             value={draft[field.id] ?? ''}

@@ -15,7 +15,7 @@ import {
   type AlertWindowDays,
   type ClientAlert,
 } from '@/lib/client-alerts';
-import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client-overview';
+import type { ClientOverviewComplianceItem, ClientOverviewNeed } from '@/lib/client/client-overview';
 import { CardTabs, type CardTab } from '@/components/client/overview/CardTabs';
 
 const LIST_LIMIT = 5;

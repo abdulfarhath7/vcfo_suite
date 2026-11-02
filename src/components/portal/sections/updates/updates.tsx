@@ -21,8 +21,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AppNotification } from '@/lib/checklist-notifications';
-import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/announcements';
+import type { AppNotification } from '@/lib/checklist/checklist-notifications';
+import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/notifications/announcements';
 import { useIntent, usePortal, type Intent } from '../../runtime';
 import { getJson, QK, sendJson } from '../../data';
 import { ModalBox, PopHead } from '../../overlays';

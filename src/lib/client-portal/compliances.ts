@@ -461,7 +461,7 @@ export function focusNodes(f: PortalFiling, companyShort: string, today: string)
 
 /* --------------------------------------------------------------- csv / ics */
 
-function csvEscape(v: string | number | null | undefined): string {
+export function csvEscape(v: string | number | null | undefined): string {
   let s = v == null ? '' : String(v);
   // spreadsheet formula injection: a cell starting with = + - @ is text
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;

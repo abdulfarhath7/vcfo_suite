@@ -15,10 +15,10 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useApp } from '@/context/AppContext';
 import { fmtL } from '@/components/portal/dates';
-import { internLeadManagerRequestPatch } from '@/lib/checklist-item-review';
-import { createCustomInternFocus, isCustomInternFocus } from '@/lib/intern-work';
-import { useInternPortfolio } from '@/lib/use-intern-portfolio';
-import { useOwnFocusTodos } from '@/lib/use-personal-todos';
+import { internLeadManagerRequestPatch } from '@/lib/checklist/checklist-item-review';
+import { createCustomInternFocus, isCustomInternFocus } from '@/lib/intern/intern-work';
+import { useInternPortfolio } from '@/hooks/use-intern-portfolio';
+import { useOwnFocusTodos } from '@/hooks/use-personal-todos';
 import { SecLoading } from '@/components/portal/ui';
 import { Btn, Empty, GoArrow, Icon, Panel, Seg, hueOf } from '../../ui';
 import { Menu, PopHead } from '../../overlays';

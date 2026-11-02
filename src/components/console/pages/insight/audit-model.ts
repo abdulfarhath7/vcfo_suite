@@ -14,7 +14,7 @@ import {
   getAuditTargetType,
   type AuditActionCategory,
   type AuditEventRow,
-} from '@/lib/audit-log';
+} from '@/lib/audit/audit-log';
 import { ROLE_UI_LABEL, type DbRole } from '@/lib/auth';
 import { stepSlugForItemId } from '@/lib/slug';
 import { hhmmIst, istDayOf, sentenceCase, toCsv } from './fmt';

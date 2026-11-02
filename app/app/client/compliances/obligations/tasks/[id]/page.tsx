@@ -1,14 +1,20 @@
-import { Suspense } from "react";
-import { ClientCompliancesTaskRoute } from "@/components/client-portal/pages/compliances";
-import { pageMetadata } from "@/lib/shell/page-metadata";
+import { Suspense } from 'react';
+import { ClientRoute } from '@/components/portal/Intent';
+import { ClientCompliancesTaskRoute } from '@/components/client-portal/pages/compliances';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
-export const metadata = pageMetadata("Task", "One non-statutory task shared with the client");
+export const metadata = pageMetadata('Task', 'One non-statutory task shared with the client');
 
-/** Client portal non-statutory task page (COMPLIANCE-MODEL.md 4.3; a firm-only task reads as not shared). */
+/** A non-statutory task shared with the client — the Filings section owns it in the portal. */
 export default function Page() {
   return (
-    <Suspense fallback={null}>
-      <ClientCompliancesTaskRoute />
-    </Suspense>
+    <ClientRoute
+      intent={{ kind: 'section', key: 'filings' }}
+      legacy={
+        <Suspense fallback={null}>
+          <ClientCompliancesTaskRoute />
+        </Suspense>
+      }
+    />
   );
 }

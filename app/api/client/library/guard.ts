@@ -6,9 +6,6 @@ import { requireAuth, type AuthContext } from '@/auth/guards';
 /** Roles with a client Library: clients, and the admins who may preview one. Managers and Project Leads have none. */
 const LIBRARY_ROLES: ReadonlySet<string> = new Set(['client', 'admin', 'super_admin']);
 
-/** Roles with a Library. Managers and Project Leads have Ask VCFO but no Library. */
-const LIBRARY_ROLES = new Set(['client', 'admin', 'super_admin']);
-
 /**
  * Client-portal Library routes: session (401) → role (403 for managers and
  * Project Leads, who have no library). Deliberately NOT the Ask VCFO feature

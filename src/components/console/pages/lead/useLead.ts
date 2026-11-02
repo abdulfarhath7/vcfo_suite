@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import type { DirectoryPerson } from '@/lib/email/directory-filter';
-import { resolveLeadManagers, type LeadManager } from '@/lib/lead-managers';
+import { resolveLeadManagers, type LeadManager } from '@/lib/intern/lead-managers';
 import { useConsoleBadge } from '../../runtime';
 import { useToday } from '../today/useToday';
 import type { TodayModel } from '../today/model';

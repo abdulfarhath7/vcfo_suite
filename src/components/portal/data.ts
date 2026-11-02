@@ -17,15 +17,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import type { ChecklistItemState } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
-import { findEngagementForClientUser } from '@/lib/checklist-state-key';
+import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
 import { buildIncorporationModel, type PortalIncorporationModel } from '@/lib/client-portal/step-model';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
 import { statutoryFilings } from '@/lib/client-portal/statutory-fallback';
 import { projectedWindow } from '@/lib/client-portal/master-plan';
-import type { ClientHome } from '@/lib/client-home';
+import type { ClientHome } from '@/lib/client/client-home';
 import type { ClientDocumentsPayload } from '@/lib/client-portal/documents';
 import type { ClientIncorporationExtras } from '@/lib/client-portal/incorporation-types';
-import { useClientOverview } from '@/lib/use-client-overview';
+import { useClientOverview } from '@/hooks/use-client-overview';
 import { fyOf, todayIso } from './dates';
 
 /** Every portal query key starts with this, so `refreshPortal()` can refetch them all. */

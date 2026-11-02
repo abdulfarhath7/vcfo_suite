@@ -11,7 +11,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { internAssignedToEngagement } from '@/lib/intern-work';
+import { internAssignedToEngagement } from '@/lib/intern/intern-work';
 import { useConsole, useCrumbs } from '../../runtime';
 import { Drill } from '../../overlays';
 import { Btn, Empty, Icon, LeadAv, Panel, hueOf } from '../../ui';

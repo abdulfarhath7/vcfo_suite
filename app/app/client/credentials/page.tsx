@@ -1,5 +1,5 @@
 import { ClientRoute } from '@/components/portal/Intent';
-import { pageMetadata } from '@/lib/page-metadata';
+import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata("Credentials", "Government portal logins, registrations and directors’ KYC");
 

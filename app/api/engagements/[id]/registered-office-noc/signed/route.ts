@@ -6,7 +6,7 @@ import {
   nocEngagementDbId,
   nocObjectKey,
 } from '@/db/repositories/registered-office-noc';
-import { validateMilestoneUploadFile } from '@/lib/milestone-document-storage';
+import { validateMilestoneUploadFile } from '@/lib/documents/milestone-document-storage';
 import { MILESTONE_DOCUMENT_EXTENSIONS, resolveUploadContentType } from '@/lib/upload-limits';
 import { bucketKey, putObject } from '@/storage/s3';
 

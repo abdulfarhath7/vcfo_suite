@@ -7,7 +7,11 @@ import { toastError, toastSuccess, errorMessage } from '@/lib/toast-errors';
 import { getChangedPartial } from '@/views/incorporation/milestone-response-form-utils';
 import { internFormNextTarget } from '@/lib/intern/intern-overview-progress';
 import { clientIncorporationPath, clientIncorporationStepPath } from '@/lib/projects/project-step-path';
-import { canRoleEditField, stripLeadOnlyResponses } from '@/lib/incorporation/pre-inc-direct-flow';
+import {
+  canRoleEditField,
+  CLIENT_HAS_NOT_FILLED_MESSAGE,
+  stripResponsesNotEditableBy,
+} from '@/lib/incorporation/pre-inc-direct-flow';
 import { errorKeyInFields } from './helpers';
 import type { MilestoneFormCtx } from './types';
 
@@ -36,6 +40,7 @@ export function createSubmitActions(ctx: MilestoneFormCtx) {
     setPeakEndMoment,
     isClient,
     directFlow,
+    leadOnIntakeStep,
     writableForViewer,
     clientResubmit,
     isInternDeliveryStep,
@@ -179,6 +184,9 @@ export function createSubmitActions(ctx: MilestoneFormCtx) {
     const blocking: Record<string, string> = {};
     for (const [key, message] of Object.entries(validation.errors)) {
       if (canRoleEditField(role, item.id, key)) blocking[key] = message;
+      // The lead cannot fill the client's part of an intake step: a gap there
+      // is shown as an error (the server answers the same way).
+      else if (leadOnIntakeStep) blocking[key] = CLIENT_HAS_NOT_FILLED_MESSAGE;
     }
     setFieldWarnings(validation.warnings);
 
@@ -202,7 +210,7 @@ export function createSubmitActions(ctx: MilestoneFormCtx) {
 
     setSubmitting(true);
     try {
-      const sent = isClient ? stripLeadOnlyResponses(item.id, submitDraft) : submitDraft;
+      const sent = stripResponsesNotEditableBy(role, item.id, submitDraft);
       const result = await submitDirectStep(scopeId, item.id, sent);
       if (result.outcome === 'invalid') {
         showErrors(result.fieldErrors ?? {});

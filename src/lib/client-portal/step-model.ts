@@ -32,7 +32,7 @@ import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { windowForStep, type EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';
-type StepOwner = 'client' | 'sbc' | 'mca';
+export type StepOwner = 'client' | 'sbc' | 'mca';
 
 export interface PortalStep {
   /** 1-based number across all 48 steps (prototype `inc-step-N`). */

@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { clientStepHref, type ClientOverviewMilestone } from '@/lib/client-overview';
+import { clientStepHref, type ClientOverviewMilestone } from '@/lib/client/client-overview';
 import { CardTabs, type CardTab } from '@/components/client/overview/CardTabs';
 
 type DrillTab = 'all' | ClientOverviewMilestone['kind'];
