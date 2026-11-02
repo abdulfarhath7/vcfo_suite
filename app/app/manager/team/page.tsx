@@ -1,5 +1,6 @@
-import AdminTeam from "@/views/admin/Team";
+import { redirect } from 'next/navigation';
 
+/** Moved into the console's Project leads page (portal redesign, Oct 2026). */
 export default function Page() {
-  return <AdminTeam />;
+  redirect('/app/manager/leads');
 }

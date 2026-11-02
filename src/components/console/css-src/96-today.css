@@ -1,0 +1,78 @@
+/* Manager Today and the manager sidebar extras (not from the prototype): only what the prototype sheet (30-console.css)
+   lacks once its marks carry real data — long real names, clickable chips and cells, a filed-late cell, today ringed
+   on the mini calendar, and no space kept for trend lines we do not draw. Section sheets bundle before the prototype
+   sheet, so rules that tie on specificity double a class. */
+
+/* long real names: one line with an ellipsis (the element carries a title with the full text) */
+.tdy-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tdy-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mx-fi .mx-dt b .tdy-ell { flex: 0 1 auto; }
+
+/* wide grids scroll inside their panel, never the page */
+.tdy-scrollx { overflow-x: auto; scrollbar-width: thin; max-width: 100%; }
+.tdy-scrollx > .mx-tt { min-width: 560px; }
+.tdy-scrollx > .tdy-hm { min-width: 440px; }
+.tdy-scrollx > .tdy-rw { min-width: 0; }
+
+/* the hero ribbon keeps no room for a trend line: there is no real daily series behind these tiles */
+body.gx .mx-ribbon .mx-rb { padding-bottom: 14px; }
+.mx-rb[disabled] { cursor: default; }
+.mx-rb[disabled]:hover { background: transparent; }
+
+/* orbit key rows that are not links (clients with no lead) */
+.mx-ok.tdy-static { cursor: default; }
+.mx-ok.tdy-static:hover { background: transparent; }
+
+/* this week: lane icons, clickable chips, the day list */
+.mx-lnl svg { width: 16px; height: 16px; flex: none; color: var(--ink-3); }
+button.mx-lni { width: 100%; text-align: left; cursor: pointer; }
+button.mx-lni:hover { background: color-mix(in srgb, var(--cc) 14%, var(--solid)); }
+button.mx-more { text-align: left; padding: 0 4px; border-radius: 5px; }
+button.mx-more:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.mx-wl.tdy-wl { width: 100%; text-align: left; padding: 5px 6px; border-radius: 8px; }
+.mx-wl.tdy-wl:hover { background: var(--solid-2); }
+.mx-wl.tdy-wl .tdy-ell { flex: 1; }
+.tdy-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.tdy-key { font: 700 10.5px var(--f-mono); color: var(--ink-2); }
+
+/* filing matrix: a filed-late cell, clickable cells and rows */
+.mx-fgc.l { background: color-mix(in srgb, var(--mx-ok) 50%, var(--ink-3)); color: #06251a; }
+button.mx-fgc { cursor: pointer; transition: filter .15s; }
+button.mx-fgc:hover { filter: brightness(1.12); }
+.mx-fgh .tdy-ell { text-align: center; }
+.mx-nf.tdy-nf { width: 100%; text-align: left; }
+.mx-nf.tdy-nf:hover .mx-dt b { color: var(--ice); }
+
+/* runway: the client cell is a button */
+button.mx-tc3 { text-align: left; min-width: 0; }
+button.mx-tc3:hover b { color: var(--ice); }
+.mx-rwr > .mx-tc3 > span { min-width: 0; }
+
+/* practice areas: pipeline stages open their clients */
+.mx-pp.tdy-pp { border: 1px solid transparent; cursor: pointer; min-width: 0; }
+.mx-pp.tdy-pp:hover { border-color: var(--line); }
+
+/* inbox: team to-dos grouped by person */
+.tdy-tg { padding: 8px 0; border-top: 1px solid var(--line-2); }
+.tdy-tg:first-child { border-top: 0; padding-top: 0; }
+.tdy-tg .co-row b { font: 600 13.5px var(--f-disp); }
+.tdy-tg .mx-todo { padding-left: 10px; }
+
+/* notices: an unshown notice must not catch clicks */
+.mx-notice:not(.in) { pointer-events: none; }
+
+/* mini calendar (sidebar): today ringed in the accent so its status underline stays readable; upcoming in the
+   page's grey; keyboard focus */
+body.gx .mx-md.now.now { background: transparent; color: var(--gx-acc); box-shadow: inset 0 0 0 1.5px var(--gx-acc); font-weight: 700; }
+.mx-md.w-u.w-u::after { background: var(--mx-none2); }
+.mx-md.now.w-f::after { background: var(--mx-ok); }
+.mx-md.now.w-o::after { background: #ff6b6b; }
+.mx-md.now.w-d::after { background: #fbbf24; }
+.mx-md.now.w-u::after { background: var(--mx-none2); }
+.mx-mleg { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; font: 500 10.5px var(--f-disp); color: var(--sb-dim); }
+.mx-mleg span { display: inline-flex; align-items: center; gap: 4px; }
+.mx-mleg i { width: 10px; height: 2px; border-radius: 2px; }
+
+/* sidebar lists: names never push the count off the row; quiet notes when a list is empty */
+.mx-subl button .tdy-ell { flex: 0 1 auto; }
+.tdy-sbnote { display: block; padding: 6px 10px; font-size: 12px; color: var(--sb-dim); }

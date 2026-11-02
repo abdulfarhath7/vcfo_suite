@@ -149,6 +149,31 @@ describe('deterministic paths', () => {
   });
 });
 
+describe('DIN lookup', () => {
+  afterEach(() => {
+    delete process.env.DIN_LOOKUP_PROVIDER;
+  });
+
+  it('a staff DIN question is answered live with zero model calls', async () => {
+    process.env.DIN_LOOKUP_PROVIDER = 'mock';
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('manager', { shell: 'admin', message: 'check DIN 99999901' });
+    expect(provider.calls).toHaveLength(0);
+    expect(answer?.origin).toBe('deterministic');
+    expect(answer?.line).toContain('DEMO DIRECTOR ONE (DIN 99999901)');
+  });
+
+  it('a client DIN question takes the guarded road, not the lookup', async () => {
+    process.env.DIN_LOOKUP_PROVIDER = 'mock';
+    const provider = mockProvider([guard('off_topic')]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', message: 'DIN 99999901' });
+    expect(provider.calls).toHaveLength(1);
+    expect(answer?.line).not.toContain('DEMO DIRECTOR ONE');
+  });
+});
+
 describe('guarded free text', () => {
   it('off-topic gets the fixed refusal with no generation call', async () => {
     const provider = mockProvider([guard('off_topic')]);

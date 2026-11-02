@@ -1,8 +1,9 @@
-import { CredentialsPage } from '@/components/client-portal/pages/credentials/CredentialsPage';
+import { ClientRoute } from '@/components/portal/Intent';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Credentials', 'Government portal logins, registrations and directors’ KYC');
+export const metadata = pageMetadata("Credentials", "Government portal logins, registrations and directors’ KYC");
 
+/** Scrolls to Credentials. */
 export default function Page() {
-  return <CredentialsPage />;
+  return <ClientRoute intent={{ kind: 'section', key: 'credentials' }} />;
 }

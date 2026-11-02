@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildTemplateComponents,
+  buildTemplatePlaceholders,
   firstNameOf,
   readTemplateNames,
   templateNameEnvKey,
@@ -32,6 +33,14 @@ describe('template references', () => {
     expect(readTemplateNames(env({ WHATSAPP_TEMPLATE_NAME_WELCOME: '   ' })).welcome).toBe(
       'welcome',
     );
+  });
+
+  it('prefixes every name when a provider asks for it, and an override still wins', () => {
+    const names = readTemplateNames(env({}), 'vcfo_');
+    for (const event of NOTIFY_EVENTS) expect(names[event]).toBe(`vcfo_${event}`);
+    expect(
+      readTemplateNames(env({ WHATSAPP_TEMPLATE_NAME_WELCOME: 'vcfo_welcome_v2' }), 'vcfo_').welcome,
+    ).toBe('vcfo_welcome_v2');
   });
 });
 
@@ -69,8 +78,23 @@ describe('variable serialisation', () => {
     ]);
   });
 
+  it('orders step_awaiting_approval first name → step title → company, as approved on Meta', () => {
+    expect(buildTemplatePlaceholders('step_awaiting_approval', vars)).toEqual([
+      'Asha',
+      'Certificate of Incorporation',
+      'Kestrel Robotics India Pvt Ltd',
+    ]);
+  });
+
+  it('gives DoubleTick the same sanitised values as the Meta components', () => {
+    for (const event of NOTIFY_EVENTS) {
+      expect(buildTemplatePlaceholders(event, vars)).toEqual(
+        buildTemplateComponents(event, vars)[0]!.parameters.map((p) => p.text),
+      );
+    }
+  });
+
   it.each([
-    'step_awaiting_approval',
     'phase_approved',
     'client_action_needed',
     'staff_client_submitted',

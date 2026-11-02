@@ -69,6 +69,14 @@ export interface PortalFiling {
   proofCount: number;
   /** The caller's own reminder day for this filing, or null. */
   reminderOn: string | null;
+  /**
+   * Not a register row: a deadline from SBC's statutory compliance calendar
+   * (src/data/statutory-calendar-fy2627.ts) shown while the company has no
+   * filings on its register yet (e.g. before incorporation). Informational
+   * only — no reminder, proof, window or walkthrough; never counted as
+   * overdue or filed. See src/lib/client-portal/statutory-fallback.ts.
+   */
+  fromCalendar?: boolean;
 }
 
 export const AREAS: { id: AreaFilter; label: string }[] = [
@@ -190,14 +198,16 @@ export function fyMonths(startYear: number): string[] {
 
 /* ---------------------------------------------------------------- status */
 
-export function statusOf(f: Pick<PortalFiling, 'filedOn' | 'dueDate'>, today: string): CompStatus {
+export function statusOf(f: Pick<PortalFiling, 'filedOn' | 'dueDate'> & { fromCalendar?: boolean }, today: string): CompStatus {
   if (f.filedOn) return 'ok';
+  // a line from SBC's compliance calendar is not the company's deadline yet: never "due soon" or overdue
+  if (f.fromCalendar) return 'up';
   const d = daysBetween(today, f.dueDate);
   if (d < 0) return 'over';
   if (d <= PORTAL_DUE_SOON_DAYS) return 'due';
   return 'up';
 }
-export function worstStatus(rows: Pick<PortalFiling, 'filedOn' | 'dueDate'>[], today: string): CompStatus {
+export function worstStatus(rows: Array<Pick<PortalFiling, 'filedOn' | 'dueDate'> & { fromCalendar?: boolean }>, today: string): CompStatus {
   return rows.reduce<CompStatus>((w, r) => (RANK[statusOf(r, today)] > RANK[w] ? statusOf(r, today) : w), 'ok');
 }
 export function countByStatus(rows: PortalFiling[], today: string): Record<CompStatus, number> {

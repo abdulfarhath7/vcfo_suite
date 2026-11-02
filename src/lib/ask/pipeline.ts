@@ -18,6 +18,10 @@ import { firmDisplayName } from '@/lib/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
 import { askConfig, askFeatures } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
+import { directorLookupAnswer, withoutDirectorLookups } from '@/lib/ask/director-answer';
+import { findDinInMessage } from '@/lib/director-lookup/din';
+import { getDinProvider } from '@/lib/director-lookup/providers';
+import type { DinLookupResult } from '@/lib/director-lookup/types';
 import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
 import { gateActiveCatalog } from '@/lib/checklist-step-gate';
 import { generateAnswer } from '@/lib/ask/generate';
@@ -191,7 +195,9 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       (existing.conversation.engagementId ?? null) === engagementId
     ) {
       conversationId = existing.conversation.id;
-      history = existing.messages.map((m) => ({ sender: m.sender as 'user' | 'assistant', text: m.text }));
+      history = withoutDirectorLookups(
+        existing.messages.map((m) => ({ sender: m.sender as 'user' | 'assistant', text: m.text })),
+      );
     }
   }
   if (!conversationId) {
@@ -293,6 +299,26 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   const limit = await checkAskRateLimit(ctx, config.rateLimit, now);
   if (!limit.ok) {
     emit({ type: 'error', code: 'rate_limited', message: REFUSAL_COPY.rateLimited });
+    return;
+  }
+
+  // ---- 3a. DIN lookup (staff): live record, no model — a DIN and a
+  // director's details never reach it ----
+  const din = shell !== 'client' && request.message ? findDinInMessage(request.message) : null;
+  if (din) {
+    const dinProvider = getDinProvider();
+    const lookupStartedAt = Date.now();
+    let result: DinLookupResult;
+    try {
+      result = await dinProvider.lookup(din);
+    } catch (error) {
+      console.error('[ask-vcfo] DIN lookup failed', error);
+      result = { kind: 'unavailable', din, reason: 'provider_error' };
+    }
+    await finish(directorLookupAnswer(result), {
+      toolCalls: [{ name: 'directorLookup', args: { provider: dinProvider.id, result: result.kind } }],
+      startedAt: lookupStartedAt,
+    });
     return;
   }
 

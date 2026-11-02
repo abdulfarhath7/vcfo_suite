@@ -1,10 +1,8 @@
-import AdminProjects from "@/views/admin/Projects";
+import { ClientsPage } from '@/components/console/pages/clients/ClientsPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Projects", "Manage client projects");
-
+export const metadata = pageMetadata("Clients", "Every client in your book");
 
 export default function Page() {
-  return <AdminProjects />;
+  return <ClientsPage />;
 }

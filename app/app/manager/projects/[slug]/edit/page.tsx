@@ -1,9 +1,8 @@
-import ProjectEdit from "@/views/admin/ProjectEdit";
+import { ProjectEditPage } from '@/components/console/pages/clients/ProjectEditPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Edit project", "Edit project details");
+export const metadata = pageMetadata("Edit project", "Project details, team and schedule");
 
 export default function Page() {
-  return <ProjectEdit />;
+  return <ProjectEditPage />;
 }

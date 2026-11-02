@@ -1,10 +1,8 @@
-import AdminAnalytics from "@/views/admin/Analytics";
+import { AnalyticsPage } from '@/components/console/pages/insight/AnalyticsPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Analytics", "Firm analytics");
-
+export const metadata = pageMetadata("Analytics", "How your book is doing over time");
 
 export default function Page() {
-  return <AdminAnalytics />;
+  return <AnalyticsPage />;
 }

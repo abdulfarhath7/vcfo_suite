@@ -5,6 +5,50 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles } from '@/db/schema';
 import { authConfigBase } from '@/auth/config.base';
+import { devDirectEmail, devDirectPick } from '@/auth/dev-direct';
+
+type ProfileRow = typeof profiles.$inferSelect;
+
+/** The checks every sign-in shares: active account, interns need a scoping key. */
+function sessionUserFor(row: ProfileRow | undefined) {
+  if (!row) return null;
+  if (row.status !== 'active') return null;
+  if (row.role === 'intern' && !row.internId?.trim()) {
+    // Interns without a scoping key see an empty portfolio — refuse login.
+    return null;
+  }
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name ?? undefined,
+    role: row.role,
+    internId: row.internId ?? undefined,
+    clientId: row.clientId ?? undefined,
+    hasAvatar: Boolean(row.avatarObjectKey),
+    avatarVersion: row.updatedAt.getTime(),
+  };
+}
+
+/**
+ * Development only (src/auth/dev-direct.ts): signs in, without a password, as
+ * an account listed in DEV_DIRECT_LOGIN_EMAIL (`as` must be on that list).
+ * Not registered at all when NODE_ENV is 'production' or the variable is unset.
+ */
+const devDirectProvider = devDirectEmail()
+  ? [
+      Credentials({
+        id: 'dev-direct',
+        name: 'Local direct sign-in',
+        credentials: { as: {} },
+        async authorize(credentials) {
+          const email = devDirectPick(typeof credentials?.as === 'string' ? credentials.as : null);
+          if (!email) return null;
+          const [row] = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
+          return sessionUserFor(row);
+        },
+      }),
+    ]
+  : [];
 
 /**
  * Auth.js (NextAuth v5) — email/password now, SSO later.
@@ -46,24 +90,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!row?.passwordHash) return null;
         const ok = await bcrypt.compare(password, row.passwordHash);
         if (!ok) return null;
-        if (row.status !== 'active') return null;
-        if (row.role === 'intern' && !row.internId?.trim()) {
-          // Interns without a scoping key see an empty portfolio — refuse login.
-          return null;
-        }
-
-        return {
-          id: row.id,
-          email: row.email,
-          name: row.name ?? undefined,
-          role: row.role,
-          internId: row.internId ?? undefined,
-          clientId: row.clientId ?? undefined,
-          hasAvatar: Boolean(row.avatarObjectKey),
-          avatarVersion: row.updatedAt.getTime(),
-        };
+        return sessionUserFor(row);
       },
     }),
+    ...devDirectProvider,
   ],
   callbacks: {
     ...authConfigBase.callbacks,

@@ -3,6 +3,7 @@
 // '@/auth/config' would pull bcrypt and the pg pool into every guarded request.
 import { auth } from '@/auth/edge';
 import { NextResponse } from 'next/server';
+import { devDirectEmail } from '@/auth/dev-direct';
 
 /**
  * Route protection + role-home redirects.
@@ -38,6 +39,14 @@ export default auth((req) => {
 
   const isApp = path.startsWith('/app');
   const isAuthPage = path === '/login' || path === '/';
+
+  // Development only: with DEV_DIRECT_LOGIN_EMAIL set, an unsigned visit to the
+  // app (or the root) signs straight in as that one account (src/auth/dev-direct.ts).
+  if ((isApp || path === '/') && (!session?.user || !role) && devDirectEmail()) {
+    const url = new URL('/dev-direct', nextUrl);
+    if (isApp) url.searchParams.set('next', path);
+    return NextResponse.redirect(url);
+  }
 
   if (isApp && (!session?.user || !role)) {
     const url = new URL('/login', nextUrl);

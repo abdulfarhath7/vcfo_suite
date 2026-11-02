@@ -1,8 +1,8 @@
-import { pageMetadata } from "@/lib/page-metadata";
-import ApprovalsInbox from "@/views/admin/ApprovalsInbox";
+import { ApprovalsPage } from '@/components/console/pages/approvals/ApprovalsPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata("Approvals", "Pending reviews for your projects");
+export const metadata = pageMetadata("Approvals", "Steps and documents waiting for your approval");
 
 export default function Page() {
-  return <ApprovalsInbox scope="manager" />;
+  return <ApprovalsPage />;
 }

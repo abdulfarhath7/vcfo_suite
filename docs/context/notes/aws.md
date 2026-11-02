@@ -28,13 +28,39 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - `NEXT_PUBLIC_SITE_URL` is baked at build; server-side links read runtime
   `SITE_URL` first (`src/lib/site-url.ts`), so one image serves any hostname.
 
-## WhatsApp — AWS EUM only (2026-09-08, collapsed 2026-09-16)
+## WhatsApp — DoubleTick provider (2026-10-29)
 
-- One transport: `sendWhatsAppTemplate` (dispatcher, runs the guards) →
-  `sendViaEum` in `send-whatsapp-eum.ts`, shared result/deps types in
-  `send-whatsapp-shared.ts`. A Twilio sandbox transport was tried on
-  2026-10-12 and removed again on 2026-10-14 (owner). Do not reintroduce a
-  provider field "just in case".
+- The owner's manager chose SBC's existing WhatsApp Business number
+  (SBC TAX ADVISORY, 919014079600, already on DoubleTick with a 6-person
+  shared inbox) on 2026-10-23. EUM stays in the code behind
+  `WHATSAPP_PROVIDER=eum|doubletick` (owner's choice: switch, don't delete).
+- Transport `send-whatsapp-doubletick.ts`: `POST
+  https://public.doubletick.io/whatsapp/message/template`, header
+  `Authorization: <key>` (no Bearer), body `messages[{from, to, messageId,
+  content{templateName, language, templateData.body.placeholders[]}}]`.
+  Numbers are bare digits. We generate the UUID v4 `messageId` and store it
+  as `provider_message_id`, so the status webhook can find the row. A 201 can
+  still carry `status: "FAILED"` → `doubletick_failed`. Codes:
+  `doubletick_http_<n>` (429/5xx retry), `doubletick_network` (retry),
+  `doubletick_failed` (stop).
+- Template names `vcfo_<event>`: the number holds ~55 sales MARKETING
+  templates, including one called `welcome`. Never touch those.
+- Rate limits seen: send 10/s, create template 60/min, get message status
+  1/s; a template can be edited only 24 h after its last edit.
+- Not built yet: the DoubleTick status webhook (`POST /v2/webhook/register`,
+  events `MESSAGE_STATUS_UPDATE` + `MESSAGE_RECEIVED`, Bearer token we choose;
+  payload `{messageId, to, status SENT|DELIVERED|READ|FAILED, failMessage}`),
+  and the Terraform secret for `DOUBLETICK_API_KEY`.
+- The DoubleTick key was once pasted into `.gitignore` (removed 2026-10-23,
+  never committed) and into a chat: the manager must regenerate it before
+  production.
+
+## WhatsApp — AWS EUM (2026-09-08, collapsed 2026-09-16)
+
+- `sendWhatsAppTemplate` (dispatcher, runs the guards) → `sendViaEum` in
+  `send-whatsapp-eum.ts` when `WHATSAPP_PROVIDER=eum`, shared result/deps
+  types in `send-whatsapp-shared.ts`. A Twilio sandbox transport was tried on
+  2026-10-12 and removed again on 2026-10-14 (owner).
 - **Recipients match the email.** Each WhatsApp goes to the people on that
   mail (To, and CC where the mail copies someone), minus the person who
   triggered it (`mailHandlersForEvent`). A person with no phone number or no

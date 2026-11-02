@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { engagements, notificationDeliveries, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { engagementDbId } from '@/lib/legacy-engagement-ids';
+import { appEngagementId, engagementDbId } from '@/lib/legacy-engagement-ids';
 import { managerOwnsEngagement } from '@/db/repositories/engagements';
 import { listLeadMemberEngagementIds } from '@/db/repositories/engagement-leads-membership';
 import { statusesThatMayAdvanceTo } from '@/lib/notify/delivery-status';
@@ -297,4 +297,57 @@ export async function getDeliveryForRetry(
       attempt: (prior?.n ?? 0) + 1,
     },
   };
+}
+
+export type WhatsAppSendView = NotificationDeliveryView & {
+  /** app engagement id (for the Retry route), null for personal test sends */
+  engagementId: string | null;
+  companyName: string | null;
+  templateRef: string | null;
+};
+
+/**
+ * Recent WhatsApp deliveries across the caller's engagements, newest first —
+ * the console WhatsApp page's "Sent" list. Same scope as the Send log
+ * (`readableEngagementIds`); rows with no engagement are left out.
+ */
+export async function listRecentWhatsAppDeliveries(
+  ctx: AuthContext,
+  limit: number = 30,
+): Promise<WhatsAppSendView[]> {
+  const scope = await readableEngagementIds(ctx);
+  if (scope !== 'all' && scope.length === 0) return [];
+  const where =
+    scope === 'all'
+      ? eq(notificationDeliveries.channel, 'whatsapp')
+      : and(eq(notificationDeliveries.channel, 'whatsapp'), inArray(notificationDeliveries.engagementId, scope));
+  const rows = await db
+    .select({
+      delivery: notificationDeliveries,
+      recipientName: profiles.name,
+      recipientEmail: profiles.email,
+      companyName: engagements.companyName,
+    })
+    .from(notificationDeliveries)
+    .innerJoin(engagements, eq(engagements.id, notificationDeliveries.engagementId))
+    .leftJoin(profiles, eq(profiles.id, notificationDeliveries.recipientProfileId))
+    .where(where)
+    .orderBy(desc(notificationDeliveries.createdAt))
+    .limit(Math.min(Math.max(limit, 1), DELIVERY_LIST_LIMIT));
+  return rows.map((r) => ({
+    id: r.delivery.id,
+    eventType: r.delivery.eventType,
+    channel: r.delivery.channel,
+    status: r.delivery.status,
+    skipReason: r.delivery.skipReason,
+    errorCode: r.delivery.errorCode,
+    toAddress: r.delivery.toAddress,
+    recipientName: r.recipientName,
+    recipientEmail: r.recipientEmail,
+    retryOf: r.delivery.retryOf,
+    createdAt: r.delivery.createdAt.toISOString(),
+    engagementId: r.delivery.engagementId ? appEngagementId(r.delivery.engagementId) : null,
+    companyName: r.companyName,
+    templateRef: r.delivery.templateSid,
+  }));
 }

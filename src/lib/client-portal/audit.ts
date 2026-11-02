@@ -30,8 +30,8 @@ export interface ClientAuditEvent {
 }
 
 export interface ClientAuditSummary {
-  /** 14 IST days, oldest first; the last is today. */
-  days: Array<{ day: string; count: number }>;
+  /** 14 IST days, oldest first; the last is today. `cats` splits the day's count by category. */
+  days: Array<{ day: string; count: number; cats?: Partial<Record<AuditCategory, number>> }>;
   total: number;
 }
 
@@ -46,4 +46,20 @@ export interface ClientAuditPage {
 export function istParts(d: Date): { day: string; time: string } {
   const s = new Date(d.getTime() + 330 * 60_000).toISOString();
   return { day: s.slice(0, 10), time: s.slice(11, 16) };
+}
+
+/**
+ * The category a client-visible audit action falls in — the same split the
+ * repository's projection makes: documents, team changes, emails, credential
+ * access; everything else (steps, timeline) is a milestone.
+ */
+export function auditCategoryOf(action: string): AuditCategory {
+  const a = action;
+  if (a === 'client.need_uploaded' || a === 'client.need_upload_undone') return 'Documents';
+  if (a === 'board_resolution.finalize' || a.startsWith('incorporation_docs.') || a.startsWith('doc_pack.') || a.startsWith('document_request.')) return 'Documents';
+  if (a.startsWith('client.timeline_change') || a === 'client.change_request') return 'Milestones';
+  if (a.startsWith('client.') || a === 'project.client_changed') return 'Team';
+  if (a.startsWith('welcome_email.') || a === 'email_templates.fire') return 'Email';
+  if (a.startsWith('credentials.')) return 'Credentials';
+  return 'Milestones';
 }

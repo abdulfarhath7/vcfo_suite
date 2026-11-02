@@ -1,9 +1,10 @@
-import { DocumentsPage } from "@/components/client-portal/pages/documents/DocumentsPage";
-
-import { pageMetadata } from "@/lib/page-metadata";
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyDocuments } from '@/components/portal/legacy';
+import { pageMetadata } from '@/lib/page-metadata';
 
 export const metadata = pageMetadata("Documents", "Your documents");
 
+/** Scrolls to Documents. */
 export default function Page() {
-  return <DocumentsPage />;
+  return <ClientRoute intent={{ kind: 'section', key: 'documents' }} legacy={<LegacyDocuments />} />;
 }

@@ -1,8 +1,8 @@
-import DocumentVaultPage from '@/views/vault/DocumentVaultPage';
+import { VaultPage } from '@/components/console/pages/workspace/VaultPage';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Document vault', 'Files across your assigned clients');
+export const metadata = pageMetadata("Document vault", "Every client document you can open");
 
 export default function Page() {
-  return <DocumentVaultPage />;
+  return <VaultPage />;
 }

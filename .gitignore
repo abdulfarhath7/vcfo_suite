@@ -26,3 +26,5 @@ docs/mca-recordings/
 
 # Source workbooks with client PII (PAN, Aadhaar, DIN) — never commit
 *.xlsx
+
+doubletick-test.http

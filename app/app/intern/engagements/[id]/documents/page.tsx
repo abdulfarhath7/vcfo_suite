@@ -1,8 +1,9 @@
-import DocPackViewClient from '@/views/engagement/DocPackViewClient';
+import { EngagementRedirect } from '@/components/console/pages/clients/EngagementRedirect';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Pre-incorporation documents', 'Generated document pack');
+export const metadata = pageMetadata('Client', 'Opening the client');
 
+/** Old lead link: lands on /app/intern/projects/<slug>/… with the query string kept. */
 export default function Page() {
-  return <DocPackViewClient />;
+  return <EngagementRedirect to="documents" />;
 }

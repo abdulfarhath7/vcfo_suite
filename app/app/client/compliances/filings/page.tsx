@@ -1,14 +1,10 @@
-import { Suspense } from "react";
-import { ClientCompliancesFilingsRoute } from "@/components/client-portal/pages/compliances";
-import { pageMetadata } from "@/lib/page-metadata";
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyFilings } from '@/components/portal/legacy';
+import { pageMetadata } from '@/lib/page-metadata';
 
 export const metadata = pageMetadata("Filings", "Statutory filing register");
 
-/** Client portal v7 filings (?fy= ?cadence= ?area= ?status= ?period= ?view=year ?filing=). */
+/** Scrolls to Filings (?filing=<id> opens that filing). */
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <ClientCompliancesFilingsRoute />
-    </Suspense>
-  );
+  return <ClientRoute intent={{ kind: 'section', key: 'filings' }} legacy={<LegacyFilings />} />;
 }

@@ -1,5 +1,8 @@
-import AccountSettings from '@/views/settings/AccountSettings';
+import { SettingsPage } from '@/components/console/pages/insight/SettingsPage';
+import { pageMetadata } from '@/lib/page-metadata';
+
+export const metadata = pageMetadata("Settings", "Your profile, security and mailbox");
 
 export default function Page() {
-  return <AccountSettings path="/app/manager/settings" />;
+  return <SettingsPage />;
 }

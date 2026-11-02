@@ -1,0 +1,25 @@
+/* Home section — React-side additions (not from the prototype). Scoped under .cpx by scripts/portal-css.mjs.
+   Section sheets are bundled BEFORE portal-css.ts (PortalRoot imports Shell first), so every rule here doubles its
+   class to outrank the prototype's same-specificity rules whatever the bundle order. */
+
+/* The prototype's v4 sheet re-declares `.home { grid-template-columns }` after the head sheet's
+   1180 px collapse, so the collapse never applied; restate it. */
+@media (max-width: 1180px) {
+  .home.home { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Company strip on a phone: let the overdue chip wrap under the eyebrow instead of overflowing its 32 px chip. */
+.co-row.co-row { flex-wrap: wrap; }
+.idc.red.red { height: auto; min-height: 32px; padding-top: 4px; padding-bottom: 4px; }
+.idc.red.red b { white-space: nowrap; }
+@media (max-width: 640px) {
+  .co-row.co-row .sp { display: none; }
+}
+
+/* Countdown late line: "317 days late" stays on one line; the name may wrap. */
+.cd .late.late .tm { white-space: nowrap; flex: none; }
+.cd .late.late { text-align: left; }
+
+/* The overdue chip is a button here (the prototype used a span). */
+button.idc.idc { cursor: pointer; font: inherit; }
+button.idc.idc:hover { border-color: var(--over); }

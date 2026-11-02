@@ -1,0 +1,55 @@
+/* Approvals and Date requests of the manager console (not from the prototype): only what the prototype sheet
+   (30-console.css: .mx-aps, .mx-ap, .mx-rq, .mx-rqd, .mx-paper) lacks once its cards carry real data — long real
+   names, the note field, the Stage hint, the edge legend, the phase table, answer lists in the preview and the
+   admin-request rows. Section sheets bundle before the prototype sheet, so ties double a class. */
+
+.ap-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mx-ap .mx-aph, .mx-rq .mx-aph { min-width: 0; }
+.mx-ap .mx-aph .pill, .mx-rq .mx-aph .pill { flex: none; }
+/* the prototype set the note banner 8px under the text */
+.mx-ap .banner, .mx-rq .banner { margin-top: 8px; }
+.mx-rq.ap-wd.ap-wd { border-left-color: var(--line); }
+
+/* decision dialog */
+.ap-ta { resize: vertical; min-height: 92px; }
+.ap-err { margin: 10px 0 0; font-size: 12.5px; font-weight: 500; color: var(--over-ink); }
+
+/* the Stage filter hides some */
+.ap-hint { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -6px 0 0; font-size: 13px; color: var(--ink-3); }
+.ap-hint svg { width: 16px; height: 16px; flex: none; color: var(--due); }
+
+/* error state */
+.mx-empty.ap-bad svg { color: var(--over); }
+.mx-empty.ap-bad .btn { margin-top: 8px; }
+
+/* edge legend under the cards */
+.ap-foot { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: -6px; }
+.ap-lk { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-3); }
+.ap-sw { display: inline-block; width: 4px; height: 14px; border-radius: 2px; flex: none; }
+
+/* preview: answers and field lists on the paper */
+.ap-dl { margin: 0; display: flex; flex-direction: column; gap: 0; }
+.ap-dl > div { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 12px; padding: 6px 0; border-top: 1px solid #e3e6ee; }
+.ap-dl > div:first-child { border-top: 0; }
+.ap-dl dt { font: 600 12.5px/1.45 var(--f-body); color: #6b7280; }
+.ap-dl dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ap-ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+@media (max-width: 560px) { .ap-dl > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+/* date requests: the phase table */
+.ap-phs { display: flex; flex-direction: column; border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; }
+.ap-ph { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 58px; gap: 10px; align-items: center; padding: 7px 12px; font-size: 13px; color: var(--ink-2); border-top: 1px solid var(--line-2); }
+.ap-ph.two { grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr); }
+.ap-ph:first-child { border-top: 0; }
+.ap-ph.head { font: 600 10.5px var(--f-disp); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); background: var(--hi); }
+.ap-ph b { font: 600 13px var(--f-disp); color: var(--ink); }
+.ap-num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.ap-num.late { color: var(--over-ink); }
+@media (max-width: 560px) { .ap-ph { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px; } .ap-ph > :nth-child(2):not(:last-child) { display: none; } .ap-ph.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+
+/* your requests to an admin */
+.mx-qi.ap-cr { align-items: flex-start; }
+.mx-qi.ap-cr .pill { margin-top: 2px; }
+.ap-diff { font-size: 12.5px; color: var(--ink-3); overflow-wrap: anywhere; }
+.ap-diff s { color: var(--ink-3); }
+.ap-diff b { color: var(--ink); font-weight: 600; }

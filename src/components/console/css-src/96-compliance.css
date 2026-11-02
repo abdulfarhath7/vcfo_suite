@@ -1,0 +1,110 @@
+/* Compliance calendar + filings register (manager / lead console). Only what the prototype sheet (30-console.css) lacks
+   once its marks carry real data: long names, clickable chips / cells / rows, SBC calendar lines (dashed), the year's
+   mini grids, the period sheets, full screen. Section sheets bundle before the prototype sheet: ties double a class. */
+
+.cf-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cf-note { margin: 0; }
+.banner.cf-banner { margin: 0; align-items: center; }
+.banner.cf-banner span { display: block; font-size: 13.5px; color: var(--ink-2); }
+.banner.cf-banbtn { width: 100%; text-align: left; margin-top: 12px; cursor: pointer; }
+.banner.cf-banbtn:hover { filter: brightness(1.08); }
+.banner.cf-banbtn b { font-size: 14px; }
+
+/* calendar body */
+.glass.panel.cf-body { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.mx-mvc.cf-mvc { cursor: pointer; }
+.mx-mvc.cf-mvc:focus-visible { outline: 2px solid var(--ice); outline-offset: 1px; }
+.mx-mvc.cf-sel.cf-sel { border-color: var(--ice); box-shadow: inset 0 0 0 1px var(--ice); }
+.mx-fchip.cf-chip { width: 100%; margin: 0; text-align: left; cursor: pointer; }
+.mx-fchip.cf-chip:hover { background: color-mix(in srgb, var(--cc) 26%, transparent); }
+.mx-fchip.cf-chip .cf-ell { flex: 1; }
+.mx-fchip.cf-cal.cf-cal { background: transparent; box-shadow: none; border: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent); }
+.cf-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.mx-phleg.cf-leg { margin-top: 2px; }
+.mx-phleg.cf-leg svg { color: var(--ink-3); }
+
+/* year: month cards with a mini grid of days */
+.mx-ym.cf-ym { cursor: default; gap: 6px; }
+.cf-ymh { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; border-radius: 8px; }
+.cf-ymh:hover b { color: var(--ice); }
+.cf-ymh b { font: 700 15px var(--f-disp); }
+.cf-ymh span { font-size: 12px; color: var(--ink-3); }
+.mx-ymb.cf-ymb { margin-top: 2px; }
+.mx-ymb.cf-ymb i { flex: none; }
+.cf-ymg { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin-top: 6px; }
+.cf-yd { height: 20px; border-radius: 5px; display: grid; place-items: center; font: 600 10.5px var(--f-mono); color: var(--ink); background: color-mix(in srgb, var(--cc) 30%, transparent); box-shadow: inset 0 -2px 0 var(--cc); }
+button.cf-yd:hover { background: color-mix(in srgb, var(--cc) 50%, transparent); }
+.cf-yd.off { background: transparent; box-shadow: none; color: var(--ink-3); opacity: .55; }
+.cf-yd.now { outline: 1px solid var(--ice); }
+
+/* timeline: one dot per day per lane, a count when several share it */
+.mx-fdot.cf-fdot { display: grid; place-items: center; font: 700 9px var(--f-mono); color: #06101f; cursor: pointer; }
+
+/* SBC calendar: the act legend toggles */
+.cf-acts2 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line-2); }
+.mx-lg.cf-act { width: auto; gap: 6px; }
+.mx-lg.cf-act.off { opacity: .4; }
+.cf-acts2 .cf-note { flex-basis: 100%; }
+
+/* agenda */
+.cf-agenda .mx-agi .mx-dt { min-width: 0; }
+.mx-agd.cf-flash { animation: cfFlash 1.4s var(--ease); border-radius: 10px; }
+@keyframes cfFlash { 0%, 40% { background: var(--ice-soft); } 100% { background: transparent; } }
+
+/* full screen (live maximised calendar) */
+.cf-full { position: fixed; inset: 0; z-index: 66; overflow: auto; background: var(--bg1, var(--solid)); padding: 18px 22px 90px; display: flex; flex-direction: column; gap: 14px; }
+.cf-fullh { display: flex; align-items: center; gap: 12px; }
+.cf-fullh h3 { font: 700 20px var(--f-disp); letter-spacing: -.01em; }
+.cf-full .mx-mvc { min-height: 120px; }
+
+/* filing card */
+.cf-pop .cf-pchips { margin: 10px 0 0; }
+.cf-pop .mx-facts b { overflow-wrap: anywhere; }
+.cf-pop .mx-ds2.cf-proofs { padding: 10px 0; }
+.mx-ds2.cf-proofs .mx-drow svg { color: var(--ink-3); flex: none; }
+.mx-ds2.cf-proofs .co-row { flex-wrap: wrap; }
+.mx-apa.cf-acts { padding-top: 10px; border-top: 1px solid var(--line-2); }
+.mx-in.cf-date { width: auto; padding: 6px 10px; font-size: 13px; }
+.ib.sm.cf-on { color: var(--ice); border-color: var(--ice); background: var(--ice-soft); }
+.co-row.cf-fyrow { justify-content: space-between; margin-top: 8px; }
+
+/* filings register rows */
+.mx-fra.cf-next { min-width: 220px; max-width: 320px; }
+.mx-fra.cf-next svg { color: var(--ice); flex: none; }
+.mx-tc3.cf-cli { text-align: left; border-radius: 9px; }
+.mx-tc3.cf-cli:hover b { color: var(--ice); }
+.mx-tc3 > span { min-width: 0; }
+.cf-fn { min-width: 0; text-align: left; border-radius: 6px; }
+.cf-fn:hover b, .cf-fn:focus-visible b { color: var(--ice); }
+.mx-tc1 .mx-chips { flex-wrap: nowrap; min-width: 0; }
+.cf-fd, .cf-st { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.cf-win { display: inline-flex; align-items: center; gap: 5px; font: 500 11.5px var(--f-mono); color: var(--ink-3); padding: 2px 6px; border-radius: 6px; border: 1px dashed var(--line); white-space: nowrap; }
+button.cf-win:hover { color: var(--ink); border-color: var(--ice); }
+.cf-win.ro { border-style: solid; border-color: transparent; padding-left: 0; }
+.pill.cf-pb { cursor: pointer; }
+.pill.cf-pb:hover { filter: brightness(1.12); }
+
+/* period sheets (Full year, Quarterly): rows = filing, columns = period */
+.cf-scrollx { overflow-x: auto; scrollbar-width: thin; max-width: 100%; }
+.cf-mx { display: grid; gap: 5px; align-items: stretch; min-width: 640px; }
+.cf-mxh { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; font: 700 10.5px var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding-bottom: 4px; }
+.cf-mxh:first-child { align-items: flex-start; }
+.cf-mxh.now { color: var(--ice); }
+.cf-mxh small { font: 500 10px var(--f-mono); letter-spacing: 0; text-transform: none; }
+.cf-mxn { display: flex; gap: 8px; align-items: center; min-width: 0; padding: 4px 0; }
+.cf-mc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 40px; border-radius: 8px; font: 600 11px var(--f-mono); background: color-mix(in srgb, var(--cc, var(--line)) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc, var(--line)) 40%, transparent); }
+.cf-mc span { font: 600 10px var(--f-disp); color: var(--ink-2); }
+button.cf-mc { cursor: pointer; }
+button.cf-mc:hover { background: color-mix(in srgb, var(--cc) 32%, transparent); }
+.cf-mc.s-f, .cf-mc.s-l { --cc: var(--mx-ok); }
+.cf-mc.s-o { --cc: var(--over); }
+.cf-mc.s-d { --cc: var(--due); }
+.cf-mc.s-u { --cc: var(--mx-none); }
+.cf-mc.s-c { --cc: var(--done); box-shadow: inset 0 0 0 1px transparent; border: 1px dashed color-mix(in srgb, var(--ink-3) 60%, transparent); background: transparent; }
+.cf-mc.x { background: repeating-linear-gradient(45deg, transparent 0 4px, var(--line-2) 4px 5px); box-shadow: none; border: 1px solid var(--line-2); }
+.cf-mc.now { outline: 1px solid color-mix(in srgb, var(--ice) 55%, transparent); }
+
+@media (max-width: 720px) {
+  .mx-fra.cf-next { max-width: none; }
+  .cf-full { padding: 12px 12px 90px; }
+}

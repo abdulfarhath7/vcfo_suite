@@ -1,0 +1,63 @@
+/* Incorporation section + StepWork (portal port, Oct 2026). Not from the prototype: React-specific additions only.
+   Scoped like every other file by scripts/portal-css.mjs (`:root` → `.cpx`). Imported by the incorporation section. */
+
+/* The prototype shows 3 phase cards here; the real tool has 4 (Registration opens its own section). */
+#sec-incorporation div.phases { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1150px) { #sec-incorporation div.phases { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { #sec-incorporation div.phases { grid-template-columns: minmax(0, 1fr); } }
+/* the ring shares its class (.rg) with the Registrations cards: keep it a bare 58px svg */
+#sec-incorporation .pc svg.rg { display: block; padding: 0; border: 0; border-radius: 0; background: none; transform: none; width: 58px; height: 58px; }
+#sec-incorporation .pc .cur { overflow-wrap: anywhere; }
+#sec-incorporation .pc.reg .cur { color: var(--ice); font-weight: 600; }
+
+/* step detail: plain description + facts */
+.sd-desc { margin-top: 14px; font-size: 14.5px; color: var(--ink-2); line-height: 1.6; max-width: 70ch; }
+.sd-facts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.sd-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.sd-h .calchip { cursor: pointer; }
+span.calchip { cursor: default; }
+span.calchip:hover { filter: none; }
+.sd-work { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+
+/* ---------------------------------------------------------------- StepWork */
+.sw { display: flex; flex-direction: column; gap: 4px; margin-top: 18px; min-width: 0; }
+.sw > .banner:first-child, .sw > .sw-blk:first-child { margin-top: 0; }
+.sw-blk { margin-top: 14px; min-width: 0; }
+.sw-blk:first-child { margin-top: 0; }
+.sw-h { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.sw-intro { font-size: 14px; color: var(--ink-2); margin-bottom: 10px; }
+.sw-note { font-size: 13.5px; color: var(--ink-3); padding: 10px 2px; }
+.sw-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.sw .banner .sw-acts { margin-top: 10px; }
+.sw-files { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+.sw-file { padding: 8px 6px; }
+.sw-file .st2 { flex-wrap: wrap; justify-content: flex-end; }
+.sw-ib { width: 34px; height: 34px; border-radius: 10px; }
+.sw-ib svg { width: 16px; height: 16px; }
+.sw .drop { display: block; margin-top: 10px; }
+.sw .drop span { display: block; margin-top: 2px; }
+.sw .drop.sw-busy { opacity: .6; cursor: progress; }
+.sw-need-t { display: block; font: 700 14px var(--f-disp); }
+.sw-board .needs { gap: 6px; margin-top: 4px; }
+.sw-board .need { padding: 10px 12px; }
+.sw-caps { margin-top: 0; }
+.sw-caps .cap { align-items: start; }
+.sw-cap-l { font-weight: 600; font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.sw-v { white-space: normal !important; text-align: right; max-width: 34ch; overflow-wrap: anywhere; }
+.sw-link { display: inline-flex; gap: 5px; align-items: center; text-decoration: underline; text-underline-offset: 3px; white-space: normal; text-align: right; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .sw-caps .cap { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .sw-v, .sw-link { text-align: left; max-width: none; }
+}
+
+/* ---------------------------------------------------------------- the shared step form (Tailwind island)
+   Its utilities come from css/95-incorporation-tw.css (`.sw-tw .x`). Two fixes for living inside `.cpx`:
+   the portal re-defines --ink (a hex colour) while the app's Tailwind `ink` colour reads --ink as an OKLCH
+   triplet, so the island restores the app's value; and the island gets the app's body type. */
+.sw-tw { --ink: 100% 0 0; font-family: var(--font-sans), system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: oklch(var(--foreground)); letter-spacing: normal; }
+.sw-tw.dark { --ink: 21% 0.042 264; }
+.sw-tw :where(h1, h2, h3, h4) { font-family: inherit; letter-spacing: normal; }
+.sw-tw :where(button) { text-align: center; border-style: solid; border-color: oklch(var(--border)); }
+.sw-tw :where(input, select, textarea) { color: oklch(var(--foreground)); }
+.sw-form { border-radius: 16px; background: oklch(var(--card)); border: 1px solid var(--line); padding: 16px; min-width: 0; overflow-x: auto; }
+.sw-paper { margin-top: 10px; border-radius: 14px; overflow: auto; max-height: 520px; background: #fff; border: 1px solid var(--line); }

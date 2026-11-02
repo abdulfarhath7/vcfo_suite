@@ -1,9 +1,10 @@
-import { IncorporationRoute } from '@/components/client-portal/pages/incorporation';
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyIncorporation } from '@/components/portal/legacy';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Incorporation', 'Incorporation checklist');
+export const metadata = pageMetadata("Incorporation", "Incorporation checklist");
 
-/** Client portal v7 landing. `?step=` (email links) and `?phase=` still deep-link. */
+/** Scrolls to Incorporation (?step= opens that step, ?phase= that phase). */
 export default function Page() {
-  return <IncorporationRoute />;
+  return <ClientRoute intent={{ kind: 'section', key: 'incorporation' }} legacy={<LegacyIncorporation />} />;
 }

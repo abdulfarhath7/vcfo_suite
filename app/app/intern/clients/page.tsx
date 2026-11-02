@@ -1,10 +1,8 @@
-import InternClients from "@/views/intern/Clients";
+import { ClientsPage } from '@/components/console/pages/clients/ClientsPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Clients", "Assigned clients");
-
+export const metadata = pageMetadata("Clients", "Every client you lead");
 
 export default function Page() {
-  return <InternClients />;
+  return <ClientsPage />;
 }

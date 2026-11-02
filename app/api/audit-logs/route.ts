@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { listAuditEvents } from '@/db/repositories/audit-events';
+import { parseAuditBefore } from '@/lib/audit-paging';
 
 /**
  * GET /api/audit-logs — role-scoped audit feed (Path A in listAuditEvents).
@@ -17,11 +18,14 @@ export async function GET(request: Request) {
   const engagementParam = url.searchParams.get('engagementId')?.trim();
   const limitRaw = Number.parseInt(url.searchParams.get('limit') ?? '100', 10);
   const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 500) : 100;
+  // Optional keyset cursor ("Load older" on the Audit log page); absent = newest page, as before.
+  const before = parseAuditBefore(url.searchParams.get('before'));
 
   try {
     const events = await listAuditEvents(guard.ctx, {
       engagementId: engagementParam || null,
       limit,
+      before,
     });
     return NextResponse.json({
       ok: true,

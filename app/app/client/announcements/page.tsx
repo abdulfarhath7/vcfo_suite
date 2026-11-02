@@ -1,9 +1,10 @@
+import { ClientRoute } from '@/components/portal/Intent';
 import AnnouncementsPage from '@/views/announcements/AnnouncementsPage';
-import { ClientAnnouncementsEntry } from '@/components/client-portal/pages/team';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Announcements', 'Firm-wide news and official tax updates');
+export const metadata = pageMetadata("Announcements", "Firm-wide news and official tax updates");
 
+/** Opens the Announcements card from the top bar. */
 export default function Page() {
-  return <ClientAnnouncementsEntry legacy={<AnnouncementsPage />} />;
+  return <ClientRoute intent={{ kind: 'anns' }} legacy={<AnnouncementsPage />} />;
 }

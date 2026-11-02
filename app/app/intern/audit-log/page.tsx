@@ -1,8 +1,8 @@
-import { pageMetadata } from "@/lib/page-metadata";
-import AuditLog from "@/views/admin/AuditLog";
+import { AuditPage } from '@/components/console/pages/insight/AuditPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata("Audit log", "Lead audit trail");
+export const metadata = pageMetadata("Audit log", "Who did what, and when");
 
 export default function Page() {
-  return <AuditLog />;
+  return <AuditPage />;
 }

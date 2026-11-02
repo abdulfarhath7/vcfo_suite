@@ -65,7 +65,28 @@ export function isRetryableEumCode(code: string | undefined): boolean {
   return !EUM_NON_RETRYABLE.has(key);
 }
 
+/**
+ * DoubleTick codes come from `send-whatsapp-doubletick.ts`:
+ *   doubletick_network        — no answer: retry
+ *   doubletick_http_429 / 5xx — rate limit or outage: retry
+ *   doubletick_http_4xx       — bad key, bad payload, unknown template: stop
+ *   doubletick_failed         — DoubleTick accepted and then marked it FAILED
+ *                               (e.g. not a WhatsApp number): stop
+ */
+export function isRetryableDoubleTickCode(code: string | undefined): boolean {
+  const key = code?.trim().toLowerCase() ?? '';
+  if (key === 'doubletick_network') return true;
+  if (key === 'doubletick_failed') return false;
+  const http = /^doubletick_http_(\d{3})$/.exec(key);
+  if (http) {
+    const status = Number(http[1]);
+    return status === 429 || status >= 500;
+  }
+  return true;
+}
+
 /** The retry decision the Inngest job keys off. */
 export function isRetryableWhatsAppError(code: string | undefined): boolean {
+  if (code?.trim().toLowerCase().startsWith('doubletick_')) return isRetryableDoubleTickCode(code);
   return isRetryableEumCode(code);
 }

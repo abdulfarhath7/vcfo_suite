@@ -1,10 +1,8 @@
-import EngagementDetailClient from '@/views/admin/EngagementDetailClient';
+import { EngagementRedirect } from '@/components/console/pages/clients/EngagementRedirect';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
+export const metadata = pageMetadata("Client", "Opening the client overview");
 
-export const metadata = pageMetadata("Engagement", "Engagement detail");
-
-
-export default function InternEngagementPage() {
-  return <EngagementDetailClient />;
+export default function Page() {
+  return <EngagementRedirect />;
 }

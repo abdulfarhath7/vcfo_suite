@@ -20,9 +20,17 @@ const ERROR_TEXT: Record<string, string> = {
   accessdeniedbymetaexception: 'Meta refused the send for this business account',
   validationexception: 'WhatsApp rejected the request',
   resourcenotfoundexception: 'WhatsApp sender number not found in AWS',
+  doubletick_http_400: 'DoubleTick rejected the message (template or variables)',
+  doubletick_http_401: 'DoubleTick API key is wrong or was regenerated',
+  doubletick_http_403: 'DoubleTick API key is missing or not allowed',
+  doubletick_http_404: 'Template not found on DoubleTick under this name',
+  doubletick_http_422: 'DoubleTick could not process the message',
+  doubletick_failed: 'DoubleTick could not deliver (check the number is on WhatsApp)',
+  doubletick_network: 'Could not reach DoubleTick; will retry',
 };
 
 const RATE_LIMIT_CODES = new Set([
+  'doubletick_http_429',
   '130429',
   '131048',
   '133016',
@@ -43,6 +51,7 @@ const SKIP_TEXT: Record<SkipReason, string> = {
   no_phone: 'No WhatsApp number on the profile',
   no_consent: 'Has not opted in to WhatsApp',
   opted_out: 'Replied STOP on WhatsApp',
+  not_allowlisted: 'Not on the WhatsApp test list yet',
 };
 
 export function skipReasonText(reason: string | null | undefined): string | null {

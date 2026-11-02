@@ -1,6 +1,6 @@
 # HANDOFF — where the work stands (read after STATE.md)
 
-Last updated: 2026-10-14. Written so a fresh session (any account, any tool)
+Last updated: 2026-10-29. Written so a fresh session (any account, any tool)
 can pick up without the old chat history.
 
 ## The owner and how they work
@@ -21,9 +21,16 @@ can pick up without the old chat history.
   - `--ink` is a SURFACE token — never `text-ink` for text; use `text-foreground` / `text-muted-foreground`;
   - dark mode must stay readable (`.dark [data-role="client"]` overrides the pinned light surface);
   - floating buttons must not cover dashboard content.
-- Keep as-is unless asked: compliance calendar page, `ClientTimeline`, the
-  VCFO-by-SBC logo, Ask VCFO behaviour (bot face deferred). Do not copy the
-  packed HTML prototype's look.
+- **Superseded 2026-10-28:** the owner asked for the client portal to be
+  replaced by the "Northwind Client Portal" prototype's look and behaviour
+  (claude.ai artifact 9WwrJS88BTDnzpNuDrXzF4, source in
+  `C:\Users\Prithish Sai Reddy\Projects\sbc-vcfo-local\source\portal\v4`).
+  The older rule "do not copy the packed HTML prototype's look" and the v7
+  feedback list above apply to the v7 portal, which is now deleted. Ask VCFO
+  behaviour is kept (real assistant in the prototype's chat panel).
+- **The laptop has 16 GB RAM.** Seven parallel agents (each running a full
+  `tsc`, headless Chrome and the dev server) froze it on 2026-10-28. Run at
+  most two heavy agents at a time; full `tsc` once mid-way and once at the end.
 
 ## Functional reference: the v7 prototype (owner, 2026-10-14)
 
@@ -56,6 +63,148 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   `<button aria-label="Close">` (click-outside stays keyboard-reachable, and
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
+
+## Session 2026-10-29 — staff portals from the prototype (branch `portal-redesign`, in progress)
+
+Owner, 2026-10-29: after the client portal, bring the prototype's other portals into localhost — Manager,
+Lead, Admin, Super admin, Developer — replacing the old staff screens. **Client and Manager keep the
+prototype's design.** Lead, Admin, Super admin and Developer keep the same template (Graphite console / brand
+sidebar) but must be redesigned inside it to a professional standard: "anything means anything — even a dot,
+an alignment, a label". Order: Manager → Lead → Admin → Super admin → Developer.
+
+- **Console framework:** `src/components/console/` — read its `README.md` (architecture, rules, the detail
+  standard every page must pass). One frame for manager / admin / super admin / developer (`seat` = mgr / adm /
+  sup / dev, accent per seat), pages are real Next routes inside the persistent frame, prototype CSS in
+  `css-src/30-console.css` scoped under `.cpx` (same root class as the client portal; a person only mounts one).
+  `scripts/portal-css.mjs` now builds both folders.
+- **Manager:** `app/app/manager/layout.tsx` → `ConsoleGate seat="mgr"`; every route renders
+  `src/components/console/pages/<area>/<Page>.tsx`. New routes: `date-requests`, `work`, `leads`,
+  `team-load`; `team` and `people` redirect to `leads`. The prototype's "View book as" switch is a real Stage
+  filter (all / incorporating / compliance). KPI trend lines only with a real series.
+- **Old staff views stay** (`src/views/admin/*` …): admin and super admin still render them until their turn.
+- **Live tool = reference (owner, 2026-10-29):** app.sbctrack.in runs `origin/main` (last deploy 19 Oct,
+  `ee3d905`); this branch contains all of `origin/main` and the fork's `mine/main` (checked by `git fetch`:
+  0 commits missing). Port every live operation as it works today, even where it looks wrong; agents list
+  suspected mistakes under "Live behaviour that looks wrong" and the owner fixes them afterwards on localhost.
+  Those lists are collected in `docs/context/LIVE-BEHAVIOUR.md`.
+- **Project lead = a console seat too** (`seat = 'lead'`, `/app/intern`, decided 2026-10-29). The prototype
+  drew the lead in the client portal's frame (`a59_lead.js`, one long page) before the console existed, but a
+  live lead opens the same pages as a manager (client / step / documents, compliances, mail, vault, knowledge
+  bank, updates, analytics, audit, settings), so the lead uses the console with its own nav (`LEAD` in
+  `nav.ts`) and lead-only pages under `pages/lead/` (Today desk, Reviews, Registrations, Team) and
+  `pages/work/LeadTasksPage.tsx`. Shared pages build every link from `useConsole().base` (`SEAT_BASE`), never a
+  hard-coded `/app/manager`. The prototype's "Incorporation desk" has no staff-side API, so it is not a page.
+- **Light mode for agents (owner, 2026-10-29: "I need the work done very soon"):** up to eight agents at once,
+  none runs `tsc`, a build or a browser (console README rule 6); the lead session typechecks, screenshots and
+  generates migrations one at a time. The `next dev` process grows (3+ GB) while agents save files: restart
+  it when free RAM runs low — agents do not need it.
+- **Real logins on localhost (owner, 2026-10-29):** the owner reviews the new portals as the real people, not
+  the demo accounts. `DEV_DIRECT_LOGIN_EMAIL` in `.env.local` is now a comma-separated list (Pranay — manager,
+  Bhavana and Sasi — leads, Prithish — client, Krishna — admin, Farhath — super admin); `/dev-direct` shows an
+  "Open as" page and `/dev-direct?as=<email>` switches account, only for emails on that list, never in
+  production (`src/auth/dev-direct.ts`, `app/dev-direct/route.ts`, names via
+  `src/db/repositories/dev-direct-accounts.ts`). Bharat (a lead on the live tool) is not in the local
+  database copy. Admin and super admin still see the old screens until their portals are built.
+- **WhatsApp page (owner, 2026-10-29):** Workspace → WhatsApp for managers and leads (`pages/workspace/
+  WhatsAppPage.tsx`): one consented recipient, an approved template, its fields, a phone preview, send through
+  the existing EUM dispatcher (`POST /api/whatsapp/send`, delivery row like the Settings test), Sent list.
+  Template wording for the preview lives in `src/lib/notify/manual-send.ts` (copied from
+  `notes/whatsapp-templates.md`; some bodies were never confirmed approved). Locally nothing sends until
+  `.env.local` has `WHATSAPP_ENABLED=true`, `EUM_PHONE_NUMBER_ID` and AWS credentials.
+- **Government updates on localhost:** do NOT run `npm run inngest:dev` casually — it also fires the daily
+  compliance reminders, which send real email while `RESEND_API_KEY` is set. Use `npm run ask:feeds:once`
+  (`scripts/ask-feeds-once.ts`) to poll the government portals once and finish indexing. The chatbot answers
+  only from approved updates: a manager approves them on Regulatory updates.
+- **Pop-ups in the right theme:** Radix dialogs and menus of embedded live components portal into `<body>`,
+  outside the root that carries `data-theme`; `src/components/portal/use-body-theme.ts` (used by both
+  `PortalRoot` and `ConsoleRoot`) puts the root's theme on `<body>` while it is mounted. The person's saved app
+  theme (next-themes on `<html>`) is untouched.
+- **Done so far (manager):** Today + sidebar extras (`pages/today/`, `seats/mgr/`, new `GET
+  /api/engagements/leads`), the Clients chain + New project → office NOC (`pages/clients/`, table
+  `registered_office_nocs`, migration `0029`, applied locally). In progress: Approvals + Date requests, My
+  work + Project leads + Team load, Compliances, Email + Vault + Knowledge bank, Updates + Ask VCFO,
+  Analytics + Audit + Settings; then the lead pages, central typecheck and screenshots.
+
+## Session 2026-10-28/29 — client portal replaced by the Northwind prototype (branch `portal-redesign`, uncommitted)
+
+Branch `portal-redesign` was cut from `ask-vcfo-rag` with all of its
+uncommitted work (Ask VCFO watchers, director lookup, WhatsApp). Nothing is
+committed. Owner's scope: **client portal only** (incorporated client + new
+client); real data only, no "coming soon"; old client screens deleted.
+
+- **New portal:** `src/components/portal/` — read its `README.md` first.
+  One continuous page of sections, popovers, full-screen step walkthroughs.
+  Prototype CSS copied verbatim into `css-src/`, scoped under `.cpx` by
+  `node scripts/portal-css.mjs` (section files `95-*.css`; their rules double
+  a class, `.x.x`, because section sheets bundle before the prototype sheets).
+  `scripts/portal-tw-island.mjs` rebuilds the Tailwind "island" that keeps the
+  shared step form styled inside the portal.
+- **ONE portal for every client (owner, 2026-10-29).** The first build had
+  two seats (new client / client); the owner merged them: the prototype's
+  "Client · SBC-GCC" screens (Overview, Master data = the real Part A / Part B
+  intake forms, Declarations) are sections of the one Northwind portal, right
+  after Incorporation. Order (`runtime.tsx` `PORTAL_SECTIONS`): Home, Updates,
+  Incorporation, Overview, Master data, Declarations, Registrations, Master
+  calendar, Calendar, Filings, Documents, Library, Credentials, Team, Audit,
+  Settings. `shell.seat` is gone. The three sections read the company's SPICe+
+  stage (`sections/newc/model.ts` `spiceStageOf`): `pre` (fill / sign),
+  `incorporated` (complete; only an explicit "sign" request asks the client to
+  sign), `skipped` (every SPICe+ step not applicable: "nothing to fill or sign
+  here"). Step / phase / board links are owned by Incorporation (its
+  walkthrough holds the same real form).
+- **Routes:** every `/app/client/**` page only sends an intent
+  (`ClientRoute`, `Intent.tsx`): scroll to a section, open a step / phase /
+  board / filing / reader / notifications. Email deep links keep working.
+  A super admin on `/app/client/**` still gets the staff-style views
+  (`legacy.tsx`).
+- **Mappings decided for the owner (tell them if asked):** Registrations =
+  real `reg-*` steps + SOP text from the SBC Registration & Compliance Manual
+  (`src/data/registration-sops.ts`); Master calendar = the manager's step
+  windows (`engagement.schedule`) + live status (`src/lib/client-portal/master-plan.ts`,
+  critical-path rule documented there), Minutes = timeline change requests,
+  "Request a timeline change" kept; New-client Master data = the real Part A /
+  Part B step forms (not the prototype's single form); Ask VCFO = real
+  assistant; OTP = real code to the PM (never 123456).
+- **Backend changes:** audit summary per-category counts
+  (`src/lib/client-portal/audit.ts`); compliances export accepts `from`/`to`.
+  No migration.
+- **Deleted:** `src/components/client-portal/` (130 files) and
+  `scripts/cp-css.mjs` (both recoverable from git history).
+- **Gate 2026-10-29:** `npx tsc --noEmit -p .` 0 errors; full
+  `npx vitest run --maxWorkers=4 --testTimeout=60000` 207 / 209 files,
+  2059 / 2063 tests — the 4 failures are Ask VCFO tests that predate this
+  work (the known `ask-repositories` client-library mock failure, and three
+  tests still expecting Ask VCFO to refuse managers, who were allowed in on
+  2026-10-23). ESLint on the portal + client routes: 0 errors, 108 warnings
+  (mostly react-refresh "file exports helpers").
+- **Not seen live (no demo data):** a pending file request / approval on a
+  step, dock items, saved Library books, filing focus-track / proofs / ARNs,
+  a Master calendar with dates (no demo engagement has a schedule; one was set
+  on Meridian for screenshots and cleared). Demo seed mismatch: reg steps
+  marked done without registration numbers, so Registrations says "Live" while
+  Credentials says "Not registered yet".
+- **Orbit / Calendar / Filings never empty (owner, 2026-10-29: "the orbit has no data … whatever is on the
+  website, it has to be here"):** while a company has no filings on its register, `useFilings` returns SBC's
+  statutory compliance calendar (`src/data/statutory-calendar-fy2627.ts`, the same source the prototype's
+  orbit used) filtered by `deadlineAppliesTo` and by when the company exists (real incorporation date, else
+  SBC's expected one, else the playbook projection): nothing due before it, nothing for a period that ended
+  before it (`src/lib/client-portal/statutory-fallback.ts`). Rows carry `fromCalendar`: status always
+  Upcoming, dashed rings on the orbit, "SBC calendar" in Filings, an info card instead of the filing card,
+  no reminder / proof / window / walkthrough, never in the countdown, dock, overdue or brief counts.
+- **Master calendar never empty:** with no manager-set windows, `buildMasterPlan(model, today, { start,
+  incorporationDate })` projects each step from its deadline rule (estimated weeks from the project start;
+  days from incorporation; no-limit steps stay undated); bars are hatched + dashed, marked "projected", and
+  get no on-time / delayed verdict.
+- **Local direct sign-in (2026-10-29, owner's request):** with
+  `DEV_DIRECT_LOGIN_EMAIL=prithish@sbcllp.in` in `.env.local`, an unsigned
+  visit to `/` or `/app/*` goes to `/dev-direct` and signs in as that one
+  account without a password (`src/auth/dev-direct.ts`, provider `dev-direct`
+  in `src/auth/config.ts`, redirect in `proxy.ts`). Always off when
+  `NODE_ENV=production`; `/login` still works for other accounts. The owner
+  plans to switch the password screen back on later: delete that line.
+- **Open:** `e2e/ask-vcfo-screens.spec.ts` client tests target the old staff
+  Ask panel; update them to the portal's `.chat` panel. Lead, Manager, Admin,
+  Super admin and Developer seats of the prototype are not started.
 
 ## Session 2026-10-26 — Ask VCFO DIN lookup, step 1 (branch `ask-vcfo-rag`, uncommitted)
 

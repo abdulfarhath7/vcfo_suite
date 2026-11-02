@@ -1,10 +1,8 @@
-import KnowledgeBankPage from "@/views/knowledge-bank/KnowledgeBankPage";
+import { KnowledgePage } from '@/components/console/pages/workspace/KnowledgePage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Knowledge bank", "Internal knowledge base");
-
+export const metadata = pageMetadata("Knowledge bank", "The firm library");
 
 export default function Page() {
-  return <KnowledgeBankPage basePath="/app/intern/knowledge-bank" />;
+  return <KnowledgePage />;
 }

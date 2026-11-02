@@ -1,0 +1,51 @@
+/* New-client seat (Overview, Master data, Declarations): what React adds to the prototype's #app-newc styles. */
+
+/* Overview: the stages open their work */
+.nt.nt-go { cursor: pointer; }
+.nt.nt-go:hover { border-color: var(--ink-3); }
+.nt.nt-go:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+/* "What SBC prepares": chip states + legend */
+.kind.nk-sign { background: var(--ice-soft); color: var(--ice); }
+.kind.nk-prep { background: var(--due-bg); color: var(--due-ink); }
+.kind.nk-signed { background: rgba(52, 211, 153, .16); color: var(--ink); }
+.ndir b .nsub { display: block; font-weight: 500; margin-top: 1px; }
+.nlegend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-2); }
+.nlegend i.kind { display: inline-block; width: 10px; height: 10px; padding: 0; border-radius: 3px; vertical-align: -1px; margin-right: 4px; background: var(--hi); }
+.nlegend i.kind.nk-sign { background: var(--ice); }
+.nlegend i.kind.nk-prep { background: var(--due); }
+.nlegend i.kind.nk-signed { background: var(--ok-green); }
+.nl-by { font-style: normal; color: var(--ink-3); }
+
+/* Master data */
+.nmd-sent { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mdsec .sw { margin-top: 2px; }
+.mdsec-h h3 { min-width: 0; overflow-wrap: anywhere; }
+.chk.nmiss { width: 100%; text-align: left; cursor: pointer; flex-wrap: nowrap; padding: 7px 10px; }
+.chk.nmiss b { font-size: 13px; line-height: 1.3; }
+.chk.nmiss b { overflow-wrap: anywhere; }
+.nprev-steps { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-2); }
+.nps { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 7px 8px; border-radius: 10px; text-align: left; }
+.nps:hover, .nps.on { background: var(--hi); }
+.nps-t { font: 600 13px var(--f-disp); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nps .dck:not(.ok):not(.req) { background: var(--line-2); color: var(--ink-3); }
+.nbar .btn { max-width: 100%; }
+/* keep the bar clear of the Ask VCFO launcher (bottom right) */
+@media (min-width: 761px) { .nbar.nbar { padding-right: 236px; } }
+@media (max-width: 760px) { .nbar.nbar { bottom: 86px; } }
+@media (max-width: 760px) {
+  .nbar .btn { flex: 1 1 100%; justify-content: center; white-space: normal; }
+}
+
+/* Declarations */
+.pdoc.npend { opacity: .72; }
+.pdoc.npend:hover { background: transparent; border-color: var(--line-2); }
+.nbusy { opacity: .6; pointer-events: none; }
+.nwait .small { display: block; }
+.nbr { margin-bottom: 14px; }
+.nbr .ph h3 { margin-top: 2px; }
+.nbr .ph .small { display: block; margin-top: 3px; }
+@media (max-width: 520px) {
+  .nsg .pdoc { grid-template-columns: 34px minmax(0, 1fr); }
+  .nsg .pdoc .pd-acts { grid-column: 2; justify-content: flex-start; }
+}

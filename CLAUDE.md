@@ -121,15 +121,18 @@ the versions in `package.json`; only bump when a peer-dep genuinely requires it.
 
 ## Outbound messaging (already built)
 
-Email runs behind a provider switch; WhatsApp has one transport. Both are
-additive — never make one depend on the other:
+Email and WhatsApp each run behind a provider switch. Both are additive —
+never make one depend on the other:
 
 - **Email:** `EMAIL_PROVIDER=resend|ses`, dispatcher `src/lib/email/send-email.ts`.
-- **WhatsApp:** AWS End User Messaging (Social) only, dispatcher
-  `src/lib/notify/send-whatsapp.ts` → `send-whatsapp-eum.ts`. Chosen so the
-  Meta message fee lands on the same AWS invoice as SES/RDS/S3. WhatsApp is
-  an outbound-only *nudge* channel — email stays the system of record, and a
-  WhatsApp skip or failure must never touch, slow or downgrade the email path.
+- **WhatsApp:** `WHATSAPP_PROVIDER=eum|doubletick`, dispatcher
+  `src/lib/notify/send-whatsapp.ts` → `send-whatsapp-eum.ts` (AWS End User
+  Messaging, never set up with Meta) or `send-whatsapp-doubletick.ts` (SBC's
+  existing number 919014079600 via DoubleTick, chosen by the owner's manager
+  on 2026-10-23; templates named `vcfo_<event>`). `WHATSAPP_ALLOWLIST_E164`
+  limits sends to listed numbers during rollout. WhatsApp is an outbound-only
+  *nudge* channel — email stays the system of record, and a WhatsApp skip or
+  failure must never touch, slow or downgrade the email path.
 
 Setup, the six templates, the out-of-band AWS/Meta checklist and the gotchas
 are in `docs/context/notes/aws.md`.

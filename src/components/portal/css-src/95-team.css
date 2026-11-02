@@ -1,0 +1,31 @@
+/* Team section — React-side additions (not from the prototype). Scoped under .cpx by scripts/portal-css.mjs.
+   Bundled before the prototype sheets: every rule doubles its class to win ties. */
+
+/* photo inside the avatar tile */
+.tc.tc .av img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.tc.tc .av { overflow: hidden; }
+.tc.tc .tc-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--f-mono); font-size: 12px; }
+
+/* people rows: actions pinned right, the "does" column hides on narrow screens */
+.prow.prow .prow-acts { display: flex; gap: 6px; margin-left: auto; }
+.prow.prow .prow-acts .ib { width: 34px; height: 34px; border-radius: 10px; }
+.prow.prow .prow-does { min-width: 150px; }
+@media (max-width: 1100px) { .prow.prow .prow-does { display: none; } }
+@media (max-width: 640px) {
+  .prow.prow { gap: 8px 10px; }
+  .prow.prow .em { flex-basis: 100%; order: 5; }
+}
+
+/* forms in the Invite / Substitute modals */
+.tm-form.tm-form { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.tm-grid.tm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .tm-grid.tm-grid { grid-template-columns: minmax(0, 1fr); } }
+.tm-swap.tm-swap { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); gap: 10px; align-items: center; }
+.tm-seat.tm-seat { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.tm-seat.tm-seat.new { border-style: dashed; background: var(--ice-soft); }
+.tm-seat.tm-seat b { display: block; font: 600 14px var(--f-disp); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-seat.tm-seat .small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) {
+  .tm-swap.tm-swap { grid-template-columns: minmax(0, 1fr); }
+  .tm-swap.tm-swap > svg { transform: rotate(90deg); justify-self: center; }
+}

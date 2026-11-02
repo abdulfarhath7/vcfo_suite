@@ -1,8 +1,8 @@
-import DocPackViewClient from '@/views/engagement/DocPackViewClient';
+import { ClientDocsPage } from '@/components/console/pages/clients/ClientDocsPage';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Pre-incorporation documents', 'Generated document pack');
+export const metadata = pageMetadata("Documents", "The client document pack");
 
 export default function Page() {
-  return <DocPackViewClient />;
+  return <ClientDocsPage />;
 }

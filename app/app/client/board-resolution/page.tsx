@@ -1,8 +1,10 @@
-import { BoardRoute } from '@/components/client-portal/pages/incorporation';
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyBoard } from '@/components/portal/legacy';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Board resolution', 'Board resolution documents');
+export const metadata = pageMetadata("Board resolution", "Board resolution documents");
 
+/** Opens the board resolution (Incorporation, or Declarations for a new client). */
 export default function Page() {
-  return <BoardRoute />;
+  return <ClientRoute intent={{ kind: 'board' }} legacy={<LegacyBoard />} />;
 }

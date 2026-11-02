@@ -1,14 +1,8 @@
-import { Suspense } from "react";
-import { FilingsPage } from "@/views/compliances/CompliancePages";
-import { pageMetadata } from "@/lib/page-metadata";
+import { FilingsPage } from '@/components/console/pages/compliance/FilingsPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata("Filings", "Statutory filing register");
+export const metadata = pageMetadata("Filings register", "Statutory filing register across your clients");
 
-/** Route shell only. `?company=` / `?status=` / `?cadence=` / `?period=` / `?fy=` carry the state on refresh. */
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading filings…</div>}>
-      <FilingsPage basePath="/app/intern/compliances" />
-    </Suspense>
-  );
+  return <FilingsPage />;
 }

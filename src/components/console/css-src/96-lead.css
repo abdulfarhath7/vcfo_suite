@@ -1,0 +1,32 @@
+/* Project lead pages (not from the prototype): the prototype's lead classes (.lkpi, .lq, .lh, .lweek, .rv, .tm, .regs
+   in portal/css-src/10-v4.css) carry the look; this only adapts them to real rows — a queue row whose box is a
+   button only for team tasks, day tiles that are buttons, small pills, the registration document list. */
+
+/* queue: the row is a div; its box (tasks) and its body are separate buttons */
+.lq .tdy-lqi { width: 10px; height: 10px; border-radius: 50%; justify-self: center; }
+.lq button.bx { cursor: pointer; }
+.lq button.bx:hover { border-color: var(--ink-2); }
+.tdy-lqb { min-width: 0; width: 100%; text-align: left; }
+.tdy-lqb .m .tdy-ell { flex: 0 1 auto; max-width: 260px; }
+.tdy-pillsm.pill { padding: 3px 7px; font-size: 10.5px; }
+.tdy-qfoot { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+/* this week: a day tile is a button that filters the queue */
+button.lwd { cursor: pointer; width: 100%; }
+button.lwd:hover { border-color: var(--ink-3); }
+.lwd.tdy-sel { box-shadow: inset 0 0 0 2px var(--ice); }
+
+/* client chips that open a client */
+button.cc { cursor: pointer; }
+button.cc:hover { background: color-mix(in srgb, var(--cc) 26%, transparent); }
+
+/* KPI tiles while the book loads */
+.lkpi[disabled] { cursor: default; }
+.lkpi[disabled]:hover { transform: none; }
+
+/* registrations: what the client provides */
+.tdy-req { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ink-2); }
+#lreglist .regrow .tdy-pillsm { flex: none; }
+
+/* team: the avatar sits on the person's colour */
+.tm-h .av { flex: none; }

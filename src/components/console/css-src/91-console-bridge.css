@@ -1,0 +1,13 @@
+/* Bridge between the prototype's console CSS and the React app (not from the prototype).
+   Scoped like every other file: `body.gx` here becomes `.cpx.gx`, the console root. */
+
+/* The Graphite console names "IBM Plex Sans" literally; next/font self-hosts it under a generated family. */
+body.gx {
+  --f-disp: var(--font-plex-sans), "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-body: var(--font-plex-sans), "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  background-color: var(--bg1);
+}
+
+/* The prototype's frame was `#app-mgr` inside a `.frame`; ours is the console root's only app. */
+body.gx .app.mgr { min-height: 100vh; }

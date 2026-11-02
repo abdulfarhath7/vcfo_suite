@@ -18,7 +18,7 @@ const CADENCE: Record<string, string[]> = {
   annual: ['annual', 'one-time'],
 };
 
-/** GET /api/client/compliances/export?fy=&cadence=&area=&status= — CSV of the Filings view. */
+/** GET /api/client/compliances/export?fy=&cadence=&area=&status=&from=&to= — CSV of the Filings view. */
 export async function GET(request: Request) {
   const guard = await requireAuth();
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
@@ -32,7 +32,13 @@ export async function GET(request: Request) {
   if (area && area !== 'all' && AREAS.some((a) => a.id === area)) rows = rows.filter((r) => r.area === area);
   const status = p.get('status') as CompStatus | 'all' | null;
   if (status && status !== 'all' && ['ok', 'due', 'over', 'up'].includes(status)) rows = rows.filter((r) => statusOf(r, today) === status);
-  const name = `filings-${fy ? fyLabelOf(fy).replace(/\s+/g, '-') : 'all'}${cadence ? `-${cadence}` : ''}.csv`;
+  // from / to (YYYY-MM-DD, inclusive): the period on screen (a month or a quarter)
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  const from = p.get('from');
+  const to = p.get('to');
+  const span = Boolean(from && to && iso.test(from) && iso.test(to));
+  if (span) rows = rows.filter((r) => r.dueDate >= from! && r.dueDate <= to!);
+  const name = `filings-${fy ? fyLabelOf(fy).replace(/\s+/g, '-') : 'all'}${cadence ? `-${cadence}` : ''}${span ? `-${from}-to-${to}` : ''}.csv`;
   return new Response('﻿' + filingsCsv(rows, today), {
     headers: {
       'content-type': 'text/csv; charset=utf-8',

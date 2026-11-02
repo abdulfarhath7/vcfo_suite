@@ -1,11 +1,8 @@
-import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
+import { NotificationsPage } from '@/components/console/pages/updates/NotificationsPage';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata(
-  'Notification history',
-  'Every notification for your account, including items cleared from the inbox',
-);
+export const metadata = pageMetadata("Notifications", "Every notification for your account");
 
 export default function Page() {
-  return <NotificationHistoryPage />;
+  return <NotificationsPage />;
 }

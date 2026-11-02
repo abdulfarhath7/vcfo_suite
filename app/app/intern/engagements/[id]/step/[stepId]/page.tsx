@@ -1,10 +1,9 @@
-import EngagementStepDetailClient from "@/views/engagement/EngagementStepDetailClient";
+import { EngagementRedirect } from '@/components/console/pages/clients/EngagementRedirect';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
+export const metadata = pageMetadata('Client', 'Opening the client');
 
-export const metadata = pageMetadata("Step", "Checklist step detail");
-
-
+/** Old lead link: lands on /app/intern/projects/<slug>/… with the query string kept. */
 export default function Page() {
-  return <EngagementStepDetailClient />;
+  return <EngagementRedirect to="step" />;
 }

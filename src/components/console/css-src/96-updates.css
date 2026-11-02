@@ -1,0 +1,138 @@
+/* Updates (bell, megaphone, Announcements, Notifications, Regulatory updates, Ask VCFO, live cards) — not from the
+   prototype: only what its sheet (30-console.css) lacks once its marks carry real data. Section sheets bundle before the
+   prototype sheet, so rules that tie on specificity double a class. */
+
+/* long real text: one line with an ellipsis, or two lines (the element carries a title) */
+.upd-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upd-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.upd-pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.upd-pad { padding: 12px 8px; }
+.upd-col { display: flex; flex-direction: column; gap: 2px; }
+.upd-err { color: var(--over-ink); font-size: 13px; padding: 8px 10px; border-radius: 10px; background: var(--over-bg); margin: 6px 0; }
+.upd-gap { margin: 18px 0; }
+.upd-lede { margin: -6px 0 14px; max-width: 76ch; }
+.upd-list { margin: 14px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14px; }
+
+/* ---------------------------------------------------------------- bell pop-over */
+.upd-pop .mx-drows { max-height: min(360px, 50vh); }
+.upd-pop .mx-rdg { padding: 8px 8px 2px; }
+.mx-nrow.upd-nrow { padding: 0; gap: 4px; align-items: center; transition: transform .22s var(--ease), opacity .22s var(--ease); }
+.upd-nmain { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 11px; text-align: left; }
+.upd-nmain:focus-visible { outline: 2px solid var(--ice); outline-offset: -2px; }
+.upd-nmain .mx-ud { margin-top: 0; }
+.mx-nrow.upd-nrow:hover { background: var(--hi); }
+.mx-nrow.upd-nrow > .ib { opacity: .55; }
+.mx-nrow.upd-nrow:hover > .ib, .mx-nrow.upd-nrow > .ib:focus-visible { opacity: 1; }
+.mx-nrow.upd-out { transform: translateX(40px); opacity: 0; }
+.upd-pop .pop-foot .link svg { width: 15px; height: 15px; }
+
+/* ---------------------------------------------------------------- top-bar button pulse when a card lands */
+.mx-top .ib.upd-catch { animation: updCatch .55s var(--ease); color: var(--ice); background: var(--ice-soft); }
+@keyframes updCatch { 0% { transform: scale(1); } 35% { transform: scale(1.3); } 65% { transform: scale(.94); } 100% { transform: scale(1); } }
+
+/* ---------------------------------------------------------------- live cards */
+.upd-live { position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; pointer-events: none; }
+.upd-lscrim { position: absolute; inset: 0; pointer-events: auto; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .28s var(--ease); cursor: default; }
+.upd-live.show .upd-lscrim { opacity: 1; }
+.upd-lcard { position: relative; pointer-events: auto; width: min(424px, calc(100vw - 32px)); background: var(--solid); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-lg); overflow: hidden; opacity: 0; transform: translateY(14px) scale(.96); transition: opacity .3s var(--ease), transform .42s var(--ease); }
+.upd-lcard::before { content: ""; display: block; height: 3px; background: var(--ice); }
+.upd-live.show .upd-lcard { opacity: 1; transform: none; }
+.upd-lcard.fly { transition: none; opacity: 1; background: var(--ice); border-color: var(--ice); }
+.upd-lcard.fly .upd-lin { opacity: 0; transition: opacity .15s; }
+.upd-lh { display: flex; gap: 12px; align-items: center; padding: 16px 18px 6px; }
+.upd-lh .mx-dt { gap: 6px; }
+.upd-lb { display: flex; flex-direction: column; gap: 6px; padding: 6px 18px 4px; }
+.upd-lmsg { margin: 0; font: 600 17px/1.4 var(--f-disp); color: var(--ink); overflow-wrap: anywhere; white-space: pre-line; max-height: 40vh; overflow-y: auto; }
+.upd-lf { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 18px 18px; }
+.upd-lf:empty { display: none; }
+.upd-lq { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--hi); }
+@media (prefers-reduced-motion: reduce) { .upd-lcard, .upd-lscrim, .mx-nrow.upd-nrow { transition: none; } .mx-top .ib.upd-catch { animation: none; } }
+
+/* ---------------------------------------------------------------- announcements */
+.mx-cn.upd-far { background: var(--hi); border-color: var(--line); }
+.mx-cn.upd-far b, .mx-cn.upd-far span { color: var(--ink); }
+.mx-count.mx-count { margin-bottom: 16px; }
+.mx-count .mx-dt { min-width: 0; }
+.mx-awall.mx-awall { margin-bottom: 8px; }
+.mx-acard .mx-ach .mx-dt { min-width: 0; }
+.upd-cardt { text-align: left; font: inherit; color: inherit; }
+.upd-cardt:hover { text-decoration: underline; text-underline-offset: 3px; }
+.upd-cardt:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; border-radius: 4px; }
+.mx-ann .mx-dt .mx-chips { flex-wrap: nowrap; min-width: 0; }
+.upd-sec2 { margin-top: 22px; }
+.upd-band { margin-bottom: 14px; }
+.upd-band > .eyebrow { display: block; margin-bottom: 8px; }
+.upd-portals { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.mx-ptile.upd-ptile { padding: 0; gap: 0; }
+.upd-ptile summary { display: flex; gap: 10px; align-items: center; padding: 12px 14px; cursor: pointer; list-style: none; border-radius: inherit; }
+.upd-ptile summary::-webkit-details-marker { display: none; }
+.upd-ptile summary b { flex: 1; min-width: 0; }
+.upd-ptile summary svg { width: 15px; height: 15px; color: var(--ink-3); transition: transform .2s var(--ease); }
+.upd-ptile[open] summary svg { transform: rotate(180deg); }
+.upd-ptile summary:focus-visible { outline: 2px solid var(--ice); outline-offset: -2px; }
+.upd-ptile ul { list-style: none; margin: 0; padding: 0 14px 10px; display: flex; flex-direction: column; }
+.upd-ptile li { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line-2); font-size: 13px; }
+.upd-ptile li > .upd-ell { flex: 1; }
+.upd-ptile li .link { font-size: 12px; flex: none; }
+.upd-watch { display: flex; flex-direction: column; }
+.upd-watch .mx-qi a { flex: 1; color: var(--ink); font-size: 13.5px; }
+.upd-watch .mx-qi a:hover { color: var(--ice); }
+.upd-note { margin-top: 10px; }
+
+/* ---------------------------------------------------------------- notifications */
+.upd-filters { display: flex; gap: 8px; padding: 0 4px; }
+.upd-filters .lsel { flex: 1; min-width: 0; }
+.mx-rdl .mx-rdls { min-height: 120px; }
+.mx-reader .mx-rdb p { margin: 0; font-size: 14px; color: var(--ink); }
+.mx-reader .mx-rdh .mx-dt { min-width: 0; }
+.mx-reader .mx-rdh h3 { overflow-wrap: anywhere; }
+.mx-rdi .mx-ud { margin-top: 0; }
+
+/* ---------------------------------------------------------------- regulatory updates */
+.upd-regs { display: flex; flex-direction: column; }
+.upd-reg { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line-2); }
+.upd-reg:first-child { border-top: 0; padding-top: 4px; }
+.upd-regh { display: flex; gap: 10px; align-items: flex-start; }
+.upd-regh b { font: 600 15px/1.35 var(--f-disp); color: var(--ink); overflow-wrap: anywhere; }
+.upd-what { margin: 0; font-size: 14px; color: var(--ink); display: flex; flex-direction: column; gap: 3px; }
+.upd-srcl { color: var(--ice); display: inline-flex; gap: 3px; align-items: center; }
+.upd-srcl:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------------------------------------------------------------- Ask VCFO panel */
+.mx-chat .ch-h > div { min-width: 0; }
+.mx-chat .ch-h span { display: block; }
+.upd-prev { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 7px 16px; font-size: 12.5px; background: var(--due-bg); color: var(--due-ink); }
+.upd-prev .link { font-size: 12.5px; color: inherit; }
+.mx-chat .msg.upd-merr { background: var(--over-bg); border-color: color-mix(in srgb, var(--over) 35%, transparent); color: var(--over-ink); font-size: 13.5px; }
+.upd-think { display: flex; gap: 10px; align-items: center; }
+.upd-think .msg { margin: 0; }
+.mx-chat .mx-card { max-width: 100%; }
+.mx-chat .mx-card > .mx-chips .eyebrow { margin-right: 2px; }
+.mx-chat .mx-card .btn.sm svg { width: 14px; height: 14px; }
+.upd-rel.upd-rel { padding: 0; }
+.upd-rel button { text-align: left; }
+.mx-chat .ch-chips { max-height: 92px; overflow-y: auto; scrollbar-width: thin; }
+.mx-chat .ch-chips button[disabled] { opacity: .45; cursor: default; }
+.upd-chin { flex: 1; min-width: 0; resize: none; max-height: 120px; border-radius: 12px; border: 1px solid var(--line); background: var(--solid-2); padding: 10px 13px; outline: none; font: 400 14.5px/1.4 var(--f-body); color: var(--ink); }
+.upd-chin:focus { border-color: var(--ice); }
+.mx-chat .ch-in .btn[disabled] { opacity: .4; }
+.upd-av { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line-2); border-radius: 12px; padding: 4px; }
+.upd-av .mx-drow > svg { color: var(--ink-3); flex: none; }
+.upd-am { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.upd-am > div { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--hi); }
+.upd-am dt { font-size: 12px; color: var(--ink-3); }
+.upd-am dd { margin: 0; font: 700 19px/1.2 var(--f-disp); font-variant-numeric: tabular-nums; }
+.upd-akf { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+.upd-akf > div { display: contents; }
+.upd-akf dt { color: var(--ink-3); }
+.upd-akf dd { margin: 0; color: var(--ink); }
+.upd-aflow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+.upd-aflow li { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); font-size: 12.5px; }
+.upd-aflow li.st-here { border-color: var(--ice); background: var(--ice-soft); }
+.upd-aflow li.st-done .eyebrow { color: var(--mx-ok); }
+.upd-aflow li.st-next { border-style: dashed; }
+.upd-asteps, .upd-acmp ul, .upd-anext ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.upd-acmp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.upd-acmp > div { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line-2); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.upd-anext { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--ice) 40%, transparent); background: var(--ice-soft); }
+.upd-anext ul { flex-basis: 100%; }

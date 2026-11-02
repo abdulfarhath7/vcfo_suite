@@ -82,6 +82,7 @@ function toAppTask(row: Row): TaskInstance {
     id: row.id,
     engagementId: appEngagementId(row.engagementId),
     checklistKey: row.stepId ?? '',
+    title: row.title,
     status: dbStatusToApp(row.status),
     assigneeId: row.assignedTo ?? undefined,
     dueAt: row.deadline ? row.deadline.toISOString() : undefined,

@@ -1,12 +1,11 @@
-import { StepRoute } from '@/components/client-portal/pages/incorporation';
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyStep } from '@/components/portal/legacy';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata('Step', 'Checklist step');
+export const metadata = pageMetadata("Step", "Checklist step");
 
-/**
- * Client portal v7 step page (live layout). Outside the portal (a super admin
- * on the staff shell) the shared `EngagementStepDetail` still renders.
- */
-export default function Page() {
-  return <StepRoute />;
+/** Opens a step (id like pre-13, or its slug) in its walkthrough — the link every step email carries. */
+export default async function Page({ params }: { params: Promise<{ stepId: string }> }) {
+  const p = await params;
+  return <ClientRoute intent={{ kind: 'step', stepId: decodeURIComponent(p.stepId) }} legacy={<LegacyStep />} />;
 }

@@ -1,0 +1,43 @@
+/* Library section + reader (React port, Oct 2026). Only what the real content needs beyond the
+   prototype CSS (the book page shows real text, not placeholder lines). Scoped by scripts/portal-css.mjs. */
+
+.lib-empty { max-width: 720px; }
+.lib-empty .acts-row { margin-top: 14px; }
+.ess .book .lib-upd { position: absolute; right: -4px; top: -8px; z-index: 2; font: 700 10px var(--f-disp); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 99px; background: var(--ice); color: var(--prim-ink); box-shadow: var(--shadow); }
+.sec-h .dfilter { min-width: 200px; }
+
+/* reader */
+.rd-modal { max-height: 92vh; }
+.rd-kick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rd-kick .ib.x { margin-left: 4px; }
+.rd-page .t { margin-top: 10px; }
+.rd-page .rd-t2 { font-size: 17px; margin-top: 22px; }
+.rd-sec + .rd-sec { border-top: 1px dashed var(--line-2); margin-top: 18px; }
+.rd-line { font-size: 15.5px; line-height: 1.6; color: var(--ink); margin-top: 6px; }
+.rd-why { font-size: 14.5px; line-height: 1.6; color: var(--ink-2); margin-top: 6px; }
+.rd-src { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.rd-src a { color: var(--ink); display: inline-flex; gap: 5px; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
+.rd-src a svg { width: 13px; height: 13px; }
+.rd-flow { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rd-flow li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.rd-flow li b { display: block; font: 600 14.5px/1.35 var(--f-disp); }
+.rd-flow li span:not(.nd) { display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.rd-flow li .nd { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--f-disp); }
+.rd-flow li .nd.done { background: var(--done-bg); color: var(--done); }
+.rd-flow li .nd.prog { background: var(--ice); color: var(--prim-ink); }
+.rd-flow li .nd.up { background: var(--hi); color: var(--ink-2); border: 1px solid var(--line); }
+.rd-flow li .nd svg { width: 13px; height: 13px; }
+.rd-flow li .rd-here { color: var(--ice) !important; font-weight: 700; }
+.rd-cmp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 10px; }
+.rd-cmp > div { padding: 12px 14px; border-radius: 12px; background: var(--hi); border: 1px solid var(--line-2); }
+.rd-cmp b { display: block; font: 700 14px var(--f-disp); margin-bottom: 6px; }
+.rd-cmp ul { margin: 0; padding-left: 16px; font-size: 13.5px; color: var(--ink-2); display: flex; flex-direction: column; gap: 4px; }
+.rd-rel { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.rd-rel-b { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--hi); font: 600 13px var(--f-disp); text-align: left; color: var(--ink); }
+.rd-rel-b:hover { border-color: var(--ink-3); }
+.rd-rel-b svg { width: 14px; height: 14px; flex: none; color: var(--ink-3); }
+@media (max-width: 720px) {
+  .rd-modal { padding: 16px; }
+  .rd-cmp { grid-template-columns: minmax(0, 1fr); }
+  .reader > div:first-child .cover { max-width: 180px; }
+}

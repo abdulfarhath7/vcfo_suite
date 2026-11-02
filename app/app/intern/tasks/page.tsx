@@ -1,9 +1,8 @@
-import InternMyWork from "@/views/intern/MyWork";
+import { LeadTasksPage } from '@/components/console/pages/work/LeadTasksPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("My work", "List, board, and timeline of your open steps and filings");
+export const metadata = pageMetadata("Tasks", "Your tasks across your clients");
 
 export default function Page() {
-  return <InternMyWork />;
+  return <LeadTasksPage />;
 }

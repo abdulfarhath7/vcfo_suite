@@ -1,0 +1,17 @@
+/* Settings section — React-side additions (not from the prototype). Scoped under .cpx by scripts/portal-css.mjs.
+   Bundled before the prototype sheets: every rule doubles its class to win ties. */
+
+.st-av.st-av { overflow: hidden; }
+.st-av.st-av img { width: 100%; height: 100%; object-fit: cover; }
+.kv.kv .st-wrap { overflow-wrap: anywhere; }
+.ns.st-head.st-head { font: 700 11px var(--f-disp); letter-spacing: .12em; color: var(--ink-3); }
+.st-form.st-form { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.tog.tog:disabled { cursor: not-allowed; }
+
+/* phones: key/value rows stack the action under the value */
+@media (max-width: 560px) {
+  .kv.kv { grid-template-columns: 96px minmax(0, 1fr); }
+  .kv.kv > :nth-child(3) { grid-column: 2; justify-self: start; }
+  .kv.kv > :nth-child(3):empty { display: none; }
+  .ns.ns { grid-template-columns: minmax(0, 1fr) 58px 70px; gap: 6px; }
+}

@@ -1,13 +1,6 @@
-import { Suspense } from "react";
-import { pageMetadata } from "@/lib/page-metadata";
-import FirmPeople from "@/views/admin/FirmPeople";
+import { redirect } from 'next/navigation';
 
-export const metadata = pageMetadata("People", "Portfolio people overview");
-
+/** Moved into the console's Project leads page (portal redesign, Oct 2026). */
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading people…</div>}>
-      <FirmPeople />
-    </Suspense>
-  );
+  redirect('/app/manager/leads');
 }

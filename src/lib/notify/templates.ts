@@ -26,18 +26,20 @@ export type TemplateNameMap = Record<NotifyEvent, string>;
 /**
  * Approved Meta template names, one per event.
  *
- * Defaults to the event name itself — the templates are approved in WhatsApp
- * Manager under exactly these names — so the EUM path needs no per-event env
- * at all. Set an override only when a WABA template had to be named
- * differently. A blank override falls back to the default rather than
- * disabling the event, because an empty string is a typo, not an intention.
+ * Defaults to `<prefix><event>` — EUM uses no prefix, DoubleTick uses `vcfo_`
+ * because the shared SBC number already holds the sales team's templates
+ * (one of them is called `welcome`). Set an override only when a template had
+ * to be named differently. A blank override falls back to the default rather
+ * than disabling the event, because an empty string is a typo, not an
+ * intention.
  */
 export function readTemplateNames(
   env: NodeJS.ProcessEnv = process.env,
+  prefix = '',
 ): TemplateNameMap {
   const out = {} as TemplateNameMap;
   for (const event of NOTIFY_EVENTS) {
-    out[event] = env[templateNameEnvKey(event)]?.trim() || event;
+    out[event] = env[templateNameEnvKey(event)]?.trim() || `${prefix}${event}`;
   }
   return out;
 }
@@ -51,8 +53,9 @@ export function readTemplateNames(
  *   compliance_due_monthly   1 company name, 2 obligation name, 3 due date
  *   compliance_due_quarterly 1 company name, 2 obligation name, 3 due date
  *   compliance_overdue       1 company name, 2 obligation name
- *   step_awaiting_approval   1 first name, 2 company name, 3 step title
- *   phase_approved           1 first name, 2 company name, 3 step title
+ *   step_awaiting_approval   1 first name, 2 step title, 3 company name
+ *                            (as approved on Meta on 2026-10-23)
+ *   phase_approved          1 first name, 2 company name, 3 step title
  *   client_action_needed     1 first name, 2 company name, 3 step title
  *   documents_shared         1 first name, 2 company name
  *   staff_client_submitted   1 first name, 2 company name, 3 step title
@@ -81,6 +84,7 @@ function orderedVariables(
     case 'compliance_overdue':
       return [vars.companyName ?? '', vars.obligationName ?? ''];
     case 'step_awaiting_approval':
+      return [vars.firstName ?? '', vars.stepTitle ?? '', vars.companyName ?? ''];
     case 'phase_approved':
     case 'client_action_needed':
     case 'staff_client_submitted':
@@ -131,6 +135,17 @@ export function buildTemplateComponents(
       })),
     },
   ];
+}
+
+/**
+ * The same variables as plain ordered strings — DoubleTick's
+ * `templateData.body.placeholders` takes `{{1}}, {{2}}…` in this form.
+ */
+export function buildTemplatePlaceholders(
+  event: NotifyEvent,
+  vars: NotifyVariables,
+): string[] {
+  return orderedVariables(event, vars).map(sanitizeVariable);
 }
 
 /** First name only — WhatsApp greetings read badly with a full legal name. */

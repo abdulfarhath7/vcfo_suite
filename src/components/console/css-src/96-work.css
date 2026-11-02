@@ -1,0 +1,50 @@
+/* Planner (My work, Project leads, a lead's Tasks): only what the prototype sheet (30-console.css) lacks once the
+   marks carry real data — long real names, buttons where the prototype had plain cells, a done bar on the timeline,
+   a list without the lead column, wide grids that scroll inside their panel. Doubled classes win specificity ties. */
+
+.wk-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-scrollx { overflow-x: auto; scrollbar-width: thin; max-width: 100%; }
+.wk-scrollx > .mx-tlg { min-width: 760px; }
+.wk-scrollx > .mx-lt { min-width: 720px; }
+.wk-scrollx > .mx-rt { min-width: 640px; }
+.wk-err { margin: 10px 0 0; font-size: 13px; color: var(--over-ink); }
+.wk-note { margin: 0 0 8px; }
+.wk-pre { margin: 0; white-space: pre-wrap; }
+.wk-ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.wk-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.wk-chips .mx-fchip { margin: 0; }
+
+/* summary strip cells are doors (they open the list) */
+.mx-rb.wk-rb { font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer; }
+.mx-sum .mx-rb.wk-rb:hover { background: var(--hi); }
+.mx-rb.wk-rb:focus-visible { outline: 2px solid var(--ice); outline-offset: -2px; }
+
+/* the next arrow is the back icon turned round */
+.wk-next svg { transform: rotate(180deg); }
+.wk-calh { flex-wrap: wrap; row-gap: 8px; }
+.wk-yr { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.wk-yr b { font: 700 14px var(--f-mono); }
+
+/* timeline: done bars, and the diamond in the legend */
+.mx-tlb.mx-tlb.d { background: color-mix(in srgb, var(--mx-ok) 30%, transparent); color: var(--ink); }
+.mx-tlleg .mx-dia.wk-dia { position: static; display: inline-block; width: 9px; height: 9px; box-shadow: none; }
+.mx-tlr .mx-tll .mx-dt { min-width: 0; }
+
+/* list without the lead column (a lead's own planner) */
+.mx-lt.wk-nolead .mx-th, .mx-lt.wk-nolead .mx-tr { grid-template-columns: minmax(0, 2fr) 120px 120px 70px 110px; }
+.mx-lrow.wk-done { opacity: .65; }
+.mx-lrow:focus-visible, .mx-card2:focus-visible, .mx-blk:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+/* a team task row with its assign button */
+.wk-trow { display: flex; align-items: center; gap: 6px; }
+.wk-trow > .mx-todo { flex: 1; min-width: 0; }
+.mx-todo .mx-dt { min-width: 0; flex: 1; }
+.mx-todo .mx-dt b, .mx-todo .mx-dt span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* rows in pop-overs that are information, not doors */
+.mx-drow.wk-static { cursor: default; }
+.mx-drow.wk-static:hover { background: transparent; }
+
+@media (max-width: 720px) {
+  .mx-board.mx-board { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,14 +1,10 @@
-import { Suspense } from "react";
-import { ClientCompliancesCalendarRoute } from "@/components/client-portal/pages/compliances";
-import { pageMetadata } from "@/lib/page-metadata";
+import { ClientRoute } from '@/components/portal/Intent';
+import { LegacyCalendar } from '@/components/portal/legacy';
+import { pageMetadata } from '@/lib/page-metadata';
 
 export const metadata = pageMetadata("Calendar", "Compliance calendar");
 
-/** Client portal v7 calendar (?date= ?view= ?area= ?filing= carry the state on refresh). */
+/** Scrolls to the compliance calendar (?filing=<id> opens that filing). */
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <ClientCompliancesCalendarRoute />
-    </Suspense>
-  );
+  return <ClientRoute intent={{ kind: 'section', key: 'calendar' }} legacy={<LegacyCalendar />} />;
 }

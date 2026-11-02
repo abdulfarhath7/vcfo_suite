@@ -1140,3 +1140,5 @@ export * from './schema-portal-compliances';
 export * from './schema-portal-documents';
 export * from './schema-portal-team';
 export * from './schema-portal-credentials';
+export * from './schema-registered-office-noc';
+export * from './schema-planner';

@@ -1,0 +1,69 @@
+/* Insight pages — Analytics, Audit log, Settings (not from the prototype): only what the prototype sheet lacks once
+   its marks carry real data and real controls — KPI tiles that open their breakdown, chart points that open a month,
+   lead counts as buttons, a photo inside the avatar ring, a disabled consent switch, error boxes. Section sheets bundle
+   before the prototype sheet, so rules that tie on specificity double a class. */
+
+.ins-ell { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ins-mono { font-family: var(--f-mono); font-size: 12px; }
+.ins-err > svg { color: var(--over-ink); }
+
+/* analytics: KPI tiles are doors */
+.mx-kpi3.ins-kpi { width: 100%; cursor: pointer; transition: border-color .15s, background .15s; }
+.mx-kpi3.ins-kpi:hover { border-color: color-mix(in srgb, var(--ice) 45%, var(--line)); }
+.mx-kpi3.ins-kpi .co-row b { font-variant-numeric: tabular-nums; }
+.mx-spark.mx-spark { overflow: visible; }
+.mx-spark.ins-n path { stroke: var(--ink-2); }
+.mx-spark.ins-n circle { stroke: var(--ink-2); }
+
+/* analytics: chart points open the month; a wide hit area; the legend under the chart */
+.ins-hit { fill: transparent; }
+.ins-ptg.click { cursor: pointer; outline: none; }
+.ins-ptg.click:hover .mx-pt, .ins-ptg.click:focus-visible .mx-pt { stroke-width: 4; }
+.ins-cleg { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 10px; font-size: 12px; color: var(--ink-3); }
+.ins-cleg > span { display: inline-flex; gap: 6px; align-items: center; }
+.ins-cleg .ins-hint { margin-left: auto; }
+.ins-pt { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ice); background: var(--solid); flex: none; }
+.ins-pt.good { background: var(--ice); }
+.ins-dash { width: 18px; height: 0; border-top: 2px dashed var(--sb-gold); flex: none; }
+
+/* analytics: lead scorecards — header and counts are buttons */
+.sec-h.ins-sech2 { margin-top: 6px; }
+.ins-scl { width: 100%; text-align: left; border-radius: 10px; }
+.ins-scl:hover b { color: var(--ice); }
+.ins-scl .ins-ell { flex: 0 1 auto; }
+.ins-ring0 { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 4px solid var(--line-2); font: 700 12px var(--f-mono); color: var(--ink-3); flex: none; }
+.mx-lpst > button { display: flex; flex-direction: column; align-items: center; padding: 10px 4px; gap: 1px; text-align: center; }
+.mx-lpst > button + button { border-left: 1px solid var(--line-2); }
+.mx-lpst > button:hover { background: var(--hi); }
+.mx-lpst > button b { font-variant-numeric: tabular-nums; }
+.ins-legend.ins-legend { margin: 0; }
+
+/* audit: facet icons, the summary line, long facts wrap inside the panel */
+.mx-facb .ins-fl { display: inline-flex; gap: 8px; align-items: center; min-width: 0; }
+.mx-facb .ins-fl svg { width: 15px; height: 15px; flex: none; }
+.mx-sb[disabled] { cursor: default; }
+.mx-sb[disabled]:hover { background: transparent; }
+.mx-dt > .ins-asum { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.mx-spe.ins-spe .mx-spt b { font-weight: 600; }
+.ins-adet .mx-fact2 { max-width: 100%; min-width: 0; }
+.ins-adet .mx-fact2 b { overflow-wrap: anywhere; }
+.mx-spe.ins-spe { --sc: var(--ink-3); }
+.mx-aspine .mx-empty, .mx-aspine .sec-load { min-height: 220px; }
+
+/* settings: photo inside the avatar ring; the file input stays out of sight; disabled consent; sign out */
+.mx-lav.ins-face { overflow: hidden; }
+.mx-lav.ins-face img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.ins-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.mx-prof.mx-prof { position: relative; }
+.mx-sw.ins-sw { align-items: flex-start; }
+.mx-sw.ins-sw > span b { font: 600 13.5px var(--f-disp); }
+.mx-sw.ins-sw.off { cursor: not-allowed; }
+.mx-sw.ins-sw.off i { opacity: .45; }
+.mx-fh.ins-bad { color: var(--over-ink); }
+.mx-qi.ins-wa { border-top: 0; padding: 4px 0; }
+.mx-setnav > button.ins-out { margin-top: 10px; border-top: 1px solid var(--line-2); border-radius: 0 0 11px 11px; color: var(--over-ink); }
+.mx-setnav > button.ins-out:hover { background: var(--over-bg); }
+.mx-setme .ins-ell { width: 100%; }
+.ins-look { display: flex; flex-direction: column; gap: 16px; }
+.ins-lrow { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+@media (max-width: 920px) { .mx-setnav > button.ins-out { margin-top: 0; border-top: 0; border-radius: 11px; } }

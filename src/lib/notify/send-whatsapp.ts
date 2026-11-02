@@ -5,11 +5,14 @@ import type {
   SendWhatsAppDeps,
   WhatsAppSendResult,
 } from '@/lib/notify/send-whatsapp-shared';
+import { sendViaDoubleTick } from '@/lib/notify/send-whatsapp-doubletick';
 import { sendViaEum } from '@/lib/notify/send-whatsapp-eum';
 import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify/types';
 
 /**
- * WhatsApp dispatcher — one transport, AWS End User Messaging (Social).
+ * WhatsApp dispatcher — two transports behind one switch, like email's
+ * EMAIL_PROVIDER: WHATSAPP_PROVIDER=eum (AWS End User Messaging, the default)
+ * or doubletick (SBC's existing WhatsApp Business number via DoubleTick).
  *
  * Same shape as the email dispatcher (`send-email.ts`): the guards run here,
  * once, and the transport only ever receives a resolved phone number and an
@@ -61,7 +64,7 @@ export async function sendWhatsAppTemplate(input: {
     deps: input.deps,
   };
 
-  return sendViaEum(shared);
+  return config.provider === 'doubletick' ? sendViaDoubleTick(shared) : sendViaEum(shared);
 }
 
 /**

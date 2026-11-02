@@ -1,10 +1,8 @@
-import AdminVault from "@/views/admin/Vault";
+import { VaultPage } from '@/components/console/pages/workspace/VaultPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Vault", "Document vault");
-
+export const metadata = pageMetadata("Document vault", "Every client document in your book");
 
 export default function Page() {
-  return <AdminVault />;
+  return <VaultPage />;
 }

@@ -7,6 +7,7 @@ import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, getMyEngagement } from '@/db/repositories/engagements';
 import { checklistItemLabel, formatAuditActionLabel } from '@/lib/audit-log';
 import {
+  auditCategoryOf,
   istParts,
   type AuditCategory,
   type AuditNode,
@@ -335,16 +336,21 @@ async function summary(dbId: string): Promise<ClientAuditSummary> {
   }
   const since = new Date(new Date(`${days[0]}T00:00:00Z`).getTime() - 330 * 60_000);
   const rows = await db
-    .select({ at: auditEvents.createdAt })
+    .select({ at: auditEvents.createdAt, action: auditEvents.action })
     .from(auditEvents)
     .where(and(eq(auditEvents.engagementId, dbId), allowed(), gte(auditEvents.createdAt, since)))
     .limit(5000);
   const counts = new Map(days.map((d) => [d, 0]));
+  const cats = new Map<string, Partial<Record<AuditCategory, number>>>(days.map((d) => [d, {}]));
   for (const r of rows) {
     const d = istParts(r.at).day;
-    if (counts.has(d)) counts.set(d, (counts.get(d) ?? 0) + 1);
+    if (!counts.has(d)) continue;
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+    const c = cats.get(d)!;
+    const k = auditCategoryOf(r.action);
+    c[k] = (c[k] ?? 0) + 1;
   }
-  const list = days.map((day) => ({ day, count: counts.get(day) ?? 0 }));
+  const list = days.map((day) => ({ day, count: counts.get(day) ?? 0, cats: cats.get(day) ?? {} }));
   return { days: list, total: list.reduce((n, d) => n + d.count, 0) };
 }
 

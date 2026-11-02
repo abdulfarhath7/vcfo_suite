@@ -2,7 +2,8 @@
  * Outbound notification channel types.
  *
  * TRANSPORT-AGNOSTIC ON PURPOSE. WhatsApp ships over AWS End User Messaging
- * (Social) and nothing in this file may name the transport.
+ * (Social) or DoubleTick, chosen by WHATSAPP_PROVIDER, and nothing in this
+ * file may name a transport.
  *
  * WhatsApp is a *nudge* channel that runs alongside email — email stays the
  * system of record. Every message body is a pre-approved template referenced
@@ -56,7 +57,9 @@ export type SkipReason =
   | 'no_consent'
   | 'opted_out'
   | 'no_template'
-  | 'disabled';
+  | 'disabled'
+  /** The rollout list (WHATSAPP_ALLOWLIST_E164) is on and this number is not on it. */
+  | 'not_allowlisted';
 
 /**
  * The slice of a person the WhatsApp guards need.

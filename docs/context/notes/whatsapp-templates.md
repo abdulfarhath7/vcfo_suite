@@ -3,8 +3,23 @@
 Every WhatsApp message is one of these pre-approved templates — nothing else is
 ever sent. Category **utility**, language **en**, for all of them. The Meta
 template name defaults to the event name (`NOTIFY_EVENTS` in
-`src/lib/notify/types.ts`); override with `WHATSAPP_TEMPLATE_NAME_<EVENT>` only
-if Meta forced a different name. Variable order is fixed by `orderedVariables`
+`src/lib/notify/types.ts`) on EUM, and to `vcfo_<event>` on DoubleTick
+(`WHATSAPP_PROVIDER=doubletick`, because SBC's number already holds the sales
+team's `welcome` and others); override with `WHATSAPP_TEMPLATE_NAME_<EVENT>`
+only if Meta forced a different name.
+
+**Utility vs marketing (learnt 2026-10-23).** Since April 2025 Meta silently
+approves a "utility" template as MARKETING when its fixed text reads as
+promotional or vague; `allowCategoryUpdate: false` no longer prevents it.
+`vcfo_step_update` ("Hi {{1}}, the step {{2}} for {{3}} is now {{4}}. You can
+view the details in your VCFO portal.") came back MARKETING and showed clients
+"This chat has offers and announcements". What passed as UTILITY: state the
+person's own matter in fixed words ("your step … is ready for your approval"),
+variables in the middle, then a plain "Please sign in to VCFO Suite …". A
+DoubleTick template can be edited only 24 hours after its last edit.
+
+**Approved on DoubleTick (919014079600):** `vcfo_step_awaiting_approval`,
+UTILITY, 2026-10-23, id 3467125, delivered to a phone with no marketing label. Variable order is fixed by `orderedVariables`
 in `src/lib/notify/templates.ts` — if a body and the builder disagree, the
 builder is wrong. Meta does not allow a variable at the very start or end of a
 body.
@@ -17,7 +32,7 @@ password, OTP, amount or document content.
 
 | Meta template name | Sent when (process email) | Body | Variables |
 |---|---|---|---|
-| `step_awaiting_approval` | `step_awaiting_client_approval` — client, plus the admins / leads the email copies | Hello {{1}}, the step "{{3}}" for {{2}} is ready for your approval. Please sign in to VCFO Suite to review it. | 1 first name, 2 company name, 3 step title |
+| `step_awaiting_approval` | `step_awaiting_client_approval` — client, plus the admins / leads the email copies | Hello {{1}}, your step {{2}} for {{3}} is ready for your approval. Please sign in to VCFO Suite to review it. **(approved)** | 1 first name, 2 step title, 3 company name |
 | `client_action_needed` | `client_fill_approved` — client, plus the admins / leads the email copies | Hello {{1}}, we need some details from you for "{{3}}" ({{2}}). Please sign in to VCFO Suite to fill them in. | 1 first name, 2 company name, 3 step title |
 | `documents_shared` | `docs_shared` — client | Hello {{1}}, new documents for {{2}} have been shared with you. Please sign in to VCFO Suite to view them. | 1 first name, 2 company name |
 | `document_delivered` * | `delivered` — client | A new document for {{1}} is ready on "{{2}}". Please sign in to VCFO Suite to view it. | 1 company name, 2 step title |

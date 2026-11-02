@@ -1,0 +1,9 @@
+/* Compliance calendar + Filings (React port, not from the prototype).
+   Phones: the law rings stack above their legend so "FEMA · RBI" and the
+   counts are not squeezed into a 100 px column. */
+@media (max-width: 560px) {
+  .lawrings { flex-wrap: wrap; justify-content: center; }
+  .lawrings > .lr-leg { flex: 1 1 100%; }
+  .donut-row { gap: 12px; }
+  .donut-row svg { width: 120px; height: 120px; }
+}

@@ -1,10 +1,8 @@
-import InternToday from "@/views/intern/Today";
+import { LeadTodayPage } from '@/components/console/pages/lead/LeadTodayPage';
+import { pageMetadata } from '@/lib/page-metadata';
 
-import { pageMetadata } from "@/lib/page-metadata";
-
-export const metadata = pageMetadata("Today", "Intern daily queue");
-
+export const metadata = pageMetadata("Today", "Your desk today: what is due, what is late and who is waiting");
 
 export default function Page() {
-  return <InternToday />;
+  return <LeadTodayPage />;
 }

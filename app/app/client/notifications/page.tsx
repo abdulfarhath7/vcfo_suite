@@ -1,12 +1,10 @@
+import { ClientRoute } from '@/components/portal/Intent';
 import NotificationHistoryPage from '@/views/notifications/NotificationHistoryPage';
-import { ClientNotificationsEntry } from '@/components/client-portal/pages/team';
 import { pageMetadata } from '@/lib/page-metadata';
 
-export const metadata = pageMetadata(
-  'Notification history',
-  'Every notification for your account, including items cleared from the inbox',
-);
+export const metadata = pageMetadata("Notifications", "Every notification for your account");
 
+/** Opens the Notifications card from the top bar. */
 export default function Page() {
-  return <ClientNotificationsEntry legacy={<NotificationHistoryPage />} />;
+  return <ClientRoute intent={{ kind: 'notes' }} legacy={<NotificationHistoryPage />} />;
 }

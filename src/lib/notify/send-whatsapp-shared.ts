@@ -59,4 +59,8 @@ export type EumSendMessage = (params: {
 export type SendWhatsAppDeps = {
   config?: WhatsAppConfig;
   createEumClient?: (config: WhatsAppConfig) => Promise<EumSendMessage>;
+  /** DoubleTick is plain HTTPS; a test injects this instead of the network. */
+  fetch?: typeof fetch;
+  /** DoubleTick `messageId` (UUID v4); injectable so a test can pin it. */
+  newMessageId?: () => string;
 };
