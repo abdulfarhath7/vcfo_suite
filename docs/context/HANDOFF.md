@@ -78,8 +78,15 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
 - **Part A rule, one decision for the owner:** both branches built "the client fills, the lead fills
   only NIC codes". Unified in `pre-inc-direct-flow.ts` (see `notes/checklist-workflow.md`, "Merge of
   2026-11-04"). Kept ours for Part B (pre-13..16 stay client-owned); main had let the lead edit them.
-- Gate: typecheck 2 errors, both in `src/components/portal/sections/ask/history.test.ts` and already
-  present in the 2 Nov checkpoint (reads `.save` on the `LogItem` union); vitest 502 files / 4799 tests green.
+- Gate: typecheck 0 (the two old errors in `src/components/portal/sections/ask/history.test.ts` are
+  fixed); vitest 502 files / 4799 tests green.
+- **Official updates without Inngest:** `npm run ask:feeds:schedule` installs a Windows scheduled
+  task that runs the watchers every 30 minutes and at log-on (see `notes/ask-feeds.md`). The owner
+  installs it; the agent's sandbox refuses to register scheduled tasks. Verified the runner by hand:
+  19 new items from 8 portals, all pending manager review with their review PDF.
+- **Branch for the PR:** `notifications-update-from-portals-of-acts` (git names cannot hold spaces).
+  The owner raises the PR into `abdulfarhath7/vcfo_suite` main. Queued for later, by the owner:
+  the WhatsApp work and RAG in the chatbot.
 
 ## Session 2026-11-02 — origin/main (Farhath, 29–31 Oct) merged into `portal-redesign`; functionality ported, our portals kept
 

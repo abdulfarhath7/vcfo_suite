@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { AnswerEnvelope } from '@/data/ask/schema';
 import type { ThreadItem } from '@/components/ask/ask-context';
-import { answerToLog, chatDate, destToAct, threadToLog } from './history';
+import { answerToLog, chatDate, destToAct, threadToLog, type LogItem } from './history';
+
+/** An answer row of the panel log (answerToLog always returns one). */
+const asAnswer = (item: LogItem) => item as Extract<LogItem, { r: 'a' }>;
 
 const base: AnswerEnvelope = {
   line: 'Your next step is the director KYC.',
@@ -37,8 +40,8 @@ describe('threadToLog (past chats in the portal panel)', () => {
     const a: AnswerEnvelope = { ...base, links: [{ dest: { to: 'documents' }, label: 'Open Documents' }] };
     const saved = answerToLog(a, 'm9', 'q', false);
     expect(saved).toMatchObject({ acts: [{ label: 'Open Documents', intent: { kind: 'section', key: 'documents' } }], save: { messageId: 'm9' } });
-    expect(answerToLog(a, 'm9', 'q', true).save).toBeUndefined();
-    expect(answerToLog({ ...a, topicSlug: 'gst-basics' }, null, 'q', false).save).toEqual({ topicSlug: 'gst-basics', answer: { ...a, topicSlug: 'gst-basics' } });
+    expect(asAnswer(answerToLog(a, 'm9', 'q', true)).save).toBeUndefined();
+    expect(asAnswer(answerToLog({ ...a, topicSlug: 'gst-basics' }, null, 'q', false)).save).toEqual({ topicSlug: 'gst-basics', answer: { ...a, topicSlug: 'gst-basics' } });
   });
 
   it('a refusal reads as "cannot answer" with the hand-off offer and the why line', () => {

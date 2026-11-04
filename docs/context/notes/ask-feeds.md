@@ -57,6 +57,27 @@ far had come from the Sources page button. In production, `INNGEST_EVENT_KEY`
 + `INNGEST_SIGNING_KEY` on App Runner do the same job (AWS-DEPLOY.md).
 Government portals also publish almost nothing on weekends.
 
+## Without Inngest: the Windows scheduled task (2026-11-04)
+
+The owner asked for updates to be captured even when `npm run dev` and Inngest are not
+running. `npm run ask:feeds:schedule` registers a Windows scheduled task,
+"VCFO official updates (every 30 min)", that runs `scripts/ask-feeds-scheduled.ps1`
+every 30 minutes and at log-on as the signed-in user (no admin, no stored password).
+The runner starts Docker Desktop and `docker compose up -d` when Postgres is not
+reachable, then runs `npm run ask:feeds:once`; output goes to `.logs/ask-feeds.log`.
+`-- status`, `-- run` and `-- remove` inspect, trigger and uninstall it.
+
+- A run missed while the laptop was off or asleep starts when it is back
+  (`StartWhenAvailable`), and a skipped run loses nothing: each watcher looks back
+  `MAX_AGE_DAYS` and the `(feed_id, external_id)` unique index drops repeats. After a long
+  gap `MAX_NEW_PER_WATCHER` spreads the backlog over a few runs.
+- Running it next to `npm run inngest:dev` is safe for the same reason (duplicates are dropped).
+- Nothing on the laptop runs while it is off; only the deployed app with the Inngest keys
+  watches around the clock.
+- In the one-shot script, "review pdf failed … reading 'S'" can appear for items the
+  background ingestion already finished; check `review_pdf_key` before treating it as a loss
+  (on 2026-11-04 all 19 new items had their review PDF).
+
 ## Other gotchas
 
 - `MAX_AGE_DAYS = 60` and `MAX_NEW_PER_WATCHER = 10` per check: DGFT and
