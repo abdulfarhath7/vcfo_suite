@@ -84,7 +84,7 @@ export function WorkFilterChip({
         <button
           type="button"
           className={cn(
-            'inline-flex h-7 flex-none items-center gap-1.5 rounded-md border-1.5 border-line-strong px-2.5 text-[13px] font-medium text-ink-2',
+            'inline-flex h-7 flex-none items-center gap-1.5 rounded-md border-1.5 border-dashed border-line-strong px-2.5 text-[13px] font-medium text-ink-2',
             'hover:bg-surface-sunken data-[state=open]:bg-surface-sunken',
           )}
         >

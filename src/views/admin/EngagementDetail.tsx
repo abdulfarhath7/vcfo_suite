@@ -132,6 +132,7 @@ export default function EngagementDetail() {
     getStateForEngagement,
     refreshEngagementChecklist,
     engagementsLoading,
+    engagementsSettled,
   } = useApp();
   const router = useRouter();
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
@@ -198,7 +199,7 @@ export default function EngagementDetail() {
     }
   }
 
-  if (!eng && engagementsLoading) {
+  if (!eng && (!engagementsSettled || !user)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <HexgridLoader />

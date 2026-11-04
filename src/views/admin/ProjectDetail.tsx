@@ -56,7 +56,7 @@ export default function ProjectDetail() {
   const slugParam = params.slug as string;
   const {
     engagements,
-    engagementsLoading,
+    engagementsSettled,
     getStateForEngagement,
     refreshEngagementChecklist,
     teamMembers,
@@ -93,7 +93,9 @@ export default function ProjectDetail() {
   // Client viewer on purpose: read-only gating, identical to the client portal.
   const gates = useMemo(() => gateActiveCatalog(state, 'client'), [state]);
 
-  if (!eng && engagementsLoading) {
+  // Not `engagementsLoading`: that is false with an empty list while the session hydrates, which
+  // bounced a reload of a record to the project list.
+  if (!eng && (!engagementsSettled || !user)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <HexgridLoader />
