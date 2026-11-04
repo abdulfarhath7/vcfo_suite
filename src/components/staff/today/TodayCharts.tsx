@@ -39,7 +39,7 @@ export function TaskStatusCard({ rows, title = 'Task status' }: { rows: Array<{ 
   );
 }
 
-const LOAD_STATUSES: TodayStatus[] = ['Overdue', 'Due soon', 'In progress', 'Waiting', 'Not started'];
+const LOAD_STATUSES: TodayStatus[] = ['Overdue', 'Due soon', 'In progress', 'Not started'];
 
 /**
  * Workload by lead (C2, R-25): one stacked bar per person in the status colours, scaled to the

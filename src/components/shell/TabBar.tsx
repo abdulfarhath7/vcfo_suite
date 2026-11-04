@@ -42,7 +42,7 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
       return [
         { label: 'Overview', href: '/app/super/dashboard', Icon: LayoutDashboard },
         { label: 'Risks', href: '/app/super/risks', Icon: TriangleAlert },
-        { label: 'Clients', href: '/app/super/projects', Icon: Briefcase },
+        { label: 'Clients', href: '/app/super/projects', Icon: Building2 },
       ];
     case 'intern':
       return [
