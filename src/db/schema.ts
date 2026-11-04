@@ -51,6 +51,8 @@ export const roleEnum = pgEnum('trak_role', [
   'client',
   /** Engineering access to the developer console only; no client data (G-01). */
   'developer',
+  /** A client's partner: their own receivables at /receivables only (docs/specs/receivables/PLAN.md). */
+  'partner',
 ]);
 export const stageEnum = pgEnum('engagement_stage', [
   'Pre-Incorporation',
@@ -1248,3 +1250,7 @@ export * from './schema-planner';
 export * from './schema-firm';
 export * from './schema-work';
 export * from './schema-compliance-tasks';
+
+export * from './schema-labour-registers';
+export * from './schema-board-meetings';
+export * from './schema-receivables';

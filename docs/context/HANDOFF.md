@@ -64,6 +64,23 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-11-04 — origin/main (c7ae16b6) merged into `whatsapp-doubletick`
+
+- Brought in 78 commits from main: receivables Phases 8 to 10 (partner logins, FX, shared views,
+  forex desk), labour registers, board meetings, the Part A owner list. Backup branch:
+  `backup/whatsapp-doubletick-pre-main-merge-2026-11-04`; local pg_dump in the session scratchpad.
+- 13 conflicts, resolved with the 2026-11-02 policy below. `proxy.ts` is main's `proxyRedirect`
+  plus our dev-direct block; Inngest registers main's jobs plus `askFeeds`, without `announcementFeeds`.
+- **Migrations:** main's 0033 to 0040 kept; our `0033_portal_redesign_merge` regenerated as
+  **`0041_portal_redesign_merge`** (same statements, now idempotent: `IF NOT EXISTS` and guarded FKs),
+  so RDS can take it after 0040 and local databases that ran the old 0033 skip it. Local Docker DB
+  migrated to 0041.
+- **Part A rule, one decision for the owner:** both branches built "the client fills, the lead fills
+  only NIC codes". Unified in `pre-inc-direct-flow.ts` (see `notes/checklist-workflow.md`, "Merge of
+  2026-11-04"). Kept ours for Part B (pre-13..16 stay client-owned); main had let the lead edit them.
+- Gate: typecheck 2 errors, both in `src/components/portal/sections/ask/history.test.ts` and already
+  present in the 2 Nov checkpoint (reads `.save` on the `LogItem` union); vitest 502 files / 4799 tests green.
+
 ## Session 2026-11-02 — origin/main (Farhath, 29–31 Oct) merged into `portal-redesign`; functionality ported, our portals kept
 
 Owner, 2026-11-02: "the whole app.sbctrack.in got changes" — Farhath deployed `main` three times

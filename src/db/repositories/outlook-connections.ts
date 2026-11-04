@@ -5,15 +5,19 @@ import { outlookConnections } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { decryptSecret, encryptSecret } from '@/lib/outlook/token-crypto';
 import {
+  graphCancelEvent,
+  graphCreateTeamsEvent,
   graphGetPhoto,
   graphSendMail,
+  graphUpdateTeamsEvent,
   refreshAccessToken,
   type GraphFileAttachment,
+  type GraphTeamsEventInput,
 } from '@/lib/outlook/oauth';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 
 function assertStaff(ctx: AuthContext) {
-  if (ctx.role === 'client' || ctx.role === 'developer') {
+  if (ctx.role === 'client' || ctx.role === 'developer' || ctx.role === 'partner') {
     throw new Error('not permitted');
   }
 }
@@ -164,6 +168,7 @@ export async function sendMailViaOutlook(
   input: {
     to: string[];
     cc?: string[];
+    bcc?: string[];
     subject: string;
     html: string;
     text?: string;
@@ -173,4 +178,76 @@ export async function sendMailViaOutlook(
   const { access, msEmail } = await validAccessToken(ctx);
   await graphSendMail(access, input);
   return { msEmail };
+}
+
+/**
+ * SYSTEM (board meetings, docs/specs/board-meetings/PLAN.md): a Teams meeting in the lead's own
+ * Outlook calendar, so the notice can carry a join link. No AuthContext: the caller has already
+ * checked the meeting; this only reads the named user's own connection. Without a connection or
+ * without the Calendars.ReadWrite scope (connections made before 2 Nov 2026), it returns null and
+ * the lead pastes a link instead.
+ */
+async function systemAccessToken(userId: string): Promise<string | null> {
+  const [row] = await db.select().from(outlookConnections).where(eq(outlookConnections.userId, userId)).limit(1);
+  if (!row) return null;
+  try {
+    if (row.expiresAt.getTime() - Date.now() > 2 * 60 * 1000) return decryptSecret(row.accessTokenEnc);
+    const refresh = decryptSecret(row.refreshTokenEnc);
+    const tokens = await refreshAccessToken(refresh);
+    await db
+      .update(outlookConnections)
+      .set({
+        accessTokenEnc: encryptSecret(tokens.access_token),
+        refreshTokenEnc: encryptSecret(tokens.refresh_token ?? refresh),
+        expiresAt: new Date(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000),
+        updatedAt: new Date(),
+      })
+      .where(eq(outlookConnections.userId, userId));
+    return tokens.access_token;
+  } catch (err) {
+    console.error('[outlook] token refresh for a system call failed', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
+ * SYSTEM (receivables reminders, docs/specs/receivables/PLAN.md): sends one message as the named
+ * user from a job, using their stored connection. No AuthContext: the job has already resolved
+ * the sheet's manager. Returns null without a connection, on a failed refresh or a failed send,
+ * so the caller falls back to the firm's own email (SES or Resend).
+ */
+export async function systemSendMailAs(
+  userId: string,
+  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
+): Promise<{ msEmail: string } | null> {
+  const [row] = await db.select({ msEmail: outlookConnections.msEmail }).from(outlookConnections).where(eq(outlookConnections.userId, userId)).limit(1);
+  if (!row) return null;
+  const access = await systemAccessToken(userId);
+  if (!access) return null;
+  try {
+    await graphSendMail(access, input);
+    return { msEmail: row.msEmail };
+  } catch (err) {
+    console.error('[outlook] system send failed', err instanceof Error ? err.message.slice(0, 200) : err);
+    return null;
+  }
+}
+
+export async function systemTeamsMeeting(
+  userId: string,
+  action: { kind: 'create'; input: GraphTeamsEventInput } | { kind: 'update'; eventId: string; input: GraphTeamsEventInput } | { kind: 'cancel'; eventId: string; comment: string },
+): Promise<{ eventId: string; joinUrl: string | null } | null> {
+  const access = await systemAccessToken(userId);
+  if (!access) return null;
+  try {
+    if (action.kind === 'cancel') {
+      await graphCancelEvent(access, action.eventId, action.comment);
+      return { eventId: action.eventId, joinUrl: null };
+    }
+    if (action.kind === 'update') return await graphUpdateTeamsEvent(access, action.eventId, action.input);
+    return await graphCreateTeamsEvent(access, action.input);
+  } catch (err) {
+    console.error('[outlook] Teams meeting call failed', err instanceof Error ? err.message : err);
+    return null;
+  }
 }

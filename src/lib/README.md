@@ -11,6 +11,7 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `assist-profile/` — builds the company profile that the vcfo_assist browser extension fills into MCA portals.
 - `audit/` — audit-log display formatting and the role rules for who sees which audit events.
 - `board-resolution/` — board resolution data model, docx generation, preview and storage keys.
+- `board-meetings/` — board meetings after incorporation: dates (T-10, T-7, T+30, 120-day gap), meeting numbers, quorum, agenda rules, the notice text and Word file, `.ics` invites and signed director links.
 - `checklist/` — the 34-step SPICe+ checklist: per-step validation, gating, review, locks, responses and Part A sections.
 - `client/` — client overview, home (`/api/client/home`) and progress-board shapes, shared by the portal and the legacy client views.
 - `client-portal/` — the v7 client portal's pure models (answers, compliances, credentials, documents, steps).
@@ -23,6 +24,7 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `incorporation-docs/` — generators for the MCA incorporation documents (MOA, AOA, INC-9, DIR-2, DIR-8 and letters).
 - `intern/` — the project lead's (intern role) dashboard, work queue, managers and personal todos.
 - `knowledge-bank/` — knowledge bank folders, search and storage keys.
+- `labour-registers/` — statutory labour registers: the form catalogue for a state and period, column and value matching against a client's payroll sheet, the per-day attendance block, content-addressed caching of generated documents, and the section 14 overtime scoping. Gotchas: `docs/context/notes/labour-registers.md`.
 - `noc/` — the parent company NOC (Pre-2 board resolution) templates and variants.
 - `notifications/` — in-app bell, announcements, popup cadence and the dock animation.
 - `notes/` — the wire type of a staff note on a client record (G-19).

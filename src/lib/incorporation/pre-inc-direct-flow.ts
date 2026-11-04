@@ -40,6 +40,12 @@ const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
   'pre-1': ['nicCode', 'nicBusinessType', 'additionalNicCodes'],
 };
 
+/**
+ * Fields both the client and the project lead may write on every client-intake
+ * step (owner decision 2026-11-02 for Part A: the step remarks stay shared).
+ */
+const SHARED_FIELD_IDS: ReadonlySet<string> = new Set(['stepRemarks']);
+
 /** Whole steps that only the project lead can edit. Empty by owner decision. */
 export const LEAD_ONLY_STEP_IDS: ReadonlySet<string> = new Set();
 
@@ -111,10 +117,21 @@ export function isClientIntakeStep(itemId: string): boolean {
 
 /** A client field the lead may also edit on a client-intake step (root id or repeat entry). */
 export function isLeadSharedField(itemId: string, fieldId: string): boolean {
+  if (!isClientIntakeStep(itemId)) return false;
+  const root = fieldId.split('.')[0] ?? fieldId;
+  if (SHARED_FIELD_IDS.has(root)) return true;
   const ids = LEAD_SHARED_FIELD_IDS[itemId];
   if (!ids?.length) return false;
-  const root = fieldId.split('.')[0] ?? fieldId;
   return ids.includes(fieldId) || ids.includes(root);
+}
+
+/**
+ * True for a field the client fills and the project lead only reads: every
+ * field of a client-intake step except the lead-only and lead-shared ones.
+ */
+export function isClientOnlyField(itemId: string, fieldId: string): boolean {
+  if (!isClientIntakeStep(itemId)) return false;
+  return !isLeadOnlyField(itemId, fieldId) && !isLeadSharedField(itemId, fieldId);
 }
 
 /**
@@ -128,10 +145,7 @@ export function isLeadSharedField(itemId: string, fieldId: string): boolean {
  *   other steps keep their current staff rules.
  */
 export function canRoleEditField(role: string, itemId: string, fieldId: string): boolean {
-  if (role === 'intern') {
-    if (!isClientIntakeStep(itemId)) return true;
-    return isLeadOnlyField(itemId, fieldId) || isLeadSharedField(itemId, fieldId);
-  }
+  if (role === 'intern') return !isClientOnlyField(itemId, fieldId);
   if (role === 'client') return isDirectFlowStep(itemId) && !isLeadOnlyField(itemId, fieldId);
   if (isFirmRole(role)) return !isDirectFlowStep(itemId);
   return false;
@@ -145,6 +159,18 @@ export function stripLeadOnlyResponses(
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(responses)) {
     if (!isLeadOnlyField(itemId, key)) out[key] = value;
+  }
+  return out;
+}
+
+/** A project lead's responses minus the client's own answers (the server applies this before a merge). */
+export function stripClientOnlyResponses(
+  itemId: string,
+  responses: Record<string, string>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(responses)) {
+    if (!isClientOnlyField(itemId, key)) out[key] = value;
   }
   return out;
 }

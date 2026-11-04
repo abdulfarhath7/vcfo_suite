@@ -239,6 +239,12 @@ export async function submitDirectFlowStep(
     ...lastEditedPatch({ actorName: ctx.name, actorRole: ctx.role, now }),
   };
 
+  // A project lead cannot finish a step while the client's own answers (Part A)
+  // are still missing: those errors come back so the form can say so.
+  if (ctx.role === 'intern' && Object.keys(blocking).length === 0 && Object.keys(validation.errors).length > 0) {
+    Object.assign(blocking, validation.errors);
+  }
+
   if (Object.keys(blocking).length > 0) {
     const checklistState = Object.keys(sent).length
       ? await patchChecklistItem(ctx, appEngagementId, itemId, answers)

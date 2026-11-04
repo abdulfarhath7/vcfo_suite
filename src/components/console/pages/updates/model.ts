@@ -155,6 +155,7 @@ export const NOTE_META: Record<NotificationKind, NoteMeta> = {
   'schedule.window': { type: 'steps', icon: 'step', tone: 'due', what: 'A date change request waits for a decision' },
   'compliance.reminder': { type: 'steps', icon: 'bell', tone: 'due', what: 'A compliance item is due soon or overdue' },
   'compliance.task': { type: 'steps', icon: 'check', tone: 'mut', what: 'A compliance task was assigned or changed' },
+  'board.meeting': { type: 'steps', icon: 'team', tone: 'due', what: 'A board meeting needs a notice, an approval or its minutes' },
   'email.sent': { type: 'email', icon: 'send', tone: 'ok', what: 'An email the tool sent for you' },
   'email.skipped': { type: 'email', icon: 'mail', tone: 'mut', what: 'An email the tool did not send' },
   'email.failed': { type: 'email', icon: 'alert', tone: 'over', what: 'An email that could not be sent' },

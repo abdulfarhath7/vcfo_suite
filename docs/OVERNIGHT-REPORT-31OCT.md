@@ -103,3 +103,49 @@ Then run `npm run totp:reencrypt` through the tunnel (docs/context/AWS-DEPLOY.md
 | Rollback image | ✓ | `vcfo-suite:rollback-0f746dfc`. |
 | Image | ✓ | `vcfo-suite:b5f3f919` and `:latest`. App Runner deployment succeeded at 12:03 IST. |
 | Live check | ✓ | `/` and `/login` answer 200. No errors in the application log. Not checked signed in. |
+
+## 8. Deploy, 2 Nov 2026 18:03 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| `main` | ✓ | `fd08d4ac`: Ask VCFO robot fixes (PR #4 and PR #5). No migration and no infra change. |
+| Gate | ✓ | 0 type errors, 0 lint errors (518 warnings), 3,709 tests pass. |
+| Rollback image | ✓ | `vcfo-suite:rollback-b5f3f919`. |
+| Image | ✓ | `vcfo-suite:fd08d4ac` and `:latest`. App Runner deployment succeeded at 18:03 IST. |
+| Live check | ✓ | `/` and `/login` answer 200. No errors in the application log. Not checked signed in. |
+
+## 9. Deploy, 2 Nov 2026 18:41 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| `main` | ✓ | `7fb6b705`: Labour registers (PR #6). Adds migration 0033 (6 new tables, additive only). |
+| Gate | ✓ | 0 type errors, 0 lint errors (524 warnings), 3,794 tests pass. |
+| RDS snapshot | ✓ | `vcfo-suite-db-pre-0033-20261102-1823`. |
+| Migration 0033 on RDS | ✓ | Applied through the SSM tunnel on the NAT instance. RDS stayed private. The tunnel is closed. |
+| Rollback image | ✓ | `vcfo-suite:rollback-fd08d4ac`. |
+| Image | ✓ | `vcfo-suite:7fb6b705` and `:latest`. App Runner deployment succeeded at 18:41 IST. |
+| Live check | ✓ | `/` and `/login` answer 200. No errors in the application log. Not checked signed in. |
+
+## 10. Deploy, 3 Nov 2026 12:17 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| `main` | ✓ | `b54acd9d`: Client Details rework (PR #3), the previous landing page with the Ask VCFO robot (revert and PR #7), Board meetings (PR #8, migration 0034), Labour registers fix (PR #9) and the India map picker (PR #10). |
+| Gate | ✓ | 0 type errors, 0 lint errors (529 warnings), 3,832 tests pass. Migration chain checked; no schema drift. |
+| RDS snapshot | ✓ | `vcfo-suite-db-pre-0034-20261103-1202`. |
+| Migration 0034 on RDS | ✓ | 9 new tables, additive only. Applied through the SSM tunnel; RDS stayed private; the tunnel is closed. |
+| Rollback image | ✓ | `vcfo-suite:rollback-7fb6b705`. |
+| Image | ✓ | `vcfo-suite:b54acd9d` and `:latest`. App Runner deployment succeeded at 12:17 IST. |
+| Live check | ✓ | `/` and `/login` answer 200. No errors in the application log. Not checked signed in. |
+
+## 11. Deploy, 4 Nov 2026 09:24 IST
+
+| Step | Done | Detail |
+|---|---|---|
+| `main` | ✓ | `832949e1`: Labour registers lock, upload, projection and reconciliation (migration 0035), the checklist removal (PR #13, migration 0036), and Receivables phases 8 to 10 with partner portal, FX and forex desk (PR #14 and PR #16, migrations 0037 to 0040). |
+| Gate | ✓ | 0 type errors, 0 lint errors (541 warnings), 4,309 tests pass. Migration chain checked; no schema drift. |
+| RDS snapshot | ✓ | `vcfo-suite-db-pre-0035-20261104-0904`. |
+| Migrations 0035 to 0040 on RDS | ✓ | The owner ran them through the SSM tunnel; RDS stayed private; the tunnel is closed. 0036 dropped the two labour-register checklist tables, which had 0 rows each (the owner approved this exception to the additive-only rule). |
+| Rollback image | ✓ | `vcfo-suite:rollback-b54acd9d`. |
+| Image | ✓ | `vcfo-suite:832949e1` and `:latest`. App Runner deployment succeeded at 09:24 IST. |
+| Live check | ✓ | `/`, `/login` and `/receivables/login` answer 200. No errors in the application log. Not checked signed in. |

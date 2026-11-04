@@ -20,6 +20,7 @@ import {
   isWaitingOnLead,
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
+  stripClientOnlyResponses,
   stripLeadOnlyResponses,
   stripResponsesNotEditableBy,
 } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -95,6 +96,9 @@ export async function POST(request: Request, context: RouteContext) {
         );
       }
       patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
+    } else if (guard.ctx.role === 'intern' && directFlow && patchFields.responses) {
+      // Direct flow: the project lead never overwrites the client's own answers (Part A).
+      patch = { ...patchFields, responses: stripClientOnlyResponses(itemId, patchFields.responses) };
     } else if (guard.ctx.role === 'client') {
       const {
         reviewStatus: _rs,

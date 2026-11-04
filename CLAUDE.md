@@ -139,6 +139,10 @@ never make one depend on the other:
 
 ## Next steps / known issues
 
+- Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
+  before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
+  the notice to carry a Teams link.
+
 - `src/lib/email/email-layout.ts` still has its own literal palette (not Spectrum yet).
 - `npm run lint` has 0 errors and 329 warnings (mostly `react-refresh/only-export-components`).
 - `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features

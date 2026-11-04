@@ -77,6 +77,7 @@ import { getItem } from '@/data/checklist';
 import type { BoardResolutionMissingFieldRef } from '@/lib/api/board-resolution-errors';
 import { docPackStepPath } from '@/lib/doc-pack/paths';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { PART_A_SECTION } from '@/lib/checklist/part-a-sections';
 import {
   BoardResolutionEditorDocPanel,
   type BoardResolutionEditorProps,
@@ -295,7 +296,7 @@ export function BoardResolutionEditorView(
             <button
               type="button"
               onClick={() =>
-                router.push(docPackStepPath(eng, staffShell, 'pre-1', sectionSlug('Share Capital Details')))
+                router.push(docPackStepPath(eng, staffShell, 'pre-1', sectionSlug(PART_A_SECTION.shareCapital)))
               }
               className="font-medium text-brand-text hover:underline"
             >
