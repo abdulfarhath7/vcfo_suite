@@ -29,7 +29,7 @@ import {
   filingOutcome,
   openRegistrations,
   overdueFilingsNow,
-} from '@/components/super/insights/super-insights-model';
+} from '@/lib/super/super-insights-model';
 import { useSuperOverview } from '@/hooks/use-super-overview';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';

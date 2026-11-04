@@ -58,7 +58,7 @@ export function SuperAttentionPanel({
 }
 
 /** Overdue and blocked rows are the urgent ones (prototype: Overdue and Stuck). */
-export function isUrgentAttention(summary: SuperEngagementSummary): boolean {
+function isUrgentAttention(summary: SuperEngagementSummary): boolean {
   return summary.stateKey === 'overdue' || summary.stuckReason === 'blocked';
 }
 

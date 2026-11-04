@@ -47,9 +47,9 @@ export const FILING_SHOWN: Record<SixWord, string> = {
 };
 
 /** The status filter options in the order the prototype shows them. */
-export const STATUS_FILTER_ORDER: readonly FilingStatusFilter[] = ['all', 'overdue', 'due-soon', 'upcoming', 'filed'];
+const STATUS_FILTER_ORDER: readonly FilingStatusFilter[] = ['all', 'overdue', 'due-soon', 'upcoming', 'filed'];
 
-export const STATUS_FILTER_LABEL: Record<FilingStatusFilter, string> = {
+const STATUS_FILTER_LABEL: Record<FilingStatusFilter, string> = {
   all: 'All',
   overdue: 'Overdue',
   'due-soon': 'Due soon',

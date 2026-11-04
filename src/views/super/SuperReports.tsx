@@ -13,7 +13,7 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { plainDay } from '@/components/super/parts/super-text';
-import { buildRisks, type SuperTeamManager } from '@/components/super/insights/super-insights-model';
+import { buildRisks, type SuperTeamManager } from '@/lib/super/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ import { SavedReportsCard } from '@/components/super/reports/SavedReportsCard';
 import { useApp } from '@/context/AppContext';
 import { SBC_LOCKUP_DARK_SRC, SBC_LOCKUP_LIGHT_SRC } from '@/components/brand/SbcLogo';
 import { clientLine, onTimePct, recentMonths, type SavedReport } from '@/lib/reports/partner-report';
-import { registrationCounts } from '@/components/super/insights/super-insights-model';
+import { registrationCounts } from '@/lib/super/super-insights-model';
 import { useProspects } from '@/views/super/growth/use-growth-data';
 import { useFirmSettings } from '@/views/firm-settings/use-firm-settings';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
@@ -54,7 +54,7 @@ import { useSavedReportMutations, useSavedReports } from '@/views/super/reports/
  * `saved-reports-send` emails due schedules with the PDF attached. The prototype's fee report
  * stays out (R-37: no money).
  */
-export const SUPER_REPORTS_HREF = '/app/super/reports';
+const SUPER_REPORTS_HREF = '/app/super/reports';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 

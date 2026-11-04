@@ -117,7 +117,7 @@ export function DashSection({
 }
 
 /** Small link in a card head: "Open ›" (13px, blurple). */
-export function HeadLink({ href, children }: { href: string; children: ReactNode }) {
+function HeadLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}

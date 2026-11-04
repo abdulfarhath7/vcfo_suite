@@ -16,7 +16,7 @@ import {
 } from '@/components/super/parts/super-parts';
 import { shortCompany } from '@/components/super/parts/super-text';
 import { INC_STAGES, incStageOf, phaseNameOf } from '@/components/super/overview/super-overview-format';
-import type { SuperInsightClient } from '@/components/super/insights/super-insights-model';
+import type { SuperInsightClient } from '@/lib/super/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { usePracticeMetrics } from '@/components/metrics/use-metrics';
 import { ExpectedCoiCard } from '@/components/metrics/practice-cards';
@@ -30,7 +30,7 @@ import { superEngagementHref } from '@/lib/super/super-overview';
  * certificates. Read from the engagement rows and the step events. The client list lives on the
  * Clients page (Stage: Incorporating). Read-only.
  */
-export const SUPER_INCORPORATION_HREF = '/app/super/practice/incorporation';
+const SUPER_INCORPORATION_HREF = '/app/super/practice/incorporation';
 
 export default function SuperPracticeIncorporation() {
   const query = useSuperInsights();

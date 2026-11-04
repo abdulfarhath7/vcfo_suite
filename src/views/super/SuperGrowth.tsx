@@ -13,7 +13,7 @@ import {
 } from '@/components/super/parts/super-parts';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { SuperCapacityLines } from '@/components/super/overview/SuperCapacityCard';
-import { roomAcross } from '@/components/super/insights/super-insights-model';
+import { roomAcross } from '@/lib/super/super-insights-model';
 import { indexPeople, usePeopleMetrics } from '@/components/metrics/use-metrics';
 import { Button } from '@/components/ui/button';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -46,7 +46,7 @@ import { useDemoRequests, useProspectMutations, useProspects } from '@/views/sup
  * requests from the public "Book a demo" form (G-30) sit below with "Add as prospect", their only
  * home. No money (R-37).
  */
-export const SUPER_GROWTH_HREF = '/app/super/growth';
+const SUPER_GROWTH_HREF = '/app/super/growth';
 
 type PipelineView = 'board' | 'list';
 
