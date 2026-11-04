@@ -2,7 +2,7 @@
 
 /**
  * Top bar, VCFO Spectrum (prototype src/components/shell/TopBar.tsx): 60 px, white, a 1.5 px
- * line under it. SBC logo, then the location trail ("Northwind / Documents", the last part
+ * line under it. SBC logo, then the location trail ("Compliances / Filings", the last part
  * in ink 500), the 380 px search field with Ctrl K, the Before/After pill (desktop),
  * Announcements and Notifications (6 px square icon buttons, square red count) and the
  * theme switch. No profile and no Ask VCFO button in the top bar (R-45).
@@ -23,10 +23,9 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
   const act = activeKeyFor(pathname);
   const notif = shell?.badges.notifications ?? 0;
   const themeLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
-  /* The trail starts at the company ("Northwind / Documents"). A page may set its own trail
+  /* The trail is the sidebar's words ("Compliances / Filings"). A page may set its own trail
      (for example a step page); otherwise the route gives an optional middle part and the page. */
-  const pageTrail = crumbs && crumbs.length ? crumbs : [...(mid ? [mid] : []), crumb];
-  const trail = shell?.companyShort ? [shell.companyShort, ...pageTrail] : pageTrail;
+  const trail = crumbs && crumbs.length ? crumbs : [...(mid ? [mid] : []), crumb];
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -69,12 +68,12 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
           <ol className="tbar-ol">
             {trail.map((c, i) => {
               const last = i === trail.length - 1;
-              /* Narrow screens drop the company first, then every middle part (phones show the page only). */
-              const cls = last ? 'tbar-cur' : i === 0 && trail.length > 1 ? 'tbar-pre tbar-mid' : 'tbar-mid';
+              /* Phones show the page only. */
+              const cls = last ? 'tbar-cur' : 'tbar-mid';
               return (
                 <Fragment key={`${c}-${i}`}>
                   {i > 0 ? (
-                    <li aria-hidden="true" className={`tbar-sep ${i === 1 ? 'tbar-pre tbar-mid' : 'tbar-mid'}`}>
+                    <li aria-hidden="true" className="tbar-sep tbar-mid">
                       /
                     </li>
                   ) : null}
@@ -91,7 +90,7 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true" style={{ flex: 'none' }}>
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
             </svg>
-            <span className="tbar-sl">Search steps, filings, documents</span>
+            <span className="tbar-sl">Search clients, filings, documents</span>
             <kbd className="tbar-kbd">Ctrl K</kbd>
           </button>
           {bp === 'desktop' && showBa ? (
