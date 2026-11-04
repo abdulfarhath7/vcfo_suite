@@ -455,6 +455,21 @@ export function WorkScreen({
             ]
           : []),
         {
+          key: 'show',
+          set: kind !== 'all',
+          node: (
+            <FilterChip
+              label="Show"
+              value={kind === 'all' ? '' : kind}
+              options={[
+                { value: 'steps', label: 'Steps only' },
+                { value: 'filings', label: 'Filings only' },
+              ]}
+              onChange={(v) => go({ kind: (v || 'all') as InternWorkKindFilter })}
+            />
+          ),
+        },
+        {
           key: 'status',
           set: !!statusFilter,
           node: (
@@ -487,21 +502,6 @@ export function WorkScreen({
               },
             ]
           : []),
-        {
-          key: 'show',
-          set: kind !== 'all',
-          node: (
-            <FilterChip
-              label="Show"
-              value={kind === 'all' ? '' : kind}
-              options={[
-                { value: 'steps', label: 'Steps only' },
-                { value: 'filings', label: 'Filings only' },
-              ]}
-              onChange={(v) => go({ kind: (v || 'all') as InternWorkKindFilter })}
-            />
-          ),
-        },
         ...(tag
           ? [{ key: 'tag', set: true, node: <FilterChip label="Tag" value={tag} valueLabel={TAG_LABEL[tag]} options={[]} onChange={() => go({ tag: null })} /> }]
           : []),

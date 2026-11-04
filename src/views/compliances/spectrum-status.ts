@@ -36,6 +36,16 @@ export const FILING_WORD: Record<FilingStatus, SixWord> = {
   upcoming: 'Not started',
 };
 
+/** What a filing's word reads on screen: a filing is Filed or Upcoming, as in the prototype. */
+export const FILING_SHOWN: Record<SixWord, string> = {
+  'Not started': 'Upcoming',
+  'In progress': 'In progress',
+  Waiting: 'Waiting',
+  'Due soon': 'Due soon',
+  Overdue: 'Overdue',
+  Done: 'Filed',
+};
+
 /** The status filter options in the order the prototype shows them. */
 export const STATUS_FILTER_ORDER: readonly FilingStatusFilter[] = ['all', 'overdue', 'due-soon', 'upcoming', 'filed'];
 
@@ -43,12 +53,12 @@ export const STATUS_FILTER_LABEL: Record<FilingStatusFilter, string> = {
   all: 'All',
   overdue: 'Overdue',
   'due-soon': 'Due soon',
-  upcoming: 'Not started',
-  filed: 'Done',
+  upcoming: 'Upcoming',
+  filed: 'Filed',
 };
 
 /** The four register statuses in chart order (R-25: charts use status colours only). */
-export const CHART_STATUSES: readonly FilingStatus[] = ['overdue', 'due-soon', 'upcoming', 'filed'];
+export const CHART_STATUSES: readonly FilingStatus[] = ['filed', 'due-soon', 'overdue', 'upcoming'];
 
 /** Bar and swatch fills per status. */
 export const STATUS_FILL: Record<FilingStatus, string> = {

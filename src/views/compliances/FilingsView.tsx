@@ -523,7 +523,7 @@ export function FilingsView({
     className: 'hidden md:table-cell',
     render: (row) => <FilingAction row={row} now={now} href={recordHref(row)} />,
   };
-  const statusCol: GridColumn<FilingRow> = { key: 'status', label: 'Status', width: 128, render: (row) => <WordChip word={boardWord(row, details.get(row.id), now)} /> };
+  const statusCol: GridColumn<FilingRow> = { key: 'status', label: 'Status', width: 128, render: (row) => <WordChip filing word={boardWord(row, details.get(row.id), now)} /> };
   const noteCol: GridColumn<FilingRow> = {
     key: 'note',
     label: 'Note',
@@ -1074,7 +1074,7 @@ function RegisterTable({
           <FilingWindowCell row={row} mayWrite={mayWrite} />
         ),
     },
-    { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip word={boardWord(row, details.get(row.id), now)} /> },
+    { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip filing word={boardWord(row, details.get(row.id), now)} /> },
     {
       key: 'proof',
       header: 'Proof',

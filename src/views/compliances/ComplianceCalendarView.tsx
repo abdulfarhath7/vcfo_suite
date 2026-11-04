@@ -11,7 +11,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { AreaPill, Chip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { AreaPill, Chip, REG_WORD, regOf, type ChipTone } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import {
@@ -269,7 +269,7 @@ export function ComplianceCalendarView({
               className="min-w-0"
               items={[
                 { key: ALL_AREAS, label: 'All', count: counted.length },
-                ...areas.map((a) => ({ key: a, label: areaLabel(a), count: counted.filter((row) => row.compliance === a).length })),
+                ...areas.map((a) => ({ key: a, label: regOf(a) ? REG_WORD[regOf(a)!] : areaLabel(a), count: counted.filter((row) => row.compliance === a).length })),
               ]}
               value={areaOn}
               onChange={setArea}
@@ -440,7 +440,7 @@ function DayRow({ row, now, href, showCompany }: { row: FilingRow; now: Date; hr
           </span>
         </span>
       </span>
-      <WordChip word={filingWord(row, now)} />
+      <WordChip filing word={filingWord(row, now)} />
     </li>
   );
 }
@@ -521,7 +521,7 @@ function PopRow({ row, now, href }: { row: FilingRow; now: Date; href: string })
             <span className="truncate">{row.companyName}</span>
           </span>
         </span>
-        <WordChip word={filingWord(row, now)} />
+        <WordChip filing word={filingWord(row, now)} />
       </Link>
     </li>
   );

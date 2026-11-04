@@ -97,7 +97,7 @@ export function PlanTimeline({ items, now, onOpen }: { items: InternWorkItem[]; 
                     <ClientDot name={item.companyName} />
                     <span className="min-w-0">
                       <b className="block truncate text-[13px] font-medium text-ink hover:underline" title={item.title}>
-                        {item.title}
+                        {item.title.split(' · ')[0]}
                       </b>
                       <span className="block truncate text-[11.5px] text-ink-muted">
                         {shortCompany(item.companyName)} · {item.catalogLabel ?? (filing ? 'Filing' : 'To-do')}

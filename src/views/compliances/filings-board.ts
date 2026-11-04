@@ -69,8 +69,8 @@ export const BOARD_STATUS_OPTIONS: Array<{ value: Exclude<BoardStatus, ''>; labe
   { value: 'due-soon', label: 'Due soon' },
   { value: 'in-progress', label: 'In progress' },
   { value: 'waiting', label: 'Waiting' },
-  { value: 'upcoming', label: 'Not started' },
-  { value: 'filed', label: 'Done' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'filed', label: 'Filed' },
 ];
 
 /**
