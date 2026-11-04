@@ -12,7 +12,7 @@
 .tb-team .ibtn.ghost:hover{background:oklch(var(--ink) / .1)}
 .tb-team .ibtn[aria-disabled="true"],.tb-team .btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed}
 .tb-err{color:oklch(var(--danger));font-size:13px;font-weight:500}
-@media (max-width:767px){.tb-team .tb-contact{width:100%;padding-left:48px}.tb-team .tb-contact .ibtn{width:40px;height:40px}.tb-team .sx-head .sx-right{margin-left:0;width:100%}}
+@media (max-width:767px){.tb-team .tb-contact{box-sizing:border-box;width:100%;padding-left:48px}.tb-team .tb-contact .ibtn{width:40px;height:40px}.tb-team .sx-head .sx-right{margin-left:0;width:100%}}
 /* the empty filter: one faint centred line (prototype DataGrid empty cell) */
 .tb-team .tb-faint{padding:28px 16px;text-align:center;font-size:13px;color:oklch(var(--ink-faint))}
 /* seat dialog: one raised box, from › to */

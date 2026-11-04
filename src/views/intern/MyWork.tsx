@@ -678,10 +678,13 @@ export function WorkScreen({
               }
             />
           </div>
-          <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-            <WorkStatusCard title="My work · status" items={statusRows} />
-            <WorkAreaCard items={statusRows} />
-          </div>
+          {/* The lead's own summary; a manager's Work has none in the prototype. */}
+          {team ? null : (
+            <div className="mt-4 grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+              <WorkStatusCard title="My work · status" items={statusRows} />
+              <WorkAreaCard items={statusRows} />
+            </div>
+          )}
         </>
       ) : null}
 
