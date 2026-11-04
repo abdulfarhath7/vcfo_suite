@@ -419,6 +419,7 @@ export function FirmProjectsPanel({
       onRowClick={(r) => router.push(adminProjectPath(r.eng, '/app/admin'))}
       empty="No clients match these filters"
       minWidth={1000}
+      actionsColumn="step"
       pageSize={title ? Math.max(1, rows.length) : 10}
       columns={projectColumns}
       loading={engagementsLoading}

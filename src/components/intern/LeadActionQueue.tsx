@@ -184,7 +184,7 @@ export function LeadActionQueue({
       ) : (
         <>
           <div className="max-w-full overflow-x-auto">
-            <table className="w-full table-fixed border-collapse text-[14px]" style={{ minWidth: 640 }}>
+            <table className="w-full table-fixed border-collapse text-[14px]" style={{ minWidth: 720 }}>
               <caption className="sr-only">Action queue by client</caption>
               <colgroup>
                 <col />
