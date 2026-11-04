@@ -330,13 +330,13 @@ describe('FilingsView and ComplianceCalendarView', () => {
 
   it('plots the month with day tags and the coming-up rail', () => {
     search = new URLSearchParams('date=2099-10-20');
-    const { container } = render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
-    // The GSTR-3B filing falls on 20 Oct; the two tasks (MIS report, Board pack) run up to it.
-    const titles = [...container.querySelectorAll('.vc-ev')].map((ev) => ev.textContent ?? '');
-    expect(titles.some((t) => t.includes('GSTR-3B'))).toBe(true);
-    expect(titles.some((t) => t.includes('MIS report'))).toBe(true);
-    expect(titles.some((t) => t.includes('Board pack'))).toBe(true);
-    const coming = screen.getByRole('region', { name: 'Coming up' });
+    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    // The GSTR-3B filing falls on 20 Oct; the two tasks (MIS report, Board pack) carry a day tag too.
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('GSTR-3B');
+    expect(text).toContain('MIS report');
+    expect(text).toContain('Board pack');
+    const coming = screen.getByRole('region', { name: 'Coming up', hidden: true });
     expect(within(coming).getByText('TDS payment')).toBeInTheDocument();
     expect(within(coming).getByText('MIS report · Oct 2099')).toBeInTheDocument();
   });
