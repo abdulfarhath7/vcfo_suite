@@ -717,6 +717,9 @@ export function DocsCard({
 
 /* ------------------------------------------------------------ activity */
 
+/** C1: the Recent activity card shows this many rows, then a link to the Audit page. */
+export const ACTIVITY_ROWS = 5;
+
 export function ActivityCard({ h, className }: { h: HomeData; className?: string }) {
   const [tab, setTab] = useState('all');
   const all = h.home?.activity ?? [];
@@ -741,22 +744,33 @@ export function ActivityCard({ h, className }: { h: HomeData; className?: string
         />
       }
     >
-      {rows.length === 0 ? (
-        <Empty />
-      ) : (
-        <ul>
-          {rows.map((a) => (
-            <li key={a.id} className="grid grid-cols-[64px_minmax(0,1fr)] items-baseline gap-3 border-t border-line-soft px-4 py-2.5 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
-              <span className="text-[12.5px] text-ink-muted">
-                {dShort(istDate(a.at))}
-                <span className="hidden md:inline"> {istTime(a.at)}</span>
-              </span>
-              <span className="min-w-0 break-words text-ink">{a.label}</span>
-              <span className="truncate text-[12.5px] text-ink-muted md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* C1 (owner, 2026-10-30): the latest five rows in a fixed height, then "View all". */}
+      <div className="flex h-[264px] flex-col">
+        {rows.length === 0 ? (
+          <Empty />
+        ) : (
+          <ul className="min-h-0 flex-1 overflow-hidden">
+            {rows.slice(0, ACTIVITY_ROWS).map((a) => (
+              <li key={a.id} className="grid h-11 grid-cols-[64px_minmax(0,1fr)] items-center gap-3 border-t border-line-soft px-4 text-[13.5px] first:border-t-0 md:grid-cols-[64px_minmax(0,1fr)_110px] md:px-5">
+                <span className="text-[12.5px] leading-tight text-ink-muted">
+                  {dShort(istDate(a.at))}
+                  {/* C-071: the time shows from 768px. */}
+                  <span className="block font-mono text-[11.5px] text-ink-faint max-md:hidden">{istTime(a.at)}</span>
+                </span>
+                <span className="min-w-0 truncate text-ink" title={a.label}>
+                  {a.label}
+                </span>
+                <span className="truncate text-[12.5px] text-ink-muted max-md:hidden md:text-right">{a.actorKind === 'client' ? h.company : a.actorName}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-auto flex justify-end border-t border-line-soft px-4 py-2.5 md:px-5">
+          <HeadLink onClick={() => h.portal.go(portalHref('audit'))} label="View all activity on the Audit page">
+            View all <ChevronRight size={14} strokeWidth={1.6} aria-hidden />
+          </HeadLink>
+        </div>
+      </div>
     </SCard>
   );
 }

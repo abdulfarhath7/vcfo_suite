@@ -313,7 +313,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
             <input
               ref={inputRef}
               value={q}
-              placeholder="Search clients, steps, filings, documents"
+              placeholder="Search steps, filings, documents"
               aria-label="Search"
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={onKey}
@@ -371,7 +371,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
           <input
             ref={inputRef}
             value={q}
-            placeholder="Search clients, steps, filings, documents"
+            placeholder="Search steps, filings, documents"
             aria-label="Search"
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKey}

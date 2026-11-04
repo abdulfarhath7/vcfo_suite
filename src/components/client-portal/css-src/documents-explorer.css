@@ -14,7 +14,7 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .btn-o{background:oklch(var(--surface-raised));color:oklch(var(--ink));border-color:oklch(var(--line-strong))}.btn-o:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
 .ib{width:30px;height:30px;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:oklch(var(--surface-raised));color:oklch(var(--ink-2));display:inline-flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-sizing:border-box}
 .ib:hover{background:oklch(var(--surface-sunken));color:oklch(var(--ink))}
-.tg{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;border:1.5px dashed oklch(var(--line-strong));background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
+.tg{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:6px;border:1.5px solid oklch(var(--line-strong));background:none;color:oklch(var(--ink-2));font:500 13px var(--font-sans),sans-serif;cursor:pointer}
 .tg.on{border-style:solid;background:oklch(var(--brand-soft));color:oklch(var(--brand-text));border-color:oklch(var(--brand-line))}
 .seg{position:relative;display:inline-flex;gap:2px;flex-wrap:nowrap;padding:2px;border-radius:6px;background:oklch(var(--surface-sunken))}
 .seg>.thumb{display:none}
@@ -37,7 +37,7 @@ a{color:oklch(var(--brand-text));text-decoration:none;font-weight:500}a:hover{te
 .tr.sel .fico{background:oklch(var(--surface-raised))}
 /* R-26 file marks: 22 x 18 soft squares; a file not uploaded yet is an empty square (R-56: no dashes) */
 .ft{width:22px;min-width:22px;height:18px;padding:0;box-sizing:border-box;border-radius:4px;font:500 7.5px/18px var(--font-sans),sans-serif;letter-spacing:-.02em;text-align:center;flex:none}
-.ft-miss{width:22px;height:18px;flex:none;box-sizing:border-box;border-radius:4px;border:1.5px dashed oklch(var(--line-strong))}
+.ft-miss{width:22px;height:18px;flex:none;box-sizing:border-box;border-radius:4px;border:1.5px solid oklch(var(--line-strong))}
 .ft-miss.lg{width:44px;height:24px;border-radius:4px}
 .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .cnt{font:400 12.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
@@ -81,7 +81,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 /* ---------- v7 responsive (phone <=767 · tablet 768-1279 · desktop >=1280) ---------- */
 .vdoc{position:relative;width:100%;height:calc(100vh - var(--cp-top-h,63px) - var(--vp-launch-h,0px));height:calc(100dvh - var(--cp-top-h,63px) - var(--vp-launch-h,0px));min-height:508px;display:flex;background:var(--bg);font-family:var(--font-sans),system-ui,sans-serif;color:var(--fg);font-size:13px}
 .vdoc-col{flex:1;min-width:0;display:flex;flex-direction:column}
-.vdoc-main{flex:1;min-height:0;width:100%;max-width:1440px;margin-inline:auto;box-sizing:border-box;padding:var(--cp-gut-t) var(--cp-gut) var(--cp-gut-b);display:flex;flex-direction:column;gap:14px}
+.vdoc-main{flex:1;min-height:0;width:100%;max-width:1600px;margin-inline:auto;box-sizing:border-box;padding:clamp(16px,2vw,28px);display:flex;flex-direction:column;gap:14px}
 .vdoc-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:52px;padding:10px 12px;box-sizing:border-box;border-bottom:1px solid oklch(var(--line-soft));flex:none}
 .vdoc-q{flex:1 1 200px;max-width:260px;min-width:180px;box-sizing:border-box}
 .vdoc-sp{flex:1 1 0}
@@ -155,45 +155,47 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid oklch
 .vdoc-drop-cap{font-size:13px;color:oklch(var(--ink-muted))}
 /* the Older and Due marks hide under 640 px only */
 @media (min-width:640px) and (max-width:767px){.vdoc-hide-sm{display:revert}}
-/* ---------- the explorer as one white card, as in the prototype's DocumentsExplorer ----------
-   The toolbar runs across the top, the folder tree (440 px) on the left, the preview on the right
-   with its grey tray and a Step / From / Date / File list. */
-.vdoc-ex{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;color:oklch(var(--ink));background:oklch(var(--surface-raised));border:1px solid oklch(var(--line));border-radius:6px}
-.vdoc-ex .vdoc-q{flex:0 0 220px;min-width:140px;max-width:none}
-.vdoc-q .n{flex:none;font-size:12.5px;color:oklch(var(--ink-muted));font-variant-numeric:tabular-nums}
-.vdoc-ex .vdoc-acts{margin-left:auto;align-items:center}
-/* Download all shows its words only when the toolbar has room for them (the prototype's 2xl). */
-@media (min-width:640px) and (max-width:1535px){.vdoc-zipt{display:none}.vdoc-zip{width:30px;padding:0}}
-.vdoc-ex .vdoc-tree{width:clamp(320px,44%,440px);padding:8px 0;border-right:1px solid oklch(var(--line-soft))}
-.vdoc-ex .tr .main{padding-left:12px}
-/* one line per document: the mark, the name, a tag or a due chip, then the status square */
-.vdoc-tag{flex:none;display:inline-flex}
-.tr .lb.fl{flex:1 1 0}
+/* ---------- the explorer on the page (owner fix E1, 31 Oct 2026) ----------
+   No card: the toolbar, the folder tree and the preview sit on the page ground. One 2 px line
+   separates the tree from the preview; nothing else is boxed. The tree is the side panel. */
+.vdoc-ex{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;color:oklch(var(--ink))}
+.vdoc-ex .vdoc-tools{min-height:0;padding:0 0 12px;border-bottom:0}
+.vdoc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.vdoc-chips .sx-filter{height:30px;gap:6px}
+.vdoc-chips .sx-filter b{font-weight:500;color:oklch(var(--ink-muted))}
+.vdoc-chips .sx-filter[aria-pressed=true] b{color:inherit}
+.vdoc-ex .vdoc-tree{width:clamp(360px,48%,580px);padding:0 8px 8px 0;border-right:2px solid oklch(var(--line))}
+.vdoc-ex .tr .main{padding-left:8px}
+/* one line per document: the name, then the secondary text in faint ink, then the status chip */
+.tr .lb.fl{flex:0 1 auto}
+.vdoc-sub{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 13px var(--font-sans),sans-serif;color:oklch(var(--ink-faint))}
+.vdoc-st{flex:none;display:inline-flex}
 .tr.fd .lb{font-weight:500}
 .tr.over{background:oklch(var(--brand-soft));box-shadow:inset 0 0 0 1.5px oklch(var(--brand))}
-.sg.done{background:oklch(var(--positive-soft));color:oklch(var(--positive))}
-.sg.sbc{background:oklch(var(--brand-soft));color:oklch(var(--brand-text))}
-.sg.you{background:oklch(var(--warning-soft));color:oklch(var(--warning))}
-.sg.late{background:oklch(var(--danger-soft));color:oklch(var(--danger))}
 .vdoc-tree .menu a{display:flex;align-items:center;gap:10px;width:100%;height:34px;padding:0 10px;box-sizing:border-box;border-radius:4px;font:400 14px var(--font-sans),sans-serif;color:oklch(var(--ink));text-decoration:none}
 .vdoc-tree .menu a svg{color:oklch(var(--ink-muted))}
 .vdoc-tree .menu a:hover,.vdoc-tree .menu a:focus-visible{background:oklch(var(--surface-sunken));outline:none}
-.vdoc-ex .vdoc-pane{min-height:0}
+/* the preview: on the page ground, the paper is the only sheet */
+.vdoc-ex .vdoc-pane{padding-left:24px;min-height:0}
+.vdoc-ex .vdoc-ph{min-height:44px;padding:0;border-bottom:0}
+.vdoc-ex .vdoc-pv{background:none;padding:16px 0}
 .vdoc-kv{flex:none}
+.vdoc-ex .kv{padding:0}
 .vdoc-pg-k{display:block;font:400 11.5px var(--font-sans),sans-serif;color:oklch(var(--ink-muted));margin-top:4px}
 .vdoc-pg-k:first-child{margin-top:0}
 .vdoc-pg-t{display:block;font:600 18px var(--font-sans),sans-serif;margin-top:10px}
 .vdoc-pg-ln{display:block;height:6px;border-radius:3px;background:oklch(var(--surface-sunken));margin-top:9px}
 .vdoc-pg-k+.vdoc-pg-ln{margin-top:18px}
 /* the tree drop-down for narrow screens (hidden on wide screens) */
-.vdoc-tt{display:none;align-items:center;gap:8px;width:100%;min-width:0;height:44px;padding:0 12px;border:0;background:none;color:oklch(var(--ink));font:500 14px var(--font-sans),sans-serif;cursor:pointer;text-align:left}
+.vdoc-tt{display:none;align-items:center;gap:8px;width:100%;min-width:0;height:44px;padding:0 4px;border:0;background:none;color:oklch(var(--ink));font:500 14px var(--font-sans),sans-serif;cursor:pointer;text-align:left}
 .vdoc-tt svg{flex:none;color:oklch(var(--ink-muted))}
 .vdoc-tt-l{flex:none}
 @keyframes vdoc-dd{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media (max-width:999px){
   .vdoc-tt{display:flex}
-  .vdoc-tt[aria-expanded=false]{border-bottom:1px solid oklch(var(--line-soft))}
-  .vdoc-ex .vdoc-tree{width:auto;padding:4px 0 8px;border-right:0;border-bottom:1px solid oklch(var(--line-soft));animation:vdoc-dd .16s ease-out}
+  .vdoc-tt[aria-expanded=false]{border-bottom:2px solid oklch(var(--line))}
+  .vdoc-ex .vdoc-tree{width:auto;padding:4px 0 8px;border-right:0;border-bottom:2px solid oklch(var(--line));animation:vdoc-dd .16s ease-out}
   .vdoc-ex .vdoc-tree.shut{display:none}
+  .vdoc-ex .vdoc-pane{padding:12px 0 0}
 }
 @media (prefers-reduced-motion: reduce){.vdoc-ex .vdoc-tree{animation:none}}

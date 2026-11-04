@@ -90,7 +90,7 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true" style={{ flex: 'none' }}>
               <path d="M11 4.5a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13Z M16 16l4 4" />
             </svg>
-            <span className="tbar-sl">Search clients, filings, documents</span>
+            <span className="tbar-sl">Search steps, filings, documents</span>
             <kbd className="tbar-kbd">Ctrl K</kbd>
           </button>
           {bp === 'desktop' && showBa ? (

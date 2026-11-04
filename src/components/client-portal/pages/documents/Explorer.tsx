@@ -1,15 +1,17 @@
 'use client';
 
 /**
- * Documents explorer, desktop and tablet (prototype src/screens/shared/DocumentsExplorer.tsx): one
- * white card with a toolbar, a folder tree on the left and the preview of the picked file on the
- * right. A file row is the mark, the name, a tag or due chip and a status square.
+ * Documents explorer, desktop and tablet (owner fix E1, 31 Oct 2026). The layout is the one from
+ * before 30 Oct, made simpler: a toolbar, a folder tree on the left (folders open and close, like
+ * a code editor's side panel) and the preview of the picked file on the right. Nothing sits in a
+ * card: the parts sit on the page ground, and one 2 px line separates the tree from the preview.
  *
- * Every action stays: preview, download, folder ZIP, upload against a request by button, menu or a
- * dropped file, open step, verify, copy link, deep links. The open-folder view (`Drill.tsx`) opens
- * from the progress bars. Under 1000 px the tree folds into a drop-down above the preview.
+ * Kept from the 30 Oct table: the filter chips (All · Waiting on you · From SBC · Signed), one
+ * line per document with the secondary text in faint ink, a status chip column, and every action
+ * (preview, download, folder ZIP, upload against a request by button, menu or a dropped file,
+ * open step, verify, copy link, deep links). The open-folder view (`Drill.tsx`) opens from the
+ * progress bars. Under 1000 px the tree folds into a drop-down above the preview.
  */
-import { AlertCircle, Check, TrendingUp, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { OTHER_PHASE_ID, OTHER_PHASE_TITLE, type ClientDocumentsPayload, type DocNode } from '@/lib/client-portal/documents';
 import type { PortalIncorporationModel } from '@/lib/client-portal/step-model';
@@ -17,13 +19,15 @@ import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { onActivate } from '@/components/client-portal/a11y';
-import { Chip, Tag } from '@/components/ui/spectrum-chip';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { FileBadge } from '@/components/ui/file-badge';
 import { fileTag, longDate, previewMode } from './file-types';
 import {
   buildEntries,
+  DOC_FILTERS,
   fileUrl,
   folderCounts,
+  matchesFilter,
   missingLabel,
   STATUS_TONE,
   stripNo,
@@ -31,6 +35,7 @@ import {
   tagText,
   tagTip,
   treeRows,
+  type DocFilter,
   type TEntry,
   type TFolder,
   type View,
@@ -64,22 +69,6 @@ function Chev({ open, size = 15 }: { open: boolean; size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transition: 'transform .15s', transform: `rotate(${open ? 90 : 0}deg)` }}>
       <path d={CHEV} />
     </svg>
-  );
-}
-
-/** Status square: done green tick, with SBC blurple arrow, waiting on the client amber person, late red mark. */
-function StatusSquare({ n, company }: { n: DocNode; company: string }) {
-  const k = n.status === 'In review' ? 'sbc' : n.status === 'Missing' ? (n.overdue ? 'late' : 'you') : 'done';
-  const cfg = {
-    done: { Icon: Check, tip: `Done · ${n.status === 'Final' ? 'from SBC' : 'approved'}` },
-    sbc: { Icon: TrendingUp, tip: 'With SBC · in review' },
-    you: { Icon: User, tip: `Waiting on ${company}` },
-    late: { Icon: AlertCircle, tip: 'Late' },
-  }[k];
-  return (
-    <span className={`sg ${k}`} title={cfg.tip} role="img" aria-label={cfg.tip}>
-      <cfg.Icon size={13} strokeWidth={2} aria-hidden />
-    </span>
   );
 }
 
@@ -122,7 +111,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const isOpen = useCallback((id: string) => open[id] ?? true, [open]);
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState(true);
+  const [filter, setFilter] = useState<DocFilter>('all');
   const [hid, setHid] = useState(false);
   const [menu, setMenu] = useState('');
   const [sel, setSel] = useState<string | null>(null);
@@ -146,11 +135,12 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
   const files = useMemo(() => entries.filter((e): e is Extract<TEntry, { kind: 'file' }> => e.kind === 'file'), [entries]);
   const under = useCallback((id: string) => files.filter((f) => ancestors(f).includes(id)), [files, ancestors]);
   const ql = q.trim().toLowerCase();
-  const shown = useCallback(
-    (n: DocNode) => (hid || !n.replaced) && (!ql || n.label.toLowerCase().includes(ql) || n.fileName.toLowerCase().includes(ql)),
+  const pass = useCallback(
+    (n: DocNode, f: DocFilter) => (hid || !n.replaced) && matchesFilter(n, f) && (!ql || n.label.toLowerCase().includes(ql) || n.fileName.toLowerCase().includes(ql)),
     [hid, ql],
   );
-  const count = files.filter((x) => shown(x.node)).length;
+  const shown = useCallback((n: DocNode) => pass(n, filter), [pass, filter]);
+  const counts = useMemo(() => Object.fromEntries(DOC_FILTERS.map((f) => [f.id, files.filter((x) => pass(x.node, f.id)).length])) as Record<DocFilter, number>, [files, pass]);
 
   const scrollTo = (id: string) => setTimeout(() => treeRef.current?.querySelector(`[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }), 50);
 
@@ -329,22 +319,29 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
               setMenu('');
             }}
           />
-          <span className="n">
-            {count}/{files.length}
-          </span>
         </label>
-        <button type="button" className="sx-filter tip" data-tip="Show the status squares" aria-pressed={status} onClick={() => setStatus((v) => !v)}>
-          <span className="vdoc-dots" aria-hidden="true">
-            <i style={{ background: 'oklch(var(--positive-mid))' }} />
-            <i style={{ background: 'oklch(var(--brand))' }} />
-            <i style={{ background: 'oklch(var(--warning-mid))' }} />
-          </span>
-          Status
-        </button>
+        <div className="vdoc-chips" role="group" aria-label="Show">
+          {DOC_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="sx-filter"
+              aria-pressed={filter === f.id}
+              onClick={() => {
+                setMenu('');
+                setFilter(f.id);
+              }}
+            >
+              {f.label}
+              <b className="mono">{counts[f.id]}</b>
+            </button>
+          ))}
+        </div>
         <button type="button" className="sx-filter tip" data-tip="Show files that were replaced" aria-pressed={hid} onClick={() => setHid((v) => !v)}>
           <Ico d={EYE_OFF} size={14} />
           Replaced
         </button>
+        <span className="vdoc-sp" />
         <div className="sx-seg" role="tablist" aria-label="Arrange by">
           {(['By step', 'By category'] as const).map((l, i) => (
             <button
@@ -363,9 +360,9 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
           ))}
         </div>
         <span className="vdoc-acts">
-          <button type="button" className="sx-btn sm vdoc-zip" disabled={!zipAllCount} aria-label="Download all (ZIP)" title="Download all (ZIP)" onClick={() => void zip.startZip('all', `${company} documents`, zipAllCount)}>
+          <button type="button" className="sx-btn sm" disabled={!zipAllCount} onClick={() => void zip.startZip('all', `${company} documents`, zipAllCount)}>
             <Ico d={DL} />
-            <span className="vdoc-zipt">Download all (ZIP)</span>
+            Download all (ZIP)
           </button>
           {openReq > 0 ? (
             <button type="button" className="sx-btn sm p" onClick={() => onUpload()}>
@@ -405,6 +402,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
             const tip = folder ? `${stripNo(folder.label)} · ${c.ok} received · ${c.rv} in review · ${c.ms} missing` : '';
             const tabbable = (focusId ?? sel ?? rows[0]?.e.id) === e.id || (!rows.some((x) => x.e.id === (focusId ?? sel)) && i === 0);
             const step = f ? stepOf(f) : undefined;
+            const sub = !f ? null : f.replaced ? 'Replaced' : f.stale ? 'Older than 2 months' : f.note ? `“${f.note}”` : missing ? null : f.fileName;
             return (
               <div
                 key={e.id}
@@ -445,24 +443,20 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                   ) : null}
                   {missing ? <span className="ft-miss" role="img" aria-label="Not uploaded yet" /> : null}
                   <span className={`lb${f ? ' fl' : ''}${missing ? ' miss' : ''}`}>{f ? f.label : folder!.label}</span>
-                  {f?.stale && !f.replaced ? (
-                    <span className="vdoc-tag cp-tw">
-                      <Tag tone="warn">Older than 2 months</Tag>
+                  {f ? <span className="vdoc-sub">{sub}</span> : null}
+                  {f ? (
+                    <span className="vdoc-st">
+                      {missing ? (
+                        <Chip fixed raw tone={f.overdue ? 'bad' : 'warn'}>
+                          {missingLabel(f)}
+                        </Chip>
+                      ) : (
+                        <Chip fixed raw tone={STATUS_TONE[f.status]}>
+                          {f.status}
+                        </Chip>
+                      )}
                     </span>
                   ) : null}
-                  {f?.replaced ? (
-                    <span className="vdoc-tag cp-tw">
-                      <Tag>Replaced</Tag>
-                    </span>
-                  ) : null}
-                  {missing ? (
-                    <span className="vdoc-tag cp-tw">
-                      <Chip fixed raw tone={f!.overdue ? 'bad' : 'warn'}>
-                        {missingLabel(f!)}
-                      </Chip>
-                    </span>
-                  ) : null}
-                  {f && status && !f.replaced ? <StatusSquare n={f} company={company} /> : null}
                   {folder && folder.level === 'phase' ? <span className="cnt">{kids.filter((x) => !x.replaced).length}</span> : null}
                 </button>
                 {isBar ? (
@@ -632,7 +626,7 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
                 className="sx-btn sm"
                 onClick={() => {
                   setQ('');
-                  setHid(false);
+                  setFilter('all');
                 }}
               >
                 Show all
