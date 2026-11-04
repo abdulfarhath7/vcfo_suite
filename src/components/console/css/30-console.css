@@ -2434,7 +2434,8 @@
 .cpx.gx .gx-me { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font: 600 11.5px var(--f-mono); color: #e6edf3; background: #161c24; box-shadow: 0 0 0 1.5px var(--gx-acc); }
 .cpx.gx .gx-ctx { position: absolute; top: 0; bottom: 0; left: 56px; width: 236px; display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: thin; background: var(--sb-bg); border-right: 1px solid var(--sb-line); box-shadow: 18px 0 40px -18px rgba(0, 0, 0, .7); opacity: 0; visibility: hidden; transform: translateX(-10px); transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s; }
 .cpx.gx .mx-side.gx-open .gx-ctx { opacity: 1; visibility: visible; transform: none; transition: opacity .16s ease, transform .16s ease, visibility 0s; }
-.cpx.gx .mx-side { width: 56px; position: sticky; }
+/* margin: 0 — Tailwind reads the class `mx-side` as its `mx-*` utility with the `side` (248px) spacing. */
+.cpx.gx .mx-side { width: 56px; position: sticky; margin: 0; }
 .cpx.gx .gx-tip { display: none; }
 .cpx.gx .gx-ctx .logo { display: none; }
 .cpx.gx .gx-ch { display: flex; flex-direction: column; gap: 3px; padding: 18px 16px 12px; border-bottom: 1px solid var(--sb-line); }
