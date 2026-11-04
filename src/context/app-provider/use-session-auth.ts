@@ -153,6 +153,9 @@ export function useSessionAuth({
     setInvites([]);
     setActivity([]);
     setDbChecklistState({});
+    // Leave the signed-in page. Without this the sidebar's Sign out left the page on a
+    // loading state with no user; a full load also drops every cached page of the old session.
+    window.location.replace('/login');
   }, [
     queryClient,
     dismissedIdsRef,

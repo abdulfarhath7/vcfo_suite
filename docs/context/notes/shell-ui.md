@@ -115,3 +115,13 @@ Gotchas already paid for once. Append when something costs more than a minute to
   darkens those surfaces (otherwise the white lockup lands on a pale panel).
 - Do not change `variant="navbar"` / TopBar / RoleSidebar from this work —
   shell owns those. Left `public/sbc-logo.png` to the shell agent.
+
+## Sign out must leave the page (2026-11-04)
+
+- `useApp().signOut()` (`src/context/app-provider/use-session-auth.ts`) signs out with
+  `redirect: false` and clears the provider. Until 2026-11-04 it never navigated, so the
+  admin and super admin sidebar button (`RoleSidebar`) left the page on a loading state
+  with no user. It now ends with `window.location.replace('/login')`; a full load also drops
+  the old session's cached pages. Callers that `router.push('/login')` afterwards are harmless.
+- The portal and console menus call next-auth's `signOut({ callbackUrl: '/login' })` directly;
+  measured 2026-11-04: about 0.1 s from the sign-out request to the login page.
