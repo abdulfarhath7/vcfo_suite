@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 const AREA_HREFS: Record<SuperPracticeArea['area'], string> = {
   Incorporation: '/app/super/practice/incorporation',
   Registrations: '/app/super/practice/registrations',
-  Compliances: '/app/admin/compliances/calendar',
+  Compliances: '/app/super/practice/compliances',
 };
 
 const HEALTH_TONE: Record<SuperAreaHealth, ChipTone> = { 'On track': 'ok', Watch: 'warn', 'At risk': 'bad' };
@@ -31,12 +31,12 @@ export function SuperPracticeAreasPanel({ insights }: { insights: SuperInsights 
   const rows = buildPracticeAreas(insights, AREA_HREFS, new Date());
 
   const columns: EFilingColumn<SuperPracticeArea>[] = [
-    { key: 'area', header: 'Area', render: (r) => <span className="font-medium">{r.area}</span> },
+    { key: 'area', header: 'Area', render: (r) => <span className="font-medium text-ink">{r.area}</span> },
     { key: 'active', header: 'Active clients', width: '120px', align: 'right', render: (r) => <span className="tabular-nums">{r.active}</span> },
     {
       key: 'done',
       header: 'Done this month',
-      width: '130px',
+      width: '134px',
       align: 'right',
       render: (r) =>
         r.doneThisMonth === null ? (
@@ -48,21 +48,21 @@ export function SuperPracticeAreasPanel({ insights }: { insights: SuperInsights 
     {
       key: 'overdue',
       header: 'Overdue',
-      width: '90px',
+      width: '84px',
       align: 'right',
       render: (r) => <span className={cn('tabular-nums', r.overdue > 0 && 'font-medium text-danger')}>{r.overdue}</span>,
     },
     {
       key: 'health',
       header: 'Health',
-      width: '130px',
+      width: '170px',
       render: (r) => (
         <Chip fixed tone={HEALTH_TONE[r.health]}>
           {r.health}
         </Chip>
       ),
     },
-    { key: 'lead', header: 'Lead manager', width: '140px', render: (r) => <span className="truncate">{r.leadManager ?? '–'}</span> },
+    { key: 'lead', header: 'Lead manager', width: '110px', render: (r) => <span className="truncate">{r.leadManager ?? '–'}</span> },
   ];
 
   return (

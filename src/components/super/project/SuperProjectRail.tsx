@@ -141,7 +141,7 @@ export function SuperFilingsPanel({ detail }: { detail: SuperEngagementDetail })
 
 export function SuperTeamPanel({ detail }: { detail: SuperEngagementDetail }) {
   return (
-    <DashSection title="Team" meta={detail.team.length || undefined} bodyClassName="p-0">
+    <DashSection title="Team" meta={detail.team.length || undefined} flush>
       {detail.team.length === 0 ? (
         <div className="p-4">
           <EmptyState title="Nobody assigned yet" />
@@ -149,7 +149,7 @@ export function SuperTeamPanel({ detail }: { detail: SuperEngagementDetail }) {
       ) : (
         <ul>
           {detail.team.map((member) => (
-            <li key={member.id} className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0">
+            <li key={member.id} className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
               <PersonAvatar name={member.name} size={28} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13.5px] font-medium text-ink">{member.name}</span>
@@ -168,7 +168,7 @@ export function SuperActivityPanel({ detail }: { detail: SuperEngagementDetail }
   const entries = detail.activity;
 
   return (
-    <DashSection title="Audit" href="/app/admin/audit-log" hrefLabel="Full log" bodyClassName="p-0">
+    <DashSection title="Audit" flush>
       {entries.length === 0 ? (
         <div className="p-4">
           <EmptyState title="No activity yet" />
@@ -176,7 +176,7 @@ export function SuperActivityPanel({ detail }: { detail: SuperEngagementDetail }
       ) : (
         <ul>
           {entries.map((entry) => (
-            <li key={entry.id} className="flex min-w-0 items-start gap-3 border-t border-line-soft px-4 py-3 first:border-t-0">
+            <li key={entry.id} className="flex min-w-0 items-start gap-3 border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
               <PersonAvatar name={entry.actor ?? 'System'} />
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] leading-snug text-ink">{entry.label}</span>
