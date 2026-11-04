@@ -358,6 +358,7 @@ function TeamTasksBody({ rows, tools, loading, viewParam }: Props & { viewParam:
                   bulkNoun: ['task', 'tasks'] as [string, string],
                   // M-27 (D1): Open and Remind at the row end, then the row menu with Reassign (A)
                   // and Copy link (C). The row column holds three buttons, so Reassign lives in the menu.
+                  actionsColumn: 'task',
                   rowActions: (r: TeamTaskRow) => (
                     <RowQuickActions onOpen={() => router.push(r.href)} onRemind={teamRowRemindKey(r) ? () => remind([r]) : undefined}>
                       <RowMoreMenu

@@ -253,7 +253,7 @@ export default function FirmDashboard() {
               rows={managerStrip}
               rowKey={(row) => row.managerId}
               empty="No open Pre/Post projects."
-              minWidth={canSetCapacity ? 960 : 860}
+              minWidth={canSetCapacity ? 860 : 760}
               columns={[
                 {
                   key: 'name',

@@ -28,7 +28,7 @@ export function LeadSideRail({ items, mailHref = '/app/intern/mail', title = 'Wa
         ) : (
           <ul>
             {waiting.map((item) => (
-              <li key={item.id} className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0">
+              <li key={item.id} className="flex min-w-0 items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0 md:px-5">
                 <ClientDot name={item.companyName} />
                 <span className="min-w-0 flex-1">
                   <Link href={item.href} className="block truncate font-medium text-ink hover:underline" title={item.title}>

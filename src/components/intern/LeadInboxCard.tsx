@@ -174,7 +174,7 @@ function TriageList({ engagementIds }: { engagementIds?: Set<string> }) {
       <div className="px-4 pb-2 pt-3">
         <SpectrumTabs
           label="Triage"
-          className="gap-3"
+          className="gap-1 [&>button]:px-2"
           items={MESSAGE_TRIAGE.map((t) => ({ key: t, label: MESSAGE_TRIAGE_LABEL[t], ...(count(t) ? { count: count(t) } : {}) }))}
           value={state}
           onChange={(k) => {

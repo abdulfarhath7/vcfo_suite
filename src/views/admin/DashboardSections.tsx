@@ -263,7 +263,6 @@ export function AdminDashboardView({
           </div>
           <div className="flex min-w-0 flex-col gap-5">
             <DashboardApprovalsPanel />
-            <BoardMeetingsCard />
             <TaskStatusCard rows={teamRows} />
             <WorkloadByLeadCard rows={teamRows} rebalanceHref={`${projectBase}/team`} />
           </div>
@@ -290,6 +289,7 @@ export function AdminDashboardView({
           <div className="flex min-w-0 flex-col gap-5">
             {userId ? <LeadInboxCard userId={userId} items={teamItems} engagementIds={scopedIds} /> : null}
             <LeadSideRail items={teamItems} mailHref={`${staffBase}/mail`} />
+            <BoardMeetingsCard />
             {userId ? <TeamTodosPanel userId={userId} /> : null}
           </div>
         </div>

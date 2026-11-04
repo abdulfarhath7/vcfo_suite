@@ -107,7 +107,8 @@ export function DashSection({
       <CardLoadBody
         loading={loading || switching}
         variant={loadingVariant}
-        className={cn(!flush && 'px-4 py-4 md:px-5', bodyClassName)}
+        // `p-0` on the body means flush: tailwind-merge alone leaves `md:px-5` behind and insets the rows.
+        className={cn(!flush && bodyClassName !== 'p-0' && 'px-4 py-4 md:px-5', bodyClassName)}
       >
         {children}
       </CardLoadBody>

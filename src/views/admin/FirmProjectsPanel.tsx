@@ -235,7 +235,7 @@ export function FirmProjectsPanel({
         </span>
       ),
     },
-    { key: 'manager', header: 'Manager', width: '92px', render: (r) => managerName(r.eng.managerId ?? r.eng.adminId) },
+    { key: 'manager', header: 'Manager', width: '92px', render: (r) => <span title={managerName(r.eng.managerId ?? r.eng.adminId)}>{managerName(r.eng.managerId ?? r.eng.adminId).split(/\s+/)[0]}</span> },
     {
       key: 'stage',
       header: 'Stage',
@@ -249,7 +249,7 @@ export function FirmProjectsPanel({
     {
       key: 'next',
       header: 'Next',
-      width: '64px',
+      width: '76px',
       render: (r) => {
         const d = nextScheduleDate(r.eng.schedule, todayIso);
         return d ? <span className={cn('tabular-nums', d < todayIso && 'font-medium text-danger')}>{shortDate(d)}</span> : '—';
@@ -258,7 +258,7 @@ export function FirmProjectsPanel({
     {
       key: 'health',
       header: 'Health',
-      width: '132px',
+      width: '148px',
       render: (r) => (
         <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
           {r.facts.health}
