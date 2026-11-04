@@ -25,11 +25,6 @@ import { cn } from '@/lib/utils';
    Managers tab reads `useFirmWorkRows` and the Project leads tab `useTeamWork`; both build on
    `buildInternWorkItems`, so a row is the same item the lead sees on their own Work page. */
 
-const STATUS_FILTER = [
-  { value: 'open', label: 'Open' },
-  ...TODAY_STATUS_ORDER.map((s) => ({ value: s.status, label: s.status })),
-];
-
 const STATUS_RANK = Object.fromEntries(TODAY_STATUS_ORDER.map((s, i) => [s.status, i])) as Record<string, number>;
 
 function sortRows(rows: FirmWorkRow[]): FirmWorkRow[] {
@@ -85,7 +80,7 @@ const statusColumn: EFilingColumn<FirmWorkRow> = {
 };
 
 function useFiltered(rows: FirmWorkRow[], person: (r: FirmWorkRow) => string) {
-  const [status, setStatus] = useState('open');
+  const [status, setStatus] = useState('');
   const [who, setWho] = useState('');
   const [company, setCompany] = useState('');
   const shown = sortRows(
@@ -123,19 +118,16 @@ export function ManagersWorkPanel() {
     { key: 'item', header: 'Item', render: (r) => <ItemCell row={r} /> },
     { key: 'company', header: 'Company', width: '200px', render: (r) => <CompanyCell row={r} /> },
     { key: 'manager', header: 'Manager', width: '132px', render: (r) => <PersonCell name={r.managerName} /> },
-    { key: 'lead', header: 'Lead', width: '120px', render: (r) => <PersonCell name={r.leadName} /> },
     dueColumn,
     statusColumn,
   ];
 
-  const anyFilter = f.status !== 'open' || Boolean(f.who) || Boolean(f.company);
+  const anyFilter = Boolean(f.who) || Boolean(f.company);
   const scoped = rows.filter((r) => (!f.who || r.managerId === f.who) && (!f.company || r.engagementId === f.company));
 
   return (
-    <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
-      <DashSection title="Managers' items" meta={String(f.shown.length)} bodyClassName="p-0" loading={loading}>
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-          <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-center gap-2">
           <FilterChip label="Manager" value={f.who} options={options(rows, (r) => r.managerId, (r) => r.managerName)} onChange={f.setWho} />
           <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
           {anyFilter ? (
@@ -143,7 +135,6 @@ export function ManagersWorkPanel() {
               size="sm"
               variant="link"
               onClick={() => {
-                f.setStatus('open');
                 f.setWho('');
                 f.setCompany('');
               }}
@@ -151,20 +142,19 @@ export function ManagersWorkPanel() {
               Clear
             </Button>
           ) : null}
-        </div>
-        <div className="border-t border-line-soft px-2 pb-3">
-          <EFilingGrid
-            caption="Managers' items"
-            columns={columns}
-            rows={f.shown}
-            rowKey={(r) => r.id}
-            onRowClick={(r) => router.push(r.href)}
-            rowClassName={(r) => (r.status === 'Overdue' ? 'bg-danger-soft/40' : undefined)}
-            pageSize={13}
-            minWidth={820}
-            empty="No items match these filters"
-          />
-        </div>
+      </div>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
+      <DashSection title="Manager items" meta={String(f.shown.length)} flush loading={loading}>
+        <EFilingGrid
+          caption="Manager items"
+          columns={columns}
+          rows={f.shown}
+          rowKey={(r) => r.id}
+          onRowClick={(r) => router.push(r.href)}
+          pageSize={13}
+          minWidth={700}
+          empty="No items match these filters"
+        />
       </DashSection>
       <div className="flex min-w-0 flex-col gap-5">
       <WorkStatusCard title="Status" items={scoped} loading={loading} />
@@ -213,6 +203,7 @@ export function ManagersWorkPanel() {
         ) : null}
       </DashSection>
       <WorkAreaCard items={scoped} loading={loading} />
+      </div>
       </div>
     </div>
   );

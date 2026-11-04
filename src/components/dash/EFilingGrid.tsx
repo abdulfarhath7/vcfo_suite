@@ -106,6 +106,7 @@ export function EFilingGrid<T>({
   bulkNoun,
   rowActions,
   rowShortcuts,
+  actionsColumn,
   stickyHead,
   stickyTop = 'var(--shell-sticky-top)',
   stickyFirstColumn,
@@ -144,6 +145,8 @@ export function EFilingGrid<T>({
   rowActions?: (row: T) => ReactNode;
   /** E-02: one-key actions on a focused row. */
   rowShortcuts?: EFilingRowShortcut<T>[];
+  /** E-02: show the row actions over the right end of this column (a text column) instead of in a column of their own. The density switch then sits in this column's head. */
+  actionsColumn?: string;
   /** E-09: sticky head. */
   stickyHead?: boolean;
   /** Where the sticky head stops: the top bar plus the ribbon by default. Pass 0 inside a scrolling panel. */
@@ -238,7 +241,7 @@ export function EFilingGrid<T>({
       )
     : [];
 
-  const trailing = !!rowActions || !!densityScope;
+  const trailing = (!!rowActions || !!densityScope) && !actionsColumn;
   const colCount = columns.length + (selectable ? 1 : 0) + (trailing ? 1 : 0);
   const headTop = sticky.fits ? stickyTop : undefined;
   const stickTh = stickyHead ? 'sticky z-[2] bg-surface-raised' : '';
@@ -315,9 +318,15 @@ export function EFilingGrid<T>({
                     ci === 0 && firstSticky,
                     ci === 0 && stickyFirstColumn && 'max-sm:z-[3]',
                     bulk && ci === 0 && cn('z-[4] overflow-visible', stickyHead ? null : stickyFirstColumn ? 'sm:relative' : 'relative'),
+                    c.key === actionsColumn && !stickyHead && 'relative',
                   )}
                 >
                   {c.header}
+                  {c.key === actionsColumn && !bulk && densityScope && densityProp === undefined ? (
+                    <span className="absolute inset-y-0 right-1 flex items-center normal-case tracking-normal max-md:hidden">
+                      <DensityMenu value={density} onChange={setStoredDensity} />
+                    </span>
+                  ) : null}
                   {bulk && ci === 0 ? (
                     // E-01: the bar covers the head row while rows are picked, so the rows do not move.
                     <div
@@ -464,10 +473,16 @@ export function EFilingGrid<T>({
                           c.wrap ? 'whitespace-normal' : 'truncate whitespace-nowrap',
                           ci === 0 && firstSticky,
                           ci === 0 && !selectable && mark && 'relative',
+                          c.key === actionsColumn && 'relative',
                         )}
                       >
                         {ci === 0 && !selectable ? mark : null}
                         {c.render(row)}
+                        {c.key === actionsColumn && rowActions ? (
+                          <span className="invisible absolute inset-y-0 right-1 flex items-center gap-0.5 bg-surface-raised pl-1.5 group-hover/row:visible group-focus-within/row:visible group-focus-visible/row:visible max-md:hidden">
+                            {rowActions(row)}
+                          </span>
+                        ) : null}
                       </td>
                     ))}
                     {trailing ? (

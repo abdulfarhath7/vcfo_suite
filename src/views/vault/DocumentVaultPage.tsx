@@ -26,9 +26,8 @@ import {
 } from '@/lib/documents/vault-documents';
 import { internVisibleDocuments } from '@/lib/documents/document-access';
 import { useIndexedDocuments } from '@/hooks/use-vault-documents';
-import { adminProjectPath, internEngagementPath } from '@/lib/projects/project-step-path';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
-import { ArrowUpRight, Download, EyeOff, Search, Upload } from 'lucide-react';
+import { Download, EyeOff, Search, Upload } from 'lucide-react';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { toastUndo } from '@/components/ui/undo-toast';
 import { toastError } from '@/lib/toast-errors';
@@ -43,7 +42,7 @@ import {
   type VaultMenuItem,
 } from '@/views/vault/vault-explorer-parts';
 import { DocViewerOverlay, type DocViewerItem } from '@/views/doc-viewer/DocViewerOverlay';
-import { formatUploadDate } from '@/views/vault/vault-tree';
+import { formatUploadDate, withStepPhases } from '@/views/vault/vault-tree';
 import { buildVaultTree, type VaultTreeView } from '@/views/vault/vault-tree';
 import {
   entityDocs as allEntityDocs,
@@ -81,7 +80,7 @@ import type { VaultDocument } from '@/lib/documents/vault-documents';
 /** R-10 toggle filter: on is the soft blurple fill, off is a plain edge (R-56). */
 const FILTER = 'inline-flex h-[30px] flex-none items-center gap-2 rounded-md border-1.5 px-2.5 text-[13px] font-medium';
 const FILTER_ON = 'border-brand-line bg-brand-soft text-brand-text';
-const FILTER_OFF = 'border-line-strong text-ink-2 hover:bg-surface-sunken';
+const FILTER_OFF = 'border-dashed border-line-strong text-ink-2 hover:bg-surface-sunken';
 
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
 
@@ -237,7 +236,8 @@ function DocumentVaultPageContent() {
       : null) ??
     entityGroups[0]?.engagementId ??
     null;
-  const selectedEntity = entityGroups.find((g) => g.engagementId === selectedEntityId) ?? null;
+  const selectedEntityRaw = entityGroups.find((g) => g.engagementId === selectedEntityId) ?? null;
+  const selectedEntity = useMemo(() => (selectedEntityRaw ? withStepPhases(selectedEntityRaw) : null), [selectedEntityRaw]);
 
   const treeRows = useMemo(
     () => (selectedEntity ? buildVaultTree(selectedEntity, view, closed) : []),
@@ -272,11 +272,6 @@ function DocumentVaultPageContent() {
   const pool = isSearching ? searchHits.map((h) => h.doc) : entityDocs;
   const selectedDoc =
     pool.find((d) => d.id === selectedDocId) ?? visibleDocs[0] ?? pool[0] ?? null;
-
-  const projectHref = (engagementId: string, slug?: string) => {
-    const target = { id: engagementId, slug };
-    return isIntern ? internEngagementPath(target) : adminProjectPath(target, staffBase);
-  };
 
   function setChecked(id: string, on: boolean) {
     setCheckedIds((prev) => {
@@ -528,7 +523,7 @@ function DocumentVaultPageContent() {
                 className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-ink-faint"
               />
               <span className="flex-none text-[12.5px] tabular-nums text-ink-muted">
-                {isSearching ? `${searchHits.length}/${allDocs.length}` : selectedEntity?.docCount ?? 0}
+                {isSearching ? `${searchHits.length}/${allDocs.length}` : `${selectedEntity?.docCount ?? 0}/${selectedEntity?.docCount ?? 0}`}
               </span>
             </label>
 
@@ -601,20 +596,6 @@ function DocumentVaultPageContent() {
               </span>
             ) : null}
 
-            {selectedEntity && !isSearching ? (
-              <Button asChild size="sm" variant="secondary">
-                <Link
-                  href={projectHref(
-                    selectedEntity.engagementId,
-                    selectedEntity.slug ??
-                      engagements.find((e) => e.id === selectedEntity.engagementId)?.slug,
-                  )}
-                >
-                  {isIntern ? 'Open client' : 'Open project'}
-                  <ArrowUpRight aria-hidden />
-                </Link>
-              </Button>
-            ) : null}
           </div>
 
           {/* The filter searches every client, so the line names how many files and clients match. */}

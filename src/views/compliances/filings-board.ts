@@ -184,11 +184,11 @@ export function tileSubs(rows: FilingRow[], now: Date): Record<Exclude<BoardTile
 
 /** The six regulators in the order of the "By regulator" card (C-07). */
 export const REGULATORS: ReadonlyArray<{ key: Regulator; label: string }> = [
+  { key: 'mca', label: 'MCA' },
   { key: 'gst', label: 'GST' },
   { key: 'it', label: 'Income tax' },
-  { key: 'mca', label: 'MCA' },
-  { key: 'fema', label: 'FEMA' },
   { key: 'payroll', label: 'Payroll' },
+  { key: 'fema', label: 'FEMA' },
   { key: 'labour', label: 'Labour' },
 ];
 

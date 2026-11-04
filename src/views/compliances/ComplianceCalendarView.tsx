@@ -249,6 +249,9 @@ export function ComplianceCalendarView({
               </SelectContent>
             </Select>
           )}
+          <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className={cn(view !== 'month' && 'invisible')} aria-hidden={view !== 'month' || undefined}>
             <MonthNav
               value={monthKey}
@@ -262,7 +265,6 @@ export function ComplianceCalendarView({
           <span className="inline-flex h-8 flex-none items-center rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning">
             {financialYearLabel(fyStartYear)}
           </span>
-          <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
           {cat === 'non-statutory' ? null : (
             <SpectrumTabs
               label="Filter by area"
