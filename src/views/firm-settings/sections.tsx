@@ -192,7 +192,7 @@ export function WorkingCalendarSection({ settings, canEdit, save }: { settings: 
   ];
 
   return (
-    <DashSection title="Working calendar" meta={workingDaysLabel(settings.workingDays)} bodyClassName="px-2 pb-2 pt-3">
+    <DashSection title="Working calendar" meta={workingDaysLabel(settings.workingDays)} flush>
       <div className="flex flex-wrap gap-1.5 px-2" role="group" aria-label="Working days">
         {WEEKDAYS.map((d) => {
           const on = settings.workingDays.includes(d.day);

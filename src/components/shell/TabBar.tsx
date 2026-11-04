@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Briefcase,
+  Building2,
   ClipboardCheck,
   ClipboardList,
   Terminal,
@@ -15,7 +16,6 @@ import {
   Plug,
   Sparkles,
   TriangleAlert,
-  UserSquare2,
   type LucideIcon,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
@@ -48,17 +48,17 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
       return [
         { label: 'Today', href: '/app/intern/today', Icon: LayoutDashboard },
         { label: 'Work', href: '/app/intern/tasks', Icon: ListChecks },
-        { label: 'Clients', href: '/app/intern/clients', Icon: UserSquare2 },
+        { label: 'Clients', href: '/app/intern/clients', Icon: Building2 },
       ];
     case 'manager':
       return [
-        { label: 'Home', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
+        { label: 'Today', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
         { label: 'Work', href: `${staffBase}/work`, Icon: ListChecks },
         { label: 'Projects', href: `${staffBase}/projects`, Icon: Briefcase },
       ];
     case 'admin':
       return [
-        { label: 'Home', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
+        { label: 'Today', href: `${staffBase}/dashboard`, Icon: LayoutDashboard },
         { label: 'Projects', href: `${staffBase}/projects`, Icon: Briefcase },
         { label: 'Approvals', href: `${staffBase}/approvals`, Icon: ClipboardCheck },
       ];

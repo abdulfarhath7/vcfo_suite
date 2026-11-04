@@ -309,7 +309,7 @@ export function EFilingGrid<T>({
                   scope="col"
                   style={headTop !== undefined ? { top: headTop } : undefined}
                   className={cn(
-                    'h-9 whitespace-nowrap border-b-1.5 border-line px-2.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted',
+                    'h-9 whitespace-nowrap border-b-1.5 border-line px-2.5 first:pl-4 md:first:pl-5 last:pr-4 md:last:pr-5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted',
                     alignClass(c.align),
                     stickTh,
                     ci === 0 && firstSticky,
@@ -360,7 +360,7 @@ export function EFilingGrid<T>({
                   <tr key={`sk${i}`} aria-hidden>
                     {selectable ? <td className="border-b border-line-soft pl-2.5" /> : null}
                     {columns.map((c, ci) => (
-                      <td key={c.key} className={cn('border-b border-line-soft px-2.5 align-middle', compact ? 'h-8' : 'h-11')}>
+                      <td key={c.key} className={cn('border-b border-line-soft px-2.5 first:pl-4 md:first:pl-5 last:pr-4 md:last:pr-5 align-middle', compact ? 'h-8' : 'h-11')}>
                         {ci === 0 && !compact ? (
                           <span className="grid gap-1.5">
                             <span className="block h-3 w-3/5 animate-pulse rounded-bar bg-line motion-reduce:animate-none" />
@@ -458,7 +458,7 @@ export function EFilingGrid<T>({
                       <td
                         key={c.key}
                         className={cn(
-                          'border-b border-line-soft px-2.5 align-middle text-ink-2',
+                          'border-b border-line-soft px-2.5 first:pl-4 md:first:pl-5 last:pr-4 md:last:pr-5 align-middle text-ink-2',
                           compact ? 'h-8' : 'h-11',
                           alignClass(c.align),
                           c.wrap ? 'whitespace-normal' : 'truncate whitespace-nowrap',
@@ -501,7 +501,7 @@ export function EFilingGrid<T>({
         />
       ) : null}
       {rows.length > 0 && !loading ? (
-        <footer className="mt-2 flex flex-wrap items-center gap-3 border-t border-line-soft pt-2 text-[13px] text-ink-muted">
+        <footer className="flex flex-wrap items-center gap-3 px-4 py-2 text-[13px] text-ink-muted md:px-5">
           <span className="tabular-nums">
             {current * pageSize + 1}–{Math.min(rows.length, (current + 1) * pageSize)} of {rows.length}
           </span>

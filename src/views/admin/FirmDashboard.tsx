@@ -249,7 +249,7 @@ export default function FirmDashboard() {
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,2.4fr)_minmax(300px,1fr)]">
           {/* Managers (K-37, C-0034): a T1 grid. */}
-          <DashSection title="Managers" meta={managerStrip.length || undefined} bodyClassName="px-2 pb-3 pt-1">
+          <DashSection title="Managers" meta={managerStrip.length || undefined} flush>
             <EFilingGrid
               caption="Managers"
               rows={managerStrip}

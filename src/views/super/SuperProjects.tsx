@@ -232,7 +232,7 @@ function SuperProjectsInner() {
             </Button>
           </span>
         }
-        bodyClassName="px-2 pb-2 pt-1"
+        flush
       >
         <div className="hidden md:block">
           <EFilingGrid

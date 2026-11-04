@@ -66,7 +66,7 @@ export function SuperPracticeAreasPanel({ insights }: { insights: SuperInsights 
   ];
 
   return (
-    <DashSection title="Practice areas" bodyClassName="px-2 pb-2 pt-1">
+    <DashSection title="Practice areas" flush>
       <EFilingGrid
         caption="Practice areas"
         columns={columns}

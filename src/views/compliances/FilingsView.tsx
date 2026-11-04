@@ -24,7 +24,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { OnTimeColumns } from '@/components/compliances/OnTimeColumns';
 import {
   PreIncorporationNotice,
-  PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
 import { useApp } from '@/context/AppContext';
 import { isFirmWideAdmin } from '@/lib/auth';
@@ -811,8 +810,6 @@ export function FilingsView({
           <PreIncorporationNotice
             scope={{ audience: scope.audience, companyName: pickedPreIncorporation.companyName }}
           />
-        ) : !picked ? (
-          <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
         {/* The rail is narrower than the default 360 px, so the grouped grid keeps its five columns at 1440. */}

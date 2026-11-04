@@ -334,7 +334,7 @@ export default function SuperTeam() {
           }
           href={PEOPLE_HREF}
           hrefLabel="People"
-          bodyClassName="px-2 pb-2 pt-1"
+          flush
         >
           {staff.isPending ? (
             <SkeletonRows rows={2} className="p-2" />
@@ -346,11 +346,11 @@ export default function SuperTeam() {
         {/* Managers and Staff on the left, a 360px rail from lg (prototype). */}
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
-            <DashSection title="Managers" meta={String(managers.length)} href={PEOPLE_HREF} hrefLabel="People" bodyClassName="px-2 pb-2 pt-1">
+            <DashSection title="Managers" meta={String(managers.length)} href={PEOPLE_HREF} hrefLabel="People" flush>
               <EFilingGrid caption="Managers" columns={managerColumns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={1220} />
             </DashSection>
 
-            <DashSection title="Staff" meta={String(staffRows.length)} bodyClassName="px-2 pb-2 pt-3">
+            <DashSection title="Staff" meta={String(staffRows.length)} flush>
               <div className="mb-2 px-2">
                 <SpectrumTabs
                   label="Staff"

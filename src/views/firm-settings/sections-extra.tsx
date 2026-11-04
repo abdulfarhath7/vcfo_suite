@@ -173,7 +173,7 @@ export function PeopleRolesSection() {
           Add person
         </Button>
       }
-      bodyClassName="px-2 pb-2 pt-1"
+      flush
     >
       {people.isPending ? (
         <SkeletonRows rows={4} className="p-2" />
@@ -375,7 +375,7 @@ export function RolePermissionsSection({ settings, canChange, save }: { settings
   const pending = ask ? perms[ask.role][ask.perm] : false;
 
   return (
-    <DashSection title="Roles and permissions" icon={KeyRound} tone="violet" bodyClassName="px-2 pb-2 pt-1">
+    <DashSection title="Roles and permissions" icon={KeyRound} tone="violet" flush>
       {ask ? (
         <ConfirmRow
           text={`${pending ? 'Remove' : 'Give'} "can ${ask.perm}" ${pending ? 'from' : 'to'} ${PERMISSION_ROLE_LABEL[ask.role]}?`}

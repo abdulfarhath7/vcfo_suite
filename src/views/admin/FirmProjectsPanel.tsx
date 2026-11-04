@@ -451,7 +451,7 @@ export function FirmProjectsPanel({
 
   if (title) {
     return (
-      <DashSection title={title} meta={String(rows.length)} bodyClassName="px-2 pb-3 pt-0">
+      <DashSection title={title} meta={String(rows.length)} flush>
         <div className="px-2 py-3">{filters}</div>
         {grid}
         {tools.dialog}

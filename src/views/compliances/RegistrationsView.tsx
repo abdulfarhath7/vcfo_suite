@@ -10,7 +10,6 @@ import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Button } from '@/components/ui/button';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { PreIncorporationPortfolioNote } from '@/components/compliances/PreIncorporationNotice';
 import { useApp } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
 import { REG_SHORT } from '@/lib/client-portal/credentials';
@@ -296,7 +295,6 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
         {embedded ? null : <h1 className="sr-only">Registrations</h1>}
         <FilterStrip items={strip} value={filter} onChange={(k) => setParams({ state: k || null })} />
-        {scope.preIncorporationIds.size ? <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} /> : null}
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div ref={embedded ? undefined : listRef} className="min-w-0">

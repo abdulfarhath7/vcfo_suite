@@ -251,7 +251,7 @@ export default function SuperPracticeIncorporation() {
           />
         </div>
 
-        <DashSection title="Clients in incorporation" meta={`${rows.length} of ${incorporating.length}`} bodyClassName="px-2 pb-2 pt-3">
+        <DashSection title="Clients in incorporation" meta={`${rows.length} of ${incorporating.length}`} flush>
           <SuperFilterChips
             className="mb-2 px-2"
             onClear={() => {

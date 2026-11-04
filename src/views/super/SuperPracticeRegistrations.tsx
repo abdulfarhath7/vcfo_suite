@@ -262,7 +262,7 @@ export default function SuperPracticeRegistrations() {
           <DashSection
             title="Registrations · clients by type"
             meta={`${total('progress')} in progress · ${total('waiting')} waiting`}
-            bodyClassName="px-2 pb-2 pt-3"
+            flush
           >
             <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
               <SuperFilterChips
@@ -310,7 +310,7 @@ export default function SuperPracticeRegistrations() {
                   { label: 'Done to date', value: total('done'), good: total('done') > 0 },
                 ]}
               />
-              <DashSection title="Open registrations" meta={`${itemRows.length} of ${items.length}`} bodyClassName="px-2 pb-2 pt-3">
+              <DashSection title="Open registrations" meta={`${itemRows.length} of ${items.length}`} flush>
                 <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
                   <SuperFilterChips
                     onClear={() => {

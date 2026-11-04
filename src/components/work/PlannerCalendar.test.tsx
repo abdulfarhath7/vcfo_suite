@@ -8,7 +8,7 @@ import type { PlannerBlock } from '@/lib/work/planner';
  */
 
 let role = 'intern';
-vi.mock('@/context/AppContext', () => ({ useApp: () => ({ user: { id: 'u1', role } }) }));
+vi.mock('@/context/AppContext', () => ({ useApp: () => ({ user: { id: 'u1', role }, engagements: [] }) }));
 
 const blocks: PlannerBlock[] = [
   { id: 'b1', itemKey: null, engagementId: null, title: 'Focus', startsAt: '2026-11-02T04:30:00.000Z', endsAt: '2026-11-02T05:30:00.000Z' },

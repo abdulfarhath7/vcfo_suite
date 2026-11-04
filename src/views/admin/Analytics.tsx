@@ -330,7 +330,7 @@ export default function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <DashSection title="Time in step" meta="Open and finished steps" loading={metrics.isPending} bodyClassName="px-2 pb-2 pt-1">
+          <DashSection title="Time in step" meta="Open and finished steps" loading={metrics.isPending} flush>
             <EFilingGrid
               caption="Time in step"
               columns={STEP_TIME_COLUMNS}

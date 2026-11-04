@@ -126,7 +126,7 @@ export function SuperAdminsPanel({
   ];
 
   return (
-    <DashSection {...head} meta={rows.filter((r) => r.id !== NO_ADMIN).length} bodyClassName="px-2 pb-2 pt-1">
+    <DashSection {...head} meta={rows.filter((r) => r.id !== NO_ADMIN).length} flush>
       <EFilingGrid caption="Admins" columns={columns} rows={rows} rowKey={(r) => r.id} minWidth={640} empty="No admins yet" />
     </DashSection>
   );

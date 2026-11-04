@@ -82,7 +82,7 @@ export default function SuperRisks() {
     return (
       <PageTransition>
         {seo}
-        <DashSection title="Risks" bodyClassName="px-2 pb-2 pt-3">
+        <DashSection title="Risks" flush>
           <SkeletonRows rows={8} className="p-2" />
         </DashSection>
       </PageTransition>
@@ -195,7 +195,7 @@ export default function SuperRisks() {
             />
           </span>
         }
-        bodyClassName="px-2 pb-2 pt-1"
+        flush
       >
         <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={820} pageSize={10} />
       </DashSection>

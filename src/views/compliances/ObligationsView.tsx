@@ -12,7 +12,6 @@ import { Term } from '@/components/ui/term';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import {
   PreIncorporationNotice,
-  PreIncorporationPortfolioNote,
 } from '@/components/compliances/PreIncorporationNotice';
 import { monthKeyOf, rowsInMonth } from '@/lib/compliance/filings';
 import { cn } from '@/lib/utils';
@@ -433,8 +432,6 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
 
         {pickedPreIncorporation ? (
           <PreIncorporationNotice scope={{ audience: scope.audience, companyName: pickedPreIncorporation.companyName }} />
-        ) : !picked ? (
-          <PreIncorporationPortfolioNote count={scope.preIncorporationIds.size} />
         ) : null}
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">

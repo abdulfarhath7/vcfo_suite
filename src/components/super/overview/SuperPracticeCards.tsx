@@ -249,7 +249,7 @@ export function SuperManagersPanel({
     },
   ];
   return (
-    <DashSection title="Managers" meta={String(managers.length)} href={TEAM_HREF} hrefLabel="Open team" bodyClassName="px-2 pb-2 pt-1">
+    <DashSection title="Managers" meta={String(managers.length)} href={TEAM_HREF} hrefLabel="Open team" flush>
       <EFilingGrid caption="Managers" columns={columns} rows={managers} rowKey={(m) => m.id} empty="No manager yet" minWidth={600} pageSize={6} />
     </DashSection>
   );
