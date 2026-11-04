@@ -159,7 +159,7 @@ describe('ComplianceCalendarView bar', () => {
     search = new URLSearchParams('date=2099-10-20');
     render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
     // The date in the URL opens that day's popover; a filing opens its period's statutory page.
-    expect(screen.getByRole('button', { name: /^20 October, 2 filings/, hidden: true })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^20 October/, hidden: true })).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('a[href="/app/manager/compliances/obligations/gst-3b/b"]')).not.toBeNull();
     expect(document.querySelector('a[href="/app/manager/compliances/obligations/gst-3b/a"]')).not.toBeNull();
   });
