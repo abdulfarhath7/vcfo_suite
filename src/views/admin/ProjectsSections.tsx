@@ -250,7 +250,7 @@ export function ProjectsView(props: ProjectsViewProps) {
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      width: '56px',
+      width: '72px',
       align: 'right',
       render: (item) => (
         <span data-grid-ctl className="inline-flex">

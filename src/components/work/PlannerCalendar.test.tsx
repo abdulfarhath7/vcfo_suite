@@ -71,13 +71,9 @@ describe('PlannerCalendar', () => {
     expect(container.querySelector('[aria-label="To plan"]')).toBeNull();
   });
 
-  it('offers the open items in the To plan tray to drag onto the calendar', () => {
+  it('has no tray of its own: tasks drag in from the to-do list', () => {
     const { container } = render(<PlannerCalendar days={days} items={items} now={now} onOpenItem={vi.fn()} />);
-    const tray = container.querySelector('[aria-label="To plan"]')!;
-    expect([...tray.querySelectorAll('[data-plan-key]')].map((e) => e.getAttribute('data-plan-key'))).toEqual([
-      'filing:f1',
-      'step:e1:s1',
-      'task:t1',
-    ]);
+    expect(container.querySelector('[aria-label="To plan"]')).toBeNull();
+    expect(container.querySelector('[data-plan-key]')).toBeNull();
   });
 });

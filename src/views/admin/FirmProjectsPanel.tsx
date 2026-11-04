@@ -258,7 +258,7 @@ export function FirmProjectsPanel({
     {
       key: 'health',
       header: 'Health',
-      width: '148px',
+      width: '172px',
       render: (r) => (
         <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
           {r.facts.health}
@@ -272,7 +272,7 @@ export function FirmProjectsPanel({
     {
       key: 'actions',
       header: <span className="sr-only">Actions</span>,
-      width: '56px',
+      width: '72px',
       align: 'center' as const,
       wrap: true,
       render: (r) => (
