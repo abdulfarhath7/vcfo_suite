@@ -121,6 +121,22 @@ describe('CBIC missing intermediate certificate', () => {
   });
 });
 
+describe('e-Gazette missing Let\'s Encrypt chain', () => {
+  it('links YR1 through the cross-signed Root YR to ISRG Root X1, which Node already trusts', async () => {
+    const crypto = await import('node:crypto');
+    const tls = await import('node:tls');
+    const { LETS_ENCRYPT_YR1_PEM, ISRG_ROOT_YR_BY_X1_PEM } = await import('@/lib/ask/feeds/govt-https');
+    const yr1 = new crypto.X509Certificate(LETS_ENCRYPT_YR1_PEM);
+    const rootYr = new crypto.X509Certificate(ISRG_ROOT_YR_BY_X1_PEM);
+    expect(yr1.fingerprint256).toBe('13:94:96:34:D9:9C:D6:FD:6A:A8:0B:C0:34:FE:FA:CC:EB:19:69:FE:EF:98:65:86:71:3E:CD:BB:05:75:8D:3F');
+    expect(rootYr.fingerprint256).toBe('07:26:39:D0:B1:40:D5:BF:FA:E1:6A:D9:C3:F6:CC:60:86:04:06:21:F5:1E:E6:1A:6D:46:A8:91:5C:07:CF:76');
+    expect(yr1.checkIssued(rootYr) && yr1.verify(rootYr.publicKey)).toBe(true);
+    const root = tls.rootCertificates.map((p) => new crypto.X509Certificate(p)).find((r) => rootYr.checkIssued(r));
+    expect(root?.subject).toContain('ISRG Root X1');
+    expect(rootYr.verify(root!.publicKey)).toBe(true);
+  });
+});
+
 describe('cleanSummary', () => {
   it('drops a heading or a "Summary:" label and squashes whitespace', async () => {
     const { cleanSummary } = await import('@/lib/ask/ingest/summarize');
@@ -154,6 +170,23 @@ describe('review PDF facts (pure helpers)', () => {
     expect(good.warning).toBeNull();
     expect(good.pieces).toBe(2);
     expect(good.words).toBeGreaterThan(100);
+  });
+
+  it('keeps the English part of a bilingual gazette for the excerpt', async () => {
+    const { latinExcerpt } = await import('@/lib/ask/feeds/review-pdf');
+    const gazette =
+      'रजिस्ट्री सं. - 33004/99 REGD. No. D. जन. — केन्द्रीर् सरकार, कंपनी अजधजनर्म , 2013\n(2) र्े जनर्म रािपत्र में इनके प्र कािन की तारीख\nG.S.R. 968(E).—In exercise of the powers conferred by section 23 of the Companies Act, 2013 (18 of 2013), the Central Government hereby makes the following rules.\nPrice ₹ 5 — "Rules", 2026';
+    const out = latinExcerpt(gazette, 1600);
+    expect(out).not.toMatch(/[ऀ-ॿ]/);
+    expect(out).toContain('G.S.R. 968(E).—In exercise of the powers conferred');
+    expect(out).toContain('Price Rs. 5 — "Rules", 2026');
+    expect(latinExcerpt('a'.repeat(2000), 1600)).toHaveLength(1602);
+  });
+
+  it('does not call the Hindi half of a gazette unreadable', async () => {
+    const { readingCheck } = await import('@/lib/ask/feeds/review-pdf');
+    const bilingual = `${'कंपनी अधिनियम की धारा '.repeat(60)}\n${'The Central Government hereby makes the following rules. '.repeat(10)}`;
+    expect(readingCheck(bilingual, 3).warning).toBeNull();
   });
 });
 

@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ask:feeds:once": "node --env-file=.env.local --conditions=react-server --import tsx scripts/ask-feeds-once.ts",
+    "ask:feeds:once": "node --env-file=.env.local --import ./scripts/allow-server-only.mjs --import tsx scripts/ask-feeds-once.ts",
     "ask:feeds:schedule": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/ask-feeds-schedule.ps1",
     "check": "npm run typecheck && npm run lint && npm run test",
     "css:portal": "node scripts/cp-css.mjs && node scripts/portal-css.mjs",

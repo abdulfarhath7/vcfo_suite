@@ -22,6 +22,7 @@ import type { FeedWatcher } from './types';
  *     ✓ the department's e-filing portal "Latest News", same CBDT notifications + PDFs — `income-tax` (HTML)
  *   MCA (mca.gov.in: "Access Denied" to programs and headless Chrome)
  *     ✓ the Gazette of India, searched by ministry in a real browser; PDFs by id — `mca-egazette`
+ *     ✗ General Circulars (not in the Gazette; mca.gov.in blocks programs) — upload by hand on the Sources page
  *   EPFO  ✓ notices feed, employer-relevant only                 — `epfo` (RSS)
  *   ESIC  ✓ circulars table, employer-relevant only              — `esic` (HTML)
  *   Telangana Commercial Taxes (tgct.gov.in)

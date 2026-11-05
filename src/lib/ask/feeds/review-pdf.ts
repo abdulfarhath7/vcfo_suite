@@ -37,14 +37,36 @@ export function effectiveFromPhrase(text: string): string | null {
   return m ? m[1]!.replace(/\s+/g, ' ').trim() : null;
 }
 
-/** Characters outside basic Latin, common dashes/quotes and the rupee sign — a garbled read has many. */
+const DEVANAGARI = /[ऀ-ॿ]/g;
+
+/**
+ * Characters outside basic Latin, common dashes/quotes, the rupee sign and Hindi (Devanagari) —
+ * a garbled read has many. Hindi is left out because every gazette is printed in Hindi and English.
+ */
 function nonLatinCount(text: string): number {
   let n = 0;
   for (const ch of text) {
     const c = ch.codePointAt(0) ?? 0;
-    if (c > 0x7f && !(c >= 0x2010 && c <= 0x2027) && c !== 0x20b9) n += 1;
+    if (c > 0x7f && !(c >= 0x2010 && c <= 0x2027) && c !== 0x20b9 && !(c >= 0x0900 && c <= 0x097f)) n += 1;
   }
   return n;
+}
+
+/**
+ * Pure: the opening of the original text for the review PDF. The PDF's built-in font has no Hindi
+ * letters or rupee sign, so lines that are mostly Hindi (the first half of a bilingual gazette)
+ * are dropped and ₹ becomes "Rs.".
+ */
+export function latinExcerpt(text: string, max: number): string {
+  const english = text
+    .split(/\r?\n/)
+    .filter((line) => (line.match(DEVANAGARI) ?? []).length <= (line.match(/[A-Za-z]/g) ?? []).length)
+    .join(' ')
+    .replace(DEVANAGARI, '')
+    .replace(/₹\s*/g, 'Rs. ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return english.length > max ? `${english.slice(0, max)} …` : english;
 }
 
 /** Pure: a reading-quality verdict for the manager. */
@@ -88,7 +110,7 @@ export async function renderReviewPdf(
     amends: amendedInstruments(input.text),
     effectiveFrom: effectiveFromPhrase(input.text),
     reading: readingCheck(input.text, input.pieces),
-    excerpt: input.text.replace(/\s+/g, ' ').trim().slice(0, 1600) + (input.text.length > 1600 ? ' …' : ''),
+    excerpt: latinExcerpt(input.text, 1600),
   };
   return renderToBuffer(createElement(ReviewPdfDocument, { input: full }) as Parameters<typeof renderToBuffer>[0]);
 }

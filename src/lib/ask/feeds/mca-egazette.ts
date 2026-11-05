@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { withBrowserPage, type BrowserPage } from './browser-fetch';
-import { fetchPdf } from './govt-fetch';
+import { pdfContent } from './govt-fetch';
+import { govtGetBytes } from './govt-https';
 import { toYmd, type FeedContent, type FeedItem, type FeedWatcher } from './types';
 
 /**
@@ -119,6 +120,9 @@ export const mcaGazetteWatcher: FeedWatcher = {
     return parseGazetteRows(rows);
   },
   async fetch(item: FeedItem): Promise<FeedContent> {
-    return fetchPdf(item.publicUrl, `${item.externalId}.pdf`);
+    // egazette.gov.in sends an incomplete certificate chain; `govtGetBytes` supplies the missing pieces.
+    const res = await govtGetBytes(item.publicUrl, 90_000);
+    if (res.status !== 200) throw new Error(`egazette.gov.in answered ${res.status} for the file`);
+    return pdfContent(res.body, `${item.externalId}.pdf`);
   },
 };

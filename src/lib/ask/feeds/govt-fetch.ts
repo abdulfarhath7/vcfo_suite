@@ -4,7 +4,7 @@ import { GOVT_FETCH_HEADERS, type FeedContent } from './types';
 
 /**
  * Plain HTTPS reads of government pages and PDFs (ordinary certificate
- * chains — CBIC's incomplete one goes through `govt-https.ts` instead).
+ * chains — CBIC's and the e-Gazette's incomplete ones go through `govt-https.ts` instead).
  * Browser-like headers: some sites answer bare clients with an error page.
  */
 export async function fetchText(url: string, maxBytes = 2 * 1024 * 1024, timeoutMs = 45_000): Promise<string> {
@@ -26,7 +26,11 @@ export async function fetchPdf(url: string, fileName: string, maxBytes = 40 * 10
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`${new URL(url).host} answered ${res.status} for the file`);
-  const bytes = Buffer.from(await res.arrayBuffer());
+  return pdfContent(Buffer.from(await res.arrayBuffer()), fileName, maxBytes);
+}
+
+/** Checks downloaded bytes are a PDF of a sane size and names the file. */
+export function pdfContent(bytes: Buffer, fileName: string, maxBytes = 40 * 1024 * 1024): FeedContent {
   if (bytes.length > maxBytes) throw new Error('The file is too large to index');
   if (bytes.subarray(0, 5).toString() !== '%PDF-') throw new Error('The link did not return a PDF');
   const safe = fileName.replace(/[\\/]/g, '_');

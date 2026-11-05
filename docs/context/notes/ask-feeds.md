@@ -12,7 +12,7 @@ Sources page button. New items wait in the manager's review queue.
 | GST portal `services.gst.gov.in/services/gstlaw/gstlawlist` | Its "GST Law" page is a page of links; it sends you to CBIC for notifications. We read CBIC (`cbic.ts`, JSON) **and** the portal's own "News and Updates" advisories (`gst-portal.ts`) | CBIC: plain HTTPS with the Sectigo intermediate embedded (`govt-https.ts`). Portal news: **real browser only** (below) |
 | Income Tax `incometaxindia.gov.in` | Refuses programs and headless Chrome (Akamai "Access Denied"). The department's e-filing portal `incometax.gov.in/iec/foportal/latest-news` lists the same CBDT notifications/circulars with PDFs on the same host | plain HTTPS (`income-tax.ts`) |
 | MCA `mca.gov.in` | Refuses programs and headless Chrome. Every MCA notification is published in the Gazette of India: `mca-egazette.ts` drives the e-Gazette "Search by Ministry" click-through (session lives in the URL, so it must be a browser), reads the results table (subject · issue date · gazette id) and downloads the PDF by id: `egazette.gov.in/WriteReadData/<year>/<serial>.pdf`. Searches this month, plus last month in the first week. Ministry staff matters (service rules, tenure, appointments) are skipped | **real browser** (`mca-egazette.ts`) |
-| EPFO | Notices RSS `epfo.gov.in/?post_type=notices&feed=rss2`, employer-relevant only. The old `circulars.php` archive stopped in 2025 | RSS (`epfo.ts`) |
+| EPFO | Notices RSS `epfo.gov.in/?post_type=notices&feed=rss2`, employer-relevant only. The old `circulars.php` archive stopped in 2025; the new site posts its circulars as notices ("Circular Dated 28.09.2026", "Wage Ceiling Circular 28.09.2026", checked 2026-11-05), so the RSS carries them | RSS (`epfo.ts`) |
 | ESIC `esic.gov.in/circulars` | Circulars table, employer-relevant only | HTML (`esic.ts`) |
 | Telangana Commercial Taxes `tgct.gov.in/tgportal/` | "Announcements › View More" — PDF links **without dates**; dated the day first seen, the title says so. Profession Tax GO page: postback links, newest 2021 | HTML (`tgct.ts`) |
 | DGFT `dgft.gov.in/CP/?opt=regulatory-updates` | That hub links to four tables: notifications, public notices, circulars, trade notices — all read | HTML (`dgft.ts`) |
@@ -46,6 +46,18 @@ A direct link to `SearchMenu.aspx` lands on `error.aspx`. The server log prints
 `[ask-feeds] e-Gazette Ministry of Corporate Affairs YYYY-MM: N gazette(s) listed`
 so "0 added" can be told apart from "nothing found".
 
+**Known gap: MCA General Circulars.** The owner's PDF circles both "Notifications" and
+"Circulars" on the MCA e-book page. Notifications reach us through the Gazette; General
+Circulars are not printed in the Gazette, and `mca.gov.in` answers 403 to automated readers
+(checked again 2026-11-05). We do not disguise a program as a person to get past that block. Until
+MCA offers a feed, circulars are added by hand on the Sources page (upload), which goes through
+the same review gate.
+
+**egazette.gov.in sends an incomplete certificate chain** (Let's Encrypt YR1, checked
+2026-11-05), like CBIC. Gazette PDFs download through `govtGetBytes` in `govt-https.ts`, which
+adds YR1 and the ISRG Root YR cross-signed by ISRG Root X1. Before this, every new gazette
+failed with `UNABLE_TO_VERIFY_LEAF_SIGNATURE` and was retried each run.
+
 ## The 30-minute timer needs Inngest running
 
 The cron in `src/jobs/ask-feeds.ts` is executed by Inngest, not by Next. On
@@ -74,9 +86,15 @@ reachable, then runs `npm run ask:feeds:once`; output goes to `.logs/ask-feeds.l
 - Running it next to `npm run inngest:dev` is safe for the same reason (duplicates are dropped).
 - Nothing on the laptop runs while it is off; only the deployed app with the Inngest keys
   watches around the clock.
-- In the one-shot script, "review pdf failed … reading 'S'" can appear for items the
-  background ingestion already finished; check `review_pdf_key` before treating it as a loss
-  (on 2026-11-04 all 19 new items had their review PDF).
+- "review pdf failed … reading 'S'" (fixed 2026-11-05): `ask:feeds:once` used to run with
+  `--conditions=react-server`, which loads React's server build, and @react-pdf/renderer cannot
+  render with it. When Inngest was down the script indexed inline, so every item it captured
+  (the scheduled task's normal case) had no review PDF. The script now preloads
+  `scripts/allow-server-only.mjs`, which only empties `server-only`. Do not put the
+  react-server flag back on any script that renders a PDF.
+- Gazettes are printed in Hindi and English and the review PDF's built-in font has no Hindi
+  letters: `latinExcerpt` keeps the English lines, and `readingCheck` does not count Hindi as
+  unreadable.
 
 ## Other gotchas
 

@@ -64,6 +64,20 @@ counts (Updates 3, Incorporation 6/14, Documents 6).
   the inner panel no longer needs `stopPropagation`), Escape closes the
   dialog, and one `let from` in `client-timeline.ts` became `const`.
 
+## Session 2026-11-05 — the owner's portal PDF checked against the watchers
+
+- The owner's PDF (Income Tax, MCA, GST, PF, ESIC, Professional Tax, DGFT) plus RBI/FEMA: all nine
+  watchers are registered and a live run listed items from every portal.
+- **Fixed:** MCA gazette PDFs failed to download (egazette.gov.in's incomplete Let's Encrypt chain;
+  `govt-https.ts` now ships it). Review PDFs were never built when `ask:feeds:once` indexed inline,
+  which is the scheduled task's normal case (React's server build; `scripts/allow-server-only.mjs`).
+  Gazette excerpts keep the English half. Four pending local items had their review PDF rebuilt.
+- **Known gap, told to the owner:** MCA General Circulars (not in the Gazette, `mca.gov.in` blocks
+  programs). EPFO circulars are covered: the new site posts them as notices.
+- The Telangana portal links one PDF that answers 404; the watcher retries it each run and logs it.
+- Gate: typecheck 0; vitest 503 files, all green when the two slow-import tests
+  (`source-file.test.ts`, `labour-registers-page.test.ts`) are rerun; they time out at 5 s on a cold cache.
+
 ## Session 2026-11-04 — origin/main (c7ae16b6) merged into `whatsapp-doubletick`
 
 - Brought in 78 commits from main: receivables Phases 8 to 10 (partner logins, FX, shared views,
