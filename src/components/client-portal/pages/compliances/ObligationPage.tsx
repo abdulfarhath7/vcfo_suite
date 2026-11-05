@@ -28,7 +28,7 @@ import { AREA_FULL, fmtDM, fyStartOfMonth, portalFor, slugOf, todayIso, type Por
 import { fetchProofs, proofHref, useAllFilings, useDownload } from './api';
 import { CompProvider } from './ctx';
 import { RiskChip, SidePanel, longPeriod } from './Detail';
-import { groupObligations, type Obligation } from './obligations';
+import { groupCompanyObligations, type Obligation } from '@/lib/compliance/obligation-groups';
 import { OBLIGATIONS_BASE } from './ObligationsPage';
 import { CompanyTile } from '@/components/staff/today/today-parts';
 import { Tag } from '@/components/ui/spectrum-chip';
@@ -83,7 +83,7 @@ function usePanelParam() {
 function ObligationBody({ id, today }: { id: string; today: string }) {
   const { after } = usePortal();
   const q = useAllFilings(after);
-  const o = useMemo(() => groupObligations(after ? (q.data?.rows ?? []) : [], today).find((x) => x.id === id) ?? null, [after, q.data, today, id]);
+  const o = useMemo(() => groupCompanyObligations(after ? (q.data?.rows ?? []) : [], today).find((x) => x.id === id) ?? null, [after, q.data, today, id]);
   usePortalCrumbs(['Compliances', 'Obligations', o?.name ?? 'Obligation']);
 
   const back = (

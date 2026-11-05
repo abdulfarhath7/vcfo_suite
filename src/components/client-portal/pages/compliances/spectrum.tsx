@@ -21,6 +21,7 @@ import {
   AREA_FULL,
   AREA_LABEL,
   MON,
+  byComp,
   daysBetween,
   dow,
   portalFor,
@@ -32,6 +33,7 @@ import { usePortal } from '../../PortalProvider';
 import { portalHref } from '../../routes';
 import { useDismiss } from './bits';
 import { exactDate } from '@/lib/relative-due';
+import { STATUS_FILL, STATUS_STROKE } from '@/lib/compliance/spectrum-status';
 
 /* ------------------------------------------------------------------ island */
 
@@ -50,14 +52,9 @@ export function Island({ className, inline, children }: { className?: string; in
 export const WORD: Record<CompStatus, string> = { ok: 'Filed', due: 'Due soon', over: 'Overdue', up: 'Upcoming' };
 export const TONE: Record<CompStatus, ChipTone> = { ok: 'ok', due: 'warn', over: 'bad', up: 'idle' };
 /** Solid marks for bars, legend squares and dots (R-25: status colours only in charts). */
-export const FILL: Record<CompStatus, string> = { ok: 'bg-positive-mid', due: 'bg-warning-mid', over: 'bg-danger-mid', up: 'bg-upcoming-mid' };
+export const FILL: Record<CompStatus, string> = byComp(STATUS_FILL);
 /** SVG stroke colours for the donut, from the same tokens. */
-export const STROKE: Record<CompStatus, string> = {
-  ok: 'oklch(var(--positive-mid))',
-  due: 'oklch(var(--warning-mid))',
-  over: 'oklch(var(--danger-mid))',
-  up: 'oklch(var(--upcoming-mid))',
-};
+export const STROKE: Record<CompStatus, string> = byComp(STATUS_STROKE);
 /** Soft tint for a date tile or a day number. */
 export const TINT: Record<CompStatus, string> = {
   ok: 'bg-positive-soft text-positive',

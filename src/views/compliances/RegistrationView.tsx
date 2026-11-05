@@ -15,7 +15,7 @@ import { getChecklistStepTimelineLabel, getRegistrationPhases } from '@/data/che
 import { adminProjectStepPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
 import { cn } from '@/lib/utils';
 import type { ComplianceScope } from '@/views/compliances/compliance-scope';
-import { daysUntil, isIdentifier } from '@/views/compliances/spectrum-status';
+import { daysUntil, isIdentifier } from '@/lib/compliance/spectrum-status';
 import { Fact, HeadRing, WordChip } from '@/views/compliances/spectrum-parts';
 import { BeforeFilingCard } from '@/views/compliances/record-cards';
 import { AssistCard } from '@/components/compliances/AssistParts';

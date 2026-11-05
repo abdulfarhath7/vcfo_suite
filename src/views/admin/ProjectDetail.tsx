@@ -68,9 +68,9 @@ export default function ProjectDetail() {
   // Client viewer on purpose: read-only gating, identical to the client portal.
   const gates = useMemo(() => gateActiveCatalog(state, 'client'), [state]);
 
-  // Not `engagementsLoading`: that is false with an empty list while the session hydrates, which
-  // bounced a reload of a record to the project list.
-  if (!eng && (!engagementsSettled || !user)) {
+  // `engagementsLoading` is false while the session hydrates (the query is still idle), so a
+  // fresh page load would bounce; wait until the engagements query has settled.
+  if (!eng && !engagementsSettled) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <HexgridLoader />
