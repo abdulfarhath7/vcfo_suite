@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { regOf, type Regulator } from '@/lib/ui/regulator';
 
 /* VCFO Spectrum chips (prototype src/components/ui/Chip.tsx). One file holds the status chip
    (R-13), the owner chip (R-14), the area pill (R-43) and the plain tag, so every portal draws
@@ -130,7 +131,6 @@ export function OwnerChip({ owner, label, className }: { owner: Owner; label?: s
   );
 }
 
-export type Regulator = 'mca' | 'gst' | 'it' | 'payroll' | 'fema' | 'labour';
 const SWATCH: Record<Regulator, string> = {
   mca: 'bg-reg-mca',
   gst: 'bg-reg-gst',
@@ -139,18 +139,6 @@ const SWATCH: Record<Regulator, string> = {
   fema: 'bg-reg-fema',
   labour: 'bg-reg-labour',
 };
-
-/** The regulator for an area word, or undefined. "ROC" is MCA; "TDS" is income tax; PF and ESI are payroll. */
-export function regOf(area: string): Regulator | undefined {
-  const s = area.trim().toLowerCase();
-  if (/^(mca|roc|incorporation|companies act|company law)/.test(s)) return 'mca';
-  if (/^gst/.test(s)) return 'gst';
-  if (/^(income tax|it|tds|tcs|direct tax)/.test(s)) return 'it';
-  if (/^(payroll|pf|esi|epf|pf and esi)/.test(s)) return 'payroll';
-  if (/^(fema|rbi|stpi)/.test(s)) return 'fema';
-  if (/^(labour|labor|pt|professional tax|shops)/.test(s)) return 'labour';
-  return undefined;
-}
 
 /** The short name of a regulator: an area pill and an area tab read "MCA", never the act's name. */
 export const REG_WORD: Record<Regulator, string> = { mca: 'MCA', gst: 'GST', it: 'Income tax', payroll: 'Payroll', fema: 'FEMA', labour: 'Labour' };

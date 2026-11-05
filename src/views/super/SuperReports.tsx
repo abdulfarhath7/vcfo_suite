@@ -12,7 +12,7 @@ import {
   SuperPageHead,
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
-import { plainDay } from '@/components/super/parts/super-text';
+import { plainDay } from '@/lib/date-format';
 import { buildRisks, type SuperTeamManager } from '@/lib/super/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import { useSuperStaff } from '@/components/super/assign/use-super-staff';
@@ -32,8 +32,7 @@ import { SaveReportDialog } from '@/components/super/reports/SaveReportDialog';
 import { SavedReportsCard } from '@/components/super/reports/SavedReportsCard';
 import { useApp } from '@/context/AppContext';
 import { SBC_LOCKUP_DARK_SRC, SBC_LOCKUP_LIGHT_SRC } from '@/components/brand/SbcLogo';
-import { clientLine, onTimePct, recentMonths, type SavedReport } from '@/lib/reports/partner-report';
-import { registrationCounts } from '@/lib/super/super-insights-model';
+import { clientLine, monthNumbers, onTimePct, recentMonths, type SavedReport } from '@/lib/reports/partner-report';
 import { useProspects } from '@/views/super/growth/use-growth-data';
 import { useFirmSettings } from '@/views/firm-settings/use-firm-settings';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
@@ -132,28 +131,7 @@ export default function SuperReports() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const closed = (prospects ?? []).filter((p) => month && p.closedAt?.startsWith(month.key));
-  const filed = (month?.filedOnTime ?? 0) + (month?.filedLate ?? 0);
-  const numbers: Array<{ k: string; v: string | number; warn?: boolean }> = month
-    ? [
-        { k: 'Active clients', v: insights.clients.length },
-        {
-          k: 'Client movement',
-          v: `${closed.filter((p) => p.stage === 'won').length} won · ${closed.filter((p) => p.stage === 'lost').length} lost`,
-        },
-        { k: 'Certificates (COI) issued', v: month.certificatesIssued },
-        {
-          k: `Average days to COI${targetDays !== null ? ` · target ${targetDays}` : ''}`,
-          v: month.avgDaysToCoi === null ? '–' : `${month.avgDaysToCoi} days`,
-          warn: month.avgDaysToCoi !== null && targetDays !== null && month.avgDaysToCoi > targetDays,
-        },
-        {
-          k: `Filings on time (${month.filedLate} late)`,
-          v: filed ? `${Math.round((month.filedOnTime / filed) * 100)}%` : '–',
-        },
-        { k: 'Registrations completed', v: registrationCounts(insights).reduce((sum, c) => sum + c.done, 0) },
-      ]
-    : [];
+  const numbers = month ? monthNumbers(insights, month, { prospects: prospects ?? [], targetDays }) : [];
 
   return (
     <PageTransition>
@@ -205,7 +183,7 @@ export default function SuperReports() {
                     <span className="truncate text-[13px] font-medium text-ink-2" title={n.k}>
                       {n.k}
                     </span>
-                    <b className={cn('text-[26px] font-medium leading-none tabular-nums', n.warn && 'text-warning')}>{n.v}</b>
+                    <b className={cn('text-[26px] font-medium leading-none tabular-nums', n.tone === 'warn' && 'text-warning')}>{n.v}</b>
                   </div>
                 ))}
               </div>

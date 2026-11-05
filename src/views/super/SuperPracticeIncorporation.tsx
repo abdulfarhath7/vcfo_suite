@@ -15,6 +15,7 @@ import {
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
 import { shortCompany } from '@/components/super/parts/super-text';
+import { plainDay } from '@/lib/date-format';
 import { INC_STAGES, incStageOf, phaseNameOf } from '@/components/super/overview/super-overview-format';
 import type { SuperInsightClient } from '@/lib/super/super-insights-model';
 import { useSuperInsights } from '@/views/super/use-super-insights';
@@ -27,8 +28,8 @@ import { superEngagementHref } from '@/lib/super/super-overview';
  * PRACTICE · INCORPORATION (prototype `PracticeScreen` area "Incorporation").
  *
  * The pipeline across the page by named stage, then days in each stage beside the expected
- * certificates. Read from the engagement rows and the step events. The client list lives on the
- * Clients page (Stage: Incorporating). Read-only.
+ * certificates, and the certificates issued most recently. Read from the engagement rows and the
+ * step events. The client list lives on the Clients page (Stage: Incorporating). Read-only.
  */
 const SUPER_INCORPORATION_HREF = '/app/super/practice/incorporation';
 
@@ -69,6 +70,11 @@ export default function SuperPracticeIncorporation() {
     );
   }
 
+  const issued = insights.clients
+    .filter((c) => c.startedPreInc && c.certificateDate)
+    .sort((a, b) => (b.certificateDate ?? '').localeCompare(a.certificateDate ?? ''))
+    .slice(0, 8);
+
   return (
     <PageTransition>
       {seo}
@@ -85,6 +91,31 @@ export default function SuperPracticeIncorporation() {
             hrefFor={(row) => superEngagementHref(row.engagementId)}
           />
         </div>
+
+        <DashSection title="Certificates issued" meta={issued.length ? String(issued.length) : undefined} flush>
+          {issued.length === 0 ? (
+            <div className="p-4">
+              <EmptyState title="No certificate recorded yet" />
+            </div>
+          ) : (
+            <ul>
+              {issued.map((c) => (
+                <li key={c.summary.id} className="border-t border-line-soft first:border-t-0">
+                  <Link href={c.summary.href} className="flex min-w-0 items-center gap-3 px-4 py-3 hover:bg-surface-sunken/60 md:px-5">
+                    <ClientTile id={c.summary.id} name={c.summary.companyName} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-ink">{shortCompany(c.summary.companyName)}</span>
+                      <span className="block truncate text-[12px] text-ink-muted">
+                        {[c.summary.managerName, c.daysToCoi !== null ? `${c.daysToCoi} days to COI` : null].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                    <b className="w-16 flex-none text-right text-[13px] font-medium tabular-nums">{plainDay(c.certificateDate)}</b>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashSection>
       </div>
     </PageTransition>
   );

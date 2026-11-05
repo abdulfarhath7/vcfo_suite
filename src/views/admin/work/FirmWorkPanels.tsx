@@ -25,6 +25,11 @@ import { cn } from '@/lib/utils';
    Managers tab reads `useFirmWorkRows` and the Project leads tab `useTeamWork`; both build on
    `buildInternWorkItems`, so a row is the same item the lead sees on their own Work page. */
 
+const STATUS_FILTER = [
+  { value: 'open', label: 'Open' },
+  ...TODAY_STATUS_ORDER.map((s) => ({ value: s.status, label: s.status })),
+];
+
 const STATUS_RANK = Object.fromEntries(TODAY_STATUS_ORDER.map((s, i) => [s.status, i])) as Record<string, number>;
 
 function sortRows(rows: FirmWorkRow[]): FirmWorkRow[] {
@@ -80,7 +85,7 @@ const statusColumn: EFilingColumn<FirmWorkRow> = {
 };
 
 function useFiltered(rows: FirmWorkRow[], person: (r: FirmWorkRow) => string) {
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('open');
   const [who, setWho] = useState('');
   const [company, setCompany] = useState('');
   const shown = sortRows(
@@ -122,12 +127,13 @@ export function ManagersWorkPanel() {
     statusColumn,
   ];
 
-  const anyFilter = Boolean(f.who) || Boolean(f.company);
+  const anyFilter = f.status !== 'open' || Boolean(f.who) || Boolean(f.company);
   const scoped = rows.filter((r) => (!f.who || r.managerId === f.who) && (!f.company || r.engagementId === f.company));
 
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-2">
+          <FilterChip label="Status" value={f.status} options={STATUS_FILTER} onChange={f.setStatus} />
           <FilterChip label="Manager" value={f.who} options={options(rows, (r) => r.managerId, (r) => r.managerName)} onChange={f.setWho} />
           <FilterChip label="Company" value={f.company} options={options(rows, (r) => r.engagementId, (r) => r.companyName)} onChange={f.setCompany} />
           {anyFilter ? (
@@ -135,6 +141,7 @@ export function ManagersWorkPanel() {
               size="sm"
               variant="link"
               onClick={() => {
+                f.setStatus('open');
                 f.setWho('');
                 f.setCompany('');
               }}

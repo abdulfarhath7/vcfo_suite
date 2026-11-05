@@ -30,7 +30,8 @@ import {
   SuperPageError,
   SuperPageSkeleton,
 } from '@/components/super/parts/super-parts';
-import { plainDay, shortCompany, todayKey } from '@/components/super/parts/super-text';
+import { shortCompany, todayKey } from '@/components/super/parts/super-text';
+import { plainDay } from '@/lib/date-format';
 import { useSuperOverview } from '@/hooks/use-super-overview';
 import { useSuperInsights } from '@/views/super/use-super-insights';
 import {
@@ -48,8 +49,8 @@ import { cn } from '@/lib/utils';
  * already ranked by urgency. Read-only, like the rest of this surface.
  *
  * The table is the shared `EFilingGrid` (Spectrum T1 rows). The chips are Admin,
- * Manager, Stage and Area (prototype); `?filter=` still narrows the list for links
- * that land on a slice, and Clear all drops it. The Admin column reads the
+ * Manager, Stage and Area (prototype); a link with `?filter=` lands on a slice, shown
+ * as one more chip, and Clear all drops it. The Admin column reads the
  * manager's reporting line (G-20), and "Assign client" opens the same assign dialog
  * as the Overview.
  */
@@ -58,6 +59,13 @@ type Filter = 'all' | 'attention' | 'firm' | 'client';
 
 const STAGES = ['Incorporating', 'Compliance'];
 const AREAS = ['Incorporation', 'Registrations', 'Compliances'];
+
+/** The word a `?filter=` slice shows on its chip, so the narrowed list says why it is short. */
+const SLICE_WORD: Record<Exclude<Filter, 'all'>, string> = {
+  attention: 'Needs attention',
+  firm: 'With SBC',
+  client: 'With client',
+};
 
 function parseFilter(value: string | null): Filter {
   return value === 'attention' || value === 'firm' || value === 'client' ? value : 'all';
@@ -170,6 +178,20 @@ function SuperProjectsInner() {
           if (filter !== 'all') router.replace(SUPER_PROJECTS_HREF, { scroll: false });
         }}
         filters={[
+          ...(filter !== 'all'
+            ? [
+                {
+                  key: 'slice',
+                  label: 'Showing',
+                  value: SLICE_WORD[filter],
+                  options: Object.values(SLICE_WORD),
+                  onChange: (word: string) => {
+                    const next = Object.entries(SLICE_WORD).find(([, w]) => w === word)?.[0];
+                    router.replace(next ? `${SUPER_PROJECTS_HREF}?filter=${next}` : SUPER_PROJECTS_HREF, { scroll: false });
+                  },
+                },
+              ]
+            : []),
           {
             key: 'admin',
             label: 'Admin',

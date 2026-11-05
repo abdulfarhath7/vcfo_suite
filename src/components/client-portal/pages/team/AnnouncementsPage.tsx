@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAnnouncements } from '@/hooks/use-announcements';
 import { ANNOUNCEMENT_KIND_LABEL, type Announcement } from '@/lib/notifications/announcements';
 import { VCFO_PORTAL_TASKS, type VcfoPortalTask } from '@/lib/notifications/announcement-portals';
-import type { Regulator } from '@/components/ui/spectrum-chip';
+import type { Regulator } from '@/lib/ui/regulator';
 import { usePortal } from '../../PortalProvider';
 import { LinkButton } from '../../LinkButton';
 import {

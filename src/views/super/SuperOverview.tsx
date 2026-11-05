@@ -24,6 +24,7 @@ import {
 } from '@/components/super/overview/SuperPracticeCards';
 import { SuperPracticeAreasPanel } from '@/components/super/overview/SuperPracticeAreasPanel';
 import { SuperTeamLoadPanel } from '@/components/super/overview/SuperTeamLoadPanel';
+import { EscalationsPanel } from '@/components/super/escalations/EscalationsPanel';
 import {
   changeText,
   filingOutcome,
@@ -55,10 +56,10 @@ import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
  * tiles (Clients, Registrations open, Filed on time, Filings overdue, each with the
  * change against last month where stored dates can say), the three practice cards,
  * then a main column (admins, managers, practice areas and the attention list last)
- * and a 360px rail (top risks, what admins did, team load) from lg, 20px gaps.
+ * and a 360px rail (escalations, top risks, what admins did, team load) from lg, 20px gaps.
  * Assign task stays beside Assign client because it is a real super admin action.
- * Escalations live on the client record and the "Open esc." column here; the audit
- * trail opens from Team.
+ * The firm-wide open escalations sit at the top of the rail, beyond the prototype, because
+ * no other page lists them. The audit trail opens from Team.
  */
 export default function SuperOverview() {
   const { user } = useApp();
@@ -205,6 +206,7 @@ export default function SuperOverview() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-5">
+            <EscalationsPanel canResolve limit={6} />
             {insights ? <SuperTopRisks insights={insights} /> : <InsightShapes count={1} />}
             {insights ? (
               <DashSection title="What admins did" meta="This week" flush>

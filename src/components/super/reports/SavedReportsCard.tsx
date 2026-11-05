@@ -7,7 +7,7 @@ import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Button } from '@/components/ui/button';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { SkeletonRows } from '@/components/ui/empty-state';
-import { plainDay } from '@/components/super/parts/super-text';
+import { plainDay } from '@/lib/date-format';
 import { SuperFilterChips } from '@/components/super/parts/super-parts';
 import { monthKeyLabel, REPORT_SCHEDULE_LABEL, type SavedReport } from '@/lib/reports/partner-report';
 

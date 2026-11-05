@@ -310,6 +310,7 @@ export function AuditTable({
   emptyMessage,
   filters,
   onFiltersChange,
+  showTarget = true,
   exportName,
   onLoadOlder,
   loadingOlder = false,
@@ -323,7 +324,6 @@ export function AuditTable({
   emptyMessage: string;
   filters: AuditFilters;
   onFiltersChange: (patch: Partial<AuditFilters>) => void;
-  /** Kept for callers; the project shows in the event's side panel. */
   showTarget?: boolean;
   exportName: string;
   /** Set while an older page exists (G-28); the button fetches it and the rows append. */
@@ -408,6 +408,21 @@ export function AuditTable({
       width: '124px',
       render: (ev) => <ResultChip ev={ev} />,
     },
+    ...(showTarget
+      ? [
+          {
+            key: 'target',
+            header: 'Target',
+            width: '180px',
+            render: (ev: AuditEventRow) => (
+              <span className="block min-w-0">
+                <span className="block truncate text-ink">{projectOf(ev) ?? '—'}</span>
+                <span className="block truncate text-[12.5px] text-ink-muted">{getAuditTargetType(ev.action)}</span>
+              </span>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const isFiltered = auditFiltersSet(filters);
@@ -444,7 +459,7 @@ export function AuditTable({
 
       <div>
         {loading ? (
-          <EFilingGrid columns={columns} rows={[] as AuditEventRow[]} rowKey={(ev) => ev.id} minWidth={764} caption={title} loading />
+          <EFilingGrid columns={columns} rows={[] as AuditEventRow[]} rowKey={(ev) => ev.id} minWidth={showTarget ? 944 : 764} caption={title} loading />
         ) : events.length === 0 ? (
           <EmptyState title={emptyMessage} className="m-4" />
         ) : filtered.length === 0 ? (
@@ -463,7 +478,7 @@ export function AuditTable({
             rows={filtered}
             rowKey={(ev) => ev.id}
             pageSize={10}
-            minWidth={764}
+            minWidth={showTarget ? 944 : 764}
             caption={title}
             stickyFirstColumn
             onRowClick={(ev: AuditEventRow) => setPicked(ev)}

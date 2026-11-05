@@ -11,7 +11,8 @@ import { DashSection } from '@/components/dash/DashSection';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { AreaPill, Chip, REG_WORD, regOf, type ChipTone } from '@/components/ui/spectrum-chip';
+import { AreaPill, Chip, REG_WORD, type ChipTone } from '@/components/ui/spectrum-chip';
+import { regOf } from '@/lib/ui/regulator';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import {
@@ -31,6 +32,7 @@ import {
   parseIsoDate,
   rowsInMonth,
   sortByDueDate,
+  todayIST,
   type FilingRow,
   type FilingStatus,
 } from '@/lib/compliance/filings';
@@ -112,7 +114,7 @@ export function ComplianceCalendarView({
   const params = useSearchParams();
   const router = useRouter();
   const now = useMemo(() => new Date(), []);
-  const todayIso = now.toISOString().slice(0, 10);
+  const todayIso = todayIST(now);
   const { engagements } = scope;
   const sole = soleCompany(engagements);
 
