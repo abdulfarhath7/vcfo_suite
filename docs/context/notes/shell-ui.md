@@ -125,3 +125,16 @@ Gotchas already paid for once. Append when something costs more than a minute to
   the old session's cached pages. Callers that `router.push('/login')` afterwards are harmless.
 - The portal and console menus call next-auth's `signOut({ callbackUrl: '/login' })` directly;
   measured 2026-11-04: about 0.1 s from the sign-out request to the login page.
+
+## Stuck on "Opening VCFO Suite…" after sign-in (2026-11-04)
+
+- Seen on the live site: after a password sign-in the shell stayed on the boot screen until a manual
+  refresh. Not reproducible on a dev laptop; the likely cause is a failed or stale `/api/auth/session`
+  read (the jwt callback queries the profile and `user_sessions` on every read).
+- Two layers, both in place: `useSessionAuth` re-reads the session three times when an `/app` page finds
+  none and signs out only when the server itself answers "no session"; `AuthBootScreen` reloads the page
+  once (at most once a minute, `sessionStorage` stamp) if it is still showing after 8 s. Code-split
+  loaders pass `reloadAfterMs={0}`.
+- Verified 2026-11-05 by faking the session read in Playwright (admin, manager, client): two failed reads
+  recover with no reload; a read that never answers recovers through the reload; "no session" ends on
+  `/login`. Do not switch sign-in to a full page load instead: in dev it made sign-in 3 to 18 s.

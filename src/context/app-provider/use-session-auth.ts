@@ -40,6 +40,30 @@ function authUserFromSessionUser(user: SessionUser | undefined): AuthUser | null
   };
 }
 
+/** Waits before each extra session read when an /app page finds no session (see the effect below). */
+const SESSION_RETRY_WAITS_MS = [0, 600, 1500] as const;
+
+/**
+ * One read of `/api/auth/session`. `definite` is true only when the server answered; a network
+ * error or a 5xx is not a "signed out" answer, so the caller must not sign the person out on it.
+ */
+async function readSessionUser(): Promise<{ user: AuthUser | null; definite: boolean }> {
+  try {
+    const res = await fetch('/api/auth/session', { cache: 'no-store', credentials: 'same-origin' });
+    if (!res.ok) return { user: null, definite: false };
+    const body = (await res.json()) as { user?: SessionUser } | null;
+    return { user: authUserFromSessionUser(body?.user), definite: true };
+  } catch {
+    return { user: null, definite: false };
+  }
+}
+
+function isOnAppPage(): boolean {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname;
+  return path === '/app' || path.startsWith('/app/');
+}
+
 type SessionAuthParams = {
   queryClient: QueryClient;
 } & Pick<
@@ -91,8 +115,43 @@ export function useSessionAuth({
       setAuthLoading(true);
       return;
     }
-    setUser(authUserFromSessionUser(session?.user as SessionUser | undefined));
-    setAuthLoading(false);
+    const fromSession = authUserFromSessionUser(session?.user as SessionUser | undefined);
+    if (fromSession || !isOnAppPage()) {
+      setUser(fromSession);
+      setAuthLoading(false);
+      return;
+    }
+    // On /app the proxy has already seen a valid sign-in cookie, so "no session" here is a stale
+    // or failed read. On the live site it left the shell on "Opening VCFO Suite…" right after
+    // sign-in until a manual refresh. Ask again before giving up; only when the server itself says
+    // there is no session (signed out on another device, profile removed) clear the cookie and go
+    // to the login page. Reads that failed leave the session alone; the boot screen's reload
+    // safety net (AuthBootScreen) handles those.
+    let cancelled = false;
+    setAuthLoading(true);
+    void (async () => {
+      let definitelySignedOut = false;
+      for (const waitMs of SESSION_RETRY_WAITS_MS) {
+        if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
+        if (cancelled) return;
+        const read = await readSessionUser();
+        if (read.user) {
+          if (!cancelled) {
+            setUser(read.user);
+            setAuthLoading(false);
+          }
+          return;
+        }
+        definitelySignedOut = read.definite;
+      }
+      if (cancelled || !definitelySignedOut) return;
+      setUser(null);
+      const back = `${window.location.pathname}${window.location.search}`;
+      await authJsSignOut({ callbackUrl: `/login?${new URLSearchParams({ next: back }).toString()}` });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [session, sessionStatus, setUser, setAuthLoading]);
 
   const signIn = useCallback<AppContextValue['signIn']>(async (email, password) => {

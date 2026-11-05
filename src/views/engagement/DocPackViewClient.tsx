@@ -5,7 +5,7 @@ import { AuthBootScreen } from '@/components/common/AuthBootScreen';
 
 const DocPackView = dynamic(() => import('@/views/engagement/DocPackView'), {
   ssr: false,
-  loading: () => <AuthBootScreen label="Loading document pack…" />,
+  loading: () => <AuthBootScreen label="Loading document pack…" reloadAfterMs={0} />,
 });
 
 /** Client-only entry, like the step page: the view reads route params and the session. */
