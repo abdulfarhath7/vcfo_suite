@@ -290,8 +290,17 @@ export function EFilingGrid<T>({
           {caption ? <caption className="sr-only">{caption}</caption> : null}
           <colgroup>
             {selectable ? <col style={{ width: '36px' }} /> : null}
-            {columns.map((c) => (
-              <col key={c.key} style={c.width ? { width: c.width } : undefined} />
+            {columns.map((c, ci) => (
+              // The last cell's edge padding is 10px more than a normal cell's, and a fixed 104px chip
+              // needs that room back or its cell ellipsis shows beside the chip.
+              <col
+                key={c.key}
+                style={
+                  c.width
+                    ? { width: !trailing && ci === columns.length - 1 && c.width.endsWith('px') ? `calc(${c.width} + 20px)` : c.width }
+                    : undefined
+                }
+              />
             ))}
             {trailing ? <col style={{ width: rowActions ? '104px' : '44px' }} /> : null}
           </colgroup>
