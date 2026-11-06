@@ -56,7 +56,7 @@ let today = 0;
 const recorded = vi.fn();
 vi.mock('@/db/repositories/ask-usage', () => ({ systemTodayTokenTotal: async () => today, systemRecordAskUsage: async (...a: unknown[]) => recorded(...a) }));
 vi.mock('@/db/repositories/engagements', () => ({ getEngagementById: async () => ({ companyName: 'Acme' }) }));
-const createCard = vi.fn(async (_c: unknown, _i: { draft: { rows: unknown[]; tier: string; title: string; recipients?: unknown[] } }) => 'c0000000-0000-4000-8000-00000000000c' as string | null);
+const createCard = vi.fn(async (_c: unknown, _i: { draft: { rows: unknown[]; tier: string; title: string; recipients?: unknown[]; engagementId?: string | null } }) => 'c0000000-0000-4000-8000-00000000000c' as string | null);
 let cardRows: Array<{ status: string; error?: string | null }> = [];
 let cardStatus = 'proposed';
 vi.mock('@/db/repositories/ask-changesets', () => ({
@@ -122,6 +122,49 @@ beforeEach(() => {
     budgetTokens: 200000,
     state: firstAgentMessage({ companyName: 'Acme', person: 'Lead', role: 'intern', goal: 'Tidy this project', now: new Date('2026-11-06T10:00:00Z') }),
   };
+});
+
+describe('a run with no project', () => {
+  const firmAction = (name: string, tier: string) =>
+    fakeAction(name, tier, '{"invoices":[]}', {
+      firmWide: true,
+      preview: async (_actx: unknown, input: object) => ({ title: name, tier, engagementId: null, rows: [{ action: name, target: input, label: name, oldValue: null, newValue: '', displayOld: '', displayNew: '', sensitive: false, source: null, checks: [] }] }),
+    });
+
+  beforeEach(() => {
+    run.engagementId = null;
+    run.state = firstAgentMessage({ companyName: null, person: 'Lead', role: 'intern', goal: 'Skip the reminder', now: new Date('2026-11-06T10:00:00Z') });
+    registered = [...registered, firmAction('receivables.reminderQueue', 'T0'), firmAction('receivables.skipReminder', 'T2')];
+  });
+
+  it('shows the model only firm-wide tools, and says there is no client', async () => {
+    script = [say('Nothing to do.')];
+    await agentTurn('run-1');
+    expect(requests[0]!.tools!.flatMap((t) => ('defer_loading' in t ? [t.name] : []))).toEqual(['receivables__reminderQueue', 'receivables__skipReminder']);
+    expect(JSON.stringify(requests[0]!.messages)).toContain('No client');
+  });
+
+  it('refuses a project tool the model asks for anyway', async () => {
+    script = [call(['tasks__create', { body: 'x' }]), say('I could not.')];
+    await agentTurn('run-1');
+    expect(lastResults()[0]).toMatchObject({ is_error: true, content: 'That tool is not available to this person.' });
+    expect(createCard).not.toHaveBeenCalled();
+  });
+
+  it('puts a firm-wide proposal on a card with no project, and waits', async () => {
+    script = [call(['receivables__skipReminder', { body: 'x' }])];
+    expect((await agentTurn('run-1')).kind).toBe('wait');
+    expect(createCard.mock.calls[0]![1].draft.engagementId).toBeNull();
+  });
+
+  it('a card mixing a firm-wide row with a project row on a locked run carries the project', async () => {
+    run.engagementId = CLIENT;
+    script = [call(['receivables__skipReminder', { body: 'x' }], ['tasks__create', { body: 'y' }])];
+    expect((await agentTurn('run-1')).kind).toBe('wait');
+    const { draft } = createCard.mock.calls[0]![1];
+    expect(draft.engagementId).toBe(CLIENT);
+    expect(draft.rows).toHaveLength(2);
+  });
 });
 
 describe('agent loop', () => {

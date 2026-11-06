@@ -145,6 +145,10 @@ describe('the receivables actions', () => {
     }
   });
 
+  it('marks every action firm-wide, so a request needs no client first', () => {
+    expect(actions.filter((a: AnyAction) => !a.firmWide).map((a: AnyAction) => a.name)).toEqual([]);
+  });
+
   it('offers nothing to a project lead, a client, a developer or a partner, and has no payment action', () => {
     for (const action of actions) {
       for (const role of ['intern', 'client', 'developer', 'partner']) expect(action.roles).not.toContain(role);

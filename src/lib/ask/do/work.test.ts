@@ -25,7 +25,7 @@ vi.mock('@/db/repositories/ask-runs', () => ({
   setAskRunAnswer: (...a: unknown[]) => answer(...a),
   systemLoadAskRun: vi.fn(),
 }));
-const createCard = vi.fn(async (_c: unknown, _i: { draft: { engagementId: string; tier: string; recipients?: unknown[]; rows: Array<{ target: object }> } }) => 'c0000000-0000-4000-8000-00000000000c');
+const createCard = vi.fn(async (_c: unknown, _i: { draft: { engagementId: string | null; tier: string; recipients?: unknown[]; rows: Array<{ target: object }> } }) => 'c0000000-0000-4000-8000-00000000000c');
 vi.mock('@/db/repositories/ask-changesets', () => ({ createAskChangeset: (...a: [unknown, never]) => createCard(...a) }));
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn(async () => []) }));
 vi.mock('@/db/repositories/engagement-managers-membership', () => ({ listManagerIdsForEngagement: async () => [] }));
@@ -77,7 +77,7 @@ describe('handleWork', () => {
     expect(calls[0]!.model).toBe('claude-haiku-5-5');
     const names = calls[0]!.tools!.map((t) => t.name);
     expect(names).toEqual(expect.arrayContaining(['fill_details', 'notes__add', 'open_ended', 'requests__create', 'tasks__create']));
-    const actionNames = names.filter((name) => name !== 'fill_details' && name !== 'open_ended');
+    const actionNames = names.filter((name) => !['fill_details', 'open_ended', 'receivables_work'].includes(name));
     for (const action of await Promise.all(actionNames.map((name) => getAction(name.replace('__', '.'))))) expect(action?.simple).toBe(true);
     expect(createRun).not.toHaveBeenCalled();
   });
@@ -183,6 +183,61 @@ describe('handleWork', () => {
     if (outcome.kind !== 'answer') throw new Error(outcome.kind);
     expect(outcome.answer.line).toMatch(/switched off/);
     expect(createRun).not.toHaveBeenCalled();
+  });
+
+  describe('firm-wide work, which sits on no project', () => {
+    const noProjects = (message: string, page?: string) =>
+      handleWork(manager, { shell: 'admin', page: page ? { path: page } : undefined }, {
+        message,
+        onScreen: null,
+        conversationId: null,
+        now: new Date('2026-11-06T10:00:00Z'),
+        engagements: async () => {
+          throw new Error('a firm-wide request must not look for a client');
+        },
+        provider: async () => provider,
+      });
+
+    it('offers the way to it only to a role that has such actions', async () => {
+      reply = tool('open_ended');
+      await go('Skip the reminder for invoice 42', { ctx: lead });
+      expect(calls[0]!.tools!.map((t) => t.name)).not.toContain('receivables_work');
+      calls.length = 0;
+      await go('Skip the reminder for invoice 42 at Acme');
+      expect(calls[0]!.tools!.map((t) => t.name)).toEqual(expect.arrayContaining(['receivables_work', 'receivables__markReceived']));
+    });
+
+    it('starts a run with no lock and no client named, for a person with no projects', async () => {
+      reply = tool('receivables_work');
+      const outcome = await noProjects('Skip the reminder for invoice SC/08/02');
+      if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+      expect(outcome.answer.line).toBe('Working on this. Nothing is saved or sent until you accept it.');
+      expect(lockRun).not.toHaveBeenCalled();
+      const first = updateRun.mock.calls.find((c) => c[2].state)![2].state;
+      expect(JSON.stringify(first.messages)).toContain('No client');
+      expect(JSON.stringify(first.messages)).not.toContain('Client:');
+    });
+
+    it('never names the project on screen', async () => {
+      reply = tool('receivables_work');
+      const outcome = await noProjects('Which invoices are overdue?', '/app/admin/engagements/acme');
+      if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+      expect(outcome.answer.line).not.toMatch(/Acme/);
+      expect(lockRun).not.toHaveBeenCalled();
+    });
+
+    it('turns one firm-wide action into a card with no project on it', async () => {
+      const action = (await getAction('receivables.markReceived'))!;
+      const preview = vi.spyOn(action, 'preview').mockResolvedValue({ title: 'Record a receipt', tier: 'T2', engagementId: null, rows: [{ action: action.name, target: {}, label: 'SC/09/01', oldValue: null, newValue: 'x', displayOld: '', displayNew: 'x', sensitive: false, source: null, checks: [] }] });
+      reply = tool('receivables__markReceived', { invoiceNo: 'SC/09/01', paidOn: '2026-11-05' });
+      const outcome = await noProjects('Mark invoice SC/09/01 as paid in full on 5 November 2026.');
+      if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+      expect(preview.mock.calls[0]![0].engagementId).toBeNull();
+      expect(lockRun).not.toHaveBeenCalled();
+      expect(createCard.mock.calls[0]![1].draft.engagementId).toBeNull();
+      expect(outcome.answer.line).toBe('I prepared this. Nothing is saved until you accept.');
+      preview.mockRestore();
+    });
   });
 
   it('masks identity numbers before the small model reads the request', async () => {
