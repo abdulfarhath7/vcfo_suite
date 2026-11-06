@@ -1,10 +1,10 @@
-import { after, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
-import { deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, recordSummarySend } from '@/db/repositories/receivables';
-import { assertOutlookReady } from '@/db/repositories/outlook-connections';
+import { queueSummary } from '@/lib/actions/receivables/summary';
+import { cleanRecipients } from '@/lib/receivables/recipients';
+import { outlookErrorCode } from '@/lib/receivables/summary-send';
+import { getSummarySendStatus, getSummarySource } from '@/db/repositories/receivables';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
 /**
@@ -42,24 +42,8 @@ export async function POST(request: Request, context: RouteContext) {
   const subject = input.subject.trim();
   try {
     const src = await getSummarySource(guard.ctx, id);
-    const { msEmail } = await assertOutlookReady(guard.ctx);
-    const { id: sendId } = await recordSummarySend(guard.ctx, id, { versionId: src.version.id, to: people.to, cc: people.cc, bcc: people.bcc, subject, channel: 'outlook', status: 'sending' });
-    const ctx = guard.ctx;
-    after(() =>
-      deliverSummary(ctx, id, sendId, {
-        clientOrgName: src.sheet.clientOrgName,
-        snapshot: src.version.snapshot,
-        attachExcel: input.attachExcel,
-        mail: {
-          to: people.to.map((r) => r.email),
-          cc: people.cc.map((r) => r.email),
-          bcc: people.bcc.map((r) => r.email),
-          subject,
-          html: tidyEmailHtml(input.html),
-        },
-      }),
-    );
-    return NextResponse.json({ ok: true, queued: true, sendId, from: msEmail, to: people.to.length, cc: people.cc.length, bcc: people.bcc.length }, { status: 202 });
+    const { sendId, from } = await queueSummary(guard.ctx, src, { to: people.to, cc: people.cc, bcc: people.bcc, subject, html: input.html, attachExcel: input.attachExcel });
+    return NextResponse.json({ ok: true, queued: true, sendId, from, to: people.to.length, cc: people.cc.length, bcc: people.bcc.length }, { status: 202 });
   } catch (e) {
     const code = outlookErrorCode(e);
     if (code) return NextResponse.json({ error: code }, { status: 409 });
