@@ -34,6 +34,8 @@ const NOTIFICATION_KINDS = [
   'watch.update',
   /** An official source stopped working, for the reviewers (Watch). */
   'watch.alert',
+  /** Overnight proposals waiting on this person's review. */
+  'ask.proposal',
   'team.assigned',
   'team.removed',
   'email.sent',

@@ -29,6 +29,7 @@ export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
   'board.meeting': 'Meeting',
   'watch.update': 'Update',
   'watch.alert': 'Source',
+  'ask.proposal': 'Proposal',
   'team.assigned': 'Assigned',
   'team.removed': 'Removed',
   'email.sent': 'Sent',

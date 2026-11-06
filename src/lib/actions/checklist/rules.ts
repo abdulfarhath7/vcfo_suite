@@ -58,7 +58,7 @@ export function isFileRow(action: string): boolean {
   return action === RESPONSE_ACTIONS.client.attach || action === RESPONSE_ACTIONS.staff.attach;
 }
 
-const NOT_BLOCKING: ReadonlySet<string> = new Set(['conflict', 'other_step', 'documents_differ']);
+const NOT_BLOCKING: ReadonlySet<string> = new Set(['conflict', 'other_step', 'documents_differ', 'open_first']);
 const HOLDS: ReadonlySet<string> = new Set(['gate', 'owner', 'condition']);
 
 export function rowCanApply(checks: readonly RowCheck[]): boolean {

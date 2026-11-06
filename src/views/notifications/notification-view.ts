@@ -34,6 +34,7 @@ export function chipWordOf(item: Pick<AppNotification, 'kind'>): string {
   if (k.startsWith('team.')) return 'Team';
   if (k === 'watch.update') return 'Update';
   if (k === 'watch.alert') return 'Source';
+  if (k === 'ask.proposal') return 'Proposal';
   return 'Step';
 }
 

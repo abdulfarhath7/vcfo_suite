@@ -34,7 +34,7 @@ function maskJson(value: JsonValue | undefined): JsonValue | undefined {
 
 export async function createAskRun(
   ctx: AuthContext,
-  input: { conversationId: string | null; workflow: string; goal: string; budgetTokens: number; kind?: 'fixed_workflow' | 'agent' },
+  input: { conversationId: string | null; workflow: string; goal: string; budgetTokens: number; kind?: 'fixed_workflow' | 'agent'; trigger?: 'chat' | 'schedule' },
 ): Promise<AskRunRow> {
   assertAskRole(ctx);
   const [row] = await db
@@ -44,6 +44,7 @@ export async function createAskRun(
       conversationId: input.conversationId,
       kind: input.kind ?? 'fixed_workflow',
       workflow: input.workflow,
+      trigger: input.trigger ?? 'chat',
       status: input.kind === 'agent' ? 'queued' : 'running',
       goal: maskIdentityNumbers(input.goal).slice(0, 2000),
       budgetTokens: input.budgetTokens,
@@ -172,22 +173,27 @@ export async function setAskRunAnswer(ctx: AuthContext, run: Pick<AskRunRow, 'id
     .where(eq(askMessages.id, run.messageId));
 }
 
-/**
- * The run and its person as they stand now, so a job acts with today's role. A person who was
- * removed or who lost Ask VCFO while the run slept gets null, and the run stops.
- */
+const PERSON = { id: profiles.id, email: profiles.email, name: profiles.name, role: profiles.role, internId: profiles.internId, clientId: profiles.clientId, status: profiles.status };
+
+type PersonRow = { id: string; email: string; name: string | null; role: string; internId: string | null; clientId: string | null; status: string };
+
+/** Today's role, or null for a person who was removed or who has lost Ask VCFO. */
+function contextOf(person: PersonRow | undefined): AuthContext | null {
+  if (!person || person.status !== 'active' || !canUseAsk(person.role)) return null;
+  return { userId: person.id, email: person.email, name: person.name?.trim() || person.email, role: person.role as AuthContext['role'], internId: person.internId ?? undefined, clientId: person.clientId ?? undefined };
+}
+
+/** The run and its person as they stand now, so a job acts with today's role and a run can stop if they have gone. */
 export async function systemLoadAskRun(runId: string): Promise<{ run: AskRunRow; ctx: AuthContext } | null> {
-  const [found] = await db
-    .select({ run: askRuns, id: profiles.id, email: profiles.email, name: profiles.name, role: profiles.role, internId: profiles.internId, clientId: profiles.clientId, status: profiles.status })
-    .from(askRuns)
-    .innerJoin(profiles, eq(profiles.id, askRuns.profileId))
-    .where(eq(askRuns.id, runId))
-    .limit(1);
-  if (!found || found.status !== 'active' || !canUseAsk(found.role)) return null;
-  return {
-    run: found.run,
-    ctx: { userId: found.id, email: found.email, name: found.name?.trim() || found.email, role: found.role as AuthContext['role'], internId: found.internId ?? undefined, clientId: found.clientId ?? undefined },
-  };
+  const [found] = await db.select({ run: askRuns, ...PERSON }).from(askRuns).innerJoin(profiles, eq(profiles.id, askRuns.profileId)).where(eq(askRuns.id, runId)).limit(1);
+  const ctx = contextOf(found);
+  return found && ctx ? { run: found.run, ctx } : null;
+}
+
+/** The person a scheduled run acts as, read the same way. */
+export async function systemLoadAskOwner(profileId: string): Promise<AuthContext | null> {
+  const [found] = await db.select(PERSON).from(profiles).where(eq(profiles.id, profileId)).limit(1);
+  return contextOf(found);
 }
 
 export async function systemStopAskRun(runId: string, error: string): Promise<void> {

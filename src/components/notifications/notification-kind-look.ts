@@ -42,6 +42,7 @@ export const NOTIFICATION_KIND_LOOK: Record<
   'board.meeting': { Icon: Users, tone: 'prog', group: 'Steps' },
   'watch.update': { Icon: Megaphone, tone: 'prog', group: 'Updates' },
   'watch.alert': { Icon: TriangleAlert, tone: 'warn', group: 'Updates' },
+  'ask.proposal': { Icon: Inbox, tone: 'prog', group: 'Requests' },
   'team.assigned': { Icon: Users, tone: 'prog', group: 'Team' },
   'team.removed': { Icon: Users, tone: 'idle', group: 'Team' },
   'email.sent': { Icon: Mail, tone: 'ok', group: 'Email' },

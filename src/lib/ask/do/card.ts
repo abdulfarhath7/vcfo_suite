@@ -11,6 +11,20 @@ import { isAdminOrManager } from '@/lib/auth';
 
 const CARD_DAYS = 7;
 
+/** Several proposals go on one card, the highest tier deciding how it is confirmed. */
+export function oneCard(drafts: readonly ChangesetDraft[], lastRead: string | null): ChangesetDraft {
+  const recipients = [...new Map(drafts.flatMap((draft) => draft.recipients ?? []).map((person) => [person.email ?? person.name, person])).values()];
+  const source = lastRead ? { kind: 'record' as const, fileName: lastRead } : null;
+  return {
+    title: drafts.length === 1 ? drafts[0]!.title : `${drafts.length} changes to review`,
+    tier: drafts.some((draft) => draft.tier === 'T3') ? 'T3' : 'T2',
+    // A firm-wide row has no project, so a mixed card takes the project of the row that has one.
+    engagementId: drafts.find((draft) => draft.engagementId)?.engagementId ?? null,
+    rows: drafts.flatMap((draft) => draft.rows).map((row) => ({ ...row, source: row.source ?? source })),
+    ...(drafts.some((draft) => draft.tier === 'T3') ? { recipients } : {}),
+  };
+}
+
 /** Puts a card in the chat, and tells the manager when a row on it is theirs to approve. */
 export async function createReviewCard(
   ctx: AuthContext,

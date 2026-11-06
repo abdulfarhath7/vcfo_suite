@@ -209,12 +209,12 @@ export function AskProvider({ children }: { children: ReactNode }) {
       });
   }, [open, pageOpen, enabled, conversationId, thread.length, key, hKey]);
 
-  // A link such as a manager's notification opens one review card in the chat.
+  // A link such as a manager's notification opens its review cards in the chat.
   useEffect(() => {
     if (!enabled) return;
-    const changesetId = new URLSearchParams(window.location.search).get('changeset');
-    if (!changesetId) return;
-    setThread((t) => (t.some((item) => item.kind === 'changeset' && item.changesetId === changesetId) ? t : [...t, { id: nextId(), kind: 'changeset', changesetId }]));
+    const changesetIds = new URLSearchParams(window.location.search).getAll('changeset');
+    if (changesetIds.length === 0) return;
+    setThread((t) => [...t, ...changesetIds.filter((changesetId) => !t.some((item) => item.kind === 'changeset' && item.changesetId === changesetId)).map((changesetId) => ({ id: nextId(), kind: 'changeset' as const, changesetId }))]);
     setOpenState(true);
   }, [enabled]);
 

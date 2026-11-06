@@ -10,7 +10,7 @@ import { needsApproval, type ActionContext, type AnyAction } from '@/lib/actions
 import { defaultShellForRole } from '@/lib/ask/access';
 import type { ChangesetDraft, JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
-import { createReviewCard } from '@/lib/ask/do/card';
+import { createReviewCard, oneCard } from '@/lib/ask/do/card';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { getAskProvider, type LlmMessage } from '@/lib/ask/provider';
 import { REFUSAL_COPY } from '@/lib/ask/refusals';
@@ -175,20 +175,6 @@ async function answerTool(
     console.error('[ask-vcfo] action failed', action.name, error);
     return failed('That could not be done just now.');
   }
-}
-
-/** Several proposals from one model turn go on one card, the highest tier deciding how it is confirmed. */
-function oneCard(drafts: readonly ChangesetDraft[], lastRead: string | null): ChangesetDraft {
-  const recipients = [...new Map(drafts.flatMap((draft) => draft.recipients ?? []).map((person) => [person.email ?? person.name, person])).values()];
-  const source = lastRead ? { kind: 'record' as const, fileName: lastRead } : null;
-  return {
-    title: drafts.length === 1 ? drafts[0]!.title : `${drafts.length} changes to review`,
-    tier: drafts.some((draft) => draft.tier === 'T3') ? 'T3' : 'T2',
-    // A firm-wide row has no project, so a mixed card takes the project of the row that has one.
-    engagementId: drafts.find((draft) => draft.engagementId)?.engagementId ?? null,
-    rows: drafts.flatMap((draft) => draft.rows).map((row) => ({ ...row, source: row.source ?? source })),
-    ...(drafts.some((draft) => draft.tier === 'T3') ? { recipients } : {}),
-  };
 }
 
 function answerAll(state: AgentState): void {
