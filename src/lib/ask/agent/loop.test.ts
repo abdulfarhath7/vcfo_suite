@@ -59,8 +59,11 @@ vi.mock('@/db/repositories/engagements', () => ({ getEngagementById: async () =>
 const createCard = vi.fn(async (_c: unknown, _i: { draft: { rows: unknown[]; tier: string; title: string; recipients?: unknown[]; engagementId?: string | null } }) => 'c0000000-0000-4000-8000-00000000000c' as string | null);
 let cardRows: Array<{ status: string; error?: string | null }> = [];
 let cardStatus = 'proposed';
+let cardOnFile: string | null = null;
+const findCard = vi.fn(async (_c: unknown, _runId: string, _hash: string) => cardOnFile);
 vi.mock('@/db/repositories/ask-changesets', () => ({
   createAskChangeset: (...a: [unknown, never]) => createCard(...a),
+  findAskChangesetForRun: (...a: [unknown, string, string]) => findCard(...a),
   getAskChangesetSummary: async () => ({ changeset: { status: cardStatus, expiresAt: new Date(Date.now() + 86_400_000) }, rows: cardRows }),
 }));
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn(async () => []) }));
@@ -105,6 +108,8 @@ beforeEach(() => {
   cardRows = [];
   cardStatus = 'proposed';
   createCard.mockClear();
+  findCard.mockClear();
+  cardOnFile = null;
   recorded.mockClear();
   delete process.env.ASK_KILL_PATHS;
   registered = [fakeAction('tasks.list', 'T0', '{"tasks":[]}'), fakeAction('tasks.addPersonalTodo', 'T1', 'added', { undo: async () => ({ ok: true, summary: 'gone' }) }), fakeAction('tasks.create', 'T2'), fakeAction('reminders.sendClient', 'T3'), fakeAction('filing.submit', 'T4')];
@@ -279,6 +284,40 @@ describe('agent loop', () => {
     expect(executed).toEqual(['tasks.list']);
     expect(lastResults()[1]).toMatchObject({ is_error: true });
     expect(requests).toHaveLength(1);
+  });
+
+  it('a step retried after its card went out goes back to sleep on that card', async () => {
+    script = [call(['tasks__create', { body: 'x' }])];
+    const first = await agentTurn('r');
+    expect(first).toEqual({ kind: 'wait', changesetId: expect.any(String) });
+    const again = await agentTurn('r');
+    expect(again).toEqual(first);
+    expect(createCard).toHaveBeenCalledTimes(1);
+    expect(run.status).toBe('waiting_approval');
+  });
+
+  it('a step that died between making its card and saving it finds that card', async () => {
+    cardOnFile = 'c0000000-0000-4000-8000-0000000000dd';
+    script = [call(['tasks__create', { body: 'x' }])];
+    expect(await agentTurn('r')).toEqual({ kind: 'wait', changesetId: cardOnFile });
+    expect(createCard).not.toHaveBeenCalled();
+    expect(findCard.mock.calls[0]![2]).toMatch(/\S/);
+    expect((state().waiting as { changesetId: string }).changesetId).toBe(cardOnFile);
+  });
+
+  it('cuts a long read, and stops reading when one turn has read enough', async () => {
+    registered = [fakeAction('tasks.list', 'T0', 'a'.repeat(30_000))];
+    script = [call(['tasks__list'], ['tasks__list'], ['tasks__list'], ['tasks__list'])];
+    await agentTurn('r');
+    const results = lastResults() as Array<{ content: string; is_error?: boolean }>;
+    expect(results[0]!.content.length).toBeLessThan(24_200);
+    expect(results[0]!.content).toContain('Cut here');
+    expect(results[1]!.is_error).toBeUndefined();
+    expect(results[2]!.content).toContain('Cut here');
+    expect(results[2]!.content.length).toBeLessThan(12_200);
+    expect(results[3]!.is_error).toBe(true);
+    expect(results[3]!.content).toContain('Too much was read');
+    expect(executed).toHaveLength(3);
   });
 
   it('stops at the turn cap, the token cap and the daily cap, with a clear line and no model call', async () => {

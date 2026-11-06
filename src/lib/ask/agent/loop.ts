@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
-import { getAskChangesetSummary } from '@/db/repositories/ask-changesets';
+import { findAskChangesetForRun, getAskChangesetSummary } from '@/db/repositories/ask-changesets';
 import { appendAskRunStep, setAskRunAnswer, systemLoadAskRun, updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { getEngagementById } from '@/db/repositories/engagements';
@@ -10,7 +10,7 @@ import { needsApproval, type ActionContext, type AnyAction } from '@/lib/actions
 import { defaultShellForRole } from '@/lib/ask/access';
 import type { ChangesetDraft, JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
-import { createReviewCard, oneCard } from '@/lib/ask/do/card';
+import { createReviewCard, draftHash, oneCard } from '@/lib/ask/do/card';
 import { maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import { getAskProvider, type LlmMessage } from '@/lib/ask/provider';
 import { REFUSAL_COPY } from '@/lib/ask/refusals';
@@ -44,6 +44,12 @@ const MAX_TOKENS = 8000;
 /** App Runner ends a request at 120 seconds, and each turn runs inside one. */
 const TURN_TIMEOUT_MS = 100_000;
 const FINAL_MAX = 1200;
+/** What one read, and all the reads of one turn, may put in front of the model. Every later turn pays for it again. */
+const MAX_RESULT_CHARS = 24_000;
+const MAX_TURN_CHARS = 60_000;
+/** A result that is not a read stays short, so it is kept even when the reads have used up the turn. */
+const MIN_RESULT_CHARS = 1000;
+const CUT_NOTE = '\n[Cut here: too long to read in one go. Ask for less, by id or by a narrower filter.]';
 
 export type AgentOutcome = { kind: 'next' } | { kind: 'wait'; changesetId: string } | { kind: 'finished'; status: string };
 
@@ -150,6 +156,7 @@ async function answerTool(
   actx: ActionContext,
   byName: ReadonlyMap<string, AnyAction>,
   use: ReturnType<typeof toolUsesOf>[number],
+  room: number,
 ): Promise<{ result: ToolResult; read?: string } | { draft: ChangesetDraft }> {
   const failed = (content: string) => ({ result: { tool_use_id: use.id, content, is_error: true } });
   const action = byName.get(actionNameOf(use.name));
@@ -161,6 +168,7 @@ async function answerTool(
       const draft = await action.preview(actx, parsed.data);
       return draft ? { draft } : failed('There is nothing to propose here.');
     }
+    if (action.tier === 'T0' && room <= 0) return failed('Too much was read in one step. Read the rest next, a little at a time.');
     const outcome = await action.execute(actx, parsed.data);
     if (outcome.ok === false) {
       await appendAskRunStep(actx.auth, actx.runId!, { kind: 'tool', name: action.name, label: action.label, tier: action.tier, status: 'failed', output: { error: outcome.error } });
@@ -168,7 +176,9 @@ async function answerTool(
     }
     await appendAskRunStep(actx.auth, actx.runId!, { kind: 'tool', name: action.name, label: action.label, tier: action.tier, status: 'done', input: use.input as JsonValue, output: outcome.undo == null ? {} : { undo: outcome.undo } });
     const fileName = action.name === 'documents.read' ? (JSON.parse(outcome.summary) as { fileName?: string }).fileName : undefined;
-    return { result: { tool_use_id: use.id, content: maskIdentityNumbers(outcome.summary) }, read: fileName };
+    const limit = Math.min(MAX_RESULT_CHARS, Math.max(room, MIN_RESULT_CHARS));
+    const content = maskIdentityNumbers(outcome.summary);
+    return { result: { tool_use_id: use.id, content: content.length > limit ? content.slice(0, limit) + CUT_NOTE : content }, read: fileName };
   } catch (error) {
     const refusal = refusalOf(error);
     if (refusal) return failed(refusal);
@@ -190,6 +200,8 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
   if (['done', 'failed', 'cancelled', 'over_budget'].includes(run.status)) return { kind: 'finished', status: run.status };
   const now = new Date();
   const state = stateOf(run);
+  // A step retried after its card went out only goes back to sleep on that card.
+  if (state.waiting) return { kind: 'wait', changesetId: state.waiting.changesetId };
   if (run.status !== 'running') await updateAskRun(ctx, runId, { status: 'running' });
 
   const actions = (await actionsFor(ctx.role, defaultShellForRole(ctx.role) ?? 'client')).filter((action) => run.engagementId || action.firmWide);
@@ -207,7 +219,8 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
   const drafted: Array<{ id: string; draft: ChangesetDraft }> = [];
   for (const use of uses) {
     if (state.results.some((result) => result.tool_use_id === use.id)) continue;
-    const answer = await answerTool(actx, byName, use);
+    const used = state.results.reduce((sum, result) => sum + result.content.length, 0);
+    const answer = await answerTool(actx, byName, use, MAX_TURN_CHARS - used);
     if ('draft' in answer) {
       drafted.push({ id: use.id, draft: answer.draft });
       continue;
@@ -223,7 +236,9 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
     return { kind: 'next' };
   }
   const row = run.engagementId ? await getEngagementById(ctx, run.engagementId) : null;
-  const changesetId = await createReviewCard(ctx, oneCard(drafted.map((d) => d.draft), state.lastRead), { runId, conversationId: run.conversationId, companyName: row?.companyName ?? '', now });
+  const card = oneCard(drafted.map((d) => d.draft), state.lastRead);
+  // A step that died after making this card, before saving that it had, finds the card and does not make another.
+  const changesetId = (await findAskChangesetForRun(ctx, runId, draftHash(card))) ?? (await createReviewCard(ctx, card, { runId, conversationId: run.conversationId, companyName: row?.companyName ?? '', now }));
   if (!changesetId) return stop(ctx, run, 'failed', 'That project is no longer available.', 'card refused');
   state.waiting = { changesetId, toolUseIds: drafted.flatMap(({ id, draft }) => draft.rows.map(() => id)) };
   await updateAskRun(ctx, runId, { status: 'waiting_approval', state: saveState(state) });

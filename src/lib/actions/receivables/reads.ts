@@ -95,8 +95,8 @@ const reminderQueue = defineAction({
   execute: (actx, input) =>
     run(async () => {
       const desk = await reminderDesk(actx.auth, (await pickSheet(actx, input.sheetId)).id);
-      const queue = desk.queue.map((r) => ({ id: r.id, label: r.label, status: r.status, client: r.clientName, invoiceNo: r.invoiceNo, amountInr: r.amountInr, dueDate: r.dueDate, partner: r.partnerName, subject: r.subject, body: r.body.slice(0, 1000), edited: r.edited }));
-      return { ok: true, summary: JSON.stringify({ today: desk.today, remindersOn: desk.rules.enabled, queue, sentOrFailedLast14Days: desk.history.length }) };
+      const queue = desk.queue.slice(0, LINES).map((r) => ({ id: r.id, label: r.label, status: r.status, client: r.clientName, invoiceNo: r.invoiceNo, amountInr: r.amountInr, dueDate: r.dueDate, partner: r.partnerName, subject: r.subject, body: r.body.slice(0, 1000), edited: r.edited }));
+      return { ok: true, summary: JSON.stringify({ today: desk.today, remindersOn: desk.rules.enabled, total: desk.queue.length, queue, sentOrFailedLast14Days: desk.history.length }) };
     }),
 });
 

@@ -26,6 +26,10 @@ export function oneCard(drafts: readonly ChangesetDraft[], lastRead: string | nu
   };
 }
 
+export function draftHash(draft: ChangesetDraft): string {
+  return changesetHash(draft.rows.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue })));
+}
+
 /** Puts a card in the chat, and tells the manager when a row on it is theirs to approve. */
 export async function createReviewCard(
   ctx: AuthContext,
@@ -34,7 +38,7 @@ export async function createReviewCard(
 ): Promise<string | null> {
   const changesetId = await createAskChangeset(ctx, {
     draft,
-    contentHash: changesetHash(draft.rows.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue }))),
+    contentHash: draftHash(draft),
     conversationId: run.conversationId,
     runId: run.runId,
     expiresAt: new Date(run.now.getTime() + CARD_DAYS * 86_400_000),

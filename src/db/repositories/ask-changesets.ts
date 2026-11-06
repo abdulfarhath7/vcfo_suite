@@ -33,6 +33,17 @@ export interface ChangesetAccess {
 
 export const rowNeedsManager = (row: Pick<AskChangesetRowRow, 'target'>): boolean => row.target.needsManager === true;
 
+/** The card a run already made for exactly these changes, still untouched. A retried step uses it and makes no second one. */
+export async function findAskChangesetForRun(ctx: AuthContext, runId: string, contentHash: string): Promise<string | null> {
+  assertAskRole(ctx);
+  const [row] = await db
+    .select({ id: askChangesets.id })
+    .from(askChangesets)
+    .where(and(eq(askChangesets.runId, runId), eq(askChangesets.profileId, ctx.userId), eq(askChangesets.contentHash, contentHash), eq(askChangesets.status, 'proposed')))
+    .limit(1);
+  return row?.id ?? null;
+}
+
 export async function createAskChangeset(
   ctx: AuthContext,
   input: { draft: ChangesetDraft; contentHash: string; conversationId: string | null; runId: string | null; expiresAt: Date },
