@@ -432,17 +432,29 @@ Phase 7 pack for board meetings, receivables and labour registers, 6 November: 4
 - A receivables sheet is on no project, so its actions ignore the run's lock and their cards carry a null
   `engagementId`. The repository's scope, the sheet's own manager and the firm-wide admins, is the guard, and the sheet's
   change log is the audit. `handleWork` still locks a client first, so a receivables request is asked "Which project is
-  this for?" and the answer means nothing. That needs a firm-wide flag on an action and a branch in `work.ts`, which this
-  pack could not touch. A run that mixes a task row and a receivables row on one card fails the task row safely.
+  this for?" and the answer means nothing, which a person with no projects cannot get past. The browser check on 6
+  November saw that question. It needs a firm-wide flag on an action in `types.ts`, a branch in `work.ts` that skips the
+  lock for such an action, and a way to run the agent with no lock. These files belong to the do track, so this pack left
+  them alone. None of this is built. A run that mixes a task row and a receivables row on one card fails the task row
+  safely.
 - No payment action exists. `markReceived` and `decideCredit` record money that already arrived, and the card says so.
-  The pick's system prompt says no tool fits payments, so a live model may refuse "mark this paid". That is untested.
+  A live run on Haiku refused "mark this paid" until `markReceived` became `simple`; it now reaches the card, and "pay the
+  vendor invoice" and "transfer" still get no action. A live run on Sonnet refused to pay an invoice or finalise a
+  resolution, with no tool and no card.
 - Code names every recipient. An invoice's partner, a resolution's signers (all current directors) and a meeting's
   recipients are not in any input. `sendSummary` takes a ready-made list only, and its card stores who was on the list, so
-  a card accepted days later refuses if the list has changed.
+  a card accepted days later refuses if the list has changed. `publish`, `sendRemindersNow` and `replyToPartner` do the
+  same: preview fills `cardCheck`, overwriting anything the model sends, and execute compares it with what is true now.
 - `labour.markReady` is T3, and accepting the card is the person's own statement of accuracy. It enforces `canClose` from
   the same readiness check the batch screen uses, which the route leaves to the screen's dialog.
-- `simple` went only to `board-meetings.create` and `labour.openBatch`. None of the pack is `common`, to stay inside the
-  strict-tool limit.
+- `simple` went only to `board-meetings.create`, `labour.openBatch` and `receivables.markReceived`. The last takes an
+  invoice number, finds the one open invoice with it across the person's sheets, and defaults the amount to what is open
+  less TDS; a part payment or a foreign invoice with no amount is asked for the rupees. `labour.openBatch` uses the
+  project's one existing state when none is named. None of the pack is `common`, to stay inside the strict-tool limit.
+- Live runs on 6 November found the agent reaches the right card for nearly every request tried, once the descriptions
+  use people's words. Two still miss because the model never searches: "skip today's reminder" and "send back the board
+  meeting notice", which proposed a stage change and a note instead. `OPEN_ENDED` in `pick.ts` and `SYSTEM` in `loop.ts`
+  say "one project" and should name these areas; both belong to the do track.
 - Each area turns repository codes into sentences locally, because `REFUSAL_COPY` in `shared.ts` is outside the pack.
 - The routes for approve, cancel and remind on a meeting, send for signature, receipts, partner replies, the reminder
   desk, send now, the summary, assumptions and generate now call shared functions in these folders.
