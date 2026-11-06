@@ -14,7 +14,7 @@ import { catalogSynonyms } from '@/lib/ask/data-router/candidates';
 import { companiesNamed, documentMatches, lockEngagement } from '@/lib/ask/data-router/lock';
 import { placeValues, type SourceRead } from '@/lib/ask/data-router/place';
 import { planRows } from '@/lib/ask/data-router/plan';
-import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
+import { instructionOf, looksLikeData, readFile, readPaste, REFUSED_ID_DOC, ReadRefused } from '@/lib/ask/data-router/read';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { matchClientFiles } from '@/lib/actions/client-portal/file-card';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
@@ -89,6 +89,24 @@ function mayHoldValues(message: string): boolean {
     if (synonym.length >= MIN_SYNONYM_LENGTH && text.includes(` ${synonym} `)) return true;
   }
   return false;
+}
+
+/** What the model read from a file, kept beside it, so that answering a question does not pay to read it again. */
+const readKey = (s3Key: string): string => `${s3Key}.read.json`;
+
+async function keepRead(s3Key: string, result: ReadResult): Promise<void> {
+  if (!result.usedModel) return;
+  await putObject(readKey(s3Key), JSON.stringify(result), 'application/json').catch((error) => console.warn('[ask-vcfo] read not kept', safeError(error)));
+}
+
+async function keptRead(s3Key: string): Promise<ReadResult | null> {
+  try {
+    const kept = await getObjectBuffer(readKey(s3Key));
+    return kept ? (JSON.parse(kept.toString('utf8')) as ReadResult) : null;
+  } catch (error) {
+    console.warn('[ask-vcfo] kept read not used', safeError(error));
+    return null;
+  }
 }
 
 const moreThanOne = (options: ReadonlyArray<{ companyName: string }>): string => `More than one project matches: ${options.map((o) => o.companyName).join(' and ')}. Which one is this for?`;
@@ -221,6 +239,7 @@ export async function handleDoWork(
   const engagements = await reachable();
   const instruction = pending ? pending.state.instruction : instructionOf(message);
 
+  const reads: SourceRead[] = [];
   // The sources: files as given, and a paste kept as a file only if the run has to wait.
   const sourceIds = pending ? pending.state.attachmentIds : attachmentIds;
   const paste = !pending && message.trim() && attachmentIds.length === 0 ? message : null;
@@ -228,6 +247,8 @@ export async function handleDoWork(
     if (!paste) return sourceIds;
     const s3Key = `ask/attachments/${ctx.userId}/${randomUUID()}/paste.txt`;
     await putObject(s3Key, paste, 'text/plain; charset=utf-8');
+    const pasteRead = reads.find((read) => !read.attachment);
+    if (pasteRead) await keepRead(s3Key, pasteRead.result);
     const row = await createAskAttachment(ctx, { kind: 'paste', fileName: 'paste.txt', contentType: 'text/plain', sizeBytes: Buffer.byteLength(paste), s3Key, conversationId });
     return [row.id];
   };
@@ -271,7 +292,6 @@ export async function handleDoWork(
   }
 
   progress(rows.length > 0 || paste ? 'Reading…' : 'Checking…');
-  const reads: SourceRead[] = [];
   const refusals: string[] = [];
   const readOne = async (attachment: AskAttachmentRow | null, read: () => Promise<ReadResult>) => {
     try {
@@ -289,10 +309,15 @@ export async function handleDoWork(
   };
   if (paste) await readOne(null, () => readPaste(paste, deps));
   for (const attachment of rows) {
-    const bytes = attachment.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
     await readOne(attachment, async () => {
+      const kept = pending && attachment.s3Key ? await keptRead(attachment.s3Key) : null;
+      if (kept?.sensitive && !flags.idDocReading) throw new ReadRefused(REFUSED_ID_DOC);
+      if (kept) return kept;
+      const bytes = attachment.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
       if (!bytes) throw new ReadRefused('That file is no longer available. Please attach it again.');
-      return attachment.kind === 'paste' ? readPaste(bytes.toString('utf8'), deps) : readFile({ fileName: attachment.fileName, data: bytes }, deps);
+      const result = await (attachment.kind === 'paste' ? readPaste(bytes.toString('utf8'), deps) : readFile({ fileName: attachment.fileName, data: bytes }, deps));
+      await keepRead(attachment.s3Key!, result);
+      return result;
     });
   }
   if (reads.length === 0) return finish(line(`${refusals[0] ?? 'I found nothing to read.'}${openNote}`), 'failed', undefined, 'read refused');

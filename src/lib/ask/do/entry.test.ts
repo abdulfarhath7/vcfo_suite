@@ -32,8 +32,9 @@ const lockRun = vi.fn(async () => true);
 const attachments = vi.fn(async () => [] as unknown[]);
 const updateAttachment = vi.fn();
 const createAttachment = vi.fn(async () => ({ id: 'paste-1' }));
-const putObject = vi.fn();
+const putObject = vi.fn(async (..._a: unknown[]) => undefined);
 const getObject = vi.fn(async () => null as Buffer | null);
+const keptReads = new Map<string, Buffer>();
 
 vi.mock('@/db/repositories/engagements', () => ({
   listEngagements: async () => engagements,
@@ -49,20 +50,27 @@ vi.mock('@/db/repositories/ask-usage', () => ({ systemTodayTokenTotal: async () 
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn(async () => []) }));
 vi.mock('@/db/repositories/engagement-managers-membership', () => ({ listManagerIdsForEngagement: async () => ['mgr-1'] }));
 vi.mock('@/lib/ask/rate-limit', () => ({ checkAskRateLimit: async () => ({ ok: true }) }));
-vi.mock('@/storage/s3', () => ({ putObject: (...a: unknown[]) => putObject(...a), getObjectBuffer: () => getObject() }));
+vi.mock('@/storage/s3', () => ({
+  putObject: (key: string, body: string, type: string) => {
+    if (key.endsWith('.read.json')) keptReads.set(key, Buffer.from(body));
+    return putObject(key, body, type);
+  },
+  getObjectBuffer: (key: string) => (key.endsWith('.read.json') ? Promise.resolve(keptReads.get(key) ?? null) : getObject()),
+}));
 const openRequests = vi.fn(async () => [] as unknown[]);
 vi.mock('@/db/repositories/client-documents', () => ({ listOpenDocumentRequests: openRequests, undoRequestUpload: vi.fn(), UploadRejectedError: class extends Error {} }));
 vi.mock('@/db/repositories/client-incorporation', () => ({ listFileRequests: async () => [], clientAttachRequestedFile: vi.fn(), clientUndoRequestedFile: vi.fn(), FileRequestError: class extends Error {} }));
 vi.mock('@/db/repositories/client-compliances', () => ({ getPortalFilings: async () => [], addClientFilingProof: vi.fn(), setFilingReminder: vi.fn(), clearFilingReminder: vi.fn(), complianceErrorStatus: () => null }));
 vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRecipients: async () => ({ leads: [{ name: 'Lead', email: 'l@x.test' }], managers: [] }) }));
 const modelCalls: LlmRequest[] = [];
+let modelValues: unknown[] = [];
 vi.mock('@/lib/ask/provider', async (load) => ({
   ...(await load<object>()),
   getAskProvider: async () => ({
     name: 'mock',
     complete: async (req: LlmRequest) => {
       modelCalls.push(req);
-      return { model: req.model, content: [{ type: 'text', text: JSON.stringify({ docType: 'other', company: null, values: [], picks: [] }) }], stopReason: 'end_turn', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+      return { model: req.model, content: [{ type: 'text', text: JSON.stringify({ docType: 'other', company: null, values: modelValues, picks: [] }) }], stopReason: 'end_turn', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } };
     },
   }),
 }));
@@ -71,11 +79,12 @@ const { handleDoWork, isDataMessage, pendingDoRun } = await import('./entry');
 // Every action area loads on first use, which is slow on a busy machine, so it happens before the timed tests.
 await (await import('@/lib/actions/registry')).getAction('tasks.create');
 
-const run = (message: string, extra: { page?: string; attachmentIds?: string[]; pending?: Awaited<ReturnType<typeof pendingDoRun>> } = {}) =>
+const run = (message: string, extra: { page?: string; attachmentIds?: string[]; pending?: Awaited<ReturnType<typeof pendingDoRun>>; onMeter?: () => void } = {}) =>
   handleDoWork(lead, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined, attachmentIds: extra.attachmentIds }, message, () => undefined, {
     conversationId: 'e0000000-0000-4000-8000-00000000000e',
     now: new Date('2026-11-06T10:00:00Z'),
     pending: extra.pending ?? null,
+    onMeter: extra.onMeter,
   });
 
 const DATA = 'Name: Asha Rao\nPAN: ABCDE1234F\nDIN: 01234567';
@@ -83,6 +92,8 @@ const DATA = 'Name: Asha Rao\nPAN: ABCDE1234F\nDIN: 01234567';
 beforeEach(() => {
   vi.clearAllMocks();
   modelCalls.length = 0;
+  modelValues = [];
+  keptReads.clear();
   engagements = [acme, kestrel];
   waiting.mockResolvedValue(null);
   attachments.mockResolvedValue([]);
@@ -182,6 +193,57 @@ describe('handleDoWork', () => {
     expect(result!.answer.line).toMatch(/More than one project matches/);
     expect(lockRun).not.toHaveBeenCalled();
     expect(updateRun).not.toHaveBeenCalled();
+  });
+
+  describe('a file the model has read', () => {
+    const FILE = { id: 'f0000000-0000-4000-8000-00000000000f', kind: 'file', fileName: 'note.txt', s3Key: 'ask/attachments/lead-1/u/note.txt' };
+    const reads = () => modelCalls.filter((req) => JSON.stringify(req.messages).includes('<document>'));
+    const prose = 'Our registered office moved to 12 Park Street in the spring of this year.';
+    const value = { label: 'Registered office', value: '12 Park Street', page: null, person: null, confidence: 0.9 };
+
+    it('is read once: the reply to the question uses what was read, and tells the meter', async () => {
+      modelValues = [value];
+      attachments.mockResolvedValue([FILE]);
+      getObject.mockResolvedValue(Buffer.from(prose));
+      const onMeter = vi.fn();
+      const first = await run('', { attachmentIds: [FILE.id], onMeter });
+      expect(first!.answer.line).toBe('Which project is this for?');
+      expect(reads()).toHaveLength(1);
+      expect(onMeter).toHaveBeenCalledTimes(1);
+      const state = updateRun.mock.calls.at(-1)![2].state;
+
+      getObject.mockClear();
+      await run('Acme', { pending: { run: { id: 'run-1' }, state } as never });
+      expect(reads()).toHaveLength(1);
+      expect(getObject).not.toHaveBeenCalled();
+      expect(lockRun).toHaveBeenCalledWith(lead, 'run-1', acme.id);
+    });
+
+    it('is read again when what was kept will not parse', async () => {
+      modelValues = [value];
+      attachments.mockResolvedValue([FILE]);
+      getObject.mockResolvedValue(Buffer.from(prose));
+      keptReads.set(`${FILE.s3Key}.read.json`, Buffer.from('{not json'));
+      await run('Acme', { pending: { run: { id: 'run-1' }, state: { attachmentIds: [FILE.id], instruction: '', options: [acme], mismatch: null } } as never });
+      expect(reads()).toHaveLength(1);
+    });
+
+    it('stays refused when reading identity documents has since been switched off', async () => {
+      attachments.mockResolvedValue([FILE]);
+      getObject.mockResolvedValue(Buffer.from(prose));
+      keptReads.set(`${FILE.s3Key}.read.json`, Buffer.from(JSON.stringify({ docType: 'pan_card', company: null, values: [value], sensitive: true, usedModel: true })));
+      const result = await run('Acme', { pending: { run: { id: 'run-1' }, state: { attachmentIds: [FILE.id], instruction: '', options: [acme], mismatch: null } } as never });
+      expect(reads()).toHaveLength(0);
+      expect(result!.answer.line).toMatch(/identity/i);
+      expect(createChangeset).not.toHaveBeenCalled();
+    });
+
+    it('reports a file storage cannot give back as a refusal, and does not fail the message', async () => {
+      attachments.mockResolvedValue([FILE]);
+      getObject.mockRejectedValueOnce(new Error('storage is down'));
+      const result = await run('', { attachmentIds: [FILE.id] });
+      expect(result!.answer.line).toContain('could not be read');
+    });
   });
 
   it('stops when the person says no', async () => {
