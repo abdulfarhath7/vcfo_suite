@@ -141,7 +141,8 @@ describe('a client\'s actions', () => {
     for (const role of STAFF) expect((await actionsForRole(role)).some((a: AnyAction) => a.name.startsWith('client-portal.'))).toBe(false);
     const own = await actionsForRole('client');
     expect(own.map((a: AnyAction) => a.name).sort()).toEqual(TABLE.map(([name]) => name).sort());
-  });
+    // Every area file is imported here for the first time, which is slow in a loaded test run.
+  }, 60_000);
 
   it('has no T4 action, and nothing that reaches a login, an OTP or a sign-off', () => {
     for (const action of actions) {
