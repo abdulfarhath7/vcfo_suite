@@ -29,7 +29,7 @@ import { currentKnowledgeVersion } from '@/lib/ask/knowledge-version';
 import { expectsData, runGuard, type GuardResult } from '@/lib/ask/guard';
 import { localMatch, metricByName } from '@/lib/ask/local-match';
 import { metricsForRole } from '@/lib/ask/metrics/match';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { holdsPortalSecret, maskIdentityNumbers } from '@/lib/ask/mask';
 import type { AskPath } from '@/lib/ask/paths';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
@@ -254,6 +254,12 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     emit({ type: 'answer', conversationId: conversationId!, messageId: row?.id ?? '', answer: final });
     return { messageId: row?.id ?? null, answer: final };
   };
+
+  // A login, OTP, DSC PIN or token stops here, before any model. Its stored copy is already hidden.
+  if (request.message && holdsPortalSecret(request.message)) {
+    await finish(limitAnswer(shell, 'portalSecret'), { path: null });
+    return;
+  }
 
   const flags = askFlags();
   // The data router's own way in: a file, a labelled paste, or the answer to its last question.

@@ -178,6 +178,21 @@ describe('deterministic paths', () => {
   });
 });
 
+describe('a portal secret in a message', () => {
+  it('stops before any model, and the stored copy holds no secret', async () => {
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('intern', { shell: 'admin', message: 'Prepare the filing run. MCA password: Secret@123 and the OTP is 482913' });
+    expect(provider.calls).toHaveLength(0);
+    expect(answer?.line).toBe(REFUSAL_COPY.portalSecret);
+    expect(answer?.origin).toBe('refusal');
+    const stored = JSON.stringify(appendAskMessage.mock.calls);
+    expect(stored).not.toContain('Secret@123');
+    expect(stored).not.toContain('482913');
+    expect(stored).toContain('[hidden]');
+  });
+});
+
 describe('guarded free text', () => {
   it('off-topic gets the fixed refusal with no generation call', async () => {
     const provider = mockProvider([guard('off_topic')]);
