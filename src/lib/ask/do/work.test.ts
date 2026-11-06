@@ -29,7 +29,7 @@ const createCard = vi.fn(async (_c: unknown, _i: { draft: { engagementId: string
 vi.mock('@/db/repositories/ask-changesets', () => ({ createAskChangeset: (...a: [unknown, never]) => createCard(...a) }));
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn(async () => []) }));
 vi.mock('@/db/repositories/engagement-managers-membership', () => ({ listManagerIdsForEngagement: async () => [] }));
-vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRecipients: async () => ({ clients: [{ userId: 'c', name: 'Client Person', email: 'c@x.test' }] }) }));
+vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRecipients: async () => ({ clients: [{ userId: 'c', name: 'Client Person', email: 'c@x.test' }], leads: [{ name: 'Lena Lead', email: 'lena@firm.test' }], managers: [] }) }));
 const createTask = vi.fn();
 vi.mock('@/db/repositories/compliance-tasks', () => ({ createTask: (...a: unknown[]) => createTask(...a), ComplianceTaskError: class extends Error {} }));
 const send = vi.fn(async () => undefined as unknown);
@@ -48,13 +48,13 @@ const tool = (name: string, input: unknown = {}) => [{ type: 'tool_use', id: 't'
 
 const { handleWork } = await import('./work');
 
-const go = (message: string, extra: { ctx?: AuthContext; page?: string; resumed?: Parameters<typeof handleWork>[2]['resumed'] } = {}) =>
-  handleWork(extra.ctx ?? manager, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined }, {
+const go = (message: string, extra: { ctx?: AuthContext; shell?: 'admin' | 'client'; own?: boolean; page?: string; resumed?: Parameters<typeof handleWork>[2]['resumed'] } = {}) =>
+  handleWork(extra.ctx ?? manager, { shell: extra.shell ?? 'admin', page: extra.page ? { path: extra.page } : undefined }, {
     message,
     onScreen: null,
     conversationId: 'e0000000-0000-4000-8000-00000000000e',
     now: new Date('2026-11-06T10:00:00Z'),
-    engagements: async () => [acme, kestrel],
+    engagements: async () => (extra.own ? [kestrel] : [acme, kestrel]),
     provider: async () => provider,
     resumed: extra.resumed,
   });
@@ -65,6 +65,45 @@ beforeEach(() => {
   reply = [];
   send.mockResolvedValue(undefined);
   delete process.env.ASK_KILL_PATHS;
+});
+
+describe('handleWork for a client', () => {
+  const client: AuthContext = { userId: 'client-1', email: 'c@x.test', name: 'Cora', role: 'client' };
+  const asClient = (message: string) => go(message, { ctx: client, shell: 'client', own: true });
+
+  it('offers the small model only what a client can fill in one message', async () => {
+    reply = [{ type: 'text', text: 'No.' }] as LlmResult['content'];
+    await asClient('Please delete the other company');
+    expect(calls[0]!.tools!.map((t) => t.name).sort()).toEqual(['client-portal__sendMessage', 'fill_details', 'open_ended']);
+  });
+
+  it('makes a card on their own company with no company in the input, naming the lead without an email', async () => {
+    reply = tool('client-portal__sendMessage', { body: 'When is the next filing?', engagementId: acme.id });
+    const outcome = await asClient('Tell my lead I asked when the next filing is');
+    if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+    const { draft } = createCard.mock.calls[0]![1];
+    expect(draft.engagementId).toBe(kestrel.id);
+    expect(draft.recipients).toEqual([{ name: 'Lena Lead', role: 'Project lead' }]);
+    expect(lockRun).toHaveBeenCalledWith(client, 'run-1', kestrel.id);
+  });
+
+  it('refuses a company it was named, and a staff action the model made up', async () => {
+    reply = tool('client-portal__sendMessage', { body: 'Hello' });
+    const named = await asClient('Send this for Zeta Industries Pvt Ltd');
+    if (named.kind !== 'answer') throw new Error(named.kind);
+    expect(named.answer.line).toMatch(/cannot find Zeta Industries Pvt Ltd/);
+    reply = tool('requests__create', { label: 'Rent' });
+    expect((await asClient('Ask for the rent agreement')).kind).toBe('none');
+    expect(createCard).not.toHaveBeenCalled();
+  });
+
+  it('runs open-ended work locked to their company', async () => {
+    reply = tool('open_ended');
+    const outcome = await asClient('Sort out what is pending for me');
+    if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+    expect(outcome.path).toBe('agent_run');
+    expect(lockRun).toHaveBeenCalledWith(client, 'run-1', kestrel.id);
+  });
 });
 
 describe('handleWork', () => {

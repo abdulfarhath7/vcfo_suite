@@ -215,6 +215,14 @@ describe('handleDoWork', () => {
       expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_approval');
     });
 
+    it('never takes their own kept paste for a file answering a request', async () => {
+      attachments.mockResolvedValue([{ id: 'f0000000-0000-4000-8000-00000000000f', fileName: 'paste.txt', kind: 'paste', s3Key: 'k', contentType: 'text/plain', sizeBytes: 10 }]);
+      openRequests.mockResolvedValue([{ id: 'a1000000-0000-4000-8000-00000000000a', title: 'Paste txt', dueOn: null, note: null }]);
+      getObject.mockResolvedValueOnce(Buffer.from(DATA));
+      await asClient('', { attachmentIds: ['f0000000-0000-4000-8000-00000000000f'] });
+      expect(openRequests).not.toHaveBeenCalled();
+    });
+
     it('says what is open when a file answers none of it', async () => {
       attachments.mockResolvedValue([{ id: 'f0000000-0000-4000-8000-00000000000f', fileName: 'holiday.pdf', kind: 'file', s3Key: 'k', contentType: 'application/pdf', sizeBytes: 10 }]);
       openRequests.mockResolvedValue([{ id: 'a1000000-0000-4000-8000-00000000000a', title: 'Rent agreement', dueOn: null, note: null }]);

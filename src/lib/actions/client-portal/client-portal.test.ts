@@ -267,6 +267,7 @@ describe('what each one does', () => {
     expect(JSON.stringify(outcome)).not.toContain('ABCDE1234F');
     const draft = await preview('client-portal.saveDetails', { values: { turnover: '20', pan: 'ABCDE1234F' } });
     expect(draft!.rows[0]!.displayOld).not.toContain('ABCDE1234F');
+    expect(draft!.rows[0]!.displayNew).not.toContain('ABCDE1234F');
   });
 
   it('refuses a detail the firm fills or nobody asked for', async () => {

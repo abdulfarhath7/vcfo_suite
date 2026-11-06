@@ -251,7 +251,7 @@ export const attachRequestedFile = defineAction({
     refusing(async () => {
       const engagementId = lockedClient(actx);
       const request = await openFileRequest(actx, input.requestId);
-      const stored = await storeChatFile(actx, input.attachmentId, engagementId, request.fieldId, request.stepId, true);
+      const stored = await storeChatFile(actx, input.attachmentId, engagementDbId(engagementId), request.fieldId, request.stepId, true);
       try {
         await clientAttachRequestedFile(actx.auth, engagementId, request.stepId, { requestId: request.id, ...stored, sizeBytes: stored.sizeBytes ?? undefined, contentType: stored.contentType ?? undefined });
       } catch (error) {

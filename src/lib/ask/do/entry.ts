@@ -247,9 +247,10 @@ export async function handleDoWork(
 
   // A client's file that answers something open needs no reading: it goes straight on a card.
   let openNote = '';
-  if (client && rows.length > 0 && firstLock.kind === 'locked') {
+  const clientFiles = rows.filter((row) => row.kind !== 'paste');
+  if (client && clientFiles.length > 0 && firstLock.kind === 'locked') {
     const { engagement } = firstLock;
-    const match = await matchClientFiles({ auth: ctx, engagementId: engagement.id, conversationId, runId, now, via: 'ask' }, rows, instruction);
+    const match = await matchClientFiles({ auth: ctx, engagementId: engagement.id, conversationId, runId, now, via: 'ask' }, clientFiles, instruction);
     openNote = match.note;
     if (match.draft) {
       await lockAskRun(ctx, runId, engagement.id);
