@@ -2,23 +2,19 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { setRegistrationDates } from '@/db/repositories/credentials';
+import { expiresAfterIssue, registrationDate, registrationStepId, renewEveryMonths } from '@/lib/actions/registrations/rules';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { credentialsError } from '../../client/credentials/_respond';
-
-const isoDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((v) => !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), 'invalid date');
 
 const body = z
   .object({
     engagementId: z.string().trim().min(1).max(80),
-    stepId: z.string().regex(/^reg-\d{1,3}$/),
-    issuedOn: isoDate.nullable(),
-    expiresOn: isoDate.nullable(),
-    renewEveryMonths: z.number().int().min(1).max(240).nullable(),
+    stepId: registrationStepId,
+    issuedOn: registrationDate.nullable(),
+    expiresOn: registrationDate.nullable(),
+    renewEveryMonths: renewEveryMonths.nullable(),
   })
-  .refine((b) => !b.issuedOn || !b.expiresOn || b.expiresOn > b.issuedOn, { message: 'expiry_before_issue', path: ['expiresOn'] });
+  .refine(expiresAfterIssue, { message: 'expiry_before_issue', path: ['expiresOn'] });
 
 /**
  * PATCH /api/registrations/dates — staff set the issue date, expiry and renewal period of
