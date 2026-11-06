@@ -104,6 +104,8 @@ describe('pricing', () => {
     expect(estimateCostUsd('claude-haiku-5-5', { ...NO_LLM_USAGE, inputTokens: 1_000_000 })).toBeCloseTo(0.1);
     expect(estimateCostUsd('claude-sonnet-5-5', { ...NO_LLM_USAGE, cacheReadTokens: 1_000_000 })).toBeCloseTo(0.2);
     expect(estimateCostUsd('claude-sonnet-5-5', { ...NO_LLM_USAGE, cacheWriteTokens: 1_000_000 })).toBeCloseTo(2.5);
+    expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, inputTokens: 1_000_000, outputTokens: 1_000_000 })).toBeCloseTo(24);
+    expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, cacheReadTokens: 1_000_000 })).toBeCloseTo(0.2);
     expect(estimateCostUsd('unknown', { ...NO_LLM_USAGE, inputTokens: 1_000_000 })).toBe(0);
   });
 

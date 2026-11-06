@@ -47,7 +47,7 @@ export function parseRobots(text: string): RobotsRules {
       if (Number.isFinite(seconds) && seconds >= 0) current.crawlDelayMs = seconds * 1000;
     }
   }
-  const named = groups.filter((g) => g.agents.some((a) => a !== '*' && ROBOTS_AGENT_TOKEN.startsWith(a)));
+  const named = groups.filter((g) => g.agents.some((a) => a && a !== '*' && ROBOTS_AGENT_TOKEN.startsWith(a)));
   const chosen = named.length > 0 ? named : groups.filter((g) => g.agents.includes('*'));
   return {
     rules: chosen.flatMap((g) => g.rules),

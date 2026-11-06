@@ -161,7 +161,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
     (id: string, title: string) => {
       setAllHistory((list) => {
         const old = list.find((e) => e.id === id);
-        const entry: AskHistoryEntry = { id, title: old?.title ?? title.slice(0, 120), at: new Date().toISOString(), scope: key };
+        const entry: AskHistoryEntry = { id, title: old?.title ?? maskIdentityNumbers(title).slice(0, 120), at: new Date().toISOString(), scope: key };
         const next = [entry, ...list.filter((e) => e.id !== id)];
         writeHistory(hKey, next);
         return next;

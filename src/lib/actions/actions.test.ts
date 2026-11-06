@@ -201,6 +201,11 @@ describe('the 25 actions', () => {
     }
   });
 
+  it('holds a review note to the length the screen allows', () => {
+    expect(byName('tasks.review').input.safeParse({ ...(INPUTS['tasks.review'] as object), note: 'x'.repeat(500) }).success).toBe(true);
+    expect(byName('tasks.review').input.safeParse({ ...(INPUTS['tasks.review'] as object), note: 'x'.repeat(501) }).success).toBe(false);
+  });
+
   it('refuses a task or document on another client, as if it were not there', async () => {
     tasksRepo.getTask.mockResolvedValue({ ...task, engagementId: OTHER });
     docsRepo.getDocumentById.mockResolvedValue({ ...document, engagementId: OTHER });

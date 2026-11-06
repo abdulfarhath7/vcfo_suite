@@ -96,9 +96,9 @@ async function stop(ctx: AuthContext, run: AskRunRow, status: string, line: stri
   return { kind: 'finished', status };
 }
 
-/** The per-path kill switch and the turn, token and daily caps, checked before each model call. */
+/** The feature flag, the per-path kill switch and the turn, token and daily caps, checked before each model call. */
 async function limitReached(ctx: AuthContext, run: AskRunRow, now: Date): Promise<AgentOutcome | null> {
-  if (askFlags().killedPaths.has('agent_run')) return stop(ctx, run, 'cancelled', REFUSAL_COPY.pathStopped, 'switched off');
+  if (!askConfig().enabled || askFlags().killedPaths.has('agent_run')) return stop(ctx, run, 'cancelled', REFUSAL_COPY.pathStopped, 'switched off');
   const budgets = askBudgets();
   if (run.turns >= budgets.runMaxTurns || run.inputTokens + run.outputTokens + run.cacheWriteTokens >= (run.budgetTokens ?? budgets.runMaxTokens)) {
     return stop(ctx, run, 'over_budget', REFUSAL_COPY.runTooLong, 'run budget');

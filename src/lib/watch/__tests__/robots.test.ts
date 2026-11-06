@@ -13,6 +13,8 @@ describe('robots rules', () => {
   it('prefers the group naming our product over the star group', () => {
     const robots = parseRobots('User-agent: *\nDisallow: /\n\nUser-agent: VCFO-Suite\nAllow: /\n');
     expect(robotsAllows(robots, '/anything')).toBe(true);
+    // A User-agent line left empty names nobody, and does not stand in front of the wildcard.
+    expect(robotsAllows(parseRobots('User-agent:\nAllow: /\n\nUser-agent: *\nDisallow: /\n'), '/a')).toBe(false);
     const shut = parseRobots('User-agent: *\nAllow: /\n\nUser-agent: vcfo-suite\nDisallow: /\n');
     expect(robotsAllows(shut, '/anything')).toBe(false);
   });

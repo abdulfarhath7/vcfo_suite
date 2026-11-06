@@ -112,6 +112,7 @@ beforeEach(() => {
   cardOnFile = null;
   recorded.mockClear();
   delete process.env.ASK_KILL_PATHS;
+  process.env.ASK_VCFO_ENABLED = 'true';
   registered = [fakeAction('tasks.list', 'T0', '{"tasks":[]}'), fakeAction('tasks.addPersonalTodo', 'T1', 'added', { undo: async () => ({ ok: true, summary: 'gone' }) }), fakeAction('tasks.create', 'T2'), fakeAction('reminders.sendClient', 'T3'), fakeAction('filing.submit', 'T4')];
   run = {
     id: 'run-1',
@@ -330,6 +331,13 @@ describe('agent loop', () => {
     today = 99_000_000;
     expect(await agentTurn('run-1')).toEqual({ kind: 'finished', status: 'over_budget' });
     expect(answer).toMatch(/usage limit/);
+    expect(requests).toHaveLength(0);
+  });
+
+  it('stops a queued run when Ask VCFO itself is switched off', async () => {
+    process.env.ASK_VCFO_ENABLED = 'false';
+    script = [say('never')];
+    expect(await agentTurn('r')).toEqual({ kind: 'finished', status: 'cancelled' });
     expect(requests).toHaveLength(0);
   });
 

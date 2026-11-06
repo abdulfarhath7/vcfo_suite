@@ -259,7 +259,7 @@ const commentToClient = defineAction({
 const review = defineAction({
   name: 'tasks.review',
   description: 'Propose approving a task in review, or sending it back with a note. The owner is told. A person confirms it on a card; this never approves anything by itself.',
-  input: taskId.extend({ decision: z.enum(['approve', 'send-back']), note: z.string().trim().max(1000).optional() }),
+  input: taskId.extend({ decision: z.enum(['approve', 'send-back']), note: z.string().trim().max(500).optional() }),
   tier: 'T3',
   roles: STAFF_ROLES,
   preview: async (actx, input) => {
