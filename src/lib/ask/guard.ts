@@ -47,7 +47,7 @@ function guardSystem(
   const audience =
     shell === 'client'
       ? 'The user is a client of an Indian corporate services firm, often a foreign parent executive.'
-      : 'The user is firm staff asking about firm projects, deadlines and compliance rules.';
+      : 'The user is firm staff asking about firm projects, deadlines and compliance rules. For staff, asking what stands on the firm\'s own receivables, invoices, reminders, bank credits, board meetings or labour register batches, e.g. "which invoices are overdue?" or "what meetings are coming up?", is do_work, because only that path can read them. Asking what such a thing is, or how the law treats it, stays explain.';
   return [
     'You route messages sent to Ask VCFO, the in-app assistant of an Indian corporate services firm.',
     audience,

@@ -10,7 +10,7 @@ import type { LlmProvider, LlmTool, LlmUsage } from '@/lib/ask/provider';
  * single message can fill. A request that needs a record looked up first, or several steps, says so
  * and goes to the agent run. Nothing here writes; the choice still goes through a person's card.
  */
-export type WorkPick = { kind: 'action'; action: string; input: Record<string, unknown> } | { kind: 'data' } | { kind: 'agent' } | { kind: 'none' };
+export type WorkPick = { kind: 'action'; action: string; input: Record<string, unknown> } | { kind: 'data' } | { kind: 'agent'; firmWide?: boolean } | { kind: 'none' };
 
 const noInput: LlmTool['input_schema'] = { type: 'object', properties: {}, additionalProperties: false };
 const FILL_DETAILS: LlmTool = {
@@ -21,7 +21,13 @@ const FILL_DETAILS: LlmTool = {
 };
 const OPEN_ENDED: LlmTool = {
   name: 'open_ended',
-  description: 'Anything else the app can do on one project: it names an existing task, document request, filing, document or note, needs records looked up first, or takes more than one step.',
+  description: 'Anything else the app can do on one project: it names an existing task, document request, filing, document, note, board meeting, resolution or labour register, needs records looked up first, or takes more than one step.',
+  strict: true,
+  input_schema: noInput,
+};
+const RECEIVABLES: LlmTool = {
+  name: 'receivables_work',
+  description: 'Anything else about the firm\'s receivables, which sit on no project: invoices and what is overdue, receipts, payment reminders, disputes, TDS, credit notes, bank credits, statements, partner replies, the summary.',
   strict: true,
   input_schema: noInput,
 };
@@ -35,14 +41,15 @@ const SYSTEM = [
 export async function pickWork(
   provider: LlmProvider,
   model: string,
-  input: { message: string; onScreen: string | null; simple: readonly AnyAction[]; now: Date },
+  input: { message: string; onScreen: string | null; simple: readonly AnyAction[]; receivables: boolean; now: Date },
 ): Promise<{ pick: WorkPick; usage: LlmUsage }> {
+  const tools = [...input.simple.map((action) => toolOf(action)), FILL_DETAILS, OPEN_ENDED, ...(input.receivables ? [RECEIVABLES] : [])];
   const text = [`Today: ${input.now.toISOString().slice(0, 10)}`, input.onScreen, `Request: ${maskIdentityNumbers(input.message)}`].filter(Boolean).join('\n');
   const result = await provider.complete({
     model,
     system: [{ type: 'text', text: SYSTEM }],
     messages: [{ role: 'user', content: text }],
-    tools: [...input.simple.map((action) => toolOf(action)), FILL_DETAILS, OPEN_ENDED],
+    tools,
     maxTokens: 800,
     effort: 'low',
   });
@@ -50,5 +57,6 @@ export async function pickWork(
   if (!use || use.type !== 'tool_use') return { pick: { kind: 'none' }, usage: result.usage };
   if (use.name === FILL_DETAILS.name) return { pick: { kind: 'data' }, usage: result.usage };
   if (use.name === OPEN_ENDED.name) return { pick: { kind: 'agent' }, usage: result.usage };
+  if (use.name === RECEIVABLES.name) return { pick: { kind: 'agent', firmWide: true }, usage: result.usage };
   return { pick: { kind: 'action', action: actionNameOf(use.name), input: use.input as Record<string, unknown> }, usage: result.usage };
 }

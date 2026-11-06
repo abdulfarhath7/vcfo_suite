@@ -423,3 +423,47 @@ Phase 5, 6 November:
 - The loop's live checks go through vitest and the browser test, because a script under `--conditions=react-server`
   cannot load the registry.
 
+
+## Where the ops pack left this plan
+
+Phase 7 pack for board meetings, receivables and labour registers, 6 November: 41 actions, in
+`src/lib/actions/{board-meetings,receivables,labour}/`.
+
+- A receivables sheet is on no project, so its actions are marked `firmWide`. A request for one skips the client lock:
+  `pick.ts` offers a `receivables_work` way out, `work.ts` takes no lock, and a run with no lock sees only firm-wide
+  tools. The repository's scope, the sheet's own manager and the firm-wide admins, is the guard, and the sheet's change
+  log is the audit. A card with no project stays with the person who made it. A locked run can still reach these tools,
+  and a card mixing the two carries the project. This went beyond the pack's folders, as the smallest seam the ownership
+  rule allows, because the chat could not otherwise reach a sheet: `types.ts`, `work.ts`, `pick.ts`, `loop.ts` and one
+  sentence in `guard.ts`.
+- No payment action exists. `markReceived` and `decideCredit` record money that already arrived, and the card says so.
+  A live run on Haiku refused "mark this paid" until `markReceived` became `simple`; it now reaches the card, and "pay the
+  vendor invoice" and "transfer" still get no action. A live run on Sonnet refused to pay an invoice or finalise a
+  resolution, with no tool and no card.
+- Code names every recipient. An invoice's partner, a resolution's signers (all current directors) and a meeting's
+  recipients are not in any input. `sendSummary` takes a ready-made list only, and its card stores who was on the list, so
+  a card accepted days later refuses if the list has changed. `publish`, `sendRemindersNow` and `replyToPartner` do the
+  same: preview fills `cardCheck`, overwriting anything the model sends, and execute compares it with what is true now.
+- `labour.markReady` is T3, and accepting the card is the person's own statement of accuracy. It enforces `canClose` from
+  the same readiness check the batch screen uses, which the route leaves to the screen's dialog.
+- `simple` went only to `board-meetings.create`, `labour.openBatch` and `receivables.markReceived`. The last takes an
+  invoice number, finds the one open invoice with it across the person's sheets, and defaults the amount to what is open
+  less TDS; a part payment or a foreign invoice with no amount is asked for the rupees. `labour.openBatch` uses the
+  project's one existing state when none is named. None of the pack is `common`, to stay inside the strict-tool limit.
+- The router sent staff questions about these records to `ops_query`, whose tools cannot read them, so the read actions
+  were out of reach. A sentence in the staff audience now routes them to work. It is staff only, so a client's chat routes
+  as before.
+- Live runs first missed "skip today's reminder" and "send back the board meeting notice", which proposed a stage change
+  and a note, because the model never searched. `SYSTEM` in `loop.ts` and `OPEN_ENDED` in `pick.ts` now name these areas,
+  and both requests reach the right card.
+- `tests/ask/evals/ops-cards.test.ts` puts every write action on a real card on Postgres, on a local `*_eval` copy with
+  everything outward stubbed, and fails if one is missed. With `ASK_EVAL_LIVE` it runs the router, the pick and the loop,
+  accepts each card and lets the run finish.
+- Each area turns repository codes into sentences locally, because `REFUSAL_COPY` in `shared.ts` is outside the pack.
+- The routes for approve, cancel and remind on a meeting, send for signature, receipts, partner replies, the reminder
+  desk, send now, the summary, assumptions and generate now call shared functions in these folders.
+- Left out on purpose: uploads that need a file (minutes, signed copies, bank statements, FIRAs, labour uploads and
+  mapping), director records (identity numbers, DIR-12), share links and partner logins (tokens and credentials), adding
+  or editing partners (recipient choice), reminder rules and sheet settings, the treasury desk (forwards, alerts, rates),
+  attestation (a signed statutory record), the firm's verification and code-rule decisions, downloads and exports, and
+  developer routes.

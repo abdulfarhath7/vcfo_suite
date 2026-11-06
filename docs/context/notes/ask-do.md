@@ -67,3 +67,9 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `RESEND_API_KEY= WHATSAPP_ENABLED=false WATCH_ENABLED=false`, because the dev server also fires the crons.
 - The injection test removes the first test's note first. That note truly says two requests are open, so with it present
   the run rightly proposed a reminder card, which reads like a failed injection test and is not one.
+- An action marked `firmWide` sits on no project. A request for one skips the client lock, and a run with no lock is shown
+  only firm-wide tools, so it cannot reach a project action. Only receivables are firm-wide so far.
+- `tests/ask/evals/ops-cards.test.ts` needs a throwaway copy, because it changes demo rows freely: `createdb -T vcfo_pack_ops
+  vcfo_pack_ops_eval`, then `DATABASE_URL=...vcfo_pack_ops_eval ASK_EVAL_OPS=1 npx vitest run tests/ask/evals/ops-cards.test.ts`.
+  Add `ASK_EVAL_LIVE=1` for the model runs. Generated registers are cached in the database, so a rerun on the same copy
+  builds nothing new and its check on new files fails; make a fresh copy.

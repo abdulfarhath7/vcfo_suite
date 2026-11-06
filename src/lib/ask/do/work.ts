@@ -22,8 +22,9 @@ import { pickWork, type WorkPick } from './pick';
 /**
  * Work asked for in words. A request one action can settle gets a card at once, and only open-ended
  * work starts an agent run. Either way the run is locked to one client first, by code, and asks when
- * two match. A question asked here is held in a run row with the choice already made, so the reply
- * costs no second model call.
+ * two match. Firm-wide work, which sits on no project, skips the lock and sees only firm-wide actions.
+ * A question asked here is held in a run row with the choice already made, so the reply costs no second
+ * model call.
  */
 
 export interface WorkState {
@@ -70,18 +71,22 @@ export async function handleWork(
   const actions = await actionsFor(ctx.role, request.shell);
   const pick = resumed
     ? resumed.pick
-    : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), now })).pick;
+    : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), now })).pick;
   if (pick.kind === 'none') return { kind: 'none' };
   if (pick.kind === 'data') return { kind: 'data' };
   if (pick.kind === 'agent' && askFlags().killedPaths.has('agent_run')) return answerOf(limitAnswer(request.shell, 'pathStopped'));
 
   const workflow = pick.kind === 'action' ? pick.action : 'agent';
-  const engagements = resumed ? [] : await input.engagements();
-  const lock = resumed
-    ? ({ kind: 'locked', engagement: resumed.engagement } as const)
-    : lockEngagement({ message, pagePath: request.page?.path, engagements });
-  if (lock.kind === 'unknown' && lock.mentioned) return answerOf(line(`I cannot find ${maskIdentityNumbers(lock.mentioned)} among your projects, so I have done nothing.`));
-  if (lock.kind !== 'locked') {
+  const action = pick.kind === 'action' ? actions.find((candidate) => candidate.name === pick.action) : undefined;
+  const firmWide = pick.kind === 'agent' ? pick.firmWide === true : action?.firmWide === true;
+  const engagements = resumed || firmWide ? [] : await input.engagements();
+  const lock = firmWide
+    ? null
+    : resumed
+      ? ({ kind: 'locked', engagement: resumed.engagement } as const)
+      : lockEngagement({ message, pagePath: request.page?.path, engagements });
+  if (lock?.kind === 'unknown' && lock.mentioned) return answerOf(line(`I cannot find ${maskIdentityNumbers(lock.mentioned)} among your projects, so I have done nothing.`));
+  if (lock && lock.kind !== 'locked') {
     const options = lock.kind === 'choose' ? lock.options : engagements;
     const run = await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: pick.kind === 'agent' ? 'agent' : undefined });
     const state: WorkState = { mode: 'work', pick, instruction: message, attachmentIds: [], options: options.map(({ id, slug, companyName }) => ({ id, slug, companyName })), mismatch: null };
@@ -89,17 +94,18 @@ export async function handleWork(
     const question = lock.kind === 'choose' ? `More than one project matches: ${options.map((o) => o.companyName).join(' and ')}. Which one is this for?` : 'Which project is this for?';
     return answerOf(line(question, { runId: run.id }));
   }
-  const { engagement } = lock;
+  const engagement = lock?.kind === 'locked' ? lock.engagement : null;
+  const forWhom = engagement ? ` for ${engagement.companyName}` : '';
 
   if (pick.kind === 'agent') {
     const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: 'agent' }));
-    await lockAskRun(ctx, run.id, engagement.id);
-    const state = firstAgentMessage({ companyName: engagement.companyName, person: ctx.name, role: ctx.role, goal: message, now });
+    if (engagement) await lockAskRun(ctx, run.id, engagement.id);
+    const state = firstAgentMessage({ companyName: engagement?.companyName ?? null, person: ctx.name, role: ctx.role, goal: message, now });
     await updateAskRun(ctx, run.id, { status: 'queued', state: state as unknown as JsonValue });
     return {
       kind: 'answer',
       path: 'agent_run',
-      answer: line(`Working on this for ${engagement.companyName}. Nothing is saved or sent until you accept it.`, { runId: run.id, runLive: true }),
+      answer: line(`Working on this${forWhom}. Nothing is saved or sent until you accept it.`, { runId: run.id, runLive: true }),
       start: async (messageId) => {
         await updateAskRun(ctx, run.id, { messageId });
         try {
@@ -115,26 +121,25 @@ export async function handleWork(
   }
 
   // One action, chosen from what this role may use. It only ever becomes a card here.
-  const action = pick.kind === 'action' && actions.find((candidate) => candidate.name === pick.action);
   if (!action || !needsApproval(action.tier)) return { kind: 'none' };
   const parsed = action.input.safeParse(pick.input);
   if (!parsed.success) return answerOf(line('I could not read all the details in that. Please say it once more with the name and the date.'));
 
   const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens }));
   const close = async (status: string) => updateAskRun(ctx, run.id, { status, ...(status === 'waiting_approval' ? {} : { finishedAt: new Date() }) });
-  await lockAskRun(ctx, run.id, engagement.id);
-  const actx: ActionContext = { auth: ctx, engagementId: engagement.id, conversationId, runId: run.id, now, via: 'ask' };
+  if (engagement) await lockAskRun(ctx, run.id, engagement.id);
+  const actx: ActionContext = { auth: ctx, engagementId: engagement?.id ?? null, conversationId, runId: run.id, now, via: 'ask' };
   try {
     const draft = await action.preview(actx, parsed.data);
     if (!draft) return { kind: 'none' };
-    const changesetId = await createReviewCard(ctx, draft, { runId: run.id, conversationId, companyName: engagement.companyName, now });
+    const changesetId = await createReviewCard(ctx, draft, { runId: run.id, conversationId, companyName: engagement?.companyName ?? '', now });
     if (!changesetId) {
       await close('failed');
       return answerOf(line('That project is not available.', { runId: run.id }));
     }
     await close('waiting_approval');
     const hold = draft.tier === 'T3' ? 'Nothing goes out until you confirm.' : 'Nothing is saved until you accept.';
-    return answerOf(line(`I prepared this for ${engagement.companyName}. ${hold}`, { changesetId, runId: run.id }));
+    return answerOf(line(`I prepared this${forWhom}. ${hold}`, { changesetId, runId: run.id }));
   } catch (error) {
     const refusal = refusalOf(error);
     if (!refusal) throw error;
