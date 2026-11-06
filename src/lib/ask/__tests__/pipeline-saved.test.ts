@@ -34,6 +34,17 @@ vi.mock('@/lib/ask/tools/staff-data', () => ({
   loadStaffEngagements: vi.fn(async () => []),
 }));
 
+vi.mock('@/lib/ask/snapshot', () => ({
+  loadProjectSnapshot: vi.fn(async () => ({
+    snapshot: { companyName: 'Sunrise Foods Private Limited', legalForm: 'private_limited', residency: 'indian', step: 'Name approval' },
+    engagementDbId: 'eng-1',
+    state: {},
+    filings: [],
+  })),
+}));
+const engagementBySlug = vi.fn();
+vi.mock('@/db/repositories/engagements', async (load) => ({ ...(await load<object>()), getEngagementBySlug: (...a: unknown[]) => engagementBySlug(...a) }));
+
 const { runAskChat } = await import('@/lib/ask/pipeline');
 const { setAskProviderForTests } = await import('@/lib/ask/provider');
 
@@ -134,6 +145,39 @@ describe('saved answers in the chat', () => {
     await ask('Should a firm register for GST?');
     provider([guard('explain'), rendered('Bad.', [{ id: 'made-up', label: 'x' }]), rendered('Bad.', [{ id: 'made-up', label: 'x' }])]);
     await ask('Who files AOC-4?');
+    expect(saveAnswer).not.toHaveBeenCalled();
+  });
+
+  const asClient = (message: string) => runAskChat({ ...admin, userId: 'c1', role: 'client' }, { shell: 'client', engagementId: 'eng-1', message }, () => undefined);
+  const systemOf = (call: unknown[]) => JSON.stringify((call[0] as { system: unknown }).system);
+
+  it('writes a client answer that may serve other clients without their project in the prompt', async () => {
+    const complete = provider([guard('explain'), rendered('AOC-4 goes in within 30 days of the AGM.')]);
+    await asClient('Who files AOC-4?');
+    expect(systemOf(complete.mock.calls[1]!)).not.toContain('Sunrise Foods');
+    expect(systemOf(complete.mock.calls[1]!)).not.toContain('Name approval');
+    expect(saveAnswer).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the project in the prompt when the answer is for this client alone', async () => {
+    const complete = provider([guard('explain'), rendered('It is due soon.')]);
+    await asClient('What is due on my AOC-4 today?');
+    expect(systemOf(complete.mock.calls[1]!)).toContain('Sunrise Foods');
+    expect(saveAnswer).not.toHaveBeenCalled();
+  });
+
+  it('never saves an answer that holds the short form of the company name', async () => {
+    provider([guard('explain'), rendered('Sunrise Foods files AOC-4 within 30 days of the AGM.')]);
+    await asClient('Who files AOC-4?');
+    expect(saveAnswer).not.toHaveBeenCalled();
+  });
+
+  it('never saves an answer a staff member got with a client on screen', async () => {
+    engagementBySlug.mockResolvedValue({ companyName: 'Kestrel Robotics' });
+    const complete = provider([guard('explain'), rendered('AOC-4 goes in within 30 days of the AGM.')]);
+    await ask('Who files AOC-4?', { page: { path: '/app/admin/engagements/kestrel' } });
+    expect(JSON.stringify((complete.mock.calls[0]![0] as { messages: unknown }).messages)).toContain('Kestrel Robotics');
+    expect(lastPath()).toBe('document_answer');
     expect(saveAnswer).not.toHaveBeenCalled();
   });
 

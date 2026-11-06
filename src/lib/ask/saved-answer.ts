@@ -1,4 +1,5 @@
 import type { AnswerEnvelope } from '@/data/ask/schema';
+import { coreName } from '@/lib/ask/data-router/lock';
 import { SNAPSHOT_SOURCE_ID } from '@/lib/ask/generate';
 import type { RetrievedSource } from '@/lib/ask/retrieve';
 
@@ -20,5 +21,7 @@ export function maySaveAnswer(input: {
   if (answer.citations.length === 0 || answer.citations.some((c) => c.id === SNAPSHOT_SOURCE_ID)) return false;
   if (answer.links?.some((link) => 'engagementId' in link.dest)) return false;
   if (answer.visual?.type === 'nextStep' || answer.visual?.type === 'flow') return false;
-  return !companyName || !JSON.stringify(answer).toLowerCase().includes(companyName.toLowerCase());
+  if (!companyName) return true;
+  const written = JSON.stringify(answer).toLowerCase();
+  return ![companyName.toLowerCase(), coreName(companyName)].some((name) => name && written.includes(name));
 }

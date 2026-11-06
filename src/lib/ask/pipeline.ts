@@ -29,7 +29,7 @@ import { currentKnowledgeVersion } from '@/lib/ask/knowledge-version';
 import { expectsData, runGuard, type GuardResult } from '@/lib/ask/guard';
 import { localMatch, metricByName } from '@/lib/ask/local-match';
 import { metricsForRole } from '@/lib/ask/metrics/match';
-import { holdsPortalSecret, maskIdentityNumbers } from '@/lib/ask/mask';
+import { holdsPortalSecret, maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import type { AskPath } from '@/lib/ask/paths';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
@@ -249,7 +249,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     });
     if (extra.path && spend.length > 0) {
       // The roll-up never holds up an answer the person has already paid for.
-      await systemRecordAskUsage(extra.path, spend, now).catch((error) => console.error('[ask-vcfo] usage not recorded', error));
+      await systemRecordAskUsage(extra.path, spend, now).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));
     }
     emit({ type: 'answer', conversationId: conversationId!, messageId: row?.id ?? '', answer: final });
     return { messageId: row?.id ?? null, answer: final };
@@ -348,7 +348,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
         return;
       }
     } catch (error) {
-      console.warn('[ask-vcfo] saved answer lookup failed; answering in full', error);
+      console.warn('[ask-vcfo] saved answer lookup failed; answering in full', safeError(error));
     }
   }
 
@@ -375,16 +375,17 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   const startedAt = Date.now();
   let guard: GuardResult;
+  let onScreen: string | null = null;
   try {
     // A follow-up rarely names its subject, so the previous question helps to pick the topics.
     const lastAsked = history.findLast((m) => m.sender === 'user')?.text ?? '';
     const topics = shortlistTopics(`${message} ${lastAsked}`, audience).map((t) => ({ slug: t.slug, question: t.question }));
     const metrics = metricsForRole(metricRole).map((m) => m.name);
-    const onScreen = shell === 'client' ? null : await pageContextLine(ctx, request.page);
+    onScreen = shell === 'client' ? null : await pageContextLine(ctx, request.page);
     const routed = onScreen ? `${message}\n\n(${onScreen})` : message;
     guard = (await runGuard(provider, { model: config.models.guard, shell, message: routed, history, topics, metrics })).result;
   } catch (error) {
-    console.error('[ask-vcfo] guard failed', error);
+    console.error('[ask-vcfo] guard failed', safeError(error));
     await finish(unavailableAnswer(shell), { path: null });
     return;
   }
@@ -443,6 +444,10 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   // Dates in a document or a record are checked against that source. A topic's rule is a duration.
   const datedSources = sources.filter((s) => s.kind !== 'topic').map((s) => s.text);
 
+  // An answer that may serve other people is written without this person's project or screen in view.
+  const mayServeOthers = savedKey !== null && !wantsData && !decision && !preview && !onScreen;
+  const inPrompt = mayServeOthers ? null : snapshot;
+
   let toolCard: Visual | undefined;
   const allTools =
     shell === 'client'
@@ -466,7 +471,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       .filter((s) => s.kind === 'topic')
       .flatMap((s) => resolveTopicForViewer(s.id, applicability, audience)?.citations.map((c) => c.id) ?? []),
     ...tools.map((t) => t.definition.name),
-    ...(snapshot ? [SNAPSHOT_SOURCE_ID] : []),
+    ...(inPrompt ? [SNAPSHOT_SOURCE_ID] : []),
   ]);
 
   emit({ type: 'status', label: STATUS_LABELS.writing });
@@ -485,7 +490,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       maxTotalTokens: budgets.answerMaxTokens,
       shell,
       firmName: firmDisplayName(),
-      snapshot,
+      snapshot: inPrompt,
       sources,
       history,
       message: guard.rewrittenQuery,
@@ -503,7 +508,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       },
     });
   } catch (error) {
-    console.error('[ask-vcfo] generation failed', error);
+    console.error('[ask-vcfo] generation failed', safeError(error));
     await finish(unavailableAnswer(shell), { path: expectedPath, guard, startedAt });
     return;
   }
@@ -543,12 +548,10 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   });
   if (
     savedKey &&
+    mayServeOthers &&
     result.ok === true &&
-    !wantsData &&
-    !decision &&
-    !preview &&
     maySaveAnswer({ answer: done.answer, path, sources, namedCompany: Boolean(guard.company), companyName: snapshot?.companyName ?? null })
   ) {
-    await saveAnswer(ctx, savedKey, done.answer, done.messageId).catch((error) => console.warn('[ask-vcfo] answer not saved', error));
+    await saveAnswer(ctx, savedKey, done.answer, done.messageId).catch((error) => console.warn('[ask-vcfo] answer not saved', safeError(error)));
   }
 }
