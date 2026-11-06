@@ -157,9 +157,14 @@ describe('the registration actions', () => {
 
   it('undoes the dates, the fields and the ticks', async () => {
     const dates = await byName('registrations.setDates').execute(actx(), { itemId: STEP, expiresOn: '2027-01-01' });
-    expect((await byName('registrations.setDates').undo!(actx(), (dates as unknown as { undo: never }).undo)).ok).toBe(true);
+    const datesUndo = (dates as unknown as { undo: never }).undo;
+    expect(await byName('registrations.setDates').undo!(actx(), datesUndo)).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    credentials.listRegistrationFacts.mockResolvedValueOnce({ [CLIENT]: { [STEP]: { ...(facts()[STEP] as object), expiresOn: '2027-01-01' } } });
+    expect((await byName('registrations.setDates').undo!(actx(), datesUndo)).ok).toBe(true);
     expect(credentials.setRegistrationDates).toHaveBeenLastCalledWith(person('manager'), { engagementId: CLIENT, stepId: STEP, issuedOn: '2026-01-01', expiresOn: null, renewEveryMonths: 12 });
     const fields = await byName('registrations.saveFields').execute(actx(), inputOf('registrations.saveFields'));
+    expect(await byName('registrations.saveFields').undo!(actx(), (fields as unknown as { undo: never }).undo)).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    inputs.getSubjectInputs.mockResolvedValueOnce({ ...inputsDto(), sbc: [{ key: 'arn', label: 'ARN', value: 'AA36' }] } as never);
     expect((await byName('registrations.saveFields').undo!(actx(), (fields as unknown as { undo: never }).undo)).ok).toBe(true);
     expect(inputs.saveSubjectFields).toHaveBeenLastCalledWith(person('manager'), expect.objectContaining({ kind: 'registration', key: STEP, values: { arn: null } }));
     const tick = await byName('registrations.tickChecklist').execute(actx(), inputOf('registrations.tickChecklist'));

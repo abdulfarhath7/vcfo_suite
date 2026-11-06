@@ -44,7 +44,7 @@ export function canManage(role: string): boolean {
   return isAdminOrManager(role);
 }
 
-function clientMaySee(visibility: string): boolean {
+export function clientMaySee(visibility: string): boolean {
   return visibility === 'client' || visibility === 'both';
 }
 

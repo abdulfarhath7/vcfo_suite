@@ -48,6 +48,8 @@ vi.mock('@/db/repositories/client-compliances', () => compliances);
 const inputs = {
   getSubjectInputs: vi.fn(async () => ({ engagementId: OWN as string, client: [{ key: 'pan', label: 'PAN', value: 'ABCDE1234F' }, { key: 'turnover', label: 'Turnover', value: '10' }], submittedAt: null, confirmedAt: null }) as unknown),
   saveSubjectFields: vi.fn(async () => true),
+  readSubjectFieldRows: vi.fn(async () => [] as unknown[]),
+  restoreSubjectFields: vi.fn(async () => true),
 };
 vi.mock('@/db/repositories/compliance-inputs', () => inputs);
 vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRecipients: async () => ({ leads: [{ name: 'Lena Lead', email: 'lena@firm.test' }], managers: [{ name: 'Manu Manager', email: 'manu@firm.test' }] }) }));
@@ -279,11 +281,33 @@ describe('what each one does', () => {
   });
 
   it('saves details on the client side only, and puts the old ones back', async () => {
+    const earlier = { fieldKey: 'turnover', value: '10', updatedBy: 'u1', updatedAt: '2026-10-01T00:00:00.000Z', submittedAt: '2026-10-01T00:00:00.000Z', confirmedAt: '2026-10-02T00:00:00.000Z', confirmedBy: 'lead' };
+    inputs.readSubjectFieldRows.mockResolvedValueOnce([earlier]);
     const outcome = await run('client-portal.saveDetails');
     expect((inputs.saveSubjectFields.mock.calls[0] as unknown[])[1]).toMatchObject({ side: 'client', values: { turnover: '20' } });
+    expect(outcome).toMatchObject({ ok: true, undo: { rows: [earlier], applied: { turnover: '20' } } });
+    inputs.readSubjectFieldRows.mockResolvedValueOnce([{ ...earlier, value: '20', submittedAt: 'now', confirmedAt: null, confirmedBy: null }]);
     const back = await byName('client-portal.saveDetails').undo!(actx(), undoOf(outcome));
     expect(back.ok).toBe(true);
-    expect((inputs.saveSubjectFields.mock.calls[1] as unknown[])[1]).toMatchObject({ side: 'client', values: { turnover: '10' } });
+    // The earlier row goes back with its stamps, and a save is not made to look like a new submission.
+    expect(inputs.saveSubjectFields).toHaveBeenCalledTimes(1);
+    expect((inputs.restoreSubjectFields.mock.calls[0] as unknown[])[1]).toMatchObject({ side: 'client', keys: ['turnover'], rows: [earlier] });
+  });
+
+  it('leaves details alone on an undo once they changed or the lead has confirmed them', async () => {
+    const earlier = { fieldKey: 'turnover', value: '10', updatedBy: 'u1', updatedAt: '2026-10-01T00:00:00.000Z', submittedAt: null, confirmedAt: null, confirmedBy: null };
+    const outcome = await run('client-portal.saveDetails');
+    inputs.readSubjectFieldRows.mockResolvedValueOnce([{ ...earlier, value: '99', confirmedAt: null }]);
+    expect(await byName('client-portal.saveDetails').undo!(actx(), undoOf(outcome))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    inputs.readSubjectFieldRows.mockResolvedValueOnce([{ ...earlier, value: '20', confirmedAt: '2026-11-06T00:00:00.000Z' }]);
+    expect(await byName('client-portal.saveDetails').undo!(actx(), undoOf(outcome))).toEqual({ ok: false, error: expect.stringContaining('has confirmed') });
+    expect(inputs.restoreSubjectFields).not.toHaveBeenCalled();
+  });
+
+  it('refuses a masked number, which would overwrite the real one', async () => {
+    await expect(preview('client-portal.saveDetails', { values: { turnover: 'XXXXXX234F' } })).rejects.toThrow(/masked/);
+    expect(await run('client-portal.saveDetails', { values: { turnover: 'XXXXXX234F' } })).toMatchObject({ ok: false });
+    expect(inputs.saveSubjectFields).not.toHaveBeenCalled();
   });
 
   it('files the chat file where the firm asked for it, and can take it back', async () => {

@@ -225,6 +225,27 @@ describe('the board meeting actions', () => {
     ]);
   });
 
+  it('names a director\'s address from their own record, as the notice does when it goes', async () => {
+    repo.getMeeting.mockResolvedValue({ ...meeting, directors: [{ ...meeting.directors[0]!, email: 'new@x.test' }] });
+    const draft = await byName('board-meetings.approve').preview(actx(), { meetingId: ID });
+    expect(draft!.recipients![0]).toEqual({ name: 'Asha Rao', email: 'new@x.test', role: 'Director' });
+  });
+
+  it('shows every field of a resolution on its card, and says when one is being cleared', async () => {
+    const full = { ...resolution, changesItem: 'Bank signatory', reason: 'New account' };
+    const added = await byName('board-meetings.addResolution').preview(actx(), { meetingId: ID, ...full });
+    expect(added!.rows[0]!.displayNew).toContain('dated 2026-12-16');
+    expect(added!.rows[0]!.displayNew).toContain('Changes: Bank signatory');
+    expect(added!.rows[0]!.displayNew).toContain('Reason: New account');
+    repo.getMeeting.mockResolvedValue({ ...meeting, documents: [{ ...meeting.documents[0]!, resolutionDate: '2026-12-01', changesItem: 'Old item', reason: 'Old reason' }] });
+    const edited = await byName('board-meetings.editResolution').preview(actx(), { documentId: DOC, ...resolution });
+    expect(edited!.rows[0]!.displayOld).toContain('2026-12-01');
+    expect(edited!.rows[0]!.displayOld).toContain('Changes: Old item');
+    expect(edited!.rows[0]!.displayNew).toContain('dated 2026-12-16');
+    expect(edited!.rows[0]!.displayNew).toContain('Changes: nothing named');
+    expect(edited!.rows[0]!.displayNew).toContain('Reason: none given');
+  });
+
   it('tells nobody about a cancelled meeting whose notice never went', async () => {
     expect((await byName('board-meetings.cancel').preview(actx(), { meetingId: ID }))!.recipients).toEqual([]);
     repo.getMeeting.mockResolvedValue({ ...meeting, sentAt: '2026-11-01T00:00:00Z' });
@@ -280,6 +301,9 @@ describe('the board meeting actions', () => {
     const edit = byName('board-meetings.editNotice');
     const edited = await edit.execute(actx(), { meetingId: ID, venue: 'Mumbai' });
     expect(edited).toMatchObject({ ok: true, undo: { meetingId: ID, venue: 'Hyderabad' } });
+    expect(await edit.undo!(actx(), undoFrom(edited))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    expect(repo.updateMeeting).toHaveBeenCalledTimes(1);
+    repo.getMeeting.mockResolvedValue({ ...meeting, venue: 'Mumbai' });
     expect((await edit.undo!(actx(), undoFrom(edited))).ok).toBe(true);
     expect(repo.updateMeeting.mock.calls[1]![2]).toMatchObject({ venue: 'Hyderabad' });
   });

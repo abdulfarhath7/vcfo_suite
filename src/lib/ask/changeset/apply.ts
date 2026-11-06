@@ -9,17 +9,19 @@ import {
   rowNeedsManager,
   setAskChangesetStatus,
   updateAskChangesetRows,
+  type AskChangesetRow,
   type AskChangesetRowRow,
   type ChangesetAccess,
 } from '@/db/repositories/ask-changesets';
 import { isFileRow, responseKey } from '@/lib/actions/checklist/rules';
 import { getAction } from '@/lib/actions/registry';
+import { refusalOf } from '@/lib/actions/shared';
 import { agentMayExecute, type ActionContext, type AnyAction } from '@/lib/actions/types';
 import { ASK_CHANGESET_DECIDED } from '@/lib/ask/agent/events';
 import { askFlags } from '@/lib/ask/config';
 import { inngest } from '@/jobs/client';
 import { changesetHash } from './hash';
-import type { JsonValue } from './types';
+import type { ChangesetRecipient, JsonValue } from './types';
 import { safeError } from '@/lib/ask/mask';
 
 /**
@@ -147,7 +149,7 @@ export async function decideChangeset(ctx: AuthContext, id: string, input: { con
   const statusById = new Map(found.rows.map((row) => [row.id, row.status]));
   const fields: string[] = [];
   for (const row of wanted) {
-    const outcome = await applyRow(actx, row);
+    const outcome = await applyRow(actx, row, found.changeset);
     await updateAskChangesetRows(ctx, found, [{ id: row.id, patch: outcome.patch }]);
     statusById.set(row.id, outcome.patch.status!);
     if (outcome.patch.status === 'applied') {
@@ -185,29 +187,51 @@ async function announceDecision(found: ChangesetAccess, settled: boolean): Promi
   }
 }
 
-async function loadAction(row: AskChangesetRowRow): Promise<AnyAction | null> {
+/** An owner's flag or kill switch stops a card already made. A T3 card stops with the T3 switch, whichever tier the action says it is. */
+async function loadAction(row: AskChangesetRowRow, cardTier: string): Promise<AnyAction | null> {
   const action = await getAction(row.action);
-  return action && agentMayExecute(action.tier) && !askFlags().killedTiers.has(action.tier) ? action : null;
+  const { killedTiers } = askFlags();
+  if (!action || !agentMayExecute(action.tier) || killedTiers.has(action.tier) || (cardTier === 'T3' && killedTiers.has('T3'))) return null;
+  return action.available?.() === false ? null : action;
 }
 
-async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
+const personKey = (person: ChangesetRecipient): string => (person.email ?? person.name).trim().toLowerCase();
+
+/**
+ * The approval covered the names on the card. If the same action would now reach someone else, it
+ * says who, and nothing goes out. A person who has since left the list is no reason to stop.
+ */
+async function strangerOnCard(action: AnyAction, actx: ActionContext, input: unknown, onCard: readonly ChangesetRecipient[]): Promise<string | null> {
+  const draft = await action.preview(actx, input as never);
+  const known = new Set(onCard.map(personKey));
+  const strangers = (draft?.recipients ?? []).filter((person) => !known.has(personKey(person)));
+  return strangers.length > 0 ? `The people on this have changed since the card was made: ${strangers.map((p) => p.name).join(', ')} would also get it. Nothing was sent. Please ask again.` : null;
+}
+
+async function applyRow(actx: ActionContext, row: AskChangesetRowRow, card: AskChangesetRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
   const failed = (error: string) => ({ patch: { status: 'failed', error } });
-  const action = await loadAction(row);
+  const action = await loadAction(row, card.tier);
   if (!action) return failed('This action is switched off.');
   if (!action.roles.includes(actx.auth.role)) return failed('This is not yours to do.');
   const parsed = action.input.safeParse(inputOf(row));
   if (!parsed.success) return failed('This row no longer reads as a valid change.');
-  if (action.recheck) {
-    const checked = await action.recheck(actx, parsed.data, {});
-    if (!checked.canApply) {
-      return { patch: { status: 'held', checks: checked.checks, heldReason: checked.heldReason ?? checked.checks.find((c) => !c.ok)?.message ?? 'A check failed.' } };
-    }
-  }
   try {
+    if (action.recheck) {
+      const checked = await action.recheck(actx, parsed.data, {});
+      if (!checked.canApply) {
+        return { patch: { status: 'held', checks: checked.checks, heldReason: checked.heldReason ?? checked.checks.find((c) => !c.ok)?.message ?? 'A check failed.' } };
+      }
+    }
+    if (card.tier === 'T3') {
+      const stranger = await strangerOnCard(action, actx, parsed.data, card.recipients ?? []);
+      if (stranger) return failed(stranger);
+    }
     const outcome = await action.execute(actx, parsed.data);
     if (outcome.ok === false) return failed(outcome.error);
     return { patch: { status: 'applied', error: null, heldReason: null, appliedAt: actx.now, undoData: outcome.undo ?? null } };
   } catch (error) {
+    const refusal = refusalOf(error);
+    if (refusal) return failed(refusal);
     console.error('[ask-vcfo] changeset row failed', safeError(error));
     return failed('This row could not be saved.');
   }

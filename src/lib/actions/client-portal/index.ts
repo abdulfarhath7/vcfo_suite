@@ -6,7 +6,7 @@ import { getOwnAskAttachments } from '@/db/repositories/ask-attachments';
 import { addClientFilingProof, clearFilingReminder, complianceErrorStatus, getPortalFilings, setFilingReminder } from '@/db/repositories/client-compliances';
 import { listOpenDocumentRequests, undoRequestUpload, UploadRejectedError } from '@/db/repositories/client-documents';
 import { clientAttachRequestedFile, clientUndoRequestedFile, FileRequestError, listFileRequests } from '@/db/repositories/client-incorporation';
-import { getSubjectInputs, saveSubjectFields } from '@/db/repositories/compliance-inputs';
+import { getSubjectInputs, readSubjectFieldRows, restoreSubjectFields, saveSubjectFields, type SubjectFieldRow } from '@/db/repositories/compliance-inputs';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
 import type { ChangesetRecipient } from '@/lib/ask/changeset/types';
@@ -22,7 +22,7 @@ import { answerDocumentRequest } from '@/lib/requests/answer-document-request';
 import { itemKey } from '@/lib/work/item-key';
 import { getObjectBuffer } from '@/storage/s3';
 import { attachAnswerFile, setAnswer, storeChatFile } from '../checklist/set-response';
-import { ActionRefused, assertOnLockedClient, lockedClient, recordDraft, refusing } from '../shared';
+import { ActionRefused, assertOnLockedClient, CHANGED_SINCE, lockedClient, MASKED_VALUE, recordDraft, refusing, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type AnyAction } from '../types';
 
 /**
@@ -150,6 +150,8 @@ const readDetails = defineAction({
     }),
 });
 
+const savedFieldRow = z.object({ fieldKey: z.string(), value: z.string().nullable(), updatedBy: z.string().nullable(), updatedAt: z.string(), submittedAt: z.string().nullable(), confirmedAt: z.string().nullable(), confirmedBy: z.string().nullable() });
+
 const saveDetails = defineAction({
   name: 'client-portal.saveDetails',
   description: 'Propose saving the details you give for one filing or registration, by field key. Your project lead sees them and confirms them. You approve it on a card.',
@@ -160,6 +162,7 @@ const saveDetails = defineAction({
     const found = await ownDetails(actx, input);
     const fields = found.client.filter((f) => f.key in input.values);
     if (fields.length === 0 || fields.length !== Object.keys(input.values).length) throw new ActionRefused('The firm fills some of those details, or they are not asked for here.');
+    if (Object.values(input.values).some((value) => MASKED_VALUE.test(value))) throw new ActionRefused('That number is masked here, so it cannot be saved from chat. Please type it on the page itself.');
     return recordDraft(actx, {
       action: 'client-portal.saveDetails',
       tier: 'T2',
@@ -173,16 +176,21 @@ const saveDetails = defineAction({
   execute: (actx, input) =>
     refusing(async () => {
       const found = await ownDetails(actx, input);
-      const previous = Object.fromEntries(found.client.filter((f) => f.key in input.values).map((f) => [f.key, f.value]));
+      if (Object.values(input.values).some((value) => MASKED_VALUE.test(value))) return { ok: false, error: 'That number is masked here, so it cannot be saved from chat. Please type it on the page itself.' };
+      const rows = await readSubjectFieldRows(actx.auth, { kind: input.kind, key: input.key, keys: found.client.filter((f) => f.key in input.values).map((f) => f.key) });
       const saved = await saveSubjectFields(actx.auth, { kind: input.kind, key: input.key, side: 'client', values: input.values });
       if (!saved) return { ok: false, error: 'The firm fills those details, or they are not asked for here.' };
-      return { ok: true, summary: 'Saved your details.', undo: { kind: input.kind, key: input.key, previous } };
+      return { ok: true, summary: 'Saved your details.', undo: { kind: input.kind, key: input.key, rows, applied: input.values } };
     }),
   undo: (actx, raw) =>
     refusing(async () => {
-      const undo = details.extend({ previous: z.record(z.string(), z.string().nullable()) }).parse(raw);
+      const undo = details.extend({ rows: z.array(savedFieldRow), applied: z.record(z.string(), z.string()) }).parse(raw);
       await ownDetails(actx, undo);
-      await saveSubjectFields(actx.auth, { kind: undo.kind, key: undo.key, side: 'client', values: undo.previous });
+      const keys = Object.keys(undo.applied);
+      const live = await readSubjectFieldRows(actx.auth, { kind: undo.kind, key: undo.key, keys });
+      if (live.some((row) => row.confirmedAt)) return { ok: false, error: 'Your project lead has confirmed these details since, so they stay. Please change them on the page.' };
+      if (!stillAsSaved(Object.fromEntries(live.map((row) => [row.fieldKey, row.value])), undo.applied)) return { ok: false, error: CHANGED_SINCE };
+      await restoreSubjectFields(actx.auth, { kind: undo.kind, key: undo.key, side: 'client', keys, rows: undo.rows as SubjectFieldRow[] });
       return { ok: true, summary: 'Put your details back.' };
     }),
 });

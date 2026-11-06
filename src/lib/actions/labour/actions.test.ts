@@ -209,6 +209,8 @@ describe('the labour register actions', () => {
     const outcome = await set.execute(actx(), { batchId: BATCH, assumptions: { dailyHours: 8 } });
     expect(repo.updateBatch).toHaveBeenCalledWith(person('manager'), BATCH, { assumptions: { weekOff: 'sun', dailyHours: 8 } });
     expect(outcome).toMatchObject({ ok: true, undo: { batchId: BATCH, previous: { weekOff: 'sun' } } });
+    expect(await set.undo!(actx(), undoFrom(outcome))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    repo.getBatch.mockResolvedValue({ ...openBatch, assumptions: { dailyHours: 8, weekOff: 'sun' } });
     await set.undo!(actx(), undoFrom(outcome));
     expect(repo.updateBatch).toHaveBeenLastCalledWith(person('manager'), BATCH, { assumptions: { weekOff: 'sun' } });
   });

@@ -63,6 +63,35 @@ export async function refusing(run: () => Promise<ActionResult>): Promise<Action
   }
 }
 
+/** A value this chat shows masked. Saving it would overwrite the real number with the mask. */
+export const MASKED_VALUE = /^X{3,}[A-Z0-9]{4}$/i;
+
+/** What an undo says when somebody has changed the record since the card saved it. */
+export const CHANGED_SINCE = 'This value was changed after it was saved, so it was left as it is.';
+
+const comparable = (value: unknown): unknown => {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (Array.isArray(value)) return value.map(comparable);
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .filter(([, item]) => item !== undefined)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, item]) => [key, comparable(item)]);
+  }
+  const text = String(value).trim();
+  return text !== '' && Number.isFinite(Number(text)) ? Number(text) : text;
+};
+
+/**
+ * True when a record still holds what a card saved. An undo checks this before it writes, so it
+ * cannot overwrite a later edit. Numbers compare by value, as the database hands back "100.00" for
+ * 100, and an empty string and a null are the same.
+ */
+export function stillAsSaved(current: object, saved: object): boolean {
+  return Object.entries(saved).every(([key, value]) => JSON.stringify(comparable((current as Record<string, unknown>)[key])) === JSON.stringify(comparable(value)));
+}
+
 /** The people on the client's side, worked out by code: the model never picks a recipient. */
 export async function clientRecipients(engagementId: string): Promise<ChangesetRecipient[]> {
   const parties = await resolveEngagementRecipients(engagementId);

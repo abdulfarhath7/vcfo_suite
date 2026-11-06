@@ -22,7 +22,7 @@ import {
 import { invoiceLabel, num, scopedInvoice } from '@/db/repositories/receivables/shared';
 import { addDaysIso, todayIst } from '@/lib/receivables/dates';
 import { INVOICE_CURRENCY_CODES } from '@/lib/receivables/currencies';
-import { ActionRefused, MANAGING_ROLES } from '../shared';
+import { ActionRefused, CHANGED_SINCE, MANAGING_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext } from '../types';
 import { recordReceipt } from './flows';
 import { inr, pickSheet, run, said, sheetCard } from './shared';
@@ -92,11 +92,13 @@ const edit = defineAction({
       const { invoice, label } = await labelled(actx, invoiceId);
       await updateInvoice(actx.auth, invoiceId, patch);
       const before = Object.fromEntries(Object.keys(patch).map((name) => [name, invoice[name as keyof typeof invoice] as string | null]));
-      return { ok: true, summary: `${label} is updated on the draft.`, undo: { invoiceId, before } };
+      return { ok: true, summary: `${label} is updated on the draft.`, undo: { invoiceId, before, after: patch } };
     }),
   undo: (actx, undo) =>
     run(async () => {
-      const { invoiceId, before } = undoOf(undo);
+      const { invoiceId, before, after } = undoOf(undo);
+      // A part payment or a credit note lowers the amount, so this catches those too.
+      if (!stillAsSaved((await labelled(actx, invoiceId)).invoice, after)) return { ok: false, error: CHANGED_SINCE };
       const restored = { ...(before as Record<string, string | null>) };
       for (const money of ['amountInr', 'fcAmount', 'fxRate'] as const) if (typeof restored[money] === 'string') (restored as Record<string, unknown>)[money] = Number(restored[money]);
       await updateInvoice(actx.auth, invoiceId, restored);
@@ -118,8 +120,8 @@ async function openInvoiceId(actx: ActionContext, input: { invoiceId?: string; i
 const received = defineAction({
   name: 'receivables.markReceived',
   simple: true,
-  description: 'Propose marking an invoice received or paid: record a payment that has already arrived against it, in full or in part, with its paid-on date. invoiceNo is the number on the invoice as the person says it. Leave amount out when the whole open balance arrived; otherwise amount is the rupees credited. part true keeps the invoice open with a lower balance. This only records a receipt and moves no money. A person approves it on a card.',
-  input: z.object({ invoiceId: z.string().uuid().optional(), invoiceNo: z.string().trim().min(1).max(40).optional(), paidOn: isoDate, amount: amount.optional(), part: z.boolean().optional(), receivedFc: amount.optional(), tdsInr: z.number().min(0).max(1e12).optional() }),
+  description: 'Propose marking an invoice received or paid: record a payment that has already arrived against it, in full or in part, with its paid-on date. invoiceNo is the number on the invoice as the person says it. Leave amount out when the whole open balance arrived; otherwise amount is the rupees credited. part true keeps the invoice open with a lower balance. Leave openAtCard out; the card fills it. This only records a receipt and moves no money. A person approves it on a card.',
+  input: z.object({ invoiceId: z.string().uuid().optional(), invoiceNo: z.string().trim().min(1).max(40).optional(), paidOn: isoDate, amount: amount.optional(), part: z.boolean().optional(), receivedFc: amount.optional(), tdsInr: z.number().min(0).max(1e12).optional(), openAtCard: z.number().optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
   examples: [{ invoiceNo: 'SC/09/03', paidOn: '2026-11-05' }],
@@ -130,13 +132,15 @@ const received = defineAction({
       if (invoice.status !== 'open') throw new ActionRefused('This invoice is not open.');
       if (input.amount === undefined && (input.part || invoice.currency !== 'INR')) throw new ActionRefused('Say how many rupees were credited.');
       const amount = input.amount ?? open - (input.tdsInr ?? 0);
-      return sheetCard(actx, { action: 'receivables.markReceived', tier: 'T2', title: 'Record a receipt', label, target: { ...input, invoiceId, amount }, displayOld: `Open, ${inr(open)}`, displayNew: `${input.part ? 'Part payment' : 'Received'} ${inr(amount)} on ${input.paidOn}${input.tdsInr ? `, TDS ${inr(input.tdsInr)}` : ''}` });
+      return sheetCard(actx, { action: 'receivables.markReceived', tier: 'T2', title: 'Record a receipt', label, target: { ...input, invoiceId, amount, openAtCard: open }, displayOld: `Open, ${inr(open)}`, displayNew: `${input.part ? 'Part payment' : 'Received'} ${inr(amount)} on ${input.paidOn}${input.tdsInr ? `, TDS ${inr(input.tdsInr)}` : ''}` });
     }),
-  execute: (actx, { invoiceId, invoiceNo: _invoiceNo, amount, ...receipt }) =>
+  execute: (actx, { invoiceId, invoiceNo: _invoiceNo, amount, openAtCard, ...receipt }) =>
     run(async () => {
       // A card always carries both: its preview found the invoice and worked out the amount.
       if (!invoiceId || amount === undefined) return { ok: false, error: 'This card does not say which invoice or how much.' };
-      const { label } = await labelled(actx, invoiceId);
+      const { label, open } = await labelled(actx, invoiceId);
+      // The amount was worked out from the balance on the card, and the balance moves as payments and credit notes arrive.
+      if (open !== openAtCard) return { ok: false, error: 'This invoice\'s balance has changed since this card was made. Please ask again.' };
       const invoice = await recordReceipt(actx.auth, invoiceId, { ...receipt, amount });
       // A part payment has no undo on the screen either: it is corrected by editing the amount.
       return invoice.status === 'received' ? { ok: true, summary: `${label} is marked received on the draft.`, undo: { invoiceId } } : { ok: true, summary: `Recorded the part payment on ${label}. ${inr(invoice.amountInr)} stays open.` };
@@ -163,11 +167,12 @@ const pause = defineAction({
     run(async () => {
       const { invoice, label } = await labelled(actx, input.invoiceId);
       await setReminderPause(actx.auth, input.invoiceId, { until: input.until ?? null, reason: input.reason ?? null });
-      return { ok: true, summary: input.until ? `Reminders on ${label} are paused until ${input.until}.` : `Reminders on ${label} are on again.`, undo: { invoiceId: input.invoiceId, until: invoice.remindersPausedUntil ? String(invoice.remindersPausedUntil) : null, reason: invoice.pauseReason } };
+      return { ok: true, summary: input.until ? `Reminders on ${label} are paused until ${input.until}.` : `Reminders on ${label} are on again.`, undo: { invoiceId: input.invoiceId, until: invoice.remindersPausedUntil ? String(invoice.remindersPausedUntil) : null, reason: invoice.pauseReason, applied: { remindersPausedUntil: input.until ?? null } } };
     }),
   undo: (actx, undo) =>
     run(async () => {
-      const { invoiceId, until, reason } = undoOf(undo);
+      const { invoiceId, until, reason, applied } = undoOf(undo);
+      if (!stillAsSaved((await labelled(actx, invoiceId)).invoice, applied)) return { ok: false, error: CHANGED_SINCE };
       await setReminderPause(actx.auth, invoiceId, { until, reason });
       return { ok: true, summary: 'The reminders are back as they were.' };
     }),
@@ -217,11 +222,12 @@ const tds = defineAction({
     run(async () => {
       const { invoice, label } = await labelled(actx, invoiceId);
       await setTds(actx.auth, invoiceId, input);
-      return { ok: true, summary: `The TDS on ${label} is recorded.`, undo: { invoiceId, tdsInr: num(invoice.tdsInr) ?? 0, certificateOn: invoice.tdsCertificateOn ? String(invoice.tdsCertificateOn) : null } };
+      return { ok: true, summary: `The TDS on ${label} is recorded.`, undo: { invoiceId, tdsInr: num(invoice.tdsInr) ?? 0, certificateOn: invoice.tdsCertificateOn ? String(invoice.tdsCertificateOn) : null, applied: { ...(input.tdsInr !== undefined ? { tdsInr: input.tdsInr } : {}), ...(input.certificateOn ? { tdsCertificateOn: input.certificateOn } : {}) } } };
     }),
   undo: (actx, undo) =>
     run(async () => {
-      const { invoiceId, tdsInr, certificateOn } = undoOf(undo);
+      const { invoiceId, tdsInr, certificateOn, applied } = undoOf(undo);
+      if (!stillAsSaved((await labelled(actx, invoiceId)).invoice, applied)) return { ok: false, error: CHANGED_SINCE };
       await setTds(actx.auth, invoiceId, { tdsInr, certificateOn });
       return { ok: true, summary: 'The TDS is back as it was.' };
     }),

@@ -251,6 +251,67 @@ export async function saveSubjectFields(
   return true;
 }
 
+/** One saved field with its stamps, in a form an undo can keep. */
+export type SubjectFieldRow = {
+  fieldKey: string;
+  value: string | null;
+  updatedBy: string | null;
+  updatedAt: string;
+  submittedAt: string | null;
+  confirmedAt: string | null;
+  confirmedBy: string | null;
+};
+
+const subjectFieldsWhere = (dbId: string, input: { kind: InputsKind; key: string; keys: readonly string[] }) =>
+  and(eq(complianceSubjectFields.engagementId, dbId), eq(complianceSubjectFields.subjectKind, input.kind), eq(complianceSubjectFields.subjectKey, input.key), inArray(complianceSubjectFields.fieldKey, [...input.keys]));
+
+/** The rows behind some fields, as they stand. A field nobody has saved has no row. */
+export async function readSubjectFieldRows(ctx: AuthContext, input: { engagementId?: string | null; kind: InputsKind; key: string; keys: readonly string[] }): Promise<SubjectFieldRow[]> {
+  const scope = await scopeEngagement(ctx, input.engagementId);
+  if (!scope || input.keys.length === 0) return [];
+  const rows = await db.select().from(complianceSubjectFields).where(subjectFieldsWhere(scope.dbId, input));
+  return rows.map((row) => ({
+    fieldKey: row.fieldKey,
+    value: row.value,
+    updatedBy: row.updatedBy,
+    updatedAt: row.updatedAt.toISOString(),
+    submittedAt: row.submittedAt?.toISOString() ?? null,
+    confirmedAt: row.confirmedAt?.toISOString() ?? null,
+    confirmedBy: row.confirmedBy,
+  }));
+}
+
+/**
+ * Puts fields back exactly as an earlier read found them, stamps included, so taking back a client's
+ * save does not leave the old value looking newly submitted or lose a confirmation. A field with no
+ * earlier row loses its row. A client touches only its own side.
+ */
+export async function restoreSubjectFields(
+  ctx: AuthContext,
+  input: { engagementId?: string | null; kind: InputsKind; key: string; side: 'client' | 'sbc'; keys: readonly string[]; rows: readonly SubjectFieldRow[] },
+): Promise<boolean> {
+  if (ctx.role === 'client' && input.side !== 'client') throw new InputsForbiddenError('Clients fill only their own details');
+  if (ctx.role !== 'client' && !isStaff(ctx)) throw new InputsForbiddenError('Not allowed');
+  const scope = await scopeEngagement(ctx, input.engagementId);
+  if (!scope) return false;
+  const date = (value: string | null) => (value ? new Date(value) : null);
+  await db.transaction(async (tx) => {
+    for (const fieldKey of input.keys) {
+      const earlier = input.rows.find((row) => row.fieldKey === fieldKey);
+      const where = and(subjectFieldsWhere(scope.dbId, { ...input, keys: [fieldKey] }), eq(complianceSubjectFields.side, input.side));
+      if (!earlier) {
+        await tx.delete(complianceSubjectFields).where(where);
+        continue;
+      }
+      await tx
+        .update(complianceSubjectFields)
+        .set({ value: earlier.value, updatedBy: earlier.updatedBy, updatedAt: new Date(earlier.updatedAt), submittedAt: date(earlier.submittedAt), confirmedAt: date(earlier.confirmedAt), confirmedBy: earlier.confirmedBy })
+        .where(where);
+    }
+  });
+  return true;
+}
+
 /** Staff confirm the client's submitted details ("Confirmed by"). */
 export async function confirmSubjectFields(ctx: AuthContext, input: { engagementId: string; kind: InputsKind; key: string }): Promise<boolean> {
   if (!isStaff(ctx)) throw new InputsForbiddenError('Only firm staff confirm details');

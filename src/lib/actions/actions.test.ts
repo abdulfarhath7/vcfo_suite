@@ -28,6 +28,7 @@ const tasksRepo = {
   reviewTask: vi.fn(async () => task),
   addChecklistItem: vi.fn(async () => ({ label: 'Line' })),
   addTaskComment: vi.fn(async () => ({})),
+  taskCommentAudience: vi.fn(async () => ({ clientSees: true, people: [{ name: 'Owner', email: 'o@x.test', role: 'intern' }, { name: 'Client Person', email: 'c@x.test', role: 'client' }] })),
 };
 vi.mock('@/db/repositories/compliance-tasks', () => tasksRepo);
 const workRepo = { addChecklistItem: vi.fn(async () => ({ id: 'w1', label: 'Mine' }) as { id: string; label: string } | null), deleteChecklistItem: vi.fn(async () => true) };
@@ -241,6 +242,37 @@ describe('the 25 actions', () => {
     expect(draft!.recipients).toEqual([{ name: 'Client Person', email: 'c@x.test', role: 'Client' }]);
     const review = await byName('tasks.review').preview(actx(), { taskId: ID, decision: 'approve' });
     expect(review!.recipients).toEqual([{ name: 'Owner', role: 'Task owner' }]);
+  });
+
+  it('shows everything a new task will hold, and confirms a task the client sees like a message', async () => {
+    const firm = await byName('tasks.create').preview(actx(), { name: 'New', dueDate: '2026-12-01', startDate: '2026-11-20', urgency: 'High', checklist: ['Ask the client', 'File it'] });
+    expect(firm!.tier).toBe('T2');
+    expect(firm!.recipients ?? []).toEqual([]);
+    expect(firm!.rows[0]!.displayNew).toBe('New, starts 2026-11-20, due 2026-12-01, High urgency, seen by the firm only. Checklist: Ask the client; File it');
+    const shared = await byName('tasks.create').preview(actx(), { name: 'New', dueDate: '2026-12-01', visibility: 'both' });
+    expect(shared!.tier).toBe('T3');
+    expect(shared!.rows[0]!.displayNew).toContain('seen by the firm and the client');
+    expect(shared!.recipients).toEqual([{ name: 'Client Person', email: 'c@x.test', role: 'Client' }]);
+  });
+
+  it('lists the people a client comment tells, and refuses when no client would hear of it', async () => {
+    const draft = await byName('tasks.commentToClient').preview(actx(), { taskId: ID, body: 'Hello' });
+    expect(draft!.recipients).toEqual([{ name: 'Owner', email: 'o@x.test', role: 'Staff' }, { name: 'Client Person', email: 'c@x.test', role: 'Client' }]);
+    tasksRepo.taskCommentAudience.mockResolvedValueOnce({ clientSees: false, people: [] });
+    await expect(byName('tasks.commentToClient').preview(actx(), { taskId: ID, body: 'Hello' })).rejects.toThrow(/cannot see this task/);
+    tasksRepo.taskCommentAudience.mockResolvedValueOnce({ clientSees: false, people: [] });
+    expect(await byName('tasks.commentToClient').execute(actx(), { taskId: ID, body: 'Hello' })).toMatchObject({ ok: false });
+    expect(tasksRepo.addTaskComment).not.toHaveBeenCalled();
+    tasksRepo.taskCommentAudience.mockResolvedValueOnce({ clientSees: true, people: [{ name: 'Owner', email: 'o@x.test', role: 'intern' }] });
+    await expect(byName('tasks.commentToClient').preview(actx(), { taskId: ID, body: 'Hello' })).rejects.toThrow(/no client login/);
+  });
+
+  it('fixes the filed date on the card, in India\'s day, so the record says what was approved', async () => {
+    const late = { ...actx(), now: new Date('2026-11-06T20:00:00Z') };
+    const draft = await byName('statuses.markFiled').preview(late, { filingId: ID });
+    expect(draft!.rows[0]!.target).toMatchObject({ filedOn: '2026-11-07' });
+    expect(draft!.rows[0]!.displayNew).toBe('Filed 2026-11-07');
+    expect((await byName('statuses.markFiled').preview(late, { filingId: ID, filedOn: '2026-10-30' }))!.rows[0]!.displayNew).toBe('Filed 2026-10-30');
   });
 
   it('keeps an internal comment internal, and a client comment visible', async () => {

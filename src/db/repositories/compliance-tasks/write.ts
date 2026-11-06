@@ -1,7 +1,7 @@
 import 'server-only';
-import { and, eq, max } from 'drizzle-orm';
+import { and, eq, inArray, max } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { complianceTaskChecklistItems, complianceTaskComments, complianceTaskEvents, complianceTasks } from '@/db/schema';
+import { complianceTaskChecklistItems, complianceTaskComments, complianceTaskEvents, complianceTasks, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { getActivityRow, systemEnsureActivitiesSeeded } from '@/db/repositories/compliance-activities';
@@ -30,6 +30,7 @@ import {
   notFound,
   notifyTask,
   scopedTask,
+  clientMaySee,
   type TaskRow,
 } from './shared';
 
@@ -341,6 +342,16 @@ export interface CommentDto {
   body: string;
   internal: boolean;
   at: string;
+}
+
+/** Who a staff comment the client can see tells, the same people `addTaskComment` and `notifyTask` pick. */
+export async function taskCommentAudience(ctx: AuthContext, taskId: string): Promise<{ clientSees: boolean; people: Array<{ name: string; email: string; role: string }> }> {
+  const { task, engagement } = await scopedTask(ctx, taskId);
+  const clientSees = clientMaySee(task.visibility);
+  const ids = [...new Set([task.ownerId, task.reviewerId, engagement.clientUserId].filter((id): id is string => Boolean(id) && id !== ctx.userId))];
+  if (ids.length === 0) return { clientSees, people: [] };
+  const rows = await db.select({ name: profiles.name, email: profiles.email, role: profiles.role }).from(profiles).where(inArray(profiles.id, ids));
+  return { clientSees, people: rows.filter((p) => p.role !== 'client' || clientSees).map((p) => ({ name: p.name?.trim() || p.email, email: p.email, role: p.role })) };
 }
 
 /** A comment from staff or the client (K-2). A client's comment is never internal. */

@@ -7,6 +7,7 @@ import { FilingStatusError, markFilingFiled, reopenFiling } from '@/db/repositor
 import { filingStatus } from '@/lib/compliance/filings';
 import { buildPhaseProgress, currentPhaseRow } from '@/lib/ask/phase-progress';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import { todayIst } from '@/lib/receivables/dates';
 import { ActionRefused, lockedClient, recordDraft, refusing, STAFF_ROLES } from '../shared';
 import { defineAction, type ActionContext, type AnyAction } from '../types';
 
@@ -64,14 +65,16 @@ const markFiled = defineAction({
   common: true,
   preview: async (actx, input) => {
     const filing = await scopedFiling(actx, input.filingId);
+    // The date on the card is the date saved, however long the card waits.
+    const filedOn = input.filedOn ?? todayIst(actx.now);
     return recordDraft(actx, {
       action: 'statuses.markFiled',
       tier: 'T2',
       title: 'Record a filing as filed',
       label: `${filing.particular}${filing.periodLabel ? `, ${filing.periodLabel}` : ''}`,
-      target: input,
+      target: { ...input, filedOn },
       displayOld: filing.filedOn ? `Filed ${filing.filedOn}` : 'Not filed',
-      displayNew: `Filed ${input.filedOn ?? actx.now.toISOString().slice(0, 10)}${input.note ? `. ${input.note}` : ''}`,
+      displayNew: `Filed ${filedOn}${input.note ? `. ${input.note}` : ''}`,
     });
   },
   execute: (actx, input) =>

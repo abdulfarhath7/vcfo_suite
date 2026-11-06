@@ -16,6 +16,7 @@ export {
   setChecklistItem,
   deleteChecklistItem,
   addTaskComment,
+  taskCommentAudience,
 } from './write';
 export type { CreateTaskInput, EditTaskInput, ChecklistItemDto, CommentDto } from './write';
 export { addTaskAttachment, getTaskAttachmentUrl, removeTaskAttachment } from './attachments';

@@ -12,13 +12,14 @@ import { listCalendarProposals } from '@/db/repositories/reg-proposals';
 import { decideProposal } from '@/lib/watch/calendar-decision';
 import { createWindowRequest, decideWindowRequest, listWindowRequests, withdrawWindowRequest } from '@/db/repositories/item-window-requests';
 import { setComplianceInstanceWindow } from '@/db/repositories/schedule';
+import { askFlags } from '@/lib/ask/config';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { isAdminOrManager } from '@/lib/auth';
 import { STAGE_LABEL, type Stage } from '@/lib/compliance-tasks/model';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { itemKey } from '@/lib/work/item-key';
 import { notifyWindowDecided, notifyWindowRequested } from '@/lib/work/window-request-notify';
-import { ActionRefused, assertOnLockedClient, lockedClient, MANAGING_ROLES, recordDraft, STAFF_ROLES } from '../shared';
+import { ActionRefused, assertOnLockedClient, CHANGED_SINCE, lockedClient, MANAGING_ROLES, recordDraft, STAFF_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type AnyAction } from '../types';
 import { filingDetailsFields, isoDate, windowFields, withBothDates } from './rules';
 import { refuseKnown, subjectActions, subjectSummary, undoWith, type SubjectArea } from './subject';
@@ -265,9 +266,12 @@ const setWindow = defineAction({
       const { inst, title } = await scoped(actx, input.itemId);
       if (inst.filedOn) throw new ActionRefused('A filed period keeps its window.');
       await setComplianceInstanceWindow(actx.auth, input.itemId, input.from && input.to ? { from: input.from, to: input.to } : null);
-      return { ok: true, summary: `Updated the working window on ${title}.`, undo: { itemId: input.itemId, from: inst.windowFrom, to: inst.windowTo } };
+      return { ok: true, summary: `Updated the working window on ${title}.`, undo: { itemId: input.itemId, from: inst.windowFrom, to: inst.windowTo, applied: { windowFrom: input.from ?? null, windowTo: input.to ?? null } } };
     }),
-  undo: undoWith(windowInput, async (actx, input) => {
+  undo: undoWith(z.object({ applied: z.record(z.string(), z.string().nullable()) }).and(windowInput), async (actx, { applied, ...input }) => {
+    const { inst } = await scoped(actx, input.itemId);
+    if (inst.filedOn) throw new ActionRefused('A filed period keeps its window.');
+    if (!stillAsSaved(inst, applied)) return { ok: false, error: CHANGED_SINCE };
     await setComplianceInstanceWindow(actx.auth, input.itemId, input.from && input.to ? { from: input.from, to: input.to } : null);
     return { ok: true, summary: 'Put the earlier working window back.' };
   }),
@@ -312,11 +316,14 @@ const saveDetails = defineAction({
   execute: (actx, { itemId: id, ...patch }) =>
     refuseKnown(async () => {
       const { title } = await scoped(actx, id);
-      const before = await detailsBefore(actx, id, detailChanges({ itemId: id, ...patch }));
+      const keys = detailChanges({ itemId: id, ...patch });
+      const before = await detailsBefore(actx, id, keys);
       await upsertFilingDetails(actx.auth, id, patch);
-      return { ok: true, summary: `Recorded the details on ${title}.`, undo: { itemId: id, ...before } };
+      return { ok: true, summary: `Recorded the details on ${title}.`, undo: { itemId: id, ...before, applied: Object.fromEntries(keys.map((key) => [key, patch[key]])) } };
     }),
-  undo: undoWith(detailsInput, async (actx, { itemId: id, ...patch }) => {
+  undo: undoWith(detailsInput.extend({ applied: z.record(z.string(), z.string().nullable()) }), async (actx, { itemId: id, applied, ...patch }) => {
+    const now = await detailsBefore(actx, id, Object.keys(applied) as Array<keyof typeof DETAIL_LABELS>);
+    if (!stillAsSaved(now, applied)) return { ok: false, error: CHANGED_SINCE };
     await upsertFilingDetails(actx.auth, id, patch);
     return { ok: true, summary: 'Put the earlier details back.' };
   }),
@@ -512,6 +519,7 @@ const removeTaskLine = defineAction({
  */
 const approveCalendarChange = defineAction({
   name: 'compliance.approveCalendarChange',
+  available: () => askFlags().watch,
   description: 'Approve a due date change that Watch proposed. It moves the filing for every client it applies to. A manager approves it on a card.',
   input: z.object({ proposalId: z.string().uuid() }),
   tier: 'T2',

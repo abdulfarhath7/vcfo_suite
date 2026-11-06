@@ -11,7 +11,7 @@ import { appEngagementId, engagementDbId } from '@/lib/projects/legacy-engagemen
 import { normalizeEngagementSchedule } from '@/lib/projects/schedule-windows';
 import { registrationRows, type RegistrationRow } from '@/views/compliances/registration-rows';
 import { refuseKnown, readSubject, subjectActions, undoWith, type Subject, type SubjectArea } from '../compliance/subject';
-import { ActionRefused, lockedClient, recordDraft, STAFF_ROLES } from '../shared';
+import { ActionRefused, CHANGED_SINCE, lockedClient, recordDraft, STAFF_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type AnyAction } from '../types';
 import { expiresAfterIssue, registrationDate, registrationStepId, renewEveryMonths } from './rules';
 
@@ -155,9 +155,10 @@ const setDates = defineAction({
     refuseKnown(async () => {
       const { subject, before, after } = await planDates(actx, input);
       await setRegistrationDates(actx.auth, { engagementId: lockedClient(actx), stepId: subject.key, ...after });
-      return { ok: true, summary: `Saved the dates on ${subject.title}.`, undo: { itemId: subject.key, ...before } };
+      return { ok: true, summary: `Saved the dates on ${subject.title}.`, undo: { itemId: subject.key, ...before, applied: after } };
     }),
-  undo: undoWith(datesInput, async (actx, input) => {
+  undo: undoWith(datesInput.extend({ applied: z.object({ issuedOn: z.string().nullable(), expiresOn: z.string().nullable(), renewEveryMonths: z.number().nullable() }) }), async (actx, { applied, ...input }) => {
+    if (!stillAsSaved((await factsOf(actx))[input.itemId] ?? {}, applied)) return { ok: false, error: CHANGED_SINCE };
     await setRegistrationDates(actx.auth, { engagementId: lockedClient(actx), stepId: input.itemId, issuedOn: input.issuedOn ?? null, expiresOn: input.expiresOn ?? null, renewEveryMonths: input.renewEveryMonths ?? null });
     return { ok: true, summary: 'Put the earlier dates back.' };
   }),

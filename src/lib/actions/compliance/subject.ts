@@ -13,7 +13,7 @@ import {
   type SubjectInputsDto,
 } from '@/db/repositories/compliance-inputs';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
-import { ActionRefused, clientRecipients, lockedClient, recordDraft, refusing, STAFF_ROLES } from '../shared';
+import { ActionRefused, CHANGED_SINCE, clientRecipients, lockedClient, MASKED_VALUE, recordDraft, refusing, STAFF_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type ActionResult, type AnyAction } from '../types';
 
 /**
@@ -111,7 +111,6 @@ export async function readSubject(actx: ActionContext, area: SubjectArea, subjec
   return subjectSummary(inputs, subject.lines, ticks);
 }
 
-const MASKED = /^X{3,}[A-Z0-9]{4}$/i;
 const shownValue = (value: string | null) => value ?? 'Empty';
 
 export function subjectActions(area: SubjectArea): AnyAction[] {
@@ -144,7 +143,7 @@ export function subjectActions(area: SubjectArea): AnyAction[] {
     const known = new Map(list.map((field) => [field.key, field]));
     const unknown = input.fields.find((field) => !known.has(field.key));
     if (unknown) throw new ActionRefused(`"${unknown.key}" is not a field here. The fields are: ${list.map((field) => field.key).join(', ') || 'none'}.`);
-    if (input.fields.some((field) => field.value && MASKED.test(field.value))) {
+    if (input.fields.some((field) => field.value && MASKED_VALUE.test(field.value))) {
       throw new ActionRefused('That number is masked here, so it cannot be saved from chat. Please type it on the record itself.');
     }
     const rows = input.fields.map((field) => ({ ...field, label: known.get(field.key)!.label, old: known.get(field.key)!.value }));
@@ -176,11 +175,15 @@ export function subjectActions(area: SubjectArea): AnyAction[] {
         return {
           ok: true,
           summary: `Saved the details on ${subject.title}.`,
-          undo: { itemId: input.itemId, side: input.side ?? 'sbc', fields: rows.map((row) => ({ key: row.key, value: row.old })) },
+          undo: { itemId: input.itemId, side: input.side ?? 'sbc', fields: rows.map((row) => ({ key: row.key, value: row.old })), applied: Object.fromEntries(input.fields.map((field) => [field.key, field.value])) },
         };
       }),
-    undo: undoWith(fieldsInput, async (actx, input) => {
+    undo: undoWith(fieldsInput.extend({ applied: z.record(z.string(), z.string().nullable()) }), async (actx, { applied, ...input }) => {
       const subject = await area.resolve(actx, input.itemId);
+      if (subject.locked) throw new ActionRefused('These details are locked after filing.');
+      const inputs = await readInputs(actx, area, subject);
+      const list = input.side === 'client' ? inputs.client : inputs.sbc;
+      if (!stillAsSaved(Object.fromEntries(list.map((field) => [field.key, field.value])), applied)) return { ok: false, error: CHANGED_SINCE };
       await saveFields(actx, subject.key, input);
       return { ok: true, summary: 'Put the earlier details back.' };
     }),

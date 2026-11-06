@@ -10,13 +10,15 @@ import {
   getTask,
   listTasks,
   reviewTask,
+  taskCommentAudience,
   type TaskDetailDto,
 } from '@/db/repositories/compliance-tasks';
 import { addChecklistItem as addPersonalItem, deleteChecklistItem as deletePersonalItem } from '@/db/repositories/work-checklist';
 import { isAdminOrManager } from '@/lib/auth';
 import { LEAD_STAGES, STAGE_LABEL, STAGES } from '@/lib/compliance-tasks/model';
 import { itemKey } from '@/lib/work/item-key';
-import { assertOnLockedClient, clientRecipients, lockedClient, MANAGING_ROLES, recordDraft, refusing, STAFF_ROLES } from '../shared';
+import type { ChangesetRecipient } from '@/lib/ask/changeset/types';
+import { ActionRefused, assertOnLockedClient, clientRecipients, lockedClient, MANAGING_ROLES, recordDraft, refusing, STAFF_ROLES } from '../shared';
 import { defineAction, type ActionContext, type AnyAction } from '../types';
 
 /**
@@ -92,6 +94,8 @@ const createInput = z.object({
   checklist: z.array(z.string().trim().min(1).max(200)).max(30).optional(),
 });
 
+const WHO_SEES = { firm: 'seen by the firm only', client: 'seen by the client', both: 'seen by the firm and the client' } as const;
+
 const create = defineAction({
   name: 'tasks.create',
   simple: true,
@@ -101,15 +105,21 @@ const create = defineAction({
   roles: MANAGING_ROLES,
   common: true,
   examples: [{ name: 'Collect board minutes for Q2', dueDate: '2026-12-15', urgency: 'High', visibility: 'firm', checklist: ['Ask the client', 'File in the vault'] }],
-  preview: async (actx, input) =>
-    recordDraft(actx, {
+  preview: async (actx, input) => {
+    // A task the client can see goes out to them, so it is confirmed like a message, with their names.
+    const visibility = input.visibility ?? 'firm';
+    const toClient = visibility !== 'firm';
+    const when = `${input.startDate ? `starts ${input.startDate}, ` : ''}due ${input.dueDate}`;
+    return recordDraft(actx, {
       action: 'tasks.create',
-      tier: 'T2',
+      tier: toClient ? 'T3' : 'T2',
       title: 'New task',
       label: 'Task',
       target: input,
-      displayNew: `${input.name}, due ${input.dueDate}${input.checklist?.length ? `, with ${input.checklist.length} checklist items` : ''}`,
-    }),
+      displayNew: `${input.name}, ${when}, ${input.urgency ?? 'Medium'} urgency, ${WHO_SEES[visibility]}${input.checklist?.length ? `. Checklist: ${input.checklist.join('; ')}` : ''}`,
+      ...(toClient ? { recipients: await clientRecipients(lockedClient(actx)) } : {}),
+    });
+  },
   execute: (actx, input) =>
     refusing(async () => {
       const task = await createTask(actx.auth, {
@@ -211,6 +221,15 @@ const comment = defineAction({
     }),
 });
 
+/** Everyone a client comment tells, or a refusal when no client would hear of it. */
+async function clientCommentAudience(actx: ActionContext, id: string): Promise<ChangesetRecipient[]> {
+  await scoped(actx, id);
+  const { clientSees, people } = await taskCommentAudience(actx.auth, id);
+  if (!clientSees) throw new ActionRefused('The client cannot see this task, so a comment on it would not reach them.');
+  if (!people.some((person) => person.role === 'client')) throw new ActionRefused('This project has no client login to tell about the comment.');
+  return people.map((person) => ({ name: person.name, email: person.email, role: person.role === 'client' ? 'Client' : 'Staff' }));
+}
+
 const commentToClient = defineAction({
   name: 'tasks.commentToClient',
   description: 'Propose a comment on a task that the client also sees and is told about. A person confirms it on a card that lists who will see it.',
@@ -226,12 +245,12 @@ const commentToClient = defineAction({
       label: task.title,
       target: input,
       displayNew: input.body,
-      recipients: await clientRecipients(lockedClient(actx)),
+      recipients: await clientCommentAudience(actx, input.taskId),
     });
   },
   execute: (actx, input) =>
     refusing(async () => {
-      await scoped(actx, input.taskId);
+      await clientCommentAudience(actx, input.taskId);
       await addTaskComment(actx.auth, input.taskId, { body: input.body, internal: false });
       return { ok: true, summary: 'Sent the comment.' };
     }),

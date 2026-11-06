@@ -377,11 +377,53 @@ describe('the filing actions', () => {
     expect(notify.notifyWindowDecided).toHaveBeenCalledWith(expect.objectContaining({ requesterId: 'l', approved: true }));
   });
 
+  const windowSaved = () => statutory.scopedStatutory.mockResolvedValueOnce({ ...found(), inst: { ...found().inst, windowFrom: '2026-11-02', windowTo: '2026-11-09' } });
+  const detailsSaved = () => clientCompliances.getPortalFilings.mockResolvedValueOnce([{ acknowledgementNo: 'AA1234', amountPaid: null, draftDueOn: '2026-11-08' }]);
+  const fieldsSaved = () => inputs.getSubjectInputs.mockResolvedValueOnce({ ...inputsDto(), sbc: [{ key: 'tax', label: 'Tax payable', value: '500' }, { key: 'gstin', label: 'GSTIN', value: null }] });
+
+  it('leaves a value someone changed after the card saved it, and writes nothing', async () => {
+    const undoAfter = async (name: string) => {
+      const action = byName(name);
+      const outcome = await action.execute(actx(), action.input.parse(inputOf(name)));
+      return action.undo!(actx(), (outcome as unknown as { undo: never }).undo);
+    };
+    const changed = { ok: false, error: expect.stringContaining('changed after it was saved') };
+    statutory.scopedStatutory.mockClear();
+    schedule.setComplianceInstanceWindow.mockClear();
+    expect(await undoAfter('compliance.setWorkingWindow')).toEqual(changed);
+    expect(schedule.setComplianceInstanceWindow).toHaveBeenCalledTimes(1);
+    clientCompliances.upsertFilingDetails.mockClear();
+    expect(await undoAfter('compliance.recordDetails')).toEqual(changed);
+    expect(clientCompliances.upsertFilingDetails).toHaveBeenCalledTimes(1);
+    inputs.saveSubjectFields.mockClear();
+    expect(await undoAfter('compliance.saveFields')).toEqual(changed);
+    expect(inputs.saveSubjectFields).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves a filed period\'s details and window alone on an undo', async () => {
+    const filed = () => {
+      const row = found();
+      row.inst.filedOn = '2026-11-05';
+      return row;
+    };
+    const fields = byName('compliance.saveFields');
+    const saved = await fields.execute(actx(), fields.input.parse(inputOf('compliance.saveFields')));
+    statutory.scopedStatutory.mockResolvedValue(filed());
+    const stayed = await fields.undo!(actx(), (saved as unknown as { undo: never }).undo);
+    expect(stayed).toEqual({ ok: false, error: 'These details are locked after filing.' });
+    const undoWindow = { itemId: ID, from: '2026-11-01', to: '2026-11-10', applied: { windowFrom: '2026-11-02', windowTo: '2026-11-09' } };
+    schedule.setComplianceInstanceWindow.mockClear();
+    expect(await byName('compliance.setWorkingWindow').undo!(actx(), undoWindow)).toEqual({ ok: false, error: 'A filed period keeps its window.' });
+    expect(schedule.setComplianceInstanceWindow).not.toHaveBeenCalled();
+    statutory.scopedStatutory.mockImplementation(async () => found());
+  });
+
   it('undoes what has an undo, putting the earlier value back', async () => {
-    const run = async (name: string, role: AppRole = 'manager') => {
+    const run = async (name: string, role: AppRole = 'manager', saved?: () => void) => {
       const action = byName(name);
       const outcome = await action.execute(actx(role), action.input.parse(inputOf(name)));
       expect(outcome.ok, name).toBe(true);
+      saved?.();
       const undone = await action.undo!(actx(role), (outcome as unknown as { undo: never }).undo);
       expect(undone.ok, name).toBe(true);
     };
@@ -389,9 +431,9 @@ describe('the filing actions', () => {
     expect(clientCompliances.clearFilingReminder).toHaveBeenCalledWith(person('manager'), ID);
     await run('compliance.setStage');
     expect(statutory.updateStatutory).toHaveBeenLastCalledWith(person('manager'), ID, { action: 'stage', stage: 'in-progress' });
-    await run('compliance.setWorkingWindow');
+    await run('compliance.setWorkingWindow', 'manager', windowSaved);
     expect(schedule.setComplianceInstanceWindow).toHaveBeenLastCalledWith(person('manager'), ID, { from: '2026-11-01', to: '2026-11-10' });
-    await run('compliance.recordDetails');
+    await run('compliance.recordDetails', 'manager', detailsSaved);
     expect(clientCompliances.upsertFilingDetails).toHaveBeenLastCalledWith(person('manager'), ID, { acknowledgementNo: 'old', draftDueOn: null });
     await run('compliance.setReminderLead');
     expect(reminders.setReminderSchedule).toHaveBeenLastCalledWith(person('manager'), { kind: 'statutory', id: ID, notifyDays: 5 });
@@ -399,7 +441,7 @@ describe('the filing actions', () => {
     expect(windowRequests.withdrawWindowRequest).toHaveBeenCalledWith(person('intern'), ID);
     await run('compliance.tickTaskLine');
     expect(tasks.setChecklistItem).toHaveBeenLastCalledWith(person('manager'), ID, LINE, false);
-    await run('compliance.saveFields');
+    await run('compliance.saveFields', 'manager', fieldsSaved);
     expect(inputs.saveSubjectFields).toHaveBeenLastCalledWith(person('manager'), expect.objectContaining({ side: 'sbc', values: { tax: null } }));
     await run('compliance.tickChecklist');
     expect(ticks.setChecklistTick).toHaveBeenLastCalledWith(person('manager'), expect.objectContaining({ itemKey: '2b', checked: false }));

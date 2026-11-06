@@ -6,7 +6,7 @@ import { getEngagementById } from '@/db/repositories/engagements';
 import { getBatch, listBatches, markReady, openBatch, reopenInputs, updateBatch, type BatchRow } from '@/db/repositories/labour-registers';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { loadBatchView } from '@/views/labour-registers/load-batch';
-import { ActionRefused, assertOnLockedClient, lockedClient, recordDraft, refusing, STAFF_ROLES } from '../shared';
+import { ActionRefused, assertOnLockedClient, CHANGED_SINCE, lockedClient, recordDraft, refusing, STAFF_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type ActionResult, type AnyAction } from '../types';
 import { assumptionsInput, mergeAssumptions } from './flows';
 
@@ -148,13 +148,14 @@ const setAssumptions = defineAction({
       const outcome = await mergeAssumptions(actx.auth, input.batchId, input.assumptions);
       if (outcome.kind === 'not_found') return { ok: false, error: 'That register batch is not available.' };
       if (outcome.kind === 'closed') return { ok: false, error: 'The period is closed. Reopen the inputs to change how a figure was arrived at.' };
-      return { ok: true, summary: 'The basis is recorded on the batch.', undo: JSON.parse(JSON.stringify({ batchId: input.batchId, previous: outcome.previous })) };
+      return { ok: true, summary: 'The basis is recorded on the batch.', undo: JSON.parse(JSON.stringify({ batchId: input.batchId, previous: outcome.previous, applied: outcome.merged })) };
     }),
   undo: (actx, undo) =>
     run(async () => {
-      const { batchId, previous } = (undo ?? {}) as { batchId: string; previous: Record<string, unknown> };
+      const { batchId, previous, applied } = (undo ?? {}) as { batchId: string; previous: Record<string, unknown>; applied: Record<string, unknown> };
       const batch = await scoped(actx, batchId);
       if (batch.markedReadyAt) return { ok: false, error: 'The period is closed now, so this stays.' };
+      if (!stillAsSaved({ assumptions: batch.assumptions }, { assumptions: applied })) return { ok: false, error: CHANGED_SINCE };
       await updateBatch(actx.auth, batchId, { assumptions: previous });
       return { ok: true, summary: 'The basis is back as it was.' };
     }),

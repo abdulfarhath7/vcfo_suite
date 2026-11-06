@@ -62,7 +62,7 @@ const rendered = (line: string, citations = [{ id: 'chunk-1', label: 'Guide' }])
   content: [{ type: 'tool_use', id: 'tu', name: 'render_answer', input: { line, citations, actions: [] } } as never],
 });
 const provider = (replies: LlmResult[]) => {
-  const complete = vi.fn(async () => {
+  const complete = vi.fn(async (_request?: unknown) => {
     const next = replies.shift();
     if (!next) throw new Error('unexpected provider call');
     return next;

@@ -180,6 +180,60 @@ describe('decideChangeset', () => {
     await expect(decideChangeset(lead, 'cs-1', { contentHash: 'x'.repeat(64), accept: ['a'] })).rejects.toMatchObject({ status: 404 });
   });
 
+  describe('the people a T3 card names', () => {
+    const asha = { name: 'Asha', email: 'Asha@x.test', role: 'Director' };
+    const ravi = { name: 'Ravi', email: 'ravi@x.test', role: 'Director' };
+    const preview = vi.fn();
+    const send = async (onCard: unknown[]) => {
+      const hash = setCard([makeRow('a')]);
+      (found as { changeset: Record<string, unknown> }).changeset.tier = 'T3';
+      (found as { changeset: Record<string, unknown> }).changeset.recipients = onCard;
+      return decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] });
+    };
+
+    beforeEach(() => {
+      (action as Record<string, unknown>).preview = preview;
+      preview.mockReset();
+    });
+
+    it('sends nothing when someone new would get it, and says who', async () => {
+      preview.mockResolvedValue({ recipients: [asha, ravi] });
+      expect(await send([asha])).toEqual({ applied: 0, failed: 1, held: 0 });
+      expect(execute).not.toHaveBeenCalled();
+      expect(updateRows.mock.calls[0]![2][0].patch.error).toMatch(/Ravi would also get it/);
+    });
+
+    it('goes ahead for the same people, in any letter case, and when someone has left the list', async () => {
+      preview.mockResolvedValue({ recipients: [{ ...asha, email: 'asha@X.TEST' }] });
+      expect(await send([asha, ravi])).toEqual({ applied: 1, failed: 0, held: 0 });
+    });
+
+    it('fails the row with the action\'s own sentence when it now refuses', async () => {
+      const { ActionRefused } = await import('@/lib/actions/shared');
+      preview.mockRejectedValue(new ActionRefused('That meeting was cancelled.'));
+      expect(await send([asha])).toEqual({ applied: 0, failed: 1, held: 0 });
+      expect(execute).not.toHaveBeenCalled();
+      expect(updateRows.mock.calls[0]![2][0].patch.error).toBe('That meeting was cancelled.');
+    });
+  });
+
+  it('stops a card whose action an owner\'s flag has since switched off', async () => {
+    (action as Record<string, unknown>).available = () => false;
+    const hash = setCard([makeRow('a')]);
+    expect(await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] })).toEqual({ applied: 0, failed: 1, held: 0 });
+    expect(execute).not.toHaveBeenCalled();
+    delete (action as Record<string, unknown>).available;
+  });
+
+  it('does not leave a card stuck when a check throws at the click', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    recheck.mockRejectedValue(new Error('database down'));
+    const hash = setCard([makeRow('a')]);
+    expect(await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] })).toEqual({ applied: 0, failed: 1, held: 0 });
+    expect(setStatus).toHaveBeenCalled();
+    error.mockRestore();
+  });
+
   it('never executes a T4 action from a card', async () => {
     action.tier = 'T4';
     const hash = setCard([makeRow('a')]);

@@ -19,7 +19,7 @@ import {
   type UpdateMeetingInput,
 } from '@/db/repositories/board-meetings';
 import type { ChangesetRecipient } from '@/lib/ask/changeset/types';
-import { ActionRefused, assertOnLockedClient, lockedClient, MANAGING_ROLES, recordDraft, refusing, STAFF_ROLES } from '../shared';
+import { ActionRefused, assertOnLockedClient, CHANGED_SINCE, lockedClient, MANAGING_ROLES, recordDraft, refusing, STAFF_ROLES, stillAsSaved } from '../shared';
 import { defineAction, type ActionContext, type ActionResult, type AnyAction } from '../types';
 
 /**
@@ -92,7 +92,12 @@ const stateOf = (m: MeetingDto) => `${m.statusLabel}, ${whenOf(m)}`;
 
 /** Everyone the notice goes to, as the meeting itself lists them. */
 const noticeRecipients = (m: MeetingDto): ChangesetRecipient[] =>
-  m.recipients.filter((r) => r.email).map((r) => ({ name: r.name, email: r.email!, role: r.kind === 'cc' ? 'Copied' : 'Director' }));
+  m.recipients.flatMap((r) => {
+    // A director's own record decides the address, as it does when the notice is sent.
+    const director = r.directorId ? m.directors.find((d) => d.id === r.directorId) : undefined;
+    const email = director?.email ?? r.email;
+    return email ? [{ name: director?.name ?? r.name, email, role: r.kind === 'cc' ? 'Copied' : 'Director' }] : [];
+  });
 
 const list = defineAction({
   name: 'board-meetings.list',
@@ -233,8 +238,10 @@ const edit = defineAction({
         ...(addAgendaItems ?? []).map((text) => ({ key: `ask-${randomUUID().slice(0, 8)}`, libraryId: null, text, subs: [] })),
       ];
       await updateMeeting(actx.auth, meetingId, { ...fields, ...(agendaChanges ? { agenda } : {}) });
-      const undo: UpdateMeetingInput & { meetingId: string } = {
+      const applied = { ...fields, ...(agendaChanges ? { agendaKeys: agenda.map((a) => a.key) } : {}) };
+      const undo: UpdateMeetingInput & { meetingId: string; applied: object } = {
         meetingId,
+        applied,
         meetingDate: m.meetingDate,
         meetingTime: m.meetingTime,
         mode: m.mode,
@@ -248,9 +255,10 @@ const edit = defineAction({
     }),
   undo: (actx, undo) =>
     run(async () => {
-      const { meetingId, ...before } = (undo ?? {}) as UpdateMeetingInput & { meetingId?: string };
-      if (typeof meetingId !== 'string') return { ok: false, error: 'This cannot be undone.' };
-      await scoped(actx, meetingId);
+      const { meetingId, applied, ...before } = (undo ?? {}) as UpdateMeetingInput & { meetingId?: string; applied?: object };
+      if (typeof meetingId !== 'string' || !applied) return { ok: false, error: 'This cannot be undone.' };
+      const m = await scoped(actx, meetingId);
+      if (!stillAsSaved({ ...m, agendaKeys: m.agenda.map((a) => a.key) }, applied)) return { ok: false, error: CHANGED_SINCE };
       await updateMeeting(actx.auth, meetingId, before);
       return { ok: true, summary: 'The notice is back as it was.' };
     }),
@@ -391,6 +399,10 @@ const resolutionFields = {
   reason: z.string().trim().max(1000).optional(),
 };
 
+/** Everything a resolution's fields will say, so the card hides none of what the approval covers. */
+const resolutionLine = (r: { title: string; description: string; resolutionDate: string | null; changesItem?: string | null; reason?: string | null }): string =>
+  `${r.title}, dated ${r.resolutionDate ?? 'not set'}: ${r.description.replace(/\.$/, '')}. Changes: ${r.changesItem?.trim() || 'nothing named'}. Reason: ${r.reason?.trim() || 'none given'}`;
+
 const addResolution = defineAction({
   name: 'board-meetings.addResolution',
   description: 'Propose adding a draft resolution passed after a board meeting, on a meeting that has been held. Every current director signs it. It stays a draft: signing and locking happen on the screen. A person approves it on a card.',
@@ -401,7 +413,7 @@ const addResolution = defineAction({
     said(async () => {
       const m = await scoped(actx, input.meetingId);
       if (!m.can.addResolution) throw new ActionRefused(REFUSALS.not_held!);
-      return recordDraft(actx, { action: 'board-meetings.addResolution', tier: 'T2', title: 'New draft resolution', label: m.meetingNo, target: input, displayNew: `${input.title}, dated ${input.resolutionDate}: ${input.description.replace(/\.$/, '')}. Signed by ${m.directors.filter((d) => d.current).map((d) => d.name).join(', ')}` });
+      return recordDraft(actx, { action: 'board-meetings.addResolution', tier: 'T2', title: 'New draft resolution', label: m.meetingNo, target: input, displayNew: `${resolutionLine(input)}. Signed by ${m.directors.filter((d) => d.current).map((d) => d.name).join(', ')}` });
     }),
   execute: (actx, { meetingId, ...fields }) =>
     run(async () => {
@@ -422,7 +434,7 @@ const editResolution = defineAction({
       const { document } = await scopedDocument(actx, input.documentId);
       if (document.kind !== 'resolution') throw new ActionRefused(REFUSALS.not_resolution!);
       if (document.status === 'locked') throw new ActionRefused(REFUSALS.locked!);
-      return recordDraft(actx, { action: 'board-meetings.editResolution', tier: 'T2', title: 'Edit the resolution', label: document.title, target: input, displayOld: document.description, displayNew: `${input.title}: ${input.description}` });
+      return recordDraft(actx, { action: 'board-meetings.editResolution', tier: 'T2', title: 'Edit the resolution', label: document.title, target: input, displayOld: resolutionLine(document), displayNew: resolutionLine(input) });
     }),
   execute: (actx, { documentId, ...fields }) =>
     run(async () => {

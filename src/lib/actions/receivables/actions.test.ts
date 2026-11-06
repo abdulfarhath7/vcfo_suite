@@ -99,6 +99,8 @@ const TABLE: Array<[string, string, object]> = [
   ['receivables.sendSummary', 'T3', { list: 'partners' }],
 ];
 const undoFrom = (outcome: ActionResult) => (outcome.ok ? outcome.undo! : null);
+/** The invoice as the database holds it after a write. */
+const saved = (patch: object) => scopedInvoice.mockResolvedValue({ invoice: { ...invoiceRow, ...patch }, sheet: { id: SHEET } });
 const needsCard = (a: AnyAction) => a.tier === 'T2' || a.tier === 'T3';
 const writes = [repo.recordSummarySend, repo.addInvoice, repo.updateInvoice, repo.deleteInvoice, repo.markReceived, repo.reopenInvoice, repo.createAwaitedFira, repo.setReminderPause, repo.raiseDispute, repo.resolveDispute, repo.setTds, repo.addCreditNote, repo.confirmCredit, repo.ignoreCredit, repo.setReminderSkipped, repo.editReminder, repo.publishSheet, repo.addSbcNote, sendEmail, sendDueReminders, deliverSummary];
 /** What runs the card through: the same reparse the changeset does on apply. */
@@ -258,18 +260,41 @@ describe('the receivables actions', () => {
     const action = byName('receivables.updateInvoice');
     const outcome = await action.execute(actx(), { invoiceId: INVOICE, amountInr: 200, dueDate: '2026-12-31' });
     expect(outcome.ok).toBe(true);
+    saved({ amountInr: '200.00', dueDate: '2026-12-31' });
     await action.undo!(actx(), undoFrom(outcome));
     expect(repo.updateInvoice.mock.calls[1]![2]).toEqual({ amountInr: 125000, dueDate: '2026-10-15' });
     await expect(action.preview(actx(), { invoiceId: INVOICE })).rejects.toThrow(/nothing to change/);
   });
 
+  it('leaves an invoice whose balance has moved since the edit, so a payment is not written over', async () => {
+    const action = byName('receivables.updateInvoice');
+    const outcome = await action.execute(actx(), { invoiceId: INVOICE, amountInr: 200 });
+    saved({ amountInr: '150.00' });
+    expect(await action.undo!(actx(), undoFrom(outcome))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    expect(repo.updateInvoice).toHaveBeenCalledTimes(1);
+  });
+
+  it('records nothing when the balance moved after the card worked out the amount', async () => {
+    const action = byName('receivables.markReceived');
+    const draft = await action.preview(actx(), action.input.parse({ invoiceId: INVOICE, paidOn: '2026-11-05' }));
+    const row = draft!.rows[0]!;
+    expect(row.target).toMatchObject({ amount: 125000, openAtCard: 125000 });
+    saved({ amountInr: '100000' });
+    const outcome = await action.execute(actx(), action.input.parse({ ...row.target, value: row.newValue }));
+    expect(outcome).toEqual({ ok: false, error: expect.stringContaining('balance has changed') });
+    expect(repo.markReceived).not.toHaveBeenCalled();
+  });
+
   it('undoes a pause, a dispute, a TDS entry and a skipped reminder', async () => {
     const pause = byName('receivables.pauseReminders');
     const paused = await pause.execute(actx(), { invoiceId: INVOICE, until: '2026-12-01', reason: 'Promised' });
+    expect(await pause.undo!(actx(), undoFrom(paused))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    saved({ remindersPausedUntil: '2026-12-01', pauseReason: 'Promised' });
     await pause.undo!(actx(), undoFrom(paused));
     expect(repo.setReminderPause.mock.calls[1]![2]).toEqual({ until: null, reason: null });
 
     const dispute = byName('receivables.setDispute');
+    saved({});
     const raised = await dispute.execute(actx(), { invoiceId: INVOICE, disputed: true, reason: 'Wrong rate' });
     expect(repo.raiseDispute).toHaveBeenCalledWith(person('manager'), INVOICE, { reason: 'Wrong rate' });
     await dispute.undo!(actx(), undoFrom(raised));
@@ -278,6 +303,7 @@ describe('the receivables actions', () => {
 
     const tds = byName('receivables.setTds');
     const set = await tds.execute(actx(), { invoiceId: INVOICE, tdsInr: 100 });
+    saved({ tdsInr: '100.00' });
     await tds.undo!(actx(), undoFrom(set));
     expect(repo.setTds.mock.calls[1]![2]).toEqual({ tdsInr: 0, certificateOn: null });
     await expect(tds.preview(actx(), { invoiceId: INVOICE })).rejects.toThrow(/TDS amount or a certificate/);
