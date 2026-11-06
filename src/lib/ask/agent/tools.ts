@@ -10,8 +10,9 @@ import type { LlmRequestTool, LlmTool } from '@/lib/ask/provider';
 
 /**
  * What a model may be shown. The filter runs in code before any request: an action this role cannot
- * use, a T4 action or a switched-off tier is not in the tool list, so it cannot be asked for by
- * anything a document says. Common tools are loaded; the rest are found through tool search.
+ * use, a T4 action, a switched-off tier or an action behind a flag that is off is not in the tool list,
+ * so it cannot be asked for by anything a document says. Common tools are loaded; the rest are found
+ * through tool search.
  */
 const TOOL_SEARCH = { type: 'tool_search_tool_bm25_20251119', name: 'tool_search_tool_bm25' } as const;
 
@@ -45,7 +46,7 @@ export function toolOf(action: AnyAction, strict = true): LlmTool {
 export async function actionsFor(role: AppRole, shell: AskShell): Promise<AnyAction[]> {
   const killed = askFlags().killedTiers;
   return (await actionsForRole(role)).filter(
-    (action) => !action.routerOnly && agentMayExecute(action.tier) && !killed.has(action.tier) && action.name.startsWith('client-portal.') === (shell === 'client'),
+    (action) => !action.routerOnly && action.available?.() !== false && agentMayExecute(action.tier) && !killed.has(action.tier) && action.name.startsWith('client-portal.') === (shell === 'client'),
   );
 }
 

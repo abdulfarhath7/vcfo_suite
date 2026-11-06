@@ -71,7 +71,7 @@ export async function handleWork(
   const actions = await actionsFor(ctx.role, request.shell);
   const pick = resumed
     ? resumed.pick
-    : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), now })).pick;
+    : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), handoff: actions.some((action) => action.name === 'filing.prepareRun'), now })).pick;
   if (pick.kind === 'none') return { kind: 'none' };
   if (pick.kind === 'data') return { kind: 'data' };
   if (pick.kind === 'agent' && askFlags().killedPaths.has('agent_run')) return answerOf(limitAnswer(request.shell, 'pathStopped'));

@@ -58,8 +58,10 @@ export interface Action<Input = unknown> {
   simple?: boolean;
   /** Sits on no project: the repository's own scope is the guard, so a request for it needs no client first. */
   firmWide?: boolean;
-  /** Filled only by the data router's rules, so it is never offered to a model as a tool. */
+  /** Proposed only by code (the data router's rules, the overnight job), so it is never offered to a model as a tool. */
   routerOnly?: boolean;
+  /** An owner's flag: while it says no, tool selection leaves this action out, and the action refuses too. */
+  available?(): boolean;
   /** What the person sees while a T0 or T1 action runs. */
   label?: string;
   examples?: readonly Input[];

@@ -61,7 +61,7 @@ const lineOf = (row: RegistrationRow, facts: Awaited<ReturnType<typeof factsOf>>
 
 const subjectOf = (row: RegistrationRow): Subject => ({ key: row.item.id, title: row.name, lines: registrationChecklist(row.category), locked: false });
 
-async function rowOf(actx: ActionContext, id: string): Promise<RegistrationRow> {
+export async function rowOf(actx: ActionContext, id: string): Promise<RegistrationRow> {
   const row = (await rowsOf(actx)).find((r) => r.item.id === id);
   if (!row) throw new ActionRefused('That registration is not available.');
   return row;

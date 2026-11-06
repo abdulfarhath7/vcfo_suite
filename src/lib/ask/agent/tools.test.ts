@@ -111,6 +111,17 @@ describe('tools for the agent', () => {
     expect(shown.some((a) => a.tier === 'T2')).toBe(true);
   });
 
+  it('offers the filing run only with its flag on, and never to a client', async () => {
+    const named = async () => (await actionsFor('intern', 'admin')).some((a) => a.name === 'filing.prepareRun');
+    vi.stubEnv('VCFO_ASSIST_ENABLED', 'on');
+    expect(await named()).toBe(false);
+    vi.stubEnv('ASK_ASSIST_HANDOFF_ENABLED', 'true');
+    expect(await named()).toBe(true);
+    expect((await actionsFor('client', 'client')).some((a) => a.name.startsWith('filing.'))).toBe(false);
+    vi.unstubAllEnvs();
+    expect(await named()).toBe(false);
+  });
+
   it('keeps the data router\'s own actions away from the model', async () => {
     const all = await actionsForRole('manager');
     expect(all.some((a: AnyAction) => a.name === 'checklist.setResponse')).toBe(true);

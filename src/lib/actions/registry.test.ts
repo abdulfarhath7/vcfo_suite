@@ -78,6 +78,7 @@ describe('the whole registry', () => {
       receivables: 21,
       labour: 7,
       'client-portal': 14,
+      filing: 1,
     });
   }, 60_000);
 

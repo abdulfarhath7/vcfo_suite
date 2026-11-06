@@ -37,17 +37,18 @@ const SYSTEM = [
   'No tool fits filing or submitting on a government portal, signing, payments, changing anyone\'s role, or making a decision for the firm.',
   'Today is given in the message. A date without a year is the next one to come.',
 ].join(' ');
+const HANDOFF_LINE = ' Preparing a filing run in VCFO Assist only sets up the form for a person to finish, so it is open_ended.';
 
 export async function pickWork(
   provider: LlmProvider,
   model: string,
-  input: { message: string; onScreen: string | null; simple: readonly AnyAction[]; receivables: boolean; now: Date },
+  input: { message: string; onScreen: string | null; simple: readonly AnyAction[]; receivables: boolean; handoff: boolean; now: Date },
 ): Promise<{ pick: WorkPick; usage: LlmUsage }> {
   const tools = [...input.simple.map((action) => toolOf(action)), FILL_DETAILS, OPEN_ENDED, ...(input.receivables ? [RECEIVABLES] : [])];
   const text = [`Today: ${input.now.toISOString().slice(0, 10)}`, input.onScreen, `Request: ${maskIdentityNumbers(input.message)}`].filter(Boolean).join('\n');
   const result = await provider.complete({
     model,
-    system: [{ type: 'text', text: SYSTEM }],
+    system: [{ type: 'text', text: input.handoff ? `${SYSTEM}${HANDOFF_LINE}` : SYSTEM }],
     messages: [{ role: 'user', content: text }],
     tools,
     maxTokens: 800,
