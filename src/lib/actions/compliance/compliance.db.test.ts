@@ -81,7 +81,7 @@ describe.skipIf(!process.env.ASK_ACTIONS_DB)('Compliance and registration action
   };
   const undo = async (run: Run, name: string, outcome: ActionResult) => {
     expect(outcome, name).toMatchObject({ ok: true });
-    return (await action(name)).undo!(context(run), (outcome as { undo: never }).undo);
+    return (await action(name)).undo!(context(run), (outcome as unknown as { undo: never }).undo);
   };
   const read = async <T>(run: Run, name: string, input: unknown): Promise<T> => {
     const outcome = await execute(run, name, input);

@@ -157,13 +157,13 @@ describe('the registration actions', () => {
 
   it('undoes the dates, the fields and the ticks', async () => {
     const dates = await byName('registrations.setDates').execute(actx(), { itemId: STEP, expiresOn: '2027-01-01' });
-    expect((await byName('registrations.setDates').undo!(actx(), (dates as { undo: never }).undo)).ok).toBe(true);
+    expect((await byName('registrations.setDates').undo!(actx(), (dates as unknown as { undo: never }).undo)).ok).toBe(true);
     expect(credentials.setRegistrationDates).toHaveBeenLastCalledWith(person('manager'), { engagementId: CLIENT, stepId: STEP, issuedOn: '2026-01-01', expiresOn: null, renewEveryMonths: 12 });
     const fields = await byName('registrations.saveFields').execute(actx(), inputOf('registrations.saveFields'));
-    expect((await byName('registrations.saveFields').undo!(actx(), (fields as { undo: never }).undo)).ok).toBe(true);
+    expect((await byName('registrations.saveFields').undo!(actx(), (fields as unknown as { undo: never }).undo)).ok).toBe(true);
     expect(inputs.saveSubjectFields).toHaveBeenLastCalledWith(person('manager'), expect.objectContaining({ kind: 'registration', key: STEP, values: { arn: null } }));
     const tick = await byName('registrations.tickChecklist').execute(actx(), inputOf('registrations.tickChecklist'));
-    expect((await byName('registrations.tickChecklist').undo!(actx(), (tick as { undo: never }).undo)).ok).toBe(true);
+    expect((await byName('registrations.tickChecklist').undo!(actx(), (tick as unknown as { undo: never }).undo)).ok).toBe(true);
     expect(ticks.setChecklistTick).toHaveBeenLastCalledWith(person('manager'), expect.objectContaining({ subjectKind: 'registration', itemKey: 'documents', checked: false }));
   });
 

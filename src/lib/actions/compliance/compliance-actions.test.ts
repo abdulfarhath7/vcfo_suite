@@ -375,7 +375,7 @@ describe('the filing actions', () => {
       const action = byName(name);
       const outcome = await action.execute(actx(role), action.input.parse(inputOf(name)));
       expect(outcome.ok, name).toBe(true);
-      const undone = await action.undo!(actx(role), (outcome as { undo: never }).undo);
+      const undone = await action.undo!(actx(role), (outcome as unknown as { undo: never }).undo);
       expect(undone.ok, name).toBe(true);
     };
     await run('compliance.remindMe');
