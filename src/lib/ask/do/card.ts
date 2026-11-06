@@ -8,6 +8,7 @@ import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { changesetHash } from '@/lib/ask/changeset/hash';
 import type { ChangesetDraft } from '@/lib/ask/changeset/types';
 import { isAdminOrManager } from '@/lib/auth';
+import { safeError } from '@/lib/ask/mask';
 
 const CARD_DAYS = 7;
 
@@ -54,7 +55,7 @@ export async function createReviewCard(
         companyName: run.companyName,
         href: `/app/manager/ask?changeset=${changesetId}`,
       })),
-    ).catch((error) => console.warn('[ask-vcfo] manager notice failed', error));
+    ).catch((error) => console.warn('[ask-vcfo] manager notice failed', safeError(error)));
   }
   return changesetId;
 }

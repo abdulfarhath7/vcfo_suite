@@ -7,6 +7,7 @@ import { chooseFields, type ChoiceInput } from './choose';
 import { ReadRefused } from './read';
 import type { AttachedFile, PlacedValue } from './plan';
 import type { ReadResult } from './types';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * Finds the place for every value that was read: code first, then one small-model call for the rest.
@@ -62,7 +63,7 @@ export async function placeValues(
         else questions.push(`I do not know where "${item.value.label}" goes, so I left it out.`);
       });
     } catch (error) {
-      if (!(error instanceof ReadRefused)) console.error('[ask-vcfo] field choice failed', error);
+      if (!(error instanceof ReadRefused)) console.error('[ask-vcfo] field choice failed', safeError(error));
       questions.push(`I could not place ${toChoose.map((t) => t.value.label).slice(0, 5).join(', ')}.`);
     }
   }

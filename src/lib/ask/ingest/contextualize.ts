@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { LlmProvider } from '@/lib/ask/provider';
 import type { SourceChunk } from './chunk';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * Contextual retrieval prefix (Haiku 5.5, 50–100 tokens): one or two sentences
@@ -52,7 +53,7 @@ export async function contextualizeChunks(input: {
         .trim();
       out.push(text ? text.slice(0, 600) : null);
     } catch (error) {
-      console.warn('[ask-vcfo] contextualize failed for chunk', chunk.ordinal, error);
+      console.warn('[ask-vcfo] contextualize failed for chunk', chunk.ordinal, safeError(error));
       out.push(null);
     }
   }

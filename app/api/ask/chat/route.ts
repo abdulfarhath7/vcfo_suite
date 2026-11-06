@@ -3,6 +3,7 @@ import { AskForbiddenError } from '@/lib/ask/access';
 import { chatRequestSchema, runAskChat, type AskEvent } from '@/lib/ask/pipeline';
 import { requireAsk } from '@/lib/ask/route-guard';
 import { REFUSAL_COPY } from '@/lib/ask/refusals';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * POST /api/ask/chat — streams newline-delimited JSON events:
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
         if (error instanceof AskForbiddenError) {
           emit({ type: 'error', code: 'forbidden', message: 'Ask VCFO is not available here.' });
         } else {
-          console.error('[ask-vcfo] chat failed', error);
+          console.error('[ask-vcfo] chat failed', safeError(error));
           emit({ type: 'error', code: 'unavailable', message: REFUSAL_COPY.unavailable });
         }
       } finally {

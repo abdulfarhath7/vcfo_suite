@@ -4,7 +4,7 @@ import type { AuthContext } from '@/auth/guards';
 import { searchAskChunks } from '@/db/repositories/ask-documents';
 import { searchIndexItems } from '@/db/repositories/ask-index';
 import { embedQuery } from '@/lib/ask/embeddings';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import { expandQuery } from '@/lib/ask/query-expand';
 import { fuseRanked } from '@/lib/ask/rank-fusion';
 import { matchTopics, topicSource } from '@/lib/ask/topic-match';
@@ -45,7 +45,7 @@ export async function retrieveSources(
   const queryVector = await embedQuery(input.query);
   const searched = <T,>(run: Promise<T[]>): Promise<T[]> =>
     run.catch((error) => {
-      console.warn('[ask-vcfo] one retrieval search failed; answering from the others', error);
+      console.warn('[ask-vcfo] one retrieval search failed; answering from the others', safeError(error));
       return [];
     });
   const chunkSearch = (query: string) => searched(searchAskChunks(authCtx, { query, persona, limit: topK, queryVector }));

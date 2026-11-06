@@ -11,6 +11,7 @@ import { getMetric } from '@/lib/ask/metrics/catalog';
 import { contentWords, matchCompany, matchMetric, routerMetricFilters } from '@/lib/ask/metrics/match';
 import type { MetricDefinition, MetricEnv, MetricFilters } from '@/lib/ask/metrics/types';
 import { answerUpdatesQuestion, matchUpdatesQuestion } from '@/lib/watch/chat-updates';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * What code can answer alone, cheapest first: a greeting, a strict metric match, a list of official
@@ -37,7 +38,7 @@ async function resolveClient(words: readonly string[], env: MetricEnv): Promise<
     const row = matchCompany(words, rows);
     return row ? { id: row.id, key: toAppEngagement(row).id, name: row.companyName } : null;
   } catch (error) {
-    console.error('[ask-vcfo] company lookup failed', error);
+    console.error('[ask-vcfo] company lookup failed', safeError(error));
     return null;
   }
 }
@@ -47,7 +48,7 @@ async function runMetric(metric: MetricDefinition, filters: MetricFilters, env: 
   try {
     return metric.answer(await metric.run(env, filters), filters, env);
   } catch (error) {
-    console.error(`[ask-vcfo] metric ${metric.name} failed`, error);
+    console.error(`[ask-vcfo] metric ${metric.name} failed`, safeError(error));
     return null;
   }
 }
@@ -83,7 +84,7 @@ async function localUpdates(message: string, env: MetricEnv): Promise<AnswerEnve
   try {
     return await answerUpdatesQuestion(env.ctx, env.shell, question, env.now);
   } catch (error) {
-    console.error('[ask-vcfo] official updates failed', error);
+    console.error('[ask-vcfo] official updates failed', safeError(error));
     return null;
   }
 }

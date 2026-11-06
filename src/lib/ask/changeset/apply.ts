@@ -20,6 +20,7 @@ import { askFlags } from '@/lib/ask/config';
 import { inngest } from '@/jobs/client';
 import { changesetHash } from './hash';
 import type { JsonValue } from './types';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * Approval and undo. Nothing here is reachable by a model: these run only from a person's click on
@@ -180,7 +181,7 @@ async function announceDecision(found: ChangesetAccess, settled: boolean): Promi
     const kind = await systemNoteAskRunDecision(runId, settled);
     if (kind === 'agent') await inngest.send({ name: ASK_CHANGESET_DECIDED, data: { changesetId: id, runId } });
   } catch (error) {
-    console.error('[ask-vcfo] decision not announced', error);
+    console.error('[ask-vcfo] decision not announced', safeError(error));
   }
 }
 
@@ -207,7 +208,7 @@ async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{
     if (outcome.ok === false) return failed(outcome.error);
     return { patch: { status: 'applied', error: null, heldReason: null, appliedAt: actx.now, undoData: outcome.undo ?? null } };
   } catch (error) {
-    console.error('[ask-vcfo] changeset row failed', error);
+    console.error('[ask-vcfo] changeset row failed', safeError(error));
     return failed('This row could not be saved.');
   }
 }

@@ -8,13 +8,14 @@ import {
 } from '@/db/repositories/ask-index';
 import { backfillEmbeddings } from '@/lib/ask/embeddings/backfill';
 import { buildCard, CARD_KINDS, type CardKind } from './build';
+import { safeError } from '@/lib/ask/mask';
 
 /** Brings one card in line with its source row, removing it when the row is gone. */
 export async function refreshIndexCard(kind: CardKind, id: string): Promise<void> {
   const [source] = await systemReadCardSources(kind, id);
   if (source) await systemUpsertIndexItems([buildCard(source)]);
   else await systemDeleteIndexItem(kind, id);
-  await backfillEmbeddings().catch((error) => console.warn('[ask-vcfo] card embedding failed; the backfill will retry', error));
+  await backfillEmbeddings().catch((error) => console.warn('[ask-vcfo] card embedding failed; the backfill will retry', safeError(error)));
 }
 
 /** Rebuilds every card. Unchanged text keeps its vector, so a run with nothing new spends nothing. */

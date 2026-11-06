@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { holdsPortalSecret, maskIdentityNumbers, tokeniseIdentityNumbers } from './mask';
+import { holdsPortalSecret, maskIdentityNumbers, safeError, tokeniseIdentityNumbers } from './mask';
 
 describe('maskIdentityNumbers', () => {
   it('leaves a record id whole, though parts of one look like a passport or an Aadhaar', () => {
@@ -19,6 +19,21 @@ describe('maskIdentityNumbers', () => {
   it('catches a PAN or passport typed in lower case', () => {
     expect(maskIdentityNumbers('pan abcde1234f')).toBe('pan XXXXXX234f');
     expect(maskIdentityNumbers('passport j8369854')).toBe('passport XXXX9854');
+  });
+
+  it('masks a number an underscore joins to a word, as in a file name', () => {
+    for (const [text, kept] of [
+      ['PAN_ABCDE1234F.pdf', 'ABCDE1234F'],
+      ['ABCDE1234F_pan.pdf', 'ABCDE1234F'],
+      ['Aadhaar_234567890123.pdf', '234567890123'],
+      ['{"fileName":"PAN_ABCDE1234F.pdf"}', 'ABCDE1234F'],
+      ['passport_J8369854.png', 'J8369854'],
+      ['DIN_01234567', '01234567'],
+    ] as const) {
+      expect(maskIdentityNumbers(text), text).not.toContain(kept);
+      expect(tokeniseIdentityNumbers(text).text, text).not.toContain(kept);
+    }
+    expect(maskIdentityNumbers('GSTIN_22AAAAA0000A1Z5.pdf')).toBe('GSTIN_22AAAAA0000A1Z5.pdf');
   });
 
   it('leaves public registry numbers and ordinary text alone', () => {
@@ -48,10 +63,42 @@ describe('portal logins and one-time codes', () => {
     }
   });
 
+  it('catches the other ways people write a password or a code', () => {
+    for (const [text, kept] of [
+      ['The MCA password for this client is Abc@1234', 'Abc@1234'],
+      ['The password for MCA V3 portal: Abc@1234', 'Abc@1234'],
+      ['Login: ravi / Pass: Abc@1234', 'Abc@1234'],
+      ['pass: Abc@1234', 'Abc@1234'],
+      ['password - Abc@1234', 'Abc@1234'],
+      ['MCA login ravi, pw Abc@1234', 'Abc@1234'],
+      ['my password is Secretword', 'Secretword'],
+      ['OTP: AB12CD', 'AB12CD'],
+    ] as const) {
+      expect(holdsPortalSecret(text), text).toBe(true);
+      expect(maskIdentityNumbers(text), text).not.toContain(kept);
+    }
+  });
+
   it('leaves questions about them and postal codes alone', () => {
-    for (const text of ['Where do I enter the OTP?', 'the password is required', 'The OTP is sent to the director', 'PIN 500081', 'PIN: 500081, Hyderabad', 'what is a DSC token?', 'the secret ballot of 2026', 'prepare the filing run for GSTR-3B']) {
+    for (const text of ['the password is incorrect.', 'the password for the portal is wrong', 'pass AOC4 to the client', 'the password-protected file', 'Please change your password and retry', 'Where do I enter the OTP?', 'the password is required', 'The OTP is sent to the director', 'PIN 500081', 'PIN: 500081, Hyderabad', 'what is a DSC token?', 'the secret ballot of 2026', 'prepare the filing run for GSTR-3B']) {
       expect(holdsPortalSecret(text), text).toBe(false);
       expect(maskIdentityNumbers(text), text).toBe(text);
     }
+  });
+});
+
+describe('safeError', () => {
+  it('drops the parameters of a failed query and masks what is left', () => {
+    const cause = new Error('value too long for PAN ABCDE1234F');
+    const error = Object.assign(new Error('Failed query: insert into profiles values ($1)\nparams: ABCDE1234F,Secret'), { cause });
+    const line = safeError(error);
+    expect(line).toContain('Failed query');
+    expect(line).not.toContain('ABCDE1234F');
+    expect(line).not.toContain('Secret');
+    expect(line).toContain('XXXXXX234F');
+  });
+
+  it('copes with something that is not an Error', () => {
+    expect(safeError('PAN ABCDE1234F')).toBe('PAN XXXXXX234F');
   });
 });

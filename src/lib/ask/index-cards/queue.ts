@@ -1,5 +1,6 @@
 import { askConfig } from '@/lib/ask/config';
 import type { CardKind } from './build';
+import { safeError } from '@/lib/ask/mask';
 
 export const ASK_INDEX_REFRESH_EVENT = 'ask/index.refresh';
 
@@ -18,5 +19,5 @@ export function queueIndexRefresh(kind: CardKind, id: string): void {
       const { refreshIndexCard } = await import('./refresh');
       await refreshIndexCard(kind, id);
     }
-  })().catch((error) => console.error('[ask-vcfo] card refresh failed', error));
+  })().catch((error) => console.error('[ask-vcfo] card refresh failed', safeError(error)));
 }

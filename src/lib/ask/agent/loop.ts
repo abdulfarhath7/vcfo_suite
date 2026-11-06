@@ -11,7 +11,7 @@ import { defaultShellForRole } from '@/lib/ask/access';
 import type { ChangesetDraft, JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { createReviewCard, oneCard } from '@/lib/ask/do/card';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import { getAskProvider, type LlmMessage } from '@/lib/ask/provider';
 import { REFUSAL_COPY } from '@/lib/ask/refusals';
 import { actionNameOf, actionsFor, agentTools } from './tools';
@@ -115,7 +115,7 @@ async function callModel(ctx: AuthContext, run: AskRunRow, state: AgentState, ac
     timeoutMs: TURN_TIMEOUT_MS,
   });
   const { usage } = result;
-  await systemRecordAskUsage('agent_run', [{ model: result.model, calls: 1, usage }], now).catch((error) => console.error('[ask-vcfo] usage not recorded', error));
+  await systemRecordAskUsage('agent_run', [{ model: result.model, calls: 1, usage }], now).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));
   await appendAskRunStep(ctx, run.id, { kind: 'model', name: 'turn', status: 'done', model: result.model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, latencyMs: Date.now() - startedAt, output: { cacheRead: usage.cacheReadTokens, cacheWrite: usage.cacheWriteTokens, stop: result.stopReason } });
   const spent = {
     model: result.model,
@@ -172,7 +172,7 @@ async function answerTool(
   } catch (error) {
     const refusal = refusalOf(error);
     if (refusal) return failed(refusal);
-    console.error('[ask-vcfo] action failed', action.name, error);
+    console.error('[ask-vcfo] action failed', action.name, safeError(error));
     return failed('That could not be done just now.');
   }
 }

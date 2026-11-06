@@ -5,6 +5,7 @@ import { ANSWER_ACTIONS, type AnswerDepth, type AskShell, type ProjectSnapshot }
 import { addLlmUsage, NO_LLM_USAGE, type LlmMessage, type LlmProvider, type LlmSystemBlock, type LlmTool, type LlmUsage } from '@/lib/ask/provider';
 import type { RetrievedSource } from '@/lib/ask/retrieve';
 import type { ValidationResult } from '@/lib/ask/validate';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * Answer generation. `render_answer` is the only way an answer leaves the
@@ -252,7 +253,7 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
         toolResultTexts.push(text);
         results.push({ type: 'tool_result', tool_use_id: use.id, content: text });
       } catch (error) {
-        console.warn('[ask-vcfo] tool failed', use.name, error);
+        console.warn('[ask-vcfo] tool failed', use.name, safeError(error));
         results.push({ type: 'tool_result', tool_use_id: use.id, is_error: true, content: 'Tool failed' });
       }
     }

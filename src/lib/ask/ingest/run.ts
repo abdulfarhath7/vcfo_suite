@@ -14,6 +14,7 @@ import { meterProvider } from '@/lib/ask/provider/meter';
 import { chunkDocument } from './chunk';
 import { contextualizeChunks } from './contextualize';
 import { ExtractError, extractSourceText } from './extract';
+import { safeError } from '@/lib/ask/mask';
 
 export const ASK_INGEST_EVENT = 'ask/document.ingest';
 
@@ -67,16 +68,16 @@ export async function runAskIngestion(documentId: string): Promise<{ status: 're
     );
     await systemSetAskDocumentResult(doc.id, { status: 'ready' });
     // Search works on full text meanwhile, and the sweep fills what this misses.
-    await backfillEmbeddings().catch((error) => console.warn('[ask-vcfo] embedding failed; the backfill will retry', error));
+    await backfillEmbeddings().catch((error) => console.warn('[ask-vcfo] embedding failed; the backfill will retry', safeError(error)));
     return { status: 'ready', chunks: chunks.length };
   } catch (error) {
     const reason = error instanceof ExtractError ? error.message : 'Indexing failed. Try again.';
-    console.error('[ask-vcfo] ingestion failed', documentId, error);
+    console.error('[ask-vcfo] ingestion failed', documentId, safeError(error));
     await systemSetAskDocumentResult(doc.id, { status: 'failed', error: reason });
     return { status: 'failed', chunks: 0 };
   } finally {
     const spend = provider?.spend() ?? [];
-    if (spend.length > 0) await systemRecordAskUsage('ingest', spend).catch((error) => console.error('[ask-vcfo] usage not recorded', error));
+    if (spend.length > 0) await systemRecordAskUsage('ingest', spend).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));
   }
 }
 
@@ -91,7 +92,7 @@ export async function queueAskIngestion(documentId: string): Promise<'queued' | 
     await inngest.send({ name: ASK_INGEST_EVENT, data: { documentId } });
     return 'queued';
   } catch (error) {
-    console.warn('[ask-vcfo] inngest unavailable; indexing inline', error);
+    console.warn('[ask-vcfo] inngest unavailable; indexing inline', safeError(error));
     void runAskIngestion(documentId);
     return 'inline';
   }

@@ -15,6 +15,7 @@ import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { createReviewCard, oneCard } from '@/lib/ask/do/card';
 import { roleAnnouncementsPath } from '@/lib/notifications/announcements';
 import { firmWideProposals, proposalsForEngagement, type Proposal } from './proposals';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * The overnight job's work for one owner. It acts as that person and leaves only review cards: it can
@@ -106,7 +107,7 @@ export async function prepareForOwner(owner: ProactiveOwner, now: Date): Promise
       rows += drafts.flatMap((draft) => draft.rows).length;
     } catch (error) {
       // One project's fault must not cost the owner's other projects their proposals.
-      console.error('[ask-vcfo] overnight proposals failed for one project', error);
+      console.error('[ask-vcfo] overnight proposals failed for one project', safeError(error));
     }
   }
 
@@ -121,7 +122,7 @@ export async function prepareForOwner(owner: ProactiveOwner, now: Date): Promise
         companyName: '',
         href: `${roleAnnouncementsPath(ctx.role as Parameters<typeof roleAnnouncementsPath>[0]).replace(/announcements$/, 'ask')}?${cards.map((id) => `changeset=${id}`).join('&')}`,
       },
-    ]).catch((error) => console.error('[ask-vcfo] overnight notice failed', error));
+    ]).catch((error) => console.error('[ask-vcfo] overnight notice failed', safeError(error)));
   }
   return { cards: cards.length, rows };
 }

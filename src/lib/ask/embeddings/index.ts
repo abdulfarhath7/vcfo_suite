@@ -3,6 +3,7 @@ import 'server-only';
 import { askEmbeddingsConfig } from '@/lib/ask/config';
 import { bedrockEmbeddingProvider } from './bedrock';
 import type { EmbeddingProvider, QueryVector } from './types';
+import { safeError } from '@/lib/ask/mask';
 
 /**
  * Vectors for search. Provider `none` returns null and search runs on full text alone, which is the
@@ -39,7 +40,7 @@ export async function embedQuery(text: string): Promise<QueryVector | null> {
     const [values] = await provider.embed([text]);
     return values ? { values, model: provider.model } : null;
   } catch (error) {
-    console.warn('[ask-vcfo] embedding failed; searching on full text', error);
+    console.warn('[ask-vcfo] embedding failed; searching on full text', safeError(error));
     return null;
   }
 }
