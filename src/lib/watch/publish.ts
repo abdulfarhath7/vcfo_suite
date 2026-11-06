@@ -6,7 +6,7 @@ import {
   publishRegUpdate,
   systemGetPipelineUpdate,
   systemMarkNotified,
-  systemUpdatesAwaitingSummary,
+  systemSendSummaryOnce,
   systemWatchPeople,
 } from '@/db/repositories/reg-updates';
 import { roleAnnouncementsPath } from '@/lib/notifications/announcements';
@@ -45,29 +45,25 @@ const SUMMARY_TITLES = 5;
 
 /** One bell row per person for everything published since the last run. */
 export async function sendDailySummary(): Promise<{ updates: number; rows: number }> {
-  const updates = (await systemUpdatesAwaitingSummary()).map((row) => ({
-    ...row,
-    importance: (row.importance ?? 'normal') as RegImportance,
-  }));
-  if (updates.length === 0) return { updates: 0, rows: 0 };
-  const rows = (await systemWatchPeople()).flatMap((person) => {
-    const mine = summaryFor(person, updates);
-    if (mine.length === 0) return [];
-    const titles = mine.slice(0, SUMMARY_TITLES).map((row) => `• ${row.title}`);
-    if (mine.length > SUMMARY_TITLES) titles.push(`and ${mine.length - SUMMARY_TITLES} more`);
-    return [
-      {
-        userId: person.id,
-        kind: 'watch.update' as const,
-        title: `Official updates today: ${mine.length}`,
-        body: titles.join('\n'),
-        engagementId: '',
-        companyName: '',
-        href: roleAnnouncementsPath(person.role),
-      },
-    ];
+  const people = await systemWatchPeople();
+  return systemSendSummaryOnce((waiting) => {
+    const updates = waiting.map((row) => ({ ...row, importance: (row.importance ?? 'normal') as RegImportance }));
+    return people.flatMap((person) => {
+      const mine = summaryFor(person, updates);
+      if (mine.length === 0) return [];
+      const titles = mine.slice(0, SUMMARY_TITLES).map((row) => `• ${row.title}`);
+      if (mine.length > SUMMARY_TITLES) titles.push(`and ${mine.length - SUMMARY_TITLES} more`);
+      return [
+        {
+          userId: person.id,
+          kind: 'watch.update' as const,
+          title: `Official updates today: ${mine.length}`,
+          body: titles.join('\n'),
+          engagementId: '',
+          companyName: '',
+          href: roleAnnouncementsPath(person.role),
+        },
+      ];
+    });
   });
-  await createNotificationsForUsers(rows);
-  await systemMarkNotified(updates.map((row) => row.id));
-  return { updates: updates.length, rows: rows.length };
 }

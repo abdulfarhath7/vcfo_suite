@@ -27,6 +27,7 @@ import type {
 } from '@/lib/watch/types';
 import type { AlertMail } from '@/lib/watch/mail-parse';
 import { noiseLogFields } from '@/lib/watch/noise';
+import { createNotificationsForUsers, type SystemNotificationInput } from './notifications';
 import { writeCalendarProposals } from './reg-proposals';
 import { systemDeleteWatchBoardRow, systemPublishWatchBoardRow, systemPostWatchBoardRow, type BoardWriter } from './announcements';
 
@@ -471,12 +472,24 @@ export async function systemWatchPeople(): Promise<WatchPerson[]> {
   return rows.map((row) => ({ id: row.id, role: row.role as Role }));
 }
 
-export async function systemUpdatesAwaitingSummary(): Promise<RegUpdateRow[]> {
-  return db
-    .select()
-    .from(regUpdates)
-    .where(and(eq(regUpdates.status, 'published'), isNull(regUpdates.notifiedAt)))
-    .orderBy(desc(regUpdates.publishedAt));
+/**
+ * Sends the bell rows for whatever is waiting. They commit with `notified_at` and the waiting rows are
+ * locked meanwhile, so a retry after a failure sends what was not sent, and a second run sends nothing.
+ */
+export async function systemSendSummaryOnce(build: (updates: RegUpdateRow[]) => SystemNotificationInput[]): Promise<{ updates: number; rows: number }> {
+  return db.transaction(async (tx) => {
+    const updates = await tx
+      .select()
+      .from(regUpdates)
+      .where(and(eq(regUpdates.status, 'published'), isNull(regUpdates.notifiedAt)))
+      .orderBy(desc(regUpdates.publishedAt))
+      .for('update', { skipLocked: true });
+    if (updates.length === 0) return { updates: 0, rows: 0 };
+    const rows = build(updates);
+    await createNotificationsForUsers(rows, tx);
+    await tx.update(regUpdates).set({ notifiedAt: new Date() }).where(inArray(regUpdates.id, updates.map((row) => row.id)));
+    return { updates: updates.length, rows: rows.length };
+  });
 }
 
 export async function systemMarkNotified(ids: readonly string[]): Promise<void> {

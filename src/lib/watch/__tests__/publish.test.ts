@@ -19,7 +19,15 @@ vi.mock('@/db/repositories/reg-updates', () => ({
   publishRegUpdate: (...args: unknown[]) => publishRow(...args),
   systemGetPipelineUpdate: async () => ({ sourceName: 'CBIC' }),
   systemMarkNotified: (ids: unknown) => markNotified(ids),
-  systemUpdatesAwaitingSummary: () => awaiting(),
+  // The real one commits these together, which summary.db.test.ts shows on a real database.
+  systemSendSummaryOnce: async (build: (rows: Array<{ id: string }>) => unknown[]) => {
+    const rows: Array<{ id: string }> = await awaiting();
+    if (rows.length === 0) return { updates: 0, rows: 0 };
+    const built = build(rows);
+    notify(built);
+    markNotified(rows.map((row) => row.id));
+    return { updates: rows.length, rows: built.length };
+  },
   systemWatchPeople: async () => PEOPLE,
 }));
 

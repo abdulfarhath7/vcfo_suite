@@ -171,15 +171,19 @@ export async function createNotifications(
   return inserted.map(toAppNotification);
 }
 
+export type SystemNotificationInput = Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { userId: string };
+
 /**
  * System fan-out: insert notifications for arbitrary user ids after a process event.
  * Call only from server-side notifiers (after the mutation already authorized access).
  */
 export async function createNotificationsForUsers(
-  items: Array<Omit<AppNotification, 'id' | 'read' | 'createdAt'> & { userId: string }>,
+  items: SystemNotificationInput[],
+  /** A transaction, when these rows must stand or fall with another write. */
+  writer: Pick<typeof db, 'insert'> = db,
 ): Promise<AppNotification[]> {
   if (items.length === 0) return [];
-  const inserted = await db
+  const inserted = await writer
     .insert(notifications)
     .values(
       items.map((input) => ({
