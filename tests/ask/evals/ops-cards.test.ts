@@ -165,6 +165,24 @@ describe.skipIf(!OPS)('the operations pack through real cards', async () => {
       return outcome.answer.runId!;
     };
 
+    it('routes questions about these records to work, and leaves general questions and other data alone', async () => {
+      const route = async (message: string) => (await runGuard(provider, { model: askConfig().models.guard, shell: 'admin', message, history: [], topics: [], metrics: ['Companies incorporated'] })).result.intent;
+      const cases: Array<[string, readonly string[]]> = [
+        ['Which invoices are overdue?', ['do_work']],
+        ['Show me the reminder queue on the receivables sheet.', ['do_work']],
+        ['What bank credits are waiting for a decision?', ['do_work']],
+        ['What board meetings are coming up for this client?', ['do_work']],
+        ['Where does the October labour register batch stand?', ['do_work']],
+        ['What is the notice period for a board meeting?', ['explain', 'decision_request']],
+        ['What is TDS on a professional invoice?', ['explain']],
+        ['How many companies were incorporated this year?', ['fact', 'ops_query']],
+        ['Which projects are waiting for my approval?', ['ops_query', 'project_status']],
+      ];
+      const seen = await Promise.all(cases.map(async ([message]) => route(message)));
+      console.log(`[ops live] router: ${JSON.stringify(cases.map(([message], i) => [message, seen[i]]))}`);
+      cases.forEach(([message, allowed], i) => expect(allowed, message).toContain(seen[i]));
+    }, 120_000);
+
     it('skips a reminder for a person away from any project, accepts the card, and the run finishes', async () => {
       const { intent, outcome } = await ask(manager, 'Skip the queued reminder for invoice SC/09/02.');
       expect(intent).toBe('do_work');
@@ -181,7 +199,8 @@ describe.skipIf(!OPS)('the operations pack through real cards', async () => {
     }, 180_000);
 
     it('answers what is overdue with no card', async () => {
-      const { outcome } = await ask(manager, 'Which receivables invoices are overdue right now?');
+      const { intent, outcome } = await ask(manager, 'Which receivables invoices are overdue right now?');
+      expect(intent).toBe('do_work');
       const runId = started(outcome);
       expect(await drive(runId)).toBeNull();
       const line = await finalLine(runId);
