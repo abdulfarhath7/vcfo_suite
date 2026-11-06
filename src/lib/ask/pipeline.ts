@@ -127,7 +127,27 @@ function actionsForShell(answer: AnswerEnvelope, shell: AskShell, preview: boole
   return { ...answer, actions: [...new Set(actions)] };
 }
 
+/** What a message has spent, kept outside its turn so that a failure partway through still counts. */
+interface Ledger {
+  metered: MeteredProvider | null;
+  path: AskPath;
+  recorded: boolean;
+}
+
+/** Every path the router can lead to. An agent run starts through the fixed workflow's own switch. */
+const ROUTER_PATHS: readonly AskPath[] = ['router_refusal', 'router_topic', 'router_metric', 'document_answer', 'tool_answer', 'fixed_workflow'];
+
 export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: Emit): Promise<void> {
+  const ledger: Ledger = { metered: null, path: 'fixed_workflow', recorded: false };
+  try {
+    await answerMessage(ctx, request, emit, ledger);
+  } finally {
+    const spend = ledger.metered?.spend() ?? [];
+    if (!ledger.recorded && spend.length > 0) await systemRecordAskUsage(ledger.path, spend).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));
+  }
+}
+
+async function answerMessage(ctx: AuthContext, request: ChatRequest, emit: Emit, ledger: Ledger): Promise<void> {
   assertAskRole(ctx);
   const { shell } = request;
   if (!shellAllowedForRole(ctx.role, shell)) throw new AskForbiddenError('Shell not allowed');
@@ -210,8 +230,6 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     };
   };
 
-  let metered: MeteredProvider | null = null;
-
   const finish = async (
     answer: AnswerEnvelope,
     extra: {
@@ -228,9 +246,9 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       const links = sanitizeLinks(final.links, await linkScope(final.links));
       final = links.length > 0 ? { ...final, links } : { ...final, links: undefined };
     }
-    const spend = metered?.spend() ?? [];
+    const spend = ledger.metered?.spend() ?? [];
     const usage = spend.reduce((sum, s) => addLlmUsage(sum, s.usage), NO_LLM_USAGE);
-    const model = metered?.lastModel() ?? null;
+    const model = ledger.metered?.lastModel() ?? null;
     const row = await appendAskMessage(ctx, conversationId!, {
       sender: 'assistant',
       text: final.line,
@@ -250,6 +268,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     if (extra.path && spend.length > 0) {
       // The roll-up never holds up an answer the person has already paid for.
       await systemRecordAskUsage(extra.path, spend, now).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));
+      ledger.recorded = true;
     }
     emit({ type: 'answer', conversationId: conversationId!, messageId: row?.id ?? '', answer: final });
     return { messageId: row?.id ?? null, answer: final };
@@ -268,9 +287,19 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   const canDo = !preview;
   const pending = canDo ? await pendingDoRun(ctx, conversationId, request.message, now) : null;
   const doWork = async (extra: { guard?: GuardResult; startedAt?: number } = {}) => {
-    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending, metered, lockedTo: engagementId });
+    ledger.path = 'fixed_workflow';
+    const result = await handleDoWork(ctx, request, request.message ?? '', emit, {
+      conversationId,
+      now,
+      pending,
+      metered: ledger.metered,
+      onMeter: (meter) => {
+        ledger.metered = meter;
+      },
+      lockedTo: engagementId,
+    });
     if (!result) return false;
-    metered = result.metered ?? metered;
+    ledger.metered = result.metered ?? ledger.metered;
     const finished = await finish(result.answer, { path: result.path ?? 'fixed_workflow', ...extra });
     await result.start?.(finished.messageId);
     return true;
@@ -353,6 +382,10 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   }
 
   // ---- 5. Free text: budget → router → metric, topic or generation ----
+  if (ROUTER_PATHS.every((path) => flags.killedPaths.has(path))) {
+    await finish(limitAnswer(shell, 'pathStopped'), { path: null });
+    return;
+  }
   const budgets = askBudgets();
   if ((await systemTodayTokenTotal(now)) >= budgets.dailyTokens) {
     await finish(limitAnswer(shell, 'budgetReached'), { path: null });
@@ -370,8 +403,9 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     await finish(unavailableAnswer(shell), { path: null });
     return;
   }
-  const provider = meterProvider(configured);
-  metered = provider;
+  // A Do step that came to nothing may already have spent, and that stays on the one meter.
+  const provider = (ledger.metered ??= meterProvider(configured));
+  ledger.path = 'router_refusal';
 
   const startedAt = Date.now();
   let guard: GuardResult;
@@ -391,15 +425,18 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   }
 
   if (guard.intent === 'off_topic' || guard.intent === 'unsafe') {
+    if (await stopIfKilled('router_refusal', { guard, startedAt })) return;
     await finish(offTopicAnswer(shell), { path: 'router_refusal', guard, startedAt });
     return;
   }
   if (guard.intent === 'greeting') {
+    if (await stopIfKilled('router_refusal', { guard, startedAt })) return;
     await finish(greetingAnswer(shell), { path: 'router_refusal', guard, startedAt });
     return;
   }
   if (guard.intent === 'do_work') {
     if (canDo && (await doWork({ guard, startedAt }))) return;
+    if (await stopIfKilled('router_refusal', { guard, startedAt })) return;
     await finish(limitAnswer(shell, 'doWork'), { path: 'router_refusal', guard, startedAt });
     return;
   }
@@ -431,6 +468,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   const wantsData = expectsData(guard.intent);
   const expectedPath: AskPath = wantsData ? 'tool_answer' : 'document_answer';
   if (await stopIfKilled(expectedPath, { guard, startedAt })) return;
+  ledger.path = expectedPath;
 
   emit({ type: 'status', label: STATUS_LABELS.sources });
   const sources = await retrieveSources(ctx, {

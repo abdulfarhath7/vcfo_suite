@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
-import { askBudgets, askConfig } from '@/lib/ask/config';
+import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { getAskProvider, type LlmUsage } from '@/lib/ask/provider';
 import {
   systemGetPipelineUpdate,
@@ -27,7 +27,13 @@ export type StepResult = 'next' | 'stop';
 const BUDGET_NOTE = "Today's token budget is spent; this waits for the next check.";
 const NO_MODEL_NOTE = 'No model is configured; this waits for the next check.';
 
-const budgetSpent = async (): Promise<boolean> => (await systemTodayTokenTotal()) >= askBudgets().dailyTokens;
+const KILLED_NOTE = 'Reading by model is switched off for Watch; this waits for the next check.';
+
+/** Why no model may be called today, if there is a reason. */
+const modelOffNote = async (): Promise<string | null> => {
+  if (askFlags().killedPaths.has('watch')) return KILLED_NOTE;
+  return (await systemTodayTokenTotal()) >= askBudgets().dailyTokens ? BUDGET_NOTE : null;
+};
 
 /** The roll-up never fails a step whose model call is already paid for, or the retry would pay twice. */
 const recordUsage = (model: string, usage: LlmUsage): Promise<void> =>
@@ -36,9 +42,9 @@ const recordUsage = (model: string, usage: LlmUsage): Promise<void> =>
 export async function readStep(id: string): Promise<StepResult> {
   const row = await systemGetPipelineUpdate(id);
   if (!row || row.update.status !== 'queued') return row?.update.status === 'read' ? 'next' : 'stop';
-  const overBudget = await budgetSpent();
+  const off = await modelOffNote();
   try {
-    const provider = overBudget ? null : await getAskProvider();
+    const provider = off ? null : await getAskProvider();
     const model = askConfig().models.watch;
     const { text, usage } = await readUpdateText(
       { url: row.update.sourceUrl, s3Key: row.update.s3Key, listingText: row.update.sourceText },
@@ -50,7 +56,7 @@ export async function readStep(id: string): Promise<StepResult> {
     return mergedInto ? 'stop' : 'next';
   } catch (err) {
     if (err instanceof WatchScanWaitsError) {
-      await systemNoteRegUpdate(id, overBudget ? BUDGET_NOTE : NO_MODEL_NOTE);
+      await systemNoteRegUpdate(id, off ?? NO_MODEL_NOTE);
       return 'stop';
     }
     if (err instanceof WatchBlockedError) {
@@ -71,8 +77,9 @@ export async function readStep(id: string): Promise<StepResult> {
 export async function summariseStep(id: string): Promise<SummariseResult | null> {
   const row = await systemGetPipelineUpdate(id);
   if (!row || row.update.status !== 'read' || !row.update.sourceText) return null;
-  if (await budgetSpent()) {
-    await systemNoteRegUpdate(id, BUDGET_NOTE);
+  const off = await modelOffNote();
+  if (off) {
+    await systemNoteRegUpdate(id, off);
     return null;
   }
   const provider = await getAskProvider();

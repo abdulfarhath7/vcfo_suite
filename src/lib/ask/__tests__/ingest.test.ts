@@ -101,6 +101,17 @@ describe('ingestion job', () => {
     expect((replaceChunks.mock.calls[0]![1] as Array<{ contextPrefix: string | null }>)[0]!.contextPrefix).toBeNull();
   });
 
+  it('spends nothing while the ingest path is switched off, and still indexes a text source', async () => {
+    vi.stubEnv('ASK_KILL_PATHS', 'ingest');
+    const complete = vi.fn();
+    setAskProviderForTests({ name: 'mock', complete });
+    getDoc.mockResolvedValue(doc);
+    getObjectBuffer.mockResolvedValue(Buffer.from(['# GST', para(1), para(2), para(3)].join('\n\n')));
+    expect((await runAskIngestion('doc-1')).status).toBe('ready');
+    expect(complete).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
   it('marks an unreadable PDF failed with a readable reason', async () => {
     getDoc.mockResolvedValue({ ...doc, s3Key: 'knowledge-bank/ask-sources/doc-1/rules.pdf' });
     getObjectBuffer.mockResolvedValue(Buffer.from('%PDF-1.4'));

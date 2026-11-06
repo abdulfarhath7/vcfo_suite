@@ -7,7 +7,7 @@ import {
 } from '@/db/repositories/ask-documents';
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { getObjectBuffer } from '@/storage/s3';
-import { askBudgets, askConfig } from '@/lib/ask/config';
+import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { backfillEmbeddings } from '@/lib/ask/embeddings/backfill';
 import { getAskProvider } from '@/lib/ask/provider';
 import { meterProvider } from '@/lib/ask/provider/meter';
@@ -28,8 +28,8 @@ export function askSourceStoragePath(documentId: string, fileName: string): stri
  * Extract → chunk → contextualize → replace chunks → ready → embed. Idempotent:
  * the chunk set is replaced wholesale, so a retry never duplicates rows. Any
  * failure marks the source `failed` with a readable reason. Model calls count
- * toward the daily token budget; past it, a text PDF still indexes without
- * context prefixes and a scan waits for a retry.
+ * toward the daily token budget; past it, or with the path switched off, a text
+ * PDF still indexes without context prefixes and a scan waits for a retry.
  */
 export async function runAskIngestion(documentId: string): Promise<{ status: 'ready' | 'failed' | 'skipped'; chunks: number }> {
   const doc = await systemGetAskDocument(documentId);
@@ -45,7 +45,7 @@ export async function runAskIngestion(documentId: string): Promise<{ status: 're
     const bytes = await getObjectBuffer(doc.s3Key);
     if (!bytes) throw new ExtractError('The uploaded file is missing from storage.');
     const config = askConfig();
-    const usable = provider && (await systemTodayTokenTotal()) < askBudgets().dailyTokens ? provider : null;
+    const usable = provider && !askFlags().killedPaths.has('ingest') && (await systemTodayTokenTotal()) < askBudgets().dailyTokens ? provider : null;
     const text = await extractSourceText({
       bytes,
       fileName: doc.s3Key.split('/').pop() ?? doc.s3Key,

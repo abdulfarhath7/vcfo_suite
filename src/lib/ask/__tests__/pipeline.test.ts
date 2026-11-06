@@ -50,6 +50,7 @@ vi.mock('@/lib/ask/tools/staff-data', () => ({
 }));
 
 const { runAskChat } = await import('@/lib/ask/pipeline');
+const { retrieveSources } = await import('@/lib/ask/retrieve');
 const { setAskProviderForTests } = await import('@/lib/ask/provider');
 const { REFUSAL_COPY } = await import('@/lib/ask/refusals');
 const { AskForbiddenError } = await import('@/lib/ask/access');
@@ -540,6 +541,40 @@ describe('path, usage and limits', () => {
     const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', ...request });
     expect(answer?.line).toBe(REFUSAL_COPY.pathStopped);
     expect(lastStored()).toMatchObject({ path });
+  });
+
+  it('the kill switch stops a refusal and a greeting, and what the router spent still counts', async () => {
+    vi.stubEnv('ASK_KILL_PATHS', 'router_refusal');
+    for (const intent of ['off_topic', 'greeting']) {
+      setAskProviderForTests(mockProvider([guard(intent)]));
+      const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', message: 'Tell me a joke about cricket' });
+      expect(answer?.line).toBe(REFUSAL_COPY.pathStopped);
+      expect(systemRecordAskUsage).toHaveBeenLastCalledWith('router_refusal', expect.any(Array), expect.any(Date));
+    }
+  });
+
+  it('calls no router when every place it could lead to is switched off', async () => {
+    vi.stubEnv('ASK_KILL_PATHS', 'router_refusal,router_topic,router_metric,document_answer,tool_answer,fixed_workflow');
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', message: 'What is a DIN?' });
+    expect(answer?.line).toBe(REFUSAL_COPY.pathStopped);
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it('counts what was spent once when a step after the router throws', async () => {
+    setAskProviderForTests(mockProvider([guard('explain')]));
+    vi.mocked(retrieveSources).mockRejectedValueOnce(new Error('search is down'));
+    await expect(run('client', { shell: 'client', engagementId: 'eng-1', message: 'What is a DIN?' })).rejects.toThrow('search is down');
+    expect(systemRecordAskUsage).toHaveBeenCalledTimes(1);
+    expect(systemRecordAskUsage.mock.calls[0]![0]).toBe('document_answer');
+    expect(systemRecordAskUsage.mock.calls[0]![1]).toEqual([expect.objectContaining({ model: 'mock-model', calls: 1 })]);
+  });
+
+  it('does not count an answer twice when the turn ends normally', async () => {
+    setAskProviderForTests(mockProvider([guard('explain'), rendered()]));
+    await run('client', { shell: 'client', engagementId: 'eng-1', message: 'What is a DIN?' });
+    expect(systemRecordAskUsage).toHaveBeenCalledTimes(1);
   });
 
   it('a killed tool path offers no tools to a document answer', async () => {

@@ -30,6 +30,7 @@ const PATH_LABELS: Record<string, string> = {
   fixed_workflow: 'Fixed workflow',
   agent_run: 'Agent run',
   watch: 'Watch',
+  ingest: 'Indexing a source',
   unrecorded: 'Before tracking',
 };
 

@@ -129,6 +129,8 @@ export async function handleDoWork(
     now: Date;
     pending: Awaited<ReturnType<typeof pendingDoRun>>;
     metered?: MeteredProvider | null;
+    /** Told as soon as a meter starts, so a failure partway through can still count what it spent. */
+    onMeter?: (meter: MeteredProvider) => void;
     /** A client's own company, from the shell: every run in that shell is held to it. */
     lockedTo?: string | null;
   },
@@ -152,6 +154,7 @@ export async function handleDoWork(
     const configured = await getAskProvider();
     if (!configured) throw new ReadRefused('Reading this needs the Ask VCFO model, which is not available right now. Please type the details as "Label: value" lines.');
     metered = meterProvider(configured);
+    context.onMeter?.(metered);
     return metered;
   };
   const deps = { provider, model: config.models.extract, idDocReading: flags.idDocReading };

@@ -4,6 +4,7 @@ import type { SummariseResult } from '../summarise';
 import type { RegSummary } from '../types';
 
 const read = vi.fn();
+let watchKilled = false;
 const provider = vi.fn();
 const usage = { systemRecordAskUsage: vi.fn(), systemTodayTokenTotal: vi.fn() };
 const repo = {
@@ -17,7 +18,7 @@ const repo = {
 vi.mock('server-only', () => ({}));
 vi.mock('@/db/repositories/reg-updates', () => repo);
 vi.mock('@/db/repositories/ask-usage', () => usage);
-vi.mock('@/lib/ask/config', () => ({ askBudgets: () => ({ dailyTokens: 100 }), askConfig: () => ({ models: { watch: 'claude-haiku-5-5' } }) }));
+vi.mock('@/lib/ask/config', () => ({ askBudgets: () => ({ dailyTokens: 100 }), askConfig: () => ({ models: { watch: 'claude-haiku-5-5' } }), askFlags: () => ({ killedPaths: new Set(watchKilled ? ['watch'] : []) }) }));
 vi.mock('@/lib/ask/provider', () => ({ getAskProvider: () => provider() }));
 vi.mock('../read', async (original) => ({ ...(await original<typeof import('../read')>()), readUpdateText: (...args: unknown[]) => read(...args) }));
 
@@ -52,6 +53,7 @@ const saved = () => repo.systemSaveSummary.mock.calls[0]![1];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  watchKilled = false;
   usage.systemTodayTokenTotal.mockResolvedValue(0);
   usage.systemRecordAskUsage.mockResolvedValue(undefined);
   repo.systemSaveReadText.mockResolvedValue({ mergedInto: null });
@@ -65,6 +67,16 @@ describe('readStep', () => {
     expect(await readStep('u')).toBe('next');
     repo.systemSaveReadText.mockResolvedValue({ mergedInto: 'other' });
     expect(await readStep('u')).toBe('stop');
+  });
+
+  it('gives a scan no model while Watch is switched off, and says why it waits', async () => {
+    watchKilled = true;
+    repo.systemGetPipelineUpdate.mockResolvedValue(pending('queued'));
+    read.mockRejectedValue(new WatchScanWaitsError());
+    expect(await readStep('u')).toBe('stop');
+    expect(read.mock.calls[0]![1]).toBeNull();
+    expect(provider).not.toHaveBeenCalled();
+    expect(repo.systemNoteRegUpdate).toHaveBeenCalledWith('u', expect.stringContaining('switched off'));
   });
 
   it('gives a scan no model once the day budget is spent, and it waits', async () => {
@@ -111,6 +123,14 @@ describe('readStep', () => {
 });
 
 describe('summariseStep', () => {
+  it('spends nothing while Watch is switched off, and says why', async () => {
+    watchKilled = true;
+    repo.systemGetPipelineUpdate.mockResolvedValue(pending('read'));
+    expect(await summariseStep('u')).toBeNull();
+    expect(provider).not.toHaveBeenCalled();
+    expect(repo.systemNoteRegUpdate).toHaveBeenCalledWith('u', expect.stringContaining('switched off'));
+  });
+
   it('spends nothing once the day budget is spent', async () => {
     repo.systemGetPipelineUpdate.mockResolvedValue(pending('read'));
     usage.systemTodayTokenTotal.mockResolvedValue(100);
