@@ -200,17 +200,28 @@ describe('the receivables actions', () => {
   });
 
   it('turns a repository refusal into a sentence, and leaves a fault as a fault', async () => {
+    const onCard = { cardCheck: 'priya@client.test' };
     repo.publishSheet.mockRejectedValueOnce(new ReceivablesError(409, 'not_published'));
-    expect(await byName('receivables.publish').execute(actx(), {})).toEqual({ ok: false, error: 'Publish the sheet first, so the summary has a version to send.' });
+    expect(await byName('receivables.publish').execute(actx(), onCard)).toEqual({ ok: false, error: 'Publish the sheet first, so the summary has a version to send.' });
     repo.publishSheet.mockRejectedValueOnce(new ReceivablesError(409, 'some_new_code'));
-    expect(await byName('receivables.publish').execute(actx(), {})).toEqual({ ok: false, error: 'That could not be done on this sheet.' });
+    expect(await byName('receivables.publish').execute(actx(), onCard)).toEqual({ ok: false, error: 'That could not be done on this sheet.' });
     repo.publishSheet.mockRejectedValueOnce(new Error('database down'));
-    await expect(byName('receivables.publish').execute(actx(), {})).rejects.toThrow('database down');
+    await expect(byName('receivables.publish').execute(actx(), onCard)).rejects.toThrow('database down');
   });
 
   it('names the active partners on a publish card, never one who has left', async () => {
     const draft = await byName('receivables.publish').preview(actx(), {});
     expect(draft!.recipients).toEqual([{ name: 'Priya', email: 'priya@client.test', role: 'Client partner' }]);
+  });
+
+  it('refuses a publish card once a partner has joined since it was made', async () => {
+    const publish = byName('receivables.publish');
+    const target = (await publish.preview(actx(), { cardCheck: 'x@evil.test' }))!.rows[0]!.target;
+    expect(target).toMatchObject({ cardCheck: 'priya@client.test' });
+    repo.getManagerSheet.mockResolvedValueOnce({ partners: [partner, { ...gone, active: true }] });
+    expect(await publish.execute(actx(), publish.input.parse(target))).toEqual({ ok: false, error: expect.stringContaining('have changed') });
+    expect(repo.publishSheet).not.toHaveBeenCalled();
+    expect(await publish.execute(actx(), publish.input.parse(target))).toMatchObject({ ok: true });
   });
 
   it('adds an invoice with no partner, whatever the model sends, and undoes it', async () => {
@@ -285,11 +296,20 @@ describe('the receivables actions', () => {
   it('keeps the screen rule that nothing queued means nothing to send, and sends after the answer', async () => {
     repo.getReminderDesk.mockResolvedValueOnce({ sheet: { id: SHEET, reminderRules: {} }, queue: [{ ...queued, reminder: { ...queued.reminder, status: 'skipped' } }], history: [] });
     await expect(byName('receivables.sendRemindersNow').preview(actx(), {})).rejects.toThrow(/No reminder is waiting/);
-    const outcome = await byName('receivables.sendRemindersNow').execute(actx(), {});
+    const outcome = await applied('receivables.sendRemindersNow', {});
     expect(outcome).toEqual({ ok: true, summary: '1 reminder is going out now.' });
     expect(sendDueReminders).not.toHaveBeenCalled();
     await afterQueue.shift()!();
     expect(sendDueReminders).toHaveBeenCalledWith(expect.any(String), { sheetId: SHEET });
+  });
+
+  it('sends reminders only for the queue the card showed, so a card from an earlier day cannot send a later one', async () => {
+    const send = byName('receivables.sendRemindersNow');
+    const target = (await send.preview(actx(), { cardCheck: 'made-up' }))!.rows[0]!.target;
+    expect(target).toMatchObject({ cardCheck: REMINDER });
+    repo.getReminderDesk.mockResolvedValueOnce({ sheet: { id: SHEET, reminderRules: {} }, queue: [{ ...queued, reminder: { ...queued.reminder, id: OTHER_SHEET } }], history: [] });
+    expect(await send.execute(actx(), send.input.parse(target))).toEqual({ ok: false, error: expect.stringContaining('queue has changed') });
+    expect(afterQueue).toHaveLength(0);
   });
 
   it('edits a queued reminder and puts the old wording back', async () => {
@@ -304,10 +324,16 @@ describe('the receivables actions', () => {
   it('emails the partner the code finds on a reply, after the answer', async () => {
     const draft = await byName('receivables.replyToPartner').preview(actx(), { invoiceId: INVOICE, text: 'Thanks' });
     expect(draft!.recipients).toEqual([{ name: 'Priya', email: 'priya@client.test', role: 'Client partner' }]);
-    await byName('receivables.replyToPartner').execute(actx(), { invoiceId: INVOICE, text: 'Thanks' });
+    const reply = byName('receivables.replyToPartner');
+    await reply.execute(actx(), reply.input.parse(draft!.rows[0]!.target));
     expect(sendEmail).not.toHaveBeenCalled();
     await afterQueue.shift()!();
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'priya@client.test' }));
+
+    repo.addSbcNote.mockClear();
+    scopedInvoice.mockResolvedValueOnce({ invoice: { ...invoiceRow, partnerId: 'p3' }, sheet: { id: SHEET } });
+    expect(await reply.execute(actx(), reply.input.parse(draft!.rows[0]!.target))).toEqual({ ok: false, error: expect.stringContaining('partner has changed') });
+    expect(repo.addSbcNote).not.toHaveBeenCalled();
   });
 
   it('sends a summary only to the people the card showed, and overwrites what the model claims', async () => {
