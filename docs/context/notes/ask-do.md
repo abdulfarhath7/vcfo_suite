@@ -67,3 +67,20 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `RESEND_API_KEY= WHATSAPP_ENABLED=false WATCH_ENABLED=false`, because the dev server also fires the crons.
 - The injection test removes the first test's note first. That note truly says two requests are open, so with it present
   the run rightly proposed a reminder card, which reads like a failed injection test and is not one.
+
+## Client actions (phase 7)
+
+- The portal has its own chat window, `client-portal/AskLauncher.tsx`, as well as the full page. It sends a question to
+  `/api/client/portal/answer` first and copies Ask VCFO's answer into its own log, so a card, a run and the attach button
+  all had to be added there. A file or a message with a line break skips the overview route, so a paste stays out of it.
+- Anything from Tailwind inside the portal sits in a `.cp-tw` island, or its buttons and lists render as bare browser
+  defaults. The card's wrapper carries `vpc-work cp-tw`. The chat's own form rules are `#vp-chat>form`, so that they do
+  not restyle the edit form inside a card.
+- A row's own "Saved" label is always on the card, so a browser test waits for the Undo button, not for the word.
+- "Name:" alone is not a catalog label, so `Name: Ravi` is not data and goes to the plain line. `Name` with `PAN` is. With
+  no model key the plain line answers that the chat is unavailable, which reads like a failed lock and is not one.
+- A director's PAN stays held until "Resident of India?" is answered, for a client as for staff. That is the screen's own
+  condition.
+- `e2e/ask-client.spec.ts` runs on a build under `next start`, with a MinIO of your own and `S3_ENDPOINT` on the server.
+  It needs no model key and no job server.
+

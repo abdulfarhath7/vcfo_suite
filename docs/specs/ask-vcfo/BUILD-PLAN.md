@@ -264,6 +264,25 @@ direct-flow strips from the extracted checklist rule; never another client's eng
 resolutions, MCA submit, DSC signing, payments and role changes are T4: define them only if a prepare step helps; they
 never execute. Developer routes stay out.
 
+### What the client-portal pack built, and why
+
+A client has their own actions under `client-portal.*`, for role `client` only. The answer pair (`setAnswer`, `attachFile`)
+comes from the same factory and the same save as the staff pair, so one rule holds for both. `applyRow` now checks the
+action's roles at the click, so a card cannot run an action for a person it was not made for.
+
+- **Own fields only.** Beyond the direct-flow rule, a client's row must be on the form for this kind of company, and a file
+  answer must come from a file, so typed text can never point a file field at a stored path. What the firm fills never
+  reaches a client's card; the chat says so in a line. The other-step check is off for a client, because it would show a
+  value from a step they cannot read.
+- **Files find their own place, with no model.** A file goes to the open request, file request or filing its name and the
+  message best name. A tie is not guessed: the file goes on to the data router, and the chat lists what is open. Filings
+  are looked at only when proof is mentioned.
+- **Recipients by name.** A client's card names the firm's people and shows no staff email.
+- **The run's company comes from the shell.** The input of an action the model can call has no company, and a name that
+  reads as another company stops the run. "For Asha Rao" does not, because that is a person.
+- **The message limit went from 2,000 to 20,000 characters** for a client, because a paste now has somewhere to go.
+- **Left out on purpose.** A step's approve (a legal sign-off of the firm's work), logins, OTPs and identity numbers.
+
 ## Phase 8: portal hand-off (final)
 
 `src/lib/actions/filing/prepare-run.ts`: "prepare filing run" creates a requested `assist_runs` row through the existing
