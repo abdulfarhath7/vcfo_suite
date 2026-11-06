@@ -9,7 +9,6 @@ import { loadBatchView } from '@/views/labour-registers/load-batch';
 import { ActionRefused, assertOnLockedClient, lockedClient, recordDraft, refusing, STAFF_ROLES } from '../shared';
 import { defineAction, type ActionContext, type ActionResult, type AnyAction } from '../types';
 import { assumptionsInput, mergeAssumptions } from './flows';
-import { generateRegisters } from './generate';
 
 /**
  * Labour registers on the locked client: the monthly close and the build, with the same rules as the
@@ -226,6 +225,8 @@ const generate = defineAction({
     run(async () => {
       const batch = await scoped(actx, input.batchId);
       const engagement = await getEngagementById(actx.auth, engagementDbId(batch.engagementId));
+      // Loaded here: the workbook and PDF renderers are heavy, and every chat request loads this file.
+      const { generateRegisters } = await import('./generate');
       const outcome = await generateRegisters(actx.auth, { ...input, companyName: engagement?.companyName });
       if (outcome.kind === 'not_found') return { ok: false, error: 'That register batch is not available.' };
       if (outcome.kind === 'not_ready') return { ok: false, error: 'Mark the inputs ready before generating. Nothing is built from a half-gathered month.' };

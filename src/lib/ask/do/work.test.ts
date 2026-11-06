@@ -48,6 +48,8 @@ const tool = (name: string, input: unknown = {}) => [{ type: 'tool_use', id: 't'
 
 const { handleWork } = await import('./work');
 const { getAction } = await import('@/lib/actions/registry');
+// Every action area loads on first use, which is slow on a busy machine, so it happens before the timed tests.
+await getAction('tasks.create');
 
 const go = (message: string, extra: { ctx?: AuthContext; page?: string; resumed?: Parameters<typeof handleWork>[2]['resumed'] } = {}) =>
   handleWork(extra.ctx ?? manager, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined }, {

@@ -63,6 +63,8 @@ vi.mock('@/lib/ask/provider', async (load) => ({
 }));
 
 const { handleDoWork, isDataMessage, pendingDoRun } = await import('./entry');
+// Every action area loads on first use, which is slow on a busy machine, so it happens before the timed tests.
+await (await import('@/lib/actions/registry')).getAction('tasks.create');
 
 const run = (message: string, extra: { page?: string; attachmentIds?: string[]; pending?: Awaited<ReturnType<typeof pendingDoRun>> } = {}) =>
   handleDoWork(lead, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined, attachmentIds: extra.attachmentIds }, message, () => undefined, {

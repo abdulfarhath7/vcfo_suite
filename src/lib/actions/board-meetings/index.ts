@@ -21,7 +21,6 @@ import {
 import type { ChangesetRecipient } from '@/lib/ask/changeset/types';
 import { ActionRefused, assertOnLockedClient, lockedClient, MANAGING_ROLES, recordDraft, refusing, STAFF_ROLES } from '../shared';
 import { defineAction, type ActionContext, type ActionResult, type AnyAction } from '../types';
-import { approveAndSendNotice, cancelAndTell, remindDirectors, sendDocumentForSignature } from './flows';
 
 /**
  * Board meetings on the locked client. Who may do what stays in the repository and shows in the
@@ -29,6 +28,9 @@ import { approveAndSendNotice, cancelAndTell, remindDirectors, sendDocumentForSi
  * signer from the meeting, so the model never names one. A signed copy finalises a resolution, so it
  * stays on the screen, and so do the files the agent could not supply: the minutes and the signed PDF.
  */
+
+/** Loaded when used: the notice's Word file and calendar code are heavy, and every chat request loads this file. */
+const flows = () => import('./flows');
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
@@ -289,7 +291,7 @@ const approve = defineAction({
   execute: (actx, input) =>
     run(async () => {
       const m = await scoped(actx, input.meetingId);
-      await approveAndSendNotice(actx.auth, input.meetingId);
+      await (await flows()).approveAndSendNotice(actx.auth, input.meetingId);
       return { ok: true, summary: `Approved ${m.meetingNo}. The notice is going out now, and the bell will say when it has.` };
     }),
 });
@@ -349,7 +351,7 @@ const cancel = defineAction({
   execute: (actx, input) =>
     run(async () => {
       const m = await scoped(actx, input.meetingId);
-      await cancelAndTell(actx.auth, input.meetingId, input.reason ?? '');
+      await (await flows()).cancelAndTell(actx.auth, input.meetingId, input.reason ?? '');
       return { ok: true, summary: `${m.meetingNo} is cancelled.` };
     }),
 });
@@ -376,7 +378,7 @@ const remind = defineAction({
   execute: (actx, input) =>
     run(async () => {
       await scoped(actx, input.meetingId);
-      const sent = await remindDirectors(actx.auth, input.meetingId);
+      const sent = await (await flows()).remindDirectors(actx.auth, input.meetingId);
       return { ok: true, summary: sent ? 'The reminder has gone to the directors who have not replied.' : 'Every director with an email has replied, so nothing went out.' };
     }),
 });
@@ -451,7 +453,7 @@ const sendForSignature = defineAction({
   execute: (actx, input) =>
     run(async () => {
       const { document } = await scopedDocument(actx, input.documentId);
-      const { sent } = await sendDocumentForSignature(actx.auth, input.documentId, input.reminder ?? false);
+      const { sent } = await (await flows()).sendDocumentForSignature(actx.auth, input.documentId, input.reminder ?? false);
       return { ok: true, summary: `${document.title} went to ${sent} signer${sent === 1 ? '' : 's'}.` };
     }),
 });
