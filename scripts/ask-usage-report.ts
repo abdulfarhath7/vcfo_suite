@@ -29,6 +29,7 @@ async function main() {
       costUsd: Number(r.costUsd.toFixed(4)),
     })),
   );
+  console.table(report.acceptance);
   process.exit(0);
 }
 

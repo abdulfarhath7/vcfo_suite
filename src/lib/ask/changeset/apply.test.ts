@@ -205,6 +205,8 @@ describe('editChangesetRow', () => {
     expect(execute).not.toHaveBeenCalled();
     const [, , updates, hash] = updateRows.mock.calls[0]!;
     expect(updates[0].patch.newValue).toBe('ABCDE1234F');
+    // The acceptance report counts a row accepted with edits apart from one accepted as proposed.
+    expect(updates[0].patch.editedAt).toBeInstanceOf(Date);
     expect(hash).toBe(changesetHash([{ action: 'checklist.setResponse', target: { stepId: 'pre-15', fieldId: 'a' }, newValue: 'ABCDE1234F' }]));
   });
 

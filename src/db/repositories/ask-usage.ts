@@ -3,9 +3,11 @@ import 'server-only';
 import { and, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askMessages, askUsageDaily } from '@/db/schema';
+import { askChangesetRows, askChangesets, askRuns } from '@/db/schema-ask';
 import type { AuthContext } from '@/auth/guards';
 import { AskForbiddenError, assertAskRole } from '@/lib/ask/access';
 import { askBudgets, askFlags } from '@/lib/ask/config';
+import { acceptanceByAction, type ActionAcceptance } from '@/lib/ask/proactive/acceptance';
 import { NO_LLM_USAGE, type LlmUsage } from '@/lib/ask/provider';
 import type { ModelSpend } from '@/lib/ask/provider/meter';
 import { estimateCostUsd } from '@/lib/ask/provider/pricing';
@@ -75,6 +77,8 @@ export interface AskUsageReport {
   todayTokens: number;
   dailyBudget: number;
   killedPaths: string[];
+  /** Per action, how people answered its cards, so raising autonomy can be judged. Nothing reads it to act. */
+  acceptance: ActionAcceptance[];
 }
 
 /**
@@ -88,7 +92,7 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
   const now = input.now ?? new Date();
   const since = new Date(now.getTime() - input.days * 86_400_000);
 
-  const [spend, counts, unrecorded, todayTokens] = await Promise.all([
+  const [spend, counts, unrecorded, todayTokens, cardRows] = await Promise.all([
     db
       .select({
         path: askUsageDaily.path,
@@ -119,6 +123,20 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
       .where(and(eq(askMessages.sender, 'assistant'), isNull(askMessages.path), isNotNull(askMessages.model), gte(askMessages.createdAt, since)))
       .groupBy(askMessages.model),
     systemTodayTokenTotal(now),
+    db
+      .select({
+        action: askChangesetRows.action,
+        trigger: sql<string>`coalesce(${askRuns.trigger}, 'chat')`,
+        status: askChangesetRows.status,
+        edited: sql<boolean>`${askChangesetRows.editedAt} is not null`,
+        expired: sql<boolean>`${askChangesets.expiresAt} <= ${now.toISOString()}::timestamptz`,
+        rows: sql<string>`count(*)`,
+      })
+      .from(askChangesetRows)
+      .innerJoin(askChangesets, eq(askChangesets.id, askChangesetRows.changesetId))
+      .leftJoin(askRuns, eq(askRuns.id, askChangesets.runId))
+      .where(gte(askChangesets.createdAt, since))
+      .groupBy(sql`1, 2, 3, 4, 5`),
   ]);
 
   const rows = new Map<string, AskUsageRow>();
@@ -165,5 +183,6 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
     todayTokens,
     dailyBudget: askBudgets().dailyTokens,
     killedPaths: [...askFlags().killedPaths],
+    acceptance: acceptanceByAction(cardRows.map((row) => ({ ...row, rows: Number(row.rows) }))),
   };
 }

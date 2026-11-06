@@ -202,6 +202,8 @@ export const askChangesetRows = pgTable(
     /** What `undo` needs to put the old value back. */
     undoData: jsonb('undo_data').$type<JsonValue>(),
     appliedAt: timestamp('applied_at', { withTimezone: true }),
+    /** A person corrected this row, which outlives the status, so the report can tell accepted as proposed from accepted after an edit. */
+    editedAt: timestamp('edited_at', { withTimezone: true }),
   },
   (t) => ({
     ordinalUq: uniqueIndex('ask_changeset_rows_ordinal_uq').on(t.changesetId, t.ordinal),

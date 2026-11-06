@@ -12,6 +12,7 @@ import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { FilterSelect } from '@/components/ui/native-select';
 import { Tag } from '@/components/ui/spectrum-chip';
 import type { AskUsageReport, AskUsageRow } from '@/db/repositories/ask-usage';
+import type { ActionAcceptance } from '@/lib/ask/proactive/acceptance';
 import { totalTokens } from '@/lib/ask/provider/pricing';
 
 const PATH_LABELS: Record<string, string> = {
@@ -47,6 +48,76 @@ const COLUMNS: Array<{ label: string; value: (r: AskUsageRow) => string }> = [
   { label: 'Per message', value: (r) => (r.messages > 0 ? number(Math.round(totalTokens(r) / r.messages)) : '–') },
   { label: 'Est. cost', value: (r) => money(r.costUsd) },
 ];
+
+const percent = (rate: number | null) => (rate === null ? '–' : `${Math.round(rate * 100)}%`);
+
+const ACCEPTANCE_COLUMNS: Array<{ label: string; value: (r: ActionAcceptance) => string }> = [
+  { label: 'Proposed', value: (r) => number(r.proposed) },
+  { label: 'Accepted', value: (r) => number(r.accepted) },
+  { label: 'After an edit', value: (r) => number(r.acceptedEdited) },
+  { label: 'Turned down', value: (r) => number(r.turnedDown) },
+  { label: 'Undone', value: (r) => number(r.undone) },
+  { label: 'Expired', value: (r) => number(r.expired) },
+  { label: 'Waiting', value: (r) => number(r.waiting) },
+  { label: 'Failed', value: (r) => number(r.failed) },
+  { label: 'Accepted rate', value: (r) => percent(r.acceptedRate) },
+  { label: 'Unedited rate', value: (r) => percent(r.uneditedRate) },
+];
+
+/** How people answered each action's cards. It reports only: autonomy changes when a person decides it should. */
+function CardAcceptance({ rows }: { rows: ActionAcceptance[] }) {
+  return (
+    <section aria-labelledby="acceptance-title" className="surface min-w-0 overflow-hidden">
+      <header className="flex min-h-[52px] flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line-soft px-4 py-2">
+        <CardHeadTile title="Analytics" />
+        <h2 id="acceptance-title" className="text-[15px] font-medium text-ink">
+          Cards per action
+        </h2>
+      </header>
+      {rows.length === 0 ? (
+        <EmptyState title="No cards in this period" className="m-4" />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-[13px]">
+            <thead className="text-[12px] text-ink-muted">
+              <tr>
+                <th scope="col" className="px-4 py-2 font-medium">
+                  Action
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  From
+                </th>
+                {ACCEPTANCE_COLUMNS.map((column) => (
+                  <th key={column.label} scope="col" className="whitespace-nowrap px-3 py-2 text-right font-medium">
+                    {column.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={`${row.action}:${row.trigger}`} className="border-t border-line-soft">
+                  <th scope="row" className="whitespace-nowrap px-4 py-2.5 font-medium text-ink">
+                    {row.action}
+                  </th>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-ink-2">{row.trigger === 'schedule' ? 'Overnight' : 'Chat'}</td>
+                  {ACCEPTANCE_COLUMNS.map((column) => (
+                    <td key={column.label} className="px-3 py-2.5 text-right tabular-nums text-ink-2">
+                      {column.value(row)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="border-t border-line-soft px-4 py-2.5 text-[12.5px] text-ink-muted">
+        Rates count cards a person answered or left to expire. These numbers change nothing by themselves.
+      </p>
+    </section>
+  );
+}
 
 /** Super admin: what each Ask VCFO path spends, against today's budget and the kill switches. */
 export default function AskTokenUse() {
@@ -149,6 +220,8 @@ export default function AskTokenUse() {
             </p>
           ) : null}
         </section>
+
+        {data ? <CardAcceptance rows={data.acceptance} /> : null}
       </div>
     </PageTransition>
   );

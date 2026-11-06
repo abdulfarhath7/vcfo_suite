@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { and, asc, eq, gt, inArray } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 import { db } from '@/db/client';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
-import { askChangesetRows, askChangesets } from '@/db/schema-ask';
+import { askChangesetRows, askChangesets, askRuns } from '@/db/schema-ask';
 import { isAdminOrManager } from '@/lib/auth';
 import { AskForbiddenError, assertAskRole } from '@/lib/ask/access';
 import type { ChangesetDraft, ChangesetStatus } from '@/lib/ask/changeset/types';
@@ -98,6 +98,17 @@ export async function getAskChangesetSummary(ctx: AuthContext, id: string): Prom
   return { ...found, rows: found.rows.map(({ oldValue: _old, newValue: _new, undoData, ...row }) => ({ ...row, hasUndo: undoData != null })) };
 }
 
+/** What the overnight job has already put in front of this person, decided or not, so it is not proposed again. */
+export async function listOwnScheduledRows(ctx: AuthContext, since: Date): Promise<Array<Pick<AskChangesetRowRow, 'action' | 'target'>>> {
+  assertAskRole(ctx);
+  return db
+    .select({ action: askChangesetRows.action, target: askChangesetRows.target })
+    .from(askChangesetRows)
+    .innerJoin(askChangesets, eq(askChangesets.id, askChangesetRows.changesetId))
+    .innerJoin(askRuns, eq(askRuns.id, askChangesets.runId))
+    .where(and(eq(askChangesets.profileId, ctx.userId), eq(askRuns.trigger, 'schedule'), gte(askChangesets.createdAt, since)));
+}
+
 /** Writes below take the access just read for this person, so a card cannot be changed by anyone else. */
 function assertDecider(ctx: AuthContext, found: ChangesetAccess): void {
   if (found.viewerId !== ctx.userId) throw new AskForbiddenError('This card belongs to someone else.');
@@ -137,7 +148,7 @@ export async function setAskChangesetStatus(
 export async function updateAskChangesetRows(
   ctx: AuthContext,
   found: ChangesetAccess,
-  updates: ReadonlyArray<{ id: string; patch: Partial<Pick<AskChangesetRowRow, 'status' | 'checks' | 'heldReason' | 'error' | 'undoData' | 'appliedAt' | 'newValue' | 'oldValue' | 'displayOld' | 'displayNew'>> }>,
+  updates: ReadonlyArray<{ id: string; patch: Partial<Pick<AskChangesetRowRow, 'status' | 'checks' | 'heldReason' | 'error' | 'undoData' | 'appliedAt' | 'newValue' | 'oldValue' | 'displayOld' | 'displayNew' | 'editedAt'>> }>,
   contentHash?: string,
 ): Promise<void> {
   assertDecider(ctx, found);

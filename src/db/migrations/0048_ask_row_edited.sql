@@ -1,0 +1,1 @@
+ALTER TABLE "ask_changeset_rows" ADD COLUMN "edited_at" timestamp with time zone;

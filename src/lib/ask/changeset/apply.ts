@@ -115,7 +115,7 @@ export async function editChangesetRow(ctx: AuthContext, id: string, rowId: stri
   await updateAskChangesetRows(
     ctx,
     found,
-    updates.map((update) => (update.id === rowId ? { ...update, patch: { ...update.patch, newValue: checked.value } } : update)),
+    updates.map((update) => (update.id === rowId ? { ...update, patch: { ...update.patch, newValue: checked.value, editedAt: now } } : update)),
     changesetHash(edited.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue as JsonValue }))),
   );
 }
