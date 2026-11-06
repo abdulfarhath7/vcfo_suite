@@ -1,23 +1,13 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { setComplianceInstanceWindow } from '@/db/repositories/schedule';
+import { windowFields, withBothDates } from '@/lib/actions/compliance/rules';
 import { publicErrorMessage } from '@/lib/api-error';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'invalid_date');
-
-const bodySchema = z
-  .object({
-    from: isoDate.nullable().optional(),
-    to: isoDate.nullable().optional(),
-  })
-  .refine((d) => Boolean(d.from) === Boolean(d.to), {
-    message: 'window_needs_both_dates',
-    path: ['to'],
-  });
+const bodySchema = withBothDates(windowFields);
 
 /** POST /api/filings/:id/window — set or clear the working window on one compliance instance. */
 export async function POST(request: Request, context: RouteContext) {

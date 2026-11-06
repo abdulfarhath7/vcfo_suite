@@ -3,20 +3,14 @@ import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { complianceErrorStatus, upsertFilingDetails } from '@/db/repositories/client-compliances';
+import { detailDate, filingDetailsFields } from '@/lib/actions/compliance/rules';
 import { publicErrorMessage } from '@/lib/api-error';
 
 type Ctx = { params: Promise<{ id: string }> };
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional();
-const body = z.object({
-  acknowledgementNo: z.string().max(80).nullable().optional(),
-  amountPaid: z.string().regex(/^\d+(\.\d{1,2})?$/).nullable().optional(),
+const body = filingDetailsFields.extend({
   filedBy: z.string().uuid().nullable().optional(),
-  dataReceivedOn: isoDate,
-  preparingSince: isoDate,
-  draftDueOn: isoDate,
-  approvalDueOn: isoDate,
-  approvedOn: isoDate,
+  approvedOn: detailDate,
 });
 
 /** PATCH /api/client/compliances/:id/details — staff set ARN, tax paid, filed by, focus-track dates. */
