@@ -3,8 +3,7 @@ import { z } from 'zod';
 
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { getBatch, updateBatch } from '@/db/repositories/labour-registers';
-import type { AssumptionSet } from '@/lib/labour-registers/cache-key';
+import { assumptionsInput, mergeAssumptions } from '@/lib/actions/labour/flows';
 
 /**
  * Record how a figure was arrived at, where it was not simply read off a sheet.
@@ -20,33 +19,9 @@ import type { AssumptionSet } from '@/lib/labour-registers/cache-key';
  *
  * POST /api/labour-registers/assumptions  { batchId, assumptions }
  */
-const establishmentSchema = z.object({
-  name: z.string().max(200).optional(),
-  address: z.string().max(400).optional(),
-  shiftName: z.string().max(80).optional(),
-  shiftStart: z.string().max(20).optional(),
-  shiftEnd: z.string().max(20).optional(),
-  restInterval: z.string().max(40).optional(),
-  dateOfPayment: z.string().max(20).optional(),
-});
-
 const bodySchema = z.object({
   batchId: z.string().min(1).max(64),
-  assumptions: z.object({
-    fullAttendanceAssumed: z.boolean().optional(),
-    /* The keys the grid understands, not free text. A value outside this set used to be
-       accepted and then silently ignored by the grid, which is how a register came to print
-       `P` on every Sunday under a footnote saying Sundays were off. */
-    weekOff: z.enum(['none', 'sun', 'sat-sun', 'alt-sat-sun']).optional(),
-    holidayList: z.string().max(200).optional(),
-    dateOrder: z.enum(['day-first', 'month-first']).optional(),
-    doubleRateOvertime: z.boolean().optional(),
-    wageRateBasis: z.enum(['monthly', 'daily']).optional(),
-    dailyHours: z.number().min(1).max(24).optional(),
-    /* Whose rules this establishment is under. Decides which registers exist at all. */
-    sphere: z.enum(['state', 'central']).optional(),
-    establishment: establishmentSchema.optional(),
-  }),
+  assumptions: assumptionsInput,
 });
 
 export async function POST(request: Request) {
@@ -56,29 +31,14 @@ export async function POST(request: Request) {
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
 
-  const batch = await getBatch(guard.ctx, body.data.batchId);
-  if (!batch) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-  if (batch.markedReadyAt) {
+  const outcome = await mergeAssumptions(guard.ctx, body.data.batchId, body.data.assumptions);
+  if (outcome.kind === 'not_found') return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  if (outcome.kind === 'closed') {
     return NextResponse.json(
       { error: 'The period is closed. Reopen the inputs to change how a figure was arrived at.' },
       { status: 409 },
     );
   }
 
-  /* Merged, not replaced: the establishment's shift timings and the attendance decision are
-     set on different screens at different times and neither should clear the other. */
-  const current = (batch.assumptions ?? {}) as AssumptionSet & { establishment?: Record<string, string> };
-  const incoming = body.data.assumptions;
-  const merged = {
-    ...current,
-    ...incoming,
-    ...(incoming.establishment
-      ? { establishment: { ...(current.establishment ?? {}), ...incoming.establishment } }
-      : {}),
-  };
-
-  const updated = await updateBatch(guard.ctx, body.data.batchId, { assumptions: merged });
-  if (!updated) return NextResponse.json({ error: 'not_found' }, { status: 404 });
-
-  return NextResponse.json({ batchId: updated.id, assumptions: merged });
+  return NextResponse.json({ batchId: outcome.batchId, assumptions: outcome.merged });
 }
