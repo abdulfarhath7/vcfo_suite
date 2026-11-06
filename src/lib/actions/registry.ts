@@ -13,6 +13,7 @@ const AREA_LOADERS = {
   reminders: () => import('./reminders'),
   documents: () => import('./documents'),
   statuses: () => import('./statuses'),
+  notes: () => import('./notes'),
   checklist: () => import('./checklist'),
   compliance: () => import('./compliance'),
   registrations: () => import('./registrations'),
@@ -40,10 +41,15 @@ export function indexActions(byArea: ReadonlyArray<readonly [string, readonly An
 
 let loading: Promise<Map<string, AnyAction>> | null = null;
 
+/** One area at a time: the schema files import each other, and loading in parallel can see one half read. */
+async function loadAreas(): Promise<Map<string, AnyAction>> {
+  const byArea: Array<readonly [string, AnyAction[]]> = [];
+  for (const [area, load] of Object.entries(AREA_LOADERS)) byArea.push([area, (await load()).actions]);
+  return indexActions(byArea);
+}
+
 function loadIndex(): Promise<Map<string, AnyAction>> {
-  loading ??= Promise.all(
-    Object.entries(AREA_LOADERS).map(async ([area, load]) => [area, (await load()).actions] as const),
-  ).then(indexActions);
+  loading ??= loadAreas();
   return loading;
 }
 

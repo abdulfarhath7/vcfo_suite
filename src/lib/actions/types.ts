@@ -54,6 +54,12 @@ export interface Action<Input = unknown> {
   roles: readonly AppRole[];
   /** Kept loaded for tool search; the rest are deferred. */
   common?: boolean;
+  /** One message can fill the input, with no item id to look up, so the fixed workflow may run it alone. */
+  simple?: boolean;
+  /** Filled only by the data router's rules, so it is never offered to a model as a tool. */
+  routerOnly?: boolean;
+  /** What the person sees while a T0 or T1 action runs. */
+  label?: string;
   examples?: readonly Input[];
   /** Null for T0 and T1, which have nothing to review. Reads only; it never writes. */
   preview(actx: ActionContext, input: Input): Promise<ChangesetDraft | null>;

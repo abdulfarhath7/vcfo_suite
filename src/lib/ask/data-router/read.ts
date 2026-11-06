@@ -189,7 +189,7 @@ export function instructionOf(message: string): string {
 
 const compareForm = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '');
 
-const ID_DOC_TEXT = /permanent account number card|income tax department|government of india[\s\S]*\b(?:aadhaar|male|female)\b|unique identification authority|\baadhaar\b[\s\S]*\byour\b|republic of india[\s\S]*passport|\bpassport no\b|election commission of india|driving licen[cs]e/i;
+export const ID_DOC_TEXT = /permanent account number card|income tax department|government of india[\s\S]*\b(?:aadhaar|male|female)\b|unique identification authority|\baadhaar\b[\s\S]*\byour\b|republic of india[\s\S]*passport|\bpassport no\b|election commission of india|driving licen[cs]e/i;
 
 interface ModelReadDeps {
   provider: () => Promise<LlmProvider>;

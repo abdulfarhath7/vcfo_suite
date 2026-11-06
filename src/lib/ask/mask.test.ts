@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { maskIdentityNumbers } from './mask';
 
 describe('maskIdentityNumbers', () => {
+  it('leaves a record id whole, though parts of one look like a passport or an Aadhaar', () => {
+    const id = 'a1234567-2345-6789-0123-123456789012';
+    const masked = maskIdentityNumbers(`task ${id} and PAN ABCDE1234F`);
+    expect(masked).toContain(id);
+    expect(masked).not.toContain('ABCDE1234F');
+  });
+
   it('masks PAN, Aadhaar, passport and DIN, keeping the last four', () => {
     expect(maskIdentityNumbers('PAN ABCDE1234F')).toBe('PAN XXXXXX234F');
     expect(maskIdentityNumbers('Aadhaar 2345 6789 0123')).toBe('Aadhaar XXXXXXXX0123');

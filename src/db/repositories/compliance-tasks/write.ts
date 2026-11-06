@@ -9,6 +9,7 @@ import { queueIndexRefresh } from '@/lib/ask/index-cards/queue';
 import { queueTaskCompleted } from '@/lib/compliance-tasks/events';
 import {
   STAGE_LABEL,
+  LEAD_STAGES,
   periodLabelFor,
   repeatsOfFrequency,
   type Repeats,
@@ -126,8 +127,6 @@ export async function createTask(ctx: AuthContext, input: CreateTaskInput): Prom
   return buildTaskDetail(ctx, row, access.row.companyName);
 }
 
-/** Stages a lead may set. Completed and Not applicable are the manager's call (3.5). */
-const LEAD_STAGES = new Set<Stage>(['not-started', 'ready', 'in-progress', 'waiting', 'review', 'rework']);
 
 /** 3.3: move a task to a stage. `review` is the submit. */
 export async function changeTaskStage(ctx: AuthContext, taskId: string, stage: Stage): Promise<TaskDetailDto> {

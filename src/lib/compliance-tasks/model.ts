@@ -4,7 +4,7 @@
  * argument. Dates are 'YYYY-MM-DD' strings in India time, compared as UTC midnights.
  */
 
-const STAGES = [
+export const STAGES = [
   'not-started',
   'ready',
   'in-progress',
@@ -15,6 +15,9 @@ const STAGES = [
   'not-applicable',
 ] as const;
 export type Stage = (typeof STAGES)[number];
+
+/** Stages a lead may set. Completed and Not applicable are the manager's call (3.5). */
+export const LEAD_STAGES: ReadonlySet<Stage> = new Set<Stage>(['not-started', 'ready', 'in-progress', 'waiting', 'review', 'rework']);
 
 export const STAGE_LABEL: Record<Stage, string> = {
   'not-started': 'Not started',

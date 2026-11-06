@@ -16,9 +16,18 @@ const PATTERNS: readonly RegExp[] = [
 
 const DIN_IN_CONTEXT = /\b(DIN[\s:#-]*)(\d{8})\b/gi;
 
+/** A record id is never an identity number, though parts of one can look like a passport or an Aadhaar. */
+const RECORD_ID = /(\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b)/i;
+
 export function maskIdentityNumbers(text: string): string {
-  const masked = PATTERNS.reduce((out, pattern) => out.replace(pattern, lastFour), text);
-  return masked.replace(DIN_IN_CONTEXT, (_all, label: string, digits: string) => `${label}${lastFour(digits)}`);
+  return text
+    .split(RECORD_ID)
+    .map((part, index) => {
+      if (index % 2 === 1) return part;
+      const masked = PATTERNS.reduce((out, pattern) => out.replace(pattern, lastFour), part);
+      return masked.replace(DIN_IN_CONTEXT, (_all, label: string, digits: string) => `${label}${lastFour(digits)}`);
+    })
+    .join('');
 }
 
 /** The whole of one identity value, for a field already known to hold one. */

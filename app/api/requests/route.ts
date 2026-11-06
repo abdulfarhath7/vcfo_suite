@@ -1,11 +1,8 @@
 import { publicErrorMessage } from '@/lib/api-error';
-import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
+import { createAndNotifyDocumentRequest } from '@/lib/requests/create-document-request';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import {
-  createDocumentRequest,
-  listDocumentRequests,
-} from '@/db/repositories/document-requests';
+import { listDocumentRequests } from '@/db/repositories/document-requests';
 
 /** GET /api/requests */
 export async function GET() {
@@ -44,20 +41,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'engagementId_and_label_required' }, { status: 400 });
   }
   try {
-    const docRequest = await createDocumentRequest(guard.ctx, {
+    const { request: docRequest, email } = await createAndNotifyDocumentRequest(guard.ctx, {
       engagementId: body.engagementId,
       taskId: body.taskId,
-      label: body.label.trim(),
+      label: body.label,
       message: body.message,
       dueAt: body.dueAt,
-    });
-    const email = await notifyEngagementEventSoon({
-      engagementId: body.engagementId,
-      itemId: body.taskId?.trim() || 'document-request',
-      event: 'request_created',
-      note: body.message,
-      requestLabel: body.label.trim(),
-      actorUserId: guard.ctx.userId,
     });
     return NextResponse.json({ request: docRequest, email }, { status: 201 });
   } catch (err) {
