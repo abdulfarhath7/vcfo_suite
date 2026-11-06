@@ -423,3 +423,31 @@ Phase 5, 6 November:
 - The loop's live checks go through vitest and the browser test, because a script under `--conditions=react-server`
   cannot load the registry.
 
+
+## Where the ops pack left this plan
+
+Phase 7 pack for board meetings, receivables and labour registers, 6 November: 41 actions, in
+`src/lib/actions/{board-meetings,receivables,labour}/`.
+
+- A receivables sheet is on no project, so its actions ignore the run's lock and their cards carry a null
+  `engagementId`. The repository's scope, the sheet's own manager and the firm-wide admins, is the guard, and the sheet's
+  change log is the audit. `handleWork` still locks a client first, so a receivables request is asked "Which project is
+  this for?" and the answer means nothing. That needs a firm-wide flag on an action and a branch in `work.ts`, which this
+  pack could not touch. A run that mixes a task row and a receivables row on one card fails the task row safely.
+- No payment action exists. `markReceived` and `decideCredit` record money that already arrived, and the card says so.
+  The pick's system prompt says no tool fits payments, so a live model may refuse "mark this paid". That is untested.
+- Code names every recipient. An invoice's partner, a resolution's signers (all current directors) and a meeting's
+  recipients are not in any input. `sendSummary` takes a ready-made list only, and its card stores who was on the list, so
+  a card accepted days later refuses if the list has changed.
+- `labour.markReady` is T3, and accepting the card is the person's own statement of accuracy. It enforces `canClose` from
+  the same readiness check the batch screen uses, which the route leaves to the screen's dialog.
+- `simple` went only to `board-meetings.create` and `labour.openBatch`. None of the pack is `common`, to stay inside the
+  strict-tool limit.
+- Each area turns repository codes into sentences locally, because `REFUSAL_COPY` in `shared.ts` is outside the pack.
+- The routes for approve, cancel and remind on a meeting, send for signature, receipts, partner replies, the reminder
+  desk, send now, the summary, assumptions and generate now call shared functions in these folders.
+- Left out on purpose: uploads that need a file (minutes, signed copies, bank statements, FIRAs, labour uploads and
+  mapping), director records (identity numbers, DIR-12), share links and partner logins (tokens and credentials), adding
+  or editing partners (recipient choice), reminder rules and sheet settings, the treasury desk (forwards, alerts, rates),
+  attestation (a signed statutory record), the firm's verification and code-rule decisions, downloads and exports, and
+  developer routes.
