@@ -486,3 +486,15 @@ Phase 7 pack for board meetings, receivables and labour registers, 6 November: 4
   or editing partners (recipient choice), reminder rules and sheet settings, the treasury desk (forwards, alerts, rates),
   attestation (a signed statutory record), the firm's verification and code-rule decisions, downloads and exports, and
   developer routes.
+
+## Where the pack merge left this plan
+
+- `chatbot-pack-compliance`, `chatbot-pack-ops` and `chatbot-pack-client` are merged with merge commits. No pack added a
+  migration, so the journal still ends at `0047_ask_foundation` with 48 unique entries, `drizzle-kit generate` finds no
+  schema change, and `vcfo_chatbot` has all 48 applied.
+- Three conflicts needed a person's reading. `SYSTEM` in `agent/loop.ts` now names staff, clients and firm-wide runs, and
+  says the other tools exist only where this person may use them. `do/work.ts` keeps the firm-wide skip and passes
+  `ownCompany` to the lock. The notes keep both sides.
+- `actions/registry.test.ts` pins the count of each area and checks that every area folder and every written action name is
+  registered. `agent/tools.test.ts` pins what each role sees, area by area, the lead-only and intern-only names, and that
+  only receivables are firm-wide.
