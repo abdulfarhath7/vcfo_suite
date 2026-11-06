@@ -147,9 +147,10 @@ describe('handleDoWork', () => {
     expect(updateRun.mock.calls.at(-1)![2].status).toBe('cancelled');
   });
 
-  it('gives prose that names no fact back to the plain line, at no cost', async () => {
+  it('gives prose no action fits back to the plain line, after one small-model look', async () => {
     expect(await run('Send a reminder to the team please')).toBeNull();
-    expect(modelCalls).toHaveLength(0);
+    expect(modelCalls).toHaveLength(1);
+    expect(modelCalls[0]!.model).toBe('claude-haiku-5-5');
     expect(createRun).not.toHaveBeenCalled();
   });
 

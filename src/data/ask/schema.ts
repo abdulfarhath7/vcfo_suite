@@ -330,6 +330,8 @@ export const answerEnvelopeSchema = z.object({
   /** The review card this answer carries, and the fixed workflow or agent run behind it. */
   changesetId: z.string().uuid().optional(),
   runId: z.string().uuid().optional(),
+  /** The run behind this answer goes on after it, so the chat shows its progress. */
+  runLive: z.boolean().optional(),
 });
 export type AnswerEnvelope = z.infer<typeof answerEnvelopeSchema>;
 

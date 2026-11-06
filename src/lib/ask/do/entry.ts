@@ -4,14 +4,10 @@ import { randomUUID } from 'node:crypto';
 import type { AuthContext } from '@/auth/guards';
 import type { AnswerEnvelope, AskShell } from '@/data/ask/schema';
 import { getOwnAskAttachments, createAskAttachment, updateOwnAskAttachment, type AskAttachmentRow } from '@/db/repositories/ask-attachments';
-import { createAskChangeset } from '@/db/repositories/ask-changesets';
-import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
 import { checklistStateFromRow, getEngagementBySlug, getEngagementById, listEngagements } from '@/db/repositories/engagements';
-import { createNotificationsForUsers } from '@/db/repositories/notifications';
-import { appendAskRunStep, createAskRun, findWaitingAskRun, lockAskRun, updateAskRun } from '@/db/repositories/ask-runs';
+import { appendAskRunStep, createAskRun, findWaitingAskRun, lockAskRun, updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
 import { systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { checklist } from '@/data/checklist';
-import { changesetHash } from '@/lib/ask/changeset/hash';
 import type { JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { catalogSynonyms } from '@/lib/ask/data-router/candidates';
@@ -27,13 +23,16 @@ import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
 import { checkAskRateLimit } from '@/lib/ask/rate-limit';
 import { limitAnswer, REFUSAL_COPY } from '@/lib/ask/refusals';
 import { getObjectBuffer, putObject } from '@/storage/s3';
+import { createReviewCard } from './card';
+import { handleWork, type WorkState } from './work';
 
 /**
- * The Do engine's way in. Phase 4 has one fixed workflow, the data router: read a file or a paste,
- * find the place for each value, run the screen's rules, and put a review card in the chat. It is
- * not an agent loop. Each step is code except the two small-model calls, which return strict schemas
- * and can touch nothing. A question the workflow cannot settle is asked in the chat and held in a
- * run row, so the next message can finish it.
+ * The Do engine's way in. A file, a labelled paste or a message of facts goes to the data router:
+ * read it, find the place for each value, run the screen's rules, and put a review card in the chat.
+ * Each step is code except the two small-model calls, which return strict schemas and can touch
+ * nothing. Work asked for in words goes to `handleWork`, which uses the same card and starts an agent
+ * run only for open-ended work. A question either one cannot settle is asked in the chat and held in
+ * a run row, so the next message can finish it.
  */
 
 export type DoEvent = { type: 'progress'; runId: string; label: string } | { type: 'run'; runId: string; status: string };
@@ -41,6 +40,9 @@ export type DoEvent = { type: 'progress'; runId: string; label: string } | { typ
 export interface DoWorkResult {
   answer: AnswerEnvelope;
   metered: MeteredProvider | null;
+  path?: 'fixed_workflow' | 'agent_run';
+  /** Runs once the answer is stored, so a run can point back at its message. */
+  start?: (messageId: string | null) => Promise<void>;
 }
 
 export interface DoWorkRequest {
@@ -52,6 +54,7 @@ export interface DoWorkRequest {
 type EngagementOption = { id: string; slug: string | null; companyName: string };
 
 interface PendingState {
+  mode?: undefined;
   attachmentIds: string[];
   instruction: string;
   options: EngagementOption[];
@@ -59,7 +62,6 @@ interface PendingState {
   mismatch: { engagementId: string; company: string } | null;
 }
 
-const CARD_DAYS = 7;
 const MIN_SYNONYM_LENGTH = 4;
 export const STORED_USER_TEXT_MAX = 1_000;
 
@@ -95,7 +97,7 @@ export async function pendingDoRun(ctx: AuthContext, conversationId: string | nu
   if (!conversationId || !message) return null;
   const run = await findWaitingAskRun(ctx, conversationId, now);
   if (!run) return null;
-  const state = run.state as unknown as PendingState;
+  const state = run.state as unknown as PendingState | WorkState;
   const named = companiesNamed(message, state.options);
   if (CANCEL.test(message) || CONFIRM.test(message) || named.length > 0) return { run, state };
   return null;
@@ -118,21 +120,18 @@ export async function handleDoWork(
   request: DoWorkRequest,
   message: string,
   emit: (event: DoEvent) => void,
-  context: { conversationId: string | null; now: Date; pending: Awaited<ReturnType<typeof pendingDoRun>> },
+  context: { conversationId: string | null; now: Date; pending: Awaited<ReturnType<typeof pendingDoRun>>; metered?: MeteredProvider | null },
 ): Promise<DoWorkResult | null> {
   const { shell } = request;
   if (shell === 'client') return { answer: limitAnswer(shell, 'doWork'), metered: null };
   const flags = askFlags();
   if (flags.killedPaths.has('fixed_workflow') || flags.killedTiers.has('T2')) return { answer: limitAnswer(shell, 'pathStopped'), metered: null };
-  const { conversationId, now, pending } = context;
+  const { conversationId, now } = context;
   const attachmentIds = request.attachmentIds ?? [];
-
-  // Prose the router sent here that names no fact goes back to the plain line, at no cost.
-  if (!pending && attachmentIds.length === 0 && !isDataMessage(message) && !mayHoldValues(message)) return null;
 
   const config = askConfig();
   const budgets = askBudgets();
-  let metered: MeteredProvider | null = null;
+  let metered: MeteredProvider | null = context.metered ?? null;
   const provider = async () => {
     if (metered) return metered;
     if ((await systemTodayTokenTotal(now)) >= budgets.dailyTokens) throw new ReadRefused(REFUSAL_COPY.budgetReached);
@@ -143,6 +142,31 @@ export async function handleDoWork(
     return metered;
   };
   const deps = { provider, model: config.models.extract, idDocReading: flags.idDocReading };
+
+  // Work asked for in words comes first; a message of facts carries on to the data router below.
+  const waiting = context.pending;
+  const workReply = waiting?.state.mode === 'work' ? { run: waiting.run, state: waiting.state as WorkState } : null;
+  if (workReply || (!waiting && attachmentIds.length === 0 && !isDataMessage(message))) {
+    if (workReply && CANCEL.test(message)) {
+      await updateAskRun(ctx, workReply.run.id, { status: 'cancelled', finishedAt: new Date() });
+      return { answer: line('All right, I have left this as it is. Nothing was saved.', { runId: workReply.run.id }), metered };
+    }
+    const named = workReply ? companiesNamed(message, workReply.state.options)[0] : undefined;
+    if (workReply && !named) return { answer: line('Please tell me which project this is for.', { runId: workReply.run.id }), metered };
+    const outcome = await handleWork(ctx, request, {
+      message: workReply ? workReply.state.instruction : message,
+      onScreen: await pageContextLine(ctx, request.page),
+      conversationId,
+      now,
+      engagements: async () => (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug, companyName: e.companyName })),
+      provider,
+      resumed: workReply ? { run: workReply.run, pick: workReply.state.pick, engagement: named! } : undefined,
+    });
+    if (outcome.kind === 'answer') return { answer: outcome.answer, metered, path: outcome.path, start: outcome.start };
+    // Prose that names no fact goes back to the plain line.
+    if (outcome.kind === 'none' || !mayHoldValues(message)) return null;
+  }
+  const pending = waiting as { run: AskRunRow; state: PendingState } | null;
 
   const run = pending?.run ?? (await createAskRun(ctx, { conversationId, workflow: 'data_router', goal: instructionOf(message) || (attachmentIds.length > 0 ? `${attachmentIds.length} attached file(s)` : 'Pasted details'), budgetTokens: budgets.runMaxTokens }));
   const runId = run.id;
@@ -281,32 +305,8 @@ export async function handleDoWork(
     const nothing = placed.length > 0 ? `Everything here is already saved for ${row.companyName}.` : `I found nothing to save for ${row.companyName}.`;
     return finish(line(`${nothing}${askMore}`));
   }
-  const contentHash = changesetHash(plan.draft.rows.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue })));
-  const changesetId = await createAskChangeset(ctx, {
-    draft: plan.draft,
-    contentHash,
-    conversationId,
-    runId,
-    expiresAt: new Date(now.getTime() + CARD_DAYS * 86_400_000),
-  });
+  const changesetId = await createReviewCard(ctx, plan.draft, { runId, conversationId, companyName: row.companyName, now });
   if (!changesetId) return finish(line('That project is not available.'), 'failed');
-  await appendAskRunStep(ctx, runId, { kind: 'approval', name: 'changeset', status: 'waiting', changesetId, output: { rows: plan.draft.rows.length } });
-
-  const managerRows = plan.draft.rows.filter((r) => r.target.needsManager === true);
-  if (managerRows.length > 0 && ctx.role !== 'manager' && ctx.role !== 'admin' && ctx.role !== 'super_admin') {
-    const managers = await listManagerIdsForEngagement(row.id);
-    await createNotificationsForUsers(
-      managers.map((userId) => ({
-        userId,
-        kind: 'checklist.review' as const,
-        title: `${row.companyName}: values to approve`,
-        body: `${ctx.name} prepared ${managerRows.length} value${managerRows.length === 1 ? '' : 's'} for you to approve.`,
-        engagementId: row.id,
-        companyName: row.companyName,
-        href: `/app/manager/ask?changeset=${changesetId}`,
-      })),
-    ).catch((error) => console.warn('[ask-vcfo] manager notice failed', error));
-  }
 
   const count = plan.draft.rows.length;
   const held = plan.draft.rows.filter((r) => r.heldReason).length;

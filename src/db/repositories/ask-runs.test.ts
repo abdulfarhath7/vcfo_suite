@@ -6,6 +6,7 @@ import type { AuthContext } from '@/auth/guards';
 /** A run belongs to its person, and no stored trace holds an identity number. */
 
 let lastWhere: SQL | undefined;
+let firstWhere: SQL | undefined;
 let inserted: unknown;
 const chain = () => {
   const c: Record<string, unknown> = {
@@ -25,6 +26,7 @@ const chain = () => {
     },
     where: (w: SQL) => {
       lastWhere = w;
+      firstWhere ??= w;
       return c;
     },
     then: (res: (v: unknown) => unknown) => Promise.resolve([{ id: 'r', last: 1 }]).then(res),
@@ -35,7 +37,7 @@ vi.mock('@/db/client', () => ({ db: { select: chain, update: chain, insert: chai
 const access = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({ assertEngagementAccess: (...a: unknown[]) => access(...a) }));
 
-const { appendAskRunStep, createAskRun, findWaitingAskRun, lockAskRun, updateAskRun } = await import('./ask-runs');
+const { appendAskRunStep, createAskRun, findWaitingAskRun, getOwnAskRun, lockAskRun, updateAskRun } = await import('./ask-runs');
 const { AskForbiddenError } = await import('@/lib/ask/access');
 
 const me: AuthContext = { userId: 'me', email: 'x@x.test', name: 'X', role: 'intern' };
@@ -44,6 +46,7 @@ const params = () => new PgDialect().sqlToQuery(lastWhere!).params;
 beforeEach(() => {
   vi.clearAllMocks();
   lastWhere = undefined;
+  firstWhere = undefined;
   inserted = undefined;
 });
 
@@ -57,11 +60,29 @@ describe('ask runs', () => {
     expect(JSON.stringify(inserted)).not.toContain('ABCDE1234F');
   });
 
+  it('leaves a thinking block exactly as the API sent it, and masks everything around it', async () => {
+    const thinking = { type: 'thinking', thinking: 'PAN ABCDE1234F', signature: 'ABCDE1234F' };
+    await updateAskRun(me, 'r', { state: { messages: [{ role: 'assistant', content: [thinking, { type: 'text', text: 'PAN ABCDE1234F' }] }] } });
+    const saved = JSON.stringify((inserted as { state: unknown }).state);
+    expect(saved).toContain(JSON.stringify(thinking));
+    expect(saved.replace(JSON.stringify(thinking), '')).not.toContain('ABCDE1234F');
+  });
+
   it('scopes every read and write to the person', async () => {
     await findWaitingAskRun(me, 'c', new Date());
     expect(params()).toContain('me');
     await updateAskRun(me, 'r', { status: 'done' });
     expect(params()).toContain('me');
+  });
+
+  it('reads only the person\'s own run', async () => {
+    await getOwnAskRun(me, 'r');
+    expect(new PgDialect().sqlToQuery(firstWhere!).params).toContain('me');
+  });
+
+  it('refuses a person who may not use Ask VCFO any more', async () => {
+    const dev = { ...me, role: 'developer' } as AuthContext;
+    await expect(getOwnAskRun(dev, 'r')).rejects.toBeInstanceOf(AskForbiddenError);
   });
 
   it('refuses to lock a run to an engagement the person cannot reach', async () => {

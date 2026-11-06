@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { systemNoteAskRunDecision } from '@/db/repositories/ask-runs';
 import {
   claimAskChangeset,
   getAskChangesetForDecision,
@@ -14,7 +15,9 @@ import {
 import { responseKey } from '@/lib/actions/checklist/rules';
 import { getAction } from '@/lib/actions/registry';
 import { agentMayExecute, type ActionContext, type AnyAction } from '@/lib/actions/types';
+import { ASK_CHANGESET_DECIDED } from '@/lib/ask/agent/events';
 import { askFlags } from '@/lib/ask/config';
+import { inngest } from '@/jobs/client';
 import { changesetHash } from './hash';
 import type { JsonValue } from './types';
 
@@ -148,7 +151,7 @@ export async function decideChangeset(ctx: AuthContext, id: string, input: { con
     statusById.set(row.id, outcome.patch.status!);
     if (outcome.patch.status === 'applied') {
       result.applied += 1;
-      fields.push(`${String(row.target.stepId)}/${String(row.target.fieldId)}`);
+      fields.push(row.target.stepId ? `${String(row.target.stepId)}/${String(row.target.fieldId)}` : row.action);
     } else if (outcome.patch.status === 'held') result.held += 1;
     else result.failed += 1;
   }
@@ -165,7 +168,20 @@ export async function decideChangeset(ctx: AuthContext, id: string, input: { con
       result: 'ok',
     });
   }
+  await announceDecision(found, status !== 'partly_applied' && status !== 'proposed');
   return result;
+}
+
+/** Ends a fixed workflow's run, or wakes the agent run sleeping on this card. It never undoes a decision. */
+async function announceDecision(found: ChangesetAccess, settled: boolean): Promise<void> {
+  const { id, runId } = found.changeset;
+  if (!runId) return;
+  try {
+    const kind = await systemNoteAskRunDecision(runId, settled);
+    if (kind === 'agent') await inngest.send({ name: ASK_CHANGESET_DECIDED, data: { changesetId: id, runId } });
+  } catch (error) {
+    console.error('[ask-vcfo] decision not announced', error);
+  }
 }
 
 async function loadAction(row: AskChangesetRowRow): Promise<AnyAction | null> {
@@ -199,7 +215,10 @@ export async function rejectChangeset(ctx: AuthContext, id: string): Promise<voi
   const now = new Date();
   const found = await loadOpen(ctx, id, now);
   if (!found.owner && !found.manager) throw new ChangesetRefused('This card is not yours to decide.', 403);
+  const leftOpen = found.rows.filter((r) => OPEN_ROW.has(r.status));
+  await updateAskChangesetRows(ctx, found, leftOpen.map((r) => ({ id: r.id, patch: { status: 'skipped' } })));
   await setAskChangesetStatus(ctx, found, found.rows.some((r) => r.status === 'applied') ? 'partly_applied' : 'rejected', { decidedAt: now });
+  await announceDecision(found, true);
 }
 
 /** Puts back what the card saved, newest first. A value changed since then is left as it is. */

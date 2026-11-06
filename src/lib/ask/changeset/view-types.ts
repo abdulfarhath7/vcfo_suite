@@ -1,4 +1,4 @@
-import type { ChangesetRowStatus, ChangesetStatus, RowCheck } from './types';
+import type { ChangesetRecipient, ChangesetRowStatus, ChangesetStatus, RowCheck } from './types';
 
 /** What the card shows. It never holds a raw value: only the masked `displayOld` and `displayNew`. */
 export interface ChangesetRowView {
@@ -30,6 +30,9 @@ export interface ChangesetView {
   companyName: string;
   engagementId: string | null;
   status: ChangesetStatus;
+  /** T3 goes out or is hard to undo, so the card says "confirm" and names everyone it reaches. */
+  tier: string;
+  recipients: ChangesetRecipient[] | null;
   contentHash: string;
   expiresAt: string;
   canUndo: boolean;

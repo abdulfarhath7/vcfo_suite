@@ -18,7 +18,7 @@ import type { ChangesetDraft, ChangesetStatus } from '@/lib/ask/changeset/types'
  */
 export type AskChangesetRow = typeof askChangesets.$inferSelect;
 export type AskChangesetRowRow = typeof askChangesetRows.$inferSelect;
-export type AskChangesetRowSummary = Omit<AskChangesetRowRow, 'oldValue' | 'newValue' | 'undoData'>;
+export type AskChangesetRowSummary = Omit<AskChangesetRowRow, 'oldValue' | 'newValue' | 'undoData'> & { hasUndo: boolean };
 
 export interface ChangesetAccess {
   changeset: AskChangesetRow;
@@ -95,7 +95,7 @@ export type ChangesetSummary = Omit<ChangesetAccess, 'rows'> & { rows: AskChange
 export async function getAskChangesetSummary(ctx: AuthContext, id: string): Promise<ChangesetSummary | null> {
   const found = await getAskChangesetForDecision(ctx, id);
   if (!found) return null;
-  return { ...found, rows: found.rows.map(({ oldValue: _old, newValue: _new, undoData: _undo, ...row }) => row) };
+  return { ...found, rows: found.rows.map(({ oldValue: _old, newValue: _new, undoData, ...row }) => ({ ...row, hasUndo: undoData != null })) };
 }
 
 /** Writes below take the access just read for this person, so a card cannot be changed by anyone else. */

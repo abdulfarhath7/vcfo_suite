@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
 import { AskAnswerCard } from './AskAnswerCard';
 import { AskChangesetCard } from './AskChangesetCard';
+import { AskRunProgress } from './AskRunProgress';
 import { AskPreviewPicker } from './AskPreviewPicker';
 import { AskHandoffForm } from './AskHandoffForm';
 import { useApp } from '@/context/AppContext';
@@ -69,6 +70,11 @@ export function AskThread() {
             {item.answer.changesetId ? (
               <div className="mt-2">
                 <AskChangesetCard changesetId={item.answer.changesetId} />
+              </div>
+            ) : null}
+            {item.answer.runLive && item.answer.runId ? (
+              <div className="mt-2">
+                <AskRunProgress runId={item.answer.runId} shownLine={item.answer.line} />
               </div>
             ) : null}
           </AnswerRow>

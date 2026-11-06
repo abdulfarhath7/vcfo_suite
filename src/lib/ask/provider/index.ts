@@ -10,6 +10,8 @@ import { anthropicApiKey } from '@/lib/secrets/app-secrets';
  */
 export type LlmMessage = Anthropic.Beta.BetaMessageParam;
 export type LlmTool = Anthropic.Beta.BetaTool;
+/** A request may also carry the server-side tool search, which runs on the API's side. */
+export type LlmRequestTool = LlmTool | Anthropic.Beta.Messages.BetaToolSearchToolBm25_20251119;
 export type LlmSystemBlock = Anthropic.Beta.BetaTextBlockParam;
 type LlmContentBlock = Anthropic.Beta.BetaContentBlock;
 
@@ -17,7 +19,7 @@ export interface LlmRequest {
   model: string;
   system: LlmSystemBlock[];
   messages: LlmMessage[];
-  tools?: LlmTool[];
+  tools?: LlmRequestTool[];
   maxTokens: number;
   /** Only sent when set — models without effort support reject it. */
   effort?: 'low' | 'medium' | 'high';

@@ -17,6 +17,10 @@ const recheck = vi.fn();
 const undo = vi.fn();
 const action = { name: 'checklist.setResponse', tier: 'T2', input: z.object({ stepId: z.string(), fieldId: z.string(), value: z.string() }).passthrough(), recheck, execute, undo };
 const actions: Record<string, unknown> = { 'checklist.setResponse': action };
+const noteDecision = vi.fn(async () => null as string | null);
+const sendEvent = vi.fn(async () => undefined);
+vi.mock('@/db/repositories/ask-runs', () => ({ systemNoteAskRunDecision: (...a: unknown[]) => noteDecision(...(a as [])) }));
+vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => sendEvent(...(a as [])) } }));
 vi.mock('@/lib/actions/registry', () => ({ getAction: async (name: string) => actions[name] ?? null }));
 
 const claim = vi.fn();
@@ -33,7 +37,7 @@ vi.mock('@/db/repositories/ask-changesets', () => ({
 const audit = vi.fn();
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: (...a: unknown[]) => audit(...a) }));
 
-const { ChangesetRefused, decideChangeset, editChangesetRow, undoChangeset } = await import('./apply');
+const { ChangesetRefused, decideChangeset, editChangesetRow, rejectChangeset, undoChangeset } = await import('./apply');
 
 const makeRow = (id: string, patch: Record<string, unknown> = {}) => ({
   id,
@@ -138,6 +142,29 @@ describe('decideChangeset', () => {
     await decideChangeset(manager, 'cs-1', { contentHash: hash, accept: ['a'] });
     expect(execute).toHaveBeenCalledTimes(1);
     expect(execute.mock.calls[0]![0].auth).toBe(manager);
+  });
+
+  it('wakes the agent run behind the card, and never fails the decision if that does not work', async () => {
+    setCard([makeRow('a')]);
+    noteDecision.mockResolvedValueOnce('agent');
+    claim.mockResolvedValue(true);
+    execute.mockResolvedValue({ ok: true, summary: 'done' });
+    recheck.mockResolvedValue({ canApply: true, checks: [], heldReason: null });
+    const hash = (found as { changeset: { contentHash: string } }).changeset.contentHash;
+    await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] });
+    expect(sendEvent).toHaveBeenCalledWith({ name: 'ask/changeset.decided', data: { changesetId: 'cs-1', runId: 'run-1' } });
+    noteDecision.mockRejectedValueOnce(new Error('down'));
+    setCard([makeRow('b')]);
+    const again = (found as { changeset: { contentHash: string } }).changeset.contentHash;
+    await expect(decideChangeset(lead, 'cs-1', { contentHash: again, accept: ['b'] })).resolves.toMatchObject({ applied: 1 });
+  });
+
+  it('wakes the run on a rejection too, and closes the rows left open', async () => {
+    setCard([makeRow('a')]);
+    noteDecision.mockResolvedValueOnce('agent');
+    await rejectChangeset(lead, 'cs-1');
+    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', patch: { status: 'skipped' } }]);
+    expect(sendEvent).toHaveBeenCalledTimes(1);
   });
 
   it('refuses a person who is neither owner nor manager on the card', async () => {

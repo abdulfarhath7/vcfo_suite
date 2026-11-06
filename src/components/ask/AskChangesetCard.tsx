@@ -104,6 +104,13 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
     <section aria-label={card.title} className="rounded-md border border-line bg-surface-raised">
       <header className="border-b border-line px-3 py-2">
         <p className="text-[13px] font-semibold text-ink">{card.title}</p>
+        {card.recipients?.length ? (
+          <p className="mt-0.5 break-words text-[12px] text-ink-muted" data-testid="changeset-recipients">
+            Goes to {card.recipients.map((person) => (person.email ? `${person.name} (${person.email})` : person.name)).join(', ')}
+          </p>
+        ) : card.tier === 'T3' && card.recipients ? (
+          <p className="mt-0.5 text-[12px] text-ink-muted">This cannot be undone once confirmed, except where Undo appears.</p>
+        ) : null}
       </header>
       <ul className="divide-y divide-line">
         {card.rows.map((row) => {
@@ -171,7 +178,7 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
               disabled={chosen.length === 0 || change.isPending}
               onClick={() => change.mutate(() => decideChangeset(card.id, { contentHash: card.contentHash, accept: chosen.map((row) => row.id) }))}
             >
-              Save accepted{chosen.length > 0 ? ` (${chosen.length})` : ''}
+              {card.tier === 'T3' ? 'Confirm' : 'Save accepted'}{chosen.length > 0 ? ` (${chosen.length})` : ''}
             </Button>
             <Button type="button" size="sm" variant="ghost" disabled={change.isPending} onClick={() => change.mutate(() => decideChangeset(card.id, { reject: true }))}>
               Discard

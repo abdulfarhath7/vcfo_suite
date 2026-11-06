@@ -407,10 +407,10 @@ describe('path, usage and limits', () => {
   });
 
   it('asks to do work get a plain line and no generation', async () => {
-    const provider = mockProvider([guard('do_work')]);
+    const provider = mockProvider([guard('do_work'), { model: 'claude-haiku-5-5', content: [{ type: 'text', text: 'No tool fits.' }] as LlmResult['content'], stopReason: 'end_turn', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } }]);
     setAskProviderForTests(provider);
     const { answer } = await run('admin', { shell: 'admin', message: 'Send the reminder' });
-    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls).toHaveLength(2);
     expect(answer?.line).toBe(REFUSAL_COPY.doWork);
   });
 

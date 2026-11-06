@@ -1,4 +1,5 @@
 import type { AnswerDepth, AnswerEnvelope, AskShell, ProjectSnapshot } from '@/data/ask/schema';
+import type { AskRunView } from '@/lib/ask/agent/view';
 import type { ChangesetView } from '@/lib/ask/changeset/view-types';
 
 /** Browser client for /api/ask/*. Every call surfaces a friendly error message. */
@@ -239,4 +240,8 @@ export async function decideChangeset(id: string, body: { contentHash: string; a
 
 export async function undoChangeset(id: string): Promise<ChangesetView> {
   return json(await sendChangeset(`${changesetUrl(id)}/undo`, 'POST', {}), 'Could not undo this.');
+}
+
+export async function undoAskRunStep(runId: string, stepId: string): Promise<AskRunView> {
+  return json(await fetch(`/api/ask/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(stepId)}/undo`, { method: 'POST' }), 'Could not undo this.');
 }

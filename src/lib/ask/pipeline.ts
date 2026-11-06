@@ -263,10 +263,11 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   // The raw message goes there because code needs the values; it is stored only in masked form.
   const pending = shell === 'client' ? null : await pendingDoRun(ctx, conversationId, request.message, now);
   const doWork = async (extra: { guard?: GuardResult; startedAt?: number } = {}) => {
-    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending });
+    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending, metered });
     if (!result) return false;
     metered = result.metered ?? metered;
-    await finish(result.answer, { path: 'fixed_workflow', ...extra });
+    const finished = await finish(result.answer, { path: result.path ?? 'fixed_workflow', ...extra });
+    await result.start?.(finished.messageId);
     return true;
   };
   if (shell !== 'client' && (attachmentIds.length > 0 || pending || (request.message && isDataMessage(request.message)))) {

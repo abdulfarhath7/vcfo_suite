@@ -17,7 +17,7 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
     const field = target.stepId ? fieldOf(target) : null;
     const pageNote = row.source?.page ? `page ${row.source.page}` : '';
     const source =
-      row.source?.kind === 'attachment' ? [row.source.fileName, pageNote].filter(Boolean).join(', ') || 'Attached file' : row.source?.kind === 'paste' ? 'Pasted text' : row.source?.kind === 'message' ? 'Your message' : null;
+      row.source?.kind === 'attachment' ? [row.source.fileName, pageNote].filter(Boolean).join(', ') || 'Attached file' : row.source?.kind === 'paste' ? 'Pasted text' : row.source?.kind === 'message' ? 'Your message' : row.source?.kind === 'record' && row.source.fileName ? `After reading ${row.source.fileName}` : null;
     const open = row.status === 'proposed' || row.status === 'edited' || row.status === 'held' || row.status === 'failed';
     return {
       id: row.id,
@@ -46,9 +46,11 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
     companyName: found.companyName,
     engagementId: changeset.engagementId,
     status: changeset.status as ChangesetStatus,
+    tier: changeset.tier,
+    recipients: changeset.recipients ?? null,
     contentHash: changeset.contentHash,
     expiresAt: changeset.expiresAt.toISOString(),
-    canUndo: (found.owner || changeset.decidedById === ctx.userId) && found.rows.some((row) => row.status === 'applied'),
+    canUndo: (found.owner || changeset.decidedById === ctx.userId) && found.rows.some((row) => row.status === 'applied' && row.hasUndo),
     rows,
   };
 }
