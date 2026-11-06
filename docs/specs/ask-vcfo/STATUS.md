@@ -9,6 +9,9 @@ Verification: `npx tsc --noEmit` 0 errors · vitest 163 files, 1,491 tests ·
 `tests/ask` mock evals 70 · live eval 29 of 29 (`EVAL-LIVE-2026-09-30.md`) ·
 Playwright `e2e/ask-vcfo*.spec.ts` 19 tests.
 
+Phases 8 and 9 of the build plan (2026-11-06, branch `chatbot`) are recorded in `BUILD-PLAN.md` under "Where the final
+track left this plan", and in `docs/context/STATE.md`.
+
 ## Spec items
 
 | Spec item | Status | Where | Reason (Changed / Omitted) |

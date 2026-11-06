@@ -137,6 +137,10 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Ask VCFO phases 8 and 9 on branch `chatbot` need migrations `0047` and `0048_ask_row_edited` on RDS before deploy.
+  `ASK_ASSIST_HANDOFF_ENABLED` stays off until the written CS opinion, and `ASK_PROACTIVE_ENABLED` stays off until the owner
+  turns it on. The proactive job only creates cards and has no path to applying them.
+
 - Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
   before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
   the notice to carry a Teams link.

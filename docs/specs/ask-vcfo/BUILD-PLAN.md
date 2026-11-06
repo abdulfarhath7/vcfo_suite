@@ -498,3 +498,40 @@ Phase 7 pack for board meetings, receivables and labour registers, 6 November: 4
 - `actions/registry.test.ts` pins the count of each area and checks that every area folder and every written action name is
   registered. `agent/tools.test.ts` pins what each role sees, area by area, the lead-only and intern-only names, and that
   only receivables are firm-wide.
+
+## Where the final track left this plan
+
+Phase 8, portal hand-off:
+
+- `filing.prepareRun` needs both `ASK_ASSIST_HANDOFF_ENABLED` and `VCFO_ASSIST_ENABLED`, because the assist-runs route has
+  that rule too. With either off the action is not in the tool list, and a card made earlier is refused at the click.
+- It is T2, and it only stores a `requested` row through `requestAssistRun`. Code works out the form from the item, so the
+  model cannot name one. Filed, not needed and done items, and items with an open run, are refused. Undo works only while
+  the run is still `requested`.
+- The input uses plain `z.object`, not `.strict()`, because a row's input at the click also holds `value`. Plain strips
+  extras, so a credential field sent to the action is dropped, and a test holds that.
+- A message holding a portal login, OTP, DSC PIN or token now stops in the pipeline before any model
+  (`holdsPortalSecret`), and the same values read `[hidden]` wherever text is masked.
+- Not done: the remaining Part B field bindings and a live portal run depend on the other session's uncommitted filing work
+  and on the CS opinion. Nothing here touched the MCA portal.
+
+Phase 9, proactive:
+
+- The job calls no model. Code finds the work, so a quiet night costs nothing and a page's text cannot suggest anything.
+  It does read the same limits: the flag, `fixed_workflow` and T2 in the kill switches, and the daily budget.
+- Each project has one owner: its lead, or its manager when there is no active lead. Managers of a project are also listed
+  with no projects of their own, because a due date change waits on a manager. Several managers may each get that card,
+  and the first to accept decides it.
+- Tonight's proposals are overdue requests and overdue filings waiting on the client (`reminders.sendClient`), files on a
+  step unreviewed for two days (`documents.review`, with a note on the row to open the file first), and due date changes
+  waiting on Watch (`compliance.approveCalendarChange`, new, T2, router-only).
+- One card per project and one per owner for firm-wide work, ten rows a card and ten cards a night, one bell row linking to
+  all of them. A row proposed once stays quiet for 14 days, whatever became of it, so a retried step cannot double a card.
+- Turning down a due date card leaves the change waiting on the Watch screen, because an unused card is not a decision.
+- Migration `0048_ask_row_edited` adds `ask_changeset_rows.edited_at`, because "accepted without an edit" cannot be
+  measured from the row's status. The token page and `scripts/ask-usage-report.ts` show cards per action, chat and
+  overnight apart. Nothing reads those numbers to act.
+- `src/lib/ask/proactive/no-auto-apply.test.ts` reads the source to prove no job, no agent code and no proactive code can reach
+  the code that applies a card. `prepare.test.ts` watches every action's `execute` and `undo` while the job runs.
+- `e2e/ask-proactive.spec.ts` needs a local Inngest dev server, and its header says how to start one. The server must be up
+  first, because Playwright's own `webServer` runs `predev`, which starts Docker for the main checkout's containers.
