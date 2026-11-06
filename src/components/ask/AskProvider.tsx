@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -9,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import type { AnswerDepth, AskShell } from '@/data/ask/schema';
 import { useApp } from '@/context/AppContext';
 import { findEngagementForClientUser } from '@/lib/checklist/checklist-state-key';
@@ -81,6 +83,15 @@ function writeHistory(key: string, list: AskHistoryEntry[]) {
   } catch {
     // Storage blocked: the chat list lasts for this page load only.
   }
+}
+
+/** A link such as a notification's opens its review cards in the chat, on arrival and on a move inside the app. */
+function CardLink({ onOpen }: { onOpen: (changesetIds: readonly string[]) => void }) {
+  const named = useSearchParams().getAll('changeset').join(',');
+  useEffect(() => {
+    if (named) onOpen(named.split(','));
+  }, [named, onOpen]);
+  return null;
 }
 
 export function AskProvider({ children }: { children: ReactNode }) {
@@ -209,14 +220,10 @@ export function AskProvider({ children }: { children: ReactNode }) {
       });
   }, [open, pageOpen, enabled, conversationId, thread.length, key, hKey]);
 
-  // A link such as a manager's notification opens its review cards in the chat.
-  useEffect(() => {
-    if (!enabled) return;
-    const changesetIds = new URLSearchParams(window.location.search).getAll('changeset');
-    if (changesetIds.length === 0) return;
+  const openCards = useCallback((changesetIds: readonly string[]) => {
     setThread((t) => [...t, ...changesetIds.filter((changesetId) => !t.some((item) => item.kind === 'changeset' && item.changesetId === changesetId)).map((changesetId) => ({ id: nextId(), kind: 'changeset' as const, changesetId }))]);
     setOpenState(true);
-  }, [enabled]);
+  }, []);
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
@@ -379,5 +386,14 @@ export function AskProvider({ children }: { children: ReactNode }) {
     [enabled, firmName, features, open, setOpen, toggle, shell, engagementId, preview, setPreview, thread, status, busy, conversationId, ask, showTopic, reset, history, openConversation, pageOpen, handoffDraft, backPill],
   );
 
-  return <AskContext.Provider value={value}>{children}</AskContext.Provider>;
+  return (
+    <AskContext.Provider value={value}>
+      {enabled ? (
+        <Suspense fallback={null}>
+          <CardLink onOpen={openCards} />
+        </Suspense>
+      ) : null}
+      {children}
+    </AskContext.Provider>
+  );
 }
