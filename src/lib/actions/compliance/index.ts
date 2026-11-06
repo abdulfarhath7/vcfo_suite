@@ -8,6 +8,8 @@ import { getReminderSchedule, setReminderSchedule } from '@/db/repositories/comp
 import { getStatutoryDetail, scopedStatutory, statutoryStage, updateStatutory } from '@/db/repositories/compliance-statutory';
 import { deleteChecklistItem, getTask, setChecklistItem } from '@/db/repositories/compliance-tasks';
 import { markFilingFiled, reopenFiling } from '@/db/repositories/filing-status';
+import { listCalendarProposals } from '@/db/repositories/reg-proposals';
+import { decideProposal } from '@/lib/watch/calendar-decision';
 import { createWindowRequest, decideWindowRequest, listWindowRequests, withdrawWindowRequest } from '@/db/repositories/item-window-requests';
 import { setComplianceInstanceWindow } from '@/db/repositories/schedule';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
@@ -503,6 +505,44 @@ const removeTaskLine = defineAction({
     }),
 });
 
+/**
+ * A due date change Watch proposed, on a card the overnight job leaves for a manager, through the same
+ * decision as the Watch screen. A model is never offered it. Turning the card down leaves the change
+ * waiting on that screen, because a card that goes unused is not a decision about the date.
+ */
+const approveCalendarChange = defineAction({
+  name: 'compliance.approveCalendarChange',
+  description: 'Approve a due date change that Watch proposed. It moves the filing for every client it applies to. A manager approves it on a card.',
+  input: z.object({ proposalId: z.string().uuid() }),
+  tier: 'T2',
+  roles: MANAGING_ROLES,
+  routerOnly: true,
+  preview: async (actx, input) => {
+    const view = (await listCalendarProposals(actx.auth)).find((proposal) => proposal.id === input.proposalId);
+    if (view?.status !== 'proposed') throw new ActionRefused('This due date change has already been decided.');
+    const clients = view.total === 1 ? '1 client' : `${view.total} clients`;
+    return {
+      ...recordDraft(
+        { ...actx, engagementId: 'firm' },
+        {
+          action: 'compliance.approveCalendarChange',
+          tier: 'T2',
+          title: 'Approve a due date change',
+          label: `${view.obligationName}, ${view.period}`,
+          target: input,
+          displayOld: `Due ${view.oldDueDate}`,
+          displayNew: `Due ${view.newDueDate}, for ${clients}. From: ${view.updateTitle}`,
+        },
+      ),
+      engagementId: null,
+    };
+  },
+  execute: async (actx, input) => {
+    const decided = await decideProposal(actx.auth, input.proposalId, 'approved');
+    return decided ? { ok: true, summary: `The due date moved on ${decided.moved.length} filing${decided.moved.length === 1 ? '' : 's'}.` } : { ok: false, error: 'This due date change has already been decided.' };
+  },
+});
+
 export const actions: AnyAction[] = [
   getFiling,
   remindMe,
@@ -516,6 +556,7 @@ export const actions: AnyAction[] = [
   listDateChanges,
   requestDateChange,
   decideDateChange,
+  approveCalendarChange,
   tickTaskLine,
   removeTaskLine,
   ...subjectActions(FILING),

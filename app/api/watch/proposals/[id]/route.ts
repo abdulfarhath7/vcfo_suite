@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { publicErrorMessage } from '@/lib/api-error';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { obligationName } from '@/lib/watch/affected';
 import { decideProposal } from '@/lib/watch/calendar-decision';
 import { watchReviewer } from '../../_guard';
 
@@ -20,13 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const decided = await decideProposal(guard.ctx, id, body.data.decision);
     if (!decided) return NextResponse.json({ error: 'already_decided' }, { status: 409 });
-    const { proposal, moved } = decided;
-    await recordAuditEvent(guard.ctx, {
-      action: `watch.calendar_${body.data.decision}`,
-      summary: `${body.data.decision === 'approved' ? 'Approved' : 'Rejected'} a due date change: ${obligationName(proposal.obligationId)}, ${proposal.period}, to ${proposal.newDueDate}`,
-      metadata: { proposalId: id, updateId: proposal.updateId, oldDueDate: proposal.oldDueDate, newDueDate: proposal.newDueDate, moved: moved.length },
-    });
-    return NextResponse.json({ moved: moved.length });
+    return NextResponse.json({ moved: decided.moved.length });
   } catch (err) {
     return NextResponse.json({ error: publicErrorMessage(err, 'decision_failed') }, { status: 500 });
   }

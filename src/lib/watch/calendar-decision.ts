@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
+import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { decideCalendarProposal, systemMovedAudience, type DecidedProposal } from '@/db/repositories/reg-proposals';
 import { systemWatchPeople } from '@/db/repositories/reg-updates';
@@ -47,6 +48,13 @@ async function tellOwners(ctx: AuthContext, { proposal, moved }: DecidedProposal
 
 export async function decideProposal(ctx: AuthContext, id: string, decision: 'approved' | 'rejected'): Promise<DecidedProposal | null> {
   const decided = await decideCalendarProposal(ctx, id, decision);
-  if (decided?.moved.length) await tellOwners(ctx, decided).catch((err) => console.error('[watch] could not tell owners about a moved date', err));
+  if (!decided) return null;
+  const { proposal, moved } = decided;
+  if (moved.length) await tellOwners(ctx, decided).catch((err) => console.error('[watch] could not tell owners about a moved date', err));
+  await recordAuditEvent(ctx, {
+    action: `watch.calendar_${decision}`,
+    summary: `${decision === 'approved' ? 'Approved' : 'Rejected'} a due date change: ${obligationName(proposal.obligationId)}, ${proposal.period}, to ${proposal.newDueDate}`,
+    metadata: { proposalId: id, updateId: proposal.updateId, oldDueDate: proposal.oldDueDate, newDueDate: proposal.newDueDate, moved: moved.length },
+  });
   return decided;
 }

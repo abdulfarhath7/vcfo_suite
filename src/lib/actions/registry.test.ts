@@ -72,7 +72,7 @@ describe('the whole registry', () => {
       statuses: 3,
       notes: 3,
       checklist: 2,
-      compliance: 19,
+      compliance: 20,
       registrations: 8,
       'board-meetings': 13,
       receivables: 21,

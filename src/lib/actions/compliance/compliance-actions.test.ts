@@ -101,6 +101,12 @@ const inputs = {
   reviewSubjectDocument: vi.fn(async () => true),
 };
 vi.mock('@/db/repositories/compliance-inputs', () => inputs);
+const watchRows = {
+  listCalendarProposals: vi.fn(async () => [{ id: ID, status: 'proposed', obligationName: 'GSTR-1', period: 'Oct 2026', oldDueDate: '2026-11-11', newDueDate: '2026-11-13', total: 2, updateTitle: 'Notification 12', clients: [] }] as Array<Record<string, unknown>>),
+};
+vi.mock('@/db/repositories/reg-proposals', async (load) => ({ ...(await load<object>()), ...watchRows }));
+const decideProposal = vi.fn();
+vi.mock('@/lib/watch/calendar-decision', () => ({ decideProposal }));
 const ticks = { listChecklistTicks: vi.fn(async () => [{ itemKey: 'books', checkedBy: 'A', checkedAt: 'x' }]), setChecklistTick: vi.fn(async () => true) };
 vi.mock('@/db/repositories/compliance-checklist-checks', () => ticks);
 
@@ -169,7 +175,8 @@ beforeEach(() => {
 
 describe('the filing actions', () => {
   it('holds exactly the actions in the table, with that tier and those roles', () => {
-    expect(actions.map((a) => a.name).sort()).toEqual(TABLE.map(([name]) => name).sort());
+    // The due date change sits on no client, so it has its own tests at the end instead of a row here.
+    expect(actions.map((a) => a.name).filter((name) => name !== 'compliance.approveCalendarChange').sort()).toEqual(TABLE.map(([name]) => name).sort());
     for (const [name, tier, roles] of TABLE) {
       expect(byName(name).tier, name).toBe(tier);
       expect([...byName(name).roles].sort(), name).toEqual([...roles].sort());
@@ -411,5 +418,37 @@ describe('the filing actions', () => {
     expect(outcome).toMatchObject({ ok: true });
     expect((outcome as { undo?: unknown }).undo).toBeUndefined();
     expect(ticks.setChecklistTick).not.toHaveBeenCalled();
+  });
+});
+
+describe('approving a due date change Watch proposed', () => {
+  const change = () => actions.find((action) => action.name === 'compliance.approveCalendarChange')!;
+  const firm = () => actx('manager', null);
+
+  it('is a card for a manager only, and the model is never shown it', () => {
+    expect(change()).toMatchObject({ tier: 'T2', routerOnly: true });
+    expect(change().roles).not.toContain('intern');
+    expect(change().roles).not.toContain('client');
+  });
+
+  it('shows the old date, the new date, how many clients and the source, and moves nothing', async () => {
+    decideProposal.mockClear();
+    const draft = await change().preview(firm(), { proposalId: ID });
+    expect(draft).toMatchObject({ engagementId: null, tier: 'T2' });
+    expect(draft!.rows[0]).toMatchObject({ target: { proposalId: ID }, displayOld: 'Due 2026-11-11', displayNew: 'Due 2026-11-13, for 2 clients. From: Notification 12' });
+    expect(decideProposal).not.toHaveBeenCalled();
+  });
+
+  it('refuses a change that has been decided', async () => {
+    watchRows.listCalendarProposals.mockResolvedValueOnce([{ id: ID, status: 'approved' }]);
+    await expect(change().preview(firm(), { proposalId: ID })).rejects.toThrow('already been decided');
+  });
+
+  it('moves the dates only when a person accepts, as that person, the same way the Watch screen does', async () => {
+    decideProposal.mockResolvedValueOnce({ moved: [{}, {}] });
+    expect(await change().execute(firm(), { proposalId: ID })).toEqual({ ok: true, summary: 'The due date moved on 2 filings.' });
+    expect(decideProposal).toHaveBeenCalledWith(firm().auth, ID, 'approved');
+    decideProposal.mockResolvedValueOnce(null);
+    expect(await change().execute(firm(), { proposalId: ID })).toMatchObject({ ok: false });
   });
 });
