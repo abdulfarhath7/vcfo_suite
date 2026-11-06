@@ -1,4 +1,4 @@
-import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
+import { answerDocumentRequest } from '@/lib/requests/answer-document-request';
 import { NextResponse } from 'next/server';
 import { rejectLargeBody } from '@/lib/api/body-limit';
 import { requireAuth } from '@/auth/guards';
@@ -6,7 +6,6 @@ import {
   ClientDocumentsForbiddenError,
   MAX_FILES_PER_REQUEST_UPLOAD,
   undoRequestUpload,
-  uploadRequestFiles,
   UploadRejectedError,
 } from '@/db/repositories/client-documents';
 
@@ -42,24 +41,18 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: `Up to ${MAX_FILES_PER_REQUEST_UPLOAD} files at a time` }, { status: 400 });
   }
   try {
-    const out = await uploadRequestFiles(
+    const answered = await answerDocumentRequest(
       guard.ctx,
       id,
       await Promise.all(
         files.map(async (file) => ({ name: file.name, type: file.type, size: file.size, bytes: Buffer.from(await file.arrayBuffer()) })),
       ),
     );
-    if (!out) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    if (!answered) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    const { out, email } = answered;
     if (out.fileIds.length === 0) {
       return NextResponse.json({ error: out.rejected[0]?.error ?? 'Upload failed', rejected: out.rejected }, { status: 422 });
     }
-    const email = await notifyEngagementEventSoon({
-      engagementId: out.engagementId,
-      itemId: 'document-request',
-      event: 'client_uploaded',
-      requestLabel: out.requestLabel,
-      actorUserId: guard.ctx.userId,
-    }).catch(() => null);
     return NextResponse.json({ ok: true, fileId: out.fileIds[0], files: out.files, rejected: out.rejected, email }, { status: 201 });
   } catch (e) {
     if (e instanceof UploadRejectedError) return NextResponse.json({ error: e.message }, { status: 422 });

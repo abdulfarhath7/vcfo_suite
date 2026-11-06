@@ -88,7 +88,7 @@ vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRec
 vi.mock('@/db/repositories/documents', () => ({ getDocumentById: async () => null, listDocuments: async () => [] }));
 vi.mock('@/db/repositories/board-resolution', () => ({ getBoardResolutionByEngagementId: async () => null }));
 
-const { getClientDocuments, listClientDocumentsZip, uploadRequestFiles, undoRequestUpload } = await import('@/db/repositories/client-documents');
+const { getClientDocuments, listClientDocumentsZip, listOpenDocumentRequests, uploadRequestFiles, undoRequestUpload } = await import('@/db/repositories/client-documents');
 const s3 = await import('@/storage/s3');
 
 const dialect = new PgDialect();
@@ -139,6 +139,25 @@ describe('uploadRequestFiles — tenant scope', () => {
     expect(out?.fileIds).toEqual([FILE]);
     const close = calls.find((c) => c.op === 'update' && c.set?.status === 'fulfilled');
     expect(close?.set?.closedAt).toBeInstanceOf(Date);
+  });
+});
+
+describe('listOpenDocumentRequests — tenant scope', () => {
+  it('reads nothing for an engagement that is not the client\'s own', async () => {
+    expect(await listOpenDocumentRequests(ctx('client'), OTHER_REQUEST)).toEqual([]);
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each(['admin', 'manager', 'intern'] as const)('%s is refused', async (role) => {
+    await expect(listOpenDocumentRequests(ctx(role), OWN)).rejects.toBeTruthy();
+    expect(calls).toHaveLength(0);
+  });
+
+  it('lists only open requests on the client\'s own engagement', async () => {
+    results = [[{ id: OTHER_REQUEST, title: 'Electricity bill', dueOn: null, note: null }]];
+    expect(await listOpenDocumentRequests(ctx('client'), OWN)).toHaveLength(1);
+    const q = dialect.sqlToQuery(calls[0]!.where!);
+    expect(q.params).toEqual(expect.arrayContaining([OWN, 'pending']));
   });
 });
 
