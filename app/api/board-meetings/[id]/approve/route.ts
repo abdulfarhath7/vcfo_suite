@@ -1,7 +1,7 @@
-import { after, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
-import { approveMeeting, getMeeting, systemMeetingBundle, systemMeetingPeople } from '@/db/repositories/board-meetings';
-import { sendNotice } from '@/lib/board-meetings/send';
+import { getMeeting } from '@/db/repositories/board-meetings';
+import { approveAndSendNotice } from '@/lib/actions/board-meetings/flows';
 import { meetingError, type RouteContext } from '../../_respond';
 
 /**
@@ -19,15 +19,7 @@ export async function POST(_request: Request, context: RouteContext) {
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const { id } = await context.params;
   try {
-    const approved = await approveMeeting(guard.ctx, id);
-    const bundle = await systemMeetingBundle(approved.id);
-    const team = bundle ? await systemMeetingPeople(bundle.engagement) : null;
-    const opts = {
-      leadId: team?.lead?.id ?? null,
-      notifyIds: [...new Set([team?.lead?.id, team?.manager?.id, guard.ctx.userId].filter((x): x is string => Boolean(x)))],
-      update: Boolean(approved.rescheduledFrom) || Boolean(approved.sentAt),
-    };
-    after(() => sendNotice(approved.id, opts).catch((err) => console.error('[board-meetings] notice send failed', approved.id, err)));
+    await approveAndSendNotice(guard.ctx, id);
     return NextResponse.json({ meeting: await getMeeting(guard.ctx, id), queued: true });
   } catch (e) {
     return meetingError(e);

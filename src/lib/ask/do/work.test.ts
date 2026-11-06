@@ -47,6 +47,7 @@ const provider = {
 const tool = (name: string, input: unknown = {}) => [{ type: 'tool_use', id: 't', name, input }] as unknown as LlmResult['content'];
 
 const { handleWork } = await import('./work');
+const { getAction } = await import('@/lib/actions/registry');
 
 const go = (message: string, extra: { ctx?: AuthContext; page?: string; resumed?: Parameters<typeof handleWork>[2]['resumed'] } = {}) =>
   handleWork(extra.ctx ?? manager, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined }, {
@@ -72,7 +73,10 @@ describe('handleWork', () => {
     reply = [{ type: 'text', text: 'I cannot do that here.' }] as LlmResult['content'];
     expect((await go('File the INC-20A on the MCA portal for Acme')).kind).toBe('none');
     expect(calls[0]!.model).toBe('claude-haiku-5-5');
-    expect(calls[0]!.tools!.map((t) => t.name).sort()).toEqual(['fill_details', 'notes__add', 'open_ended', 'requests__create', 'tasks__create']);
+    const names = calls[0]!.tools!.map((t) => t.name);
+    expect(names).toEqual(expect.arrayContaining(['fill_details', 'notes__add', 'open_ended', 'requests__create', 'tasks__create']));
+    const actionNames = names.filter((name) => name !== 'fill_details' && name !== 'open_ended');
+    for (const action of await Promise.all(actionNames.map((name) => getAction(name.replace('__', '.'))))) expect(action?.simple).toBe(true);
     expect(createRun).not.toHaveBeenCalled();
   });
 

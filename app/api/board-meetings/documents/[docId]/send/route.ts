@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
-import { getMeeting, markSentForSignature, systemMeetingBundle, systemMeetingPeople } from '@/db/repositories/board-meetings';
-import { sendForSignature } from '@/lib/board-meetings/send';
+import { getMeeting } from '@/db/repositories/board-meetings';
+import { sendDocumentForSignature } from '@/lib/actions/board-meetings/flows';
 import { meetingError, type DocContext } from '../../../_respond';
 
 /**
@@ -14,11 +14,8 @@ export async function POST(request: Request, context: DocContext) {
   const { docId } = await context.params;
   const reminder = new URL(request.url).searchParams.get('reminder') === '1';
   try {
-    const { doc } = await markSentForSignature(guard.ctx, docId, reminder);
-    const bundle = await systemMeetingBundle(doc.meetingId);
-    const team = bundle ? await systemMeetingPeople(bundle.engagement) : null;
-    const sent = await sendForSignature(doc.id, { lead: team?.lead ?? { name: guard.ctx.name, email: guard.ctx.email }, reminder });
-    return NextResponse.json({ sent, meeting: await getMeeting(guard.ctx, doc.meetingId) });
+    const { sent, meetingId } = await sendDocumentForSignature(guard.ctx, docId, reminder);
+    return NextResponse.json({ sent, meeting: await getMeeting(guard.ctx, meetingId) });
   } catch (e) {
     return meetingError(e);
   }
