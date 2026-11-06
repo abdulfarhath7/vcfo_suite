@@ -429,14 +429,13 @@ Phase 5, 6 November:
 Phase 7 pack for board meetings, receivables and labour registers, 6 November: 41 actions, in
 `src/lib/actions/{board-meetings,receivables,labour}/`.
 
-- A receivables sheet is on no project, so its actions ignore the run's lock and their cards carry a null
-  `engagementId`. The repository's scope, the sheet's own manager and the firm-wide admins, is the guard, and the sheet's
-  change log is the audit. `handleWork` still locks a client first, so a receivables request is asked "Which project is
-  this for?" and the answer means nothing, which a person with no projects cannot get past. The browser check on 6
-  November saw that question. It needs a firm-wide flag on an action in `types.ts`, a branch in `work.ts` that skips the
-  lock for such an action, and a way to run the agent with no lock. These files belong to the do track, so this pack left
-  them alone. None of this is built. A run that mixes a task row and a receivables row on one card fails the task row
-  safely.
+- A receivables sheet is on no project, so its actions are marked `firmWide`. A request for one skips the client lock:
+  `pick.ts` offers a `receivables_work` way out, `work.ts` takes no lock, and a run with no lock sees only firm-wide
+  tools. The repository's scope, the sheet's own manager and the firm-wide admins, is the guard, and the sheet's change
+  log is the audit. A card with no project stays with the person who made it. A locked run can still reach these tools,
+  and a card mixing the two carries the project. This went beyond the pack's folders, as the smallest seam the ownership
+  rule allows, because the chat could not otherwise reach a sheet: `types.ts`, `work.ts`, `pick.ts`, `loop.ts` and one
+  sentence in `guard.ts`.
 - No payment action exists. `markReceived` and `decideCredit` record money that already arrived, and the card says so.
   A live run on Haiku refused "mark this paid" until `markReceived` became `simple`; it now reaches the card, and "pay the
   vendor invoice" and "transfer" still get no action. A live run on Sonnet refused to pay an invoice or finalise a
@@ -451,10 +450,15 @@ Phase 7 pack for board meetings, receivables and labour registers, 6 November: 4
   invoice number, finds the one open invoice with it across the person's sheets, and defaults the amount to what is open
   less TDS; a part payment or a foreign invoice with no amount is asked for the rupees. `labour.openBatch` uses the
   project's one existing state when none is named. None of the pack is `common`, to stay inside the strict-tool limit.
-- Live runs on 6 November found the agent reaches the right card for nearly every request tried, once the descriptions
-  use people's words. Two still miss because the model never searches: "skip today's reminder" and "send back the board
-  meeting notice", which proposed a stage change and a note instead. `OPEN_ENDED` in `pick.ts` and `SYSTEM` in `loop.ts`
-  say "one project" and should name these areas; both belong to the do track.
+- The router sent staff questions about these records to `ops_query`, whose tools cannot read them, so the read actions
+  were out of reach. A sentence in the staff audience now routes them to work. It is staff only, so a client's chat routes
+  as before.
+- Live runs first missed "skip today's reminder" and "send back the board meeting notice", which proposed a stage change
+  and a note, because the model never searched. `SYSTEM` in `loop.ts` and `OPEN_ENDED` in `pick.ts` now name these areas,
+  and both requests reach the right card.
+- `tests/ask/evals/ops-cards.test.ts` puts every write action on a real card on Postgres, on a local `*_eval` copy with
+  everything outward stubbed, and fails if one is missed. With `ASK_EVAL_LIVE` it runs the router, the pick and the loop,
+  accepts each card and lets the run finish.
 - Each area turns repository codes into sentences locally, because `REFUSAL_COPY` in `shared.ts` is outside the pack.
 - The routes for approve, cancel and remind on a meeting, send for signature, receipts, partner replies, the reminder
   desk, send now, the summary, assumptions and generate now call shared functions in these folders.

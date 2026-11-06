@@ -2,10 +2,11 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { login, onLocalDb, openAsk, type DemoRole } from './helpers/login';
 
 /**
- * Two one-step requests from the operations pack, end to end with a live small model: a board meeting
- * and a receipt each become a card, nothing is saved until the person accepts, and the receipt can be
- * undone. It costs a few real tokens, so it runs only with ASK_E2E_LIVE=1 and a model key. Needs a demo
- * database, and no Inngest because a fixed workflow has no run to wake.
+ * The operations pack end to end with live models: a board meeting and a receipt each become a card,
+ * nothing is saved until the person accepts, and the receipt can be undone. Receivables need no project,
+ * so those requests are made from the dashboard. It costs real tokens, so it runs only with
+ * ASK_E2E_LIVE=1 and a model key. It needs a demo database, and the last test needs an Inngest dev
+ * server (see `docs/context/notes/ask-do.md`), because a run wakes through it.
  */
 
 test.describe.configure({ mode: 'serial', timeout: 240_000 });
@@ -54,13 +55,14 @@ test('a project lead schedules a board meeting from chat, and it waits for the c
   await onLocalDb((db) => db.query(`delete from board_meetings m using engagements e where e.id = m.engagement_id and e.slug = 'demo-kestrel-robotics' and m.meeting_date = $1`, [date]));
 });
 
-test('an admin records a receipt by invoice number at phone width, and undoes it', async ({ page }) => {
+test('an admin away from any project records a receipt by invoice number at phone width, and undoes it', async ({ page }) => {
   const [invoice] = await query<{ id: string; invoice_no: string }>(`select id, invoice_no from receivable_invoices where status = 'open' and deleted_at is null and invoice_no is not null order by due_date limit 1`);
   const status = async () => (await query<{ status: string }>('select status from receivable_invoices where id = $1', [invoice!.id]))[0]!.status;
 
-  const panel = await askOn(page, 'admin', '/app/admin/engagements/demo-northwind-analytics', `Mark invoice ${invoice!.invoice_no} as paid in full on 5 November 2026.`);
+  const panel = await askOn(page, 'admin', '/app/admin', `Mark invoice ${invoice!.invoice_no} as paid in full on 5 November 2026.`);
   const card = panel.locator('section[aria-label*="receipt" i]');
   await expect(card).toBeVisible({ timeout: 120_000 });
+  await expect(panel.getByText('Which project is this for?')).toHaveCount(0);
   // The rest happens at phone width, as in the agent run spec: the card fits and still works.
   await page.setViewportSize({ width: 375, height: 812 });
   await card.scrollIntoViewIfNeeded();
@@ -73,4 +75,33 @@ test('an admin records a receipt by invoice number at phone width, and undoes it
   await expect.poll(status, { timeout: 30_000 }).toBe('received');
   await card.getByRole('button', { name: /Undo/ }).click();
   await expect.poll(status, { timeout: 30_000 }).toBe('open');
+});
+
+test('an admin away from any project reads the reminder queue, skips a reminder, and the run finishes after the card', async ({ page }) => {
+  const [reminder] = await query<{ id: string; invoice_no: string }>(
+    `select r.id, i.invoice_no from receivable_reminders r join receivable_invoices i on i.id = r.invoice_id where r.status = 'queued' and i.invoice_no is not null and i.deleted_at is null order by i.due_date limit 1`,
+  );
+  const run = async (word: string) => (await query<{ id: string; status: string; engagement_id: string | null }>(`select id, status, engagement_id from ask_runs where kind = 'agent' and goal like $1 order by created_at desc limit 1`, [`%${word}%`]))[0];
+
+  const panel = await askOn(page, 'admin', '/app/admin', 'Show me the reminder queue on the receivables sheet.');
+  await expect.poll(async () => (await run('reminder queue'))?.status, { timeout: 180_000, intervals: [3_000] }).toBe('done');
+  await expect(panel.getByTestId('run-progress').locator('p').last()).toContainText(/reminder/i, { timeout: 60_000 });
+
+  const composer = panel.getByRole('textbox').first();
+  await composer.fill(`Skip the queued reminder for invoice ${reminder!.invoice_no}.`);
+  await panel.getByRole('button', { name: 'Send' }).first().click();
+  const card = panel.locator('section[aria-label*="reminder" i]');
+  await expect(card).toBeVisible({ timeout: 180_000 });
+  const skipping = (await run(`invoice ${reminder!.invoice_no}`))!;
+  expect(skipping.engagement_id).toBeNull();
+  const status = async () => (await query<{ status: string }>('select status from receivable_reminders where id = $1', [reminder!.id]))[0]!.status;
+  expect(await status()).toBe('queued');
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await card.scrollIntoViewIfNeeded();
+  const box = await card.boundingBox();
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+  await accept(card);
+  await expect.poll(status, { timeout: 30_000 }).toBe('skipped');
+  await expect.poll(async () => (await run(`invoice ${reminder!.invoice_no}`))?.status, { timeout: 180_000, intervals: [3_000] }).toBe('done');
 });
