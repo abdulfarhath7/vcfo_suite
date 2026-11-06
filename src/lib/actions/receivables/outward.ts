@@ -31,7 +31,7 @@ const dueReminders = <Row extends { status: string; invoiceOpen: boolean }>(queu
 
 const publish = defineAction({
   name: 'receivables.publish',
-  description: 'Propose the Update: the draft becomes what the client page shows, and each partner who asked for alerts hears about their changed invoices. Leave cardCheck out; the card fills it. A person confirms it on a card that lists the partners.',
+  description: 'Propose publishing the receivables sheet, the Update: the draft becomes what the client page shows, and each partner who asked for alerts hears about their changed invoices. Leave cardCheck out; the card fills it. A person confirms it on a card that lists the partners.',
   input: z.object({ sheetId, note: z.string().trim().max(500).optional(), cardCheck }),
   tier: 'T3',
   roles: MANAGING_ROLES,
@@ -53,7 +53,7 @@ const publish = defineAction({
 
 const sendReminders = defineAction({
   name: 'receivables.sendRemindersNow',
-  description: 'Propose sending today\'s queued payment reminders on a sheet now instead of at the send hour. Skipped ones stay skipped. Leave cardCheck out; the card fills it. A person confirms it on a card that lists the partners.',
+  description: 'Propose sending today\'s queued payment reminders on a receivables sheet now instead of at the send hour. Skipped ones stay skipped. Leave cardCheck out; the card fills it. A person confirms it on a card that lists the partners.',
   input: z.object({ sheetId, cardCheck }),
   tier: 'T3',
   roles: MANAGING_ROLES,
@@ -76,7 +76,7 @@ const sendReminders = defineAction({
 
 const editQueued = defineAction({
   name: 'receivables.editReminder',
-  description: 'Propose new wording for one of today\'s queued payment reminders, which then goes out on its own at the send hour. Ids come from receivables.reminderQueue. A person confirms it on a card that names the partner.',
+  description: 'Propose new wording for one of today\'s queued payment reminders on the receivables sheet, which then goes out on its own at the send hour. Ids come from receivables.reminderQueue. A person confirms it on a card that names the partner.',
   input: z.object({ sheetId, reminderId: z.string().uuid(), subject: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(5000) }),
   tier: 'T3',
   roles: MANAGING_ROLES,
@@ -104,7 +104,7 @@ const editQueued = defineAction({
 
 const reply = defineAction({
   name: 'receivables.replyToPartner',
-  description: 'Propose a reply from the firm on an invoice\'s notes. A partner with a login gets a short email with a link to it. Leave cardCheck out; the card fills it. A person confirms it on a card that names the partner.',
+  description: 'Propose a reply from the firm on a receivables invoice\'s notes. A partner with a login gets a short email with a link to it. Leave cardCheck out; the card fills it. A person confirms it on a card that names the partner.',
   input: z.object({ invoiceId: z.string().uuid(), text: z.string().trim().min(1).max(2000), cardCheck }),
   tier: 'T3',
   roles: MANAGING_ROLES,

@@ -284,6 +284,28 @@ describe('the receivables actions', () => {
     expect(repo.setReminderSkipped).toHaveBeenLastCalledWith(person('manager'), REMINDER, false);
   });
 
+  it('finds an invoice by its number, and takes the open balance when no amount is said', async () => {
+    const outcome = await applied('receivables.markReceived', { invoiceNo: 'sc/1', paidOn: '2026-11-05' });
+    expect(outcome).toMatchObject({ ok: true, undo: { invoiceId: INVOICE } });
+    expect(repo.markReceived).toHaveBeenCalledWith(person('manager'), INVOICE, { paidOn: '2026-11-05', amount: 125000 });
+    const withTds = await byName('receivables.markReceived').preview(actx(), { invoiceNo: 'SC/1', paidOn: '2026-11-05', tdsInr: 25000 });
+    expect(withTds!.rows[0]!.target).toMatchObject({ invoiceId: INVOICE, amount: 100000, tdsInr: 25000 });
+  });
+
+  it('refuses a receipt it cannot place, and an amount it would have to guess', async () => {
+    const action = byName('receivables.markReceived');
+    const paidOn = '2026-11-05';
+    await expect(action.preview(actx(), { paidOn })).rejects.toThrow(/which invoice/);
+    await expect(action.preview(actx(), { invoiceNo: 'SC/404', paidOn })).rejects.toThrow(/No open invoice/);
+    await expect(action.preview(actx(), { invoiceId: INVOICE, paidOn, part: true })).rejects.toThrow(/how many rupees/);
+    scopedInvoice.mockResolvedValueOnce({ invoice: { ...invoiceRow, currency: 'USD' }, sheet: { id: SHEET } });
+    await expect(action.preview(actx(), { invoiceId: INVOICE, paidOn })).rejects.toThrow(/how many rupees/);
+    expect(await action.execute(actx(), { invoiceNo: 'SC/1', paidOn })).toEqual({ ok: false, error: expect.stringContaining('which invoice') });
+    repo.listMySheets.mockResolvedValue([{ id: SHEET, name: 'One' }, { id: OTHER_SHEET, name: 'Two' }]);
+    await expect(action.preview(actx(), { invoiceNo: 'SC/1', paidOn })).rejects.toThrow(/More than one/);
+    expect(repo.markReceived).not.toHaveBeenCalled();
+  });
+
   it('confirms a bank credit against the suggested invoices, and refuses one not open', async () => {
     const outcome = await applied('receivables.decideCredit', { creditId: CREDIT, decision: 'confirm' });
     expect(outcome.ok).toBe(true);

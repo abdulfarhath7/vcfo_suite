@@ -205,7 +205,7 @@ const FIELD_LABEL = { meetingDate: 'Date', meetingTime: 'Time', mode: 'Mode', me
 
 const edit = defineAction({
   name: 'board-meetings.editNotice',
-  description: 'Propose changes to a draft notice: date, time, mode, venue, type, signatory, meeting link, or agenda items to add or remove (keys come from board-meetings.get). A manager can also edit one waiting for approval. Fixed agenda items stay. A person approves it on a card.',
+  description: 'Propose changes to a draft board meeting notice: date, time, mode, venue, type, signatory, meeting link, or agenda items to add or remove (keys come from board-meetings.get). A manager can also edit one waiting for approval. Fixed agenda items stay. A person approves it on a card.',
   input: editInput,
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -258,7 +258,7 @@ const edit = defineAction({
 
 const submit = defineAction({
   name: 'board-meetings.submit',
-  description: 'Propose sending a draft notice to the manager for approval. It is refused while the agenda has blanks, no director has an email, or there is no venue. A person approves it on a card.',
+  description: 'Propose submitting a draft board meeting notice to the manager for approval. It is refused while the agenda has blanks, no director has an email, or there is no venue. A person approves it on a card.',
   input: meetingRef,
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -278,7 +278,7 @@ const submit = defineAction({
 
 const approve = defineAction({
   name: 'board-meetings.approve',
-  description: 'Propose approving a notice that is waiting for approval. VCFO then emails the notice with its Word file and calendar invite to the directors. A manager confirms it on a card that lists them.',
+  description: 'Propose approving a board meeting notice that is waiting for approval. VCFO then emails the notice with its Word file and calendar invite to the directors. A manager confirms it on a card that lists them.',
   input: meetingRef,
   tier: 'T3',
   roles: MANAGING_ROLES,
@@ -298,7 +298,7 @@ const approve = defineAction({
 
 const sendBack = defineAction({
   name: 'board-meetings.sendBack',
-  description: 'Propose returning a notice to the project lead, with a note saying what to change. A manager confirms it on a card.',
+  description: 'Propose sending a board meeting notice back to the project lead, with a note saying what to change. A manager confirms it on a card.',
   input: meetingRef.extend({ note: z.string().trim().min(1).max(2000) }),
   tier: 'T3',
   roles: MANAGING_ROLES,
@@ -318,7 +318,7 @@ const sendBack = defineAction({
 
 const reschedule = defineAction({
   name: 'board-meetings.reschedule',
-  description: 'Propose moving a meeting whose notice is approved or sent. The replies so far are cleared, the new date goes back to the manager, and the directors hear only once it is approved again. A person confirms it on a card.',
+  description: 'Propose rescheduling a board meeting whose notice is approved or sent. The replies so far are cleared, the new date goes back to the manager, and the directors hear only once it is approved again. A person confirms it on a card.',
   input: meetingRef.extend({ meetingDate: isoDate, meetingTime: hhmm, reason: z.string().trim().max(500).optional() }),
   tier: 'T3',
   roles: STAFF_ROLES,
@@ -338,7 +338,7 @@ const reschedule = defineAction({
 
 const cancel = defineAction({
   name: 'board-meetings.cancel',
-  description: 'Propose cancelling a meeting. If its notice went out, the directors get a cancellation email. This cannot be taken back. A person confirms it on a card that lists them.',
+  description: 'Propose cancelling a board meeting. If its notice went out, the directors get a cancellation email. This cannot be taken back. A person confirms it on a card that lists them.',
   input: meetingRef.extend({ reason: z.string().trim().max(500).optional() }),
   tier: 'T3',
   roles: STAFF_ROLES,
@@ -358,7 +358,7 @@ const cancel = defineAction({
 
 const remind = defineAction({
   name: 'board-meetings.remindDirectors',
-  description: 'Propose emailing the directors who have not yet replied to a notice that went out. A person confirms it on a card that lists them.',
+  description: 'Propose reminding the directors who have not yet replied to a board meeting notice that went out. A person confirms it on a card that lists them.',
   input: meetingRef,
   tier: 'T3',
   roles: STAFF_ROLES,
@@ -393,7 +393,7 @@ const resolutionFields = {
 
 const addResolution = defineAction({
   name: 'board-meetings.addResolution',
-  description: 'Propose a draft resolution passed after a meeting, on a meeting that has been held. Every current director signs it. It stays a draft: signing and locking happen on the screen. A person approves it on a card.',
+  description: 'Propose adding a draft resolution passed after a board meeting, on a meeting that has been held. Every current director signs it. It stays a draft: signing and locking happen on the screen. A person approves it on a card.',
   input: meetingRef.extend(resolutionFields),
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -413,7 +413,7 @@ const addResolution = defineAction({
 
 const editResolution = defineAction({
   name: 'board-meetings.editResolution',
-  description: 'Propose new wording for a resolution that is not locked. Changed text must be signed again, so it goes back to draft. A person approves it on a card.',
+  description: 'Propose new wording for a board resolution that is not locked. Changed text must be signed again, so it goes back to draft. A person approves it on a card.',
   input: z.object({ documentId: z.string().uuid(), ...resolutionFields }),
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -434,7 +434,7 @@ const editResolution = defineAction({
 
 const sendForSignature = defineAction({
   name: 'board-meetings.sendForSignature',
-  description: 'Propose emailing minutes or a resolution to the directors who sign it, or a reminder when it has already gone. This does not finalise it: a signed copy is uploaded on the screen. A person confirms it on a card that lists them.',
+  description: 'Propose sending board minutes or a resolution for signature to the directors who sign it, or a reminder when it has already gone. This does not finalise it: a signed copy is uploaded on the screen. A person confirms it on a card that lists them.',
   input: z.object({ documentId: z.string().uuid(), reminder: z.boolean().optional() }),
   tier: 'T3',
   roles: STAFF_ROLES,

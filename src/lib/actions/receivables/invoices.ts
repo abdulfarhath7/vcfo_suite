@@ -10,6 +10,7 @@ import {
   getReminderDesk,
   ignoreCredit,
   listCredits,
+  listMySheets,
   raiseDispute,
   reopenInvoice,
   resolveDispute,
@@ -75,7 +76,7 @@ const add = defineAction({
 
 const edit = defineAction({
   name: 'receivables.updateInvoice',
-  description: 'Propose changes to an invoice on the draft: client name, number, month, due date or amount, and the foreign-currency fields. A person approves it on a card.',
+  description: 'Propose changes to an invoice on the receivables sheet\'s draft: client name, number, month, due date or amount, and the foreign-currency fields. A person approves it on a card.',
   input: invoiceRef.extend({ clientName: z.string().trim().min(1).max(120).optional(), invoiceNo: z.string().trim().max(40).optional(), invoiceMonth: isoDate.optional(), dueDate: isoDate.optional(), amountInr: amount.optional(), ...fxFields }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -103,23 +104,40 @@ const edit = defineAction({
     }),
 });
 
+/** The invoice meant: by id, or by the number on it when one open invoice on the person's sheets carries it. */
+async function openInvoiceId(actx: ActionContext, input: { invoiceId?: string; invoiceNo?: string }): Promise<string> {
+  if (input.invoiceId) return input.invoiceId;
+  const wanted = input.invoiceNo?.toLowerCase();
+  if (!wanted) throw new ActionRefused('Say which invoice this is for.');
+  const sheets = await Promise.all((await listMySheets(actx.auth)).map((sheet) => getManagerSheet(actx.auth, sheet.id)));
+  const found = sheets.flatMap((sheet) => sheet.invoices).filter((invoice) => invoice.status === 'open' && invoice.invoiceNo?.toLowerCase() === wanted);
+  if (found.length === 1) return found[0]!.id;
+  throw new ActionRefused(found.length === 0 ? `No open invoice on your sheets is numbered ${input.invoiceNo}.` : `More than one open invoice is numbered ${input.invoiceNo}. Say the client as well.`);
+}
+
 const received = defineAction({
   name: 'receivables.markReceived',
-  description: 'Propose recording money that has already arrived against an invoice, in full or in part: part true keeps it open with a lower balance. This only records a receipt and moves no money. amount is the rupees credited. A person approves it on a card.',
-  input: invoiceRef.extend({ paidOn: isoDate, amount, part: z.boolean().optional(), receivedFc: amount.optional(), tdsInr: z.number().min(0).max(1e12).optional() }),
+  simple: true,
+  description: 'Propose marking an invoice received or paid: record a payment that has already arrived against it, in full or in part, with its paid-on date. invoiceNo is the number on the invoice as the person says it. Leave amount out when the whole open balance arrived; otherwise amount is the rupees credited. part true keeps the invoice open with a lower balance. This only records a receipt and moves no money. A person approves it on a card.',
+  input: z.object({ invoiceId: z.string().uuid().optional(), invoiceNo: z.string().trim().min(1).max(40).optional(), paidOn: isoDate, amount: amount.optional(), part: z.boolean().optional(), receivedFc: amount.optional(), tdsInr: z.number().min(0).max(1e12).optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
-  examples: [{ invoiceId: '7a1f0c52-3b64-4d2e-9f10-2c5b8e6d4a11', paidOn: '2026-11-05', amount: 125000 }],
-  preview: (actx, input) =>
+  examples: [{ invoiceNo: 'SC/09/03', paidOn: '2026-11-05' }],
+  preview: (actx, { invoiceNo, ...input }) =>
     said(async () => {
-      const { invoice, label, open } = await labelled(actx, input.invoiceId);
+      const invoiceId = await openInvoiceId(actx, { ...input, invoiceNo });
+      const { invoice, label, open } = await labelled(actx, invoiceId);
       if (invoice.status !== 'open') throw new ActionRefused('This invoice is not open.');
-      return sheetCard(actx, { action: 'receivables.markReceived', tier: 'T2', title: 'Record a receipt', label, target: input, displayOld: `Open, ${inr(open)}`, displayNew: `${input.part ? 'Part payment' : 'Received'} ${inr(input.amount)} on ${input.paidOn}${input.tdsInr ? `, TDS ${inr(input.tdsInr)}` : ''}` });
+      if (input.amount === undefined && (input.part || invoice.currency !== 'INR')) throw new ActionRefused('Say how many rupees were credited.');
+      const amount = input.amount ?? open - (input.tdsInr ?? 0);
+      return sheetCard(actx, { action: 'receivables.markReceived', tier: 'T2', title: 'Record a receipt', label, target: { ...input, invoiceId, amount }, displayOld: `Open, ${inr(open)}`, displayNew: `${input.part ? 'Part payment' : 'Received'} ${inr(amount)} on ${input.paidOn}${input.tdsInr ? `, TDS ${inr(input.tdsInr)}` : ''}` });
     }),
-  execute: (actx, { invoiceId, ...receipt }) =>
+  execute: (actx, { invoiceId, invoiceNo: _invoiceNo, amount, ...receipt }) =>
     run(async () => {
+      // A card always carries both: its preview found the invoice and worked out the amount.
+      if (!invoiceId || amount === undefined) return { ok: false, error: 'This card does not say which invoice or how much.' };
       const { label } = await labelled(actx, invoiceId);
-      const invoice = await recordReceipt(actx.auth, invoiceId, receipt);
+      const invoice = await recordReceipt(actx.auth, invoiceId, { ...receipt, amount });
       // A part payment has no undo on the screen either: it is corrected by editing the amount.
       return invoice.status === 'received' ? { ok: true, summary: `${label} is marked received on the draft.`, undo: { invoiceId } } : { ok: true, summary: `Recorded the part payment on ${label}. ${inr(invoice.amountInr)} stays open.` };
     }),
@@ -132,7 +150,7 @@ const received = defineAction({
 
 const pause = defineAction({
   name: 'receivables.pauseReminders',
-  description: 'Propose stopping payment reminders on an invoice until a date, or resuming them with until left out. A person approves it on a card.',
+  description: 'Propose pausing the payment reminders on a receivables invoice until a date, or resuming them with until left out. A person approves it on a card.',
   input: invoiceRef.extend({ until: isoDate.optional(), reason: z.string().trim().max(200).optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -157,7 +175,7 @@ const pause = defineAction({
 
 const dispute = defineAction({
   name: 'receivables.setDispute',
-  description: 'Propose marking an open invoice disputed, with the reason, which stops its reminders and leaves it out of the ageing; or disputed false to say the dispute is resolved. A person approves it on a card.',
+  description: 'Propose raising a dispute on an open receivables invoice, marking it disputed with the reason, which stops its reminders and leaves it out of the ageing; or disputed false to say the dispute is resolved. A person approves it on a card.',
   input: invoiceRef.extend({ disputed: z.boolean(), reason: z.string().trim().max(300).optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -185,7 +203,7 @@ const dispute = defineAction({
 
 const tds = defineAction({
   name: 'receivables.setTds',
-  description: 'Propose recording the TDS a client deducted on an invoice, or the date its Form 16A certificate arrived. A person approves it on a card.',
+  description: 'Propose recording the TDS a client deducted on a receivables invoice, or the date its Form 16A certificate arrived. A person approves it on a card.',
   input: invoiceRef.extend({ tdsInr: z.number().min(0).max(1e12).optional(), certificateOn: isoDate.optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -211,7 +229,7 @@ const tds = defineAction({
 
 const creditNote = defineAction({
   name: 'receivables.addCreditNote',
-  description: 'Propose recording a credit note against an open invoice, which lowers its open balance. It must be less than the balance. There is no undo. A person approves it on a card.',
+  description: 'Propose recording a credit note against an open receivables invoice, which lowers its open balance. It must be less than the balance. There is no undo. A person approves it on a card.',
   input: invoiceRef.extend({ number: z.string().trim().max(40).optional(), issuedOn: isoDate, amountInr: amount, reason: z.string().trim().max(300).optional() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -257,7 +275,7 @@ const decideCredit = defineAction({
 
 const skipReminder = defineAction({
   name: 'receivables.skipReminder',
-  description: 'Propose skipping one of today\'s queued payment reminders, or skipped false to put it back. Ids come from receivables.reminderQueue. A person approves it on a card.',
+  description: 'Propose skipping one of today\'s queued payment reminders on the receivables sheet, or skipped false to put it back. Ids come from receivables.reminderQueue. A person approves it on a card.',
   input: z.object({ sheetId: z.string().uuid().optional(), reminderId: z.string().uuid(), skipped: z.boolean() }),
   tier: 'T2',
   roles: MANAGING_ROLES,
@@ -287,7 +305,7 @@ export const records = [add, edit, received, pause, dispute, tds, creditNote, de
 
 export const removeInvoice = defineAction({
   name: 'receivables.deleteInvoice',
-  description: 'Propose taking an invoice off the draft. Published versions keep their copy, and there is no way back from the chat. A person confirms it on a card.',
+  description: 'Propose deleting an invoice from the receivables sheet\'s draft. Published versions keep their copy, and there is no way back from the chat. A person confirms it on a card.',
   input: invoiceRef,
   tier: 'T3',
   roles: MANAGING_ROLES,

@@ -189,6 +189,18 @@ describe('the labour register actions', () => {
     expect(repo.openBatch).toHaveBeenCalledWith(person('manager'), { engagementId: CLIENT, stateCode: 'TG', periodFrom: '2026-10-01', periodTo: '2026-10-31' });
   });
 
+  it('takes the project\'s one state when none is named, and asks when it cannot tell', async () => {
+    const open = byName('labour.openBatch');
+    const period = { periodFrom: '2026-11-01', periodTo: '2026-11-30' };
+    const draft = await open.preview(actx(), period);
+    expect(draft!.rows[0]!.target).toMatchObject({ stateCode: 'TG' });
+    repo.listBatches.mockResolvedValue([]);
+    await expect(open.preview(actx(), period)).rejects.toThrow(/Which state/);
+    repo.listBatches.mockResolvedValue([openBatch, { ...openBatch, stateCode: 'KA' }]);
+    await expect(open.preview(actx(), period)).rejects.toThrow(/Which state/);
+    expect(repo.openBatch).not.toHaveBeenCalled();
+  });
+
   it('merges a basis over what is there, spells it out on the card, and undoes to what was there', async () => {
     const set = byName('labour.setAssumptions');
     const draft = await set.preview(actx(), { batchId: BATCH, assumptions: { dailyHours: 8, establishment: { shiftName: 'General' } } });

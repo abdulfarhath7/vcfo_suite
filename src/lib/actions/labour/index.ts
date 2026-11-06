@@ -81,22 +81,31 @@ const status = defineAction({
     }),
 });
 
+/** The state named, or the one state this project already keeps registers for. */
+async function stateCodeFor(actx: ActionContext, named: string | undefined): Promise<string> {
+  if (named) return named;
+  const states = new Set((await listBatches(actx.auth, { engagementId: lockedClient(actx) })).map((batch) => batch.stateCode));
+  if (states.size === 1) return [...states][0]!;
+  throw new ActionRefused('Which state are these registers for? Say it with the two-letter code, such as TG for Telangana.');
+}
+
 const open = defineAction({
   name: 'labour.openBatch',
   simple: true,
-  description: 'Propose opening the register batch for one state and period on this project, or finding the one that already exists. stateCode is the two-letter state code: TG for Telangana, KA for Karnataka. A person approves it on a card.',
-  input: z.object({ stateCode: z.string().trim().min(2).max(3), periodFrom: isoDate, periodTo: isoDate }),
+  description: 'Propose opening the register batch for one state and period on this project, or finding the one that already exists. stateCode is the two-letter state code, TG for Telangana or KA for Karnataka; leave it out when the message names no state, and the code checks it. A person approves it on a card.',
+  input: z.object({ stateCode: z.string().trim().min(2).max(3).optional(), periodFrom: isoDate, periodTo: isoDate }),
   tier: 'T2',
   roles: STAFF_ROLES,
   examples: [{ stateCode: 'TG', periodFrom: '2026-10-01', periodTo: '2026-10-31' }],
   preview: async (actx, input) => {
-    if (!stateByCode(input.stateCode)) throw new ActionRefused('That state code is not one the registers know. Use the two-letter code, such as TG.');
+    const stateCode = await stateCodeFor(actx, input.stateCode);
+    if (!stateByCode(stateCode)) throw new ActionRefused('That state code is not one the registers know. Use the two-letter code, such as TG.');
     if (input.periodFrom > input.periodTo) throw new ActionRefused('The period ends before it starts.');
-    return recordDraft(actx, { action: 'labour.openBatch', tier: 'T2', title: 'Open a register batch', label: 'Labour registers', target: input, displayNew: periodOf({ stateCode: input.stateCode, periodFrom: input.periodFrom, periodTo: input.periodTo }) });
+    return recordDraft(actx, { action: 'labour.openBatch', tier: 'T2', title: 'Open a register batch', label: 'Labour registers', target: { ...input, stateCode }, displayNew: periodOf({ stateCode, periodFrom: input.periodFrom, periodTo: input.periodTo }) });
   },
   execute: (actx, input) =>
     run(async () => {
-      const batch = await openBatch(actx.auth, { engagementId: lockedClient(actx), ...input });
+      const batch = await openBatch(actx.auth, { engagementId: lockedClient(actx), ...input, stateCode: await stateCodeFor(actx, input.stateCode) });
       if (!batch) return { ok: false, error: 'That project is not available.' };
       return { ok: true, summary: `The batch for ${periodOf(batch)} is open.` };
     }),
@@ -122,7 +131,7 @@ function assumptionLines(values: z.infer<typeof assumptionsInput>): string {
 
 const setAssumptions = defineAction({
   name: 'labour.setAssumptions',
-  description: 'Propose recording how a figure was arrived at on an open batch: month fully present, weekly off, overtime rate, wage basis, state or central rules, the establishment\'s shift times and wage payment date. These change what the registers print, and they stay with the batch as its basis. A person approves it on a card.',
+  description: 'Propose setting the assumptions on an open labour register batch, which is how a figure was arrived at: month fully present, weekly off, overtime rate, wage basis, state or central rules, the establishment\'s shift times and wage payment date. These change what the registers print, and they stay with the batch as its basis. A person approves it on a card.',
   input: batchRef.extend({ assumptions: assumptionsInput }),
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -162,7 +171,7 @@ async function readinessOf(actx: ActionContext, batchId: string) {
 
 const close = defineAction({
   name: 'labour.markReady',
-  description: 'Propose the monthly close of an open batch. The uploads and mapping lock, and the registers are built from exactly that. It is refused while the readiness check shows something blocking. Accepting the card is the person\'s own statement that the data is accurate, which no model can make for them.',
+  description: 'Propose closing a labour register period, the monthly close of an open batch. The uploads and mapping lock, and the registers are built from exactly that. It is refused while the readiness check shows something blocking. Accepting the card is the person\'s own statement that the data is accurate, which no model can make for them.',
   input: batchRef,
   tier: 'T3',
   roles: STAFF_ROLES,
@@ -193,7 +202,7 @@ const close = defineAction({
 
 const reopen = defineAction({
   name: 'labour.reopen',
-  description: 'Propose reopening a closed period, with the reason, which stays on the batch and is counted. Registers already built stay as they are. A person approves it on a card.',
+  description: 'Propose reopening a closed labour register period, with the reason, which stays on the batch and is counted. Registers already built stay as they are. A person approves it on a card.',
   input: batchRef.extend({ reason: z.string().trim().min(3).max(500) }),
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -212,7 +221,7 @@ const reopen = defineAction({
 
 const generate = defineAction({
   name: 'labour.generate',
-  description: 'Propose building a closed period\'s registers, as Excel workbooks unless PDF is asked for too. Anything already built under the same inputs comes from storage. A form that cannot be built is reported, not fatal. This builds drafts and signs nothing. A person approves it on a card.',
+  description: 'Propose generating a closed period\'s labour registers, as Excel workbooks unless PDF is asked for too. Anything already built under the same inputs comes from storage. A form that cannot be built is reported, not fatal. This builds drafts and signs nothing. A person approves it on a card.',
   input: batchRef.extend({ formats: z.array(z.enum(['xlsx', 'pdf'])).min(1).max(2).optional() }),
   tier: 'T2',
   roles: STAFF_ROLES,
