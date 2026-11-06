@@ -14,15 +14,21 @@
  *
  * Data: suggested questions → /api/client/portal/answer (the client's own
  * overview); anything else → Ask VCFO (`useAskOptional`, when switched on);
- * hand-off → /api/client/handoff.
+ * hand-off → /api/client/handoff. A file or a pasted block goes straight to Ask
+ * VCFO, whose review card and run progress show under its line in this window.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Paperclip, X } from 'lucide-react';
 import { useAskOptional } from '@/components/ask/ask-context';
+import { AskChangesetCard } from '@/components/ask/AskChangesetCard';
+import { AskRunProgress } from '@/components/ask/AskRunProgress';
+import { ASK_FILE_ACCEPT, useAskFiles } from '@/components/ask/use-ask-files';
 import type { Destination } from '@/data/ask/schema';
 import { ASK_PANEL_SIZES, useAskPanelSize, type AskPanelSize } from '@/components/ask/use-ask-layout';
 import { useApp } from '@/context/AppContext';
 import { CLIENT_BASE, resolveHref } from '@/lib/ask/resolve-href';
+import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { visualText } from '@/lib/ask/visual-text';
 import { AFTER_QUESTIONS, BEFORE_QUESTIONS } from '@/lib/client-portal/answers';
 import { usePortal, type WhatsThisAnswer } from './PortalProvider';
@@ -39,10 +45,12 @@ const SIZE_ICON: Record<AskPanelSize, string> = {
 
 type LogItem =
   | { r: 'u'; t: string }
-  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; links?: { label: string; href: string }[]; q?: string; mid?: string | null; fb?: 'up' | 'down' }
+  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; links?: { label: string; href: string }[]; q?: string; mid?: string | null; fb?: 'up' | 'down'; card?: string; run?: string }
   | { r: 'w'; w: WhatsThisAnswer; k: 'ok' };
 
 const LOG_KEY = 'vcfo.chat';
+/** A long paste shows as a short, masked line; the card under the answer holds what matters. */
+const ECHO_MAX = 1_000;
 
 function readLog(): LogItem[] {
   try {
@@ -87,13 +95,16 @@ export function AskLauncher() {
   const launchRef = useRef<HTMLDivElement>(null);
   const winRef = useRef<HTMLElement>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const pillRef = useRef<HTMLButtonElement>(null);
   const [log, setLog] = useState<LogItem[]>([]);
   const [thinking, setThinking] = useState(false);
   const [mood, setMood] = useState<'ok' | 'nan' | null>(null);
   const [moodN, setMoodN] = useState(0);
   const awaitingAsk = useRef<number | null>(null);
+  const attach = useAskFiles();
+  const picker = useRef<HTMLInputElement>(null);
+  const canDo = Boolean(ask?.enabled && ask.engagementId && !ask.preview);
 
   useEffect(() => setLog(readLog()), []);
   const save = useCallback((l: LogItem[]) => {
@@ -158,6 +169,17 @@ export function AskLauncher() {
     if (msgsRef.current) msgsRef.current.scrollTop = 1e6;
   }, [log, thinking, chatOpen]);
 
+  /* A review card loads after its line, so the window follows it down once, when it first has a height. */
+  const followCard = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const seen = new ResizeObserver(() => {
+      if (el.offsetHeight === 0) return;
+      seen.disconnect();
+      if (msgsRef.current) msgsRef.current.scrollTop = 1e6;
+    });
+    seen.observe(el);
+  }, []);
+
   const setMoodReplay = (k: 'ok' | 'nan') => {
     setMood(null);
     requestAnimationFrame(() => {
@@ -168,8 +190,9 @@ export function AskLauncher() {
 
   /* ---------- ask ---------- */
   const ask_ = useCallback(
-    async (q: string, w?: WhatsThisAnswer) => {
-      const base = [...readLog(), { r: 'u', t: q } as LogItem];
+    async (q: string, w?: WhatsThisAnswer, files?: { attachmentIds?: string[]; label: string }) => {
+      const message = q || undefined;
+      const base = [...readLog(), { r: 'u', t: maskIdentityNumbers(q || files!.label).slice(0, ECHO_MAX) } as LogItem];
       save(base);
       setThinking(true);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -181,26 +204,29 @@ export function AskLauncher() {
         setMoodReplay('ok');
         return;
       }
-      try {
-        const res = await fetch('/api/client/portal/answer', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ question: q }),
-        });
-        const body = res.ok ? ((await res.json()) as { answer: { text: string; kind: 'ok' | 'nan' } | null }) : { answer: null };
-        if (body.answer) {
-          await delay(600);
-          save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind, q }]);
-          setThinking(false);
-          setMoodReplay(body.answer.kind);
-          return;
+      // A file or a pasted block is not a question for the overview, so its text stays out of that route.
+      if (!files?.attachmentIds && !q.includes('\n')) {
+        try {
+          const res = await fetch('/api/client/portal/answer', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ question: q }),
+          });
+          const body = res.ok ? ((await res.json()) as { answer: { text: string; kind: 'ok' | 'nan' } | null }) : { answer: null };
+          if (body.answer) {
+            await delay(600);
+            save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind, q }]);
+            setThinking(false);
+            setMoodReplay(body.answer.kind);
+            return;
+          }
+        } catch {
+          /* fall through to Ask VCFO */
         }
-      } catch {
-        /* fall through to Ask VCFO */
       }
       if (ask?.enabled && ask.engagementId) {
         awaitingAsk.current = ask.thread.length;
-        await ask.ask({ message: q });
+        await ask.ask({ message, ...files });
         return;
       }
       await delay(600);
@@ -230,6 +256,8 @@ export function AskLauncher() {
         h: refusal,
         links: (last.answer.links ?? []).map((l) => ({ label: l.label, href: destHref(l.dest) })),
         mid: last.messageId,
+        card: last.answer.changesetId ?? undefined,
+        run: last.answer.runLive ? (last.answer.runId ?? undefined) : undefined,
         q: [...ask.thread].reverse().find((i) => i.kind === 'user')?.kind === 'user' ? ([...ask.thread].reverse().find((i) => i.kind === 'user') as { text: string }).text : undefined,
       };
       save([...readLog(), item]);
@@ -403,44 +431,52 @@ export function AskLauncher() {
                 </div>
               );
             return (
-              <div key={i} className="vpc-m vpc-a" style={{ whiteSpace: 'pre-line' }}>
-                {m.t}
-                {m.links?.map((l) => (
-                  <span key={l.href}>
-                    <br />
-                    <button type="button" onClick={() => router.push(l.href)}>
-                      {l.label}
-                    </button>
-                  </span>
-                ))}
-                {m.h ? (
-                  <>
-                    <br />
-                    <button type="button" data-handoff onClick={handoff}>
-                      Hand off to {lead?.name ?? 'your project lead'}
-                    </button>
-                  </>
-                ) : null}
-                {m.k === 'ok' ? (
-                  <span className="vpc-fb" role="group" aria-label="Was this helpful?">
-                    <span>Helpful?</span>
-                    {(['up', 'down'] as const).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        aria-label={v === 'up' ? 'Helpful' : 'Not helpful'}
-                        aria-pressed={m.fb === v}
-                        disabled={Boolean(m.fb)}
-                        onClick={() => vote(i, v)}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={v === 'down' ? { transform: 'rotate(180deg)' } : undefined}>
-                          <path d="M7 10v11H4V10Zm0 0 4-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.2 21H7" />
-                        </svg>
+              <Fragment key={i}>
+                <div className="vpc-m vpc-a" style={{ whiteSpace: 'pre-line' }}>
+                  {m.t}
+                  {m.links?.map((l) => (
+                    <span key={l.href}>
+                      <br />
+                      <button type="button" onClick={() => router.push(l.href)}>
+                        {l.label}
                       </button>
-                    ))}
-                  </span>
+                    </span>
+                  ))}
+                  {m.h ? (
+                    <>
+                      <br />
+                      <button type="button" data-handoff onClick={handoff}>
+                        Hand off to {lead?.name ?? 'your project lead'}
+                      </button>
+                    </>
+                  ) : null}
+                  {m.k === 'ok' ? (
+                    <span className="vpc-fb" role="group" aria-label="Was this helpful?">
+                      <span>Helpful?</span>
+                      {(['up', 'down'] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          aria-label={v === 'up' ? 'Helpful' : 'Not helpful'}
+                          aria-pressed={m.fb === v}
+                          disabled={Boolean(m.fb)}
+                          onClick={() => vote(i, v)}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={v === 'down' ? { transform: 'rotate(180deg)' } : undefined}>
+                            <path d="M7 10v11H4V10Zm0 0 4-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.2 21H7" />
+                          </svg>
+                        </button>
+                      ))}
+                    </span>
+                  ) : null}
+                </div>
+                {m.card || m.run ? (
+                  <div className="vpc-work cp-tw" ref={followCard}>
+                    {m.card ? <AskChangesetCard changesetId={m.card} /> : null}
+                    {m.run ? <AskRunProgress runId={m.run} shownLine={m.t} /> : null}
+                  </div>
                 ) : null}
-              </div>
+              </Fragment>
             );
           })}
           {thinking ? (
@@ -459,12 +495,29 @@ export function AskLauncher() {
             </button>
           ))}
         </div>
+        {attach.files.length > 0 ? (
+          <ul className="vpc-files">
+            {attach.files.map((file) => (
+              <li key={file.id}>
+                <span>{file.fileName}</span>
+                <button type="button" aria-label={`Remove ${file.fileName}`} onClick={() => attach.remove(file.id)}>
+                  <X size={12} strokeWidth={1.6} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {attach.error ? (
+          <p className="vpc-fe" role="alert">
+            {attach.error}
+          </p>
+        ) : null}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             const v = inputRef.current?.value.trim() ?? '';
-            if (v) {
-              void ask_(v);
+            if (v || attach.files.length > 0) {
+              void ask_(v, undefined, attach.files.length > 0 ? attach.take() : undefined);
               if (inputRef.current) inputRef.current.value = '';
             } else {
               inputRef.current?.focus();
@@ -472,8 +525,41 @@ export function AskLauncher() {
             }
           }}
         >
-          <input ref={inputRef} aria-label="Type a question" placeholder="Type a question" />
-          <button type="submit">Send</button>
+          {canDo ? (
+            <>
+              <input
+                ref={picker}
+                type="file"
+                multiple
+                hidden
+                accept={ASK_FILE_ACCEPT}
+                data-testid="ask-attach-input"
+                aria-label="Attach a file"
+                onChange={(e) => {
+                  void attach.add(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+              <button type="button" className="vpc-att" aria-label="Attach a file" disabled={attach.uploading || attach.full} onClick={() => picker.current?.click()}>
+                <Paperclip size={16} strokeWidth={1.6} aria-hidden="true" />
+              </button>
+            </>
+          ) : null}
+          <textarea
+            ref={inputRef}
+            rows={1}
+            aria-label="Type a question"
+            placeholder={canDo ? 'Ask or paste details' : 'Type a question'}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <button type="submit" disabled={attach.uploading}>
+            Send
+          </button>
         </form>
       </section>
       <div id="vp-launch" ref={launchRef} hidden={pageOpen} className={[yieldOn ? 'yield' : '', chatOpen ? 'open' : ''].filter(Boolean).join(' ')}>

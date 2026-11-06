@@ -2,13 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { Paperclip, SendHorizontal, X } from 'lucide-react';
-import { uploadAskAttachment } from '@/hooks/ask/ask-api';
 import { ASK_VISIBILITY_NOTICE } from '@/lib/ask/question-gaps';
 import { useAskOptional } from './ask-context';
+import { ASK_FILE_ACCEPT, useAskFiles } from './use-ask-files';
 
 const MESSAGE_MAX = 20_000;
-const MAX_FILES = 5;
-const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.csv,.tsv,.txt';
 
 /**
  * Input + Send: Send is the only solid main button in the panel (D1, R-12). A person can also attach
@@ -18,10 +16,9 @@ const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.csv,.tsv,.txt';
 export function AskComposer() {
   const ask = useAskOptional();
   const [text, setText] = useState('');
-  const [files, setFiles] = useState<Array<{ id: string; fileName: string }>>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const attach = useAskFiles();
   const picker = useRef<HTMLInputElement>(null);
+  const { files, uploading } = attach;
   if (!ask) return null;
   const client = ask.shell === 'client';
   const canAttach = !ask.preview;
@@ -29,32 +26,10 @@ export function AskComposer() {
   const submit = () => {
     if (!ready) return;
     const message = text.trim();
-    const attachmentIds = files.map((file) => file.id);
     setText('');
-    setFiles([]);
-    setUploadError(null);
-    void ask.ask({
-      message: message || undefined,
-      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
-      label: `Attached ${attachmentIds.length} file${attachmentIds.length === 1 ? '' : 's'}`,
-    });
+    void ask.ask({ message: message || undefined, ...attach.take() });
   };
-  const addFiles = async (list: FileList | null) => {
-    if (!list || list.length === 0 || !canAttach) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      for (const file of [...list].slice(0, MAX_FILES - files.length)) {
-        const added = await uploadAskAttachment(file);
-        setFiles((now) => [...now, added]);
-      }
-    } catch (error) {
-      setUploadError((error as Error).message);
-    } finally {
-      setUploading(false);
-      if (picker.current) picker.current.value = '';
-    }
-  };
+  const addFiles = (list: FileList | null) => (canAttach ? attach.add(list) : undefined);
   return (
     <div className="space-y-1.5">
       {files.length > 0 ? (
@@ -62,7 +37,7 @@ export function AskComposer() {
           {files.map((file) => (
             <li key={file.id} className="flex max-w-full items-center gap-1 rounded-md border border-line bg-surface-sunken py-0.5 pl-2 pr-1 text-[12px] text-ink">
               <span className="truncate">{file.fileName}</span>
-              <button type="button" aria-label={`Remove ${file.fileName}`} className="grid h-5 w-5 place-items-center rounded-mark hover:bg-surface-raised" onClick={() => setFiles((now) => now.filter((f) => f.id !== file.id))}>
+              <button type="button" aria-label={`Remove ${file.fileName}`} className="grid h-5 w-5 place-items-center rounded-mark hover:bg-surface-raised" onClick={() => attach.remove(file.id)}>
                 <X className="h-3 w-3" strokeWidth={1.6} />
               </button>
             </li>
@@ -87,11 +62,14 @@ export function AskComposer() {
       >
         {canAttach ? (
           <>
-            <input ref={picker} type="file" multiple accept={ACCEPT} className="sr-only" data-testid="ask-attach-input" aria-label="Attach a file" tabIndex={-1} onChange={(e) => void addFiles(e.target.files)} />
+            <input ref={picker} type="file" multiple accept={ASK_FILE_ACCEPT} className="sr-only" data-testid="ask-attach-input" aria-label="Attach a file" tabIndex={-1} onChange={(e) => {
+              void addFiles(e.target.files);
+              e.target.value = '';
+            }} />
             <button
               type="button"
               aria-label="Attach a file"
-              disabled={uploading || files.length >= MAX_FILES}
+              disabled={uploading || attach.full}
               onClick={() => picker.current?.click()}
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25 disabled:opacity-50"
             >
@@ -127,9 +105,9 @@ export function AskComposer() {
         </button>
       </form>
       {uploading ? <p className="px-1 text-[12px] text-ink-muted">Attaching…</p> : null}
-      {uploadError ? (
+      {attach.error ? (
         <p role="alert" className="px-1 text-[12px] text-danger">
-          {uploadError}
+          {attach.error}
         </p>
       ) : null}
       {/* The client lines are disclosures (who can see the chat, no legal advice), so they stay;
