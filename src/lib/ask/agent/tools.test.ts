@@ -59,6 +59,51 @@ describe('tools for the agent', () => {
     expect((await actionsFor('manager', 'admin')).map((a) => a.name)).toContain('tasks.create');
   });
 
+  it('filters every role to exactly its own tools, area by area', async () => {
+    const lead = { tasks: 10, requests: 3, reminders: 2, documents: 4, statuses: 3, notes: 3, compliance: 18, registrations: 8, 'board-meetings': 13, receivables: 21, labour: 7 };
+    const expected: Array<[AppRole, 'super' | 'admin' | 'client', Record<string, number>]> = [
+      ['super_admin', 'super', lead],
+      ['admin', 'admin', lead],
+      ['manager', 'admin', lead],
+      ['intern', 'admin', { tasks: 8, requests: 3, reminders: 2, documents: 4, statuses: 3, notes: 3, compliance: 14, registrations: 8, 'board-meetings': 11, labour: 7 }],
+      ['client', 'client', { 'client-portal': 9 }],
+      ['client', 'admin', {}],
+      ['developer', 'admin', {}],
+      ['partner', 'admin', {}],
+    ];
+    for (const [role, shell, areas] of expected) {
+      const counts: Record<string, number> = {};
+      for (const { name } of await actionsFor(role, shell)) counts[name.split('.')[0]!] = (counts[name.split('.')[0]!] ?? 0) + 1;
+      expect({ role, counts }).toEqual({ role, counts: areas });
+    }
+  });
+
+  it('holds back from an intern what only a lead may do, and the reverse', async () => {
+    const intern = (await actionsFor('intern', 'admin')).map((a) => a.name);
+    const manager = (await actionsFor('manager', 'admin')).map((a) => a.name);
+    const leadOnly = manager.filter((name) => !intern.includes(name) && !name.startsWith('receivables.'));
+    expect(leadOnly.sort()).toEqual([
+      'board-meetings.approve',
+      'board-meetings.sendBack',
+      'compliance.decideDateChange',
+      'compliance.removeTaskLine',
+      'compliance.reopenFiling',
+      'compliance.setReminderLead',
+      'compliance.setWorkingWindow',
+      'tasks.create',
+      'tasks.edit',
+    ]);
+    expect(intern.filter((name) => !manager.includes(name))).toEqual(['compliance.requestDateChange']);
+  });
+
+  it('marks only receivables firm-wide, so a run with no client reaches nothing else', async () => {
+    for (const role of [...STAFF, 'client' as const]) {
+      const firmWide = (await actionsFor(role, role === 'client' ? 'client' : shellOf(role))).filter((a) => a.firmWide);
+      for (const action of firmWide) expect(action.name.startsWith('receivables.')).toBe(true);
+      expect(firmWide.length).toBe(role === 'intern' || role === 'client' ? 0 : 21);
+    }
+  });
+
   it('takes a switched-off tier out of the list', async () => {
     process.env.ASK_KILL_TIERS = 'T3';
     const shown = await actionsFor('manager', 'admin');
