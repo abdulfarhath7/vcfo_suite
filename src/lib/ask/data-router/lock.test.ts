@@ -28,6 +28,15 @@ describe('lockEngagement', () => {
     expect(lockEngagement({ message: 'Add this', engagements })).toEqual({ kind: 'unknown', mentioned: null });
   });
 
+  it('does not let one shared word move a run off the client on screen', () => {
+    const page = '/app/intern/projects/kestrel';
+    const reddy = { id: 'r', slug: 'reddy', companyName: 'Reddy Exports Pvt Ltd' };
+    const list = [kestrel, reddy];
+    expect(lockEngagement({ message: "Mr Reddy's PAN is on the form", pagePath: page, engagements: list })).toEqual({ kind: 'choose', options: [kestrel, reddy] });
+    expect(lockEngagement({ message: 'File this for Reddy Exports', pagePath: page, engagements: list })).toEqual({ kind: 'locked', engagement: reddy });
+    expect(lockEngagement({ message: 'File this for Kestrel', pagePath: page, engagements: list })).toEqual({ kind: 'locked', engagement: kestrel });
+  });
+
   it('never locks to a company outside the scoped list it is given', () => {
     expect(lockEngagement({ message: 'Add this for Zeta', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: 'Zeta' });
     expect(lockEngagement({ message: 'Add this', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: null });
@@ -40,6 +49,14 @@ describe('companiesNamed', () => {
     expect(lockEngagement({ message: 'This is for Asha Rao', engagements: own, ownCompany: true }).kind).toBe('locked');
     expect(lockEngagement({ message: 'File it for Zeta Industries Pvt Ltd', engagements: own, ownCompany: true })).toEqual({ kind: 'unknown', mentioned: 'Zeta Industries Pvt Ltd' });
     expect(lockEngagement({ message: 'This is for Asha Rao', engagements: own }).kind).toBe('unknown');
+  });
+
+  it('does not count a name that sits inside a longer one', () => {
+    const foods = { id: 'f', slug: 'f', companyName: 'Sunrise Foods LLP' };
+    const exports = { id: 'x', slug: 'x', companyName: 'Sunrise Foods Exports Pvt Ltd' };
+    expect(companiesNamed('Sunrise Foods Exports', [foods, exports])).toEqual([exports]);
+    expect(companiesNamed('Sunrise Foods', [foods, exports])).toEqual([foods]);
+    expect(companiesNamed('Sunrise Foods and Sunrise Foods Exports', [foods, exports])).toEqual([foods, exports]);
   });
 
   it('prefers the whole name over a first word', () => {

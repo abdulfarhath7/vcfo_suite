@@ -148,6 +148,42 @@ describe('handleDoWork', () => {
     expect(createChangeset.mock.calls[0]![1].draft.engagementId).toBe(acme.id);
   });
 
+  it('checks the document after a plain answer to which project', async () => {
+    getObject.mockResolvedValue(Buffer.from(`Company: Zeta Industries\n${DATA}`));
+    attachments.mockResolvedValue([{ id: 'paste-1', kind: 'paste', fileName: 'paste.txt', s3Key: 'k' }]);
+    const state = { attachmentIds: ['paste-1'], instruction: '', options: [acme, kestrel], mismatch: null };
+    const result = await run('Acme please', { pending: { run: { id: 'run-1', state }, state } as never });
+    expect(result!.answer.line).toMatch(/names Zeta Industries, not Acme/);
+    expect(createChangeset).not.toHaveBeenCalled();
+  });
+
+  it('checks the document again when the reply to a mismatch names a different project', async () => {
+    getObject.mockResolvedValue(Buffer.from(`Company: Zeta Industries\n${DATA}`));
+    attachments.mockResolvedValue([{ id: 'paste-1', kind: 'paste', fileName: 'paste.txt', s3Key: 'k' }]);
+    const state = { attachmentIds: ['paste-1'], instruction: '', options: [acme, kestrel], mismatch: { engagementId: acme.id, company: 'Zeta Industries' } };
+    const result = await run('Kestrel', { pending: { run: { id: 'run-1', state }, state } as never });
+    expect(result!.answer.line).toMatch(/names Zeta Industries, not Kestrel/);
+    expect(createChangeset).not.toHaveBeenCalled();
+  });
+
+  it('asks again with the narrowed list when a reply names two projects, and locks to neither', async () => {
+    const state = { attachmentIds: ['paste-1'], instruction: '', options: [acme, kestrel, acmeFoods], mismatch: null };
+    const result = await run('Acme I think', { pending: { run: { id: 'run-1', state }, state } as never });
+    expect(result!.answer.line).toMatch(/More than one project matches: Acme Robotics Private Limited and Acme Foods LLP\./);
+    expect(updateRun.mock.calls.at(-1)![2].state.options).toEqual([acme, acmeFoods]);
+    expect(lockRun).not.toHaveBeenCalled();
+    expect(createChangeset).not.toHaveBeenCalled();
+    expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_reply');
+  });
+
+  it('asks again when a reply to a work question names two projects', async () => {
+    const state = { mode: 'work', pick: { kind: 'agent' }, instruction: 'Close the task', attachmentIds: [], options: [acme, kestrel], mismatch: null };
+    const result = await run('Acme Robotics or Kestrel Robotics', { pending: { run: { id: 'run-1', state }, state } as never });
+    expect(result!.answer.line).toMatch(/More than one project matches/);
+    expect(lockRun).not.toHaveBeenCalled();
+    expect(updateRun).not.toHaveBeenCalled();
+  });
+
   it('stops when the person says no', async () => {
     const state = { attachmentIds: [], instruction: '', options: [acme], mismatch: null };
     const result = await run('No, leave it', { pending: { run: { id: 'run-1', state }, state } as never });

@@ -279,6 +279,21 @@ describe('handleWork', () => {
     });
   });
 
+  it('asks for smaller parts when the first look was cut short, and acts on nothing', async () => {
+    reply = tool('tasks__create', { title: 'half' });
+    const complete = vi.spyOn(provider, 'complete').mockImplementationOnce(async (req) => {
+      calls.push(req);
+      return { model: req.model, content: reply, stopReason: 'max_tokens', usage: { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 } };
+    });
+    const outcome = await go('Create these sixty tasks at Acme');
+    complete.mockRestore();
+    if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+    expect(outcome.answer.line).toContain('smaller parts');
+    expect(createCard).not.toHaveBeenCalled();
+    expect(calls[0]!.thinking).toBe('off');
+    expect(calls[0]!.maxTokens).toBeGreaterThan(1024);
+  });
+
   it('masks identity numbers before the small model reads the request', async () => {
     reply = tool('open_ended');
     await go('Find the director with PAN ABCDE1234F at Acme');

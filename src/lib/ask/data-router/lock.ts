@@ -24,11 +24,21 @@ export function coreName(name: string): string {
 
 const mentions = (haystack: string, needle: string) => needle.length >= 3 && new RegExp(`(^|\\s)${needle}(\\s|$)`).test(haystack);
 
-/** Companies a text names: the whole name first, then a distinctive first word. */
+/**
+ * Companies a text names: the whole name first, then a distinctive first word. Longer names are
+ * tried first and blanked once found, so "Sunrise Foods Exports" does not also name "Sunrise Foods".
+ */
 export function companiesNamed<E extends LockableEngagement>(text: string, engagements: readonly E[]): E[] {
   const haystack = normalizeLabel(text);
-  const whole = engagements.filter((e) => mentions(haystack, coreName(e.companyName)));
-  if (whole.length > 0) return whole;
+  const cores = [...new Set(engagements.map((e) => coreName(e.companyName)))].sort((a, b) => b.length - a.length);
+  const found = new Set<string>();
+  let rest = haystack;
+  for (const core of cores) {
+    if (!mentions(rest, core)) continue;
+    found.add(core);
+    rest = rest.replace(new RegExp(`(^|\\s)${core}(?=\\s|$)`, 'g'), ' ');
+  }
+  if (found.size > 0) return engagements.filter((e) => found.has(coreName(e.companyName)));
   return engagements.filter((e) => {
     const first = coreName(e.companyName).split(' ')[0] ?? '';
     return first.length >= 4 && mentions(haystack, first);
@@ -46,6 +56,12 @@ function explicitMention(message: string): string | null {
 
 const NAMES_A_COMPANY = /\b(?:private|pvt|limited|ltd|llp|opc|inc|llc)\b/i;
 
+/** A name of two words or more written out in full; a single word could as well be a person. */
+function namedInFull(text: string, companyName: string): boolean {
+  const core = coreName(companyName);
+  return core.includes(' ') && mentions(normalizeLabel(text), core);
+}
+
 const PAGE_PROJECT = /\/(?:projects|engagements|clients)\/([^/?#]+)/;
 
 export function lockEngagement<E extends LockableEngagement>(input: {
@@ -58,14 +74,16 @@ export function lockEngagement<E extends LockableEngagement>(input: {
 }): EngagementLock<E> {
   const { engagements } = input;
   const named = companiesNamed(input.message, engagements);
+  const key = input.pagePath ? PAGE_PROJECT.exec(input.pagePath)?.[1] : null;
+  const onPage = key ? engagements.find((e) => e.slug === key || e.id === key) : null;
+  // One shared word ("Mr Reddy's PAN") is not enough to move a run off the client on screen.
+  if (onPage && named.length > 0 && !named.includes(onPage) && !named.some((e) => namedInFull(input.message, e.companyName))) return { kind: 'choose', options: [onPage, ...named] };
   if (named.length === 1) return { kind: 'locked', engagement: named[0]! };
   if (named.length > 1) return { kind: 'choose', options: named };
   const mentioned = explicitMention(input.message);
   if (mentioned && (!input.ownCompany || NAMES_A_COMPANY.test(mentioned))) return { kind: 'unknown', mentioned };
   const pending = engagements.find((e) => e.id === input.pendingEngagementId);
   if (pending) return { kind: 'locked', engagement: pending };
-  const key = input.pagePath ? PAGE_PROJECT.exec(input.pagePath)?.[1] : null;
-  const onPage = key ? engagements.find((e) => e.slug === key || e.id === key) : null;
   if (onPage) return { kind: 'locked', engagement: onPage };
   if (engagements.length === 1) return { kind: 'locked', engagement: engagements[0]! };
   return { kind: 'unknown', mentioned: null };

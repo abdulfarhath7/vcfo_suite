@@ -18,7 +18,7 @@ import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from '
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { matchClientFiles } from '@/lib/actions/client-portal/file-card';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
@@ -90,6 +90,8 @@ function mayHoldValues(message: string): boolean {
   }
   return false;
 }
+
+const moreThanOne = (options: ReadonlyArray<{ companyName: string }>): string => `More than one project matches: ${options.map((o) => o.companyName).join(' and ')}. Which one is this for?`;
 
 const CANCEL = /^\s*(?:no|nope|cancel|stop|leave it|never ?mind|don'?t)\b/i;
 const CONFIRM = /^\s*(?:yes|yep|yeah|ok|okay|sure|confirm|go ahead|file it|correct|right)\b/i;
@@ -164,8 +166,12 @@ export async function handleDoWork(
       await updateAskRun(ctx, workReply.run.id, { status: 'cancelled', finishedAt: new Date() });
       return { answer: line('All right, I have left this as it is. Nothing was saved.', { runId: workReply.run.id }), metered };
     }
-    const named = workReply ? companiesNamed(message, workReply.state.options)[0] : undefined;
-    if (workReply && !named) return { answer: line('Please tell me which project this is for.', { runId: workReply.run.id }), metered };
+    const matches = workReply ? companiesNamed(message, workReply.state.options) : [];
+    if (workReply && matches.length !== 1) {
+      const question = matches.length > 1 ? moreThanOne(matches) : 'Please tell me which project this is for.';
+      return { answer: line(question, { runId: workReply.run.id }), metered };
+    }
+    const named = matches[0];
     const outcome = await handleWork(ctx, request, {
       message: workReply ? workReply.state.instruction : message,
       onScreen: await pageContextLine(ctx, request.page),
@@ -226,16 +232,17 @@ export async function handleDoWork(
     finish(line(text), 'waiting_reply', { attachmentIds: await keepPaste(), instruction, ...state });
 
   // Which client. A reply to a question names it, or confirms the one asked about.
+  const replyMatches = pending ? companiesNamed(message, pending.state.options) : [];
+  if (pending && replyMatches.length > 1) return askBack(moreThanOne(replyMatches), { options: replyMatches, mismatch: null });
   const replied = pending
-    ? (companiesNamed(message, pending.state.options)[0] ?? (pending.state.mismatch && CONFIRM.test(message) ? engagements.find((e) => e.id === pending.state.mismatch!.engagementId) : undefined))
+    ? (replyMatches[0] ?? (pending.state.mismatch && CONFIRM.test(message) ? engagements.find((e) => e.id === pending.state.mismatch!.engagementId) : undefined))
     : undefined;
   if (pending && !replied) return askBack('Please tell me which project this is for.', pending.state);
   const firstLock = replied
     ? ({ kind: 'locked', engagement: replied } as const)
     : lockEngagement({ message: instruction, pagePath: request.page?.path, engagements, ownCompany: client });
   if (firstLock.kind === 'choose') {
-    const names = firstLock.options.map((o) => o.companyName);
-    return askBack(`More than one project matches: ${names.join(' and ')}. Which one is this for?`, { options: firstLock.options, mismatch: null });
+    return askBack(moreThanOne(firstLock.options), { options: firstLock.options, mismatch: null });
   }
   if (firstLock.kind === 'unknown' && firstLock.mentioned) {
     return finish(line(`I cannot find ${maskIdentityNumbers(firstLock.mentioned)} among your projects, so nothing was read.`));
@@ -271,7 +278,7 @@ export async function handleDoWork(
       await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: 'Reading', output: { docType: result.docType, values: result.values.length } });
     } catch (error) {
       const known = error instanceof ReadRefused;
-      if (!known) console.error('[ask-vcfo] read failed', error);
+      if (!known) console.error('[ask-vcfo] read failed', safeError(error));
       const text = known ? error.message : 'This file could not be read. Please type the details in instead.';
       refusals.push(text);
       if (attachment) await updateOwnAskAttachment(ctx, attachment.id, { status: 'failed', error: text, runId });
@@ -301,7 +308,7 @@ export async function handleDoWork(
     const named = [...new Map(docCompanies.flatMap((name) => companiesNamed(name, engagements)).map((e) => [e.id, e])).values()];
     if (named.length === 1) locked = named[0]!;
     else {
-      const text = named.length > 1 ? `More than one project matches: ${named.map((o) => o.companyName).join(' and ')}. Which one is this for?` : 'Which project is this for?';
+      const text = named.length > 1 ? moreThanOne(named) : 'Which project is this for?';
       return askBack(text, { options: named.length > 1 ? named : engagements, mismatch: null });
     }
   }
@@ -309,7 +316,8 @@ export async function handleDoWork(
   const row = await getEngagementById(ctx, locked.id);
   if (!row) return finish(line('That project is not available.'), 'failed');
   const state = checklistStateFromRow(row);
-  const confirmed = Boolean(replied);
+  // Only a yes to the project the mismatch question asked about passes over the document's name.
+  const confirmed = Boolean(replied) && pending?.state.mismatch?.engagementId === row.id;
   const knownNames = [row.companyName, state['pre-1']?.responses?.proposedName1, state['pre-1']?.responses?.proposedName2, row.parentEntityName].filter((n): n is string => Boolean(n?.trim()));
   const stranger = confirmed ? null : docCompanies.find((name) => !documentMatches(name, knownNames));
   if (stranger) {

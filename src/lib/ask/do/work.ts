@@ -12,7 +12,7 @@ import { firstAgentMessage } from '@/lib/ask/agent/loop';
 import { actionsFor } from '@/lib/ask/agent/tools';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { lockEngagement, type LockableEngagement } from '@/lib/ask/data-router/lock';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, safeError } from '@/lib/ask/mask';
 import type { LlmProvider } from '@/lib/ask/provider';
 import { limitAnswer } from '@/lib/ask/refusals';
 import { inngest } from '@/jobs/client';
@@ -73,6 +73,7 @@ export async function handleWork(
     ? resumed.pick
     : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), handoff: actions.some((action) => action.name === 'filing.prepareRun'), now })).pick;
   if (pick.kind === 'none') return { kind: 'none' };
+  if (pick.kind === 'cut') return answerOf(line('That is more than I can take in one go. Please send it in smaller parts.'));
   if (pick.kind === 'data') return { kind: 'data' };
   if (pick.kind === 'agent' && askFlags().killedPaths.has('agent_run')) return answerOf(limitAnswer(request.shell, 'pathStopped'));
 
@@ -111,7 +112,7 @@ export async function handleWork(
         try {
           await inngest.send({ name: ASK_RUN_START, data: { runId: run.id } });
         } catch (error) {
-          console.error('[ask-vcfo] run did not start', error);
+          console.error('[ask-vcfo] run did not start', safeError(error));
           const stopped = 'This could not start just now. Nothing was saved. Please try again in a little while.';
           await setAskRunAnswer(ctx, { id: run.id, profileId: ctx.userId, messageId }, stopped);
           await updateAskRun(ctx, run.id, { status: 'failed', error: 'job not started', finishedAt: new Date() });

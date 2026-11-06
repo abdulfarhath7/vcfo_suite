@@ -10,7 +10,10 @@ import type { LlmProvider, LlmTool, LlmUsage } from '@/lib/ask/provider';
  * single message can fill. A request that needs a record looked up first, or several steps, says so
  * and goes to the agent run. Nothing here writes; the choice still goes through a person's card.
  */
-export type WorkPick = { kind: 'action'; action: string; input: Record<string, unknown> } | { kind: 'data' } | { kind: 'agent'; firmWide?: boolean } | { kind: 'none' };
+export type WorkPick = { kind: 'action'; action: string; input: Record<string, unknown> } | { kind: 'data' } | { kind: 'agent'; firmWide?: boolean } | { kind: 'cut' } | { kind: 'none' };
+
+/** Haiku 5.5 is not given less than 1,024 tokens, and a filled-in action can run well above that. */
+const PICK_MAX_TOKENS = 4000;
 
 const noInput: LlmTool['input_schema'] = { type: 'object', properties: {}, additionalProperties: false };
 const FILL_DETAILS: LlmTool = {
@@ -51,9 +54,12 @@ export async function pickWork(
     system: [{ type: 'text', text: input.handoff ? `${SYSTEM}${HANDOFF_LINE}` : SYSTEM }],
     messages: [{ role: 'user', content: text }],
     tools,
-    maxTokens: 800,
+    maxTokens: PICK_MAX_TOKENS,
     effort: 'low',
+    thinking: 'off',
   });
+  // A call cut short holds half an input at best, so nothing is read from it.
+  if (result.stopReason === 'max_tokens') return { pick: { kind: 'cut' }, usage: result.usage };
   const use = result.content.find((block) => block.type === 'tool_use');
   if (!use || use.type !== 'tool_use') return { pick: { kind: 'none' }, usage: result.usage };
   if (use.name === FILL_DETAILS.name) return { pick: { kind: 'data' }, usage: result.usage };
