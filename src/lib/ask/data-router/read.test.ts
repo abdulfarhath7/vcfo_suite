@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import PizZip from 'pizzip';
+import { assertZipWithinLimit } from '@/lib/ask/ingest/extract';
 import type { LlmProvider, LlmRequest } from '@/lib/ask/provider';
-import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from './read';
+import { attachmentTypeOf, instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from './read';
 
 function modelReturning(output: unknown): { provider: LlmProvider; seen: LlmRequest[] } {
   const seen: LlmRequest[] = [];
@@ -145,5 +147,67 @@ describe('ASK_ID_DOC_READING off', () => {
   it('still reads a typed paste with an identity number in it', async () => {
     const result = await readPaste('Name: Asha Rao\nPAN: ABCDE1234F', deps(noModel, false));
     expect(result.values).toHaveLength(2);
+  });
+});
+
+describe('files that unpack too far', () => {
+  const zipOf = (name: string, content: Buffer) => {
+    const zip = new PizZip();
+    zip.file(name, content, { compression: 'DEFLATE' } as never);
+    return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+  };
+
+  it.each(['bomb.docx', 'bomb.xlsx'])('refuses %s before any parser loads it', async (fileName) => {
+    const started = Date.now();
+    const bomb = zipOf('word/document.xml', Buffer.alloc(150 * 1024 * 1024));
+    expect(bomb.length).toBeLessThan(1024 * 1024);
+    await expect(readFile({ fileName, data: bomb }, deps())).rejects.toThrow(/unpacks to more than can be read/);
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+
+  it('counts every part towards one total', () => {
+    const zip = new PizZip();
+    for (let i = 0; i < 3; i += 1) zip.file(`part${i}.xml`, Buffer.alloc(40 * 1024 * 1024), { compression: 'DEFLATE' } as never);
+    const bytes = zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    expect(() => assertZipWithinLimit(bytes)).toThrow(/unpacks to more than/);
+  });
+
+  it('refuses a zip that says it has more parts than any real document, and bytes that are no zip', () => {
+    const end = Buffer.alloc(22);
+    end.writeUInt32LE(0x06054b50, 0);
+    end.writeUInt16LE(0xffff, 10);
+    expect(() => assertZipWithinLimit(end)).toThrow(/unpacks to more than/);
+    expect(() => assertZipWithinLimit(Buffer.from('plain words'))).toThrow(/not a readable/);
+  });
+
+  it('still reads a real workbook and a real document', async () => {
+    const ExcelJS = await import('exceljs');
+    const book = new ExcelJS.Workbook();
+    book.addWorksheet('Sheet').addRow(['Name', 'Asha Rao']);
+    const sheet = Buffer.from(await book.xlsx.writeBuffer());
+    expect(() => assertZipWithinLimit(sheet)).not.toThrow();
+    const stored = new PizZip();
+    stored.file('word/document.xml', '<w:p><w:r><w:t>Name: Asha Rao</w:t></w:r></w:p>');
+    const result = await readFile({ fileName: 'a.docx', data: stored.generate({ type: 'nodebuffer' }) }, deps());
+    expect(result.values[0]).toMatchObject({ value: 'Asha Rao' });
+  });
+});
+
+describe('what an attachment is', () => {
+  it('takes its type from the name and the first bytes, never from the browser', () => {
+    expect(attachmentTypeOf('a.pdf', Buffer.from('%PDF-1.7 rest'))).toBe('application/pdf');
+    expect(attachmentTypeOf('a.PNG', Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d]))).toBe('image/png');
+    expect(attachmentTypeOf('a.jpg', Buffer.from([0xff, 0xd8, 0xff, 0xe0]))).toBe('image/jpeg');
+    expect(attachmentTypeOf('a.webp', Buffer.from('RIFFxxxxWEBPVP8 ', 'latin1'))).toBe('image/webp');
+    expect(attachmentTypeOf('a.xlsx', Buffer.from('PK\x03\x04rest', 'latin1'))).toContain('spreadsheetml');
+    expect(attachmentTypeOf('a.txt', Buffer.from('Plain words'))).toBe('text/plain');
+  });
+
+  it('refuses a file that is not what its name says', () => {
+    expect(attachmentTypeOf('a.pdf', Buffer.from('<html><script>'))).toBeNull();
+    expect(attachmentTypeOf('a.png', Buffer.from('%PDF-1.7'))).toBeNull();
+    expect(attachmentTypeOf('a.docx', Buffer.from('%PDF-1.7'))).toBeNull();
+    expect(attachmentTypeOf('a.txt', Buffer.from([0x4d, 0x5a, 0x00, 0x01]))).toBeNull();
+    expect(attachmentTypeOf('a.exe', Buffer.from('MZ'))).toBeNull();
   });
 });

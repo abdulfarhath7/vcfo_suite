@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { inflateRawSync } from 'node:zlib';
 import PizZip from 'pizzip';
 import type { LlmProvider } from '@/lib/ask/provider';
 
@@ -35,8 +36,46 @@ function decodeXml(s: string): string {
     .replace(/&amp;/g, '&');
 }
 
+const ZIP_MAX_INFLATED_BYTES = 100 * 1024 * 1024;
+const ZIP_MAX_ENTRIES = 5000;
+const ZIP_END_MARK = Buffer.from([0x50, 0x4b, 0x05, 0x06]);
+const ZIP_ENTRY_MARK = 0x02014b50;
+const ZIP_TOO_BIG = 'This file unpacks to more than can be read here. Please send a smaller one.';
+const ZIP_NOT_READABLE = 'This file is not a readable Office document.';
+
+/**
+ * Word and Excel files are zips, and a few kilobytes of zip can unpack to gigabytes. The sizes a zip
+ * declares can lie, so each part is unpacked here against a running total before any parser sees it.
+ */
+export function assertZipWithinLimit(bytes: Buffer): void {
+  const end = bytes.lastIndexOf(ZIP_END_MARK);
+  if (end < 0 || end + 22 > bytes.length) throw new ExtractError(ZIP_NOT_READABLE);
+  const entries = bytes.readUInt16LE(end + 10);
+  let at = bytes.readUInt32LE(end + 16);
+  // A zip too large for these fields says so with all ones, and no Word or Excel file here needs that.
+  if (entries > ZIP_MAX_ENTRIES || at === 0xffffffff) throw new ExtractError(ZIP_TOO_BIG);
+  let room = ZIP_MAX_INFLATED_BYTES;
+  try {
+    for (let i = 0; i < entries; i += 1) {
+      if (bytes.readUInt32LE(at) !== ZIP_ENTRY_MARK) throw new ExtractError(ZIP_NOT_READABLE);
+      const method = bytes.readUInt16LE(at + 10);
+      if (method !== 0 && method !== 8) throw new ExtractError(ZIP_NOT_READABLE);
+      const local = bytes.readUInt32LE(at + 42);
+      const dataAt = local + 30 + bytes.readUInt16LE(local + 26) + bytes.readUInt16LE(local + 28);
+      const data = bytes.subarray(dataAt, dataAt + bytes.readUInt32LE(at + 20));
+      room -= method === 8 ? inflateRawSync(data, { maxOutputLength: Math.max(room, 1) }).length : data.length;
+      if (room < 0) throw new ExtractError(ZIP_TOO_BIG);
+      at += 46 + bytes.readUInt16LE(at + 28) + bytes.readUInt16LE(at + 30) + bytes.readUInt16LE(at + 32);
+    }
+  } catch (error) {
+    if (error instanceof ExtractError) throw error;
+    throw new ExtractError((error as { code?: string }).code === 'ERR_BUFFER_TOO_LARGE' ? ZIP_TOO_BIG : ZIP_NOT_READABLE);
+  }
+}
+
 /** Paragraphs of a .docx, headings marked with "#" so the chunker can use them. */
 export function docxToText(bytes: Buffer): string {
+  assertZipWithinLimit(bytes);
   let xml: string;
   try {
     xml = new PizZip(bytes).file('word/document.xml')?.asText() ?? '';

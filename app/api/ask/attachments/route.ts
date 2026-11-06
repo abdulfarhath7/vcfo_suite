@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createAskAttachment } from '@/db/repositories/ask-attachments';
-import { READABLE_EXTENSIONS } from '@/lib/ask/data-router/read';
+import { attachmentTypeOf, READABLE_EXTENSIONS } from '@/lib/ask/data-router/read';
 import { requireAsk } from '@/lib/ask/route-guard';
 import { MAX_UPLOAD_BYTES, maxUploadSizeError } from '@/lib/upload-limits';
 import { putObject } from '@/storage/s3';
@@ -25,8 +25,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'I can read PDF, Word, Excel, CSV, text and image files.' }, { status: 400 });
   }
   const s3Key = `ask/attachments/${gate.ctx.userId}/${randomUUID()}/${fileName}`;
-  const contentType = file.type || 'application/octet-stream';
-  await putObject(s3Key, Buffer.from(await file.arrayBuffer()), contentType);
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const contentType = attachmentTypeOf(fileName, bytes);
+  if (!contentType) return NextResponse.json({ error: 'This file is not what its name says it is.' }, { status: 400 });
+  await putObject(s3Key, bytes, contentType);
   const row = await createAskAttachment(gate.ctx, { kind: 'file', fileName, contentType, sizeBytes: file.size, s3Key });
   return NextResponse.json({ id: row.id, fileName: row.fileName });
 }

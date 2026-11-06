@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { z } from 'zod';
-import { docxToText, ExtractError } from '@/lib/ask/ingest/extract';
+import { assertZipWithinLimit, docxToText, ExtractError } from '@/lib/ask/ingest/extract';
 import { tokeniseIdentityNumbers } from '@/lib/ask/mask';
 import type { LlmMessage, LlmProvider } from '@/lib/ask/provider';
 import { catalogSynonyms } from './candidates';
@@ -283,6 +283,7 @@ async function pdfPages(data: Buffer): Promise<string[] | null> {
 }
 
 async function sheetPages(data: Buffer): Promise<string[]> {
+  assertZipWithinLimit(data);
   const ExcelJS = await import('exceljs');
   const book = new (ExcelJS.default?.Workbook ?? ExcelJS.Workbook)();
   await book.xlsx.load(data as unknown as ArrayBuffer);
@@ -299,6 +300,27 @@ async function sheetPages(data: Buffer): Promise<string[]> {
 export const READABLE_EXTENSIONS: ReadonlySet<string> = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'xlsx', 'csv', 'tsv', 'txt']);
 
 const IMAGE_TYPES: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
+
+const ZIP_HEAD = (head: Buffer) => head.subarray(0, 4).equals(Buffer.from('PK\x03\x04', 'latin1'));
+const TEXT_HEAD = (head: Buffer) => !head.subarray(0, 4096).includes(0);
+const FILE_KINDS: Record<string, { type: string; matches: (head: Buffer) => boolean }> = {
+  pdf: { type: 'application/pdf', matches: (head) => head.subarray(0, 1024).includes('%PDF-') },
+  png: { type: IMAGE_TYPES.png!, matches: (head) => head.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47])) },
+  jpg: { type: IMAGE_TYPES.jpg!, matches: (head) => head.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) },
+  jpeg: { type: IMAGE_TYPES.jpeg!, matches: (head) => head.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) },
+  webp: { type: IMAGE_TYPES.webp!, matches: (head) => head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP' },
+  docx: { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', matches: ZIP_HEAD },
+  xlsx: { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', matches: ZIP_HEAD },
+  csv: { type: 'text/csv', matches: TEXT_HEAD },
+  tsv: { type: 'text/tab-separated-values', matches: TEXT_HEAD },
+  txt: { type: 'text/plain', matches: TEXT_HEAD },
+};
+
+/** The type a file is stored under, from its extension and its first bytes, or null when they disagree. The browser's word for it counts for nothing. */
+export function attachmentTypeOf(fileName: string, head: Buffer): string | null {
+  const kind = FILE_KINDS[fileName.toLowerCase().split('.').pop() ?? ''];
+  return kind?.matches(head) ? kind.type : null;
+}
 
 export async function readFile(file: { fileName: string; data: Buffer }, deps: ModelReadDeps): Promise<ReadResult> {
   const ext = file.fileName.toLowerCase().split('.').pop() ?? '';
