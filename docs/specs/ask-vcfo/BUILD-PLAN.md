@@ -400,3 +400,26 @@ Phase 4, 6 November:
 - A manager accepting a real approval step is covered by unit tests with `needsManager` rows. The browser test only
   opens such a card from its link.
 
+Phase 5, 6 November:
+
+- Only the loaded common tools are `strict`. The API refuses more than 20 strict tools in one request and counts deferred
+  ones: "Too many strict tools (27)". Zod parses every input again at execution, so a deferred tool loses nothing.
+- A fixed workflow is offered only for an action marked `simple` that needs no item id: `tasks.create`,
+  `requests.create` and `notes.add`. Everything else goes to the agent run, because finding the item is the open-ended part.
+- Work asked for in words costs one Haiku pick, because a sentence names no action in a form code can read, and a wrong
+  workflow costs more than the pick. A file or a labelled paste goes straight to the data router and skips it.
+- The pick can answer `fill_details`, which goes to the data router, and `open_ended`, which starts the agent run.
+  `checklist.setResponse` and `checklist.attachFile` are marked `routerOnly` and are not agent tools, so step values
+  still reach a card through the router's checks and nowhere else.
+- A `notes` area was added, as the 25 needed it: `notes.list`, `notes.add`, `notes.delete`.
+- "Most used" was counted from the `fetch` call sites in the app, as a proxy. Real usage is on RDS, which this track may
+  not read.
+- Only `app/api/requests` held a rule the chat must also obey, so only it was extracted, into
+  `src/lib/requests/create-document-request.ts`. Every other route's rules were already in its repository, and those
+  routes were left as they are, so they do not call the action.
+- Rejecting a changeset now marks its open rows skipped, so an agent run reads a clear result when it wakes.
+- The envelope gains `runLive`, which tells the thread to follow a run, and a changeset summary gains `hasUndo`, so the
+  card offers undo only for actions that have it.
+- The loop's live checks go through vitest and the browser test, because a script under `--conditions=react-server`
+  cannot load the registry.
+

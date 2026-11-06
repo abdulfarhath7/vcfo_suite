@@ -41,3 +41,29 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - `next dev` stopped twice during these runs with exit code 143, right after compiling a changeset route. Run the spec
   against a build with `next start`. Playwright otherwise tries `npm run dev`, which runs Docker Compose from the
   worktree and hits the main checkout's container names.
+
+## Agent runs (phase 5)
+
+- The API takes at most 20 strict tools in one request and counts deferred ones, so only the loaded common tools are
+  strict. Zod parses every input again at execution, so a deferred tool loses nothing that matters. Strict schemas take
+  no `minLength`, `pattern` or `format`; `agent/tools.ts` strips them and zod keeps those rules.
+- `z.toJSONSchema` needs the default `output` side: the `input` side leaves out `additionalProperties: false` and the
+  API answers 400.
+- Tool names cannot hold a dot. `tasks.create` travels as `tasks__create`.
+- `maskJson` over a run's transcript must leave thinking blocks alone, or the API refuses the next turn. It walks the
+  value now instead of masking the JSON text.
+- A UUID can hold a shape that reads as a passport or an Aadhaar, so `maskIdentityNumbers` skips whole UUIDs. Without
+  that, a run's tool ids break when they come back from storage.
+- `step.waitForEvent` does not see an event sent before the wait began. The job's first wait is one minute and it looks
+  at the card after every wait, so a very fast click still wakes the run.
+- Action areas load one at a time. The schema files import each other, and loading them in parallel could read one half
+  evaluated in a test run.
+- `refusing()` turns a repository's 4xx into a sentence. Anything else stays a fault, so the loop reports a neutral line
+  to the model and the real error goes to the log.
+- A script under `node --conditions=react-server` cannot load the registry, because a repository's import chain reaches
+  `react-hot-toast`. Live checks run under vitest with `// @vitest-environment node`, or in the browser test.
+- `e2e/ask-run.spec.ts` needs `ASK_E2E_LIVE=1`, a build under `next start` with `INNGEST_DEV=1`, and
+  `npx inngest-cli@latest dev -u http://localhost:3100/api/inngest --no-discovery`. Start the server with
+  `RESEND_API_KEY= WHATSAPP_ENABLED=false WATCH_ENABLED=false`, because the dev server also fires the crons.
+- The injection test removes the first test's note first. That note truly says two requests are open, so with it present
+  the run rightly proposed a reminder card, which reads like a failed injection test and is not one.
