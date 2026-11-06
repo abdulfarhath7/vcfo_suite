@@ -23,7 +23,7 @@ import { actionNameOf, actionsFor, agentTools } from './tools';
  * `ask_runs.state`, so a step that is retried, or a run that wakes days later, picks up where it was.
  */
 
-const SYSTEM = `You are the Do engine of Ask VCFO, working for staff of an Indian compliance firm on one client's project.
+const SYSTEM = `You are the Do engine of Ask VCFO, working for a person at an Indian compliance firm, or for one of its clients, on one client's project.
 
 The tools act on that one project as the signed-in person. Other tools exist beyond the loaded ones: use tool search when you need one.
 
@@ -102,7 +102,7 @@ async function limitReached(ctx: AuthContext, run: AskRunRow, now: Date): Promis
 
 async function callModel(ctx: AuthContext, run: AskRunRow, state: AgentState, actions: readonly AnyAction[], now: Date): Promise<AgentOutcome | null> {
   const provider = await getAskProvider();
-  if (!provider) return stop(ctx, run, 'failed', REFUSAL_COPY.unavailableStaff, 'no provider');
+  if (!provider) return stop(ctx, run, 'failed', ctx.role === 'client' ? REFUSAL_COPY.unavailable : REFUSAL_COPY.unavailableStaff, 'no provider');
   const startedAt = Date.now();
   const result = await provider.complete({
     model: askConfig().models.agent,

@@ -16,8 +16,10 @@ import { placeValues, type SourceRead } from '@/lib/ask/data-router/place';
 import { planRows } from '@/lib/ask/data-router/plan';
 import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
 import type { ReadResult } from '@/lib/ask/data-router/types';
+import { matchClientFiles } from '@/lib/actions/client-portal/file-card';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
 import { checkAskRateLimit } from '@/lib/ask/rate-limit';
@@ -120,10 +122,19 @@ export async function handleDoWork(
   request: DoWorkRequest,
   message: string,
   emit: (event: DoEvent) => void,
-  context: { conversationId: string | null; now: Date; pending: Awaited<ReturnType<typeof pendingDoRun>>; metered?: MeteredProvider | null },
+  context: {
+    conversationId: string | null;
+    now: Date;
+    pending: Awaited<ReturnType<typeof pendingDoRun>>;
+    metered?: MeteredProvider | null;
+    /** A client's own company, from the shell: every run in that shell is held to it. */
+    lockedTo?: string | null;
+  },
 ): Promise<DoWorkResult | null> {
   const { shell } = request;
-  if (shell === 'client') return { answer: limitAnswer(shell, 'doWork'), metered: null };
+  const client = shell === 'client';
+  // A super admin previewing the client shell only reads; a client's run needs their own company.
+  if (client && (ctx.role !== 'client' || !context.lockedTo)) return { answer: limitAnswer(shell, 'doWork'), metered: null };
   const flags = askFlags();
   if (flags.killedPaths.has('fixed_workflow') || flags.killedTiers.has('T2')) return { answer: limitAnswer(shell, 'pathStopped'), metered: null };
   const { conversationId, now } = context;
@@ -142,6 +153,8 @@ export async function handleDoWork(
     return metered;
   };
   const deps = { provider, model: config.models.extract, idDocReading: flags.idDocReading };
+  const reachable = async (): Promise<EngagementOption[]> =>
+    (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug, companyName: e.companyName })).filter((e) => !client || engagementDbId(e.id) === engagementDbId(context.lockedTo!));
 
   // Work asked for in words comes first; a message of facts carries on to the data router below.
   const waiting = context.pending;
@@ -158,7 +171,7 @@ export async function handleDoWork(
       onScreen: await pageContextLine(ctx, request.page),
       conversationId,
       now,
-      engagements: async () => (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug, companyName: e.companyName })),
+      engagements: reachable,
       provider,
       resumed: workReply ? { run: workReply.run, pick: workReply.state.pick, engagement: named! } : undefined,
     });
@@ -196,7 +209,7 @@ export async function handleDoWork(
 
   if (pending && CANCEL.test(message)) return finish(line('All right, I have left this as it is. Nothing was saved.'), 'cancelled');
 
-  const engagements: EngagementOption[] = (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug, companyName: e.companyName }));
+  const engagements = await reachable();
   const instruction = pending ? pending.state.instruction : instructionOf(message);
 
   // The sources: files as given, and a paste kept as a file only if the run has to wait.
@@ -219,7 +232,7 @@ export async function handleDoWork(
   if (pending && !replied) return askBack('Please tell me which project this is for.', pending.state);
   const firstLock = replied
     ? ({ kind: 'locked', engagement: replied } as const)
-    : lockEngagement({ message: instruction, pagePath: request.page?.path, engagements });
+    : lockEngagement({ message: instruction, pagePath: request.page?.path, engagements, ownCompany: client });
   if (firstLock.kind === 'choose') {
     const names = firstLock.options.map((o) => o.companyName);
     return askBack(`More than one project matches: ${names.join(' and ')}. Which one is this for?`, { options: firstLock.options, mismatch: null });
@@ -231,6 +244,21 @@ export async function handleDoWork(
   // Read every source. A refused file is reported; the others still count.
   const rows: AskAttachmentRow[] = await getOwnAskAttachments(ctx, sourceIds);
   if (sourceIds.length > 0 && rows.length !== sourceIds.length) return finish(line('One of those files is not available. Please attach it again.'), 'failed');
+
+  // A client's file that answers something open needs no reading: it goes straight on a card.
+  let openNote = '';
+  if (client && rows.length > 0 && firstLock.kind === 'locked') {
+    const { engagement } = firstLock;
+    const match = await matchClientFiles({ auth: ctx, engagementId: engagement.id, conversationId, runId, now, via: 'ask' }, rows, instruction);
+    openNote = match.note;
+    if (match.draft) {
+      await lockAskRun(ctx, runId, engagement.id);
+      const changesetId = await createReviewCard(ctx, match.draft, { runId, conversationId, companyName: engagement.companyName, now });
+      if (!changesetId) return finish(line('Your company is not available.'), 'failed');
+      return finish(line(`I prepared this for ${engagement.companyName}. Nothing goes out until you confirm.${openNote}`, { changesetId }), 'waiting_approval');
+    }
+  }
+
   progress(rows.length > 0 || paste ? 'Reading…' : 'Checking…');
   const reads: SourceRead[] = [];
   const refusals: string[] = [];
@@ -256,13 +284,13 @@ export async function handleDoWork(
       return attachment.kind === 'paste' ? readPaste(bytes.toString('utf8'), deps) : readFile({ fileName: attachment.fileName, data: bytes }, deps);
     });
   }
-  if (reads.length === 0) return finish(line(refusals[0] ?? 'I found nothing to read.'), 'failed', undefined, 'read refused');
+  if (reads.length === 0) return finish(line(`${refusals[0] ?? 'I found nothing to read.'}${openNote}`), 'failed', undefined, 'read refused');
   if (reads.every((r) => r.result.values.length === 0)) {
     if (paste && !isDataMessage(paste)) {
       await close('done');
       return null;
     }
-    return finish(line('I could not find any details to file in this. Nothing was saved.'));
+    return finish(line(`I could not find any details to file in this. Nothing was saved.${openNote}`));
   }
 
   // With no client yet, the document may name one. A document naming another client is a question.
@@ -299,7 +327,7 @@ export async function handleDoWork(
   progress('Checking the rules…');
   const plan = planRows({ role: ctx.role, engagementId: row.id, companyName: row.companyName, engagement: row, state, placed, files, instruction });
   questions.push(...plan.questions);
-  const askMore = questions.length > 0 ? ` ${[...new Set(questions)].slice(0, 5).join(' ')}` : '';
+  const askMore = `${questions.length > 0 ? ` ${[...new Set(questions)].slice(0, 5).join(' ')}` : ''}${openNote}`;
 
   if (plan.draft.rows.length === 0) {
     const nothing = placed.length > 0 ? `Everything here is already saved for ${row.companyName}.` : `I found nothing to save for ${row.companyName}.`;

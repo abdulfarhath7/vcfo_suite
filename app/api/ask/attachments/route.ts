@@ -6,11 +6,10 @@ import { requireAsk } from '@/lib/ask/route-guard';
 import { MAX_UPLOAD_BYTES, maxUploadSizeError } from '@/lib/upload-limits';
 import { putObject } from '@/storage/s3';
 
-/** POST /api/ask/attachments: stores one file for the staff chat. Reading it happens at the next message. */
+/** POST /api/ask/attachments: stores one file for the chat. Reading it happens at the next message. */
 export async function POST(request: Request) {
   const gate = await requireAsk();
   if (gate.ok === false) return gate.response;
-  if (gate.ctx.role === 'client') return NextResponse.json({ error: 'Attachments are not available here.' }, { status: 403 });
 
   let form: FormData;
   try {

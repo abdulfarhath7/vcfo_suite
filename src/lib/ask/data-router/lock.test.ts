@@ -35,6 +35,13 @@ describe('lockEngagement', () => {
 });
 
 describe('companiesNamed', () => {
+  it('in a client\'s run, treats only a company-like name as pointing elsewhere', () => {
+    const own = [engagements[0]!];
+    expect(lockEngagement({ message: 'This is for Asha Rao', engagements: own, ownCompany: true }).kind).toBe('locked');
+    expect(lockEngagement({ message: 'File it for Zeta Industries Pvt Ltd', engagements: own, ownCompany: true })).toEqual({ kind: 'unknown', mentioned: 'Zeta Industries Pvt Ltd' });
+    expect(lockEngagement({ message: 'This is for Asha Rao', engagements: own }).kind).toBe('unknown');
+  });
+
   it('prefers the whole name over a first word', () => {
     expect(companiesNamed('Acme Foods', engagements)).toEqual([acmeFoods]);
   });

@@ -79,7 +79,7 @@ export async function handleWork(
   const engagements = resumed ? [] : await input.engagements();
   const lock = resumed
     ? ({ kind: 'locked', engagement: resumed.engagement } as const)
-    : lockEngagement({ message, pagePath: request.page?.path, engagements });
+    : lockEngagement({ message, pagePath: request.page?.path, engagements, ownCompany: request.shell === 'client' });
   if (lock.kind === 'unknown' && lock.mentioned) return answerOf(line(`I cannot find ${maskIdentityNumbers(lock.mentioned)} among your projects, so I have done nothing.`));
   if (lock.kind !== 'locked') {
     const options = lock.kind === 'choose' ? lock.options : engagements;

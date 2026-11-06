@@ -15,7 +15,7 @@ const manager: AuthContext = { userId: 'mgr-1', email: 'm@x.test', name: 'Manage
 const execute = vi.fn();
 const recheck = vi.fn();
 const undo = vi.fn();
-const action = { name: 'checklist.setResponse', tier: 'T2', input: z.object({ stepId: z.string(), fieldId: z.string(), value: z.string() }).passthrough(), recheck, execute, undo };
+const action = { name: 'checklist.setResponse', tier: 'T2', roles: ['super_admin', 'admin', 'manager', 'intern'], input: z.object({ stepId: z.string(), fieldId: z.string(), value: z.string() }).passthrough(), recheck, execute, undo };
 const actions: Record<string, unknown> = { 'checklist.setResponse': action };
 const noteDecision = vi.fn(async () => null as string | null);
 const sendEvent = vi.fn(async () => undefined);
@@ -118,6 +118,14 @@ describe('decideChangeset', () => {
     expect(execute).not.toHaveBeenCalled();
     expect(updateRows.mock.calls[0]![2][0].patch).toMatchObject({ status: 'held', heldReason: 'Held: the step closed.' });
     expect(audit).not.toHaveBeenCalled();
+  });
+
+  it('runs no row for a person whose role the action does not take, on any card', async () => {
+    const hash = setCard([makeRow('a')]);
+    const client = { ...lead, role: 'client' as const };
+    const result = await decideChangeset(client, 'cs-1', { contentHash: hash, accept: ['a'] });
+    expect(execute).not.toHaveBeenCalled();
+    expect(result.failed).toBe(1);
   });
 
   it('refuses an expired card', async () => {

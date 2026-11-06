@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getItem } from '@/data/checklist';
-import { checkResponseRow, displayValue, fieldOf, needsManagerApproval, responseKey, type ResponseTarget, type RowEngagement } from '@/lib/actions/checklist/rules';
+import { checkResponseRow, displayValue, fieldOf, needsManagerApproval, responseActionsFor, responseKey, type ResponseTarget, type RowEngagement } from '@/lib/actions/checklist/rules';
 import type { ChangesetDraft, ChangesetRowDraft, RowCheck, RowSource } from '@/lib/ask/changeset/types';
 import { catalogEntry, writableUses } from '@/lib/ask/field-catalog';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
@@ -143,15 +143,22 @@ export function planRows(input: PlanInput): PlanResult {
   const questions: string[] = [];
   const rows: ChangesetRowDraft[] = [];
   const seen = new Map<string, ChangesetRowDraft>();
+  const client = input.role === 'client';
+  const actions = responseActionsFor(input.role);
 
   const makeRow = (target: ResponseTarget, value: string, label: string, source: RowSource | null, extra: { action?: string; isFile?: boolean } = {}): ChangesetRowDraft | null => {
-    const fullTarget: ResponseTarget = { ...target, ...(needsManagerApproval(target.stepId) ? { needsManager: true } : {}) };
+    const fullTarget: ResponseTarget = { ...target, ...(!client && needsManagerApproval(target.stepId) ? { needsManager: true } : {}) };
     const checked = checkResponseRow({ role: input.role, target: fullTarget, value, state: input.state, engagement: input.engagement, isFile: extra.isFile });
     // The same value is already there, so there is nothing to review.
     if (checked.oldValue && checked.oldValue === checked.value) return null;
+    // What belongs to the firm never reaches a client's card.
+    if (client && checked.checks.some((check) => check.rule === 'owner' && !check.ok)) {
+      questions.push(`Your project lead fills "${label}", so I left it out.`);
+      return null;
+    }
     const field = fieldOf(fullTarget);
     return {
-      action: extra.action ?? 'checklist.setResponse',
+      action: extra.action ?? actions.set,
       target: { ...fullTarget },
       label,
       oldValue: checked.oldValue,
@@ -176,6 +183,7 @@ export function planRows(input: PlanInput): PlanResult {
         state: input.state,
         engagement: input.engagement,
         isFile: true,
+        probe: true,
       });
       return !checks.some((check) => !check.ok && (check.rule === 'gate' || check.rule === 'owner'));
     });
@@ -264,7 +272,7 @@ export function planRows(input: PlanInput): PlanResult {
       attachmentId: file.attachmentId,
     };
     const field = fieldOf(target);
-    const row = makeRow(target, file.fileName, displayLabel('director', person, file.person, field?.label ?? 'Copy'), { kind: 'attachment', attachmentId: file.attachmentId }, { action: 'checklist.attachFile', isFile: true });
+    const row = makeRow(target, file.fileName, displayLabel('director', person, file.person, field?.label ?? 'Copy'), { kind: 'attachment', attachmentId: file.attachmentId }, { action: actions.attach, isFile: true });
     if (row) rows.push({ ...row, displayNew: file.fileName, displayOld: row.oldValue ? 'A file is already attached' : '', sensitive: false });
   }
 

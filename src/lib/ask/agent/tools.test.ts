@@ -27,9 +27,21 @@ afterEach(() => {
 const schemaOf = (tool: LlmTool) => tool.input_schema as { properties?: Record<string, unknown>; additionalProperties?: boolean; required?: string[] };
 
 describe('tools for the agent', () => {
-  it('shows a client no staff action, and a developer nothing', async () => {
-    expect(await actionsFor('client', 'client')).toEqual([]);
+  it('shows a client only their own actions, and a developer nothing', async () => {
+    const shown = await actionsFor('client', 'client');
+    expect(shown.length).toBeGreaterThan(0);
+    for (const action of shown) {
+      expect(action.name.startsWith('client-portal.')).toBe(true);
+      expect(action.roles).toEqual(['client']);
+      expect(action.routerOnly).toBeFalsy();
+      expect(action.tier).not.toBe('T4');
+    }
     expect(await actionsFor('developer', 'admin')).toEqual([]);
+  });
+
+  it('keeps a client\'s actions out of every staff shell', async () => {
+    for (const role of STAFF) expect((await actionsFor(role, shellOf(role))).some((a) => a.name.startsWith('client-portal.'))).toBe(false);
+    expect(await actionsFor('manager', 'client')).toEqual([]);
   });
 
   it('shows no T4 action to anyone, and no action the role may not use', async () => {

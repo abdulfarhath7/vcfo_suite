@@ -6,14 +6,14 @@ import { uploadAskAttachment } from '@/hooks/ask/ask-api';
 import { ASK_VISIBILITY_NOTICE } from '@/lib/ask/question-gaps';
 import { useAskOptional } from './ask-context';
 
-const STAFF_MESSAGE_MAX = 20_000;
-const CLIENT_MESSAGE_MAX = 2_000;
+const MESSAGE_MAX = 20_000;
 const MAX_FILES = 5;
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.csv,.tsv,.txt';
 
 /**
- * Input + Send: Send is the only solid main button in the panel (D1, R-12). Staff can also attach
+ * Input + Send: Send is the only solid main button in the panel (D1, R-12). A person can also attach
  * files or paste a long block of details; the data router reads them and answers with a review card.
+ * A super admin previewing the client shell only reads, so the preview has no attach control.
  */
 export function AskComposer() {
   const ask = useAskOptional();
@@ -24,6 +24,7 @@ export function AskComposer() {
   const picker = useRef<HTMLInputElement>(null);
   if (!ask) return null;
   const client = ask.shell === 'client';
+  const canAttach = !ask.preview;
   const ready = (text.trim() || files.length > 0) && !ask.busy && !uploading;
   const submit = () => {
     if (!ready) return;
@@ -39,7 +40,7 @@ export function AskComposer() {
     });
   };
   const addFiles = async (list: FileList | null) => {
-    if (!list || list.length === 0 || client) return;
+    if (!list || list.length === 0 || !canAttach) return;
     setUploading(true);
     setUploadError(null);
     try {
@@ -74,17 +75,17 @@ export function AskComposer() {
           e.preventDefault();
           submit();
         }}
-        onDragOver={client ? undefined : (e) => e.preventDefault()}
+        onDragOver={canAttach ? (e) => e.preventDefault() : undefined}
         onDrop={
-          client
-            ? undefined
-            : (e) => {
+          canAttach
+            ? (e) => {
                 e.preventDefault();
                 void addFiles(e.dataTransfer.files);
               }
+            : undefined
         }
       >
-        {client ? null : (
+        {canAttach ? (
           <>
             <input ref={picker} type="file" multiple accept={ACCEPT} className="sr-only" data-testid="ask-attach-input" aria-label="Attach a file" tabIndex={-1} onChange={(e) => void addFiles(e.target.files)} />
             <button
@@ -97,7 +98,7 @@ export function AskComposer() {
               <Paperclip className="h-4 w-4" strokeWidth={1.6} />
             </button>
           </>
-        )}
+        ) : null}
         <label htmlFor="ask-composer" className="sr-only">
           Ask VCFO
         </label>
@@ -105,7 +106,7 @@ export function AskComposer() {
           id="ask-composer"
           rows={1}
           value={text}
-          maxLength={client ? CLIENT_MESSAGE_MAX : STAFF_MESSAGE_MAX}
+          maxLength={MESSAGE_MAX}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -113,7 +114,7 @@ export function AskComposer() {
               submit();
             }
           }}
-          placeholder={client ? 'Ask about your company setup…' : 'Ask, paste details or attach a file…'}
+          placeholder={ask.preview ? 'Ask about your company setup…' : 'Ask, paste details or attach a file…'}
           className="max-h-32 min-h-[32px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[14px] text-ink placeholder:text-ink-faint focus:outline-none"
         />
         <button

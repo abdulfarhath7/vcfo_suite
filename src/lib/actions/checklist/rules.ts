@@ -5,7 +5,7 @@ import { checkFormat } from '@/lib/ask/data-router/formats';
 import { maskIdentityValue } from '@/lib/ask/mask';
 import type { JsonValue, RowCheck } from '@/lib/ask/changeset/types';
 import { expandRepeatEntry, isRepeatField, repeatFieldId, showWhenMatches } from '@/lib/checklist/checklist-repeat';
-import { getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
+import { fieldsForOwnership, getClientResponseFields, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { checklistGateViewerFrom, gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
@@ -41,6 +41,23 @@ export interface RowEngagement {
   parentEntityRegistrationNumber?: string | null;
 }
 
+/** The actions that fill a checklist field: a client's own pair, and the staff pair. */
+const RESPONSE_ACTIONS = {
+  client: { set: 'client-portal.setAnswer', attach: 'client-portal.attachFile' },
+  staff: { set: 'checklist.setResponse', attach: 'checklist.attachFile' },
+} as const;
+
+export const responseActionsFor = (role: string) => (role === 'client' ? RESPONSE_ACTIONS.client : RESPONSE_ACTIONS.staff);
+
+/** A typed answer a person may correct on the card; a file row can only be accepted or left. */
+export function isEditableAnswer(action: string): boolean {
+  return action === RESPONSE_ACTIONS.client.set || action === RESPONSE_ACTIONS.staff.set;
+}
+
+export function isFileRow(action: string): boolean {
+  return action === RESPONSE_ACTIONS.client.attach || action === RESPONSE_ACTIONS.staff.attach;
+}
+
 const NOT_BLOCKING: ReadonlySet<string> = new Set(['conflict', 'other_step', 'documents_differ']);
 const HOLDS: ReadonlySet<string> = new Set(['gate', 'owner', 'condition']);
 
@@ -71,8 +88,20 @@ export function needsManagerApproval(stepId: string): boolean {
   return stepId === MANAGER_APPROVAL_STEP_ID;
 }
 
-function ownerMessage(stepId: string, key: string): string {
+function ownerMessage(stepId: string, key: string, role: string): string {
+  if (role === 'client') return 'Your project lead fills this field.';
   return isClientOnlyField(stepId, key) ? 'The client fills this field.' : 'The project lead fills this field.';
+}
+
+/**
+ * A client's own field, beyond the direct-flow rule: it is on the form for this kind of company, and
+ * a file answer only ever comes from a file, so typed text can never point a file field at a path.
+ */
+function clientOwnsField(target: ResponseTarget, key: string, ownership: unknown, field: ChecklistField | null, isFile: boolean | null): boolean {
+  const item = getItem(target.stepId);
+  if (!item || !field || field.type === 'repeat' || (isFile !== null && (field.type === 'file') !== isFile)) return false;
+  const root = key.split('.')[0];
+  return fieldsForOwnership(item.id, getClientResponseFields(item), coerceOwnershipType(ownership)).some((f) => f.id === root);
 }
 
 /** A value already on the screen for the same fact, on another step. */
@@ -111,6 +140,8 @@ export function checkResponseRow(input: {
   pending?: ChecklistItemResponses;
   engagement: RowEngagement;
   isFile?: boolean;
+  /** Only asking whether this person could fill this place at all, with no value yet. */
+  probe?: boolean;
 }): RowCheckResult {
   const { role, target, state, engagement } = input;
   const key = responseKey(target);
@@ -148,10 +179,10 @@ export function checkResponseRow(input: {
     checks.push({ rule: 'gate', ok: true });
   }
 
-  const owner = canRoleEditField(role, target.stepId, key);
-  checks.push({ rule: 'owner', ok: owner, ...(owner ? {} : { message: `Held: ${ownerMessage(target.stepId, key)}` }) });
-
   const field = fieldOf(target);
+  const owner = canRoleEditField(role, target.stepId, key) && (role !== 'client' || clientOwnsField(target, key, engagement.ownershipType, field, input.probe ? null : Boolean(input.isFile)));
+  checks.push({ rule: 'owner', ok: owner, ...(owner ? {} : { message: `Held: ${ownerMessage(target.stepId, key, role)}` }) });
+
   if (!field) checks.push({ rule: 'condition', ok: false, message: 'Held: this field is not on the step.' });
   else if (field.showWhen && !showWhenMatches(field.showWhen, responses[field.showWhen.field])) {
     const parent = fieldOf({ ...target, fieldId: field.showWhen.field.split('.').pop() ?? field.showWhen.field });
@@ -178,7 +209,8 @@ export function checkResponseRow(input: {
   if (oldValue && value && oldValue !== value) {
     checks.push({ rule: 'conflict', ok: false, message: 'A different value is already saved. Accepting replaces it.' });
   }
-  if (value && !input.isFile) {
+  // A client's form shows each step on its own, and another step may hold what is not theirs to read.
+  if (value && !input.isFile && role !== 'client') {
     const position = target.group && target.entryId ? (saved[target.group] ?? '').split(',').indexOf(target.entryId) + 1 : null;
     const other = otherStepValue(target, position || null, state);
     if (other && other.value !== value) {

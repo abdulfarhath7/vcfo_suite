@@ -12,7 +12,7 @@ import {
   type AskChangesetRowRow,
   type ChangesetAccess,
 } from '@/db/repositories/ask-changesets';
-import { responseKey } from '@/lib/actions/checklist/rules';
+import { isFileRow, responseKey } from '@/lib/actions/checklist/rules';
 import { getAction } from '@/lib/actions/registry';
 import { agentMayExecute, type ActionContext, type AnyAction } from '@/lib/actions/types';
 import { ASK_CHANGESET_DECIDED } from '@/lib/ask/agent/events';
@@ -103,7 +103,7 @@ export async function editChangesetRow(ctx: AuthContext, id: string, rowId: stri
   const found = await loadOpen(ctx, id, now);
   const row = found.rows.find((r) => r.id === rowId);
   if (!row || !canDecideRow(found, row)) throw new ChangesetRefused('This row is not yours to change.', 403);
-  if (row.action === 'checklist.attachFile' || row.status === 'applied') throw new ChangesetRefused('This row cannot be edited.');
+  if (isFileRow(row.action) || row.status === 'applied') throw new ChangesetRefused('This row cannot be edited.');
   const actx = actionContext(ctx, found, now);
   const action = await getAction(row.action);
   const parsed = action?.input.safeParse({ ...row.target, value });
@@ -193,6 +193,7 @@ async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{
   const failed = (error: string) => ({ patch: { status: 'failed', error } });
   const action = await loadAction(row);
   if (!action) return failed('This action is switched off.');
+  if (!action.roles.includes(actx.auth.role)) return failed('This is not yours to do.');
   const parsed = action.input.safeParse(inputOf(row));
   if (!parsed.success) return failed('This row no longer reads as a valid change.');
   if (action.recheck) {

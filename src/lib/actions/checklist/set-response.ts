@@ -12,10 +12,13 @@ import { isRepeatField, removeRepeatEntry, repeatEntries } from '@/lib/checklist
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { checklistGateViewerFrom, gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import { getItem } from '@/data/checklist';
+import { MILESTONE_DOCUMENT_EXTENSIONS, resolveUploadExtension } from '@/lib/upload-limits';
 import { bucketKey, getObjectBuffer, putObject } from '@/storage/s3';
+import type { AppRole } from '@/auth/guards';
 import type { JsonValue } from '@/lib/ask/changeset/types';
+import { ActionRefused, assertOnLockedClient, refusing } from '../shared';
 import { defineAction, type ActionContext, type ActionRecheck, type ActionResult } from '../types';
-import { checkResponseRow, displayValue, fieldOf, responseKey, rowCanApply, type ResponseTarget } from './rules';
+import { checkResponseRow, displayValue, fieldOf, responseActionsFor, responseKey, rowCanApply, type ResponseTarget } from './rules';
 
 /**
  * Filling one checklist field from an approved card. The write goes through `applyChecklistPatch`,
@@ -36,8 +39,6 @@ const setInput = targetInput.extend({ value: z.string() });
 const attachInput = targetInput.extend({ attachmentId: z.string().uuid(), value: z.string() });
 
 type UndoData = { engagementId: string; stepId: string; key: string; previous: string; applied: string; group?: string; entryId?: string; addedEntry?: boolean };
-
-const STAFF = ['super_admin', 'admin', 'manager', 'intern'] as const;
 
 async function loadRow(auth: AuthContext, engagementId: string) {
   const row = await getEngagementById(auth, engagementDbId(engagementId));
@@ -146,54 +147,102 @@ function previewOf(label: string, action: string, input: ResponseTarget & { valu
   };
 }
 
-export const setResponse = defineAction({
-  name: 'checklist.setResponse',
-  routerOnly: true,
-  description: 'Fill one answer on an incorporation checklist step, after a person approves it on a review card.',
-  input: setInput,
-  tier: 'T2',
-  roles: STAFF,
-  common: true,
-  async preview(actx, input) {
-    return previewOf(fieldOf(input)?.label ?? input.fieldId, 'checklist.setResponse', input, await recheck(actx, input, {}, false));
-  },
-  recheck: (actx, input, pending) => recheck(actx, input, pending, false),
-  async execute(actx, input) {
-    const { value, ...target } = input;
-    return save(actx, target, value);
-  },
-  undo: undoSave,
-});
+/**
+ * The pair of actions for one audience: both run the same rules and the same save. A client's pair
+ * also holds every row to the run's own company, and to the file types the screen's upload takes.
+ */
+function responseActions(input: { audience: 'staff' | 'client'; roles: readonly AppRole[]; description: { set: string; attach: string } }) {
+  const names = responseActionsFor(input.audience === 'client' ? 'client' : 'staff');
+  const client = input.audience === 'client';
+  const onRun = (actx: ActionContext, target: ResponseTarget) => {
+    if (client) assertOnLockedClient(actx, target.engagementId, 'step');
+  };
+  const set = defineAction({
+    name: names.set,
+    routerOnly: true,
+    description: input.description.set,
+    input: setInput,
+    tier: 'T2',
+    roles: input.roles,
+    common: !client,
+    async preview(actx, row) {
+      onRun(actx, row);
+      return previewOf(fieldOf(row)?.label ?? row.fieldId, names.set, row, await recheck(actx, row, {}, false));
+    },
+    recheck(actx, row, pending) {
+      onRun(actx, row);
+      return recheck(actx, row, pending, false);
+    },
+    async execute(actx, row) {
+      const { value, ...target } = row;
+      return refusing(async () => {
+        onRun(actx, target);
+        return save(actx, target, value);
+      });
+    },
+    undo: undoSave,
+  });
+  const attach = defineAction({
+    name: names.attach,
+    routerOnly: true,
+    description: input.description.attach,
+    input: attachInput,
+    tier: 'T2',
+    roles: input.roles,
+    async preview(actx, row) {
+      onRun(actx, row);
+      return previewOf(fieldOf(row)?.label ?? row.fieldId, names.attach, row, await recheck(actx, row, {}, true));
+    },
+    recheck(actx, row, pending) {
+      onRun(actx, row);
+      return recheck(actx, row, pending, true);
+    },
+    async execute(actx, row) {
+      const { value: _value, ...target } = row;
+      return refusing(async () => {
+        onRun(actx, target);
+        const key = responseKey(row);
+        const stored = await storeChatFile(actx, row.attachmentId, row.engagementId, key, row.stepId, client);
+        return save(actx, target, stored.path);
+      });
+    },
+    undo: undoSave,
+  });
+  return { set, attach };
+}
 
-export const attachFile = defineAction({
-  name: 'checklist.attachFile',
-  routerOnly: true,
-  description: 'Attach a file from the chat to an upload field on an incorporation checklist step, after a person approves it.',
-  input: attachInput,
-  tier: 'T2',
-  roles: STAFF,
-  async preview(actx, input) {
-    return previewOf(fieldOf(input)?.label ?? input.fieldId, 'checklist.attachFile', input, await recheck(actx, input, {}, true));
+/** Copies a file from the chat to its place on a step, and lists it in the vault as the screen's upload does. */
+export async function storeChatFile(actx: ActionContext, attachmentId: string, engagementId: string, key: string, stepId: string, checkType: boolean): Promise<{ path: string; fileName: string; sizeBytes: number | null; contentType: string | null }> {
+  const [attachment] = await getOwnAskAttachments(actx.auth, [attachmentId]);
+  const bytes = attachment?.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
+  if (!attachment || !bytes) throw new ActionRefused('The file is no longer available.');
+  if (checkType && !resolveUploadExtension({ name: attachment.fileName, type: attachment.contentType ?? '' }, MILESTONE_DOCUMENT_EXTENSIONS)) {
+    throw new ActionRefused('This file type cannot go on a step. Please send a PDF, an image or a Word file.');
+  }
+  const path = milestoneDocumentObjectPath(engagementId, key, attachment.fileName);
+  await putObject(bucketKey(MILESTONE_DOCUMENTS_BUCKET, path), bytes, attachment.contentType ?? undefined);
+  await indexMilestoneUpload(actx.auth, { engagementId, fieldId: key, fileName: attachment.fileName, objectKey: path, contentType: attachment.contentType, sizeBytes: attachment.sizeBytes, stepId });
+  return { path, fileName: attachment.fileName, sizeBytes: attachment.sizeBytes, contentType: attachment.contentType };
+}
+
+const staffActions = responseActions({
+  audience: 'staff',
+  roles: ['super_admin', 'admin', 'manager', 'intern'],
+  description: {
+    set: 'Fill one answer on an incorporation checklist step, after a person approves it on a review card.',
+    attach: 'Attach a file from the chat to an upload field on an incorporation checklist step, after a person approves it.',
   },
-  recheck: (actx, input, pending) => recheck(actx, input, pending, true),
-  async execute(actx, input) {
-    const { value: _value, ...target } = input;
-    const [attachment] = await getOwnAskAttachments(actx.auth, [input.attachmentId]);
-    const bytes = attachment?.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
-    if (!attachment || !bytes) return { ok: false, error: 'The file is no longer available.' };
-    const key = responseKey(input);
-    const path = milestoneDocumentObjectPath(input.engagementId, key, attachment.fileName);
-    await putObject(bucketKey(MILESTONE_DOCUMENTS_BUCKET, path), bytes, attachment.contentType ?? undefined);
-    await indexMilestoneUpload(actx.auth, {
-      engagementId: input.engagementId,
-      fieldId: key,
-      fileName: attachment.fileName,
-      objectKey: path,
-      contentType: attachment.contentType,
-      sizeBytes: attachment.sizeBytes,
-      stepId: input.stepId,
-    });
-    return save(actx, target, path);
-  },
-  undo: undoSave,
 });
+export const setResponse = staffActions.set;
+export const attachFile = staffActions.attach;
+
+const clientActions = responseActions({
+  audience: 'client',
+  roles: ['client'],
+  description: {
+    set: 'Fill one of your own answers on a step of your company file, after you approve it on a review card.',
+    attach: 'Attach a file from the chat to one of your own upload fields on a step, after you approve it.',
+  },
+});
+export const setAnswer = clientActions.set;
+export const attachAnswerFile = clientActions.attach;
