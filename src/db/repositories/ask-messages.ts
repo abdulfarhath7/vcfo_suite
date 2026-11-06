@@ -97,7 +97,7 @@ export async function countModelAnswersSince(ctx: AuthContext, since: Date): Pro
         eq(askConversations.profileId, ctx.userId),
         eq(askMessages.sender, 'assistant'),
         isNotNull(askMessages.model),
-        inArray(askMessages.origin, ['generated', 'refusal']),
+        inArray(askMessages.origin, ['generated', 'refusal', 'work']),
         gte(askMessages.createdAt, since),
       ),
     );

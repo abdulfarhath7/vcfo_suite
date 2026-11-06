@@ -266,6 +266,15 @@ describe('conversation list and delete (F4)', () => {
   });
 });
 
+describe('the rate limit count', () => {
+  it('counts Do answers along with generated ones, for this person only', async () => {
+    selectRows = [{ n: 3 }];
+    await expect(messages.countModelAnswersSince(clientA, new Date('2026-11-06T00:00:00Z'))).resolves.toBe(3);
+    const params = whereParams();
+    expect(params).toEqual(expect.arrayContaining([clientA.userId, 'generated', 'refusal', 'work']));
+  });
+});
+
 describe('client library', () => {
   it('lists only the caller’s items', async () => {
     await library.listLibraryItems(clientB);

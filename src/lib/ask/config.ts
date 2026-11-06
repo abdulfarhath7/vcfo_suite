@@ -39,6 +39,14 @@ function intEnv(name: string, fallback: number): number {
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : fallback;
 }
 
+/** A limit the owner can set to 0, which stops that spending. Only an empty or unusable value takes the default. */
+function limitEnv(name: string, fallback: number): number {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallback;
+}
+
 /** Phase 9 proposed features (§9A), each off unless ASK_VCFO_FEATURE_<ID>=true. */
 const ASK_FEATURE_IDS = ['C1', 'C2', 'C3', 'C4', 'C5', 'A1'] as const;
 type AskFeatureId = (typeof ASK_FEATURE_IDS)[number];
@@ -66,7 +74,7 @@ export function askConfig(): AskConfig {
       agent: process.env.ASK_VCFO_MODEL_AGENT?.trim() || 'claude-sonnet-5-5',
     },
     answerEffort: effort === 'medium' || effort === 'high' ? effort : 'low',
-    rateLimit: { hour: intEnv('ASK_VCFO_RATE_LIMIT_HOUR', 30), day: intEnv('ASK_VCFO_RATE_LIMIT_DAY', 200) },
+    rateLimit: { hour: limitEnv('ASK_VCFO_RATE_LIMIT_HOUR', 30), day: limitEnv('ASK_VCFO_RATE_LIMIT_DAY', 200) },
     retrievalTopK: intEnv('ASK_VCFO_RETRIEVAL_TOP_K', 4),
     bedrockRegion: process.env.ASK_VCFO_BEDROCK_REGION?.trim() || null,
     refusalFallback: process.env.ASK_VCFO_REFUSAL_FALLBACK !== 'false',
@@ -121,10 +129,10 @@ export interface AskBudgets {
 
 export function askBudgets(): AskBudgets {
   return {
-    runMaxTurns: intEnv('ASK_RUN_MAX_TURNS', 12),
-    runMaxTokens: intEnv('ASK_RUN_MAX_TOKENS', 200_000),
-    answerMaxTokens: intEnv('ASK_ANSWER_MAX_TOKENS', 40_000),
-    dailyTokens: intEnv('ASK_DAILY_TOKEN_BUDGET', 2_000_000),
+    runMaxTurns: limitEnv('ASK_RUN_MAX_TURNS', 12),
+    runMaxTokens: limitEnv('ASK_RUN_MAX_TOKENS', 200_000),
+    answerMaxTokens: limitEnv('ASK_ANSWER_MAX_TOKENS', 40_000),
+    dailyTokens: limitEnv('ASK_DAILY_TOKEN_BUDGET', 2_000_000),
   };
 }
 
