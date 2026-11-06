@@ -4,24 +4,19 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 import { db } from '@/db/client';
 import { askAttachments } from '@/db/schema-ask';
-import { AskForbiddenError, assertAskRole } from '@/lib/ask/access';
+import { assertAskRole } from '@/lib/ask/access';
 
 /**
  * Files and long pastes given to the chat. A row belongs to the person who gave it, whatever their
- * role: `profile_id = ctx.userId` is in every query. Clients have no attachment control yet.
+ * role: `profile_id = ctx.userId` is in every query.
  */
 export type AskAttachmentRow = typeof askAttachments.$inferSelect;
-
-function assertStaff(ctx: AuthContext): void {
-  assertAskRole(ctx);
-  if (ctx.role === 'client') throw new AskForbiddenError('Clients cannot attach files to the chat yet.');
-}
 
 export async function createAskAttachment(
   ctx: AuthContext,
   input: { kind: 'file' | 'paste'; fileName: string; contentType: string | null; sizeBytes: number; s3Key: string; conversationId?: string | null },
 ): Promise<AskAttachmentRow> {
-  assertStaff(ctx);
+  assertAskRole(ctx);
   const [row] = await db
     .insert(askAttachments)
     .values({ ...input, profileId: ctx.userId })
@@ -30,7 +25,7 @@ export async function createAskAttachment(
 }
 
 export async function getOwnAskAttachments(ctx: AuthContext, ids: readonly string[]): Promise<AskAttachmentRow[]> {
-  assertStaff(ctx);
+  assertAskRole(ctx);
   if (ids.length === 0) return [];
   return db
     .select()
@@ -43,7 +38,7 @@ export async function updateOwnAskAttachment(
   id: string,
   patch: Partial<Pick<AskAttachmentRow, 'status' | 'docType' | 'sensitive' | 'error' | 'engagementId' | 'runId' | 'conversationId'>>,
 ): Promise<void> {
-  assertStaff(ctx);
+  assertAskRole(ctx);
   await db
     .update(askAttachments)
     .set(patch)

@@ -69,9 +69,6 @@ import { handleDoWork, isDataMessage, pageContextLine, pendingDoRun, STORED_USER
  *   through scoped repositories.
  */
 
-/** Long pastes are for the data router, which clients do not have yet. */
-const CLIENT_MESSAGE_MAX = 2000;
-
 export const chatRequestSchema = z.object({
   conversationId: z.string().uuid().optional(),
   shell: z.enum(ASK_SHELLS),
@@ -91,7 +88,7 @@ export const chatRequestSchema = z.object({
     .optional(),
   depth: z.enum(ANSWER_DEPTHS).optional(),
   language: z.string().trim().min(2).max(35).optional(),
-}).refine((body) => body.shell !== 'client' || (body.message?.length ?? 0) <= CLIENT_MESSAGE_MAX, { path: ['message'] });
+});
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
 const STATUS_LABELS = {
@@ -261,16 +258,18 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   const flags = askFlags();
   // The data router's own way in: a file, a labelled paste, or the answer to its last question.
   // The raw message goes there because code needs the values; it is stored only in masked form.
-  const pending = shell === 'client' ? null : await pendingDoRun(ctx, conversationId, request.message, now);
+  // A client's own work runs locked to their company. A super admin previewing the shell only reads.
+  const canDo = !preview;
+  const pending = canDo ? await pendingDoRun(ctx, conversationId, request.message, now) : null;
   const doWork = async (extra: { guard?: GuardResult; startedAt?: number } = {}) => {
-    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending, metered });
+    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending, metered, lockedTo: engagementId });
     if (!result) return false;
     metered = result.metered ?? metered;
     const finished = await finish(result.answer, { path: result.path ?? 'fixed_workflow', ...extra });
     await result.start?.(finished.messageId);
     return true;
   };
-  if (shell !== 'client' && (attachmentIds.length > 0 || pending || (request.message && isDataMessage(request.message)))) {
+  if (canDo && (attachmentIds.length > 0 || pending || (request.message && isDataMessage(request.message)))) {
     if (await doWork()) return;
   }
 
@@ -393,7 +392,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     return;
   }
   if (guard.intent === 'do_work') {
-    if (shell !== 'client' && (await doWork({ guard, startedAt }))) return;
+    if (canDo && (await doWork({ guard, startedAt }))) return;
     await finish(limitAnswer(shell, 'doWork'), { path: 'router_refusal', guard, startedAt });
     return;
   }

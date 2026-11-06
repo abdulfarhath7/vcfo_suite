@@ -50,6 +50,11 @@ vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers:
 vi.mock('@/db/repositories/engagement-managers-membership', () => ({ listManagerIdsForEngagement: async () => ['mgr-1'] }));
 vi.mock('@/lib/ask/rate-limit', () => ({ checkAskRateLimit: async () => ({ ok: true }) }));
 vi.mock('@/storage/s3', () => ({ putObject: (...a: unknown[]) => putObject(...a), getObjectBuffer: () => getObject() }));
+const openRequests = vi.fn(async () => [] as unknown[]);
+vi.mock('@/db/repositories/client-documents', () => ({ listOpenDocumentRequests: openRequests, undoRequestUpload: vi.fn(), UploadRejectedError: class extends Error {} }));
+vi.mock('@/db/repositories/client-incorporation', () => ({ listFileRequests: async () => [], clientAttachRequestedFile: vi.fn(), clientUndoRequestedFile: vi.fn(), FileRequestError: class extends Error {} }));
+vi.mock('@/db/repositories/client-compliances', () => ({ getPortalFilings: async () => [], addClientFilingProof: vi.fn(), setFilingReminder: vi.fn(), clearFilingReminder: vi.fn(), complianceErrorStatus: () => null }));
+vi.mock('@/db/repositories/engagement-recipients', () => ({ resolveEngagementRecipients: async () => ({ leads: [{ name: 'Lead', email: 'l@x.test' }], managers: [] }) }));
 const modelCalls: LlmRequest[] = [];
 vi.mock('@/lib/ask/provider', async (load) => ({
   ...(await load<object>()),
@@ -81,6 +86,7 @@ beforeEach(() => {
   engagements = [acme, kestrel];
   waiting.mockResolvedValue(null);
   attachments.mockResolvedValue([]);
+  openRequests.mockResolvedValue([]);
 });
 
 describe('handleDoWork', () => {
@@ -156,10 +162,77 @@ describe('handleDoWork', () => {
     expect(createRun).not.toHaveBeenCalled();
   });
 
-  it('refuses a client shell', async () => {
-    const result = await handleDoWork(lead, { shell: 'client' }, DATA, () => undefined, { conversationId: null, now: new Date(), pending: null });
+  it('refuses a person previewing the client shell, who only reads there', async () => {
+    const result = await handleDoWork(lead, { shell: 'client' }, DATA, () => undefined, { conversationId: null, now: new Date(), pending: null, lockedTo: acme.id });
     expect(result!.answer.line).toMatch(/can't do that from chat/);
     expect(createRun).not.toHaveBeenCalled();
+  });
+
+  describe('for a client', () => {
+    const client: AuthContext = { userId: 'client-1', email: 'c@x.test', name: 'Client', role: 'client' };
+    const asClient = (message: string, extra: { lockedTo?: string | null; attachmentIds?: string[] } = {}) =>
+      handleDoWork(client, { shell: 'client', attachmentIds: extra.attachmentIds }, message, () => undefined, {
+        conversationId: 'e0000000-0000-4000-8000-00000000000e',
+        now: new Date('2026-11-06T10:00:00Z'),
+        pending: null,
+        lockedTo: extra.lockedTo === undefined ? acme.id : extra.lockedTo,
+      });
+
+    it('needs the company from the shell', async () => {
+      const result = await asClient(DATA, { lockedTo: null });
+      expect(result!.answer.line).toMatch(/can't do that from chat/);
+      expect(createRun).not.toHaveBeenCalled();
+    });
+
+    it('makes a card from their own paste, held to their own company', async () => {
+      const result = await asClient(`Name: Asha Rao\nPAN: ABCDE1234F`);
+      expect(result!.answer.changesetId).toBeTruthy();
+      const { draft } = createChangeset.mock.calls[0]![1];
+      expect(draft.engagementId).toBe(acme.id);
+      expect(draft.rows.every((row) => String(row.action).startsWith('client-portal.'))).toBe(true);
+      expect(patchChecklist).not.toHaveBeenCalled();
+    });
+
+    it('never reaches another company, even by naming one the list would hold', async () => {
+      const result = await asClient(`Add this for Kestrel Robotics Pvt Ltd\n${DATA}`);
+      expect(result!.answer.line).toMatch(/cannot find Kestrel Robotics Pvt Ltd/);
+      expect(createChangeset).not.toHaveBeenCalled();
+      expect(lockRun).not.toHaveBeenCalled();
+    });
+
+    it('asks before filing a document that names another company', async () => {
+      const result = await asClient(`Company: Kestrel Robotics Pvt Ltd\n${DATA}`);
+      expect(result!.answer.line).toMatch(/names Kestrel Robotics Pvt Ltd, not Acme/);
+      expect(createChangeset).not.toHaveBeenCalled();
+    });
+
+    it('puts a file that answers an open request straight on a card, without reading it', async () => {
+      attachments.mockResolvedValue([{ id: 'f0000000-0000-4000-8000-00000000000f', fileName: 'rent-agreement.pdf', kind: 'file', s3Key: 'k', contentType: 'application/pdf', sizeBytes: 10 }]);
+      openRequests.mockResolvedValue([{ id: 'a1000000-0000-4000-8000-00000000000a', title: 'Rent agreement', dueOn: null, note: null }]);
+      const result = await asClient('Here you go', { attachmentIds: ['f0000000-0000-4000-8000-00000000000f'] });
+      expect(result!.answer.changesetId).toBeTruthy();
+      expect(modelCalls).toHaveLength(0);
+      expect(getObject).not.toHaveBeenCalled();
+      expect(createChangeset.mock.calls[0]![1].draft.rows[0]!.action).toBe('client-portal.uploadToRequest');
+      expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_approval');
+    });
+
+    it('never takes their own kept paste for a file answering a request', async () => {
+      attachments.mockResolvedValue([{ id: 'f0000000-0000-4000-8000-00000000000f', fileName: 'paste.txt', kind: 'paste', s3Key: 'k', contentType: 'text/plain', sizeBytes: 10 }]);
+      openRequests.mockResolvedValue([{ id: 'a1000000-0000-4000-8000-00000000000a', title: 'Paste txt', dueOn: null, note: null }]);
+      getObject.mockResolvedValueOnce(Buffer.from(DATA));
+      await asClient('', { attachmentIds: ['f0000000-0000-4000-8000-00000000000f'] });
+      expect(openRequests).not.toHaveBeenCalled();
+    });
+
+    it('says what is open when a file answers none of it', async () => {
+      attachments.mockResolvedValue([{ id: 'f0000000-0000-4000-8000-00000000000f', fileName: 'holiday.pdf', kind: 'file', s3Key: 'k', contentType: 'application/pdf', sizeBytes: 10 }]);
+      openRequests.mockResolvedValue([{ id: 'a1000000-0000-4000-8000-00000000000a', title: 'Rent agreement', dueOn: null, note: null }]);
+      getObject.mockResolvedValueOnce(Buffer.from('not much'));
+      const result = await asClient('Here you go', { attachmentIds: ['f0000000-0000-4000-8000-00000000000f'] });
+      expect(result!.answer.changesetId).toBeFalsy();
+      expect(result!.answer.line).toMatch(/Still open: Rent agreement/);
+    });
   });
 
   it('never trusts a document that asks to be approved: the card still waits for a person', async () => {

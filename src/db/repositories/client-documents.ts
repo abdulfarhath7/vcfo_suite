@@ -25,7 +25,7 @@ import { extractItemResponses, getClientResponseFields } from '@/lib/checklist/c
 import { repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
 import { isStepReleasedTo } from '@/lib/checklist/checklist-visibility';
 import { checklistItemForFieldId } from '@/lib/documents/vault-documents';
-import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
+import { appEngagementId, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   fileNameFromStoragePath,
   isMilestoneStoragePath,
@@ -657,6 +657,19 @@ export async function listClientDocumentsZip(
     entries.push({ name: path, key: file.key, sizeBytes: nd.sizeBytes ?? null });
   }
   return { engagementId: payload.engagementId, filename: `${rootName}.zip`, entries, missing };
+}
+
+/** What the firm is still waiting for on this client's own project: empty for any other project. */
+export async function listOpenDocumentRequests(ctx: AuthContext, engagementId: string): Promise<Array<{ id: string; title: string; dueOn: string | null; note: string | null }>> {
+  const mine = await myEngagement(ctx);
+  if (!mine || mine.dbId !== engagementDbId(engagementId)) return [];
+  const rows = await db
+    .select({ id: documentRequests.id, title: documentRequests.title, dueOn: documentRequestDetails.dueOn, note: documentRequestDetails.reviewNote })
+    .from(documentRequests)
+    .leftJoin(documentRequestDetails, eq(documentRequestDetails.requestId, documentRequests.id))
+    .where(and(eq(documentRequests.engagementId, mine.dbId), eq(documentRequests.status, 'pending')))
+    .orderBy(desc(documentRequests.createdAt));
+  return rows;
 }
 
 /* ------------------------------------------------------------------ */

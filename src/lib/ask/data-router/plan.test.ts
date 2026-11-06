@@ -143,4 +143,26 @@ describe('planRows', () => {
     expect(target(copy).entryId).toBe(target(draft.rows[0]!).entryId);
     expect(copy.displayNew).toBe('pan.pdf');
   });
+
+  describe('for a client', () => {
+    const asClient = { role: 'client' as const };
+
+    it('uses the client\'s own action, with no manager step', () => {
+      const { draft } = planRows(input([place('director.name', 'Asha Rao')], openAt('pre-15'), asClient));
+      expect(draft.rows.length).toBeGreaterThan(0);
+      expect(draft.rows.every((r) => r.action === 'client-portal.setAnswer' && target(r).needsManager !== true)).toBe(true);
+    });
+
+    it('leaves out what the firm fills, and says so, instead of holding it on the card', () => {
+      const { draft, questions } = planRows(input([place('company.nic_code', '62011', null)], openAt('pre-1'), asClient));
+      expect(draft.rows).toEqual([]);
+      expect(questions.join(' ')).toMatch(/Your project lead fills/);
+    });
+
+    it('never offers a checklist action or a value from another step', () => {
+      const { draft } = planRows(input([place('director.name', 'Asha Rao')], openAt('pre-15'), asClient));
+      expect(draft.rows.some((r) => r.action.startsWith('checklist.'))).toBe(false);
+      expect(draft.rows.flatMap((r) => r.checks).some((c) => c.rule === 'other_step')).toBe(false);
+    });
+  });
 });

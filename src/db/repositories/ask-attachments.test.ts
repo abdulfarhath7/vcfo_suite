@@ -3,7 +3,7 @@ import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 
-/** A chat file belongs to the person who gave it: no role widens that, and clients have none yet. */
+/** A chat file belongs to the person who gave it: no role widens that, a client's included. */
 
 let lastWhere: SQL | undefined;
 const chain = () => {
@@ -42,12 +42,15 @@ describe('ask attachments', () => {
     expect(params()).toContain('me');
   });
 
-  it('refuses clients and developers before any query', async () => {
-    for (const role of ['client', 'developer'] as const) {
-      await expect(getOwnAskAttachments(who(role), ['x'])).rejects.toBeInstanceOf(AskForbiddenError);
-      await expect(createAskAttachment(who(role), { kind: 'file', fileName: 'a', contentType: null, sizeBytes: 1, s3Key: 'k' })).rejects.toBeInstanceOf(AskForbiddenError);
-    }
+  it('refuses a developer before any query', async () => {
+    await expect(getOwnAskAttachments(who('developer'), ['x'])).rejects.toBeInstanceOf(AskForbiddenError);
+    await expect(createAskAttachment(who('developer'), { kind: 'file', fileName: 'a', contentType: null, sizeBytes: 1, s3Key: 'k' })).rejects.toBeInstanceOf(AskForbiddenError);
     expect(select).not.toHaveBeenCalled();
+  });
+
+  it('holds a client to their own rows too', async () => {
+    await getOwnAskAttachments(who('client', 'client-me'), ['a0000000-0000-4000-8000-000000000001']);
+    expect(params()).toContain('client-me');
   });
 
   it('makes no query for an empty list', async () => {

@@ -6,9 +6,9 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   checklistStateForViewer,
   submitChecklistItem,
-  submitDirectFlowStep,
 } from '@/db/repositories/engagements';
 import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { submitDirectStep } from '@/lib/incorporation/submit-direct-step';
 import {
   BOARD_RESOLUTION_WITH_MANAGER,
   requestBoardResolutionApproval,
@@ -86,7 +86,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     if (direct) {
-      const result = await submitDirectFlowStep(guard.ctx, id, itemId, responses);
+      const result = await submitDirectStep(guard.ctx, id, itemId, responses);
       const checklistState = checklistStateForViewer(guard.ctx, result.checklistState);
       if (result.outcome === 'invalid') {
         return NextResponse.json(
@@ -94,17 +94,7 @@ export async function POST(request: Request, context: RouteContext) {
           { status: 422 },
         );
       }
-      // Every party hears a completed submit; a client's submit that stopped
-      // on the NIC codes is the lead's news. Autosave never reaches here.
-      const email = await notifyEngagementEventSoon({
-        engagementId: id,
-        itemId,
-        event: result.outcome === 'waiting_on_lead' ? 'step_waiting_on_lead' : 'step_submitted',
-        actorUserId: guard.ctx.userId,
-        actorName: guard.ctx.name,
-        actorRole: guard.ctx.role,
-      });
-      return NextResponse.json({ checklistState, outcome: result.outcome, email });
+      return NextResponse.json({ checklistState, outcome: result.outcome, email: result.email });
     }
 
     const checklistState = await submitChecklistItem(guard.ctx, id, itemId, responses);

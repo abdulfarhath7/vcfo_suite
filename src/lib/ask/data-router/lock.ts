@@ -44,6 +44,8 @@ function explicitMention(message: string): string | null {
   return name && !NOT_A_COMPANY.test(name) ? name : null;
 }
 
+const NAMES_A_COMPANY = /\b(?:private|pvt|limited|ltd|llp|opc|inc|llc)\b/i;
+
 const PAGE_PROJECT = /\/(?:projects|engagements|clients)\/([^/?#]+)/;
 
 export function lockEngagement<E extends LockableEngagement>(input: {
@@ -51,13 +53,15 @@ export function lockEngagement<E extends LockableEngagement>(input: {
   pagePath?: string | null;
   pendingEngagementId?: string | null;
   engagements: readonly E[];
+  /** A client's run: only a name that reads as a company points elsewhere, and "for Asha Rao" is a person. */
+  ownCompany?: boolean;
 }): EngagementLock<E> {
   const { engagements } = input;
   const named = companiesNamed(input.message, engagements);
   if (named.length === 1) return { kind: 'locked', engagement: named[0]! };
   if (named.length > 1) return { kind: 'choose', options: named };
   const mentioned = explicitMention(input.message);
-  if (mentioned) return { kind: 'unknown', mentioned };
+  if (mentioned && (!input.ownCompany || NAMES_A_COMPANY.test(mentioned))) return { kind: 'unknown', mentioned };
   const pending = engagements.find((e) => e.id === input.pendingEngagementId);
   if (pending) return { kind: 'locked', engagement: pending };
   const key = input.pagePath ? PAGE_PROJECT.exec(input.pagePath)?.[1] : null;
