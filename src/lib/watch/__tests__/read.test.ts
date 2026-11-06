@@ -8,7 +8,7 @@ vi.mock('../fetch', () => ({ MAX_PDF_BYTES: 1000, WatchBlockedError: class exten
 vi.mock('@/lib/ask/ingest/pdf-text', () => ({ pdfText: (bytes: unknown) => pdfMock(bytes) }));
 vi.mock('@/storage/s3', () => ({ getObjectBuffer: async () => Buffer.from('%PDF-file') }));
 
-const { embeddedPdf, readUpdateText, SCAN_LABEL, WatchReadError, WatchScanWaitsError } = await import('../read');
+const { embeddedPdf, pageText, readUpdateText, SCAN_LABEL, WatchReadError, WatchScanWaitsError } = await import('../read');
 
 const LONG = 'Notification text that is long enough to read. '.repeat(20);
 const scanModel = (text: string, stopReason = 'end_turn') =>
@@ -78,5 +78,20 @@ describe('readUpdateText', () => {
     await expect(readUpdateText({ url: null, s3Key: 'k', listingText: null }, scanModel('', 'refusal'), 'm')).rejects.toThrow('declined');
     await expect(readUpdateText({ url: null, s3Key: 'k', listingText: null }, scanModel('part of it', 'max_tokens'), 'm')).rejects.toBeInstanceOf(WatchReadError);
     await expect(readUpdateText({ url: null, s3Key: 'k', listingText: null }, null, 'm')).rejects.toBeInstanceOf(WatchScanWaitsError);
+  });
+});
+
+describe('pageText', () => {
+  it('reads the main element without its menus', () => {
+    const page = '<nav>Home</nav><main class="x"><header>Top</header><p>The rule.</p><ASIDE>More</ASIDE><footer>End</footer></main><p>Outside</p>';
+    expect(pageText(page)).toBe('The rule.');
+    expect(pageText('<nav>Home</nav><p>The rule.</p>')).toBe('The rule.');
+    expect(pageText('<main><p>Never closed</p>')).toBe('Never closed');
+  });
+
+  it('stays quick on a page of openings that never close', () => {
+    const started = Date.now();
+    for (const piece of ['<nav>', '<main>', '<article ', '<nav></footer>']) pageText(piece.repeat(150_000));
+    expect(Date.now() - started).toBeLessThan(2000);
   });
 });

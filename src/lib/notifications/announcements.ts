@@ -492,13 +492,45 @@ function decodeXmlEntities(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
+/**
+ * The elements of these names, in one pass. A page is text from outside, and a lazy regular expression
+ * takes minutes over one that opens thousands of elements and closes none. An opening with no closing
+ * tag is not an element, and an element inside another of these names belongs to the outer one.
+ */
+export function* elementsIn(html: string, names: readonly string[]): Generator<{ from: number; closeAt: number; to: number }> {
+  const tags = new RegExp(`<(/?)(${names.join('|')})(?![\\w:-])`, 'gi');
+  let open: { name: string; at: number } | null = null;
+  let past = 0;
+  for (const tag of html.matchAll(tags)) {
+    if (tag.index < past) continue;
+    const name = tag[2]!.toLowerCase();
+    if (!open) {
+      if (!tag[1]) open = { name, at: tag.index };
+    } else if (tag[1] && name === open.name) {
+      const end = html.indexOf('>', tag.index);
+      if (end < 0) return;
+      past = end + 1;
+      yield { from: open.at, closeAt: tag.index, to: past };
+      open = null;
+    }
+  }
+}
+
+export function removeElements(html: string, names: readonly string[]): string {
+  let out = '';
+  let kept = 0;
+  for (const { from, to } of elementsIn(html, names)) {
+    out += `${html.slice(kept, from)} `;
+    kept = to;
+  }
+  return out + html.slice(kept);
+}
+
 export function stripHtml(value: string): string {
-  return decodeXmlEntities(value)
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const text = removeElements(decodeXmlEntities(value), ['script', 'style']);
+  // A "<" after the last ">" closes nothing, and looking for its end from each one would never stop paying.
+  const end = text.lastIndexOf('>') + 1;
+  return (text.slice(0, end).replace(/<[^>]+>/g, ' ') + text.slice(end)).replace(/\s+/g, ' ').trim();
 }
 
 function innerTag(block: string, name: string): string {

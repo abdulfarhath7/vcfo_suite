@@ -301,6 +301,19 @@ describe('parseRssOrAtom', () => {
 });
 
 describe('stripHtml', () => {
+  it('takes out scripts and styles of any case, and keeps text around a stray bracket', () => {
+    expect(stripHtml('a<SCRIPT src="x">var b</Script >c<style>d{}</style>e')).toBe('a c e');
+    expect(stripHtml('1 and <b>bold</b> then 3 < 4')).toBe('1 and bold then 3 < 4');
+    expect(stripHtml('<script>never closed <b>kept</b>')).toBe('never closed kept');
+  });
+
+  it('stays quick on a page that opens thousands of elements and closes none', () => {
+    const started = Date.now();
+    for (const piece of ['<script', '<style ', '<', '<script></script', '<script</script']) stripHtml(piece.repeat(200_000));
+    stripHtml(`${'<script</script'.repeat(200_000)}>`);
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
   it('removes tags and scripts', () => {
     expect(stripHtml('<p>Hello <b>Act</b></p><script>alert(1)</script>')).toBe('Hello Act');
   });

@@ -3,7 +3,7 @@ import 'server-only';
 import { pdfText } from '@/lib/ask/ingest/pdf-text';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import type { LlmProvider, LlmUsage } from '@/lib/ask/provider';
-import { stripHtml } from '@/lib/notifications/announcements';
+import { elementsIn, removeElements, stripHtml } from '@/lib/notifications/announcements';
 import { getObjectBuffer } from '@/storage/s3';
 import { officialUrl } from './adapters/html';
 import { MAX_PDF_BYTES, WatchBlockedError, watchFetch, type WatchFetch } from './fetch';
@@ -101,8 +101,9 @@ export function rbiBody(html: string): string | null {
 
 /** The main text of a page: menus and footers cost tokens and are never the document. */
 export function pageText(html: string): string {
-  const main = /<(main|article)\b[^>]*>([\s\S]*?)<\/\1>/i.exec(html)?.[2] ?? html;
-  return stripHtml(main.replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, ' '));
+  const first = elementsIn(html, ['main', 'article']).next().value;
+  const main = first ? html.slice(html.indexOf('>', first.from) + 1, first.closeAt) : html;
+  return stripHtml(removeElements(main, ['nav', 'header', 'footer', 'aside']));
 }
 
 function finish(text: string): string {
