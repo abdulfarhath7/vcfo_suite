@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
 import type { AnswerEnvelope, AskShell } from '@/data/ask/schema';
-import { appendAskRunStep, createAskRun, lockAskRun, setAskRunAnswer, updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
+import { appendAskRunStep, countOwnAgentRunsSince, createAskRun, lockAskRun, setAskRunAnswer, updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
 import { getAction } from '@/lib/actions/registry';
 import { refusalOf } from '@/lib/actions/shared';
 import { needsApproval, type ActionContext } from '@/lib/actions/types';
@@ -80,6 +80,9 @@ export async function handleWork(
   if (pick.kind === 'cut') return answerOf(line('That is more than I can take in one go. Please send it in smaller parts.'));
   if (pick.kind === 'data') return { kind: 'data' };
   if (pick.kind === 'agent' && askFlags().killedPaths.has('agent_run')) return answerOf(limitAnswer(request.shell, 'pathStopped'));
+  if (pick.kind === 'agent' && !resumed && (await countOwnAgentRunsSince(ctx, new Date(now.getTime() - 3_600_000))) >= budgets.agentRunsPerHour) {
+    return answerOf(limitAnswer(request.shell, 'agentRunsPerHour'));
+  }
 
   const workflow = pick.kind === 'action' ? pick.action : 'agent';
   const action = pick.kind === 'action' ? actions.find((candidate) => candidate.name === pick.action) : undefined;

@@ -77,6 +77,7 @@ Suggested dev ports if a task names none: answer 3101, watch 3102, do 3103, pack
 | `ASK_PROACTIVE_ENABLED` | `askFlags().proactive` | off | on |
 | `ASK_KILL_PATHS`, `ASK_KILL_TIERS` | `askFlags().killedPaths`, `.killedTiers` | empty | empty |
 | `ASK_RUN_MAX_TURNS`, `ASK_RUN_MAX_TOKENS`, `ASK_DAILY_TOKEN_BUDGET` | `askBudgets()` | 12, 200,000, 2,000,000 | same |
+| `ASK_AGENT_RUNS_PER_HOUR` | `askBudgets().agentRunsPerHour` | 6 | same |
 | `ASK_EMBEDDINGS_PROVIDER`, `_REGION`, `_MODEL` | `askEmbeddingsConfig()` | `none` | `none` |
 | `ASK_VCFO_MODEL_{GUARD,ANSWER,DOCUMENT,EXTRACT,WATCH,AGENT}` | `askConfig().models` | below | same |
 | `WATCH_ALERT_MAILBOX` | `src/lib/watch/mail-intake.ts` | empty, route off | empty |

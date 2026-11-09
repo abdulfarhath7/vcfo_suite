@@ -19,6 +19,7 @@ export const REFUSAL_COPY = {
   budgetReached: "Ask VCFO has reached today's usage limit, so typed questions resume tomorrow. Suggested questions still work.",
   pathStopped: 'This kind of answer is switched off for now. Suggested questions still work.',
   runTooLong: 'That question needed more work than one answer allows. Try asking about one project or one form at a time.',
+  agentRunsPerHour: 'You have started as many longer tasks as one hour allows. Please try again in a little while, or do this one from its screen.',
   doWork: "I can't do that from chat yet. I can explain it or show you where to do it.",
   portalSecret: 'Please do not type logins, OTPs, DSC PINs or tokens here. I hid what you typed and did nothing with it. You enter them yourself on the portal.',
 } as const;
@@ -44,7 +45,7 @@ export function unavailableAnswer(shell: AskShell): AnswerEnvelope {
   return envelope(shell === 'client' ? REFUSAL_COPY.unavailable : REFUSAL_COPY.unavailableStaff, shell);
 }
 
-export function limitAnswer(shell: AskShell, limit: 'budgetReached' | 'pathStopped' | 'runTooLong' | 'doWork' | 'portalSecret'): AnswerEnvelope {
+export function limitAnswer(shell: AskShell, limit: 'budgetReached' | 'pathStopped' | 'runTooLong' | 'doWork' | 'portalSecret' | 'agentRunsPerHour'): AnswerEnvelope {
   return envelope(REFUSAL_COPY[limit], shell);
 }
 

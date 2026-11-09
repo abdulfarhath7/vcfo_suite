@@ -17,7 +17,9 @@ const updateRun = vi.fn();
 const createRun = vi.fn(async (_c: unknown, _i: { kind?: string; goal: string }) => ({ id: 'run-1' }));
 const lockRun = vi.fn(async () => true);
 const answer = vi.fn();
+const agentRunsThisHour = vi.fn(async (_c: unknown, _since: Date) => 0);
 vi.mock('@/db/repositories/ask-runs', () => ({
+  countOwnAgentRunsSince: (...a: [unknown, Date]) => agentRunsThisHour(...a),
   createAskRun: (...a: [unknown, never]) => createRun(...a),
   updateAskRun: (...a: unknown[]) => updateRun(...a),
   lockAskRun: (...a: unknown[]) => (lockRun as (...x: unknown[]) => Promise<boolean>)(...a),
@@ -211,6 +213,17 @@ describe('handleWork', () => {
     await outcome.start!('m0000000-0000-4000-8000-00000000000m');
     expect(updateRun.mock.calls.at(-1)![2]).toEqual({ messageId: 'm0000000-0000-4000-8000-00000000000m' });
     expect(send).toHaveBeenCalledWith({ id: 'ask-run-run-1', name: 'ask/run.start', data: { runId: 'run-1' } });
+  });
+
+  it('stops a person at the hourly cap on agent runs with a clear sentence, and starts nothing', async () => {
+    reply = tool('open_ended');
+    agentRunsThisHour.mockResolvedValueOnce(6);
+    const outcome = await go('Remind Acme about everything overdue and note it');
+    if (outcome.kind !== 'answer') throw new Error(outcome.kind);
+    expect(outcome.answer.line).toMatch(/as many longer tasks as one hour allows/);
+    expect(agentRunsThisHour.mock.calls[0]![1]).toEqual(new Date('2026-11-06T09:00:00Z'));
+    expect(createRun).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 
   it('says so plainly when the job cannot start', async () => {

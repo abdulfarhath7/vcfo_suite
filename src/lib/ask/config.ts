@@ -125,6 +125,8 @@ export interface AskBudgets {
   answerMaxTokens: number;
   /** Across all paths, per day (IST); reaching it stops model calls until the next day. */
   dailyTokens: number;
+  /** Agent runs one person may start from the chat in an hour, so one person cannot use up the day's budget. */
+  agentRunsPerHour: number;
 }
 
 export function askBudgets(): AskBudgets {
@@ -133,6 +135,7 @@ export function askBudgets(): AskBudgets {
     runMaxTokens: limitEnv('ASK_RUN_MAX_TOKENS', 200_000),
     answerMaxTokens: limitEnv('ASK_ANSWER_MAX_TOKENS', 40_000),
     dailyTokens: limitEnv('ASK_DAILY_TOKEN_BUDGET', 2_000_000),
+    agentRunsPerHour: limitEnv('ASK_AGENT_RUNS_PER_HOUR', 6),
   };
 }
 

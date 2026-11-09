@@ -43,6 +43,7 @@ const messages = await import('@/db/repositories/ask-messages');
 const library = await import('@/db/repositories/client-library');
 const documents = await import('@/db/repositories/ask-documents');
 const usage = await import('@/db/repositories/ask-usage');
+const runs = await import('@/db/repositories/ask-runs');
 const { AskForbiddenError } = await import('@/lib/ask/access');
 
 const dialect = new PgDialect();
@@ -272,6 +273,14 @@ describe('the rate limit count', () => {
     await expect(messages.countModelAnswersSince(clientA, new Date('2026-11-06T00:00:00Z'))).resolves.toBe(3);
     const params = whereParams();
     expect(params).toEqual(expect.arrayContaining([clientA.userId, 'generated', 'refusal', 'work']));
+  });
+});
+
+describe('the hourly agent run count', () => {
+  it('counts only the agent runs this person started from the chat', async () => {
+    selectRows = [{ n: 2 }];
+    await expect(runs.countOwnAgentRunsSince(lead, new Date('2026-11-06T09:00:00Z'))).resolves.toBe(2);
+    expect(whereParams()).toEqual(expect.arrayContaining([lead.userId, 'agent', 'chat']));
   });
 });
 

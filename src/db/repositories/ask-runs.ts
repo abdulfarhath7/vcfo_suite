@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, desc, eq, gt, max } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, max } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 import { db } from '@/db/client';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
@@ -71,6 +71,16 @@ export async function createAskRun(
     })
     .returning();
   return row!;
+}
+
+/** Agent runs this person started from the chat since `since`, for the hourly cap. */
+export async function countOwnAgentRunsSince(ctx: AuthContext, since: Date): Promise<number> {
+  assertAskRole(ctx);
+  const [row] = await db
+    .select({ n: count() })
+    .from(askRuns)
+    .where(and(eq(askRuns.profileId, ctx.userId), eq(askRuns.kind, 'agent'), eq(askRuns.trigger, 'chat'), gte(askRuns.createdAt, since)));
+  return Number(row?.n ?? 0);
 }
 
 /** Locks a run to one engagement, after a repository call confirms the person can reach it. */
