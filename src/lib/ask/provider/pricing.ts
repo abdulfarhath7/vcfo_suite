@@ -7,8 +7,9 @@ import type { LlmUsage } from './index';
  * models a fallback can reach are listed too. A longer id comes first, as an id matches by its part.
  * An unknown model has no price, and the report names it rather than counting it as free.
  */
-const PRICES: ReadonlyArray<{ match: string; input: number; output: number; cacheRead?: number }> = [
-  { match: 'haiku-5-5', input: 0.1, output: 0.5 },
+const PRICES: ReadonlyArray<{ match: string; input: number; output: number; cacheRead?: number; longPromptOver?: number }> = [
+  // Haiku 5.5's list price is five times higher for a prompt past 100K tokens, which a scanned PDF reaches.
+  { match: 'haiku-5-5', input: 0.1, output: 0.5, longPromptOver: 100_000 },
   { match: 'haiku-4-5', input: 1, output: 5 },
   { match: 'sonnet-5-5', input: 2, output: 10 },
   { match: 'sonnet-5', input: 2, output: 10 },
@@ -28,6 +29,15 @@ export function estimateCostUsd(model: string, usage: LlmUsage): number | null {
   if (!price) return totalTokens(usage) === 0 ? 0 : null;
   const input = usage.inputTokens + usage.cacheReadTokens * (price.cacheRead ?? 0.1) + usage.cacheWriteTokens * 1.25;
   return (input * price.input + usage.outputTokens * price.output) / 1_000_000;
+}
+
+/**
+ * True when spend summed over calls is large enough to hold one prompt past the model's long-prompt
+ * threshold. The estimate prices every token at the short rate, so it is then only a lower bound.
+ */
+export function mayUnderstate(model: string, usage: LlmUsage): boolean {
+  const over = PRICES.find((p) => model.includes(p.match))?.longPromptOver;
+  return over !== undefined && usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens > over;
 }
 
 /** Everything the model read or wrote, cached or not. */

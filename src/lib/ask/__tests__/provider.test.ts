@@ -3,7 +3,7 @@ import type { LlmProvider, LlmRequest, LlmResult } from '@/lib/ask/provider';
 import { addLlmUsage, NO_LLM_USAGE, outputConfigFor, toLlmResult } from '@/lib/ask/provider';
 import { createAnthropicProvider } from '@/lib/ask/provider/anthropic';
 import { meterProvider } from '@/lib/ask/provider/meter';
-import { estimateCostUsd, totalTokens } from '@/lib/ask/provider/pricing';
+import { estimateCostUsd, mayUnderstate, totalTokens } from '@/lib/ask/provider/pricing';
 
 const create = vi.fn();
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -106,6 +106,12 @@ describe('pricing', () => {
     expect(estimateCostUsd('claude-sonnet-5-5', { ...NO_LLM_USAGE, cacheWriteTokens: 1_000_000 })).toBeCloseTo(2.5);
     expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, inputTokens: 1_000_000, outputTokens: 1_000_000 })).toBeCloseTo(24);
     expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, cacheReadTokens: 1_000_000 })).toBeCloseTo(0.2);
+  });
+
+  it('marks Haiku 5.5 spend that could hold a prompt past 100K tokens as a lower bound', () => {
+    expect(mayUnderstate('claude-haiku-5-5', { ...NO_LLM_USAGE, inputTokens: 90_000, cacheReadTokens: 10_000 })).toBe(false);
+    expect(mayUnderstate('claude-haiku-5-5', { ...NO_LLM_USAGE, inputTokens: 225_000 })).toBe(true);
+    expect(mayUnderstate('claude-sonnet-5-5', { ...NO_LLM_USAGE, inputTokens: 225_000 })).toBe(false);
   });
 
   it('prices the models a fallback can land on, each by its own id', () => {

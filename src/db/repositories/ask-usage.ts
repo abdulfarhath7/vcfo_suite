@@ -10,7 +10,7 @@ import { askBudgets, askFlags } from '@/lib/ask/config';
 import { acceptanceByAction, type ActionAcceptance } from '@/lib/ask/proactive/acceptance';
 import { NO_LLM_USAGE, type LlmUsage } from '@/lib/ask/provider';
 import type { ModelSpend } from '@/lib/ask/provider/meter';
-import { estimateCostUsd } from '@/lib/ask/provider/pricing';
+import { estimateCostUsd, mayUnderstate } from '@/lib/ask/provider/pricing';
 import { todayIST } from '@/lib/compliance/filings';
 import type { AskPath } from '@/lib/ask/paths';
 
@@ -72,6 +72,8 @@ export interface AskUsageRow extends LlmUsage {
   costUsd: number;
   /** Models that spent tokens here but have no price, so the estimate leaves them out. */
   unpricedModels: string[];
+  /** The spend could hold a prompt billed at a model's higher long-prompt rate, so the estimate may be low. */
+  atLeast: boolean;
 }
 
 export interface AskUsageReport {
@@ -146,7 +148,7 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
   const rowFor = (path: string): AskUsageRow => {
     const seen = rows.get(path);
     if (seen) return seen;
-    const fresh: AskUsageRow = { path, messages: 0, calls: 0, costUsd: 0, unpricedModels: [], ...NO_LLM_USAGE };
+    const fresh: AskUsageRow = { path, messages: 0, calls: 0, costUsd: 0, unpricedModels: [], atLeast: false, ...NO_LLM_USAGE };
     rows.set(path, fresh);
     return fresh;
   };
@@ -156,6 +158,7 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
     row.cacheReadTokens += usage.cacheReadTokens;
     row.cacheWriteTokens += usage.cacheWriteTokens;
     const cost = estimateCostUsd(model, usage);
+    row.atLeast ||= mayUnderstate(model, usage);
     if (cost !== null) row.costUsd += cost;
     else if (!row.unpricedModels.includes(model || 'unknown')) row.unpricedModels.push(model || 'unknown');
   };
