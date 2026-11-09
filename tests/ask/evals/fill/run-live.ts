@@ -34,7 +34,7 @@ async function main() {
   const total = summarise(outcomes);
   const spend = provider.spend();
   const usage = spend.reduce((sum, s) => addLlmUsage(sum, s.usage), NO_LLM_USAGE);
-  const cost = spend.reduce((sum, s) => sum + estimateCostUsd(s.model, s.usage), 0);
+  const cost = spend.reduce((sum, s) => sum + (estimateCostUsd(s.model, s.usage) ?? 0), 0);
   const lines = [
     `Model: ${model}`,
     `Correct-field rate on proposed rows: ${(total.correctFieldRate * 100).toFixed(1)}% (${total.correct} of ${total.proposed}; target 98%)`,

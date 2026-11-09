@@ -204,7 +204,7 @@ async function main() {
       tools: toolsCalled,
       guardTokens,
       answerTokens,
-      cost: estimateCostUsd(guardModel, guardTokens) + estimateCostUsd(answerModel, answerTokens),
+      cost: (estimateCostUsd(guardModel, guardTokens) ?? 0) + (estimateCostUsd(answerModel, answerTokens) ?? 0),
     });
     console.log(`${problems.length === 0 ? 'PASS' : 'FAIL'}  ${c.id}${problems.length ? `  — ${problems.join(' / ')}` : ''}`);
   }

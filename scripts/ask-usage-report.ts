@@ -27,6 +27,7 @@ async function main() {
       output: r.outputTokens,
       perMessage: r.messages > 0 ? Math.round(totalTokens(r) / r.messages) : null,
       costUsd: Number(r.costUsd.toFixed(4)),
+      notPriced: r.unpricedModels.join(', '),
     })),
   );
   console.table(report.acceptance);

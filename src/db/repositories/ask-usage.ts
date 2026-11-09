@@ -68,7 +68,10 @@ export interface AskUsageRow extends LlmUsage {
   path: string;
   messages: number;
   calls: number;
+  /** The estimate for the models that have a price. */
   costUsd: number;
+  /** Models that spent tokens here but have no price, so the estimate leaves them out. */
+  unpricedModels: string[];
 }
 
 export interface AskUsageReport {
@@ -143,7 +146,7 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
   const rowFor = (path: string): AskUsageRow => {
     const seen = rows.get(path);
     if (seen) return seen;
-    const fresh: AskUsageRow = { path, messages: 0, calls: 0, costUsd: 0, ...NO_LLM_USAGE };
+    const fresh: AskUsageRow = { path, messages: 0, calls: 0, costUsd: 0, unpricedModels: [], ...NO_LLM_USAGE };
     rows.set(path, fresh);
     return fresh;
   };
@@ -152,7 +155,9 @@ export async function askUsageReport(ctx: AuthContext, input: { days: number; no
     row.outputTokens += usage.outputTokens;
     row.cacheReadTokens += usage.cacheReadTokens;
     row.cacheWriteTokens += usage.cacheWriteTokens;
-    row.costUsd += estimateCostUsd(model, usage);
+    const cost = estimateCostUsd(model, usage);
+    if (cost !== null) row.costUsd += cost;
+    else if (!row.unpricedModels.includes(model || 'unknown')) row.unpricedModels.push(model || 'unknown');
   };
 
   for (const s of spend) {

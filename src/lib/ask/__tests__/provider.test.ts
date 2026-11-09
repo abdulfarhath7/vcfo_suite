@@ -106,7 +106,20 @@ describe('pricing', () => {
     expect(estimateCostUsd('claude-sonnet-5-5', { ...NO_LLM_USAGE, cacheWriteTokens: 1_000_000 })).toBeCloseTo(2.5);
     expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, inputTokens: 1_000_000, outputTokens: 1_000_000 })).toBeCloseTo(24);
     expect(estimateCostUsd('claude-opus-5-5', { ...NO_LLM_USAGE, cacheReadTokens: 1_000_000 })).toBeCloseTo(0.2);
-    expect(estimateCostUsd('unknown', { ...NO_LLM_USAGE, inputTokens: 1_000_000 })).toBe(0);
+  });
+
+  it('prices the models a fallback can land on, each by its own id', () => {
+    const million = { ...NO_LLM_USAGE, inputTokens: 1_000_000, outputTokens: 1_000_000 };
+    expect(estimateCostUsd('claude-opus-5', million)).toBeCloseTo(30);
+    expect(estimateCostUsd('claude-opus-4-8', million)).toBeCloseTo(30);
+    expect(estimateCostUsd('claude-sonnet-5', million)).toBeCloseTo(12);
+    expect(estimateCostUsd('anthropic.claude-opus-5-5', million)).toBeCloseTo(24);
+    expect(estimateCostUsd('claude-fable-5-1', { ...NO_LLM_USAGE, cacheReadTokens: 1_000_000 })).toBeCloseTo(0.25);
+  });
+
+  it('gives an unknown model that spent tokens no price, rather than counting it as free', () => {
+    expect(estimateCostUsd('unknown', { ...NO_LLM_USAGE, inputTokens: 1_000_000 })).toBeNull();
+    expect(estimateCostUsd('', NO_LLM_USAGE)).toBe(0);
   });
 
   it('counts every token the model read or wrote', () => {

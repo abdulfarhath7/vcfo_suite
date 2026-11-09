@@ -47,7 +47,7 @@ const COLUMNS: Array<{ label: string; value: (r: AskUsageRow) => string }> = [
   { label: 'Cache write', value: (r) => number(r.cacheWriteTokens) },
   { label: 'Output', value: (r) => number(r.outputTokens) },
   { label: 'Per message', value: (r) => (r.messages > 0 ? number(Math.round(totalTokens(r) / r.messages)) : '–') },
-  { label: 'Est. cost', value: (r) => money(r.costUsd) },
+  { label: 'Est. cost', value: (r) => (r.unpricedModels.length > 0 ? `${money(r.costUsd)}, plus ${r.unpricedModels.join(', ')} not priced` : money(r.costUsd)) },
 ];
 
 const percent = (rate: number | null) => (rate === null ? '–' : `${Math.round(rate * 100)}%`);
