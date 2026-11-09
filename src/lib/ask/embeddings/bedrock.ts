@@ -5,19 +5,25 @@ import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from './types';
 /** Titan takes one text per call, so a batch runs a few calls at a time, in input order. */
 const CONCURRENCY = 5;
 
-/** Titan Text Embeddings V2 on demand. The SDK loads on the first call, so a `none` machine never pays for it. */
-export function bedrockEmbeddingProvider(region: string, model: string): EmbeddingProvider {
-  let client: Promise<import('@aws-sdk/client-bedrock-runtime').BedrockRuntimeClient> | null = null;
+type BedrockSdk = Pick<typeof import('@aws-sdk/client-bedrock-runtime'), 'BedrockRuntimeClient' | 'InvokeModelCommand'>;
+
+/**
+ * Titan Text Embeddings V2 on demand. The SDK loads on the first call, so a `none` machine never pays
+ * for it. It loads once, and the client and its command come from that one module: a client and a
+ * command from two loads can differ, and the client then cannot run the command.
+ */
+export function bedrockEmbeddingProvider(region: string, model: string, load: () => Promise<BedrockSdk> = () => import('@aws-sdk/client-bedrock-runtime')): EmbeddingProvider {
+  let sdk: Promise<{ client: InstanceType<BedrockSdk['BedrockRuntimeClient']>; Command: BedrockSdk['InvokeModelCommand'] }> | null = null;
   const connect = () =>
-    (client ??= import('@aws-sdk/client-bedrock-runtime').then(
-      ({ BedrockRuntimeClient }) =>
-        new BedrockRuntimeClient({ region, maxAttempts: 2, requestHandler: { connectionTimeout: 2_000, requestTimeout: 10_000 } }),
-    ));
+    (sdk ??= load().then(({ BedrockRuntimeClient, InvokeModelCommand }) => ({
+      client: new BedrockRuntimeClient({ region, maxAttempts: 2, requestHandler: { connectionTimeout: 2_000, requestTimeout: 10_000 } }),
+      Command: InvokeModelCommand,
+    })));
 
   const embedOne = async (text: string): Promise<number[]> => {
-    const { InvokeModelCommand } = await import('@aws-sdk/client-bedrock-runtime');
-    const response = await (await connect()).send(
-      new InvokeModelCommand({
+    const { client, Command } = await connect();
+    const response = await client.send(
+      new Command({
         modelId: model,
         contentType: 'application/json',
         accept: 'application/json',

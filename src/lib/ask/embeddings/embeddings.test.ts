@@ -1,15 +1,17 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// The SDK is handed in, not mocked by module path, so every call in a run sees the same fake.
 const send = vi.fn();
-vi.mock('@aws-sdk/client-bedrock-runtime', () => ({
+const sdk = {
   BedrockRuntimeClient: class {
     send = send;
   },
   InvokeModelCommand: class {
     constructor(public input: { modelId: string; body: string }) {}
   },
-}));
+};
+const load = vi.fn(async () => sdk as never);
 
 const listChunks = vi.fn();
 const saveChunks = vi.fn();
@@ -40,15 +42,16 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('Titan request (the SDK is mocked; no call reaches AWS)', () => {
+describe('Titan request (the SDK is a fake; no call reaches AWS)', () => {
   it('asks for 512 normalised dimensions, one text per call, in input order', async () => {
     send.mockImplementation(async (command: { input: { body: string } }) => {
       const { inputText } = JSON.parse(command.input.body) as { inputText: string };
       return titanReply(vector(Number(inputText) / 100));
     });
     const texts = Array.from({ length: 7 }, (_, i) => String(i));
-    const out = await bedrockEmbeddingProvider('ap-south-1', 'amazon.titan-embed-text-v2:0').embed(texts);
+    const out = await bedrockEmbeddingProvider('ap-south-1', 'amazon.titan-embed-text-v2:0', load).embed(texts);
     expect(send).toHaveBeenCalledTimes(7);
+    expect(load).toHaveBeenCalledTimes(1);
     const first = send.mock.calls[0]![0] as { input: { modelId: string; body: string } };
     expect(first.input.modelId).toBe('amazon.titan-embed-text-v2:0');
     expect(JSON.parse(first.input.body)).toMatchObject({ dimensions: 512, normalize: true });
@@ -57,7 +60,7 @@ describe('Titan request (the SDK is mocked; no call reaches AWS)', () => {
 
   it('refuses a vector of the wrong length', async () => {
     send.mockResolvedValue(titanReply([0.1, 0.2]));
-    await expect(bedrockEmbeddingProvider('ap-south-1', 'm').embed(['x'])).rejects.toThrow();
+    await expect(bedrockEmbeddingProvider('ap-south-1', 'm', load).embed(['x'])).rejects.toThrow('Titan returned 2 dimensions');
   });
 });
 
