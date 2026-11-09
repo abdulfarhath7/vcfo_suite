@@ -49,8 +49,12 @@ type LogItem =
   | { r: 'w'; w: WhatsThisAnswer; k: 'ok' };
 
 const LOG_KEY = 'vcfo.chat';
-/** A long paste shows as a short, masked line; the card under the answer holds what matters. */
+/**
+ * A long paste shows as a short, masked line; the card under the answer holds what matters. The log is
+ * kept in the browser, so a question goes into it, and to the feedback route, only in this form.
+ */
 const ECHO_MAX = 1_000;
+const echo = (text: string): string => maskIdentityNumbers(text).slice(0, ECHO_MAX);
 
 function readLog(): LogItem[] {
   try {
@@ -192,7 +196,7 @@ export function AskLauncher() {
   const ask_ = useCallback(
     async (q: string, w?: WhatsThisAnswer, files?: { attachmentIds?: string[]; label: string }) => {
       const message = q || undefined;
-      const base = [...readLog(), { r: 'u', t: maskIdentityNumbers(q || files!.label).slice(0, ECHO_MAX) } as LogItem];
+      const base = [...readLog(), { r: 'u', t: echo(q || files!.label) } as LogItem];
       save(base);
       setThinking(true);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -215,7 +219,7 @@ export function AskLauncher() {
           const body = res.ok ? ((await res.json()) as { answer: { text: string; kind: 'ok' | 'nan' } | null }) : { answer: null };
           if (body.answer) {
             await delay(600);
-            save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind, q }]);
+            save([...base, { r: 'a', t: body.answer.text, k: body.answer.kind, q: echo(q) }]);
             setThinking(false);
             setMoodReplay(body.answer.kind);
             return;
@@ -247,6 +251,7 @@ export function AskLauncher() {
     awaitingAsk.current = null;
     setThinking(false);
     if (last.kind === 'assistant') {
+      const asked = [...ask.thread].reverse().find((i) => i.kind === 'user');
       const refusal = last.answer.origin === 'refusal';
       const item: LogItem = {
         r: 'a',
@@ -258,7 +263,7 @@ export function AskLauncher() {
         mid: last.messageId,
         card: last.answer.changesetId ?? undefined,
         run: last.answer.runLive ? (last.answer.runId ?? undefined) : undefined,
-        q: [...ask.thread].reverse().find((i) => i.kind === 'user')?.kind === 'user' ? ([...ask.thread].reverse().find((i) => i.kind === 'user') as { text: string }).text : undefined,
+        q: asked?.kind === 'user' ? echo(asked.text) : undefined,
       };
       save([...readLog(), item]);
       setMoodReplay(refusal ? 'nan' : 'ok');
