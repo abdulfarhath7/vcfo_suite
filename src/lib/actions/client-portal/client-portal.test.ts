@@ -41,7 +41,8 @@ const compliances = {
   getPortalFilings: vi.fn(async (_ctx: unknown, _input?: unknown) => [filing]),
   addClientFilingProof: vi.fn(async () => ({})),
   setFilingReminder: vi.fn(async () => ({ remindOn: '2026-11-13' })),
-  clearFilingReminder: vi.fn(async () => undefined),
+  getOwnFilingReminder: vi.fn(async () => null as unknown),
+  restoreFilingReminder: vi.fn(async () => undefined),
   complianceErrorStatus: (error: unknown) => (error instanceof Error && error.message === 'Already filed' ? 400 : null),
 };
 vi.mock('@/db/repositories/client-compliances', () => compliances);
@@ -381,8 +382,13 @@ describe('what each one does', () => {
   it('sets and clears their own reminder, and not on a filed filing', async () => {
     const outcome = await run('client-portal.remindFiling');
     expect(outcome.ok).toBe(true);
-    expect(await byName('client-portal.remindFiling').undo!(actx(), undoOf(outcome))).toMatchObject({ ok: true });
-    expect(compliances.clearFilingReminder).toHaveBeenCalledTimes(1);
+    expect(await byName('client-portal.remindFiling').undo!(actx(), undoOf(outcome))).toMatchObject({ ok: true, summary: 'Your reminder is off.' });
+    expect(compliances.restoreFilingReminder).toHaveBeenLastCalledWith(expect.anything(), FILING, null);
+    const before = { remindOn: '2026-11-14', channels: ['whatsapp'], sentAt: null };
+    compliances.getOwnFilingReminder.mockResolvedValueOnce(before);
+    const again = await run('client-portal.remindFiling');
+    expect(await byName('client-portal.remindFiling').undo!(actx(), undoOf(again))).toMatchObject({ ok: true, summary: 'Your reminder is back as it was.' });
+    expect(compliances.restoreFilingReminder).toHaveBeenLastCalledWith(expect.anything(), FILING, before);
     filing.filedOn = '2026-11-01';
     expect(await run('client-portal.remindFiling')).toMatchObject({ ok: false, error: 'This filing is already filed.' });
   });

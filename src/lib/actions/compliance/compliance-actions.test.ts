@@ -57,7 +57,8 @@ vi.mock('@/db/repositories/compliance-statutory', () => statutory);
 const clientCompliances = {
   getPortalFilings: vi.fn(async () => [{ acknowledgementNo: 'old', amountPaid: null, draftDueOn: null }]),
   setFilingReminder: vi.fn(async () => ({ remindOn: '2026-11-15' })),
-  clearFilingReminder: vi.fn(async () => undefined),
+  getOwnFilingReminder: vi.fn(async () => null as unknown),
+  restoreFilingReminder: vi.fn(async () => undefined),
   upsertFilingDetails: vi.fn(async () => undefined),
 };
 vi.mock('@/db/repositories/client-compliances', () => clientCompliances);
@@ -428,7 +429,12 @@ describe('the filing actions', () => {
       expect(undone.ok, name).toBe(true);
     };
     await run('compliance.remindMe');
-    expect(clientCompliances.clearFilingReminder).toHaveBeenCalledWith(person('manager'), ID);
+    expect(clientCompliances.restoreFilingReminder).toHaveBeenLastCalledWith(person('manager'), ID, null);
+    // A reminder the person already had comes back as it was, not removed.
+    const before = { remindOn: '2026-11-14', channels: ['whatsapp'], sentAt: null };
+    clientCompliances.getOwnFilingReminder.mockResolvedValueOnce(before);
+    await run('compliance.remindMe');
+    expect(clientCompliances.restoreFilingReminder).toHaveBeenLastCalledWith(person('manager'), ID, before);
     await run('compliance.setStage');
     expect(statutory.updateStatutory).toHaveBeenLastCalledWith(person('manager'), ID, { action: 'stage', stage: 'in-progress' });
     await run('compliance.setWorkingWindow', 'manager', windowSaved);

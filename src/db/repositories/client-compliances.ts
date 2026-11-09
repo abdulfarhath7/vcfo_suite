@@ -537,6 +537,34 @@ export async function clearFilingReminder(ctx: AuthContext, instanceId: string):
     .where(and(eq(complianceReminders.instanceId, inst.id), eq(complianceReminders.userId, ctx.userId)));
 }
 
+/** The caller's own reminder on a filing as it was saved, kept so a change made for them can be put back. */
+export type SavedFilingReminder = {
+  remindOn: string;
+  channels: ReminderChannel[];
+  sentAt: string | null;
+};
+
+export async function getOwnFilingReminder(ctx: AuthContext, instanceId: string): Promise<SavedFilingReminder | null> {
+  const inst = await scopedInstance(ctx, instanceId);
+  const [row] = await db
+    .select({ remindOn: complianceReminders.remindOn, channels: complianceReminders.channels, sentAt: complianceReminders.sentAt })
+    .from(complianceReminders)
+    .where(and(eq(complianceReminders.instanceId, inst.id), eq(complianceReminders.userId, ctx.userId)))
+    .limit(1);
+  return row ? { remindOn: row.remindOn, channels: row.channels as ReminderChannel[], sentAt: row.sentAt?.toISOString() ?? null } : null;
+}
+
+/** Puts the caller's reminder back as it was saved, or removes it when there was none. */
+export async function restoreFilingReminder(ctx: AuthContext, instanceId: string, saved: SavedFilingReminder | null): Promise<void> {
+  if (!saved) return clearFilingReminder(ctx, instanceId);
+  const inst = await scopedInstance(ctx, instanceId);
+  const row = { remindOn: saved.remindOn, channels: saved.channels, sentAt: saved.sentAt ? new Date(saved.sentAt) : null };
+  await db
+    .insert(complianceReminders)
+    .values({ instanceId: inst.id, userId: ctx.userId, ...row })
+    .onConflictDoUpdate({ target: [complianceReminders.instanceId, complianceReminders.userId], set: row });
+}
+
 /**
  * SYSTEM (Inngest only — no AuthContext): reminders whose day has come and
  * that were not sent yet, with what the email needs. Re-checks the filing is

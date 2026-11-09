@@ -3,7 +3,7 @@ import 'server-only';
 import { z } from 'zod';
 import { getItem, getActiveCatalogItems } from '@/data/checklist';
 import { getOwnAskAttachments } from '@/db/repositories/ask-attachments';
-import { addClientFilingProof, clearFilingReminder, complianceErrorStatus, getPortalFilings, setFilingReminder } from '@/db/repositories/client-compliances';
+import { addClientFilingProof, complianceErrorStatus, getOwnFilingReminder, getPortalFilings, restoreFilingReminder, setFilingReminder, type SavedFilingReminder } from '@/db/repositories/client-compliances';
 import { listOpenDocumentRequests, undoRequestUpload, UploadRejectedError } from '@/db/repositories/client-documents';
 import { clientAttachRequestedFile, clientUndoRequestedFile, FileRequestError, listFileRequests } from '@/db/repositories/client-incorporation';
 import { getSubjectInputs, readSubjectFieldRows, restoreSubjectFields, saveSubjectFields, type SubjectFieldRow } from '@/db/repositories/compliance-inputs';
@@ -323,13 +323,16 @@ const remindFiling = defineAction({
     refusing(async () => {
       const filing = await ownFiling(actx, input.filingId);
       if (filing.filedOn) return { ok: false, error: 'This filing is already filed.' };
+      // The reminder this replaces, so an undo puts it back rather than leaving none.
+      const before = await getOwnFilingReminder(actx.auth, filing.id);
       const { remindOn } = await setFilingReminder(actx.auth, filing.id);
-      return { ok: true, summary: `You will be reminded about ${filing.name} on ${remindOn}.`, undo: { filingId: filing.id } };
+      return { ok: true, summary: `You will be reminded about ${filing.name} on ${remindOn}.`, undo: { filingId: filing.id, before } };
     }),
   undo: (actx, raw) =>
     refusing(async () => {
-      await clearFilingReminder(actx.auth, (raw as { filingId: string }).filingId);
-      return { ok: true, summary: 'Your reminder is off.' };
+      const { filingId, before } = raw as { filingId: string; before?: SavedFilingReminder | null };
+      await restoreFilingReminder(actx.auth, filingId, before ?? null);
+      return { ok: true, summary: before ? 'Your reminder is back as it was.' : 'Your reminder is off.' };
     }),
 });
 

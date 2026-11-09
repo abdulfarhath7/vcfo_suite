@@ -3,7 +3,7 @@ import 'server-only';
 import { z } from 'zod';
 import { obligationChecklist } from '@/data/before-filing';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
-import { clearFilingReminder, getPortalFilings, setFilingReminder, upsertFilingDetails } from '@/db/repositories/client-compliances';
+import { getOwnFilingReminder, getPortalFilings, restoreFilingReminder, setFilingReminder, upsertFilingDetails, type SavedFilingReminder } from '@/db/repositories/client-compliances';
 import { getReminderSchedule, setReminderSchedule } from '@/db/repositories/compliance-reminder-schedule';
 import { getStatutoryDetail, scopedStatutory, statutoryStage, updateStatutory } from '@/db/repositories/compliance-statutory';
 import { deleteChecklistItem, getTask, setChecklistItem } from '@/db/repositories/compliance-tasks';
@@ -114,12 +114,14 @@ const remindMe = defineAction({
   execute: (actx, input) =>
     refuseKnown(async () => {
       const { title } = await scoped(actx, input.itemId);
+      // The reminder this replaces, so an undo puts it back rather than leaving none.
+      const before = await getOwnFilingReminder(actx.auth, input.itemId);
       const { remindOn } = await setFilingReminder(actx.auth, input.itemId, input.channels);
-      return { ok: true, summary: `You will be reminded about ${title} on ${remindOn}.`, undo: { itemId: input.itemId } };
+      return { ok: true, summary: `You will be reminded about ${title} on ${remindOn}.`, undo: { itemId: input.itemId, before } };
     }),
-  undo: undoWith(filingId, async (actx, input) => {
-    await clearFilingReminder(actx.auth, input.itemId);
-    return { ok: true, summary: 'Your reminder is off.' };
+  undo: undoWith(filingId.extend({ before: z.custom<SavedFilingReminder | null>().optional() }), async (actx, input) => {
+    await restoreFilingReminder(actx.auth, input.itemId, input.before ?? null);
+    return { ok: true, summary: input.before ? 'Your reminder is back as it was.' : 'Your reminder is off.' };
   }),
 });
 
