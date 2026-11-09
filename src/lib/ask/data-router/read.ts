@@ -2,7 +2,7 @@ import 'server-only';
 
 import { z } from 'zod';
 import { assertZipWithinLimit, docxToText, ExtractError } from '@/lib/ask/ingest/extract';
-import { tokeniseIdentityNumbers } from '@/lib/ask/mask';
+import { holdsPortalSecret, tokeniseIdentityNumbers } from '@/lib/ask/mask';
 import type { LlmMessage, LlmProvider } from '@/lib/ask/provider';
 import { catalogSynonyms } from './candidates';
 import { IDENTITY_DOC_TYPES, type ReadResult, type ReadValue } from './types';
@@ -191,6 +191,8 @@ const compareForm = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, 
 
 export const ID_DOC_TEXT = /permanent account number card|income tax department|government of india[\s\S]*\b(?:aadhaar|male|female)\b|unique identification authority|\baadhaar\b[\s\S]*\byour\b|republic of india[\s\S]*passport|\bpassport no\b|election commission of india|driving licen[cs]e/i;
 
+const PORTAL_SECRET_IN_FILE = 'This holds a password, OTP, DSC PIN or token, so I did not read it. Please remove them and attach it again; you enter them yourself on the portal.';
+
 interface ModelReadDeps {
   provider: () => Promise<LlmProvider>;
   model: string;
@@ -221,6 +223,8 @@ async function askModel(deps: ModelReadDeps, content: Extract<LlmMessage['conten
 /** Pages of text: code first, then the model with identity numbers swapped out. */
 async function readTextPages(pages: string[], deps: ModelReadDeps): Promise<ReadResult> {
   const whole = pages.join('\n');
+  // A login, OTP, DSC PIN or token in a file stops here, before code keeps a value or a model reads it.
+  if (holdsPortalSecret(whole)) throw new ReadRefused(PORTAL_SECRET_IN_FILE);
   const idDoc = ID_DOC_TEXT.test(whole);
   const docTypeFromText = idDoc ? 'identity_document' : 'other';
   const parsedPages = pages.map((page, i) => parseStructured(page, pages.length > 1 ? i + 1 : null));

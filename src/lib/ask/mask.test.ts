@@ -100,6 +100,14 @@ describe('portal logins and one-time codes', () => {
     }
   });
 
+  it('hides the values under a password column in a pasted or sheet table', () => {
+    const table = 'Client credentials\nPortal | User ID | Password\nGST | acme_gst | Acme@2024\nMCA | acme_mca | Mca#7788';
+    expect(holdsPortalSecret(table)).toBe(true);
+    expect(maskIdentityNumbers(table)).toBe('Client credentials\nPortal | User ID | Password\nGST | acme_gst | [hidden]\nMCA | acme_mca | [hidden]');
+    expect(maskIdentityNumbers('Portal\tPwd\nGST\tAcme@2024')).toBe('Portal\tPwd\nGST\t[hidden]');
+    for (const text of ['Portal | Password\n', 'Password, please reset it.\nThanks, Ravi', 'Portal | Status\nGST | Password expired']) expect(holdsPortalSecret(text), text).toBe(false);
+  });
+
   it('leaves ordinary questions that mention a password alone, in English and Hinglish', () => {
     for (const text of ['What is the password policy?', 'I forgot my password, how do I reset it?', 'Is the MCA password needed for DIR-3 KYC?', 'Where do I change the password for MCA V3?', 'The password is with the director.', 'password reset nahi ho raha', 'password kaise reset kare?', 'password galat hai', 'password expired hai kya karu', 'password change karna hai', 'password ka kya karna hai', 'otp nahi aaya']) {
       expect(holdsPortalSecret(text), text).toBe(false);

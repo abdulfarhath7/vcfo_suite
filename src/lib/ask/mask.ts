@@ -43,7 +43,40 @@ const PORTAL_SECRETS: readonly RegExp[] = [
   /()\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g,
 ];
 
-const hideSecrets = (text: string): string => PORTAL_SECRETS.reduce((out, pattern) => out.replace(pattern, `$1${SECRET_VALUE}`), text);
+const PASSWORD_CELL = new RegExp(String.raw`^["']?${PASSWORD_WORD}s?["']?$`, 'i');
+const CELL_SEPARATORS = ['\t', '|', ',', ';'];
+
+/** A header row: short label cells, one of them a password word. */
+const isHeaderCell = (cell: string) => cell.length <= 40 && !/[.?!]$/.test(cell);
+
+/**
+ * A table with a password column, pasted or read from a sheet: each value under that header is
+ * hidden, on every following row split the same way into as many cells.
+ */
+function hideSecretColumns(text: string): string {
+  let header: { column: number; separator: string; width: number } | null = null;
+  return text
+    .split('\n')
+    .map((line) => {
+      const separator = CELL_SEPARATORS.find((candidate) => line.includes(candidate));
+      const cells = separator ? line.split(separator) : [line];
+      const column = cells.findIndex((cell) => PASSWORD_CELL.test(cell.trim()));
+      if (separator && column >= 0 && cells.every((cell) => isHeaderCell(cell.trim()))) {
+        header = { column, separator, width: cells.length };
+        return line;
+      }
+      if (!header || separator !== header.separator || cells.length !== header.width) {
+        if (line.trim()) header = null;
+        return line;
+      }
+      const value = cells[header.column]!;
+      if (value.trim()) cells[header.column] = value.replace(/\S(?:.*\S)?/, SECRET_VALUE);
+      return cells.join(separator);
+    })
+    .join('\n');
+}
+
+const hideSecrets = (text: string): string => PORTAL_SECRETS.reduce((out, pattern) => out.replace(pattern, `$1${SECRET_VALUE}`), hideSecretColumns(text));
 
 /** True when a message holds a portal login, OTP, DSC PIN or token. */
 export function holdsPortalSecret(text: string): boolean {

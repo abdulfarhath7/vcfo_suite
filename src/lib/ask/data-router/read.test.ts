@@ -193,6 +193,18 @@ describe('files that unpack too far', () => {
   });
 });
 
+describe('portal logins in a file', () => {
+  it('refuses a credentials sheet before any model call or kept value', async () => {
+    const ExcelJS = await import('exceljs');
+    const book = new ExcelJS.Workbook();
+    const sheet = book.addWorksheet('Logins');
+    for (const row of [['Client credentials'], ['Portal', 'User ID', 'Password'], ['GST', 'acme_gst', 'Acme@2024']]) sheet.addRow(row);
+    const data = Buffer.from(await book.xlsx.writeBuffer());
+    await expect(readFile({ fileName: 'credentials.xlsx', data }, deps())).rejects.toThrow(/password, OTP, DSC PIN or token/);
+    await expect(readPaste('Portal | User ID | Password\nGST | acme_gst | Acme@2024', deps())).rejects.toBeInstanceOf(ReadRefused);
+  });
+});
+
 describe('what an attachment is', () => {
   it('takes its type from the name and the first bytes, never from the browser', () => {
     expect(attachmentTypeOf('a.pdf', Buffer.from('%PDF-1.7 rest'))).toBe('application/pdf');
