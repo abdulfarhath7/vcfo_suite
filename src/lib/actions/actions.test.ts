@@ -37,7 +37,7 @@ const requestsRepo = { createAndNotifyDocumentRequest: vi.fn(async () => ({ requ
 vi.mock('@/lib/requests/create-document-request', () => requestsRepo);
 const clientDocs = { setDocumentRequestDetails: vi.fn(async () => true) };
 vi.mock('@/db/repositories/client-documents', () => clientDocs);
-const document = { id: ID, engagementId: CLIENT, fileName: 'notice.txt', objectKey: 'engagement-documents/x/notice.txt', contentType: 'text/plain', reviewStatus: 'pending', uploadedByName: 'Up Loader' };
+const document = { id: ID, engagementId: CLIENT, fileName: 'notice.txt', objectKey: 'engagement-documents/x/notice.txt', contentType: 'text/plain', reviewStatus: 'pending', reviewedAt: null as string | null, uploadedByName: 'Up Loader' };
 const docsRepo = {
   listVaultRequests: vi.fn(async () => [{ id: ID, title: 'Rent', status: 'pending', dueOn: null, files: [] }]),
   listDocuments: vi.fn(async () => [document]),

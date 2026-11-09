@@ -30,11 +30,11 @@ async function financeSheet(): Promise<WorkbookInput> {
   return wb.xlsx.writeBuffer();
 }
 
-/** A few hundred kilobytes that unpack to 150 MB. */
-function zipBomb(): Buffer {
+/** A few hundred kilobytes that unpack to 150 MB. exceljs types its input as a plain `Buffer`. */
+function zipBomb(): WorkbookInput {
   const zip = new PizZip();
   zip.file('xl/worksheets/sheet1.xml', Buffer.alloc(150 * 1024 * 1024), { compression: 'DEFLATE' } as never);
-  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' }) as unknown as WorkbookInput;
 }
 
 describe('parseReceivablesWorkbook', () => {
