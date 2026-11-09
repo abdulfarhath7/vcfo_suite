@@ -2,7 +2,7 @@
 import '../../../scripts/load-env';
 
 import ExcelJS from 'exceljs';
-import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { AuthContext } from '@/auth/guards';
 import type { LlmProvider } from '@/lib/ask/provider';
@@ -58,6 +58,7 @@ describe.skipIf(!OPS)('the operations pack through real cards', async () => {
   const { getAction } = await import('@/lib/actions/registry');
   const { decideChangeset, ChangesetRefused, undoChangeset } = await import('@/lib/ask/changeset/apply');
   const { createReviewCard } = await import('@/lib/ask/do/card');
+  const { reminderDesk } = await import('@/lib/actions/receivables/flows');
   const { listCredits, systemIngestCredits } = await import('@/db/repositories/receivables');
   const { recordUpload, saveColumnMap } = await import('@/db/repositories/labour-registers');
   const { parseWorkbook } = await import('@/lib/labour-registers/parse');
@@ -310,12 +311,8 @@ describe.skipIf(!OPS)('the operations pack through real cards', async () => {
     });
 
     it('skips a reminder and edits one', async () => {
-      const reminders = await db
-        .select({ id: receivableReminders.id })
-        .from(receivableReminders)
-        .innerJoin(receivableInvoices, eq(receivableInvoices.id, receivableReminders.invoiceId))
-        .where(and(eq(receivableInvoices.sheetId, sheetId), inArray(receivableReminders.status, ['queued', 'held'])))
-        .limit(2);
+      // Today's queue, as the Reminders tab shows it: a reminder queued on an earlier day is not on a card.
+      const reminders = (await reminderDesk(manager, sheetId)).queue.filter((row) => ['queued', 'held'].includes(row.status)).slice(0, 2);
       expect(reminders.length).toBe(2);
       await viaCard(manager, 'receivables.skipReminder', { sheetId, reminderId: reminders[0]!.id, skipped: true });
       await viaCard(manager, 'receivables.editReminder', { sheetId, reminderId: reminders[1]!.id, subject: 'Payment due', body: 'Please pay the invoice.' });
@@ -421,11 +418,12 @@ describe.skipIf(!OPS)('the operations pack through real cards', async () => {
 
   /** What the upload screen leaves behind: the file, its row, and the columns matched to it. */
   async function uploadPaysheet(ctx: AuthContext, batch: typeof labourRegisterBatches.$inferSelect) {
-    const fields = requiredFields(formsFor(batch.stateCode, { from: batch.periodFrom, to: batch.periodTo }, 'state'));
+    // Each person's minimum wage coverage is decided too, because the close blocks while anyone's is not.
+    const fields = [...requiredFields(formsFor(batch.stateCode, { from: batch.periodFrom, to: batch.periodTo }, 'state')), 'minimumWageCoverage'];
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Payroll');
     sheet.addRow(fields);
-    sheet.addRow(fields.map(() => 1));
+    sheet.addRow(fields.map((field) => (field === 'minimumWageCoverage' ? 'covered' : 1)));
     const bytes = Buffer.from(await workbook.xlsx.writeBuffer());
     const objectKey = `labour/eval/${batch.id}/paysheet.xlsx`;
     outward.files.set(objectKey, bytes);
