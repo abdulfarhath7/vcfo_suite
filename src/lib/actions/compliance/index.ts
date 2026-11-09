@@ -528,7 +528,10 @@ const approveCalendarChange = defineAction({
   preview: async (actx, input) => {
     const view = (await listCalendarProposals(actx.auth)).find((proposal) => proposal.id === input.proposalId);
     if (view?.status !== 'proposed') throw new ActionRefused('This due date change has already been decided.');
-    const clients = view.total === 1 ? '1 client' : `${view.total} clients`;
+    // The approver sees the reach: every client this person may see by name, and how many there are in all.
+    const named = view.clients.slice(0, 10).map((client) => client.companyName);
+    const more = view.total - named.length;
+    const clients = `${view.total === 1 ? '1 client' : `${view.total} clients`}${named.length > 0 ? `: ${named.join(', ')}${more > 0 ? ` and ${more} more` : ''}` : ''}`;
     return {
       ...recordDraft(
         { ...actx, engagementId: 'firm' },
@@ -539,7 +542,7 @@ const approveCalendarChange = defineAction({
           label: `${view.obligationName}, ${view.period}`,
           target: input,
           displayOld: `Due ${view.oldDueDate}`,
-          displayNew: `Due ${view.newDueDate}, for ${clients}. From: ${view.updateTitle}`,
+          displayNew: `Due ${view.newDueDate}, for ${clients}. Each filing's owner and the client's manager are told. From: ${view.updateTitle}`,
         },
       ),
       engagementId: null,

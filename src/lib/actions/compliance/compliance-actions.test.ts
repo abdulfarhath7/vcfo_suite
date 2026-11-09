@@ -477,8 +477,22 @@ describe('approving a due date change Watch proposed', () => {
     decideProposal.mockClear();
     const draft = await change().preview(firm(), { proposalId: ID });
     expect(draft).toMatchObject({ engagementId: null, tier: 'T2' });
-    expect(draft!.rows[0]).toMatchObject({ target: { proposalId: ID }, displayOld: 'Due 2026-11-11', displayNew: 'Due 2026-11-13, for 2 clients. From: Notification 12' });
+    expect(draft!.rows[0]).toMatchObject({ target: { proposalId: ID }, displayOld: 'Due 2026-11-11', displayNew: "Due 2026-11-13, for 2 clients. Each filing's owner and the client's manager are told. From: Notification 12" });
     expect(decideProposal).not.toHaveBeenCalled();
+  });
+
+  it('names the clients the person may see and counts the rest', async () => {
+    watchRows.listCalendarProposals.mockResolvedValueOnce([{ id: ID, status: 'proposed', obligationName: 'GSTR-1', period: 'Oct 2026', oldDueDate: '2026-11-11', newDueDate: '2026-11-13', total: 3, updateTitle: 'Notification 12', clients: [{ companyName: 'Acme' }, { companyName: 'Kestrel' }] }]);
+    const draft = await change().preview(firm(), { proposalId: ID });
+    expect(draft!.rows[0]!.displayNew).toContain('for 3 clients: Acme, Kestrel and 1 more.');
+  });
+
+  it('is off while Watch is off, so a card made before cannot move a date after', () => {
+    vi.stubEnv('WATCH_ENABLED', 'false');
+    expect(change().available!()).toBe(false);
+    vi.stubEnv('WATCH_ENABLED', 'true');
+    expect(change().available!()).toBe(true);
+    vi.unstubAllEnvs();
   });
 
   it('refuses a change that has been decided', async () => {
