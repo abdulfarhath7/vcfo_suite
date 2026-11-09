@@ -41,7 +41,13 @@ Look up the records you need before proposing, and propose only what the request
 When the work is done, or you cannot go on, finish with one to three plain sentences: what was done, what is waiting for the person, and anything you could not do. Never say something is done unless a tool result says so. No markdown.`;
 
 const MAX_TOKENS = 8000;
-/** App Runner ends a request at 120 seconds, and each turn runs inside one. */
+/**
+ * App Runner ends a request at 120 seconds, and each turn's job step runs inside one. So the turn's
+ * model call makes one attempt of at most 100 seconds, with no retry inside the SDK, which would run
+ * past the request. The job retries a failed step twice, so the worst case is three attempts, 300
+ * seconds of model time a turn, and 12 turns (ASK_RUN_MAX_TURNS) bound a run. An attempt that times
+ * out is billed but reports no usage, so it is not counted.
+ */
 const TURN_TIMEOUT_MS = 100_000;
 const FINAL_MAX = 1200;
 /** What one read, and all the reads of one turn, may put in front of the model. Every later turn pays for it again. */
@@ -120,6 +126,7 @@ async function callModel(ctx: AuthContext, run: AskRunRow, state: AgentState, ac
     maxTokens: MAX_TOKENS,
     effort: 'medium',
     timeoutMs: TURN_TIMEOUT_MS,
+    maxRetries: 0,
   });
   const { usage } = result;
   await systemRecordAskUsage('agent_run', [{ model: result.model, calls: 1, usage }], now).catch((error) => console.error('[ask-vcfo] usage not recorded', safeError(error)));

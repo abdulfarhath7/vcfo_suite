@@ -33,3 +33,15 @@ describe('the refusal fallback', () => {
     expect(create.mock.calls[0]![0]).toMatchObject({ fallbacks: 'default', betas: ['server-side-fallback-2026-07-01'] });
   });
 });
+
+describe('the request options', () => {
+  it('send a request its own timeout and retry count, so an agent turn makes one bounded attempt', async () => {
+    await createAnthropicProvider({ refusalFallback: false }).complete({ model: 'claude-sonnet-5-5', maxTokens: 10, system: [], messages: [], timeoutMs: 100_000, maxRetries: 0 });
+    expect(create.mock.calls[0]![1]).toEqual({ timeout: 100_000, maxRetries: 0 });
+  });
+
+  it('leave the client defaults alone when a request sets neither', async () => {
+    await ask('claude-sonnet-5-5');
+    expect(create.mock.calls[0]![1]).toBeUndefined();
+  });
+});

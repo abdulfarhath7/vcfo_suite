@@ -207,6 +207,7 @@ describe('agent loop', () => {
     expect(JSON.stringify(state().messages)).not.toContain('cache_control');
     expect(requests[0]!.model).toBe('claude-sonnet-5-5');
     expect(requests[0]!.effort).toBe('medium');
+    expect(requests[0]).toMatchObject({ timeoutMs: 100_000, maxRetries: 0 });
   });
 
   it('turns a T2 proposal into a card and sleeps; nothing is written', async () => {

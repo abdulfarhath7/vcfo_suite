@@ -29,6 +29,8 @@ export interface LlmRequest {
   outputSchema?: Record<string, unknown>;
   /** Per-request timeout (ms) for long jobs such as document transcription. */
   timeoutMs?: number;
+  /** Retries inside the SDK, which keeps its own default when this is unset. Each retry may wait a full timeout. */
+  maxRetries?: number;
 }
 
 export interface LlmUsage {
@@ -66,6 +68,12 @@ export function outputConfigFor(req: LlmRequest) {
       ...(req.outputSchema ? { format: { type: 'json_schema' as const, schema: req.outputSchema } } : {}),
     },
   };
+}
+
+/** The SDK's per-request options: a request's own timeout and retry count, or nothing. */
+export function requestOptionsFor(req: LlmRequest): { timeout?: number; maxRetries?: number } | undefined {
+  if (req.timeoutMs === undefined && req.maxRetries === undefined) return undefined;
+  return { ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}), ...(req.maxRetries !== undefined ? { maxRetries: req.maxRetries } : {}) };
 }
 
 /** The one mapping from an API response to the seam, shared by both adapters. A refusal carries no content. */
