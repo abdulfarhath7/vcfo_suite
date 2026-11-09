@@ -47,7 +47,8 @@ export function parseRobots(text: string): RobotsRules {
       if (Number.isFinite(seconds) && seconds >= 0) current.crawlDelayMs = seconds * 1000;
     }
   }
-  const named = groups.filter((g) => g.agents.some((a) => a && a !== '*' && ROBOTS_AGENT_TOKEN.startsWith(a)));
+  // RFC 9309 matches the whole product token, in any letter case, so "User-agent: v" is another crawler's group.
+  const named = groups.filter((g) => g.agents.includes(ROBOTS_AGENT_TOKEN));
   const chosen = named.length > 0 ? named : groups.filter((g) => g.agents.includes('*'));
   return {
     rules: chosen.flatMap((g) => g.rules),

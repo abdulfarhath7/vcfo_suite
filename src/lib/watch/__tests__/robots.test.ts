@@ -19,6 +19,11 @@ describe('robots rules', () => {
     expect(robotsAllows(shut, '/anything')).toBe(false);
   });
 
+  it('takes a group only for our whole product token, never a shorter name that starts it', () => {
+    const robots = parseRobots('User-agent: v\nAllow: /\n\nUser-agent: vcfo\nAllow: /\n\nUser-agent: *\nDisallow: /circulars\n');
+    expect(robotsAllows(robots, '/circulars/a.pdf')).toBe(false);
+  });
+
   it('handles wildcards, end anchors and comments, and an empty Disallow allows', () => {
     const robots = parseRobots('# hello\nUser-agent: *\nDisallow: /*.pdf$ # no pdfs\nDisallow:\n');
     expect(robotsAllows(robots, '/a/b.pdf')).toBe(false);
