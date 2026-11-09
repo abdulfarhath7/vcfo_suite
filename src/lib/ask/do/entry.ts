@@ -26,7 +26,7 @@ import { checkAskRateLimit } from '@/lib/ask/rate-limit';
 import { limitAnswer, REFUSAL_COPY } from '@/lib/ask/refusals';
 import { getObjectBuffer, putObject } from '@/storage/s3';
 import { createReviewCard } from './card';
-import { handleWork, type WorkState } from './work';
+import { handleWork, line, type WorkState } from './work';
 
 /**
  * The Do engine's way in. A file, a labelled paste or a message of facts goes to the data router:
@@ -41,7 +41,6 @@ export type DoEvent = { type: 'progress'; runId: string; label: string } | { typ
 
 export interface DoWorkResult {
   answer: AnswerEnvelope;
-  metered: MeteredProvider | null;
   path?: 'fixed_workflow' | 'agent_run';
   /** Runs once the answer is stored, so a run can point back at its message. */
   start?: (messageId: string | null) => Promise<void>;
@@ -66,15 +65,6 @@ interface PendingState {
 
 const MIN_SYNONYM_LENGTH = 4;
 export const STORED_USER_TEXT_MAX = 1_000;
-
-const line = (text: string, extra: Partial<AnswerEnvelope> = {}): AnswerEnvelope => ({
-  line: text.slice(0, 1200),
-  citations: [],
-  actions: [],
-  origin: 'work',
-  depth: 'normal',
-  ...extra,
-});
 
 /** A message worth a look by the router: a labelled line, or a long paste. */
 export function isDataMessage(message: string): boolean {
@@ -151,14 +141,16 @@ export async function handleDoWork(
     onMeter?: (meter: MeteredProvider) => void;
     /** A client's own company, from the shell: every run in that shell is held to it. */
     lockedTo?: string | null;
+    /** The line about the record on screen, when the chat has already looked it up. */
+    onScreen?: string | null;
   },
 ): Promise<DoWorkResult | null> {
   const { shell } = request;
   const client = shell === 'client';
   // A super admin previewing the client shell only reads; a client's run needs their own company.
-  if (client && (ctx.role !== 'client' || !context.lockedTo)) return { answer: limitAnswer(shell, 'doWork'), metered: null };
+  if (client && (ctx.role !== 'client' || !context.lockedTo)) return { answer: limitAnswer(shell, 'doWork') };
   const flags = askFlags();
-  if (flags.killedPaths.has('fixed_workflow') || flags.killedTiers.has('T2')) return { answer: limitAnswer(shell, 'pathStopped'), metered: null };
+  if (flags.killedPaths.has('fixed_workflow') || flags.killedTiers.has('T2')) return { answer: limitAnswer(shell, 'pathStopped') };
   const { conversationId, now } = context;
   const attachmentIds = request.attachmentIds ?? [];
 
@@ -189,24 +181,24 @@ export async function handleDoWork(
   if (workReply || (!waiting && attachmentIds.length === 0 && !isDataMessage(message))) {
     if (workReply && CANCEL.test(message)) {
       await updateAskRun(ctx, workReply.run.id, { status: 'cancelled', finishedAt: new Date() });
-      return { answer: line('All right, I have left this as it is. Nothing was saved.', { runId: workReply.run.id }), metered };
+      return { answer: line('All right, I have left this as it is. Nothing was saved.', { runId: workReply.run.id }) };
     }
     const matches = workReply ? companiesNamed(message, workReply.state.options) : [];
     if (workReply && matches.length !== 1) {
       const question = matches.length > 1 ? moreThanOne(matches) : 'Please tell me which project this is for.';
-      return { answer: line(question, { runId: workReply.run.id }), metered };
+      return { answer: line(question, { runId: workReply.run.id }) };
     }
     const named = matches[0];
     const outcome = await handleWork(ctx, request, {
       message: workReply ? workReply.state.instruction : message,
-      onScreen: await pageContextLine(ctx, request.page),
+      onScreen: context.onScreen !== undefined ? context.onScreen : await pageContextLine(ctx, request.page),
       conversationId,
       now,
       engagements: reachable,
       provider,
       resumed: workReply ? { run: workReply.run, pick: workReply.state.pick, engagement: named! } : undefined,
     });
-    if (outcome.kind === 'answer') return { answer: outcome.answer, metered, path: outcome.path, start: outcome.start };
+    if (outcome.kind === 'answer') return { answer: outcome.answer, path: outcome.path, start: outcome.start };
     // Prose that names no fact goes back to the plain line.
     if (outcome.kind === 'none' || !mayHoldValues(message)) return null;
   }
@@ -235,7 +227,7 @@ export async function handleDoWork(
   };
   const finish = async (answer: AnswerEnvelope, status = 'done', state?: PendingState, error?: string): Promise<DoWorkResult> => {
     await close(status, state, error);
-    return { answer: { ...answer, runId }, metered };
+    return { answer: { ...answer, runId } };
   };
 
   const route = async (): Promise<DoWorkResult | null> => {

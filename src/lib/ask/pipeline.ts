@@ -286,7 +286,7 @@ async function answerMessage(ctx: AuthContext, request: ChatRequest, emit: Emit,
   // A client's own work runs locked to their company. A super admin previewing the shell only reads.
   const canDo = !preview;
   const pending = canDo ? await pendingDoRun(ctx, conversationId, request.message, now) : null;
-  const doWork = async (extra: { guard?: GuardResult; startedAt?: number } = {}) => {
+  const doWork = async ({ onScreen, ...extra }: { guard?: GuardResult; startedAt?: number; onScreen?: string | null } = {}) => {
     ledger.path = 'fixed_workflow';
     const result = await handleDoWork(ctx, request, request.message ?? '', emit, {
       conversationId,
@@ -297,9 +297,9 @@ async function answerMessage(ctx: AuthContext, request: ChatRequest, emit: Emit,
         ledger.metered = meter;
       },
       lockedTo: engagementId,
+      onScreen,
     });
     if (!result) return false;
-    ledger.metered = result.metered ?? ledger.metered;
     const finished = await finish(result.answer, { path: result.path ?? 'fixed_workflow', ...extra });
     await result.start?.(finished.messageId);
     return true;
@@ -435,7 +435,7 @@ async function answerMessage(ctx: AuthContext, request: ChatRequest, emit: Emit,
     return;
   }
   if (guard.intent === 'do_work') {
-    if (canDo && (await doWork({ guard, startedAt }))) return;
+    if (canDo && (await doWork({ guard, startedAt, onScreen }))) return;
     if (await stopIfKilled('router_refusal', { guard, startedAt })) return;
     await finish(limitAnswer(shell, 'doWork'), { path: 'router_refusal', guard, startedAt });
     return;

@@ -41,7 +41,8 @@ export type WorkOutcome =
   | { kind: 'none' }
   | { kind: 'answer'; answer: AnswerEnvelope; path: 'fixed_workflow' | 'agent_run'; start?: (messageId: string | null) => Promise<void> };
 
-const line = (text: string, extra: Partial<AnswerEnvelope> = {}): AnswerEnvelope => ({
+/** A one-line answer from the Do engine. */
+export const line = (text: string, extra: Partial<AnswerEnvelope> = {}): AnswerEnvelope => ({
   line: text.slice(0, 1200),
   citations: [],
   actions: [],

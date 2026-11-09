@@ -79,12 +79,13 @@ const { handleDoWork, isDataMessage, pendingDoRun } = await import('./entry');
 // Every action area loads on first use, which is slow on a busy machine, so it happens before the timed tests.
 await (await import('@/lib/actions/registry')).getAction('tasks.create');
 
-const run = (message: string, extra: { page?: string; attachmentIds?: string[]; pending?: Awaited<ReturnType<typeof pendingDoRun>>; onMeter?: () => void } = {}) =>
+const run = (message: string, extra: { page?: string; attachmentIds?: string[]; pending?: Awaited<ReturnType<typeof pendingDoRun>>; onMeter?: () => void; onScreen?: string | null } = {}) =>
   handleDoWork(lead, { shell: 'admin', page: extra.page ? { path: extra.page } : undefined, attachmentIds: extra.attachmentIds }, message, () => undefined, {
     conversationId: 'e0000000-0000-4000-8000-00000000000e',
     now: new Date('2026-11-06T10:00:00Z'),
     pending: extra.pending ?? null,
     onMeter: extra.onMeter,
+    onScreen: extra.onScreen,
   });
 
 const DATA = 'Name: Asha Rao\nPAN: ABCDE1234F\nDIN: 01234567';
@@ -271,6 +272,13 @@ describe('handleDoWork', () => {
     const result = await run('No, leave it', { pending: { run: { id: 'run-1', state }, state } as never });
     expect(result!.answer.line).toMatch(/Nothing was saved/);
     expect(updateRun.mock.calls.at(-1)![2].status).toBe('cancelled');
+  });
+
+  it('uses the line about the screen the chat already looked up, instead of looking again', async () => {
+    await run('Send a reminder to the team please', { page: '/app/intern/projects/kestrel', onScreen: 'The person is looking at the payroll sheet.' });
+    const asked = JSON.stringify(modelCalls[0]!.messages);
+    expect(asked).toContain('payroll sheet');
+    expect(asked).not.toContain('Kestrel');
   });
 
   it('gives prose no action fits back to the plain line, after one small-model look', async () => {
