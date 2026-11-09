@@ -40,7 +40,8 @@ function zipBomb(): WorkbookInput {
 describe('parseReceivablesWorkbook', () => {
   it('refuses a workbook that unpacks too far before exceljs loads it', async () => {
     await expect(parseReceivablesWorkbook(zipBomb(), { receivedOn: '2026-11-01' })).rejects.toThrow(/unpacks to more than/);
-  });
+    // Building the bomb compresses 150 MB, which takes seconds on a busy machine.
+  }, 20_000);
 
   it('reads month blocks, splits summed cells and marks received rows', async () => {
     const r = await parseReceivablesWorkbook(await financeSheet(), { receivedOn: '2026-11-01' });

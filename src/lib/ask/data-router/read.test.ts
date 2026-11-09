@@ -163,7 +163,8 @@ describe('files that unpack too far', () => {
     expect(bomb.length).toBeLessThan(1024 * 1024);
     await expect(readFile({ fileName, data: bomb }, deps())).rejects.toThrow(/unpacks to more than can be read/);
     expect(Date.now() - started).toBeLessThan(10_000);
-  });
+    // Building the bomb compresses 150 MB, which takes seconds on a busy machine.
+  }, 20_000);
 
   it('counts every part towards one total', () => {
     const zip = new PizZip();

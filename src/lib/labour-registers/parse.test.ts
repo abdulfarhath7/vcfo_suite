@@ -32,7 +32,8 @@ function zipBomb(): Buffer {
 describe('parseWorkbook', () => {
   it('refuses a workbook that unpacks too far before exceljs loads it', async () => {
     await expect(parseWorkbook(zipBomb(), { format: 'xlsx' })).rejects.toThrow(/unpacks to more than/);
-  });
+    // Building the bomb compresses 150 MB, which takes seconds on a busy machine.
+  }, 20_000);
 
   it('finds the heading row under a title and an instruction row', async () => {
     const buf = await book([
