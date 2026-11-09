@@ -187,13 +187,23 @@ const edit = defineAction({
 
 const addSubtask = defineAction({
   name: 'tasks.addSubtask',
-  description: 'Propose adding a checklist line to a task, which everyone on the task sees. A person approves it on a card.',
+  description: 'Propose adding a checklist line to a task, which everyone on the task sees, the client too when the task is shared with them. A person approves it on a card.',
   input: taskId.extend({ label: z.string().trim().min(1).max(200) }),
   tier: 'T2',
   roles: STAFF_ROLES,
   preview: async (actx, input) => {
     const task = await scoped(actx, input.taskId);
-    return recordDraft(actx, { action: 'tasks.addSubtask', tier: 'T2', title: 'Add a checklist line', label: task.title, target: input, displayNew: input.label });
+    // A line on a task the client sees reaches their portal, so it is confirmed like a message, with their names.
+    const toClient = task.visibility !== 'firm';
+    return recordDraft(actx, {
+      action: 'tasks.addSubtask',
+      tier: toClient ? 'T3' : 'T2',
+      title: 'Add a checklist line',
+      label: task.title,
+      target: input,
+      displayNew: input.label,
+      ...(toClient ? { recipients: await clientRecipients(task.engagementId) } : {}),
+    });
   },
   execute: (actx, input) =>
     refusing(async () => {

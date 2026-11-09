@@ -260,6 +260,17 @@ describe('the 25 actions', () => {
     expect(shared!.recipients).toEqual([{ name: 'Client Person', email: 'c@x.test', role: 'Client' }]);
   });
 
+  it('confirms a checklist line or review note the client will read like a message, with their names', async () => {
+    const client = [{ name: 'Client Person', email: 'c@x.test', role: 'Client' }];
+    expect((await byName('tasks.addSubtask').preview(actx(), { taskId: ID, label: 'Line' }))!.tier).toBe('T2');
+    tasksRepo.getTask.mockResolvedValueOnce({ ...task, visibility: 'both' });
+    const line = await byName('tasks.addSubtask').preview(actx(), { taskId: ID, label: 'Line' });
+    expect([line!.tier, line!.recipients]).toEqual(['T3', client]);
+    expect((await byName('requests.setDetails').preview(actx(), { requestId: ID, dueOn: '2026-12-01' }))!.tier).toBe('T2');
+    const note = await byName('requests.setDetails').preview(actx(), { requestId: ID, reviewNote: 'Scan it again' });
+    expect([note!.tier, note!.recipients]).toEqual(['T3', client]);
+  });
+
   it('lists the people a client comment tells, and refuses when no client would hear of it', async () => {
     const draft = await byName('tasks.commentToClient').preview(actx(), { taskId: ID, body: 'Hello' });
     expect(draft!.recipients).toEqual([{ name: 'Owner', email: 'o@x.test', role: 'Staff' }, { name: 'Client Person', email: 'c@x.test', role: 'Client' }]);

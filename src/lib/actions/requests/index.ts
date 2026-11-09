@@ -63,7 +63,7 @@ const create = defineAction({
 
 const setDetails = defineAction({
   name: 'requests.setDetails',
-  description: 'Propose changing a document request\'s due date or review note. A person approves it on a card.',
+  description: 'Propose changing a document request\'s due date or review note. The client reads the review note in their portal. A person approves it on a card.',
   input: z.object({ requestId: z.string().uuid(), dueOn: isoDate.optional(), reviewNote: z.string().trim().max(1000).optional() }),
   tier: 'T2',
   roles: STAFF_ROLES,
@@ -71,12 +71,14 @@ const setDetails = defineAction({
     const request = await scoped(actx, input.requestId);
     return recordDraft(actx, {
       action: 'requests.setDetails',
-      tier: 'T2',
+      // The client reads the review note as the request's note, so a note is confirmed like a message.
+      tier: input.reviewNote ? 'T3' : 'T2',
       title: 'Change a document request',
       label: request.title,
       target: input,
       displayOld: request.dueOn ? `Due ${request.dueOn}` : '',
       displayNew: [input.dueOn ? `Due ${input.dueOn}` : null, input.reviewNote ?? null].filter(Boolean).join('. '),
+      ...(input.reviewNote ? { recipients: await clientRecipients(lockedClient(actx)) } : {}),
     });
   },
   execute: (actx, input) =>
