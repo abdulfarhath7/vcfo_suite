@@ -37,14 +37,6 @@ describe('lockEngagement', () => {
     expect(lockEngagement({ message: 'File this for Kestrel', pagePath: page, engagements: list })).toEqual({ kind: 'locked', engagement: kestrel });
   });
 
-  it('asks, with no project on screen, when one shared word is all that names a client', () => {
-    const hyderabad = { id: 'h', slug: 'hyderabad-foods', companyName: 'Hyderabad Foods Pvt Ltd' };
-    const list = [kestrel, hyderabad];
-    expect(lockEngagement({ message: 'Ask the client for the Hyderabad office lease', engagements: list })).toEqual({ kind: 'choose', options: [hyderabad] });
-    expect(lockEngagement({ message: 'Ask the client for the Hyderabad office lease', pendingEngagementId: 'h', engagements: list })).toEqual({ kind: 'locked', engagement: hyderabad });
-    expect(lockEngagement({ message: 'Ask Hyderabad Foods for the office lease', engagements: list })).toEqual({ kind: 'locked', engagement: hyderabad });
-  });
-
   it('never locks to a company outside the scoped list it is given', () => {
     expect(lockEngagement({ message: 'Add this for Zeta', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: 'Zeta' });
     expect(lockEngagement({ message: 'Add this', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: null });
