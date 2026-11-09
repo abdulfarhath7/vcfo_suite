@@ -78,14 +78,29 @@ test('an admin away from any project records a receipt by invoice number at phon
 });
 
 test('an admin away from any project reads the reminder queue, skips a reminder, and the run finishes after the card', async ({ page }) => {
-  const [reminder] = await query<{ id: string; invoice_no: string }>(
-    `select r.id, i.invoice_no from receivable_reminders r join receivable_invoices i on i.id = r.invoice_id where r.status = 'queued' and i.invoice_no is not null and i.deleted_at is null order by i.due_date limit 1`,
-  );
+  // A seeded sheet sends no reminders, so they are switched on for this test, on every day of the week, and put back after.
+  const [sheet] = await query<{ id: string; reminder_rules: Record<string, unknown> }>('select id, reminder_rules from receivable_sheets order by created_at limit 1');
+  await onLocalDb((db) => db.query('update receivable_sheets set reminder_rules = $2 where id = $1', [sheet!.id, { ...sheet!.reminder_rules, enabled: true, skipWeekends: false }]));
+  try {
+    await skipAReminder(page);
+  } finally {
+    await onLocalDb((db) => db.query('update receivable_sheets set reminder_rules = $2 where id = $1', [sheet!.id, sheet!.reminder_rules]));
+  }
+});
+
+async function skipAReminder(page: Page) {
   const run = async (word: string) => (await query<{ id: string; status: string; engagement_id: string | null }>(`select id, status, engagement_id from ask_runs where kind = 'agent' and goal like $1 order by created_at desc limit 1`, [`%${word}%`]))[0];
 
   const panel = await askOn(page, 'admin', '/app/admin', 'Show me the reminder queue on the receivables sheet.');
   await expect.poll(async () => (await run('reminder queue'))?.status, { timeout: 180_000, intervals: [3_000] }).toBe('done');
   await expect(panel.getByTestId('run-progress').locator('p').last()).toContainText(/reminder/i, { timeout: 60_000 });
+
+  // Reading the queue queues today's reminders, so one is picked only now, from today's.
+  const [reminder] = await query<{ id: string; invoice_no: string }>(
+    `select r.id, i.invoice_no from receivable_reminders r join receivable_invoices i on i.id = r.invoice_id
+     where r.status = 'queued' and r.for_date = (now() at time zone 'Asia/Kolkata')::date and i.invoice_no is not null and i.deleted_at is null
+     order by i.due_date limit 1`,
+  );
 
   const composer = panel.getByRole('textbox').first();
   await composer.fill(`Skip the queued reminder for invoice ${reminder!.invoice_no}.`);
@@ -104,4 +119,4 @@ test('an admin away from any project reads the reminder queue, skips a reminder,
   await accept(card);
   await expect.poll(status, { timeout: 30_000 }).toBe('skipped');
   await expect.poll(async () => (await run(`invoice ${reminder!.invoice_no}`))?.status, { timeout: 180_000, intervals: [3_000] }).toBe('done');
-});
+}
