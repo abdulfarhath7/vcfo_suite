@@ -241,6 +241,14 @@ describe('decideChangeset', () => {
       expect(await send([asha, ravi])).toEqual({ applied: 1, failed: 0, held: 0 });
     });
 
+    it('checks a row against its own people, not everyone the card names for other rows', async () => {
+      const hash = setCard([makeRow('a', { target: { stepId: 'pre-15', fieldId: 'a', cardRecipients: ['ravi@x.test'] } })]);
+      Object.assign((found as { changeset: Record<string, unknown> }).changeset, { tier: 'T3', recipients: [asha, ravi] });
+      preview.mockResolvedValue({ recipients: [ravi, asha] });
+      expect(await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] })).toEqual({ applied: 0, failed: 1, held: 0 });
+      expect(updateRows.mock.calls[0]![2][0].patch.error).toMatch(/Asha would also get it/);
+    });
+
     it('fails the row with the action\'s own sentence when it now refuses', async () => {
       const { ActionRefused } = await import('@/lib/actions/shared');
       preview.mockRejectedValue(new ActionRefused('That meeting was cancelled.'));

@@ -22,7 +22,7 @@ import { ASK_CHANGESET_DECIDED } from '@/lib/ask/agent/events';
 import { askFlags } from '@/lib/ask/config';
 import { inngest } from '@/jobs/client';
 import { changesetHash } from './hash';
-import type { ChangesetRecipient, JsonValue } from './types';
+import { recipientKey, type JsonValue } from './types';
 import { safeError } from '@/lib/ask/mask';
 
 /**
@@ -204,16 +204,16 @@ async function loadAction(row: AskChangesetRowRow, cardTier: string): Promise<An
   return action.available?.() === false ? null : action;
 }
 
-const personKey = (person: ChangesetRecipient): string => (person.email ?? person.name).trim().toLowerCase();
-
 /**
- * The approval covered the names on the card. If the same action would now reach someone else, it
- * says who, and nothing goes out. A person who has since left the list is no reason to stop.
+ * The approval covered the names the card showed for this row: its own, or the card's when the row
+ * keeps none. If the same action would now reach someone else, it says who, and nothing goes out. A
+ * person who has since left the list is no reason to stop.
  */
-async function strangerOnCard(action: AnyAction, actx: ActionContext, input: unknown, onCard: readonly ChangesetRecipient[]): Promise<string | null> {
+async function strangerOnCard(action: AnyAction, actx: ActionContext, input: unknown, row: AskChangesetRowRow, card: AskChangesetRow): Promise<string | null> {
   const draft = await action.preview(actx, input as never);
-  const known = new Set(onCard.map(personKey));
-  const strangers = (draft?.recipients ?? []).filter((person) => !known.has(personKey(person)));
+  const own = row.target.cardRecipients;
+  const known = new Set(Array.isArray(own) ? own.map(String) : (card.recipients ?? []).map(recipientKey));
+  const strangers = (draft?.recipients ?? []).filter((person) => !known.has(recipientKey(person)));
   return strangers.length > 0 ? `The people on this have changed since the card was made: ${strangers.map((p) => p.name).join(', ')} would also get it. Nothing was sent. Please ask again.` : null;
 }
 
@@ -232,7 +232,7 @@ async function applyRow(actx: ActionContext, row: AskChangesetRowRow, card: AskC
       }
     }
     if (card.tier === 'T3') {
-      const stranger = await strangerOnCard(action, actx, parsed.data, card.recipients ?? []);
+      const stranger = await strangerOnCard(action, actx, parsed.data, row, card);
       if (stranger) return failed(stranger);
     }
     const outcome = await action.execute(actx, parsed.data);

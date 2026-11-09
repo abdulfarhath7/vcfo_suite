@@ -44,7 +44,11 @@ async function proposable(ctx: AuthContext): Promise<ReadonlyMap<string, AnyActi
   return new Map(actions.map((action) => [action.name, action]));
 }
 
-const seenKey = (row: { action: string; target: JsonValue }) => changesetHash([{ ...row, newValue: null }]);
+/** What was proposed, not who a card named for it then. */
+const seenKey = ({ action, target }: { action: string; target: JsonValue }) => {
+  const { cardRecipients: _people, ...proposed } = target as Record<string, JsonValue>;
+  return changesetHash([{ action, target: proposed, newValue: null }]);
+};
 
 /** One draft per proposal the action itself accepts. A refusal only means there is nothing to propose. */
 async function draftsFor(actx: ActionContext, proposals: readonly Proposal[], actions: ReadonlyMap<string, AnyAction>, seen: Set<string>): Promise<ChangesetDraft[]> {

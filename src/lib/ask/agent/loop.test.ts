@@ -263,6 +263,8 @@ describe('agent loop', () => {
     expect(draft.rows).toHaveLength(2);
     expect(draft.tier).toBe('T3');
     expect(draft.recipients).toEqual([{ name: 'Client Person', email: 'client@x.test' }]);
+    // Each row keeps its own people, so the click checks it against those alone.
+    expect(draft.rows.map((row: { target: { cardRecipients: unknown } }) => row.target.cardRecipients)).toEqual([[], ['client@x.test']]);
     expect(executed).toEqual(['tasks.list']);
   });
 

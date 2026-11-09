@@ -6,7 +6,7 @@ import { appendAskRunStep } from '@/db/repositories/ask-runs';
 import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { changesetHash } from '@/lib/ask/changeset/hash';
-import type { ChangesetDraft } from '@/lib/ask/changeset/types';
+import { recipientKey, type ChangesetDraft } from '@/lib/ask/changeset/types';
 import { isAdminOrManager } from '@/lib/auth';
 import { safeError } from '@/lib/ask/mask';
 
@@ -16,13 +16,17 @@ const CARD_DAYS = 7;
 export function oneCard(drafts: readonly ChangesetDraft[], lastRead: string | null): ChangesetDraft {
   const recipients = [...new Map(drafts.flatMap((draft) => draft.recipients ?? []).map((person) => [person.email ?? person.name, person])).values()];
   const source = lastRead ? { kind: 'record' as const, fileName: lastRead } : null;
+  const outward = drafts.some((draft) => draft.tier === 'T3');
   return {
     title: drafts.length === 1 ? drafts[0]!.title : `${drafts.length} changes to review`,
     tier: drafts.some((draft) => draft.tier === 'T3') ? 'T3' : 'T2',
     // A firm-wide row has no project, so a mixed card takes the project of the row that has one.
     engagementId: drafts.find((draft) => draft.engagementId)?.engagementId ?? null,
-    rows: drafts.flatMap((draft) => draft.rows).map((row) => ({ ...row, source: row.source ?? source })),
-    ...(drafts.some((draft) => draft.tier === 'T3') ? { recipients } : {}),
+    // On an outward card each row keeps its own people, so a click checks it against those and not the whole card's.
+    rows: drafts.flatMap((draft) =>
+      draft.rows.map((row) => ({ ...row, source: row.source ?? source, ...(outward ? { target: { ...row.target, cardRecipients: (draft.recipients ?? []).map(recipientKey) } } : {}) })),
+    ),
+    ...(outward ? { recipients } : {}),
   };
 }
 

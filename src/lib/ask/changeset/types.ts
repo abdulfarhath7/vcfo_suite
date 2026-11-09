@@ -71,6 +71,9 @@ export interface ChangesetRecipient {
   role?: string;
 }
 
+/** How a person on a card is compared: their address, in any letter case, or their name when there is none. */
+export const recipientKey = (person: ChangesetRecipient): string => (person.email ?? person.name).trim().toLowerCase();
+
 export interface ChangesetDraft {
   title: string;
   tier: Extract<ActionTier, 'T2' | 'T3'>;
