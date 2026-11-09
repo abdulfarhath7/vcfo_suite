@@ -212,7 +212,8 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
   if (state.waiting) return { kind: 'wait', changesetId: state.waiting.changesetId };
   if (run.status !== 'running') await updateAskRun(ctx, runId, { status: 'running' });
 
-  const actions = (await actionsFor(ctx.role, defaultShellForRole(ctx.role) ?? 'client')).filter((action) => run.engagementId || action.firmWide);
+  // A run locked to a client sees only that client's actions; firm-wide receivables run with no client, so no other organisation's data reaches a client's card.
+  const actions = (await actionsFor(ctx.role, defaultShellForRole(ctx.role) ?? 'client')).filter((action) => !action.firmWide === !!run.engagementId);
   // A retried step finds the model's reply already saved, with its tool calls still to answer.
   if (toolUsesOf(state.messages.at(-1)).length === 0) {
     const limit = await limitReached(ctx, run, now);

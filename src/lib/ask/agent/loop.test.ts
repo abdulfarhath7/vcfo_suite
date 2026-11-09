@@ -170,13 +170,13 @@ describe('a run with no project', () => {
     expect(createCard.mock.calls[0]![1].draft.engagementId).toBeNull();
   });
 
-  it('a card mixing a firm-wide row with a project row on a locked run carries the project', async () => {
+  it('keeps firm-wide tools out of a run locked to one client', async () => {
     run.engagementId = CLIENT;
-    script = [call(['receivables__skipReminder', { body: 'x' }], ['tasks__create', { body: 'y' }])];
-    expect((await agentTurn('run-1')).kind).toBe('wait');
-    const { draft } = createCard.mock.calls[0]![1];
-    expect(draft.engagementId).toBe(CLIENT);
-    expect(draft.rows).toHaveLength(2);
+    script = [call(['receivables__skipReminder', { body: 'x' }]), say('I could not.')];
+    await agentTurn('run-1');
+    expect(JSON.stringify(requests[0]!.tools)).not.toContain('receivables__');
+    expect(lastResults()[0]).toMatchObject({ is_error: true, content: 'That tool is not available to this person.' });
+    expect(createCard).not.toHaveBeenCalled();
   });
 });
 
