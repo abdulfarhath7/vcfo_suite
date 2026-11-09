@@ -146,6 +146,7 @@ function ChangeDialog({
   to,
   heading = 'Request a change',
   placeholder = 'What should change?',
+  hint,
   onClose,
   onSend,
 }: {
@@ -153,6 +154,8 @@ function ChangeDialog({
   to?: string;
   heading?: string;
   placeholder?: string;
+  /** A line under the field that says what sending will do. */
+  hint?: string;
   onClose: () => void;
   onSend: (note: string) => Promise<void>;
 }) {
@@ -190,6 +193,7 @@ function ChangeDialog({
       }
     >
       <FieldArea label="Message" value={note} onChange={setNote} areaRef={ref} placeholder={placeholder} />
+      {hint ? <p className="mt-2 text-[13px] text-ink-muted">{hint}</p> : null}
       {err ? (
         <p role="alert" className="mt-2 text-[13px] text-danger">
           {err}
@@ -313,10 +317,10 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     const st = approvalStateOf(s?.slice);
     return st === 'pending_client' || st === 'client_approved';
   })();
+  // Always the form, never the chat: Ask VCFO opens only when the client asks for it. A step the
+  // firm still holds is recorded and mailed by the server but reopens nothing, and the form says so.
   const requestChange = () => {
-    if (!s) return;
-    if (canChange) setChangeOpen(true);
-    else openChat(`I want to request a change to step ${s.n} · ${s.title}`);
+    if (s) setChangeOpen(true);
   };
   const sendChange = async (note: string) => {
     if (!s || !d.engagementId) return;
@@ -862,7 +866,15 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           />
         </Island>
       </div>
-      {changeOpen ? <ChangeDialog about={`Step ${s.n} · ${s.title}`} to={d.leadName ? firstName(d.leadName) : undefined} onClose={() => setChangeOpen(false)} onSend={sendChange} /> : null}
+      {changeOpen ? (
+        <ChangeDialog
+          about={`Step ${s.n} · ${s.title}`}
+          to={d.leadName ? firstName(d.leadName) : undefined}
+          hint={canChange ? undefined : 'This step is with SBC now. Your team gets your note, and the step stays as it is until they reply.'}
+          onClose={() => setChangeOpen(false)}
+          onSend={sendChange}
+        />
+      ) : null}
       {msgOpen ? (
         <ChangeDialog
           about={`Step ${s.n} · ${s.title}`}

@@ -67,6 +67,8 @@ The token link at `/receivables/s/[token]` has no signed-in person, so it gets n
 
 ## Safety rules
 
+- Manual first: the chat is a choice, never a route. No task button opens it (see "Manual first" in
+  `BUILD-PLAN.md`), and Ask about this stays a small, labelled control beside the normal one.
 - Page context is a hint and never grants access. The server rechecks the person's access to every record.
 - Access stays on the real session role, never on the URL, because admin and manager share views.
 - The partner shell has its own flag, `ASK_PARTNER_ENABLED`, off by default in production. Partner

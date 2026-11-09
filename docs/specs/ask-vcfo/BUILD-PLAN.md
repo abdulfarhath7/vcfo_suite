@@ -20,6 +20,14 @@ why in its own section at the bottom and says so in its result.
 - Local data: `vcfo_chatbot` is migrated and seeded, and is the template for track databases:
   `CREATE DATABASE vcfo_<track> TEMPLATE vcfo_chatbot` on `localhost:5544`.
 
+## Manual first (owner rule, 9 November 2026)
+
+Ask VCFO is optional. Every task can be done on its own screen, and the chat opens only when the person
+asks for it. A button that does a task, such as Request a change, Approve or Upload, does that task in the
+app and never opens the chat, in any state. Only a control labelled as asking, such as "Ask VCFO" or
+"What's this?", may open the chat. When a task cannot run in the current state, the screen says why and
+offers the manual next step.
+
 ## Facts that differ from the master plan
 
 - `src/lib/ask/access.ts` already admits manager and intern (F-298, 29 Oct), so decision 2 needs tests,
