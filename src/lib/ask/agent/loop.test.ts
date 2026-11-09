@@ -210,6 +210,42 @@ describe('agent loop', () => {
     expect(requests[0]).toMatchObject({ timeoutMs: 100_000, maxRetries: 0 });
   });
 
+  describe('a goal that names a filing', () => {
+    const goalled = (goal: string) => {
+      run.goal = goal;
+      run.state = firstAgentMessage({ companyName: 'Acme', person: 'Lead', role: 'intern', goal, now: new Date('2026-11-06T10:00:00Z') });
+    };
+    const deferred = () => requests[0]!.tools!.flatMap((t) => ('defer_loading' in t ? [t.name] : []));
+    beforeEach(() => {
+      registered = [...registered, fakeAction('compliance.remindMe', 'T1', 'You will be reminded.'), fakeAction('statuses.listFilings', 'T0', '{"filings":[]}'), fakeAction('labour.listBatches', 'T0')];
+    });
+
+    it('loads the filing tools, so the model reaches the reminder without a search', async () => {
+      goalled('Remind me about the Form MGT-7 filing');
+      script = [call(['compliance__remindMe', { body: 'MGT-7' }]), say('You will be reminded about MGT-7.')];
+      await agentTurn('run-1');
+      expect(deferred()).not.toContain('compliance__remindMe');
+      expect(deferred()).not.toContain('statuses__listFilings');
+      expect(deferred()).toContain('labour__listBatches');
+      const loaded = requests[0]!.tools!.find((t) => t.name === 'compliance__remindMe')!;
+      expect('strict' in loaded).toBe(false);
+      expect(executed).toEqual(['compliance.remindMe']);
+    });
+
+    it('finds a form by its name alone, and keeps the filing tools deferred for other work', async () => {
+      goalled('Has the DIR-3 KYC gone in for Acme?');
+      script = [say('Not yet.')];
+      await agentTurn('run-1');
+      expect(deferred()).not.toContain('statuses__listFilings');
+      requests.length = 0;
+      goalled('Tidy this project');
+      script = [say('Done.')];
+      run.status = 'queued';
+      await agentTurn('run-1');
+      expect(deferred()).toEqual(expect.arrayContaining(['compliance__remindMe', 'statuses__listFilings']));
+    });
+  });
+
   it('turns a T2 proposal into a card and sleeps; nothing is written', async () => {
     script = [call(['tasks__create', { body: 'New task' }])];
     const outcome = await agentTurn('run-1');

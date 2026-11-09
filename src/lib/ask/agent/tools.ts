@@ -6,6 +6,7 @@ import type { AskShell } from '@/data/ask/schema';
 import { actionsForRole } from '@/lib/actions/registry';
 import { agentMayExecute, type AnyAction } from '@/lib/actions/types';
 import { askFlags } from '@/lib/ask/config';
+import { obligationsNamedIn } from '@/lib/watch/affected';
 import type { LlmRequestTool, LlmTool } from '@/lib/ask/provider';
 
 /**
@@ -50,10 +51,27 @@ export async function actionsFor(role: AppRole, shell: AskShell): Promise<AnyAct
   );
 }
 
+/** The areas a filing's work sits in. A goal that names a filing loads them, as a search for a form's name finds none. */
+const FILING_AREAS = ['compliance.', 'statuses.'];
+
+/** True when a goal names a filing, by its form's name or by the word. */
+export function namesFiling(goal: string): boolean {
+  return /\bfilings?\b/i.test(goal) || obligationsNamedIn(goal).length > 0;
+}
+
 /**
- * The API takes at most 20 strict tools in one request, counting deferred ones, so only the loaded
- * tools are strict. Every input is parsed with zod again at execution, whichever tool it came from.
+ * The API takes at most 20 strict tools in one request, counting deferred ones, so only the common
+ * tools are strict, and an area loaded for a filing comes in without strict. Every input is parsed
+ * with zod again at execution, whichever tool it came from.
  */
-export function agentTools(actions: readonly AnyAction[]): LlmRequestTool[] {
-  return [TOOL_SEARCH, ...actions.map((action) => (action.common ? toolOf(action) : { ...toolOf(action, false), defer_loading: true }))];
+export function agentTools(actions: readonly AnyAction[], goal = ''): LlmRequestTool[] {
+  const filing = namesFiling(goal);
+  return [
+    TOOL_SEARCH,
+    ...actions.map((action) => {
+      if (action.common) return toolOf(action);
+      const loaded = filing && FILING_AREAS.some((area) => action.name.startsWith(area));
+      return loaded ? toolOf(action, false) : { ...toolOf(action, false), defer_loading: true };
+    }),
+  ];
 }

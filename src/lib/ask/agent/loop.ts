@@ -122,7 +122,7 @@ async function callModel(ctx: AuthContext, run: AskRunRow, state: AgentState, ac
     model: askConfig().models.agent,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
     messages: withCachePoint(state.messages),
-    tools: agentTools(actions),
+    tools: agentTools(actions, run.goal),
     maxTokens: MAX_TOKENS,
     effort: 'medium',
     timeoutMs: TURN_TIMEOUT_MS,

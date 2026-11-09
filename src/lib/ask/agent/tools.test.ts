@@ -140,6 +140,14 @@ describe('tools for the agent', () => {
     expect(custom.filter((t) => t.strict).length).toBeLessThanOrEqual(20);
   });
 
+  it('loads the real filing tools for a goal that names a filing, still inside the strict limit', async () => {
+    const actions = await actionsFor('super_admin', 'super');
+    const custom = agentTools(actions, 'Remind me about the Form MGT-7 filing').slice(1) as Array<LlmTool & { defer_loading?: boolean }>;
+    const loaded = custom.filter((t) => !t.defer_loading).map((t) => t.name);
+    expect(loaded).toEqual(expect.arrayContaining(['compliance__remindMe', 'compliance__getFiling', 'statuses__listFilings']));
+    expect(custom.filter((t) => t.strict).length).toBeLessThanOrEqual(20);
+  });
+
   it('never lets the model name the client or a recipient', async () => {
     for (const action of await actionsFor('super_admin', 'super')) {
       const properties = Object.keys(schemaOf(toolOf(action)).properties ?? {});
