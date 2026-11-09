@@ -30,4 +30,14 @@ describe('robots rules', () => {
     const robots = parseRobots('User-agent: a\nUser-agent: *\nDisallow: /x\n');
     expect(robotsAllows(robots, '/x')).toBe(false);
   });
+
+  it('matches a site\'s rule with many wildcards in a moment', () => {
+    const started = Date.now();
+    const robots = parseRobots(`User-agent: *\nDisallow: /${'*a'.repeat(12)}b\nDisallow: /${'*'.repeat(500)}x$\n`);
+    expect(robotsAllows(robots, `/${'a'.repeat(40)}`)).toBe(true);
+    expect(robotsAllows(robots, `/${'a'.repeat(5_000)}`)).toBe(true);
+    expect(robotsAllows(robots, `/${'a'.repeat(40)}b`)).toBe(false);
+    expect(robotsAllows(robots, '/ax')).toBe(false);
+    expect(Date.now() - started).toBeLessThan(500);
+  });
 });

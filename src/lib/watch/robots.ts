@@ -55,11 +55,31 @@ export function parseRobots(text: string): RobotsRules {
   };
 }
 
+/**
+ * A rule's `*` matches any run and a final `$` anchors the end. A site writes the rule, so it is matched
+ * by a scan that goes back only to the last `*`, at most rule times path steps: as a regular expression,
+ * a rule with a dozen stars takes a minute on a forty-character path.
+ */
 function ruleMatches(rulePath: string, target: string): boolean {
-  const anchored = rulePath.endsWith('$');
-  const body = anchored ? rulePath.slice(0, -1) : rulePath;
-  const pattern = body.split('*').map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-  return new RegExp(`^${pattern}${anchored ? '$' : ''}`).test(target);
+  const pattern = rulePath.endsWith('$') ? rulePath.slice(0, -1) : `${rulePath}*`;
+  let p = 0;
+  let t = 0;
+  let star = -1;
+  let resume = 0;
+  while (t < target.length) {
+    if (pattern[p] === '*') {
+      star = p++;
+      resume = t;
+    } else if (p < pattern.length && pattern[p] === target[t]) {
+      p += 1;
+      t += 1;
+    } else if (star >= 0) {
+      p = star + 1;
+      t = ++resume;
+    } else return false;
+  }
+  while (pattern[p] === '*') p += 1;
+  return p === pattern.length;
 }
 
 export function robotsAllows(robots: RobotsRules, pathAndQuery: string): boolean {

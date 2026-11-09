@@ -1,8 +1,8 @@
-import { parseRssOrAtom, stripHtml } from '@/lib/notifications/announcements';
+import { elementsOf, parseRssOrAtom, removeElements, stripHtml } from '@/lib/notifications/announcements';
 import { todayIST } from '@/lib/compliance/filings';
 import { firstDateIn } from '../dates';
 import type { ListedItem, SourceAdapter } from '../types';
-import { linksIn, officialUrl, tableRows, withoutComments } from './html';
+import { between, linksIn, officialUrl, tableRows, withoutComments } from './html';
 
 /**
  * One adapter per way a source lists its items, keyed by `announcement_sources.adapter`. A staff-added
@@ -96,9 +96,9 @@ const incomeTaxNews: SourceAdapter = {
     const items: ListedItem[] = [];
     for (const block of withoutComments(body).split('class="views-row"').slice(1)) {
       const id = /<div id="([\w-]{20,})"/.exec(block)?.[1];
-      const paragraph = /<p>([\s\S]*?)<\/p>/.exec(block)?.[1];
+      const paragraph = between(block, '<p>', '</p>');
       if (!id || !paragraph) continue;
-      const text = clean(stripHtml(paragraph.replace(/<a\b[\s\S]*?<\/a>/gi, ' ')));
+      const text = clean(stripHtml(removeElements(paragraph, ['a'])));
       if (!text) continue;
       const pdf = linksIn(block, baseUrl).find((link) => /\.pdf(\?|$)/i.test(link.href));
       items.push({
@@ -141,11 +141,11 @@ const epfo: SourceAdapter = {
   list(body, baseUrl) {
     const items: ListedItem[] = [];
     for (const block of body.split('class="download-box"').slice(1)) {
-      const title = /class="download-title">([\s\S]*?)<\/h3>/.exec(block)?.[1];
+      const title = between(block, 'class="download-title">', '</h3>');
       const href = /<a href="([^"]+)" class="view-pdf-btn"/.exec(block)?.[1];
       const url = href && officialUrl(href, baseUrl);
       if (!title || !url) continue;
-      const meta = /class="meta-row">([\s\S]*?)<\/div>/.exec(block)?.[1] ?? '';
+      const meta = between(block, 'class="meta-row">', '</div>') ?? '';
       items.push({
         externalKey: url,
         title: clean(stripHtml(title)).slice(0, 300),
@@ -163,8 +163,9 @@ const icai: SourceAdapter = {
   noise: (item) => (ICAI_ROUTINE.test(item.title) ? 'routine_notice' : null),
   list(body, baseUrl) {
     const items: ListedItem[] = [];
-    for (const row of body.matchAll(/<li class='list-group-item'>([\s\S]*?)<\/li>/gi)) {
-      const link = linksIn(row[1]!, baseUrl)[0];
+    for (const row of elementsOf(body, ['li'])) {
+      if (row.tag.toLowerCase() !== "<li class='list-group-item'>") continue;
+      const link = linksIn(row.inner, baseUrl)[0];
       if (!link?.text) continue;
       const dated = /^(.*?)\s*-\s*\((\d{2}-\d{2}-\d{4})\)\s*$/.exec(link.text);
       items.push({

@@ -319,6 +319,21 @@ describe('stripHtml', () => {
   });
 });
 
+describe('parseRssOrAtom on a hostile feed', () => {
+  it('still reads CDATA, attributes and fields', () => {
+    const xml = '<feed><entry><title><![CDATA[Due <b>date</b>]]></title><link rel="alternate" href="https://www.sebi.gov.in/a.html"/><id>e1</id><updated>2026-11-05T10:00:00Z</updated></entry></feed>';
+    expect(parseRssOrAtom(xml)).toMatchObject([{ title: 'Due date', link: 'https://www.sebi.gov.in/a.html', externalId: 'e1' }]);
+  });
+
+  it('stays quick on items, fields, attributes and CDATA that open and never close', () => {
+    const started = Date.now();
+    for (const piece of ['<item>', '<entry>', '<![CDATA[', '<item><title>', '<entry><link ', '<entry><link href=x ']) parseRssOrAtom(piece.repeat(80_000));
+    parseRssOrAtom(`<item>${'<link '.repeat(80_000)}</item>`);
+    parseRssOrAtom(`<entry>${'<link '.repeat(80_000)}></entry>`);
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+});
+
 describe('announcement kind and attribution', () => {
   it('infers GST, MCA, tax, and deadline from titles', () => {
     expect(inferAnnouncementKind('New GST circular 12')).toBe('gst');

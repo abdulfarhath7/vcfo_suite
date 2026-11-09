@@ -87,9 +87,11 @@ export function embeddedPdf(html: string, baseUrl: string): string | null {
  * list. Empty means the paper is only a PDF. The balance count survives tables inside the text.
  */
 export function rbiBody(html: string): string | null {
-  const start = /class="tablecontent2"[^>]*>/i.exec(html);
-  if (!start) return null;
-  const rest = html.slice(start.index + start[0].length);
+  // Found by plain searches: a pattern that runs on to the next ">" from every match costs minutes on a hostile page.
+  const at = html.search(/class="tablecontent2"/i);
+  const open = at < 0 ? -1 : html.indexOf('>', at);
+  if (open < 0) return null;
+  const rest = html.slice(open + 1);
   let depth = 0;
   for (const tag of rest.matchAll(/<(\/?)table\b/gi)) {
     if (!tag[1]) depth += 1;

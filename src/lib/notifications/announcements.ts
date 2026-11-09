@@ -473,9 +473,24 @@ export type ParsedFeedItem = {
   publishedAt: Date;
 };
 
+/**
+ * Replaces each span from `start` to the next `end` after it, in one pass. A lazy regular expression
+ * does the same, but scans to the end of the text again for every start it cannot close.
+ */
+export function replaceSpans(text: string, start: string, end: string, by: (inner: string) => string): string {
+  let out = '';
+  let at = 0;
+  for (let open = text.indexOf(start); open >= 0; open = text.indexOf(start, at)) {
+    const close = text.indexOf(end, open + start.length);
+    if (close < 0) break;
+    out += text.slice(at, open) + by(text.slice(open + start.length, close));
+    at = close + end.length;
+  }
+  return out + text.slice(at);
+}
+
 function decodeXmlEntities(value: string): string {
-  return value
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
+  return replaceSpans(value, '<![CDATA[', ']]>', (inner) => inner)
     .replace(/&nbsp;/gi, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -517,6 +532,14 @@ export function* elementsIn(html: string, names: readonly string[]): Generator<{
   }
 }
 
+/** Each element of these names, with its opening tag and its inner markup, in the same one pass. */
+export function* elementsOf(html: string, names: readonly string[]): Generator<{ tag: string; inner: string }> {
+  for (const { from, closeAt } of elementsIn(html, names)) {
+    const open = html.indexOf('>', from) + 1;
+    if (open > 0 && open <= closeAt) yield { tag: html.slice(from, open), inner: html.slice(open, closeAt) };
+  }
+}
+
 export function removeElements(html: string, names: readonly string[]): string {
   let out = '';
   let kept = 0;
@@ -534,20 +557,27 @@ export function stripHtml(value: string): string {
   return (text.slice(0, end).replace(/<[^>]+>/g, ' ') + text.slice(end)).replace(/\s+/g, ' ').trim();
 }
 
+/* A feed is text from outside too, so its items, fields and attributes are found in one pass each. */
 function innerTag(block: string, name: string): string {
-  const re = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'i');
-  const match = block.match(re);
-  return match?.[1] ? stripHtml(match[1]) : '';
+  const inner = elementsOf(block, [name]).next().value?.inner;
+  return inner ? stripHtml(inner) : '';
 }
 
 function tagAttr(block: string, name: string, attr: string): string {
-  const re = new RegExp(`<${name}[^>]*\\s${attr}\\s*=\\s*["']([^"']+)["'][^>]*/?>`, 'i');
-  return re.exec(block)?.[1]?.trim() ?? '';
+  const value = new RegExp(`\\s${attr}\\s*=\\s*["']([^"']+)["']`, 'i');
+  let past = 0;
+  for (const tag of block.matchAll(new RegExp(`<${name}(?![\\w:-])`, 'gi'))) {
+    if (tag.index < past) continue;
+    past = block.indexOf('>', tag.index);
+    if (past < 0) break;
+    const found = value.exec(block.slice(tag.index, past))?.[1]?.trim();
+    if (found) return found;
+  }
+  return '';
 }
 
 function chunks(xml: string, tag: string): string[] {
-  const re = new RegExp(`<${tag}(?:\\s[^>]*)?>[\\s\\S]*?</${tag}>`, 'gi');
-  return xml.match(re) ?? [];
+  return Array.from(elementsIn(xml, [tag]), ({ from, to }) => xml.slice(from, to));
 }
 
 function parseDate(raw: string | undefined): Date {

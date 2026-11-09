@@ -8,7 +8,7 @@ vi.mock('../fetch', () => ({ MAX_PDF_BYTES: 1000, WatchBlockedError: class exten
 vi.mock('@/lib/ask/ingest/pdf-text', () => ({ pdfText: (bytes: unknown) => pdfMock(bytes) }));
 vi.mock('@/storage/s3', () => ({ getObjectBuffer: async () => Buffer.from('%PDF-file') }));
 
-const { embeddedPdf, pageText, readUpdateText, SCAN_LABEL, WatchReadError, WatchScanWaitsError } = await import('../read');
+const { embeddedPdf, pageText, rbiBody, readUpdateText, SCAN_LABEL, WatchReadError, WatchScanWaitsError } = await import('../read');
 
 const LONG = 'Notification text that is long enough to read. '.repeat(20);
 const scanModel = (text: string, stopReason = 'end_turn') =>
@@ -87,6 +87,13 @@ describe('pageText', () => {
     expect(pageText(page)).toBe('The rule.');
     expect(pageText('<nav>Home</nav><p>The rule.</p>')).toBe('The rule.');
     expect(pageText('<main><p>Never closed</p>')).toBe('Never closed');
+  });
+
+  it('finds an RBI notice\'s cell quickly on a page of markers that never close', () => {
+    expect(rbiBody('<td CLASS="tablecontent2" width="1">The rule.<table><tr><td>x</td></tr></table></td></table>')).toBe('The rule. x');
+    const started = Date.now();
+    expect(rbiBody('class="tablecontent2"'.repeat(150_000))).toBeNull();
+    expect(Date.now() - started).toBeLessThan(2000);
   });
 
   it('stays quick on a page of openings that never close', () => {

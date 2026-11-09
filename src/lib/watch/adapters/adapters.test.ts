@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { adapterFor } from './index';
+import { linksIn, tableRows, withoutComments } from './html';
 import { noiseReason } from '../noise';
 
 const fixture = (name: string): string => readFileSync(path.join(import.meta.dirname, '__fixtures__', name), 'utf8');
@@ -47,7 +48,10 @@ describe('Watch adapters on saved copies', () => {
   });
 
   it('keeps SEBI circulars, drops enforcement papers and repairs a doubled host', () => {
+    // SEBI writes most dates as "05 Nov, 2026", which does not parse, so those items take the day they were read.
+    vi.useFakeTimers({ now: new Date('2026-11-06T10:00:00+05:30'), toFake: ['Date'] });
     const { items, kept } = listed('sebi', 'sebi.xml', 'https://www.sebi.gov.in/sebirss.xml');
+    vi.useRealTimers();
     expect(items.length).toBe(18);
     expect(kept.some((item) => /accredited investors/i.test(item.title))).toBe(true);
     expect(kept.every((item) => !item.url.includes('/enforcement/'))).toBe(true);
@@ -147,5 +151,31 @@ describe('Watch adapters on saved copies', () => {
   it('treats a staff-added feed with no adapter as a plain feed', () => {
     expect(adapterFor(null)!.id).toBe('feed');
     expect(adapterFor('nope')).toBeNull();
+  });
+});
+
+describe('Watch adapters on a hostile page', () => {
+  it('still reads links, rows and comments the way the page means them', () => {
+    const base = 'https://www.esic.gov.in/circulars';
+    expect(withoutComments('a<!-- <tr><td>x</td></tr> -->b<!-- open')).toBe('a b<!-- open');
+    expect(linksIn('<A HREF="/one.pdf">One <b>PDF</b></A><a>none</a><a href=\'/two\'>Two</a>', base)).toEqual([
+      { href: 'https://www.esic.gov.in/one.pdf', text: 'One PDF' },
+      { href: 'https://www.esic.gov.in/two', text: 'Two' },
+    ]);
+    expect(tableRows('<tr class="r"><td>1</td><TD><a href="/a">A</a></TD></tr><tr></tr>', base)).toEqual([{ cells: ['1', 'A'], links: [[], [{ href: 'https://www.esic.gov.in/a', text: 'A' }]] }]);
+  });
+
+  it('stays quick on elements, comments and markers that open and never close', () => {
+    const started = Date.now();
+    const base = 'https://www.esic.gov.in/circulars';
+    for (const piece of ['<a href="/x">', '<tr>', '<tr><td>', '<!--', "<li class='list-group-item'>", '<p>', 'class="download-title">', 'class="meta-row">']) {
+      const page = piece.repeat(60_000);
+      linksIn(page, base);
+      tableRows(page, base);
+      for (const id of ['icai', 'esic', 'income-tax-news', 'epfo', 'dgft']) adapterFor(id)!.list(page, base);
+      adapterFor('income-tax-news')!.list(`class="views-row"<div id="${'a'.repeat(24)}">${page}`, base);
+      adapterFor('epfo')!.list(`class="download-box"${page}`, base);
+    }
+    expect(Date.now() - started).toBeLessThan(3000);
   });
 });
