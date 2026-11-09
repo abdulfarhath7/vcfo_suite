@@ -16,14 +16,22 @@ describe('who gets what', () => {
     expect(changeTypeFor('form_change', 'CBDT has notified the Income-tax (Eighth Amendment) Rules, 2026')).toBe('form_change');
   });
 
-  it('derives importance from the change type and the source, never the model', () => {
+  it('derives importance from the change type, the listed title and the source', () => {
     for (const change of ['due_date', 'penalty', 'law_in_force', 'form_change'] as const) {
-      expect(importanceFor(change, 'everyone')).toBe('important');
+      expect(importanceFor(change, 'everyone', 'Extension of due date and waiver of late fee')).toBe('important');
     }
     for (const change of ['circular', 'faq', 'clarification', 'consultation', 'other'] as const) {
-      expect(importanceFor(change, 'everyone')).toBe('normal');
+      expect(importanceFor(change, 'everyone', 'Extension of due date')).toBe('normal');
     }
-    expect(importanceFor('due_date', 'staff')).toBe('staff_only');
+    expect(importanceFor('due_date', 'staff', 'Extension of due date')).toBe('staff_only');
+  });
+
+  it('lets the model lower importance but never raise it over a title that names no such change', () => {
+    for (const change of ['due_date', 'penalty', 'law_in_force', 'form_change'] as const) {
+      expect(importanceFor(change, 'everyone', 'Circular on KYC FAQs for intermediaries')).toBe('normal');
+    }
+    expect(importanceFor('law_in_force', 'everyone', 'Sections 4 to 9 come into force')).toBe('important');
+    expect(importanceFor('form_change', 'everyone', 'Revised Form MGT-7A notified')).toBe('important');
   });
 
   it('gives an important update one bell row per person, all five roles', () => {

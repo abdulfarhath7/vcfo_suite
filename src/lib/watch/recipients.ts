@@ -19,11 +19,19 @@ export function isWatchStaff(role: Role | string | undefined): boolean {
   return isAdminOrManager(role) || role === 'intern';
 }
 
-const IMPORTANT_CHANGES: ReadonlySet<RegChangeType> = new Set(['due_date', 'penalty', 'law_in_force', 'form_change']);
+export const IMPORTANT_CHANGES: ReadonlySet<RegChangeType> = new Set(['due_date', 'penalty', 'law_in_force', 'form_change']);
 
-export function importanceFor(changeType: RegChangeType, sourceAudience: string | null): RegImportance {
+/** A listed title that names a change of one of those kinds, read by code. */
+const IMPORTANT_TITLE = /\b(due dates?|last dates?|time limits?|extend(s|ed|ing)?|extension|penalt(y|ies)|late fees?|waive[ds]?|waiver|into force|commencement|appointed date|e-?forms?|forms?)\b/i;
+
+/**
+ * The model labels the change from the page's own text, which a hostile page can steer, so its label
+ * may lower an update to normal but never raise one: a bell to everyone also needs the listed title
+ * to name the change. A reviewer can still mark any update important before publishing it.
+ */
+export function importanceFor(changeType: RegChangeType, sourceAudience: string | null, title: string): RegImportance {
   if (sourceAudience === 'staff') return 'staff_only';
-  return IMPORTANT_CHANGES.has(changeType) ? 'important' : 'normal';
+  return IMPORTANT_CHANGES.has(changeType) && IMPORTANT_TITLE.test(title) ? 'important' : 'normal';
 }
 
 const PROPOSAL = /\b(draft|proposed|proposes|proposal|(inviting|seeking|invites) (comments|suggestions))\b/i;

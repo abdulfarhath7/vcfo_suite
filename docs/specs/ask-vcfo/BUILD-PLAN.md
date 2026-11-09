@@ -172,7 +172,9 @@ any path adds to `ask_usage_daily` through `systemRecordAskUsage`, and calls are
 ### What Phase 3 built differently, and why
 
 - Adapters sit in one file, `src/lib/watch/adapters/index.ts`, because most share a table shape.
-- Importance comes from code (`importanceFor`), not the model, so a hostile page cannot pick recipients.
+- Importance comes from code (`importanceFor`) and the source's audience. The model's label can lower an update to normal
+  but never raise it: a bell to everyone also needs the listed title to name the change, so a hostile page cannot widen
+  who is told. A reviewer can still mark an update important.
 - A `stale` health was added, because a list that answers with years-old rows otherwise reads as healthy.
 - CBIC's `cbic-gst.gov.in` list stopped in December 2022, so the GST lists read are the GST Council's three CGST pages. They lag too (newest rows January to June 2025) and show `Out of date`, so current GST papers need manual intake. `taxinformation.cbic.gov.in` is a manual source: it is script-loaded and its server omits the intermediate TLS certificate, so Node cannot verify it. Whether to read its JSON list is an owner decision.
 - `summarise.ts` uses a strict output schema with no tools, as the master plan says, not the single strict tool first written here. On the same 20 live documents output fell from 746 to 329 tokens per document. It added `outputSchema` to the provider exactly as the answer track did, so the merge keeps one copy.

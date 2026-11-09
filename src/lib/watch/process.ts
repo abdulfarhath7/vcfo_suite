@@ -12,7 +12,7 @@ import {
 } from '@/db/repositories/reg-updates';
 import { WatchBlockedError } from './fetch';
 import { readUpdateText, WatchReadError, WatchScanWaitsError } from './read';
-import { changeTypeFor, importanceFor } from './recipients';
+import { changeTypeFor, IMPORTANT_CHANGES, importanceFor } from './recipients';
 import { summariseUpdate, WatchSummariseError, type SummariseResult } from './summarise';
 import { WATCH_PROCESS_EVENT, type RegArea } from './types';
 import { verifyRegSummary } from './verify';
@@ -112,13 +112,13 @@ export async function verifyStep(id: string, result: SummariseResult): Promise<'
   const changeType = changeTypeFor(result.summary.changeType, row.update.title);
   const problems = verifyRegSummary(result.summary, row.update.sourceText);
   // Code corrects the label, but the wording may still say a draft is in force, so a person reads it.
-  if (changeType !== result.summary.changeType && importanceFor(result.summary.changeType, null) === 'important') {
+  if (changeType !== result.summary.changeType && IMPORTANT_CHANGES.has(result.summary.changeType)) {
     problems.push({ field: 'changeType', value: result.summary.changeType, message: 'The title says this is a draft or proposal, but it was summarised as made. Check the wording.' });
   }
   await systemSaveSummary(id, {
     // A date on a draft is the last day for comments; no filing has moved.
     summary: { ...result.summary, area, changeType, ...(changeType === 'consultation' ? { oldDueDate: null, newDueDate: null } : {}) },
-    importance: importanceFor(changeType, row.sourceAudience),
+    importance: importanceFor(changeType, row.sourceAudience, row.update.title),
     problems,
     model: result.model,
     inputTokens: result.usage.inputTokens,
