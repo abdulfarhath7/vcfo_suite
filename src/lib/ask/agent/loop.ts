@@ -49,6 +49,7 @@ const MAX_RESULT_CHARS = 24_000;
 const MAX_TURN_CHARS = 60_000;
 /** A result that is not a read stays short, so it is kept even when the reads have used up the turn. */
 const MIN_RESULT_CHARS = 1000;
+const UNSURE_T1 = 'This step stopped before it said whether it was done. Check before trying it again.';
 const CUT_NOTE = '\n[Cut here: too long to read in one go. Ask for less, by id or by a narrower filter.]';
 
 export type AgentOutcome = { kind: 'next' } | { kind: 'wait'; changesetId: string } | { kind: 'finished'; status: string };
@@ -220,6 +221,11 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
   for (const use of uses) {
     if (state.results.some((result) => result.tool_use_id === use.id)) continue;
     const used = state.results.reduce((sum, result) => sum + result.content.length, 0);
+    if (byName.get(actionNameOf(use.name))?.tier === 'T1') {
+      // A T1 step writes, so it is marked as unsure before it runs. A job step retried after a
+      // crash finds the mark and does not run it a second time.
+      await updateAskRun(ctx, runId, { state: saveState({ ...state, results: [...state.results, { tool_use_id: use.id, content: UNSURE_T1, is_error: true }] }) });
+    }
     const answer = await answerTool(actx, byName, use, MAX_TURN_CHARS - used);
     if ('draft' in answer) {
       drafted.push({ id: use.id, draft: answer.draft });

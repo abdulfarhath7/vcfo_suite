@@ -110,7 +110,8 @@ export async function handleWork(
       start: async (messageId) => {
         await updateAskRun(ctx, run.id, { messageId });
         try {
-          await inngest.send({ name: ASK_RUN_START, data: { runId: run.id } });
+          // The event id is Inngest's idempotency key, so a send the SDK retries starts one run, not two.
+          await inngest.send({ id: `ask-run-${run.id}`, name: ASK_RUN_START, data: { runId: run.id } });
         } catch (error) {
           console.error('[ask-vcfo] run did not start', safeError(error));
           const stopped = 'This could not start just now. Nothing was saved. Please try again in a little while.';

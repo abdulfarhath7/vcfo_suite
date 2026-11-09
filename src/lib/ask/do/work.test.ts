@@ -202,7 +202,7 @@ describe('handleWork', () => {
     expect(send).not.toHaveBeenCalled();
     await outcome.start!('m0000000-0000-4000-8000-00000000000m');
     expect(updateRun.mock.calls.at(-1)![2]).toEqual({ messageId: 'm0000000-0000-4000-8000-00000000000m' });
-    expect(send).toHaveBeenCalledWith({ name: 'ask/run.start', data: { runId: 'run-1' } });
+    expect(send).toHaveBeenCalledWith({ id: 'ask-run-run-1', name: 'ask/run.start', data: { runId: 'run-1' } });
   });
 
   it('says so plainly when the job cannot start', async () => {

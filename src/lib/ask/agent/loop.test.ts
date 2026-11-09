@@ -40,9 +40,15 @@ let run: Record<string, unknown>;
 let ctx: AuthContext | null = lead;
 const steps: Array<Record<string, unknown>> = [];
 let answer: string | null = null;
+/** Set by a test to make the next save fail, as a job step that dies there. */
+let crashNextSave = false;
 vi.mock('@/db/repositories/ask-runs', () => ({
   systemLoadAskRun: async () => (ctx ? { run: JSON.parse(JSON.stringify(run)), ctx } : null),
   updateAskRun: async (_c: unknown, _id: string, patch: Record<string, unknown>) => {
+    if (crashNextSave) {
+      crashNextSave = false;
+      throw new Error('step died');
+    }
     run = { ...run, ...JSON.parse(JSON.stringify(patch)) };
   },
   appendAskRunStep: async (_c: unknown, _id: string, step: Record<string, unknown>) => {
@@ -103,6 +109,7 @@ beforeEach(() => {
   requests.length = 0;
   script = [];
   answer = null;
+  crashNextSave = false;
   today = 0;
   ctx = lead;
   cardRows = [];
@@ -220,6 +227,20 @@ describe('agent loop', () => {
     expect(draft.tier).toBe('T3');
     expect(draft.recipients).toEqual([{ name: 'Client Person', email: 'client@x.test' }]);
     expect(executed).toEqual(['tasks.list']);
+  });
+
+  it('never runs a T1 step twice when the job step dies after it ran, before its result was saved', async () => {
+    const t1 = registered.find((a) => a.name === 'tasks.addPersonalTodo')!;
+    t1.execute = async () => {
+      executed.push(t1.name);
+      crashNextSave = true;
+      return { ok: true, summary: 'added' };
+    };
+    script = [call(['tasks__addPersonalTodo', { body: 'Call the bank' }])];
+    await expect(agentTurn('run-1')).rejects.toThrow('step died');
+    await agentTurn('run-1');
+    expect(executed).toEqual(['tasks.addPersonalTodo']);
+    expect(lastResults()[0]).toMatchObject({ type: 'tool_result', is_error: true, content: expect.stringMatching(/stopped before it said whether it was done/) });
   });
 
   it('keeps sleeping until the card is settled, then tells the model what the person did', async () => {
