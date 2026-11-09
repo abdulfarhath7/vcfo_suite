@@ -26,7 +26,7 @@ let engagements = [acme, kestrel];
 const patchChecklist = vi.fn();
 const createChangeset = vi.fn(async (_ctx: unknown, _input: { draft: { engagementId: string; rows: Array<Record<string, unknown>> }; contentHash: string }) => 'd0000000-0000-4000-8000-00000000000d');
 const updateRun = vi.fn();
-const createRun = vi.fn(async () => ({ id: 'run-1' }));
+const createRun = vi.fn(async () => ({ id: 'run-1', inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, model: null }));
 const waiting = vi.fn(async () => null as unknown);
 const lockRun = vi.fn(async () => true);
 const attachments = vi.fn(async () => [] as unknown[]);
@@ -217,6 +217,26 @@ describe('handleDoWork', () => {
       expect(reads()).toHaveLength(1);
       expect(getObject).not.toHaveBeenCalled();
       expect(lockRun).toHaveBeenCalledWith(lead, 'run-1', acme.id);
+    });
+
+    it('adds what a reply spends to what the run spent before, and counts every call on it', async () => {
+      modelValues = [value];
+      attachments.mockResolvedValue([FILE]);
+      getObject.mockResolvedValue(Buffer.from(prose));
+      const earlier = { id: 'run-1', inputTokens: 40, outputTokens: 4, cacheReadTokens: 0, cacheWriteTokens: 0, model: 'claude-haiku-5-5' };
+      await run('Acme', { pending: { run: earlier, state: { attachmentIds: [FILE.id], instruction: '', options: [acme], mismatch: null } } as never });
+      const calls = modelCalls.length;
+      expect(calls).toBeGreaterThan(0);
+      expect(updateRun.mock.calls.at(-1)![2]).toMatchObject({ inputTokens: 40 + calls, outputTokens: 4 + calls, model: 'claude-haiku-5-5' });
+    });
+
+    it('closes its run as failed when a step throws, instead of leaving it running', async () => {
+      attachments.mockResolvedValue([FILE]);
+      lockRun.mockRejectedValueOnce(new Error('database went away'));
+      getObject.mockResolvedValue(Buffer.from(prose));
+      modelValues = [value];
+      await expect(run('Acme', { attachmentIds: [FILE.id] })).rejects.toThrow('database went away');
+      expect(updateRun.mock.calls.at(-1)![2]).toMatchObject({ status: 'failed', error: 'step failed' });
     });
 
     it('is read again when what was kept will not parse', async () => {

@@ -69,9 +69,12 @@ export async function handleWork(
   const { message, conversationId, now, resumed } = input;
   const budgets = askBudgets();
   const actions = await actionsFor(ctx.role, request.shell);
-  const pick = resumed
-    ? resumed.pick
-    : (await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), handoff: actions.some((action) => action.name === 'filing.prepareRun'), now })).pick;
+  const picked = resumed
+    ? null
+    : await pickWork(await input.provider(), askConfig().models.extract, { message, onScreen: input.onScreen, simple: actions.filter((action) => action.simple), receivables: actions.some((action) => action.firmWide), handoff: actions.some((action) => action.name === 'filing.prepareRun'), now });
+  const pick = resumed ? resumed.pick : picked!.pick;
+  // The pick's call is counted on the run it starts, so the run row holds everything spent on it.
+  const spent = picked ? { model: picked.model, usage: picked.usage } : undefined;
   if (pick.kind === 'none') return { kind: 'none' };
   if (pick.kind === 'cut') return answerOf(line('That is more than I can take in one go. Please send it in smaller parts.'));
   if (pick.kind === 'data') return { kind: 'data' };
@@ -89,7 +92,7 @@ export async function handleWork(
   if (lock?.kind === 'unknown' && lock.mentioned) return answerOf(line(`I cannot find ${maskIdentityNumbers(lock.mentioned)} among your projects, so I have done nothing.`));
   if (lock && lock.kind !== 'locked') {
     const options = lock.kind === 'choose' ? lock.options : engagements;
-    const run = await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: pick.kind === 'agent' ? 'agent' : undefined });
+    const run = await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: pick.kind === 'agent' ? 'agent' : undefined, spent });
     const state: WorkState = { mode: 'work', pick, instruction: message, attachmentIds: [], options: options.map(({ id, slug, companyName }) => ({ id, slug, companyName })), mismatch: null };
     await updateAskRun(ctx, run.id, { status: 'waiting_reply', state: state as unknown as JsonValue });
     const question = lock.kind === 'choose' ? `More than one project matches: ${options.map((o) => o.companyName).join(' and ')}. Which one is this for?` : 'Which project is this for?';
@@ -99,7 +102,7 @@ export async function handleWork(
   const forWhom = engagement ? ` for ${engagement.companyName}` : '';
 
   if (pick.kind === 'agent') {
-    const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: 'agent' }));
+    const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, kind: 'agent', spent }));
     if (engagement) await lockAskRun(ctx, run.id, engagement.id);
     const state = firstAgentMessage({ companyName: engagement?.companyName ?? null, person: ctx.name, role: ctx.role, goal: message, now });
     await updateAskRun(ctx, run.id, { status: 'queued', state: state as unknown as JsonValue });
@@ -127,7 +130,7 @@ export async function handleWork(
   const parsed = action.input.safeParse(pick.input);
   if (!parsed.success) return answerOf(line('I could not read all the details in that. Please say it once more with the name and the date.'));
 
-  const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens }));
+  const run = resumed?.run ?? (await createAskRun(ctx, { conversationId, workflow, goal: message, budgetTokens: budgets.runMaxTokens, spent }));
   const close = async (status: string) => updateAskRun(ctx, run.id, { status, ...(status === 'waiting_approval' ? {} : { finishedAt: new Date() }) });
   if (engagement) await lockAskRun(ctx, run.id, engagement.id);
   const actx: ActionContext = { auth: ctx, engagementId: engagement?.id ?? null, conversationId, runId: run.id, now, via: 'ask' };
@@ -144,7 +147,10 @@ export async function handleWork(
     return answerOf(line(`I prepared this${forWhom}. ${hold}`, { changesetId, runId: run.id }));
   } catch (error) {
     const refusal = refusalOf(error);
-    if (!refusal) throw error;
+    if (!refusal) {
+      await close('failed');
+      throw error;
+    }
     await appendAskRunStep(ctx, run.id, { kind: 'tool', name: action.name, status: 'failed', output: { error: refusal } });
     await close('failed');
     return answerOf(line(refusal, { runId: run.id }));

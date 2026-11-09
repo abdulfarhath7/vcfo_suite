@@ -46,7 +46,7 @@ export async function pickWork(
   provider: LlmProvider,
   model: string,
   input: { message: string; onScreen: string | null; simple: readonly AnyAction[]; receivables: boolean; handoff: boolean; now: Date },
-): Promise<{ pick: WorkPick; usage: LlmUsage }> {
+): Promise<{ pick: WorkPick; usage: LlmUsage; model: string }> {
   const tools = [...input.simple.map((action) => toolOf(action)), FILL_DETAILS, OPEN_ENDED, ...(input.receivables ? [RECEIVABLES] : [])];
   const text = [`Today: ${input.now.toISOString().slice(0, 10)}`, input.onScreen, `Request: ${maskIdentityNumbers(input.message)}`].filter(Boolean).join('\n');
   const result = await provider.complete({
@@ -59,11 +59,11 @@ export async function pickWork(
     thinking: 'off',
   });
   // A call cut short holds half an input at best, so nothing is read from it.
-  if (result.stopReason === 'max_tokens') return { pick: { kind: 'cut' }, usage: result.usage };
+  if (result.stopReason === 'max_tokens') return { pick: { kind: 'cut' }, usage: result.usage, model: result.model };
   const use = result.content.find((block) => block.type === 'tool_use');
-  if (!use || use.type !== 'tool_use') return { pick: { kind: 'none' }, usage: result.usage };
-  if (use.name === FILL_DETAILS.name) return { pick: { kind: 'data' }, usage: result.usage };
-  if (use.name === OPEN_ENDED.name) return { pick: { kind: 'agent' }, usage: result.usage };
-  if (use.name === RECEIVABLES.name) return { pick: { kind: 'agent', firmWide: true }, usage: result.usage };
-  return { pick: { kind: 'action', action: actionNameOf(use.name), input: use.input as Record<string, unknown> }, usage: result.usage };
+  if (!use || use.type !== 'tool_use') return { pick: { kind: 'none' }, usage: result.usage, model: result.model };
+  if (use.name === FILL_DETAILS.name) return { pick: { kind: 'data' }, usage: result.usage, model: result.model };
+  if (use.name === OPEN_ENDED.name) return { pick: { kind: 'agent' }, usage: result.usage, model: result.model };
+  if (use.name === RECEIVABLES.name) return { pick: { kind: 'agent', firmWide: true }, usage: result.usage, model: result.model };
+  return { pick: { kind: 'action', action: actionNameOf(use.name), input: use.input as Record<string, unknown> }, usage: result.usage, model: result.model };
 }

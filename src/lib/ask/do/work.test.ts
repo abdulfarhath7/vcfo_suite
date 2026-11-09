@@ -143,6 +143,14 @@ describe('handleWork', () => {
     expect(lockRun).toHaveBeenCalledWith(manager, 'run-1', acme.id);
     expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_approval');
     expect(outcome.path).toBe('fixed_workflow');
+    expect(createRun.mock.calls[0]![1]).toMatchObject({ spent: { model: 'claude-haiku-5-5', usage: { inputTokens: 1, outputTokens: 1 } } });
+  });
+
+  it('closes the run as failed when the card cannot be drafted, instead of leaving it running', async () => {
+    reply = tool('tasks__create', { name: 'Collect minutes', dueDate: '2026-12-15' });
+    createCard.mockRejectedValueOnce(new Error('database went away'));
+    await expect(go('Create a task for Acme to collect minutes by 15 December')).rejects.toThrow('database went away');
+    expect(updateRun.mock.calls.at(-1)![2].status).toBe('failed');
   });
 
   it('T3: says nothing goes out until confirmed, with recipients from code', async () => {

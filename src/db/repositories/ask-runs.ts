@@ -9,6 +9,7 @@ import { askRuns, askRunSteps } from '@/db/schema-ask';
 import { AskForbiddenError, assertAskRole, canUseAsk } from '@/lib/ask/access';
 import type { JsonValue } from '@/lib/ask/changeset/types';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
+import type { LlmUsage } from '@/lib/ask/provider';
 
 /**
  * Traces of fixed workflows and agent runs. Every run acts as the person who started it, and only
@@ -34,7 +35,16 @@ function maskJson(value: JsonValue | undefined): JsonValue | undefined {
 
 export async function createAskRun(
   ctx: AuthContext,
-  input: { conversationId: string | null; workflow: string; goal: string; budgetTokens: number; kind?: 'fixed_workflow' | 'agent'; trigger?: 'chat' | 'schedule' },
+  input: {
+    conversationId: string | null;
+    workflow: string;
+    goal: string;
+    budgetTokens: number;
+    kind?: 'fixed_workflow' | 'agent';
+    trigger?: 'chat' | 'schedule';
+    /** A model call made to decide on the run, such as the pick, counted on the run it starts. */
+    spent?: { model: string; usage: LlmUsage };
+  },
 ): Promise<AskRunRow> {
   assertAskRole(ctx);
   const [row] = await db
@@ -49,6 +59,15 @@ export async function createAskRun(
       goal: maskIdentityNumbers(input.goal).slice(0, 2000),
       budgetTokens: input.budgetTokens,
       startedAt: new Date(),
+      ...(input.spent
+        ? {
+            model: input.spent.model,
+            inputTokens: input.spent.usage.inputTokens,
+            outputTokens: input.spent.usage.outputTokens,
+            cacheReadTokens: input.spent.usage.cacheReadTokens,
+            cacheWriteTokens: input.spent.usage.cacheWriteTokens,
+          }
+        : {}),
     })
     .returning();
   return row!;

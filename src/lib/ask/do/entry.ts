@@ -165,7 +165,7 @@ export async function handleDoWork(
   const config = askConfig();
   const budgets = askBudgets();
   let metered: MeteredProvider | null = context.metered ?? null;
-  const provider = async () => {
+  const messageMeter = async () => {
     if (metered) return metered;
     if ((await systemTodayTokenTotal(now)) >= budgets.dailyTokens) throw new ReadRefused(REFUSAL_COPY.budgetReached);
     if (!(await checkAskRateLimit(ctx, config.rateLimit, now)).ok) throw new ReadRefused(REFUSAL_COPY.rateLimited);
@@ -175,6 +175,10 @@ export async function handleDoWork(
     context.onMeter?.(metered);
     return metered;
   };
+  // The message's meter counts every call for the usage roll-up. This one counts only the calls made
+  // here, the pick, the reads and the choice of fields, so the run row holds what its own work spent.
+  let doMeter: MeteredProvider | null = null;
+  const provider = async () => (doMeter ??= meterProvider(await messageMeter()));
   const deps = { provider, model: config.models.extract, idDocReading: flags.idDocReading };
   const reachable = async (): Promise<EngagementOption[]> =>
     (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug, companyName: e.companyName })).filter((e) => !client || engagementDbId(e.id) === engagementDbId(context.lockedTo!));
@@ -213,16 +217,16 @@ export async function handleDoWork(
   emit({ type: 'run', runId, status: 'running' });
   const progress = (label: string) => emit({ type: 'progress', runId, label });
 
+  // A reply to the run's question adds to what the run spent before; it never replaces it.
   const close = async (status: string, state?: PendingState, error?: string) => {
-    const spend = metered?.spend() ?? [];
-    const usage = spend.reduce((sum, s) => addLlmUsage(sum, s.usage), NO_LLM_USAGE);
+    const usage = (doMeter?.spend() ?? []).reduce((sum, s) => addLlmUsage(sum, s.usage), NO_LLM_USAGE);
     await updateAskRun(ctx, runId, {
       status,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      model: metered?.lastModel() ?? null,
+      inputTokens: run.inputTokens + usage.inputTokens,
+      outputTokens: run.outputTokens + usage.outputTokens,
+      cacheReadTokens: run.cacheReadTokens + usage.cacheReadTokens,
+      cacheWriteTokens: run.cacheWriteTokens + usage.cacheWriteTokens,
+      model: doMeter?.lastModel() ?? run.model ?? null,
       ...(state ? { state: state as unknown as JsonValue } : {}),
       ...(error ? { error } : {}),
       ...(status === 'waiting_reply' || status === 'waiting_approval' ? {} : { finishedAt: new Date() }),
@@ -234,150 +238,159 @@ export async function handleDoWork(
     return { answer: { ...answer, runId }, metered };
   };
 
-  if (pending && CANCEL.test(message)) return finish(line('All right, I have left this as it is. Nothing was saved.'), 'cancelled');
+  const route = async (): Promise<DoWorkResult | null> => {
+    if (pending && CANCEL.test(message)) return finish(line('All right, I have left this as it is. Nothing was saved.'), 'cancelled');
 
-  const engagements = await reachable();
-  const instruction = pending ? pending.state.instruction : instructionOf(message);
+    const engagements = await reachable();
+    const instruction = pending ? pending.state.instruction : instructionOf(message);
 
-  const reads: SourceRead[] = [];
-  // The sources: files as given, and a paste kept as a file only if the run has to wait.
-  const sourceIds = pending ? pending.state.attachmentIds : attachmentIds;
-  const paste = !pending && message.trim() && attachmentIds.length === 0 ? message : null;
-  const keepPaste = async (): Promise<string[]> => {
-    if (!paste) return sourceIds;
-    const s3Key = `ask/attachments/${ctx.userId}/${randomUUID()}/paste.txt`;
-    await putObject(s3Key, paste, 'text/plain; charset=utf-8');
-    const pasteRead = reads.find((read) => !read.attachment);
-    if (pasteRead) await keepRead(s3Key, pasteRead.result);
-    const row = await createAskAttachment(ctx, { kind: 'paste', fileName: 'paste.txt', contentType: 'text/plain', sizeBytes: Buffer.byteLength(paste), s3Key, conversationId });
-    return [row.id];
+    const reads: SourceRead[] = [];
+    // The sources: files as given, and a paste kept as a file only if the run has to wait.
+    const sourceIds = pending ? pending.state.attachmentIds : attachmentIds;
+    const paste = !pending && message.trim() && attachmentIds.length === 0 ? message : null;
+    const keepPaste = async (): Promise<string[]> => {
+      if (!paste) return sourceIds;
+      const s3Key = `ask/attachments/${ctx.userId}/${randomUUID()}/paste.txt`;
+      await putObject(s3Key, paste, 'text/plain; charset=utf-8');
+      const pasteRead = reads.find((read) => !read.attachment);
+      if (pasteRead) await keepRead(s3Key, pasteRead.result);
+      const row = await createAskAttachment(ctx, { kind: 'paste', fileName: 'paste.txt', contentType: 'text/plain', sizeBytes: Buffer.byteLength(paste), s3Key, conversationId });
+      return [row.id];
+    };
+    const askBack = async (text: string, state: Omit<PendingState, 'attachmentIds' | 'instruction'>) =>
+      finish(line(text), 'waiting_reply', { attachmentIds: await keepPaste(), instruction, ...state });
+
+    // Which client. A reply to a question names it, or confirms the one asked about.
+    const replyMatches = pending ? companiesNamed(message, pending.state.options) : [];
+    if (pending && replyMatches.length > 1) return askBack(moreThanOne(replyMatches), { options: replyMatches, mismatch: null });
+    const replied = pending
+      ? (replyMatches[0] ?? (pending.state.mismatch && CONFIRM.test(message) ? engagements.find((e) => e.id === pending.state.mismatch!.engagementId) : undefined))
+      : undefined;
+    if (pending && !replied) return askBack('Please tell me which project this is for.', pending.state);
+    const firstLock = replied
+      ? ({ kind: 'locked', engagement: replied } as const)
+      : lockEngagement({ message: instruction, pagePath: request.page?.path, engagements, ownCompany: client });
+    if (firstLock.kind === 'choose') {
+      return askBack(moreThanOne(firstLock.options), { options: firstLock.options, mismatch: null });
+    }
+    if (firstLock.kind === 'unknown' && firstLock.mentioned) {
+      return finish(line(`I cannot find ${maskIdentityNumbers(firstLock.mentioned)} among your projects, so nothing was read.`));
+    }
+
+    // Read every source. A refused file is reported; the others still count.
+    const rows: AskAttachmentRow[] = await getOwnAskAttachments(ctx, sourceIds);
+    if (sourceIds.length > 0 && rows.length !== sourceIds.length) return finish(line('One of those files is not available. Please attach it again.'), 'failed');
+
+    // A client's file that answers something open needs no reading: it goes straight on a card.
+    let openNote = '';
+    const clientFiles = rows.filter((row) => row.kind !== 'paste');
+    if (client && clientFiles.length > 0 && firstLock.kind === 'locked') {
+      const { engagement } = firstLock;
+      const match = await matchClientFiles({ auth: ctx, engagementId: engagement.id, conversationId, runId, now, via: 'ask' }, clientFiles, instruction);
+      openNote = match.note;
+      if (match.draft) {
+        await lockAskRun(ctx, runId, engagement.id);
+        const changesetId = await createReviewCard(ctx, match.draft, { runId, conversationId, companyName: engagement.companyName, now });
+        if (!changesetId) return finish(line('Your company is not available.'), 'failed');
+        return finish(line(`I prepared this for ${engagement.companyName}. Nothing goes out until you confirm.${openNote}`, { changesetId }), 'waiting_approval');
+      }
+    }
+
+    progress(rows.length > 0 || paste ? 'Reading…' : 'Checking…');
+    const refusals: string[] = [];
+    const readOne = async (attachment: AskAttachmentRow | null, read: () => Promise<ReadResult>) => {
+      try {
+        const result = await read();
+        reads.push({ result, attachment });
+        if (attachment) await updateOwnAskAttachment(ctx, attachment.id, { status: 'read', docType: result.docType, sensitive: result.sensitive, runId });
+        await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: 'Reading', output: { docType: result.docType, values: result.values.length } });
+      } catch (error) {
+        const known = error instanceof ReadRefused;
+        if (!known) console.error('[ask-vcfo] read failed', safeError(error));
+        const text = known ? error.message : 'This file could not be read. Please type the details in instead.';
+        refusals.push(text);
+        if (attachment) await updateOwnAskAttachment(ctx, attachment.id, { status: 'failed', error: text, runId });
+      }
+    };
+    if (paste) await readOne(null, () => readPaste(paste, deps));
+    for (const attachment of rows) {
+      await readOne(attachment, async () => {
+        const kept = pending && attachment.s3Key ? await keptRead(attachment.s3Key) : null;
+        if (kept?.sensitive && !flags.idDocReading) throw new ReadRefused(REFUSED_ID_DOC);
+        if (kept) return kept;
+        const bytes = attachment.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
+        if (!bytes) throw new ReadRefused('That file is no longer available. Please attach it again.');
+        const result = await (attachment.kind === 'paste' ? readPaste(bytes.toString('utf8'), deps) : readFile({ fileName: attachment.fileName, data: bytes }, deps));
+        await keepRead(attachment.s3Key!, result);
+        return result;
+      });
+    }
+    if (reads.length === 0) return finish(line(`${refusals[0] ?? 'I found nothing to read.'}${openNote}`), 'failed', undefined, 'read refused');
+    if (reads.every((r) => r.result.values.length === 0)) {
+      if (paste && !isDataMessage(paste)) {
+        await close('done');
+        return null;
+      }
+      return finish(line(`I could not find any details to file in this. Nothing was saved.${openNote}`));
+    }
+
+    // With no client yet, the document may name one. A document naming another client is a question.
+    const docCompanies = [...new Set(reads.flatMap((r) => (r.result.company ? [r.result.company] : [])))];
+    let locked = firstLock.kind === 'locked' ? firstLock.engagement : null;
+    if (!locked) {
+      const named = [...new Map(docCompanies.flatMap((name) => companiesNamed(name, engagements)).map((e) => [e.id, e])).values()];
+      if (named.length === 1) locked = named[0]!;
+      else {
+        const text = named.length > 1 ? moreThanOne(named) : 'Which project is this for?';
+        return askBack(text, { options: named.length > 1 ? named : engagements, mismatch: null });
+      }
+    }
+    await lockAskRun(ctx, runId, locked.id);
+    const row = await getEngagementById(ctx, locked.id);
+    if (!row) return finish(line('That project is not available.'), 'failed');
+    const state = checklistStateFromRow(row);
+    // Only a yes to the project the mismatch question asked about passes over the document's name.
+    const confirmed = Boolean(replied) && pending?.state.mismatch?.engagementId === row.id;
+    const knownNames = [row.companyName, state['pre-1']?.responses?.proposedName1, state['pre-1']?.responses?.proposedName2, row.parentEntityName].filter((n): n is string => Boolean(n?.trim()));
+    const stranger = confirmed ? null : docCompanies.find((name) => !documentMatches(name, knownNames));
+    if (stranger) {
+      return askBack(`This document names ${maskIdentityNumbers(stranger)}, not ${row.companyName}. Should I file it for ${row.companyName}? Say "Yes, file it for ${row.companyName}", or name the right project.`, {
+        options: engagements,
+        mismatch: { engagementId: row.id, company: stranger },
+      });
+    }
+
+    // Find the place for each value: code first, then one small-model call for the rest.
+    progress('Finding the right fields…');
+    const { placed, questions: placeQuestions, files, chooseCalls } = await placeValues(reads, { instruction, provider, model: config.models.extract });
+    if (chooseCalls > 0) await appendAskRunStep(ctx, runId, { kind: 'model', name: 'choose', output: { asked: chooseCalls, chosen: placed.length } });
+    const questions = [...new Set(refusals), ...placeQuestions];
+
+    progress('Checking the rules…');
+    const plan = planRows({ role: ctx.role, engagementId: row.id, companyName: row.companyName, engagement: row, state, placed, files, instruction });
+    questions.push(...plan.questions);
+    const askMore = `${questions.length > 0 ? ` ${[...new Set(questions)].slice(0, 5).join(' ')}` : ''}${openNote}`;
+
+    if (plan.draft.rows.length === 0) {
+      const nothing = placed.length > 0 ? `Everything here is already saved for ${row.companyName}.` : `I found nothing to save for ${row.companyName}.`;
+      return finish(line(`${nothing}${askMore}`));
+    }
+    const changesetId = await createReviewCard(ctx, plan.draft, { runId, conversationId, companyName: row.companyName, now });
+    if (!changesetId) return finish(line('That project is not available.'), 'failed');
+
+    const count = plan.draft.rows.length;
+    const held = plan.draft.rows.filter((r) => r.heldReason).length;
+    const heldNote = held > 0 ? ` ${held} ${held === 1 ? 'is' : 'are'} held, with the reason on the row.` : '';
+    return finish(
+      line(`I prepared ${count} value${count === 1 ? '' : 's'} for ${row.companyName}. Nothing is saved until you accept.${heldNote}${askMore}`, { changesetId }),
+      'waiting_approval',
+    );
   };
-  const askBack = async (text: string, state: Omit<PendingState, 'attachmentIds' | 'instruction'>) =>
-    finish(line(text), 'waiting_reply', { attachmentIds: await keepPaste(), instruction, ...state });
-
-  // Which client. A reply to a question names it, or confirms the one asked about.
-  const replyMatches = pending ? companiesNamed(message, pending.state.options) : [];
-  if (pending && replyMatches.length > 1) return askBack(moreThanOne(replyMatches), { options: replyMatches, mismatch: null });
-  const replied = pending
-    ? (replyMatches[0] ?? (pending.state.mismatch && CONFIRM.test(message) ? engagements.find((e) => e.id === pending.state.mismatch!.engagementId) : undefined))
-    : undefined;
-  if (pending && !replied) return askBack('Please tell me which project this is for.', pending.state);
-  const firstLock = replied
-    ? ({ kind: 'locked', engagement: replied } as const)
-    : lockEngagement({ message: instruction, pagePath: request.page?.path, engagements, ownCompany: client });
-  if (firstLock.kind === 'choose') {
-    return askBack(moreThanOne(firstLock.options), { options: firstLock.options, mismatch: null });
+  try {
+    return await route();
+  } catch (error) {
+    // A step that throws still closes its run, so the row never stays at running.
+    await close('failed', undefined, 'step failed').catch((closing) => console.error('[ask-vcfo] run not closed', safeError(closing)));
+    throw error;
   }
-  if (firstLock.kind === 'unknown' && firstLock.mentioned) {
-    return finish(line(`I cannot find ${maskIdentityNumbers(firstLock.mentioned)} among your projects, so nothing was read.`));
-  }
-
-  // Read every source. A refused file is reported; the others still count.
-  const rows: AskAttachmentRow[] = await getOwnAskAttachments(ctx, sourceIds);
-  if (sourceIds.length > 0 && rows.length !== sourceIds.length) return finish(line('One of those files is not available. Please attach it again.'), 'failed');
-
-  // A client's file that answers something open needs no reading: it goes straight on a card.
-  let openNote = '';
-  const clientFiles = rows.filter((row) => row.kind !== 'paste');
-  if (client && clientFiles.length > 0 && firstLock.kind === 'locked') {
-    const { engagement } = firstLock;
-    const match = await matchClientFiles({ auth: ctx, engagementId: engagement.id, conversationId, runId, now, via: 'ask' }, clientFiles, instruction);
-    openNote = match.note;
-    if (match.draft) {
-      await lockAskRun(ctx, runId, engagement.id);
-      const changesetId = await createReviewCard(ctx, match.draft, { runId, conversationId, companyName: engagement.companyName, now });
-      if (!changesetId) return finish(line('Your company is not available.'), 'failed');
-      return finish(line(`I prepared this for ${engagement.companyName}. Nothing goes out until you confirm.${openNote}`, { changesetId }), 'waiting_approval');
-    }
-  }
-
-  progress(rows.length > 0 || paste ? 'Reading…' : 'Checking…');
-  const refusals: string[] = [];
-  const readOne = async (attachment: AskAttachmentRow | null, read: () => Promise<ReadResult>) => {
-    try {
-      const result = await read();
-      reads.push({ result, attachment });
-      if (attachment) await updateOwnAskAttachment(ctx, attachment.id, { status: 'read', docType: result.docType, sensitive: result.sensitive, runId });
-      await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: 'Reading', output: { docType: result.docType, values: result.values.length } });
-    } catch (error) {
-      const known = error instanceof ReadRefused;
-      if (!known) console.error('[ask-vcfo] read failed', safeError(error));
-      const text = known ? error.message : 'This file could not be read. Please type the details in instead.';
-      refusals.push(text);
-      if (attachment) await updateOwnAskAttachment(ctx, attachment.id, { status: 'failed', error: text, runId });
-    }
-  };
-  if (paste) await readOne(null, () => readPaste(paste, deps));
-  for (const attachment of rows) {
-    await readOne(attachment, async () => {
-      const kept = pending && attachment.s3Key ? await keptRead(attachment.s3Key) : null;
-      if (kept?.sensitive && !flags.idDocReading) throw new ReadRefused(REFUSED_ID_DOC);
-      if (kept) return kept;
-      const bytes = attachment.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
-      if (!bytes) throw new ReadRefused('That file is no longer available. Please attach it again.');
-      const result = await (attachment.kind === 'paste' ? readPaste(bytes.toString('utf8'), deps) : readFile({ fileName: attachment.fileName, data: bytes }, deps));
-      await keepRead(attachment.s3Key!, result);
-      return result;
-    });
-  }
-  if (reads.length === 0) return finish(line(`${refusals[0] ?? 'I found nothing to read.'}${openNote}`), 'failed', undefined, 'read refused');
-  if (reads.every((r) => r.result.values.length === 0)) {
-    if (paste && !isDataMessage(paste)) {
-      await close('done');
-      return null;
-    }
-    return finish(line(`I could not find any details to file in this. Nothing was saved.${openNote}`));
-  }
-
-  // With no client yet, the document may name one. A document naming another client is a question.
-  const docCompanies = [...new Set(reads.flatMap((r) => (r.result.company ? [r.result.company] : [])))];
-  let locked = firstLock.kind === 'locked' ? firstLock.engagement : null;
-  if (!locked) {
-    const named = [...new Map(docCompanies.flatMap((name) => companiesNamed(name, engagements)).map((e) => [e.id, e])).values()];
-    if (named.length === 1) locked = named[0]!;
-    else {
-      const text = named.length > 1 ? moreThanOne(named) : 'Which project is this for?';
-      return askBack(text, { options: named.length > 1 ? named : engagements, mismatch: null });
-    }
-  }
-  await lockAskRun(ctx, runId, locked.id);
-  const row = await getEngagementById(ctx, locked.id);
-  if (!row) return finish(line('That project is not available.'), 'failed');
-  const state = checklistStateFromRow(row);
-  // Only a yes to the project the mismatch question asked about passes over the document's name.
-  const confirmed = Boolean(replied) && pending?.state.mismatch?.engagementId === row.id;
-  const knownNames = [row.companyName, state['pre-1']?.responses?.proposedName1, state['pre-1']?.responses?.proposedName2, row.parentEntityName].filter((n): n is string => Boolean(n?.trim()));
-  const stranger = confirmed ? null : docCompanies.find((name) => !documentMatches(name, knownNames));
-  if (stranger) {
-    return askBack(`This document names ${maskIdentityNumbers(stranger)}, not ${row.companyName}. Should I file it for ${row.companyName}? Say "Yes, file it for ${row.companyName}", or name the right project.`, {
-      options: engagements,
-      mismatch: { engagementId: row.id, company: stranger },
-    });
-  }
-
-  // Find the place for each value: code first, then one small-model call for the rest.
-  progress('Finding the right fields…');
-  const { placed, questions: placeQuestions, files, chooseCalls } = await placeValues(reads, { instruction, provider, model: config.models.extract });
-  if (chooseCalls > 0) await appendAskRunStep(ctx, runId, { kind: 'model', name: 'choose', output: { asked: chooseCalls, chosen: placed.length } });
-  const questions = [...new Set(refusals), ...placeQuestions];
-
-  progress('Checking the rules…');
-  const plan = planRows({ role: ctx.role, engagementId: row.id, companyName: row.companyName, engagement: row, state, placed, files, instruction });
-  questions.push(...plan.questions);
-  const askMore = `${questions.length > 0 ? ` ${[...new Set(questions)].slice(0, 5).join(' ')}` : ''}${openNote}`;
-
-  if (plan.draft.rows.length === 0) {
-    const nothing = placed.length > 0 ? `Everything here is already saved for ${row.companyName}.` : `I found nothing to save for ${row.companyName}.`;
-    return finish(line(`${nothing}${askMore}`));
-  }
-  const changesetId = await createReviewCard(ctx, plan.draft, { runId, conversationId, companyName: row.companyName, now });
-  if (!changesetId) return finish(line('That project is not available.'), 'failed');
-
-  const count = plan.draft.rows.length;
-  const held = plan.draft.rows.filter((r) => r.heldReason).length;
-  const heldNote = held > 0 ? ` ${held} ${held === 1 ? 'is' : 'are'} held, with the reason on the row.` : '';
-  return finish(
-    line(`I prepared ${count} value${count === 1 ? '' : 's'} for ${row.companyName}. Nothing is saved until you accept.${heldNote}${askMore}`, { changesetId }),
-    'waiting_approval',
-  );
 }
