@@ -62,6 +62,11 @@ function namedInFull(text: string, companyName: string): boolean {
   return core.includes(' ') && mentions(normalizeLabel(text), core);
 }
 
+function namedAsClient(message: string, companyName: string): boolean {
+  const mentioned = explicitMention(message);
+  return !!mentioned && coreName(mentioned).split(' ')[0] === coreName(companyName).split(' ')[0];
+}
+
 const PAGE_PROJECT = /\/(?:projects|engagements|clients)\/([^/?#]+)/;
 
 export function lockEngagement<E extends LockableEngagement>(input: {
@@ -78,7 +83,13 @@ export function lockEngagement<E extends LockableEngagement>(input: {
   const onPage = key ? engagements.find((e) => e.slug === key || e.id === key) : null;
   // One shared word ("Mr Reddy's PAN") is not enough to move a run off the client on screen.
   if (onPage && named.length > 0 && !named.includes(onPage) && !named.some((e) => namedInFull(input.message, e.companyName))) return { kind: 'choose', options: [onPage, ...named] };
-  if (named.length === 1) return { kind: 'locked', engagement: named[0]! };
+  if (named.length === 1) {
+    const only = named[0]!;
+    // One shared word ("the Hyderabad office", "Mr Reddy") locks only when it is the client on screen or
+    // already chosen, or when the person names it as the one the work is for ("for Kestrel").
+    const sure = only === onPage || only.id === input.pendingEngagementId || namedInFull(input.message, only.companyName) || namedAsClient(input.message, only.companyName);
+    return sure ? { kind: 'locked', engagement: only } : { kind: 'choose', options: named };
+  }
   if (named.length > 1) return { kind: 'choose', options: named };
   const mentioned = explicitMention(input.message);
   if (mentioned && (!input.ownCompany || NAMES_A_COMPANY.test(mentioned))) return { kind: 'unknown', mentioned };
