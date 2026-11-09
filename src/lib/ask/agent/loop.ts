@@ -245,7 +245,11 @@ export async function agentTurn(runId: string): Promise<AgentOutcome> {
   return { kind: 'wait', changesetId };
 }
 
-const STILL_OPEN: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held']);
+/**
+ * Rows a person can still act on. A failed row stays open, because the card offers to try it again,
+ * so the run sleeps until it is saved, discarded or the card expires, and only then tells the model.
+ */
+const STILL_OPEN: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'applying', 'failed']);
 
 /** Wakes the run when its card is settled, and tells the model what the person did. False means keep sleeping. */
 export async function agentResume(runId: string): Promise<boolean> {

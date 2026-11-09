@@ -239,12 +239,16 @@ describe('agent loop', () => {
     expect(state().waiting).toBeNull();
   });
 
-  it('reports a failed row to the model, and moves on from an expired card', async () => {
+  it('keeps sleeping on a failed row the person can retry, reports it once the card expires, and moves on', async () => {
     script = [call(['tasks__create', { body: 'A' }])];
     await agentTurn('run-1');
     cardRows = [{ status: 'failed', error: 'You cannot do this on this item.' }];
-    await agentResume('run-1');
+    expect(await agentResume('run-1')).toBe(false);
+    expect(run.status).toBe('waiting_approval');
+    cardStatus = 'expired';
+    expect(await agentResume('run-1')).toBe(true);
     expect(lastResults()[0]!.content).toMatch(/failed: You cannot do this/);
+    cardStatus = 'proposed';
     script = [call(['tasks__create', { body: 'B' }])];
     await agentTurn('run-1');
     cardStatus = 'expired';
