@@ -179,6 +179,10 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
   // The API needs a user turn first and alternating roles are merged; drop a leading assistant turn.
   while (messages.length > 0 && messages[0]!.role !== 'user') messages.shift();
 
+  const overBudget = (): GenerateOutput => ({ result: { ok: false, errors: ['answer budget'], overBudget: true }, model, toolCalls, toolResultTexts, usage });
+  // A limit of 0 stops this spending, so not even a first call is paid for.
+  if (input.maxTotalTokens <= 0) return overBudget();
+
   let retried = false;
   let maxTokens = MAX_TOKENS[input.depth];
   for (let round = 0; round < MAX_ROUNDS; round += 1) {
@@ -196,7 +200,6 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
     // Cache writes are billed above the input price, so they count. A reply over the budget still
     // gives its finished answer, and only a reply with nothing finished stops on the budget.
     const over = usage.inputTokens + usage.outputTokens + usage.cacheWriteTokens >= input.maxTotalTokens;
-    const overBudget = (): GenerateOutput => ({ result: { ok: false, errors: ['answer budget'], overBudget: true }, model, toolCalls, toolResultTexts, usage });
     if (response.stopReason === 'max_tokens') {
       if (over) return overBudget();
       maxTokens *= 2;

@@ -50,6 +50,11 @@ describe('the answer budget', () => {
     expect(out.result).toMatchObject({ ok: false, overBudget: true });
   });
 
+  it('makes no call at all when the limit is 0', async () => {
+    const out = await generateAnswer(inputWith([], 0));
+    expect(out.result).toMatchObject({ ok: false, overBudget: true });
+  });
+
   it('goes on to the next round while under the budget', async () => {
     const out = await generateAnswer(inputWith([reply([lookUp], usage(100)), reply([render], usage(100))], 1000));
     expect(out.result).toMatchObject({ ok: true });
