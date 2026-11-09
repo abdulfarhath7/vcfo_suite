@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { login, onLocalDb, openClientChat } from './helpers/login';
+import { lockDemoProject, login, onLocalDb, openClientChat } from './helpers/login';
 
 /**
  * Ask VCFO's Do engine as a client, in the portal's own chat window: a paste becomes a card only for
@@ -19,8 +19,12 @@ const REQUEST_TITLE = 'E2E rent agreement';
 
 let saved: unknown = null;
 let cardId = '';
+let unlock: () => Promise<void> = async () => undefined;
 
 test.beforeAll(async () => {
+  // `ask-fill.spec.ts` takes and puts back the same step, so wait while it runs.
+  test.setTimeout(600_000);
+  unlock = await lockDemoProject(SLUG);
   await onLocalDb(async (db) => {
     const { rows } = await db.query('select id, checklist_state from engagements where slug = $1', [SLUG]);
     saved = rows[0].checklist_state;
@@ -34,6 +38,7 @@ test.afterAll(async () => {
     await db.query('update engagements set checklist_state = $2 where slug = $1', [SLUG, JSON.stringify(saved)]);
     await db.query('delete from document_requests where title = $1', [REQUEST_TITLE]);
   });
+  await unlock();
 });
 
 const preFifteen = async () => {

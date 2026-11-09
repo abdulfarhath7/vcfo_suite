@@ -40,13 +40,31 @@ export async function closeLivePopups(page: Page): Promise<void> {
   }
 }
 
-/** Runs against the test database only when it is on this machine: no connection is made for any other host. */
-export async function onLocalDb(run: (db: Client) => Promise<unknown>): Promise<void> {
+async function localDb(): Promise<Client | null> {
   const url = process.env.DATABASE_URL;
-  if (!url || !['localhost', '127.0.0.1'].includes(new URL(url).hostname)) return;
+  if (!url || !['localhost', '127.0.0.1'].includes(new URL(url).hostname)) return null;
   const db = new Client({ connectionString: url });
   await db.connect();
-  await run(db).finally(() => db.end());
+  return db;
+}
+
+/** Runs against the test database only when it is on this machine: no connection is made for any other host. */
+export async function onLocalDb(run: (db: Client) => Promise<unknown>): Promise<void> {
+  const db = await localDb();
+  if (db) await run(db).finally(() => db.end());
+}
+
+/**
+ * Holds a lock named for a demo project until the returned function runs, so spec files that take a
+ * copy of the same project's steps and put it back wait for each other across Playwright workers,
+ * instead of one putting back a copy taken in the middle of the other. Local databases only.
+ */
+export async function lockDemoProject(slug: string): Promise<() => Promise<void>> {
+  const db = await localDb();
+  if (!db) return async () => undefined;
+  await db.query('select pg_advisory_lock(hashtext($1))', [`e2e:${slug}`]);
+  // Ending the session releases the lock.
+  return () => db.end();
 }
 
 /**

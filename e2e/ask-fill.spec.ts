@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { login, onLocalDb, openAsk } from './helpers/login';
+import { lockDemoProject, login, onLocalDb, openAsk } from './helpers/login';
 
 /**
  * The data router as a project lead: drop a synthetic document, review the card, accept, see the
@@ -15,8 +15,12 @@ const STEP_PATH = `/app/intern/engagements/${SLUG}/step/proposed-directors`;
 const FIXTURES = path.resolve('tests/ask/evals/fill/fixtures');
 
 let saved: unknown = null;
+let unlock: () => Promise<void> = async () => undefined;
 
 test.beforeAll(async () => {
+  // `ask-client.spec.ts` takes and puts back the same step, so wait while it runs.
+  test.setTimeout(600_000);
+  unlock = await lockDemoProject(SLUG);
   await onLocalDb(async (db) => {
     const { rows } = await db.query('select checklist_state from engagements where slug = $1', [SLUG]);
     saved = rows[0].checklist_state;
@@ -26,6 +30,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await onLocalDb((db) => db.query('update engagements set checklist_state = $2 where slug = $1', [SLUG, JSON.stringify(saved)]));
+  await unlock();
 });
 
 const preFifteen = async () => {
