@@ -167,7 +167,9 @@ describe('the board meeting actions', () => {
 
   it.each(TABLE)('%s runs as the person, on the locked client', async (name, _tier, _roles, input) => {
     const action = byName(name);
-    const outcome = await action.execute(actx(), action.input.parse(input));
+    // A card's action runs with the target its card saved, as a click does.
+    const card = await action.preview(actx(), action.input.parse(input));
+    const outcome = await action.execute(actx(), action.input.parse(card ? card.rows[0]!.target : input));
     expect(outcome.ok, `${name}: ${JSON.stringify(outcome)}`).toBe(true);
     const calls = [repo.listMeetings, repo.getMeeting, repo.createMeeting].flatMap((fn) => fn.mock.calls);
     expect(calls.length).toBeGreaterThan(0);
@@ -259,8 +261,20 @@ describe('the board meeting actions', () => {
     await expect(byName('board-meetings.remindDirectors').preview(actx(), { meetingId: ID })).rejects.toThrow(/has replied/);
   });
 
+  it('approves only the notice the card showed, at the notice period it showed', async () => {
+    const approve = byName('board-meetings.approve');
+    const shown = (await approve.preview(actx(), { meetingId: ID }))!.rows[0]!.target;
+    repo.getMeeting.mockResolvedValue({ ...meeting, dates: { shortNoticeIfSentToday: true } });
+    expect(await approve.execute(actx(), shown)).toEqual({ ok: false, error: expect.stringContaining('changed since this card was made') });
+    repo.getMeeting.mockResolvedValue({ ...meeting, agenda: [meeting.agenda[0]!, { ...meeting.agenda[1]!, text: 'Accounts and audit' }] });
+    expect((await approve.execute(actx(), shown)).ok).toBe(false);
+    expect((await approve.execute(actx(), { meetingId: ID })).ok).toBe(false);
+    expect(repo.approveMeeting).not.toHaveBeenCalled();
+  });
+
   it('approves first and sends the notice only after the answer', async () => {
-    const outcome = await byName('board-meetings.approve').execute(actx(), { meetingId: ID });
+    const shown = (await byName('board-meetings.approve').preview(actx(), { meetingId: ID }))!.rows[0]!.target;
+    const outcome = await byName('board-meetings.approve').execute(actx(), shown);
     expect(outcome.ok).toBe(true);
     expect(repo.approveMeeting).toHaveBeenCalledWith(person('manager'), ID);
     expect(send.sendNotice).not.toHaveBeenCalled();
@@ -305,6 +319,18 @@ describe('the board meeting actions', () => {
     expect(repo.updateMeeting).toHaveBeenCalledTimes(1);
     repo.getMeeting.mockResolvedValue({ ...meeting, venue: 'Mumbai' });
     expect((await edit.undo!(actx(), undoFrom(edited))).ok).toBe(true);
-    expect(repo.updateMeeting.mock.calls[1]![2]).toMatchObject({ venue: 'Hyderabad' });
+    expect(repo.updateMeeting.mock.calls[1]![2]).toEqual({ venue: 'Hyderabad' });
+  });
+
+  it('undoes a notice edit only while the agenda still reads as it was saved', async () => {
+    const edit = byName('board-meetings.editNotice');
+    const saved = { ...meeting, agenda: [...meeting.agenda, { key: 'ask-1', libraryId: null, text: 'Auditor', subs: [] }] };
+    repo.updateMeeting.mockResolvedValue(saved);
+    const edited = await edit.execute(actx(), { meetingId: ID, addAgendaItems: ['Auditor'] });
+    repo.getMeeting.mockResolvedValue({ ...saved, meetingTime: '15:00', agenda: [saved.agenda[0]!, { ...saved.agenda[1]!, text: 'Accounts, corrected' }, saved.agenda[2]!] });
+    expect(await edit.undo!(actx(), undoFrom(edited))).toEqual({ ok: false, error: expect.stringContaining('changed after it was saved') });
+    repo.getMeeting.mockResolvedValue({ ...saved, meetingTime: '15:00' });
+    expect((await edit.undo!(actx(), undoFrom(edited))).ok).toBe(true);
+    expect(repo.updateMeeting.mock.calls[1]![2]).toEqual({ agenda: meeting.agenda });
   });
 });

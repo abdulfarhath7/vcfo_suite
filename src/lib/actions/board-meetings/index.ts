@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
   BoardMeetingError,
@@ -206,6 +206,8 @@ const editInput = meetingRef.extend({
   removeAgendaKeys: z.array(z.string().max(40)).max(40).optional(),
 });
 
+const agendaWords = (agenda: MeetingDto['agenda']) => agenda.map(({ key, text, subs }) => ({ key, text, subs }));
+
 const FIELD_LABEL = { meetingDate: 'Date', meetingTime: 'Time', mode: 'Mode', meetingType: 'Type', venue: 'Venue', signatoryDirectorId: 'Signatory', teamsLink: 'Meeting link' } as const;
 
 const edit = defineAction({
@@ -237,20 +239,11 @@ const edit = defineAction({
         ...m.agenda.filter((a) => a.fixed || !removeAgendaKeys?.includes(a.key)),
         ...(addAgendaItems ?? []).map((text) => ({ key: `ask-${randomUUID().slice(0, 8)}`, libraryId: null, text, subs: [] })),
       ];
-      await updateMeeting(actx.auth, meetingId, { ...fields, ...(agendaChanges ? { agenda } : {}) });
-      const applied = { ...fields, ...(agendaChanges ? { agendaKeys: agenda.map((a) => a.key) } : {}) };
-      const undo: UpdateMeetingInput & { meetingId: string; applied: object } = {
-        meetingId,
-        applied,
-        meetingDate: m.meetingDate,
-        meetingTime: m.meetingTime,
-        mode: m.mode,
-        meetingType: m.meetingType,
-        venue: m.venue,
-        signatoryDirectorId: m.signatoryDirectorId,
-        teamsLink: m.teamsLink,
-        ...(agendaChanges ? { agenda: m.agenda } : {}),
-      };
+      const saved = await updateMeeting(actx.auth, meetingId, { ...fields, ...(agendaChanges ? { agenda } : {}) });
+      // An undo puts back only what this card changed, and only while that still stands word for word.
+      const applied = { ...fields, ...(agendaChanges ? { agendaWords: agendaWords(saved.agenda) } : {}) };
+      const before = Object.fromEntries(Object.keys(fields).map((key) => [key, m[key as keyof typeof fields]]));
+      const undo: UpdateMeetingInput & { meetingId: string; applied: object } = { meetingId, applied, ...before, ...(agendaChanges ? { agenda: m.agenda } : {}) };
       return { ok: true, summary: `The notice ${m.meetingNo} is updated.`, undo: JSON.parse(JSON.stringify(undo)) };
     }),
   undo: (actx, undo) =>
@@ -258,7 +251,7 @@ const edit = defineAction({
       const { meetingId, applied, ...before } = (undo ?? {}) as UpdateMeetingInput & { meetingId?: string; applied?: object };
       if (typeof meetingId !== 'string' || !applied) return { ok: false, error: 'This cannot be undone.' };
       const m = await scoped(actx, meetingId);
-      if (!stillAsSaved({ ...m, agendaKeys: m.agenda.map((a) => a.key) }, applied)) return { ok: false, error: CHANGED_SINCE };
+      if (!stillAsSaved({ ...m, agendaWords: agendaWords(m.agenda) }, applied)) return { ok: false, error: CHANGED_SINCE };
       await updateMeeting(actx.auth, meetingId, before);
       return { ok: true, summary: 'The notice is back as it was.' };
     }),
@@ -284,21 +277,26 @@ const submit = defineAction({
     }),
 });
 
+/** What an approval card showed. A click after the date, time, place, agenda or notice period moved sends nothing. */
+const noticeAsShown = (m: MeetingDto) =>
+  createHash('sha256').update(JSON.stringify([m.meetingDate, m.meetingTime, m.mode, m.venue, agendaWords(m.agenda), m.dates.shortNoticeIfSentToday])).digest('hex');
+
 const approve = defineAction({
   name: 'board-meetings.approve',
-  description: 'Propose approving a board meeting notice that is waiting for approval. VCFO then emails the notice with its Word file and calendar invite to the directors. A manager confirms it on a card that lists them.',
-  input: meetingRef,
+  description: 'Propose approving a board meeting notice that is waiting for approval. VCFO then emails the notice with its Word file and calendar invite to the directors. Leave cardCheck out; the card fills it. A manager confirms it on a card that lists them.',
+  input: meetingRef.extend({ cardCheck: z.string().optional() }),
   tier: 'T3',
   roles: MANAGING_ROLES,
   preview: (actx, input) =>
     said(async () => {
       const m = await scoped(actx, input.meetingId);
       if (!m.can.approve) throw new ActionRefused(REFUSALS.not_pending!);
-      return recordDraft(actx, { action: 'board-meetings.approve', tier: 'T3', title: 'Approve and send the notice', label: m.meetingNo, target: input, displayOld: stateOf(m), displayNew: `Approved, and the notice for ${whenOf(m)} goes out${m.dates.shortNoticeIfSentToday ? ' at short notice' : ''}`, recipients: noticeRecipients(m) });
+      return recordDraft(actx, { action: 'board-meetings.approve', tier: 'T3', title: 'Approve and send the notice', label: m.meetingNo, target: { ...input, cardCheck: noticeAsShown(m) }, displayOld: stateOf(m), displayNew: `Approved, and the notice for ${whenOf(m)} goes out${m.dates.shortNoticeIfSentToday ? ' at short notice' : ''}`, recipients: noticeRecipients(m) });
     }),
   execute: (actx, input) =>
     run(async () => {
       const m = await scoped(actx, input.meetingId);
+      if (noticeAsShown(m) !== input.cardCheck) return { ok: false, error: 'The meeting date, place, agenda or notice period has changed since this card was made. Please ask again.' };
       await (await flows()).approveAndSendNotice(actx.auth, input.meetingId);
       return { ok: true, summary: `Approved ${m.meetingNo}. The notice is going out now, and the bell will say when it has.` };
     }),
