@@ -4,6 +4,7 @@ import { requireAuth } from '@/auth/guards';
 import { BatchPage } from '@/views/labour-registers/BatchPage';
 import { ClientRegistersPage } from '@/views/labour-registers/ClientRegistersPage';
 import { loadBatchView } from '@/views/labour-registers/load-batch';
+import { loadClientRegistersView } from '@/views/labour-registers/load-client-registers';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 
 export const metadata = pageMetadata('Labour registers', 'Statutory labour registers, state by state');
@@ -34,8 +35,20 @@ export default async function Page({
     /* A client may read a batch and never write to one. The write routes refuse them anyway;
        this stops the controls being drawn, because a client pressing "Mark as ready" and
        getting a 403 is a bug report. */
-    return <BatchPage view={view} shellBase="/app/client" canPrepare={false} />;
+    // cp-tw: the client portal keeps Tailwind only inside `.cp-tw` islands.
+    return (
+      <div className="cp-tw">
+        <BatchPage view={view} shellBase="/app/client" canPrepare={false} />
+      </div>
+    );
   }
 
-  return <ClientRegistersPage shellBase="/app/client" stateCode={one('state')} period={one('period')} />;
+  /* The screen's four answers — where they employ people, which registers exist, what is
+     pending — come from their own batches. Until this read was wired the component ran on its
+     defaults, so no download link could ever appear. */
+  const guard = await requireAuth();
+  if (!guard.ok) notFound();
+  const view = await loadClientRegistersView(guard.ctx, { stateCode: one('state'), period: one('period') });
+
+  return <ClientRegistersPage shellBase="/app/client" {...view} />;
 }

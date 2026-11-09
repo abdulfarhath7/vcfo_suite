@@ -62,6 +62,8 @@ const PAGE_LABEL: Record<string, string> = {
   inbox: 'Inbox',
   incorporation: 'Incorporation',
   'labour-registers': 'Labour registers',
+  budgets: 'Budgets',
+  payroll: 'Payroll',
   documents: 'Documents',
   settings: 'Profile',
   engagements: 'Clients',

@@ -27,6 +27,7 @@ import {
   Megaphone,
   Plug,
   ScrollText,
+  Calculator,
   Settings,
   ShieldCheck,
   Text as TextIcon,
@@ -34,6 +35,7 @@ import {
   TriangleAlert,
   UserSquare2,
   Users,
+  Wallet,
 } from 'lucide-react';
 import type { Role } from '@/lib/auth';
 import { complianceLeaves, compliancesBasePath } from '@/components/shell/compliance-nav';
@@ -159,11 +161,22 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
 
 /**
  * R-51 sits three labels in the practice block, so Labour registers is its own row directly
- * after it rather than a fourth label inside it. Every role that does practice work gets it,
- * clients included: their portal row is download-only, which the page enforces.
+ * after it rather than a fourth label inside it, with Payroll next (the registers also open as
+ * a tab inside Payroll). Every role that does practice work gets both, clients included: their
+ * pages are read-only, which the pages enforce.
  */
+/** Annual cost budgets (docs/specs/budget/PLAN.md), one per client and year. */
+function budgetsItem(base: string): NavItem {
+  return { to: `${base}/budgets`, label: 'Budgets', icon: Calculator, iconTone: TONE.work };
+}
+
 function labourRegistersItem(base: string): NavItem {
   return { to: `${base}/labour-registers`, label: 'Labour registers', icon: ScrollText, iconTone: TONE.work };
+}
+
+/** The Payroll page (salary updates, payroll summary, and the labour registers as a tab). */
+function payrollItem(base: string): NavItem {
+  return { to: `${base}/payroll`, label: 'Payroll', icon: Wallet, iconTone: TONE.work };
 }
 
 /**
@@ -184,6 +197,8 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/managers', label: 'Managers', icon: UserSquare2, iconTone: TONE.people },
   ...practiceBlock('admin', '/app/admin'),
   labourRegistersItem('/app/admin'),
+  payrollItem('/app/admin'),
+  budgetsItem('/app/admin'),
   updatesGroup('/app/admin'),
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
@@ -200,6 +215,8 @@ const clientItems: NavEntry[] = [
   { to: '/app/client/overview', label: 'Home', icon: LayoutDashboard, iconTone: TONE.home },
   ...practiceBlock('client', '/app/client'),
   labourRegistersItem('/app/client'),
+  payrollItem('/app/client'),
+  budgetsItem('/app/client'),
   updatesGroup('/app/client'),
   { to: '/app/client/documents', label: 'Documents', icon: FolderClosed, iconTone: TONE.files },
   { to: '/app/client/library', label: 'Library', icon: BookMarked, iconTone: TONE.knowledge },
@@ -215,6 +232,8 @@ const superAdminItems: NavEntry[] = [
   { to: '/app/super/projects', label: 'Clients', icon: Building2, iconTone: TONE.work },
   ...practiceBlock('super_admin', '/app/super'),
   labourRegistersItem('/app/super/practice'),
+  payrollItem('/app/super/practice'),
+  budgetsItem('/app/super/practice'),
   { to: '/app/super/team', label: 'Team', icon: Users, iconTone: TONE.people },
   { to: '/app/super/growth', label: 'Growth', icon: TrendingUp, iconTone: TONE.analytics },
   { to: '/app/super/reports', label: 'Reports', icon: FileText, iconTone: TONE.analytics },
@@ -255,6 +274,8 @@ function managerItems(staffBase: string): NavEntry[] {
     { to: `${staffBase}/team`, label: 'Project leads', icon: UserSquare2, iconTone: TONE.people },
     ...practiceBlock('manager', staffBase),
     labourRegistersItem(staffBase),
+    payrollItem(staffBase),
+    budgetsItem(staffBase),
     receivablesItem(),
     updatesGroup(staffBase),
     { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
@@ -276,6 +297,8 @@ const internItems: NavEntry[] = [
   { to: INTERN_CLIENTS, label: 'Clients', icon: Building2, iconTone: TONE.people },
   ...practiceBlock('intern', '/app/intern'),
   labourRegistersItem('/app/intern'),
+  payrollItem('/app/intern'),
+  budgetsItem('/app/intern'),
   updatesGroup('/app/intern'),
   { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/intern', Archive),

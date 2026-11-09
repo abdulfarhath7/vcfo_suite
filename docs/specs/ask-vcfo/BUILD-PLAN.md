@@ -539,7 +539,7 @@ Phase 9, proactive:
 - One card per project and one per owner for firm-wide work, ten rows a card and ten cards a night, one bell row linking to
   all of them. A row proposed once stays quiet for 14 days, whatever became of it, so a retried step cannot double a card.
 - Turning down a due date card leaves the change waiting on the Watch screen, because an unused card is not a decision.
-- Migration `0048_ask_row_edited` adds `ask_changeset_rows.edited_at`, because "accepted without an edit" cannot be
+- Migration `0050_ask_row_edited` (renumbered after main's `0048_budgets` and `0049_budget_variance`, 9 November) adds `ask_changeset_rows.edited_at`, because "accepted without an edit" cannot be
   measured from the row's status. The token page and `scripts/ask-usage-report.ts` show cards per action, chat and
   overnight apart. Nothing reads those numbers to act.
 - `src/lib/ask/proactive/no-auto-apply.test.ts` reads the source to prove no job, no agent code and no proactive code can reach

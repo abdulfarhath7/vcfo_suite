@@ -26,6 +26,7 @@ import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import type { NocState } from '@/lib/noc/state';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
+import { FitToWidth } from '@/components/board-resolution/FitToWidth';
 import {
   DocFiles,
   DocPaper,
@@ -352,7 +353,9 @@ export default function BoardPage() {
       <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
         <div className="cp-tw">
           {d.engagementId ? (
-            <BoardResolutionDocPreview engagementId={d.engagementId} downloadUrl={downloadHref} refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`} mergeFields={mergeFields} />
+            <FitToWidth>
+              <BoardResolutionDocPreview engagementId={d.engagementId} downloadUrl={downloadHref} refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`} mergeFields={mergeFields} />
+            </FitToWidth>
           ) : null}
         </div>
       </div>
@@ -373,8 +376,11 @@ export default function BoardPage() {
                   {variantLabel}
                 </span>
                 <span data-testid="noc-passed-by">Passed by: Board of {parent || 'the parent company'} (the parent)</span>
-                <Dot />
-                <span>Phase 1 · Steps 2–3</span>
+                {/* The dot travels with "Phase 1", so a wrapped line never starts with a stray separator. */}
+                <span className="whitespace-nowrap max-sm:basis-full">
+                  <Dot className="mr-2 max-sm:hidden" />
+                  Phase 1 · Steps 2–3
+                </span>
               </>
             }
             links={stepLinks}
