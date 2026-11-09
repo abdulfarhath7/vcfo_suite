@@ -42,6 +42,7 @@ export async function chooseFields(provider: LlmProvider, model: string, inputs:
     maxTokens: CHOOSE_MAX_TOKENS,
     effort: 'low',
     thinking: 'off',
+    maxRetries: 0,
     outputSchema: {
       type: 'object',
       additionalProperties: false,

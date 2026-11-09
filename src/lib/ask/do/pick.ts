@@ -57,6 +57,7 @@ export async function pickWork(
     maxTokens: PICK_MAX_TOKENS,
     effort: 'low',
     thinking: 'off',
+    maxRetries: 0,
   });
   // A call cut short holds half an input at best, so nothing is read from it.
   if (result.stopReason === 'max_tokens') return { pick: { kind: 'cut' }, usage: result.usage, model: result.model };

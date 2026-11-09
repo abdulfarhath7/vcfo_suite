@@ -95,6 +95,8 @@ export async function runGuard(
     maxTokens: 1024,
     effort: 'low',
     thinking: 'off',
+    // The chat request has 120 seconds, so the SDK's unrecorded retries would bill attempts nobody gets.
+    maxRetries: 0,
     outputSchema: ROUTER_OUTPUT,
     system: [{ type: 'text', text: guardSystem(input.shell, input.topics, input.metrics) }],
     messages: [

@@ -193,6 +193,7 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
       system,
       messages,
       tools,
+      maxRetries: 0,
     });
     model = response.model;
     usage = addLlmUsage(usage, response.usage);

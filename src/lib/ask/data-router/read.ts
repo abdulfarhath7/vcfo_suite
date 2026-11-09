@@ -210,6 +210,7 @@ async function askModel(deps: ModelReadDeps, content: Extract<LlmMessage['conten
     thinking: 'off',
     outputSchema: READ_SCHEMA,
     timeoutMs: READ_TIMEOUT_MS,
+    maxRetries: 0,
   });
   if (reply.stopReason === 'refusal') throw new ReadRefused('This file could not be read. Please type the details in instead.');
   const text = reply.content.flatMap((block) => (block.type === 'text' ? [block.text] : [])).join('');
