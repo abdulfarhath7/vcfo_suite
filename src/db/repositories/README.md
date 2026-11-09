@@ -60,7 +60,11 @@ this table, so re-check the migration before trusting a row.
 | audit_events | **read: all** | **read: owned/assigned engagements** | **own actor + assigned engagements** | own engagements | four-role + `20260529120000` + product |
 | ask_index_items | all | via owned engagement + firm-wide cards | via assigned engagement + firm-wide cards | own engagements, `client` / `both` cards only | `0047` (`ask-index.ts`) |
 | ask_saved_answers | staff rows | staff rows | staff rows | `client` rows only | `0047` (`ask-saved-answers.ts`) |
-| ask_changesets, ask_changeset_rows | the person it was prepared for; a card holding a manager's row, on an engagement in reach | same | the person it was prepared for | **none** (phase 7) | `ask-changesets.ts` |
+| ask_changesets, ask_changeset_rows | the person it was prepared for; a card holding a manager's row, on an engagement in reach | same | the person it was prepared for | the person it was prepared for, on an own engagement (client-portal actions) | `ask-changesets.ts` |
+| ask_usage_daily | super admin only (report); written by `system*` after every model call | **none** | **none** | **none** | `0047` (`ask-usage.ts`) |
+| ask metrics reads | firm-wide | owned engagements | assigned engagements | own engagements; tasks and reviews refused; invoices only to a sheet's manager and firm-wide admins | `ask-metrics.ts` |
+| reg_updates, reg_proposals, Watch sources | read; `isAdminOrManager` edits, publishes, rejects and decides | same | read; names only for engagements in scope | published non-staff updates through `listUpdatesForChat` only | `0047` (`reg-updates.ts`, `reg-proposals.ts`, `reg-sources.ts`) |
+| ask-proactive owner list | job only (`system*`); each owner's own AuthContext then does every read and card | | | **none** | `ask-proactive.ts` |
 | ask_attachments, ask_runs, ask_run_steps | own rows only | own rows only | own rows only | **none** for attachments; own runs | `ask-attachments.ts`, `ask-runs.ts` |
 | email_send_log | read | read | none | none | `20260806120000_email_send_log_seeds.sql` |
 | engagement_step_events | read: all | read: owned/assigned engagements | read: assigned engagements | **none** | product (G-13); written only inside `updateChecklistState`'s transaction |

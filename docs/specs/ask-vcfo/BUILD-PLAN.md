@@ -546,3 +546,39 @@ Phase 9, proactive:
   the code that applies a card. `prepare.test.ts` watches every action's `execute` and `undo` while the job runs.
 - `e2e/ask-proactive.spec.ts` needs a local Inngest dev server, and its header says how to start one. The server must be up
   first, because Playwright's own `webServer` runs `predev`, which starts Docker for the main checkout's containers.
+
+## Final gate, 9 November
+
+What shipped on branch `chatbot`, none of it merged to `main` or deployed:
+
+- The Answer engine (phases 0 to 2), the Do engine (phases 4, 5 and 7, with 109 actions in 13 areas), Watch (phases 3 and
+  6), the VCFO Assist hand-off (phase 8) and the overnight cards (phase 9), plus both review rounds.
+- `origin/main` is merged in with a merge commit. The only migration this branch adds is `0050_ask_row_edited`.
+  `docs/specs/ask-vcfo/DEPLOY-NOTES.md` lists every migration, the `vector` extension check, each flag's production
+  default and what to check before turning on `WATCH_ENABLED`, `ASK_ID_DOC_READING`, `ASK_ASSIST_HANDOFF_ENABLED` and
+  `ASK_PROACTIVE_ENABLED`.
+- Live model run on 9 November, under $0.30 in all:
+  - The golden set (`npm run eval:live`) passed 34 of 35 cases. The guard used 1,400 tokens a call against 1,607 on the
+    30 September baseline, and a generated answer 5,489 tokens against 10,965.
+  - The fill set passed and the knowledge set passed 18 of 18.
+  - The operations eval passed 23 of 23 with the live router, pick and agent loop. The three agent runs used 1 to 3
+    Sonnet turns each.
+  - The agent run, proactive and operations browser specs passed against a real Inngest dev server.
+  - "Remind me about the Form MGT-7 filing", asked by a lead on Kestrel, ran 3 Sonnet turns. It made no card, because
+    Kestrel has no MGT-7 filing yet, and it said so rather than inventing one. The run cost about $0.03.
+
+Still open:
+
+- The golden case `type-llp-spice-free-text` failed both live runs. Haiku cited step `pre-1` without calling a tool,
+  so the validator rejected the answer and the fallback line was shown. A prompt change needs its own eval round.
+- These browser specs fail on `main` as well, because with no saved setting the staff sidebar starts as the rail, so
+  the "Collapse sidebar" button and the folds are not on screen:
+  - the four `e2e/rail.spec.ts` tests
+  - `e2e/lead-manager-fold.spec.ts`
+  - the first test of `e2e/watch.spec.ts`
+- The undecided minimum wage coverage count in `src/lib/labour-registers/dataset.ts` (from `main`) counts every employee
+  with no decision. The comment in `readiness.ts` says that count is zero when no overtime was worked. The two
+  disagree, and that is for the labour registers owner to settle.
+- The Part B field bindings and a live MCA run wait on the filing work and the written CS opinion.
+- One shared word still locks a client when no project is on screen. Fixing it needs a product decision.
+- Inngest keys are not set on AWS, `0050_ask_row_edited` is not on RDS, and nothing here has run on App Runner.

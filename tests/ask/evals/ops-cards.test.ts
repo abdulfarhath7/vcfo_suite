@@ -12,9 +12,9 @@ import type { LlmProvider } from '@/lib/ask/provider';
  * write action goes preview, card, accept, and undo where it has one. Everything that would reach
  * someone is replaced, and any other network call fails, so this sends nothing to anyone.
  *
- * It changes demo rows freely, so it refuses any database that is not a local copy named `*_eval`:
- *   createdb -T vcfo_pack_ops vcfo_pack_ops_eval
- *   DATABASE_URL=postgresql://.../vcfo_pack_ops_eval ASK_EVAL_OPS=1 npx vitest run tests/ask/evals/ops-cards.test.ts
+ * It changes demo rows freely, so it refuses any database that is not a local copy named `*_eval`. The copy needs a held
+ * board meeting and a labour batch that is not attested (`docs/context/notes/ask-do.md` says how):
+ *   DATABASE_URL=postgresql://.../vcfo_demo_eval ASK_EVAL_OPS=1 npx vitest run tests/ask/evals/ops-cards.test.ts
  * With ASK_EVAL_LIVE=1 and a model key as well, the last suite drives the real router, pick and agent
  * loop, accepts each card and lets the run finish. A plain `npm run test` skips this file.
  */
