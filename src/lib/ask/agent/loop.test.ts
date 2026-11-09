@@ -391,6 +391,11 @@ describe('agent loop', () => {
     expect(answer).toMatch(/more work than one answer allows/);
     run = { ...run, status: 'running', turns: 0, inputTokens: 300000 };
     expect(await agentTurn('run-1')).toEqual({ kind: 'finished', status: 'over_budget' });
+    // An owner who lowers the run ceiling stops a run made under the old one.
+    run = { ...run, status: 'running', inputTokens: 30000 };
+    vi.stubEnv('ASK_RUN_MAX_TOKENS', '20000');
+    expect(await agentTurn('run-1')).toEqual({ kind: 'finished', status: 'over_budget' });
+    vi.unstubAllEnvs();
     run = { ...run, status: 'running', inputTokens: 0 };
     today = 99_000_000;
     expect(await agentTurn('run-1')).toEqual({ kind: 'finished', status: 'over_budget' });
