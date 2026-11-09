@@ -63,8 +63,11 @@ export async function refusing(run: () => Promise<ActionResult>): Promise<Action
   }
 }
 
-/** A value this chat shows masked. Saving it would overwrite the real number with the mask. */
-export const MASKED_VALUE = /^X{3,}[A-Z0-9]{4}$/i;
+/**
+ * A value that is, or holds, a form this chat shows masked: a number cut to its last four, or a hidden
+ * portal secret. Saving it would overwrite the real value with the mask.
+ */
+export const MASKED_VALUE = /(?<![A-Z0-9])X{3,}[A-Z0-9]{4}(?![A-Z0-9])|\[hidden\]/i;
 
 /** What an undo says when somebody has changed the record since the card saved it. */
 export const CHANGED_SINCE = 'This value was changed after it was saved, so it was left as it is.';

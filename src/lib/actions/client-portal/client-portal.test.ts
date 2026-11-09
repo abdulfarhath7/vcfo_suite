@@ -273,6 +273,15 @@ describe('what each one does', () => {
     expect(draft!.rows[0]!.displayNew).not.toContain('ABCDE1234F');
   });
 
+  it('never saves a masked number over the real one, alone or inside other words', async () => {
+    for (const pan of ['XXXXXX234F', 'xxxxxx234f', 'PAN XXXXXX234F as shown', 'XXXXXXXX1234 (Aadhaar)', '[hidden]']) {
+      await expect(preview('client-portal.saveDetails', { values: { pan } })).rejects.toThrow(/masked here/);
+      expect(await run('client-portal.saveDetails', { values: { pan } })).toEqual({ ok: false, error: expect.stringContaining('masked here') });
+    }
+    expect(inputs.saveSubjectFields).not.toHaveBeenCalled();
+    expect((await run('client-portal.saveDetails', { values: { pan: 'ABCDE1234F' } })).ok).toBe(true);
+  });
+
   it('refuses a detail the firm fills or nobody asked for', async () => {
     await expect(preview('client-portal.saveDetails', { values: { sbcOnly: '1' } })).rejects.toThrow(/firm fills/);
     await expect(preview('client-portal.saveDetails', { values: { turnover: '1', sbcOnly: '1' } })).rejects.toThrow(/firm fills/);
