@@ -6,11 +6,8 @@ import {
   systemUpsertFeedAnnouncements,
 } from '@/db/repositories/announcements';
 import { catalogCircularFeedCandidates } from '@/lib/notifications/announcement-portals';
-import {
-  fetchOfficialFeedXml,
-  parseRssOrAtom,
-  type AnnouncementSource,
-} from '@/lib/notifications/announcements';
+import { parseRssOrAtom, type AnnouncementSource } from '@/lib/notifications/announcements';
+import { fetchOfficialFeedXml } from '@/lib/notifications/public-host';
 import { withRunNow } from '@/jobs/dev-controls';
 import { askFlags } from '@/lib/ask/config';
 import { systemGetWatchSource } from '@/db/repositories/reg-sources';

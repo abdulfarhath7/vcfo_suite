@@ -2,6 +2,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetWatchFetchForTests, watchFetch, WatchBlockedError, MAX_PAGE_BYTES, WATCH_USER_AGENT } from '../fetch';
 
+const PUBLIC = [{ address: '164.100.78.1', family: 4 }];
+const lookup = vi.hoisted(() => vi.fn());
+vi.mock('node:dns/promises', () => ({ lookup: (...args: unknown[]) => lookup(...args) }));
+
 type Handler = (url: string, init: RequestInit) => Response;
 
 let calls: Array<{ url: string; headers: Record<string, string> }>;
@@ -32,6 +36,7 @@ const robotsOk = (url: string): Response | null => (url.endsWith('/robots.txt') 
 beforeEach(() => {
   calls = [];
   resetWatchFetchForTests();
+  lookup.mockReset().mockResolvedValue(PUBLIC);
   vi.useFakeTimers();
 });
 
@@ -100,11 +105,70 @@ describe('watchFetch', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it('reads a robots redirect to the home page as no robots file', async () => {
+  it('follows a robots redirect to another path and keeps the rules it finds there', async () => {
     mockFetch((url) =>
-      url.endsWith('/robots.txt') ? new Response(null, { status: 302, headers: { location: 'http://www.incometax.gov.in/iec/foportal' } }) : new Response('ok'),
+      url.endsWith('/en/robots.txt')
+        ? new Response('User-agent: *\nDisallow: /private\n')
+        : url.endsWith('/robots.txt')
+          ? new Response(null, { status: 301, headers: { location: '/en/robots.txt' } })
+          : new Response('ok'),
+    );
+    await expect(settled(watchFetch('https://www.sebi.gov.in/private/a'))).rejects.toThrow('robots_disallow');
+    expect(calls.map((c) => c.url)).toEqual(['https://www.sebi.gov.in/robots.txt', 'https://www.sebi.gov.in/en/robots.txt']);
+    expect((await settled(watchFetch('https://www.sebi.gov.in/open'))).status).toBe('ok');
+  });
+
+  it('reads a robots redirect to the home page as that page, which names no rules', async () => {
+    mockFetch((url) =>
+      url.endsWith('/robots.txt') ? new Response(null, { status: 302, headers: { location: '/iec/foportal' } }) : new Response('<html>home</html>'),
     );
     expect((await settled(watchFetch('https://www.incometax.gov.in/a'))).status).toBe('ok');
+  });
+
+  it('blocks the source when the robots redirects cannot be followed to an end', async () => {
+    const hops = (location: (n: number) => string) => {
+      let n = 0;
+      mockFetch((url) => (url.includes('robots') ? new Response(null, { status: 302, headers: { location: location((n += 1)) } }) : new Response('ok')));
+    };
+    hops((n) => `/robots-${n}.txt`);
+    await expect(settled(watchFetch('https://esic.gov.in/a'))).rejects.toThrow('robots_disallow');
+    expect(calls).toHaveLength(6);
+    for (const target of ['http://www.incometax.gov.in/iec/foportal', 'https://evil.example/robots.txt', 'https://esic.gov.in:8443/robots.txt']) {
+      resetWatchFetchForTests();
+      calls = [];
+      hops(() => target);
+      await expect(settled(watchFetch('https://esic.gov.in/a'))).rejects.toBeInstanceOf(WatchBlockedError);
+      expect(calls).toHaveLength(1);
+    }
+  });
+
+  it('leaves a host to manual intake when its crawl delay is longer than a check can wait', async () => {
+    mockFetch((url) => (url.endsWith('/robots.txt') ? new Response('User-agent: *\nCrawl-delay: 86400\n') : new Response('ok')));
+    await expect(settled(watchFetch('https://esic.gov.in/a'))).rejects.toThrow('robots_crawl_delay');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('reads no host that resolves to an address inside a network, robots file included', async () => {
+    mockFetch(() => new Response('ok'));
+    for (const address of ['169.254.169.254', '10.0.0.7', '127.0.0.1', '100.64.1.1', '::1', 'fd00:ec2::254', '::ffff:10.0.0.7', 'fe80::1', '224.0.0.1']) {
+      resetWatchFetchForTests();
+      lookup.mockResolvedValue([PUBLIC[0], { address, family: address.includes(':') ? 6 : 4 }]);
+      await expect(settled(watchFetch('https://old.esic.gov.in/a'))).rejects.toThrow('host_not_public');
+    }
+    expect(calls).toEqual([]);
+  });
+
+  it('checks the address again on every redirect hop', async () => {
+    lookup.mockImplementation(async (host: string) => (host === 'inside.sebi.gov.in' ? [{ address: '10.1.2.3', family: 4 }] : PUBLIC));
+    mockFetch((url) => robotsOk(url) ?? new Response(null, { status: 302, headers: { location: 'https://inside.sebi.gov.in/a' } }));
+    await expect(settled(watchFetch('https://www.sebi.gov.in/a'))).rejects.toThrow('host_not_public');
+    expect(calls.every((c) => !c.url.includes('inside'))).toBe(true);
+  });
+
+  it('refuses any port but the default one', async () => {
+    mockFetch(() => new Response('ok'));
+    await expect(settled(watchFetch('https://icsi.edu:8443/a'))).rejects.toThrow('invalid_feed_url');
+    expect((await settled(watchFetch('https://icsi.edu:443/a'))).status).toBe('ok');
   });
 
   it('checks every redirect hop against the allowlist', async () => {

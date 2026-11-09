@@ -447,7 +447,8 @@ export function assertSafeHttpsUrl(raw: string, kind: 'feed' | 'link' = 'link'):
   if (url.protocol !== 'https:') {
     throw new Error(kind === 'feed' ? 'feed_must_be_https' : 'link_must_be_https');
   }
-  if (url.username || url.password) {
+  // The URL parser drops the default port, so any port left is one the firm never reads from.
+  if (url.username || url.password || url.port) {
     throw new Error(kind === 'feed' ? 'invalid_feed_url' : 'invalid_link');
   }
   if (isPrivateOrLocalHost(url.hostname)) {
@@ -615,31 +616,4 @@ export function parseRssOrAtom(xml: string): ParsedFeedItem[] {
     out.push(item);
   }
   return out;
-}
-
-export async function fetchOfficialFeedXml(feedUrl: string): Promise<string> {
-  let current = assertSafeFeedUrl(feedUrl);
-  for (let hop = 0; hop < 4; hop++) {
-    const res = await fetch(current.href, {
-      redirect: 'manual',
-      headers: {
-        Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.4',
-        'User-Agent': 'VCFO-Suite/1.0 (firm announcement feeds)',
-      },
-      signal: AbortSignal.timeout(12_000),
-    });
-    if (res.status >= 300 && res.status < 400) {
-      const location = res.headers.get('location');
-      if (!location) throw new Error('feed_redirect_invalid');
-      current = assertSafeFeedUrl(new URL(location, current).href);
-      continue;
-    }
-    if (!res.ok) throw new Error(`feed_http_${res.status}`);
-    const buf = await res.arrayBuffer();
-    if (buf.byteLength > 512 * 1024) throw new Error('feed_too_large');
-    const text = new TextDecoder('utf-8', { fatal: false }).decode(buf).trim();
-    if (!text.includes('<')) throw new Error('feed_not_xml');
-    return text;
-  }
-  throw new Error('feed_too_many_redirects');
 }

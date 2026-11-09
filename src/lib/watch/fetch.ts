@@ -2,13 +2,14 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { assertSafeFeedUrl } from '@/lib/notifications/announcements';
+import { assertPublicHost } from '@/lib/notifications/public-host';
 import { ALLOW_ALL, DENY_ALL, parseRobots, robotsAllows, type RobotsRules } from './robots';
 
 /**
- * The only way Watch reads the web. Official allowlisted hosts over HTTPS, our real name in the
- * user agent, robots rules honoured, one request at a time per host with a gap between them, and a
- * size limit. A 403 or a robots refusal is `blocked`: the caller stops and the source goes to
- * manual intake. There is no retry, no rotation and no disguise, by the owner's rule.
+ * The only way Watch reads the web. Official allowlisted hosts over HTTPS on the default port, at
+ * public addresses only, our real name in the user agent, robots rules honoured, one request at a
+ * time per host with a gap between them, and a size limit. A 403, a robots refusal or a crawl delay
+ * too long to keep is `blocked`: the caller stops and the source goes to manual intake. There is no retry, no rotation and no disguise, by the owner's rule.
  */
 export const WATCH_USER_AGENT = 'VCFO-Suite/1.0 (official updates reader; +https://sbcllp.in)';
 
@@ -16,6 +17,10 @@ const TIMEOUT_MS = 25_000;
 const MIN_GAP_MS = 2_000;
 const ROBOTS_TTL_MS = 24 * 3_600_000;
 const MAX_HOPS = 4;
+/** RFC 9309 asks a crawler to follow at least five redirects to a robots file. */
+const MAX_ROBOTS_REDIRECTS = 5;
+/** A site asking for a longer wait than this between requests is left to manual intake, never read faster. */
+const MAX_CRAWL_DELAY_MS = 60_000;
 export const MAX_PAGE_BYTES = 3 * 1024 * 1024;
 export const MAX_PDF_BYTES = 15 * 1024 * 1024;
 
@@ -81,7 +86,8 @@ async function readCapped(res: Response, maxBytes: number): Promise<Buffer> {
   return Buffer.concat(parts);
 }
 
-function request(url: URL, headers: Record<string, string> = {}): Promise<Response> {
+async function request(url: URL, headers: Record<string, string> = {}): Promise<Response> {
+  await assertPublicHost(url);
   return fetch(url.href, {
     redirect: 'manual',
     headers: { 'User-Agent': WATCH_USER_AGENT, ...headers },
@@ -102,14 +108,18 @@ async function robotsFor(url: URL): Promise<RobotsRules> {
   if (cached && Date.now() - cached.at < ROBOTS_TTL_MS) return cached.rules;
   const rules = await onHostTurn(url.hostname, MIN_GAP_MS, async () => {
     let current = new URL('/robots.txt', url);
-    for (let hop = 0; hop < MAX_HOPS; hop++) {
+    for (let redirects = 0; ; redirects++) {
       const res = await request(current, { Accept: 'text/plain' });
-      const location = res.headers.get('location');
-      if (res.status >= 300 && res.status < 400 && location) {
-        const next = new URL(location, current);
-        // A redirect away from robots.txt, usually to the home page, means the site has no file.
-        if (next.pathname !== '/robots.txt') return ALLOW_ALL;
-        current = assertSafeFeedUrl(next.href);
+      if (res.status >= 300 && res.status < 400) {
+        // Redirects are followed to any path, as RFC 9309 says. One with no target, a sixth one, or one
+        // to an address Watch never reads leaves the rules unread, and unread rules allow nothing.
+        const location = res.headers.get('location');
+        if (!location || redirects === MAX_ROBOTS_REDIRECTS) return DENY_ALL;
+        try {
+          current = assertSafeFeedUrl(new URL(location, current).href);
+        } catch {
+          return DENY_ALL;
+        }
         continue;
       }
       if (res.ok) return parseRobots((await readCapped(res, 512 * 1024)).toString('utf8'));
@@ -118,14 +128,13 @@ async function robotsFor(url: URL): Promise<RobotsRules> {
       if (res.status >= 400 && res.status < 500 && res.status !== 429) return ALLOW_ALL;
       throw new Error(`robots_http_${res.status}`);
     }
-    throw new Error('robots_too_many_redirects');
   });
   robotsCache.set(url.hostname, { rules, at: Date.now() });
   return rules;
 }
 
 /**
- * GET one official URL. Every redirect hop passes the same host and robots checks. With `etag` or
+ * GET one official URL. Every redirect hop passes the same host, address and robots checks. With `etag` or
  * `lastModified` it asks conditionally and a 304 returns `not_modified`.
  */
 export async function watchFetch(
@@ -136,6 +145,7 @@ export async function watchFetch(
   for (let hop = 0; hop < MAX_HOPS; hop++) {
     const robots = await robotsFor(current);
     if (!robotsAllows(robots, current.pathname + current.search)) throw new WatchBlockedError('robots_disallow');
+    if ((robots.crawlDelayMs ?? 0) > MAX_CRAWL_DELAY_MS) throw new WatchBlockedError('robots_crawl_delay');
     const gap = Math.max(MIN_GAP_MS, robots.crawlDelayMs ?? 0);
     const target = current;
     const outcome = await onHostTurn(target.hostname, gap, async () => {
