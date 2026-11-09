@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { connected, respondWith } from '@/lib/notifications/__tests__/fake-https';
 import { resetWatchFetchForTests, watchFetch, WatchBlockedError, MAX_PAGE_BYTES, WATCH_USER_AGENT } from '../fetch';
 
 const PUBLIC = [{ address: '164.100.78.1', family: 4 }];
 const lookup = vi.hoisted(() => vi.fn());
 vi.mock('node:dns/promises', () => ({ lookup: (...args: unknown[]) => lookup(...args) }));
-
-type Handler = (url: string, init: RequestInit) => Response;
+vi.mock('node:https', () => import('@/lib/notifications/__tests__/fake-https'));
 
 let calls: Array<{ url: string; headers: Record<string, string> }>;
 
@@ -21,14 +21,11 @@ async function settled<T>(work: Promise<T>): Promise<T> {
   return tracked;
 }
 
-function mockFetch(handler: Handler) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string, init: RequestInit) => {
-      calls.push({ url, headers: init.headers as Record<string, string> });
-      return handler(url, init);
-    }),
-  );
+function mockFetch(handler: (url: string) => Response) {
+  respondWith((url, headers) => {
+    calls.push({ url, headers });
+    return handler(url);
+  });
 }
 
 const robotsOk = (url: string): Response | null => (url.endsWith('/robots.txt') ? new Response('User-agent: *\nAllow: /\n') : null);
@@ -42,7 +39,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
 describe('watchFetch', () => {
@@ -158,6 +154,14 @@ describe('watchFetch', () => {
     expect(calls).toEqual([]);
   });
 
+  it('connects to the addresses it checked, so a name that answers again with an inside address is not read', async () => {
+    lookup.mockResolvedValueOnce(PUBLIC).mockResolvedValueOnce(PUBLIC).mockResolvedValue([{ address: '169.254.169.254', family: 4 }]);
+    mockFetch((url) => robotsOk(url) ?? new Response('ok'));
+    expect((await settled(watchFetch('https://www.sebi.gov.in/a'))).status).toBe('ok');
+    expect(lookup).toHaveBeenCalledTimes(2);
+    expect(connected).toEqual(['164.100.78.1', '164.100.78.1']);
+  });
+
   it('checks the address again on every redirect hop', async () => {
     lookup.mockImplementation(async (host: string) => (host === 'inside.sebi.gov.in' ? [{ address: '10.1.2.3', family: 4 }] : PUBLIC));
     mockFetch((url) => robotsOk(url) ?? new Response(null, { status: 302, headers: { location: 'https://inside.sebi.gov.in/a' } }));
@@ -187,17 +191,14 @@ describe('watchFetch', () => {
     let active = 0;
     let most = 0;
     const times: number[] = [];
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        active += 1;
-        most = Math.max(most, active);
-        times.push(Date.now());
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        active -= 1;
-        return robotsOk(url) ?? new Response('ok');
-      }),
-    );
+    respondWith(async (url) => {
+      active += 1;
+      most = Math.max(most, active);
+      times.push(Date.now());
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active -= 1;
+      return robotsOk(url) ?? new Response('ok');
+    });
     await settled(Promise.all([watchFetch('https://esic.gov.in/a'), watchFetch('https://esic.gov.in/b')]));
     expect(most).toBe(1);
     expect(times.at(-1)! - times.at(-2)!).toBeGreaterThanOrEqual(1900);

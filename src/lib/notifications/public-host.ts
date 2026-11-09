@@ -1,7 +1,9 @@
 import 'server-only';
 
 import { lookup } from 'node:dns/promises';
+import { get, type RequestOptions } from 'node:https';
 import { BlockList, isIP } from 'node:net';
+import { Readable } from 'node:stream';
 import { assertSafeFeedUrl } from './announcements';
 
 /**
@@ -28,28 +30,60 @@ export function isPublicAddress(address: string): boolean {
 }
 
 /**
- * Refuses a URL whose host is, or resolves to, any address that is not public. Every request and
- * every redirect hop calls this, so a listed name that is repointed inside the network is not read.
+ * The socket's own name lookup: every address the name resolves to must be public, and the socket
+ * connects to the addresses checked here. A check made before the request would let the connection
+ * resolve the name again, so a name repointed inside the network between the two (DNS rebinding)
+ * would be read.
  */
-export async function assertPublicHost(url: URL): Promise<void> {
+export const publicLookup: RequestOptions['lookup'] = (hostname, options, callback) => {
+  lookup(hostname, { all: true, verbatim: true }).then(
+    (entries) => {
+      if (entries.length === 0 || !entries.every((entry) => isPublicAddress(entry.address))) return callback(new Error('host_not_public'), '', 4);
+      if (options.all) return (callback as unknown as (err: null, list: typeof entries) => void)(null, entries);
+      callback(null, entries[0]!.address, entries[0]!.family);
+    },
+    (err: NodeJS.ErrnoException) => callback(err, '', 4),
+  );
+};
+
+/** Bodies a Response refuses to carry. */
+const NULL_BODY = new Set([204, 205, 304]);
+
+/**
+ * GET over HTTPS at a public address only, without following redirects. An address written in the URL
+ * is checked here, since a socket skips the lookup for one; a name is checked by `publicLookup`.
+ */
+export function publicFetch(url: URL, headers: Record<string, string>, timeoutMs: number): Promise<Response> {
   const host = url.hostname.replace(/^\[|\]$/g, '');
-  const addresses = isIP(host) ? [host] : (await lookup(host, { all: true, verbatim: true })).map((entry) => entry.address);
-  if (addresses.length === 0 || !addresses.every(isPublicAddress)) throw new Error('host_not_public');
+  if (isIP(host) && !isPublicAddress(host)) return Promise.reject(new Error('host_not_public'));
+  return new Promise((resolve, reject) => {
+    get(url, { headers, lookup: publicLookup, agent: false, signal: AbortSignal.timeout(timeoutMs) }, (res) => {
+      try {
+        const status = res.statusCode ?? 0;
+        const pairs: [string, string][] = [];
+        for (let i = 0; i < res.rawHeaders.length; i += 2) pairs.push([res.rawHeaders[i]!, res.rawHeaders[i + 1]!]);
+        const body = NULL_BODY.has(status) ? null : (Readable.toWeb(res) as ReadableStream<Uint8Array>);
+        resolve(new Response(body, { status, headers: pairs }));
+      } catch (err) {
+        res.destroy();
+        reject(err);
+      }
+    }).on('error', reject);
+  });
 }
 
 /** An official RSS or Atom feed, following at most three redirects, each one checked again. */
 export async function fetchOfficialFeedXml(feedUrl: string): Promise<string> {
   let current = assertSafeFeedUrl(feedUrl);
   for (let hop = 0; hop < 4; hop++) {
-    await assertPublicHost(current);
-    const res = await fetch(current.href, {
-      redirect: 'manual',
-      headers: {
+    const res = await publicFetch(
+      current,
+      {
         Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.4',
         'User-Agent': 'VCFO-Suite/1.0 (firm announcement feeds)',
       },
-      signal: AbortSignal.timeout(12_000),
-    });
+      12_000,
+    );
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location');
       if (!location) throw new Error('feed_redirect_invalid');

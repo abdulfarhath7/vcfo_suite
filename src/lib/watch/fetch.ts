@@ -2,7 +2,7 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { assertSafeFeedUrl } from '@/lib/notifications/announcements';
-import { assertPublicHost } from '@/lib/notifications/public-host';
+import { publicFetch } from '@/lib/notifications/public-host';
 import { ALLOW_ALL, DENY_ALL, parseRobots, robotsAllows, type RobotsRules } from './robots';
 
 /**
@@ -86,13 +86,8 @@ async function readCapped(res: Response, maxBytes: number): Promise<Buffer> {
   return Buffer.concat(parts);
 }
 
-async function request(url: URL, headers: Record<string, string> = {}): Promise<Response> {
-  await assertPublicHost(url);
-  return fetch(url.href, {
-    redirect: 'manual',
-    headers: { 'User-Agent': WATCH_USER_AGENT, ...headers },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+function request(url: URL, headers: Record<string, string> = {}): Promise<Response> {
+  return publicFetch(url, { 'User-Agent': WATCH_USER_AGENT, ...headers }, TIMEOUT_MS);
 }
 
 const robotsCache = new Map<string, { rules: RobotsRules; at: number }>();
