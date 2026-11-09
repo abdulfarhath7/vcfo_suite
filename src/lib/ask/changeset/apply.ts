@@ -5,6 +5,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { systemNoteAskRunDecision } from '@/db/repositories/ask-runs';
 import {
   claimAskChangeset,
+  claimAskChangesetRow,
   getAskChangesetForDecision,
   rowNeedsManager,
   setAskChangesetStatus,
@@ -41,7 +42,8 @@ export class ChangesetRefused extends Error {
 }
 
 const OPEN: readonly string[] = ['proposed', 'partly_applied'];
-const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
+const OPEN_ROWS = ['proposed', 'edited', 'accepted', 'held', 'failed'] as const;
+const OPEN_ROW: ReadonlySet<string> = new Set(OPEN_ROWS);
 
 /** Who may approve one row. Undo takes the same right, row by row, whoever clicked last on the card. */
 export function canDecideRow(found: Pick<ChangesetAccess, 'owner' | 'manager'>, row: Pick<AskChangesetRowRow, 'target'>): boolean {
@@ -68,7 +70,7 @@ const inputOf = (row: AskChangesetRowRow) => ({ ...row.target, value: row.newVal
 /** Runs every still-open row's rules again, in order, with earlier rows' answers counted. */
 async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRow[]) {
   const pending: Record<string, string> = {};
-  const updates: Parameters<typeof updateAskChangesetRows>[2][number][] = [];
+  const updates: Array<Omit<Parameters<typeof updateAskChangesetRows>[2][number], 'from'>> = [];
   for (const row of rows) {
     if (row.status === 'applied' || row.status === 'undone' || row.status === 'skipped') continue;
     const action = await getAction(row.action);
@@ -119,7 +121,7 @@ export async function editChangesetRow(ctx: AuthContext, id: string, rowId: stri
   await updateAskChangesetRows(
     ctx,
     found,
-    updates.map((update) => (update.id === rowId ? { ...update, patch: { ...update.patch, newValue: checked.value, editedAt: now } } : update)),
+    updates.map((update) => ({ ...update, from: OPEN_ROWS, ...(update.id === rowId ? { patch: { ...update.patch, newValue: checked.value, editedAt: now } } : {}) })),
     changesetHash(edited.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue as JsonValue }))),
   );
 }
@@ -149,30 +151,36 @@ export async function decideChangeset(ctx: AuthContext, id: string, input: { con
   const result: DecisionResult = { applied: 0, failed: 0, held: 0 };
   const statusById = new Map(found.rows.map((row) => [row.id, row.status]));
   const fields: string[] = [];
-  for (const row of wanted) {
-    const outcome = await applyRow(actx, row, found.changeset);
-    await updateAskChangesetRows(ctx, found, [{ id: row.id, patch: outcome.patch }]);
-    statusById.set(row.id, outcome.patch.status!);
-    if (outcome.patch.status === 'applied') {
-      result.applied += 1;
-      fields.push(row.target.stepId ? `${String(row.target.stepId)}/${String(row.target.fieldId)}` : row.action);
-    } else if (outcome.patch.status === 'held') result.held += 1;
-    else result.failed += 1;
+  try {
+    for (const row of wanted) {
+      // Another click that read this card at the same moment holds the row, or has already run it.
+      if (!(await claimAskChangesetRow(ctx, found, row.id, OPEN_ROWS))) continue;
+      statusById.set(row.id, 'applying');
+      const outcome = await applyRow(actx, row, found.changeset);
+      await updateAskChangesetRows(ctx, found, [{ id: row.id, from: ['applying'], patch: outcome.patch }]);
+      statusById.set(row.id, outcome.patch.status!);
+      if (outcome.patch.status === 'applied') {
+        result.applied += 1;
+        fields.push(row.target.stepId ? `${String(row.target.stepId)}/${String(row.target.fieldId)}` : row.action);
+      } else if (outcome.patch.status === 'held') result.held += 1;
+      else result.failed += 1;
+    }
+  } finally {
+    // Whatever stopped the loop, the card leaves `approved`, so it can be decided again and its run is told.
+    const remaining = [...statusById.values()].some((status) => OPEN_ROW.has(status));
+    const status = result.applied === 0 ? (found.changeset.status === 'proposed' ? 'proposed' : 'partly_applied') : remaining ? 'partly_applied' : 'applied';
+    await setAskChangesetStatus(ctx, found, status, result.applied > 0 ? { appliedAt: now } : {});
+    if (found.changeset.engagementId && result.applied > 0) {
+      await recordAuditEvent(ctx, {
+        engagementId: found.changeset.engagementId,
+        action: 'ask.changeset.applied',
+        summary: `Saved ${result.applied} value${result.applied === 1 ? '' : 's'} from an Ask VCFO card`,
+        metadata: { via: 'ask', changesetId: id, runId: found.changeset.runId, fields },
+        result: 'ok',
+      });
+    }
+    await announceDecision(found, status !== 'partly_applied' && status !== 'proposed');
   }
-
-  const remaining = [...statusById.values()].some((status) => OPEN_ROW.has(status) || status === 'failed');
-  const status = result.applied === 0 ? (found.changeset.status === 'proposed' ? 'proposed' : 'partly_applied') : remaining ? 'partly_applied' : 'applied';
-  await setAskChangesetStatus(ctx, found, status, result.applied > 0 ? { appliedAt: now } : {});
-  if (found.changeset.engagementId && result.applied > 0) {
-    await recordAuditEvent(ctx, {
-      engagementId: found.changeset.engagementId,
-      action: 'ask.changeset.applied',
-      summary: `Saved ${result.applied} value${result.applied === 1 ? '' : 's'} from an Ask VCFO card`,
-      metadata: { via: 'ask', changesetId: id, runId: found.changeset.runId, fields },
-      result: 'ok',
-    });
-  }
-  await announceDecision(found, status !== 'partly_applied' && status !== 'proposed');
   return result;
 }
 
@@ -245,7 +253,7 @@ export async function rejectChangeset(ctx: AuthContext, id: string): Promise<voi
   // Rejecting saves nothing, so the person who asked may withdraw every row; anyone else closes only the rows they could decide.
   const closing = leftOpen.filter((r) => found.owner || canDecideRow(found, r));
   if (closing.length === 0 && leftOpen.length > 0) throw new ChangesetRefused('This card is not yours to decide.', 403);
-  await updateAskChangesetRows(ctx, found, closing.map((r) => ({ id: r.id, patch: { status: 'skipped' } })));
+  await updateAskChangesetRows(ctx, found, closing.map((r) => ({ id: r.id, from: OPEN_ROWS, patch: { status: 'skipped' } })));
   const settled = closing.length === leftOpen.length;
   if (settled) await setAskChangesetStatus(ctx, found, found.rows.some((r) => r.status === 'applied') ? 'partly_applied' : 'rejected', { decidedAt: now });
   await announceDecision(found, settled);
@@ -271,10 +279,10 @@ export async function undoChangeset(ctx: AuthContext, id: string): Promise<{ und
     const outcome = action?.undo ? await action.undo(actx, row.undoData) : { ok: false as const, error: 'This row cannot be undone.' };
     if (outcome.ok === true) {
       undone += 1;
-      await updateAskChangesetRows(ctx, found, [{ id: row.id, patch: { status: 'undone' } }]);
+      await updateAskChangesetRows(ctx, found, [{ id: row.id, from: ['applied'], patch: { status: 'undone' } }]);
     } else {
       kept.push(`${row.label}: ${outcome.error}`);
-      await updateAskChangesetRows(ctx, found, [{ id: row.id, patch: { error: outcome.error } }]);
+      await updateAskChangesetRows(ctx, found, [{ id: row.id, from: ['applied'], patch: { error: outcome.error } }]);
     }
   }
   if (kept.length === 0 && mine.length === saved.length) await setAskChangesetStatus(ctx, found, 'undone', { undoneAt: now });

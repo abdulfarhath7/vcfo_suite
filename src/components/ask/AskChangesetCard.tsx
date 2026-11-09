@@ -16,6 +16,7 @@ import type { ChangesetRowView, ChangesetView } from '@/lib/ask/changeset/view-t
 const ROW_WORD: Partial<Record<ChangesetRowView['status'], { word: string; tone: ChipTone }>> = {
   applied: { word: 'Saved', tone: 'ok' },
   undone: { word: 'Undone', tone: 'idle' },
+  applying: { word: 'Saving', tone: 'prog' },
   failed: { word: 'Not saved', tone: 'bad' },
   skipped: { word: 'Skipped', tone: 'idle' },
 };

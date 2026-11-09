@@ -156,18 +156,33 @@ export async function setAskChangesetStatus(
     .where(eq(askChangesets.id, found.changeset.id));
 }
 
+/**
+ * One click's hold on one row: it moves the row to `applying` only from a status it may be decided
+ * in, so of two requests that both read the row as open, one applies it and the other skips it.
+ */
+export async function claimAskChangesetRow(ctx: AuthContext, found: ChangesetAccess, rowId: string, from: readonly string[]): Promise<boolean> {
+  assertDecider(ctx, found);
+  const rows = await db
+    .update(askChangesetRows)
+    .set({ status: 'applying' })
+    .where(and(eq(askChangesetRows.id, rowId), eq(askChangesetRows.changesetId, found.changeset.id), inArray(askChangesetRows.status, [...from])))
+    .returning({ id: askChangesetRows.id });
+  return rows.length > 0;
+}
+
+/** Each update names the statuses it may write over, so a copy read before another click cannot undo that click's work. */
 export async function updateAskChangesetRows(
   ctx: AuthContext,
   found: ChangesetAccess,
-  updates: ReadonlyArray<{ id: string; patch: Partial<Pick<AskChangesetRowRow, 'status' | 'checks' | 'heldReason' | 'error' | 'undoData' | 'appliedAt' | 'newValue' | 'oldValue' | 'displayOld' | 'displayNew' | 'editedAt'>> }>,
+  updates: ReadonlyArray<{ id: string; from: readonly string[]; patch: Partial<Pick<AskChangesetRowRow, 'status' | 'checks' | 'heldReason' | 'error' | 'undoData' | 'appliedAt' | 'newValue' | 'oldValue' | 'displayOld' | 'displayNew' | 'editedAt'>> }>,
   contentHash?: string,
 ): Promise<void> {
   assertDecider(ctx, found);
-  for (const { id, patch } of updates) {
+  for (const { id, from, patch } of updates) {
     await db
       .update(askChangesetRows)
       .set(patch)
-      .where(and(eq(askChangesetRows.id, id), eq(askChangesetRows.changesetId, found.changeset.id)));
+      .where(and(eq(askChangesetRows.id, id), eq(askChangesetRows.changesetId, found.changeset.id), inArray(askChangesetRows.status, [...from])));
   }
   if (contentHash) await db.update(askChangesets).set({ contentHash }).where(eq(askChangesets.id, found.changeset.id));
 }

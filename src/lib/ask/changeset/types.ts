@@ -22,6 +22,8 @@ export const CHANGESET_ROW_STATUSES = [
   'edited',
   'skipped',
   'held',
+  /** Held by one click while its action runs, so a second click cannot run it again. */
+  'applying',
   'applied',
   'failed',
   'undone',

@@ -24,12 +24,14 @@ vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => sendEven
 vi.mock('@/lib/actions/registry', () => ({ getAction: async (name: string) => actions[name] ?? null }));
 
 const claim = vi.fn();
+const claimRow = vi.fn();
 const setStatus = vi.fn();
 const updateRows = vi.fn();
 let found: unknown = null;
 vi.mock('@/db/repositories/ask-changesets', () => ({
   getAskChangesetForDecision: vi.fn(async () => found),
   claimAskChangeset: (...a: unknown[]) => claim(...a),
+  claimAskChangesetRow: (...a: unknown[]) => claimRow(...a),
   setAskChangesetStatus: (...a: unknown[]) => setStatus(...a),
   updateAskChangesetRows: (...a: unknown[]) => updateRows(...a),
   rowNeedsManager: (row: { target: { needsManager?: boolean } }) => row.target.needsManager === true,
@@ -71,6 +73,7 @@ beforeEach(() => {
   actions['checklist.setResponse'] = action;
   action.tier = 'T2';
   claim.mockResolvedValue(true);
+  claimRow.mockResolvedValue(true);
   recheck.mockResolvedValue(passes);
   execute.mockResolvedValue({ ok: true, summary: 'saved', undo: { previous: '' } });
   undo.mockResolvedValue({ ok: true, summary: 'undone' });
@@ -108,6 +111,23 @@ describe('decideChangeset', () => {
     claim.mockResolvedValue(false);
     await expect(decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] })).rejects.toThrow(/already been decided/);
     expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('runs a row only once when two clicks read the card at the same moment', async () => {
+    const hash = setCard([makeRow('a'), makeRow('b')]);
+    claimRow.mockImplementation(async (_c: unknown, _f: unknown, rowId: string) => rowId === 'b');
+    expect(await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a', 'b'] })).toEqual({ applied: 1, failed: 0, held: 0 });
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(claimRow.mock.calls.map((call) => call[3])).toEqual([expect.arrayContaining(['proposed', 'failed']), expect.arrayContaining(['proposed', 'failed'])]);
+    expect(updateRows.mock.calls).toEqual([[lead, found, [{ id: 'b', from: ['applying'], patch: expect.objectContaining({ status: 'applied' }) }]]]);
+  });
+
+  it('never leaves a card at approved when saving a row\'s result fails', async () => {
+    const hash = setCard([makeRow('a')]);
+    updateRows.mockRejectedValueOnce(new Error('database down'));
+    await expect(decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a'] })).rejects.toThrow('database down');
+    expect(setStatus.mock.calls[0]![2]).toBe('proposed');
+    expect(noteDecision).toHaveBeenCalled();
   });
 
   it('checks again at the click: a step locked since the proposal holds the row', async () => {
@@ -171,14 +191,14 @@ describe('decideChangeset', () => {
     setCard([makeRow('a')]);
     noteDecision.mockResolvedValueOnce('agent');
     await rejectChangeset(lead, 'cs-1');
-    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', patch: { status: 'skipped' } }]);
+    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', from: expect.arrayContaining(['proposed', 'failed']), patch: { status: 'skipped' } }]);
     expect(sendEvent).toHaveBeenCalledTimes(1);
   });
 
   it('lets a manager reject only the rows a manager decides, and leaves the lead\'s own rows open', async () => {
     setCard([makeRow('a', { target: { stepId: 'pre-2', fieldId: 'a', needsManager: true } }), makeRow('b')], { owner: false, manager: true, viewerId: 'mgr-1' });
     await rejectChangeset(manager, 'cs-1');
-    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', patch: { status: 'skipped' } }]);
+    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', from: expect.arrayContaining(['proposed', 'failed']), patch: { status: 'skipped' } }]);
     expect(setStatus).not.toHaveBeenCalled();
     expect(noteDecision).toHaveBeenCalledWith('run-1', false);
     // The lead who asked may still withdraw every row, the manager's one included.
