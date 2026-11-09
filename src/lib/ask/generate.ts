@@ -243,6 +243,8 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
         }
         continue;
       }
+      // Over the budget, no tool runs that only leads to another round.
+      if (over) continue;
       const tool = byName.get(use.name);
       const args = (use.input ?? {}) as Record<string, unknown>;
       toolCalls.push({ name: use.name, args });

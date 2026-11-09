@@ -42,7 +42,7 @@ describe('the answer budget', () => {
   it('counts cache writes, so a reply that only writes the cache can use up the budget', async () => {
     const out = await generateAnswer(inputWith([reply([lookUp], usage(100, 2000)), reply([render], usage(100))], 1000));
     expect(out.result).toMatchObject({ ok: false, overBudget: true });
-    expect(out.toolCalls).toEqual([{ name: 'lookUp', args: {} }]);
+    expect(out.toolCalls).toEqual([]);
   });
 
   it('stops a cut-off reply over the budget instead of asking again with more room', async () => {
