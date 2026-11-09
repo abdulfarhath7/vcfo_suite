@@ -49,9 +49,11 @@ function op(name: string) {
   };
 }
 
-vi.mock('@/db/client', () => ({
-  db: { select: op('select'), insert: op('insert'), update: op('update'), delete: op('delete') },
-}));
+vi.mock('@/db/client', () => {
+  const db: Record<string, unknown> = { select: op('select'), insert: op('insert'), update: op('update'), delete: op('delete') };
+  db.transaction = (work: (tx: unknown) => unknown) => work(db);
+  return { db };
+});
 
 const assertEngagementAccess = vi.fn();
 vi.mock('@/db/repositories/engagements', async () => {
@@ -350,6 +352,31 @@ describe('indexMilestoneUpload (P-575, P-593)', () => {
     results = [[], [docRow(OWN, { objectKey: path })]];
     await repo.indexMilestoneUpload(ctx('manager'), input(OWN, path, 'vault'));
     expect(calls.some((c) => c.op === 'update')).toBe(false);
+  });
+});
+
+describe('withdrawMilestoneUpload', () => {
+  it('soft deletes the file a card saved and makes the file it replaced current again', async () => {
+    results = [[{ id: DOC }], []];
+    expect(await repo.withdrawMilestoneUpload(ctx('client'), OWN, PATH_OWN)).toBe(true);
+    const [deleted, restored] = writes();
+    expect(deleted!.set).toMatchObject({ deletedBy: 'user-client' });
+    expect(dialect.sqlToQuery(deleted!.where!).params).toEqual([OWN, PATH_OWN, 'user-client']);
+    expect(restored!.set).toEqual({ replacedAt: null, replacedById: null });
+    expect(dialect.sqlToQuery(restored!.where!).params).toEqual([OWN, DOC]);
+  });
+
+  it('lets a manager take back a file someone else uploaded', async () => {
+    results = [[{ id: DOC }], []];
+    await repo.withdrawMilestoneUpload(ctx('manager'), OWN, PATH_OWN);
+    expect(dialect.sqlToQuery(writes()[0]!.where!).params).toEqual([OWN, PATH_OWN]);
+  });
+
+  it('leaves a file a step still holds, or one on another engagement', async () => {
+    expect(await repo.withdrawMilestoneUpload(ctx('intern'), OTHER, PATH_OTHER)).toBe(false);
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: { id: OWN, checklistState: { s1: { responses: { pan_card: PATH_OWN } } } } });
+    expect(await repo.withdrawMilestoneUpload(ctx('intern'), OWN, PATH_OWN)).toBe(false);
+    expect(writes()).toHaveLength(0);
   });
 });
 

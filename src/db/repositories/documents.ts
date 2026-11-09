@@ -847,6 +847,34 @@ export async function indexMilestoneUpload(
   return mapRow(row);
 }
 
+/**
+ * Takes back a step file a review card saved, once its undo has put the step's old answer back. The
+ * vault row is soft deleted, as a vault delete is, and the file it replaced is current again. Only the
+ * person who uploaded it, or an admin or manager, may, and never while a step still holds it.
+ */
+export async function withdrawMilestoneUpload(ctx: AuthContext, engagementId: string, objectKey: string): Promise<boolean> {
+  if (ctx.role === 'developer' || ctx.role === 'partner') throw new Error('Upload index is not permitted for this role');
+  const access = await assertEngagementAccess(ctx, engagementDbId(engagementId));
+  if (!access.ok || checklistHoldsObject(access.row.checklistState, objectKey)) return false;
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(documents)
+      .set({ deletedAt: new Date(), deletedBy: ctx.userId })
+      .where(
+        and(
+          eq(documents.engagementId, access.dbId),
+          eq(documents.objectKey, objectKey),
+          isNull(documents.deletedAt),
+          ...(isAdminOrManager(ctx.role) ? [] : [eq(documents.uploadedBy, ctx.userId)]),
+        ),
+      )
+      .returning({ id: documents.id });
+    if (!row) return false;
+    await tx.update(documents).set({ replacedAt: null, replacedById: null }).where(and(eq(documents.engagementId, access.dbId), eq(documents.replacedById, row.id)));
+    return true;
+  });
+}
+
 /** True when the engagement's checklist still points at this object (the step's current file). */
 function checklistHoldsObject(checklistState: unknown, objectKey: string): boolean {
   if (!checklistState || !objectKey) return false;

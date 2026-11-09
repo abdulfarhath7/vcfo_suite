@@ -9,6 +9,7 @@ import { clientAttachRequestedFile, clientUndoRequestedFile, FileRequestError, l
 import { getSubjectInputs, readSubjectFieldRows, restoreSubjectFields, saveSubjectFields, type SubjectFieldRow } from '@/db/repositories/compliance-inputs';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
+import { withdrawMilestoneUpload } from '@/db/repositories/documents';
 import type { ChangesetRecipient } from '@/lib/ask/changeset/types';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
@@ -266,12 +267,13 @@ export const attachRequestedFile = defineAction({
         if (error instanceof FileRequestError) return { ok: false, error: 'This request is no longer open.' };
         throw error;
       }
-      return { ok: true, summary: `Added ${stored.fileName} for ${request.label}.`, undo: { stepId: request.stepId, requestId: request.id } };
+      return { ok: true, summary: `Added ${stored.fileName} for ${request.label}.`, undo: { stepId: request.stepId, requestId: request.id, path: stored.path } };
     }),
   undo: (actx, raw) =>
     refusing(async () => {
-      const { stepId, requestId } = raw as { stepId: string; requestId: string };
+      const { stepId, requestId, path } = raw as { stepId: string; requestId: string; path?: string };
       await clientUndoRequestedFile(actx.auth, lockedClient(actx), stepId, requestId);
+      if (path) await withdrawMilestoneUpload(actx.auth, lockedClient(actx), path);
       return { ok: true, summary: 'Took the file back. The request is open again.' };
     }),
 });

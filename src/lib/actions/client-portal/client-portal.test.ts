@@ -69,8 +69,10 @@ const change = { requestClientStepChange: vi.fn(async () => ({ request: { stepTi
 vi.mock('@/lib/client/request-step-change', () => change);
 const submit = { submitDirectStep: vi.fn(async () => ({ outcome: 'completed', email: null }) as unknown) };
 vi.mock('@/lib/incorporation/submit-direct-step', () => submit);
-vi.mock('@/lib/incorporation/apply-checklist-patch', () => ({ applyChecklistPatch: vi.fn(), ChecklistPatchRefused: class extends Error {} }));
-vi.mock('@/db/repositories/documents', () => ({ indexMilestoneUpload: vi.fn(async () => ({})) }));
+const patched = { applyChecklistPatch: vi.fn(), ChecklistPatchRefused: class extends Error {} };
+vi.mock('@/lib/incorporation/apply-checklist-patch', () => patched);
+const vault = { indexMilestoneUpload: vi.fn(async () => ({})), withdrawMilestoneUpload: vi.fn(async () => true) };
+vi.mock('@/db/repositories/documents', () => vault);
 const storage = { getObjectBuffer: vi.fn(async () => Buffer.from('%PDF') as Buffer | null), putObject: vi.fn(async () => undefined), bucketKey: (bucket: string, key: string) => `${bucket}/${key}` };
 vi.mock('@/storage/s3', () => storage);
 
@@ -329,6 +331,20 @@ describe('what each one does', () => {
     const back = await byName('client-portal.attachRequestedFile').undo!(actx(), undoOf(outcome));
     expect(back.ok).toBe(true);
     expect(incorporation.clientUndoRequestedFile).toHaveBeenCalledTimes(1);
+    expect(vault.withdrawMilestoneUpload).toHaveBeenCalledWith(auth(), OWN, (stored[3] as { path: string }).path);
+  });
+
+  it('takes an undone answer file back out of the vault, and leaves a typed answer\'s undo at the step', async () => {
+    patched.applyChecklistPatch.mockImplementation(async (_ctx: unknown, _id: string, stepId: string, patch: { responses: Record<string, string> }) => ({ checklistState: { [stepId]: { responses: patch.responses } } }));
+    for (const [name, file] of [['client-portal.attachFile', true], ['client-portal.setAnswer', false]] as const) {
+      vault.withdrawMilestoneUpload.mockClear();
+      const outcome = await run(name);
+      const applied = (undoOf(outcome) as { applied: string }).applied;
+      engagements.checklistStateFromRow.mockReturnValueOnce({ 'pre-15': { responses: { x: applied } } } as never);
+      expect(await byName(name).undo!(actx(), undoOf(outcome))).toMatchObject({ ok: true });
+      if (file) expect(vault.withdrawMilestoneUpload).toHaveBeenCalledWith(auth(), OWN, applied);
+      else expect(vault.withdrawMilestoneUpload).not.toHaveBeenCalled();
+    }
   });
 
   it('says so when a requested file was closed since the card was made', async () => {

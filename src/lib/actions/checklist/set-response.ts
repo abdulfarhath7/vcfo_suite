@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { AuthContext } from '@/auth/guards';
 import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
 import { getOwnAskAttachments } from '@/db/repositories/ask-attachments';
-import { indexMilestoneUpload } from '@/db/repositories/documents';
+import { indexMilestoneUpload, withdrawMilestoneUpload } from '@/db/repositories/documents';
 import { MILESTONE_DOCUMENTS_BUCKET, milestoneDocumentObjectPath } from '@/lib/documents/milestone-document-storage';
 import { applyChecklistPatch, ChecklistPatchRefused } from '@/lib/incorporation/apply-checklist-patch';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -38,7 +38,8 @@ const targetInput = z.object({
 const setInput = targetInput.extend({ value: z.string() });
 const attachInput = targetInput.extend({ attachmentId: z.string().uuid(), value: z.string() });
 
-type UndoData = { engagementId: string; stepId: string; key: string; previous: string; applied: string; group?: string; entryId?: string; addedEntry?: boolean };
+/** `file` marks a saved file, which the undo also takes back out of the vault. */
+type UndoData = { engagementId: string; stepId: string; key: string; previous: string; applied: string; group?: string; entryId?: string; addedEntry?: boolean; file?: boolean };
 
 async function loadRow(auth: AuthContext, engagementId: string) {
   const row = await getEngagementById(auth, engagementDbId(engagementId));
@@ -64,7 +65,7 @@ async function recheck(actx: ActionContext, input: ResponseTarget & { value: str
   };
 }
 
-async function save(actx: ActionContext, input: ResponseTarget, value: string): Promise<ActionResult> {
+async function save(actx: ActionContext, input: ResponseTarget, value: string, file = false): Promise<ActionResult> {
   const loaded = await loadRow(actx.auth, input.engagementId);
   if (!loaded) return { ok: false, error: 'This project is not available.' };
   const saved = loaded.state[input.stepId]?.responses ?? {};
@@ -92,6 +93,7 @@ async function save(actx: ActionContext, input: ResponseTarget, value: string): 
     previous: saved[key] ?? '',
     applied: value,
     ...(input.group && input.entryId ? { group: input.group, entryId: input.entryId, addedEntry } : {}),
+    ...(file ? { file } : {}),
   };
   return { ok: true, summary: `Saved ${key}`, undo };
 }
@@ -120,6 +122,7 @@ async function undoSave(actx: ActionContext, raw: JsonValue): Promise<ActionResu
     if (error instanceof ChecklistPatchRefused) return { ok: false, error: error.message };
     throw error;
   }
+  if (undo.file) await withdrawMilestoneUpload(actx.auth, undo.engagementId, undo.applied);
   return { ok: true, summary: `Undid ${undo.key}` };
 }
 
@@ -203,7 +206,7 @@ function responseActions(input: { audience: 'staff' | 'client'; roles: readonly 
         onRun(actx, target);
         const key = responseKey(row);
         const stored = await storeChatFile(actx, row.attachmentId, row.engagementId, key, row.stepId, client);
-        return save(actx, target, stored.path);
+        return save(actx, target, stored.path, true);
       });
     },
     undo: undoSave,
