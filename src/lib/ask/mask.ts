@@ -19,24 +19,26 @@ const PATTERNS: readonly RegExp[] = [
 const DIN_IN_CONTEXT = /(?<![A-Z0-9])(DIN[\s:#_-]*)(\d{8})(?![A-Z0-9])/gi;
 
 const SECRET_VALUE = '[hidden]';
-const PASSWORD_WORD = String.raw`(?:password|passcode|passwd|pwd|pw)`;
+const PASSWORD_WORD = String.raw`(?:password|pass\s?word|passcode|passwd|pwd|pw)`;
+/** "is", and the Hinglish ways of saying it, between the word and the value. */
+const SAYS = String.raw`(?:\s+(?:is|hai|h|he|hain|ye|yeh|ya|tha|thi))`;
 /** A value with a digit or a symbol in it reads as a secret. */
 const MARKED_VALUE = String.raw`(?=\S*[\d@#$%&*])\S{4,}`;
 /** A plain word after "is" counts only at the end of the clause, and not when it says something about the password. */
 const WORD_VALUE = String.raw`(?!(?:required|wrong|incorrect|expired|invalid|missing|not|correct|changed|reset|locked|sent|needed|same|different|blocked|disabled|forgotten|weak|strong|mandatory|valid|working|the|a|an)\b)\S{6,}(?=[ \t]*(?:$|\n|[.,;]|and\b))`;
 
 /**
- * Each pattern needs a value that looks like a secret, so "the OTP is sent to the director" and
- * "the password is required" stay as they are. A bare "PIN" is a postal code here, so it does not count.
+ * Each pattern needs a value that looks like a secret, so "the OTP is sent to the director", "the
+ * password is required" and "password galat hai" stay as they are. A bare "PIN" is a postal code here,
+ * so it does not count.
  */
 const PORTAL_SECRETS: readonly RegExp[] = [
-  new RegExp(String.raw`\b(${PASSWORD_WORD}(?:\s+for\s+[^:=\n]{1,60}?)?\s*[:=]\s*)\S+`, 'gi'),
-  new RegExp(String.raw`\b(${PASSWORD_WORD}\s+(?:is\s+)?)(?=\S*\d)\S{4,}`, 'gi'),
-  new RegExp(String.raw`\b(${PASSWORD_WORD}\s+for\s+[^:=\n]{1,60}?\s+is\s+)(?:${MARKED_VALUE}|${WORD_VALUE})`, 'gi'),
-  new RegExp(String.raw`\b(${PASSWORD_WORD}\s+is\s+)${WORD_VALUE}`, 'gi'),
-  new RegExp(String.raw`\b(${PASSWORD_WORD}\s*[-–]\s*)${MARKED_VALUE}`, 'gi'),
-  new RegExp(String.raw`\b(pass\s*[:=]\s*)${MARKED_VALUE}`, 'gi'),
-  /\b((?:otp|one[- ]time\s+(?:password|code)|dsc\s+(?:token\s+)?(?:pin|password)|token\s+pin)\s*(?:is|:|=|-)?\s*)(?=\S*\d)[A-Za-z0-9]{4,8}\b/gi,
+  new RegExp(String.raw`\b(${PASSWORD_WORD}(?:\s+for\s+[^:=\n]{1,60}?)?${SAYS}*\s*[:=]\s*)\S+`, 'gi'),
+  new RegExp(String.raw`\b(${PASSWORD_WORD}${SAYS}*\s*(?:-+>?|[–→])?\s*)${MARKED_VALUE}`, 'gi'),
+  new RegExp(String.raw`\b(${PASSWORD_WORD}\s+for\s+[^:=\n]{1,60}?${SAYS}+\s+)(?:${MARKED_VALUE}|${WORD_VALUE})`, 'gi'),
+  new RegExp(String.raw`\b(${PASSWORD_WORD}${SAYS}+\s+)${WORD_VALUE}`, 'gi'),
+  new RegExp(String.raw`\b(pass(?:${SAYS}+\s*[:=]?|\s*[:=])\s*)${MARKED_VALUE}`, 'gi'),
+  /\b((?:otp|one[- ]time\s+(?:password|code)|dsc\s+(?:token\s+)?(?:pin|password)|token\s+pin)(?:\s+(?:is|hai|h|he|aaya|aya|aayi|ayi|mila|tha|ye|yeh))*\s*[:=-]?\s*)(?=\S*\d)[A-Za-z0-9]{4,8}\b/gi,
   /\b((?:token|api[- ]?key|secret|bearer)\s*(?:is|:|=)?\s*)(?=[A-Za-z0-9._~+/=-]*\d)[A-Za-z0-9._~+/=-]{16,}/gi,
   /()\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}/g,
 ];

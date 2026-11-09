@@ -79,6 +79,33 @@ describe('portal logins and one-time codes', () => {
     }
   });
 
+  it('catches the usual English and Hinglish phrasings', () => {
+    for (const [text, kept] of [
+      ['password is: Abc@1234', 'Abc@1234'],
+      ['password -> Abc@1234', 'Abc@1234'],
+      ['pass is Abc@1234', 'Abc@1234'],
+      ['pass word: Abc@1234', 'Abc@1234'],
+      ['password hai Abc@1234', 'Abc@1234'],
+      ['password h Abc@1234', 'Abc@1234'],
+      ['mca ka password hai Secretword', 'Secretword'],
+      ['password yeh hai Abc@1234', 'Abc@1234'],
+      ['password ye hai: Abc@1234', 'Abc@1234'],
+      ['pwd hai abcd1234', 'abcd1234'],
+      ['mera password Abc@1234 hai', 'Abc@1234'],
+      ['otp hai 482913', '482913'],
+      ['OTP aaya hai 482913', '482913'],
+    ] as const) {
+      expect(holdsPortalSecret(text), text).toBe(true);
+      expect(maskIdentityNumbers(text), text).not.toContain(kept);
+    }
+  });
+
+  it('leaves ordinary questions that mention a password alone, in English and Hinglish', () => {
+    for (const text of ['What is the password policy?', 'I forgot my password, how do I reset it?', 'Is the MCA password needed for DIR-3 KYC?', 'Where do I change the password for MCA V3?', 'The password is with the director.', 'password reset nahi ho raha', 'password kaise reset kare?', 'password galat hai', 'password expired hai kya karu', 'password change karna hai', 'password ka kya karna hai', 'otp nahi aaya']) {
+      expect(holdsPortalSecret(text), text).toBe(false);
+    }
+  });
+
   it('leaves questions about them and postal codes alone', () => {
     for (const text of ['the password is incorrect.', 'the password for the portal is wrong', 'pass AOC4 to the client', 'the password-protected file', 'Please change your password and retry', 'Where do I enter the OTP?', 'the password is required', 'The OTP is sent to the director', 'PIN 500081', 'PIN: 500081, Hyderabad', 'what is a DSC token?', 'the secret ballot of 2026', 'prepare the filing run for GSTR-3B']) {
       expect(holdsPortalSecret(text), text).toBe(false);
