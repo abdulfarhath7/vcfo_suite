@@ -24,16 +24,30 @@ vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => sendEven
 vi.mock('@/lib/actions/registry', () => ({ getAction: async (name: string) => actions[name] ?? null }));
 
 const claim = vi.fn();
+const claimEdit = vi.fn();
 const claimRow = vi.fn();
 const setStatus = vi.fn();
 const updateRows = vi.fn();
 let found: unknown = null;
+/** The rows as the database holds them: a claim and each update write through, so a later read sees them. */
+const writeRow = (id: string, from: readonly string[], patch: Record<string, unknown>) => {
+  const row = (found as { rows: Array<{ id: string; status: string }> } | null)?.rows.find((r) => r.id === id);
+  if (row && from.includes(row.status)) Object.assign(row, patch);
+};
 vi.mock('@/db/repositories/ask-changesets', () => ({
   getAskChangesetForDecision: vi.fn(async () => found),
   claimAskChangeset: (...a: unknown[]) => claim(...a),
-  claimAskChangesetRow: (...a: unknown[]) => claimRow(...a),
+  claimAskChangesetEdit: (...a: unknown[]) => claimEdit(...a),
+  claimAskChangesetRow: async (...a: unknown[]) => {
+    const claimed = await claimRow(...a);
+    if (claimed) writeRow(a[2] as string, a[3] as string[], { status: 'applying' });
+    return claimed;
+  },
   setAskChangesetStatus: (...a: unknown[]) => setStatus(...a),
-  updateAskChangesetRows: (...a: unknown[]) => updateRows(...a),
+  updateAskChangesetRows: async (...a: unknown[]) => {
+    await updateRows(...a);
+    for (const update of a[2] as Array<{ id: string; from: string[]; patch: Record<string, unknown> }>) writeRow(update.id, update.from, update.patch);
+  },
   rowNeedsManager: (row: { target: { needsManager?: boolean } }) => row.target.needsManager === true,
 }));
 const audit = vi.fn();
@@ -52,7 +66,8 @@ const makeRow = (id: string, patch: Record<string, unknown> = {}) => ({
   ...patch,
 });
 
-function setCard(rows: ReturnType<typeof makeRow>[], extra: Record<string, unknown> = {}) {
+function setCard(given: ReturnType<typeof makeRow>[], extra: Record<string, unknown> = {}) {
+  const rows = given.map((row) => ({ ...row }));
   const contentHash = changesetHash(rows.map((r) => ({ action: r.action, target: r.target as never, newValue: r.newValue as never })));
   found = {
     changeset: { id: 'cs-1', status: 'proposed', contentHash, expiresAt: new Date(Date.now() + 86_400_000), engagementId: 'eng-1', conversationId: null, runId: 'run-1', decidedById: null },
@@ -73,6 +88,7 @@ beforeEach(() => {
   actions['checklist.setResponse'] = action;
   action.tier = 'T2';
   claim.mockResolvedValue(true);
+  claimEdit.mockResolvedValue(true);
   claimRow.mockResolvedValue(true);
   recheck.mockResolvedValue(passes);
   execute.mockResolvedValue({ ok: true, summary: 'saved', undo: { previous: '' } });
@@ -208,6 +224,22 @@ describe('decideChangeset', () => {
     expect(setStatus.mock.calls.at(-1)![2]).toBe('rejected');
   });
 
+  it('sets the card from the rows as they stand after the loop, counting a row another click saved', async () => {
+    const hash = setCard([makeRow('a'), makeRow('b')]);
+    (found as { changeset: { status: string } }).changeset.status = 'partly_applied';
+    claimRow.mockImplementation(async (_c: unknown, _f: unknown, rowId: string) => {
+      if (rowId === 'a') writeRow('a', ['proposed'], { status: 'applied' });
+      return rowId === 'b';
+    });
+    expect(await decideChangeset(lead, 'cs-1', { contentHash: hash, accept: ['a', 'b'] })).toEqual({ applied: 1, failed: 0, held: 0 });
+    expect(setStatus.mock.calls[0]![2]).toBe('applied');
+    expect(noteDecision).toHaveBeenCalledWith('run-1', true);
+    setCard([makeRow('a', { status: 'applied' }), makeRow('b')]);
+    claimRow.mockResolvedValue(false);
+    await decideChangeset(lead, 'cs-1', { contentHash: changesetHash([{ action: 'checklist.setResponse', target: { stepId: 'pre-15', fieldId: 'a' }, newValue: 'value-a' }, { action: 'checklist.setResponse', target: { stepId: 'pre-15', fieldId: 'b' }, newValue: 'value-b' }]), accept: ['b'] });
+    expect(setStatus.mock.calls[1]![2]).toBe('partly_applied');
+  });
+
   it('refuses a person who is neither owner nor manager on the card', async () => {
     found = null;
     await expect(decideChangeset(lead, 'cs-1', { contentHash: 'x'.repeat(64), accept: ['a'] })).rejects.toMatchObject({ status: 404 });
@@ -298,11 +330,19 @@ describe('editChangesetRow', () => {
     recheck.mockResolvedValue({ ...passes, value: 'ABCDE1234F' });
     await editChangesetRow(lead, 'cs-1', 'a', 'abcde1234f');
     expect(execute).not.toHaveBeenCalled();
-    const [, , updates, hash] = updateRows.mock.calls[0]!;
+    const [, , updates] = updateRows.mock.calls[0]!;
+    const hash = claimEdit.mock.calls[0]![2];
     expect(updates[0].patch.newValue).toBe('ABCDE1234F');
     // The acceptance report counts a row accepted with edits apart from one accepted as proposed.
     expect(updates[0].patch.editedAt).toBeInstanceOf(Date);
     expect(hash).toBe(changesetHash([{ action: 'checklist.setResponse', target: { stepId: 'pre-15', fieldId: 'a' }, newValue: 'ABCDE1234F' }]));
+  });
+
+  it('saves no edit once an approval has claimed the card', async () => {
+    setCard([makeRow('a')]);
+    claimEdit.mockResolvedValue(false);
+    await expect(editChangesetRow(lead, 'cs-1', 'a', 'x')).rejects.toThrow(/already been decided/);
+    expect(updateRows).not.toHaveBeenCalled();
   });
 
   it('refuses an edit of a row that is not yours', async () => {

@@ -175,7 +175,6 @@ export async function updateAskChangesetRows(
   ctx: AuthContext,
   found: ChangesetAccess,
   updates: ReadonlyArray<{ id: string; from: readonly string[]; patch: Partial<Pick<AskChangesetRowRow, 'status' | 'checks' | 'heldReason' | 'error' | 'undoData' | 'appliedAt' | 'newValue' | 'oldValue' | 'displayOld' | 'displayNew' | 'editedAt'>> }>,
-  contentHash?: string,
 ): Promise<void> {
   assertDecider(ctx, found);
   for (const { id, from, patch } of updates) {
@@ -184,5 +183,19 @@ export async function updateAskChangesetRows(
       .set(patch)
       .where(and(eq(askChangesetRows.id, id), eq(askChangesetRows.changesetId, found.changeset.id), inArray(askChangesetRows.status, [...from])));
   }
-  if (contentHash) await db.update(askChangesets).set({ contentHash }).where(eq(askChangesets.id, found.changeset.id));
+}
+
+/**
+ * An edit's hold on the card: the new hash replaces the one just read only while the card is still
+ * open, so an edit cannot land on a card an approval has claimed, and an approval of the old content
+ * fails once the edit holds it.
+ */
+export async function claimAskChangesetEdit(ctx: AuthContext, found: ChangesetAccess, contentHash: string): Promise<boolean> {
+  assertDecider(ctx, found);
+  const rows = await db
+    .update(askChangesets)
+    .set({ contentHash })
+    .where(and(eq(askChangesets.id, found.changeset.id), inArray(askChangesets.status, ['proposed', 'partly_applied']), eq(askChangesets.contentHash, found.changeset.contentHash)))
+    .returning({ id: askChangesets.id });
+  return rows.length > 0;
 }

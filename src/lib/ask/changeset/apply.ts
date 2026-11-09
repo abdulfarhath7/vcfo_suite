@@ -5,6 +5,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { systemNoteAskRunDecision } from '@/db/repositories/ask-runs';
 import {
   claimAskChangeset,
+  claimAskChangesetEdit,
   claimAskChangesetRow,
   getAskChangesetForDecision,
   rowNeedsManager,
@@ -118,11 +119,13 @@ export async function editChangesetRow(ctx: AuthContext, id: string, rowId: stri
   const checked = await action.recheck(actx, parsed.data, {});
   const edited = found.rows.map((r) => (r.id === rowId ? { ...r, newValue: checked.value as JsonValue, status: 'edited' } : r));
   const updates = await recheckRows(actx, edited);
+  if (!(await claimAskChangesetEdit(ctx, found, changesetHash(edited.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue as JsonValue })))))) {
+    throw new ChangesetRefused('This card has already been decided, or it changed.');
+  }
   await updateAskChangesetRows(
     ctx,
     found,
     updates.map((update) => ({ ...update, from: OPEN_ROWS, ...(update.id === rowId ? { patch: { ...update.patch, newValue: checked.value, editedAt: now } } : {}) })),
-    changesetHash(edited.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue as JsonValue }))),
   );
 }
 
@@ -167,8 +170,11 @@ export async function decideChangeset(ctx: AuthContext, id: string, input: { con
     }
   } finally {
     // Whatever stopped the loop, the card leaves `approved`, so it can be decided again and its run is told.
-    const remaining = [...statusById.values()].some((status) => OPEN_ROW.has(status));
-    const status = result.applied === 0 ? (found.changeset.status === 'proposed' ? 'proposed' : 'partly_applied') : remaining ? 'partly_applied' : 'applied';
+    // The rows are read again, so a click that ran rows at the same moment counts too.
+    const statuses = (await getAskChangesetForDecision(ctx, id))?.rows.map((row) => row.status) ?? [...statusById.values()];
+    const remaining = statuses.some((status) => OPEN_ROW.has(status) || status === 'applying');
+    const saved = statuses.some((status) => status === 'applied');
+    const status = remaining ? (saved ? 'partly_applied' : 'proposed') : 'applied';
     await setAskChangesetStatus(ctx, found, status, result.applied > 0 ? { appliedAt: now } : {});
     if (found.changeset.engagementId && result.applied > 0) {
       await recordAuditEvent(ctx, {

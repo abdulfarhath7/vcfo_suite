@@ -45,7 +45,7 @@ describe('no automatic path to applying a card', () => {
   });
 
   it('only apply.ts claims a card or changes its rows', () => {
-    for (const word of [/\bclaimAskChangeset\(/, /\bclaimAskChangesetRow\(/, /\bupdateAskChangesetRows\(/, /\bsetAskChangesetStatus\(/]) {
+    for (const word of [/\bclaimAskChangeset\(/, /\bclaimAskChangesetEdit\(/, /\bclaimAskChangesetRow\(/, /\bupdateAskChangesetRows\(/, /\bsetAskChangesetStatus\(/]) {
       expect(named(word).filter((path) => path !== 'src/lib/ask/changeset/apply.ts' && path !== 'src/db/repositories/ask-changesets.ts')).toEqual([]);
     }
   });
