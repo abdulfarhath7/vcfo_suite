@@ -127,7 +127,7 @@ const INPUTS: Record<string, unknown> = {
   'reminders.sendClient': { itemKey: `request:${ID}` },
   'documents.list': {},
   'documents.read': { documentId: ID },
-  'documents.review': { documentId: ID, status: 'approved' },
+  'documents.review': { documentId: ID, status: 'approved', reviewAtCard: 'pending ' },
   'documents.delete': { documentId: ID },
   'statuses.projectOverview': {},
   'statuses.listFilings': {},
@@ -293,6 +293,16 @@ describe('the 25 actions', () => {
     expect(JSON.stringify(outcome)).not.toContain('ABCDE1234F');
     storage.getObjectBuffer.mockResolvedValueOnce(Buffer.from('Permanent Account Number Card, Income Tax Department'));
     expect((await byName('documents.read').execute(actx(), { documentId: ID })).ok).toBe(false);
+  });
+
+  it('reviews a document only while it stands as it did when the card was made', async () => {
+    const draft = await byName('documents.review').preview(actx(), { documentId: ID, status: 'approved' });
+    const target = draft!.rows[0]!.target;
+    expect(target.reviewAtCard).toEqual(expect.any(String));
+    docsRepo.getDocumentById.mockResolvedValueOnce({ ...document, reviewStatus: 'changes', reviewedAt: '2026-11-07T09:00:00.000Z' });
+    expect(await byName('documents.review').execute(actx(), target)).toEqual({ ok: false, error: expect.stringContaining('reviewed since this card was made') });
+    expect(docsRepo.setDocumentReview).not.toHaveBeenCalled();
+    expect((await byName('documents.review').execute(actx(), target)).ok).toBe(true);
   });
 
   it('asks for a note on "changes needed"', async () => {

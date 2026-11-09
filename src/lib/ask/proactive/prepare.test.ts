@@ -136,7 +136,7 @@ describe('with the flag on', () => {
   it('asks the person to open a file first, on the row, without blocking it', async () => {
     await prepareForOwner(owner, NOW);
     const row = rowsMade().find((r) => r.action === 'documents.review')!;
-    expect(row.target).toEqual({ documentId: DOCUMENT, status: 'approved' });
+    expect(row.target).toEqual({ documentId: DOCUMENT, status: 'approved', reviewAtCard: expect.any(String) });
     expect(row.checks).toEqual([{ rule: 'open_first', ok: false, message: expect.stringContaining('Open this file') }]);
     const { rowCanApply } = await import('@/lib/actions/checklist/rules');
     expect(rowCanApply(row.checks)).toBe(true);
@@ -191,7 +191,7 @@ describe('with the flag on', () => {
     await prepareForOwner(owner, NOW);
     const since = repos.listOwnScheduledRows.mock.calls[0]![1] as Date;
     expect((NOW.getTime() - since.getTime()) / 86_400_000).toBe(14);
-    expect(rowsMade().map((row) => row.target)).toEqual([{ itemKey: `filing:${FILING}` }, { documentId: DOCUMENT, status: 'approved' }]);
+    expect(rowsMade().map((row) => row.target)).toEqual([{ itemKey: `filing:${FILING}` }, { documentId: DOCUMENT, status: 'approved', reviewAtCard: expect.any(String) }]);
     // A second run sees its own work and adds nothing, so a retried step cannot double a card.
     repos.listOwnScheduledRows.mockResolvedValue([{ action: 'reminders.sendClient', target: { itemKey: `request:${REQUEST}` } }, ...rowsMade().map((row) => ({ action: row.action, target: row.target }))]);
     repos.createAskChangeset.mockClear();

@@ -64,10 +64,13 @@ const read = defineAction({
     }),
 });
 
+/** The review a card was made against, so a verdict given on the screen since then is never overwritten. */
+const reviewStamp = (document: { reviewStatus: string; reviewedAt: string | null }) => `${document.reviewStatus} ${document.reviewedAt ?? ''}`;
+
 const review = defineAction({
   name: 'documents.review',
-  description: 'Propose setting a document\'s review state: in review, approved, or changes needed with a note. The uploader sees the result. A person confirms it on a card.',
-  input: documentId.extend({ status: z.enum(['pending', 'approved', 'changes']), note: z.string().trim().max(1000).optional() }),
+  description: 'Propose setting a document\'s review state: in review, approved, or changes needed with a note. The uploader sees the result. Leave reviewAtCard out; the card fills it. A person confirms it on a card.',
+  input: documentId.extend({ status: z.enum(['pending', 'approved', 'changes']), note: z.string().trim().max(1000).optional(), reviewAtCard: z.string().optional() }),
   tier: 'T3',
   roles: STAFF_ROLES,
   preview: async (actx, input) => {
@@ -77,7 +80,7 @@ const review = defineAction({
       tier: 'T3',
       title: 'Review a document',
       label: document.fileName,
-      target: input,
+      target: { ...input, reviewAtCard: reviewStamp(document) },
       displayOld: document.reviewStatus,
       displayNew: `${input.status}${input.note ? `: ${input.note}` : ''}`,
       recipients: document.uploadedByName ? [{ name: document.uploadedByName, role: 'Uploaded it' }] : [],
@@ -86,7 +89,7 @@ const review = defineAction({
   execute: (actx, input) =>
     refusing(async () => {
       if (input.status === 'changes' && !input.note) return { ok: false, error: 'Changes needed takes a note saying what to change.' };
-      await scoped(actx, input.documentId);
+      if (reviewStamp(await scoped(actx, input.documentId)) !== input.reviewAtCard) return { ok: false, error: 'This document was reviewed since this card was made. Please ask again.' };
       const saved = await setDocumentReview(actx.auth, { ref: { documentId: input.documentId }, status: input.status, note: input.note });
       return saved ? { ok: true, summary: `${saved.fileName} is marked ${input.status}.` } : { ok: false, error: 'That document is not available.' };
     }),
