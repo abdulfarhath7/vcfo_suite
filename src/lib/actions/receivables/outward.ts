@@ -134,7 +134,8 @@ function listOf(lists: ReadonlyArray<RecipientSet & { key: string }>, key: strin
   return clean;
 }
 
-const peopleCheck = ({ to, cc, bcc }: RecipientSet) => cardCheckOf([...to, ...cc, ...bcc].map((r) => r.email));
+/** The people and the published version on the card, so a later publish or list change stops the send. */
+const summaryCheck = ({ to, cc, bcc }: RecipientSet, versionId: string) => cardCheckOf([...to, ...cc, ...bcc].map((r) => r.email).concat(`version:${versionId}`));
 
 async function outlookSaid<T>(work: () => Promise<T>): Promise<T> {
   try {
@@ -158,7 +159,7 @@ const sendSummary = defineAction({
       const draft = await summaryDraft(actx.auth, sheet.id);
       const people = listOf(draft.lists, input.list);
       const recipients = [...people.to.map((r) => ({ ...r, role: 'To' })), ...people.cc.map((r) => ({ ...r, role: 'Cc' })), ...people.bcc.map((r) => ({ ...r, role: 'Bcc' }))];
-      return sheetCard(actx, { action: 'receivables.sendSummary', tier: 'T3', title: 'Send the receivables summary', label: sheet.name, target: { ...input, sheetId: sheet.id, cardCheck: peopleCheck(people) }, displayNew: `${draft.subject}, from published version ${draft.versionSeq}${input.attachExcel === false ? '' : ', with the Excel file'}`, recipients });
+      return sheetCard(actx, { action: 'receivables.sendSummary', tier: 'T3', title: 'Send the receivables summary', label: sheet.name, target: { ...input, sheetId: sheet.id, cardCheck: summaryCheck(people, draft.src.version.id) }, displayNew: `${draft.subject}, from published version ${draft.versionSeq}${input.attachExcel === false ? '' : ', with the Excel file'}`, recipients });
     }),
   execute: (actx, input) =>
     run(() =>
@@ -166,7 +167,7 @@ const sendSummary = defineAction({
         const sheet = await pickSheet(actx, input.sheetId);
         const draft = await summaryDraft(actx.auth, sheet.id);
         const people = listOf(draft.lists, input.list);
-        if (peopleCheck(people) !== input.cardCheck) return changed('The people on that list have changed');
+        if (summaryCheck(people, draft.src.version.id) !== input.cardCheck) return changed('The published summary or the people on that list have changed');
         const { from } = await queueSummary(actx.auth, draft.src, { ...people, subject: draft.subject, html: draft.html, attachExcel: input.attachExcel ?? true });
         return { ok: true, summary: `The summary is going out from ${from}. The sheet records whether it arrived.` };
       }),

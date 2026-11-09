@@ -393,7 +393,7 @@ describe('the receivables actions', () => {
     const draft = await summary.preview(actx(), { list: 'partners', cardCheck: 'x@evil.test' });
     expect(draft!.recipients).toEqual([{ name: 'Priya', email: 'priya@client.test', role: 'To' }]);
     const target = draft!.rows[0]!.target as { cardCheck: string };
-    expect(target.cardCheck).toBe('priya@client.test');
+    expect(target.cardCheck).toBe('priya@client.test,version:v1');
 
     const newcomer = { id: 'p3', name: 'New', email: 'new@client.test', slug: 'new', active: true };
     repo.getSummarySource.mockResolvedValueOnce({ sheet: { id: SHEET, clientOrgName: 'Summit', slug: 's' }, version: { id: 'v1', seq: 3, publishedAt: new Date(), snapshot: [] }, partners: [partner, newcomer], lastSend: null });
@@ -408,12 +408,20 @@ describe('the receivables actions', () => {
     expect(deliverSummary).toHaveBeenCalledTimes(1);
   });
 
+  it('refuses a summary when a newer version was published after the card showed one', async () => {
+    const summary = byName('receivables.sendSummary');
+    const target = (await summary.preview(actx(), { list: 'partners' }))!.rows[0]!.target;
+    repo.getSummarySource.mockResolvedValueOnce({ sheet: { id: SHEET, clientOrgName: 'Summit', slug: 's' }, version: { id: 'v2', seq: 4, publishedAt: new Date(), snapshot: [] }, partners: [partner, gone], lastSend: null });
+    expect(await summary.execute(actx(), summary.input.parse(target))).toEqual({ ok: false, error: expect.stringContaining('published summary') });
+    expect(repo.recordSummarySend).not.toHaveBeenCalled();
+  });
+
   it('refuses a summary with nobody to send to, or with Outlook not connected', async () => {
     const summary = byName('receivables.sendSummary');
     await expect(summary.preview(actx(), { list: 'last' })).rejects.toThrow(/no previous summary/);
     await expect(summary.preview(actx(), { list: 'overdue' })).rejects.toThrow(/Nobody is on that list/);
     assertOutlookReady.mockRejectedValue(new Error('outlook_not_connected'));
-    expect(await summary.execute(actx(), { list: 'partners', cardCheck: 'priya@client.test' })).toEqual({ ok: false, error: 'Connect your Outlook first, because the summary goes from your own mailbox.' });
+    expect(await summary.execute(actx(), { list: 'partners', cardCheck: 'priya@client.test,version:v1' })).toEqual({ ok: false, error: 'Connect your Outlook first, because the summary goes from your own mailbox.' });
   });
 
   it('reads the queue with each reminder\'s wording, and filters the invoices by overdue', async () => {
