@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, count, eq, gte, inArray, isNotNull } from 'drizzle-orm';
+import { and, count, eq, gte, isNotNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askConversations, askMessages } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -84,8 +84,9 @@ export async function getAskMessage(
 }
 
 /**
- * Model-backed answers the caller received since `since`. Deterministic and
- * reviewed-topic answers never record a model, so they count as zero.
+ * Answers the caller received since `since` that paid for a model call. A templated answer the
+ * router chose counts as well, because the router call was paid; only an answer no model touched
+ * records no model and counts as zero.
  */
 export async function countModelAnswersSince(ctx: AuthContext, since: Date): Promise<number> {
   const [row] = await db
@@ -97,7 +98,6 @@ export async function countModelAnswersSince(ctx: AuthContext, since: Date): Pro
         eq(askConversations.profileId, ctx.userId),
         eq(askMessages.sender, 'assistant'),
         isNotNull(askMessages.model),
-        inArray(askMessages.origin, ['generated', 'refusal', 'work']),
         gte(askMessages.createdAt, since),
       ),
     );

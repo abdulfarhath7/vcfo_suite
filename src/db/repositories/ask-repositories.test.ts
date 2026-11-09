@@ -268,11 +268,13 @@ describe('conversation list and delete (F4)', () => {
 });
 
 describe('the rate limit count', () => {
-  it('counts Do answers along with generated ones, for this person only', async () => {
+  it('counts every answer that paid for a model call, whatever its origin, for this person only', async () => {
     selectRows = [{ n: 3 }];
     await expect(messages.countModelAnswersSince(clientA, new Date('2026-11-06T00:00:00Z'))).resolves.toBe(3);
     const params = whereParams();
-    expect(params).toEqual(expect.arrayContaining([clientA.userId, 'generated', 'refusal', 'work']));
+    expect(params).toEqual(expect.arrayContaining([clientA.userId, 'assistant']));
+    // A templated answer the router chose still paid for the router call.
+    expect(params).not.toContain('generated');
   });
 });
 
