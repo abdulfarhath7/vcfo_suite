@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -21,7 +22,18 @@ async function book(sheets: Array<{ name: string; rows: unknown[][]; merge?: str
   return wb.xlsx.writeBuffer();
 }
 
+/** A few hundred kilobytes that unpack to 150 MB. */
+function zipBomb(): Buffer {
+  const zip = new PizZip();
+  zip.file('xl/worksheets/sheet1.xml', Buffer.alloc(150 * 1024 * 1024), { compression: 'DEFLATE' } as never);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
 describe('parseWorkbook', () => {
+  it('refuses a workbook that unpacks too far before exceljs loads it', async () => {
+    await expect(parseWorkbook(zipBomb(), { format: 'xlsx' })).rejects.toThrow(/unpacks to more than/);
+  });
+
   it('finds the heading row under a title and an instruction row', async () => {
     const buf = await book([
       {

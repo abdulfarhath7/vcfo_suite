@@ -12,6 +12,7 @@
  */
 import { Readable } from 'node:stream';
 import ExcelJS from 'exceljs';
+import { assertZipWithinLimit } from '@/lib/ask/ingest/extract';
 import { detectAttendanceGrid, type GridDetection } from './attendance-grid';
 import { normaliseHeader } from './normalise';
 
@@ -62,11 +63,13 @@ export function formatForFileName(fileName: string): SheetFormat {
  */
 async function loadWorkbook(input: WorkbookInput, format: SheetFormat): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
+  const bytes = ArrayBuffer.isView(input) ? Buffer.from(input.buffer, input.byteOffset, input.byteLength) : Buffer.from(input as ArrayBuffer);
   if (format === 'csv') {
-    const bytes = ArrayBuffer.isView(input) ? Buffer.from(input.buffer, input.byteOffset, input.byteLength) : Buffer.from(input as ArrayBuffer);
     await workbook.csv.read(Readable.from(bytes));
     return workbook;
   }
+  // A workbook is a zip, and a small one can unpack to gigabytes before exceljs notices.
+  assertZipWithinLimit(bytes);
   await workbook.xlsx.load(input as Parameters<ExcelJS.Workbook['xlsx']['load']>[0]);
   return workbook;
 }

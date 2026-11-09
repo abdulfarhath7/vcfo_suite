@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 import { amountsOf, parseReceivablesWorkbook, type WorkbookInput } from './import-workbook';
 import { isPublicKeyShape, partnerSlug, publicPageUrl } from './links';
@@ -29,7 +30,18 @@ async function financeSheet(): Promise<WorkbookInput> {
   return wb.xlsx.writeBuffer();
 }
 
+/** A few hundred kilobytes that unpack to 150 MB. */
+function zipBomb(): Buffer {
+  const zip = new PizZip();
+  zip.file('xl/worksheets/sheet1.xml', Buffer.alloc(150 * 1024 * 1024), { compression: 'DEFLATE' } as never);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
 describe('parseReceivablesWorkbook', () => {
+  it('refuses a workbook that unpacks too far before exceljs loads it', async () => {
+    await expect(parseReceivablesWorkbook(zipBomb(), { receivedOn: '2026-11-01' })).rejects.toThrow(/unpacks to more than/);
+  });
+
   it('reads month blocks, splits summed cells and marks received rows', async () => {
     const r = await parseReceivablesWorkbook(await financeSheet(), { receivedOn: '2026-11-01' });
     expect(r.sheetName).toBe('Sheet1');

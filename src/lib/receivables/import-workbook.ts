@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { assertZipWithinLimit } from '@/lib/ask/ingest/extract';
 import { monthStart } from './dates';
 
 /**
@@ -86,6 +87,8 @@ function monthFromTitle(s: string): string | null {
 
 export async function parseReceivablesWorkbook(input: WorkbookInput, opts: { receivedOn: string }): Promise<ImportResult> {
   const wb = new ExcelJS.Workbook();
+  // A workbook is a zip, and a small one can unpack to gigabytes before exceljs notices.
+  assertZipWithinLimit(Buffer.from(input));
   await wb.xlsx.load(input);
   const warnings: string[] = [];
 
