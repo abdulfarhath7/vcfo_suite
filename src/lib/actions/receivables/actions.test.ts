@@ -132,6 +132,7 @@ beforeEach(() => {
   sendEmail.mockResolvedValue({ ok: true });
   sendDueReminders.mockResolvedValue(undefined);
   scopedInvoice.mockResolvedValue({ invoice: invoiceRow, sheet: { id: SHEET } });
+  repo.updateInvoice.mockImplementation(async (_ctx: unknown, _id: string, patch: object) => ({ ...sheetInvoice, ...patch }));
 });
 
 afterEach(async () => {
@@ -264,6 +265,16 @@ describe('the receivables actions', () => {
     await action.undo!(actx(), undoFrom(outcome));
     expect(repo.updateInvoice.mock.calls[1]![2]).toEqual({ amountInr: 125000, dueDate: '2026-10-15' });
     await expect(action.preview(actx(), { invoiceId: INVOICE })).rejects.toThrow(/nothing to change/);
+  });
+
+  it('puts back the booked amount a currency change set by itself', async () => {
+    const action = byName('receivables.updateInvoice');
+    const fx = { currency: 'USD', fcAmount: 1000, fxRate: 85, invoiceDate: '2026-10-01' };
+    repo.updateInvoice.mockResolvedValueOnce({ ...sheetInvoice, ...fx, amountInr: 85000 });
+    const outcome = await action.execute(actx(), { invoiceId: INVOICE, ...fx });
+    saved({ ...fx, amountInr: '85000.00' });
+    expect(await action.undo!(actx(), undoFrom(outcome))).toMatchObject({ ok: true });
+    expect(repo.updateInvoice.mock.calls[1]![2]).toEqual({ currency: 'INR', fcAmount: null, fxRate: null, invoiceDate: null, amountInr: 125000 });
   });
 
   it('leaves an invoice whose balance has moved since the edit, so a payment is not written over', async () => {

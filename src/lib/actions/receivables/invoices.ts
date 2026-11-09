@@ -90,9 +90,11 @@ const edit = defineAction({
   execute: (actx, { invoiceId, ...patch }) =>
     run(async () => {
       const { invoice, label } = await labelled(actx, invoiceId);
-      await updateInvoice(actx.auth, invoiceId, patch);
-      const before = Object.fromEntries(Object.keys(patch).map((name) => [name, invoice[name as keyof typeof invoice] as string | null]));
-      return { ok: true, summary: `${label} is updated on the draft.`, undo: { invoiceId, before, after: patch } };
+      // A change to the foreign-currency fields can set the booked amount too, so the undo always keeps it.
+      const names = [...new Set([...Object.keys(patch), 'amountInr'])];
+      const fieldsOf = (row: object) => Object.fromEntries(names.map((name) => [name, ((row as Record<string, unknown>)[name] ?? null) as string | number | null]));
+      const updated = await updateInvoice(actx.auth, invoiceId, patch);
+      return { ok: true, summary: `${label} is updated on the draft.`, undo: { invoiceId, before: fieldsOf(invoice), after: fieldsOf(updated) } };
     }),
   undo: (actx, undo) =>
     run(async () => {
