@@ -9,8 +9,21 @@ import {
 } from '@/lib/checklist/checklist-pre1-validation';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { PART_A_SECTION } from '@/lib/checklist/part-a-sections';
-import { BoardResolutionSaveError } from '@/lib/projects/engagements-db';
 import { resolveDirectorDisplayName, resolveSignatoryDisplayName } from '@/lib/person-name';
+
+/**
+ * A board resolution save the server refused. It lives here, not beside the browser fetch helpers that
+ * throw it, so server code that formats these errors never loads the browser toast library.
+ */
+export class BoardResolutionSaveError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'BoardResolutionSaveError';
+  }
+}
 
 export const BOARD_RESOLUTION_ERROR_CODES = {
   STEP1_INCOMPLETE: 'step1_incomplete',

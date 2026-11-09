@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   BOARD_RESOLUTION_ERROR_CODES,
@@ -11,6 +11,11 @@ import {
   toBoardResolutionError,
   validateBoardResolutionGeneration,
 } from '@/lib/api/board-resolution-errors';
+
+// Server code and the Ask scripts format these errors, so this module must load without the browser toast library.
+vi.mock('react-hot-toast', () => {
+  throw new Error('board-resolution-errors loaded react-hot-toast');
+});
 
 const completePre1 = {
   parentEntityName: 'ABC Holdings LLC',

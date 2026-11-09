@@ -8,6 +8,7 @@ import {
   type BoardResolutionDoc,
   parseBoardResolutionRpcPayload,
 } from '@/lib/board-resolution/board-resolution';
+import { BoardResolutionSaveError } from '@/lib/api/board-resolution-errors';
 import { AppApiError, toastEmailDispatch } from '@/lib/toast-errors';
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
@@ -52,16 +53,6 @@ export class ChecklistSaveError extends Error {
     super(message);
     this.name = 'ChecklistSaveError';
     this.code = code;
-  }
-}
-
-export class BoardResolutionSaveError extends Error {
-  constructor(
-    message: string,
-    readonly code?: string,
-  ) {
-    super(message);
-    this.name = 'BoardResolutionSaveError';
   }
 }
 
