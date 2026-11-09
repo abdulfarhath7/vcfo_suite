@@ -43,6 +43,7 @@ export class ChangesetRefused extends Error {
 const OPEN: readonly string[] = ['proposed', 'partly_applied'];
 const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
 
+/** Who may approve one row. Undo takes the same right, row by row, whoever clicked last on the card. */
 export function canDecideRow(found: Pick<ChangesetAccess, 'owner' | 'manager'>, row: Pick<AskChangesetRowRow, 'target'>): boolean {
   return rowNeedsManager(row) ? found.manager : found.owner;
 }
@@ -240,24 +241,32 @@ async function applyRow(actx: ActionContext, row: AskChangesetRowRow, card: AskC
 export async function rejectChangeset(ctx: AuthContext, id: string): Promise<void> {
   const now = new Date();
   const found = await loadOpen(ctx, id, now);
-  if (!found.owner && !found.manager) throw new ChangesetRefused('This card is not yours to decide.', 403);
   const leftOpen = found.rows.filter((r) => OPEN_ROW.has(r.status));
-  await updateAskChangesetRows(ctx, found, leftOpen.map((r) => ({ id: r.id, patch: { status: 'skipped' } })));
-  await setAskChangesetStatus(ctx, found, found.rows.some((r) => r.status === 'applied') ? 'partly_applied' : 'rejected', { decidedAt: now });
-  await announceDecision(found, true);
+  // Rejecting saves nothing, so the person who asked may withdraw every row; anyone else closes only the rows they could decide.
+  const closing = leftOpen.filter((r) => found.owner || canDecideRow(found, r));
+  if (closing.length === 0 && leftOpen.length > 0) throw new ChangesetRefused('This card is not yours to decide.', 403);
+  await updateAskChangesetRows(ctx, found, closing.map((r) => ({ id: r.id, patch: { status: 'skipped' } })));
+  const settled = closing.length === leftOpen.length;
+  if (settled) await setAskChangesetStatus(ctx, found, found.rows.some((r) => r.status === 'applied') ? 'partly_applied' : 'rejected', { decidedAt: now });
+  await announceDecision(found, settled);
 }
 
-/** Puts back what the card saved, newest first. A value changed since then is left as it is. */
+/**
+ * Puts back what the card saved, newest first, of the rows this person could decide. A value changed
+ * since then is left as it is, and so is a row only somebody else could decide.
+ */
 export async function undoChangeset(ctx: AuthContext, id: string): Promise<{ undone: number; kept: string[] }> {
   const now = new Date();
   const found = await getAskChangesetForDecision(ctx, id);
   if (!found) throw new ChangesetRefused('This card is not available.', 404);
-  if (!found.owner && found.changeset.decidedById !== ctx.userId) throw new ChangesetRefused('Only the person who saved this can undo it.', 403);
+  const saved = found.rows.filter((row) => row.status === 'applied' && row.undoData != null);
+  if (saved.length === 0) throw new ChangesetRefused('Nothing on this card has been saved.');
+  const mine = saved.filter((row) => canDecideRow(found, row));
+  if (mine.length === 0) throw new ChangesetRefused('Only the person who may approve these rows can undo them.', 403);
   const actx = actionContext(ctx, found, now);
   const kept: string[] = [];
   let undone = 0;
-  for (const row of [...found.rows].reverse()) {
-    if (row.status !== 'applied' || row.undoData == null) continue;
+  for (const row of [...mine].reverse()) {
     const action = await getAction(row.action);
     const outcome = action?.undo ? await action.undo(actx, row.undoData) : { ok: false as const, error: 'This row cannot be undone.' };
     if (outcome.ok === true) {
@@ -268,8 +277,7 @@ export async function undoChangeset(ctx: AuthContext, id: string): Promise<{ und
       await updateAskChangesetRows(ctx, found, [{ id: row.id, patch: { error: outcome.error } }]);
     }
   }
-  if (undone === 0 && kept.length === 0) throw new ChangesetRefused('Nothing on this card has been saved.');
-  if (kept.length === 0) await setAskChangesetStatus(ctx, found, 'undone', { undoneAt: now });
+  if (kept.length === 0 && mine.length === saved.length) await setAskChangesetStatus(ctx, found, 'undone', { undoneAt: now });
   if (found.changeset.engagementId && undone > 0) {
     await recordAuditEvent(ctx, {
       engagementId: found.changeset.engagementId,

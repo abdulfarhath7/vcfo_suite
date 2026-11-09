@@ -50,7 +50,7 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
     recipients: changeset.recipients ?? null,
     contentHash: changeset.contentHash,
     expiresAt: changeset.expiresAt.toISOString(),
-    canUndo: (found.owner || changeset.decidedById === ctx.userId) && found.rows.some((row) => row.status === 'applied' && row.hasUndo),
+    canUndo: found.rows.some((row) => row.status === 'applied' && row.hasUndo && canDecideRow(found, row)),
     rows,
   };
 }

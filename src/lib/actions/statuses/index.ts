@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
 import { getFilings } from '@/db/repositories/filings';
 import { FilingStatusError, markFilingFiled, reopenFiling } from '@/db/repositories/filing-status';
+import { isAdminOrManager } from '@/lib/auth';
 import { filingStatus } from '@/lib/compliance/filings';
 import { buildPhaseProgress, currentPhaseRow } from '@/lib/ask/phase-progress';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -81,7 +82,8 @@ const markFiled = defineAction({
     refusing(async () => {
       const filing = await scopedFiling(actx, input.filingId);
       await markFilingFiled(actx.auth, input.filingId, { filedOn: input.filedOn, note: input.note });
-      return { ok: true, summary: `${filing.particular} is recorded as filed.`, undo: { filingId: input.filingId } };
+      // Only a manager may reopen a filing on its screen, so only a manager's save offers an undo.
+      return { ok: true, summary: `${filing.particular} is recorded as filed.`, ...(isAdminOrManager(actx.auth.role) ? { undo: { filingId: input.filingId } } : {}) };
     }),
   undo: async (actx, undo) => {
     const id = (undo as { filingId?: unknown } | null)?.filingId;

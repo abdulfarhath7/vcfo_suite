@@ -307,6 +307,11 @@ describe('the 25 actions', () => {
     expect(await byName('documents.delete').execute(actx('intern'), { documentId: ID })).toEqual({ ok: false, error: 'You can remove only your own uploads.' });
   });
 
+  it('offers an undo of a filed mark only to a manager, who alone may reopen a filing', async () => {
+    expect(await byName('statuses.markFiled').execute(actx('intern'), { filingId: ID })).not.toHaveProperty('undo');
+    expect(await byName('statuses.markFiled').execute(actx('manager'), { filingId: ID })).toMatchObject({ undo: { filingId: ID } });
+  });
+
   it('undoes what has an undo', async () => {
     const todo = byName('tasks.addPersonalTodo');
     const added = await todo.execute(actx(), { taskId: ID, label: 'Mine' });

@@ -175,6 +175,19 @@ describe('decideChangeset', () => {
     expect(sendEvent).toHaveBeenCalledTimes(1);
   });
 
+  it('lets a manager reject only the rows a manager decides, and leaves the lead\'s own rows open', async () => {
+    setCard([makeRow('a', { target: { stepId: 'pre-2', fieldId: 'a', needsManager: true } }), makeRow('b')], { owner: false, manager: true, viewerId: 'mgr-1' });
+    await rejectChangeset(manager, 'cs-1');
+    expect(updateRows.mock.calls.at(-1)![2]).toEqual([{ id: 'a', patch: { status: 'skipped' } }]);
+    expect(setStatus).not.toHaveBeenCalled();
+    expect(noteDecision).toHaveBeenCalledWith('run-1', false);
+    // The lead who asked may still withdraw every row, the manager's one included.
+    setCard([makeRow('a', { target: { stepId: 'pre-2', fieldId: 'a', needsManager: true } }), makeRow('b')]);
+    await rejectChangeset(lead, 'cs-1');
+    expect(updateRows.mock.calls.at(-1)![2].map((r: { id: string }) => r.id)).toEqual(['a', 'b']);
+    expect(setStatus.mock.calls.at(-1)![2]).toBe('rejected');
+  });
+
   it('refuses a person who is neither owner nor manager on the card', async () => {
     found = null;
     await expect(decideChangeset(lead, 'cs-1', { contentHash: 'x'.repeat(64), accept: ['a'] })).rejects.toMatchObject({ status: 404 });
@@ -298,8 +311,24 @@ describe('undoChangeset', () => {
     expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'ask.changeset.undone' });
   });
 
-  it('refuses someone who neither prepared nor saved it', async () => {
+  it('refuses someone who could not approve any of the saved rows', async () => {
     setCard([makeRow('a', { status: 'applied', undoData: {} })], { owner: false, manager: true });
     await expect(undoChangeset(manager, 'cs-1')).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('undoes each row with the right to approve it, whoever clicked last', async () => {
+    const managerRow = makeRow('a', { status: 'applied', undoData: { n: 1 }, target: { stepId: 'pre-2', fieldId: 'a', needsManager: true } });
+    const leadRow = makeRow('b', { status: 'applied', undoData: { n: 2 } });
+    // The lead decided last, yet the manager's row is the manager's to put back, and the lead's row stays.
+    setCard([managerRow, leadRow], { owner: false, manager: true, viewerId: 'mgr-1' });
+    (found as { changeset: { decidedById: string } }).changeset.decidedById = 'lead-1';
+    expect(await undoChangeset(manager, 'cs-1')).toEqual({ undone: 1, kept: [] });
+    expect(undo.mock.calls.map((call) => call[1])).toEqual([{ n: 1 }]);
+    expect(setStatus).not.toHaveBeenCalled();
+    // The lead who prepared the card cannot reverse the manager's approval.
+    vi.clearAllMocks();
+    setCard([managerRow]);
+    await expect(undoChangeset(lead, 'cs-1')).rejects.toMatchObject({ status: 403 });
+    expect(undo).not.toHaveBeenCalled();
   });
 });
