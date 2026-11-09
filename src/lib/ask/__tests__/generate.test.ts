@@ -18,7 +18,7 @@ function inputWith(script: LlmResult[], maxTotalTokens: number): GenerateInput {
     provider: { name: 'scripted', complete: async () => script.shift() ?? Promise.reject(new Error('unexpected model call')) },
     model: 'claude-sonnet-5-5',
     effort: 'low',
-    shell: 'staff',
+    shell: 'admin',
     firmName: 'SBC',
     snapshot: null,
     sources: [],
