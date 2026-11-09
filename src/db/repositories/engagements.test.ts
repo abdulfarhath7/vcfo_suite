@@ -169,8 +169,8 @@ describe('scopeFor via listEngagements / getEngagementById', () => {
   it('intern without an internId matches nothing', async () => {
     await repo.listEngagements(ctx('intern', { internId: undefined }));
     const q = lastWhere();
-    expect(q.sql).toBe('"engagements"."id" = $1');
-    expect(q.params).toEqual(['__none__']);
+    expect(q.sql).toBe('false');
+    expect(q.params).toEqual([]);
     expect(listLeadMemberEngagementIds).not.toHaveBeenCalled();
   });
 

@@ -91,7 +91,8 @@ export async function scopeFor(ctx: AuthContext) {
     return and(notDeleted, roleScope);
   }
   if (ctx.role === 'intern') {
-    if (!ctx.internId) return eq(engagements.id, '__none__');
+    // A lead with no intern id reaches nothing. A constant false keeps a non-uuid out of a uuid column.
+    if (!ctx.internId) return sql`false`;
     const memberIds = await listLeadMemberEngagementIds(ctx.internId);
     const conds = [eq(engagements.internId, ctx.internId)];
     if (memberIds.length > 0) conds.push(inArray(engagements.id, memberIds));
