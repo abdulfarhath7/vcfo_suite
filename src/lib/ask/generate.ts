@@ -118,7 +118,7 @@ export interface GenerateInput {
   decision: boolean;
   tools: ReadonlyArray<{ definition: LlmTool; run: (input: Record<string, unknown>) => Promise<unknown> }>;
   validate: (raw: unknown, toolResultTexts: readonly string[]) => ValidationResult;
-  /** Input plus output tokens this answer may spend across its rounds. */
+  /** Input, output and cache-write tokens this answer may spend across its rounds. */
   maxTotalTokens: number;
 }
 
@@ -193,10 +193,12 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
     model = response.model;
     usage = addLlmUsage(usage, response.usage);
 
-    if (usage.inputTokens + usage.outputTokens >= input.maxTotalTokens) {
-      return { result: { ok: false, errors: ['answer budget'], overBudget: true }, model, toolCalls, toolResultTexts, usage };
-    }
+    // Cache writes are billed above the input price, so they count. A reply over the budget still
+    // gives its finished answer, and only a reply with nothing finished stops on the budget.
+    const over = usage.inputTokens + usage.outputTokens + usage.cacheWriteTokens >= input.maxTotalTokens;
+    const overBudget = (): GenerateOutput => ({ result: { ok: false, errors: ['answer budget'], overBudget: true }, model, toolCalls, toolResultTexts, usage });
     if (response.stopReason === 'max_tokens') {
+      if (over) return overBudget();
       maxTokens *= 2;
       continue;
     }
@@ -258,6 +260,7 @@ export async function generateAnswer(input: GenerateInput): Promise<GenerateOutp
       }
     }
     if (final) return { result: final, model, toolCalls, toolResultTexts, usage };
+    if (over) return overBudget();
     // All tool results of one turn go back in a single user message.
     messages.push({ role: 'user', content: results });
   }
