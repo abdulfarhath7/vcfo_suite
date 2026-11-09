@@ -116,6 +116,7 @@ export function recordDraft(
   },
 ): ChangesetDraft {
   const displayNew = maskIdentityNumbers(draft.displayNew);
+  const displayOld = draft.displayOld == null ? null : maskIdentityNumbers(draft.displayOld);
   return {
     title: draft.title,
     tier: draft.tier,
@@ -126,9 +127,9 @@ export function recordDraft(
         action: draft.action,
         target: JSON.parse(JSON.stringify(draft.target)) as { [key: string]: JsonValue },
         label: draft.label,
-        oldValue: draft.displayOld ?? null,
+        oldValue: displayOld,
         newValue: displayNew,
-        displayOld: draft.displayOld ?? '',
+        displayOld: displayOld ?? '',
         displayNew,
         sensitive: false,
         source: null,

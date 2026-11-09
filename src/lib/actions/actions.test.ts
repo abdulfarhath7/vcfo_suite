@@ -271,6 +271,12 @@ describe('the 25 actions', () => {
     expect([note!.tier, note!.recipients]).toEqual(['T3', client]);
   });
 
+  it('masks the value a card shows as it stands, as it masks the new one', async () => {
+    notesRepo.listEngagementNotes.mockResolvedValueOnce([{ id: ID, authorName: 'A', createdAt: 'x', pinned: false, body: 'Director PAN ABCDE1234F, MCA pwd Acme@2024' }]);
+    const row = (await byName('notes.delete').preview(actx(), { noteId: ID }))!.rows[0]!;
+    expect([row.displayOld, row.oldValue]).toEqual(['Director PAN XXXXXX234F, MCA pwd [hidden]', 'Director PAN XXXXXX234F, MCA pwd [hidden]']);
+  });
+
   it('lists the people a client comment tells, and refuses when no client would hear of it', async () => {
     const draft = await byName('tasks.commentToClient').preview(actx(), { taskId: ID, body: 'Hello' });
     expect(draft!.recipients).toEqual([{ name: 'Owner', email: 'o@x.test', role: 'Staff' }, { name: 'Client Person', email: 'c@x.test', role: 'Client' }]);
