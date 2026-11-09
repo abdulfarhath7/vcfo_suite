@@ -127,7 +127,7 @@ describe.skipIf(!process.env.ASK_PROACTIVE_DB)('Overnight proposals on the real 
     const rows = await rowsOf(made!.id);
     const targets = rows.map((row) => row.target as Record<string, string>);
     expect(targets).toContainEqual({ itemKey: `request:${requestId}` });
-    expect(targets).toContainEqual({ documentId, status: 'approved' });
+    expect(targets).toContainEqual({ documentId, status: 'approved', reviewAtCard: 'pending ' });
     for (const row of rows) expect(row).toMatchObject({ status: 'proposed', appliedAt: null, undoData: null });
 
     const [document] = await db.select().from(documents).where(eq(documents.id, documentId));
