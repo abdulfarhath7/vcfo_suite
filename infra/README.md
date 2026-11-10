@@ -161,6 +161,12 @@ so no apply and no redeploy (AWS-DEPLOY.md §11.1).
 
 ## Ask VCFO (in-app assistant)
 
+**Provider (2026-11-10):** the default is now Amazon Bedrock in ap-south-1 with India data residency
+(`ask_vcfo_llm_provider = "bedrock"`, `ask_vcfo_data_residency = "india"`), which needs no Anthropic
+key. Before applying it, follow `docs/specs/ask-vcfo/BEDROCK-INDIA.md` (model access, profile ids,
+retention `none` in both India regions). The Anthropic API steps below apply only with
+`ask_vcfo_llm_provider = "anthropic"` and `ask_vcfo_data_residency = "none"`.
+
 Off until `ask_vcfo_enabled = true`. The Anthropic API key never goes through
 Terraform: you create the secret by hand, Terraform only looks it up by name.
 

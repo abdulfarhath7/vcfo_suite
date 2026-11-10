@@ -147,10 +147,10 @@ resource "aws_secretsmanager_secret_version" "azure_ad_client_secret" {
 }
 
 # Ask VCFO: the Anthropic API key lives in a secret created by hand in the
-# console (value never in Terraform state). Looked up only when enabled, so a
-# plan without the secret still works.
+# console (value never in Terraform state). Looked up only when Ask VCFO runs on
+# the Anthropic API, so a plan without the secret still works (Bedrock needs no key).
 data "aws_secretsmanager_secret" "anthropic_api_key" {
-  count = var.ask_vcfo_enabled ? 1 : 0
+  count = local.ask_uses_anthropic ? 1 : 0
   name  = var.ask_vcfo_anthropic_secret_name
 }
 
@@ -164,7 +164,7 @@ locals {
     { auth_secret = aws_secretsmanager_secret.auth_secret.arn },
     local.db_rotating ? { db_master = local.db_master_secret_arn } : { database_url = aws_secretsmanager_secret.database_url[0].arn },
     local.outlook_enabled ? { azure_ad_client_secret = aws_secretsmanager_secret.azure_ad_client_secret[0].arn } : {},
-    var.ask_vcfo_enabled ? { anthropic_api_key = data.aws_secretsmanager_secret.anthropic_api_key[0].arn } : {},
+    local.ask_uses_anthropic ? { anthropic_api_key = data.aws_secretsmanager_secret.anthropic_api_key[0].arn } : {},
   )
 }
 

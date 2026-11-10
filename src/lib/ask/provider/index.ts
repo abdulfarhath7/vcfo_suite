@@ -3,6 +3,7 @@ import 'server-only';
 import type Anthropic from '@anthropic-ai/sdk';
 import { askConfig } from '@/lib/ask/config';
 import { anthropicApiKey } from '@/lib/secrets/app-secrets';
+import { AskResidencyError, residencyProblems } from './residency';
 
 /**
  * Provider seam (OD1). Both adapters speak the Messages API shape, so the
@@ -94,28 +95,66 @@ export function setAskProviderForTests(provider: LlmProvider | null | undefined)
 }
 
 let cached: { key: string; provider: LlmProvider | null } | null = null;
+let warnedOutsideIndia = false;
+let loggedResidencyError = '';
+
+/**
+ * A provider that refuses every call with the residency error, so a misconfigured India setup
+ * fails loudly on each path (the pipeline shows "unavailable") and never falls back elsewhere.
+ */
+function refusingProvider(error: AskResidencyError): LlmProvider {
+  return { name: 'refused', complete: () => Promise.reject(error) };
+}
 
 /**
  * The configured provider, or null when no credentials exist locally
  * (mirrors the email console-skip: deterministic paths keep working).
+ *
+ * RESIDENCY: with ASK_VCFO_DATA_RESIDENCY=india (the default for Bedrock) the configuration is
+ * checked here, at first use, and a bad one yields a provider that refuses every call with an
+ * AskResidencyError. There is no fallback to the Anthropic API or to a Global profile.
  */
 export async function getAskProvider(): Promise<LlmProvider | null> {
   if (override !== undefined) return override;
   const config = askConfig();
   // The key's source only (env or Secrets Manager); the value is read per call (M7).
-  const key = `${config.provider}:${config.bedrockRegion ?? ''}:${anthropicApiKey.source()}`;
+  const key = JSON.stringify([config.provider, config.dataResidency, config.bedrockRegion, config.models, anthropicApiKey.source()]);
   if (cached?.key === key) return cached.provider;
 
   let provider: LlmProvider | null = null;
-  if (config.provider === 'bedrock') {
-    if (config.bedrockRegion) {
+  const problems = residencyProblems(config);
+  if (problems.length > 0) {
+    const error = new AskResidencyError(problems);
+    if (loggedResidencyError !== error.message) {
+      loggedResidencyError = error.message;
+      console.error(`[ask-vcfo] refusing every model call: ${error.message}`);
+    }
+    provider = refusingProvider(error);
+  } else if (config.provider === 'bedrock') {
+    if (config.dataResidency === 'india') {
+      const { createBedrockIndiaProvider } = await import('./bedrock');
+      provider = createBedrockIndiaProvider(config.bedrockRegion!);
+    } else if (config.bedrockRegion) {
       const { createBedrockProvider } = await import('./bedrock');
       provider = createBedrockProvider(config.bedrockRegion);
     }
   } else if (anthropicApiKey.configured()) {
+    if (!warnedOutsideIndia) {
+      warnedOutsideIndia = true;
+      console.warn(
+        '[ask-vcfo] ASK_VCFO_LLM_PROVIDER=anthropic: prompts are processed by the Anthropic API outside India. Use Bedrock with ASK_VCFO_DATA_RESIDENCY=india in production (docs/specs/ask-vcfo/BEDROCK-INDIA.md).',
+      );
+    }
     const { createAnthropicProvider } = await import('./anthropic');
     provider = createAnthropicProvider({ refusalFallback: config.refusalFallback });
   }
   cached = { key, provider };
   return provider;
+}
+
+/** Tests only: forget the resolved provider and the one-time log lines. */
+export function resetAskProviderCacheForTests(): void {
+  cached = null;
+  warnedOutsideIndia = false;
+  loggedResidencyError = '';
 }
