@@ -27,7 +27,7 @@ test('T-08 MCA document pack', async ({ browser }) => {
 
   let items: Item[] = [];
   await step(lead, { test: T, step: 1, role: 'lead', caption: 'The lead opens the document pack: each incorporation document is generated from the answers.' }, async () => {
-    await lead.goto(`/app/intern/engagements/${trackA.slug}/documents`);
+    await lead.goto(`/app/lead/engagements/${trackA.slug}/documents`);
     await settle(lead, /Download/);
     const res = await lead.request.get(`/api/engagements/${trackA.id}/doc-pack`);
     expect(res.ok()).toBe(true);

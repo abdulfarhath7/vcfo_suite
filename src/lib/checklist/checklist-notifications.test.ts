@@ -40,7 +40,7 @@ describe('diffChecklistForNotifications', () => {
     );
     expect(items).toHaveLength(1);
     expect(items[0]?.kind).toBe('checklist.submit');
-    expect(items[0]?.href).toContain('/app/intern/engagements/');
+    expect(items[0]?.href).toContain('/app/lead/engagements/');
   });
 
   it('labels lead→manager approval requests distinctly', () => {

@@ -12,7 +12,7 @@ test('T-21 Regression, security and sign-off', async ({ browser }) => {
   const client = await as(browser, 'clientB');
 
   await step(client, { test: T, step: 2, role: 'clientB', caption: 'The Kaveri client types staff URLs: each one sends the client back to the portal.' }, async () => {
-    const urls = ['/app/admin/people', '/app/manager/approvals', '/app/intern/vault', '/app/super/dashboard', '/app/admin/firm-settings', `/app/admin/projects/${st.trackA.slug}`, '/app/dev/overview'];
+    const urls = ['/app/admin/people', '/app/manager/approvals', '/app/lead/vault', '/app/super/dashboard', '/app/admin/firm-settings', `/app/admin/projects/${st.trackA.slug}`, '/app/dev/overview'];
     const leaks: string[] = [];
     for (const u of urls) {
       await client.goto(u);
@@ -49,7 +49,7 @@ test('T-21 Regression, security and sign-off', async ({ browser }) => {
     const a = st.trackA.id;
     const r1 = await lead.request.get(`/api/engagements/${a}/doc-pack`);
     const r2 = await lead.request.get(`/api/engagements/${a}`);
-    await lead.goto(`/app/intern/engagements/${st.trackA.slug}`);
+    await lead.goto(`/app/lead/engagements/${st.trackA.slug}`);
     await settle(lead);
     const body = await lead.locator('body').innerText();
     expect([401, 403, 404]).toContain(r1.status());

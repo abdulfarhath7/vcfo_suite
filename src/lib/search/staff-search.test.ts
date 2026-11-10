@@ -132,7 +132,7 @@ describe('GET /api/search', () => {
     const res = await call('gstr');
     const { hits } = (await res.json()) as { hits: Array<{ href: string; client?: string }> };
     expect(hits.some((h) => h.href.includes('eng-other') || h.client === 'Other Co')).toBe(false);
-    expect(hits.every((h) => h.href.startsWith('/app/intern/'))).toBe(true);
+    expect(hits.every((h) => h.href.startsWith('/app/lead/'))).toBe(true);
   });
 
   it('refuses a client and a developer', async () => {

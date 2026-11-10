@@ -11,19 +11,19 @@ import {
 } from '@/components/shell/compliance-nav';
 
 const leaves: SidebarNavLeaf[] = [
-  { to: '/app/intern/vault', label: 'Vault', icon: () => null },
-  { to: '/app/intern/knowledge-bank', label: 'Knowledge Bank', icon: () => null },
+  { to: '/app/lead/vault', label: 'Vault', icon: () => null },
+  { to: '/app/lead/knowledge-bank', label: 'Knowledge Bank', icon: () => null },
 ];
 
 describe('sidebar nav groups', () => {
   it('treats vault and knowledge-bank as the Docs section', () => {
-    expect(isSidebarGroupActive('/app/intern/vault', leaves)).toBe(true);
-    expect(isSidebarGroupActive('/app/intern/knowledge-bank', leaves)).toBe(true);
-    expect(isSidebarGroupActive('/app/intern/today', leaves)).toBe(false);
+    expect(isSidebarGroupActive('/app/lead/vault', leaves)).toBe(true);
+    expect(isSidebarGroupActive('/app/lead/knowledge-bank', leaves)).toBe(true);
+    expect(isSidebarGroupActive('/app/lead/today', leaves)).toBe(false);
   });
 
   it('lights the Compliances group on either child, for every shell base', () => {
-    for (const base of ['/app/client', '/app/intern', '/app/manager', '/app/admin']) {
+    for (const base of ['/app/client', '/app/lead', '/app/manager', '/app/admin']) {
       const leaves = complianceLeaves(base);
       expect(leaves.map((leaf) => leaf.label)).toEqual(['Obligations', 'Calendar', 'Filings']);
       expect(leaves.map((leaf) => leaf.to)).toEqual([
@@ -43,7 +43,7 @@ describe('sidebar nav groups', () => {
     expect(compliancesBasePath('super_admin', '/app/super')).toBe('/app/admin');
     expect(compliancesBasePath('admin', '/app/admin')).toBe('/app/admin');
     expect(compliancesBasePath('manager', '/app/manager')).toBe('/app/manager');
-    expect(compliancesBasePath('intern', '/app/manager')).toBe('/app/intern');
+    expect(compliancesBasePath('intern', '/app/manager')).toBe('/app/lead');
     expect(compliancesBasePath('client', '/app/manager')).toBe('/app/client');
     expect(complianceCalendarPath('super_admin', '/app/super')).toBe('/app/admin/compliances/calendar');
     expect(complianceCalendarPath('manager', '/app/manager')).toBe('/app/manager/compliances/calendar');

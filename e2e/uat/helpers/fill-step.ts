@@ -212,7 +212,7 @@ export async function runStep(
     action?: 'submit' | 'approval';
   },
 ): Promise<string> {
-  const base = o.role.startsWith('lead') ? `/app/intern/engagements/${o.engagement.slug}` : `/app/${o.role}/projects/${o.engagement.slug}`;
+  const base = o.role.startsWith('lead') ? `/app/lead/engagements/${o.engagement.slug}` : `/app/${o.role}/projects/${o.engagement.slug}`;
   await page.goto(`${base}/step/${o.slug}`);
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.getByRole('heading', { name: o.title }).first().waitFor({ timeout: 30_000 }).catch(() => {});

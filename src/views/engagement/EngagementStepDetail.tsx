@@ -189,7 +189,7 @@ export default function EngagementStepDetail() {
       {isClientRoute ? (
         <WhatsThisButton kind="step" refId={item.id} label={item.title} />
       ) : (
-        <WhatsThisButton kind="step" refId={item.id} label={item.title} variant="outline" className="h-control-md px-3.5 text-[14px]" onOpen={() => setAboutOpen(true)} />
+        <WhatsThisButton kind="step" refId={item.id} label={item.title} variant="outline" className="h-control-md w-auto aspect-square" onOpen={() => setAboutOpen(true)} />
       )}
       {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
       {docPackHref ? (

@@ -653,7 +653,7 @@ const REVIEW_WORD: Record<DocumentReviewStatus, string> = {
 };
 
 function vaultPathForRole(role: string | null | undefined): string {
-  if (role === 'intern') return '/app/intern/vault';
+  if (role === 'intern') return '/app/lead/vault';
   if (role === 'manager') return '/app/manager/vault';
   if (role === 'client') return '/app/client/documents';
   return '/app/admin/vault';

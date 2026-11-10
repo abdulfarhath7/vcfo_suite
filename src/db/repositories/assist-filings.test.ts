@@ -291,7 +291,7 @@ describe('the deadline job', () => {
     ];
     const due = await filings.systemFilingAlertsDue('2026-11-14');
     expect(due).toHaveLength(1);
-    expect(due[0]).toMatchObject({ recipientId: 'lead-1', href: '/app/intern/engagements/acme', companyName: 'Acme' });
+    expect(due[0]).toMatchObject({ recipientId: 'lead-1', href: '/app/lead/engagements/acme', companyName: 'Acme' });
     expect(due[0]!.due[0]).toMatchObject({ key: 'upload', daysLeft: 2 });
     await filings.systemMarkFilingAlerted('f1', {}, ['upload'], '2026-11-14');
     const update = calls.find((c) => c.op === 'update')!;

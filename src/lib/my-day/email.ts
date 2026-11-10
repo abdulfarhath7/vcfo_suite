@@ -21,7 +21,7 @@ function lineText(item: RankedMyDayItem): string {
 
 /** The Today page each role opens; the plan card sits at its top. */
 export function myDayHomeHref(role: string): string {
-  if (role === 'intern') return '/app/intern/today';
+  if (role === 'intern') return '/app/lead/today';
   if (role === 'super_admin') return '/app/super/dashboard';
   return role === 'manager' ? '/app/manager/dashboard' : '/app/admin/dashboard';
 }

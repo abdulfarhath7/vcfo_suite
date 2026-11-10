@@ -100,7 +100,7 @@ function parseWorkView(value: string | null | undefined): WorkView {
 
 /**
  * `internWorkPath` with the Planner view kept in the `view` param, on the page at `path` (the
- * lead's `/app/intern/tasks`, the manager's `/app/manager/work`, or one lead's page). `lead`
+ * lead's `/app/lead/tasks`, the manager's `/app/manager/work`, or one lead's page). `lead`
  * is the team pages' Lead filter.
  */
 function workPath(
@@ -202,7 +202,7 @@ export interface WorkScreenProps {
 }
 
 /**
- * Work: the lead's own Work page (`/app/intern/tasks`), the manager's Work (`/app/manager/work`)
+ * Work: the lead's own Work page (`/app/lead/tasks`), the manager's Work (`/app/manager/work`)
  * and the work part of one lead's page. With `team` the list adds the Lead column and filter,
  * bulk Assign and row Reassign (managers and admins move steps and tasks through
  * `/api/work/reassign`), the board shows each card's lead and the drawer marks items that wait
@@ -220,7 +220,7 @@ export function WorkScreen({
   planner,
   team,
   storageScope,
-  seo = { title: 'My work — VCFO Suite', description: 'List, board, and timeline of your open steps and filings.', path: '/app/intern/tasks' },
+  seo = { title: 'My work — VCFO Suite', description: 'List, board, and timeline of your open steps and filings.', path: '/app/lead/tasks' },
 }: WorkScreenProps) {
   const params = useSearchParams();
   const router = useRouter();

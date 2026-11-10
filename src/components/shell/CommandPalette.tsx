@@ -129,18 +129,18 @@ function pagesForRole(role: Role | undefined): PageLink[] {
       ];
     case "intern":
       return [
-        { label: "Today", href: "/app/intern/today" },
-        { label: "My work", href: "/app/intern/tasks" },
-        { label: "Clients", href: "/app/intern/clients" },
-        { label: "Document vault", href: "/app/intern/vault" },
-        { label: "Announcements", href: "/app/intern/announcements" },
-        { label: "Notification history", href: "/app/intern/notifications" },
-        { label: "Send email", href: "/app/intern/mail" },
-        { label: "Analytics", href: "/app/intern/analytics" },
-        { label: "Compliance calendar", href: "/app/intern/compliances/calendar" },
-        { label: "Filings", href: "/app/intern/compliances/filings" },
-        { label: "Audit log", href: "/app/intern/audit-log" },
-        { label: "Knowledge Bank", href: "/app/intern/knowledge-bank" },
+        { label: "Today", href: "/app/lead/today" },
+        { label: "My work", href: "/app/lead/tasks" },
+        { label: "Clients", href: "/app/lead/clients" },
+        { label: "Document vault", href: "/app/lead/vault" },
+        { label: "Announcements", href: "/app/lead/announcements" },
+        { label: "Notification history", href: "/app/lead/notifications" },
+        { label: "Send email", href: "/app/lead/mail" },
+        { label: "Analytics", href: "/app/lead/analytics" },
+        { label: "Compliance calendar", href: "/app/lead/compliances/calendar" },
+        { label: "Filings", href: "/app/lead/compliances/filings" },
+        { label: "Audit log", href: "/app/lead/audit-log" },
+        { label: "Knowledge Bank", href: "/app/lead/knowledge-bank" },
       ];
     case "client":
       return [
@@ -179,7 +179,7 @@ function documentRegulator(doc: { section: string; milestoneTitle: string; bucke
 
 function staffLibraryPaths(role: Role | undefined, staffBase: string) {
   if (role === "intern") {
-    return { vault: "/app/intern/vault", kb: "/app/intern/knowledge-bank" };
+    return { vault: "/app/lead/vault", kb: "/app/lead/knowledge-bank" };
   }
   return { vault: `${staffBase}/vault`, kb: `${staffBase}/knowledge-bank` };
 }

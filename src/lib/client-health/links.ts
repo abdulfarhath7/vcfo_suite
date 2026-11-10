@@ -10,8 +10,8 @@ type ProjectTarget = { id: string; slug?: string | null };
 
 const project = (p: ProjectTarget) => ({ id: p.id, slug: p.slug ?? p.id });
 
-export function roleBase(role: string): '/app/intern' | '/app/manager' | '/app/admin' | '/app/super' {
-  if (role === 'intern') return '/app/intern';
+export function roleBase(role: string): '/app/lead' | '/app/manager' | '/app/admin' | '/app/super' {
+  if (role === 'intern') return '/app/lead';
   if (role === 'manager') return '/app/manager';
   if (role === 'super_admin') return '/app/super';
   return '/app/admin';

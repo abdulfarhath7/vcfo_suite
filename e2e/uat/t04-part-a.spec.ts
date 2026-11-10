@@ -94,7 +94,7 @@ test('T-04 Client questionnaire (Part A)', async ({ browser }) => {
 
   const lead = await as(browser, 'lead');
   await step(lead, { test: T, step: 3, role: 'lead', caption: 'The lead opens the same step, sees the client\'s answers and adds the NIC code 62011; the business type fills in by itself.' }, async () => {
-    await lead.goto(`/app/intern/engagements/${trackA.slug}/step/name-application`);
+    await lead.goto(`/app/lead/engagements/${trackA.slug}/step/name-application`);
     await settle(lead, /Business Description/);
     await tab(lead, 'Proposed Company Names').click();
     await expect(seen(lead, 'Nilgiri Insights Private Limited')).toBeVisible();

@@ -46,9 +46,9 @@ export function tabBarTabs(role: Role | undefined, { staffBase = '/app/manager',
       ];
     case 'intern':
       return [
-        { label: 'Today', href: '/app/intern/today', Icon: LayoutDashboard },
-        { label: 'Work', href: '/app/intern/tasks', Icon: ListChecks },
-        { label: 'Clients', href: '/app/intern/clients', Icon: Building2 },
+        { label: 'Today', href: '/app/lead/today', Icon: LayoutDashboard },
+        { label: 'Work', href: '/app/lead/tasks', Icon: ListChecks },
+        { label: 'Clients', href: '/app/lead/clients', Icon: Building2 },
       ];
     case 'manager':
       return [

@@ -12,6 +12,7 @@ import { postLoginPath, roleHomePath } from '@/lib/auth-routes';
  *   - A client partner is kept out of /app and /receivables/manager and sent to /receivables.
  *   - Staff who open a partner page go to /receivables/manager (editors) or their role home.
  *   - On /app the URL segment must match the role; the super admin may enter every segment.
+ *   - An old /app/intern/... link goes to the same page under /app/lead/... for everyone.
  *   - A shared view, /receivables/s/<token> (Phase 10), is let through for everyone, signed out
  *     or not, because the page itself decides who may see it. A signed-in person who lands on the
  *     partner login with `?next=` set to a shared view goes straight to it.
@@ -21,12 +22,12 @@ const ROLE_SEGMENT: Partial<Record<Role, string>> = {
   super_admin: 'super',
   admin: 'admin',
   manager: 'manager',
-  intern: 'intern',
+  intern: 'lead',
   client: 'client',
   developer: 'dev',
 };
 
-const ALL_SEGMENTS = new Set(['super', 'admin', 'manager', 'intern', 'client', 'dev']);
+const ALL_SEGMENTS = new Set(['super', 'admin', 'manager', 'lead', 'client', 'dev']);
 
 /** The roles that may open the receivables manager area. */
 const RECEIVABLES_EDITORS = new Set<string>(['super_admin', 'admin', 'manager']);
@@ -55,6 +56,12 @@ export function isReceivablesPartnerPath(path: string): boolean {
   return !isReceivablesManagerPath(path) && !isPublicReceivablesPath(path) && !isReceivablesSharePath(path);
 }
 
+/** The /app/lead address of an old /app/intern one, or null for any other path. */
+export function movedLeadPath(path: string): string | null {
+  if (path === '/app/intern' || path.startsWith('/app/intern/')) return `/app/lead${path.slice('/app/intern'.length)}`;
+  return null;
+}
+
 /** The role home, or /login for a role this build does not know. */
 function homeFor(role: string): string {
   return isValidDbRole(role) ? roleHomePath(role) : '/login';
@@ -71,6 +78,10 @@ function loginRedirect(loginPath: string, next: string): string {
  */
 export function proxyRedirect(path: string, search: string, role: string | null | undefined): string | null {
   if (isReceivablesSharePath(path)) return null;
+  // The project lead's pages moved from /app/intern to /app/lead (owner, 10 Nov 2026). Old
+  // bookmarks, emails and notification links keep working: they go to the same page there.
+  const moved = movedLeadPath(path);
+  if (moved) return `${moved}${search}`;
   const isApp = path === '/app' || path.startsWith('/app/');
   const isManager = isReceivablesManagerPath(path);
   const isPartnerPage = isReceivablesPartnerPath(path);

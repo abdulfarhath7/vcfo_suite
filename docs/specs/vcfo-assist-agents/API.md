@@ -315,7 +315,7 @@ open, so the extension does not need to know the role:
 
 | Role | Lands on |
 |---|---|
-| Project lead (`intern`) | `/app/intern/engagements/{slug}/step/{stepSlug}` |
+| Project lead (`intern`) | `/app/lead/engagements/{slug}/step/{stepSlug}` |
 | Manager | `/app/manager/projects/{slug}/step/{stepSlug}` |
 | Admin, super admin | `/app/admin/projects/{slug}/step/{stepSlug}` |
 

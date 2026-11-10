@@ -96,10 +96,10 @@ export function useDocumentVault() {
   }, [urlQ]);
   const [checklistRefreshing, setChecklistRefreshing] = useState(false);
 
-  const isIntern = user?.role === 'intern' || pathname.startsWith('/app/intern/');
+  const isIntern = user?.role === 'intern' || pathname.startsWith('/app/lead/');
   const isSuper = user?.role === 'super_admin' || pathname.startsWith('/app/super/');
-  const vaultPath = isIntern ? '/app/intern/vault' : isSuper ? '/app/super/vault' : `${staffBase}/vault`;
-  const portfolioHref = isIntern ? '/app/intern/clients' : `${staffBase}/projects`;
+  const vaultPath = isIntern ? '/app/lead/vault' : isSuper ? '/app/super/vault' : `${staffBase}/vault`;
+  const portfolioHref = isIntern ? '/app/lead/clients' : `${staffBase}/projects`;
   const portfolioLabel = isIntern ? 'View clients' : 'View projects';
 
   const engagementIds = useMemo(() => engagements.map((e) => e.id), [engagements]);

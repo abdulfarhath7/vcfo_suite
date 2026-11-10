@@ -71,7 +71,7 @@ Branch `ovn/m3`. The owner approved these items. The checks were `npx tsc --noEm
 
 | Item | Result | Status |
 |---|---|---|
-| Routes | `/app/client/ask`, `/app/intern/ask`, `/app/manager/ask`, `/app/admin/ask`, `/app/super/ask`. | ✓ |
+| Routes | `/app/client/ask`, `/app/lead/ask`, `/app/manager/ask`, `/app/admin/ask`, `/app/super/ask`. | ✓ |
 | Developer | No page. Ask VCFO is off for the developer (`canUseAsk`). | ✓ |
 | Layout | Past chats on the left. The conversation on the right with the same thread, answer cards and composer. "New chat" starts a new chat. | ✓ |
 | Open full page | A head button in both pop-ups. It closes the pop-up and opens the page. The provider keeps the same conversation. | ✓ |

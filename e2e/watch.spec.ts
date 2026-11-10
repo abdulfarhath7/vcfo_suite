@@ -58,9 +58,9 @@ test.describe.serial('official updates', () => {
     await login(page, 'lead');
     const unreviewed = (await boardTitles(page)).filter((row) => row.unreviewed);
     test.skip(unreviewed.length === 0, 'No update is waiting for review.');
-    await page.goto('/app/intern/announcements');
+    await page.goto('/app/lead/announcements');
     await expect(page.getByText('Not yet reviewed').first()).toBeVisible();
-    await page.goto('/app/intern/watch');
+    await page.goto('/app/lead/watch');
     await page.getByRole('button', { name: /Not yet reviewed/ }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish' })).toHaveCount(0);

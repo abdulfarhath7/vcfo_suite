@@ -110,33 +110,33 @@ describe('deterministic answers carry links', () => {
 
 describe('links per shell', () => {
   it('sends a Project Lead to the lead pages, never a manager page', () => {
-    expect(resolveHref({ to: 'project', engagementId: 'acme' }, LEAD_BASE)).toMatch(/^\/app\/intern\/engagements\/acme\?/);
-    expect(resolveHref({ to: 'projectStep', engagementId: 'acme', stepId: 'pre-2' }, LEAD_BASE)).toMatch(/^\/app\/intern\/engagements\/acme\//);
-    expect(resolveHref({ to: 'approvals' }, LEAD_BASE)).toMatch(/^\/app\/intern\/clients\?/);
-    expect(resolveHref({ to: 'compliance' }, LEAD_BASE)).toMatch(/^\/app\/intern\/compliances\/filings\?/);
-    expect(resolveHref({ to: 'composeReminder', engagementId: 'acme' }, LEAD_BASE)).toMatch(/^\/app\/intern\/mail\?/);
-    expect(askProjectPath('acme', LEAD_BASE)).toBe('/app/intern/engagements/acme');
+    expect(resolveHref({ to: 'project', engagementId: 'acme' }, LEAD_BASE)).toMatch(/^\/app\/lead\/engagements\/acme\?/);
+    expect(resolveHref({ to: 'projectStep', engagementId: 'acme', stepId: 'pre-2' }, LEAD_BASE)).toMatch(/^\/app\/lead\/engagements\/acme\//);
+    expect(resolveHref({ to: 'approvals' }, LEAD_BASE)).toMatch(/^\/app\/lead\/clients\?/);
+    expect(resolveHref({ to: 'compliance' }, LEAD_BASE)).toMatch(/^\/app\/lead\/compliances\/filings\?/);
+    expect(resolveHref({ to: 'composeReminder', engagementId: 'acme' }, LEAD_BASE)).toMatch(/^\/app\/lead\/mail\?/);
+    expect(askProjectPath('acme', LEAD_BASE)).toBe('/app/lead/engagements/acme');
   });
 
   it.each([
     ['projects', '/app/admin', '/app/admin/projects'],
     ['projects', '/app/manager', '/app/manager/projects'],
     ['projects', '/app/super', '/app/admin/projects'],
-    ['projects', LEAD_BASE, '/app/intern/clients'],
+    ['projects', LEAD_BASE, '/app/lead/clients'],
     ['approvals', '/app/manager', '/app/manager/approvals'],
-    ['approvals', LEAD_BASE, '/app/intern/clients'],
+    ['approvals', LEAD_BASE, '/app/lead/clients'],
     ['filings', '/app/admin', '/app/admin/compliances/filings'],
-    ['filings', LEAD_BASE, '/app/intern/compliances/filings'],
+    ['filings', LEAD_BASE, '/app/lead/compliances/filings'],
     ['filings', '/app/client', '/app/client/compliances/filings'],
-    ['requests', LEAD_BASE, '/app/intern/requests'],
+    ['requests', LEAD_BASE, '/app/lead/requests'],
     ['requests', '/app/client', '/app/client/documents'],
-    ['tasks', LEAD_BASE, '/app/intern/tasks'],
+    ['tasks', LEAD_BASE, '/app/lead/tasks'],
     ['tasks', '/app/manager', '/app/manager/work'],
     ['tasks', '/app/admin', '/app/admin/projects'],
     ['documents', '/app/client', '/app/client/documents'],
     ['documents', '/app/manager', '/app/manager/vault'],
     ['registrations', '/app/client', '/app/client/registrations'],
-    ['labour', LEAD_BASE, '/app/intern/labour-registers'],
+    ['labour', LEAD_BASE, '/app/lead/labour-registers'],
     ['people', '/app/admin', '/app/admin/people'],
     ['updates', '/app/client', '/app/client/announcements'],
     ['receivables', '/app/manager', '/receivables/manager'],

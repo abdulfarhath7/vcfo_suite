@@ -8,7 +8,7 @@ import { login } from './helpers/login';
  */
 test('the lead creates a meeting and walks its tabs', async ({ page }) => {
   await login(page, 'lead');
-  await page.goto('/app/intern/compliances/obligations?cat=ns');
+  await page.goto('/app/lead/compliances/obligations?cat=ns');
   await page.getByRole('button', { name: 'New meeting' }).click();
   await page.getByRole('button', { name: /Create and draft notice/ }).click();
   await page.waitForURL(/\/obligations\/meetings\//, { timeout: 60_000 });

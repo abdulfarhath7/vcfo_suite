@@ -10,7 +10,7 @@ test.afterAll(closeAll);
 test('T-20 WhatsApp', async ({ browser }) => {
   const lead = await as(browser, 'lead2');
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead adds a WhatsApp number and ticks consent in Settings › About you.' }, async () => {
-    await lead.goto('/app/intern/settings');
+    await lead.goto('/app/lead/settings');
     await settle(lead, /About you/);
     const wa = lead.locator('#profile-whatsapp').or(lead.getByPlaceholder('+91 98765 43210')).first();
     await wa.fill('+91 98450 67890');

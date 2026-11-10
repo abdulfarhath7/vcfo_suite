@@ -436,7 +436,7 @@ export async function addClientFilingProof(
             body: `${ctx.name || 'The client'} added ${safe} to ${filingName}. Check it before marking the filing.`,
             engagementId: inst.engagementId,
             companyName: about!.companyName,
-            href: '/app/intern/compliances/filings',
+            href: '/app/lead/compliances/filings',
           },
         ]);
       }

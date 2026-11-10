@@ -67,17 +67,17 @@ export function adminProjectStepPath(
 
 /** True for intern engagement detail, step, and board-resolution URLs. */
 export function isInternEngagementPathname(pathname: string): boolean {
-  return /^\/app\/intern\/engagements\/[^/]+/.test(pathname);
+  return /^\/app\/lead\/engagements\/[^/]+/.test(pathname);
 }
 
 /** True for intern checklist step detail (`…/engagements/{id}/step/…`). */
 export function isInternEngagementStepPathname(pathname: string): boolean {
-  return /^\/app\/intern\/engagements\/[^/]+\/step(?:\/|$)/.test(pathname);
+  return /^\/app\/lead\/engagements\/[^/]+\/step(?:\/|$)/.test(pathname);
 }
 
 /** Intern engagement detail (slug when available, else id / UUID). */
 export function internEngagementPath(project: ProjectRouteTarget): string {
-  return `/app/intern/engagements/${project.slug ?? project.id}`;
+  return `/app/lead/engagements/${project.slug ?? project.id}`;
 }
 
 /** Intern checklist step detail */

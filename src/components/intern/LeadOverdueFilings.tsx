@@ -35,7 +35,7 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
     .sort((a, b) => (a.status === 'overdue' ? 0 : 1) - (b.status === 'overdue' ? 0 : 1) || a.nextDue.localeCompare(b.nextDue))
     .slice(0, 8);
   return (
-    <DashSection title="Overdue filings" meta={rows.length ? `${rows.length}` : undefined} href="/app/intern/compliances/filings" hrefLabel="Filings" bodyClassName="px-0 py-0">
+    <DashSection title="Overdue filings" meta={rows.length ? `${rows.length}` : undefined} href="/app/lead/compliances/filings" hrefLabel="Filings" bodyClassName="px-0 py-0">
       {rows.length === 0 ? (
         <p className="px-4 py-4 text-[13px] text-ink-muted">No filing is overdue or due soon.</p>
       ) : (
@@ -65,7 +65,7 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
                 </span>
                 <span className="min-w-0 flex-1">
                   <Link
-                    href="/app/intern/compliances/calendar"
+                    href="/app/lead/compliances/calendar"
                     className="block truncate text-[13.5px] font-medium text-ink after:absolute after:inset-0 hover:underline"
                   >
                     {f.periodLabel && !f.periodLabel.startsWith(f.filing) ? `${f.filing} · ${f.periodLabel}` : (f.periodLabel ?? f.filing)}
@@ -80,7 +80,7 @@ export function LeadOverdueFilings({ filings, engagements, now }: { filings: Com
                 </Chip>
                 {late ? (
                   <Button size="sm" variant="strong" asChild className="relative">
-                    <Link href="/app/intern/compliances/calendar">Open</Link>
+                    <Link href="/app/lead/compliances/calendar">Open</Link>
                   </Button>
                 ) : null}
               </li>

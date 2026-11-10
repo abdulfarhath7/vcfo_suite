@@ -6,7 +6,7 @@ const SHELL: Partial<Record<Role, string>> = {
   super_admin: '/app/super/practice',
   admin: '/app/admin',
   manager: '/app/manager',
-  intern: '/app/intern',
+  intern: '/app/lead',
   client: '/app/client',
 };
 

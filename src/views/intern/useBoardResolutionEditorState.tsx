@@ -130,12 +130,12 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
 
   const { engagements, getStateForEngagement, refreshEngagementChecklist, reviewChecklistItem, user } = useApp();
   /**
-   * The same editor serves the project lead (`/app/intern/...`) and, since S-556, S-557 and P-112,
+   * The same editor serves the project lead (`/app/lead/...`) and, since S-556, S-557 and P-112,
    * the manager, the admin and the super admin. Staff other than the lead may edit while the draft
    * is with the manager, and they approve it or send it back instead of sending it for approval.
    * The server enforces the same split (`assertLeadMayEdit`, the finalize route's guard).
    */
-  const isLead = user?.role === 'intern' || pathname?.startsWith('/app/intern/') === true;
+  const isLead = user?.role === 'intern' || pathname?.startsWith('/app/lead/') === true;
   const staffShell: DocPackShell = isLead ? 'intern' : staffProjectBaseFromPathname(pathname, user?.role);
   const eng = useMemo(
 

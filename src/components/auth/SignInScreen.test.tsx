@@ -51,7 +51,7 @@ describe('SignInScreen', () => {
     expect(submit).toBeDisabled();
     fill('lead@firm.in', 'secret');
     fireEvent.click(submit);
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/app/intern/today'));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/app/lead/today'));
     expect(signIn).toHaveBeenCalledWith('lead@firm.in', 'secret');
   });
 

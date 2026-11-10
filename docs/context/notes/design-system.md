@@ -70,7 +70,7 @@ history). The lead dashboard is the canonical
 design system: where two versions of a primitive exist, the one the lead
 dashboard uses wins, and everything else is deprecated for new surfaces.
 
-> Repo correction to the context doc: `app/app/intern/*` holds **route shells
+> Repo correction to the context doc: `app/app/lead/*` holds **route shells
 > only** (`export default function Page() { return <InternToday /> }`). The real
 > UI lives in `src/views/intern/*` and `src/components/intern/*`.
 
@@ -104,7 +104,7 @@ dashboard uses wins, and everything else is deprecated for new surfaces.
   rail). Both `Today.tsx` and the current super dashboard use exactly this.
 - **KPI placement:** the lead's headline numbers live **inside the hero panel**
   (`LeadHero`'s stat row: serif value + small label, `border-l border-white/20`
-  separators, each deep-linking into `/app/intern/tasks?focus=…`). There is no
+  separators, each deep-linking into `/app/lead/tasks?focus=…`). There is no
   card band under the hero — the hero *is* the metric region. A screen that
   shows the same numbers in the hero *and* in a card band prints every number
   twice; the super admin surface follows the lead and keeps them in the hero

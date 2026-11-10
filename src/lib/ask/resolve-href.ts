@@ -9,7 +9,7 @@ import {
 } from '@/lib/projects/project-step-path';
 import type { StaffPathBase } from '@/lib/projects/project-step-path';
 
-export const LEAD_BASE = '/app/intern';
+export const LEAD_BASE = '/app/lead';
 export const CLIENT_BASE = '/app/client';
 /** A staff shell, the Project Lead's own one, which has different pages, or the client's. */
 export type AskLinkBase = StaffPathBase | typeof LEAD_BASE | typeof CLIENT_BASE;

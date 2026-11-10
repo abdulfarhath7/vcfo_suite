@@ -94,7 +94,7 @@ test('T-02 Logins, roles and access', async ({ browser }) => {
   await step(lead, { test: T, step: 2, role: 'lead', caption: 'Lata Lead turns on two-step sign-in with an authenticator code.' }, async () => {
     const [row] = await sql<{ on: boolean }>(`select totp_enabled_at is not null as on from profiles where email = $1`, [TEAM.lead.email]);
     if (row?.on) return { caption: 'Two-step sign-in is already on for Lata Lead.' };
-    await lead.goto('/app/intern/settings');
+    await lead.goto('/app/lead/settings');
     await lead.getByRole('button', { name: 'Sign-in and security' }).or(lead.getByRole('link', { name: 'Sign-in and security' })).or(lead.getByRole('tab', { name: 'Sign-in and security' })).first().click();
     await lead.getByRole('button', { name: 'Turn on' }).first().click();
     const key = lead.locator('code').filter({ hasText: /[A-Z2-7]{4}/ }).first();

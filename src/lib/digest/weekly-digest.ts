@@ -234,10 +234,10 @@ export interface StaffDigestInput {
 export function staffPaths(role: 'intern' | 'manager') {
   if (role === 'intern') {
     return {
-      work: '/app/intern/today',
-      filings: '/app/intern/compliances/filings',
-      waiting: '/app/intern/requests',
-      settings: '/app/intern/settings',
+      work: '/app/lead/today',
+      filings: '/app/lead/compliances/filings',
+      waiting: '/app/lead/requests',
+      settings: '/app/lead/settings',
     };
   }
   return {

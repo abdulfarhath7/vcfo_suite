@@ -190,7 +190,7 @@ describe('buildInternWorkItems', () => {
       ],
     });
     expect(items.find((i) => i.requestId === 'req-1')?.kind).toBe('waiting-request');
-    expect(items.find((i) => i.requestId === 'req-1')?.href).toBe('/app/intern/engagements/eng-1');
+    expect(items.find((i) => i.requestId === 'req-1')?.href).toBe('/app/lead/engagements/eng-1');
     expect(internWorkKpis(items, now).waiting.client).toBeGreaterThanOrEqual(1);
   });
 
@@ -572,11 +572,11 @@ describe('intern timeline gantt span', () => {
 });
 
 describe('internWorkPath', () => {
-  it('encodes cockpit filters onto /app/intern/tasks', () => {
+  it('encodes cockpit filters onto /app/lead/tasks', () => {
     expect(internWorkPath({ focus: 'action', tag: 'rejected' })).toBe(
-      '/app/intern/tasks?focus=action&tag=rejected',
+      '/app/lead/tasks?focus=action&tag=rejected',
     );
-    expect(internWorkPath({ day: '2026-08-25', view: 'tl' })).toBe('/app/intern/tasks?day=2026-08-25');
+    expect(internWorkPath({ day: '2026-08-25', view: 'tl' })).toBe('/app/lead/tasks?day=2026-08-25');
   });
 });
 
@@ -592,14 +592,14 @@ describe('internQueueCompanyHref', () => {
   it('uses the intern engagement path from a step href', () => {
     expect(
       internQueueCompanyHref('eng-1', [
-        weekItem({ id: 'x', href: '/app/intern/engagements/abc-india/step/client-details' }),
+        weekItem({ id: 'x', href: '/app/lead/engagements/abc-india/step/client-details' }),
       ]),
-    ).toBe('/app/intern/engagements/abc-india');
+    ).toBe('/app/lead/engagements/abc-india');
   });
 
-  it('falls back to /app/intern/engagements/{id}', () => {
-    expect(internQueueCompanyHref('eng-1', [weekItem({ id: 'x', href: '/app/intern/compliance' })])).toBe(
-      '/app/intern/engagements/eng-1',
+  it('falls back to /app/lead/engagements/{id}', () => {
+    expect(internQueueCompanyHref('eng-1', [weekItem({ id: 'x', href: '/app/lead/compliance' })])).toBe(
+      '/app/lead/engagements/eng-1',
     );
   });
 });

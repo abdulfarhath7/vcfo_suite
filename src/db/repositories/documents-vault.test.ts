@@ -296,7 +296,7 @@ describe('setDocumentReview', () => {
     );
     expect(createNotification).toHaveBeenCalledWith(
       ctx('manager'),
-      expect.objectContaining({ userId: 'user-intern', href: '/app/intern/vault' }),
+      expect.objectContaining({ userId: 'user-intern', href: '/app/lead/vault' }),
     );
   });
 

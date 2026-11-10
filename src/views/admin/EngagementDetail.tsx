@@ -1,5 +1,6 @@
 "use client";
 
+import { roleAppSegment } from '@/lib/auth-routes';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
@@ -332,7 +333,7 @@ export default function EngagementDetail() {
       <SEO
         title={`${eng.companyName} — VCFO Suite`}
         description={`GCC setup project workspace for ${eng.companyName}.`}
-        path={`/app/${user?.role}/engagements/${eng.id}`}
+        path={`/app/${roleAppSegment(user?.role)}/engagements/${eng.id}`}
       />
 
       {isIntern ? (
@@ -367,7 +368,7 @@ export default function EngagementDetail() {
           />
 
           {recordTab !== 'overview' ? (
-            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/intern" />
+            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/lead" />
           ) : (
             <>
               {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
@@ -408,7 +409,7 @@ export default function EngagementDetail() {
               )}
 
               {/* Spec T6: the SPICe+ Part B attachments, under the SPICe+ steps. */}
-              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/intern" />
+              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/lead" />
               <McaFilingCard engagementId={eng.id} />
             </>
           )}

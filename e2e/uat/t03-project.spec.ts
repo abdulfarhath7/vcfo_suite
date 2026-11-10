@@ -114,7 +114,7 @@ test('T-03 Project creation and client invite', async ({ browser }) => {
   });
   const lead = await as(browser, 'lead');
   await step(lead, { test: T, step: 6, role: 'lead', caption: 'Lata Lead sees only her own project (Track A).' }, async () => {
-    await lead.goto('/app/intern/clients');
+    await lead.goto('/app/lead/clients');
     await expect(seen(lead, TRACK_A.short)).toBeVisible();
     await expect(lead.getByText(TRACK_B.short)).toHaveCount(0);
     return { marks: [{ at: seen(lead, TRACK_A.short), kind: 'ok', n: 1 }] };

@@ -4,7 +4,7 @@ const { chromium } = require('@playwright/test');
   const ctx = await b.newContext({ storageState: `e2e/uat/.auth/lead.state.json`, baseURL: 'http://localhost:3000', viewport: { width: 1440, height: 900 } });
   const p = await ctx.newPage();
   p.on('response', async r => { if (r.url().includes('/api/') && r.request().method() !== 'GET') console.log('API', r.status(), r.request().method(), r.url().replace('http://localhost:3000',''), (await r.text().catch(()=>'')).slice(0,400)); });
-  await p.goto('/app/intern/engagements/nilgiri-analytics-private-limited/step/capital-structure'); await p.waitForLoadState('networkidle'); await p.waitForTimeout(1000);
+  await p.goto('/app/lead/engagements/nilgiri-analytics-private-limited/step/capital-structure'); await p.waitForLoadState('networkidle'); await p.waitForTimeout(1000);
   const g = p.locator('[role=radiogroup]').locator('visible=true');
   await g.nth(0).getByRole('radio', { name: 'Yes' }).click();
   await p.waitForTimeout(500);

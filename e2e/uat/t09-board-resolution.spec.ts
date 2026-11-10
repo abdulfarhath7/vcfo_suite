@@ -110,7 +110,7 @@ test('T-09 Board resolutions', async ({ browser }) => {
   const lead = await as(browser, 'lead');
   await step(lead, { test: T, step: 0, role: 'lead', caption: 'The lead adds the NIC code and completes Part A.' }, async () => {
     if ((await stepState(eng!.id, 'pre-1')).status === 'completed') return { caption: 'Part A is already complete.' };
-    await lead.goto(`/app/intern/engagements/${eng!.slug}/step/name-application`);
+    await lead.goto(`/app/lead/engagements/${eng!.slug}/step/name-application`);
     await settle(lead, /Business Description/);
     await lead.getByRole('tab', { name: 'NIC Codes' }).locator('visible=true').first().click();
     await lead.locator('#pre-1-nicCode').locator('visible=true').first().fill('28220');
@@ -118,7 +118,7 @@ test('T-09 Board resolutions', async ({ browser }) => {
     expect((await stepState(eng!.id, 'pre-1')).status).toBe('completed');
   });
 
-  const brPath = `/app/intern/engagements/${eng!.slug}/board-resolution`;
+  const brPath = `/app/lead/engagements/${eng!.slug}/board-resolution`;
   let text = '';
   await step(lead, { test: T, step: 1, role: 'lead', caption: 'The lead generates the board resolution from Part A.' }, async () => {
     await lead.goto(brPath);

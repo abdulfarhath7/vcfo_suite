@@ -19,7 +19,7 @@ test('T-16 Payroll', async ({ browser }) => {
   const lead = await as(browser, 'lead2');
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead imports the October salary sheet (12 workers) on Salary updates.' }, async () => {
-    await lead.goto(`/app/intern/payroll?${q}&tab=salary-updates`);
+    await lead.goto(`/app/lead/payroll?${q}&tab=salary-updates`);
     await settle(lead, /Salary|Import/);
     await lead.locator('input[aria-label="Import salaries CSV"]').setInputFiles(join(FILES, 'payroll-oct-2026.csv'));
     await lead.waitForTimeout(1500);
@@ -29,7 +29,7 @@ test('T-16 Payroll', async ({ browser }) => {
 
   let csvTotals = '';
   await step(lead, { test: T, step: 3, role: 'lead2', caption: 'The payroll summary totals are compared with the totals worked out by hand.' }, async () => {
-    await lead.goto(`/app/intern/payroll?${q}&tab=payroll-summary`);
+    await lead.goto(`/app/lead/payroll?${q}&tab=payroll-summary`);
     await settle(lead, /Download summary|Gross|Net/);
     const [dl] = await Promise.all([lead.waitForEvent('download'), lead.getByRole('button', { name: /Download summary/ }).locator('visible=true').first().click()]);
     const path = await dl.path();

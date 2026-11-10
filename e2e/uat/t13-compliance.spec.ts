@@ -49,7 +49,7 @@ test('T-13 Compliance calendar and filings', async ({ browser }) => {
     return { detail: lines.join('\n'), status: bad ? 'fail' : 'pass' };
   });
 
-  for (const [role, base] of [['admin', '/app/admin'], ['manager', '/app/manager'], ['lead2', '/app/intern'], ['clientB', '/app/client']] as [Role, string][]) {
+  for (const [role, base] of [['admin', '/app/admin'], ['manager', '/app/manager'], ['lead2', '/app/lead'], ['clientB', '/app/client']] as [Role, string][]) {
     const page = await as(browser, role);
     await step(page, { test: T, step: 1, role, caption: `${role}: Compliances › Calendar shows Kaveri's filings.` }, async () => {
       await page.goto(`${base}/compliances/calendar`);
@@ -69,7 +69,7 @@ test('T-13 Compliance calendar and filings', async ({ browser }) => {
 
   const lead = await as(browser, 'lead2');
   await step(lead, { test: T, step: 3, role: 'lead2', caption: 'The lead clicks "File now" on the overdue GSTR-1 (September), attaches the acknowledgement and marks it filed.' }, async () => {
-    await lead.goto('/app/intern/compliances/filings');
+    await lead.goto('/app/lead/compliances/filings');
     await settle(lead, /GSTR-1/);
     const group = lead.locator('xpath=//*[normalize-space(.)="GSTR-1 Filing"]/ancestor::*[following-sibling::*][1]/following-sibling::*[1]').first();
     // Rows run by due date: TDS (7 Oct) first, then GSTR-1 (11 Oct).
@@ -89,14 +89,14 @@ test('T-13 Compliance calendar and filings', async ({ browser }) => {
     await lead.waitForTimeout(2000);
     await shot(lead, { test: T, step: 3, role: 'lead2', status: 'pass', caption: 'The lead fills the return details and clicks "Submit for review".', marks: [{ at: lead.getByRole('button', { name: /Submitted/ }), kind: 'ok', n: 1 }] });
     const mgr = await as(browser, 'manager');
-    await mgr.goto(detailUrl.replace('/app/intern/', '/app/manager/'));
+    await mgr.goto(detailUrl.replace('/app/lead/', '/app/manager/'));
     await settle(mgr, /Approve/);
     const approve = mgr.getByRole('button', { name: 'Approve', exact: true }).locator('visible=true').first();
     await shot(mgr, { test: T, step: 4, role: 'manager', status: 'pass', caption: 'The manager reviews the GSTR-1 details and approves.', marks: [{ at: approve, kind: 'focus', n: 1 }] });
     await approve.click();
     await mgr.waitForTimeout(2000);
     // Then the lead files it: Mark filed from the filings list.
-    await lead.goto('/app/intern/compliances/filings');
+    await lead.goto('/app/lead/compliances/filings');
     await settle(lead, /GSTR-1/);
     await lead.getByRole('tab', { name: /All filings/ }).or(lead.getByText(/^All filings/)).locator('visible=true').first().click();
     await lead.waitForTimeout(1000);

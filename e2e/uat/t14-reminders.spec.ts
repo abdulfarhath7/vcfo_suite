@@ -46,7 +46,7 @@ test('T-14 Reminders and overdue items', async ({ browser }) => {
 
   const lead = await as(browser, 'lead2');
   await step(lead, { test: T, step: 3, role: 'lead2', caption: 'The lead\'s bell shows the reminders.' }, async () => {
-    await lead.goto('/app/intern/notifications');
+    await lead.goto('/app/lead/notifications');
     await settle(lead);
     await expect(seen(lead, /Overdue|GSTR|TDS|reminder/i)).toBeVisible();
     return { marks: [{ at: seen(lead, /Overdue|GSTR|TDS/i), kind: 'ok', n: 1 }] };

@@ -94,7 +94,7 @@ describe('runSlaLadder', () => {
   it('tells the lead, the manager and the partner with nudge and reassign links', async () => {
     const plans = await runSlaLadder(ROW.id, due, '2026-11-10');
     expect(plans.map((p) => p.to)).toEqual([lead.email, manager.email, admin.email]);
-    expect(plans[0].text).toContain('/app/intern/engagements/acme/step/');
+    expect(plans[0].text).toContain('/app/lead/engagements/acme/step/');
     expect(plans[1].text).toContain('/app/manager/mail?');
     expect(plans[2].text).toContain('Reassign: https://app.test/app/admin/projects/acme');
     const bells = createNotificationsForUsers.mock.calls[0][0] as unknown as Array<{ userId: string }>;

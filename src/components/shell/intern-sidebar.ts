@@ -1,7 +1,7 @@
 import { normalizeShellPathname } from '@/components/shell/shell-back';
 
 /** Intern clients list — keep equal to `INTERN_CLIENTS_HREF` in InternClientsNav. */
-const INTERN_CLIENTS_HREF = '/app/intern/clients';
+const INTERN_CLIENTS_HREF = '/app/lead/clients';
 
 export type SidebarMode = 'auto' | 'open' | 'closed';
 

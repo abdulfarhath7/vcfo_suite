@@ -335,7 +335,7 @@ function InternClientsInner() {
   );
   return (
     <PageTransition>
-      <SEO title="Clients — VCFO Suite" description="Engagements assigned to you and how far each company is through setup." path="/app/intern/clients" />
+      <SEO title="Clients — VCFO Suite" description="Engagements assigned to you and how far each company is through setup." path="/app/lead/clients" />
       <h1 className="sr-only">Clients</h1>
 
       {myEngagements.length === 0 && !engagementsLoading ? (

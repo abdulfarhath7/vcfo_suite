@@ -32,11 +32,11 @@ Work goes on one branch from `main`, in five small pull requests, so each can be
 |---|---|---|
 | L5 | Alignment | **Waiting on the owner's reference Word file.** The layout will be copied from it into `board-resolution-docx-body.ts`, so all three templates follow it. |
 
-## PR 4: Lead URLs `/app/intern` to `/app/lead`
+## PR 4: Lead URLs `/app/lead` to `/app/lead`
 
 | # | Item | Change |
 |---|---|---|
-| O4 | URLs say "intern" (owner approved, 10 Nov) | Move the route folder, change the role-to-URL map, update about 135 files, and send every old `/app/intern/...` link to `/app/lead/...` so bookmarks and old emails keep working. The role name in the database stays `intern`. Large but mechanical; kept in its own pull request. |
+| O4 | URLs say "intern" (owner approved, 10 Nov) | Move the route folder, change the role-to-URL map, update about 135 files, and send every old `/app/lead/...` link to `/app/lead/...` so bookmarks and old emails keep working. The role name in the database stays `intern`. Large but mechanical; kept in its own pull request. |
 
 ## PR 5: Larger features
 

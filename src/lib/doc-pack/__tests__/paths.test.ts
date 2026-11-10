@@ -6,7 +6,7 @@ const project = { id: 'eng-1', slug: 'pexpo-inc' };
 
 describe('doc-pack paths', () => {
   it('opens the pack under the lead, manager and admin shells', () => {
-    expect(docPackPagePath(project, 'intern')).toBe('/app/intern/engagements/pexpo-inc/documents');
+    expect(docPackPagePath(project, 'intern')).toBe('/app/lead/engagements/pexpo-inc/documents');
     expect(docPackPagePath(project, '/app/manager', 'part-b')).toBe(
       '/app/manager/projects/pexpo-inc/documents?part=part-b',
     );
@@ -16,7 +16,7 @@ describe('doc-pack paths', () => {
 
   it('links a missing input to its step and section tab', () => {
     expect(docPackStepPath(project, 'intern', 'pre-14', 'registered-office')).toBe(
-      '/app/intern/engagements/pexpo-inc/step/registered-office-address?tab=registered-office',
+      '/app/lead/engagements/pexpo-inc/step/registered-office-address?tab=registered-office',
     );
     expect(docPackStepPath(project, '/app/manager', 'pre-2')).toBe(
       '/app/manager/projects/pexpo-inc/step/board-resolution-draft',

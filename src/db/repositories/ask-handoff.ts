@@ -84,7 +84,7 @@ export async function createAskHandoff(
           body: question.slice(0, 280),
           engagementId: access.dbId,
           companyName: access.row.companyName,
-          href: '/app/intern/tasks',
+          href: '/app/lead/tasks',
         },
       ]);
     } catch (error) {

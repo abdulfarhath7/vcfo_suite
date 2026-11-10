@@ -19,7 +19,7 @@ const manager = { userId: 'mgr-1', email: 'manager@vcfo.local', name: 'PM' };
 const coManager = { userId: 'mgr-2', email: 'comgr@vcfo.local', name: 'Co-PM' };
 const client = { userId: 'cli-1', email: 'client@vcfo.local', name: 'Client' };
 
-const hrefs = { leadHref: '/app/intern/step', managerHref: '/app/manager/step' };
+const hrefs = { leadHref: '/app/lead/step', managerHref: '/app/manager/step' };
 
 function recipients(partial: Partial<FanoutRecipients> = {}): FanoutRecipients {
   return {

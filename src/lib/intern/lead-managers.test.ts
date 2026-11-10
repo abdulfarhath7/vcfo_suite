@@ -90,7 +90,7 @@ describe('resolveLeadManagers', () => {
 describe('internManagerComposeHref', () => {
   it('puts the recipient on intern compose', () => {
     expect(internManagerComposeHref('manager@vcfo.local')).toBe(
-      '/app/intern/mail?to=manager%40vcfo.local',
+      '/app/lead/mail?to=manager%40vcfo.local',
     );
   });
 });

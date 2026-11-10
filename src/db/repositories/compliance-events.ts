@@ -312,7 +312,7 @@ export async function syncRecordChangeProposals(
 
 /** The staff page link for a role's portal. */
 export function complianceEventsHref(role: string): string {
-  const portal = role === 'super_admin' ? 'super' : role === 'manager' ? 'manager' : role === 'intern' ? 'intern' : 'admin';
+  const portal = role === 'super_admin' ? 'super' : role === 'manager' ? 'manager' : role === 'intern' ? 'lead' : 'admin';
   return `/app/${portal}/compliances/events`;
 }
 

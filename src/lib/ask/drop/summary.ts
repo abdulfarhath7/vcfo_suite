@@ -29,7 +29,7 @@ const listOf = (items: string[], max: number) => {
 
 /** Where a card opens for this role: the role's own Ask page with the card in the address. */
 export function cardHref(role: string, changesetId: string): string {
-  const area = role === 'super_admin' ? 'super' : role;
+  const area = role === 'super_admin' ? 'super' : role === 'intern' ? 'lead' : role;
   return `/app/${area}/ask?changeset=${changesetId}`;
 }
 

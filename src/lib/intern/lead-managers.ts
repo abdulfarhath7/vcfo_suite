@@ -76,5 +76,5 @@ export function resolveLeadManagers(
 
 export function internManagerComposeHref(email: string): string {
   const to = email.trim();
-  return to ? `/app/intern/mail?to=${encodeURIComponent(to)}` : '/app/intern/mail';
+  return to ? `/app/lead/mail?to=${encodeURIComponent(to)}` : '/app/lead/mail';
 }

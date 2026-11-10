@@ -228,7 +228,7 @@ function listForEntityPage(
   page: string,
 ): { label: string; href: string } {
   const base = roleBase(parts);
-  if (parts[1] === 'intern' && page === 'engagements') {
+  if (parts[1] === 'lead' && page === 'engagements') {
     return { label: 'Clients', href: `${base}/clients` };
   }
   if (page === 'engagements' || page === 'projects') {
@@ -249,7 +249,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
   }
 
   if ((page === 'engagements' || page === 'projects') && nested) {
-    const internRoute = parts[1] === 'intern';
+    const internRoute = parts[1] === 'lead';
     const list = listForEntityPage(parts, page);
     // The prototype's short crumb: the sidebar row, with the page where it has no row of its own.
     const after = parts[4];

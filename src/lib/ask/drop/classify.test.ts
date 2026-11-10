@@ -25,7 +25,7 @@ describe('classifyFile: the client', () => {
 
   it('then the message, the page and the only project', () => {
     expect(classifyFile(file('a', 'x.pdf'), { ...hints, instruction: 'file these for Routeware' })).toMatchObject({ engagementCandidates: [route], clientSource: 'message' });
-    expect(classifyFile(file('a', 'x.pdf'), { ...hints, pagePath: '/app/intern/projects/acme' })).toMatchObject({ engagementCandidates: [acme], clientSource: 'page' });
+    expect(classifyFile(file('a', 'x.pdf'), { ...hints, pagePath: '/app/lead/projects/acme' })).toMatchObject({ engagementCandidates: [acme], clientSource: 'page' });
     expect(classifyFile(file('a', 'x.pdf'), { engagements: [acme], instruction: '' })).toMatchObject({ engagementCandidates: [acme], clientSource: 'only' });
     const unknown = classifyFile(file('a', 'x.pdf'), hints);
     expect(unknown.engagementCandidates).toEqual([]);

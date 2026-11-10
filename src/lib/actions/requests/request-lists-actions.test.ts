@@ -119,6 +119,6 @@ describe('requests.createListFromTemplate', () => {
     createRequestListFromTemplate.mockResolvedValue({ id: LIST, title: 'TDS', items: [1, 2, 3] });
     const result = await createListFromTemplate.execute(actx, input);
     expect(createRequestListFromTemplate).toHaveBeenCalledWith(lead, expect.objectContaining({ engagementId: ENG, templateId: 'tds-quarterly' }), actx.now);
-    expect(result).toMatchObject({ ok: true, href: `/app/intern/requests?list=${LIST}` });
+    expect(result).toMatchObject({ ok: true, href: `/app/lead/requests?list=${LIST}` });
   });
 });

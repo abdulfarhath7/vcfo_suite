@@ -50,7 +50,7 @@ export type InternChipTone =
   | 'cyan';
 
 const IST = 'Asia/Kolkata';
-export const INTERN_TASKS_PATH = '/app/intern/tasks';
+export const INTERN_TASKS_PATH = '/app/lead/tasks';
 const INTERN_FOCUS_STORAGE_PREFIX = 'vcfo.intern.focus.';
 const INTERN_QUEUE_EXPANDED_STORAGE_PREFIX = 'vcfo.intern.queue.expanded.';
 export const INTERN_WORK_VIEW_KEY = 'vcfo.intern.workView';
@@ -361,7 +361,7 @@ function internWorkHref(opts: {
   engagement: Pick<Engagement, 'id' | 'slug'>;
   catalogId?: string;
 }): string {
-  if (opts.source === 'filing') return '/app/intern/compliances/calendar';
+  if (opts.source === 'filing') return '/app/lead/compliances/calendar';
   if (opts.source === 'request' || opts.source === 'task') return internEngagementPath(opts.engagement);
   const item = opts.catalogId ? getItem(opts.catalogId) : undefined;
   if (item) return internEngagementStepPath(opts.engagement, item);
@@ -970,10 +970,10 @@ export function internActionQueueByCompany(
   return list;
 }
 
-/** Intern client page for an action-queue company (`/app/intern/engagements/{slug|id}`). */
+/** Intern client page for an action-queue company (`/app/lead/engagements/{slug|id}`). */
 export function internQueueCompanyHref(engagementId: string, items: InternWorkItem[] = []): string {
   for (const item of items) {
-    const match = /^(\/app\/intern\/engagements\/[^/]+)/.exec(item.href);
+    const match = /^(\/app\/lead\/engagements\/[^/]+)/.exec(item.href);
     if (match?.[1]) return match[1];
   }
   return internEngagementPath({ id: engagementId });

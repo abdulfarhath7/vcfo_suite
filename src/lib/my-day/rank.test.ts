@@ -72,7 +72,7 @@ describe('buildMyDayEmail', () => {
     const copy = buildMyDayEmail({ recipientName: 'Priya Rao', role: 'intern', items });
     expect(copy.subject).toBe('Your day: 2 items, 1 overdue');
     expect(copy.text).toContain('1. Overdue: GSTR-3B · Acme · 3 days late');
-    expect(copy.text).toContain('/app/intern/today');
+    expect(copy.text).toContain('/app/lead/today');
     expect(copy.html).toContain('Hi Priya');
   });
 });

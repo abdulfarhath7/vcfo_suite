@@ -44,7 +44,7 @@ function expectBlockShape(three: NavEntry[]) {
 }
 
 const STAFF: Array<{ role: Role; base: string; before: string }> = [
-  { role: 'intern', base: '/app/intern', before: 'Clients' },
+  { role: 'intern', base: '/app/lead', before: 'Clients' },
   { role: 'manager', base: '/app/manager', before: 'Project leads' },
   { role: 'admin', base: '/app/admin', before: 'Managers' },
 ];
@@ -73,7 +73,7 @@ describe('practice block (R-51)', () => {
   }
 
   it('lead: Compliances is always there, whatever the clients', () => {
-    expect(sidebarItemsFor('intern', '/app/intern').map(label)).toContain('Compliances');
+    expect(sidebarItemsFor('intern', '/app/lead').map(label)).toContain('Compliances');
   });
 
   it('super admin: the block replaces Practice areas, after Clients, on the Practice routes', () => {
@@ -121,10 +121,10 @@ describe('practice block (R-51)', () => {
 
 describe('withOfficialUpdates', () => {
   it('adds the leaf to the Updates group only, on the role base', () => {
-    const items = withOfficialUpdates(sidebarItemsFor('intern', '/app/intern'));
+    const items = withOfficialUpdates(sidebarItemsFor('intern', '/app/lead'));
     const updates = items.find((entry) => isNavGroup(entry) && entry.label === 'Updates');
-    expect(isNavGroup(updates!) && updates.items.map((leaf) => leaf.to)).toContain('/app/intern/watch');
-    expect(sidebarItemsFor('intern', '/app/intern').flatMap((entry) => (isNavGroup(entry) ? entry.items : [])).some((leaf) => leaf.to.endsWith('/watch'))).toBe(false);
+    expect(isNavGroup(updates!) && updates.items.map((leaf) => leaf.to)).toContain('/app/lead/watch');
+    expect(sidebarItemsFor('intern', '/app/lead').flatMap((entry) => (isNavGroup(entry) ? entry.items : [])).some((leaf) => leaf.to.endsWith('/watch'))).toBe(false);
   });
 });
 
@@ -135,7 +135,7 @@ describe('withAssistRuns', () => {
     ['super_admin', '/app/super/assist-runs'],
     ['admin', '/app/admin/assist-runs'],
     ['manager', '/app/manager/assist-runs'],
-    ['intern', '/app/intern/assist-runs'],
+    ['intern', '/app/lead/assist-runs'],
   ] as const)('%s gets Assist runs right after the tools break', (role, href) => {
     const items = withAssistRuns(sidebarItemsFor(role, '/app/manager'), role, '/app/manager');
     const at = items.findIndex((e) => isNavSectionBreak(e));

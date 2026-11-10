@@ -139,7 +139,7 @@ export function withOfficialUpdates(items: NavEntry[]): NavEntry[] {
 export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string, inDevConsole = false): NavEntry[] {
   if (inDevConsole) return items;
   const base =
-    role === 'super_admin' ? '/app/super' : role === 'admin' ? '/app/admin' : role === 'intern' ? '/app/intern' : role === 'manager' ? staffBase : null;
+    role === 'super_admin' ? '/app/super' : role === 'admin' ? '/app/admin' : role === 'intern' ? '/app/lead' : role === 'manager' ? staffBase : null;
   if (!base) return items;
   const at = items.findIndex((entry) => isNavSectionBreak(entry) && entry.id === NAV_TOOLS_BREAK.id);
   const item: NavItem = { to: `${base}/assist-runs`, label: 'Assist runs', icon: Bot, iconTone: TONE.work };
@@ -328,26 +328,26 @@ function managerItems(staffBase: string): NavEntry[] {
 }
 
 /** Intern clients list — keep equal to `INTERN_CLIENTS_HREF` in InternClientsNav. */
-const INTERN_CLIENTS = '/app/intern/clients';
+const INTERN_CLIENTS = '/app/lead/clients';
 
 /* R-51: the lead always sees Compliances; with no incorporated client the pages show
    "No incorporated clients yet" instead of sending the lead to Today. */
 const internItems: NavEntry[] = [
-  { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/intern/tasks', label: 'Work', icon: ListChecks, iconTone: TONE.work },
-  requestsItem('/app/intern'),
-  clientHealthItem('/app/intern'),
+  { to: '/app/lead/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/lead/tasks', label: 'Work', icon: ListChecks, iconTone: TONE.work },
+  requestsItem('/app/lead'),
+  clientHealthItem('/app/lead'),
   { to: INTERN_CLIENTS, label: 'Clients', icon: Building2, iconTone: TONE.people },
-  ...practiceBlock('intern', '/app/intern'),
-  labourRegistersItem('/app/intern'),
-  payrollItem('/app/intern'),
-  budgetsItem('/app/intern'),
-  updatesGroup('/app/intern'),
-  { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
-  docsGroup('/app/intern', Archive),
+  ...practiceBlock('intern', '/app/lead'),
+  labourRegistersItem('/app/lead'),
+  payrollItem('/app/lead'),
+  budgetsItem('/app/lead'),
+  updatesGroup('/app/lead'),
+  { to: '/app/lead/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
+  docsGroup('/app/lead', Archive),
   NAV_TOOLS_BREAK,
-  { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-  { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/lead/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
+  { to: '/app/lead/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
 /**

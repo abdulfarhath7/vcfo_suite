@@ -317,7 +317,7 @@ function SidebarNavBody({
             );
           }
           const active = pathname.startsWith(it.to);
-          const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
+          const showInternBadge = user.role === 'intern' && it.to === '/app/lead/tasks';
           const showApprovals = it.to === approvalsHref(user.role, staffBase);
           const showDev = (user.role === 'developer' || inDevConsole) && DEV_COUNT_HREFS.has(it.to);
           // P-129: the super admin's Risks row counts the open risks (not urgent, so not red).
