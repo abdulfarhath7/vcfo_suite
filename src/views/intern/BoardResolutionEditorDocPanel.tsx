@@ -225,7 +225,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
                       refreshKey={previewRefreshKey}
                       editable={!isFinalized && !lockedForViewer}
                       mergeFields={mergeFields}
-                      previewLabel="Draft Word document"
+                      previewLabel="Word document"
                       docMeta={{
                         storagePath: doc?.storagePath,
                         templateFingerprint: doc?.templateFingerprint,

@@ -583,10 +583,25 @@ export function CreateProjectForm({
     }
   };
 
-  const saveDraft = () => {
-    saveCreateProjectDraft(state);
-    toastSuccess('Draft saved');
-  };
+  /**
+   * Autosave (owner, 10 Nov: "Save as draft" removed). A new project's answers
+   * are kept in this browser a moment after each change, so a reload or a
+   * closed tab resumes where the person stopped. An untouched form saves nothing,
+   * so the reset after Create or Discard does not bring an empty draft back.
+   */
+  const [draftSaved, setDraftSaved] = useState(false);
+  useEffect(() => {
+    if (isEdit || state.submitting) return;
+    const touched = [state.companyName, state.clientContact, state.clientEmail, state.parentEntityName].some((v) =>
+      v.trim(),
+    );
+    if (!touched) return;
+    const timer = window.setTimeout(() => {
+      saveCreateProjectDraft(state);
+      setDraftSaved(true);
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [isEdit, state]);
 
   const discard = () => {
     if (isEdit) {
@@ -653,7 +668,7 @@ export function CreateProjectForm({
     fieldError,
     pwStrength,
     submit,
-    saveDraft,
+    draftSaved,
     companyTypeValid,
     canSubmit,
     editMode: isEdit,

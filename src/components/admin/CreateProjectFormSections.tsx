@@ -34,7 +34,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
     setQuestionnaire,
     fieldError,
     submit,
-    saveDraft,
+    draftSaved,
     editMode,
     existingClientEmail,
     onChangeClientEmail,
@@ -55,8 +55,12 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   const sectionCtx = { ...props, ...derived };
 
   const [activeSection, setActiveSection] = useState<FormFlowSection>('entity');
-  /** Filled + blurred = plain title; click brings the field back. */
-  const [nameEditing, setNameEditing] = useState(false);
+  /**
+   * Filled + blurred = plain title; click brings the field back. The box stays
+   * open while the person types (owner, 10 Nov: the first letter used to swap
+   * the box for the title and the cursor jumped away).
+   */
+  const [nameEditing, setNameEditing] = useState(() => !companyName.trim());
   const nameFieldVisible =
     nameEditing || !companyName.trim() || Boolean(fieldError('companyName'));
 
@@ -114,7 +118,10 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
               <Input
                 id="create-company-name"
                 value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                onChange={(e) => {
+                  setNameEditing(true);
+                  setCompanyName(e.target.value);
+                }}
                 onBlur={() => {
                   if (companyName.trim()) setNameEditing(false);
                 }}
@@ -245,16 +252,10 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 {editMode ? 'Cancel' : 'Discard'}
               </Button>
             ) : null}
-            {editMode ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 px-4"
-                onClick={saveDraft}
-                disabled={submitting}
-              >
-                Save as draft
-              </Button>
+            {editMode || !draftSaved ? null : (
+              <span className="text-[12px] text-ink-muted" role="status">
+                Draft saved automatically
+              </span>
             )}
             {requiredSectionsDone ? (
               <Button

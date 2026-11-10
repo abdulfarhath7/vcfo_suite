@@ -218,7 +218,9 @@ export function saveCreateProjectDraft(state: CreateProjectState): void {
     // back with the box already ticked. The admin re-affirms it each time.
     clientWhatsappConsent: false,
     clientEmail: state.clientEmail,
-    clientPassword: state.clientPassword,
+    // The password is never kept in the browser; a resumed draft starts from
+    // the default temporary password again.
+    clientPassword: '',
     internIds: state.internIds,
     managerIds: state.managerIds,
     stage: state.stage,

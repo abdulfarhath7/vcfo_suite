@@ -24,6 +24,28 @@ export const ENGAGEMENT_DOCUMENTS_BUCKET = 'engagement-documents';
 
 export const BOARD_RESOLUTION_DOCX_FILENAME = 'board-resolution.docx';
 
+/**
+ * The name a downloaded board resolution gets (owner, 10 Nov):
+ * `Board-resolution-<company>-<date>.docx`, e.g.
+ * `Board-resolution-Sahyadri-Robotics-India-Private-Limited-10-Nov-2026.docx` (date in India
+ * time). Only letters,
+ * digits and hyphens are kept, so the name is safe in every browser and file system. The
+ * stored object keeps its fixed key (`BOARD_RESOLUTION_DOCX_FILENAME`).
+ */
+export function boardResolutionDownloadName(companyName: string | null | undefined, on: Date = new Date()): string {
+  const company = (companyName ?? '')
+    .normalize('NFKD')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  // India time, so a download near midnight is not dated the day before on the server.
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric' })
+    .formatToParts(on)
+    .reduce<Record<string, string>>((acc, p) => ({ ...acc, [p.type]: p.value }), {});
+  const date = `${parts.day}-${parts.month}-${parts.year}`;
+  return company ? `Board-resolution-${company}-${date}.docx` : `Board-resolution-${date}.docx`;
+}
+
 const UNSUPPORTED_MESSAGE = 'Use a PDF or Word (.docx) file.';
 
 /** Storage object path: `{engagementUuid}/board-resolution.docx` */

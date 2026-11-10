@@ -11,7 +11,7 @@ export const NOTIFICATION_ROW_EXIT_MS = 300;
 export const NOTIFICATION_ROW_EXIT_STAGGER_MS = 40;
 
 /** Undo toast lifetime — dismissal stays if ignored. */
-export const NOTIFICATION_UNDO_TOAST_MS = 7000;
+export const NOTIFICATION_UNDO_TOAST_MS = 5000;
 
 export const NOTIFICATION_INBOX_LIMIT = 80;
 export const NOTIFICATION_HISTORY_LIMIT = 500;

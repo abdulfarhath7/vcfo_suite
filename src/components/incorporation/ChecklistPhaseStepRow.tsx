@@ -12,6 +12,7 @@ import { initialsOf } from '@/components/ui/avatar-stack';
 import { stepMarkForGate } from '@/components/incorporation/step-mark-for-gate';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { shortDate, daysBetween } from '@/components/timeline/timeline-model';
+import { Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -130,9 +131,11 @@ export function ChecklistPhaseStepRow({
             <button
               type="button"
               onClick={() => onAbout(item)}
-              className="relative z-[1] hidden flex-none whitespace-nowrap text-[12px] font-medium text-brand-text hover:underline sm:inline"
+              aria-label={`What's this: ${item.title}`}
+              title="What's this step?"
+              className="relative z-[1] inline-flex h-7 w-7 flex-none items-center justify-center rounded-md text-brand-text hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              What&apos;s this?
+              <Eye className="h-4 w-4" aria-hidden />
             </button>
           ) : null}
         </span>

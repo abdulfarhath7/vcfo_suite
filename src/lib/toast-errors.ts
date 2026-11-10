@@ -9,8 +9,8 @@ import {
 } from '@/lib/email/email-dispatch';
 
 const ERROR_DURATION_MS = 6000;
-const SUCCESS_DURATION_MS = 4500;
-const WARNING_DURATION_MS = 5500;
+const SUCCESS_DURATION_MS = 4000;
+const WARNING_DURATION_MS = 5000;
 
 const NETWORK_MESSAGE =
   'No internet connection. Check your network and try again.';

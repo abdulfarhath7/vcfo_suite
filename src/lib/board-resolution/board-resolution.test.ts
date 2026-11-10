@@ -181,7 +181,7 @@ describe('prepared boardResolution.docx template', () => {
       director3IndiaResident: 'no',
     };
     const fields = buildBoardResolutionMergeFields({ pre1 });
-    expect(fields.PROPOSED_NAMES).toBe('Alpha India Private Limited and Beta India Private Limited');
+    expect(fields.PROPOSED_NAMES).toBe('ALPHA INDIA PRIVATE LIMITED AND BETA INDIA PRIVATE LIMITED');
     expect(fields.DIRECTOR_NAMES.split('\n')).toHaveLength(3);
 
     const zip = new PizZip(renderBoardResolutionDocxBuffer({ pre1 }));
@@ -192,7 +192,7 @@ describe('prepared boardResolution.docx template', () => {
     for (const line of fields.DIRECTOR_NAMES.split('\n')) {
       expect(paragraphs.filter((p) => p.trim() === line)).toHaveLength(1);
     }
-    expect(xml).toContain('Alpha India Private Limited and Beta India Private Limited');
+    expect(xml).toContain('ALPHA INDIA PRIVATE LIMITED AND BETA INDIA PRIVATE LIMITED');
     expect(xml).not.toMatch(/\{[#/]?[A-Z_]+\}/);
   });
 
@@ -343,8 +343,8 @@ describe('Pre-2 template by NOC variant', () => {
     const text = bodyText(renderBoardResolutionDocxBuffer({ engagement, pre1 }));
     expect(text).toContain('applicable provisions of the Companies Act 2013');
     expect(text).not.toContain('the State of');
-    expect(text).toContain('Sampada Tech Private Limited and Sampada Labs Private Limited');
-    expect(text).toContain('to be subscribed in full by Sampada Enterprises LLP');
+    expect(text).toContain('SAMPADA TECH PRIVATE LIMITED AND SAMPADA LABS PRIVATE LIMITED');
+    expect(text).toContain('to be subscribed in full by SAMPADA ENTERPRISES LLP');
     expect(text).not.toMatch(/\{[#/]?[A-Z_]+\}|_{3,}/);
     expect(generateBoardResolutionDraft({ engagement, pre1 })).toContain('Companies Act 2013');
   });
@@ -354,11 +354,11 @@ describe('Pre-2 template by NOC variant', () => {
     const text = bodyText(renderBoardResolutionDocxBuffer({ engagement, pre1 }));
     expect(text).toContain('ON SATURDAY, SEPTEMBER 26, 2026.');
     expect(text).toContain('USE OF WORD "SAMPADA"');
-    expect(text).toContain('“Sampada Tech Private Limited” or  “Sampada Labs Private Limited” or such other name');
+    expect(text).toContain('“SAMPADA TECH PRIVATE LIMITED” or  “SAMPADA LABS PRIVATE LIMITED” or such other name');
     expect(text).not.toContain('subscribed in full');
     expect(text).not.toMatch(/\{[#/]?[A-Z_]+\}/);
     expect(generateBoardResolutionDraft({ engagement, pre1 })).toContain(
-      '“Sampada Tech Private Limited” or “Sampada Labs Private Limited” or such other name',
+      '“SAMPADA TECH PRIVATE LIMITED” or “SAMPADA LABS PRIVATE LIMITED” or such other name',
     );
   });
 
@@ -367,6 +367,6 @@ describe('Pre-2 template by NOC variant', () => {
     const text = bodyText(
       renderBoardResolutionDocxBuffer({ engagement, pre1: { ...pre1, proposedName2: '' } }),
     );
-    expect(text).toContain('“Sampada Tech Private Limited” or  such other name');
+    expect(text).toContain('“SAMPADA TECH PRIVATE LIMITED” or  such other name');
   });
 });

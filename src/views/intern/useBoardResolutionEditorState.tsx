@@ -32,7 +32,10 @@ import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 
 import { buildBoardResolutionMergeFields, extractBoardResolutionInlineOverrides, type BoardResolutionDoc, type BoardResolutionMergeFields } from '@/lib/board-resolution/board-resolution';
 
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
+import {
+  BOARD_RESOLUTION_DOCX_FILENAME,
+  boardResolutionDownloadName,
+} from '@/lib/board-resolution/board-resolution-storage';
 
 import {
 
@@ -921,7 +924,7 @@ export function useBoardResolutionEditorState(_props: Record<string, unknown>) {
   );
 
   return {
-    BOARD_RESOLUTION_DOCX_FILENAME,
+    BOARD_RESOLUTION_DOCX_FILENAME: eng ? boardResolutionDownloadName(eng.companyName) : BOARD_RESOLUTION_DOCX_FILENAME,
     applyLatestTemplate,
     busy,
     doc,

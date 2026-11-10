@@ -468,17 +468,21 @@ function resolveDirectors(pre1: ChecklistItemResponses): {
   };
 }
 
+/** A company name in capitals; a `[placeholder]` for a missing answer is left as it is. */
+function companyCaps(value: string): string {
+  return /^\[.*\]$/.test(value.trim()) ? value : value.toUpperCase();
+}
+
 export function buildBoardResolutionMergeFields(
   input: BoardResolutionMergeInput,
 ): BoardResolutionMergeFields {
   const { engagement, pre1 = {}, overrides = {} } = input;
   const now = new Date();
 
-  const parentName = pickString(
-    pre1.parentEntityName,
-    engagement?.parentEntityName,
-    engagement?.companyName,
-    '[Parent entity name]',
+  // Company names print in capitals in the resolution (owner, 10 Nov). The bracketed
+  // placeholders shown while an answer is missing keep their case.
+  const parentName = companyCaps(
+    pickString(pre1.parentEntityName, engagement?.parentEntityName, engagement?.companyName, '[Parent entity name]'),
   );
 
   const { indian, others } = resolveDirectors(pre1);
@@ -495,9 +499,9 @@ export function buildBoardResolutionMergeFields(
     RESOLUTION_EFFECTIVE_DATE: formatResolutionDate(resolutionDate),
     PARENT_JURISDICTION: resolveParentJurisdiction(pre1),
     PARENT_STATE: resolveParentState(pre1, () => DEFAULT_PARENT_STATE),
-    PROPOSED_NAME_1: pickString(pre1.proposedName1, '[Proposed company name 1]'),
-    PROPOSED_NAME_2: resolveSecondProposedName(pre1),
-    PROPOSED_NAMES: formatProposedNames(pre1),
+    PROPOSED_NAME_1: companyCaps(pickString(pre1.proposedName1, '[Proposed company name 1]')),
+    PROPOSED_NAME_2: companyCaps(resolveSecondProposedName(pre1)),
+    PROPOSED_NAMES: companyCaps(formatProposedNames(pre1)),
     NIC_CODES: resolveNicCodesClause(pre1),
     AUTHORISED_CAPITAL: formatInrCapitalClause(authCapRaw),
     PAID_UP_CAPITAL: formatInrCapitalClause(paidCapRaw),

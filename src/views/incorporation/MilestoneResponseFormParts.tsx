@@ -396,7 +396,8 @@ export function InternSectionHeadingNav({
                 onClick={() => onSelect(index)}
                 className={cn(
                   'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] font-medium transition-colors',
-                  selected ? 'text-ink' : 'text-ink-muted hover:text-ink',
+                  // The open section has a light-blue wash as well as the underline (owner, 10 Nov).
+                  selected ? 'bg-info-soft text-ink' : 'text-ink-muted hover:text-ink',
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
