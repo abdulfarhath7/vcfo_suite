@@ -89,6 +89,14 @@ const fieldSchema = z
     note: z.string().optional(),
     /** The profile array this template repeats over (see the file comment). */
     each: z.string().regex(EACH).optional(),
+    /**
+     * The no-placeholder rule (SAFETY.md G16, after ICAI DC/1891/2024). When true, a missing,
+     * blank or placeholder-looking value (`9999999999`, `NA`, `test`, the firm's own phone or email)
+     * leaves the field empty, highlighted "You fill this from the client's records", and recorded
+     * on the run. Defaults to `required` (see `fieldRejectsPlaceholder`). The extension never types
+     * a placeholder-looking value into any field whatever this says: a guard is not a setting.
+     */
+    noPlaceholder: z.boolean().optional(),
   })
   .strict();
 
@@ -163,6 +171,11 @@ export const recipeSchema = z
 
 export type Recipe = z.infer<typeof recipeSchema>;
 export type RecipeField = Recipe['fields'][number];
+
+/** True when the field follows the no-placeholder rule: as declared, else when it is mandatory. */
+export function fieldRejectsPlaceholder(field: Pick<RecipeField, 'required' | 'noPlaceholder'>): boolean {
+  return field.noPlaceholder ?? field.required;
+}
 
 /**
  * The recipe field a concrete key belongs to: an exact key, or a repeating template whose `[{i}]`

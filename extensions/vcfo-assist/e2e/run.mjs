@@ -8,6 +8,9 @@
 // no profile value is sent anywhere, the portal host gets no request beyond its static files, and
 // the drift page heals at T1 with 0 AI calls and a patch proposal, the Part B recipe waits on the
 // wrong page and then fills two subscriber and two director blocks from repeating recipe fields.
+// Filing safeguards: the panel asks which MCA login is used and who signed (sent as labels and
+// references), and the Submit and Pay card appears only after the certifier's checks are recorded
+// in (fake) Suite for that run (SAFETY.md G14, G17).
 //
 // Playwright comes from the Suite repository's node_modules (it is not a dependency here). Set
 // CHROME_PATH to a Chrome for Testing or Chromium binary; branded Chrome ignores --load-extension.
@@ -95,6 +98,8 @@ async function main() {
   check(true, 'readiness badge shows Ready (profile missing[] is empty)');
   await panel.screenshot({ path: path.join(artifacts, 'panel-home.png'), fullPage: true });
 
+  check(await panel.getByRole('button', { name: 'Run', exact: true }).first().isDisabled(), 'Run stays off until the MCA login label is given');
+  await panel.getByTestId('mca-login').fill('lead.mca@fake-firm.test');
   await portal.bringToFront();
   await panel.getByRole('button', { name: 'Run', exact: true }).first().click();
   await panel.getByRole('button', { name: 'I have logged in' }).waitFor({ timeout: 15000 });
@@ -131,8 +136,19 @@ async function main() {
   check(activity.includes('recipe spice-a@1.1.0 from Suite verified'), "Suite's recipe used (Ed25519 dev key accepted on the mock host)");
   for (const code of ['G1', 'G2', 'G3']) check(activity.includes(`${code}: refused`), `activity log shows a ${code} refusal`);
 
+  check((await panel.getByTestId('pdf-input').count()) === 0, 'the PDF drop waits until "Who signed?" is answered');
+  await panel.getByTestId('signers').getByRole('checkbox').first().check();
   await panel.getByTestId('pdf-input').setInputFiles({ name: 'signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% signed by the user (mock)\n') });
   await waitState('WAIT SUBMIT PAY');
+  await panel.getByTestId('certifier-wait').waitFor({ timeout: 15000 });
+  const before = await portal.evaluate(() => document.querySelector('vcfo-assist-overlay')?.getAttribute('data-marks') ?? '');
+  check(!before.includes('human'), 'no Submit highlight before the certifier’s checks (G17)');
+  check((await panel.getByRole('heading', { name: 'Click Submit and Pay yourself' }).count()) === 0, 'no Submit and Pay card before the certifier’s checks (G17)');
+  check(await panel.getByRole('button', { name: 'Open in Suite' }).isVisible(), 'panel offers "Open in Suite" while it waits for the certifier');
+  await panel.screenshot({ path: path.join(artifacts, 'panel-certifier-wait.png'), fullPage: true });
+  await attest(suitePage, suite, 'spice-a', { fieldsCheckedAgainstRecords: true });
+  await panel.getByRole('heading', { name: 'Click Submit and Pay yourself' }).waitFor({ timeout: 15000 });
+  check(true, 'Submit and Pay card appears once the certifier’s checks are recorded in Suite');
   const gate = await portal.evaluate(() => ({
     attached: document.getElementById('attach-status').textContent,
     marks: document.querySelector('vcfo-assist-overlay')?.getAttribute('data-marks') ?? '',
@@ -163,6 +179,9 @@ async function main() {
   check(SENTINELS.every((v) => !outbound.includes(v)), 'no profile value in any request body sent to Suite');
   check(api.some((e) => e.method === 'PATCH' && e.body.includes('"srn":"AB1234567"') && e.body.includes('"status":"done"')), 'SRN written back to the run');
   check(!api.some((e) => e.path === '/api/assist/resolve'), 'resolver never called (0 AI calls)');
+  const createBody = JSON.parse(api.find((e) => e.method === 'POST' && e.path === '/api/engagements/eng-1/assist-runs')?.body ?? '{}');
+  check(createBody.mcaLoginLabel === 'lead.mca@fake-firm.test' && /^[0-9a-f-]{36}$/.test(createBody.device?.installId ?? '') && Boolean(createBody.device?.userAgent), 'run start carries the MCA login label, install id and user agent (G14)');
+  check(api.some((e) => e.method === 'PATCH' && e.body.includes('"dscSigners":["director:e1"]')), 'the DSC holder goes to Suite as a reference, not a name (G14)');
   const portalOther = portalLog.filter((e) => !(e.method === 'GET' && /\.(html|js|css)$/.test(e.path)) && e.path !== '/favicon.ico');
   if (portalOther.length) console.log('    portal requests:', JSON.stringify(portalOther));
   check(portalOther.length === 0, 'portal host received only its static files (G7)');
@@ -237,8 +256,15 @@ async function main() {
   check(partB.d1din === '09876543' && partB.d2 === 'Dirtwo' && partB.d2din === '', 'both director blocks filled; a DIN the profile lacks stays empty');
   check(partB.d1desig === '', 'designation left for the user (askUser)');
   check(partB.writes.includes('director2FirstName'), 'repeating fields filled through guideBridge');
+  await panel.getByTestId('signers').getByRole('checkbox').first().check();
   await panel.getByTestId('pdf-input').setInputFiles({ name: 'signed-b.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% Part B signed by the user (mock)\n') });
   await waitState('WAIT SUBMIT PAY');
+  await panel.getByTestId('certifier-wait').waitFor({ timeout: 15000 });
+  const partial = await attest(suitePage, suite, 'spice-b', { fieldsCheckedAgainstRecords: true });
+  check(partial === 400, 'Part B refuses checks without the office and subscriber items');
+  await attest(suitePage, suite, 'spice-b', { fieldsCheckedAgainstRecords: true, registeredOffice: 'owner_noc', subscriberSignatures: 'video_kyc' });
+  await panel.getByRole('heading', { name: 'Click Submit and Pay yourself' }).waitFor({ timeout: 15000 });
+  check(true, 'Part B: Submit and Pay card appears once the certifier’s checks are recorded');
   const gateB = await portal.evaluate(() => window.__mock.clicks);
   check(!gateB['btn-submit'] && !gateB['btn-pay'], 'Part B: Submit and Pay not clicked by the agent');
   await portal.click('#btn-submit');
@@ -252,7 +278,7 @@ async function main() {
   check(apiB.some((e) => e.method === 'PATCH' && e.body.includes('"srn":"AC7654321"')), 'Part B SRN written back to the run');
   const outboundB = apiB.filter((e) => e.method !== 'GET').map((e) => e.body).join('\n');
   check(SENTINELS.every((v) => !outboundB.includes(v)), 'no Part B profile value in any request body sent to Suite');
-  const rejectedB = apiB.filter((e) => e.status >= 400 && e.path !== '/api/assist/catalog');
+  const rejectedB = apiB.filter((e) => e.status >= 400 && e.path !== '/api/assist/catalog' && !e.path.endsWith('/attestation'));
   check(rejectedB.length === 0, 'Suite accepted every Part B request body');
 
   // G8: nothing in extension storage looks like a credential.
@@ -261,6 +287,26 @@ async function main() {
   const hit = /fake-session|staff-1|"(password|captcha\w*|otp|userId|cookie|token)":"[^"]+"/i.exec(scrubbed);
   if (hit) console.log('    storage match:', hit[0]);
   check(!hit, 'no credential, cookie or token in chrome.storage (G8)');
+}
+
+/**
+ * The certifier records the checks in (fake) Suite, from the Suite tab, as the Assist runs page
+ * dialog does. Returns the HTTP status.
+ */
+async function attest(suitePage, suite, subAgent, checks) {
+  const run = [...suite.runs.values()].filter((r) => r.subAgent === subAgent && !r.attestation).at(-1);
+  if (!run) throw new Error(`no open ${subAgent} run in the fake Suite`);
+  return suitePage.evaluate(
+    async ({ id, checks }) => {
+      const res = await fetch(`/api/engagements/eng-1/assist-runs/${id}/attestation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checks, evidenceDocumentIds: [] }),
+      });
+      return res.status;
+    },
+    { id: run.id, checks },
+  );
 }
 
 try {

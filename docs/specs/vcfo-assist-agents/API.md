@@ -32,7 +32,9 @@ Do not call these routes from the extension's own origin.
 
 ## Typical run
 
-1. `GET /api/assist/catalog` — show the agent grid; note `liveEnabled` and `mockHosts`.
+1. `GET /api/assist/catalog` — show the agent grid; note `liveEnabled` and `mockHosts`. At every run
+   start the extension reads it again for the kill switch (`extensionDisabled`,
+   `minExtensionVersion`) and the firm's own contacts (`firmContacts`).
 2. `GET /api/assist/recipes/spice-a` — verify `{ recipe, sig, alg, keyId }` against the extension's
    built-in public keys, then cache it by `recipe.version`.
 3. `GET /api/engagements/[id]/assist-profile` — the values (existing route; they never leave the browser).
@@ -40,7 +42,10 @@ Do not call these routes from the extension's own origin.
 5. While filling: `PATCH .../assist-runs/[runId]` with progress. On a field miss the extension
    tries T0/T1/T2 itself, then `POST /api/assist/resolve` (T3) with `runId`, then teach mode (T4).
    A heal that found a better SOM path, selector or label is proposed with `POST /api/assist/patches`.
-6. After the user submits and pays: `PATCH` with `status: "done"` and the `srn`.
+6. At `WAIT_SUBMIT_PAY` the extension polls `GET .../assist-runs/[runId]` until `run.attestation`
+   is set; the certifier records it in Suite (`POST .../assist-runs/[runId]/attestation`). Only then
+   does the panel show "You do this: Submit and Pay".
+7. After the user submits and pays: `PATCH` with `status: "done"` and the `srn`.
 
 "Fix in Suite" in the panel opens `GET /api/assist/step-link/[id]?step=<stepId>` in a new tab; Suite
 redirects to that engagement's checklist step in the signed-in role's own shell.
@@ -58,6 +63,9 @@ Response `200`:
   "ok": true,
   "liveEnabled": false,
   "mockHosts": ["localhost", "127.0.0.1"],
+  "extensionDisabled": false,
+  "minExtensionVersion": null,
+  "firmContacts": { "emails": ["desk@firm.in"], "phones": ["9876501234"] },
   "agents": [
     {
       "id": "incorporation",
@@ -92,7 +100,14 @@ Response `200`:
   compliance sub-agents, which carry `activityId` (`ACT-M08`, `ACT-015-AOC4`, `ACT-015-MGT7`).
 - `portalHost`: `null` for state portals (Shops and Establishments, PT).
 - `srnField`: present when a finished run's SRN is appended to that step's filing note.
-- Source: `src/lib/assist-agents/catalog.ts`.
+- `extensionDisabled` (`ASSIST_EXTENSION_DISABLED=true`) and `minExtensionVersion`
+  (`ASSIST_MIN_EXTENSION_VERSION`, dotted numbers, `null` when unset): the remote kill switch (SAFETY.md
+  G18, `DISTRIBUTION.md`). The extension refuses to start a run while the first is true or while its
+  own manifest version is below the second, and also when it cannot read the catalog.
+- `firmContacts`: the firm's own emails (lower case) and phone numbers (last ten digits), from the
+  firm settings' support email and phone, `ASSIST_FIRM_CONTACTS` (comma separated) and the signed-in
+  user's email. The no-placeholder guard (G16) never types one of them into a client's field.
+- Source: `src/lib/assist-agents/catalog.ts`, `app/api/assist/catalog/route.ts`.
 
 ## GET /api/assist/recipes/[id]
 
@@ -144,6 +159,7 @@ not an Ed25519 PEM (an unsigned recipe is never served).
     askUser?: boolean;      // the profile cannot supply it: highlight, never type
     note?: string;
     each?: string;          // a repeating template over this profile array, e.g. "directors"
+    noPlaceholder?: boolean; // G16; default = required (fieldRejectsPlaceholder)
   }[];
   actions: { id; label; kind: 'safe' | 'human'; match: Match }[];  // Submit / Pay / Final / Sign are always 'human'
   gates: ('LOGIN' | 'DSC' | 'SUBMIT' | 'PAY')[];
@@ -223,7 +239,12 @@ Start a run. The server fills `agent`, `recipeId` and `recipeVersion` from its c
 Body (strict):
 
 ```json
-{ "subAgent": "spice-a", "portalHost": "localhost:3100", "recipeVersion": "1.0.0", "fieldsTotal": 9, "state": "READY" }
+{
+  "subAgent": "spice-a", "portalHost": "localhost:3100", "recipeVersion": "1.0.0", "fieldsTotal": 9, "state": "READY",
+  "mcaLoginLabel": "lead@firm.in",
+  "device": { "installId": "0f6c1a2e-…", "userAgent": "Mozilla/5.0 …" },
+  "extensionVersion": "0.1.0"
+}
 ```
 
 - `portalHost`: the host of the portal tab (a port is ignored). Required.
@@ -231,6 +252,13 @@ Body (strict):
 - `fieldsTotal`: optional, defaults to the recipe's field count (a repeating template counts once,
   so the extension sends the expanded count). `state`: optional, `READY` by default
   (upper case, `^[A-Z][A-Z0-9_]*$`).
+- Evidence (SAFETY.md G14), all optional: `mcaLoginLabel` is the answer to "Which MCA login are you
+  using?" (1–120 chars, a user id or email label; never a password; not checked for personal data
+  because it is the staff member's own login). `device.installId` is the random id the extension
+  keeps in `chrome.storage.local` (8–64 letters, digits and hyphens), `device.userAgent` up to 400
+  chars. `extensionVersion` is the manifest version.
+- The server adds the Suite user's name and email (kept on the row if the account is later deleted)
+  and the client IP of this call (see "Client IP" below).
 
 Response `201`: `{ "ok": true, "run": Run }`.
 
@@ -263,13 +291,23 @@ Body (strict; every member optional):
   "heals": [{ "field": "company.type", "tier": "T1", "ok": true }],
   "refusals": [{ "kind": "captcha", "target": "Enter captcha", "at": "2026-11-09T10:00:00Z" }],
   "srn": "AA1234567",
-  "error": "short reason, no values"
+  "error": "short reason, no values",
+  "blanks": [{ "field": "directors[0].mobile", "reason": "placeholder" }],
+  "dscSigners": ["director:e3", "professional:self"]
 }
 ```
 
 - `heals` (up to 200, tiers `T0`–`T4`) and `refusals` (up to 100) **replace** the stored arrays:
   send the run's full list each time.
 - `srn`: 6–20 letters and digits, upper-cased by the server.
+- `blanks` (up to 300) **replaces** the stored list: the fields the extension left empty for the
+  user to fill from the client's records (G16), by key and one of `missing`, `empty`, `placeholder`,
+  `firm_contact`. Never the value. The keys are checked for personal data like heal fields.
+- `dscSigners` (1–20): who signed at the DSC step, as references only: `director:<entry id>`,
+  `subscriber:<1-based index>` or `professional:self`. Suite resolves each to a name from its own
+  records (the Assist profile; `professional:self` is the caller) and stores `{ ref, kind, name }`;
+  a reference that does not resolve is `400 unknown_signer`. The extension never sends a name.
+- Every PATCH notes the client IP in the run's evidence log.
 - `aiCalls` and `aiTokens` cannot be sent; only the resolver writes them.
 - `done`, `failed` and `cancelled` close the run and stamp `finishedAt`. A closed run answers
   `409 run_closed` to any further PATCH.
@@ -304,9 +342,87 @@ Response `200`:
   heals: { field: string; tier: 'T0'|'T1'|'T2'|'T3'|'T4'; ok: boolean }[];
   refusals: { kind: string; target?: string; at?: string }[];
   aiCalls: number; aiTokens: number; srn: string | null; error: string | null;
+  blanks: { field: string; reason: 'missing' | 'empty' | 'placeholder' | 'firm_contact' }[];
+  evidence: {
+    userName: string | null; userEmail: string | null;           // the Suite user at the start
+    mcaLoginLabel: string | null;
+    dscSigners: { ref: string; kind: 'director' | 'subscriber' | 'professional'; name: string }[];
+    device: { installId: string; userAgent: string; extensionVersion?: string } | null;
+    clientIps: { ip: string; forwardedFor?: string; firstAt: string; lastAt: string; calls: number }[];
+  };
+  attestation: Attestation | null;
   startedAt: string; finishedAt: string | null; updatedAt: string;   // ISO
 }
 ```
+
+`userId` is `null` only after the Suite account was deleted; `evidence.userName` still says who.
+
+### Client IP
+
+Suite takes the IP from the request the same way the rest of Suite does (`clientIp` in
+`src/lib/growth/demo-request.ts`): App Runner's front proxy appends the address it saw to
+`X-Forwarded-For`, so the right-most entry is the first hop Suite trusts. Entries to its left were
+written by the caller and can be spoofed, so the whole chain is kept beside it as `forwardedFor`
+(truncated to 200 chars). Each distinct IP is kept once with its first and last time and a call
+count, up to 20 per run. Run start and every PATCH count; GET polls do not. The certifier's IP is
+kept on the attestation, apart from the filer's.
+
+## POST /api/engagements/[id]/assist-runs/[runId]/attestation
+
+The certifier's due-diligence checks (SAFETY.md G17). Staff only (super admin, admin, manager, project
+lead) on a run in the caller's scope. The Suite UI is "Record certifier checks" on the run's detail on
+the Assist runs page; nothing in it starts ticked.
+
+Body (strict):
+
+```json
+{
+  "checks": {
+    "fieldsCheckedAgainstRecords": true,
+    "registeredOffice": "visited | owner_noc",
+    "subscriberSignatures": "in_presence | video_kyc"
+  },
+  "evidenceDocumentIds": ["<documents.id>", "…"],
+  "note": "optional, up to 500 chars, no personal data"
+}
+```
+
+- `fieldsCheckedAgainstRecords` must be `true` ("I checked every filled field against the original
+  records"). SPICe+ Part B (`spice-b`) also needs `registeredOffice` ("I personally visited the
+  registered office" or "I hold the owner's NOC") and `subscriberSignatures` ("Each subscriber signed
+  in my presence" or "through recorded video-KYC"). Choices a form does not need are dropped.
+- `evidenceDocumentIds` (up to 20, default none): live documents of the same engagement's vault (site
+  visit photo, NOC, video-KYC record).
+- Certifier rule: by default the user who ran the agent may record the checks. When the firm setting
+  `assistCertifierMustDiffer` is on (Firm settings → VCFO Assist filing checks; `PATCH
+  /api/firm-settings` with `{ "assistCertifierMustDiffer": true }`), Suite refuses the filer with
+  `403 certifier_must_differ`.
+- One attestation per run, never changed.
+
+Response `201`: `{ "ok": true, "attestation": Attestation }`.
+
+Errors: `400 attestation_incomplete`, `400 unknown_document`, `400 personal_data` (in `note`),
+`403 certifier_must_differ`, `404 not_found` (run out of reach or under another engagement's URL),
+`409 already_attested`, `409 run_closed`, `409 run_not_filled` (the run is not yet in `CHECK`,
+`DOWNLOAD`, `WAIT_DSC`, `ATTACH`, `RECHECK` or `WAIT_SUBMIT_PAY`).
+
+### Attestation
+
+```ts
+{
+  id: string; runId: string;
+  certifierId: string | null; certifierName: string | null; certifierEmail: string | null;
+  checks: { fieldsCheckedAgainstRecords: true; registeredOffice?: 'visited' | 'owner_noc'; subscriberSignatures?: 'in_presence' | 'video_kyc' };
+  evidenceDocumentIds: string[]; note: string | null; ip: string | null; createdAt: string;
+}
+```
+
+## Retention
+
+`assist_agent_runs` (with its evidence) and `assist_run_attestations` are kept for **at least one
+year** (DPDP Rule 8(3); CERT-In's 180 days is the floor). No job deletes them, and since migration
+`0051_assist_filing_safeguards` deleting a staff account sets `user_id` / `certifier_id` to null
+instead of deleting the rows. See SAFETY.md G14.
 
 ## GET /api/assist/step-link/[id]?step=<stepId>
 
@@ -323,6 +439,9 @@ open, so the extension does not need to know the role:
   know, it lands on the engagement page instead.
 - Signed out goes to `/login`; a client or developer to their home; an engagement out of reach to
   the caller's role home (never a `404` page, so ids cannot be probed).
+- `?run=<runId>` ("Open in Suite" while the panel waits for the certifier) lands on
+  `/app/{super|admin|manager|intern}/assist-runs?run=<runId>` instead, where that run's detail opens
+  with "Record certifier checks". A malformed run id falls back to the step link.
 - The extension sends the step of the first `missing[]` entry that names one, else the sub-agent's
   catalog `stepId`. Source: `src/lib/assist-agents/step-link.ts`.
 
@@ -408,6 +527,9 @@ separate table, `assist_agent_runs` (migration `0050_assist_agents`), and is sta
 | Resolver | `src/lib/assist-agents/resolve.ts`, `pii.ts` |
 | Request bodies | `src/lib/assist-agents/api-schemas.ts` |
 | SRN write-back | `src/lib/assist-agents/record-srn.ts` |
-| Repositories | `src/db/repositories/assist-agent-runs.ts`, `assist-patches.ts` |
-| Tables | `src/db/schema-assist.ts`, `src/db/migrations/0050_assist_agents.sql` |
-| Staff page | `src/views/assist/AssistRunsPage.tsx`, `/app/{super,admin,manager,intern}/assist-runs` |
+| Certifier's checks (rules) | `src/lib/assist-agents/attestation.ts` |
+| DSC signer references | `src/lib/assist-agents/dsc-signers.ts` |
+| Repositories | `src/db/repositories/assist-agent-runs.ts`, `assist-attestations.ts`, `assist-patches.ts` |
+| Tables | `src/db/schema-assist.ts`, `src/db/migrations/0050_assist_agents.sql`, `0051_assist_filing_safeguards.sql` |
+| Staff page | `src/views/assist/AssistRunsPage.tsx` and `AssistRunDetail.tsx`, `/app/{super,admin,manager,intern}/assist-runs` |
+| Distribution, kill switch | `DISTRIBUTION.md` |

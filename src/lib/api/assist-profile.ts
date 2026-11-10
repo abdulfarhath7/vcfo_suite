@@ -28,13 +28,26 @@ export async function loadAssistProfile(
       response: NextResponse.json({ ok: false, error: auth.error }, { status: auth.status }),
     };
   }
-  const access = await getDocPackInputs(auth.ctx, engagementParam);
-  if (access.ok === false) {
+  const built = await assistProfileFor(auth.ctx, engagementParam);
+  if (built.ok === false) {
     return {
       ok: false,
-      response: NextResponse.json({ ok: false, error: access.error }, { status: access.status }),
+      response: NextResponse.json({ ok: false, error: built.error }, { status: built.status }),
     };
   }
+  return { ok: true, load: { ctx: auth.ctx, inputs: built.inputs, result: built.result } };
+}
+
+/**
+ * The profile for a caller already through a staff guard (for example the VCFO Assist run route,
+ * which resolves DSC signer references to names). Same repository and the same access rules.
+ */
+export async function assistProfileFor(
+  ctx: AuthContext,
+  engagementParam: string,
+): Promise<{ ok: true; inputs: DocPackInputs; result: AssistProfileResult } | { ok: false; status: number; error: string }> {
+  const access = await getDocPackInputs(ctx, engagementParam);
+  if (access.ok === false) return { ok: false, status: access.status, error: access.error };
   const { inputs } = access;
   const result = buildAssistProfile(
     buildDocPackContext({
@@ -43,5 +56,5 @@ export async function loadAssistProfile(
       engagement: inputs.engagement,
     }),
   );
-  return { ok: true, load: { ctx: auth.ctx, inputs, result } };
+  return { ok: true, inputs, result };
 }

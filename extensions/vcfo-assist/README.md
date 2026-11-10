@@ -53,6 +53,15 @@ WAIT_SUBMIT_PAY → READ_SRN → WRITE_BACK → DONE`, plus `FAILED` and `CANCEL
   that becomes one field per profile entry after the profile is loaded (`src/engine/expand.ts`), so
   two directors fill two director blocks. The expanded plan is saved with the run.
 - The `WAIT_*` states are the user's. The agent only watches the page in them.
+- Before a run starts, the panel asks once "Which MCA login are you using?" (your own user ID or
+  email, never the password; remembered in `chrome.storage.local`). At the DSC step it asks "Who
+  signed?" from the client's directors and subscribers and yourself; the PDF drop is taken only
+  with an answer. Suite gets the label, references such as `director:e3` (never a name), a random
+  install id and the browser's user agent, and records the IP it sees (SAFETY.md G14).
+- At `WAIT_SUBMIT_PAY` the panel first shows "Waiting for the certifier's checks in VCFO Suite"
+  with an "Open in Suite" button, and does not highlight Submit. The certifying professional records
+  the checks on the run's detail on Suite's Assist runs page ("Record certifier checks"). The engine
+  polls the run and shows "You do this: Submit and Pay" once Suite reports them (G17).
 
 Suite data is fetched inside the open Suite tab with `chrome.scripting.executeScript`, so each
 request is same-origin and carries the Suite session cookie. The extension never calls Suite from
@@ -92,6 +101,15 @@ one off.
 - The AI never sees a value. The resolver payload holds the profile key name, the recipe label and
   candidate labels, names and aria labels; values found in labels are redacted. The AI can only
   return an index from that list, and any other answer is discarded.
+- The agent never types a blank or placeholder-looking value (`9999999999`, `1234567890`, repeated
+  digits, `NA`, `N/A`, `-`, `test`, `dummy`, `xxx`, `test@test.com`) or the firm's own phone or
+  email (from Suite's catalog) into a field (`src/guards/placeholder.ts`, G16). It leaves the field
+  empty, marks it "You fill this from the client's records" on the page, and records it on the run
+  by key and reason. A mandatory field (`noPlaceholder`, Suite's default for `required`) that Suite
+  lacks gets the same mark.
+- Every run start reads Suite's catalog first. `extensionDisabled: true`, or a manifest version below
+  `minExtensionVersion`, stops the run before the recipe or the profile is read; an unreadable
+  catalog stops it too, with "Try again" (`src/engine/kill.ts`, G18).
 - Live portals are refused. The engine runs only on the local mock (`127.0.0.1`, `localhost`)
   unless Suite's catalog says `liveAllowed: true` for that host. Until then the panel shows "Live
   portal use waits for the CS opinion".
@@ -139,6 +157,16 @@ repository. Never edit the bundle by hand; tests in both packages fail when it d
 Fields marked `askUser` (Part A's significance and trademark, Part B's director designation) are
 left for the user.
 
+## Distribution
+
+The extension is force-installed to staff browsers by Chrome enterprise policy with a pinned update
+URL, never published on the public Web Store (`docs/specs/vcfo-assist-agents/DISTRIBUTION.md`).
+`wxt.config.ts` sets `update_url` from `VCFO_ASSIST_UPDATE_URL` (the committed default is a
+placeholder on the firm's host) and the manifest `key`, which pins the extension id, from
+`VCFO_ASSIST_MANIFEST_KEY` at release time only; no key is committed. Releases need a second
+person's review, CI installs with `npm ci` from the committed lockfile, and Suite's kill switch
+(`ASSIST_EXTENSION_DISABLED`, `ASSIST_MIN_EXTENSION_VERSION`) stops runs without a new build.
+
 ## Tests
 
 ```bash
@@ -152,7 +180,10 @@ restart, the drift heal at T1, a T3 heal whose payload holds no profile value, t
 answers (selector, URL, free text, out-of-range index), the live-portal switch, the Ed25519 checks
 (dev key on mock hosts only, unknown key, bad signature, tampered recipe), the page check, the
 `each` expansion, a full Part B run with two directors and two subscribers, forbidden clicks and the
-injection text.
+injection text, the placeholder guard (`src/guards/placeholder.test.ts`) and a run with placeholder
+and firm-contact values, the certifier's gate (no Submit card or highlight until Suite reports the
+checks; an early SRN is logged), the kill switch and version floor, and the evidence fields (MCA
+login label, install id, signer references; a drop without a signer is not taken).
 
 `src/suite/contract.test.ts` runs a Part A filing, a Part B filing and a T3 heal (with a run id whose
 groups are all digits) through the real `SuiteClient` and parses every request body with Suite's own
@@ -165,7 +196,10 @@ sources.
 `npm run e2e` (`e2e/run.mjs`) loads the built extension into Chrome with Playwright, opens a fake
 Suite tab (`e2e/fake-suite.mjs`) and the mock portal, and drives the side panel through a full Part A
 run, a drift run, and a Part B run that starts on the wrong page, waits, and then fills both
-director and both subscriber blocks. Playwright is taken from the Suite repository's `node_modules`. Set `CHROME_PATH`
+director and both subscriber blocks. In Parts A and B it types the MCA login label, ticks who signed,
+checks that the panel waits for the certifier with no Submit highlight, records the certifier's
+checks through the fake Suite (`POST .../attestation`; an incomplete Part B set is refused), and only
+then sees the Submit and Pay card. Playwright is taken from the Suite repository's `node_modules`. Set `CHROME_PATH`
 to a Chrome for Testing or Chromium binary (branded Chrome ignores `--load-extension`); it runs
 headless by default and headful with `HEADFUL=1`. Screenshots are written to `e2e/artifacts/`.
 

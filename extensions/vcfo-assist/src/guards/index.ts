@@ -143,3 +143,4 @@ export function allowFill(f: FieldFacts, pageUrl: string): GuardRefusal | null {
 export function allowClick(b: ButtonFacts, pageUrl: string): GuardRefusal | null {
   return isForbiddenPage(pageUrl) ?? isForbiddenAction(b);
 }
+export { placeholderReason, type FirmContacts, type PlaceholderHit, type PlaceholderReason } from './placeholder';

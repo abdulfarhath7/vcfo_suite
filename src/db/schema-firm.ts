@@ -60,6 +60,8 @@ export const firmSettings = pgTable('firm_settings', {
   serviceTargets: jsonb('service_targets').$type<Record<string, number | null>>().notNull().default({}),
   /** Role permissions set by the super admin: { admin|manager|intern: { view, edit, approve } } (P-236). Empty means the code defaults. */
   rolePermissions: jsonb('role_permissions').$type<Record<string, Record<string, boolean>>>().notNull().default({}),
+  /** VCFO Assist: the certifier's checks must come from a user other than the filer (SAFETY.md G17). */
+  assistCertifierMustDiffer: boolean('assist_certifier_must_differ').notNull().default(false),
   updatedBy: uuid('updated_by').references(() => base.profiles.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

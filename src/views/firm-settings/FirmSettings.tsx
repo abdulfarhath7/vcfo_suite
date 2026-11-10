@@ -9,6 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { useFirmSettings } from './use-firm-settings';
 import {
+  AssistCertifierSection,
   BrandingSection,
   FirmProfileSection,
   ReminderSection,
@@ -54,6 +55,7 @@ export function FirmSettingsBody() {
           <ServiceTargetsSection settings={settings} canEdit={canEdit} save={onSave} />
           <BrandingSection settings={settings} canEdit={canEdit} logoSrc={logoSrc} uploadLogo={uploadLogo} removeLogo={removeLogo} />
           <ReminderSection settings={settings} canEdit={canEdit} save={onSave} />
+          {canEdit ? <AssistCertifierSection settings={settings} canEdit={canEdit} save={onSave} /> : null}
           {canEdit ? <IntegrationsSection isSuper={isSuper} /> : null}
           {canEdit ? <SettingsHistorySection rows={history} /> : null}
         </div>

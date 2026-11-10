@@ -197,3 +197,23 @@ in the answer (identity numbers as last four only). `ASK_CLIENT_DATA_ENABLED=fal
 data out of prompts. AI answers show an "AI-generated" notice, and clients get "Ask my CA to confirm"
 (a hand-off task with status at `GET /api/ask/handoff/[id]`). The firm setting that holds client AI
 answers for review is designed but not built. Details: `docs/specs/ask-vcfo/PRIVACY.md`.
+
+## VCFO Assist filing safeguards (10 Nov 2026, on `claude/laughing-albattani-03nyom`, not deployed)
+
+From the legal review (risks 1, 2, 5 and 6; checklist items 6 to 8). Guards G16 to G18 and the
+evidence parts of G14 in `docs/specs/vcfo-assist-agents/SAFETY.md`. **Migration
+`0051_assist_filing_safeguards` must be applied on RDS before deploy**: it adds
+`assist_run_attestations`, the run's evidence and `blanks` columns, the firm setting
+`assist_certifier_must_differ`, and makes `assist_agent_runs.user_id` `ON DELETE SET NULL` (it was
+`CASCADE`, which deleted a person's runs with their account).
+- G16 no placeholder values: the extension never types a blank, dummy (`9999999999`, `NA`, `test`)
+  or firm-contact value; it marks the field "You fill this from the client's records" and records it.
+  Recipe fields take `noPlaceholder` (default `required`).
+- G17 certifier's gate: the Submit and Pay card waits for "Record certifier checks" on the Assist
+  runs page (`POST /api/engagements/[id]/assist-runs/[runId]/attestation`); same user allowed unless
+  Firm settings → "VCFO Assist filing checks" says otherwise.
+- G14 evidence: MCA login label, DSC holders (references resolved by Suite), install id, user agent
+  and client IPs per run, shown on the run detail. Retention at least one year; nothing deletes them.
+- G18: catalog kill switch (`ASSIST_EXTENSION_DISABLED`, `ASSIST_MIN_EXTENSION_VERSION`, plus
+  `ASSIST_FIRM_CONTACTS`), placeholder `update_url` in `wxt.config.ts`, `DISTRIBUTION.md`. The
+  enterprise policy, update host, signing key and CI release job are not set up yet.

@@ -162,6 +162,12 @@ export interface FirmSettings {
   address: string | null;
   serviceTargets: ServiceTargets;
   rolePermissions: RolePermissions;
+  /**
+   * VCFO Assist (SAFETY.md G17): when on, the person who records the certifier's checks for an
+   * agent run must be a different Suite user from the one who ran it. Off by default: one
+   * professional may do both, and the checks are still that person's own acts.
+   */
+  assistCertifierMustDiffer: boolean;
   updatedAt: string | null;
   updatedByName: string | null;
 }
@@ -178,6 +184,7 @@ export const FIRM_SETTINGS_DEFAULTS: FirmSettings = {
   address: null,
   serviceTargets: EMPTY_SERVICE_TARGETS,
   rolePermissions: DEFAULT_ROLE_PERMISSIONS,
+  assistCertifierMustDiffer: false,
   updatedAt: null,
   updatedByName: null,
 };
@@ -193,7 +200,8 @@ export type FirmSettingsField =
   | 'supportPhone'
   | 'address'
   | 'serviceTargets'
-  | 'rolePermissions';
+  | 'rolePermissions'
+  | 'assistCertifierMustDiffer';
 
 const FIRM_SETTINGS_FIELD_LABEL: Record<FirmSettingsField | 'logo', string> = {
   firmName: 'Firm name',
@@ -207,6 +215,7 @@ const FIRM_SETTINGS_FIELD_LABEL: Record<FirmSettingsField | 'logo', string> = {
   address: 'Address',
   serviceTargets: 'Service targets',
   rolePermissions: 'Roles and permissions',
+  assistCertifierMustDiffer: 'Assist certifier must differ from the filer',
 };
 
 /** The longest reminder lead the screen offers; a filing a quarter away needs no nudge yet. */
@@ -271,6 +280,7 @@ export const firmSettingsPatchSchema = z
     rolePermissions: z
       .object({ admin: permissionRow, manager: permissionRow, intern: permissionRow })
       .strict(),
+    assistCertifierMustDiffer: z.boolean(),
   })
   .partial()
   .strict();
@@ -372,6 +382,7 @@ export function describeChange(change: { field: FirmSettingsField | 'logo'; new:
     }
     return moved.length ? `Role ${moved.join('; ')}` : label;
   }
+  if (change.field === 'assistCertifierMustDiffer') return `${label}: ${value ? 'on' : 'off'}`;
   if (value === null || value === '') return `${label} cleared`;
   return `${label}: ${String(value)}`;
 }

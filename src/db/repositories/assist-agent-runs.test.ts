@@ -287,3 +287,42 @@ describe('recipe patches', () => {
     await expect(patches.reviewPatch(ctx('manager'), 'p1', 'rejected')).rejects.toMatchObject({ status: 409, message: 'already_decided' });
   });
 });
+
+describe('evidence log (G14)', () => {
+  it('a new run keeps the user’s name and email, the MCA login label, the device and the first IP', async () => {
+    results = [[runRow(OWN)]];
+    await runs.createAgentRun(
+      ctx('intern'),
+      OWN,
+      { ...NEW_RUN, mcaLoginLabel: 'lead@sbc.in', device: { installId: 'install-1234', userAgent: 'UA' }, extensionVersion: '0.2.0' },
+      { ip: '1.2.3.4', forwardedFor: '1.2.3.4', userAgent: 'UA' },
+    );
+    expect(writes()[0]!.values).toMatchObject({
+      userName: 'intern',
+      userEmail: 'intern@vcfo.local',
+      mcaLoginLabel: 'lead@sbc.in',
+      device: { installId: 'install-1234', userAgent: 'UA', extensionVersion: '0.2.0' },
+      clientIps: [{ ip: '1.2.3.4', calls: 1 }],
+    });
+  });
+
+  it('each PATCH notes the client IP: a known IP is counted, a new one is added', async () => {
+    const seenBefore = [{ ip: '1.2.3.4', firstAt: '2026-11-10T00:00:00.000Z', lastAt: '2026-11-10T00:00:00.000Z', calls: 1 }];
+    results = [[runRow(OWN, { clientIps: seenBefore })], [runRow(OWN)]];
+    await runs.updateAgentRun(ctx('intern'), OWN, RUN, { fieldsFilled: 2, blanks: [{ field: 'company.email', reason: 'firm_contact' }] }, { ip: '5.6.7.8' });
+    const set = writes()[0]!.set as { clientIps: Array<{ ip: string; calls: number }>; blanks: unknown };
+    expect(set.clientIps.map((c) => [c.ip, c.calls])).toEqual([
+      ['1.2.3.4', 1],
+      ['5.6.7.8', 1],
+    ]);
+    expect(set.blanks).toEqual([{ field: 'company.email', reason: 'firm_contact' }]);
+    expect(runs.noteClientIp(seenBefore, { ip: '1.2.3.4' }, new Date())[0]!.calls).toBe(2);
+    expect(runs.noteClientIp([], { ip: 'unknown' }, new Date())).toEqual([]);
+  });
+
+  it('a run view carries the attestation when one exists', async () => {
+    results = [[runRow(OWN)], [{ id: 'a1', runId: RUN, certifierId: 'u', certifierName: 'CA', certifierEmail: null, checks: { fieldsCheckedAgainstRecords: true }, evidenceDocumentIds: [], note: null, ip: null, createdAt: new Date() }]];
+    const run = await runs.getAgentRun(ctx('admin'), RUN);
+    expect(run?.attestation).toMatchObject({ certifierName: 'CA' });
+  });
+});

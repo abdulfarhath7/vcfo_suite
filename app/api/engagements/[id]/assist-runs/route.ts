@@ -2,7 +2,7 @@ import { createAgentRun, listAgentRuns } from '@/db/repositories/assist-agent-ru
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createAgentRunSchema } from '@/lib/assist-agents/api-schemas';
 import { assistHostAllowed, findSubAgent } from '@/lib/assist-agents/catalog';
-import { assistErrorResponse, assistStaffGuard, guardFailure, json } from '@/lib/assist-agents/http';
+import { assistErrorResponse, assistStaffGuard, guardFailure, json, requestSeen } from '@/lib/assist-agents/http';
 import { getRecipe } from '@/lib/assist-agents/registry';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -24,7 +24,8 @@ export async function GET(_request: Request, context: RouteContext) {
 /**
  * POST /api/engagements/[id]/assist-runs — start a run of one sub-agent. The agent, recipe id and
  * recipe version come from the server's catalog, not the body. A live portal host is refused
- * until `ASSIST_LIVE_PORTALS=true` (the CS opinion gate); the mock host always works.
+ * until `ASSIST_LIVE_PORTALS=true` (the CS opinion gate); the mock host always works. The run
+ * keeps the evidence log: the user, the MCA login label, the device and the client IP.
  */
 export async function POST(request: Request, context: RouteContext) {
   const guard = await assistStaffGuard();
@@ -41,14 +42,22 @@ export async function POST(request: Request, context: RouteContext) {
   if (!assistHostAllowed(body.data.portalHost)) return json({ ok: false, error: 'live_portals_disabled' }, 403);
   const { id } = await context.params;
   try {
-    const run = await createAgentRun(guard.ctx, id, {
-      agent: sub.agent,
-      subAgent: sub.id,
-      recipeId: recipe.id,
-      recipeVersion: recipe.version,
-      fieldsTotal: body.data.fieldsTotal ?? recipe.fields.length,
-      state: body.data.state,
-    });
+    const run = await createAgentRun(
+      guard.ctx,
+      id,
+      {
+        agent: sub.agent,
+        subAgent: sub.id,
+        recipeId: recipe.id,
+        recipeVersion: recipe.version,
+        fieldsTotal: body.data.fieldsTotal ?? recipe.fields.length,
+        state: body.data.state,
+        mcaLoginLabel: body.data.mcaLoginLabel,
+        device: body.data.device,
+        extensionVersion: body.data.extensionVersion,
+      },
+      requestSeen(request),
+    );
     if (!run) return json({ ok: false, error: 'not_found' }, 404);
     return json({ ok: true, run }, 201);
   } catch (error) {

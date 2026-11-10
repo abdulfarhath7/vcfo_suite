@@ -66,8 +66,9 @@ const PROFILE = {
 // The shapes below follow docs/specs/vcfo-assist-agents/API.md. Bodies are checked as strictly as
 // Suite's zod schemas: an unknown key is a 400, like the real routes.
 const ALLOWED = {
-  create: ['subAgent', 'portalHost', 'recipeVersion', 'fieldsTotal', 'state'],
-  update: ['status', 'state', 'fieldsTotal', 'fieldsFilled', 'heals', 'refusals', 'srn', 'error'],
+  create: ['subAgent', 'portalHost', 'recipeVersion', 'fieldsTotal', 'state', 'mcaLoginLabel', 'device', 'extensionVersion'],
+  update: ['status', 'state', 'fieldsTotal', 'fieldsFilled', 'heals', 'refusals', 'srn', 'error', 'blanks', 'dscSigners'],
+  attestation: ['checks', 'evidenceDocumentIds', 'note'],
   resolve: ['fieldKey', 'fieldLabel', 'candidates', 'recipeId', 'runId'],
   patch: ['recipeId', 'recipeVersion', 'fieldKey', 'proposed', 'evidence', 'sourceTier', 'runId'],
 };
@@ -75,6 +76,9 @@ const ALLOWED = {
 const CATALOG = {
   ok: true,
   liveEnabled: false,
+  extensionDisabled: false,
+  minExtensionVersion: '0.1.0',
+  firmContacts: { emails: ['desk@fake-firm.test'], phones: ['9123456780'] },
   mockHosts: ['localhost', '127.0.0.1'],
   agents: [
     { id: 'incorporation', title: 'Incorporation', subAgents: [
@@ -89,6 +93,8 @@ const CATALOG = {
 
 export async function startFakeSuite(port = 4319) {
   const log = [];
+  // Runs by id, with the certifier's checks once recorded (SAFETY.md G17).
+  const runs = new Map();
   const server = createServer((req, res) => {
     let body = '';
     req.on('data', (c) => (body += c));
@@ -125,11 +131,38 @@ export async function startFakeSuite(port = 4319) {
       if (p === '/api/engagements/eng-1/assist-profile') return json(200, PROFILE);
       if (p === '/api/engagements/eng-1/assist-runs' && req.method === 'POST') {
         if (!strict(ALLOWED.create)) return json(400, { ok: false, error: 'unrecognized_keys' });
-        return json(201, { ok: true, run: { id: randomUUID(), status: 'running', state: 'READY' } });
+        const created = JSON.parse(body);
+        const run = { id: randomUUID(), status: 'running', state: 'READY', subAgent: created.subAgent, evidence: { mcaLoginLabel: created.mcaLoginLabel ?? null, device: created.device ?? null }, attestation: null };
+        runs.set(run.id, run);
+        return json(201, { ok: true, run });
       }
-      if (/^\/api\/engagements\/eng-1\/assist-runs\/[0-9a-f-]{36}$/.test(p) && req.method === 'PATCH') {
+      const runId = /^\/api\/engagements\/eng-1\/assist-runs\/([0-9a-f-]{36})$/.exec(p)?.[1];
+      if (runId && req.method === 'PATCH') {
         if (!strict(ALLOWED.update)) return json(400, { ok: false, error: 'unrecognized_keys' });
-        return json(200, { ok: true });
+        const patch = JSON.parse(body);
+        const run = runs.get(runId);
+        if (run && patch.dscSigners) run.evidence.dscSigners = patch.dscSigners;
+        if (run && patch.state) run.state = patch.state;
+        return json(200, { ok: true, run });
+      }
+      if (runId && req.method === 'GET') {
+        const run = runs.get(runId);
+        return run ? json(200, { ok: true, run }) : json(404, { ok: false, error: 'not_found' });
+      }
+      const attestRunId = /^\/api\/engagements\/eng-1\/assist-runs\/([0-9a-f-]{36})\/attestation$/.exec(p)?.[1];
+      if (attestRunId && req.method === 'POST') {
+        // The certifier's checks, as the Suite dialog sends them: strict, nothing defaults to ticked.
+        if (!strict(ALLOWED.attestation)) return json(400, { ok: false, error: 'unrecognized_keys' });
+        const run = runs.get(attestRunId);
+        if (!run) return json(404, { ok: false, error: 'not_found' });
+        if (run.attestation) return json(409, { ok: false, error: 'already_attested' });
+        const { checks = {} } = JSON.parse(body);
+        const partB = run.subAgent === 'spice-b';
+        if (checks.fieldsCheckedAgainstRecords !== true || (partB && (!checks.registeredOffice || !checks.subscriberSignatures))) {
+          return json(400, { ok: false, error: 'attestation_incomplete' });
+        }
+        run.attestation = { id: randomUUID(), runId: run.id, certifierName: 'Fake Certifier', checks, createdAt: new Date().toISOString() };
+        return json(201, { ok: true, attestation: run.attestation });
       }
       if (p === '/api/assist/resolve') {
         if (!strict(ALLOWED.resolve)) return json(400, { ok: false, error: 'unrecognized_keys' });
@@ -143,5 +176,5 @@ export async function startFakeSuite(port = 4319) {
     });
   });
   await new Promise((resolve) => server.listen(port, 'localhost', resolve));
-  return { server, log };
+  return { server, log, runs };
 }

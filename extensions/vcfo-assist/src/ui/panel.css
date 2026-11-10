@@ -70,7 +70,7 @@ button, select, textarea, input { font: inherit; color: inherit; }
 .conn.off .dot { background: var(--danger); }
 .picker { display: grid; gap: 3px; }
 .picker-label, .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin: 0; }
-.picker select, .settings textarea { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); }
+.picker select, .picker input, .settings textarea { width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--raised); }
 
 .card { background: var(--raised); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; min-width: 0; }
 details.card > summary { cursor: pointer; list-style-position: inside; }
@@ -163,3 +163,6 @@ details.card > summary { cursor: pointer; list-style-position: inside; }
 }
 .field-row > span:first-child { min-width: 0; }
 .field-row > .row { flex-wrap: nowrap; flex-shrink: 0; align-self: start; }
+.signers { display: grid; gap: 4px; margin: 0 0 8px; padding: 0; border: 0; }
+.signers legend { margin-bottom: 4px; }
+.signer { display: flex; gap: 6px; align-items: center; }

@@ -31,6 +31,11 @@ export interface RunCreate {
   recipeVersion?: string;
   fieldsTotal?: number;
   state?: string;
+  /** G14 evidence: the MCA login label the user typed (never a password). */
+  mcaLoginLabel?: string;
+  /** G14 evidence: this browser install (random id in chrome.storage.local) and its user agent. */
+  device?: { installId: string; userAgent: string };
+  extensionVersion?: string;
 }
 
 /**
@@ -46,6 +51,17 @@ export interface RunUpdate {
   refusals?: Array<{ kind: string; target?: string; at?: string }>;
   srn?: string | null;
   error?: string | null;
+  /** G16: fields left for the client's records, by key and reason (never the value). Replaces the stored list. */
+  blanks?: Array<{ field: string; reason: 'missing' | 'empty' | 'placeholder' | 'firm_contact' }>;
+  /** G14: who signed, as references Suite resolves to names (never a name). */
+  dscSigners?: string[];
+}
+
+/** G17: what Suite says about the certifier's checks for one run. */
+export interface AttestationStatus {
+  recorded: boolean;
+  certifierName?: string;
+  at?: string;
 }
 
 /** What else the resolver call carries besides the labels-only payload. */
@@ -62,6 +78,8 @@ export interface SuitePort {
   updateRun(engagementId: string, runId: string, body: RunUpdate): Promise<void>;
   resolve(payload: ResolvePayload, ctx: ResolveContext): Promise<ResolveResponse>;
   proposePatch(patch: PatchProposal): Promise<void>;
+  /** G17: reads the run back from Suite and reports whether the certifier's checks are recorded. */
+  attestation(engagementId: string, runId: string): Promise<AttestationStatus>;
 }
 
 export type TeachResult =
@@ -81,6 +99,8 @@ export interface PortalPort {
   click(target: { css?: string; text?: string }, label: string, resultCss?: string): Promise<ClickResult>;
   attach(css: string, name: string, base64: string): Promise<{ ok: boolean; sha256?: string; reason?: string }>;
   highlightHuman(gates: RecipeGate[]): Promise<number>;
+  /** G16: marks controls "You fill this from the client's records". Never writes to them. */
+  markForRecords(targets: Array<{ target: FieldTarget; label: string }>): Promise<number>;
   readSrn(pattern?: string): Promise<string | null>;
   teach(label: string): Promise<TeachResult>;
   cancelTeach(): Promise<void>;
@@ -94,6 +114,8 @@ export interface Persisted {
   profile?: ProfileResult;
   /** The dropped signed PDF, base64. Its bytes are never changed (G6). */
   pdfBase64?: string;
+  /** G16: the firm's own contact details from the catalog read at the run start. */
+  firmContacts?: { emails: string[]; phones: string[] };
 }
 
 export interface StorePort {

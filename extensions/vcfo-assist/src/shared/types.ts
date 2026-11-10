@@ -35,6 +35,12 @@ export interface RecipeField {
    * entry by `expandRecipe` after the profile is loaded. An expanded field has no `each`.
    */
   each?: string;
+  /**
+   * G16: a missing or placeholder value leaves the field empty, highlighted "You fill this from the
+   * client's records", and recorded on the run. Suite's default is `required`. A placeholder-looking
+   * value is never typed into any field, whatever this says.
+   */
+  noPlaceholder?: boolean;
 }
 
 /** Actions the engine knows. A recipe cannot add a new kind (SAFETY.md G15). */
@@ -125,6 +131,12 @@ export interface Catalog {
   /** Hosts a live run may use once `liveAllowed` is true. */
   liveHosts?: string[];
   agents: CatalogAgent[];
+  /** G18 kill switch: true stops every run at its start. */
+  extensionDisabled?: boolean;
+  /** G18: an extension below this version refuses to run. */
+  minExtensionVersion?: string | null;
+  /** G16: the firm's own emails and ten-digit phones, never typed into a client's field. */
+  firmContacts?: { emails: string[]; phones: string[] };
 }
 
 // ---------- profile ----------
@@ -259,7 +271,7 @@ export const RUN_STATES = [
 ] as const;
 export type RunState = (typeof RUN_STATES)[number];
 
-export type FieldStatus = 'pending' | 'planned' | 'filled' | 'refused' | 'missing' | 'failed' | 'user';
+export type FieldStatus = 'pending' | 'planned' | 'filled' | 'refused' | 'missing' | 'placeholder' | 'failed' | 'user';
 
 export interface FieldOutcome {
   key: string;
@@ -269,6 +281,8 @@ export interface FieldOutcome {
   target?: FieldTarget;
   /** Shown in the confirm table only; held in the browser and never sent to Suite or the AI. */
   value?: string;
+  /** G16: left empty for the user to fill from the client's records, and why (sent to Suite as key + reason). */
+  blank?: 'missing' | 'empty' | 'placeholder' | 'firm_contact';
   foundLabel?: string;
   via?: 'guideBridge' | 'dom';
   note?: string;
@@ -281,6 +295,10 @@ export type WaitInfo =
   | { kind: 'check_failed'; message: string; role: 'check' | 'recheck' }
   | { kind: 'dsc' }
   | { kind: 'submit_pay' }
+  /** G17: the Submit card waits until Suite reports the certifier's checks for this run. */
+  | { kind: 'certifier' }
+  /** G18: Suite's kill switch, or this extension is older than Suite's minimum. */
+  | { kind: 'disabled'; message: string }
   | { kind: 'live_blocked'; host: string }
   | { kind: 'wrong_page'; page: string; path: string }
   | { kind: 'suite_error'; message: string };
@@ -310,6 +328,25 @@ export interface AttachedPdf {
   sha256: string;
 }
 
+/** A person who may hold a DSC for this filing, as the panel offers them at "Who signed?". */
+export interface SignerChoice {
+  /** What Suite gets: `director:<entry id>`, `subscriber:<n>` or `professional:self`. */
+  ref: string;
+  /** The name, for the panel only (it comes from the profile and is never sent to Suite). */
+  label: string;
+}
+
+/** The run's evidence log (G14). Labels and ids only; Suite adds the IP it sees. */
+export interface RunEvidence {
+  /** "Which MCA login are you using?": a user id or email label, never a password. */
+  mcaLoginLabel?: string;
+  installId?: string;
+  userAgent?: string;
+  extensionVersion?: string;
+  /** Signer refs chosen at the DSC step. */
+  dscSigners?: string[];
+}
+
 export interface Run {
   id: string;
   suiteRunId?: string;
@@ -336,6 +373,11 @@ export interface Run {
   srn?: string;
   pdf?: AttachedPdf;
   error?: string;
+  evidence?: RunEvidence;
+  /** Who may have signed, built from the profile at PULL_PROFILE (names stay in the browser). */
+  signerChoices?: SignerChoice[];
+  /** G17: the certifier's checks as Suite reported them; the Submit card waits for this. */
+  attestation?: { certifierName?: string; at?: string };
   log: LogEntry[];
   startedAt: number;
   updatedAt: number;
