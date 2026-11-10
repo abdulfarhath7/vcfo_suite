@@ -50,16 +50,16 @@ describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
   it('lists the overview and the four phases', () => {
     expect(inc.kids?.map((k) => k.t)).toEqual([
       'Overview',
-      'SPICe+ Part A',
-      'SPICe+ Part B',
-      'Post-incorporation',
-      'Registration steps',
+      '1 · Name application',
+      '2 · Incorporation',
+      '3 · Post-incorporation',
+      '4 · Registration',
     ]);
   });
 
   it('marks the phase being read, and the overview for the other incorporation pages', () => {
     const kids = inc.kids!;
-    expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/phase/2')?.t).toBe('SPICe+ Part B');
+    expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/phase/2')?.t).toBe('2 · Incorporation');
     expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/step/pre-1')?.t).toBe('Overview');
     expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation')?.t).toBe('Overview');
     expect(currentLeaf(kids, 'home', '/app/client')).toBeUndefined();

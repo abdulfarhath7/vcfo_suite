@@ -187,10 +187,11 @@ export function portalNav({
     badge: inc,
     kids: [
       { k: 'incorporation', t: 'Overview' },
-      { k: 'incorporation', t: 'SPICe+ Part A', href: phaseHref(1) },
-      { k: 'incorporation', t: 'SPICe+ Part B', href: phaseHref(2) },
-      { k: 'incorporation', t: 'Post-incorporation', href: phaseHref(3) },
-      { k: 'incorporation', t: 'Registration steps', href: phaseHref(4) },
+      // The phase names the portal's own phase pages use (src/data/checklist.ts).
+      { k: 'incorporation', t: '1 · Name application', href: phaseHref(1) },
+      { k: 'incorporation', t: '2 · Incorporation', href: phaseHref(2) },
+      { k: 'incorporation', t: '3 · Post-incorporation', href: phaseHref(3) },
+      { k: 'incorporation', t: '4 · Registration', href: phaseHref(4) },
     ],
   };
   const compliances: NavItem = {
