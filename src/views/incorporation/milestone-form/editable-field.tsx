@@ -7,7 +7,9 @@ import type { ChecklistField } from '@/data/checklist';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import { addRepeatEntry, isRepeatField, removeRepeatEntry } from '@/lib/checklist/checklist-repeat';
-import { countWords, formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation';
+import { countWords, formatPre1DateDisplay, parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
+import { DirectorCountControl, withDirectorCount } from './director-count-control';
+import { FieldInfoButton } from './field-info-button';
 import { getPre6DirectorNameOptions } from '@/lib/checklist/checklist-pre6-validation';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import { Input } from '@/components/ui/input';
@@ -93,6 +95,7 @@ export function createEditableFieldRenderer(
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
             <FieldReviewControls engagementId={engagementId} itemId={item.id} fieldId={field.id} label={field.label} />
+            {field.helperText?.trim() ? <FieldInfoButton label={field.label} text={field.helperText.trim()} /> : null}
             <FieldHelpButton stepId={item.id} fieldId={field.id} label={field.label} />
             {(() => {
               // Help icon only where Ask VCFO has something to say about the field.
@@ -127,6 +130,20 @@ export function createEditableFieldRenderer(
                   if (key.startsWith(`${field.id}.${entryId}.`)) delete next[key];
                 }
                 return next;
+              });
+              if (autoSaveEnabled) scheduleAutoSave(false);
+            }}
+          />
+        ) : item.id === 'pre-1' && field.id === 'directorCount' ? (
+          <DirectorCountControl
+            count={parseDirectorCount(draft)}
+            onChange={(next) => {
+              userEditedRef.current = true;
+              setDraft((prev) => withDirectorCount(prev, next));
+              setFieldErrors((prev) => {
+                const rest = { ...prev };
+                delete rest.directorCount;
+                return rest;
               });
               if (autoSaveEnabled) scheduleAutoSave(false);
             }}

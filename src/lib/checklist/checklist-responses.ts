@@ -74,7 +74,7 @@ function pre1ProposedDirectorFields(): ChecklistField[] {
   const out: ChecklistField[] = [
     {
       id: 'directorCount',
-      label: 'Number of proposed directors',
+      label: 'Proposed directors',
       type: 'segmented',
       section,
       options: [
@@ -203,6 +203,8 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'text',
       section: 'Proposed Share Capital Structure',
       placeholder: '10,00,000',
+      helperText:
+        'The most share capital the company may issue, written in its memorandum. Government fees depend on it. ₹10,00,000 is usual.',
       required: true,
     },
     {
@@ -211,6 +213,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'text',
       section: 'Proposed Share Capital Structure',
       placeholder: '1,00,000',
+      helperText: 'The money the shareholders pay in for their shares at the start. It cannot be more than the authorised capital.',
       required: true,
     },
     {
@@ -219,6 +222,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'text',
       section: 'Proposed Share Capital Structure',
       placeholder: '10',
+      helperText: 'The face value of one share. ₹10 is usual, so ₹1,00,000 paid up is 10,000 shares.',
       required: true,
     },
     {

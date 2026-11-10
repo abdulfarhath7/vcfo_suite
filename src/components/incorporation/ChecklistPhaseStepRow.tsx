@@ -13,6 +13,7 @@ import { stepMarkForGate } from '@/components/incorporation/step-mark-for-gate';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { shortDate, daysBetween } from '@/components/timeline/timeline-model';
 import { Eye } from 'lucide-react';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { cn } from '@/lib/utils';
 
 /**
@@ -71,6 +72,7 @@ export function ChecklistPhaseStepRow({
   const state = base.state;
   const live = state === 'now';
   const waiting = gate.kind === 'waiting';
+  const withManager = isLeadRequestPending(facts?.slice);
   const late = Boolean(facts?.late) && live;
   const tone: StepTone = sentBack ? 'bad' : base.tone;
 
@@ -147,7 +149,13 @@ export function ChecklistPhaseStepRow({
         ) : null}
       </span>
       <span className="flex flex-none items-center gap-3">
-        {live && leadName ? (
+        {live && withManager ? (
+          // Sent for approval: the step waits on the manager, not the lead (owner, 10 Nov).
+          <span className="hidden items-center gap-1.5 text-[12.5px] text-ink-muted md:inline-flex">
+            <UserFace initials="M" className="h-6 w-6 bg-waiting-soft text-[10px] font-medium text-waiting" />
+            Manager approval
+          </span>
+        ) : live && leadName ? (
           <span className="hidden items-center gap-1.5 text-[12.5px] text-ink-muted md:inline-flex">
             <UserFace initials={initialsOf(leadName)} className="h-6 w-6 bg-brand-soft text-[10px] font-medium text-brand-text" />
             {leadName}

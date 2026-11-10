@@ -71,6 +71,7 @@ import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 
 /* ---------------- answers ---------------- */
 
@@ -537,6 +538,12 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const dirty = Object.keys(draft).length > 0;
   // C-219: a step SBC or MCA holds gets "Message <lead>" in the card foot.
   const leadFirst = d.leadName ? firstName(d.leadName) : '';
+  // Name whoever holds the step now (owner, 10 Nov): once the lead sends it for approval
+  // (the board resolution), it waits on the manager, not on the lead.
+  const withManager = isLeadRequestPending(s?.slice);
+  const withSbcLine = withManager
+    ? `Waiting for approval from ${d.managerName ? firstName(d.managerName) : 'your SBC manager'}`
+    : `${leadFirst || 'SBC'} is working on it`;
 
   const openPortal = (form: string) => {
     if (!portalLink) return;
@@ -686,7 +693,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
         : k === 'prog'
           ? { state: 'now', title: `In progress${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.due ? `Fill the remaining answers and submit by ${fmt(s.due)}` : 'Fill the remaining answers and submit', bad: late }
           : k === 'with'
-            ? { state: 'now', title: `With ${s.owner === 'mca' ? 'MCA' : 'SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.owner === 'mca' ? 'MCA reviews the filing' : `${leadFirst || 'SBC'} is working on it` }
+            ? { state: 'now', title: `With ${s.owner === 'mca' ? 'MCA' : 'SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.owner === 'mca' ? 'MCA reviews the filing' : withSbcLine }
             : { state: 'next', title: 'Not started', sub: prev ? `Opens after step ${prev.n} · ${prev.title}` : 'Opens later' };
 
   const answersCard = (
