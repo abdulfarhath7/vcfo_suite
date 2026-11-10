@@ -212,6 +212,29 @@ export async function sendHandoff(body: {
   await json(res, 'Could not send your question. Please try again.');
 }
 
+/**
+ * "Ask my CA to confirm": the same task as "Ask my lead", carrying the AI answer for review. The
+ * portal chat posts to `/api/client/handoff`, which works while the Ask VCFO model is off.
+ */
+export async function requestAnswerReview(
+  body: { engagementId?: string; question: string; context: string; conversationId?: string },
+  via: 'ask' | 'portal' = 'ask',
+): Promise<{ id: string }> {
+  const res = await fetch(via === 'ask' ? '/api/ask/handoff' : '/api/client/handoff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(via === 'ask' ? body : { question: body.question, context: body.context, conversationId: body.conversationId }),
+  });
+  const out = await json<{ handoff: { id: string } }>(res, 'Could not send it for review. Please try again.');
+  return { id: out.handoff.id };
+}
+
+/** GET /api/ask/handoff/[id]: where a review request stands. */
+export async function fetchReviewStatus(id: string): Promise<{ state: 'sent' | 'in_review' | 'reviewed'; label: string }> {
+  const res = await fetch(`/api/ask/handoff/${encodeURIComponent(id)}`, { cache: 'no-store' });
+  return json(res, 'Could not check the review status');
+}
+
 /** POST /api/ask/attachments: stores one file for the next chat message. */
 export async function uploadAskAttachment(file: File): Promise<{ id: string; fileName: string }> {
   const form = new FormData();

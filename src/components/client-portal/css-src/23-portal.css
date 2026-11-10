@@ -40,6 +40,10 @@ html.vp-chat-on{overscroll-behavior:contain}
 #vp-chat .vpc-m.vpc-a .vpc-fb button{width:30px;height:30px;min-height:30px;margin:0;padding:0;border-radius:6px;border:1px solid var(--border);background:var(--panel);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
 #vp-chat .vpc-m.vpc-a .vpc-fb button[aria-pressed=true]{background:var(--primary-light);color:var(--primary);border-color:oklch(54.6% 0.215 263 / .35)}
 #vp-chat .vpc-fb button:disabled{cursor:default}
+/* AI notice and "Ask my CA to confirm" status under an AI answer (docs/specs/ask-vcfo/PRIVACY.md). */
+#vp-chat .vpc-ai{display:block;margin-top:8px;font-size:11.5px;line-height:1.4;color:var(--muted)}
+#vp-chat .vpc-ai b{display:inline-block;margin-right:4px;padding:0 5px;border-radius:3px;background:var(--panel);border:1px solid var(--border);font-weight:600;color:var(--ink,inherit)}
+#vp-chat .vpc-rv{display:block;margin-top:6px;font-size:12px;color:var(--primary)}
 #vp-chat .vpc-st{margin-left:6px;font-size:12px;color:var(--muted)}
 /* first-visit note above the launcher (board v7chat_launcher .botup bubble, once per client) */
 .vpl-note{position:fixed;right:var(--vpl-in);bottom:calc(var(--vpl-ph) + var(--vpl-in) + 14px);z-index:2147482500;width:300px;max-width:calc(100vw - 2 * var(--vpl-in));box-sizing:border-box;border-radius:6px;background:var(--panel);border:1px solid var(--border);box-shadow:var(--pop);padding:12px 12px 10px;display:flex;flex-direction:column;gap:8px;font:500 13px/1.45 var(--font-sans),system-ui,sans-serif;color:var(--fg);animation:v7up .35s cubic-bezier(.22,1,.36,1) .9s both}

@@ -21,7 +21,9 @@ import { planRows } from '@/lib/ask/data-router/plan';
 import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { askClientDataEnabled, CLIENT_DATA_OFF_DO, knownPeopleFromState } from '@/lib/ask/client-data';
+import { createAskMasker, maskIdentityNumbers, namesFromLabelledText, type KnownPerson } from '@/lib/ask/mask';
+import { maskingProvider } from '@/lib/ask/masked-provider';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
 import { checkAskRateLimit } from '@/lib/ask/rate-limit';
@@ -101,8 +103,8 @@ export async function pendingDoRun(ctx: AuthContext, conversationId: string | nu
   return null;
 }
 
-/** A short line about the record on screen, so "this client" means something to the router. */
-export async function pageContextLine(ctx: AuthContext, page: DoWorkRequest['page']): Promise<string | null> {
+/** The record on screen, so "this client" means something to the router and its people can be masked. */
+export async function pageContext(ctx: AuthContext, page: DoWorkRequest['page']): Promise<{ line: string; people: KnownPerson[] } | null> {
   const match = page?.path ? /\/(?:projects|engagements|clients)\/([^/?#]+)(?:\/step\/([^/?#]+))?/.exec(page.path) : null;
   if (!match) return null;
   const key = decodeURIComponent(match[1]!);
@@ -110,7 +112,15 @@ export async function pageContextLine(ctx: AuthContext, page: DoWorkRequest['pag
   if (!row) return null;
   const stepKey = match[2] ? decodeURIComponent(match[2]) : null;
   const step = stepKey ? checklist.find((item) => item.slug === stepKey || item.id === stepKey) : undefined;
-  return `The person is looking at ${row.companyName}${step ? `, step "${step.title}"` : ''}.`;
+  return {
+    line: `The person is looking at ${row.companyName}${step ? `, step "${step.title}"` : ''}.`,
+    people: knownPeopleFromState(checklistStateFromRow(row)),
+  };
+}
+
+/** A short line about the record on screen, so "this client" means something to the router. */
+export async function pageContextLine(ctx: AuthContext, page: DoWorkRequest['page']): Promise<string | null> {
+  return (await pageContext(ctx, page))?.line ?? null;
 }
 
 export async function handleDoWork(
@@ -118,7 +128,13 @@ export async function handleDoWork(
   request: DoWorkRequest,
   message: string,
   emit: (event: DoEvent) => void,
-  context: { conversationId: string | null; now: Date; pending: Awaited<ReturnType<typeof pendingDoRun>> },
+  context: {
+    conversationId: string | null;
+    now: Date;
+    pending: Awaited<ReturnType<typeof pendingDoRun>>;
+    /** People the engagement on screen already names, for the masker. */
+    people?: readonly KnownPerson[];
+  },
 ): Promise<DoWorkResult | null> {
   const { shell } = request;
   if (shell === 'client') return { answer: limitAnswer(shell, 'doWork'), metered: null };
@@ -133,13 +149,17 @@ export async function handleDoWork(
   const config = askConfig();
   const budgets = askBudgets();
   let metered: MeteredProvider | null = null;
+  // The raw message stays on the server: code reads the values from it, and every model call goes
+  // through the masker, so a value written back into the app always comes from this original text.
+  const masker = createAskMasker({ people: [...(context.people ?? []), ...namesFromLabelledText(message)] });
   const provider = async () => {
     if (metered) return metered;
+    if (!askClientDataEnabled()) throw new ReadRefused(CLIENT_DATA_OFF_DO);
     if ((await systemTodayTokenTotal(now)) >= budgets.dailyTokens) throw new ReadRefused(REFUSAL_COPY.budgetReached);
     if (!(await checkAskRateLimit(ctx, config.rateLimit, now)).ok) throw new ReadRefused(REFUSAL_COPY.rateLimited);
     const configured = await getAskProvider();
     if (!configured) throw new ReadRefused('Reading this needs the Ask VCFO model, which is not available right now. Please type the details as "Label: value" lines.');
-    metered = meterProvider(configured);
+    metered = meterProvider(maskingProvider(configured, masker));
     return metered;
   };
   const deps = { provider, model: config.models.extract, idDocReading: flags.idDocReading };
