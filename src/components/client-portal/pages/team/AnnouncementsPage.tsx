@@ -406,7 +406,7 @@ function AnnDetail({
             </a>
           ) : null}
           <button type="button" className="btn btn-n" onClick={onClose}>
-            Got it
+            Noted
           </button>
         </div>
       </div>

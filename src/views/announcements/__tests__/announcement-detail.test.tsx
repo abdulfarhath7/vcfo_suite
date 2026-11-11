@@ -31,7 +31,7 @@ describe('AnnouncementDetailDialog', () => {
     expect((screen.getByRole('button', { name: 'Previous announcement' }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Next announcement' }));
     expect(onGo).toHaveBeenCalledWith(second);
-    fireEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Noted' }));
     expect(onClose).toHaveBeenCalled();
   });
 
