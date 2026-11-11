@@ -2,7 +2,8 @@ import type { Engagement } from '@/data/engagements';
 import type { IconChipTone } from '@/components/common/IconChip';
 
 /**
- * SBC master statutory compliance calendar — FY 2026-27 (Apr 2026 – Mar 2027).
+ * SBC master statutory compliance calendar — FY 2026-27 (Apr 2026 – Mar 2027), built in.
+ * Other years are imported by an admin from the Excel template (src/lib/statutory-calendar/).
  * Source: "A4 Final_SBC_Compliance Calendar 2026-27_Final Draft" PDF.
  *
  * These are fixed all-India deadlines (the reference calendar), distinct from
@@ -22,7 +23,7 @@ export type StatutoryAct =
   | 'TP';
 
 /** MCA scope — company-law forms vs LLP-law forms. */
-type McaScope = 'co' | 'llp';
+export type McaScope = 'co' | 'llp';
 
 export interface StatutoryDeadline {
   id: string;
@@ -30,8 +31,15 @@ export interface StatutoryDeadline {
   date: string;
   act: StatutoryAct;
   title: string;
-  /** Only meaningful for MCA items. */
+  /**
+   * Which legal form the deadline is for: company-law or LLP-law. Blank means every form, except
+   * that an MCA deadline with no scope is a company-law form.
+   */
   scope?: McaScope;
+  /** The authority's own name where one category covers several (APRERA, TGRERA under RERA). */
+  actLabel?: string;
+  /** The printed calendar's footnote for this line, written out in full. */
+  note?: string;
 }
 
 export const ACT_META: Record<
@@ -63,9 +71,11 @@ export const ACT_SWATCH: Record<
   TP:         { solid: 'bg-stat-tp',     soft: 'bg-stat-tp-soft',     chip: 'bg-stat-tp-soft text-stat-tp' },
 };
 
-export const FY_LABEL = 'FY 2026-27';
-export const FY_START = '2026-04-01';
-export const FY_END = '2027-03-31';
+/**
+ * The calendar the app ships with. It is the calendar for FY 2026-27 until an admin imports one
+ * for that year (src/db/repositories/statutory-calendar.ts); every other year comes from an import.
+ */
+export const BUILT_IN_FY_KEY = '2026-27';
 
 /** Compact row: [date, act, title, mcaScope?] */
 type Row = [string, StatutoryAct, string, McaScope?];
@@ -362,10 +372,9 @@ export function deadlineAppliesTo(
   const isForeign =
     engagement.companyType === 'foreign' || Boolean(engagement.parentEntityName);
 
-  if (item.act === 'MCA') {
-    if (item.scope === 'llp') return legalForm === 'llp';
-    return legalForm === 'company';
-  }
+  if (item.scope === 'llp') return legalForm === 'llp';
+  if (item.scope === 'co') return legalForm === 'company';
+  if (item.act === 'MCA') return legalForm === 'company';
   if (item.act === 'FEMA' || item.act === 'TP' || item.act === 'STPI/SEZ') {
     return isForeign;
   }

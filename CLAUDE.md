@@ -137,6 +137,8 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- The statutory calendar import (`docs/context/STATE.md`, "Statutory calendar import") needs
+  migration `0055_statutory_calendars` on RDS before deploy.
 - Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
   before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
   the notice to carry a Teams link.

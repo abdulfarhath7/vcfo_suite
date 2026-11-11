@@ -83,3 +83,19 @@ Gotchas already paid for once. Append when something costs more than a minute to
   passed portfolio via `deadlineAppliesTo`. Do not add these to the data file.
 - "Remind me" is deliberately a disabled button — there is no reminder backend
   for statutory deadlines yet. Wire it only alongside real delivery.
+
+## Statutory calendar per financial year (2026-11-11)
+
+- The master calendar is no longer one constant. `src/db/repositories/statutory-calendar.ts`
+  serves one calendar per financial year ("2026-27"); FY 2026-27 falls back to the built-in
+  `STATUTORY_DEADLINES` until an admin imports it. `FY_LABEL`, `FY_START` and `FY_END` are gone;
+  the components take the year from `useStatutoryCalendar` and `fyBounds`.
+- APRERA and TGRERA are both the `RERA` category (one colour, one legend row); the row keeps the
+  authority in `actLabel`, and the tag shows it. TRANSFER PRICING is `TP`.
+- `scope` (Applies To) now works for any act, not only MCA. An MCA row with no scope is still
+  company-law, so the template's Instructions sheet says so.
+- The template is built and read by `src/lib/statutory-calendar/{template,parse}.ts`. Columns are
+  found by header name. One bad row fails the whole import; exact repeats are dropped with a warning.
+  The unit test round-trips all 241 built-in rows through the template.
+- `deadline.id` stays `sd-<date>-<position>`, so Watch's moved-deadline lines (`withMovedDeadlines`)
+  still apply to imported years.
