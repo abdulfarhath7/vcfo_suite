@@ -1,7 +1,17 @@
 import 'server-only';
 import { sendEmail } from '@/lib/email/send-email';
 import { draftView, messageHtml, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
-import { emailCallout, emailMetaTable, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import {
+  emailButton,
+  emailCallout,
+  emailHeading,
+  emailInk,
+  emailMetaTable,
+  emailMuted,
+  emailParagraph,
+  escapeHtml,
+  renderEmailDocument,
+} from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 import { getObjectBuffer, bucketKey } from '@/storage/s3';
 import {
@@ -77,7 +87,7 @@ function slug(s: string): string {
 }
 
 function btn(href: string, label: string, primary = false): string {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;margin:0 6px 6px 0;padding:9px 14px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;${primary ? 'background:#635BFF;color:#ffffff;' : 'background:#ffffff;color:#0A2540;border:1px solid #CBD3DE;'}">${escapeHtml(label)}</a>`;
+  return emailButton(label, href, { variant: primary ? 'primary' : 'secondary', size: 'sm', margin: '0 6px 6px 0' });
 }
 
 /** Create or move the Teams meeting in the lead's Outlook (best effort). */
@@ -118,7 +128,7 @@ async function composeNotice(bundle: Bundle, update: boolean, today: string): Pr
     .map((d) => {
       const t = signDirectorLink(m.id, d.id);
       const href = (r: string) => `${base}/meeting-reply?t=${encodeURIComponent(t)}&r=${r}`;
-      return `<tr><td style="padding:8px 0;font-size:14px;color:#0A2540;">${escapeHtml(d.name)}</td><td style="padding:8px 0;text-align:right;">${btn(href('yes'), 'I will attend', true)}${btn(href('no'), "I can't attend")}</td></tr>`;
+      return `<tr><td style="padding:8px 0;font-size:14px;">${emailInk(escapeHtml(d.name), 400)}</td><td style="padding:8px 0;text-align:right;">${btn(href('yes'), 'I will attend', true)}${btn(href('no'), "I can't attend")}</td></tr>`;
     })
     .join('');
   const agendaHtml = `<ol style="margin:0 0 14px 18px;padding:0;">${notice.agenda.map((a) => `<li style="margin:0 0 4px;">${escapeHtml(a.text)}${a.subs.length ? `<ul style="margin:4px 0 0 0;padding-left:16px;">${a.subs.map((s) => `<li>${escapeHtml(s.text)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ol>`;
@@ -134,8 +144,8 @@ async function composeNotice(bundle: Bundle, update: boolean, today: string): Pr
     ]),
     m.teamsLink ? emailParagraph(btn(m.teamsLink, 'Join on Microsoft Teams', true)) : '',
     emailParagraph(`<b>Add to calendar:</b> ${btn(outlookCalendarLink(ev), 'Outlook')}${btn(googleCalendarLink(ev), 'Google Calendar')} — or open the attached .ics file.`),
-    replyRows ? `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Will you attend?</p><table role="presentation" style="width:100%;border-collapse:collapse;">${replyRows}</table><p style="margin:4px 0 14px;font-size:12px;color:#64748B;">Each director uses the buttons on their own row. No sign-in is needed.</p>` : '',
-    `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Agenda</p>${agendaHtml}`,
+    replyRows ? `${emailHeading('Will you attend?')}<table role="presentation" style="width:100%;border-collapse:collapse;">${replyRows}</table><p style="margin:4px 0 14px;">${emailMuted('Each director uses the buttons on their own row. No sign-in is needed.', 12)}</p>` : '',
+    `${emailHeading('Agenda')}${agendaHtml}`,
     m.shortNotice || isShortNotice(today, m.meetingDate) ? emailCallout('This notice is sent less than 7 days before the meeting (Sec 173(3)). Please confirm your consent to shorter notice by reply.') : '',
   ].join('');
   const file = slug(m.meetingNo);
@@ -430,7 +440,7 @@ function composeReplyReminder(bundle: Bundle, replied: string[]): ComposedEmail 
     .map((d) => {
       const t = signDirectorLink(m.id, d.id);
       const href = (r: string) => `${base}/meeting-reply?t=${encodeURIComponent(t)}&r=${r}`;
-      return `<tr><td style="padding:8px 0;font-size:14px;color:#0A2540;">${escapeHtml(d.name)}</td><td style="padding:8px 0;text-align:right;">${btn(href('yes'), 'I will attend', true)}${btn(href('no'), "I can't attend")}</td></tr>`;
+      return `<tr><td style="padding:8px 0;font-size:14px;">${emailInk(escapeHtml(d.name), 400)}</td><td style="padding:8px 0;text-align:right;">${btn(href('yes'), 'I will attend', true)}${btn(href('no'), "I can't attend")}</td></tr>`;
     })
     .join('');
   const kind = KIND_LABEL[m.kind as MeetingKind] ?? 'Board meeting';

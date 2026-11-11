@@ -1,10 +1,13 @@
 /**
- * DOM FILLER (content script) — the fallback when guideBridge is absent or did not take.
+ * DOM FILLER (content script) — the fallback when guideBridge is absent or did not take, and the
+ * path the real MCA forms use (the old MCA filler's tuning, ported).
  *
- * It writes through the prototype's native value setter and then fires input, change and blur,
- * which React, Angular and AEM all listen to. Selects are matched by option text; radio groups by
- * the option's label. Every write calls the guards first (`guardFill`), and a refused control is
- * never touched.
+ * It writes through the prototype's native value setter and then fires input, keyup, change and
+ * blur, in that order, which React, Angular and AEM's jQuery handlers all listen to (MCA's PIN code
+ * lookups and totals run on keyup and change). Selects are matched by option value, then text, then
+ * a prefix, then a unique "contains"; a dependent dropdown is polled until its option appears
+ * (`fillWhenReady`). Radio groups are matched by label or value, with Yes/No aliases (true, y). Every
+ * write calls the guards first (`guardFill`), and a refused control is never touched.
  */
 import { guardFill } from '../guards/dom';
 import { clean, labelFor } from './label';
@@ -42,10 +45,26 @@ function setNative(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElemen
 function fire(el: Element, types: string[]): void {
   const view = el.ownerDocument.defaultView ?? window;
   for (const type of types) {
-    const ev = type === 'blur' || type === 'focus' ? new view.FocusEvent(type) : new view.Event(type, { bubbles: true });
+    const ev =
+      type === 'blur' || type === 'focus'
+        ? new view.FocusEvent(type)
+        : type === 'keyup' || type === 'keydown'
+          ? new view.KeyboardEvent(type, { bubbles: true, key: 'Unidentified' })
+          : new view.Event(type, { bubbles: true });
     el.dispatchEvent(ev);
   }
 }
+
+/** The option index for `value` in a select: normalised value, then text, prefix and unique contains. */
+export function selectIndex(select: HTMLSelectElement, value: string): number {
+  const opts = Array.from(select.options);
+  const v = norm(value);
+  const byValue = opts.findIndex((o) => o.value !== '' && (o.value === value || norm(o.value) === v));
+  if (byValue >= 0) return byValue;
+  return pickOption(opts.map((o) => o.text), value);
+}
+
+const YES_NO: Record<string, string> = { true: 'yes', y: 'yes', yes: 'yes', false: 'no', n: 'no', no: 'no' };
 
 /** True when the control already shows `value` (so the guideBridge write took). */
 export function showsValue(el: Element, value: string): boolean {
@@ -67,9 +86,7 @@ export function fillElement(el: Element, value: string): FillResult {
   const view = el.ownerDocument.defaultView!;
 
   if (el instanceof view.HTMLSelectElement) {
-    const idx = pickOption(Array.from(el.options).map((o) => o.text), value);
-    const byValue = Array.from(el.options).findIndex((o) => o.value === value);
-    const pick = idx >= 0 ? idx : byValue;
+    const pick = selectIndex(el, value);
     if (pick < 0) return { ok: false, reason: 'no matching option' };
     fire(el, ['focus']);
     setNative(el, el.options[pick]!.value);
@@ -80,8 +97,9 @@ export function fillElement(el: Element, value: string): FillResult {
   if (el instanceof view.HTMLInputElement && el.type === 'radio') {
     const group = Array.from(el.ownerDocument.querySelectorAll<HTMLInputElement>(`input[type="radio"][name="${el.name}"]`));
     const labels = group.map((r) => labelFor(r) || r.value);
-    let idx = pickOption(labels, value);
-    if (idx < 0) idx = group.findIndex((r) => r.value.toLowerCase() === value.toLowerCase());
+    const want = YES_NO[value.trim().toLowerCase()] ?? value;
+    let idx = pickOption(labels, want);
+    if (idx < 0) idx = group.findIndex((r) => r.value.toLowerCase() === want.toLowerCase() || YES_NO[r.value.toLowerCase()] === want);
     if (idx < 0) return { ok: false, reason: 'no matching option' };
     const radio = group[idx]!;
     const refusedRadio = guardFill(radio);
@@ -95,8 +113,26 @@ export function fillElement(el: Element, value: string): FillResult {
     if (el.disabled || el.readOnly) return { ok: false, reason: 'control is read-only' };
     fire(el, ['focus']);
     setNative(el, value);
-    fire(el, ['input', 'change', 'blur']);
+    fire(el, ['input', 'keyup', 'change', 'blur']);
     return { ok: true, via: 'dom' };
   }
   return { ok: false, reason: 'not a form control' };
+}
+
+/** How often a dependent dropdown is checked for its option. */
+export const OPTION_POLL_MS = 300;
+
+/**
+ * Like `fillElement`, but a select whose wanted option is not there yet (it loads after an earlier
+ * choice, for example MCA's class after type of company) is polled up to `optionsMs` (8 s on MCA).
+ */
+export async function fillWhenReady(el: Element, value: string, optionsMs = 0): Promise<FillResult> {
+  const view = el.ownerDocument.defaultView!;
+  if (el instanceof view.HTMLSelectElement && optionsMs > 0) {
+    const deadline = Date.now() + optionsMs;
+    while (selectIndex(el, value) < 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, OPTION_POLL_MS));
+    }
+  }
+  return fillElement(el, value);
 }

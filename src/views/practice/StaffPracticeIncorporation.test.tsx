@@ -10,7 +10,7 @@ import type { PracticeIncorporationClient } from '@/lib/practice/practice-incorp
  * Flow test for the staff Incorporation page (R-51, D-29), against mocked fetches. The page
  * reads only the scoped `/api/practice/incorporation` (and the scoped practice metrics), never
  * the super-only insights; it shows the four tiles, filters by who holds the step, marks late
- * rows, opens a row in the caller's shell, and shows "No clients in incorporation" with
+ * rows, opens a row in the caller's shell, and shows "No client is incorporating yet" with
  * "View clients" when nothing is incorporating.
  */
 
@@ -141,10 +141,10 @@ describe('staff Incorporation page (R-51)', () => {
     expect(push).toHaveBeenCalledWith('/app/manager/projects/solstice');
   });
 
-  it('shows "No clients in incorporation" with one "View clients" button', async () => {
+  it('shows "No client is incorporating yet" with one "View clients" button', async () => {
     incorporation = { status: 200, body: { clients: [client('aurora', 'Aurora Mills Private Limited', { incorporated: true })] } };
     renderPage();
-    expect(await screen.findByText('No clients in incorporation')).toBeTruthy();
+    expect(await screen.findByText(/^No client is incorporating yet\./)).toBeTruthy();
     const link = screen.getByRole('link', { name: 'View clients' });
     expect(link.getAttribute('href')).toBe('/app/manager/projects');
   });

@@ -7,8 +7,6 @@ import { CheckCheck, ChevronLeft, ChevronRight, Minimize2 } from 'lucide-react';
 import {
   ACT_META,
   ACT_SWATCH,
-  FY_END,
-  FY_START,
   type StatutoryAct,
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
@@ -52,8 +50,11 @@ export function StatutoryMaxiCalendar({
   onJumpToday,
   byDate,
   todayIso,
+  fy,
   onMinimize,
 }: {
+  /** The financial year on screen; days outside it are shown empty. */
+  fy: { start: string; end: string };
   acts: readonly StatutoryAct[];
   actCounts: Record<StatutoryAct, number>;
   mutedActs: ReadonlySet<StatutoryAct>;
@@ -187,7 +188,7 @@ export function StatutoryMaxiCalendar({
           style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
         >
           {cells.map((cell) => {
-            const inFy = isoInStatutoryFy(cell.iso, FY_START, FY_END);
+            const inFy = isoInStatutoryFy(cell.iso, fy.start, fy.end);
             const items = inFy && cell.inMonth ? (byDate.get(cell.iso) ?? []) : [];
             const isToday = cell.iso === todayIso;
             return (

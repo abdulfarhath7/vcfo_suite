@@ -28,6 +28,7 @@ import { requestListReminders } from '@/jobs/request-list-reminders';
 import { expiryAlerts } from '@/jobs/expiry-alerts';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
+import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -68,5 +69,6 @@ export function registeredJobs(): JobFunction[] {
     expiryAlerts,
     myDayEmail,
     assistFilingDeadlines,
+    gstRegistrationStart,
   ]);
 }

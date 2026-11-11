@@ -325,10 +325,12 @@ export function ObligationView({
             />
             <RailCard
               title="Due in the next 15 days"
+              empty="Nothing due in the next 15 days. A period appears here 15 days before its due date."
               items={soon.slice(0, 5).map((r) => ({ key: r.id, title: r.companyName, sub: r.periodLabel ?? group.name, right: plainDate(r.dueDate, now) }))}
             />
             <RailCard
               title="Waiting on client"
+              empty="No period is waiting on a client. A period appears here while the client owes data for it."
               items={waiting.slice(0, 5).map((r) => ({
                 key: r.id,
                 title: r.companyName,

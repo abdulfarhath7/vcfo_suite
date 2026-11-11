@@ -20,12 +20,8 @@ export function applyTransform(raw: unknown, transform: RecipeTransform = 'none'
   switch (transform) {
     case 'upper':
       return String(raw).toUpperCase();
-    case 'date': {
-      const s = String(raw).trim();
-      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-      if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
-      return /^\d{2}\/\d{2}\/\d{4}$/.test(s) ? s : undefined;
-    }
+    case 'date':
+      return toMcaDate(String(raw));
     case 'amount': {
       const n = typeof raw === 'number' ? raw : Number(String(raw).replace(/[,\s₹]/g, ''));
       return Number.isFinite(n) ? String(n) : undefined;
@@ -45,5 +41,26 @@ export function applyTransform(raw: unknown, transform: RecipeTransform = 'none'
 }
 
 export function valueFor(profile: Record<string, unknown> | undefined, field: RecipeField): string | undefined {
-  return applyTransform(getPath(profile, field.key), field.transform);
+  return applyTransform(getPath(profile, field.path ?? field.key), field.transform);
+}
+
+const pad2 = (n: string) => n.padStart(2, '0');
+
+/**
+ * MCA's date shape, DD/MM/YYYY, from `YYYY-MM-DD` (with or without a time), `YYYY/MM/DD`,
+ * `DD/MM/YYYY`, `DD-MM-YYYY` or `DD.MM.YYYY`. Anything else, or an impossible day or month, is
+ * undefined: a date is never guessed.
+ */
+export function toMcaDate(input: string): string | undefined {
+  const s = input.trim();
+  let d: string, m: string, y: string;
+  const ymd = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s].*)?$/.exec(s);
+  const dmy = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(s);
+  if (ymd) [, y, m, d] = ymd as unknown as [string, string, string, string];
+  else if (dmy) [, d, m, y] = dmy as unknown as [string, string, string, string];
+  else return undefined;
+  const dn = Number(d);
+  const mn = Number(m);
+  if (mn < 1 || mn > 12 || dn < 1 || dn > 31) return undefined;
+  return `${pad2(d)}/${pad2(m)}/${y}`;
 }

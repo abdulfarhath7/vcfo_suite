@@ -80,8 +80,8 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
    Do not put secrets in the client bundle or commit `.env.local`. Do not bypass the seam
    "for just one query".
 8. Write docs and comments in plain full sentences. Do not commit unless the owner asks.
-9. **Ask the owner for the pull request's name every time before you create one**, and wait for
-   the answer. Never choose the title yourself, even when the owner says "raise the PR now".
+9. **Ask the owner for the pull request name before creating one.** Never pick the title
+   yourself; ask, wait for the answer, and use it as the title.
 
 ## Conventions
 
@@ -107,7 +107,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - **Large views.** A big page keeps its JSX in the original file; state moves to a `use*` hook
   and closure render helpers to `create*`/`render*` factories in a sibling folder (for example
   `src/views/incorporation/milestone-form/`), so the rendered tree does not change.
-- **Fonts and imports.** Public Sans for UI, IBM Plex Mono for identifiers (`app/layout.tsx`).
+- **Fonts and imports.** Roboto for UI and Roboto Mono for identifiers (VCFO Spectrum rule R-28, `app/layout.tsx`, `docs/design/design-tokens.json`).
   `@/` maps to `src/`; `scripts/` and `e2e/` sit outside the `tsconfig` include list.
 
 ## Where the context lives
@@ -139,11 +139,12 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- The statutory calendar import (`docs/context/STATE.md`, "Statutory calendar import") needs
+  migration `0055_statutory_calendars` on RDS before deploy.
 - Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
   before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
   the notice to carry a Teams link.
 
-- `src/lib/email/email-layout.ts` still has its own literal palette (not Spectrum yet).
 - `npm run lint` has 0 errors and 329 warnings (mostly `react-refresh/only-export-components`).
 - `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features
   throw in production until it is added.

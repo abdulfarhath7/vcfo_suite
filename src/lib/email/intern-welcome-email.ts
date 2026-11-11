@@ -7,8 +7,11 @@ import {
   type SendEmailResult,
 } from '@/lib/email/send-email';
 import {
+  emailLabel,
+  emailLink,
   emailMetaTable,
   emailParagraph,
+  emailSignature,
   escapeHtml,
   renderEmailDocument,
 } from '@/lib/email/email-layout';
@@ -40,16 +43,16 @@ function buildInternWelcomeEmail(params: InternWelcomeEmailParams): {
       emailParagraph(
         'Your VCFO Suite project lead account is ready. Use it to manage GCC setup projects, review client submissions, and coordinate delivery work.',
       ) +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
+      emailLabel('Sign-in credentials') +
       emailMetaTable([
         { label: 'Login email', value: params.internEmail },
         { label: 'Temporary password', value: params.temporaryPassword },
       ]) +
       emailParagraph(
-        `<strong>Please change your password after your first sign-in.</strong> Use Forgot password on the login page, or open <a href="${escapeHtml(params.resetUrl)}" style="color:#2563EB;">reset password</a> directly.`,
+        `<strong>Please change your password after your first sign-in.</strong> Use Forgot password on the login page, or open ${emailLink(params.resetUrl, 'reset password')} directly.`,
       ),
     cta: { label: 'Open VCFO Suite', href: params.portalUrl },
-    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#2563EB;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
+    signatureHtml: emailSignature(params.managerName, params.managerEmail),
   });
 
   const text = `Dear ${params.internName},

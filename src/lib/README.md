@@ -19,6 +19,7 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `client-portal/` — the v7 client portal's pure models (answers, compliances, credentials, documents, steps).
 - `compliance/` — the recurring compliance calendar: FY periods, obligation instances and the filings register.
 - `compliance-tasks/` — the statutory and non-statutory model: stages and status words, reminders, repeats, progress steps, the reminder email.
+- `doc-style/` — VCFO Spectrum styling for generated documents: the palette generated from the design tokens, the Word helper and the PDF print palette. Statutory documents never use it; the list is in `docs/context/notes/incorporation-docs.md`.
 - `doc-pack/` — the incorporation document pack registry, inputs and what blocks each document.
 - `documents/` — vault and milestone document visibility rules and storage keys.
 - `email/` — outbound email (`send-email.ts`, the system of record), layout and engagement event mail.

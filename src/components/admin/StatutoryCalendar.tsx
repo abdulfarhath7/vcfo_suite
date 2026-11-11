@@ -12,15 +12,16 @@ import { isFirmWideAdmin } from '@/lib/auth';
 import {
   ACT_META,
   ACT_SWATCH,
-  FY_END,
-  FY_LABEL,
-  FY_START,
-  STATUTORY_DEADLINES,
   deadlineAppliesTo,
   type StatutoryAct,
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
 import { CompanyPicker } from '@/components/admin/CompanyPicker';
+import { StatutoryCalendarImport } from '@/components/admin/StatutoryCalendarImport';
+import { FilterSelect } from '@/components/ui/native-select';
+import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
+import { deadlineTagLabel } from '@/lib/statutory-calendar/acts';
+import { fyBounds, fyKeyForIso, type FyBounds } from '@/lib/statutory-calendar/fy';
 import {
   PreIncorporationNotice,
   type PreIncorporationScope,
@@ -55,8 +56,6 @@ import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 
 const ACTS = Object.keys(ACT_META) as StatutoryAct[];
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
-const FY_FIRST_MONTH = new Date(2026, 3, 1);
-const FY_LAST_MONTH = new Date(2027, 2, 1);
 const FLASH_MS = 1400;
 const EMPTY_ITEMS: StatutoryDeadline[] = [];
 /** Fixed dot slots per cell so every calendar cell keeps the same height. */
@@ -80,10 +79,16 @@ function monthKey(d: Date): number {
   return d.getFullYear() * 12 + d.getMonth();
 }
 
-function clampToFy(d: Date): Date {
+/** First and last month of a financial year, as the 1st of each month. */
+function fyMonths(fy: FyBounds): { first: Date; last: Date } {
+  return { first: new Date(fy.startYear, 3, 1), last: new Date(fy.startYear + 1, 2, 1) };
+}
+
+function clampToFy(d: Date, fy: FyBounds): Date {
+  const { first, last } = fyMonths(fy);
   const k = monthKey(d);
-  if (k < monthKey(FY_FIRST_MONTH)) return FY_FIRST_MONTH;
-  if (k > monthKey(FY_LAST_MONTH)) return FY_LAST_MONTH;
+  if (k < monthKey(first)) return first;
+  if (k > monthKey(last)) return last;
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
@@ -107,7 +112,9 @@ function StatutoryDayTile({
   focused,
   monthLabel,
   onSelect,
+  fy,
 }: {
+  fy: FyBounds;
   cell: StatutoryMonthCell;
   items: readonly StatutoryDeadline[];
   todayIso: string;
@@ -116,7 +123,7 @@ function StatutoryDayTile({
   monthLabel: string;
   onSelect: (iso: string) => void;
 }) {
-  const inFy = isoInStatutoryFy(cell.iso, FY_START, FY_END);
+  const inFy = isoInStatutoryFy(cell.iso, fy.start, fy.end);
   const isToday = cell.iso === todayIso;
   const local = parseLocalIso(cell.iso);
   const weekday = sep(local.toLocaleDateString('en-IN', { weekday: 'long' }));
@@ -177,10 +184,13 @@ function StatutoryListRow({ item, todayIso }: { item: StatutoryDeadline; todayIs
         className={cn('stat-cal-tag mono', ACT_SWATCH[item.act].chip)}
         title={meta.full}
       >
-        {meta.label}
+        {deadlineTagLabel(item, meta.label)}
       </span>
       <span className="stat-cal-row-main">
-        <span className="stat-cal-row-title">{statutoryFilingName(item.title)}</span>
+        <span className="stat-cal-row-title">
+          {statutoryFilingName(item.title)}
+          {item.note ? <span className="mt-0.5 block text-[12px] font-normal text-ink-muted">{item.note}</span> : null}
+        </span>
         {period ? (
           <span className="stat-cal-row-period">
             {period}
@@ -279,7 +289,21 @@ export function StatutoryCalendar({
   const osReduce = useReducedMotion();
   const { reduceMotion: prefReduce } = useShellAppearance();
   const reduceMotion = Boolean(osReduce) || prefReduce;
-  const [viewMonth, setViewMonth] = useState(() => clampToFy(new Date()));
+  /** The financial year on screen; null until picked means the year that contains today. */
+  const [fyKey, setFyKey] = useState<string | null>(null);
+  const calendarQuery = useStatutoryCalendar(fyKey);
+  const calendarData = calendarQuery.data;
+  const fy = calendarData?.calendar.fy ?? fyBounds(fyKey ?? fyKeyForIso(todayIso));
+  const deadlines = calendarData?.calendar.deadlines ?? EMPTY_ITEMS;
+  const [viewMonth, setViewMonth] = useState(() => clampToFy(new Date(), fy));
+  /** On a change of year, open on this month when it is in that year, else on April. */
+  useEffect(() => {
+    setViewMonth(clampToFy(new Date(), fy));
+    setSelectedDay(null);
+    setFlashDay(null);
+    setFocusedIso(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fy.key]);
   const [mode, setMode] = useState<StatutoryCalendarMode>('minimized');
   const { sidebarMode, setSidebarMode, user, getStateForEngagement } = useApp();
   /** Admin and super see the full master calendar; leads and managers only the
@@ -360,7 +384,7 @@ export function StatutoryCalendar({
 
   /** Company + scope, but before category mutes — legend counts must not vanish. */
   const scoped = useMemo(() => {
-    return withMovedDeadlines(STATUTORY_DEADLINES, calendarChanges).filter((d) => {
+    return withMovedDeadlines(deadlines, calendarChanges).filter((d) => {
       if (company && !deadlineAppliesTo(d, company)) return false;
       if (!firmWide && !company && !engagements.some((e) => deadlineAppliesTo(d, e))) {
         return false;
@@ -368,7 +392,7 @@ export function StatutoryCalendar({
       if (scope === 'overdue' && statutoryStatus(d.date, todayIso) !== 'overdue') return false;
       return true;
     });
-  }, [company, scope, todayIso, firmWide, engagements, calendarChanges]);
+  }, [deadlines, company, scope, todayIso, firmWide, engagements, calendarChanges]);
 
   const visible = useMemo(() => scoped.filter((d) => !mutedActs.has(d.act)), [scoped, mutedActs]);
 
@@ -410,15 +434,15 @@ export function StatutoryCalendar({
         cells.find((c) => c.inMonth)?.iso ??
         null);
 
-  const canPrev = monthKey(viewMonth) > monthKey(FY_FIRST_MONTH);
-  const canNext = monthKey(viewMonth) < monthKey(FY_LAST_MONTH);
+  const canPrev = monthKey(viewMonth) > monthKey(fyMonths(fy).first);
+  const canNext = monthKey(viewMonth) < monthKey(fyMonths(fy).last);
   const monthName = sep(viewMonth.toLocaleDateString('en-IN', { month: 'long' }));
   const monthYear = viewMonth.getFullYear();
   const monthLabel = `${monthName} ${monthYear}`;
   const pane = monthPaneMotion(monthDir, reduceMotion);
 
   function jumpToToday() {
-    const next = clampToFy(new Date());
+    const next = clampToFy(new Date(), fy);
     const delta = monthKey(next) - monthKey(viewMonth);
     if (delta !== 0) {
       setMonthDir(delta < 0 ? -1 : 1);
@@ -432,7 +456,7 @@ export function StatutoryCalendar({
 
   function shiftMonth(delta: number) {
     setMonthDir(delta < 0 ? -1 : 1);
-    setViewMonth((d) => clampToFy(new Date(d.getFullYear(), d.getMonth() + delta, 1)));
+    setViewMonth((d) => clampToFy(new Date(d.getFullYear(), d.getMonth() + delta, 1), fy));
     setSelectedDay(null);
     setFlashDay(null);
     setFocusedIso(null);
@@ -440,7 +464,7 @@ export function StatutoryCalendar({
   }
 
   function jumpToDay(iso: string) {
-    if (!isoInStatutoryFy(iso, FY_START, FY_END)) return;
+    if (!isoInStatutoryFy(iso, fy.start, fy.end)) return;
     setSelectedDay(iso);
     setFocusedIso(iso);
     if (!byDate.has(iso)) {
@@ -486,6 +510,23 @@ export function StatutoryCalendar({
     });
   }
 
+  /** Years with a calendar, plus this year and any imported, newest first. */
+  const yearOptions = useMemo(() => {
+    const keys = new Set((calendarData?.years ?? []).map((y) => y.fy));
+    if (calendarData) keys.add(calendarData.currentFy);
+    keys.add(fy.key);
+    return [...keys].sort((a, b) => b.localeCompare(a));
+  }, [calendarData, fy.key]);
+  /** The import dialog opens on the first importable year with no calendar, else on next year. */
+  const importable = calendarData?.importableYears ?? [];
+  const withCalendar = new Set((calendarData?.years ?? []).map((y) => y.fy));
+  const currentFy = calendarData?.currentFy ?? fy.key;
+  const nextImportYear =
+    importable.find((key) => key > currentFy && !withCalendar.has(key)) ??
+    importable.find((key) => key > currentFy) ??
+    currentFy;
+  const importSourceYear = calendarData?.years[0]?.fy ?? null;
+
   const title = showBack ? (
     <PageBackCluster>
       <h1 className="text-[1.05rem] font-semibold leading-none tracking-tight text-ink">
@@ -503,9 +544,18 @@ export function StatutoryCalendar({
       <div className="flex flex-wrap items-center gap-3 px-1 pb-4">
         <div className="flex min-w-0 items-center gap-2.5">
           {title}
-          <span className="mono rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-brand">
-            {FY_LABEL}
-          </span>
+          {yearOptions.length > 1 ? (
+            <FilterSelect
+              aria-label="Financial year"
+              value={fy.key}
+              onChange={(event) => setFyKey(event.target.value)}
+              options={yearOptions.map((key) => ({ value: key, label: fyBounds(key).label }))}
+            />
+          ) : (
+            <span className="mono rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-brand">
+              {fy.label}
+            </span>
+          )}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {showPicker ? (
@@ -516,6 +566,14 @@ export function StatutoryCalendar({
                 setCompanyId(id);
                 setSelectedDay(null);
               }}
+            />
+          ) : null}
+          {calendarData?.canImport ? (
+            <StatutoryCalendarImport
+              importableYears={calendarData.importableYears}
+              defaultYear={nextImportYear}
+              sourceYear={importSourceYear}
+              onPublished={setFyKey}
             />
           ) : null}
           {trackerHref ? (
@@ -566,7 +624,16 @@ export function StatutoryCalendar({
           </div>
 
           <div className="stat-cal-list-body">
-            {agendaDates.length === 0 ? (
+            {calendarQuery.isError ? (
+              <p className="stat-cal-empty">The calendar could not be loaded. Refresh the page to try again.</p>
+            ) : calendarData?.calendar.source === 'none' ? (
+              <p className="stat-cal-empty">
+                There is no calendar for {fy.label} yet.
+                {calendarData.canImport ? ' Use Import calendar to add one from the Excel template.' : ' The admin adds it.'}
+              </p>
+            ) : calendarQuery.isPending ? (
+              <p className="stat-cal-empty">Loading the {fy.label} calendar.</p>
+            ) : agendaDates.length === 0 ? (
               <p className="stat-cal-empty">No deadlines in {monthLabel} for these filters.</p>
             ) : (
               agendaDates.map((dateIso) => (
@@ -656,6 +723,7 @@ export function StatutoryCalendar({
                     focused={cell.iso === rovingIso}
                     monthLabel={monthLabel}
                     onSelect={jumpToDay}
+                    fy={fy}
                   />
                 ))}
               </m.div>
@@ -710,6 +778,7 @@ export function StatutoryCalendar({
           onJumpToday={jumpToToday}
           byDate={byDate}
           todayIso={todayIso}
+          fy={fy}
           onMinimize={() => applyMode('minimized')}
         />
       ) : null}

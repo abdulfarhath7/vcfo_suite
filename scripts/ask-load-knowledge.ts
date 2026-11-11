@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { askChunks, askDocuments, askIndexItems } from '@/db/schema';
 import { systemLoadRepoDocument } from '@/db/repositories/ask-documents';
+import { systemGetStatutoryCalendar, systemListStatutoryCalendarYears } from '@/db/repositories/statutory-calendar';
 import { backfillEmbeddings } from '@/lib/ask/embeddings/backfill';
 import { chunkDocument } from '@/lib/ask/ingest/chunk';
 import { extractSourceText } from '@/lib/ask/ingest/extract';
@@ -27,7 +28,12 @@ const STAFF_PDFS = [
 ];
 
 async function main() {
-  for (const source of buildRepoSources(listTopics())) {
+  const calendars = [];
+  for (const year of await systemListStatutoryCalendarYears()) {
+    const view = await systemGetStatutoryCalendar(year.fy);
+    calendars.push({ fy: view.fy.key, deadlines: view.deadlines });
+  }
+  for (const source of buildRepoSources(listTopics(), calendars)) {
     const result = await systemLoadRepoDocument(source);
     console.log(`${result.padEnd(10)} ${source.title} (${source.chunks.length} chunks)`);
   }

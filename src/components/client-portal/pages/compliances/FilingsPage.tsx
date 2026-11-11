@@ -61,6 +61,7 @@ import { FiledCell, ProofCell } from './cells';
 import { CategoryTabs, RowArea, RowPortalLink } from './task-marks';
 import { taskHref, useClientTasks } from './task-api';
 import { doneTaskRows, fyOfIso, isTaskRow, showStat, showTasks, type Category } from './tasks';
+import { filingsEmptyMessage } from './empty-copy';
 import '../../css/compliances-board.css';
 
 const CADENCES = ['all', 'monthly', 'quarterly', 'annual'] as const;
@@ -255,16 +256,16 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
       <CardHeadTile title="Filings" />
       <h2 className="text-[15px] font-medium text-ink">Filings</h2>
     </header>
+    {/* Before incorporation the filters would only show zeros, so the card keeps the title and the message. */}
+    {after ? (
     <div className="flex flex-wrap items-center gap-2 border-b border-line-soft px-4 pb-2.5 md:px-5">
-      {after ? (
-        <CategoryTabs
-          allFirst
-          value={cat}
-          onChange={(c) => set({ cat: c, area: c === 'non-statutory' ? 'all' : area })}
-          stat={statAll.filter(inWin).length}
-          ns={taskAll.filter(inWin).length}
-        />
-      ) : null}
+      <CategoryTabs
+        allFirst
+        value={cat}
+        onChange={(c) => set({ cat: c, area: c === 'non-statutory' ? 'all' : area })}
+        stat={statAll.filter(inWin).length}
+        ns={taskAll.filter(inWin).length}
+      />
       <span className="inline-flex h-[30px] items-center overflow-hidden rounded-md border-1.5 border-line-strong bg-surface-raised">
         <button type="button" className="grid h-7 w-7 place-items-center text-ink-muted hover:bg-surface-sunken hover:text-ink disabled:opacity-40" aria-label="Earlier months" disabled={!canPrev} onClick={() => set({ period: stepMonth(end, -1) })}>
           <ChevronLeft size={15} strokeWidth={1.6} aria-hidden />
@@ -344,19 +345,21 @@ function FilingsBody({ st, tableRef }: { st: ReturnType<typeof useFilingsState>;
         </Button>
       </span>
     </div>
+    ) : null}
     </>
   );
 
+  const emptyMessage = filingsEmptyMessage({ after, rows: all.length, category: cat, fy, currentFy: st.curFy, fyLabel: fyLabelOf(fy) });
   const body = !after ? (
-    <Empty>Starts after incorporation</Empty>
+    <Empty>{emptyMessage}</Empty>
   ) : q.isError ? (
     <Empty action={<Button size="sm" variant="secondary" onClick={() => void q.refetch()}>Try again</Button>}>Could not load the register</Empty>
   ) : q.isLoading ? (
     <div className="px-4 py-4 md:px-5" aria-busy="true" aria-label="Loading filings">
       <SkeletonRows rows={5} />
     </div>
-  ) : !all.length ? (
-    <Empty>{cat === 'non-statutory' ? `No completed tasks in ${fyLabelOf(fy)}` : `No filings for ${fyLabelOf(fy)}`}</Empty>
+  ) : emptyMessage ? (
+    <Empty>{emptyMessage}</Empty>
   ) : (
     <div>
       <EFilingGrid

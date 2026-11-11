@@ -160,7 +160,11 @@ export function ManagersWorkPanel() {
           onRowClick={(r) => router.push(r.href)}
           pageSize={13}
           minWidth={700}
-          empty="No items match these filters"
+          empty={
+            rows.length === 0
+              ? "No manager items yet. Work held by managers appears here as their clients' projects run."
+              : 'No items match these filters'
+          }
         />
       </DashSection>
       <div className="flex min-w-0 flex-col gap-5">

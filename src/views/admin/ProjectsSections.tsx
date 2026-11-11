@@ -366,7 +366,7 @@ export function ProjectsView(props: ProjectsViewProps) {
           {engagementsLoading ? <SkeletonRows className="p-4" /> : null}
           {!engagementsLoading && enriched.length === 0 ? (
             <EmptyState
-              title="No GCC setup projects yet"
+              title="No GCC setup projects yet. Each client appears here once its project is started."
               className="m-4"
               action={
                 <Button size="sm" onClick={() => router.push(newProjectHref)}>
@@ -461,7 +461,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                   <Tag>{items.length}</Tag>
                 </header>
                 <div className="grid gap-2 p-3">
-                  {items.length === 0 ? <EmptyState title="No projects" className="min-h-[72px] py-4" /> : null}
+                  {items.length === 0 ? <EmptyState title="No project at this stage. A project moves here when it reaches this stage." className="min-h-[72px] py-4" /> : null}
                   {items.map((item) => (
                     <button
                       key={item.e.id}

@@ -316,7 +316,7 @@ export function NeedsCard({ h, onUpload, className }: { h: HomeData; onUpload: (
   return (
     <SCard title={`Needs from ${h.company}`} meta={rows.length} flush className={className}>
       {rows.length === 0 ? (
-        <Empty />
+        <Empty>Nothing is waiting on you right now.</Empty>
       ) : (
         rows.map((n) => {
           const sub = `${n.sub}${n.askedBy ? ` · asked by ${n.askedBy}` : ''}`;
@@ -401,7 +401,7 @@ export function HoldsCard({ h, className }: { h: HomeData; className?: string })
 
 /** R-20: full-width rows, 44px date tile, chip on the right, the urgent row soft red with a navy action. */
 function AttentionRows({ h, hero, rows, onRow }: { h: HomeData; hero?: AlertRow; rows: AlertRow[]; onRow?: (a: AlertRow) => void }) {
-  if (!hero && rows.length === 0) return <Empty />;
+  if (!hero && rows.length === 0) return <Empty>No dates coming up in this window.</Empty>;
   const chipOf = (a: AlertRow): { label: string; tone: ChipTone } => {
     const n = days(h.today, a.date);
     if (n < 0 || a.tone === 'over') return { label: 'Overdue', tone: 'bad' };
@@ -552,7 +552,7 @@ export function SbcCard({ h, className }: { h: HomeData; className?: string }) {
   return (
     <SCard title="What SBC is doing" flush className={className}>
       {rows.length === 0 ? (
-        <Empty />
+        <Empty>Work SBC is doing for you will show here.</Empty>
       ) : (
         <ul>
           {rows.map((r, i) => (
@@ -668,7 +668,7 @@ export function DocsCard({
     <SCard title="Recent documents" flush className={className} right={<HeadLink onClick={() => h.portal.go('documents')}>Documents ›</HeadLink>}>
       {uploads.length > 0 ? <UploadRows rows={uploads} busy={uploading} onCancel={onCancelUpload} /> : null}
       {h.docs.length === 0 && uploads.length > 0 ? null : h.docs.length === 0 ? (
-        <Empty />
+        <Empty>No recent documents. Everything you and SBC share is in Documents.</Empty>
       ) : (
         groups.map((g) => (
           <div key={g.label}>
@@ -747,7 +747,7 @@ export function ActivityCard({ h, className }: { h: HomeData; className?: string
       {/* C1 (owner, 2026-10-30): the latest five rows in a fixed height, then "View all". */}
       <div className="flex h-[264px] flex-col">
         {rows.length === 0 ? (
-          <Empty />
+          <Empty>No activity yet.</Empty>
         ) : (
           <ul className="min-h-0 flex-1 overflow-hidden">
             {rows.slice(0, ACTIVITY_ROWS).map((a) => (

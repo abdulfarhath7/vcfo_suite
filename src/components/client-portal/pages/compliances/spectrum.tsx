@@ -16,6 +16,7 @@ import { AreaPill, Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { regOf, type Regulator } from '@/lib/ui/regulator';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { AvatarStack } from '@/components/ui/avatar-stack';
+import { InfoButton } from '@/components/ui/info-button';
 import { StepLink, StepMark } from '@/components/ui/step-track';
 import {
   AREA_FULL,
@@ -296,15 +297,42 @@ export function SCard({
 }
 
 /** Text card (prototype TextCard): a paragraph, with the "Read the SBC SOP" link when `sop` is set. */
-export function TextCard({ title, sop, children }: { title: string; sop?: boolean; children: ReactNode }) {
+export function TextCard({
+  title,
+  sop,
+  info,
+  children,
+}: {
+  title: string;
+  sop?: boolean;
+  /** Put the text behind an "i" in the head instead of in the body (owner request 2026-11-11). */
+  info?: boolean;
+  children: ReactNode;
+}) {
+  const sopLink = sop ? (
+    <GoLink href={portalHref('knowledge-bank')} className={cn('inline-block text-[13px] font-medium text-brand-text hover:underline', !info && 'mt-3')}>
+      Read the SBC SOP
+    </GoLink>
+  ) : null;
+  if (info) {
+    return (
+      <SCard
+        title={title}
+        flush={!sop}
+        right={
+          <InfoButton title={title} label={`${title}: explanation`}>
+            {children}
+          </InfoButton>
+        }
+      >
+        {sopLink}
+      </SCard>
+    );
+  }
   return (
     <SCard title={title}>
       <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">{children}</div>
-      {sop ? (
-        <GoLink href={portalHref('knowledge-bank')} className="mt-3 inline-block text-[13px] font-medium text-brand-text hover:underline">
-          Read the SBC SOP
-        </GoLink>
-      ) : null}
+      {sopLink}
     </SCard>
   );
 }

@@ -26,13 +26,18 @@ Do not call these routes from the extension's own origin.
   as `error` (for example `srn_shape`, `personal_data`, or zod's own text).
 - **Engagement ids.** `[id]` accepts the engagement uuid, a legacy app id or the project slug, the
   same as the assist-profile route.
-- **Live portals.** Runs may start only on a mock portal host until the CS opinion is recorded and
-  the server sets `ASSIST_LIVE_PORTALS=true`. Mock hosts come from `ASSIST_MOCK_HOSTS` (comma
-  separated; `localhost` and `127.0.0.1` by default).
+- **Live portals, per pack.** Runs may start only on a mock portal host unless the task's own portal
+  pack is live. A pack is live only when its JSON says `legalStatus: "cs-cleared"` (set in code,
+  with a deploy, after the written CS opinion names that portal) **and** the server names it in
+  `ASSIST_LIVE_PACKS` (comma separated, for example `mca-v3,income-tax-efiling`). Either alone is
+  not enough, and approval for one pack never opens another pack's hosts. `ASSIST_LIVE_PORTALS=true`
+  is a deprecated alias that names `mca-v3` only. Every pack is `mock-only` today, so nothing is
+  live. Mock hosts come from `ASSIST_MOCK_HOSTS` (comma separated; `localhost` and `127.0.0.1` by
+  default).
 
 ## Typical run
 
-1. `GET /api/assist/catalog` — show the agent grid; note `liveEnabled` and `mockHosts`. At every run
+1. `GET /api/assist/catalog` — show the agent grid and the task tree; note `packs`, `liveHosts` and `mockHosts`. At every run
    start the extension reads it again for the kill switch (`extensionDisabled`,
    `minExtensionVersion`) and the firm's own contacts (`firmContacts`).
 2. `GET /api/assist/recipes/spice-a` — verify `{ recipe, sig, alg, keyId }` against the extension's
@@ -54,7 +59,8 @@ redirects to that engagement's checklist step in the signed-in role's own shell.
 
 ## GET /api/assist/catalog
 
-The agents and sub-agents for the side panel.
+The agents and their tasks, as a flat list (`agents`, the shape older extensions read) and as a
+tree of any depth (`tree`), plus each portal pack's legal status and live switch.
 
 Response `200`:
 
@@ -62,7 +68,12 @@ Response `200`:
 {
   "ok": true,
   "liveEnabled": false,
+  "liveHosts": [],
   "mockHosts": ["localhost", "127.0.0.1"],
+  "packs": [
+    { "id": "mca-v3", "title": "MCA V3 e-filing (www.mca.gov.in)", "hosts": ["www.mca.gov.in"], "legalStatus": "mock-only", "needsCsOpinionFirst": false, "live": false },
+    { "id": "gst", "title": "GST portal (www.gst.gov.in)", "hosts": ["www.gst.gov.in", "reg.gst.gov.in", "services.gst.gov.in"], "legalStatus": "mock-only", "needsCsOpinionFirst": true, "live": false }
+  ],
   "extensionDisabled": false,
   "minExtensionVersion": null,
   "firmContacts": { "emails": ["desk@firm.in"], "phones": ["9876501234"] },
@@ -79,27 +90,72 @@ Response `200`:
           "status": "beta",
           "portal": "mca",
           "portalHost": "www.mca.gov.in",
+          "pack": "mca-v3",
+          "kind": "portal-fill",
+          "gates": ["LOGIN", "CAPTCHA", "OTP", "SUBMIT", "PAY"],
           "recipeId": "spice-a",
-          "recipeVersion": "1.1.0",
+          "recipeVersion": "2.0.0",
           "stepId": "pre-4",
-          "srnField": "nameApplicationFilingNotes"
+          "srnField": "nameApplicationFilingNotes",
+          "path": ["incorporation", "spice-a"]
         }
+      ]
+    }
+  ],
+  "tree": [
+    {
+      "type": "group", "id": "compliance", "title": "Compliance", "path": ["compliance"],
+      "children": [
+        { "type": "group", "id": "income-tax-tds", "title": "Income tax & TDS", "path": ["compliance", "income-tax-tds"], "children": [
+          { "type": "group", "id": "tds", "title": "TDS", "path": ["compliance", "income-tax-tds", "tds"], "children": [
+            { "type": "task", "id": "challan-281", "agent": "compliance", "title": "Monthly TDS challan", "form": "Challan 281 (ITNS 281)", "status": "later",
+              "portal": "income-tax", "portalHost": "eportal.incometax.gov.in", "pack": "income-tax-efiling", "kind": "challan-prepare",
+              "gates": ["LOGIN", "CAPTCHA", "OTP", "PAY"], "recipeId": null, "recipeVersion": null, "stepId": null,
+              "note": "The agent prepares the challan; you create it and pay it through your own bank.",
+              "path": ["compliance", "income-tax-tds", "tds", "challan-281"] }
+          ] }
+        ] }
       ]
     }
   ]
 }
 ```
 
-- Agents, in order: `incorporation` (spice-a, spice-b, agile-pro-s, emoa, eaoa, inc-9),
-  `post-incorporation` (inc-20a, adt-1), `registration` (gst-reg-01, udyam, iec,
-  shops-establishment, pt), `compliance` (dir-3-kyc, aoc-4, mgt-7).
-- `status`: `beta` has a recipe checked against the mock (`spice-a` and `spice-b` today); `later`
-  has none yet (`recipeId` and `recipeVersion` are `null`). Nothing is `ready` until a supervised
-  live run.
+- **The tree.** Agent → sub-agent → … → task, any depth. A `group` node has `children`; a `task`
+  node is one runnable task with the same members as a flat sub-agent. Task ids are unique across
+  the tree and never change, so `spice-a` and the other original sixteen ids keep working when the
+  tree is regrouped. `agents[].subAgents` lists every task under that agent at any depth, in tree
+  order. Today:
+
+  | Agent | Below it |
+  |---|---|
+  | Incorporation | spice-a, spice-b, agile-pro-s, emoa, eaoa, inc-9 |
+  | Post-incorporation | inc-20a, adt-1 |
+  | Registration | gst-reg-01, udyam, iec, shops-establishment, pt |
+  | Compliance | MCA annual filings › dir-3-kyc, aoc-4, mgt-7; Income tax & TDS › TDS › challan-281 (Monthly TDS challan, Challan 281), tds-return-24q-26q (Quarterly TDS return 24Q / 26Q), form-16 (Form 16 / 16A download); Income tax & TDS › Income tax › challan-280 (Advance tax challan, Challan 280), itr (ITR) |
+
+- **Task members.** `pack`: the portal pack the task runs on (`null` for state portals with no
+  pack yet). `kind`: `portal-fill` (the agent fills a web form), `challan-prepare` (the agent
+  prepares a tax challan and stops before the payment mode and bank page; the person creates the
+  challan and **pays** it through their own bank) or `file-builder` (no web fill: Suite builds a
+  file, such as a 24Q or 26Q return for Protean's FVU, and the person validates, uploads and signs
+  it). `gates`: the steps only a person takes (`LOGIN`, `CAPTCHA`, `OTP`, `DSC`, `SUBMIT`, `PAY`,
+  `EVC`). `note`: one sentence for the panel. `path`: ids from the agent to the task.
+- `status`: `beta` has a recipe checked against a capture or the mock (spice-a, spice-b,
+  agile-pro-s, emoa, eaoa today); `later` has none yet (`recipeId` and `recipeVersion` are `null`).
+  Nothing is `ready` until a supervised live run.
 - `stepId`: the checklist step the run advances (`pre-*`, `post-*`, `reg-*`); `null` for
-  compliance sub-agents, which carry `activityId` (`ACT-M08`, `ACT-015-AOC4`, `ACT-015-MGT7`).
-- `portalHost`: `null` for state portals (Shops and Establishments, PT).
+  compliance tasks, which carry `activityId` (`ACT-M08`, `ACT-015-AOC4`, `ACT-015-MGT7`) or nothing
+  yet (the tax tasks).
+- `portalHost`: `null` for state portals (Shops and Establishments, PT) and for the 24Q/26Q file builder.
 - `srnField`: present when a finished run's SRN is appended to that step's filing note.
+- `packs`: each portal pack's `legalStatus` (`mock-only` or `cs-cleared`), `needsCsOpinionFirst`
+  (true for GST: even capture waits for the CS opinion, because the GST terms bar unauthorised
+  interfaces) and `live` (cleared **and** named in `ASSIST_LIVE_PACKS`). The panel shows "Needs CS
+  opinion" for a task on a `needsCsOpinionFirst` pack and "Mock only until the CS opinion" for any
+  task whose pack is not live. The extension believes `live` only together with `cs-cleared`.
+- `liveEnabled` is true when any pack is live; `liveHosts` lists the live packs' hosts. The
+  extension refuses a live host that is not in `liveHosts`.
 - `extensionDisabled` (`ASSIST_EXTENSION_DISABLED=true`) and `minExtensionVersion`
   (`ASSIST_MIN_EXTENSION_VERSION`, dotted numbers, `null` when unset): the remote kill switch (SAFETY.md
   G18, `DISTRIBUTION.md`). The extension refuses to start a run while the first is true or while its
@@ -107,7 +163,28 @@ Response `200`:
 - `firmContacts`: the firm's own emails (lower case) and phone numbers (last ten digits), from the
   firm settings' support email and phone, `ASSIST_FIRM_CONTACTS` (comma separated) and the signed-in
   user's email. The no-placeholder guard (G16) never types one of them into a client's field.
-- Source: `src/lib/assist-agents/catalog.ts`, `app/api/assist/catalog/route.ts`.
+- Source: `src/lib/assist-agents/catalog.ts` (tree, live switch), `pack.ts` and `packs/*.json`,
+  `app/api/assist/catalog/route.ts`.
+
+## Portal packs
+
+`src/lib/assist-agents/packs/<id>.json`, parsed by `packSchema` in `pack.ts` (strict). One pack per
+website: `id`, `title`, `hosts` (exact names or `*.domain`), `mockHosts`, `legalStatus`,
+`needsCsOpinionFirst`, `framework` (`aem` or `unknown`), `pages[]` (`id`, `title`, `urlPattern`,
+`mockUrlPattern`, `readySelector`, optional `step`: a step only the person takes, such as opening a
+wizard section), `selectors` (shared, by purpose), `waits` (`readyMs`, `optionsMs`,
+`afterPincodeMs`), `popups[]` (information pop-ups the agent may close; one that reads like Submit,
+Pay, OTP or Login is refused by the schema), `gates[]` (must include `LOGIN` and `SUBMIT`),
+`source` and `notes[]`.
+
+| Pack | Hosts | Status | Pages |
+|---|---|---|---|
+| `mca-v3` | www.mca.gov.in | mock-only | SPICe+ Part A, Part B sections 1, 2, 4 and 5, AGILE-PRO-S, INC-33, INC-34, INC-9, login; from the 2026-09-23 captures (`extensions/vcfo-assist/portal-data/mca-v3/`) |
+| `income-tax-efiling` | eportal.incometax.gov.in | mock-only | none yet (Challan 280 and 281 are prepared, never paid) |
+| `traces` | www.tdscpc.gov.in | mock-only | none yet |
+| `protean-tin` | www.protean-tinpan.com, tin.tin.nsdl.com | mock-only | none (24Q/26Q are file builders) |
+| `gst` | www.gst.gov.in, reg.gst.gov.in, services.gst.gov.in | mock-only, needs CS opinion first | none |
+| `epfo`, `esic`, `udyam`, `dgft` | their portals | mock-only | none yet |
 
 ## GET /api/assist/recipes/[id]
 
@@ -141,19 +218,32 @@ not an Ed25519 PEM (an unsigned recipe is never served).
 ```ts
 {
   id: string; version: 'x.y.z'; title: string; subAgent: string;
-  verifiedAgainst: 'mock' | 'live';
+  verifiedAgainst: 'mock' | 'capture' | 'live';
+  capturedFrom?: string;     // for 'capture': the capture and commit the keys were checked against
+  pack?: string;             // the portal pack (packs/<id>.json); Suite applies it before signing
+  waits?: { readyMs; optionsMs; afterPincodeMs };   // from the pack
   pages: {
-    id; title;
-    urlPattern: string;       // a glob on the portal path: `*` any run, `?` one character
+    id;
+    packPage?: string;        // a page of the pack; title, urlPattern, mockUrlPattern, ready and step come from it
+    title?;                   // required without packPage
+    urlPattern?: string;      // a glob on the portal path: `*` any run, `?` one character (required without packPage)
     mockUrlPattern?: string;  // the same on a mock host, for example "/spice-a*.html"
-    ready: Match;
+    ready?: Match;            // required without packPage; a CSS match must also be visible
+    step?: string;            // a step only the person takes before this page fills (a wizard section)
+    closePopups?: Match[];    // information pop-ups the agent may close first (guarded clicks)
   }[];
   fields: {
     key: string;            // Assist profile key, e.g. "company.proposedNames[0]" or "directors[{i}].din"
+    slot?: string;          // tells two fields with one key apart; identity "key@slot" (e.g. "directors[0].din@7a")
     page?: string;          // a pages[].id
-    som: string;            // AEM SOM path for guideBridge.resolveNode
-    css?: string;           // DOM fallback
+    som?: string;           // AEM SOM path for guideBridge.resolveNode (not captured for live MCA)
+    css?: string;           // e.g. ".guideFieldNode.proposedname1" (MCA's key class); a box is searched for its control
+    nth?: number;           // which match of css (0-based); with `each`, each entry takes the next match of that selector
+    nodeId?: string;        // the captured AEM node id: the second T0 tier
     label: string;          // the portal label, for T1/T3 heals and the confirm table
+    where?: Record<string, boolean | string>;  // with `each`: true present, false absent, a string equal
+    waitForOptions?: boolean; // a dependent dropdown: poll up to waits.optionsMs for the option
+    lookup?: boolean;       // the portal looks fields up after this one (a PIN code): wait waits.afterPincodeMs
     transform?: 'none' | 'toMcaDate' | 'rupeeAmount' | 'vocabulary' | 'nicDivision' | 'yesNo' | 'upper';
     required: boolean;
     askUser?: boolean;      // the profile cannot supply it: highlight, never type
@@ -162,11 +252,19 @@ not an Ed25519 PEM (an unsigned recipe is never served).
     noPlaceholder?: boolean; // G16; default = required (fieldRejectsPlaceholder)
   }[];
   actions: { id; label; kind: 'safe' | 'human'; match: Match }[];  // Submit / Pay / Final / Sign are always 'human'
-  gates: ('LOGIN' | 'DSC' | 'SUBMIT' | 'PAY')[];
+  gates: ('LOGIN' | 'CAPTCHA' | 'OTP' | 'DSC' | 'SUBMIT' | 'PAY' | 'EVC')[];
   expect: { id; kind: 'srn' | 'text'; pattern: string /* JS RegExp source */ }[];
 }
 Match = { som?: string; css?: string; text?: string }   // at least one
 ```
+
+Every field needs at least one of `som`, `css` and `nodeId`. A recipe without `pack` and with its
+own `urlPattern` and `ready` per page (the 1.x format) still parses: the change is backwards
+compatible. The extension finds a field by the MCA lookup ladder ported from the old filler: T0 is
+the SOM path, then the `css` match number `nth` (searched for its control), then `nodeId`; T1 is the
+label. A field whose selector matches on the page but whose control is hidden (another wizard
+section, or a conditional field), or whose `nth` block is not open (another person's Add/Edit
+sub-panel), is left to the person and never healed by label into another block.
 
 - **Page check.** The extension plans and writes only while the portal tab's path matches the
   page's `urlPattern` (`mockUrlPattern` on a mock host). On another page the run waits with "Open the
@@ -178,23 +276,35 @@ Match = { som?: string; css?: string; text?: string }   // at least one
   "Director 2: DIN". A placeholder on a field without `each` is refused. The template carries no
   count: the profile decides how many blocks are filled. The mock shows its blocks up front; adding
   an instance on a live form ("Add director") is not built.
-- `spice-a@1.1.0` is `verifiedAgainst: "mock"`. Its SOM paths follow the mock convention
-  `guide[0].guide1[0].guideRootPanel[0].<name>[0]` with these field names, which the mock portal
-  must use: `proposedName1`, `proposedName2`, `significance`, `companyType`, `companyClass`,
-  `companyCategory`, `companySubCategory`, `mainDivision`, `trademarkSimilar`
-  (`MOCK_SPICE_A_FIELD_NAMES` in `src/lib/assist-agents/mock-fields.ts`). Its actions are Save,
-  Check form, Download PDF and Attach PDF (`#signed-pdf`) as `safe`, Submit and Pay as `human`; its
-  gates are `LOGIN`, `DSC`, `SUBMIT`, `PAY`. No `safe` label may contain "sign".
-- `significance` (`company.nameSignificance`) and `trademarkSimilar` (`company.trademarkSimilar`)
-  are `askUser: true`: Suite does not collect them yet, so the profile has no such keys.
-- `spice-b@1.0.0` (SPICe+ Part B, `verifiedAgainst: "mock"`) fills `company.capital.*`, the
-  `registeredOffice.*` keys, and `subscribers[{i}]` (name, father's first name, date of birth, PAN,
-  email, mobile, shares) and `directors[{i}]` (name, DIN, PAN, date of birth, email, mobile) as
-  repeating groups. Single fields use `MOCK_SPICE_B_FIELD_NAMES`; a group's fields sit at
-  `<root>.<directors|subscribers>[0].<director|subscriber>[{i}].<name>[0]` with the mock control
-  name `director{n}Din` and so on (`MOCK_SPICE_B_GROUPS`). The director designation is `askUser`
-  (Suite does not hold it). The registered office lines and PIN code are in the recipe but the
-  profile does not split the address yet, so they show as "not in Suite" until it does.
+- **MCA recipes (`verifiedAgainst: "capture"`, `pack: "mca-v3"`).** Rewritten with the real keys
+  from the captured field maps (`abdulfarhath7/vcfo_assist` at `5e58bcf`, now
+  `extensions/vcfo-assist/portal-data/mca-v3/`). A test checks every verified key and node id
+  against the captured schemas, and the offline harness fills each recipe into the sanitized
+  captured fixtures.
+  - `spice-a@2.0.0` (`spice.html`): `type-of-company`, `class-of-company`, `category-of-company`,
+    `subcategory-of-company` (the last three wait for their options), `nic-text-box` (the person
+    picks the NIC row), `proposedname1`, `proposedname2`. Actions: Save and Auto check (safe), Submit
+    and Pay (human). Gates `LOGIN`, `CAPTCHA`, `OTP`, `SUBMIT`, `PAY`: Part A has no DSC step and no
+    attach slot. `significance` and `trademarkSimilar` were not in the capture: they are `askUser`,
+    with a note that their selectors are unverified.
+  - `spice-b@2.0.0` (`SpicePartB.html`): four pack pages, one per wizard section the person opens
+    (structure and capital, address, subscribers, directors). Capital (`numberOfClasses`, `classe1`,
+    `numberofeshares_1`, `subeshare_1`, `amountpershare_1`, `aoaEntrenched`), the registered office
+    (`correspondenceaddressline1`/`2`, `correspondenceaddress_pinCode` with the lookup wait, `Area1`
+    waiting for its options, `correspondenceaddress_MobileNumber`, `correspondenceaddress_emailID`,
+    longitude, latitude, the ROC office). Subscribers with a DIN fill block 6b (`din6b`,
+    `noofequityshares6b`), without one block 6c (`firstName6c`, father's names, `date6c`, `pan6c`,
+    the email box and more). Subscriber-directors and then directors fill block 7a by DIN (`din7a`)
+    or 7b without one (`firstName7bp`, `surName7b`, `pan7b`, `mobile7b`, `emailID7b`, citizenship and
+    residence radios); designations are `askUser`. Body-corporate subscribers (6a), addresses of
+    individuals and the share-count fields that share one class across blocks (`tableItem12`) are
+    not in the recipe yet. Actions: Save, Download PDF and Attach PDF (safe), Submit and Pay (human);
+    the captured Part B has no Auto check. Gates add `DSC`.
+  - `agile-pro-s@1.0.0` (`AgilePro.html`): state, district, number of directors, declaration place.
+  - `emoa@1.0.0` (`INC-33.html`): company name, registered office state, witness name and address.
+  - `eaoa@1.0.0` (`INC-34.html`): company name, each subscriber's place of signing (`place`, by
+    instance), witness name, address and occupation, DIN/PAN/membership.
+  The other captured fields bind to nothing in the Assist profile and are left to the person.
 
 ## POST /api/assist/resolve
 
@@ -264,7 +374,7 @@ Response `201`: `{ "ok": true, "run": Run }`.
 
 Errors: `400 unknown_sub_agent`, `400 no_recipe` (a `later` sub-agent),
 `409 recipe_outdated` (with `recipeVersion` = the current version: refetch the recipe),
-`403 live_portals_disabled`, `404 not_found` (engagement out of reach).
+`403 live_portals_disabled` (a live host whose pack is not live, or a host of another pack), `404 not_found` (engagement out of reach).
 
 ## GET /api/engagements/[id]/assist-runs
 
@@ -477,7 +587,7 @@ Body (strict):
 - `proposed` needs at least one of `som`, `css`, `label`. `evidence` is labels only (up to 40
   candidate labels).
 - `fieldKey` is the concrete key; a repeating field is proposed as `directors[1].din`, which
-  names the recipe's `directors[{i}].din` template.
+  names the recipe's `directors[{i}].din` template, and a slotted field as `directors[1].din@7a`.
 - Errors: `400 unknown_recipe`, `400 unknown_field` (the key is not in the recipe),
   `400 personal_data`, `404 not_found` (the run is out of reach).
 
@@ -519,8 +629,10 @@ separate table, `assist_agent_runs` (migration `0052_assist_agents`), and is sta
 |---|---|
 | Recipe schema, canonical JSON | `src/lib/assist-agents/recipe.ts` |
 | Recipes | `src/lib/assist-agents/recipes/*.json`, `registry.ts` |
-| Mock field names | `src/lib/assist-agents/mock-fields.ts` |
-| Catalog, live-host gate | `src/lib/assist-agents/catalog.ts` |
+| Mock pages and their recipes | `src/lib/assist-agents/mock-fields.ts`; pages generated by `extensions/vcfo-assist/mock-portal/build-mocks.mjs` |
+| Catalog tree, per-pack live switch | `src/lib/assist-agents/catalog.ts` |
+| Portal packs | `src/lib/assist-agents/pack.ts`, `src/lib/assist-agents/packs/*.json` |
+| Captured MCA data | `extensions/vcfo-assist/portal-data/mca-v3/` |
 | Signing (Ed25519), key pair | `src/lib/assist-agents/signing.ts`, `scripts/assist-recipe-keygen.mjs` |
 | Extension bundle generator | `scripts/assist-recipes-bundle.ts` → `extensions/vcfo-assist/src/recipes/bundled.json` |
 | Fix in Suite redirect | `app/api/assist/step-link/[id]/route.ts`, `src/lib/assist-agents/step-link.ts` |

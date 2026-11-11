@@ -1,0 +1,34 @@
+{
+  "id": "traces",
+  "title": "TRACES (www.tdscpc.gov.in)",
+  "hosts": [
+    "www.tdscpc.gov.in"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "unknown",
+  "pages": [],
+  "selectors": {},
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "SUBMIT",
+    "DSC"
+  ],
+  "source": "Placeholder: no capture yet. Pages and selectors come from a recorder capture made under docs/specs/vcfo-assist-agents/PORTAL-CAPTURE.md.",
+  "notes": [
+    "Form 16 and 16A downloads are requested on TRACES; the KYC page asks for real deductee details and stays the person's.",
+    "Live use needs the written CS opinion to name TRACES."
+  ]
+}

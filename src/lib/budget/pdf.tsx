@@ -8,6 +8,7 @@ import { computeBudget, rollUp, sumSeries, toReportCurrency, type BudgetResult }
 import { fyName, type BudgetState, type BudgetStatus } from './model';
 import { advanceTaxSchedule, computeTax, type TaxActuals, type TaxCalc } from './tax';
 import { VARIANCE_STATUS_LABEL, entriesOfMonth, monthBudget, taxActualsOf, type VarianceData } from './variance';
+import { PDF_COLORS, PDF_FONTS } from '@/lib/doc-style/spectrum-pdf';
 
 /**
  * The board pack: the budget by quarter, headcount, departments and cash, on A4 landscape, with the
@@ -17,27 +18,27 @@ import { VARIANCE_STATUS_LABEL, entriesOfMonth, monthBudget, taxActualsOf, type 
  */
 
 const s = StyleSheet.create({
-  page: { padding: 32, fontSize: 9, fontFamily: 'Helvetica', color: '#1f2433' },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, borderBottom: '1pt solid #d9dde6', paddingBottom: 8 },
+  page: { padding: 32, fontSize: 9, fontFamily: PDF_FONTS.ui, color: PDF_COLORS.ink },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, borderBottom: `1.5pt solid ${PDF_COLORS.rule}`, paddingBottom: 8 },
   logo: { width: 100, height: 26, objectFit: 'contain' },
   headerText: { marginLeft: 'auto', textAlign: 'right' },
-  title: { fontSize: 14, fontFamily: 'Helvetica-Bold' },
-  muted: { color: '#5b6478' },
-  h: { fontSize: 11, fontFamily: 'Helvetica-Bold', marginTop: 12, marginBottom: 5 },
+  title: { fontSize: 14, fontFamily: PDF_FONTS.uiBold },
+  muted: { color: PDF_COLORS.inkMuted },
+  h: { fontSize: 11, fontFamily: PDF_FONTS.uiBold, marginTop: 12, marginBottom: 5 },
   tiles: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  tile: { flex: 1, border: '1pt solid #d9dde6', borderRadius: 4, padding: 8 },
-  tileLabel: { fontSize: 7.5, color: '#5b6478' },
-  tileValue: { fontSize: 13, fontFamily: 'Helvetica-Bold', marginTop: 2 },
-  row: { flexDirection: 'row', borderBottom: '0.5pt solid #e6e9f0', paddingVertical: 2.5 },
-  head: { backgroundColor: '#eef1f6', fontFamily: 'Helvetica-Bold' },
-  total: { backgroundColor: '#f4f5f8', fontFamily: 'Helvetica-Bold' },
-  grp: { fontFamily: 'Helvetica-Bold', marginTop: 3 },
+  tile: { flex: 1, border: `1pt solid ${PDF_COLORS.line}`, borderRadius: 4, padding: 8 },
+  tileLabel: { fontSize: 7.5, color: PDF_COLORS.inkMuted },
+  tileValue: { fontSize: 13, fontFamily: PDF_FONTS.uiBold, marginTop: 2 },
+  row: { flexDirection: 'row', borderBottom: `0.5pt solid ${PDF_COLORS.lineSoft}`, paddingVertical: 2.5 },
+  head: { backgroundColor: PDF_COLORS.headFill, fontFamily: PDF_FONTS.uiBold },
+  total: { backgroundColor: PDF_COLORS.totalFill, fontFamily: PDF_FONTS.uiBold },
+  grp: { fontFamily: PDF_FONTS.uiBold, marginTop: 3 },
   name: { flex: 3, paddingLeft: 3 },
   cell: { flex: 1, textAlign: 'right', paddingRight: 3 },
   wide: { flex: 4, paddingLeft: 3 },
-  neg: { color: '#b42318' },
-  note: { fontSize: 7.5, color: '#5b6478', marginTop: 4 },
-  footer: { position: 'absolute', bottom: 16, left: 32, right: 32, fontSize: 7.5, color: '#5b6478', textAlign: 'center' },
+  neg: { color: PDF_COLORS.danger },
+  note: { fontSize: 7.5, color: PDF_COLORS.inkMuted, marginTop: 4 },
+  footer: { position: 'absolute', bottom: 16, left: 32, right: 32, fontSize: 7.5, color: PDF_COLORS.inkMuted, textAlign: 'center' },
 });
 
 const inr = (n: number): string => {

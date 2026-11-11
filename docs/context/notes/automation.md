@@ -8,7 +8,7 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
 
 - One migration, `0051_automation`, created all eight new tables (`request_lists`,
   `request_list_items`, `expiry_items`, `expiry_alerts`, `notice_cases`, `company_events`,
-  `client_health_scores`, `sla_escalations`). `0055_remove_health_notices_events` drops the last
+  `client_health_scores`, `sla_escalations`). `0056_remove_health_notices_events` drops the last
   four (C, D and E were removed on 2026-11-11). Both must be applied on RDS before deploy.
 - The schema files (`src/db/schema-{request-lists,expiries,notices,compliance-events,client-health}.ts`)
   are re-exported from `src/db/schema.ts`. Repositories import from `@/db/schema`.
@@ -106,7 +106,7 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
 ## C, D and E. Removed on 2026-11-11
 
 The owner removed the notice desk (C), company events (D) and client health with the SLA ladder
-(E). Migration `0055_remove_health_notices_events` drops `notice_cases`, `company_events`,
+(E). Migration `0056_remove_health_notices_events` drops `notice_cases`, `company_events`,
 `client_health_scores` and `sla_escalations`. Company events are to come back as non-statutory
 compliances. The Ask drop still reads a tax notice (`tax_notice`), files it in the vault's
 Notices folder and keeps its values off the client's checklist. The older `compliance_events`

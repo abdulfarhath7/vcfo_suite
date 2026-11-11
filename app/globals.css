@@ -856,6 +856,16 @@
     @apply rounded-lg border px-4 py-3 text-xs flex gap-3 items-start;
   }
 
+  /* Registrations pages (list and record, staff and client): softer, uniform corners (owner
+     request 2026-11-11). Only the radius tokens change, and only inside this wrapper, so cards,
+     inputs and buttons keep one consistent shape; the rest of the app stays at 6px. */
+  .reg-soft {
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 14px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .milestone-upload-zone,
     .milestone-segment-option {

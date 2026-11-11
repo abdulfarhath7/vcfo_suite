@@ -21,6 +21,7 @@
     "css:portal": "node scripts/cp-css.mjs",
     "tokens": "node scripts/design-tokens-css.mjs --write",
     "tokens:check": "node scripts/design-tokens-check.mjs",
+    "tokens:email": "node scripts/design-tokens-email.mjs --write",
     "ask:catalog": "node --conditions=react-server --import tsx scripts/ask-field-catalog.ts",
     "ask:knowledge:load": "node --conditions=react-server --import tsx scripts/ask-load-knowledge.ts",
     "ask:embed": "node --conditions=react-server --import tsx scripts/ask-embed-backfill.ts",

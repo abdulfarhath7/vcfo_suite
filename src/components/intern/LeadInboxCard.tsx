@@ -25,6 +25,14 @@ import { sep, time24 } from '@/lib/date-format';
 import { errorMessage, toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 
+/** What each triage tab says while it has no messages: what lands there and when. */
+const INBOX_EMPTY: Record<keyof typeof MESSAGE_TRIAGE_LABEL, string> = {
+  new: 'No new messages. A message a client sends on one of your projects appears here.',
+  todo: 'Nothing to do. Move a message here to keep it until you answer it.',
+  done: 'Nothing done yet. Messages you mark done appear here.',
+  ignored: 'Nothing ignored. Messages you ignore appear here.',
+};
+
 /** Rows shown before "Show all". */
 const PAGE = 5;
 
@@ -199,7 +207,7 @@ function TriageList({ engagementIds }: { engagementIds?: Set<string> }) {
         </div>
       ) : rows.length === 0 ? (
         <div className="px-4 pb-3">
-          <EmptyState title={`No ${MESSAGE_TRIAGE_LABEL[state].toLowerCase()} messages`} />
+          <EmptyState title={INBOX_EMPTY[state]} />
         </div>
       ) : (
         <ul>

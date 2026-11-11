@@ -11,8 +11,8 @@ is the contrast gate.
 
 The short version, which overrides everything in the "superseded" section below:
 
-- One face: Public Sans (`--font-sans`), weights 400/500/600. IBM Plex Mono for
-  identifiers only. `--font-serif` and `.serif` alias the sans until their
+- One face: Roboto (`--font-sans`), weights 400/500/700 (VCFO Spectrum rule R-28). Roboto Mono
+  for identifiers only. `--font-serif` and `.serif` alias the sans until their
   callers move to the type styles.
 - Colour tokens are semantic and themed: `surface`, `surface-raised`,
   `surface-sunken`, `line`, `line-strong`, `ink`, `ink-muted`, `ink-faint`,

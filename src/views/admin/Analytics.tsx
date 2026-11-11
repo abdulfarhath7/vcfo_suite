@@ -314,7 +314,7 @@ export default function Analytics() {
               columns={STEP_TIME_COLUMNS}
               rows={stepTime}
               rowKey={(s) => s.stepId}
-              empty="No step has been timed yet"
+              empty="No step has been timed yet. Each step's median and longest days appear here once a client starts a step."
               pageSize={8}
               minWidth={480}
             />

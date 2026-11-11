@@ -144,3 +144,34 @@ describe('DOM facts (jsdom)', () => {
     expect(guardFill(document.getElementById('n1')!)).toBeNull();
   });
 });
+
+/**
+ * The old MCA filler (abdulfarhath7/vcfo_assist@5e58bcf, src/shared/constants.js) refused clicks on
+ * submit|pay|payment|confirm|proceed to pay|file|final|sign|dsc|delete|remove and fills on
+ * captcha|otp|passw|passcode|mpin|pin|secret|token|cvv. Every word is refused here too.
+ */
+describe('cross-check with the old MCA DANGER and CREDENTIAL sets', () => {
+  it.each(['Submit', 'Pay', 'Payment', 'Confirm', 'Proceed to pay', 'File', 'Final', 'Sign', 'DSC', 'Delete', 'Remove'])('refuses a "%s" button', (text) => {
+    expect(isForbiddenAction({ text })).not.toBeNull();
+  });
+
+  it.each(['Reset', 'Send OTP', 'Verify OTP', 'Fetch from digilocker', 'e-Verify', 'Generate EVC', 'Remove director', 'Confirm and continue'])('refuses the extra "%s" button', (text) => {
+    expect(isForbiddenAction({ text })).not.toBeNull();
+  });
+
+  it('refuses MCA Part B buttons by their captured texts, and leaves Save, Next, Auto check and Download PDF alone', () => {
+    for (const text of ['Send OTP', 'Verify OTP', 'Submit', 'Upload to MCA']) expect(isForbiddenAction({ text }), text).not.toBeNull();
+    for (const text of ['Save', 'Next', 'Previous', 'Auto check', 'Download PDF', 'Check form', 'OK', 'Add/Edit', 'Pre-Fill']) expect(isForbiddenAction({ text }), text).toBeNull();
+  });
+
+  it.each([{ label: 'Passcode' }, { name: 'mpin' }, { label: 'Transaction PIN' }, { name: 'tpin' }, { name: 'authToken' }, { label: 'Secret answer' }, { label: 'CVV' }, { name: 'card_cvc' }])('refuses the credential field %o', (facts) => {
+    expect(isSecretField(facts)?.code).toBe('G1');
+  });
+
+  it('lets the real MCA keys through: PIN codes, the NIC search box, DINs and PANs are not credentials', () => {
+    for (const name of ['correspondenceaddress_pinCode', 'pinCode6c', 'pincode6p', 'pinCode7bp', 'nic-text-box', 'din7a', 'pan7b', 'proposedname1', 'type-of-company', 'textbox1641292661235']) {
+      expect(isSecretField({ name }), name).toBeNull();
+    }
+    expect(isSecretField({ label: '*Pin code' })).toBeNull();
+  });
+});

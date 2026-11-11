@@ -50,7 +50,7 @@ const body = z.discriminatedUnion('action', [
     kind,
     key,
     side: z.enum(['client', 'sbc']),
-    values: z.record(z.string().max(60), z.string().max(500).nullable()),
+    values: z.record(z.string().max(60), z.string().max(2000).nullable()),
   }),
   z.object({ action: z.literal('confirm'), engagementId, kind, key }),
   z.object({ action: z.literal('ask'), engagementId, kind, key, label: z.string().trim().min(1).max(200), dueOn: z.string().max(10).optional() }),

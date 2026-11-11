@@ -241,7 +241,7 @@ function MonthDrill({
         <ul className="min-h-0 flex-1 overflow-y-auto">
           {rows.length === 0 ? (
             <li className="p-4">
-              <EmptyState title="Nothing this month" />
+              <EmptyState title={tab === 'all' ? 'Nothing this month. Notifications about steps, documents, deadlines and messages appear here as they arrive.' : 'Nothing of this kind this month'} />
             </li>
           ) : (
             rows.map((n) => (
@@ -409,7 +409,13 @@ export default function NotificationHistoryPage() {
           ) : filtered.length === 0 ? (
             <div className="p-4" role="status">
               <EmptyState
-                title={tab === 'unread' ? 'Nothing unread' : 'No notifications in this view'}
+                title={
+                  tab === 'all'
+                    ? "No notifications yet. Updates on your clients' steps, documents, deadlines and messages appear here."
+                    : tab === 'unread'
+                      ? 'Nothing unread'
+                      : 'No notifications in this view'
+                }
                 action={
                   filtersSet ? (
                     <Button type="button" variant="outline" size="sm" onClick={resetFilters}>

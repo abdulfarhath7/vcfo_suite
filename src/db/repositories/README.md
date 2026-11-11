@@ -135,11 +135,17 @@ Do not HTML-scrape homepages or login pages. System ingest:
 `systemListEnabledAnnouncementSources` / `systemUpsertFeedAnnouncements` /
 `systemGetOrCreateAnnouncementSource` (only after a catalog URL parses as a feed)
 — job-only, no AuthContext.
+`statutory_calendars` / `statutory_deadlines` (`statutory-calendar.ts`, migration 0055) hold the
+all-India compliance calendar per financial year. Every signed-in role reads it (no client data in
+it); only `admin` (not `super_admin`, by the owner's decision) replaces a year by importing the
+Excel template, through `canImportStatutoryCalendar`. FY 2026-27 serves the built-in
+`src/data/statutory-calendar-fy2627.ts` until it is imported. `systemGetStatutoryCalendar` and
+`systemListStatutoryCalendarYears` are for the Ask VCFO job and the knowledge loader.
 
 Implemented: `engagements`, `knowledge-bank`, `profiles`, `audit-events`,
 `board-resolution`, `compliance`, `documents`, `tasks`, `document-requests`,
 `activity`, `notifications`, `outlook-connections`, `email-directory`,
-`email-templates`, `announcements`.
+`email-templates`, `announcements`, `statutory-calendar`.
 
 System jobs (Inngest): `systemGenerateComplianceInstances` /
 `runComplianceGenerate` in `compliance.ts`, and feed ingest helpers in

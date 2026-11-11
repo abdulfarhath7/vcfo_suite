@@ -17,6 +17,13 @@ export type Resolver = (payload: ResolvePayload) => Promise<ResolveResponse>;
 
 export type LadderResult =
   | { found: true; tier: Exclude<HealTier, 'T4'>; candidate: ScannedField; tokens: number; aiCalls: number }
+  /**
+   * The field's own selector matches on the page but its control is hidden (another wizard section
+   * or a conditional field), or the selector matches fewer blocks than `nth` (another person's
+   * Add/Edit sub-panel is not open). Not healed by label, because a label match would land in the
+   * wrong block: the person opens it, and the field is left to them.
+   */
+  | { found: false; notHere: 'hidden' | 'noinstance'; reason: string; tokens: 0; aiCalls: 0 }
   | { found: false; refused: GuardRefusal; candidate: ScannedField; tokens: 0; aiCalls: 0 }
   | { found: false; tier: 'T4'; reason: string; tokens: number; aiCalls: number };
 
@@ -38,7 +45,12 @@ export async function resolveField(field: RecipeField, scan: ScanResult, deps: L
   const t0 = probed ? scan.fields.find((f) => f.uid === probed) : undefined;
   if (t0) {
     if (t0.refused) return { found: false, refused: t0.refused, candidate: t0, tokens: 0, aiCalls: 0 };
+    if (!t0.visible) return { found: false, notHere: 'hidden', reason: 'hidden on the portal (another section, or not needed for this company)', tokens: 0, aiCalls: 0 };
     if (!deps.claimed.has(t0.uid)) return { found: true, tier: 'T0', candidate: t0, tokens: 0, aiCalls: 0 };
+  }
+  const count = scan.probeCounts?.[field.key] ?? 0;
+  if (!t0 && field.nth !== undefined && count > 0 && count <= field.nth) {
+    return { found: false, notHere: 'noinstance', reason: `only ${count} block(s) open on the page: open the Add/Edit panel for block ${field.nth + 1}, then run Fill again`, tokens: 0, aiCalls: 0 };
   }
 
   // T1: deterministic rules.

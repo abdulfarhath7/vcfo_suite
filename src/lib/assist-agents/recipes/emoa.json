@@ -1,0 +1,83 @@
+{
+  "id": "emoa",
+  "version": "1.0.0",
+  "title": "e-MoA (INC-33)",
+  "subAgent": "emoa",
+  "verifiedAgainst": "capture",
+  "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+  "pack": "mca-v3",
+  "pages": [
+    {
+      "id": "moa",
+      "packPage": "inc-33"
+    }
+  ],
+  "fields": [
+    {
+      "key": "company.proposedNames[0]",
+      "css": ".guideFieldNode.nameOfCompany",
+      "nodeId": "guideContainer-rootPanel-formData1643834073649-nameOfCompany__",
+      "label": "1 The name of the company is",
+      "transform": "none",
+      "required": true,
+      "page": "moa"
+    },
+    {
+      "key": "registeredOffice.state",
+      "css": ".guideFieldNode.regOfficeState",
+      "nodeId": "guideContainer-rootPanel-formData1643834073649-regOfficeState__",
+      "label": "2 The registered office of the company will be situated in the State of",
+      "transform": "none",
+      "required": true,
+      "page": "moa"
+    },
+    {
+      "key": "moa.witness.name",
+      "css": ".guideFieldNode.personFullName",
+      "nodeId": "guideContainer-rootPanel-formData1643834073649-panel-personfullname__",
+      "label": "Witness: full name",
+      "transform": "none",
+      "required": true,
+      "page": "moa"
+    },
+    {
+      "key": "moa.witness.address",
+      "css": ".guideFieldNode.resident",
+      "nodeId": "guideContainer-rootPanel-formData1643834073649-panel-resident__",
+      "label": "Witness: resident of",
+      "transform": "none",
+      "required": true,
+      "page": "moa"
+    }
+  ],
+  "actions": [
+    {
+      "id": "save-draft",
+      "label": "Save",
+      "kind": "safe",
+      "match": {
+        "text": "Save"
+      }
+    },
+    {
+      "id": "submit",
+      "label": "Submit",
+      "kind": "human",
+      "match": {
+        "text": "Submit"
+      }
+    }
+  ],
+  "gates": [
+    "LOGIN",
+    "DSC",
+    "SUBMIT"
+  ],
+  "expect": [
+    {
+      "id": "saved",
+      "kind": "text",
+      "pattern": "[Ss]aved successfully"
+    }
+  ]
+}

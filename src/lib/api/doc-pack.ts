@@ -157,7 +157,7 @@ function docPackZipFilename(engagement: { companyName: string; slug?: string }, 
 }
 
 /** The file name an item downloads as, known before it is rendered. */
-function docPackItemFilename(inputs: DocPackInputs, item: DocPackItem): string {
+export function docPackItemFilename(inputs: DocPackInputs, item: DocPackItem): string {
   if (item.generate.kind === 'board-resolution') return standardDownloadName('Board Resolution', inputs.engagement.companyName, 'docx');
   const { pre6 } = directorResponsesFromState(inputs.checklistState);
   return incorpDocStandardDownloadName(item.generate.doc, item.audience, inputs.engagement.companyName, { pre6 });

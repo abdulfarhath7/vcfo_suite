@@ -344,7 +344,11 @@ function TeamTasksBody({ rows, tools, loading, viewParam }: Props & { viewParam:
             onRowClick={(r) => router.push(r.href)}
             pageSize={10}
             minWidth={680}
-            empty="No tasks match these filters"
+            empty={
+              rows.length === 0
+                ? "No team tasks yet. Tasks on your team's client projects appear here once a project starts."
+                : 'No tasks match these filters'
+            }
             loading={loading}
             onClearFilters={anyFilter ? clear : undefined}
             stickyHead

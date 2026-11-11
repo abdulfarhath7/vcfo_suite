@@ -16,6 +16,7 @@ import { serviceChecks } from '@/jobs/service-checks';
 import { complianceTaskReminders } from '@/jobs/compliance-task-reminders';
 import { complianceTaskRepeatOnComplete, complianceTaskRepeatSweep } from '@/jobs/compliance-task-repeat';
 import { boardMeetingReminders } from '@/jobs/board-meeting-reminders';
+import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { receivablesReminders } from '@/jobs/receivables-reminders';
 import { receivablesBankFeed } from '@/jobs/receivables-bank-feed';
 import { receivablesFxRates } from '@/jobs/receivables-fx-rates';
@@ -29,8 +30,9 @@ import { requestListReminders } from '@/jobs/request-list-reminders';
 import { expiryAlerts } from '@/jobs/expiry-alerts';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
+import { statutoryCalendarAskSync } from '@/jobs/statutory-calendar-ask';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart],
 });

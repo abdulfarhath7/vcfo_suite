@@ -79,7 +79,7 @@ export async function verifySignature(
 
 const KINDS = new Set(['safe', 'human']);
 const ROLES = new Set(['save', 'check', 'download', 'next', 'attach']);
-const GATES = new Set(['LOGIN', 'DSC', 'SUBMIT', 'PAY']);
+const GATES = new Set(['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT', 'PAY', 'EVC']);
 const TRANSFORMS = new Set(['none', 'upper', 'date', 'amount', 'yesNo', 'nicDivision']);
 const CONTROLS = new Set(['text', 'select', 'textarea', 'radio']);
 
@@ -91,6 +91,10 @@ export function validateRecipe(r: Recipe): string[] {
   if (!Array.isArray(r.pages) || !r.pages.length) problems.push('recipe has no pages');
   for (const p of r.pages ?? []) {
     if (typeof p.urlPattern !== 'string' || !p.urlPattern.startsWith('/')) problems.push(`page ${p.id}: urlPattern must be a path glob`);
+    for (const css of p.closePopups ?? []) {
+      // A pop-up the agent closes must not be Submit, Pay, Sign or Login (the click is guarded again).
+      if (isForbiddenAction({ id: css })) problems.push(`page ${p.id}: pop-up ${css} reads like a forbidden button`);
+    }
     if (p.mockUrlPattern !== undefined && (typeof p.mockUrlPattern !== 'string' || !p.mockUrlPattern.startsWith('/'))) problems.push(`page ${p.id}: mockUrlPattern must be a path glob`);
     for (const f of p.fields ?? []) {
       if (!f.key || !f.label) problems.push(`page ${p.id}: a field has no key or label`);
@@ -99,6 +103,8 @@ export function validateRecipe(r: Recipe): string[] {
       if (f.each !== undefined && (!/^[a-z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)*$/.test(f.each) || !f.key.startsWith(`${f.each}[{i}].`))) {
         problems.push(`field ${f.key}: a repeating field must read "${f.each}[{i}].…"`);
       }
+      if (!f.som && !f.css && !f.nodeId) problems.push(`field ${f.key}: no SOM path, selector or node id`);
+      if (f.nth !== undefined && (!Number.isInteger(f.nth) || f.nth < 0 || f.nth > 50)) problems.push(`field ${f.key}: nth out of range`);
     }
   }
   for (const a of r.actions ?? []) {

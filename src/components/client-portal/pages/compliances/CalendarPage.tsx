@@ -66,6 +66,7 @@ import { CalendarMobile } from './CalendarMobile';
 import { CategoryTabs, RowArea } from './task-marks';
 import { taskHref, useExpiryRows, useTaskRows } from './task-api';
 import { dayWords, fyOfIso, isExpiryRow, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
+import { CALENDAR_BEFORE } from './empty-copy';
 import '../../css/compliances-board.css';
 
 const VIEWS = ['month', 'year', 'timeline'] as const;
@@ -237,7 +238,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
 
   /* empty month copy (E-01) */
   const emptyOverlay = (() => {
-    if (!after) return { lines: ['Starts after incorporation'], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
+    if (!after) return { lines: [...CALENDAR_BEFORE], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
     if (loading || q.isError || view !== 'month' || monthRows.length) return null;
     const pool = sortByDue([...filterArea([...fyRows, ...railRows].filter((r) => !isTaskRow(r)), area), ...fyTasks]).filter((r) => r.dueDate > `${month}-31`);
     const next = pool[0];
@@ -612,7 +613,7 @@ export function Rail({
 }) {
   const { today } = useComp();
   const expiries = <ExpiriesCard showCompany={false} mayRenew={false} className={railCard} />;
-  // Before incorporation the calendar card already says "Starts after incorporation"; a second
+  // Before incorporation the calendar card already says compliances have not started; a second
   // copy in the rail repeated it (twice in a row on a phone).
   if (!after) return <Island className="cal-rail">{expiries}</Island>;
   if (loading)

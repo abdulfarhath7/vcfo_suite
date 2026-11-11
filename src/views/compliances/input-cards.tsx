@@ -16,10 +16,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Download, Plus } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
+import { InfoButton } from '@/components/ui/info-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
-import { SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { errorMessage, toastError } from '@/lib/toast-errors';
 import { toastSaved } from '@/components/ui/toast-saved';
@@ -284,7 +285,9 @@ export function StaffSbcFieldsCard({
       ) : q.isError ? (
         <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">Could not load the fields</p>
       ) : rows.length === 0 && facts.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+        <div className="p-3">
+          <EmptyState title="No SBC fields for this item. Fields SBC fills in, such as an acknowledgement number, appear here when the filing has them." className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <dl className="m-0">
           {facts.map((f, i) => (
@@ -327,9 +330,34 @@ export function AppliesCard({ engagementId, stepId, companyName, notNeeded }: { 
   const rule = q.data?.byStep[stepId];
   if (!rule) return null;
   const skip = notNeeded || rule.applies === false;
+  const title = skip ? 'Not needed' : 'Applies because';
+  // The explanation opens from the "i" in the head; the card itself stays one line.
   return (
-    <DashSection title={skip ? 'Not needed' : 'Applies because'}>
-      <div className="grid gap-2 text-[13.5px] leading-relaxed text-ink-2">
+    <DashSection
+      title={title}
+      flush
+      right={
+        <InfoButton title={title} label={`${title}: explanation`}>
+          <AppliesExplanation rule={rule} skip={skip} companyName={companyName} />
+        </InfoButton>
+      }
+    >
+      {null}
+    </DashSection>
+  );
+}
+
+function AppliesExplanation({
+  rule,
+  skip,
+  companyName,
+}: {
+  rule: NonNullable<ReturnType<typeof useComplianceStarts>['data']>['byStep'][string];
+  skip: boolean;
+  companyName: string;
+}) {
+  return (
+    <>
         <p>{skip ? rule.notNeeded : `Applies to ${companyName} because: ${rule.why}`}</p>
         {rule.answers.length ? (
           <ul className="grid gap-0.5 text-ink-muted">
@@ -343,8 +371,7 @@ export function AppliesCard({ engagementId, stepId, companyName, notNeeded }: { 
           <p className="text-ink-muted">Not answered in the compliance questionnaire</p>
         )}
         <p className="text-ink-muted">Rule: {rule.rule}</p>
-      </div>
-    </DashSection>
+    </>
   );
 }
 

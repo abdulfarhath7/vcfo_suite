@@ -34,6 +34,7 @@ import { AreaChip, Chip, I, Seg, usePageTips } from './bits';
 import { useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { Empty, Island } from './spectrum';
+import { CALENDAR_BEFORE } from './empty-copy';
 import { Rail, showExpiriesCard, type useCalendarState } from './CalendarPage';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
@@ -213,7 +214,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!after ? (
             <Island>
-              <Empty className="m-0 md:mx-0">Starts after incorporation</Empty>
+              <Empty className="m-0 md:mx-0">{CALENDAR_BEFORE.join(' ')}</Empty>
             </Island>
           ) : loading ? (
             [1, 2, 3].map((i) => <div key={i} className="sk-row" style={{ height: 62, borderRadius: 10 }} />)

@@ -21,8 +21,28 @@ interface SuiteRecipe {
   title: string;
   subAgent?: string;
   verifiedAgainst?: string;
-  pages: Array<{ id: string; title: string; urlPattern: string; mockUrlPattern?: string; ready?: SuiteMatch }>;
-  fields: Array<{ key: string; page?: string; som: string; css?: string; label: string; transform?: string; required?: boolean; askUser?: boolean; note?: string; each?: string; noPlaceholder?: boolean }>;
+  pack?: string;
+  waits?: { readyMs: number; optionsMs: number; afterPincodeMs: number };
+  pages: Array<{ id: string; title?: string; urlPattern?: string; mockUrlPattern?: string; ready?: SuiteMatch; step?: string; closePopups?: SuiteMatch[] }>;
+  fields: Array<{
+    key: string;
+    slot?: string;
+    page?: string;
+    som?: string;
+    css?: string;
+    nth?: number;
+    nodeId?: string;
+    label: string;
+    transform?: string;
+    required?: boolean;
+    askUser?: boolean;
+    note?: string;
+    each?: string;
+    where?: Record<string, boolean | string>;
+    waitForOptions?: boolean;
+    lookup?: boolean;
+    noPlaceholder?: boolean;
+  }>;
   actions: Array<{ id: string; label: string; kind: string; match: SuiteMatch }>;
   gates: string[];
   expect: Array<{ id: string; kind: string; pattern: string }>;
@@ -41,6 +61,9 @@ const TRANSFORMS: Record<string, RecipeTransform> = {
 
 const GATE_LABELS: Record<GateKind, string> = {
   LOGIN: 'Log in to the portal yourself (user ID, password, captcha and OTP).',
+  CAPTCHA: 'Any captcha on the portal is yours to type.',
+  OTP: 'Any OTP (mobile, email or Aadhaar) is yours to request and type.',
+  EVC: 'E-verification (EVC, Aadhaar OTP or net banking) is yours.',
   DSC: 'Sign the downloaded PDF with your DSC, then drop it here.',
   SUBMIT: 'Click Submit yourself.',
   PAY: 'Pay the fee yourself.',
@@ -81,19 +104,28 @@ export function normalizeRecipe(raw: unknown): Recipe {
 
   const pages = raw.pages.map((p) => ({
     id: p.id,
-    title: p.title,
-    urlPattern: p.urlPattern,
+    title: p.title ?? p.id,
+    // A page without its own pattern was not resolved against its pack; validateRecipe refuses it.
+    urlPattern: p.urlPattern ?? '',
     mockUrlPattern: p.mockUrlPattern,
     readyCss: p.ready?.css,
+    step: p.step,
+    closePopups: p.closePopups?.map((m) => m.css).filter((c): c is string => Boolean(c)),
     fields: [] as RecipeField[],
   }));
   for (const f of raw.fields) {
     const page = pages.find((p) => p.id === (f.page ?? firstPage)) ?? pages[0];
     page?.fields.push({
-      key: f.key,
+      key: f.slot ? `${f.key}@${f.slot}` : f.key,
+      path: f.slot ? f.key : undefined,
       label: f.label,
       som: f.som,
       css: f.css,
+      nth: f.nth,
+      nodeId: f.nodeId,
+      where: f.where,
+      waitForOptions: f.waitForOptions,
+      lookup: f.lookup,
       name: nameFromCss(f.css) ?? nameFromSom(f.som),
       transform: (f.transform ? TRANSFORMS[f.transform] ?? f.transform : 'none') as RecipeTransform,
       required: f.required,
@@ -135,6 +167,8 @@ export function normalizeRecipe(raw: unknown): Recipe {
     id: raw.id,
     version: raw.version,
     title: raw.title,
+    pack: raw.pack,
+    waits: raw.waits,
     pages,
     actions,
     gates,

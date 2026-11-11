@@ -2,7 +2,8 @@ import { GLOSSARY as ASK_GLOSSARY } from '@/data/ask/glossary';
 import { ASK_PLAYBOOK } from '@/data/ask/playbook';
 import { GLOSSARY as FORM_GLOSSARY } from '@/data/glossary';
 import { OBLIGATION_TEXTS } from '@/data/obligation-texts';
-import { ACT_META, FY_END, FY_START, STATUTORY_DEADLINES } from '@/data/statutory-calendar-fy2627';
+import { ACT_META, BUILT_IN_FY_KEY, STATUTORY_DEADLINES, type StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
+import { fyBounds } from '@/lib/statutory-calendar/fy';
 import type { Topic } from '@/data/ask/schema';
 import { COMPLIANCE_OBLIGATIONS } from '@/lib/compliance/obligations-seed';
 
@@ -36,23 +37,27 @@ function obligations(): RepoSource {
 const longDate = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-function statutoryCalendar(): RepoSource {
-  const groups = new Map<string, typeof STATUTORY_DEADLINES>();
-  for (const d of [...STATUTORY_DEADLINES].sort((a, b) => a.date.localeCompare(b.date))) {
+/** One financial year's statutory calendar as a source: one chunk per act per month. */
+export function statutoryCalendarSource(fyKey: string, deadlines: readonly StatutoryDeadline[]): RepoSource {
+  const fy = fyBounds(fyKey);
+  const groups = new Map<string, StatutoryDeadline[]>();
+  for (const d of [...deadlines].sort((a, b) => a.date.localeCompare(b.date))) {
     const key = `${d.act}|${d.date.slice(0, 7)}`;
     groups.set(key, [...(groups.get(key) ?? []), d]);
   }
-  const chunks = [...groups.entries()].map(([key, deadlines]) => {
+  const chunks = [...groups.entries()].map(([key, items]) => {
     const [act, month] = key.split('|') as [keyof typeof ACT_META, string];
     const monthName = new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    return `${ACT_META[act].label} due dates, ${monthName}\n${deadlines.map((d) => `- ${longDate(d.date)}: ${d.title}`).join('\n')}`;
+    const line = (d: StatutoryDeadline) =>
+      `- ${longDate(d.date)}: ${d.actLabel ? `${d.actLabel} ` : ''}${d.title}${d.note ? ` (${d.note})` : ''}`;
+    return `${ACT_META[act].label} due dates, ${monthName}\n${items.map(line).join('\n')}`;
   });
   return {
-    title: 'Statutory compliance calendar FY 2026-27',
+    title: `Statutory compliance calendar ${fy.label}`,
     sourceType: 'firm_pdf',
     audience: 'both',
-    effectiveFrom: FY_START,
-    effectiveTo: FY_END,
+    effectiveFrom: fy.start,
+    effectiveTo: fy.end,
     chunks,
   };
 }
@@ -85,6 +90,19 @@ function reviewedTopics(topics: readonly Topic[]): RepoSource[] {
     }));
 }
 
-export function buildRepoSources(topics: readonly Topic[]): RepoSource[] {
-  return [playbook(), obligations(), statutoryCalendar(), glossary(), ...reviewedTopics(topics)];
+/**
+ * Every repository source. `calendars` are the statutory calendars to load, one per financial year;
+ * the loader passes what the database holds, and the default is the built-in FY 2026-27 calendar.
+ */
+export function buildRepoSources(
+  topics: readonly Topic[],
+  calendars: readonly { fy: string; deadlines: readonly StatutoryDeadline[] }[] = [{ fy: BUILT_IN_FY_KEY, deadlines: STATUTORY_DEADLINES }],
+): RepoSource[] {
+  return [
+    playbook(),
+    obligations(),
+    ...calendars.map((c) => statutoryCalendarSource(c.fy, c.deadlines)),
+    glossary(),
+    ...reviewedTopics(topics),
+  ];
 }

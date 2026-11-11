@@ -44,6 +44,18 @@ function collectHighlightableTextNodes(container: HTMLElement): Text[] {
   return nodes;
 }
 
+/**
+ * docx-preview turns the document defaults into a rule for every span (`.docx span`, the theme
+ * font at 12pt). A highlight span would match it and print the merge field bigger and in another
+ * font than its run, so the highlight takes the font of the run it sits in.
+ */
+const INHERIT_RUN_FONT =
+  'font-family: inherit; font-size: inherit; font-weight: inherit; font-style: inherit; line-height: inherit; min-height: 0';
+
+function inheritRunFont(span: HTMLElement): void {
+  span.setAttribute('style', INHERIT_RUN_FONT);
+}
+
 function wrapMatchesInTextNode(textNode: Text, value: string, fieldKey: string): void {
   const text = textNode.textContent ?? '';
   if (!text.includes(value)) return;
@@ -63,6 +75,7 @@ function wrapMatchesInTextNode(textNode: Text, value: string, fieldKey: string):
     const span = document.createElement('span');
     span.className = BR_MERGE_FIELD_HIGHLIGHT_CLASS;
     span.dataset.brMergeField = fieldKey;
+    inheritRunFont(span);
     span.textContent = value;
     fragment.appendChild(span);
 

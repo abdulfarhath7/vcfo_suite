@@ -58,7 +58,8 @@ export function words(...parts: Array<string | undefined>): string {
 
 const CAPTCHA = /\bcaptcha\b|\bcapcha\b|\bcap\b|\bcaptch|characters shown|characters in the image|enter the (text|code|characters)|security code|verification image|image code|\bhuman\b/;
 const OTP = /\botp\b|one time (password|pin|code)|onetime|verification code|\bsms code\b|\bauth(entication)? code\b/;
-const PASSWORD = /\bpass ?word\b|\bpasswd\b|\bpwd\b|\bpass\b|\bpin\b(?! ?code)|\bmpin\b|\bsecret\b/;
+// Cross-checked against the old MCA filler's CREDENTIAL set (captcha|otp|passw|passcode|mpin|pin|secret|token|cvv).
+const PASSWORD = /\bpass ?word\b|\bpasswd\b|\bpwd\b|\bpass\b|\bpass ?code\b|\bpin\b(?! ?code)|\bmpin\b|\btpin\b|\bsecret\b|\btoken\b|\bcvv\b|\bcvc\b/;
 const LOGIN = /\buser ?id\b|\buser ?name\b|\blogin\b|\blog in\b|\bsign in\b|\blogon\b/;
 
 /** One regular expression covering the secret-field words, for the MAIN-world double check. */
@@ -97,7 +98,13 @@ export function isSecretField(f: FieldFacts): GuardRefusal | null {
 }
 
 // A bare "Proceed" counts as submit: on MCA V3 it can lead to payment, and an unclear case is refused.
-const SUBMIT = /\bsubmit\b|\bfinal\b|\bfile (now|form|return)\b|\bupload (form|to mca)\b|\bproceed\b/;
+// Cross-checked against the old MCA filler's DANGER set (submit|pay|payment|confirm|proceed to pay|
+// file|final|sign|dsc|delete|remove): confirm, file, delete and remove are refused here too, with
+// reset (it clears the form).
+const SUBMIT = /\bsubmit\b|\bfinal\b|\bfile\b|\bupload (form|to mca)\b|\bproceed\b|\bconfirm\b/;
+const DESTRUCTIVE = /\bdelete\b|\bremove\b|\breset\b|\bdiscard\b|\bwithdraw\b/;
+// OTP requests, e-verification and DigiLocker belong to the person (G3): the agent never sends or verifies them.
+const VERIFY = /\botp\b|\be ?verify\b|\bevc\b|\bdigi ?locker\b|\baadhaar (auth|authentication|otp)\b/;
 const PAY = /\bpay\b|\bpayment\b|\bpay ?now\b|\bmake payment\b|\bproceed to pay\b|\bchallan\b|\bnet ?banking\b|\bcheckout\b/;
 const SIGN = /\baffix\b|\bsign\b|\besign\b|\bdsc\b|\bembridge\b/;
 const LOGIN_BUTTON = /\blogin\b|\blog in\b|\bsign in\b|\blogon\b/;
@@ -112,7 +119,9 @@ export function isForbiddenAction(b: ButtonFacts): GuardRefusal | null {
   if (LOGIN_BUTTON.test(text)) return { code: 'G1', reason: 'login button' };
   if (PAY.test(text)) return { code: 'G5', reason: 'payment button' };
   if (SIGN.test(text)) return { code: 'G6', reason: 'signing button' };
+  if (VERIFY.test(text)) return { code: 'G3', reason: 'OTP or e-verification button' };
   if (SUBMIT.test(text)) return { code: 'G4', reason: 'submit button' };
+  if (DESTRUCTIVE.test(text)) return { code: 'G4', reason: 'delete, remove or reset button' };
   if ((b.type ?? '').toLowerCase() === 'submit' && !words(b.text, b.value, b.aria, b.title)) {
     return { code: 'G4', reason: 'unlabelled submit button' };
   }

@@ -1,0 +1,33 @@
+/* VCFO Spectrum faces (rule R-28), bundled with the extension so the side panel needs no remote
+   font and the extension's CSP stays as it is. The files come from @fontsource/roboto and
+   @fontsource/roboto-mono (pinned exact in package.json), latin subset, only the weights the
+   panel uses: Roboto 400, 500 and 700 for the UI, Roboto Mono 500 for identifiers. Vite copies
+   them into the build as hashed assets. */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/roboto/files/roboto-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/roboto/files/roboto-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/roboto/files/roboto-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Roboto Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../../node_modules/@fontsource/roboto-mono/files/roboto-mono-latin-500-normal.woff2') format('woff2');
+}

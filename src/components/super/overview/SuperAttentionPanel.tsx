@@ -39,7 +39,7 @@ export function SuperAttentionPanel({
     <DashSection title="Clients needing attention" href={SUPER_PROJECTS_HREF} hrefLabel="Clients" flush>
       {rows.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="None" />
+          <EmptyState title="No client needs attention. A client appears here when a step is stuck, overdue or at risk." />
         </div>
       ) : (
         <ul className="flex flex-col">

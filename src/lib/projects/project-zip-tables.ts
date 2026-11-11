@@ -9,17 +9,8 @@ import {
 } from '@/lib/checklist/checklist-repeat';
 import type { ExportTable, TableCell } from '@/lib/exports/table-xlsx';
 
-/** PR-02: the folders and the spreadsheets of the project ZIP (pure, so they can be tested). */
-export const PROJECT_ZIP_FOLDERS = {
-  answers: '1 Answers',
-  directors: '2 Directors',
-  subscribers: '3 Subscribers',
-  generated: '4 Generated documents',
-  uploaded: '5 Uploaded documents',
-  boardResolution: '6 Board resolution',
-  audit: '7 Audit log',
-} as const;
-const FOLDERS = PROJECT_ZIP_FOLDERS;
+/** PR-02: the project records' spreadsheets (pure, so they can be tested). The "Download documents"
+ * pop-up offers them under "Project records". */
 
 export type Responses = Record<string, string>;
 

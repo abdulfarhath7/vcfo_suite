@@ -291,7 +291,7 @@ export default function AuditLog() {
           </div>
 
           {!sortedEngagements.length ? (
-            <EmptyState title="No projects yet" />
+            <EmptyState title="No projects yet. Each project's history of changes appears here once a project is created." />
           ) : (
             <AuditTable
               title={selectedName ?? 'Project events'}

@@ -58,7 +58,9 @@ export class ChromePortal implements PortalPort {
 
   scan: PortalPort['scan'] = (opts) => this.ask({ type: 'scan', opts });
   prepareFill: PortalPort['prepareFill'] = (target, label) => this.ask({ type: 'prepareFill', target, label });
-  fill: PortalPort['fill'] = (target, value, label, bridgeTried) => this.ask({ type: 'fill', target, value, label, bridgeTried });
+  fill: PortalPort['fill'] = (target, value, label, bridgeTried, opts) => this.ask({ type: 'fill', target, value, label, bridgeTried, opts });
+  pageReady: PortalPort['pageReady'] = (css) => this.ask({ type: 'pageReady', css });
+  closePopups: PortalPort['closePopups'] = (css) => this.ask({ type: 'closePopups', css });
   click: PortalPort['click'] = (target, label, resultCss) => this.ask({ type: 'click', css: target.css, text: target.text, label, resultCss });
   attach: PortalPort['attach'] = (css, name, base64) => this.ask({ type: 'attach', css, name, base64 });
   highlightHuman: PortalPort['highlightHuman'] = (gates) => this.ask({ type: 'highlightHuman', gates });

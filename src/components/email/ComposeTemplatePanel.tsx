@@ -165,7 +165,7 @@ export function ComposeTemplatePanel({ selectedId, onApply, onClear }: Props) {
         ) : templates.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title="No templates yet"
+              title="No templates yet. Templates you save appear here, ready to fill a new email."
               action={
                 <Button type="button" size="sm" onClick={openCreate}>
                   <Plus aria-hidden />

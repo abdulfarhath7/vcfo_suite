@@ -187,7 +187,7 @@ export function AdminDashboardView({
       icon: ListChecks,
       value: open.length,
       href: tasksHref('open'),
-      note: `${new Set(open.map((r) => r.engagementId)).size} clients`,
+      note: open.length > 0 ? `${new Set(open.map((r) => r.engagementId)).size} clients` : 'No open team task',
       how: 'Open team tasks in the clients shown.',
     },
     {
@@ -198,7 +198,7 @@ export function AdminDashboardView({
       href: tasksHref('overdue'),
       trend: trendWithLive(trends, 'overdue', overdue),
       trendTone: 'bad',
-      note: overdueClients > 0 ? `${overdueClients} ${overdueClients === 1 ? 'client' : 'clients'}` : undefined,
+      note: overdueClients > 0 ? `${overdueClients} ${overdueClients === 1 ? 'client' : 'clients'}` : 'Nothing is late',
       how: 'Team tasks past their due date: steps, filings, document requests and assigned tasks.',
     },
     {
@@ -208,7 +208,7 @@ export function AdminDashboardView({
       href: tasksHref('waiting'),
       trend: trendWithLive(trends, 'waitingClients', waitingOnClients),
       trendTone: 'teal',
-      note: waitingClients > 0 ? `${waitingClients} ${waitingClients === 1 ? 'client' : 'clients'}` : undefined,
+      note: waitingClients > 0 ? `${waitingClients} ${waitingClients === 1 ? 'client' : 'clients'}` : 'Clients owe nothing',
       how: 'Team tasks the client still owes: a step to fill or a document to upload.',
     },
     {
@@ -217,7 +217,7 @@ export function AdminDashboardView({
       value: dueWeek,
       href: tasksHref('week'),
       trend: trendWithLive(trends, 'dueWeek', dueWeek),
-      note: dueInTwoDays > 0 ? `${dueInTwoDays} filings in 2 days` : undefined,
+      note: dueInTwoDays > 0 ? `${dueInTwoDays} filings in 2 days` : dueWeek === 0 ? 'Nothing due in 7 days' : undefined,
       how: 'Open team tasks due in the next seven days.',
     },
     {
@@ -225,6 +225,7 @@ export function AdminDashboardView({
       icon: CheckCheck,
       value: doneToday,
       good: doneToday > 0,
+      note: doneToday === 0 ? 'Tasks finished today count here' : undefined,
       how: 'Team tasks finished today.',
     },
   ];

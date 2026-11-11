@@ -676,6 +676,45 @@ export const engagementComplianceTriggers = pgTable('engagement_compliance_trigg
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * One statutory (all-India) compliance calendar per financial year, imported by an admin from the
+ * Excel template (src/lib/statutory-calendar/). `fy` is the key "2026-27". A re-import replaces
+ * the year's deadlines and this row. FY 2026-27 falls back to the built-in calendar
+ * (src/data/statutory-calendar-fy2627.ts) until it is imported.
+ */
+export const statutoryCalendars = pgTable('statutory_calendars', {
+  fy: text('fy').primaryKey(),
+  fileName: text('file_name'),
+  rowCount: integer('row_count').notNull(),
+  importedBy: uuid('imported_by').references(() => profiles.id, { onDelete: 'set null' }),
+  importedByName: text('imported_by_name'),
+  importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** The deadlines of one imported calendar, in the order the sheet gave them (date, then row). */
+export const statutoryDeadlines = pgTable(
+  'statutory_deadlines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fy: text('fy')
+      .notNull()
+      .references(() => statutoryCalendars.fy, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    dueDate: date('due_date', { mode: 'string' }).notNull(),
+    /** GST | IT | MCA | FEMA | STPI/SEZ | LABOUR | RERA | TP */
+    act: text('act').notNull(),
+    /** The authority where one category covers several: APRERA, TGRERA. */
+    actLabel: text('act_label'),
+    title: text('title').notNull(),
+    /** co | llp; null means every legal form. */
+    appliesTo: text('applies_to'),
+    note: text('note'),
+  },
+  (t) => ({
+    fyDateIdx: index('statutory_deadlines_fy_date_idx').on(t.fy, t.dueDate),
+  }),
+);
+
 export const complianceInstances = pgTable(
   'compliance_instances',
   {

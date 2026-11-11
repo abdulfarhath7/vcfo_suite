@@ -390,7 +390,9 @@ function PreviousPeriods({ basePath, d, now }: { basePath: string; d: StatutoryD
   return (
     <DashSection title="Previous periods" meta={d.previous.length ? `${d.previous.length}` : undefined} flush>
       {d.previous.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+        <div className="p-3">
+          <EmptyState title="No earlier period yet. The last six periods of this filing appear here once they fall due." className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <ul>
           {d.previous.map((p) => (

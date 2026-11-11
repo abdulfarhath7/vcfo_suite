@@ -94,9 +94,25 @@ async function main() {
   await panel.getByText('Connected', { exact: true }).waitFor({ timeout: 15000 });
   check(true, 'panel shows Connected (Suite reached through the Suite tab)');
   await panel.locator('.picker select').selectOption('eng-1');
-  await panel.getByText('Ready', { exact: true }).first().waitFor({ timeout: 10000 });
-  check(true, 'readiness badge shows Ready (profile missing[] is empty)');
+  await panel.getByText('Data ready', { exact: true }).first().waitFor({ timeout: 10000 });
+  check(true, 'readiness badge shows Data ready (profile missing[] is empty)');
+  check((await panel.getByTestId('task-spice-a').innerText()).includes('Beta'), 'the task shows its status chip (Beta)');
+  check((await panel.getByTestId('task-spice-a').innerText()).includes('Mock only until the CS opinion'), 'a task whose pack is not live says "Mock only until the CS opinion"');
   await panel.screenshot({ path: path.join(artifacts, 'panel-home.png'), fullPage: true });
+
+  // The tree: Compliance › Income tax & TDS › TDS › Monthly TDS challan, with a breadcrumb.
+  await panel.locator('.tile', { hasText: 'Compliance' }).click();
+  await panel.getByTestId('task-challan-281').waitFor({ timeout: 5000 });
+  check((await panel.getByTestId('task-tree').innerText()).includes('Income tax & TDS'), 'Compliance shows the Income tax & TDS group');
+  check((await panel.getByTestId('task-challan-281').innerText()).includes('Later'), 'Monthly TDS challan shows Later');
+  check((await panel.getByTestId('task-challan-281').innerText()).includes('pay it through your own bank'), 'the challan task says the person pays');
+  await panel.getByTestId('group-income-tax-tds').click();
+  check((await panel.getByTestId('task-challan-281').count()) === 0, 'a group collapses');
+  check((await panel.locator('.crumbs').innerText()).includes('Income tax & TDS'), 'the breadcrumb follows the group');
+  await panel.getByTestId('group-income-tax-tds').click();
+  await panel.screenshot({ path: path.join(artifacts, 'panel-tree.png'), fullPage: true });
+  await panel.locator('.tile', { hasText: 'Incorporation' }).first().click();
+  await panel.getByTestId('task-spice-a').waitFor({ timeout: 5000 });
 
   check(await panel.getByRole('button', { name: 'Run', exact: true }).first().isDisabled(), 'Run stays off until the MCA login label is given');
   await panel.getByTestId('mca-login').fill('lead.mca@fake-firm.test');
@@ -111,35 +127,36 @@ async function main() {
   check(writesBefore === 0, 'nothing is written before the user confirms the fill table (G13)');
 
   await panel.getByTestId('confirm-fill').click();
-  await waitState('WAIT DSC');
+  // Part A has no DSC step on MCA V3: Auto check, then Submit and Pay.
+  await waitState('WAIT SUBMIT PAY', 30000);
   const filled = await portal.evaluate(() => ({
-    n1: document.querySelector('[name=proposedName1]').value,
-    n2: document.querySelector('[name=proposedName2]').value,
-    type: document.querySelector('[name=companyType]').value,
-    div: document.querySelector('[name=mainDivision]').value,
+    n1: document.querySelector('[name=proposedname1]').value,
+    n2: document.querySelector('[name=proposedname2]').value,
+    type: document.querySelector('[name="type-of-company"]').value,
+    cls: document.querySelector('[name="class-of-company"]').value,
+    sub: document.querySelector('[name="subcategory-of-company"]').value,
+    nic: document.querySelector('[name="nic-text-box"]').value,
     tm: document.querySelector('input[name=trademarkSimilar]:checked')?.value,
     sig: document.querySelector('[name=significance]').value,
+    info: window.__mock.infoClosed,
     login: ['login-user', 'login-password', 'login-captcha', 'login-otp'].map((id) => document.getElementById(id).value),
     writes: window.__mock.modelWrites,
     clicks: window.__mock.clicks,
     marks: document.querySelector('vcfo-assist-overlay')?.getAttribute('data-marks') ?? '',
   }));
   check(filled.n1 === 'Sentinel Alpha Private Limited' && filled.n2 === 'Sentinel Beta Private Limited', 'proposed names filled');
-  check(filled.type === 'NEW' && filled.div === '62', 'selects filled by option text');
+  check(filled.type === 'New Company (Others)' && filled.nic === '62011', 'real MCA keys filled (type-of-company, nic-text-box)');
+  check(filled.cls === 'Private' && filled.sub === 'Indian non-government company', 'dependent dropdowns filled once their options loaded');
+  check(filled.info === true, 'the #okInfoModalBtn information pop-up was closed');
   check(filled.tm === undefined && filled.sig === '', 'askUser fields (significance, trademark) left for the user');
-  check(filled.writes.includes('proposedName1'), 'fills went through guideBridge in the MAIN world');
+  check(filled.writes.includes('proposedname1'), 'fills went through guideBridge in the MAIN world');
   check(filled.login.every((v) => v === ''), 'user id, password, captcha and OTP stay empty');
   check(filled.marks.includes('refused'), 'overlay shows refused-field badges');
   check(!filled.clicks['btn-submit'] && !filled.clicks['btn-pay'], 'Submit and Pay not clicked');
-  check(filled.clicks['btn-check'] === 1 && filled.clicks['btn-download'] === 1, 'Check form and Download PDF clicked once each');
+  check(filled.clicks['btn-check'] === 2 && !filled.clicks['btn-send-otp'], 'Auto check clicked twice (check and recheck); Send OTP never');
   const activity = await panel.getByTestId('activity').innerText();
-  check(activity.includes('recipe spice-a@1.1.0 from Suite verified'), "Suite's recipe used (Ed25519 dev key accepted on the mock host)");
+  check(activity.includes('recipe spice-a@2.0.0 from Suite verified'), "Suite's recipe used (Ed25519 dev key accepted on the mock host)");
   for (const code of ['G1', 'G2', 'G3']) check(activity.includes(`${code}: refused`), `activity log shows a ${code} refusal`);
-
-  check((await panel.getByTestId('pdf-input').count()) === 0, 'the PDF drop waits until "Who signed?" is answered');
-  await panel.getByTestId('signers').getByRole('checkbox').first().check();
-  await panel.getByTestId('pdf-input').setInputFiles({ name: 'signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% signed by the user (mock)\n') });
-  await waitState('WAIT SUBMIT PAY');
   await panel.getByTestId('certifier-wait').waitFor({ timeout: 15000 });
   const before = await portal.evaluate(() => document.querySelector('vcfo-assist-overlay')?.getAttribute('data-marks') ?? '');
   check(!before.includes('human'), 'no Submit highlight before the certifier’s checks (G17)');
@@ -150,11 +167,9 @@ async function main() {
   await panel.getByRole('heading', { name: 'Click Submit and Pay yourself' }).waitFor({ timeout: 15000 });
   check(true, 'Submit and Pay card appears once the certifier’s checks are recorded in Suite');
   const gate = await portal.evaluate(() => ({
-    attached: document.getElementById('attach-status').textContent,
     marks: document.querySelector('vcfo-assist-overlay')?.getAttribute('data-marks') ?? '',
     clicks: window.__mock.clicks,
   }));
-  check(gate.attached.includes('signed.pdf'), 'signed PDF attached to the portal slot');
   check(gate.marks.includes('human'), 'Submit and Pay pulse with "You click this"');
   check(!gate.clicks['btn-submit'] && !gate.clicks['btn-pay'], 'still no Submit or Pay click at WAIT_SUBMIT_PAY');
   await panel.waitForTimeout(3000);
@@ -181,7 +196,6 @@ async function main() {
   check(!api.some((e) => e.path === '/api/assist/resolve'), 'resolver never called (0 AI calls)');
   const createBody = JSON.parse(api.find((e) => e.method === 'POST' && e.path === '/api/engagements/eng-1/assist-runs')?.body ?? '{}');
   check(createBody.mcaLoginLabel === 'lead.mca@fake-firm.test' && /^[0-9a-f-]{36}$/.test(createBody.device?.installId ?? '') && Boolean(createBody.device?.userAgent), 'run start carries the MCA login label, install id and user agent (G14)');
-  check(api.some((e) => e.method === 'PATCH' && e.body.includes('"dscSigners":["director:e1"]')), 'the DSC holder goes to Suite as a reference, not a name (G14)');
   const portalOther = portalLog.filter((e) => !(e.method === 'GET' && /\.(html|js|css)$/.test(e.path)) && e.path !== '/favicon.ico');
   if (portalOther.length) console.log('    portal requests:', JSON.stringify(portalOther));
   check(portalOther.length === 0, 'portal host received only its static files (G7)');
@@ -196,9 +210,9 @@ async function main() {
   await panel.getByRole('button', { name: 'I have logged in' }).click({ timeout: 15000 });
   await panel.getByTestId('confirm-fill').waitFor({ timeout: 15000 });
   const tiers = await panel.locator('table.diff tbody tr').allInnerTexts();
-  check(tiers.some((t) => t.includes('Proposed name 2') && t.includes('T1')), 'Proposed name 2 healed at T1 in the confirm table');
+  check(tiers.some((t) => t.includes('Proposed name II') && t.includes('T1')), 'Proposed name II healed at T1 in the confirm table');
   await panel.getByTestId('confirm-fill').click();
-  await waitState('WAIT DSC');
+  await waitState('WAIT SUBMIT PAY', 30000);
   const drift = await portal.evaluate(() => document.querySelector('[name=nameOption2]').value);
   check(drift === 'Sentinel Beta Private Limited', 'renamed field filled after healing');
   const patch = suite.log.find((e) => e.path === '/api/assist/patches');
@@ -229,33 +243,48 @@ async function main() {
   await portal.bringToFront();
   await panel.getByTestId('confirm-fill').waitFor({ timeout: 20000 });
   check(true, 'run went on by itself once the Part B page was open');
-  const rowsB = await panel.locator('table.diff tbody tr').allInnerTexts();
-  check(rowsB.some((t) => t.includes('Director 2: first name')) && rowsB.some((t) => t.includes('Subscriber 2: number of equity shares subscribed')), 'confirm table lists both director and both subscriber blocks');
+  // Section 1 is open; the person opens sections 2 to 4 from the wizard's step list (li.listep).
   await panel.getByTestId('confirm-fill').click();
-  // 39 fields, each guarded and written in the page: allow more time than Part A's nine.
+  const rowsB = [];
+  for (const section of ['address', 'subscribers', 'directors']) {
+    await panel.getByRole('heading', { name: 'You do this: open the next part of the form' }).waitFor({ timeout: 30000 });
+    if (section === 'address') {
+      const clicks = await portal.evaluate(() => window.__mock.clicks);
+      // Only the information pop-up's OK was clicked (a guarded, informational close).
+      check(Object.keys(clicks).every((id) => id === 'okInfoModalBtn') && clicks.okInfoModalBtn === 1, 'the agent clicks nothing to move between wizard sections (only the info pop-up OK)');
+      await panel.screenshot({ path: path.join(artifacts, 'panel-wizard-step.png'), fullPage: true });
+    }
+    await portal.click(`li.listep[data-section="${section}"]`);
+    await panel.getByTestId('confirm-fill').waitFor({ timeout: 30000 });
+    rowsB.push(...(await panel.locator('table.diff tbody tr').allInnerTexts()));
+    await panel.getByTestId('confirm-fill').click();
+  }
+  check(true, 'the run waited for each wizard section and went on once the person opened it');
+  check(rowsB.some((t) => t.includes('Subscriber 2: First name')) && rowsB.some((t) => t.includes('Director 2: First name')), 'confirm tables list both subscriber blocks and the director blocks');
   await waitState('WAIT DSC', 90000);
   const partB = await portal.evaluate(() => {
-    const v = (n) => document.querySelector(`[name=${n}]`).value;
+    const v = (n) => document.querySelector(`[name="${n}"]`).value;
     return {
-      cap: v('authorisedCapital'),
-      line1: v('officeLine1'),
-      state: v('officeState'),
-      s1: v('subscriber1FirstName'),
-      s2pan: v('subscriber2Pan'),
-      s2shares: v('subscriber2Shares'),
-      d1din: v('director1Din'),
-      d2: v('director2FirstName'),
-      d2din: v('director2Din'),
-      d1desig: v('director1Designation'),
+      shares: v('numberofeshares_1'),
+      line1: v('correspondenceaddressline1'),
+      area: v('Area1'),
+      s1: v('firstName6c'),
+      s2pan: v('pan6c__2'),
+      d1din: v('din7a'),
+      sd: v('firstName7bp'),
+      d2: v('firstName7bp__2'),
+      d2din: v('din7a__2'),
+      d1desig: v('designation7a_1'),
       writes: window.__mock.modelWrites,
       clicks: window.__mock.clicks,
     };
   });
-  check(partB.cap === '1000000' && partB.line1 === 'Sentinel Tower 1' && partB.state === 'TG', 'capital and registered office filled');
-  check(partB.s1 === 'Subone' && partB.s2pan === 'SENTC5678D' && partB.s2shares === '5000', 'both subscriber blocks filled');
-  check(partB.d1din === '09876543' && partB.d2 === 'Dirtwo' && partB.d2din === '', 'both director blocks filled; a DIN the profile lacks stays empty');
+  check(partB.shares === '100000' && partB.line1 === 'Sentinel Tower 1' && partB.area === 'Gachibowli', 'capital and registered office filled; the area list loaded after the PIN code');
+  check(partB.s1 === 'Subone' && partB.s2pan === 'SENTC5678D', 'both subscriber blocks (6c) filled');
+  check(partB.d1din === '09876543' && partB.sd === 'Subone' && partB.d2 === 'Dirtwo' && partB.d2din === '', 'director blocks filled: 7a by DIN, 7b for the subscriber-director and the director without a DIN');
   check(partB.d1desig === '', 'designation left for the user (askUser)');
-  check(partB.writes.includes('director2FirstName'), 'repeating fields filled through guideBridge');
+  check(partB.writes.includes('firstName7bp__2'), 'repeating fields filled through guideBridge');
+  check(partB.clicks['btn-download'] === 1 && !partB.clicks['btn-send-otp'] && !partB.clicks['btn-verify-otp'], 'Download PDF clicked once; Send OTP and Verify OTP never');
   await panel.getByTestId('signers').getByRole('checkbox').first().check();
   await panel.getByTestId('pdf-input').setInputFiles({ name: 'signed-b.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n% Part B signed by the user (mock)\n') });
   await waitState('WAIT SUBMIT PAY');
@@ -276,6 +305,7 @@ async function main() {
   const apiB = suite.log.filter((e) => e.path.startsWith('/api/'));
   check(apiB.some((e) => e.path === '/api/assist/recipes/spice-b'), "Part B recipe fetched from Suite");
   check(apiB.some((e) => e.method === 'PATCH' && e.body.includes('"srn":"AC7654321"')), 'Part B SRN written back to the run');
+  check(apiB.some((e) => e.method === 'PATCH' && e.body.includes('"dscSigners":["director:e1"]')), 'the DSC holder goes to Suite as a reference, not a name (G14)');
   const outboundB = apiB.filter((e) => e.method !== 'GET').map((e) => e.body).join('\n');
   check(SENTINELS.every((v) => !outboundB.includes(v)), 'no Part B profile value in any request body sent to Suite');
   const rejectedB = apiB.filter((e) => e.status >= 400 && e.path !== '/api/assist/catalog' && !e.path.endsWith('/attestation'));

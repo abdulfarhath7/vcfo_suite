@@ -23,6 +23,13 @@ import { AppliesCard, StaffFromClientCard, StaffSbcFieldsCard, StartsCard } from
 import { registrationChecklist } from '@/data/before-filing';
 import { CertificateButton, RegistrationDatesDialog, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
+import { InfoButton } from '@/components/ui/info-button';
+import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
+import { GST_STEP_ID, gstSchedule } from '@/lib/registrations/gst-tracker';
+import { LUT_STEP_ID } from '@/lib/registrations/lut-tracker';
+import { LutRegistrationTracker, LutScheduleDate } from '@/components/compliances/LutRegistrationTracker';
+import { getItem } from '@/data/checklist';
+import { todayIST } from '@/lib/compliance/filings';
 import {
   parseRegistrationKey,
   regDateLabel,
@@ -113,6 +120,12 @@ export function RegistrationView({
       ? internEngagementStepPath(engagement, item)
       : adminProjectStepPath(engagement, item, shellBase === '/app/manager' ? '/app/manager' : '/app/admin');
   const marks = stageMarks(row);
+  // GST registration runs on its own tracker: dates from the firm calendar, milestones from the portal.
+  const isGst = item.id === GST_STEP_ID && row.word !== 'Not needed';
+  const gstDates = isGst ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: item.deadline }) : null;
+  // The LUT runs on its own tracker and is filed on the GST registration day.
+  const isLut = item.id === LUT_STEP_ID && row.word !== 'Not needed';
+  const lutDay = isLut ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline }) : null;
   const stagesDone = marks.filter((m) => m === 'done').length;
   const lateDays = row.word === 'Overdue' && row.dueDate ? -(daysUntil(row.dueDate, now) ?? 0) : 0;
   const kbHref = `${shellBase}/knowledge-bank?q=${encodeURIComponent(row.name)}`;
@@ -129,7 +142,7 @@ export function RegistrationView({
   return (
     <PageTransition>
       <SEO title={`${row.name} · ${engagement.companyName} — VCFO Suite`} description={`${row.name} for ${engagement.companyName}.`} path={`${basePath}/${recordKey}`} />
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <div className="reg-soft grid grid-cols-[minmax(0,1fr)] gap-4">
         {/* R-02 plain head: the name, a muted meta line, the chips, the facts and the one main button. */}
         <header className="grid gap-3" aria-label="Registration">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
@@ -157,6 +170,8 @@ export function RegistrationView({
                 </p>
               </div>
             </div>
+            {gstDates ? <GstScheduleDates schedule={gstDates} /> : null}
+            {lutDay ? <LutScheduleDate gstDay={lutDay} /> : null}
             {onIt.length ? <AvatarStack people={onIt} size={30} label={`People on it: ${onIt.join(', ')}`} /> : null}
             <CertificateButton facts={facts} engagementId={engagement.id} size="default" />
             <Button asChild>
@@ -181,6 +196,17 @@ export function RegistrationView({
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="grid min-w-0 gap-4">
+            {gstDates ? (
+              <GstRegistrationTracker
+                engagementId={engagement.id}
+                schedule={gstDates}
+                canEdit
+                today={todayIST()}
+                certificate={<CertificateButton facts={facts} engagementId={engagement.id} size="sm" />}
+              />
+            ) : lutDay ? (
+              <LutRegistrationTracker engagementId={engagement.id} gstDay={lutDay} canEdit today={todayIST()} />
+            ) : (
             <DashSection title="Steps" right={<span className="text-[12.5px] text-ink-muted">{stagesDone} of {marks.length} done</span>}>
               <div className="grid grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 md:grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)]">
                 <div className="border-b-1.5 border-line pb-1.5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted">{row.authority}</div>
@@ -210,9 +236,11 @@ export function RegistrationView({
                 })}
               </div>
             </DashSection>
+            )}
 
-            {/* S-809: VCFO Assist on the registration's portal form. */}
-            {row.word === 'Not needed' ? null : (
+            {/* S-809: VCFO Assist on the registration's portal form. Not on GST: firm policy SBC-STD-AI-02
+                keeps agents off statutory portals (browser block-list); a person files in their own session. */}
+            {row.word === 'Not needed' || isGst || isLut ? null : (
               <AssistCard
                 engagementId={engagement.id}
                 kind="registration"
@@ -228,20 +256,25 @@ export function RegistrationView({
               <StaffFromClientCard engagementId={engagement.id} kind="registration" subjectKey={item.id} clientName={engagement.companyName} />
             )}
             {/* S-811: the values SBC records on the registration. */}
-            <StaffSbcFieldsCard engagementId={engagement.id} kind="registration" subjectKey={item.id} />
+            {isGst || isLut ? null : <StaffSbcFieldsCard engagementId={engagement.id} kind="registration" subjectKey={item.id} />}
           </div>
 
           <div className="grid min-w-0 gap-3">
-            <DashSection title="About">
-              <div className="grid gap-2 text-[14px] leading-relaxed text-ink-2">
-                {item.notes ? <p>{item.notes}</p> : null}
-                <p className="text-ink-muted">{getChecklistStepTimelineLabel(item)}</p>
-                {item.forms.length ? <p className="text-ink-muted">Forms: {item.forms.join(', ')}</p> : null}
-                <Link href={kbHref} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-text hover:underline">
-                  <BookOpen className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
-                  Find the SOP in the knowledge bank
-                </Link>
-              </div>
+            {/* The explanation opens from the "i" at the right of the head; the card keeps only the SOP link. */}
+            <DashSection
+              title="About"
+              right={
+                <InfoButton title={`About ${row.name}`} label={`About ${row.name}: explanation`}>
+                  {item.notes ? <p>{item.notes}</p> : null}
+                  <p className="text-ink-muted">{getChecklistStepTimelineLabel(item)}</p>
+                  {item.forms.length ? <p className="text-ink-muted">Forms: {item.forms.join(', ')}</p> : null}
+                </InfoButton>
+              }
+            >
+              <Link href={kbHref} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-text hover:underline">
+                <BookOpen className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
+                Find the SOP in the knowledge bank
+              </Link>
             </DashSection>
             <AppliesCard engagementId={engagement.id} stepId={item.id} companyName={engagement.companyName} notNeeded={row.word === 'Not needed'} />
             <StartsCard engagementId={engagement.id} stepId={item.id} obligationsBase={`${shellBase}/compliances/obligations`} />
