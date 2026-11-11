@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { useExpiries, useMarkRenewed, type ExpiryItem } from '@/hooks/use-expiries';
 import { STATUS_TILE, tileParts } from '@/lib/compliance/spectrum-status';
-import { daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
+import { CALENDAR_ONLY_KINDS, daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
 import { cn } from '@/lib/utils';
 
 /** Expired items stay listed until renewed; later ones show this many days ahead. */
@@ -99,7 +99,8 @@ function ExpiryRow({ item, showCompany, mayRenew }: { item: ExpiryItem; showComp
           {daysLeftLabel(item.daysLeft)}
         </Chip>
       </div>
-      {mayRenew ? (
+      {/* A name approval is not renewed: Part B is filed before it lapses, and that removes it. */}
+      {mayRenew && !CALENDAR_ONLY_KINDS.has(item.kind) ? (
         renewing ? (
           <form
             className="mt-2 flex items-center gap-1.5 pl-[54px]"

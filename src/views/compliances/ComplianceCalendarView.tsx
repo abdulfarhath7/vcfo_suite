@@ -161,7 +161,10 @@ export function ComplianceCalendarView({
   const monthTasks = useMemo(() => tasks.filter((t) => t.dueDate.startsWith(monthKey)), [tasks, monthKey]);
   // Expiries (DSC, DIR-3 KYC, licences) on their expiry date, from the dates typed on the steps.
   // Like tasks they have no area, so an area pick hides them; the Non-statutory filter does too.
-  const expiryQuery = useExpiries({ engagementId: companyId !== ALL_COMPANIES ? companyId : null });
+  // Only a company picked by hand narrows them: a lead whose calendar holds one incorporated
+  // company still sees the DSC expiries of the projects still being incorporated.
+  const expiryCompany = !sole && companyId !== ALL_COMPANIES ? companyId : null;
+  const expiryQuery = useExpiries({ engagementId: expiryCompany });
   const expiries = useMemo(
     () => (cat !== 'non-statutory' && areaOn === ALL_AREAS ? openExpiries(expiryQuery.data, Number.POSITIVE_INFINITY) : []),
     [expiryQuery.data, cat, areaOn],
@@ -477,9 +480,9 @@ export function ComplianceCalendarView({
             </div>
             <div className="md:col-span-2 lg:col-span-1">
               <ExpiriesCard
-                engagementId={companyId !== ALL_COMPANIES ? companyId : null}
-                showCompany={showCompany}
-                mayRenew={scope.audience !== 'client' && mayWrite}
+                engagementId={expiryCompany}
+                showCompany={showCompany || Boolean(sole)}
+                mayRenew={scope.audience !== 'client'}
                 className="surface"
               />
             </div>

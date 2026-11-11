@@ -87,4 +87,40 @@ describe('seedRowsFor', () => {
     ]);
     expect(rows[0]).toMatchObject({ subjectKind: 'company', subjectName: 'Acme', referenceLabel: 'Shops & Establishment SE-123', source: 'registration' });
   });
+
+  it('adds the authorised signatory DSC typed on PF and ICEGATE, merged with a director of the same name', () => {
+    const state = {
+      ...STATE,
+      'reg-1': slice({ signatoryDscHolderName: 'Asha Rao', signatoryDscExpiryDate: '2028-01-15' }),
+      'reg-16': slice({ signatoryDscExpiryDate: '2027-06-30' }),
+    };
+    const rows = seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors: [], today: '2026-11-09' });
+    expect(rows.filter((r) => r.kind === 'dsc').map((r) => [r.subjectName, r.expiresOn])).toEqual([
+      ['Ravi Kumar', '2027-03-12'],
+      ['Asha Rao', '2028-01-15'],
+      ['Authorised signatory', '2027-06-30'],
+    ]);
+  });
+
+  it('shows the name approval until Part B is filed or the company is incorporated', () => {
+    const state = { 'pre-5': slice({ approvedCompanyName: 'Acme Private Limited', nameApprovalExpiryDate: '2026-11-30' }) };
+    const open = seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors: [], today: '2026-11-09' });
+    expect(open).toEqual([
+      expect.objectContaining({ kind: 'name_approval', subjectKind: 'company', expiresOn: '2026-11-30', sourceKey: 'name:pre-5', referenceLabel: 'File SPICe+ Part B for Acme Private Limited before this date' }),
+    ]);
+    const filed = { ...state, 'pre-10': { status: 'completed' as const, responses: {} } };
+    expect(seedRowsFor({ companyName: 'Acme', state: filed, registrationFacts: {}, directors: [], today: '2026-11-09' })).toEqual([]);
+    expect(seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors: [], today: '2026-11-09', incorporated: true })).toEqual([]);
+  });
+
+  it('lets a Trademark Renewal date replace the Trademark Registration one', () => {
+    const rows = seedRowsFor({
+      companyName: 'Acme',
+      state: {},
+      registrationFacts: { 'reg-12': facts('reg-12', { expiresOn: '2026-05-01' }), 'reg-17': facts('reg-17', { expiresOn: '2036-05-01' }) },
+      directors: [],
+      today: '2026-11-09',
+    });
+    expect(rows.map((r) => [r.sourceKey, r.expiresOn])).toEqual([['reg:reg-17', '2036-05-01']]);
+  });
 });

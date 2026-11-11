@@ -59,20 +59,32 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
 - **Where it shows.** The staff calendar (`ComplianceCalendarView`) marks each open item on its
   date (a hollow square, like a task), lists it in the day pop-up and the Excel export, and shows
   the `ExpiriesCard` in the rail: expired items and the next 90 days, with "Mark renewed" (and the
-  new date) for staff who may write filings. The client portal calendar shows the same card in
-  its rail, read only, even before incorporation. An area pick or the Non-statutory filter hides
-  expiries. Links from alerts and My day open the calendar on the expiry's month (`?date=`).
+  new date) for every staff role. When the calendar has no company picker (a lead with one
+  incorporated client), it still shows the expiries of every project in scope, so a lead sees
+  the DSCs of projects still being incorporated. The client portal calendar draws expiries on
+  their dates like tasks (`expiryAsRow` in `client-portal/pages/compliances/tasks.ts`, labelled
+  "Expiry"; a click brings the rail card into view) and shows the same card, read only, even
+  before incorporation. An area pick or the Non-statutory filter hides expiries. Links from
+  alerts and My day open the calendar on the expiry's month (`?date=`).
 - **Where the dates come from.** Part A or `pre-15` directors who already hold a DSC; KYC Review
   & DSC (`pre-7`) asks the expiry of each DSC the firm makes, beside its proof, and requires it;
-  LEI (`reg-6`); Shops & Establishment (`reg-9`), Trade Licence (`reg-10`) and Trademark
-  (`reg-12`) ask theirs (optional); and the credentials workbook's reg rows. A `pre-7` date
-  replaces the `pre-15` one for the same director.
+  PF (`reg-1`) and ICEGATE (`reg-16`) ask whose DSC is registered on the portal and its expiry;
+  the name approval expiry on `pre-5`; LEI (`reg-6`); Shops & Establishment (`reg-9`), Trade
+  Licence (`reg-10`), Trademark (`reg-12`) and Trademark Renewal (`reg-17`, which replaces the
+  `reg-12` date) ask theirs (optional); and the credentials workbook's reg rows. A `pre-7` date
+  replaces the `pre-15` one for the same director; DSCs merge by holder name.
+- **Name approval.** Kind `name_approval`, shown only until SPICe+ Part B (`pre-10`) is complete or
+  the company is incorporated; the sync then deletes the item. It is in `CALENDAR_ONLY_KINDS`:
+  no renewal alert, task, draft or email, and no "Mark renewed".
 - **Code.** `src/lib/expiries/` (`model.ts`, `seed.ts`, `alerts.ts`); repository
   `src/db/repositories/expiry-items.ts`; routes `app/api/expiries/` (GET for the calendars, PATCH
   to mark renewed); card `src/components/compliances/ExpiriesCard.tsx`.
 - **Sync on save.** `applyChecklistPatch` calls `syncExpiryItemsForEngagement` after a save of a
-  step that feeds expiries (`stepFeedsExpiries`), so a typed date is on the calendar at once. It
-  never throws; the nightly job catches up.
+  step that feeds expiries (`stepFeedsExpiries`: `pre-1`, `pre-5`, `pre-7`, `pre-10`, `pre-12`,
+  `pre-15` and every `reg-` step), so a typed date is on the calendar at once. It never throws;
+  the nightly job catches up. Checked on 2026-11-11 against a local database: a DSC date saved
+  through `POST /api/engagements/:id/checklist` moved the calendar item at once, and marking
+  Part B complete removed the name approval item.
 - **Approval points.** `registrations.setExpiry` (T2) adds or updates a date from Ask. The job
   never contacts a client: the draft client request it opens waits for a person to send it.
 - **Job.** `expiry-alerts`, daily at 07:40 India time. It first seeds items from the checklist

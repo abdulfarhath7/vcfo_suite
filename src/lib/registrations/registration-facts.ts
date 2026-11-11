@@ -55,6 +55,7 @@ const SOURCES: Record<string, StepSource> = {
   'reg-9': { expiry: 'shopsLicenceExpiryDate' },
   'reg-10': { expiry: 'tradeLicenceExpiryDate' },
   'reg-12': { expiry: 'trademarkValidUntil' },
+  'reg-17': { expiry: 'trademarkRenewedValidUntil' },
 };
 
 /** LUT may be answered on the GST step (reg-4) as well as on its own step (reg-5). */
