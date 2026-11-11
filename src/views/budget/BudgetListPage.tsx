@@ -62,7 +62,7 @@ export function BudgetListPage({ shellBase, isClient }: { shellBase: string; isC
       </div>
 
       {isLoading ? null : !shown.length ? (
-        <EmptyState title={isClient ? 'Your firm has not started a budget for you yet.' : 'No budgets yet.'} action={!isClient ? <Button onClick={() => setCreating(true)}>Start the first budget</Button> : undefined} />
+        <EmptyState title={isClient ? 'Your firm has not started a budget for you yet.' : 'No budgets yet. Each client budget appears here once you start one.'} action={!isClient ? <Button onClick={() => setCreating(true)}>Start the first budget</Button> : undefined} />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-line bg-surface-raised">
           <table className="w-full min-w-[640px] text-[14px]">

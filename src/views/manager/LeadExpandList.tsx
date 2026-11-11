@@ -52,7 +52,7 @@ export function LeadExpandList({
   return (
     <DashSection title={title} meta={leads.length} flush>
       {leads.length === 0 ? (
-        <EmptyState title="No project leads" className="m-4" />
+        <EmptyState title="No project leads yet. Each lead on your team appears here with their open work." className="m-4" />
       ) : (
         <>
           <div className="hidden h-9 grid-cols-[minmax(0,1fr)_64px_64px_140px_16px] items-center gap-3 border-b-1.5 border-line px-5 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted md:grid">
@@ -117,7 +117,7 @@ export function LeadExpandList({
                       </span>
                     </div>
                     {openItems.length === 0 ? (
-                      <EmptyState title="Nothing open" className="mx-4 mb-3 min-h-[64px] py-3 md:mx-5" />
+                      <EmptyState title="Nothing open for this lead. Their open steps, filings and tasks appear here." className="mx-4 mb-3 min-h-[64px] py-3 md:mx-5" />
                     ) : (
                       openItems.map((t) => (
                         <div key={t.id} className="flex flex-wrap items-center gap-3 border-t border-line-soft px-4 py-2.5 text-[13.5px] md:flex-nowrap md:px-5">

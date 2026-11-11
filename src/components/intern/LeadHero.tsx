@@ -52,7 +52,7 @@ function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends):
       value: action.length,
       href: internWorkPath({ focus: 'action' }),
       trend: trendWithLive(trends, 'needsAction', action.length),
-      note: sentBack > 0 ? `${sentBack} sent back` : action.length > 0 ? plural(clients(action), 'client', 'clients') : undefined,
+      note: sentBack > 0 ? `${sentBack} sent back` : action.length > 0 ? plural(clients(action), 'client', 'clients') : 'Nothing waits on you',
       how: 'Steps, filings and tasks where the next move is yours: sent back, to review, to deliver or to file.',
     },
     {
@@ -63,7 +63,7 @@ function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends):
       hot: overdue.length > 0,
       trend: trendWithLive(trends, 'overdue', overdue.length),
       trendTone: 'bad',
-      note: overdue.length > 0 ? plural(clients(overdue), 'client', 'clients') : undefined,
+      note: overdue.length > 0 ? plural(clients(overdue), 'client', 'clients') : 'Nothing is late',
       how: 'Open steps, filings and tasks past their due date.',
     },
     {
@@ -73,7 +73,7 @@ function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends):
       href: `${INTERN_TASKS_PATH}?view=waiting`,
       trend: trendWithLive(trends, 'waitingClients', waiting.length),
       trendTone: 'teal',
-      note: managerWaits > 0 ? `${managerWaits} on managers` : waiting.length > 0 ? plural(clients(waiting), 'client', 'clients') : undefined,
+      note: managerWaits > 0 ? `${managerWaits} on managers` : waiting.length > 0 ? plural(clients(waiting), 'client', 'clients') : 'Clients owe nothing',
       how: 'Steps the client still has to fill and documents they still have to upload.',
     },
     {
@@ -82,7 +82,7 @@ function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends):
       value: weekOpen.length,
       href: `${INTERN_TASKS_PATH}?view=week`,
       trend: trendWithLive(trends, 'dueWeek', weekOpen.length),
-      note: doneWeek > 0 ? `${doneWeek} done` : undefined,
+      note: doneWeek > 0 ? `${doneWeek} done` : weekOpen.length === 0 ? 'Nothing due by Sunday' : undefined,
       how: 'Open work due from Monday to Sunday this week (IST).',
     },
     {
@@ -90,6 +90,7 @@ function leadHeroStats(items: InternWorkItem[], now: Date, trends?: HomeTrends):
       icon: CheckCheck,
       value: doneToday,
       good: doneToday > 0,
+      note: doneToday === 0 ? 'Work you finish today counts here' : undefined,
       trend: trendWithLive(trends, 'doneToday', doneToday),
       trendTone: 'ok',
       how: 'Steps, filings and tasks you finished today.',

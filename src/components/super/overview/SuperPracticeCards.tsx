@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Award, IdCard, ShieldCheck } from 'lucide-react';
 import { indexPeople, usePeopleMetrics } from '@/components/metrics/use-metrics';
 import { DashSection, ListRow } from '@/components/dash/DashSection';
+import { EmptyState } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Tag } from '@/components/ui/spectrum-chip';
 import {
@@ -276,7 +277,9 @@ export function SuperTopRisks({ insights }: { insights: SuperInsights }) {
   return (
     <DashSection title="Top risks" meta={String(risks.length)} href={RISKS_HREF} hrefLabel="All risks" flush>
       {risks.length === 0 ? (
-        <p className="px-4 py-4 text-center text-[13px] text-ink-muted">None</p>
+        <div className="p-4">
+          <EmptyState title="No risk right now. Overdue steps and filings, stuck clients and missing owners appear here." />
+        </div>
       ) : (
         risks.slice(0, 5).map((r) => (
           <ListRow key={r.id} href={r.href}>

@@ -400,10 +400,12 @@ export function KnowledgeBankPageView(props: KnowledgeBankPageViewProps) {
                       searching
                         ? 'No documents match your search'
                         : nothingHere && currentFolderId
-                          ? 'This folder is empty'
+                          ? 'This folder is empty. Documents uploaded here appear in this list.'
                           : nothingHere
-                            ? 'No documents yet'
-                            : 'No documents in this folder'
+                            ? 'No documents yet. Documents the firm uploads to the library appear here.'
+                            : currentFolderId
+                              ? 'No documents sit directly in this folder. Open a folder above to see its documents.'
+                              : 'No documents sit outside a shelf. Open a shelf above to see its documents.'
                     }
                     action={
                       searching ? (

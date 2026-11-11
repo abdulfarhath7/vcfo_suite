@@ -70,7 +70,7 @@ export function SuperRegistrationsPanel({ detail }: { detail: SuperEngagementDet
   ];
   return (
     <DashSection title="Registrations" meta={`${done} of ${needed} done${notNeeded ? ` · ${notNeeded} not needed` : ''}`} flush>
-      <EFilingGrid caption="Registrations" columns={columns} rows={steps} rowKey={(step) => step.id} pageSize={25} minWidth={560} empty="None" />
+      <EFilingGrid caption="Registrations" columns={columns} rows={steps} rowKey={(step) => step.id} pageSize={25} minWidth={560} empty="No registration on this project yet. Registrations appear here once the project lists them." />
     </DashSection>
   );
 }

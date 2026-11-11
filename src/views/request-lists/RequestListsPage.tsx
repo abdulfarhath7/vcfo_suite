@@ -129,7 +129,15 @@ export function RequestListsPage() {
         ) : shown.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title={isClient ? 'Nothing is waiting on you.' : tab === 'drafts' ? 'No drafts.' : tab === 'open' ? 'No lists waiting on clients.' : 'No closed lists.'}
+              title={
+                isClient
+                  ? 'Nothing is waiting on you.'
+                  : tab === 'drafts'
+                    ? 'No drafts. A list you save without sending appears here.'
+                    : tab === 'open'
+                      ? 'No lists waiting on clients. A list appears here once you send it to a client.'
+                      : 'No closed lists. A list appears here once every item is in or the list is cancelled.'
+              }
               action={isClient ? null : <Button size="sm" variant="outline" onClick={() => setCreating(true)}>Start from a template</Button>}
             />
           </div>

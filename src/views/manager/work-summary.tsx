@@ -32,7 +32,7 @@ export function WorkStatusCard({
   return (
     <DashSection title={title} href={href} hrefLabel={hrefLabel} loading={loading}>
       {items.length === 0 ? (
-        <EmptyState title="No work items" />
+        <EmptyState title="No work items yet. Steps, filings and tasks appear here once a client project starts." />
       ) : (
         <div className="flex min-w-0 items-center gap-6">
           <DashDonut
@@ -72,7 +72,7 @@ export function WorkAreaCard({ items, title = 'By area', loading }: { items: Cou
   return (
     <DashSection title={title} loading={loading}>
       {rows.length === 0 ? (
-        <EmptyState title="No work items" />
+        <EmptyState title="No work items yet. Steps, filings and tasks appear here once a client project starts." />
       ) : (
         <>
         <ul className="grid gap-3">

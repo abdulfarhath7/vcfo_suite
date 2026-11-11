@@ -5,6 +5,7 @@ import { Fragment, type ReactNode } from 'react';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { DashDonut, DashSection } from '@/components/dash/DashSection';
 import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import type { FilingStatus } from '@/lib/compliance/filings';
 import {
@@ -239,12 +240,17 @@ export interface RailItem {
   href?: string;
 }
 
-/** Rail card: full-width rows with a title, a client line and a date or chip on the right. */
-export function RailCard({ title, items, empty = 'None' }: { title: string; items: RailItem[]; empty?: string }) {
+/**
+ * Rail card: full-width rows with a title, a client line and a date or chip on the right. With no
+ * rows it shows `empty`, which should say what will appear here and when.
+ */
+export function RailCard({ title, items, empty }: { title: string; items: RailItem[]; empty: ReactNode }) {
   return (
     <DashSection title={title} meta={<CountBadge n={items.length} />} bodyClassName="p-0">
       {items.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint">{empty}</p>
+        <div className="p-3">
+          <EmptyState title={empty} className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <ul>
           {items.map((x) => {

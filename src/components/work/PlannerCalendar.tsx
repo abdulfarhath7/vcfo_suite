@@ -321,7 +321,13 @@ export function PlannerCalendar({
           return h > 0 ? <span className={cn(h > HEAVY_DAY_HOURS && 'text-warning')}>{Math.round(h * 10) / 10} h</span> : ' ';
         }}
         actions={action}
-        emptyNote={!query.isLoading && shownBlocks.length === 0 && events.length === 0 ? <EmptyState title="No blocks this week" /> : undefined}
+        emptyNote={!query.isLoading && shownBlocks.length === 0 && events.length === 0 ? <EmptyState
+              title={
+                readOnly
+                  ? 'Nothing planned this week. Blocks the project lead plans appear here.'
+                  : 'Nothing planned this week. Drag a to-do onto the calendar to plan it.'
+              }
+            /> : undefined}
       />
 
       {!readOnly ? (

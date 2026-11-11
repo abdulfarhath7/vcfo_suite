@@ -179,7 +179,7 @@ export function WorkBoard({
         {BOARD_COLS.map((col) => (
           <BoardColumnSection key={col.key} col={col} count={cols[col.key].length}>
             <SortableContext items={cols[col.key].map((i) => i.id)} strategy={verticalListSortingStrategy}>
-              {cols[col.key].length === 0 ? <EmptyState title="None" className="min-h-[72px] py-4" /> : null}
+              {cols[col.key].length === 0 ? <EmptyState title="No task here. Drag a card into this column to move it." className="min-h-[72px] py-4" /> : null}
               {cols[col.key].map((item) => (
                 <SortableCard key={item.id} item={item}>
                   <InternWorkBoardCard item={item} now={now} dim={col.key === 'done'} onOpen={onOpen} owner={ownerOf?.(item)} />

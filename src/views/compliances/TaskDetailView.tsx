@@ -216,7 +216,11 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
           left={
             <>
               <DashSection title="Checklist" meta={`${checklistDone} of ${task.checklistItems.length}`} flush>
-                {task.checklistItems.length === 0 ? <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p> : null}
+                {task.checklistItems.length === 0 ? (
+                  <div className="p-3">
+                    <EmptyState title="No checklist on this task. Checklist items appear here when the task has them." className="min-h-[72px] py-4 text-[13px]" />
+                  </div>
+                ) : null}
                 <ul>
                   {task.checklistItems.map((c) => (
                     <li key={c.id} className="border-t border-line-soft first:border-t-0">
@@ -288,7 +292,9 @@ function TaskDetailBody({ basePath, task, now }: { basePath: string; task: TaskD
                 }
               >
                 {task.attachments.length === 0 ? (
-                  <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+                  <div className="p-3">
+                    <EmptyState title="No files yet. Files uploaded to this task appear here." className="min-h-[72px] py-4 text-[13px]" />
+                  </div>
                 ) : (
                   <ul>
                     {task.attachments.map((f) => (

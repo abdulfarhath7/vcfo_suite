@@ -340,7 +340,7 @@ function InternClientsInner() {
       <h1 className="sr-only">Clients</h1>
 
       {myEngagements.length === 0 && !engagementsLoading ? (
-        <EmptyState title="No clients assigned yet" />
+        <EmptyState title="No clients assigned yet. A client appears here once a manager assigns you to its project." />
       ) : (
         <section className="surface min-w-0 overflow-hidden">
           <div className="flex min-h-[52px] min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-line-soft px-4 py-2 md:px-5">

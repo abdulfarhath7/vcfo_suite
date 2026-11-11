@@ -171,7 +171,7 @@ export function LeadActionQueue({
       loading={loading}
     >
       {groups.length === 0 ? (
-        <EmptyState title="Nothing needs you right now" className="m-4" />
+        <EmptyState title="Nothing needs you right now. Each client appears here with its overdue, due and waiting work once a project is running." className="m-4" />
       ) : view === 'list' ? (
         <EFilingGrid
           caption="Action queue"

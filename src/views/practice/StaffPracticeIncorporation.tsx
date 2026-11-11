@@ -57,6 +57,20 @@ function inView(view: IncorporationView | null, stepId: string | undefined): boo
   return BOARD_RESOLUTION_STEPS.has(stepId);
 }
 
+/**
+ * The grid's empty message follows the real reason: no client is incorporating at all, the
+ * "With" filter hides every row, or no client is at this view's steps yet.
+ */
+function emptyText(total: number, filtered: boolean, view: IncorporationView | null): string {
+  if (total === 0) return 'No client is incorporating yet. A client appears here once its incorporation project starts.';
+  if (filtered) return 'No client matches this filter';
+  if (view === 'part-a') return 'No client is on a SPICe+ Part A step right now. A client appears here when it reaches Part A.';
+  if (view === 'part-b') return 'No client is on a SPICe+ Part B step right now. A client appears here when it reaches Part B.';
+  if (view === 'board-resolutions')
+    return 'No client is at the board resolution steps right now. A client appears here when it reaches its board resolution.';
+  return 'No client matches this filter';
+}
+
 /** Where a row opens in this view: the part's current step, the board resolution or the documents. */
 function rowHrefFor(view: IncorporationView | null, c: PracticeIncorporationClient): string {
   const base = c.summary.href;
@@ -307,7 +321,7 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
             rowHref={(c) => rowHrefFor(view, c)}
             rowClassName={(c) => (isLateRow(c, steps?.[c.summary.id], today) ? 'text-danger' : undefined)}
             loading={loading}
-            empty={all.length === 0 ? 'No clients in incorporation' : 'No client matches this filter'}
+            empty={emptyText(all.length, withWho !== '', view)}
             emptyAction={
               all.length === 0 ? (
                 <Button asChild variant="secondary" size="sm">

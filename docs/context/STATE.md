@@ -284,3 +284,10 @@ Notes:
   - CD-05 field details.
   - The board resolution layout reference Word file (Part 3 of the 10 Nov list).
   - Confirmation of the open CR questions. Each was built to the CR's own proposal: DIN check is manual, the DR-03 email is sent manually by the lead, and after a return the Lead corrects the edited board resolution.
+
+## Staff empty states (11 Nov 2026, on `staff-dashboards-empty-states-eshwar`, not merged or deployed)
+
+- Every empty card, section and table on the Lead, Manager, Admin and Super admin pages now says what will appear there and when, through the shared `EmptyState`. The compliance `RailCard` takes a required `empty` message instead of defaulting to "None".
+- Lists tell "nothing here yet" apart from "the filter hides everything": Incorporation views, admin Clients, Super Clients, Team tasks, Work list, Manager items, Risks, Open registrations and Notifications.
+- The Lead and Manager home tiles carry a short note when the number is 0 ("Nothing is late", "Nothing due by Sunday").
+- No behaviour changed; only empty-state text and its layout.

@@ -216,7 +216,7 @@ export default function SuperOverview() {
               <DashSection title="What admins did" meta="This week" flush>
                 {feed.length === 0 ? (
                   <div className="p-4">
-                    <EmptyState title="No admin activity yet" />
+                    <EmptyState title="No admin activity yet. What admins assign, approve and change this week appears here." />
                   </div>
                 ) : (
                   <AdminFeedList rows={feed} />

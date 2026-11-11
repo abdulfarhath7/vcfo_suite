@@ -67,7 +67,7 @@ export function BoardMeetingsCard() {
               ))}
             </ul>
           ) : (
-            <p className="m-0 text-[13px] text-ink-muted">Nothing needs a look.</p>
+            <p className="m-0 text-[13px] text-ink-muted">Nothing needs a look. A meeting appears here when it waits for approval, its quorum is at risk or its minutes are late.</p>
           )}
         </div>
       ) : null}

@@ -15,7 +15,7 @@ import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-e
 import { AreaPill, Chip, REG_WORD, type ChipTone } from '@/components/ui/spectrum-chip';
 import { regOf } from '@/lib/ui/regulator';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import {
   PreIncorporationNotice,
 } from '@/components/compliances/PreIncorporationNotice';
@@ -877,7 +877,7 @@ function ComingUpCard({
         <span className="text-[11px] text-ink-muted">{items.length}</span>
       </div>
       {days.length === 0 ? (
-        <p className="py-3 text-[13px] text-ink-faint">None</p>
+        <EmptyState title="Nothing coming up. The next filings due appear here." className="my-2 min-h-[72px] py-4 text-[13px]" />
       ) : (
         days.map(([d, list]) => (
           <div key={d} className="flex items-center gap-2.5 border-t border-line-soft py-2.5 first:border-t-0">

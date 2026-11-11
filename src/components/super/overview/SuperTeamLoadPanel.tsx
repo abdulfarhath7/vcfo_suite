@@ -27,7 +27,7 @@ export function SuperTeamLoadPanel({ insights }: { insights: SuperInsights }) {
     <DashSection title="Team load" headIcon={{ icon: Users, tone: 'violet' }} flush>
       {managers.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="None" />
+          <EmptyState title="No manager yet. Each manager's open work and capacity appear here once a manager is added." />
         </div>
       ) : (
         <ul>

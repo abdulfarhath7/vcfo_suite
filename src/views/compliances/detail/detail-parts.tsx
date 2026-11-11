@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { DashSection } from '@/components/dash/DashSection';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -197,7 +198,9 @@ export function RemindersCard({
     >
       {blocked ? <p className="border-b border-line-soft px-4 py-2.5 text-[13px] text-ink-muted md:px-5">{blocked}</p> : null}
       {shown.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+        <div className="p-3">
+          <EmptyState title="No reminder is on for this item. Reminders before the due date appear here once one is turned on." className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <ul>
           {shown.map((r) => (
@@ -287,7 +290,9 @@ export function ActivityCard({ rows, now, loading }: { rows: ActivityEntry[]; no
   return (
     <DashSection title="Activity" flush loading={loading}>
       {rows.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+        <div className="p-3">
+          <EmptyState title="No activity yet. Changes, uploads and filings on this item appear here as they happen." className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <ul>
           {rows.map((h) => (

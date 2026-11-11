@@ -201,7 +201,7 @@ export default function SuperReports() {
             <section>
               <h3 className="mb-1 text-[15px] font-medium text-ink">Top risks going into {nextMonthName(month.key)}</h3>
               {risks.length === 0 ? (
-                <p className="text-[13.5px] text-ink-2">None</p>
+                <p className="text-[13.5px] text-ink-2">No open risk going into the month.</p>
               ) : (
                 <ol className="grid list-decimal gap-1.5 pl-5 text-[13.5px] text-ink-2">
                   {risks.map((r) => (
