@@ -4,11 +4,12 @@
  * Shared portal pieces used by every page:
  *  - `InfoPopover` — design rule 7: an (i) button next to a title; click opens a
  *    ≤280 px pop-over attached to the icon, ending with "Ask VCFO about this".
- *    Uses the base board classes `.info > button + .pop .ask`.
+ *    Uses the base board classes `.info > button + .pop .ask`. Outside the client portal (the
+ *    shared DocViewer on a staff page) there is no portal chat, so the "Ask" row is left out.
  *  - `BotSays` — design rule 16: the Ask VCFO head says it in a speech bubble.
  */
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { usePortal } from './PortalProvider';
+import { usePortalOptional } from './PortalProvider';
 import { VisorHead } from '@/components/ask/Visor';
 import { LinkButton } from './LinkButton';
 
@@ -28,7 +29,7 @@ export function InfoPopover({
   below?: boolean;
   style?: CSSProperties;
 }) {
-  const { openChat } = usePortal();
+  const openChat = usePortalOptional()?.openChat;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -63,18 +64,20 @@ export function InfoPopover({
       </button>
       <span className="pop" role="dialog">
         {children}
-        <LinkButton
-          className="ask w-full"
-          onClick={() => {
-            setOpen(false);
-            openChat(askAbout ? `Tell me about ${askAbout}` : 'Tell me more about this');
-          }}
-        >
-          <span style={{ width: 16, height: 16, display: 'inline-flex', overflow: 'hidden' }}>
-            <VisorHead style={{ width: 16, height: 20, marginTop: 2 }} />
-          </span>
-          Ask VCFO about this
-        </LinkButton>
+        {openChat ? (
+          <LinkButton
+            className="ask w-full"
+            onClick={() => {
+              setOpen(false);
+              openChat(askAbout ? `Tell me about ${askAbout}` : 'Tell me more about this');
+            }}
+          >
+            <span style={{ width: 16, height: 16, display: 'inline-flex', overflow: 'hidden' }}>
+              <VisorHead style={{ width: 16, height: 20, marginTop: 2 }} />
+            </span>
+            Ask VCFO about this
+          </LinkButton>
+        ) : null}
       </span>
     </span>
   );
