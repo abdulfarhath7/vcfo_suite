@@ -6,23 +6,28 @@ import { TERMINAL } from '../engine/machine';
 import { LIVE_BLOCKED_MESSAGE } from '../engine/live';
 import type { PanelCommand, PanelState } from '../shared/messages';
 import type { CatalogAgent, CatalogNode, CatalogSubAgent } from '../shared/types';
-import { MOCK_ONLY_NOTE, catalogTree, packIsLive, taskChips, tasksIn, trail } from './tree';
+import { MOCK_ONLY_NOTE, catalogTree, packIsLive, taskChips, tasksIn, trail, type TaskChip } from './tree';
+import { Chip, EmptyState, Section, type ChipTone } from './spectrum';
 
-/** One colour per agent, from the Spectrum palette. */
+/** One colour per agent, from the Spectrum data palette (data-1..6, the same in both themes). */
 export const AGENT_COLORS: Record<string, string> = {
-  incorporation: 'var(--brand)',
-  'post-incorporation': 'var(--teal)',
-  registration: 'var(--positive)',
-  compliance: 'var(--amber)',
+  incorporation: 'var(--data-2)',
+  'post-incorporation': 'var(--data-1)',
+  registration: 'var(--data-3)',
+  compliance: 'var(--data-5)',
 };
-const colorFor = (id: string, i: number) => AGENT_COLORS[id] ?? ['var(--brand)', 'var(--teal)', 'var(--positive)', 'var(--amber)'][i % 4]!;
+const DATA = ['var(--data-2)', 'var(--data-1)', 'var(--data-3)', 'var(--data-5)', 'var(--data-4)', 'var(--data-6)'];
+const colorFor = (id: string, i: number) => AGENT_COLORS[id] ?? DATA[i % DATA.length]!;
+
+/** The task status chips in the six-word tones (spectrum-chip.tsx): Ready is done-green, Beta in progress, Later not started. */
+const TASK_TONE: Record<TaskChip['tone'], ChipTone> = { positive: 'ok', brand: 'prog', muted: 'idle', warn: 'teal' };
 
 export function App() {
   const { state, send } = usePanel();
   if (!state) {
     return (
       <main className="panel">
-        <p className="muted pad">Connecting to VCFO Assist…</p>
+        <EmptyState title="Connecting to VCFO Assist…" />
       </main>
     );
   }
@@ -43,7 +48,7 @@ export function App() {
 function Header({ state, send }: { state: PanelState; send: (c: PanelCommand) => void }) {
   const running = state.run && !TERMINAL.has(state.run.state);
   return (
-    <header className="head">
+    <header className="head wash">
       <div className="head-row">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">V</span>
@@ -77,7 +82,7 @@ function Header({ state, send }: { state: PanelState; send: (c: PanelCommand) =>
           ))}
         </select>
       </label>
-      {!state.suite.connected && state.suite.error && <p className="muted small">{state.suite.error}</p>}
+      {!state.suite.connected && state.suite.error && <p className="wash-note small">{state.suite.error}</p>}
     </header>
   );
 }
@@ -96,33 +101,31 @@ function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => v
   const portal = state.portal;
   return (
     <>
-      <section className="card">
-        <h2 className="eyebrow">Agents</h2>
+      <Section title="Agents">
         <div className="grid" role="list">
           {state.catalog.agents.map((a, i) => (
             <AgentTile key={a.id} agent={a} color={colorFor(a.id, i)} selected={a.id === agentId} onSelect={() => setAgentId(a.id)} />
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="card">
-        <h2 className="eyebrow">Portal tab</h2>
+      <Section title="Portal tab">
         {portal.tabId ? (
           <p className="portal-line">
-            <span className={`chip ${portal.mock ? 'chip-teal' : 'chip-danger'}`}>{portal.mock ? 'Mock' : 'Live'}</span>
-            <span className="mono small">{portal.host}</span>
+            <Chip tone={portal.mock ? 'idle' : 'bad'}>{portal.mock ? 'Mock' : 'Live'}</Chip>
+            <span className="mono">{portal.host}</span>
           </p>
         ) : (
-          <p className="muted small">Open the portal form (or the mock portal) in a tab.</p>
+          <EmptyState title="Open the portal form (or the mock portal) in a tab." />
         )}
         {portal.tabId && !portal.liveAllowed && (
           <p className="warn small" role="status">
             {LIVE_BLOCKED_MESSAGE}
           </p>
         )}
-      </section>
+      </Section>
 
-      <section className="card">
+      <section className="card card-pad">
         <label className="picker">
           <span className="picker-label">Which MCA login are you using?</span>
           <input
@@ -140,8 +143,7 @@ function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => v
       </section>
 
       {agent && agentNode && (
-        <section className="card" data-testid="task-tree">
-          <h2 className="eyebrow">{agent.name}: sub-agents and tasks</h2>
+        <Section title={`${agent.name}: sub-agents and tasks`} data-testid="task-tree" bodyClassName="flush">
           <nav className="crumbs small" aria-label="Where you are">
             {trail(tree, focus || agent.id).map((n, i, all) => (
               <span key={n.id}>
@@ -167,7 +169,7 @@ function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => v
             }}
             renderTask={(s) => <TaskRow key={s.id} task={s} agentId={agent.id} state={state} send={send} mcaLogin={mcaLogin} onFocus={() => setFocus(s.id)} />}
           />
-        </section>
+        </Section>
       )}
 
       <Settings state={state} send={send} />
@@ -206,7 +208,7 @@ function TaskList({
         return (
           <li key={n.id} className="tree-group" role="treeitem" aria-expanded={expanded}>
             <button type="button" className="tree-toggle" onClick={() => toggle(n.id)} data-testid={`group-${n.id}`}>
-              <span aria-hidden="true">{expanded ? '▾' : '▸'}</span> <strong>{n.name}</strong>{' '}
+              <span className="caret" aria-hidden="true">{expanded ? '▾' : '▸'}</span> <strong>{n.name}</strong>{' '}
               <span className="muted small">
                 {built} of {tasks.length} built
               </span>
@@ -245,23 +247,24 @@ function TaskRow({
         <strong>{s.name}</strong>
         <span className="chips">
           {chips.map((c) => (
-            <span key={c.label} className={`chip chip-${c.tone === 'brand' ? 'brand-soft' : c.tone}`}>
+            <Chip key={c.label} tone={TASK_TONE[c.tone]}>
               {c.label}
-            </span>
+            </Chip>
           ))}
           {ready &&
             (!state.engagementId ? (
-              <span className="chip chip-muted">Pick a client</span>
+              <Chip tone="idle">Pick a client</Chip>
             ) : !r ? (
-              <span className="chip chip-muted">Checking…</span>
+              <Chip tone="prog">Checking…</Chip>
             ) : r.error ? (
-              <span className="chip chip-danger" title={r.error}>
+              <Chip tone="bad" title={r.error}>
                 Profile not loaded
-              </span>
+              </Chip>
             ) : missing === 0 ? (
-              <span className="chip chip-positive">Data ready</span>
+              <Chip tone="ok">Data ready</Chip>
             ) : (
-              <button type="button" className="chip chip-warn link" onClick={() => send({ cmd: 'openSuite', stepId: r.missing.find((m) => m.stepId)?.stepId ?? s.stepId })} title={r.missing.map((m) => m.label).join(', ')}>
+              <button type="button" className="chip chip-bad link" onClick={() => send({ cmd: 'openSuite', stepId: r.missing.find((m) => m.stepId)?.stepId ?? s.stepId })} title={r.missing.map((m) => m.label).join(', ')}>
+                <i className="chip-dot" aria-hidden="true" />
                 {missing} missing → Fix in Suite
               </button>
             ))}
@@ -272,7 +275,7 @@ function TaskRow({
       {ready && (
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm"
           disabled={!state.engagementId || !portal.tabId || !portal.liveAllowed || !mcaLogin.trim()}
           onClick={() => send({ cmd: 'start', agentId, subAgentId: s.id, mcaLoginLabel: mcaLogin.trim() })}
         >
@@ -288,7 +291,9 @@ function AgentTile({ agent, color, selected, onSelect }: { agent: CatalogAgent; 
   const mood: RobotMood = 'idle';
   return (
     <button type="button" role="listitem" className={`tile ${selected ? 'selected' : ''}`} style={{ ['--agent' as string]: color }} onClick={onSelect} aria-pressed={selected}>
-      <Robot color={color} mood={mood} label={`${agent.name} agent`} />
+      <span className="robot-well">
+        <Robot color={color} mood={mood} size={48} label={`${agent.name} agent`} />
+      </span>
       <span className="tile-name">{agent.name}</span>
       <span className="tile-sub">{built ? `${built} of ${agent.subAgents.length} ready` : 'Coming soon'}</span>
     </button>
@@ -298,15 +303,16 @@ function AgentTile({ agent, color, selected, onSelect }: { agent: CatalogAgent; 
 function Settings({ state, send }: { state: PanelState; send: (c: PanelCommand) => void }) {
   const [text, setText] = useState(state.settings.suiteOrigins.join('\n'));
   return (
-    <details className="card settings">
-      <summary>Settings</summary>
-      <label className="small">
+    <Section as="details" title="Settings" className="settings">
+      <label className="small field">
         Suite origins (one per line). The extension reads data only through an open, signed-in tab on one of these.
         <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} className="mono" />
       </label>
-      <button type="button" className="btn" onClick={() => send({ cmd: 'setOrigins', origins: text.split(/\s+/).filter(Boolean) })}>
-        Save
-      </button>
-    </details>
+      <div>
+        <button type="button" className="btn" onClick={() => send({ cmd: 'setOrigins', origins: text.split(/\s+/).filter(Boolean) })}>
+          Save
+        </button>
+      </div>
+    </Section>
   );
 }
