@@ -3,7 +3,7 @@ import 'server-only';
 import type { AuthContext } from '@/auth/guards';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 import { getDocPackInputs, type DocPackInputs } from '@/db/repositories/doc-pack';
-import { docPackItemFilename, renderDocPackItem } from '@/lib/api/doc-pack';
+import { DOCX_CONTENT_TYPE, docPackItemFilename, renderDocPackItem, ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
 import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import type { DocPackItem } from '@/lib/doc-pack/types';
 import { MILESTONE_DOCUMENTS_BUCKET } from '@/lib/documents/milestone-document-storage';
@@ -30,6 +30,27 @@ import {
  */
 
 export type DownloadLayout = 'folders' | 'flat';
+
+const CONTENT_TYPES: Record<string, string> = {
+  docx: DOCX_CONTENT_TYPE,
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  zip: ZIP_CONTENT_TYPE,
+};
+
+/** The content type a file is served with, from its extension. */
+export function downloadContentType(fileName: string): string {
+  return CONTENT_TYPES[fileName.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
+}
+
+/** Types a browser may show inline; everything else is always sent as an attachment. */
+export function isInlineType(contentType: string): boolean {
+  return contentType === 'application/pdf' || contentType.startsWith('image/');
+}
 
 /** Up to this many files, and this many uploads among them, the ZIP streams straight back. */
 export const DIRECT_MAX_FILES = 25;

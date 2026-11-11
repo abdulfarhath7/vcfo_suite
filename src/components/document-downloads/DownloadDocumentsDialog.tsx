@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Download, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { useApp } from '@/context/AppContext';
+import { useDocumentCatalog } from '@/hooks/use-document-downloads';
 import type { PublicDownloadGroup } from '@/lib/document-downloads/catalog';
+import { downloadDocumentKeys, type DownloadLayout } from '@/lib/document-downloads/client';
 import {
   groupTickState,
   initialSelection,
@@ -23,10 +24,7 @@ import {
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 
-type Layout = 'folders' | 'flat';
-type Catalog = { companyName: string; root: PublicDownloadGroup };
-
-const apiPath = (engagementId: string) => `/api/engagements/${encodeURIComponent(engagementId)}/document-downloads`;
+type Layout = DownloadLayout;
 
 /** The last choice, per person, so a Lead who always takes "Part B" finds it ticked. */
 function rememberKey(userId: string | undefined) {
@@ -53,23 +51,6 @@ function writeRemembered(userId: string | undefined, keys: string[], layout: Lay
   } catch {
     // Private windows may refuse storage; the choice is simply not remembered.
   }
-}
-
-function fileNameFrom(disposition: string | null, fallback: string): string {
-  const star = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-  if (star) return decodeURIComponent(star);
-  return disposition?.match(/filename="([^"]+)"/i)?.[1] ?? fallback;
-}
-
-function saveBlob(blob: Blob, fileName: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 function TickBox({ state, disabled, onChange, label }: { state: TickState; disabled?: boolean; onChange: () => void; label: string }) {
@@ -171,18 +152,7 @@ export function DownloadDocumentsDialog({
   selectAll?: boolean;
 }) {
   const { user } = useApp();
-  const query = useQuery({
-    queryKey: ['document-downloads', engagementId],
-    enabled: open,
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-    queryFn: async (): Promise<Catalog> => {
-      const res = await fetch(apiPath(engagementId), { cache: 'no-store' });
-      const out = (await res.json().catch(() => ({}))) as Catalog & { error?: string };
-      if (!res.ok) throw new Error(out.error || 'The document list could not be loaded.');
-      return out;
-    },
-  });
+  const query = useDocumentCatalog(engagementId, open);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [layout, setLayout] = useState<Layout>('folders');
   const [busy, setBusy] = useState(false);
@@ -204,22 +174,10 @@ export function DownloadDocumentsDialog({
     const keys = [...selected];
     writeRemembered(user?.id, keys, layout);
     try {
-      const res = await fetch(apiPath(engagementId), {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ keys, layout }),
-      });
-      if (res.status === 202) {
-        const out = (await res.json().catch(() => ({}))) as { fileName?: string };
+      const out = await downloadDocumentKeys(engagementId, keys, layout);
+      if (out.queued) {
         toastSuccess('Making the ZIP', `${out.fileName ?? 'Your documents'} will be in your notifications when it is ready. You can keep working.`);
-        onOpenChange(false);
-        return;
       }
-      if (!res.ok) {
-        const out = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(out.error || 'The download did not start.');
-      }
-      saveBlob(await res.blob(), fileNameFrom(res.headers.get('content-disposition'), 'Documents.zip'));
       onOpenChange(false);
     } catch (err) {
       toastError('The download did not start', errorMessage(err));

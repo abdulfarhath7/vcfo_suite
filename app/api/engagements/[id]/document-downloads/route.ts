@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server';
 
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { DOCX_CONTENT_TYPE, ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
+import { ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
+import { contentDisposition } from '../../../documents/_lib/object-response';
 import { bundleZipName, publicCatalog } from '@/lib/document-downloads/catalog';
 import {
+  downloadContentType,
   downloadZipStream,
   loadDownloadCatalog,
   openDownloadFile,
@@ -24,24 +26,6 @@ const STAFF = ['super_admin', 'admin', 'manager', 'intern'] as const;
 const BUNDLE_MAX_BYTES = 300 * 1024 * 1024;
 
 const NO_STORE = 'private, no-store, max-age=0, must-revalidate';
-
-const CONTENT_TYPES: Record<string, string> = {
-  docx: DOCX_CONTENT_TYPE,
-  pdf: 'application/pdf',
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  zip: ZIP_CONTENT_TYPE,
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-};
-
-function contentTypeFor(fileName: string): string {
-  return CONTENT_TYPES[fileName.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
-}
-
-function attachment(fileName: string): string {
-  return `attachment; filename="${fileName.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
-}
 
 /** GET /api/engagements/[id]/document-downloads: the tree the "Download documents" pop-up shows. */
 export async function GET(_request: Request, context: RouteContext) {
@@ -91,7 +75,7 @@ export async function POST(request: Request, context: RouteContext) {
     await audit(file.fileName, 'file');
     return new Response(new Uint8Array(bytes), {
       status: 200,
-      headers: { 'Content-Type': contentTypeFor(file.fileName), 'Content-Disposition': attachment(file.fileName), 'Cache-Control': NO_STORE },
+      headers: { 'Content-Type': downloadContentType(file.fileName), 'Content-Disposition': contentDisposition('attachment', file.fileName), 'Cache-Control': NO_STORE },
     });
   }
 
@@ -115,6 +99,6 @@ export async function POST(request: Request, context: RouteContext) {
   await audit(zip.fileName, 'zip');
   return new Response(zip.stream, {
     status: 200,
-    headers: { 'Content-Type': ZIP_CONTENT_TYPE, 'Content-Disposition': attachment(zip.fileName), 'Cache-Control': NO_STORE },
+    headers: { 'Content-Type': ZIP_CONTENT_TYPE, 'Content-Disposition': contentDisposition('attachment', zip.fileName), 'Cache-Control': NO_STORE },
   });
 }

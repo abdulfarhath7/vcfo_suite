@@ -1,15 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { Download, Eye } from 'lucide-react';
+import { useDocViewer } from '@/components/client-portal/pages/documents/DocViewer';
 import { DashSection } from '@/components/dash/DashSection';
+import { DocumentIconButton } from '@/components/document-downloads/DocumentIconButton';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { useDocumentCatalog } from '@/hooks/use-document-downloads';
 import { useSpiceAttachments } from '@/hooks/use-spice-attachments';
+import { catalogViewerDocs, downloadDocumentKeys } from '@/lib/document-downloads/client';
+import {
+  attachmentFilesUnavailableReason,
+  filesForSpiceAttachment,
+} from '@/lib/document-downloads/spice-attachment-files';
 import {
   SPICE_ATTACHMENT_STATUS_LABEL,
   type SpiceAttachment,
   type SpiceAttachmentStatus,
 } from '@/lib/spice-attachments/derive';
+import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 const TONE: Record<SpiceAttachmentStatus, ChipTone> = {
   done: 'ok',
@@ -28,7 +39,10 @@ function StatusChip({ status }: { status: SpiceAttachmentStatus }) {
 /**
  * SPICe+ attachments (spec T6 of the Board resolution (NOC) page): the documents SPICe+ Part B
  * needs, each with Not started, Waiting or Done from existing records. The accepted board
- * resolution links to its Vault copy. Staff engagement page only; `shellBase` is the shell root
+ * resolution links to its Vault copy. Each row has an eye (the shared `DocViewer`: PDFs and images
+ * inline, Word rendered) and a download icon over the row's own files from the download catalog;
+ * one file downloads as itself, several as a ZIP. A row with no file yet has both icons off, with
+ * the reason in the tip. Staff engagement page only; `shellBase` is the shell root
  * (`/app/lead`, `/app/manager`, `/app/admin`, `/app/super`) for the Vault link.
  */
 export function SpiceAttachmentsCard({
@@ -42,6 +56,28 @@ export function SpiceAttachmentsCard({
 }) {
   const query = useSpiceAttachments(engagementId);
   const list = query.data;
+  const catalog = useDocumentCatalog(engagementId);
+  const viewer = useDocViewer();
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const rowFiles = (row: SpiceAttachment) => filesForSpiceAttachment(row.key, catalog.data?.root).filter((f) => f.ready);
+  const unavailable = (row: SpiceAttachment): string | null => {
+    if (catalog.isPending) return 'Loading the files…';
+    if (catalog.isError) return 'The files could not be loaded';
+    return attachmentFilesUnavailableReason(filesForSpiceAttachment(row.key, catalog.data?.root), row.detail);
+  };
+
+  const download = async (row: SpiceAttachment) => {
+    setDownloading(row.key);
+    try {
+      const out = await downloadDocumentKeys(engagementId, rowFiles(row).map((f) => f.key));
+      if (out.queued) toastSuccess('Making the ZIP', `${out.fileName ?? row.label} will be in your notifications when it is ready.`);
+    } catch (err) {
+      toastError('The download did not start', errorMessage(err));
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   const vaultHref = (row: SpiceAttachment) =>
     row.vaultDocumentId ? `${shellBase}/vault/view/${encodeURIComponent(row.vaultDocumentId)}` : null;
@@ -54,15 +90,35 @@ export function SpiceAttachmentsCard({
     {
       key: 'open',
       header: '',
-      width: '100px',
+      width: '172px',
       align: 'right',
       render: (row) => {
         const href = vaultHref(row);
-        return href ? (
-          <Link href={href} className="text-[13px] font-medium text-brand-text hover:underline">
-            Open copy
-          </Link>
-        ) : null;
+        const reason = unavailable(row);
+        return (
+          <span className="inline-flex items-center justify-end gap-1.5">
+            {href ? (
+              <Link href={href} className="mr-1 text-[13px] font-medium text-brand-text hover:underline">
+                Open copy
+              </Link>
+            ) : null}
+            <DocumentIconButton
+              label={`Preview ${row.label}`}
+              icon={<Eye size={15} strokeWidth={1.6} aria-hidden />}
+              disabledReason={reason}
+              onClick={() => viewer.open(catalogViewerDocs(engagementId, rowFiles(row)), 0)}
+              testId={`spice-preview-${row.key}`}
+            />
+            <DocumentIconButton
+              label={`Download ${row.label}`}
+              icon={<Download size={15} strokeWidth={1.6} aria-hidden />}
+              disabledReason={reason}
+              busy={downloading === row.key}
+              onClick={() => void download(row)}
+              testId={`spice-download-${row.key}`}
+            />
+          </span>
+        );
       },
     },
   ];
@@ -80,6 +136,7 @@ export function SpiceAttachmentsCard({
       ) : (
         <EFilingGrid caption="SPICe+ attachments" columns={columns} rows={list?.items ?? []} rowKey={(row) => row.key} pageSize={20} empty="No attachments." />
       )}
+      {viewer.node}
     </DashSection>
   );
 }
