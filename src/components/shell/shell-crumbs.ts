@@ -1,3 +1,5 @@
+import { internOverviewPhases } from '@/lib/intern/intern-overview-progress';
+import { stepSlugForItemId } from '@/lib/slug';
 import { isShellHomePath, normalizeShellPathname, shellRoleHomePath } from '@/components/shell/shell-back';
 import { resolveChecklistItemFromStepParam, slugifyCompanyName } from '@/lib/slug';
 import {
@@ -237,6 +239,15 @@ function listForEntityPage(
   return { label: pageLabel(page), href: `${base}/${page}` };
 }
 
+/** The SPICe+ part (phase) a step belongs to, for its breadcrumb (NV-03). */
+function stepPartCrumb(itemId: string): { label: string; phaseNo: number; firstStepId: string } | null {
+  const phases = internOverviewPhases();
+  const index = phases.findIndex((p) => p.items.some((i) => i.id === itemId));
+  const phase = phases[index];
+  if (!phase || !phase.items[0]) return null;
+  return { label: phase.title, phaseNo: index + 1, firstStepId: phase.items[0].id };
+}
+
 export function shellBreadcrumb(pathname: string): ShellCrumb {
   const path = normalizeShellPathname(pathname);
   const parts = path.split('/').filter(Boolean);
@@ -254,9 +265,21 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     // The prototype's short crumb: the sidebar row, with the page where it has no row of its own.
     const after = parts[4];
     const segs: ShellCrumbSegment[] = [{ label: list.label, href: list.href }];
-    if (nested === 'new') segs.push({ label: 'New project', href: null });
-    else if (after === 'documents') segs.push({ label: 'Documents', href: null });
+    if (nested === 'new') {
+      segs.push({ label: 'New project', href: null });
+      return trail('briefcase', segs);
+    }
+    // NV-03: every segment but the last is a link: the list, the client, the SPICe+ part, the page.
+    const projectHref = `${base}/${page}/${nested}`;
+    segs.push({ label: titleCase(nested.replace(/-/g, ' ')), href: projectHref, engagementKey: nested });
+    if (after === 'documents') segs.push({ label: 'Documents', href: null });
     else if (after === 'board-resolution') segs.push({ label: 'Board resolution', href: null });
+    else if (after === 'step' && parts[5]) {
+      const item = resolveChecklistItemFromStepParam(parts[5]);
+      const part = item ? stepPartCrumb(item.id) : null;
+      if (part) segs.push({ label: part.label, href: `${projectHref}/step/${stepSlugForItemId(part.firstStepId)}` });
+      segs.push({ label: item?.title ?? titleCase(parts[5].replace(/-/g, ' ')), href: null });
+    }
     return trail(internRoute || page === 'engagements' ? 'users' : 'briefcase', segs);
   }
 
@@ -276,7 +299,14 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
   }
 
   if (parts[1] === 'client' && page === 'incorporation' && parts[3] === 'step') {
-    return trail('briefcase', [{ label: 'Incorporation', href: '/app/client/incorporation' }]);
+    // NV-03: Incorporation › SPICe+ part › step; the part opens its phase page.
+    const item = parts[4] ? resolveChecklistItemFromStepParam(parts[4]) : null;
+    const part = item ? stepPartCrumb(item.id) : null;
+    return trail('briefcase', [
+      { label: 'Incorporation', href: '/app/client/incorporation' },
+      ...(part ? [{ label: part.label, href: `/app/client/incorporation/phase/${part.phaseNo}` }] : []),
+      { label: item?.title ?? 'Step', href: null },
+    ]);
   }
 
   if (parts[1] === 'client' && page === 'board-resolution') {

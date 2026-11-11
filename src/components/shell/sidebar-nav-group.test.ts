@@ -60,3 +60,36 @@ describe('sidebar nav groups', () => {
     expect(cls).toContain('w-full');
   });
 });
+
+describe('Incorporation dropdown (NV-01, NV-02)', () => {
+  it('lists Overview, SPICe+ Part A, Part B, Board resolutions and Documents for every staff role', async () => {
+    const { incorporationGroup } = await import('./sidebar-items');
+    for (const base of ['/app/lead', '/app/manager', '/app/admin', '/app/super/practice']) {
+      expect(incorporationGroup(base).items.map((i) => i.label)).toEqual([
+        'Overview',
+        'SPICe+ Part A',
+        'SPICe+ Part B',
+        'Board resolutions',
+        'Documents',
+      ]);
+      expect(incorporationGroup(base).items[0]!.to).toBe(`${base}/incorporation`);
+    }
+  });
+
+  it('highlights exactly one sub-item for the open view', async () => {
+    const { isSidebarLeafActive } = await import('./SidebarNavGroup');
+    const main = '/app/manager/incorporation';
+    expect(isSidebarLeafActive(main, '', main)).toBe(true);
+    expect(isSidebarLeafActive(main, '', `${main}?view=part-a`)).toBe(false);
+    expect(isSidebarLeafActive(main, 'view=part-a', `${main}?view=part-a`)).toBe(true);
+    expect(isSidebarLeafActive(main, 'view=part-a', main)).toBe(false);
+  });
+
+  it('keeps Incorporation highlighted on a client step page, so Overview leads back to the main page', async () => {
+    const { incorporationGroup } = await import('./sidebar-items');
+    const group = incorporationGroup('/app/lead');
+    expect(isSidebarGroupActive('/app/lead/engagements/ember/step/name-application', group.items, group.activeAlso)).toBe(true);
+    expect(isSidebarGroupActive('/app/manager/projects/ember/board-resolution', group.items, group.activeAlso)).toBe(true);
+    expect(isSidebarGroupActive('/app/lead/tasks', group.items, group.activeAlso)).toBe(false);
+  });
+});

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
@@ -129,8 +130,29 @@ export function SidebarRailUrgentBadge({ count, ink = 'light' }: { count: number
   );
 }
 
-export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[]) {
-  return children.some((child) => pathname === child.to || pathname.startsWith(`${child.to}/`));
+export function isSidebarGroupActive(pathname: string, children: SidebarNavLeaf[], activeAlso?: RegExp) {
+  if (activeAlso?.test(pathname)) return true;
+  return children.some((child) => {
+    const path = child.to.split('?')[0]!;
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+}
+
+/**
+ * Whether a group's child is the open page. A child with a query (`?view=part-a`) is open only on
+ * its own view; a child without one is open when no view is chosen, so Overview and
+ * "SPICe+ Part A" are never both highlighted.
+ */
+export function isSidebarLeafActive(pathname: string, search: string, to: string): boolean {
+  const [path, query] = to.split('?');
+  const here = new URLSearchParams(search);
+  if (query) {
+    if (pathname !== path) return false;
+    const want = new URLSearchParams(query);
+    return [...want.entries()].every(([k, v]) => here.get(k) === v);
+  }
+  if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
+  return !here.get('view');
 }
 
 /**
@@ -541,7 +563,8 @@ function SidebarGroupRow({
   groupId: string;
   reduceMotion: boolean;
 }) {
-  const active = pathname === child.to || pathname.startsWith(`${child.to}/`);
+  const search = useSearchParams()?.toString() ?? '';
+  const active = isSidebarLeafActive(pathname, search, child.to);
   const itemId = `group:${child.to}`;
   const followed = Boolean(hoverFollow);
 
@@ -651,11 +674,14 @@ export function SidebarNavGroup({
   stacked = false,
   tag,
   badge,
+  activeAlso,
 }: {
   id: string;
   label: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
   iconTone?: string;
+  /** Pages outside the leaves that still highlight the group. */
+  activeAlso?: RegExp;
   /** A small tag after the label, such as "New". */
   tag?: ReactNode;
   /** A plain count after the label (for example unread updates). */
@@ -669,7 +695,7 @@ export function SidebarNavGroup({
   hoverFollow?: SidebarHoverFollow;
   stacked?: boolean;
 }) {
-  const sectionActive = isSidebarGroupActive(pathname, items);
+  const sectionActive = isSidebarGroupActive(pathname, items, activeAlso);
 
   return (
     <SidebarNavDisclosure

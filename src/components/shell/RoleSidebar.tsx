@@ -248,6 +248,7 @@ function SidebarNavBody({
           if (isNavGroup(it)) {
             const isCompliances = it.id.startsWith('compliances:');
             const isUpdates = it.id.startsWith('updates:');
+            const isIncorporation = it.id.startsWith('incorporation:');
             return (
               <SidebarNavGroup
                 key={it.id}
@@ -263,7 +264,16 @@ function SidebarNavBody({
                 ink={ink}
                 hoverFollow={hoverFollow}
                 stacked={stacked}
-                badge={isUpdates ? unreadNotificationCount : isCompliances && !inDevConsole ? complianceDueCount : undefined}
+                activeAlso={it.activeAlso}
+                badge={
+                  isUpdates
+                    ? unreadNotificationCount
+                    : isCompliances && !inDevConsole
+                      ? complianceDueCount
+                      : isIncorporation && showsIncorporationCount(user.role)
+                        ? incorporatingCount
+                        : undefined
+                }
                 tag={isCompliances && (user.role === 'intern' || user.role === 'manager') ? <NewTag ink={ink} /> : undefined}
               />
             );

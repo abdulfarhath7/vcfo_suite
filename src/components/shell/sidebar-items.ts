@@ -68,6 +68,38 @@ export interface NavGroupDef {
   icon: NavIcon;
   iconTone?: string;
   items: SidebarNavLeaf[];
+  /** Pages outside the leaves that still belong to the group (a client's step pages for Incorporation). */
+  activeAlso?: RegExp;
+}
+
+/** The Incorporation views a sub-item opens on the client list (`?view=`). */
+export const INCORPORATION_VIEWS = ['part-a', 'part-b', 'board-resolutions', 'documents'] as const;
+export type IncorporationView = (typeof INCORPORATION_VIEWS)[number];
+
+/**
+ * NV-01: Incorporation opens into Overview, SPICe+ Part A, SPICe+ Part B, Board resolutions and
+ * Documents, like Compliances. Staff have no all-client page for each part, so each sub-item opens
+ * the Incorporation client list with that view (the change list: "when no client is selected, a
+ * sub-item opens the client list first"); a row then opens that part for the client. NV-02:
+ * Overview is the Incorporation main page, and the group stays highlighted on a client's
+ * incorporation pages (step, documents and board resolution).
+ */
+export function incorporationGroup(base: string): NavGroupDef {
+  const main = `${base}/incorporation`;
+  return {
+    id: `incorporation:${base}`,
+    label: 'Incorporation',
+    icon: Landmark,
+    iconTone: TONE.work,
+    items: [
+      { to: main, label: 'Overview', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=part-a`, label: 'SPICe+ Part A', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=part-b`, label: 'SPICe+ Part B', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=board-resolutions`, label: 'Board resolutions', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=documents`, label: 'Documents', icon: Landmark, iconTone: TONE.work },
+    ],
+    activeAlso: /^\/app\/(lead\/engagements\/[^/]+|(?:admin|manager|super)\/projects\/[^/]+)\/(?:step|documents|board-resolution)(?:\/|$)/,
+  };
 }
 
 export type NavSectionBreak = { kind: 'break'; id: string };
@@ -161,7 +193,7 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
   if (role === 'super_admin') {
     const practice = '/app/super/practice';
     return [
-      { to: `${practice}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
+      incorporationGroup(practice),
       compliancesGroup(practice, [
         { ...complianceLeaves(practice)[0], to: `${practice}/compliances` },
         { ...complianceLeaves(practice)[2], to: `${practice}/filings` },
@@ -171,7 +203,9 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
     ];
   }
   return [
-    { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
+    role === 'client'
+      ? { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work }
+      : incorporationGroup(base),
     role === 'client'
       ? compliancesGroup(compliancesBasePath(role, base))
       : compliancesGroup(compliancesBasePath(role, base), [

@@ -38,7 +38,8 @@ function block(role: Role, staffBase: string) {
 function expectBlockShape(three: NavEntry[]) {
   expect(three.map(label)).toEqual([...PRACTICE_BLOCK_LABELS]);
   const [inc, comp, reg] = three;
-  expect(isNavGroup(inc) || isNavSectionBreak(inc) ? null : inc.icon).toBe(Landmark);
+  // NV-01: staff Incorporation is a dropdown (the client keeps a plain link).
+  expect(isNavSectionBreak(inc) ? null : inc.icon).toBe(Landmark);
   expect(isNavGroup(comp) ? comp.icon : null).toBe(CalendarCheck);
   expect(isNavGroup(reg) || isNavSectionBreak(reg) ? null : reg.icon).toBe(BadgeCheck);
 }
@@ -58,6 +59,10 @@ describe('practice block (R-51)', () => {
       expectBlockShape(b.three);
       expect(b.three.flatMap(hrefs)).toEqual([
         `${base}/incorporation`,
+        `${base}/incorporation?view=part-a`,
+        `${base}/incorporation?view=part-b`,
+        `${base}/incorporation?view=board-resolutions`,
+        `${base}/incorporation?view=documents`,
         `${base}/compliances/obligations`,
         `${base}/compliances/calendar`,
         `${base}/compliances/filings`,
@@ -84,6 +89,10 @@ describe('practice block (R-51)', () => {
     expect(b.items.map(label)).not.toContain('Practice areas');
     expect(b.three.flatMap(hrefs)).toEqual([
       '/app/super/practice/incorporation',
+      '/app/super/practice/incorporation?view=part-a',
+      '/app/super/practice/incorporation?view=part-b',
+      '/app/super/practice/incorporation?view=board-resolutions',
+      '/app/super/practice/incorporation?view=documents',
       '/app/super/practice/compliances',
       '/app/super/practice/filings',
       '/app/super/compliances/expiries',

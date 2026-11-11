@@ -76,7 +76,7 @@ function ShellLocationTrail({
             {seg.href ? (
               <Link
                 href={seg.href}
-                className="whitespace-nowrap text-[14px] text-ink-muted transition-colors hover:text-ink"
+                className="whitespace-nowrap rounded-sm text-[14px] text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 {seg.label}
               </Link>
