@@ -71,7 +71,7 @@ import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
-import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 
 /* ---------------- answers ---------------- */
 
@@ -538,12 +538,17 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const dirty = Object.keys(draft).length > 0;
   // C-219: a step SBC or MCA holds gets "Message <lead>" in the card foot.
   const leadFirst = d.leadName ? firstName(d.leadName) : '';
-  // Name whoever holds the step now (owner, 10 Nov): once the lead sends it for approval
-  // (the board resolution), it waits on the manager, not on the lead.
-  const withManager = isLeadRequestPending(s?.slice);
-  const withSbcLine = withManager
-    ? `Waiting for approval from ${d.managerName ? firstName(d.managerName) : 'your SBC manager'}`
-    : `${leadFirst || 'SBC'} is working on it`;
+  // BR-03: the chip follows the real workflow state, with the person and the time since the
+  // hand-over ("With Manager (approval)" · "Anita · 2 hours"). The admin has no name on the
+  // project team, so that line names the role only.
+  const holder = s ? workHolder(s) : null;
+  const holderPerson =
+    holder === 'lead' ? leadFirst : holder === 'manager' ? (d.managerName ? firstName(d.managerName) : '') : '';
+  const holderSince = sinceHandOver(s?.slice?.lastEditedAt ?? s?.since);
+  const holderLine =
+    [holderPerson || (holder === 'admin' ? 'SBC admin' : holder === 'manager' ? 'Your SBC manager' : 'SBC'), holderSince]
+      .filter(Boolean)
+      .join(' · ');
 
   const openPortal = (form: string) => {
     if (!portalLink) return;
@@ -693,7 +698,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
         : k === 'prog'
           ? { state: 'now', title: `In progress${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.due ? `Fill the remaining answers and submit by ${fmt(s.due)}` : 'Fill the remaining answers and submit', bad: late }
           : k === 'with'
-            ? { state: 'now', title: `With ${s.owner === 'mca' ? 'MCA' : 'SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.owner === 'mca' ? 'MCA reviews the filing' : withSbcLine }
+            ? { state: 'now', title: `${holder ? workHolderLabel(holder, 'client') : 'With SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: holder === 'mca' ? 'MCA reviews the filing' : holderLine }
             : { state: 'next', title: 'Not started', sub: prev ? `Opens after step ${prev.n} · ${prev.title}` : 'Opens later' };
 
   const answersCard = (

@@ -14,6 +14,7 @@ import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolut
 import { shortDate, daysBetween } from '@/components/timeline/timeline-model';
 import { Eye } from 'lucide-react';
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 import { cn } from '@/lib/utils';
 
 /**
@@ -76,8 +77,16 @@ export function ChecklistPhaseStepRow({
   const late = Boolean(facts?.late) && live;
   const tone: StepTone = sentBack ? 'bad' : base.tone;
 
+  // BR-03: staff read the same holder as the client, from the one shared function.
+  const held = facts ? workHolder(facts) : null;
   const holder =
-    facts?.owner === 'client' ? shortCompany(engagement.companyName) : facts?.owner === 'mca' ? 'MCA' : 'SBC';
+    held === 'client' || (!held && facts?.owner === 'client')
+      ? shortCompany(engagement.companyName)
+      : held
+        ? workHolderLabel(held).replace(/^With /, '')
+        : facts?.owner === 'mca'
+          ? 'MCA'
+          : 'SBC';
   const days = facts?.since ? Math.max(0, daysBetween(facts.since, today)) : null;
   const typical = getChecklistStepTimelineLabel(item);
 

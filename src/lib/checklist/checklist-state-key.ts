@@ -79,6 +79,7 @@ const ITEM_META_KEYS = new Set([
   'unlockedFields',
   'reviewStatus',
   'reviewSource',
+  'approvalStage',
   'reviewedAt',
   'reviewedBy',
   'rejectionNote',
@@ -113,6 +114,11 @@ export interface ChecklistItemStateSlice {
   reviewStatus?: ChecklistReviewStatus;
   /** Distinguishes client KYC submit vs lead requesting manager approval */
   reviewSource?: ChecklistReviewSource;
+  /**
+   * Whose approval a lead's request waits for (BR-03, BR-05): the manager first, then the admin.
+   * Absent on a request made before the two-stage chain; it then reads as `manager`.
+   */
+  approvalStage?: 'manager' | 'admin';
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionNote?: string;
@@ -340,6 +346,7 @@ export function normalizeChecklistItemSlice(
       obj.reviewSource === 'client_submission' || obj.reviewSource === 'lead_manager_request'
         ? obj.reviewSource
         : undefined,
+    approvalStage: obj.approvalStage === 'manager' || obj.approvalStage === 'admin' ? obj.approvalStage : undefined,
     reviewedAt: typeof obj.reviewedAt === 'string' ? obj.reviewedAt : undefined,
     reviewedBy: typeof obj.reviewedBy === 'string' ? obj.reviewedBy : undefined,
     rejectionNote: typeof obj.rejectionNote === 'string' ? obj.rejectionNote : undefined,

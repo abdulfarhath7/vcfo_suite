@@ -10,6 +10,7 @@
  * Tailwind class, so the parts give each text span its own colour and weight, and actions
  * that look like buttons are `<button>` elements that call `portal.go`.
  */
+import { workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ListChecks, RefreshCw, Upload } from 'lucide-react';
 import { useRef, useState, type ComponentProps, type MouseEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -292,8 +293,10 @@ const isUp = (s: PortalStep) => s.kind === 'up' || s.kind === 'next';
 
 /** Who holds a live step now: the company for the client's move, else SBC or MCA. */
 export function holderOf(s: PortalStep, company: string): string {
-  if (s.kind === 'you' || s.kind === 'prog') return company;
-  return s.owner === 'mca' ? 'MCA' : 'SBC';
+  // BR-03: the real holder, from the one function every role reads.
+  const holder = workHolder(s);
+  if (!holder || holder === 'client') return company;
+  return workHolderLabel(holder, 'client').replace(/^With /, '');
 }
 
 export function markState(s: PortalStep): 'done' | 'now' | 'next' {

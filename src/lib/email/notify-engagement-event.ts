@@ -40,11 +40,9 @@ import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { firstNameOf } from '@/lib/notify/templates';
 import type { NotifyEvent } from '@/lib/notify/types';
 import {
-  adminProjectStepPath,
-  clientBoardResolutionPath,
   clientIncorporationPath,
   internBoardResolutionPath,
-  internEngagementStepPath,
+  stepPathForRole,
 } from '@/lib/projects/project-step-path';
 import { siteUrl } from '@/lib/site-url';
 import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -401,24 +399,17 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     const title = input.requestLabel?.trim() || stepTitle(input.itemId);
     const company = recipients.companyName;
     const kind = notificationKind(input.event);
-    const clientHref =
-      input.event === 'board_resolution_shared'
-        ? clientBoardResolutionPath()
-        : input.event === 'client_fill_approved' ||
-            input.event === 'step_awaiting_client_approval'
-          ? clientIncorporationPath(input.itemId)
-          : '/app/client/incorporation';
-    const leadHref =
-      input.event === 'board_resolution_shared'
-        ? internBoardResolutionPath(project)
-        : internEngagementStepPath(project, input.itemId);
-    const managerHref = adminProjectStepPath(project, input.itemId, 'manager');
+    // GL-01: every role's target is the exact step, from the one shared helper.
+    const boardResolution = input.event === 'board_resolution_shared';
+    const clientHref = stepPathForRole('client', project, input.itemId, { boardResolution });
+    const leadHref = stepPathForRole('intern', project, input.itemId, { boardResolution });
+    const managerHref = stepPathForRole('manager', project, input.itemId);
 
     const notifDrafts: Array<
       Parameters<typeof createNotificationsForUsers>[0][number]
     > = [];
 
-    const adminHref = adminProjectStepPath(project, input.itemId, 'admin');
+    const adminHref = stepPathForRole('admin', project, input.itemId);
     const pushNotif = (
       userId: string | undefined,
       role: 'client' | 'intern' | 'manager' | 'admin',
