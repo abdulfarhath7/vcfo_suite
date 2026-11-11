@@ -7,7 +7,7 @@ import path from 'node:path';
 import { PortalAgent } from '../portal/agent';
 import { bridgeSetValue, readBridgeModel } from '../portal/bridge';
 import { SECRET_FIELD_PATTERN } from '../guards';
-import type { Persisted, PortalPort, ResolveContext, RunCreate, RunUpdate, StorePort, SuitePort } from '../engine/ports';
+import type { AttestationStatus, Persisted, PortalPort, ResolveContext, RunCreate, RunUpdate, StorePort, SuitePort } from '../engine/ports';
 import type { Catalog, PatchProposal, ProfileResult, ResolvePayload, ResolveResponse, SignedRecipe } from '../shared/types';
 
 const MOCK_DIR = path.resolve(__dirname, '../../mock-portal');
@@ -156,6 +156,12 @@ export class FakeSuite implements SuitePort {
     this.calls.push({ name: 'proposePatch', body: p });
     this.patches.push(p);
   }
+  /** G17: the certifier's checks; recorded by default so tests that do not test the gate reach Submit. */
+  attestationValue: AttestationStatus = { recorded: true, certifierName: 'Test certifier' };
+  async attestation(_id: string, runId: string): Promise<AttestationStatus> {
+    this.calls.push({ name: 'attestation', body: runId });
+    return this.attestationValue;
+  }
 }
 
 export class MemoryStore implements StorePort {
@@ -176,7 +182,7 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function pdfDrop(text = '%PDF-1.4 signed mock') {
+export function pdfDrop(text = '%PDF-1.4 signed mock', signers: string[] = ['professional:self']) {
   const bytes = new TextEncoder().encode(text);
   return sha256(bytes).then((sha) => ({
     type: 'PDF_DROPPED' as const,
@@ -184,6 +190,7 @@ export function pdfDrop(text = '%PDF-1.4 signed mock') {
     base64: Buffer.from(bytes).toString('base64'),
     sha256: sha,
     size: bytes.length,
+    signers,
   }));
 }
 
@@ -237,6 +244,9 @@ export class JsdomPortal implements PortalPort {
   }
   async readSrn(pattern?: string) {
     return this.agent.readSrn(pattern);
+  }
+  async markForRecords(targets: Parameters<PortalAgent['markForRecords']>[0]) {
+    return this.agent.markForRecords(targets);
   }
   teachAnswer: Awaited<ReturnType<PortalPort['teach']>> = null;
   async teach() {

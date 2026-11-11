@@ -29,19 +29,22 @@ export interface PanelState {
   catalog: Catalog;
   portal: PortalInfo;
   run: Run | null;
-  settings: { suiteOrigins: string[] };
+  /** `mcaLogin`: the last "Which MCA login are you using?" answer, to prefill (a label, never a password). */
+  settings: { suiteOrigins: string[]; mcaLogin?: string };
   notice?: string;
 }
 
 export type PanelCommand =
   | { cmd: 'refresh' }
   | { cmd: 'selectEngagement'; id: string }
-  | { cmd: 'start'; agentId: string; subAgentId: string }
+  | { cmd: 'start'; agentId: string; subAgentId: string; mcaLoginLabel: string }
   | { cmd: 'event'; event: UserEvent }
   | { cmd: 'reset' }
   | { cmd: 'setOrigins'; origins: string[] }
   | { cmd: 'tick' }
   /** "Fix in Suite": the engagement's step page (Suite redirects to the role's own shell). */
-  | { cmd: 'openSuite'; stepId?: string };
+  | { cmd: 'openSuite'; stepId?: string }
+  /** "Open in Suite" while the certifier's checks are awaited (G17): that run on the Assist runs page. */
+  | { cmd: 'openCertifier' };
 
 export type PanelMessage = { type: 'state'; state: PanelState };

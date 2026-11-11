@@ -22,7 +22,7 @@ interface SuiteRecipe {
   subAgent?: string;
   verifiedAgainst?: string;
   pages: Array<{ id: string; title: string; urlPattern: string; mockUrlPattern?: string; ready?: SuiteMatch }>;
-  fields: Array<{ key: string; page?: string; som: string; css?: string; label: string; transform?: string; required?: boolean; askUser?: boolean; note?: string; each?: string }>;
+  fields: Array<{ key: string; page?: string; som: string; css?: string; label: string; transform?: string; required?: boolean; askUser?: boolean; note?: string; each?: string; noPlaceholder?: boolean }>;
   actions: Array<{ id: string; label: string; kind: string; match: SuiteMatch }>;
   gates: string[];
   expect: Array<{ id: string; kind: string; pattern: string }>;
@@ -100,6 +100,8 @@ export function normalizeRecipe(raw: unknown): Recipe {
       askUser: f.askUser,
       note: f.note,
       each: f.each,
+      // Suite's rule: a mandatory field follows the no-placeholder rule unless the recipe says otherwise.
+      noPlaceholder: f.noPlaceholder ?? Boolean(f.required),
     });
   }
 

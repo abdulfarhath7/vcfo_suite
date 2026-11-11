@@ -8,7 +8,7 @@
  *
  * The paths and response shapes follow docs/specs/vcfo-assist-agents/API.md.
  */
-import type { ResolveContext, RunCreate, RunUpdate, SuitePort } from '../engine/ports';
+import type { AttestationStatus, ResolveContext, RunCreate, RunUpdate, SuitePort } from '../engine/ports';
 import type { Catalog, EngagementSummary, PatchProposal, ProfileResult, ResolvePayload, ResolveResponse, SignedRecipe } from '../shared/types';
 
 export const DEFAULT_SUITE_ORIGINS: readonly string[] = ['http://localhost:3000', 'https://app.sbctrack.in'];
@@ -30,6 +30,8 @@ export const SUITE_PATHS = {
    */
   fixInSuite: (engagementId: string, stepId?: string) =>
     engagementId ? `/api/assist/step-link/${enc(engagementId)}${stepId ? `?step=${enc(stepId)}` : ''}` : '/',
+  /** "Open in Suite" while waiting for the certifier (G17): Suite redirects to that run on the Assist runs page. */
+  certifierLink: (engagementId: string, runId: string) => `/api/assist/step-link/${enc(engagementId)}?run=${enc(runId)}`,
 };
 
 export interface TabFetchResult {
@@ -103,9 +105,15 @@ export function parseEngagements(json: unknown): EngagementSummary[] {
 export function parseCatalog(json: unknown): Catalog {
   const body = isObj(json) && isObj(json.catalog) ? json.catalog : json;
   if (!isObj(body) || !Array.isArray(body.agents)) return DEFAULT_CATALOG;
+  const contacts = isObj(body.firmContacts) ? body.firmContacts : {};
+  const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
   return {
     liveAllowed: body.liveEnabled === true || body.liveAllowed === true,
     liveHosts: Array.isArray(body.liveHosts) ? body.liveHosts.map(String) : undefined,
+    // G18: any truthy value stops runs.
+    extensionDisabled: Boolean(body.extensionDisabled),
+    minExtensionVersion: typeof body.minExtensionVersion === 'string' ? body.minExtensionVersion : null,
+    firmContacts: { emails: strings(contacts.emails).map((e) => e.toLowerCase()), phones: strings(contacts.phones).map((p) => p.replace(/\D/g, '').slice(-10)) },
     agents: body.agents.filter(isObj).map((a) => ({
       id: String(a.id),
       name: String(a.title ?? a.name ?? a.id),
@@ -165,6 +173,18 @@ export function parseResolve(json: unknown): ResolveResponse {
   };
 }
 
+/** GET /api/engagements/:id/assist-runs/:runId → whether `run.attestation` is recorded (G17). */
+export function parseAttestation(json: unknown): AttestationStatus {
+  const run = isObj(json) && isObj(json.run) ? json.run : null;
+  const att = run && isObj(run.attestation) ? run.attestation : null;
+  if (!att || typeof att.id !== 'string') return { recorded: false };
+  return {
+    recorded: true,
+    certifierName: typeof att.certifierName === 'string' ? att.certifierName : undefined,
+    at: typeof att.createdAt === 'string' ? att.createdAt : undefined,
+  };
+}
+
 export class SuiteClient implements SuitePort {
   constructor(private readonly fetchInTab: TabFetch) {}
 
@@ -197,14 +217,20 @@ export class SuiteClient implements SuitePort {
   }
 
   async createRun(engagementId: string, body: RunCreate): Promise<{ runId: string } | null> {
-    const { subAgent, portalHost, recipeVersion, fieldsTotal, state } = body;
-    const runId = parseRunId(await this.call(SUITE_PATHS.runs(engagementId), 'POST', strip({ subAgent, portalHost, recipeVersion, fieldsTotal, state })));
+    const { subAgent, portalHost, recipeVersion, fieldsTotal, state, mcaLoginLabel, device, extensionVersion } = body;
+    const runId = parseRunId(
+      await this.call(SUITE_PATHS.runs(engagementId), 'POST', strip({ subAgent, portalHost, recipeVersion, fieldsTotal, state, mcaLoginLabel, device, extensionVersion })),
+    );
     return runId ? { runId } : null;
   }
 
   async updateRun(engagementId: string, runId: string, body: RunUpdate): Promise<void> {
-    const { status, state, fieldsTotal, fieldsFilled, heals, refusals, srn, error } = body;
-    await this.call(SUITE_PATHS.run(engagementId, runId), 'PATCH', strip({ status, state, fieldsTotal, fieldsFilled, heals, refusals, srn, error }));
+    const { status, state, fieldsTotal, fieldsFilled, heals, refusals, srn, error, blanks, dscSigners } = body;
+    await this.call(SUITE_PATHS.run(engagementId, runId), 'PATCH', strip({ status, state, fieldsTotal, fieldsFilled, heals, refusals, srn, error, blanks, dscSigners }));
+  }
+
+  async attestation(engagementId: string, runId: string): Promise<AttestationStatus> {
+    return parseAttestation(await this.call(SUITE_PATHS.run(engagementId, runId)));
   }
 
   /** Labels and key names only: `payload` is built by `heal/payload.ts`, which never sees a value. */

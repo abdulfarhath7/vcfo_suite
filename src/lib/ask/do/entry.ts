@@ -20,8 +20,9 @@ import { planRows } from '@/lib/ask/data-router/plan';
 import { instructionOf, looksLikeData, readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
+import { knownPeopleFromState } from '@/lib/ask/client-data';
 import { parseDropReply } from '@/lib/ask/drop/classify';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, namesFromLabelledText, type KnownPerson } from '@/lib/ask/mask';
 import { limitAnswer } from '@/lib/ask/refusals';
 import { createRunContext, RUN_OVER_BUDGET_COPY, type DoEvent, type DoWorkResult, type RunContext } from './run-context';
 import { getObjectBuffer, putObject } from '@/storage/s3';
@@ -119,8 +120,8 @@ export async function pendingDoRun(ctx: AuthContext, conversationId: string | nu
   return null;
 }
 
-/** A short line about the record on screen, so "this client" means something to the router. */
-export async function pageContextLine(ctx: AuthContext, page: DoWorkRequest['page']): Promise<string | null> {
+/** The record on screen, so "this client" means something to the router and its people can be masked. */
+export async function pageContext(ctx: AuthContext, page: DoWorkRequest['page']): Promise<{ line: string; people: KnownPerson[] } | null> {
   const match = page?.path ? /\/(?:projects|engagements|clients)\/([^/?#]+)(?:\/step\/([^/?#]+))?/.exec(page.path) : null;
   if (!match) return null;
   const key = decodeURIComponent(match[1]!);
@@ -128,7 +129,10 @@ export async function pageContextLine(ctx: AuthContext, page: DoWorkRequest['pag
   if (!row) return null;
   const stepKey = match[2] ? decodeURIComponent(match[2]) : null;
   const step = stepKey ? checklist.find((item) => item.slug === stepKey || item.id === stepKey) : undefined;
-  return `The person is looking at ${row.companyName}${step ? `, step "${step.title}"` : ''}.`;
+  return {
+    line: `The person is looking at ${row.companyName}${step ? `, step "${step.title}"` : ''}.`,
+    people: knownPeopleFromState(checklistStateFromRow(row)),
+  };
 }
 
 export async function handleDoWork(
@@ -136,7 +140,13 @@ export async function handleDoWork(
   request: DoWorkRequest,
   message: string,
   emit: (event: DoEvent) => void,
-  context: { conversationId: string | null; now: Date; pending: Awaited<ReturnType<typeof pendingDoRun>> },
+  context: {
+    conversationId: string | null;
+    now: Date;
+    pending: Awaited<ReturnType<typeof pendingDoRun>>;
+    /** People the engagement on screen already names, for the masker. */
+    people?: readonly KnownPerson[];
+  },
 ): Promise<DoWorkResult | null> {
   const { shell } = request;
   if (shell === 'client') return { answer: limitAnswer(shell, 'doWork'), metered: null };
@@ -156,8 +166,11 @@ export async function handleDoWork(
   const run = pending?.run ?? (await createAskRun(ctx, { conversationId, workflow: 'data_router', goal: instructionOf(message) || (attachmentIds.length > 0 ? `${attachmentIds.length} attached file(s)` : 'Pasted details'), budgetTokens: budgets.runMaxTokens }));
   const runId = run.id;
   emit({ type: 'run', runId, status: 'running' });
-  // The provider, the budgets and the close live in run-context, shared with the drop job.
-  const runCtx = createRunContext({ ctx, run, now, emit });
+  // The provider, the budgets and the close live in run-context, shared with the drop job. The raw
+  // message stays on the server: code reads the values from it, and every model call goes through
+  // the masker seeded here, so a value written back into the app always comes from this original text.
+  const people = [...(context.people ?? []), ...namesFromLabelledText(message)];
+  const runCtx = createRunContext({ ctx, run, now, emit, people });
   const { deps, progress } = runCtx;
   const close = (status: string, state?: PendingState, error?: string) =>
     runCtx.close(status, { ...(state ? { state: state as unknown as JsonValue } : {}), ...(error ? { error } : {}) });

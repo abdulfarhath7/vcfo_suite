@@ -63,3 +63,19 @@ describe('SRN write-back text', () => {
     expect(appendSrn('SRN AA1234567 filed', 'AA1234567', at)).toBeNull();
   });
 });
+
+describe('evidence and blanks in the run bodies', () => {
+  it('takes the MCA login label (an email is fine: it is the staff member’s own login), the device and the version', () => {
+    const body = { subAgent: 'spice-a', portalHost: 'localhost', mcaLoginLabel: 'lead@sbc.in', device: { installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'Mozilla/5.0' }, extensionVersion: '0.2.0' };
+    expect(createAgentRunSchema.safeParse(body).success).toBe(true);
+    expect(createAgentRunSchema.safeParse({ ...body, mcaPassword: 'x' }).success).toBe(false);
+    expect(createAgentRunSchema.safeParse({ ...body, device: { installId: 'bad id!', userAgent: 'x' } }).success).toBe(false);
+  });
+
+  it('takes blanks by key and reason, and signer references only', () => {
+    expect(updateAgentRunSchema.safeParse({ blanks: [{ field: 'directors[0].mobile', reason: 'placeholder' }] }).success).toBe(true);
+    expect(updateAgentRunSchema.safeParse({ blanks: [{ field: 'x', reason: 'guess' }] }).success).toBe(false);
+    expect(updateAgentRunSchema.safeParse({ dscSigners: ['director:e3', 'professional:self'] }).success).toBe(true);
+    expect(updateAgentRunSchema.safeParse({ dscSigners: ['Asha Rao'] }).success).toBe(false);
+  });
+});

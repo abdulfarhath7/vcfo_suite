@@ -83,6 +83,8 @@ function Header({ state, send }: { state: PanelState; send: (c: PanelCommand) =>
 
 function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => void }) {
   const [agentId, setAgentId] = useState<string>(state.catalog.agents[0]?.id ?? '');
+  // G14: asked once and remembered; a user id or email label for the evidence log, never a password.
+  const [mcaLogin, setMcaLogin] = useState<string>(state.settings.mcaLogin ?? '');
   const agent = state.catalog.agents.find((a) => a.id === agentId);
   const portal = state.portal;
   return (
@@ -111,6 +113,23 @@ function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => v
             {LIVE_BLOCKED_MESSAGE}
           </p>
         )}
+      </section>
+
+      <section className="card">
+        <label className="picker">
+          <span className="picker-label">Which MCA login are you using?</span>
+          <input
+            type="text"
+            className="mono"
+            data-testid="mca-login"
+            autoComplete="off"
+            maxLength={120}
+            placeholder="Your MCA user ID or email (never the password)"
+            value={mcaLogin}
+            onChange={(e) => setMcaLogin(e.target.value)}
+          />
+        </label>
+        <p className="muted small">Kept on the run as evidence of who filed. Use your own login only.</p>
       </section>
 
       {agent && (
@@ -147,8 +166,8 @@ function Home({ state, send }: { state: PanelState; send: (c: PanelCommand) => v
                     <button
                       type="button"
                       className="btn btn-primary"
-                      disabled={!state.engagementId || !portal.tabId || !portal.liveAllowed}
-                      onClick={() => send({ cmd: 'start', agentId: agent.id, subAgentId: s.id })}
+                      disabled={!state.engagementId || !portal.tabId || !portal.liveAllowed || !mcaLogin.trim()}
+                      onClick={() => send({ cmd: 'start', agentId: agent.id, subAgentId: s.id, mcaLoginLabel: mcaLogin.trim() })}
                     >
                       Run
                     </button>

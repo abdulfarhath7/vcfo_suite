@@ -62,6 +62,7 @@ export class ChromePortal implements PortalPort {
   click: PortalPort['click'] = (target, label, resultCss) => this.ask({ type: 'click', css: target.css, text: target.text, label, resultCss });
   attach: PortalPort['attach'] = (css, name, base64) => this.ask({ type: 'attach', css, name, base64 });
   highlightHuman: PortalPort['highlightHuman'] = (gates) => this.ask({ type: 'highlightHuman', gates });
+  markForRecords: PortalPort['markForRecords'] = (targets) => this.ask({ type: 'markForRecords', targets });
   readSrn: PortalPort['readSrn'] = (pattern) => this.ask({ type: 'readSrn', pattern });
   teach = (label: string): Promise<TeachResult> => this.ask({ type: 'teach', label, timeoutMs: 180_000 });
 

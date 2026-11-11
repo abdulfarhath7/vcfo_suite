@@ -24,6 +24,8 @@ import { ASK_PANEL_SIZES, useAskPanelSize, type AskPanelSize } from '@/component
 import { useApp } from '@/context/AppContext';
 import { CLIENT_BASE, resolveHref } from '@/lib/ask/resolve-href';
 import { visualText } from '@/lib/ask/visual-text';
+import { AI_NOTICE_LABEL, aiNoticeText, isAiAnswer, REVIEW_ACTION_LABEL, REVIEW_STATE_LABEL, reviewRequestBody } from '@/lib/ask/ai-review';
+import { fetchReviewStatus, requestAnswerReview } from '@/hooks/ask/ask-api';
 import { AFTER_QUESTIONS, BEFORE_QUESTIONS } from '@/lib/client-portal/answers';
 import { usePortal, type WhatsThisAnswer } from './PortalProvider';
 import { VisorCharacter, VisorHead } from '@/components/ask/Visor';
@@ -39,7 +41,21 @@ const SIZE_ICON: Record<AskPanelSize, string> = {
 
 type LogItem =
   | { r: 'u'; t: string }
-  | { r: 'a'; t: string; k?: 'ok' | 'nan'; h?: boolean; links?: { label: string; href: string }[]; q?: string; mid?: string | null; fb?: 'up' | 'down' }
+  | {
+      r: 'a';
+      t: string;
+      k?: 'ok' | 'nan';
+      h?: boolean;
+      links?: { label: string; href: string }[];
+      q?: string;
+      mid?: string | null;
+      fb?: 'up' | 'down';
+      /** A model wrote it: shows the AI notice and "Ask my CA to confirm". */
+      ai?: boolean;
+      /** The review request (a task on the lead) and its last known status line. */
+      rv?: string;
+      rs?: string;
+    }
   | { r: 'w'; w: WhatsThisAnswer; k: 'ok' };
 
 const LOG_KEY = 'vcfo.chat';
@@ -230,6 +246,7 @@ export function AskLauncher() {
         h: refusal,
         links: (last.answer.links ?? []).map((l) => ({ label: l.label, href: destHref(l.dest) })),
         mid: last.messageId,
+        ai: isAiAnswer(last.answer),
         q: [...ask.thread].reverse().find((i) => i.kind === 'user')?.kind === 'user' ? ([...ask.thread].reverse().find((i) => i.kind === 'user') as { text: string }).text : undefined,
       };
       save([...readLog(), item]);
@@ -270,6 +287,50 @@ export function AskLauncher() {
       toast('Could not send it. Please try again.');
     }
   };
+
+  /* "Ask my CA to confirm": the question and this AI answer go to the lead as a hand-off task. */
+  const requestReview = async (i: number) => {
+    const m = readLog()[i];
+    if (!m || m.r !== 'a' || m.rv) return;
+    try {
+      const { id } = await requestAnswerReview({ ...reviewRequestBody(m.q, m.t), conversationId: ask?.conversationId ?? undefined }, 'portal');
+      const l = readLog();
+      const cur = l[i];
+      if (cur && cur.r === 'a') l[i] = { ...cur, rv: id, rs: REVIEW_STATE_LABEL.sent };
+      save(l);
+      toast(`Sent to ${lead?.name ?? 'your CA'} for review`);
+    } catch {
+      toast('Could not send it for review. Please try again.');
+    }
+  };
+
+  /* Each open refreshes the status of the review requests in this chat. */
+  useEffect(() => {
+    if (!chatOpen) return;
+    const pending = readLog()
+      .map((m, i) => ({ m, i }))
+      .filter(({ m }) => m.r === 'a' && m.rv && m.rs !== REVIEW_STATE_LABEL.reviewed);
+    if (pending.length === 0) return;
+    let live = true;
+    void Promise.all(
+      pending.map(({ m, i }) =>
+        fetchReviewStatus((m as { rv: string }).rv)
+          .then((s) => ({ i, label: s.label }))
+          .catch(() => null),
+      ),
+    ).then((results) => {
+      if (!live) return;
+      const l = readLog();
+      for (const r of results) {
+        const cur = r && l[r.i];
+        if (r && cur && cur.r === 'a') l[r.i] = { ...cur, rs: r.label };
+      }
+      save(l);
+    });
+    return () => {
+      live = false;
+    };
+  }, [chatOpen, save]);
 
   const vote = (i: number, v: 'up' | 'down') => {
     const l = readLog();
@@ -413,6 +474,25 @@ export function AskLauncher() {
                     </button>
                   </span>
                 ))}
+                {m.ai ? (
+                  <span className="vpc-ai" data-ai-notice>
+                    <b>{AI_NOTICE_LABEL}</b> {aiNoticeText(ask?.firmName)}
+                  </span>
+                ) : null}
+                {m.ai && !ask?.preview ? (
+                  m.rv ? (
+                    <span className="vpc-rv" role="status">
+                      {m.rs ?? REVIEW_STATE_LABEL.sent}
+                    </span>
+                  ) : (
+                    <span>
+                      <br />
+                      <button type="button" data-review onClick={() => void requestReview(i)}>
+                        {REVIEW_ACTION_LABEL}
+                      </button>
+                    </span>
+                  )
+                ) : null}
                 {m.h ? (
                   <>
                     <br />

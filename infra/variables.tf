@@ -119,9 +119,80 @@ variable "ask_vcfo_features" {
   }
 }
 variable "ask_vcfo_anthropic_secret_name" {
-  description = "Name of the hand-created Secrets Manager secret holding the Anthropic API key (plain string value)."
+  description = "Name of the hand-created Secrets Manager secret holding the Anthropic API key (plain string value). Only looked up when ask_vcfo_llm_provider is anthropic."
   type        = string
   default     = "/vcfo/ask-vcfo/anthropic-api-key"
+}
+
+# Ask VCFO model provider and data residency (docs/specs/ask-vcfo/BEDROCK-INDIA.md).
+# Production default: Amazon Bedrock in Mumbai with the India geographic
+# inference profile, so prompts are processed only in ap-south-1 / ap-south-2.
+variable "ask_vcfo_llm_provider" {
+  description = "Ask VCFO model provider: bedrock (default, India residency) or anthropic (Anthropic API; prompts leave India and the API key secret must exist)."
+  type        = string
+  default     = "bedrock"
+
+  validation {
+    condition     = contains(["bedrock", "anthropic"], var.ask_vcfo_llm_provider)
+    error_message = "ask_vcfo_llm_provider must be bedrock or anthropic."
+  }
+}
+variable "ask_vcfo_data_residency" {
+  description = "india (default): the app refuses any region other than ap-south-1/ap-south-2 and any model id without the in. prefix. none: no residency guard."
+  type        = string
+  default     = "india"
+
+  validation {
+    condition     = contains(["india", "none"], var.ask_vcfo_data_residency)
+    error_message = "ask_vcfo_data_residency must be india or none."
+  }
+  validation {
+    condition     = !(var.ask_vcfo_data_residency == "india" && var.ask_vcfo_llm_provider == "anthropic")
+    error_message = "The Anthropic API has no India processing option: use ask_vcfo_llm_provider = \"bedrock\", or set ask_vcfo_data_residency = \"none\" knowingly."
+  }
+}
+variable "ask_vcfo_bedrock_region" {
+  description = "Region the app calls Bedrock in (ASK_VCFO_BEDROCK_REGION). The India profile is called from ap-south-1 or ap-south-2."
+  type        = string
+  default     = "ap-south-1"
+
+  validation {
+    condition     = var.ask_vcfo_data_residency != "india" || contains(["ap-south-1", "ap-south-2"], var.ask_vcfo_bedrock_region)
+    error_message = "With india residency, ask_vcfo_bedrock_region must be ap-south-1 or ap-south-2."
+  }
+}
+# Defaults from the AWS launch post of 29 September 2026 (Opus 5, Sonnet 5 and
+# Haiku 4.5 on the India profile). CONFIRM both ids in the Mumbai console
+# (Bedrock > Cross-region inference) before the first apply with Bedrock.
+variable "ask_vcfo_bedrock_model_fast" {
+  description = "India profile id for the guard, answer, document, extract, contextualizer and watch tiers (ASK_VCFO_BEDROCK_MODEL_FAST)."
+  type        = string
+  default     = "in.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+  validation {
+    condition     = var.ask_vcfo_data_residency != "india" || startswith(var.ask_vcfo_bedrock_model_fast, "in.")
+    error_message = "With india residency the model id must start with in. (global., apac., us. and plain anthropic. ids can leave India)."
+  }
+}
+variable "ask_vcfo_bedrock_model_smart" {
+  description = "India profile id for the agent tier (ASK_VCFO_BEDROCK_MODEL_SMART)."
+  type        = string
+  default     = "in.anthropic.claude-sonnet-5"
+
+  validation {
+    condition     = var.ask_vcfo_data_residency != "india" || startswith(var.ask_vcfo_bedrock_model_smart, "in.")
+    error_message = "With india residency the model id must start with in. (global., apac., us. and plain anthropic. ids can leave India)."
+  }
+}
+variable "ask_vcfo_bedrock_extra_models" {
+  description = "Further India profile ids the app role may invoke (for example in.anthropic.claude-opus-5 for a per-tier override). Each must start with in."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for id in var.ask_vcfo_bedrock_extra_models : startswith(id, "in.")])
+    error_message = "ask_vcfo_bedrock_extra_models entries must start with in."
+  }
 }
 
 # People who may manage the vcfo secrets despite the Deny in database.tf. Exact

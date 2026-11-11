@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SUITE_PATHS, SuiteClient, parseCatalog, parseSignedRecipe } from './suite-client';
+import { SUITE_PATHS, SuiteClient, parseAttestation, parseCatalog, parseSignedRecipe } from './suite-client';
 
 describe('suite client', () => {
   it('"Fix in Suite" opens Suite\'s step link, which redirects to the role\'s own step page', () => {
@@ -27,5 +27,23 @@ describe('suite client', () => {
     const runId = '12345678-1234-4234-8234-123456789012';
     await expect(client.resolve({ fieldKey: 'company.type', fieldLabel: 'Type', candidates: [{ i: 0, label: 'Type' }] }, { recipeId: 'spice-a', runId })).rejects.toThrow(/personal_data/);
     expect(calls).toEqual([expect.objectContaining({ runId })]);
+  });
+});
+
+describe('suite client: safeguards', () => {
+  it('reads the kill switch, the version floor and the firm contacts from the catalog', () => {
+    const c = parseCatalog({ agents: [], extensionDisabled: true, minExtensionVersion: '0.3.0', firmContacts: { emails: ['Desk@Firm.in'], phones: ['+91 98765 01234'] } });
+    expect(c).toMatchObject({ extensionDisabled: true, minExtensionVersion: '0.3.0', firmContacts: { emails: ['desk@firm.in'], phones: ['9876501234'] } });
+    expect(parseCatalog({ agents: [] })).toMatchObject({ extensionDisabled: false, minExtensionVersion: null });
+  });
+
+  it('reads the certifier’s checks off the run, and links "Open in Suite" to that run', () => {
+    expect(parseAttestation({ ok: true, run: { id: 'r', attestation: null } })).toEqual({ recorded: false });
+    expect(parseAttestation({ ok: true, run: { attestation: { id: 'a1', certifierName: 'CA', createdAt: '2026-11-10T00:00:00Z' } } })).toEqual({
+      recorded: true,
+      certifierName: 'CA',
+      at: '2026-11-10T00:00:00Z',
+    });
+    expect(SUITE_PATHS.certifierLink('acme', 'r-1')).toBe('/api/assist/step-link/acme?run=r-1');
   });
 });

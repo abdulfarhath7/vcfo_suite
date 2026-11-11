@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { askBudgets, askConfig } from '@/lib/ask/config';
 import { extractSourceText } from '@/lib/ask/ingest/extract';
-import { maskIdentityNumbers, tokeniseIdentityNumbers } from '@/lib/ask/mask';
+import { askClientDataEnabled } from '@/lib/ask/client-data';
+import { createAskMasker, maskIdentityNumbers, tokeniseIdentityNumbers } from '@/lib/ask/mask';
+import { maskingProvider } from '@/lib/ask/masked-provider';
 import { getAskProvider, type LlmProvider } from '@/lib/ask/provider';
 import { meterProvider } from '@/lib/ask/provider/meter';
 import { authorityFromText, NOTICE_AUTHORITIES, type NoticeAuthority } from './model';
@@ -232,8 +234,10 @@ export async function readNotice(
   opts: { provider?: LlmProvider | null } = {},
 ): Promise<ReadNoticeResult> {
   const model = askConfig().models.extract;
-  const own = opts.provider === undefined ? await getAskProvider().catch(() => null) : null;
-  const metered = own ? meterProvider(own) : null;
+  // Its own provider goes through the Ask masker like every Ask call; with client data off, no model
+  // reads the notice and only the authority its words point to is filled.
+  const own = opts.provider === undefined && askClientDataEnabled() ? await getAskProvider().catch(() => null) : null;
+  const metered = own ? meterProvider(maskingProvider(own, createAskMasker())) : null;
   const withinBudget = metered ? (await systemTodayTokenTotal().catch(() => 0)) < askBudgets().dailyTokens : false;
   const provider = opts.provider ?? (withinBudget ? metered : null);
   try {

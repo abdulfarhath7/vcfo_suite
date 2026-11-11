@@ -147,3 +147,48 @@ export function assistHostAllowed(host: string, env: Record<string, string | und
   const bare = host.trim().toLowerCase().replace(/:\d+$/, '');
   return assistMockHosts(env).includes(bare) || assistLivePortalsEnabled(env);
 }
+
+/**
+ * The extension's remote kill switch (SAFETY.md G18, risk 6 in the legal review). The extension
+ * reads the catalog at every run start and refuses to run while `ASSIST_EXTENSION_DISABLED=true`,
+ * or while its own version is below `ASSIST_MIN_EXTENSION_VERSION`. Both are env settings so they
+ * can be flipped on App Runner without a deploy of new code.
+ */
+export function assistExtensionDisabled(env: Record<string, string | undefined> = process.env): boolean {
+  return env.ASSIST_EXTENSION_DISABLED?.trim().toLowerCase() === 'true';
+}
+
+/** The lowest extension version allowed to run, or null for no floor. Must look like `1.2.3`. */
+export function assistMinExtensionVersion(env: Record<string, string | undefined> = process.env): string | null {
+  const v = env.ASSIST_MIN_EXTENSION_VERSION?.trim();
+  return v && /^\d{1,4}(\.\d{1,5}){0,3}$/.test(v) ? v : null;
+}
+
+/**
+ * Extra firm contact details the extension must never type into a company, director or
+ * subscriber field (`ASSIST_FIRM_CONTACTS`, comma separated emails and phone numbers). The
+ * catalog route adds the firm settings' support email and phone and the signed-in user's email.
+ */
+export function assistFirmContactsFromEnv(env: Record<string, string | undefined> = process.env): { emails: string[]; phones: string[] } {
+  const items = (env.ASSIST_FIRM_CONTACTS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return splitContacts(items);
+}
+
+/** Sorts contact strings into lower-cased emails and digit-only phone numbers (the last ten digits). */
+export function splitContacts(items: ReadonlyArray<string | null | undefined>): { emails: string[]; phones: string[] } {
+  const emails = new Set<string>();
+  const phones = new Set<string>();
+  for (const raw of items) {
+    const item = raw?.trim();
+    if (!item) continue;
+    if (item.includes('@')) emails.add(item.toLowerCase());
+    else {
+      const digits = item.replace(/\D/g, '');
+      if (digits.length >= 8) phones.add(digits.slice(-10));
+    }
+  }
+  return { emails: [...emails].sort(), phones: [...phones].sort() };
+}

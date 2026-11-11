@@ -5,9 +5,10 @@
  *   filling  brand outline round the field being written
  *   refused  danger badge "Refused: captcha (G2)" on a secret field
  *   human    pulsing teal outline and "You click this" on Submit, Pay and other human steps
+ *   records  amber outline "You fill this from the client's records" on a field G16 left empty
  *   banner   one line at the top, for example the teach-mode prompt
  */
-type Kind = 'filling' | 'refused' | 'human' | 'done';
+type Kind = 'filling' | 'refused' | 'human' | 'done' | 'records';
 
 interface Mark {
   el: Element;
@@ -27,6 +28,8 @@ const CSS = `
 .done .tag { background: oklch(51% .125 154); }
 .refused { border: 2px dashed oklch(51.9% .197 22); background: oklch(51.9% .197 22 / .06); }
 .refused .tag { background: oklch(51.9% .197 22); }
+.records { border: 2px solid oklch(66% .15 70); background: oklch(66% .15 70 / .08); }
+.records .tag { background: oklch(48% .12 60); }
 .human { border: 3px solid oklch(55% .1 200); animation: pulse 1.2s ease-in-out infinite; }
 .human .tag { background: oklch(55% .1 200); font-size: 12px; }
 .banner { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; background: oklch(26% .06 251); color: #fff; font-size: 13px; box-shadow: 0 4px 16px rgb(0 0 0 / .2); }

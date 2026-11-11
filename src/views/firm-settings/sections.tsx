@@ -1,12 +1,13 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
-import { BellRing, Building2, ImagePlus, Loader2, Palette, Plus, Trash2, X } from 'lucide-react';
+import { BellRing, Building2, ImagePlus, Loader2, Palette, Plus, ShieldCheck, Trash2, X } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -395,6 +396,31 @@ export function SettingsHistorySection({ rows }: { rows: FirmSettingsHistoryRow[
           ))}
         </ul>
       )}
+    </DashSection>
+  );
+}
+
+/**
+ * VCFO Assist certifier rule (SAFETY.md G17): whether the person who records the certifier's
+ * checks on an agent run must be a different user from the one who ran it. Off by default.
+ */
+export function AssistCertifierSection({ settings, canEdit, save }: { settings: FirmSettings; canEdit: boolean; save: Save }) {
+  return (
+    <DashSection title="VCFO Assist filing checks" headIcon={{ icon: ShieldCheck, tone: 'teal' }}>
+      <div className="flex items-start justify-between gap-3">
+        <Label htmlFor="fs-assist-certifier" className="text-[13px] leading-snug text-ink">
+          The certifier must be a different person from the one who ran the agent
+          <span className="mt-1 block text-[12.5px] text-ink-muted">
+            When off, the same professional may fill the form and record the certifier&apos;s checks.
+          </span>
+        </Label>
+        <Switch
+          id="fs-assist-certifier"
+          checked={settings.assistCertifierMustDiffer}
+          disabled={!canEdit}
+          onCheckedChange={(on) => save({ assistCertifierMustDiffer: on })}
+        />
+      </div>
     </DashSection>
   );
 }

@@ -7,7 +7,9 @@ import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/a
 import { documentStorageKey, getDocumentById } from '@/db/repositories/documents';
 import type { NoticeCaseDto } from '@/db/repositories/notice-cases';
 import { askBudgets, askConfig } from '@/lib/ask/config';
-import { maskIdentityNumbers, tokeniseIdentityNumbers } from '@/lib/ask/mask';
+import { askClientDataEnabled } from '@/lib/ask/client-data';
+import { createAskMasker, maskIdentityNumbers, tokeniseIdentityNumbers } from '@/lib/ask/mask';
+import { maskingProvider } from '@/lib/ask/masked-provider';
 import { getAskProvider, type LlmProvider } from '@/lib/ask/provider';
 import { meterProvider } from '@/lib/ask/provider/meter';
 import { getObjectBuffer } from '@/storage/s3';
@@ -84,10 +86,12 @@ export interface DraftedReply {
 export class DraftUnavailable extends Error {}
 
 export async function draftNoticeReply(ctx: AuthContext, item: NoticeCaseDto, now: Date = new Date()): Promise<DraftedReply> {
+  if (!askClientDataEnabled()) throw new DraftUnavailable('Client data is switched off for Ask VCFO, so it cannot draft from this notice. Please write the reply yourself.');
   const configured = await getAskProvider().catch(() => null);
   if (!configured) throw new DraftUnavailable('Drafting needs Ask VCFO, which is not set up here.');
   if ((await systemTodayTokenTotal().catch(() => 0)) >= askBudgets().dailyTokens) throw new DraftUnavailable('Today\'s Ask VCFO budget is used up. Try again tomorrow.');
-  const provider = meterProvider(configured);
+  // Emails, phones and bank accounts leave as placeholders and come back in the draft.
+  const provider = meterProvider(maskingProvider(configured, createAskMasker()));
   const config = askConfig();
   try {
     const notice = (await caseNoticeText(ctx, item, { provider, model: config.models.extract })).slice(0, NOTICE_CHARS);

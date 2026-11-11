@@ -3,7 +3,8 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { requireAnyRole, type GuardResult } from '@/auth/guards';
-import { AssistAgentAccessError } from '@/db/repositories/assist-agent-runs';
+import { AssistAgentAccessError, type RequestSeen } from '@/db/repositories/assist-agent-runs';
+import { clientIp } from '@/lib/growth/demo-request';
 import { AssistResolveRefused } from './resolve';
 
 /**
@@ -41,4 +42,18 @@ const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 /** A run or patch id from the URL; anything else reads as not found before it reaches Postgres. */
 export function isRowId(value: string): boolean {
   return UUID_SHAPE.test(value);
+}
+
+/**
+ * What Suite saw of a run API call, for the run's evidence log (SAFETY.md G14). The IP is the
+ * address App Runner's front proxy reported: the proxy appends it to X-Forwarded-For, so it is the
+ * right-most entry, the first hop Suite itself trusts (`clientIp`); entries to its left were written
+ * by the caller and can be spoofed, so the whole chain is kept beside it, marked as such.
+ */
+export function requestSeen(request: Request): RequestSeen {
+  return {
+    ip: clientIp(request.headers),
+    forwardedFor: request.headers.get('x-forwarded-for'),
+    userAgent: request.headers.get('user-agent'),
+  };
 }

@@ -24,6 +24,7 @@ export type PortalRequest =
   | { type: 'click'; css?: string; text?: string; label: string; resultCss?: string }
   | { type: 'attach'; css: string; name: string; base64: string }
   | { type: 'highlightHuman'; gates: RecipeGate[] }
+  | { type: 'markForRecords'; targets: Array<{ target: FieldTarget; label: string }> }
   | { type: 'readSrn'; pattern?: string }
   | { type: 'teach'; label: string; timeoutMs?: number }
   | { type: 'cancelTeach' }
@@ -165,6 +166,18 @@ export class PortalAgent {
     return n;
   }
 
+  /** G16: marks fields the agent left empty "You fill this from the client's records". Writes nothing. */
+  markForRecords(targets: Array<{ target: FieldTarget; label: string }>): number {
+    let n = 0;
+    for (const t of targets) {
+      const el = locate(this.doc, t.target);
+      if (!el) continue;
+      this.overlay.mark(el, 'records', "You fill this from the client's records");
+      n += 1;
+    }
+    return n;
+  }
+
   readSrn(pattern?: string): string | null {
     const text = (this.doc.body as HTMLElement | null)?.innerText || this.doc.body?.textContent || '';
     return findSrn(text, pattern ? new RegExp(pattern, 'g') : undefined);
@@ -225,6 +238,8 @@ export class PortalAgent {
         return this.attach(msg.css, msg.name, msg.base64);
       case 'highlightHuman':
         return this.highlightHuman(msg.gates);
+      case 'markForRecords':
+        return this.markForRecords(msg.targets);
       case 'readSrn':
         return this.readSrn(msg.pattern);
       case 'teach':

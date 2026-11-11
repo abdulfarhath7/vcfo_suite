@@ -13,6 +13,9 @@
  *  - A live host is refused before the profile is pulled unless Suite allows it (G11).
  *  - Nothing is planned or written while the portal tab shows a page other than the recipe page's
  *    `urlPattern` (`mockUrlPattern` on a mock host).
+ *  - G16: a blank or placeholder-looking value, or the firm's own phone or email, is never typed.
+ *  - G17: the Submit and Pay card waits until Suite reports the certifier's checks for this run.
+ *  - G18: every run start reads Suite's kill switch and minimum version first.
  */
 import { HUMAN_STATES, TERMINAL, appendLog, suiteStatus, transition } from './machine';
 import { LIVE_BLOCKED_MESSAGE, isMockHost, liveAllowedFor } from './live';
@@ -23,16 +26,18 @@ import { expandRecipe, hasTemplates } from './expand';
 import { pageMatchesUrl, patternFor } from './url';
 import { resolveField } from '../heal/ladder';
 import { profileLeafValues } from '../heal/payload';
-import { isForbiddenAction } from '../guards';
+import { isForbiddenAction, placeholderReason } from '../guards';
+import { killSwitchReason } from './kill';
 import type { Persisted, PortalPort, RunUpdate, StorePort, SuitePort } from './ports';
 import { SuiteError } from '../suite/suite-client';
-import type { FieldOutcome, ProfileResult, Recipe, RecipeAction, Run, RunState, SignedRecipe, WaitInfo } from '../shared/types';
+import type { FieldOutcome, FieldTarget, ProfileResult, Recipe, RecipeAction, Run, RunState, SignedRecipe, SignerChoice, WaitInfo } from '../shared/types';
 
 export type UserEvent =
   | { type: 'LOGGED_IN' }
   | { type: 'CONFIRM_FILL' }
   | { type: 'SKIP_TEACH' }
-  | { type: 'PDF_DROPPED'; name: string; base64: string; sha256: string; size: number }
+  /** `signers`: who signed (G14), as `SignerChoice.ref`s; a drop without one is not taken. */
+  | { type: 'PDF_DROPPED'; name: string; base64: string; sha256: string; size: number; signers: string[] }
   | { type: 'RETRY' }
   | { type: 'REFILL' }
   | { type: 'CANCEL' };
@@ -44,6 +49,8 @@ export interface StartInput {
   subAgentId: string;
   recipeId: string;
   portalTabId: number;
+  /** G14: "Which MCA login are you using?" (a user id or email label, never a password). */
+  mcaLoginLabel?: string;
 }
 
 export interface EngineDeps {
@@ -55,6 +62,10 @@ export interface EngineDeps {
   now?: () => number;
   newId?: () => string;
   onChange?: (run: Run | null) => void;
+  /** This extension's version (the manifest's), checked against Suite's minimum (G18). */
+  extensionVersion?: string;
+  /** G14: this browser install's random id and user agent. */
+  device?: () => Promise<{ installId: string; userAgent: string }>;
 }
 
 export class StartRefused extends Error {}
@@ -66,6 +77,8 @@ const WAIT_TEXT: Record<WaitInfo['kind'], string> = {
   check_failed: 'the portal reported errors',
   dsc: 'waiting for the signed PDF',
   submit_pay: 'waiting for you to click Submit and pay',
+  certifier: "waiting for the certifier's checks in VCFO Suite",
+  disabled: 'switched off in Suite',
   live_blocked: 'live portal blocked',
   wrong_page: 'the portal tab shows another page',
   suite_error: 'Suite did not answer',
@@ -140,6 +153,7 @@ export class RunEngine {
       refusals: [],
       aiCalls: 0,
       aiTokens: 0,
+      evidence: { mcaLoginLabel: input.mcaLoginLabel?.trim() || undefined, extensionVersion: this.deps.extensionVersion },
       log: [],
       startedAt: now,
       updatedAt: now,
@@ -184,13 +198,23 @@ export class RunEngine {
         break;
       case 'PDF_DROPPED':
         if (run.state !== 'WAIT_DSC') return;
+        // G14: "Who signed?" is part of the drop; only choices the panel offered count.
+        {
+          const offered = new Set((run.signerChoices ?? []).map((c) => c.ref));
+          const signers = [...new Set(event.signers ?? [])].filter((r) => offered.has(r));
+          if (signers.length === 0) {
+            await this.log('gate', 'signed PDF not taken: choose who signed first');
+            return;
+          }
+          this.patch({ evidence: { ...run.evidence, dscSigners: signers } });
+        }
         this.p!.pdfBase64 = event.base64;
         this.patch({ pdf: { name: event.name, size: event.size, sha256: event.sha256 } });
         await this.log('gate', `signed PDF received: ${event.name} (${event.size} bytes)`);
         await this.move('ATTACH', 'signed PDF dropped');
         break;
       case 'RETRY':
-        if (wait?.kind === 'check_failed' || wait?.kind === 'suite_error' || wait?.kind === 'wrong_page') {
+        if (wait?.kind === 'check_failed' || wait?.kind === 'suite_error' || wait?.kind === 'wrong_page' || wait?.kind === 'certifier') {
           this.patch({ wait: undefined });
           await this.save();
         }
@@ -290,14 +314,23 @@ export class RunEngine {
 
   private async onReady(): Promise<boolean> {
     const run = this.run!;
-    // G11 first: nothing about the client is pulled for a host Suite has not cleared.
+    // G18 first: Suite's kill switch and minimum version, read at every run start; it fails closed.
+    let catalog = null;
+    try {
+      catalog = await this.deps.suite.catalog();
+    } catch {
+      catalog = null;
+    }
+    const killed = killSwitchReason(catalog, this.deps.extensionVersion ?? '0.0.0');
+    if (killed && catalog) {
+      await this.log('refusal', `G18: ${killed}`);
+      await this.finish('FAILED', killed, { kind: 'disabled', message: killed });
+      return true;
+    }
+    if (killed) return this.waitFor({ kind: 'suite_error', message: killed });
+    this.p!.firmContacts = catalog?.firmContacts;
+    // G11: nothing about the client is pulled for a host Suite has not cleared.
     if (!isMockHost(run.portalHost)) {
-      let catalog = null;
-      try {
-        catalog = await this.deps.suite.catalog();
-      } catch {
-        catalog = null;
-      }
       if (!liveAllowedFor(catalog, run.portalHost)) {
         this.patch({ wait: { kind: 'live_blocked', host: run.portalHost } });
         await this.log('refusal', `G11: ${run.portalHost} is a live portal. ${LIVE_BLOCKED_MESSAGE}`);
@@ -359,6 +392,15 @@ export class RunEngine {
       return this.waitFor({ kind: 'suite_error', message: `Could not load the profile: ${(err as Error).message}` });
     }
     this.p!.profile = profile;
+    this.patch({ signerChoices: signerChoicesFor(profile) });
+    if (this.deps.device) {
+      try {
+        const device = await this.deps.device();
+        this.patch({ evidence: { ...this.run!.evidence, installId: device.installId, userAgent: device.userAgent } });
+      } catch {
+        // The device facts are evidence, not a gate; the run goes on without them.
+      }
+    }
     // Repeating groups (directors, subscribers) become one field per profile entry, once.
     if (this.p!.recipe && hasTemplates(this.p!.recipe)) {
       this.p!.recipe = expandRecipe(this.p!.recipe, profile.profile);
@@ -488,8 +530,23 @@ export class RunEngine {
       }
       const value = valueFor(profile, field);
       if (value == null) {
-        this.upsertField({ key: field.key, label: field.label, status: 'missing', note: 'not in the Suite profile: you fill this' });
+        // G16: a mandatory (noPlaceholder) field is marked and recorded for the client's records.
+        const records = field.noPlaceholder === true;
+        this.upsertField({
+          key: field.key,
+          label: field.label,
+          status: 'missing',
+          note: records ? RECORDS_NOTE : 'not in the Suite profile: you fill this',
+          ...(records ? { blank: 'missing' as const, target: probeTarget(scan, field.key) } : {}),
+        });
         await this.log('info', `"${field.label}" has no value in Suite: you fill this`);
+        continue;
+      }
+      // G16: never a placeholder, never the firm's own contact; not a setting, so every field.
+      const hit = placeholderReason(value, this.p!.firmContacts);
+      if (hit) {
+        this.upsertField({ key: field.key, label: field.label, status: 'placeholder', note: `${RECORDS_NOTE} (Suite holds ${hit.why})`, blank: hit.reason, target: probeTarget(scan, field.key) });
+        await this.log('refusal', `G16: "${field.label}" not filled: Suite holds ${hit.why}. ${RECORDS_NOTE}`);
         continue;
       }
       const r = await resolveField(field, scan, {
@@ -536,6 +593,11 @@ export class RunEngine {
       }
       if (this.cancelRequested) return false;
     }
+    // G16: mark the fields left for the client's records on the page (never written to).
+    const marks = this.run!.fields
+      .filter((f) => this.pageKeys().has(f.key) && f.blank && f.target)
+      .map((f) => ({ target: f.target as FieldTarget, label: f.label }));
+    if (marks.length) await portal.markForRecords(marks).catch(() => 0);
     this.patch({ phase: 'confirm' });
     return this.waitFor({ kind: 'confirm' });
   }
@@ -608,12 +670,28 @@ export class RunEngine {
   private async onWaitSubmitPay(): Promise<boolean> {
     const recipe = this.p!.recipe!;
     const portal = this.portal();
+    const srnPattern = recipe.expect.find((e) => e.kind === 'srn')?.pattern;
+    // G17: the Submit and Pay card waits for the certifier's checks recorded in Suite.
+    if (!this.run!.attestation) {
+      const recorded = await this.checkAttestation();
+      if (!recorded) {
+        // The agent cannot stop a person clicking Submit; if an SRN appears anyway, it is logged.
+        const early = await portal.readSrn(srnPattern);
+        if (early) {
+          await this.log('refusal', "G17: the SRN appeared before the certifier's checks were recorded in Suite");
+          this.patch({ srn: early });
+          await this.move('READ_SRN', 'SRN on the page (no certifier checks)');
+          return false;
+        }
+        return this.waitFor({ kind: 'certifier' });
+      }
+    }
     if (this.run!.wait?.kind !== 'submit_pay') {
       const humanGates = recipe.gates.filter((g) => g.kind === 'SUBMIT' || g.kind === 'PAY');
       await portal.highlightHuman(humanGates);
       await this.log('gate', 'Submit and Pay are yours: the agent never clicks them');
     }
-    const srn = await portal.readSrn(recipe.expect.find((e) => e.kind === 'srn')?.pattern);
+    const srn = await portal.readSrn(srnPattern);
     if (srn) {
       this.patch({ srn });
       await this.move('READ_SRN', 'SRN on the page');
@@ -650,6 +728,30 @@ export class RunEngine {
     await this.portal().banner(null).catch(() => undefined);
     await this.move('DONE', `SRN ${run.srn} written back to Suite`);
     return true;
+  }
+
+  /** G17: asks Suite whether the certifier's checks are recorded for this run. */
+  private async checkAttestation(): Promise<boolean> {
+    const run = this.run!;
+    if (!run.suiteRunId) {
+      try {
+        const created = await this.deps.suite.createRun(run.engagementId, this.createBody());
+        if (created?.runId) this.patch({ suiteRunId: created.runId });
+      } catch {
+        return false;
+      }
+    }
+    const runId = this.run!.suiteRunId;
+    if (!runId) return false;
+    try {
+      const status = await this.deps.suite.attestation(run.engagementId, runId);
+      if (!status.recorded) return false;
+      this.patch({ attestation: { certifierName: status.certifierName, at: status.at } });
+      await this.log('gate', `certifier's checks recorded in Suite${status.certifierName ? ` by ${status.certifierName}` : ''}`);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // ---------- actions ----------
@@ -783,6 +885,10 @@ export class RunEngine {
       ...(run.recipeFrom === 'suite' && recipe ? { recipeVersion: recipe.version } : {}),
       fieldsTotal: recipe?.pages.reduce((n, p) => n + p.fields.length, 0) ?? 0,
       state: run.state,
+      // G14 evidence: labels and ids only; Suite adds the IP it sees.
+      ...(run.evidence?.mcaLoginLabel ? { mcaLoginLabel: run.evidence.mcaLoginLabel.slice(0, 120) } : {}),
+      ...(run.evidence?.installId ? { device: { installId: run.evidence.installId, userAgent: (run.evidence.userAgent ?? '').slice(0, 400) } } : {}),
+      ...(run.evidence?.extensionVersion ? { extensionVersion: run.evidence.extensionVersion } : {}),
     };
   }
 
@@ -798,6 +904,8 @@ export class RunEngine {
       refusals: run.refusals.map((r) => ({ kind: REFUSAL_KIND[r.code] ?? r.code, target: r.label.slice(0, 200), ...(r.t ? { at: new Date(r.t).toISOString() } : {}) })),
       ...(run.srn ? { srn: run.srn } : {}),
       ...(run.error ? { error: run.error.slice(0, 500) } : {}),
+      blanks: run.fields.filter((f) => f.blank).map((f) => ({ field: f.key, reason: f.blank! })),
+      ...(run.evidence?.dscSigners?.length ? { dscSigners: run.evidence.dscSigners } : {}),
     };
   }
 
@@ -821,6 +929,39 @@ export class RunEngine {
   private emit(): void {
     this.deps.onChange?.(this.run);
   }
+}
+
+const RECORDS_NOTE = "You fill this from the client's records";
+
+/** The control the recipe's own SOM path or selector found (T0), to mark it; null when none did. */
+function probeTarget(scan: { probes: Record<string, string | null>; fields: Array<{ uid: string; som: string | null; css: string; name: string }> }, key: string): FieldTarget | undefined {
+  const uid = scan.probes[key];
+  const f = uid ? scan.fields.find((x) => x.uid === uid) : undefined;
+  return f ? { uid: f.uid, som: f.som, css: f.css, name: f.name } : undefined;
+}
+
+const nameOf = (p: Record<string, unknown> | undefined): string =>
+  [p?.firstName, p?.middleName, p?.surName].filter((x) => typeof x === 'string' && x.trim()).join(' ').trim();
+
+/**
+ * "Who signed?" choices (G14): the directors and subscribers in the profile, and the signed-in
+ * professional. The names stay in the browser; Suite gets the refs and finds the names itself.
+ */
+export function signerChoicesFor(profile: ProfileResult): SignerChoice[] {
+  const out: SignerChoice[] = [];
+  const p = profile.profile as { directors?: Array<Record<string, unknown>>; subscribers?: Array<Record<string, unknown>> };
+  for (const d of p.directors ?? []) {
+    const id = typeof d.id === 'string' ? d.id : '';
+    const name = nameOf(d);
+    if (/^[A-Za-z0-9_-]{1,40}$/.test(id) && name) out.push({ ref: `director:${id}`, label: `${name} (director)` });
+  }
+  for (const s of p.subscribers ?? []) {
+    const index = typeof s.index === 'number' ? s.index : 0;
+    const name = s.kind === 'bodyCorporate' ? nameOf(s.representative as Record<string, unknown>) || String(s.name ?? '') : nameOf(s);
+    if (index > 0 && name) out.push({ ref: `subscriber:${index}`, label: `${name} (subscriber${s.isDirector ? ', director' : ''})` });
+  }
+  out.push({ ref: 'professional:self', label: 'Me (the professional signed in to Suite)' });
+  return out;
 }
 
 /** The `kind` word Suite stores for each guard. */

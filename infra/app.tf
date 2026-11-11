@@ -115,6 +115,52 @@ data "aws_iam_policy_document" "app" {
       data.aws_secretsmanager_secret.anthropic_api_key[*].arn,
     )
   }
+
+  # Ask VCFO on Amazon Bedrock, India geographic inference profile. The app calls
+  # bedrock-runtime InvokeModel / InvokeModelWithResponseStream with an in. profile
+  # id. AWS authorises the profile in the source Region and the foundation model in
+  # the source and every destination Region (ap-south-1 and ap-south-2), so both
+  # are granted, the models only when reached through these India profiles.
+  dynamic "statement" {
+    for_each = local.ask_uses_bedrock ? [1] : []
+    content {
+      sid       = "AskBedrockIndiaProfiles"
+      actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      resources = local.ask_india_profile_arns
+    }
+  }
+  dynamic "statement" {
+    for_each = local.ask_uses_bedrock ? [1] : []
+    content {
+      sid       = "AskBedrockIndiaModels"
+      actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      resources = local.ask_india_model_arns
+      condition {
+        test     = "StringEquals"
+        variable = "bedrock:InferenceProfileArn"
+        values   = local.ask_india_profile_arns
+      }
+    }
+  }
+}
+
+locals {
+  ask_uses_bedrock   = var.ask_vcfo_enabled && var.ask_vcfo_llm_provider == "bedrock"
+  ask_uses_anthropic = var.ask_vcfo_enabled && var.ask_vcfo_llm_provider == "anthropic"
+  # The India profile routes only between these two Regions (AWS, 29 Sep 2026).
+  ask_india_regions  = ["ap-south-1", "ap-south-2"]
+  ask_india_profiles = distinct(concat([var.ask_vcfo_bedrock_model_fast, var.ask_vcfo_bedrock_model_smart], var.ask_vcfo_bedrock_extra_models))
+  ask_india_profile_arns = flatten([
+    for region in local.ask_india_regions : [
+      for id in local.ask_india_profiles : "arn:aws:bedrock:${region}:${data.aws_caller_identity.current.account_id}:inference-profile/${id}"
+    ]
+  ])
+  # A profile id is the foundation model id with the in. prefix.
+  ask_india_model_arns = flatten([
+    for region in local.ask_india_regions : [
+      for id in local.ask_india_profiles : "arn:aws:bedrock:${region}::foundation-model/${trimprefix(id, "in.")}"
+    ]
+  ])
 }
 
 resource "aws_iam_role_policy" "app" {
@@ -175,15 +221,25 @@ locals {
       BACKUP_VAULT_NAME = aws_backup_vault.db.name
       RDS_INSTANCE_ID   = aws_db_instance.postgres.identifier
     },
-    # Ask VCFO. M7: the API key is read at runtime from Secrets Manager (the env
-    # var holds the ARN), so a rotation needs no redeploy. Model ids and limits
-    # use the app defaults (.env.example); override here if needed.
+    # Ask VCFO. Production default: Bedrock in Mumbai with India residency, so the
+    # app refuses any non-India region or non-in. model id and never calls the
+    # Anthropic API (docs/specs/ask-vcfo/BEDROCK-INDIA.md). With the anthropic
+    # provider the API key is read at runtime from Secrets Manager (M7: the env var
+    # holds the ARN), so a rotation needs no redeploy. Limits use the app defaults.
     var.ask_vcfo_enabled ? merge(
       {
-        ASK_VCFO_ENABLED            = "true"
-        ASK_VCFO_LLM_PROVIDER       = "anthropic"
-        ANTHROPIC_API_KEY_SECRET_ID = data.aws_secretsmanager_secret.anthropic_api_key[0].arn
+        ASK_VCFO_ENABLED        = "true"
+        ASK_VCFO_LLM_PROVIDER   = var.ask_vcfo_llm_provider
+        ASK_VCFO_DATA_RESIDENCY = var.ask_vcfo_data_residency
       },
+      local.ask_uses_bedrock ? {
+        ASK_VCFO_BEDROCK_REGION      = var.ask_vcfo_bedrock_region
+        ASK_VCFO_BEDROCK_MODEL_FAST  = var.ask_vcfo_bedrock_model_fast
+        ASK_VCFO_BEDROCK_MODEL_SMART = var.ask_vcfo_bedrock_model_smart
+      } : {},
+      local.ask_uses_anthropic ? {
+        ANTHROPIC_API_KEY_SECRET_ID = data.aws_secretsmanager_secret.anthropic_api_key[0].arn
+      } : {},
       { for id in var.ask_vcfo_features : "ASK_VCFO_FEATURE_${id}" => "true" },
     ) : {},
   )

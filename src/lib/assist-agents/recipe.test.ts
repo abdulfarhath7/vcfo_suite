@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import spiceA from './recipes/spice-a.json';
 import spiceB from './recipes/spice-b.json';
-import { canonicalJson, findRecipeField, parseRecipe, recipeSchema } from './recipe';
+import { canonicalJson, fieldRejectsPlaceholder, findRecipeField, parseRecipe, recipeSchema } from './recipe';
 import {
   MOCK_SPICE_A_FIELD_NAMES,
   MOCK_SPICE_B_FIELD_NAMES,
@@ -84,6 +84,14 @@ describe('recipe schema', () => {
 
   it('refuses unknown keys, so a recipe cannot smuggle a value in', () => {
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], value: 'X' }] }).success).toBe(false);
+  });
+
+  it('noPlaceholder (G16) defaults to true for mandatory fields and may be declared', () => {
+    expect(fieldRejectsPlaceholder({ required: true })).toBe(true);
+    expect(fieldRejectsPlaceholder({ required: false })).toBe(false);
+    expect(fieldRejectsPlaceholder({ required: false, noPlaceholder: true })).toBe(true);
+    expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], noPlaceholder: true }] }).success).toBe(true);
+    expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], noPlaceholder: 'yes' }] }).success).toBe(false);
   });
 });
 

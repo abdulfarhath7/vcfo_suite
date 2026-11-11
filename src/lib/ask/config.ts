@@ -3,6 +3,7 @@ import 'server-only';
 import { ACTION_TIERS, type ActionTier } from '@/lib/actions/types';
 import type { EmbeddingProviderName } from '@/lib/ask/embeddings/types';
 import { ASK_PATHS, type AskPath } from '@/lib/ask/paths';
+import { INDIA_DEFAULT_MODELS, parseDataResidency, type AskDataResidency } from '@/lib/ask/provider/residency';
 
 /**
  * Ask VCFO runtime configuration — env only, no model id hardcoded in logic
@@ -30,6 +31,11 @@ export interface AskConfig {
   rateLimit: { hour: number; day: number };
   retrievalTopK: number;
   bedrockRegion: string | null;
+  /**
+   * `india` (the default with Bedrock): bedrock-runtime in ap-south-1 or ap-south-2 with `in.`
+   * profile ids only, checked at startup and on every call. `none`: no residency guard.
+   */
+  dataResidency: AskDataResidency;
   /** Server-side refusal fallback (Claude API only). */
   refusalFallback: boolean;
 }
@@ -50,25 +56,48 @@ export function askFeatures(): AskFeatures {
   ) as AskFeatures;
 }
 
+type AskModels = AskConfig['models'];
+type AskTier = keyof AskModels;
+
+/** Which tiers take the small model; the rest take the large one. */
+const SMART_TIERS: ReadonlySet<AskTier> = new Set<AskTier>(['agent']);
+const TIERS: readonly AskTier[] = ['guard', 'answer', 'contextualizer', 'document', 'extract', 'watch', 'agent'];
+
+const envModel = (name: string): string | undefined => process.env[name]?.trim() || undefined;
+
+/** Model ids for the Anthropic API, or for Bedrock without the India guard (`anthropic.` is added there). */
+function apiModels(): AskModels {
+  return Object.fromEntries(
+    TIERS.map((tier) => [tier, envModel(`ASK_VCFO_MODEL_${tier.toUpperCase()}`) ?? (SMART_TIERS.has(tier) ? 'claude-sonnet-5-5' : 'claude-haiku-5-5')]),
+  ) as AskModels;
+}
+
+/**
+ * India profile ids per tier: ASK_VCFO_BEDROCK_MODEL_<TIER>, else ASK_VCFO_BEDROCK_MODEL_FAST or
+ * _SMART, else the documented defaults. ASK_VCFO_MODEL_* is ignored here so an Anthropic API id
+ * left over in the environment cannot reach Bedrock (it would be refused anyway).
+ */
+function indiaModels(): AskModels {
+  const fast = envModel('ASK_VCFO_BEDROCK_MODEL_FAST') ?? INDIA_DEFAULT_MODELS.fast;
+  const smart = envModel('ASK_VCFO_BEDROCK_MODEL_SMART') ?? INDIA_DEFAULT_MODELS.smart;
+  return Object.fromEntries(
+    TIERS.map((tier) => [tier, envModel(`ASK_VCFO_BEDROCK_MODEL_${tier.toUpperCase()}`) ?? (SMART_TIERS.has(tier) ? smart : fast)]),
+  ) as AskModels;
+}
+
 export function askConfig(): AskConfig {
-  const provider = process.env.ASK_VCFO_LLM_PROVIDER === 'bedrock' ? 'bedrock' : 'anthropic';
+  const provider = process.env.ASK_VCFO_LLM_PROVIDER?.trim() === 'bedrock' ? 'bedrock' : 'anthropic';
+  const dataResidency = parseDataResidency(process.env.ASK_VCFO_DATA_RESIDENCY, provider);
   const effort = process.env.ASK_VCFO_ANSWER_EFFORT;
   return {
     enabled: process.env.ASK_VCFO_ENABLED === 'true',
     provider,
-    models: {
-      guard: process.env.ASK_VCFO_MODEL_GUARD?.trim() || 'claude-haiku-5-5',
-      answer: process.env.ASK_VCFO_MODEL_ANSWER?.trim() || 'claude-haiku-5-5',
-      contextualizer: process.env.ASK_VCFO_MODEL_CONTEXTUALIZER?.trim() || 'claude-haiku-5-5',
-      document: process.env.ASK_VCFO_MODEL_DOCUMENT?.trim() || 'claude-haiku-5-5',
-      extract: process.env.ASK_VCFO_MODEL_EXTRACT?.trim() || 'claude-haiku-5-5',
-      watch: process.env.ASK_VCFO_MODEL_WATCH?.trim() || 'claude-haiku-5-5',
-      agent: process.env.ASK_VCFO_MODEL_AGENT?.trim() || 'claude-sonnet-5-5',
-    },
+    models: provider === 'bedrock' && dataResidency === 'india' ? indiaModels() : apiModels(),
     answerEffort: effort === 'medium' || effort === 'high' ? effort : 'low',
     rateLimit: { hour: intEnv('ASK_VCFO_RATE_LIMIT_HOUR', 30), day: intEnv('ASK_VCFO_RATE_LIMIT_DAY', 200) },
     retrievalTopK: intEnv('ASK_VCFO_RETRIEVAL_TOP_K', 4),
     bedrockRegion: process.env.ASK_VCFO_BEDROCK_REGION?.trim() || null,
+    dataResidency,
     refusalFallback: process.env.ASK_VCFO_REFUSAL_FALLBACK !== 'false',
   };
 }

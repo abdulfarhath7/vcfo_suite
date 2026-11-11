@@ -17,7 +17,7 @@ import type { JsonValue } from '@/lib/ask/changeset/types';
 import { readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { createRunContext, RUN_OVER_BUDGET_COPY, RunOverBudget } from '@/lib/ask/do/run-context';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { maskIdentityNumbers, namesFromLabelledText, type KnownPerson } from '@/lib/ask/mask';
 import { DROP_MAX_BYTES, DROP_MAX_FILES } from '@/lib/upload-limits';
 import { getObjectBuffer, putObject } from '@/storage/s3';
 import { assembleDrop, type DropRead } from './assemble';
@@ -180,7 +180,10 @@ export async function dropReadStep(runId: string, attachmentId: string): Promise
   const file = state.files.find((f) => f.attachmentId === attachmentId && f.status === 'queued');
   if (!file) return state.files.find((f) => f.attachmentId === attachmentId)?.status ?? null;
 
-  const runCtx = createRunContext({ ctx, run, now: new Date() });
+  // A pasted text's labelled names are masked too, once the text is read; patterns (emails, phones,
+  // identity numbers) are masked in every call whatever the source.
+  let pastedNames: KnownPerson[] = [];
+  const runCtx = createRunContext({ ctx, run, now: new Date(), people: () => pastedNames });
   const save = async (patch: Partial<DropFile>, flags: Partial<DropState> = {}) => {
     Object.assign(file, patch);
     const done = Math.min(state.progress.done + 1, state.progress.total);
@@ -198,6 +201,7 @@ export async function dropReadStep(runId: string, attachmentId: string): Promise
     if (!attachment?.s3Key) throw new ReadRefused('That file is no longer available. Please drop it again.');
     const bytes = await getObjectBuffer(attachment.s3Key);
     if (!bytes) throw new ReadRefused('That file is no longer available. Please drop it again.');
+    if (attachment.kind === 'paste') pastedNames = namesFromLabelledText(bytes.toString('utf8'));
     const result: ReadResult = attachment.kind === 'paste'
       ? await readPaste(bytes.toString('utf8'), runCtx.deps)
       : await readFile({ fileName: attachment.fileName, data: bytes }, runCtx.deps);

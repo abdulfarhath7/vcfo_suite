@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bot, Coins, Wand2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { DashHero } from '@/components/dash/DashHero';
@@ -14,11 +14,15 @@ import { isAdminOrManager } from '@/lib/auth';
 import { findSubAgent } from '@/lib/assist-agents/catalog';
 import type { AssistAgentRunStatus, AssistAgentRunView, AssistPatchStatus, AssistPatchView } from '@/lib/assist-agents/types';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
+import { runAwaitsAttestation } from '@/lib/assist-agents/attestation';
+import { AssistRunDetail } from './AssistRunDetail';
 
 /**
  * ASSIST RUNS — one page for every staff role (docs/specs/vcfo-assist-agents/PLAN.md): the VCFO
  * Assist agents' recent runs in the viewer's scope and the recipe patch review queue. The
  * repositories decide what each role sees; only admins and managers get Approve and Reject.
+ * A row opens the run's detail: the evidence log and the certifier's checks (SAFETY.md G14, G17).
+ * `?run=<id>` (the side panel's "Open in Suite") opens that run straight away.
  */
 
 const RUN_LOOK: Record<AssistAgentRunStatus, { label: string; tone: ChipTone }> = {
@@ -58,7 +62,7 @@ function healSummary(run: AssistAgentRunView): string {
 const TH = 'whitespace-nowrap px-3 py-2 font-medium';
 const TD = 'whitespace-nowrap px-3 py-2.5 text-ink-2';
 
-function RunsTable({ runs }: { runs: AssistAgentRunView[] }) {
+function RunsTable({ runs, onOpen }: { runs: AssistAgentRunView[]; onOpen: (id: string) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[860px] text-left text-[13px]">
@@ -85,6 +89,9 @@ function RunsTable({ runs }: { runs: AssistAgentRunView[] }) {
             <th scope="col" className={TH}>
               SRN
             </th>
+            <th scope="col" className={TH}>
+              Certifier
+            </th>
             <th scope="col" className={`${TH} pr-4`}>
               Started
             </th>
@@ -97,7 +104,9 @@ function RunsTable({ runs }: { runs: AssistAgentRunView[] }) {
             return (
               <tr key={run.id} className="border-t border-line-soft">
                 <th scope="row" className="whitespace-nowrap px-4 py-2.5 font-medium text-ink">
-                  {sub?.form ?? run.subAgent}
+                  <button type="button" className="text-left text-brand-text hover:underline" onClick={() => onOpen(run.id)}>
+                    {sub?.form ?? run.subAgent}
+                  </button>
                   <span className="ml-2 font-mono text-[11.5px] font-normal text-ink-muted">v{run.recipeVersion}</span>
                 </th>
                 <td className={`${TD} max-w-[220px] truncate`}>{run.companyName ?? '—'}</td>
@@ -113,6 +122,23 @@ function RunsTable({ runs }: { runs: AssistAgentRunView[] }) {
                 <td className={TD}>{healSummary(run)}</td>
                 <td className={`${TD} text-right tabular-nums`}>{run.aiTokens ? number(run.aiTokens) : '0'}</td>
                 <td className={`${TD} font-mono text-[12.5px]`}>{run.srn ?? '—'}</td>
+                <td className={TD}>
+                  {run.attestation ? (
+                    <Chip raw tone="ok">
+                      Checked
+                    </Chip>
+                  ) : runAwaitsAttestation(run) ? (
+                    <Button size="sm" variant="soft" onClick={() => onOpen(run.id)}>
+                      Record checks
+                    </Button>
+                  ) : run.srn ? (
+                    <Chip raw tone="bad">
+                      None
+                    </Chip>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td className={`${TD} pr-4 text-ink-muted`}>
                   {when(run.startedAt)}
                   {run.userName ? ` · ${run.userName}` : ''}
@@ -185,6 +211,13 @@ export default function AssistRunsPage() {
   const filled = runs.reduce((sum, r) => sum + r.fieldsFilled, 0);
   const tokens = runs.reduce((sum, r) => sum + r.aiTokens, 0);
   const aiFree = runs.filter((r) => r.aiCalls === 0).length;
+  const [openRunId, setOpenRunId] = useState<string | null>(null);
+  useEffect(() => {
+    // The side panel's "Open in Suite" lands here with ?run=<id> (`assistRunPath`).
+    const id = new URLSearchParams(window.location.search).get('run');
+    if (id) setOpenRunId(id);
+  }, []);
+  const openRun = runs.find((r) => r.id === openRunId) ?? null;
 
   return (
     <div className="grid min-w-0 gap-4">
@@ -219,9 +252,10 @@ export default function AssistRunsPage() {
             />
           </div>
         ) : (
-          <RunsTable runs={runs} />
+          <RunsTable runs={runs} onOpen={setOpenRunId} />
         )}
       </DashSection>
+      <AssistRunDetail key={openRun?.id ?? 'none'} run={openRun} onOpenChange={(open) => !open && setOpenRunId(null)} />
 
       <DashSection
         title="Recipe fixes"

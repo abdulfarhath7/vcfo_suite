@@ -14,7 +14,10 @@ import { reminderComposeHref } from '@/lib/ask/reminder';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { cn } from '@/lib/utils';
+import { isAiAnswer } from '@/lib/ask/ai-review';
+import { AiNotice } from './AiNotice';
 import { useAskOptional } from './ask-context';
+import { AskReviewRequest } from './AskReviewRequest';
 import { AskLinkButton } from './AskLinkButton';
 import { TrustBadge } from './TrustBadge';
 import { VisualRenderer } from './visuals/VisualRenderer';
@@ -57,6 +60,9 @@ export function AskAnswerCard({
   const hasLinks = Boolean(answer.links && answer.links.length > 0);
 
   const canVote = !ask.preview && answer.origin !== 'refusal';
+  // Every model-written answer says so; a client can send it to their CA for review.
+  const ai = isAiAnswer(answer);
+  const canRequestReview = ai && client && !ask.preview && Boolean(ask.engagementId);
   const sendVote = (v: 'up' | 'down') => {
     if (vote) return;
     setVote(v);
@@ -80,6 +86,7 @@ export function AskAnswerCard({
       </div>
 
       <p className="max-w-[60ch] text-[14px] leading-relaxed text-ink">{answer.line}</p>
+      {ai && <AiNotice firmName={ask.firmName} />}
 
       {answer.visual && <VisualRenderer visual={answer.visual} />}
 
@@ -182,6 +189,15 @@ export function AskAnswerCard({
           <button type="button" className={secondary} onClick={() => ask.setHandoffDraft(lastQuestion ?? '')}>
             Ask my lead
           </button>
+        )}
+        {canRequestReview && (
+          <AskReviewRequest
+            engagementId={ask.engagementId!}
+            conversationId={ask.conversationId}
+            messageId={messageId}
+            question={lastQuestion}
+            answerText={[answer.line, answer.why].filter(Boolean).join('\n')}
+          />
         )}
         {has('openProject') && !hasLinks && !client && rowTarget && (
           <Link href={askProjectPath(rowTarget, linkBase)} className={secondary}>

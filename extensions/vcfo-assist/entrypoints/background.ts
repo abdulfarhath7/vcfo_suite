@@ -21,6 +21,25 @@ import type { Catalog, EngagementSummary } from '../src/shared/types';
 const RUN_KEY = 'vcfo.run';
 const UI_KEY = 'vcfo.ui';
 const SETTINGS_KEY = 'vcfo.settings';
+/** G14: a random id for this browser install, made once and kept in chrome.storage.local. */
+const INSTALL_KEY = 'vcfo.install';
+
+async function installId(): Promise<string> {
+  const got = (await chrome.storage.local.get(INSTALL_KEY))[INSTALL_KEY] as { id?: string } | undefined;
+  if (got?.id) return got.id;
+  const id = crypto.randomUUID();
+  await chrome.storage.local.set({ [INSTALL_KEY]: { id } });
+  return id;
+}
+
+async function readSettings(): Promise<{ suiteOrigins?: string[]; mcaLogin?: string }> {
+  const got = await chrome.storage.local.get(SETTINGS_KEY);
+  return (got[SETTINGS_KEY] as { suiteOrigins?: string[]; mcaLogin?: string } | undefined) ?? {};
+}
+
+async function saveSettings(changes: { suiteOrigins?: string[]; mcaLogin?: string }): Promise<void> {
+  await chrome.storage.local.set({ [SETTINGS_KEY]: { ...(await readSettings()), ...changes } });
+}
 
 const sessionStore: StorePort = {
   async load() {
@@ -36,8 +55,7 @@ const sessionStore: StorePort = {
 };
 
 async function suiteOrigins(): Promise<string[]> {
-  const got = await chrome.storage.local.get(SETTINGS_KEY);
-  const origins = (got[SETTINGS_KEY] as { suiteOrigins?: string[] } | undefined)?.suiteOrigins;
+  const origins = (await readSettings()).suiteOrigins;
   return origins?.length ? origins : [...DEFAULT_SUITE_ORIGINS];
 }
 
@@ -75,6 +93,8 @@ export default defineBackground(() => {
     portalFor: (tabId) => new ChromePortal(tabId),
     bundledRecipes: BUNDLED_RECIPES,
     onChange: () => broadcast(),
+    extensionVersion: chrome.runtime.getManifest().version,
+    device: async () => ({ installId: await installId(), userAgent: navigator.userAgent }),
   });
 
   async function portalInfo(): Promise<PortalInfo> {
@@ -92,7 +112,7 @@ export default defineBackground(() => {
       const state: PanelState = {
         ...ui,
         portal: ui.portal ?? { mock: false, liveAllowed: false },
-        settings: { suiteOrigins: await suiteOrigins() },
+        settings: { suiteOrigins: await suiteOrigins(), mcaLogin: (await readSettings()).mcaLogin },
         run: engine.run,
       };
       for (const p of panels) {
@@ -162,10 +182,13 @@ export default defineBackground(() => {
         if (!engagement) ui.notice = 'Pick a client first.';
         else if (!sub?.recipeId) ui.notice = 'This sub-agent is not built yet.';
         else if (!ui.portal.tabId) ui.notice = 'Open the portal page in a tab first.';
+        else if (!cmd.mcaLoginLabel?.trim()) ui.notice = 'Say which MCA login you are using first.';
         else {
           try {
             if (engine.run && TERMINAL.has(engine.run.state)) await engine.reset();
+            await saveSettings({ mcaLogin: cmd.mcaLoginLabel.trim().slice(0, 120) });
             await engine.start({
+              mcaLoginLabel: cmd.mcaLoginLabel.trim().slice(0, 120),
               engagementId: engagement.id,
               engagementName: engagement.name,
               agentId: cmd.agentId,
@@ -189,7 +212,7 @@ export default defineBackground(() => {
         return;
       case 'setOrigins': {
         const origins = cmd.origins.map((o) => originOf(o.trim())).filter((o): o is string => Boolean(o));
-        await chrome.storage.local.set({ [SETTINGS_KEY]: { suiteOrigins: origins.length ? origins : [...DEFAULT_SUITE_ORIGINS] } });
+        await saveSettings({ suiteOrigins: origins.length ? origins : [...DEFAULT_SUITE_ORIGINS] });
         await refresh();
         return;
       }
@@ -199,6 +222,14 @@ export default defineBackground(() => {
       case 'openSuite': {
         const origin = ui.suite.origin ?? (await suiteOrigins())[0];
         await chrome.tabs.create({ url: `${origin}${SUITE_PATHS.fixInSuite(ui.engagementId ?? '', cmd.stepId)}` });
+        return;
+      }
+      case 'openCertifier': {
+        const run = engine.run;
+        const origin = ui.suite.origin ?? (await suiteOrigins())[0];
+        if (!run) return;
+        const path = run.suiteRunId ? SUITE_PATHS.certifierLink(run.engagementId, run.suiteRunId) : SUITE_PATHS.fixInSuite(run.engagementId);
+        await chrome.tabs.create({ url: `${origin}${path}` });
         return;
       }
     }

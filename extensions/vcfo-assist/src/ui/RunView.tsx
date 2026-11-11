@@ -89,7 +89,7 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
     return (
       <section className="card you you-danger" role="alert">
         <span className="eyebrow">Stopped</span>
-        <p>{w?.kind === 'live_blocked' ? LIVE_BLOCKED_MESSAGE : run.error}</p>
+        <p>{w?.kind === 'live_blocked' ? LIVE_BLOCKED_MESSAGE : w?.kind === 'disabled' ? w.message : run.error}</p>
       </section>
     );
   }
@@ -137,12 +137,28 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
       return (
         <YouCard title="Sign with DSC">
           <p>Open the downloaded PDF, sign it with your DSC, then drop the signed file here. The agent attaches it unchanged.</p>
-          <DropZone onFile={(e) => event(e)} />
+          <SignersAndDrop run={run} onFile={(e) => event(e)} />
         </YouCard>
+      );
+    case 'certifier':
+      return (
+        <section className="card you you-warn" aria-live="polite" data-testid="certifier-wait">
+          <span className="eyebrow">Waiting</span>
+          <h3>Waiting for the certifier&apos;s checks in VCFO Suite</h3>
+          <p>
+            Before Submit, the certifying professional records in Suite that they checked every filled field against the original records
+            {run.subAgentId === 'spice-b' ? ', the registered office and how each subscriber signed' : ''}. This card moves on by itself once they
+            have.
+          </p>
+          <button type="button" className="btn btn-primary" onClick={() => send({ cmd: 'openCertifier' })}>
+            Open in Suite
+          </button>
+        </section>
       );
     case 'submit_pay':
       return (
         <YouCard title="Click Submit and Pay yourself">
+          {run.attestation?.certifierName ? <p className="small muted">Certifier&apos;s checks recorded by {run.attestation.certifierName}.</p> : null}
           <p>The pulsing buttons on the portal are yours. The agent never clicks Submit or Pay. It reads the SRN when it appears.</p>
         </YouCard>
       );
@@ -219,9 +235,24 @@ function ConfirmCard({ run, event }: { run: Run; event: (e: UserEvent) => void }
           ))}
         </tbody>
       </table>
-      {others.length > 0 && (
+      {others.some((f) => f.blank) && (
+        <p className="small warn" data-testid="records-list">
+          You fill these from the client&apos;s records (the agent never types a blank or placeholder value):{' '}
+          {others
+            .filter((f) => f.blank)
+            .map((f) => `${f.label} (${f.blank === 'missing' ? 'not in Suite' : f.blank === 'firm_contact' ? "the firm's own contact in Suite" : 'placeholder in Suite'})`)
+            .join('; ')}
+          .
+        </p>
+      )}
+      {others.some((f) => !f.blank) && (
         <p className="small muted">
-          Not filled by the agent: {others.map((f) => `${f.label} (${f.status === 'missing' ? 'not in Suite' : f.status})`).join('; ')}.
+          Not filled by the agent:{' '}
+          {others
+            .filter((f) => !f.blank)
+            .map((f) => `${f.label} (${f.status === 'missing' ? 'not in Suite' : f.status})`)
+            .join('; ')}
+          .
         </p>
       )}
       <button type="button" className="btn btn-primary" onClick={() => event({ type: 'CONFIRM_FILL' })} data-testid="confirm-fill">
@@ -243,7 +274,33 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(bin);
 }
 
-function DropZone({ onFile }: { onFile: (e: Extract<UserEvent, { type: 'PDF_DROPPED' }>) => void }) {
+type Drop = Extract<UserEvent, { type: 'PDF_DROPPED' }>;
+
+/** G14: "Who signed?" first, then the drop; the drop is taken only with at least one signer. */
+function SignersAndDrop({ run, onFile }: { run: Run; onFile: (e: Drop) => void }) {
+  const choices = run.signerChoices ?? [];
+  const [picked, setPicked] = useState<string[]>([]);
+  return (
+    <>
+      <fieldset className="signers" data-testid="signers">
+        <legend className="small">Who signed? Tick each DSC holder who signed this PDF.</legend>
+        {choices.map((c) => (
+          <label key={c.ref} className="small signer">
+            <input
+              type="checkbox"
+              checked={picked.includes(c.ref)}
+              onChange={(e) => setPicked((cur) => (e.target.checked ? [...cur, c.ref] : cur.filter((r) => r !== c.ref)))}
+            />
+            {c.label}
+          </label>
+        ))}
+      </fieldset>
+      {picked.length ? <DropZone onFile={(e) => onFile({ ...e, signers: picked })} /> : <p className="small muted">Choose who signed to drop the PDF.</p>}
+    </>
+  );
+}
+
+function DropZone({ onFile }: { onFile: (e: Omit<Drop, 'signers'>) => void }) {
   const [over, setOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -311,6 +368,7 @@ const STATUS_TEXT: Record<FieldOutcome['status'], string> = {
   filled: 'Filled',
   refused: 'Refused',
   missing: 'Not in Suite',
+  placeholder: 'Placeholder: you fill',
   failed: 'Failed',
   user: 'You fill',
 };
@@ -322,7 +380,10 @@ function Fields({ fields }: { fields: FieldOutcome[] }) {
       <ul className="fields">
         {fields.map((f) => (
           <li key={f.key} className={`field-row f-${f.status}`}>
-            <span>{f.label}</span>
+            <span>
+              {f.label}
+              {f.blank ? <span className="muted small"> · you fill this from the client&apos;s records</span> : null}
+            </span>
             <span className="row">
               {f.tier && <span className="chip chip-muted">{f.tier}</span>}
               <span className={`chip ${f.status === 'filled' ? 'chip-positive' : f.status === 'refused' || f.status === 'failed' ? 'chip-danger' : 'chip-muted'}`}>

@@ -5,8 +5,11 @@ import type { AnswerEnvelope } from '@/data/ask/schema';
 import { updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import type { JsonValue } from '@/lib/ask/changeset/types';
+import { askClientDataEnabled, CLIENT_DATA_OFF_DO } from '@/lib/ask/client-data';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
 import { ReadRefused } from '@/lib/ask/data-router/read';
+import { createAskMasker, type AskMasker, type KnownPerson } from '@/lib/ask/mask';
+import { maskingProvider } from '@/lib/ask/masked-provider';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE, type LlmProvider, type LlmUsage } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
 import { checkAskRateLimit } from '@/lib/ask/rate-limit';
@@ -22,6 +25,12 @@ import { REFUSAL_COPY } from '@/lib/ask/refusals';
  * resumes after a question, or a drop whose job runs in several steps, cannot spend its budget twice.
  * When the next call would start past the budget, the call is refused with `RunOverBudget`, the run is
  * marked over budget, and whatever the run prepared before stays.
+ *
+ * Privacy (docs/specs/ask-vcfo/PRIVACY.md): every call goes through `maskingProvider`, so emails,
+ * phones, bank accounts, identity numbers and the known people's names leave as placeholders. The
+ * raw text stays on the server, and the readers take each value written back from that original
+ * text. With `ASK_CLIENT_DATA_ENABLED=false` no call is made at all: the provider refuses with
+ * `CLIENT_DATA_OFF_DO` before any model is reached.
  */
 
 export type DoEvent = { type: 'progress'; runId: string; label: string } | { type: 'run'; runId: string; status: string };
@@ -84,6 +93,12 @@ export function createRunContext(input: {
   run: Pick<AskRunRow, 'id' | 'budgetTokens' | 'inputTokens' | 'outputTokens' | 'cacheReadTokens' | 'cacheWriteTokens'>;
   now: Date;
   emit?: (event: DoEvent) => void;
+  /**
+   * People whose names are masked in every call: the engagement's directors and client, and names
+   * from labelled lines. A function is read when the first call is made, so a caller can add names
+   * it learns after building the context (a drop's pasted text).
+   */
+  people?: readonly KnownPerson[] | (() => readonly KnownPerson[]);
 }): RunContext {
   const { ctx, run, now } = input;
   const emit = input.emit ?? (() => {});
@@ -117,11 +132,15 @@ export function createRunContext(input: {
 
   const provider = async (): Promise<LlmProvider> => {
     if (guarded) return guarded;
+    // The kill switch comes first: with client data off, nothing of the client reaches a model.
+    if (!askClientDataEnabled()) throw new ReadRefused(CLIENT_DATA_OFF_DO);
     // The budgets are checked before the provider is built, so an exhausted run fails fast.
     await beforeCall();
     const configured = await getAskProvider();
     if (!configured) throw new ReadRefused(UNAVAILABLE);
-    const inner = meterProvider(configured);
+    const people = typeof input.people === 'function' ? input.people() : (input.people ?? []);
+    const masker: AskMasker = createAskMasker({ people });
+    const inner = meterProvider(maskingProvider(configured, masker));
     metered = inner;
     let first = true;
     guarded = {

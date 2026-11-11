@@ -59,11 +59,12 @@ vi.mock('@/storage/s3', () => ({
     objects.set(key, Buffer.isBuffer(body) ? body : Buffer.from(body));
   },
 }));
+const modelSaw: string[] = [];
 vi.mock('@/lib/ask/provider', async (load) => ({
   ...(await load<object>()),
   getAskProvider: async () => ({
     name: 'mock',
-    complete: async (req: LlmRequest) => ({
+    complete: async (req: LlmRequest) => (modelSaw.push(JSON.stringify(req.messages)), {
       model: req.model,
       content: [{ type: 'text', text: JSON.stringify({ docType: 'other', company: 'Acme', values: [{ label: 'Name', value: 'Asha', page: 1, person: null, confidence: 1 }] }) }],
       stopReason: 'end_turn',
@@ -74,12 +75,12 @@ vi.mock('@/lib/ask/provider', async (load) => ({
 // Reading is the data router's own; here it is a stub that spends tokens through the run's provider.
 vi.mock('@/lib/ask/data-router/read', async (load) => {
   const real = await load<typeof import('@/lib/ask/data-router/read')>();
-  const read = async (deps: { provider: () => Promise<{ complete: (r: LlmRequest) => Promise<unknown> }>; model: string }) => {
+  const read = async (deps: { provider: () => Promise<{ complete: (r: LlmRequest) => Promise<unknown> }>; model: string }, text = '') => {
     const provider = await deps.provider();
-    await provider.complete({ model: deps.model, messages: [] } as unknown as LlmRequest);
+    await provider.complete({ model: deps.model, system: [], messages: text ? [{ role: 'user', content: text }] : [] } as unknown as LlmRequest);
     return { docType: 'other', company: 'Acme', values: [{ label: 'Name', value: 'Asha', page: 1, person: null, confidence: 1 }], sensitive: false, usedModel: true };
   };
-  return { ...real, readFile: async (_f: unknown, deps: never) => read(deps), readPaste: async (_t: string, deps: never) => read(deps) };
+  return { ...real, readFile: async (_f: unknown, deps: never) => read(deps), readPaste: async (t: string, deps: never) => read(deps, t) };
 });
 const assemble = vi.fn(async (input: { files: Array<Record<string, unknown>>; reads: unknown[] }) => ({
   groups: input.reads.length > 0 ? [{ engagementId: 'eng-1', companyName: 'Acme', changesetId: 'd0000000-0000-4000-8000-00000000000d' }] : [],
@@ -108,6 +109,8 @@ beforeEach(() => {
   messages.length = 0;
   modelUsage = 10;
   nextId = 0;
+  modelSaw.length = 0;
+  vi.unstubAllEnvs();
   earlierCards = [];
   run = { id: 'run-1', workflow: 'drop', status: 'queued', conversationId: 'conv-1', budgetTokens: 400_000, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, state: { files: [], groups: [], unplaced: [], progress: { done: 0, total: 0, label: '' }, instruction: 'fill this in for Acme' } };
   rows = [file('a-1', 'notes.txt', Buffer.from('Name: Asha')), file('a-2', 'pan.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/KYC/pan.pdf' })];
@@ -130,6 +133,28 @@ describe('queueAskDrop', () => {
     expect(state.answerMessageId).toBe('msg-1');
     expect(messages[0]!.answer.changesetId).toBe('d0000000-0000-4000-8000-00000000000d');
     expect(messages[0]!.text).toMatch(/card for Acme/);
+  });
+});
+
+describe('runAskDrop privacy', () => {
+  it('masks a pasted text before the model reads it, and makes no call with client data off', async () => {
+    const paste = 'Director name: Asha Rao\nPAN ABCDE1234F\nAadhaar 2345 6789 0123\nEmail asha.rao@example.com\nMobile +91 98765 43210';
+    rows = [file('a-1', 'Pasted text', Buffer.from(paste), { kind: 'paste' })];
+    await runAskDrop('run-1');
+    expect(modelSaw.length).toBeGreaterThan(0);
+    const seen = modelSaw.join('\n');
+    for (const raw of ['ABCDE1234F', '2345 6789 0123', 'asha.rao@example.com', '98765 43210', 'Asha Rao']) expect(seen).not.toContain(raw);
+    expect(seen).toContain('[PAN_1]');
+
+    modelSaw.length = 0;
+    vi.stubEnv('ASK_CLIENT_DATA_ENABLED', 'false');
+    run = { ...run, status: 'queued', state: { files: [], groups: [], unplaced: [], progress: { done: 0, total: 0, label: '' }, instruction: 'fill this in for Acme' } };
+    actor = { ctx: owner, run };
+    rows = [file('a-1', 'Pasted text', Buffer.from(paste), { kind: 'paste' })];
+    await runAskDrop('run-1');
+    expect(modelSaw).toEqual([]);
+    const files = (run.state as { files: Array<{ status: string; reason?: string }> }).files;
+    expect(files[0]).toMatchObject({ status: 'failed', reason: expect.stringMatching(/switched off/) });
   });
 });
 

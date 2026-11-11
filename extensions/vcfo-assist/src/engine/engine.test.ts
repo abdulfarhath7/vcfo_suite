@@ -8,7 +8,8 @@ import { globMatch, pageMatchesUrl } from './url';
 import { expandFields, expandRecipe, MAX_REPEAT } from './expand';
 import { normalizeRecipe } from '../recipes/normalize';
 import { BUNDLED_RECIPES } from '../recipes';
-import { FakeSuite, JsdomPortal, MemoryStore, PART_B_PROFILE, PART_B_VALUES, PROFILE_VALUES, loadMockPage, mockState, pdfDrop } from '../test/mock-env';
+import { FakeSuite, JsdomPortal, MemoryStore, PART_B_PROFILE, PART_B_VALUES, PROFILE_VALUES, SENTINEL_PROFILE, loadMockPage, mockState, pdfDrop } from '../test/mock-env';
+import { compareVersions } from './kill';
 import type { Run, RunState, SignedRecipe } from '../shared/types';
 
 type Raw = { title: string; version: string; actions: Array<Record<string, unknown>> };
@@ -589,5 +590,173 @@ describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
     expect(engine.run!.wait).toMatchObject({ kind: 'wrong_page', page: 'SPICe+ Part B' });
+  });
+});
+
+describe('filing safeguards (G16, G17, G18, evidence)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  async function toConfirm(env: ReturnType<typeof setup>, start = START) {
+    await env.engine.start(start);
+    await env.engine.settle();
+    await env.engine.send({ type: 'LOGGED_IN' });
+    await env.engine.settle();
+  }
+
+  it('G16: a placeholder or the firm’s own contact is never typed; the field is marked and recorded', async () => {
+    const env = setup();
+    const company = SENTINEL_PROFILE.profile.company as Record<string, unknown>;
+    env.suite.profileValue = { ...SENTINEL_PROFILE, profile: { ...SENTINEL_PROFILE.profile, company: { ...company, proposedNames: ['N/A', 'desk@sbcfirm.in'] } } };
+    env.suite.catalogValue = { liveAllowed: false, agents: [], firmContacts: { emails: ['desk@sbcfirm.in'], phones: [] } };
+    await toConfirm(env);
+    const f1 = env.engine.run!.fields.find((f) => f.key === 'company.proposedNames[0]')!;
+    const f2 = env.engine.run!.fields.find((f) => f.key === 'company.proposedNames[1]')!;
+    expect(f1).toMatchObject({ status: 'placeholder', blank: 'placeholder' });
+    expect(f2).toMatchObject({ status: 'placeholder', blank: 'firm_contact' });
+    expect(f1.value).toBeUndefined();
+    expect(env.portal.agent.overlay.snapshot().filter((m) => m.kind === 'records').map((m) => m.text)).toEqual([
+      "You fill this from the client's records",
+      "You fill this from the client's records",
+    ]);
+    await env.engine.send({ type: 'CONFIRM_FILL' });
+    await env.engine.settle();
+    expect(value('proposedName1')).toBe('');
+    expect(value('proposedName2')).toBe('');
+    expect(env.engine.run!.log.some((l) => l.text.startsWith('G16:'))).toBe(true);
+    const last = env.suite.updates.at(-1)!;
+    expect(last.blanks).toEqual(
+      expect.arrayContaining([
+        { field: 'company.proposedNames[0]', reason: 'placeholder' },
+        { field: 'company.proposedNames[1]', reason: 'firm_contact' },
+      ]),
+    );
+    expect(JSON.stringify(env.suite.calls.filter((c) => c.name !== 'profile' && c.name !== 'catalog'))).not.toContain('desk@sbcfirm.in');
+  });
+
+  it('G16: a mandatory field Suite lacks is marked for the client’s records; an optional one is only listed', async () => {
+    const env = setup();
+    const company = { ...(SENTINEL_PROFILE.profile.company as Record<string, unknown>) };
+    delete company.nicCode;
+    company.proposedNames = ['Sentinel Alpha Private Limited'];
+    env.suite.profileValue = { ...SENTINEL_PROFILE, profile: { ...SENTINEL_PROFILE.profile, company } };
+    await toConfirm(env);
+    expect(env.engine.run!.fields.find((f) => f.key === 'company.nicCode')).toMatchObject({ status: 'missing', blank: 'missing' });
+    const optional = env.engine.run!.fields.find((f) => f.key === 'company.proposedNames[1]')!;
+    expect(optional.status).toBe('missing');
+    expect(optional.blank).toBeUndefined();
+  });
+
+  it('G17: the Submit card and the Submit highlight wait for the certifier’s checks in Suite', async () => {
+    const env = setup();
+    env.suite.attestationValue = { recorded: false };
+    await toConfirm(env);
+    await env.engine.send({ type: 'CONFIRM_FILL' });
+    await env.engine.settle();
+    await env.engine.send(await pdfDrop());
+    await env.engine.settle();
+    expect(env.engine.run!.state).toBe('WAIT_SUBMIT_PAY');
+    expect(env.engine.run!.wait).toEqual({ kind: 'certifier' });
+    expect(env.portal.agent.overlay.snapshot().filter((m) => m.kind === 'human')).toHaveLength(0);
+    await env.engine.tick();
+    await env.engine.settle();
+    expect(env.engine.run!.wait).toEqual({ kind: 'certifier' });
+    expect(env.suite.calls.filter((c) => c.name === 'attestation').length).toBeGreaterThanOrEqual(2);
+
+    env.suite.attestationValue = { recorded: true, certifierName: 'CA Partner' };
+    await env.engine.tick();
+    await env.engine.settle();
+    expect(env.engine.run!.wait).toEqual({ kind: 'submit_pay' });
+    expect(env.engine.run!.attestation).toMatchObject({ certifierName: 'CA Partner' });
+    expect(env.portal.agent.overlay.snapshot().filter((m) => m.kind === 'human')).toHaveLength(2);
+    expect(mockState().clicks['btn-submit']).toBeUndefined();
+  });
+
+  it('G17: an SRN that appears before the checks is read and the bypass is logged', async () => {
+    const env = setup();
+    env.suite.attestationValue = { recorded: false };
+    await toConfirm(env);
+    await env.engine.send({ type: 'CONFIRM_FILL' });
+    await env.engine.settle();
+    await env.engine.send(await pdfDrop());
+    await env.engine.settle();
+    document.getElementById('btn-submit')!.click();
+    document.getElementById('btn-pay')!.click();
+    await env.engine.tick();
+    await env.engine.settle();
+    expect(env.engine.run!.state).toBe('DONE');
+    expect(env.engine.run!.log.some((l) => /G17: the SRN appeared before/.test(l.text))).toBe(true);
+  });
+
+  it('G18: Suite’s kill switch stops the run before the profile is pulled', async () => {
+    const env = setup();
+    env.suite.catalogValue = { liveAllowed: false, agents: [], extensionDisabled: true };
+    await env.engine.start(START);
+    await env.engine.settle();
+    expect(env.engine.run!.state).toBe('FAILED');
+    expect(env.engine.run!.wait).toMatchObject({ kind: 'disabled' });
+    expect(env.suite.calls.some((c) => c.name === 'profile' || c.name === 'recipe')).toBe(false);
+  });
+
+  it('G18: an extension below Suite’s minimum version refuses to run; an unreadable catalog waits', async () => {
+    loadMockPage('spice-a.html');
+    const suite = new FakeSuite();
+    suite.catalogValue = { liveAllowed: false, agents: [], minExtensionVersion: '0.3.0' };
+    const portal = new JsdomPortal();
+    const engine = new RunEngine({ suite, store: new MemoryStore(), portalFor: () => portal, bundledRecipes: BUNDLED_RECIPES, extensionVersion: '0.2.9' });
+    await engine.start(START);
+    await engine.settle();
+    expect(engine.run!.state).toBe('FAILED');
+    expect(engine.run!.error).toMatch(/older than the version Suite requires \(0\.3\.0\)/);
+    expect(compareVersions('0.10.0', '0.9.9')).toBe(1);
+
+    const env = setup();
+    env.suite.catalog = async () => {
+      throw new Error('offline');
+    };
+    await env.engine.start(START);
+    await env.engine.settle();
+    expect(env.engine.run!.state).toBe('READY');
+    expect(env.engine.run!.wait).toMatchObject({ kind: 'suite_error' });
+    expect(env.suite.calls.some((c) => c.name === 'profile')).toBe(false);
+  });
+
+  it('evidence: the MCA login label, the device and the signers reach Suite as labels and refs only', async () => {
+    loadMockPage('spice-a.html');
+    const suite = new FakeSuite();
+    const portal = new JsdomPortal();
+    const engine = new RunEngine({
+      suite,
+      store: new MemoryStore(),
+      portalFor: () => portal,
+      bundledRecipes: BUNDLED_RECIPES,
+      extensionVersion: '0.2.0',
+      device: async () => ({ installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' }),
+    });
+    await engine.start({ ...START, mcaLoginLabel: 'lead@sbcfirm.in' });
+    await engine.settle();
+    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toMatchObject({
+      mcaLoginLabel: 'lead@sbcfirm.in',
+      device: { installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' },
+      extensionVersion: '0.2.0',
+    });
+    expect(engine.run!.signerChoices!.map((c) => c.ref)).toEqual(['director:e1', 'professional:self']);
+    await engine.send({ type: 'LOGGED_IN' });
+    await engine.settle();
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    // A drop with no signer (or one the panel never offered) is not taken.
+    await engine.send(await pdfDrop(undefined, []));
+    await engine.settle();
+    await engine.send(await pdfDrop(undefined, ['director:forged']));
+    await engine.settle();
+    expect(engine.run!.state).toBe('WAIT_DSC');
+    await engine.send(await pdfDrop(undefined, ['director:e1', 'professional:self']));
+    await engine.settle();
+    expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
+    expect(suite.updates.at(-1)!.dscSigners).toEqual(['director:e1', 'professional:self']);
+    const sent = JSON.stringify(suite.calls.filter((c) => c.name !== 'profile'));
+    for (const v of PROFILE_VALUES) expect(sent).not.toContain(v);
   });
 });

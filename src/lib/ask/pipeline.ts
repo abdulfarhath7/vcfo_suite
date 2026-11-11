@@ -30,7 +30,9 @@ import { currentKnowledgeVersion } from '@/lib/ask/knowledge-version';
 import { expectsData, runGuard, type GuardResult } from '@/lib/ask/guard';
 import { localMatch, metricByName } from '@/lib/ask/local-match';
 import { metricsForRole } from '@/lib/ask/metrics/match';
-import { maskIdentityNumbers } from '@/lib/ask/mask';
+import { askClientDataEnabled, CLIENT_DATA_OFF_NOTE, knownPeopleFromState } from '@/lib/ask/client-data';
+import { createAskMasker, maskIdentityNumbers, type KnownPerson } from '@/lib/ask/mask';
+import { maskingProvider } from '@/lib/ask/masked-provider';
 import type { AskPath } from '@/lib/ask/paths';
 import { addLlmUsage, getAskProvider, NO_LLM_USAGE } from '@/lib/ask/provider';
 import { meterProvider, type MeteredProvider } from '@/lib/ask/provider/meter';
@@ -63,7 +65,7 @@ import {
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
-import { handleDoWork, isDataMessage, pageContextLine, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
+import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
 
 /**
  * Ask VCFO request pipeline (§2, §6). Cheapest path first:
@@ -72,6 +74,11 @@ import { handleDoWork, isDataMessage, pageContextLine, pendingDoRun, STORED_USER
  *   tools + generation). Every answer is persisted with its path and usage; the
  *   model never sees data outside the caller's scope because every tool reads
  *   through scoped repositories.
+ *
+ * Every model call goes through one masker per turn (`maskingProvider`): emails, phones, bank
+ * accounts, pincodes in addresses, identity numbers and the engagement's known people become
+ * placeholders on the way out and are restored in the answer (docs/specs/ask-vcfo/PRIVACY.md).
+ * `ASK_CLIENT_DATA_ENABLED=false` keeps engagement data out of prompts altogether.
  */
 
 /** Long pastes are for the data router, which clients do not have yet. */
@@ -168,6 +175,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   let snapshot: ProjectSnapshot | null = null;
   let clientTools: ClientToolContext | null = null;
   let engagementId: string | null = null;
+  let people: KnownPerson[] = [];
   if (shell === 'client') {
     if (!request.engagementId) {
       emit({ type: 'error', code: 'forbidden', message: 'Choose a project first.' });
@@ -182,7 +190,12 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     snapshot = loaded.snapshot;
     engagementId = loaded.engagementDbId;
     clientTools = { snapshot, state: loaded.state, filings: loaded.filings, now };
+    people = knownPeopleFromState(loaded.state, ctx.role === 'client' && ctx.name?.trim() ? [{ name: ctx.name, kind: 'CLIENT' }] : []);
   }
+  const clientData = askClientDataEnabled();
+  // Staff on a project page: that project's line for the router and its people for the masker.
+  let onScreenRead: ReturnType<typeof pageContext> | null = null;
+  const onScreen = () => (onScreenRead ??= shell === 'client' ? Promise.resolve(null) : pageContext(ctx, request.page));
 
   // ---- Conversation (owner-only; a mismatched id starts a new one) ----
   let conversationId: string | null = null;
@@ -286,10 +299,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   const flags = askFlags();
   // The data router's own way in: a file, a labelled paste, or the answer to its last question.
-  // The raw message goes there because code needs the values; it is stored only in masked form.
+  // The raw message goes there because code reads the values from it; it is stored only in masked
+  // form, and every model call inside the Do path goes through the same masker as the answer path,
+  // so what is written back into the app comes from this original, never from model output alone.
   const pending = shell === 'client' ? null : await pendingDoRun(ctx, conversationId, request.message, now);
   const doWork = async (extra: { guard?: GuardResult; startedAt?: number } = {}) => {
-    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending });
+    const page = await onScreen();
+    const result = await handleDoWork(ctx, request, request.message ?? '', emit, { conversationId, now, pending, people: [...people, ...(page?.people ?? [])] });
     if (!result) return false;
     metered = result.metered ?? metered;
     await finish(result.answer, { path: 'fixed_workflow', ...extra });
@@ -395,20 +411,26 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     await finish(unavailableAnswer(shell), { path: null });
     return;
   }
-  const provider = meterProvider(configured);
+  // One masker per turn, fed the history in order, so a value keeps its placeholder across turns.
+  const page = await onScreen();
+  const masker = createAskMasker({ people: [...people, ...(page?.people ?? [])] });
+  for (const m of history) masker.mask(m.text);
+  const provider = meterProvider(maskingProvider(configured, masker));
   metered = provider;
+  // With client data off, the model sees only the question: no history, page, snapshot or tools.
+  const modelHistory = clientData ? history : [];
 
   const startedAt = Date.now();
   let guard: GuardResult;
-  let onScreen: string | null;
+  // The record on screen helps the router and the action picker; with client data off it is left out.
+  const onScreenLine = clientData ? (page?.line ?? null) : null;
   try {
     // A follow-up rarely names its subject, so the previous question helps to pick the topics.
-    const lastAsked = history.findLast((m) => m.sender === 'user')?.text ?? '';
+    const lastAsked = modelHistory.findLast((m) => m.sender === 'user')?.text ?? '';
     const topics = shortlistTopics(`${message} ${lastAsked}`, audience).map((t) => ({ slug: t.slug, question: t.question }));
     const metrics = metricsForRole(metricRole).map((m) => m.name);
-    onScreen = shell === 'client' ? null : await pageContextLine(ctx, request.page);
-    const routed = onScreen ? `${message}\n\n(${onScreen})` : message;
-    guard = (await runGuard(provider, { model: config.models.guard, shell, message: routed, history, topics, metrics })).result;
+    const routed = onScreenLine ? `${message}\n\n(${onScreenLine})` : message;
+    guard = (await runGuard(provider, { model: config.models.guard, shell, message: routed, history: modelHistory, topics, metrics })).result;
   } catch (error) {
     console.error('[ask-vcfo] guard failed', error);
     await finish(unavailableAnswer(shell), { path: null });
@@ -428,14 +450,15 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     return;
   }
   if (guard.intent === 'do_work') {
-    if (shell !== 'client' && typed && attachmentIds.length === 0) {
+    if (shell !== 'client' && typed && attachmentIds.length === 0 && clientData) {
       // A plain request ("remind Trial about the NOC") goes to the registered actions first; a
-      // request to fill answers falls through to the data router below.
+      // request to fill answers falls through to the data router below. The picker uses the same
+      // masked provider; with client data off it is skipped, as every model step of the Do path is.
       const prepared = await pickAndPrepare({
         ctx,
         message: typed,
         pagePath: request.page?.path,
-        onScreen,
+        onScreen: onScreenLine,
         conversationId,
         provider,
         model: config.models.extract,
@@ -486,12 +509,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   emit({ type: 'status', label: STATUS_LABELS.sources });
   const sources = await retrieveSources(ctx, {
-    query: guard.rewrittenQuery,
+    // The embedding call leaves the app too, so it gets the masked words.
+    query: masker.mask(guard.rewrittenQuery),
     persona: audience,
     topK: config.retrievalTopK,
     applicability,
-    includeCards: wantsData,
-    engagementId,
+    includeCards: wantsData && clientData,
+    engagementId: clientData ? engagementId : null,
   });
   // Dates in a document or a record are checked against that source. A topic's rule is a duration.
   const datedSources = sources.filter((s) => s.kind !== 'topic').map((s) => s.text);
@@ -516,7 +540,9 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
             run: async (input: Record<string, unknown>) => t.run({ ctx, data: await loadStaff() }, input),
           })),
         );
-  const tools = flags.killedPaths.has('tool_answer') ? [] : allTools;
+  // With client data off the model gets no tools and no snapshot.
+  const tools = flags.killedPaths.has('tool_answer') || !clientData ? [] : allTools;
+  const modelSnapshot = clientData ? snapshot : null;
 
   const allowedCitationIds = new Set<string>([
     ...sources.map((s) => s.id),
@@ -524,7 +550,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       .filter((s) => s.kind === 'topic')
       .flatMap((s) => resolveTopicForViewer(s.id, applicability, audience)?.citations.map((c) => c.id) ?? []),
     ...tools.map((t) => t.definition.name),
-    ...(snapshot ? [SNAPSHOT_SOURCE_ID] : []),
+    ...(modelSnapshot ? [SNAPSHOT_SOURCE_ID] : []),
   ]);
 
   emit({ type: 'status', label: STATUS_LABELS.writing });
@@ -543,9 +569,9 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       maxTotalTokens: budgets.answerMaxTokens,
       shell,
       firmName: firmDisplayName(),
-      snapshot,
+      snapshot: modelSnapshot,
       sources,
-      history,
+      history: modelHistory,
       message: guard.rewrittenQuery,
       language: request.language ?? guard.language,
       depth,
@@ -592,6 +618,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       shell,
     );
   }
+  if (!clientData && answer.origin === 'generated') answer = { ...answer, line: `${CLIENT_DATA_OFF_NOTE} ${answer.line}` };
   const path: AskPath = output.toolCalls.length > 0 ? 'tool_answer' : 'document_answer';
   const done = await finish(answer, {
     path,
@@ -602,6 +629,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   });
   if (
     savedKey &&
+    clientData &&
     result.ok === true &&
     !wantsData &&
     !decision &&

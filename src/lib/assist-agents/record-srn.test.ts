@@ -52,7 +52,7 @@ describe('SRN write-back by engagement slug', () => {
     });
     const res = await PATCH(request, { params: Promise.resolve({ id: 'acme-labs', runId: RUN }) });
     const body = await res.json();
-    expect(updateAgentRun).toHaveBeenCalledWith(CTX, 'acme-labs', RUN, expect.objectContaining({ status: 'done' }));
+    expect(updateAgentRun).toHaveBeenCalledWith(CTX, 'acme-labs', RUN, expect.objectContaining({ status: 'done' }), expect.objectContaining({ ip: 'unknown' }));
     expect(body.srnWriteBack).toEqual({ recorded: true, stepId: 'pre-4', field: 'nameApplicationFilingNotes' });
     expect(getEngagementById).toHaveBeenCalledWith(CTX, UUID);
     expect(applyChecklistPatch.mock.calls[0]![1]).toBe(UUID);

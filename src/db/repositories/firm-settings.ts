@@ -70,6 +70,7 @@ function toSettings(row: Row | undefined, updatedByName: string | null): FirmSet
     address: row.address ?? null,
     serviceTargets: readServiceTargets(row.serviceTargets),
     rolePermissions: readRolePermissions(row.rolePermissions),
+    assistCertifierMustDiffer: row.assistCertifierMustDiffer === true,
     updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
     updatedByName,
   };
@@ -235,6 +236,19 @@ export async function systemGetReminderDays(): Promise<number[] | null> {
     .limit(1);
   const days = (row?.reminderDays ?? []).filter((d) => Number.isInteger(d) && d >= 0);
   return days.length > 0 ? days : null;
+}
+
+/**
+ * VCFO Assist's certifier rule (SAFETY.md G17): true when the certifier must be a different user
+ * from the filer. No role check: it returns only this flag. False while nobody has saved settings.
+ */
+export async function systemGetAssistCertifierMustDiffer(): Promise<boolean> {
+  const [row] = await db
+    .select({ mustDiffer: firmSettings.assistCertifierMustDiffer })
+    .from(firmSettings)
+    .where(eq(firmSettings.id, ROW_ID))
+    .limit(1);
+  return row?.mustDiffer === true;
 }
 
 /**

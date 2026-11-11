@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AssistAgentRunView, AssistPatchStatus, AssistPatchView } from '@/lib/assist-agents/types';
+import type { AssistAgentRunView, AssistAttestationView, AssistPatchStatus, AssistPatchView } from '@/lib/assist-agents/types';
 
 async function readJson<T>(res: Response): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
@@ -39,5 +39,39 @@ export function useReviewAssistPatch() {
         }),
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assist-patches'] }),
+  });
+}
+
+export interface AssistAttestationBody {
+  checks: { fieldsCheckedAgainstRecords: true; registeredOffice?: 'visited' | 'owner_noc'; subscriberSignatures?: 'in_presence' | 'video_kyc' };
+  evidenceDocumentIds: string[];
+  note?: string;
+}
+
+/** The certifier records the checks for one run (`POST .../assist-runs/[runId]/attestation`, SAFETY.md G17). */
+export function useRecordAssistAttestation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ engagementId, runId, body }: { engagementId: string; runId: string; body: AssistAttestationBody }) =>
+      readJson<{ attestation: AssistAttestationView }>(
+        await fetch(`/api/engagements/${encodeURIComponent(engagementId)}/assist-runs/${runId}/attestation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assist-agent-runs'] }),
+  });
+}
+
+/** The engagement's vault documents, to offer as attestation evidence (`GET /api/documents?engagementId=`). */
+export function useAssistEvidenceDocuments(engagementId: string | null) {
+  return useQuery({
+    queryKey: ['assist-evidence-documents', engagementId],
+    enabled: Boolean(engagementId),
+    queryFn: async () =>
+      readJson<{ documents: Array<{ id: string; fileName: string; createdAt?: string }> }>(
+        await fetch(`/api/documents?engagementId=${encodeURIComponent(engagementId ?? '')}`),
+      ),
   });
 }

@@ -24,7 +24,7 @@ vi.mock('@/lib/ask/provider', async (load) => ({
 }));
 
 const { createRunContext, RunOverBudget } = await import('./run-context');
-const ask = (provider: Awaited<ReturnType<ReturnType<typeof createRunContext>['provider']>>) => provider.complete({ model: 'm', messages: [] } as unknown as LlmRequest);
+const ask = (provider: Awaited<ReturnType<ReturnType<typeof createRunContext>['provider']>>) => provider.complete({ model: 'm', system: [], messages: [] } as unknown as LlmRequest);
 
 beforeEach(() => {
   updates.length = 0;
