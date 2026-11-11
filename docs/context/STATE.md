@@ -233,6 +233,8 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
   - BR-04/05/06: the client edits the sent draft. The firm's original is kept, and the edit is stored in `pre-2.brClientEdit`. Each save is audited before and after, and staff see tracked changes.
   - The chain runs edit → confirm → email → receipt → Manager → Admin → final. The Admin cannot approve before the Manager, and a return needs a reason and goes to the Lead.
   - Each move sends one notice to every participant. `e2e/board-resolution-client-edit.spec.ts` runs the chain on a local app.
+  - Owner decisions of 11 Nov (branch `cr/board-resolution`). BR-03: the client's chip names the Lead and the Manager by first name ("With Lead · Divya", "With Manager · Anita") and the Admin by role ("With Admin"); staff chips are unchanged. The names come from the engagement team the portal already loads (`leadName`/`managerName`, `useHome`); `workHolderLabel` takes them as an optional `team`.
+  - BR-05: a returned edit is shared. Holder `lead_client` reads "With Lead and Client" for staff and "With Lead · <first name> and you" for the client. Both may `correct` (each save audited with role and before/after text), and only the Lead may `resubmit` to the Manager.
 - **Projects:** PR-01 name field focus; PR-02 "Download project (ZIP)" for the Lead, Manager and Admin. The ZIP is made in the background, with one folder per item type.
 - **Landing:** LP-01 light theme by default with a dark toggle, set before paint, contrast tested; LP-02 no screenshots; LP-03 one hero scene per headline word.
 

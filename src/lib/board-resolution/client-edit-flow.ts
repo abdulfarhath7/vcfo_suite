@@ -21,7 +21,7 @@ import {
   type ClientEditStage,
   type ClientEditState,
 } from '@/lib/board-resolution/client-edit';
-import { workHolderLabel } from '@/lib/checklist/work-holder';
+import { workHolderLabel, type WorkHolderTeam } from '@/lib/checklist/work-holder';
 import { companyFromAddress, sendEmail } from '@/lib/email/send-email';
 import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
@@ -69,6 +69,8 @@ export async function getClientEditView(ctx: AuthContext, engagementId: string):
   const original = textsOf(doc.content);
   const edited = edit ? textsOf(edit.content) : null;
   let actions = availableClientEditActions(stage, ctx.role);
+  // BR-03: the client reads the first name of the Lead and the Manager in the holder chip.
+  const team = ctx.role === 'client' && stage ? await teamNames(engagement.id) : undefined;
   if (stage === null && ctx.role === 'client' && documentWithClient(doc, slice)) actions = ['save'];
   if (stage === null && ctx.role !== 'client') actions = [];
   const view: ClientEditView = {
@@ -78,7 +80,7 @@ export async function getClientEditView(ctx: AuthContext, engagementId: string):
     changes: edited ? changedParagraphs(original, edited) : [],
     returnNote: edit?.returnNote,
     actions,
-    holder: stage ? workHolderLabel(clientEditHolder(stage), ctx.role === 'client' ? 'client' : 'staff') : null,
+    holder: stage ? workHolderLabel(clientEditHolder(stage), ctx.role === 'client' ? 'client' : 'staff', team) : null,
   };
   if (ctx.role !== 'client') {
     const rows = await listAuditEvents(ctx, { engagementId: engagement.id, limit: 200 });
@@ -95,7 +97,16 @@ export async function getClientEditView(ctx: AuthContext, engagementId: string):
   return view;
 }
 
-/** The client's (or, after a return, the lead's) paragraphs over the firm's structure. */
+/** The Lead and the Manager of the engagement, for the client's holder chip. */
+async function teamNames(engagementDbIdValue: string): Promise<WorkHolderTeam | undefined> {
+  const recipients = await resolveEngagementRecipients(engagementDbIdValue).catch(() => null);
+  return recipients ? { lead: recipients.lead?.name, manager: recipients.manager?.name } : undefined;
+}
+
+/** "With Lead · Divya" reads "with Lead · Divya" inside a sentence; names keep their capitals. */
+const inSentence = (label: string) => label.replace(/^With /, 'with ');
+
+/** The client's (or, after a return, the lead's or the client's) paragraphs over the firm's structure. */
 function contentWithTexts(baseContent: string, texts: string[]): string {
   const base = parseBoardResolutionPatchContent(baseContent);
   return serializeBoardResolutionPatchContent(
@@ -111,7 +122,8 @@ export async function saveClientEdit(ctx: AuthContext, engagementId: string, tex
   const { engagement, doc, slice, edit } = await load(ctx, engagementId);
   if (!doc) throw new Error('board_resolution_not_generated');
   const stage = edit?.stage ?? null;
-  const action: ClientEditAction = ctx.role === 'intern' ? 'correct' : 'save';
+  // BR-05: after a return the lead and the client both correct the document; before it, the client saves.
+  const action: ClientEditAction = stage === 'returned' ? 'correct' : 'save';
   if (action === 'save' && !documentWithClient(doc, slice)) throw new Error('not_with_client');
   const next = nextClientEditStage(stage, action, ctx.role);
   if ('error' in next) throw new Error(next.error);
@@ -198,6 +210,7 @@ async function notifyParticipants(ctx: AuthContext, engagementDbIdValue: string,
     if (!recipients) return;
     const project = { id: recipients.appId, slug: recipients.slug };
     const holder = clientEditHolder(stage);
+    const team: WorkHolderTeam = { lead: recipients.lead?.name, manager: recipients.manager?.name };
     const actor = ctx.name?.trim() || 'Someone';
     const groups: Array<{ role: 'client' | 'intern' | 'manager' | 'admin'; parties: EngagementParty[] }> = [
       { role: 'client', parties: uniq([...recipients.clients, recipients.client]) },
@@ -209,18 +222,21 @@ async function notifyParticipants(ctx: AuthContext, engagementDbIdValue: string,
     const drafts = groups.flatMap(({ role, parties }) =>
       parties
         .filter((p) => !done.has(p.userId!) && Boolean(done.add(p.userId!)))
-        .map((p) => ({
-          userId: p.userId!,
-          kind: 'checklist.review' as const,
-          title: `Board resolution: ${workHolderLabel(holder, role === 'client' ? 'client' : 'staff')}`,
-          body: `${actor} ${CLIENT_EDIT_ACTION_TEXT[action]}${note?.trim() ? ` (${note.trim()})` : ''}. It is now ${workHolderLabel(holder, role === 'client' ? 'client' : 'staff').toLowerCase()}.`,
-          engagementId: recipients.appId,
-          companyName: recipients.companyName,
-          itemId: STEP,
-          href: stepPathForRole(role, project, STEP, { boardResolution: true }),
-          actorId: ctx.userId,
-          actorName: actor,
-        })),
+        .map((p) => {
+          const label = workHolderLabel(holder, role === 'client' ? 'client' : 'staff', team);
+          return {
+            userId: p.userId!,
+            kind: 'checklist.review' as const,
+            title: `Board resolution: ${label}`,
+            body: `${actor} ${CLIENT_EDIT_ACTION_TEXT[action]}${note?.trim() ? ` (${note.trim()})` : ''}. It is now ${inSentence(label)}.`,
+            engagementId: recipients.appId,
+            companyName: recipients.companyName,
+            itemId: STEP,
+            href: stepPathForRole(role, project, STEP, { boardResolution: true }),
+            actorId: ctx.userId,
+            actorName: actor,
+          };
+        }),
     );
     if (drafts.length) await createNotificationsForUsers(drafts);
   } catch (err) {

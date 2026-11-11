@@ -12,13 +12,13 @@ describe('workHolder', () => {
   it('2. sent to the Manager for approval: With Manager (approval)', () => {
     const h = workHolder({ kind: 'with', owner: 'sbc', slice: { status: 'in-progress', ...pending } });
     expect(h).toBe('manager');
-    expect(workHolderLabel(h!, 'client')).toBe('With Manager (approval)');
+    expect(workHolderLabel(h!)).toBe('With Manager (approval)');
   });
 
   it('3. the Manager approved and the Admin holds it: With Admin (approval)', () => {
     const h = workHolder({ kind: 'with', owner: 'sbc', slice: { status: 'in-progress', ...pending, approvalStage: 'admin' } });
     expect(h).toBe('admin');
-    expect(workHolderLabel(h!, 'client')).toBe('With Admin (approval)');
+    expect(workHolderLabel(h!)).toBe('With Admin (approval)');
   });
 
   it('4. the firm sent it to the Client: With you for the Client, With Client for staff', () => {
@@ -44,6 +44,39 @@ describe('workHolder', () => {
   });
 });
 
+/** BR-03 (owner decision 11 Nov): the Client reads the first name of the Lead and the Manager. */
+describe('workHolderLabel for the Client', () => {
+  const team = { lead: 'Divya Rao', manager: 'Anita Shah' };
+
+  it('names the Lead and the Manager by first name, and the Admin by role only', () => {
+    expect(workHolderLabel('lead', 'client', team)).toBe('With Lead · Divya');
+    expect(workHolderLabel('manager', 'client', team)).toBe('With Manager · Anita');
+    expect(workHolderLabel('admin', 'client', team)).toBe('With Admin');
+  });
+
+  it('keeps "With you" and "With MCA"', () => {
+    expect(workHolderLabel('client', 'client', team)).toBe('With you');
+    expect(workHolderLabel('mca', 'client', team)).toBe('With MCA');
+  });
+
+  it('reads the role alone without a name, or when the name is only an email address', () => {
+    expect(workHolderLabel('lead', 'client')).toBe('With Lead');
+    expect(workHolderLabel('manager', 'client', { manager: 'anita@sbc.example' })).toBe('With Manager');
+  });
+
+  it('a returned client edit is shared by the Lead and the Client', () => {
+    expect(workHolderLabel('lead_client', 'client', team)).toBe('With Lead · Divya and you');
+    expect(workHolderLabel('lead_client', 'client')).toBe('With Lead and you');
+  });
+
+  it('leaves the staff chip unchanged', () => {
+    expect(workHolderLabel('lead', 'staff', team)).toBe('With Lead');
+    expect(workHolderLabel('manager', 'staff', team)).toBe('With Manager (approval)');
+    expect(workHolderLabel('admin', 'staff', team)).toBe('With Admin (approval)');
+    expect(workHolderLabel('lead_client', 'staff', team)).toBe('With Lead and Client');
+  });
+});
+
 describe('sinceHandOver', () => {
   const now = new Date('2026-11-11T12:00:00Z');
   it('gives the largest whole unit', () => {
@@ -62,7 +95,7 @@ describe('BR-05 holder of a client edit', () => {
     expect(at('sent')).toBe('lead');
     expect(at('manager')).toBe('manager');
     expect(at('admin')).toBe('admin');
-    expect(at('returned')).toBe('lead');
+    expect(at('returned')).toBe('lead_client');
     expect(at('final')).toBeNull();
   });
 });

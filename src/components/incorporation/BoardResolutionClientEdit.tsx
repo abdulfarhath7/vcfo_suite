@@ -16,14 +16,14 @@ const ACTION_LABEL: Partial<Record<ClientEditAction, string>> = {
   receive: 'Confirm receipt',
   'manager-approve': 'Approve',
   'admin-approve': 'Approve',
-  return: 'Return to Lead',
+  return: 'Return to Lead and Client',
   resubmit: 'Send to Manager',
   'send-final': 'Send final to Client',
 };
 
 /** Actions that open a box for text first: the return reason, the client's message. */
 const NEEDS_TEXT: Partial<Record<ClientEditAction, { label: string; required: boolean; placeholder: string }>> = {
-  return: { label: 'Reason for the return', required: true, placeholder: 'What must the Lead change?' },
+  return: { label: 'Reason for the return', required: true, placeholder: 'What must the Lead and the Client change?' },
   send: { label: 'Message to the firm (optional)', required: false, placeholder: 'e.g. We changed the date of the meeting in paragraph 3.' },
 };
 
@@ -47,9 +47,11 @@ function TrackedChange({ before, after }: { before: string; after: string }) {
  * BR-04 / BR-05 / BR-06: the client's edit of the board resolution, on the "Draft board
  * resolution" step, for every role. The client edits the paragraphs, confirms and sends; the
  * lead, the manager and the admin read the edits as tracked changes and move them along the
- * chain. The server decides which buttons each role gets (`view.actions`).
+ * chain. After a return the document is "With Lead and Client": both may edit it, and only the
+ * Lead sends it to the Manager again. The server decides which buttons each role gets (`view.actions`).
  */
-export function BoardResolutionClientEdit({ engagementId, role }: { engagementId: string; role: string }) {
+// The viewer's role is `viewerRole`, because JSX lint reads a prop named `role` as an ARIA role.
+export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { engagementId: string; viewerRole: string }) {
   const [view, setView] = useState<ClientEditView | null>(null);
   const [editing, setEditing] = useState(false);
   const [paragraphs, setParagraphs] = useState<string[]>([]);
@@ -114,7 +116,7 @@ export function BoardResolutionClientEdit({ engagementId, role }: { engagementId
     <section className="mt-4 space-y-3 rounded-lg border border-line bg-surface-raised p-4" aria-label="Edited board resolution" data-testid="br-client-edit">
       <header className="flex flex-wrap items-center gap-2">
         <h4 className="text-[14px] font-semibold text-ink">{isClient && view.stage === null ? 'Want to change the wording?' : 'Edited board resolution'}</h4>
-        {view.holder ? <Chip raw tone={view.holder === 'With you' ? 'warn' : 'prog'}>{view.holder}</Chip> : null}
+        {view.holder ? <Chip raw tone={view.holder === 'With you' || view.holder.endsWith(' and you') ? 'warn' : 'prog'}>{view.holder}</Chip> : null}
         {view.edited ? (
           <a className="ml-auto inline-flex items-center gap-1 text-[12.5px] text-brand hover:underline" href={`${base}?download=1`}>
             <Download className="h-3.5 w-3.5" aria-hidden /> Download edited version
@@ -126,7 +128,14 @@ export function BoardResolutionClientEdit({ engagementId, role }: { engagementId
         <p className="text-[13px] text-ink-muted">You can edit the draft here. The firm keeps its original version, and your edits go to your Lead, the Manager and the Admin for approval.</p>
       ) : null}
       {view.returnNote && view.stage === 'returned' ? (
-        <p className="rounded-md bg-warning-soft px-3 py-2 text-[13px] text-ink">Returned: {view.returnNote}</p>
+        <div className="space-y-1 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-ink">
+          <p>Returned: {view.returnNote}</p>
+          <p className="text-ink-muted">
+            {isClient
+              ? 'You and your Lead can both edit it now. Your Lead sends it to the Manager again.'
+              : 'The Lead and the Client can both edit it now. The Lead sends it to the Manager again.'}
+          </p>
+        </div>
       ) : null}
 
       {editing ? (

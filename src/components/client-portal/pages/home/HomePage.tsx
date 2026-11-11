@@ -159,6 +159,7 @@ export function HomePage() {
       model={h.model}
       company={h.company}
       lead={h.lead}
+      manager={h.manager}
       link={{ label: 'All steps', onClick: () => h.portal.go('incorporation') }}
       onPhase={(no) => h.portal.go(phaseHref(no))}
       onStep={(s) => h.portal.go(stepHref(s.id))}

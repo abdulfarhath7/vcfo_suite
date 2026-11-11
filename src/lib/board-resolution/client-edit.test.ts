@@ -39,11 +39,33 @@ describe('BR-05 the seven steps, in order', () => {
     expect(nextClientEditStage('manager', 'return', 'admin').ok).toBe(false);
   });
 
-  it('a return needs a reason and goes to the lead, who sends it to the manager again', () => {
+  it('a return needs a reason and goes to the lead and the client; the lead sends it to the manager again', () => {
     expect(nextClientEditStage('manager', 'return', 'manager', '  ')).toEqual({ ok: false, error: 'return_needs_reason' });
     expect(nextClientEditStage('admin', 'return', 'admin', 'Fix clause 2')).toEqual({ ok: true, stage: 'returned' });
-    expect(clientEditHolder('returned')).toBe('lead');
+    expect(clientEditHolder('returned')).toBe('lead_client');
     expect(nextClientEditStage('returned', 'resubmit', 'intern')).toEqual({ ok: true, stage: 'manager' });
+  });
+
+  it('after a return both the lead and the client may edit, and only the lead resubmits', () => {
+    expect(nextClientEditStage('returned', 'correct', 'intern')).toEqual({ ok: true, stage: 'returned' });
+    expect(nextClientEditStage('returned', 'correct', 'client')).toEqual({ ok: true, stage: 'returned' });
+    expect(availableClientEditActions('returned', 'client')).toEqual(['correct']);
+    expect(availableClientEditActions('returned', 'intern')).toEqual(['correct', 'resubmit']);
+    // The client cannot skip the chain: no resubmit, no confirm or send of their own.
+    expect(nextClientEditStage('returned', 'resubmit', 'client')).toEqual({ ok: false, error: 'not_your_move' });
+    expect(nextClientEditStage('returned', 'send', 'client')).toEqual({ ok: false, error: 'wrong_stage' });
+    expect(nextClientEditStage('returned', 'save', 'client')).toEqual({ ok: false, error: 'wrong_stage' });
+    // The manager and the admin still do not edit.
+    expect(nextClientEditStage('returned', 'correct', 'manager').ok).toBe(false);
+    expect(nextClientEditStage('returned', 'correct', 'admin').ok).toBe(false);
+  });
+
+  it('runs the chain with a client edit after a return', () => {
+    expect(run([
+      ['save', 'client'], ['confirm', 'client'], ['send', 'client'], ['receive', 'intern'],
+      ['return', 'manager', 'Use the registered office wording'], ['correct', 'client'], ['correct', 'intern'], ['resubmit', 'intern'],
+      ['manager-approve', 'manager'], ['admin-approve', 'admin'], ['send-final', 'intern'],
+    ])).toBe('final');
   });
 
   it('only the client edits, and only before confirming', () => {
