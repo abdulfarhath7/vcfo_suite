@@ -71,6 +71,7 @@ import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
+import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
 import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 
 /* ---------------- answers ---------------- */
@@ -212,6 +213,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const goTo = useGo();
   const qc = useQueryClient();
   const viewer = useDocViewer();
+  const [panelOpen, togglePanel] = useSidePanelOpen(d.engagementId ? `client:${d.engagementId}` : null);
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
@@ -851,7 +853,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
               </>
             }
           />
-          <Cols>
+          {/* GL-05: the side panel (phase steps) can be pushed aside for more room. */}
+          <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
             <Col>
               {stepForm ?? (docsCount > 0 ? (
                 <SpectrumTabs
@@ -867,7 +870,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
               ) : null)}
               {stepForm ? null : showDocs ? docsCard : answersCard}
             </Col>
-            <Col>{rail}</Col>
+            <SidePanelHandle open={panelOpen} onToggle={togglePanel} />
+            <Col className={panelOpen ? undefined : 'lg:hidden'}>{rail}</Col>
           </Cols>
           <Pager
             prev={prev ? { href: stepHrefOf(prev), label: `${prev.n} · ${prev.title}` } : { href: portalHref('incorporation'), label: 'All phases' }}
