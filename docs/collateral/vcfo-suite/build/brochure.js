@@ -72,7 +72,7 @@ async function main(out) {
     T(s, 'VCFO Suite is the web app SBC uses to set up your Indian company and then run its whole compliance life. You, your directors and our CA and CMA team work on the same record in the same app, from the first questionnaire to every annual filing.', { x: M, y: 4.1, w: 6.4, h: 0.95, fontSize: 11.5, color: HEX.soft, lineSpacingMultiple: 1.15 });
 
     const tiles = [
-      ['34', 'SPICe+ steps, in MCA order'],
+      ['48', 'guided steps, SPICe+ in MCA order'],
       ['5 roles', 'one app for firm and client'],
       ['1 record', 'incorporation → compliance, no hand-over'],
       ['2-in-1', 'platform + SBC’s CA/CMA team'],
@@ -89,8 +89,8 @@ async function main(out) {
     T(s, 'Ten unique features · the first four below · all ten on page 13', { x: M + 3.0, y: 7.0, w: CW - 3.0, h: 0.2, fontSize: 8, color: HEX.soft, align: 'right' });
     const u = [
       ['U1', 'Incorporation to compliance', 'In one app, on the same record from the questionnaire to every filing. No hand-over, no re-entry.'],
-      ['U2', 'Documents write themselves', 'MCA drafts are built from the checklist answers, one set per director, downloaded as one ZIP.'],
-      ['U3', 'Manager approval gate', 'Nothing reaches the client unchecked, and every action is written to the audit log.'],
+      ['U2', 'Documents write themselves', 'MCA drafts are built from the checklist answers, with a folder per director, downloaded as one ZIP.'],
+      ['U3', 'Manager approval gate', 'The firm’s work reaches the client only after a manager approves it, and key actions are recorded in the audit log.'],
       ['U4', 'The client is inside the app', 'Your own portal on your own phone, instead of status buried in email threads.'],
     ];
     const uw = (CW - GAP) / 2;
@@ -115,7 +115,7 @@ async function main(out) {
     T(s, 'Why we built it', { x: M, y: 2.55, w: 3.6, h: 0.3, fontSize: 12.5, bold: true, color: C.navy });
     T(s, [
       { text: 'For years we ran the same incorporation at client after client on email, WhatsApp and Excel. Directors called to ask for status. The same details were typed into ten documents. After the certificate of incorporation, the compliance calendar moved to a diary or to a different tool.', options: { breakLine: true, paraSpaceAfter: 7 } },
-      { text: 'VCFO Suite is what we built to stop that. It holds the company’s record from the first questionnaire to every annual filing, and it lets the client and our team work on that record together, with a manager checking each step before the client sees it.', options: {} },
+      { text: 'VCFO Suite is what we built to stop that. It holds the company’s record from the first questionnaire to every annual filing, and it lets the client and our team work on that record together, with a manager approving the firm’s work before the client sees it.', options: {} },
     ], { x: M, y: 2.92, w: 3.6, h: 2.35, fontSize: 9.5, color: C.navy, lineSpacingMultiple: 1.15 });
 
     const px = M + 3.6 + SECTION, pw = CW - 3.6 - SECTION;
@@ -131,7 +131,7 @@ async function main(out) {
     label(s, 'WHAT MAKES US DIFFERENT', M, 5.6, 4);
     const cards = [
       ['U10', 'Built by practitioners', 'Designed by the CA and CMA team that files for clients every month, around the order MCA, GST and the ROC actually work in.', 'briefcase'],
-      ['U9', 'India-native', 'SPICe+, REG-01, GST, TDS, PF, ESI, ROC and FEMA events are built in from the start. Nothing is adapted from a foreign template.', 'flag'],
+      ['U9', 'India-native', 'SPICe+, GST, TDS, PF, ESI, ROC and FEMA are built in from the start. Nothing is adapted from a foreign template.', 'flag'],
       ['U1', 'One app from day 0 to every filing', 'The questionnaire, checklist, documents, registrations and yearly calendar all sit on one company record.', 'route'],
       ['U4', 'Client inside the app', 'Directors see the journey, the next step, due dates and documents in their own portal, on a laptop or a phone.', 'phone'],
     ];
@@ -196,7 +196,7 @@ async function main(out) {
     const s = page('Product');
     head(s, 'PRODUCT OVERVIEW', 'One platform for the company’s whole life',
       'VCFO Suite follows a company from the first questionnaire to every annual filing. Each stage writes to the same record, so nothing is typed twice and nothing is handed over.');
-    const steps = [['Onboard', 'questionnaire'], ['Checklist', '34 SPICe+ steps'], ['Documents', 'MCA drafts'], ['Incorporate', 'SPICe+ filing, COI'], ['Register', 'GST and others'], ['Comply', 'calendar, filings'], ['Grow', 'meetings, cash, payroll']];
+    const steps = [['Onboard', 'questionnaire'], ['Checklist', '48 guided steps'], ['Documents', 'MCA drafts'], ['Incorporate', 'SPICe+ filing, COI'], ['Register', 'GST and others'], ['Comply', 'calendar, filings'], ['Grow', 'meetings, cash, payroll']];
     const sw = CW / 7, cy = 2.55, r = 0.46;
     s.addShape(pres.shapes.LINE, { x: M + sw / 2, y: cy + r / 2, w: CW - sw, h: 0, line: { color: HEX.line, width: 2 } });
     steps.forEach(([t, sub], i) => {
@@ -210,14 +210,14 @@ async function main(out) {
 
     const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 8, charSpacing: 1 } });
     const rows = [
-      ['Incorporation engine', false, 'Runs the 34-step SPICe+ checklist in MCA order.', 'Part A name intake; Part B capital, office, directors, subscribers, KYC and DSC; steps open in order; red marks on missing fields; auto-save.'],
-      ['Document generator', false, 'Builds the MCA drafts from the checklist answers.', 'MOA, AOA, DIR-2, DIR-8, subscription sheets, declarations, letters, board resolution; one set per director; one ZIP.'],
-      ['Registrations', false, 'Tracks each post-incorporation registration.', 'GST laid out like the portal’s REG-01 tabs; one tracker for every other registration.'],
+      ['Incorporation engine', false, 'Runs the 48-step checklist, with SPICe+ in MCA order.', 'Part A client details and names; Part B capital, office, directors, subscribers, KYC and DSC; steps open in order for the client; red marks on missing fields; auto-save.'],
+      ['Document generator', false, 'Builds the MCA drafts from the checklist answers.', 'MOA, AOA, DIR-2, DIR-8, INC-9, subscription sheets, declarations and letters, one ZIP with a folder per director; board resolution for a parent company.'],
+      ['Registrations', false, 'Tracks each post-incorporation registration.', 'A tracker for every post-incorporation registration; GST laid out like the portal’s REG-01 tabs (coming soon).'],
       ['Compliance calendar', false, 'Keeps every company’s yearly calendar.', 'GST, TDS, PF, ESI, ROC/MCA and FEMA events; reminders; filings register with proof; Mark filed; six status words.'],
       ['Board meetings', false, 'Runs a meeting from notice to signed minutes.', '224-item agenda library; manager approval; Word notice, invite and Teams link; Yes/No replies; quorum; MoM signing.'],
-      ['Receivables', true, 'Collects cash for the CFO.', 'Reminders before and after the due date; partner logins; camt bank import and auto-match; 9 currencies; ageing and forecast.'],
-      ['Payroll and labour registers', true, 'Keeps payroll and statutory registers.', 'Salary updates; payroll summary; statutory labour registers generated per establishment.'],
-      ['Proactive automation', true, 'Chases people so the team does not have to.', 'Request lists; T-60/T-30/T-7 expiry alerts; T-7/T-2 notice escalation; client health and SLA ladder; My day; weekly digest.'],
+      ['Receivables', false, 'Collects cash for the CFO.', 'Reminders before and after the due date; partner logins with promise-to-pay; camt statement matching; INR plus 9 foreign currencies; ageing and forecast.'],
+      ['Payroll and labour registers', false, 'Keeps payroll and statutory registers.', 'Salary updates; payroll summary; statutory labour registers per client, state and month.'],
+      ['Proactive automation', true, 'Chases people so the team does not have to.', 'Request lists; T-60/T-30/T-7 expiry alerts; T-7/T-2 notice escalation; client health and SLA ladder; My day card.'],
       ['Ask VCFO', false, 'Answers from the client’s own record.', 'Status answers; due dates and rules with citations; links to the right page; file drop of up to 50 files (coming soon).'],
     ];
     const body = rows.map(([m, isSoon, what, caps], i) => {
@@ -234,17 +234,17 @@ async function main(out) {
       x: M, y: 2.55 + 0.46 + 0.64 + SECTION, w: CW, colW: [1.55, 2.05, 3.47], fontSize: 8, fontFace: THEME.bodyFontFace, valign: 'middle',
       margin: [0.05, 0.08, 0.05, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.28, ...rows.map(() => 0.55)],
     });
-    strip(s, 2.55 + 0.46 + 0.64 + SECTION + 0.28 + 9 * 0.55 + SECTION, 0.95, 'Five roles, one approval gate.', 'Super admin, admin, manager, project lead and client share one app. A lead’s draft stays hidden until a manager approves it, so the client only ever sees checked work.');
+    strip(s, 2.55 + 0.46 + 0.64 + SECTION + 0.28 + 9 * 0.55 + SECTION, 0.95, 'Five roles, one approval gate.', 'Super admin, admin, manager, project lead and client share one app. The board resolution, post-incorporation work and registrations stay hidden from the client until a manager approves them.');
   }
 
   // =============== 5. INCORPORATION + DOCUMENTS ===============
   {
     const s = page('Product');
     head(s, 'INCORPORATION ENGINE · DOCUMENT GENERATOR', 'Answer once. The documents write themselves',
-      'The incorporation runs as a 34-step SPICe+ checklist in the order MCA expects. Every answer is stored once and flows into each MCA draft, for each director.');
+      'The incorporation runs on a 48-step checklist, with SPICe+ Part A and Part B in the order MCA expects. Every answer is stored once and flows into each MCA draft, for each director.');
     const hw = (CW - GAP) / 2;
     hero(s, M, 2.55, hw, 1.28, 'U1', 'One app, one record', 'The record built during incorporation becomes the company’s compliance record. Nobody re-enters it.');
-    hero(s, M + hw + GAP, 2.55, hw, 1.28, 'U2', 'Documents write themselves', 'MCA drafts are generated from the checklist answers, one set per director, and download as one ZIP.');
+    hero(s, M + hw + GAP, 2.55, hw, 1.28, 'U2', 'Documents write themselves', 'MCA drafts are generated from the checklist answers and download as one ZIP, with a folder per director.');
 
     // Left: checklist mock
     const lx = M, lw = 3.4, ly = 2.55 + 1.28 + SECTION;
@@ -252,7 +252,7 @@ async function main(out) {
     T(s, 'SPICe+ checklist', { x: lx + 0.18, y: ly + 0.15, w: 2, h: 0.25, fontSize: 10.5, bold: true, color: C.navy });
     T(s, 'Illustrative view', { x: lx + lw - 1.4, y: ly + 0.17, w: 1.22, h: 0.22, fontSize: 7, color: C.muted, align: 'right', italic: true });
     const items = [
-      ['Part A', 'Name intake', 'Done', HEX.green],
+      ['Part A', 'Client details', 'Done', HEX.green],
       ['Part B', 'Share capital', 'Done', HEX.green],
       ['Part B', 'Registered office', 'In progress', HEX.blue],
       ['Part B', 'Proposed directors', 'Waiting', HEX.teal],
@@ -270,7 +270,7 @@ async function main(out) {
     ico(s, 'alert', lx + 0.28, ly + 3.09, 0.26, HEX.red);
     T(s, 'Red marks show the missing fields before anyone submits.', { x: lx + 0.62, y: ly + 3.0, w: lw - 0.85, h: 0.45, fontSize: 8, color: C.red, bold: true, valign: 'middle' });
 
-    const feats = ['Part A covers the name; Part B covers capital, registered office, proposed directors, subscribers, and KYC with DSC.', 'Steps open in the right order, so nothing is filed before what it depends on.', 'The client and the project lead fill the steps directly, and every field saves as they type.'];
+    const feats = ['Part A covers the business, two proposed names, any foreign parent, the proposed directors and capital; Part B covers capital structure, registered office, director KYC, subscribers, and KYC review with DSC.', 'For the client, each step opens once the one before it is done; the project lead can work ahead.', 'The client and the project lead fill the steps directly, and every field saves as they type.'];
     T(s, feats.map((t, i) => ({ text: t, options: { bullet: { indent: 10 }, breakLine: i < feats.length - 1, paraSpaceAfter: 5 } })), { x: lx, y: ly + 3.8, w: lw, h: 1.65, fontSize: 8.8, color: C.navy, lineSpacingMultiple: 1.12 });
 
     // Right: answers -> documents
@@ -279,7 +279,7 @@ async function main(out) {
     ico(s, 'checklist', rx + 0.18, ly + 0.15, 0.32, HEX.orange);
     T(s, [{ text: 'Checklist answers', options: { bold: true, breakLine: true } }, { text: 'entered once, by the client or the lead', options: { color: HEX.soft, fontSize: 7.8 } }], { x: rx + 0.62, y: ly + 0.06, w: rw - 0.75, h: 0.5, fontSize: 9.5, color: C.white, valign: 'middle' });
     T(s, '▼', { x: rx, y: ly + 0.62 + (FLOW - 0.25) / 2, w: rw, h: 0.25, fontSize: 10, color: C.orange, align: 'center', valign: 'middle' });
-    const docsList = ['MOA', 'AOA', 'DIR-2', 'DIR-8', 'Subscription sheet', 'Declarations', 'Authorisation letter', 'Acceptance letter', 'Board resolution'];
+    const docsList = ['MOA', 'AOA', 'DIR-2', 'DIR-8', 'INC-9', 'Subscription sheet', 'Declarations', 'Authorisation letter', 'Acceptance letter'];
     const dw = (rw - 2 * GAP) / 3;
     docsList.forEach((d, i) => {
       const x = rx + (i % 3) * (dw + GAP), y = ly + 0.62 + FLOW + Math.floor(i / 3) * (0.5 + GAP);
@@ -290,7 +290,7 @@ async function main(out) {
     T(s, '▼', { x: rx, y: ly + 0.62 + FLOW + 1.5 + 2 * GAP + (FLOW - 0.25) / 2, w: rw, h: 0.25, fontSize: 10, color: C.orange, align: 'center', valign: 'middle' });
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: rx, y: ly + 0.62 + FLOW + 1.5 + 2 * GAP + FLOW, w: rw, h: 3.62 - (0.62 + 2 * FLOW + 1.5 + 2 * GAP), rectRadius: 0.06, fill: { color: C.tint }, line: { color: HEX.orange, width: 1 } });
     ico(s, 'zip', rx + 0.18, ly + 3.62 - 0.325 - 0.16, 0.32, HEX.orange);
-    T(s, [{ text: 'Download all', options: { bold: true, breakLine: true } }, { text: 'one ZIP, one set of drafts per director', options: { color: C.muted, fontSize: 7.8 } }], { x: rx + 0.62, y: ly + 3.62 - 0.65 / 2 - 0.27, w: rw - 0.75, h: 0.54, fontSize: 9.5, color: C.navy, valign: 'middle' });
+    T(s, [{ text: 'Download all', options: { bold: true, breakLine: true } }, { text: 'one ZIP: a company folder and one per director', options: { color: C.muted, fontSize: 7.8 } }], { x: rx + 0.62, y: ly + 3.62 - 0.65 / 2 - 0.27, w: rw - 0.75, h: 0.54, fontSize: 9.5, color: C.navy, valign: 'middle' });
     T(s, [
       { text: 'The document pack ', options: { bold: true, color: C.navy } },
       { text: 'lists every draft with what is still blocking it, so nobody files an incomplete set. Per-director documents are produced for each proposed director automatically.', options: { color: C.navy } },
@@ -308,24 +308,24 @@ async function main(out) {
       'After the certificate of incorporation the company stays in the same app. Registrations start from the same record, and the yearly calendar is generated from the company’s own obligations.');
     const cw = (CW - 2 * GAP) / 3;
     [
-      ['Registrations', 'GST registration is laid out like the portal’s REG-01 tabs. Every other post-incorporation registration gets its own tracker.', 'stamp'],
+      ['Registrations', 'Every post-incorporation registration gets its own tracker. GST registration laid out like the portal’s REG-01 tabs is coming soon.', 'stamp'],
       ['Yearly calendar', 'Each company gets its own calendar of GST, TDS, PF, ESI, ROC/MCA and FEMA events, statutory and non-statutory, with due-date reminders.', 'calendar'],
       ['Filings register', 'Every filing is recorded with its proof. “Mark filed” closes it, and the client sees the same entry in the portal.', 'checklist'],
     ].forEach(([t, b, ic], i) => card(s, { x: M + i * (cw + GAP), y: 2.55, w: cw, h: 1.95, bar: C.blue, iconName: ic, iconColor: HEX.white, iconBg: HEX.blue, iconSize: 0.42, title: t, body: b, titleSize: 10.5, bodySize: 8.5 }));
 
-    T(s, [{ text: 'One six-word status language, ', options: { bold: true, color: C.navy } }, { text: 'shared by the firm and the client on every screen.', options: { color: C.muted } }], { x: M, y: 2.55 + 1.95 + SECTION, w: CW, h: 0.25, fontSize: 9.5 });
+    T(s, [{ text: 'One six-word status language, ', options: { bold: true, color: C.navy } }, { text: 'shared by the firm and the client on every compliance screen.', options: { color: C.muted } }], { x: M, y: 2.55 + 1.95 + SECTION, w: CW, h: 0.25, fontSize: 9.5 });
     const words = [['Not started', HEX.grey], ['In progress', HEX.blue], ['Waiting', HEX.teal], ['Due soon', HEX.amber], ['Overdue', HEX.red], ['Done', HEX.green]];
     const pw = (CW - 5 * CHIP) / 6;
     words.forEach(([t, c], i) => pill(s, t, M + i * (pw + CHIP), 2.55 + 1.95 + SECTION + 0.33, { h: 0.32, size: 8.5, fill: c, color: C.white, w: pw, charSpacing: 0 }));
 
     const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 8, charSpacing: 1 } });
     const rows = [
-      ['GST', 'Every GST-registered company', 'Monthly or quarterly returns, and the annual return'],
-      ['TDS', 'Every company that deducts tax at source', 'Monthly deposits and quarterly returns'],
-      ['PF', 'Establishments covered by the EPF Act', 'Monthly contributions and returns'],
-      ['ESI', 'Establishments covered by the ESI Act', 'Monthly contributions and half-yearly returns'],
-      ['ROC / MCA', 'Every company', 'Annual filings and event-based forms'],
-      ['FEMA', 'Companies with foreign investment, such as Indian subsidiaries', 'Event-based reporting and annual returns'],
+      ['GST', 'Every GST-registered company', 'GSTR-1 and GSTR-3B monthly; GSTR-9 annual return'],
+      ['TDS', 'Every company that deducts tax at source', 'Monthly payment; quarterly returns; Form 16'],
+      ['PF', 'Establishments registered with EPFO', 'Monthly return and payment'],
+      ['ESI', 'Establishments registered with ESIC', 'Half-yearly return'],
+      ['ROC / MCA', 'Every company', 'AOC-4, MGT-7, DIR-3 KYC, DPT-3, MSME-1; event forms coming soon'],
+      ['FEMA', 'Companies with foreign investment, such as Indian subsidiaries', 'FLA annual return; FC-GPR and other event filings coming soon'],
     ];
     const body = rows.map((r, i) => {
       const fill = { color: i % 2 ? HEX.white : HEX.off };
@@ -341,7 +341,7 @@ async function main(out) {
       margin: [0.05, 0.08, 0.05, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.3, ...rows.map(() => 0.48)],
     });
     T(s, 'Exact due dates follow the current notifications for each law and are kept up to date by SBC’s team.', { x: M, y: 2.55 + 1.95 + SECTION + 0.65 + SECTION + 0.3 + 6 * 0.48 + 0.08, w: CW, h: 0.22, fontSize: 7.5, italic: true, color: C.muted });
-    hero(s, M, 2.55 + 1.95 + SECTION + 0.65 + SECTION + 0.3 + 6 * 0.48 + 0.08 + 0.22 + SECTION, CW, 1.15, 'U9', 'India-native, not adapted', 'SPICe+, REG-01, GST, TDS, PF, ESI, ROC and FEMA are where the design starts. They are not add-ons bolted onto a generic task tool.');
+    hero(s, M, 2.55 + 1.95 + SECTION + 0.65 + SECTION + 0.3 + 6 * 0.48 + 0.08 + 0.22 + SECTION, CW, 1.15, 'U9', 'India-native, not adapted', 'SPICe+, GST, TDS, PF, ESI, ROC and FEMA are where the design starts. They are not add-ons bolted onto a generic task tool.');
   }
 
   // =============== 7. AUTOMATION + ASK VCFO ===============
@@ -354,7 +354,7 @@ async function main(out) {
     T(s, 'The app chases for you', { x: M + 0.55, y: 2.55, w: 2.0, h: 0.26, fontSize: 11, bold: true, color: C.navy, valign: 'middle' });
     soon(s, M + lw - 1.0, 2.58);
     const auto = [
-      ['Request lists', 'The client is asked for files by email, then WhatsApp, then a call task for the lead.', 'inbox'],
+      ['Request lists', 'The client is asked for files by email, then WhatsApp if they opted in, then a call task for the lead.', 'inbox'],
       ['Expiry alerts', 'Licences, DSCs and registrations alert at T-60, T-30 and T-7, and a renewal task opens itself.', 'clock'],
       ['Notice escalations', 'Tax notices are tracked with escalations at T-7 and T-2 before the reply is due.', 'alert'],
       ['Client health and SLA ladder', 'A nightly score per client. Slipping work moves from lead to manager to partner.', 'heart'],
@@ -366,7 +366,7 @@ async function main(out) {
       T(s, t, { x: M + 0.76, y: y + 0.18, w: lw - 0.9, h: 0.25, fontSize: 10.3, bold: true, color: C.navy });
       T(s, b, { x: M + 0.76, y: y + 0.48, w: lw - 0.9, h: 0.8, fontSize: 8.8, color: C.muted, lineSpacingMultiple: 1.1 });
     });
-    T(s, 'Every staff member also gets a “My day” card and email, and the firm gets a weekly digest.', { x: M, y: 9.0, w: lw, h: 0.42, fontSize: 8.4, italic: true, color: C.navy });
+    T(s, 'Every staff member also gets a “My day” card (coming soon), and every user already gets a personal weekly digest.', { x: M, y: 9.0, w: lw, h: 0.42, fontSize: 8.4, italic: true, color: C.navy });
 
     const rx = M + lw + GAP, rw = CW - lw - GAP, ry = 2.55, rh = 6.95;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: rx, y: ry, w: rw, h: rh, rectRadius: 0.1, fill: { color: C.navy }, line: { type: 'none' } });
@@ -450,19 +450,18 @@ async function main(out) {
       T(s, big, { x: fx + 0.18, y, w: 1.1, h: 0.78, fontSize: 20, bold: true, color: C.orange, valign: 'middle' });
       T(s, t, { x: fx + 1.3, y, w: fw - 1.45, h: 0.78, fontSize: 8.6, color: C.navy, valign: 'middle' });
     });
-    hero(s, M, ey + 3 * 0.78 + 2 * GAP + SECTION, CW, 1.08, 'U7', 'Board meetings end to end', 'Notice, Teams, director Yes/No, minutes and signed resolutions, in one loop that the manager approves and the audit log records.');
+    hero(s, M, ey + 3 * 0.78 + 2 * GAP + SECTION, CW, 1.08, 'U7', 'Board meetings end to end', 'Notice, Teams, director Yes/No, minutes and signed resolutions, in one loop that the manager approves.');
   }
 
   // =============== 9. RECEIVABLES + PAYROLL ===============
   {
     const s = page('Product');
     head(s, 'RECEIVABLES · PAYROLL AND LABOUR REGISTERS', 'Cash collection for the CFO, not just compliance',
-      'Each manager keeps an invoice sheet. VCFO Suite reminds the customer on a fixed schedule, matches the bank credit when it lands and reports what is still out.');
-    soon(s, W - M - 1.0, 0.6);
+      'Each client organisation gets an invoice sheet, run by its manager. VCFO Suite sends reminders on a fixed schedule, matches bank credits from imported statements and reports what is still out.');
     // Reminder timeline
     const ty = 2.55;
     s.addShape(pres.shapes.RECTANGLE, { x: M, y: ty, w: CW, h: 1.38, fill: { color: C.off }, line: { type: 'none' } });
-    T(s, 'Automatic reminders on every invoice', { x: M + 0.2, y: ty + 0.12, w: 4, h: 0.24, fontSize: 9.5, bold: true, color: C.navy });
+    T(s, 'Reminders on every invoice, once the manager switches them on', { x: M + 0.2, y: ty + 0.12, w: 4, h: 0.24, fontSize: 9.5, bold: true, color: C.navy });
     const marks = [['5 days before', HEX.blue], ['3 days before', HEX.blue], ['On the due date', HEX.amber], ['Every day after', HEX.red]];
     const lx0 = M + 0.6, lx1 = M + CW - 0.6, ly = ty + 0.72;
     s.addShape(pres.shapes.LINE, { x: lx0, y: ly, w: lx1 - lx0, h: 0, line: { color: HEX.line, width: 2.5 } });
@@ -474,10 +473,10 @@ async function main(out) {
 
     const cw = (CW - GAP) / 2, ch = 1.62;
     const cards = [
-      ['Partner logins and promise-to-pay', 'The customer’s finance contact gets a login, sees open invoices and records a promise-to-pay date.', 'handshake', null],
-      ['Bank import and auto-matching', 'Import ISO 20022 camt bank statements. Credits match to invoices, with tolerance for TDS and bank charges.', 'bank', null],
-      ['Forex desk in nine currencies', 'Raise invoices in nine foreign currencies and track each one through the forex desk.', 'globe', '9'],
-      ['Ageing and cash forecast', 'Ageing reports and a cash forecast built from due dates and the promises customers have made.', 'chart', null],
+      ['Partner logins and promise-to-pay', 'Each partner who owns a customer gets a login, sees their own open invoices and records the date the customer promised to pay. Reminders pause until then.', 'handshake', null],
+      ['Bank statement matching', 'Import ISO 20022 camt.053/054 statements. Exact matches are marked received; credits short by TDS or bank charges are proposed for one-click confirmation.', 'bank', null],
+      ['Forex desk: INR plus nine currencies', 'Raise invoices in USD, EUR, GBP, AED, SGD, AUD, CAD, CHF or JPY, and track each one through the forex desk.', 'globe', '9'],
+      ['Ageing and cash forecast', 'Ageing reports and an eight-week cash forecast built from promised dates, due dates and each customer’s payment history.', 'chart', null],
     ];
     cards.forEach(([t, b, ic, big], i) => {
       const x = M + (i % 2) * (cw + GAP), y = ty + 1.38 + SECTION + Math.floor(i / 2) * (ch + GAP);
@@ -489,8 +488,7 @@ async function main(out) {
     s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 1.45, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
     s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 0.06, fill: { color: C.green }, line: { type: 'none' } });
     T(s, 'Payroll and labour registers', { x: M + 0.18, y: py + 0.18, w: 3.5, h: 0.26, fontSize: 10.5, bold: true, color: C.navy });
-    soon(s, W - M - 1.12, py + 0.2);
-    [['rupee', 'Salary updates', 'Record changes as they happen.'], ['table', 'Payroll summary', 'One view of the month’s payroll.'], ['history', 'Labour registers', 'Statutory registers per establishment.']].forEach(([ic, t, b], i) => {
+    [['rupee', 'Salary updates', 'Record changes as they happen.'], ['table', 'Payroll summary', 'One view of the month’s payroll.'], ['history', 'Labour registers', 'Statutory registers per client, state and month.']].forEach(([ic, t, b], i) => {
       const x = M + 0.18 + i * ((CW - 0.36) / 3);
       ico(s, ic, x, py + 0.6, 0.38, HEX.green, HEX.off);
       T(s, t, { x: x + 0.48, y: py + 0.56, w: 1.75, h: 0.24, fontSize: 9, bold: true, color: C.navy });
@@ -503,12 +501,12 @@ async function main(out) {
   {
     const s = page('Product');
     head(s, 'CLIENT PORTAL · FIRM COCKPIT', 'What the client sees. What the firm sees',
-      'Both sides work on the same record. The client gets a calm portal with only approved work; the firm gets the cockpit that checks the work before it is shown.');
+      'Both sides work on the same record. The client fills in their own steps and sees the firm’s work only once it is approved; the firm gets the cockpit that checks it first.');
     const cw = (CW - GAP) / 2, y0 = 2.55, h0 = 3.85;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: M, y: y0, w: cw, h: h0, rectRadius: 0.08, fill: { color: C.off }, line: { type: 'none' } });
     code(s, 'U4', M + 0.2, y0 + 0.22, { fill: C.orange, color: C.navy, size: 8, h: 0.24, w: 0.42 });
     T(s, 'What the client sees', { x: M + 0.72, y: y0 + 0.2, w: cw - 0.9, h: 0.28, fontSize: 11.5, bold: true, color: C.navy, valign: 'middle' });
-    const cl = [['map', 'Journey map, company snapshot and the next step'], ['calendar', 'Due dates, in the six status words'], ['folder', 'Documents explorer with every approved draft'], ['message', 'Requests, messages and the SBC team'], ['history', 'Audit log of what was done and by whom'], ['lock', 'Encrypted credentials vault'], ['phone', 'Works on a phone']];
+    const cl = [['map', 'Journey map, company snapshot and the next step'], ['calendar', 'Due dates, in the six status words'], ['folder', 'Documents explorer with every approved draft'], ['message', 'Message your project lead; see the SBC team'], ['history', 'Audit trail of key actions on your company'], ['lock', 'Encrypted vault for your portal logins (coming soon)'], ['phone', 'Works on a phone']];
     cl.forEach(([ic, t], i) => {
       const y = y0 + 0.66 + i * 0.44;
       ico(s, ic, M + 0.2, y, 0.3, HEX.orange, HEX.white);
@@ -518,7 +516,7 @@ async function main(out) {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: rx, y: y0, w: cw, h: h0, rectRadius: 0.08, fill: { color: C.navy }, line: { type: 'none' } });
     code(s, 'U3', rx + 0.2, y0 + 0.22, { fill: C.orange, color: C.navy, size: 8, h: 0.24, w: 0.42 });
     T(s, 'What the firm sees', { x: rx + 0.72, y: y0 + 0.2, w: cw - 0.9, h: 0.28, fontSize: 11.5, bold: true, color: C.white, valign: 'middle' });
-    const fl = [['shield', 'Manager approval gate: drafts stay hidden until approved', false], ['inbox', 'Approvals inbox across every client', false], ['sun', 'My day card and email for each staff member', true], ['chart', 'Analytics and practice reports', false], ['gauge', 'Team load and risks', false], ['mail', 'Outlook mail inside the app', false]];
+    const fl = [['shield', 'Manager approval gate: drafts stay hidden until approved', false], ['inbox', 'Approvals inbox, firm-wide for admins', false], ['sun', 'My day card for each staff member', true], ['chart', 'Analytics and practice reports', false], ['gauge', 'Team load, and a risks view for the super admin', false], ['mail', 'Send email from your Outlook mailbox', false]];
     fl.forEach(([ic, t, sn], i) => {
       const y = y0 + 0.66 + i * 0.5;
       ico(s, ic, rx + 0.2, y, 0.3, HEX.orange, HEX.navy2);
@@ -530,11 +528,11 @@ async function main(out) {
     const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 7.8, align: 'center' } });
     const Y = '✓', N = '–';
     const rows = [
-      ['Firm users and settings', Y, Y, N, N, N],
-      ['Clients they can see', 'All', 'All', 'Team', 'Assigned', 'Own company'],
-      ['Fill the checklist and forms', Y, Y, Y, Y, Y],
-      ['Approve work before the client sees it', Y, Y, Y, N, N],
-      ['Analytics, team load and risks', Y, Y, Y, N, N],
+      ['Firm users and settings', Y, Y, 'Leads only', N, N],
+      ['Clients they can see', 'All', 'All', 'Own projects', 'Assigned', 'Own company'],
+      ['Fill the checklist forms', 'Review', 'Review', 'Review', Y, 'Own steps'],
+      ['Approve work before the client sees it', Y, Y, Y, N, 'Final sign-off'],
+      ['Analytics', Y, Y, Y, 'Own projects', N],
       ['Approved documents, due dates, messages', Y, Y, Y, Y, Y],
     ];
     const body = rows.map((r, i) => r.map((c, j) => ({ text: c, options: { fill: { color: i % 2 ? HEX.white : HEX.off }, color: j === 0 ? C.navy : (c === Y ? C.green : C.navy), bold: j === 0 || c === Y, align: j === 0 ? 'left' : 'center', fontSize: c === Y ? 10 : 8 } })));
@@ -542,8 +540,8 @@ async function main(out) {
       x: M, y: 7.02, w: CW, colW: [2.42, 0.93, 0.93, 0.93, 0.93, 0.93], fontSize: 8, fontFace: THEME.bodyFontFace, valign: 'middle',
       margin: [0.04, 0.08, 0.04, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.3, ...rows.map(() => 0.34)],
     });
-    T(s, 'Simplified view. The platform applies the exact rules to every query, so a client never sees another client’s data.', { x: M, y: 9.42, w: CW, h: 0.22, fontSize: 7.5, italic: true, color: C.muted });
-    strip(s, 9.8, 0.72, 'U3 · Nothing reaches the client unchecked.', 'Every draft passes a manager first, and every action is logged.', { size: 9.2 });
+    T(s, 'Simplified view. Each repository query is scoped by role, so a client sees only their own company.', { x: M, y: 9.42, w: CW, h: 0.22, fontSize: 7.5, italic: true, color: C.muted });
+    strip(s, 9.8, 0.72, 'U3 · Firm work is checked first.', 'A manager approves it before the client sees it, and key actions are logged.', { size: 9.2 });
   }
 
   // =============== 11. TRUST ===============
@@ -553,12 +551,12 @@ async function main(out) {
     head(s, 'TRUST AND SECURITY', 'Built so a client’s data stays the client’s',
       'Compliance work carries PAN, Aadhaar, DSC and bank details. VCFO Suite treats that data as the most sensitive thing in the app, at every layer.');
     const cards = [
-      ['Role scoping on every query', 'Each database query is scoped to the user’s role and clients. A client never sees another client’s data.', 'shield'],
-      ['Append-only audit log', 'Every action is written to a log that cannot be edited, with who did it and when.', 'history'],
-      ['Encrypted credentials vault', 'Portal logins and passwords the firm holds for a client are stored encrypted.', 'lock'],
-      ['Two-step sign-in', 'TOTP two-step sign-in and session control, so a lost device can be signed out.', 'key'],
-      ['AWS Mumbai', 'Hosted in AWS ap-south-1, with the database on RDS and documents on S3.', 'server'],
-      ['Email is the record', 'Email is the system of record. WhatsApp is an extra nudge and never blocks an email.', 'mail'],
+      ['Role scoping on every query', 'Each repository query is scoped to the user’s role and clients, so a client sees only their own company.', 'shield'],
+      ['Audit log', 'Key actions are recorded with who did them, their role, when, and whether they succeeded.', 'history'],
+      ['Encrypted credentials vault', 'Clients keep their portal logins in an AES-256 encrypted vault in their own portal. Coming soon.', 'lock'],
+      ['Two-step sign-in', 'Optional authenticator-app sign-in; people can sign out their own devices.', 'key'],
+      ['AWS Mumbai', 'App, database (RDS) and documents (S3) in AWS ap-south-1; email through Amazon SES in Mumbai.', 'server'],
+      ['Email is the record', 'Email is the system of record. WhatsApp nudges are coming soon and will never delay an email.', 'mail'],
     ];
     const cw = (CW - 2 * GAP) / 3, ch = 1.85;
     cards.forEach(([t, b, ic], i) => card(s, { x: M + (i % 3) * (cw + GAP), y: 2.55 + Math.floor(i / 3) * (ch + GAP), w: cw, h: ch, bar: C.navy, iconName: ic, iconColor: HEX.white, iconBg: HEX.navy, iconSize: 0.42, title: t, titleLines: 2, body: b, titleSize: 9.8, bodySize: 8.3 }));
@@ -577,6 +575,7 @@ async function main(out) {
       T(s, sub, { x: x + 0.14, y: y + 0.76, w: nw - 0.2, h: 0.22, fontSize: 7.8, color: inAws ? HEX.soft : C.muted });
       if (i < 3) T(s, '→', { x: x + nw, y: y + 0.38, w: 0.3, h: 0.3, fontSize: 12, bold: true, color: C.orange, align: 'center', valign: 'middle' });
     });
+    T(s, 'Ask VCFO, the AI assistant, currently calls Anthropic’s API outside India; an India-hosted option on Amazon Bedrock is being prepared.', { x: M, y: dy + 1.48, w: 2 * nw + FLOW, h: 0.3, fontSize: 7, italic: true, color: C.muted });
     T(s, 'AWS Mumbai · ap-south-1', { x: M + 2 * (nw + FLOW), y: dy + 1.5, w: 2 * nw + 0.3, h: 0.22, fontSize: 7.8, bold: true, color: C.navy, align: 'center', fontFace: MONO });
 
     const sy = dy + 1.72 + SECTION;
@@ -588,7 +587,7 @@ async function main(out) {
       ico(s, 'check', x, y + 0.04, 0.26, HEX.green);
       T(s, t, { x: x + 0.36, y, w: sw - 0.4, h: 0.4, fontSize: 8.8, color: C.navy, valign: 'middle' });
     });
-    strip(s, sy + 0.38 + 1.0 + SECTION, 0.62, 'The same rules for everyone.', 'Staff see only the clients they work on, and every change they make is in the audit log.');
+    strip(s, sy + 0.38 + 1.0 + SECTION, 0.62, 'The same rules for everyone.', 'Staff see only the clients they work on, and their key actions are recorded in the audit log.');
   }
 
   // =============== 12. ONBOARDING ===============
@@ -596,10 +595,10 @@ async function main(out) {
   {
     const s = page('Onboarding');
     head(s, 'ONBOARDING', 'From first call to live in [SBC to confirm] days',
-      'SBC sets up the project, the client answers the questionnaire, and the team takes the company through filing to a live compliance calendar, all in the same app.');
+      'SBC sets up the project, the client fills in the checklist, and the team takes the company through filing to a live compliance calendar, all in the same app.');
     const ph = [
-      ['Discovery and project setup', ['First call on structure and timelines.', 'Project created with its lead and manager.', 'Client portal logins issued.'], 'users'],
-      ['Questionnaire and checklist', ['Client answers the questionnaire.', 'The 34-step checklist opens in order.', 'Red marks show what is missing.'], 'checklist'],
+      ['Discovery and project setup', ['First call on structure and timelines.', 'Project, lead, manager and compliance questionnaire set up by SBC.', 'Client portal logins issued.'], 'users'],
+      ['Client details and checklist', ['Client fills in the Part A details.', 'Each step opens for the client in order.', 'Red marks show what is missing.'], 'checklist'],
       ['Documents, filing and COI', ['MCA drafts generated per director.', 'Manager approves, client signs.', 'SPICe+ filed; COI received.'], 'doc'],
       ['Registrations and calendar live', ['GST and other registrations tracked.', 'Yearly compliance calendar generated.', 'Reminders and filings register live.'], 'calendar'],
     ];
@@ -613,7 +612,7 @@ async function main(out) {
       T(s, list.map((l, k) => ({ text: l, options: { bullet: { indent: 8 }, breakLine: k < list.length - 1, paraSpaceAfter: 5 } })), { x: x + 0.15, y: py + 1.28, w: pw - 0.25, h: 1.7, fontSize: 8.3, color: i === 3 ? HEX.soft : C.muted, lineSpacingMultiple: 1.1 });
       T(s, '[SBC to confirm] weeks', { x: x + 0.15, y: py + phh - 0.42, w: pw - 0.3, h: 0.25, fontSize: 7, bold: true, color: i === 3 ? C.orange : C.orangeText, fontFace: MONO });
     });
-    const tiles = [['34', 'checklist steps tracked on screen from day one'], ['5', 'roles set up at project start, including the client'], ['[SBC to confirm]', 'days from first call to certificate of incorporation']];
+    const tiles = [['48', 'checklist steps tracked on screen from day one'], ['5', 'roles set up at project start, including the client'], ['[SBC to confirm]', 'days from first call to certificate of incorporation']];
     const tw = (CW - 2 * GAP) / 3;
     tiles.forEach(([big, t], i) => {
       const x = M + i * (tw + GAP), y = py + phh + SECTION;
@@ -630,8 +629,8 @@ async function main(out) {
       ico(s, ic, x, py + phh + 2 * SECTION + 1.25 + 0.36, 0.34, HEX.orange, HEX.tint);
       T(s, t, { x: x + 0.42, y: py + phh + 2 * SECTION + 1.25 + 0.33, w: nw - 0.45, h: 0.4, fontSize: 8.3, bold: true, color: C.navy, valign: 'middle' });
     });
-    T(s, 'Each item arrives as a request in the client portal, so nothing is lost in email.', { x: M, y: py + phh + 2 * SECTION + 1.25 + 0.85, w: CW, h: 0.22, fontSize: 8, italic: true, color: C.muted });
-    strip(s, py + phh + 2 * SECTION + 1.25 + 1.07 + SECTION, 1.2, 'After go-live.', 'SBC’s team keeps running the compliance calendar with you every month. Each filing is approved by a manager, recorded with its proof in the filings register, and shown in your portal the same day.', { fill: C.navy, leadColor: C.orange, color: C.white });
+    T(s, 'Each item is entered or uploaded in the checklist step it belongs to, so nothing is lost in email.', { x: M, y: py + phh + 2 * SECTION + 1.25 + 0.85, w: CW, h: 0.22, fontSize: 8, italic: true, color: C.muted });
+    strip(s, py + phh + 2 * SECTION + 1.25 + 1.07 + SECTION, 1.2, 'After go-live.', 'SBC’s team keeps running the compliance calendar with you every month. Each filing is recorded with its proof in the filings register, and you see it in your portal.', { fill: C.navy, leadColor: C.orange, color: C.white });
   }
 
   // =============== 13. WHY ===============
@@ -642,11 +641,11 @@ async function main(out) {
       'Ten things set VCFO Suite apart. Together they mean a company is incorporated properly and then kept compliant, by software and a team that answer for the result.');
     const u = [
       ['U1', 'One app from incorporation to compliance', 'The same record runs from the questionnaire to every annual filing. No hand-over and no re-entry.'],
-      ['U2', 'Documents write themselves', 'MCA drafts are generated from the checklist, one set per director, and download as one ZIP.'],
-      ['U3 · U4', 'Checked work, shared with the client', 'A manager approves every draft before the client sees it, in the client’s own portal and on their phone.'],
-      ['U5 · U6', 'The app chases and answers', 'Request lists, expiry and notice alerts and client health run on their own. Ask VCFO answers from the live record.'],
-      ['U7 · U8', 'The board and the cash, too', 'Board meetings run end to end, and receivables come with bank matching and a forex desk.'],
-      ['U9 · U10', 'India-native, with a CA team behind it', 'SPICe+, REG-01 and the Indian calendar are built in, and SBC’s CA and CMA team is accountable for the outcome.'],
+      ['U2', 'Documents write themselves', 'MCA drafts are generated from the checklist and download as one ZIP, with a folder per director.'],
+      ['U3 · U4', 'Checked work, shared with the client', 'A manager approves the firm’s work before the client sees it, in the client’s own portal and on their phone.'],
+      ['U5 · U6', 'The app chases and answers', 'Ask VCFO answers from the live record today. Request lists, expiry and notice alerts and client health are coming soon.'],
+      ['U7 · U8', 'The board and the cash, too', 'Board meetings run end to end, and receivables come with bank statement matching and a forex desk.'],
+      ['U9 · U10', 'India-native, with a CA team behind it', 'SPICe+ and the Indian compliance calendar are built in, and SBC’s CA and CMA team is accountable for the outcome.'],
     ];
     const cw = (CW - 2 * GAP) / 3, ch = 2.08;
     u.forEach(([c, t, b], i) => {
@@ -660,8 +659,8 @@ async function main(out) {
     });
     const by = 2.55 + 2 * 2.08 + GAP + SECTION, bw = (CW - GAP) / 2, bh = 3.35;
     const cmp = [
-      ['Compared to email + Excel', ['One record, instead of copies in every inbox.', 'Documents generated from answers, not retyped for each director.', 'The client sees status without having to ask.', 'Every action sits in the audit log, not lost in a thread.', 'Reminders and escalations run without anyone remembering them.']],
-      ['Compared to generic practice-management or task tools', ['The 34 SPICe+ steps, REG-01 and the Indian calendar come built in.', 'MCA drafts are generated, not attached by hand.', 'The client gets a portal, not a guest login to a task board.', 'Board meetings and receivables live on the same company record.', 'SBC’s CA and CMA team comes with it, accountable for the outcome.']],
+      ['Compared to email + Excel', ['One record, instead of copies in every inbox.', 'Documents generated from answers, not retyped for each director.', 'The client sees status without having to ask.', 'Key actions sit in the audit log, not lost in a thread.', 'Due-date reminders go out without anyone having to remember them.']],
+      ['Compared to generic practice-management or task tools', ['The 48-step checklist, SPICe+ order and the Indian calendar come built in.', 'MCA drafts are generated, not attached by hand.', 'The client gets a portal, not a guest login to a task board.', 'Board meetings and receivables live on the same company record.', 'SBC’s CA and CMA team comes with it, accountable for the outcome.']],
     ];
     cmp.forEach(([t, list], i) => {
       const x = M + i * (bw + GAP);

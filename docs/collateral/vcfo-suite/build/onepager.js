@@ -33,7 +33,7 @@ async function main(out) {
   label('STEADFAST BUSINESS CONSULTING', M, 0.98, 4, C.orange);
   T(s, [{ text: 'Your company, incorporated and compliant — ', options: { color: C.white } }, { text: 'in one app.', options: { color: C.orange } }], { x: M, y: 1.2, w: 5.6, h: 0.92, fontSize: 25, bold: true, lineSpacingMultiple: 0.95 });
   T(s, 'VCFO Suite is the web app SBC, a CA and CMA-led firm, uses to set up your Indian company and run its whole compliance life, with you inside the same app.', { x: M, y: 2.14, w: 6.9, h: 0.42, fontSize: 9.5, color: HEX.soft, lineSpacingMultiple: 1.1 });
-  const tiles = [['34', 'SPICe+ steps'], ['5', 'roles, one app'], ['1', 'record from day 0 to every filing'], ['2-in-1', 'platform + CA team']];
+  const tiles = [['48', 'guided steps'], ['5', 'roles, one app'], ['1', 'record from day 0 to every filing'], ['2-in-1', 'platform + CA team']];
   const tw = (CW - 3 * GAP) / 4;
   tiles.forEach(([big, t], i) => {
     const x = M + i * (tw + GAP), y = 2.68;
@@ -77,11 +77,11 @@ async function main(out) {
   T(s, 'Ten unique features; the six that matter most', { x: M + 3, y: y3, w: CW - 3, h: 0.18, fontSize: 7.5, color: C.muted, align: 'right' });
   const u = [
     ['U1', 'One app, day 0 to every filing', 'Incorporation and compliance on the same record. No hand-over, no re-entry.', C.orange, false],
-    ['U2', 'Documents write themselves', 'MCA drafts from the checklist answers, one set per director, one ZIP.', C.orange, false],
-    ['U3', 'Manager approval gate', 'Nothing reaches the client unchecked, and every action is logged.', C.navy, false],
+    ['U2', 'Documents write themselves', 'MCA drafts from the checklist answers, one ZIP, a folder per director.', C.orange, false],
+    ['U3', 'Manager approval gate', 'Firm work reaches the client only after a manager approves it.', C.navy, false],
     ['U5', 'The app chases for you', 'Request lists, T-60/T-30/T-7 expiry alerts, notice escalations, client health.', C.blue, true],
     ['U6', 'Ask VCFO', 'Answers from the client’s actual status and files, with citations.', C.blue, false],
-    ['U7·U8', 'Board meetings and receivables', 'Notice to signed resolution; collections with bank matching and nine currencies.', C.green, true],
+    ['U7·U8', 'Board meetings and receivables', 'Notice to signed resolution; collections with bank matching, INR plus nine currencies.', C.green, false],
   ];
   const cw = (CW - 2 * GAP) / 3, ch = 0.98;
   u.forEach(([c, t, b, bar, sn], i) => {
@@ -98,18 +98,18 @@ async function main(out) {
   const y4 = 8.1, iw = 4.75, rx2 = M + iw + SECTION, rw2 = CW - iw - SECTION;
   label('WHAT’S INSIDE', M, y4, 3);
   const inside = [
-    ['Incorporation engine', '34 steps'],
+    ['Incorporation engine', '48 steps'],
     ['Document generator', 'per director'],
-    ['Registrations', 'GST REG-01 and more'],
+    ['Registrations', 'a tracker for each'],
     ['Compliance calendar', 'GST to FEMA'],
     ['Board meetings', 'notice to minutes'],
     ['Receivables', 'bank match, forex'],
-    ['Payroll and labour registers', ''],
-    ['Proactive automation', 'chases for you'],
+    ['Payroll, labour registers', 'per state'],
+    ['Proactive automation', 'coming soon'],
     ['Ask VCFO', 'AI with citations'],
     ['Client portal', 'works on a phone'],
     ['Firm cockpit', 'five roles, approvals'],
-    ['Trust and security', 'vault, audit log'],
+    ['Trust and security', 'audit log, AWS Mumbai'],
   ];
   const colW = (iw - GAP) / 2;
   inside.forEach(([t, d], i) => {
@@ -129,7 +129,7 @@ async function main(out) {
   // 5 ─ Proven in the platform
   const y5 = 9.92;
   label('PROVEN IN THE PLATFORM', M, y5, 3);
-  const chips = ['Per-director MCA drafts', 'Manager approval gate', 'Append-only audit log', 'Encrypted credentials vault', 'Two-step sign-in', 'AWS Mumbai', 'Email + WhatsApp + Outlook', 'Bank auto-matching', '9 currencies'];
+  const chips = ['Per-director MCA drafts', 'Manager approval gate', 'Audit log', 'Two-step sign-in', 'AWS Mumbai hosting', 'Board meetings with Teams', 'Bank statement matching', 'INR + 9 currencies', 'Ask VCFO with citations'];
   let cx = M, cy = y5 + 0.24;
   chips.forEach((t) => {
     const w = t.length * 7.2 * 0.0088 + 0.28;

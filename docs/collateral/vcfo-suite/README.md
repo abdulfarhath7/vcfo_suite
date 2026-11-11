@@ -42,16 +42,32 @@ All the tokens sit in one place, `build/shared.js`, so a later change to the des
 
 Roboto and Roboto Mono are free Google Fonts. Install both on any computer that edits the `.pptx` files, or PowerPoint will substitute another font. The PDFs have the fonts embedded.
 
+## Fact-check against the code (11 Nov 2026)
+
+Every claim was checked against the source on `origin/main`, the deploy log in `docs/OVERNIGHT-REPORT-31OCT.md` and `docs/context/STATE.md`. The prompt file had several facts that are not true of the app, and the documents now follow the code instead:
+
+- The checklist has **48 steps** in four phases (name application, incorporation, post-incorporation, registrations), not 34. SPICe+ Part A and Part B run in MCA order inside it. Part A collects client details, not only the name.
+- Receivables (deployed 4 Nov), payroll and labour registers (9 Nov) and board meetings (3 Nov) are live, although `STATE.md` still calls some of them undeployed.
+- Receivables "partners" are the client organisation's own partners, not the customer's finance contact. There are nine foreign currencies plus INR. Bank matching works from imported camt.053/054 statements; there is no live bank feed.
+- Labour registers are made per client, state and month, not per establishment.
+- The audit log is not append-only (rows cascade when a profile is deleted) and does not cover every action, so the documents say "key actions".
+- The manager approval gate covers the board resolution, post-incorporation work and registrations. Pre-incorporation forms are filled directly by the client and the project lead.
+- WhatsApp is switched off in production, Outlook can only send, and two-step sign-in is optional.
+- Ask VCFO calls Anthropic's API outside India; the trust page says so.
+- The "Download all" ZIP holds the incorporation drafts with a folder per director; the board resolution is separate and applies only to a company with a parent.
+
 ## "Coming soon" tags
 
-`docs/context/STATE.md` (10 Nov 2026) lists these modules as built but not yet deployed:
+These are built but not in production, so each carries an amber "Coming soon" tag:
 
-- Receivables (U8), including bank matching and the nine-currency forex desk
-- Payroll and labour registers
-- Automation wave 2 (U5): request lists, expiry alerts, notice escalations, client health, My day and the weekly digest
-- The Ask VCFO file drop (up to 50 files)
+- Automation wave 2 (U5): request lists, expiry alerts, notice escalations, client health and the My day card (merged 10 Nov, migration 0051 not on RDS)
+- The Ask VCFO file drop of up to 50 files (merged 10 Nov, migration 0050 not on RDS)
+- GST registration laid out like the REG-01 tabs (built 9 Nov, after that day's deploy)
+- Event-based ROC and FEMA filings such as DIR-12 and FC-GPR (part of automation wave 2)
+- The encrypted credentials vault (built, but `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner, so it fails in production)
+- WhatsApp nudges (`WHATSAPP_ENABLED` is false in production)
 
-Each one carries a small amber "Coming soon" tag. Board meetings (U7) went live on 3 Nov, so it is not tagged. Once the rest are live, rebuild without the tags:
+Once they are live, rebuild without the tags:
 
 ```bash
 cd docs/collateral/vcfo-suite/build && npm install
@@ -61,18 +77,27 @@ cd docs/collateral/vcfo-suite/build && npm install
 COMING_SOON=0 ./build.sh
 ```
 
-With the tags off, slide 11 of the deck goes back to "Every claim here is a shipped feature we can show live."
+Then remove the hand-written "coming soon" phrases in the scripts as well (search for "coming soon").
+
+## Check before the CEO presentation
+
+- Scheduled jobs (receivables reminders, board-meeting reminders, FX rates, digests) run on Inngest. `STATE.md` still lists the Inngest keys as pending on AWS, so confirm they fire in production before saying "automatic".
+- The Teams link on a board notice needs each lead to reconnect Outlook once.
+- Payroll data is still kept in the browser, not on the server.
+- Ask VCFO's knowledge topics are marked "Not yet reviewed" in the app.
+- Contact addresses differ: the documents and landing page use info@sbcllp.in, the client portal shows info@vcfosuite.com, and outbound mail uses the sbctrack.in domain. Pick one.
+- "SBC's CA and CMA team, with SLA support" (one-pager) is a service promise; confirm it.
 
 ## Placeholders for SBC to fill
 
-No numbers were invented. Every figure is one from the prompt (34 steps, 5 roles, 224 agenda items, 9 currencies, 50 files, T-60/T-30/T-7, T-7/T-2, AWS Mumbai). Anything else is a marked placeholder.
+No numbers were invented. Every figure is checked against the code (48 steps, 5 roles, 224 agenda items, INR plus 9 currencies, 50 files, T-60/T-30/T-7, T-7/T-2, AWS Mumbai). Anything else is a marked placeholder.
 
 **Brochure**
 
 - Page 12 title: "From first call to live in [SBC to confirm] days".
 - Page 12, the four phase cards: "[SBC to confirm] weeks" for each phase.
 - Page 12, third stat tile: "[SBC to confirm]" days from first call to certificate of incorporation.
-- Page 10, the role table: check the simplified scopes (All, Team, Assigned, Own company) against the live permissions.
+- Page 10, the role table: the simplified scopes (All, Own projects, Assigned, Own company) were checked against the code.
 
 **Corporate deck**
 
