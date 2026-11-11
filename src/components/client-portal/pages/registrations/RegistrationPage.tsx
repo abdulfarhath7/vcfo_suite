@@ -27,10 +27,16 @@ import { buildRegistrations, startsFilings, type RegItem } from './model';
 import { REGISTRATIONS_BASE, RegChip, useClientRegistrationFacts, useRegCredentials } from './parts';
 import { CertificateButton, renewalLine } from '@/views/compliances/registration-renewal';
 import { renewalOf } from '@/lib/registrations/registration-facts';
+import type { Engagement } from '@/data/engagements';
+import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
+import { GST_STEP_ID, gstSchedule } from '@/lib/registrations/gst-tracker';
+import { LUT_STEP_ID } from '@/lib/registrations/lut-tracker';
+import { LutRegistrationTracker, LutScheduleDate } from '@/components/compliances/LutRegistrationTracker';
+import { getItem } from '@/data/checklist';
 import '../../css/compliances-board.css';
 
 export function RegistrationRecordPage({ id }: { id: string }) {
-  const { model, loading } = usePortalIncorporation();
+  const { model, engagement, loading } = usePortalIncorporation();
   const { after } = usePortal();
   const creds = useRegCredentials();
   const { facts } = useClientRegistrationFacts();
@@ -45,7 +51,7 @@ export function RegistrationRecordPage({ id }: { id: string }) {
     </GoLink>
   );
   return (
-    <div className="cp-compliances">
+    <div className="cp-compliances reg-soft">
       <div className="cp-comp-root page">
         <Island className="grid gap-5">
           {loading ? (
@@ -57,7 +63,7 @@ export function RegistrationRecordPage({ id }: { id: string }) {
               <Empty action={back}>Not on your checklist</Empty>
             </SCard>
           ) : (
-            <Record r={r} credsError={creds.isError && !facts} credsLoading={creds.isLoading} />
+            <Record r={r} engagement={engagement} credsError={creds.isError && !facts} credsLoading={creds.isLoading} />
           )}
         </Island>
       </div>
@@ -65,10 +71,19 @@ export function RegistrationRecordPage({ id }: { id: string }) {
   );
 }
 
-function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boolean; credsLoading: boolean }) {
+function Record({ r, engagement, credsError, credsLoading }: { r: RegItem; engagement?: Engagement; credsError: boolean; credsLoading: boolean }) {
   const { go, after, shell } = usePortal();
   const companyShort = shell?.companyShort || 'You';
   const today = todayIso();
+  // GST registration runs on its own tracker; the client reads it.
+  const gstDates =
+    r.stepId === GST_STEP_ID && !r.notNeeded
+      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: r.step.item.deadline })
+      : null;
+  const lutDay =
+    r.stepId === LUT_STEP_ID && !r.notNeeded
+      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline })
+      : null;
   const parts = subList(r.step);
   const filings = useAllFilings(after && Boolean(startsFilings(r.stepId)));
   const starts = useMemo(() => {
@@ -126,12 +141,27 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
           { k: 'Number', v: r.number ? <span className="font-mono text-[13px]">{r.number}</span> : '-' },
           ...(renewal ? [{ k: 'Renew by', v: fmtDMY(renewal.renewBy), tone: renewal.word === 'Overdue' ? ('bad' as const) : undefined }] : []),
         ]}
-        people={<PeopleStack people={people} />}
+        people={
+          <>
+            {gstDates ? <GstScheduleDates schedule={gstDates} /> : null}
+            {lutDay ? <LutScheduleDate gstDay={lutDay} /> : null}
+            <PeopleStack people={people} />
+          </>
+        }
         actions={actions}
       />
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid min-w-0 gap-5">
-          {!r.notNeeded ? (
+          {gstDates ? (
+            <GstRegistrationTracker
+              schedule={gstDates}
+              canEdit={false}
+              today={today}
+              certificate={<CertificateButton facts={r.facts} size="sm" />}
+            />
+          ) : null}
+          {lutDay ? <LutRegistrationTracker gstDay={lutDay} canEdit={false} today={today} /> : null}
+          {!r.notNeeded && !gstDates && !lutDay ? (
             <SCard title="Steps" meta={`${parts.filter((p) => p.s === 'done').length} of ${parts.length} done`} flush>
               <div className="px-4 md:px-5">
                 <StepList
@@ -153,20 +183,20 @@ function Record({ r, credsError, credsLoading }: { r: RegItem; credsError: boole
               <FromClientCard kind="registration" subjectKey={r.stepId} editable={r.status !== 'Done'} />
             </div>
           ) : null}
-          <SbcFieldsCard kind="registration" subjectKey={r.stepId} extra={fixed} />
+          {gstDates || lutDay ? null : <SbcFieldsCard kind="registration" subjectKey={r.stepId} extra={fixed} />}
         </div>
         <div className="grid min-w-0 gap-5">
-          <TextCard title="About" sop>
+          <TextCard title="About" sop info>
             {description}
           </TextCard>
           {rule ? (
             r.notNeeded || rule.applies === false ? (
-              <TextCard title="Not needed">
+              <TextCard title="Not needed" info>
                 <p>{rule.notNeeded}</p>
                 {rule.answers.length ? <p className="text-ink-muted">{rule.answers.map((a) => `${a.label} ${a.value}`).join(' · ')}</p> : null}
               </TextCard>
             ) : (
-              <TextCard title="Applies because">
+              <TextCard title="Applies because" info>
                 <p>
                   Applies to {companyShort} because: {rule.why}
                 </p>

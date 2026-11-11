@@ -1,6 +1,5 @@
 import { isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { GST_REG_LEAD_ONLY_FIELD_IDS, GST_REG_STEP_ID } from '@/lib/checklist/gst-registration-fields';
 import { DIN_LEAD_ONLY_ENTRY_FIELD_IDS } from '@/lib/checklist/din-verification';
 
 /**
@@ -32,25 +31,7 @@ export const DIRECT_FLOW_STEP_IDS: ReadonlySet<string> = new Set([
   'pre-10',
   'pre-11',
   'pre-12',
-  // GST registration (2026-11-09): the client fills the company's details and
-  // documents, the project lead the portal-only fields (TRN, ARN, GSTIN).
-  GST_REG_STEP_ID,
 ]);
-
-/**
- * Direct-flow steps that do not wait their turn in the sequence: both parties
- * can fill them once the Certificate of Incorporation step is complete. A
- * registration runs alongside the post-incorporation steps, not after them
- * (GST is due within weeks of incorporation and needs the company PAN).
- */
-export const PARALLEL_STEP_IDS: ReadonlySet<string> = new Set([GST_REG_STEP_ID]);
-
-/** The step whose completion opens the parallel steps (Pre-12, the certificate). */
-export const PARALLEL_STEPS_OPEN_AFTER = 'pre-12';
-
-export function isParallelStep(itemId: string): boolean {
-  return PARALLEL_STEP_IDS.has(itemId) && DIRECT_FLOW_STEP_IDS.has(itemId);
-}
 
 /** The only pre-incorporation step that keeps lead -> manager approval. */
 export const MANAGER_APPROVAL_STEP_ID = 'pre-2';
@@ -58,7 +39,6 @@ export const MANAGER_APPROVAL_STEP_ID = 'pre-2';
 /** Fields that only the project lead can edit. The client reads them. */
 const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
   'pre-1': ['nicCode', 'nicBusinessType', 'additionalNicCodes'],
-  [GST_REG_STEP_ID]: GST_REG_LEAD_ONLY_FIELD_IDS,
 };
 
 /**

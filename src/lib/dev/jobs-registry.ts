@@ -30,6 +30,7 @@ import { noticeEscalations } from '@/jobs/notice-escalations';
 import { clientHealthNightly } from '@/jobs/client-health-nightly';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
+import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -72,5 +73,6 @@ export function registeredJobs(): JobFunction[] {
     clientHealthNightly,
     myDayEmail,
     assistFilingDeadlines,
+    gstRegistrationStart,
   ]);
 }
