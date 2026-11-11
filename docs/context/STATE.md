@@ -239,6 +239,37 @@ applied on RDS before deploy**: it adds
 - G18: catalog kill switch (`ASSIST_EXTENSION_DISABLED`, `ASSIST_MIN_EXTENSION_VERSION`, plus
   `ASSIST_FIRM_CONTACTS`), placeholder `update_url` in `wxt.config.ts`, `DISTRIBUTION.md`. The
   enterprise policy, update host, signing key and CI release job are not set up yet.
+## VCFO Assist: old repo consolidated, portal packs and the task tree (11 Nov 2026, on `claude/laughing-albattani-03nyom`, not committed or deployed)
+
+Steps 1 and 2 of the plan in `docs/specs/vcfo-assist-agents/PLAN.md` ("one extension, a family of
+agents"). No migration. Nothing touches a live portal; every pack is `mock-only`.
+- **Ported from `abdulfarhath7/vcfo_assist` (main `5e58bcf`, read only):** captured MCA schemas
+  (compacted) and field maps in `extensions/vcfo-assist/portal-data/mca-v3/` (two real director
+  names and DINs in an AGILE-PRO-S option list were dropped); the recorder in
+  `extensions/vcfo-assist/tools/recorder/` (no stealth, no values, no headers or bodies, network log
+  opt-in, PII masked, output and profile outside the repo); the offline test in `tools/offline/`
+  (sanitized fixtures rebuilt from the schemas, jsdom and Chromium); the MCA fill knowledge (key
+  class → node id → label ladder, input/keyup/change/blur, dependent dropdown polling, Yes/No radios,
+  PIN code wait, `#okInfoModalBtn`, readiness, wizard sections as human steps, DD/MM/YYYY). Not
+  ported: the popup UI, the login user-id filler, the old Suite client and `.vcfoa` crypto.
+- **Recipes** rewritten with the real keys and URLs, `verifiedAgainst: "capture"`: `spice-a@2.0.0`
+  (no DSC step on Part A), `spice-b@2.0.0` (four wizard sections; blocks 6b/6c/7a/7b via `where`,
+  `slot` and `nth`), and new `agile-pro-s`, `emoa`, `eaoa` (`beta`). Mock pages are generated with
+  the real keys (`mock-portal/build-mocks.mjs`).
+- **Portal packs** (`src/lib/assist-agents/packs/*.json`, `pack.ts`): `mca-v3` from the captures and
+  placeholders for income tax, TRACES, Protean, GST (needs CS opinion first), EPFO, ESIC, Udyam,
+  DGFT. Suite applies the pack to a recipe before signing it.
+- **Per-pack live switch:** `ASSIST_LIVE_PACKS` plus the pack's `legalStatus: "cs-cleared"`;
+  `ASSIST_LIVE_PORTALS=true` is a deprecated alias for `mca-v3` only (and does nothing until that
+  pack is cleared).
+- **Catalog tree** of any depth (Compliance › Income tax & TDS › TDS › Challan 281, 24Q/26Q, Form
+  16; Income tax › Challan 280, ITR, all `later`); original ids unchanged; `GET /api/assist/catalog`
+  adds `tree`, `packs` and `liveHosts`. The side panel shows the tree with chips and a breadcrumb.
+- Open: the live Part B opens one Add/Edit sub-panel per person, so blocks after the first are left
+  to the person until a per-person sub-panel loop is built; Part B's order on the live form is Submit
+  → Download PDF → Upload, but the engine downloads before Submit; body-corporate subscribers (6a)
+  and individuals' addresses are not in the recipe; the real Auto check success text is unknown.
+
 ## Change request VCFO-CR-2026-11 (11 Nov 2026, on `claude/brave-shannon-c5e0wi`, not merged or deployed)
 
 Built and tested (unit tests, typecheck, and the flows below on a local build):
@@ -282,3 +313,14 @@ Notes:
   - CD-05 field details.
   - The board resolution layout reference Word file (Part 3 of the 10 Nov list).
   - Confirmation of the open CR questions. Each was built to the CR's own proposal: DIN check is manual, the DR-03 email is sent manually by the lead, and after a return the Lead corrects the edited board resolution.
+
+## Spectrum styling for generated documents (11 Nov 2026, not committed or deployed)
+
+- Every generated document is classified in `docs/context/notes/incorporation-docs.md`
+  ("Spectrum styling"). Statutory and filing documents (all incorporation drafts, board
+  resolutions, NOCs, board-meeting notices, labour registers) are unchanged, and every
+  `public/templates/*.docx` is byte-identical.
+- `scripts/design-tokens-docs.mjs --write` generates `src/lib/doc-style/spectrum-tokens.ts`. The
+  Word helper is `src/lib/doc-style/spectrum-docx.ts` and has no caller yet, because no generated
+  Word file is firm-branded. The four react-pdf documents (partner report, Ask brief, status
+  brief, budget pack) now use `spectrum-pdf.ts`. Excel exports are not restyled yet.
