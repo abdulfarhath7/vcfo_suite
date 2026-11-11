@@ -13,7 +13,7 @@ import { downloadSignedBoardResolution } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
@@ -60,7 +60,8 @@ export async function GET(_request: Request, context: RouteContext) {
     status: 200,
     headers: {
       'Content-Type': contentTypeForSignedBoardResolutionPath(storagePath),
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      // BR-02: `?inline=1` opens the signed copy in the browser for "Open"; otherwise it downloads.
+      'Content-Disposition': `${new URL(request.url).searchParams.get('inline') === '1' ? 'inline' : 'attachment'}; filename="${filename}"`,
       'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',

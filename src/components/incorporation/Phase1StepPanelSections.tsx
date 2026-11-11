@@ -17,6 +17,8 @@ import {
   Phase1Pre12Panel,
 } from '@/components/incorporation/Phase1StepPanelRoutePanels';
 
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
+
 export type Phase1StepPanelRoutesProps = {
   item: ChecklistItem;
   engagement?: Engagement;
@@ -25,6 +27,10 @@ export type Phase1StepPanelRoutesProps = {
   isClient: boolean;
   isIntern: boolean;
   brStatus: 'loading' | 'none' | 'draft' | 'finalized' | 'signed';
+  /** BR-01, BR-02: the board resolution record, for its document cards. */
+  brDoc?: BoardResolutionDoc | null;
+  /** The signed-in role, for who may generate or upload. */
+  role?: string;
   deliveredToClient: boolean;
   itemState?: ChecklistItemState;
   incorpDraftLabelOptions: { pre6: ChecklistItemResponses };
