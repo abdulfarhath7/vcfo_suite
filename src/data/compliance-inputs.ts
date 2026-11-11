@@ -140,9 +140,32 @@ const BY_REGISTRATION: Record<string, SubjectInputs> = {
   },
   'reg-4': {
     client: [f('business', 'Goods or services supplied'), f('place', 'Principal place of business'), f('turnover', 'Expected yearly turnover (INR)')],
-    sbc: [f('number', 'GSTIN', true), f('arn', 'Application reference (ARN)', true), f('jurisdiction', 'Jurisdiction')],
+    // The GST tracker's milestones (`src/lib/registrations/gst-tracker.ts`); the first three keys predate it.
+    sbc: [
+      f('number', 'GSTIN', true),
+      f('arn', 'Application reference (ARN)', true),
+      f('jurisdiction', 'Jurisdiction'),
+      f('filed-on', 'Application filed on'),
+      f('arn-date', 'ARN generated on'),
+      f('aadhaar', 'Aadhaar authentication'),
+      f('srn', 'Service request number (SRN)', true),
+      f('outcome', 'Outcome'),
+      f('registered-on', 'Date of registration'),
+      f('rejection-reason', 'Reason for rejection'),
+      f('revised-date', 'Revised date'),
+    ],
   },
-  'reg-5': { client: [f('witnesses', 'Names of the two witnesses')], sbc: [f('arn', 'LUT reference (ARN)', true), f('fy', 'Financial year')] },
+  // The LUT tracker's fields (`src/lib/registrations/lut-tracker.ts`); `arn` and `fy` predate it.
+  'reg-5': {
+    client: [f('witnesses', 'Names of the two witnesses')],
+    sbc: [
+      f('arn', 'LUT number (ARN)', true),
+      f('fy', 'Financial year'),
+      f('gst-login-on', 'GST login created on'),
+      f('filed-on', 'LUT application filed on'),
+      f('allotted-on', 'Date allotted by the GST portal'),
+    ],
+  },
   'reg-6': { client: [f('representative', 'Authorised representative')], sbc: [f('number', 'LEI', true), f('renewal', 'Renewal month')] },
   'reg-7': { client: [f('headcount', 'Employees in the state'), f('state', 'State')], sbc: [f('number', 'PT registration number', true)] },
   'reg-8': { client: [f('goods', 'Goods or services traded abroad')], sbc: [f('number', 'IEC', true)] },

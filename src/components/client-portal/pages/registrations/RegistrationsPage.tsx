@@ -143,7 +143,7 @@ export function RegistrationsList() {
   );
 
   return (
-    <div className="cp-compliances">
+    <div className="cp-compliances reg-soft">
       <div className="cp-comp-root page" ref={root}>
         <Island className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <SCard title="Registrations" meta={items.length ? active.length : undefined} right={head} flush>

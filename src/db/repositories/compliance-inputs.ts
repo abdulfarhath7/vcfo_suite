@@ -233,7 +233,8 @@ export async function saveSubjectFields(
   const now = new Date();
   const byClient = ctx.role === 'client';
   for (const [fieldKey, raw] of entries) {
-    const value = typeof raw === 'string' && raw.trim() ? raw.trim().slice(0, 500) : null;
+    // 2,000 characters: a portal rejection notice runs longer than a reference number.
+    const value = typeof raw === 'string' && raw.trim() ? raw.trim().slice(0, 2000) : null;
     const set = {
       value,
       updatedBy: ctx.userId,

@@ -268,7 +268,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
   return (
     <PageTransition>
       {embedded ? null : <SEO title="Registrations — VCFO Suite" description="Statutory registrations across your clients." path={basePath} />}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <div className="reg-soft grid grid-cols-[minmax(0,1fr)] gap-4">
         {embedded ? null : <h1 className="sr-only">Registrations</h1>}
         <FilterStrip items={strip} value={filter} onChange={(k) => setParams({ state: k || null })} />
 

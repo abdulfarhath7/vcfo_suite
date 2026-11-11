@@ -211,33 +211,72 @@ Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
 - The staff sidebar now starts as the rail (opens on hover) when nothing is saved; the pin
   button or "[" still pins it.
 
-## GST registration as the portal's REG-01 (2026-11-09)
+## GST registration back to the plain step (2026-11-11)
 
-- `reg-4` follows the GST portal's FORM GST REG-01 tab by tab. The fields live in
-  `src/lib/checklist/gst-registration-fields.ts` (`GST_REG_FIELDS`), and
-  `checklist-responses.ts` points `reg-4` at them. Tabs: Part A (the TRN), Business
-  Details, Promoter / Partners, Authorized Signatory, Authorized Representative,
-  Principal Place of Business, Additional Places of Business (shows when the
-  principal place says Yes), Bank Accounts, State Specific Information, Aadhaar
-  Authentication, Verification, ARN and Certificate, LUT Filing. The portal's
-  Goods and Services tab (HSN and SAC) is left out by owner decision.
-- `reg-4` is a direct-flow step (`DIRECT_FLOW_STEP_IDS`). A field marked
-  `filledBy: 'intern'` is lead-only (`GST_REG_LEAD_ONLY_FIELD_IDS`): the client never
-  sees it. The client sees only Business Details, Promoter / Partners, Authorized
-  Signatory, Principal Place of Business, Bank Accounts and State Specific
-  Information. The project lead can edit every field. A client submit with only lead
-  fields left waits on the lead; the lead's submit (with the GSTIN and the
-  certificate) completes the step.
-- `reg-4` is also a parallel step (`PARALLEL_STEP_IDS`): it opens to the client once
-  `pre-12` (the certificate of incorporation) is complete, whatever the
-  post-incorporation steps say. Before that the client reads it locked.
-- `gstRegFormatChecks` checks the PAN, the GSTIN (and that it carries the company
-  PAN), the PIN, the mobiles and the emails, and warns when Part B is due (15 days
-  after the TRN date) or the TRN has expired.
-- The ids `gstinNumber`, `gstRegistrationDate`, `gstCertificateUrl` and the LUT ids are
-  unchanged, so the registration facts and the credentials workbook read them as before.
-  After a change to the field list run `npm run ask:catalog`.
-- Running the app in a cloud sandbox: Docker is not available, so start Postgres 16
-  directly (install `postgresql-16-pgvector` for migration 0047), and run
-  `next dev --webpack` with `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` pointing at a mock
-  module, because Google Fonts cannot be fetched from the build.
+- Owner decision: every GST REG-01 screen built from the portal screenshots is removed. That is
+  the 9 November tabbed form (commit 85bfab66 and its follow-up f4b28591, undone in the working
+  tree) and the portal look, autofill and embedded form built on 11 November (never committed).
+  `reg-4` is a normal registration step again: GSTIN, registration date, certificate and the
+  LUT fields, filled by the project lead. It is no longer a direct-flow or parallel step.
+  A new design for the left side of the GST page follows.
+- Explanations on the registration record now open from an "i" at the right end of the card
+  head (`src/components/ui/info-button.tsx`): the About card keeps only the SOP link, the
+  Applies because / Not needed card is one line. Staff page `RegistrationView` and
+  `AppliesCard`; client page `TextCard` with `info`.
+
+## GST registration tracker (2026-11-11)
+
+- The GST registration record (`reg-4`, staff `RegistrationView` and client `RegistrationPage`)
+  replaces the generic Steps card and the "Filled by SBC" card with
+  `src/components/compliances/GstRegistrationTracker.tsx`. Rules and dates are pure in
+  `src/lib/registrations/gst-tracker.ts`.
+- **Firm policy SBC-STD-AI-02 governs this page** ("Agents prepare. Humans file."). The authorised
+  signatory files on the GST portal in their own session with their own DSC or EVC. The tool
+  only records what a person read on the portal. It asks for no portal password, OTP or EVC,
+  never signs in to or reads the portal, and the VCFO Assist card is hidden on GST because
+  statutory portals are on the policy's browser block-list. Machine access, if ever wanted,
+  goes only through a contracted GST Suvidha Provider with the taxpayer's API consent.
+- **Date (top right of the record head, `GstScheduleDates`).** One date: the day the registration
+  is scheduled on the firm calendar (start of the step's schedule window). The application and
+  the LUT are filed that day; the LUT is the next step to build. With no window, the statutory
+  deadline (incorporation + 2 weeks) is shown, labelled "Not yet scheduled on the firm calendar".
+- **Stages.** 1 Application filed (filed on, ARN, ARN date) · 2 Aadhaar authentication (tick box:
+  `done` / `pending` = yet to be done) · 3 SRN · 4 Outcome: Approved (GSTIN, date of registration,
+  jurisdiction, certificate) or Resubmission (reason for rejection, revised date).
+- **Storage.** Milestones are the registration's SBC fields (`compliance_subject_fields`, side
+  `sbc`, key `reg-4`; keys in `src/data/compliance-inputs.ts`), not checklist answers, because the
+  checklist hides a lead's draft from the manager and the client. Staff write, the client reads.
+  Values may be 2,000 characters (rejection notices). On approval the tracker also writes
+  `gstinNumber` and `gstRegistrationDate` to the `reg-4` checklist responses, which start the GST
+  return calendar. The certificate uploads to `gstCertificateUrl` on the step.
+- **Reminder.** `src/jobs/gst-registration-start.ts`, daily 08:30 IST: on a calendar-scheduled day
+  with no ARN, the lead and the manager get an email and a bell notification (`compliance.reminder`).
+  Staff only; never a client, never a portal. System read: `systemGstDueToday`.
+
+## LUT tracker (2026-11-11)
+
+- The LUT record (`reg-5`, Form GST RFD-11) replaces the generic Steps card and the "Filled by SBC"
+  card with `src/components/compliances/LutRegistrationTracker.tsx`; rules in
+  `src/lib/registrations/lut-tracker.ts`. It reuses the GST tracker's exported building blocks.
+- Same policy as GST (SBC-STD-AI-02): the authorised signatory files on the GST portal in their own
+  session; the tool records what they read. No GST login, password, OTP or EVC field, and nothing
+  signs in to or reads the portal. The owner asked for credential-based fetching from the portal on
+  2026-11-11; it was declined under policy rules 1 and 2.
+- Date in the record head (`LutScheduleDate`): the GST registration day from the firm calendar.
+- Stages: 1 Application filed (GST login created on, LUT application filed on; financial year
+  derived) · 2 LUT allotted (date allotted by the GST portal, LUT number). Validity = 31 March of the
+  financial year.
+- Storage: SBC fields on `reg-5` (`gst-login-on`, `filed-on`, `fy`, `allotted-on`, `arn`). The filing
+  date and number are mirrored to `lutFilingDate` / `lutArn` on the checklist step, which the
+  registration facts and the credentials workbook already read.
+
+## Registration tracker card and soft corners (2026-11-11)
+
+- The GST and LUT records show their tracker as one compact card
+  (`src/components/compliances/tracker-card.tsx`): closed, it shows the stage count, four key facts
+  and the notice; opened, it shows the stages as the same tab strip the incorporation step forms use
+  (`InternSectionHeadingNav`: green tick on a completed tab), the stage's fields, and Back / Next.
+  It opens on the current stage. Closed by default.
+- Registrations pages (staff `RegistrationsView` and `RegistrationView`, client `RegistrationsPage`
+  and `RegistrationPage`) carry the `reg-soft` wrapper class, which raises the radius tokens to
+  8-14px inside those pages only. The rest of the app keeps the 6px design tokens.
