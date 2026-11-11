@@ -8,12 +8,13 @@
  *   sent       the client sent the confirmed document to the firm (GL-07 pop-up)
  *   manager    the lead confirmed receipt; the manager reviews
  *   admin      the manager approved; the admin reviews (never before the manager)
- *   returned   the manager or admin returned it with a reason; the lead corrects it
+ *   returned   the manager or admin returned it with a reason; the lead and the client correct it
  *   approved   the admin approved; the lead sends the final document to the client
  *   final      the final document is with the client to sign
  *
- * After a return the lead corrects the document and sends it to the manager again (the change
- * list says a return goes back to the lead). The firm's original version is never replaced.
+ * After a return both the lead and the client may correct the document (owner decision of 11 Nov),
+ * and only the lead sends it to the manager again, so the client cannot skip the chain. The firm's
+ * original version is never replaced.
  */
 
 export type ClientEditStage = 'editing' | 'confirmed' | 'sent' | 'manager' | 'admin' | 'returned' | 'approved' | 'final';
@@ -51,8 +52,8 @@ const isFirmAdmin = (role: ClientEditRole) => role === 'admin' || role === 'supe
 /** Where each action is allowed, who may take it, and the stage it leads to. */
 const MOVES: Record<ClientEditAction, { from: ReadonlyArray<ClientEditStage | null>; roles: (role: ClientEditRole) => boolean; to: ClientEditStage }> = {
   save: { from: [null, 'editing'], roles: (r) => r === 'client', to: 'editing' },
-  // After a return the lead corrects the client's version, then sends it to the manager again.
-  correct: { from: ['returned'], roles: (r) => r === 'intern', to: 'returned' },
+  // After a return the lead and the client both correct the client's version; the lead then sends it to the manager again.
+  correct: { from: ['returned'], roles: (r) => r === 'intern' || r === 'client', to: 'returned' },
   confirm: { from: ['editing'], roles: (r) => r === 'client', to: 'confirmed' },
   send: { from: ['confirmed'], roles: (r) => r === 'client', to: 'sent' },
   receive: { from: ['sent'], roles: (r) => r === 'intern', to: 'manager' },
@@ -89,9 +90,11 @@ export function availableClientEditActions(current: ClientEditStage | null, role
   });
 }
 
-/** Who holds the work at each stage (BR-03 chip). */
-export function clientEditHolder(stage: ClientEditStage): 'client' | 'lead' | 'manager' | 'admin' {
+/** Who holds the work at each stage (BR-03 chip). A returned document is shared by the lead and the client. */
+export function clientEditHolder(stage: ClientEditStage): 'client' | 'lead' | 'manager' | 'admin' | 'lead_client' {
   switch (stage) {
+    case 'returned':
+      return 'lead_client';
     case 'editing':
     case 'confirmed':
     case 'final':

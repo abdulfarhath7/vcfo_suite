@@ -13,12 +13,21 @@ import { clientEditHolder } from '@/lib/board-resolution/client-edit';
  *   Manager approved, Admin to approve       admin      With Admin (approval)
  *   The firm sent it to the Client           client     With you (the Client reads "With you")
  *   Client requested a change                lead       With Lead
+ *   A client edit was returned (BR-05)       lead_client With Lead and Client (the Client reads "With Lead and you")
  *   Filed with MCA                           mca        With MCA
  *
+ * The Client reads the first name of the Lead and the Manager after the role ("With Lead · Divya",
+ * "With Manager · Anita") and the Admin by role only ("With Admin"); staff read the role only.
  * A step that is done or has not started has no holder.
  */
 
-export type WorkHolder = 'lead' | 'manager' | 'admin' | 'client' | 'mca';
+export type WorkHolder = 'lead' | 'manager' | 'admin' | 'client' | 'lead_client' | 'mca';
+
+/** The engagement's Lead and Manager, as full names; the Client's chip shows their first names. */
+export interface WorkHolderTeam {
+  lead?: string | null;
+  manager?: string | null;
+}
 
 /** The facts the holder is read from; `PortalStep` (the client step model) has all of them. */
 export interface WorkHolderInput {
@@ -47,13 +56,41 @@ const LABEL: Record<WorkHolder, string> = {
   manager: 'With Manager (approval)',
   admin: 'With Admin (approval)',
   client: 'With Client',
+  lead_client: 'With Lead and Client',
   mca: 'With MCA',
 };
 
-/** The chip text. The Client reads "With you" where staff read "With Client". */
-export function workHolderLabel(holder: WorkHolder, viewer: 'client' | 'staff' = 'staff'): string {
-  if (holder === 'client' && viewer === 'client') return 'With you';
-  return LABEL[holder];
+/** "Divya" from "Divya Rao". An email address (the fallback name of a person) is not a name. */
+function firstNameOf(name: string | null | undefined): string {
+  const first = (name ?? '').trim().split(/\s+/)[0] ?? '';
+  return first.includes('@') ? '' : first;
+}
+
+/**
+ * The chip text. Staff read the role. The Client reads "With you" for their own move, the role and
+ * the first name for the Lead and the Manager (owner decision of 11 Nov), and the role alone for
+ * the Admin. Without a name the Client reads the role alone.
+ */
+export function workHolderLabel(holder: WorkHolder, viewer: 'client' | 'staff' = 'staff', team?: WorkHolderTeam): string {
+  if (viewer === 'staff') return LABEL[holder];
+  const named = (role: string, name: string | null | undefined) => {
+    const first = firstNameOf(name);
+    return first ? `With ${role} · ${first}` : `With ${role}`;
+  };
+  switch (holder) {
+    case 'client':
+      return 'With you';
+    case 'lead':
+      return named('Lead', team?.lead);
+    case 'manager':
+      return named('Manager', team?.manager);
+    case 'admin':
+      return 'With Admin';
+    case 'lead_client':
+      return `${named('Lead', team?.lead)} and you`;
+    default:
+      return LABEL[holder];
+  }
 }
 
 /** "2 hours", "3 days": the time since the hand-over, in the largest whole unit. */

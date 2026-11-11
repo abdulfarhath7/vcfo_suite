@@ -638,6 +638,7 @@ export default function IncorporationLanding() {
                   model={model}
                   company={short}
                   lead={d.leadName}
+                  manager={d.managerName}
                   link={{ label: `Open phase ${cur}`, onClick: () => go(phaseHref(cur)) }}
                   onPhase={(no) => go(phaseHref(no))}
                 />

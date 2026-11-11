@@ -545,17 +545,13 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const dirty = Object.keys(draft).length > 0;
   // C-219: a step SBC or MCA holds gets "Message <lead>" in the card foot.
   const leadFirst = d.leadName ? firstName(d.leadName) : '';
-  // BR-03: the chip follows the real workflow state, with the person and the time since the
-  // hand-over ("With Manager (approval)" · "Anita · 2 hours"). The admin has no name on the
-  // project team, so that line names the role only.
+  // BR-03: the chip follows the real workflow state and names the Lead or the Manager by first
+  // name ("With Manager · Anita"); the line under it gives the time since the hand-over. The
+  // admin has no name on the project team, so the chip names the role only ("With Admin").
   const holder = s ? workHolder(s) : null;
-  const holderPerson =
-    holder === 'lead' ? leadFirst : holder === 'manager' ? (d.managerName ? firstName(d.managerName) : '') : '';
+  const holderTeam = { lead: d.leadName, manager: d.managerName };
   const holderSince = sinceHandOver(s?.slice?.lastEditedAt ?? s?.since);
-  const holderLine =
-    [holderPerson || (holder === 'admin' ? 'SBC admin' : holder === 'manager' ? 'Your SBC manager' : 'SBC'), holderSince]
-      .filter(Boolean)
-      .join(' · ');
+  const holderLine = holderSince ? (holderSince === 'just now' ? 'Handed over just now' : `Handed over ${holderSince} ago`) : 'SBC is working on it';
 
   const openPortal = (form: string) => {
     if (!portalLink) return;
@@ -705,7 +701,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
         : k === 'prog'
           ? { state: 'now', title: `In progress${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.due ? `Fill the remaining answers and submit by ${fmt(s.due)}` : 'Fill the remaining answers and submit', bad: late }
           : k === 'with'
-            ? { state: 'now', title: `${holder ? workHolderLabel(holder, 'client') : 'With SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: holder === 'mca' ? 'MCA reviews the filing' : holderLine }
+            ? { state: 'now', title: `${holder ? workHolderLabel(holder, 'client', holderTeam) : 'With SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: holder === 'mca' ? 'MCA reviews the filing' : holderLine }
             : { state: 'next', title: 'Not started', sub: prev ? `Opens after step ${prev.n} · ${prev.title}` : 'Opens later' };
 
   const answersCard = (
