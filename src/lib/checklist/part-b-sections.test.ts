@@ -37,7 +37,7 @@ describe('SB-01 Part B sections follow the MCA form', () => {
     const director = CLIENT_RESPONSE_FIELDS['pre-15'][0];
     expect(director.id).toBe('directors');
     expect(director.entryFields?.map((f) => f.id)).toEqual(expect.arrayContaining(['din', 'firstName', 'lastName', 'hasDsc', 'dscExpiryDate']));
-    expect(director.entryFields?.[0].id).toBe('din');
+    expect(director.entryFields?.slice(0, 2).map((f) => f.id)).toEqual(['hasDin', 'din']);
   });
 
   it('gives each section a usable tab slug', () => {

@@ -4,6 +4,10 @@ import { useState, type ReactNode } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { ChecklistField } from '@/data/checklist';
+import { showWhenMatches } from '@/lib/checklist/checklist-repeat';
+import { parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
+import { DirectorGrid, DirectorViewToggle, useDirectorView } from '@/components/incorporation/DirectorGrid';
 
 export const PRE1_DIRECTOR_MIN = 1;
 export const PRE1_DIRECTOR_MAX = 4;
@@ -149,6 +153,58 @@ export function DirectorCards({
           Add director
         </Button>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * CD-03: Part A's directors with the Cards / Grid switch. The grid edits the same flat
+ * `director{n}…` answers as the cards, through the same setter, so both views agree.
+ */
+export function Pre1DirectorsView({
+  fields,
+  values,
+  errors,
+  isCellReadOnly,
+  onCellChange,
+  cards,
+}: {
+  fields: ChecklistField[];
+  values: Record<string, string>;
+  errors?: Record<string, string | undefined>;
+  isCellReadOnly: (cellKey: string) => boolean;
+  onCellChange: (cellKey: string, value: string) => void;
+  cards: ReactNode;
+}) {
+  const [view, setView] = useDirectorView();
+  const count = parseDirectorCount(values);
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  const columns = fields
+    .filter((f) => /^director1[A-Z]/.test(f.id) && f.id !== 'director1Din')
+    .map((f) => ({ id: f.id.slice('director1'.length), label: f.label.replace(/^Director \d+ — /, ''), field: f }));
+  const rows = Array.from({ length: count }, (_, i) => i + 1).map((n) => {
+    const name = [values[`director${n}FirstName`], values[`director${n}LastName`]].map((v) => (v ?? '').trim()).filter(Boolean).join(' ');
+    return {
+      key: String(n),
+      title: name ? `Director ${n} · ${name}` : `Director ${n}`,
+      cellKey: (col: string) => `director${n}${col}`,
+      shown: (col: string) => {
+        const field = byId.get(`director${n}${col}`);
+        if (!field) return false;
+        // The slot's own rule (director 2 shows when there are two or more) is the row itself.
+        if (!field.showWhen || field.showWhen.field === 'directorCount') return true;
+        return showWhenMatches(field.showWhen, values[field.showWhen.field]);
+      },
+    };
+  });
+  return (
+    <div className="grid gap-3">
+      <DirectorViewToggle view={view} onChange={setView} />
+      {view === 'grid' ? (
+        <DirectorGrid rows={rows} columns={columns} values={values} readOnly={isCellReadOnly} errors={errors} onChange={onCellChange} />
+      ) : (
+        cards
+      )}
     </div>
   );
 }

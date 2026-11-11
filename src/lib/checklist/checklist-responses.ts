@@ -3,6 +3,7 @@ import { checklist, type ChecklistField, type ChecklistItem } from '@/data/check
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/checklist/part-a-sections';
 import { PART_B_SECTION } from '@/lib/checklist/part-b-sections';
+import { DIN_STATUS_OPTIONS } from '@/lib/checklist/din-verification';
 import { GST_REG_FIELDS } from '@/lib/checklist/gst-registration-fields';
 import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
@@ -879,7 +880,37 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
       entryFields: [
         // 7A(i) / 7D(i) Basic details, in the order of the MCA SPICe+ Part B form.
-        { id: 'din', label: 'Director Identification Number (DIN)', type: 'text' },
+        // DR-01: ask first; with no DIN the director gets one through SPICe+. A blank answer on an
+        // older project reads as "yes", so its typed DIN stays on screen.
+        {
+          id: 'hasDin',
+          label: 'Does the director have a DIN?',
+          type: 'segmented',
+          options: [...PRE1_INDIA_RESIDENT_OPTIONS],
+        },
+        { id: 'din', label: 'Director Identification Number (DIN)', type: 'text', showWhen: { field: 'hasDin', value: 'yes', anyOf: ['yes', ''] } },
+        {
+          id: 'dinStatus',
+          label: 'DIN check against MCA director master data',
+          type: 'select',
+          options: [...DIN_STATUS_OPTIONS],
+          helperText: 'The project lead compares the name, father’s name and date of birth on the MCA portal and records the result.',
+          showWhen: { field: 'hasDin', value: 'yes', anyOf: ['yes', ''] },
+        },
+        {
+          id: 'dinMismatchNote',
+          label: 'Details that differ from MCA',
+          type: 'text',
+          placeholder: 'e.g. Date of birth: MCA shows 06/07/1973',
+          showWhen: { field: 'dinStatus', value: 'mismatch' },
+        },
+        {
+          id: 'dinProofUrl',
+          label: 'Screenshot of the MCA check',
+          type: 'file',
+          accept: '.pdf,image/*',
+          showWhen: { field: 'hasDin', value: 'yes', anyOf: ['yes', ''] },
+        },
         { id: 'firstName', label: 'First Name', type: 'text', required: true },
         { id: 'middleName', label: 'Middle Name', type: 'text' },
         { id: 'lastName', label: 'Surname', type: 'text', required: true },

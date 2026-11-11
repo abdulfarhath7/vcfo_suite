@@ -8,6 +8,7 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
+import { stampDinChecks } from '@/lib/checklist/din-verification';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
 import { hiddenEntryAnswersPatch, isRepeatField } from '@/lib/checklist/checklist-repeat';
 import { proposeEventsFromChecklistSave } from '@/lib/compliance-events/record-change-hook';
@@ -21,6 +22,7 @@ import {
   isWaitingOnLead,
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
+  PROPOSED_DIRECTORS_STEP_ID,
   stripClientOnlyResponses,
   stripLeadOnlyResponses,
 } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -107,6 +109,10 @@ export function checklistPatchForRole(
       } = patch;
       patch = draftOnly;
     }
+  }
+  if (patch.responses && itemId === PROPOSED_DIRECTORS_STEP_ID) {
+    // DR-01: the server stamps who checked a DIN and when.
+    patch = { ...patch, responses: stampDinChecks(prevSlice?.responses ?? {}, patch.responses, ctx.name, now) };
   }
   if (patch.responses && CLEAR_HIDDEN_ANSWER_STEP_IDS.has(itemId)) {
     // SB-03: a changed subscriber type clears the answers of the questions it hides.

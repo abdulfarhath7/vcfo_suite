@@ -10,7 +10,8 @@ import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import { addRepeatEntry, isRepeatField, removeRepeatEntry } from '@/lib/checklist/checklist-repeat';
 import { countWords, formatPre1DateDisplay, parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
 import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist/checklist-responses';
-import { DirectorCards } from './director-count-control';
+import { DirectorCards, Pre1DirectorsView } from './director-count-control';
+import { isClientOnlyField, isLeadOnlyField } from '@/lib/incorporation/pre-inc-direct-flow';
 import { FieldInfoButton } from './field-info-button';
 import { getPre6DirectorNameOptions } from '@/lib/checklist/checklist-pre6-validation';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
@@ -69,7 +70,14 @@ export function createEditableFieldRenderer(
     setField,
     handleFilePick,
     fieldShellClass,
+    directFlow,
+    itemState,
   } = ctx;
+
+  /** A grid cell follows the same ownership rule as the field it edits (DR-01, DR-02). */
+  const isCellReadOnly = (key: string) =>
+    (isClient && directFlow && isLeadOnlyField(item.id, key)) ||
+    (!isClient && directFlow && isClientOnlyField(item.id, key, itemState));
 
   const renderEditableField = (
     field: ChecklistField,
@@ -122,6 +130,11 @@ export function createEditableFieldRenderer(
             group={field}
             responses={draft}
             renderField={(sub) => renderEditableField(sub)}
+            grid={{
+              onCellChange: (key, value) => setField(key, value),
+              isCellReadOnly: (key) => isCellReadOnly(key),
+              errors: shownErrors,
+            }}
             onAdd={() => {
               userEditedRef.current = true;
               setDraft((prev) => ({ ...prev, ...addRepeatEntry(prev, field).patch }));
@@ -141,6 +154,13 @@ export function createEditableFieldRenderer(
             }}
           />
         ) : item.id === 'pre-1' && field.id === 'directorCount' ? (
+          <Pre1DirectorsView
+            fields={fields}
+            values={draft as Record<string, string>}
+            errors={shownErrors}
+            isCellReadOnly={isCellReadOnly}
+            onCellChange={(key, value) => setField(key, value)}
+            cards={
           <DirectorCards
             count={parseDirectorCount(draft)}
             values={draft as Record<string, string>}
@@ -160,6 +180,8 @@ export function createEditableFieldRenderer(
               });
               if (autoSaveEnabled) scheduleAutoSave(false);
             }}
+          />
+            }
           />
         ) : field.type === 'segmented' && field.options ? (
           <SegmentedPicker

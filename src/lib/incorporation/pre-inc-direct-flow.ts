@@ -1,6 +1,7 @@
 import { isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { GST_REG_LEAD_ONLY_FIELD_IDS, GST_REG_STEP_ID } from '@/lib/checklist/gst-registration-fields';
+import { DIN_LEAD_ONLY_ENTRY_FIELD_IDS } from '@/lib/checklist/din-verification';
 
 /**
  * Pre-incorporation direct flow — the one place that says which steps skip
@@ -105,6 +106,11 @@ export function isDirectFlowStep(itemId: string): boolean {
  */
 export function isLeadOnlyField(itemId: string, fieldId: string): boolean {
   if (LEAD_ONLY_STEP_IDS.has(itemId)) return true;
+  // DR-01: the DIN check inside each Proposed directors entry is the lead's.
+  if (itemId === PROPOSED_DIRECTORS_STEP_ID) {
+    const parts = fieldId.split('.');
+    if (parts.length === 3 && DIN_LEAD_ONLY_ENTRY_FIELD_IDS.includes(parts[2]!)) return true;
+  }
   const ids = LEAD_ONLY_FIELD_IDS[itemId];
   if (!ids?.length) return false;
   const root = fieldId.split('.')[0] ?? fieldId;
