@@ -1,3 +1,4 @@
+import { standardDownloadName } from '@/lib/files/download-name';
 import PizZip from 'pizzip';
 
 import {
@@ -5,7 +6,7 @@ import {
   directorFieldPrefix,
   type IncorpDocAudience,
 } from '@/lib/incorporation-docs/audiences';
-import { incorpDocDownloadFilename, type IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
+import { incorpDocStandardDownloadName, type IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { slugifyCompanyName } from '@/lib/slug';
@@ -18,7 +19,9 @@ import { slugifyCompanyName } from '@/lib/slug';
  */
 
 export function incorpDraftsZipRoot(companyName: string, slug?: string | null): string {
-  return `${slug?.trim() || slugifyCompanyName(companyName)}-incorporation-drafts`;
+  void slug;
+  // GL-08: the ZIP and its top folder follow the standard download name.
+  return standardDownloadName('Incorporation Drafts', companyName, 'zip').replace(/\.zip$/, '');
 }
 
 /** Windows- and zip-safe folder name. */
@@ -42,11 +45,12 @@ export function incorpDraftZipEntries(
   links: IncorpDraftDocLink[],
   root: string,
   pre6?: ChecklistItemResponses,
+  clientName?: string | null,
 ): IncorpDraftZipEntry[] {
   const used = new Set<string>();
   return links.map((link) => {
     const folder = incorpDraftFolder(link.audience, pre6);
-    const file = incorpDocDownloadFilename(link.doc, link.audience, { pre6 });
+    const file = incorpDocStandardDownloadName(link.doc, link.audience, clientName, { pre6 });
     let path = `${root}/${folder}/${file}`;
     for (let n = 2; used.has(path); n += 1) {
       path = `${root}/${folder}/${file.replace(/\.docx$/i, `-${n}.docx`)}`;

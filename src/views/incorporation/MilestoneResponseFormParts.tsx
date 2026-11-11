@@ -395,9 +395,10 @@ export function InternSectionHeadingNav({
                 aria-selected={selected}
                 onClick={() => onSelect(index)}
                 className={cn(
-                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] font-medium transition-colors',
-                  // The open section has a light-blue wash as well as the underline (owner, 10 Nov).
-                  selected ? 'bg-info-soft text-ink' : 'text-ink-muted hover:text-ink',
+                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] transition-colors',
+                  // GL-03, the same open-tab style as `SpectrumTabs`: brand wash, bold brand text
+                  // and a 3px underline; the other tabs are muted with no line.
+                  selected ? 'bg-brand-soft font-semibold text-brand-text' : 'font-medium text-ink-muted hover:text-ink',
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -417,7 +418,7 @@ export function InternSectionHeadingNav({
                   ) : null}
                 </span>
                 {selected ? (
-                  <span className="absolute inset-x-3 -bottom-[1.5px] h-0.5 bg-brand" aria-hidden />
+                  <span className="absolute inset-x-0 -bottom-[1.5px] h-[3px] bg-brand" aria-hidden />
                 ) : null}
               </button>
             );

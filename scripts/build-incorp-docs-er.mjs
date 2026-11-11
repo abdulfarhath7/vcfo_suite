@@ -87,7 +87,7 @@ box('capital', {
   col: 0, title: 'Share capital', where: 'Step 1 Client Details, then Phase 2 · Step 1 Capital Structure', chip: 'client',
   rows: [
     ['Authorised capital', 'INR'],
-    ['Initial paid-up capital', 'INR'],
+    ['Paid-up capital', 'INR'],
     ['Value of one equity share', 'INR'],
     ['Share classes', 'equity · preference'],
     ['Number of shares in each class', 'Phase 2 · Step 1'],

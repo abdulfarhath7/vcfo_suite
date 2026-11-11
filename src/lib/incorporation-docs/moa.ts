@@ -38,7 +38,7 @@ export interface MoaMergeFields {
   MOA_CLAUSE_2: string;
   /** Clause V (share capital) — authorised amount with figures and words. */
   AUTHORISED_SHARE_CAPITAL: string;
-  /** Clause V — initial paid-up capital with figures and words. */
+  /** Clause V — paid-up capital with figures and words. */
   PAID_UP_SHARE_CAPITAL: string;
   /** Clause V — face value per equity share (figures, e.g. 10). */
   NOMINAL_VALUE_PER_EQUITY_SHARE: string;
@@ -162,7 +162,7 @@ export function buildMoaClause5Fields(
   const MOA_CLAUSE_5 = [
     `The share capital of the company is ${authorised}`,
     `divided into ${shareCount || '[Number of shares]'} equity shares of ${nominalLabel} each`,
-    `with an initial paid-up share capital of ${paidUp}.`,
+    `with a paid-up share capital of ${paidUp}.`,
   ].join(' ');
 
   return {
@@ -224,7 +224,7 @@ export function collectMoaMissingFields(input: MoaMergeInput): string[] {
     missing.push('Authorized Share Capital (Pre-1)');
   }
   if (!pre1.paidUpShareCapital?.trim()) {
-    missing.push('Initial Paid-up Share Capital (Pre-1)');
+    missing.push('Paid-up Share Capital (Pre-1)');
   }
   if (!pre1.nominalValuePerEquityShare?.trim()) {
     missing.push('Nominal Value of Each Equity Share (Pre-1)');

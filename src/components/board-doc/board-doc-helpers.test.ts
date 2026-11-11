@@ -117,7 +117,7 @@ describe('NOC adapters', () => {
   it('builds merge values with sources and marks placeholders missing', () => {
     const values = nocMergeValues(fields);
     const parent = values.find((v) => v.key === 'PARENT_ENTITY_NAME')!;
-    expect(parent.value).toBe('NORTHWIND INC.');
+    expect(parent.value).toBe('Northwind Inc.');
     expect(parent.source).toBe('Pre-1 · Parent company name');
     expect(values.find((v) => v.key === 'SIGNATORY_DIN')!.missing).toBe(true);
     expect(nocMergeValues(null)).toEqual([]);
@@ -127,7 +127,7 @@ describe('NOC adapters', () => {
     const content = generateBoardResolutionDraft({ engagement: foreign as never, pre1 });
     const m = nocDocModel({ content, fields });
     expect(m.heading).toMatch(/^CERTIFIED TRUE COPY/);
-    expect(m.letterhead?.name).toBe('NORTHWIND INC.');
+    expect(m.letterhead?.name).toBe('Northwind Inc.');
     expect(m.sections.map((s) => s.label)).toEqual(['Purpose', 'Decision', 'Who signs', 'Filing agent', 'Certifies']);
     expect(m.dates).toEqual([
       { label: 'Meeting', value: '24 Sep 2026' },

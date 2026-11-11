@@ -168,7 +168,7 @@ describe('doc-pack routes — documents', () => {
     expect(res.headers.get('content-type')).toBe(
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     );
-    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="inc-9-resident-director-beta-director\.docx"$/);
+    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="INC-9-Beta-Director_Test-Company-Private-Limited_\d{2}-\d{2}-\d{4}\.docx"$/);
     const zip = new PizZip(Buffer.from(await res.arrayBuffer()));
     expect(zip.file('word/document.xml')?.asText()).toContain('Test Company Private Limited');
     expect(storedDocx).not.toHaveBeenCalled();
@@ -194,14 +194,14 @@ describe('doc-pack routes — documents', () => {
   it('preview serves inline and is not audited', async () => {
     const res = await itemRoute.GET(req('/moa:company?preview=1'), itemParams('moa:company'));
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-disposition')).toMatch(/^inline; filename="moa\.docx"$/);
+    expect(res.headers.get('content-disposition')).toMatch(/^inline; filename="INC-33-MOA_Test-Company-Private-Limited_\d{2}-\d{2}-\d{4}\.docx"$/);
     expect(audit).not.toHaveBeenCalled();
   });
 
   it('serves the finalized board resolution from storage, never rendering it', async () => {
     const res = await itemRoute.GET(req('/board-resolution:company'), itemParams('board-resolution:company'));
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-disposition')).toContain('board-resolution.docx');
+    expect(res.headers.get('content-disposition')).toContain('Board-Resolution_Test-Company-Private-Limited_');
     expect(storedDocx).toHaveBeenCalledTimes(1);
   });
 });
@@ -212,13 +212,15 @@ describe('doc-pack routes — zip', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/zip');
     expect(res.headers.get('content-disposition')).toMatch(
-      /^attachment; filename="test-company-pre-incorporation-\d{4}-\d{2}-\d{2}\.zip"$/,
+      /^attachment; filename="Pre-Incorporation-Documents_Test-Company-Private-Limited_\d{2}-\d{2}-\d{4}\.zip"$/,
     );
     const zip = new PizZip(Buffer.from(await res.arrayBuffer()));
     const names = Object.keys(zip.files).sort();
-    expect(names).toContain('board-resolution.docx');
-    expect(names).toContain('moa.docx');
-    expect(names).toContain('dir-2-non-resident-director-alpha-director.docx');
+    // GL-08: each file in the ZIP has the standard name too.
+    const starts = (prefix: string) => names.some((n: string) => n.startsWith(prefix) && n.endsWith('.docx'));
+    expect(starts('Board-Resolution_Test-Company-Private-Limited_')).toBe(true);
+    expect(starts('INC-33-MOA_Test-Company-Private-Limited_')).toBe(true);
+    expect(starts('DIR-2-Alpha-Director_Test-Company-Private-Limited_')).toBe(true);
     const summary = (await (await summaryRoute.GET(req(''), params())).json()) as { pack: { total: number } };
     expect(names).toHaveLength(summary.pack.total);
     expect(audit).toHaveBeenCalledTimes(1);

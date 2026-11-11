@@ -9,8 +9,9 @@ import {
 } from '@/lib/email/email-dispatch';
 
 const ERROR_DURATION_MS = 6000;
-const SUCCESS_DURATION_MS = 4000;
-const WARNING_DURATION_MS = 5000;
+// GL-02: 3 seconds, and 6 for an error.
+const SUCCESS_DURATION_MS = 3000;
+const WARNING_DURATION_MS = 3000;
 
 const NETWORK_MESSAGE =
   'No internet connection. Check your network and try again.';

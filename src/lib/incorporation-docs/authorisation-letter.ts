@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import { signingDate } from '@/lib/incorporation-docs/shared';
 import {
@@ -83,7 +84,7 @@ export function buildAuthorisationLetterMergeFields(
       '[Non-resident director address]',
     ),
     PROPOSED_COMPANY_NAME: resolveProposedCompanyName(pre5, pre1, engagement),
-    SIGNATORY_NAME: pickString(resolveSignatoryDisplayName(pre1), '[Signatory name]'),
+    SIGNATORY_NAME: properNameCase(pickString(resolveSignatoryDisplayName(pre1), '[Signatory name]')),
     SIGNATORY_DESIGNATION: pickString(pre1.signatoryDesignation, '[Signatory designation]'),
     CERTIFICATION_DATE: docDate,
     CERTIFICATION_PLACE: resolveParentEntityCountry(pre1, engagement),

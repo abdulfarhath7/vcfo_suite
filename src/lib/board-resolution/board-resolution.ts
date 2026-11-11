@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
@@ -343,7 +344,7 @@ export function formatInrCapitalClause(raw: string): string {
 }
 
 function formatDirectorLine(name: string): string {
-  const n = stripDirectorSalutation(name).trim();
+  const n = properNameCase(stripDirectorSalutation(name));
   if (!n) return '[Director name]';
   return n;
 }
@@ -379,7 +380,7 @@ function formatDirectorBulletLines(
   directors: Array<{ name: string; gender?: string | undefined }>,
 ): string {
   const lines = directors
-    .map((d) => ({ name: stripDirectorSalutation(d.name).trim(), salutation: directorSalutation(d.gender) }))
+    .map((d) => ({ name: properNameCase(stripDirectorSalutation(d.name)), salutation: directorSalutation(d.gender) }))
     .filter((d) => d.name)
     .map((d) => (d.salutation ? `${d.salutation} ${d.name}` : d.name));
   return lines.length > 0 ? lines.join('\n') : '[Director name]';
@@ -388,7 +389,7 @@ function formatDirectorBulletLines(
 /** Every Part A proposed name joined with "and"; the first name's placeholder when none. */
 function formatProposedNames(pre1: ChecklistItemResponses): string {
   const names = [pre1.proposedName1, pre1.proposedName2]
-    .map((n) => (n ?? '').trim())
+    .map((n) => properNameCase(n))
     .filter(Boolean)
     .filter((n, i, all) => all.findIndex((m) => m.toLowerCase() === n.toLowerCase()) === i);
   if (names.length === 0) return '[Proposed company name 1]';
@@ -468,20 +469,15 @@ function resolveDirectors(pre1: ChecklistItemResponses): {
   };
 }
 
-/** A company name in capitals; a `[placeholder]` for a missing answer is left as it is. */
-function companyCaps(value: string): string {
-  return /^\[.*\]$/.test(value.trim()) ? value : value.toUpperCase();
-}
-
 export function buildBoardResolutionMergeFields(
   input: BoardResolutionMergeInput,
 ): BoardResolutionMergeFields {
   const { engagement, pre1 = {}, overrides = {} } = input;
   const now = new Date();
 
-  // Company names print in capitals in the resolution (owner, 10 Nov). The bracketed
-  // placeholders shown while an answer is missing keep their case.
-  const parentName = companyCaps(
+  // Company and person names print with correct capital letters (GL-09, 11 Nov; this replaces
+  // the all-capitals rule of 10 Nov). Placeholders for a missing answer keep their case.
+  const parentName = properNameCase(
     pickString(pre1.parentEntityName, engagement?.parentEntityName, engagement?.companyName, '[Parent entity name]'),
   );
 
@@ -499,16 +495,16 @@ export function buildBoardResolutionMergeFields(
     RESOLUTION_EFFECTIVE_DATE: formatResolutionDate(resolutionDate),
     PARENT_JURISDICTION: resolveParentJurisdiction(pre1),
     PARENT_STATE: resolveParentState(pre1, () => DEFAULT_PARENT_STATE),
-    PROPOSED_NAME_1: companyCaps(pickString(pre1.proposedName1, '[Proposed company name 1]')),
-    PROPOSED_NAME_2: companyCaps(resolveSecondProposedName(pre1)),
-    PROPOSED_NAMES: companyCaps(formatProposedNames(pre1)),
+    PROPOSED_NAME_1: properNameCase(pickString(pre1.proposedName1, '[Proposed company name 1]')),
+    PROPOSED_NAME_2: properNameCase(resolveSecondProposedName(pre1)),
+    PROPOSED_NAMES: formatProposedNames(pre1),
     NIC_CODES: resolveNicCodesClause(pre1),
     AUTHORISED_CAPITAL: formatInrCapitalClause(authCapRaw),
     PAID_UP_CAPITAL: formatInrCapitalClause(paidCapRaw),
     INDIAN_DIRECTOR_LINE: indianLine,
     SECOND_DIRECTOR_LINE: secondLine,
     DIRECTOR_NAMES: formatDirectorBulletLines([indian, ...others]),
-    SIGNATORY_NAME: pickString(resolveSignatoryDisplayName(pre1), '[Authorised person name]'),
+    SIGNATORY_NAME: properNameCase(pickString(resolveSignatoryDisplayName(pre1), '[Authorised person name]')),
     SIGNATORY_DESIGNATION: pickString(pre1.signatoryDesignation, '[Designation]'),
     CERTIFICATION_DATE: formatCertificationDate(resolutionDate),
     CERTIFICATION_PLACE: resolveCertificationPlace(pre1, engagement),

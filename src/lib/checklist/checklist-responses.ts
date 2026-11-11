@@ -209,7 +209,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'paidUpShareCapital',
-      label: 'Initial Paid-up Share Capital (INR) (ex: 1,00,000)',
+      label: 'Paid-up Share Capital (INR) (ex: 1,00,000)',
       type: 'text',
       section: 'Proposed Share Capital Structure',
       placeholder: '1,00,000',
@@ -968,7 +968,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         // Existing interests (INC-9 / DIR-8 disclosure).
         {
           id: 'hasOtherCompanyInterest',
-          label: 'Existing interest in any other company or LLP?',
+          label: 'Any Indian company',
           type: 'segmented',
           options: [...PRE1_INDIA_RESIDENT_OPTIONS],
           required: true,

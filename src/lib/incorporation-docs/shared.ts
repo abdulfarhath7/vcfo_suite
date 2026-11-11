@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import {
@@ -132,11 +133,9 @@ export function resolveProposedCompanyName(
   pre1: ChecklistItemResponses,
   engagement?: Pick<Engagement, 'companyName'> | null,
 ): string {
-  return pickString(
-    pre5.approvedCompanyName,
-    pre1.proposedName1,
-    engagement?.companyName,
-    '[Proposed company name]',
+  // GL-09: every generated document prints names with correct capital letters.
+  return properNameCase(
+    pickString(pre5.approvedCompanyName, pre1.proposedName1, engagement?.companyName, '[Proposed company name]'),
   );
 }
 
@@ -148,7 +147,7 @@ export function directorField(
   if (director === 'company') return '';
   const prefix = directorFieldPrefix(director);
   if (suffix === 'FullName') {
-    return resolvePre6DisplayNameForPrefix(pre6, prefix);
+    return properNameCase(resolvePre6DisplayNameForPrefix(pre6, prefix));
   }
   return (pre6[`${prefix}${suffix}`] ?? '').trim();
 }

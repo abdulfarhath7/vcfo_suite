@@ -5,7 +5,7 @@ import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
-import { incorpDocDownloadFilename } from '@/lib/incorporation-docs/paths';
+import { incorpDocStandardDownloadName } from '@/lib/incorporation-docs/paths';
 import { isIncorpDraftSharedWithClient } from '@/lib/incorporation-docs/share';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
 import {
@@ -123,7 +123,7 @@ export async function GET(request: Request, context: RouteContext) {
     );
   }
 
-  const filename = incorpDocDownloadFilename(doc, director, { pre6 });
+  const filename = incorpDocStandardDownloadName(doc, director, access.row.companyName, { pre6 });
   const sanitized = sanitizeIncorpDocxBufferWithReport(Buffer.from(bytes));
   if (sanitized.changed) {
     await repairIncorpDocxAtPath(storagePath, sanitized.buffer);

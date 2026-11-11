@@ -4,6 +4,7 @@ import {
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
 import { requireAnyRole } from '@/auth/guards';
+import { signedBoardResolutionDownloadName } from '@/lib/board-resolution/board-resolution-storage';
 import {
   contentTypeForSignedBoardResolutionPath,
   downloadFilenameForSignedBoardResolution,
@@ -53,7 +54,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'download_failed' }, { status: 404 });
   }
 
-  const filename = downloadFilenameForSignedBoardResolution(storagePath);
+  const filename = signedBoardResolutionDownloadName(access.row?.companyName, storagePath);
 
   return new NextResponse(new Uint8Array(bytes), {
     status: 200,

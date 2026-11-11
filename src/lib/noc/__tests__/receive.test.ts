@@ -86,10 +86,10 @@ describe('snapshot and compare (T3, T4)', () => {
     const b = { ...a, PARENT_ENTITY_NAME: 'Parent B', __variant: 'indian-investing' };
     expect(diffNocFields(a, b)).toEqual([
       { key: '__variant', label: 'Template', before: 'foreign-parent', after: 'indian-investing' },
-      { key: 'PARENT_ENTITY_NAME', label: 'Parent name', before: 'PARENT A', after: 'Parent B' },
+      { key: 'PARENT_ENTITY_NAME', label: 'Parent name', before: 'Parent A', after: 'Parent B' },
     ]);
     expect(diffNocFields(a, a)).toEqual([]);
-    // A NOC released before company names were capitalised does not read as changed.
-    expect(diffNocFields({ ...a, PARENT_ENTITY_NAME: 'Parent A' }, a)).toEqual([]);
+    // A change of letter case alone (GL-09 re-cases names) does not read as a changed answer.
+    expect(diffNocFields({ ...a, PARENT_ENTITY_NAME: 'parent a' }, a)).toEqual([]);
   });
 });
