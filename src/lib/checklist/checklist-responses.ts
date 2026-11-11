@@ -82,17 +82,20 @@ function pre1ProposedDirectorFields(): ChecklistField[] {
         { value: '3', label: '3' },
         { value: '4', label: '4' },
       ],
-      helperText: 'At least two directors, and at least one of them resident in India.',
+      helperText: 'A private company needs at least two directors, and at least one of them must live in India.',
       required: true,
     },
   ];
   for (let n = 1; n <= 4; n += 1) {
+    // CD-02: one card per director; a slot shows only when the cards reach it.
     const showWhen =
-      n === 3
-        ? { field: 'directorCount', value: '3', anyOf: ['4'] }
-        : n === 4
-          ? { field: 'directorCount', value: '4' }
-          : undefined;
+      n === 2
+        ? { field: 'directorCount', value: '2', anyOf: ['3', '4'] }
+        : n === 3
+          ? { field: 'directorCount', value: '3', anyOf: ['4'] }
+          : n === 4
+            ? { field: 'directorCount', value: '4' }
+            : undefined;
     const slot = (field: ChecklistField): ChecklistField => (showWhen ? { ...field, showWhen } : field);
     out.push(
       slot({ id: `director${n}FirstName`, label: `Director ${n} — first name`, type: 'text', section, required: true, layout: 'short' }),

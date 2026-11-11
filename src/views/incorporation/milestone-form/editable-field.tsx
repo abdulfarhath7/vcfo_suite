@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { FieldHelpButton } from '@/components/ask/FieldHelpButton';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { GLOSSARY } from '@/data/ask/glossary';
@@ -9,7 +10,7 @@ import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import { addRepeatEntry, isRepeatField, removeRepeatEntry } from '@/lib/checklist/checklist-repeat';
 import { countWords, formatPre1DateDisplay, parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
 import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist/checklist-responses';
-import { DirectorCountControl, withDirectorCount } from './director-count-control';
+import { DirectorCards } from './director-count-control';
 import { FieldInfoButton } from './field-info-button';
 import { getPre6DirectorNameOptions } from '@/lib/checklist/checklist-pre6-validation';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
@@ -45,6 +46,7 @@ export function createEditableFieldRenderer(
 ) {
   const {
     isClient,
+    fields,
     item,
     engagementId,
     compactChrome,
@@ -71,8 +73,10 @@ export function createEditableFieldRenderer(
 
   const renderEditableField = (
     field: ChecklistField,
-    options?: { showUnlock?: boolean },
-  ) => {
+    options?: { showUnlock?: boolean; inDirectorCard?: boolean },
+  ): ReactNode => {
+    // CD-02: a director's fields render inside that director's card, not in the section's list.
+    if (item.id === 'pre-1' && /^director\d/.test(field.id) && !options?.inDirectorCard) return null;
     const error = shownErrors[field.id];
     const warning = shownWarnings[field.id];
     const errorId = fieldErrorId(item.id, field.id);
@@ -137,11 +141,18 @@ export function createEditableFieldRenderer(
             }}
           />
         ) : item.id === 'pre-1' && field.id === 'directorCount' ? (
-          <DirectorCountControl
+          <DirectorCards
             count={parseDirectorCount(draft)}
+            values={draft as Record<string, string>}
+            error={error}
+            renderSlot={(n) =>
+              fields
+                .filter((f) => f.id.startsWith(`director${n}`) && !/^director\d+Din$/.test(f.id))
+                .map((f) => renderEditableField({ ...f, showWhen: undefined, label: f.label.replace(/^Director \d+ — /, '') }, { inDirectorCard: true }))
+            }
             onChange={(next) => {
               userEditedRef.current = true;
-              setDraft((prev) => withDirectorCount(prev, next));
+              setDraft(next);
               setFieldErrors((prev) => {
                 const rest = { ...prev };
                 delete rest.directorCount;
