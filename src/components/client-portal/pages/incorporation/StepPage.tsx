@@ -149,6 +149,7 @@ function ChangeDialog({
   to,
   heading = 'Request a change',
   placeholder = 'What should change?',
+  sendLabel = 'Send to Lead',
   onClose,
   onSend,
 }: {
@@ -156,6 +157,8 @@ function ChangeDialog({
   to?: string;
   heading?: string;
   placeholder?: string;
+  /** BR-07: the request goes to the project lead. */
+  sendLabel?: string;
   onClose: () => void;
   onSend: (note: string) => Promise<void>;
 }) {
@@ -187,7 +190,7 @@ function ChangeDialog({
           </Button>
           <Button disabled={!note.trim() || busy} onClick={() => void send()}>
             <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
-            {busy ? 'Sending…' : 'Send'}
+            {busy ? 'Sending…' : sendLabel}
           </Button>
         </>
       }
@@ -317,10 +320,12 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     const st = approvalStateOf(s?.slice);
     return st === 'pending_client' || st === 'client_approved';
   })();
+  // BR-07: "Request a change" always opens the typed request on every step; the chatbot stays
+  // an optional second path that makes the same record.
+  void canChange;
   const requestChange = () => {
     if (!s) return;
-    if (canChange) setChangeOpen(true);
-    else openChat(`I want to request a change to step ${s.n} · ${s.title}`);
+    setChangeOpen(true);
   };
   const sendChange = async (note: string) => {
     if (!s || !d.engagementId) return;
@@ -886,6 +891,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           to={leadFirst || undefined}
           heading="Message"
           placeholder={leadFirst ? `Write to ${leadFirst}` : 'Write to your team'}
+          sendLabel="Send"
           onClose={() => setMsgOpen(false)}
           onSend={sendMessage}
         />

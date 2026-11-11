@@ -1,16 +1,9 @@
 import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
-import {
-  createClientChangeRequest,
-  createClientTimelineRequest,
-} from '@/db/repositories/client-change-requests';
+import { createClientTimelineRequest } from '@/db/repositories/client-change-requests';
 import type { TimelinePhaseDates } from '@/lib/client/client-home';
-import {
-  checklistStateForViewer,
-  clientRequestStepChange,
-} from '@/db/repositories/engagements';
-import { isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
+import { submitClientChangeRequest } from '@/lib/client-portal/change-request';
 import { publicErrorMessage } from '@/lib/api-error';
 
 /**
@@ -87,52 +80,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const created = await createClientChangeRequest(guard.ctx, {
-      engagementId: engagementId.trim(),
-      stepId: stepId.trim(),
-      note,
-    });
-    if (!created) {
+    // BR-07: the same record, notification and audit entry as a request made through Ask VCFO.
+    const out = await submitClientChangeRequest(guard.ctx, { engagementId, stepId, note, via: 'manual' });
+    if (!out) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
-
-    // Reopen the step when it was actually with the client. A note on a step
-    // the firm still holds is recorded and mailed, but reopens nothing.
-    let checklistState = null;
-    try {
-      const reopened = await clientRequestStepChange(
-        guard.ctx,
-        engagementId.trim(),
-        stepId.trim(),
-        note,
-      );
-      checklistState = checklistStateForViewer(guard.ctx, reopened.checklistState);
-      if (isDirectFlowStep(stepId.trim())) {
-        // The client reopened a submitted step: every party hears it.
-        await notifyEngagementEventSoon({
-          engagementId: engagementId.trim(),
-          itemId: stepId.trim(),
-          event: 'step_reopened',
-          actorUserId: guard.ctx.userId,
-          actorName: guard.ctx.name,
-          actorRole: guard.ctx.role,
-        }).catch(() => null);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '';
-      if (message !== 'step_not_with_client') throw err;
-    }
-
-    // The lead did the work and the manager approved it, so both hear about it.
-    const email = await notifyEngagementEventSoon({
-      engagementId: engagementId.trim(),
-      itemId: stepId.trim(),
-      event: 'client_change_requested',
-      note,
-      actorUserId: guard.ctx.userId,
-    }).catch(() => null);
-
-    return NextResponse.json({ request: created, checklistState, email }, { status: 201 });
+    return NextResponse.json(out, { status: 201 });
   } catch (error) {
     const message = publicErrorMessage(error, 'Could not send the request');
     return NextResponse.json({ error: message }, { status: 400 });
