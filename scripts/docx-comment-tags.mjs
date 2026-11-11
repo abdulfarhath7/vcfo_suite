@@ -19,8 +19,9 @@ import PizZip from 'pizzip';
  * @param {{ loop: number, drop: number }} [opts.directors]  director bullets: first loops, second is removed
  * @param {(xml: string) => string} [opts.beforeCleanup]  wording fixes that need the blanks still in place
  * @param {(xml: string) => string} [opts.afterCleanup]   wording fixes after blanks are cleared
+ * @param {(xml: string) => string} [opts.beforeWrite]    layout fixes once the comments are gone
  */
-export function tagCommentedDocx({ source, out, tags, clearBetween = [], directors, beforeCleanup, afterCleanup }) {
+export function tagCommentedDocx({ source, out, tags, clearBetween = [], directors, beforeCleanup, afterCleanup, beforeWrite }) {
   const zip = new PizZip(fs.readFileSync(source));
   let xml = zip.file('word/document.xml').asText();
 
@@ -88,6 +89,7 @@ export function tagCommentedDocx({ source, out, tags, clearBetween = [], directo
     .replace(/<w:r(?: [^>]*)?>(?:(?!<\/w:r>)[\s\S])*?<w:commentReference w:id="\d+"\/><\/w:r>/g, '');
   // Yellow marks the blanks for whoever fills them by hand; a generated draft has none.
   xml = xml.replace(/<w:highlight w:val="[a-zA-Z]+"\/>/g, '');
+  if (beforeWrite) xml = beforeWrite(xml);
   zip.file('word/document.xml', xml);
 
   for (const name of Object.keys(zip.files)) {

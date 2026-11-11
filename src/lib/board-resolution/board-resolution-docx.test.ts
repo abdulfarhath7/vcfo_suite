@@ -48,44 +48,144 @@ function docxWithDocumentXml(documentXml: string): Buffer {
   return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' }) as Buffer;
 }
 
-describe('board resolution template certification block', () => {
-  it('lists Date on its own line with Place on the line below', () => {
-    const templatePath = path.join(process.cwd(), 'public/templates/boardResolution.docx');
-    if (!fs.existsSync(templatePath)) return;
+/** Each Word paragraph's text, in document order (table cells included), as the editor reads it. */
+function paragraphTexts(xml: string): string[] {
+  return [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((m) =>
+    [...m[0].matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map((t) => t[1]).join(''),
+  );
+}
 
-    const xml = boardResolutionDocumentXml(fs.readFileSync(templatePath));
-    expect(xml.indexOf('{CERTIFICATION_DATE}')).toBeGreaterThan(-1);
-    expect(xml.indexOf('{CERTIFICATION_PLACE}')).toBeGreaterThan(-1);
-    expect(xml.indexOf('{CERTIFICATION_DATE}')).toBeLessThan(xml.indexOf('{CERTIFICATION_PLACE}'));
+/** Each paragraph as the editor saves it: bold runs inside `<strong>`. */
+function editorLines(xml: string): string[] {
+  return [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map((m) =>
+    [...m[0].matchAll(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)]
+      .map((r) => {
+        const text = r[0].match(/<w:t[^>]*>([^<]*)<\/w:t>/)?.[1] ?? '';
+        return text && /<w:b\/>/.test(r[0]) ? `<strong>${text}</strong>` : text;
+      })
+      .join(''),
+  );
+}
 
-    const certParas = xml
-      .split('</w:p>')
-      .filter((para) => /\{CERTIFICATION_(DATE|PLACE)\}/.test(para))
-      .map((para) =>
-        [...para.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
-          .map((match) => match[1])
-          .join(''),
-      );
-    expect(certParas).toHaveLength(2);
-    expect(certParas[0]).toMatch(/^Date:\s*\{CERTIFICATION_DATE\}/);
-    expect(certParas[1]).toMatch(/^Place:\s*\{CERTIFICATION_PLACE\}/);
+/** The signature block: from the "For and on behalf of" paragraph to the end of the body. */
+function signatureBlock(xml: string): string {
+  const anchor = xml.lastIndexOf('For and on behalf of');
+  const opens = [...xml.slice(0, anchor).matchAll(/<w:p(?:\s[^>]*)?>/g)];
+  return xml.slice(opens[opens.length - 1]!.index, xml.lastIndexOf('<w:sectPr'));
+}
+
+/** Text runs of the block as "text|bold", with the font and size of each. */
+function blockRuns(block: string): Array<{ text: string; bold: boolean; font: string; size: string }> {
+  return [...block.matchAll(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)]
+    .map((m) => m[0])
+    .filter((run) => /<w:t[\s>]/.test(run))
+    .map((run) => ({
+      text: run.match(/<w:t[^>]*>([^<]*)<\/w:t>/)?.[1] ?? '',
+      bold: /<w:b\/>/.test(run),
+      font: run.match(/w:ascii="([^"]*)"/)?.[1] ?? '',
+      size: run.match(/<w:sz w:val="(\d+)"/)?.[1] ?? '',
+    }));
+}
+
+const SIGNATURE_TEMPLATES = ['boardResolution.docx', 'boardResolution-indian-investing.docx'];
+
+/** Part 3 of the owner's 10 Nov list: the signature block is aligned. */
+describe.each(SIGNATURE_TEMPLATES)('board resolution signature block in %s', (name) => {
+  const templatePath = path.join(process.cwd(), 'public/templates', name);
+  const xml = fs.existsSync(templatePath) ? boardResolutionDocumentXml(fs.readFileSync(templatePath)) : '';
+
+  it('uses the body font for every label and value, bold only where the template means it', () => {
+    if (!xml) return;
+    const runs = blockRuns(signatureBlock(xml));
+    expect(runs.map((r) => r.text)).toEqual([
+      'For and on behalf of ',
+      '{PARENT_ENTITY_NAME}',
+      'Authorised Person',
+      '{SIGNATORY_NAME}',
+      'Designation:',
+      '{SIGNATORY_DESIGNATION}',
+      'Date:',
+      '{CERTIFICATION_DATE}',
+      'Place:',
+      '{CERTIFICATION_PLACE}',
+    ]);
+    for (const run of runs) expect([run.font, run.size]).toEqual(['Times New Roman', '22']);
+    expect(runs.filter((r) => r.bold).map((r) => r.text)).toEqual([
+      '{PARENT_ENTITY_NAME}',
+      'Authorised Person',
+      '{SIGNATORY_NAME}',
+      'Date:',
+      'Place:',
+    ]);
   });
 
-  it('renders certification date before place in generated docx', () => {
-    const templatePath = path.join(process.cwd(), 'public/templates/boardResolution.docx');
-    if (!fs.existsSync(templatePath)) return;
+  it('starts the Designation, Date and Place values at one position', () => {
+    if (!xml) return;
+    const block = signatureBlock(xml);
+    const table = block.match(/<w:tbl>[\s\S]*<\/w:tbl>/)?.[0] ?? '';
+    const rows = [...table.matchAll(/<w:tr>[\s\S]*?<\/w:tr>/g)].map((row) => paragraphTexts(row[0]));
+    expect(rows).toEqual([
+      ['Designation:', '{SIGNATORY_DESIGNATION}'],
+      ['Date:', '{CERTIFICATION_DATE}'],
+      ['Place:', '{CERTIFICATION_PLACE}'],
+    ]);
+    // One label column for every row, no borders and no cell padding to shift the text.
+    expect([...table.matchAll(/<w:tcW w:w="(\d+)"/g)].map((m) => m[1]).filter((_, i) => i % 2 === 0)).toEqual(['1440', '1440', '1440']);
+    expect(table).toMatch(/<w:tblBorders>(?:<w:\w+ w:val="nil"\/>){6}<\/w:tblBorders>/);
+    expect(table).toContain('<w:left w:w="0" w:type="dxa"/>');
+    // No tab, line break or run of spaces lines anything up.
+    expect(table).not.toMatch(/<w:tab\/>|<w:br\/>/);
+  });
 
+  it('spaces the lines evenly: one paragraph per line, no empty lines, no space after', () => {
+    if (!xml) return;
+    const block = signatureBlock(xml);
+    const texts = paragraphTexts(block);
+    // The last paragraph is the 1 pt one Word keeps after a table.
+    expect(texts.slice(0, -1).every((t) => t.trim() !== '')).toBe(true);
+    expect(texts.at(-1)).toBe('');
+    const spacings = [...block.matchAll(/<w:p(?:\s[^>]*)?><w:pPr><w:spacing ([^/]*)\/>/g)].map((m) => m[1]);
+    expect(new Set(spacings.slice(0, -1).map((s) => s.trim()))).toEqual(new Set(['w:before="0" w:after="0"']));
+    // Only the first line keeps the blank lines above it, for the signature.
+    expect(block.slice(block.indexOf('</w:p>')).includes('<w:br/>')).toBe(false);
+  });
+});
+
+describe('board resolution signature block in a generated Word file', () => {
+  const templatePath = path.join(process.cwd(), 'public/templates/boardResolution.docx');
+
+  it('fills each value in its own cell, date before place', () => {
+    if (!fs.existsSync(templatePath)) return;
     const docx = renderBoardResolutionDocxBuffer({
-      pre1: {
-        boardResolutionDate: '2026-05-26',
-        parentEntityAddress: '123 Main St, Denver, USA',
-      },
+      pre1: { boardResolutionDate: '2026-05-26', parentEntityAddress: '123 Main St, Denver, USA' },
+      overrides: { SIGNATORY_NAME: 'Hasan Askari', SIGNATORY_DESIGNATION: 'Director', CERTIFICATION_PLACE: 'United States of America' },
     });
-    const text = docxPlainText(docx);
-    const dateIdx = text.search(/Date:\s*\d/);
-    const placeIdx = text.search(/Place:\s*\S/);
-    expect(dateIdx).toBeGreaterThan(-1);
-    expect(placeIdx).toBeGreaterThan(dateIdx);
+    const texts = paragraphTexts(signatureBlock(boardResolutionDocumentXml(docx)));
+    expect(texts.slice(1, 9)).toEqual([
+      'Authorised Person',
+      'Hasan Askari',
+      'Designation:',
+      'Director',
+      'Date:',
+      expect.stringMatching(/\d/),
+      'Place:',
+      'United States of America',
+    ]);
+  });
+
+  it('keeps the layout when the editor saves the document', () => {
+    if (!fs.existsSync(templatePath)) return;
+    const docx = renderBoardResolutionDocxBuffer({
+      overrides: { SIGNATORY_NAME: 'Hasan Askari', CERTIFICATION_PLACE: 'United States of America' },
+    });
+    // The editor saves one line per Word paragraph; change the Place value only.
+    const lines = editorLines(boardResolutionDocumentXml(docx)).map((t) => (t === 'United States of America' ? 'New York' : t));
+    const patched = boardResolutionDocumentXml(patchBoardResolutionDocxBuffer(docx, lines.join('\n')));
+    const block = signatureBlock(patched);
+    expect(block).toContain('<w:tbl>');
+    expect(paragraphTexts(block).slice(-3, -1)).toEqual(['Place:', 'New York']);
+    expect(blockRuns(block).find((r) => r.text === 'Place:')?.bold).toBe(true);
+    expect(blockRuns(block).find((r) => r.text === 'New York')).toMatchObject({ bold: false, font: 'Times New Roman', size: '22' });
   });
 });
 

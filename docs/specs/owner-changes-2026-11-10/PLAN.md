@@ -30,7 +30,7 @@ Work goes on one branch from `main`, in five small pull requests, so each can be
 
 | # | Item | Change |
 |---|---|---|
-| L5 | Alignment | **Waiting on the owner's reference Word file.** The layout will be copied from it into `board-resolution-docx-body.ts`, so all three templates follow it. |
+| L5 | Alignment of the signature block (the owner's picture of 10 Nov) | **Done 11 Nov** (branch `board-resolution-signature-block-alignment-eshwar`). The block is one font (Times New Roman 11 pt, as the body), the Designation, Date and Place values sit in a borderless two-column table so they start at one position, and every line has the same spacing. `scripts/br-signature-block.mjs` rewrites the block in the foreign and Indian-investing templates (the prepare scripts call it); the name-only NOC has its own block with no labels. The in-app preview printed merge fields in the 12 pt theme font because docx-preview styles every span with the document default; the highlight now inherits the run's font. Before and after: `br-signature-block-before-after.png`. |
 
 ## PR 4: Lead URLs `/app/lead` to `/app/lead`
 
