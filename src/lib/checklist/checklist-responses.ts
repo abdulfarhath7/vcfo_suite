@@ -47,6 +47,33 @@ const NEEDED_FOR_DOCUMENTS = 'Needed before the incorporation documents can be g
 const toOptions = (options: readonly { value: string; label: string }[]) =>
   options.map(({ value, label }) => ({ value, label }));
 
+/**
+ * The same option list with some labels replaced. Part B (pre-13 to pre-16) uses
+ * the wording of the MCA SPICe+ Part B form, while the shared lists keep their
+ * labels because the generated documents print them. Stored values never change.
+ */
+const withLabels = (
+  options: readonly { value: string; label: string }[],
+  labels: Record<string, string>,
+) => options.map(({ value, label }) => ({ value, label: labels[value] ?? label }));
+
+/** Educational qualification as worded on the MCA SPICe+ Part B form. */
+const PART_B_QUALIFICATION_OPTIONS = withLabels(PRE6_QUALIFICATION_OPTIONS, {
+  'primary-education': 'Primary education',
+  'secondary-education': 'Secondary education',
+  'vocational-qualification': 'Vocational qualification',
+  'bachelors-degree': "Bachelor's degree",
+  'master-degree': "Master's degree",
+  'doctorate-or-higher': 'Doctorate or higher',
+});
+
+/** Identity proof as worded on the MCA SPICe+ Part B form. */
+const PART_B_IDENTITY_PROOF_OPTIONS = withLabels(DIRECTOR_IDENTITY_PROOF_OPTIONS, {
+  aadhaar: 'Aadhaar',
+  'driving-licence': 'Driving License',
+  'voter-id': 'Voter Identity Card',
+});
+
 /** Structured client-input fields keyed by checklist item id (pre/post incorporation). */
 /** `otherInterest{i}Company` … for one `pre-15` director entry (see `other-company-interests.ts`). */
 function pre15OtherInterestFields(): ChecklistField[] {
@@ -54,9 +81,9 @@ function pre15OtherInterestFields(): ChecklistField[] {
   return Array.from({ length: PRE15_MAX_OTHER_INTERESTS }, (_, n) => {
     const i = n + 1;
     return [
-      { id: `otherInterest${i}Company`, label: `Interest ${i} — company or LLP name`, type: 'text', showWhen },
-      { id: `otherInterest${i}Cin`, label: `Interest ${i} — CIN / LLPIN`, type: 'text', showWhen },
-      { id: `otherInterest${i}Designation`, label: `Interest ${i} — designation`, type: 'text', showWhen },
+      { id: `otherInterest${i}Company`, label: `Interest ${i} — Name`, type: 'text', showWhen },
+      { id: `otherInterest${i}Cin`, label: `Interest ${i} — CIN/LLPIN/FCRN/Registration Number`, type: 'text', showWhen },
+      { id: `otherInterest${i}Designation`, label: `Interest ${i} — Designation`, type: 'text', showWhen },
       { id: `otherInterest${i}From`, label: `Interest ${i} — from`, type: 'date', showWhen },
       { id: `otherInterest${i}To`, label: `Interest ${i} — to (if ended)`, type: 'date', showWhen },
     ] satisfies ChecklistField[];
@@ -823,7 +850,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-14': [
     {
       id: 'registeredOfficeCompleteAddress',
-      label: 'Correspondence address (Line 1, Line 2, area or locality, city, district, pin code)',
+      label: 'Correspondence Address (Line 1, Line 2, Pin code, Area/Locality, City, District)',
       type: 'textarea',
       section: PART_B_SECTION.correspondenceAddress,
       required: true,
@@ -838,7 +865,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'registeredOfficeNocUrl',
-      label: 'Proof of office address along with NOC',
+      label: 'Proof of Office address along with NOC, if applicable (Conveyance / Lease deed / Rent Agreement along with rent receipts)',
       type: 'file',
       section: PART_B_SECTION.officeProof,
       accept: '.pdf,image/*',
@@ -871,7 +898,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-15': [
     {
       id: 'directors',
-      label: 'Particulars of directors',
+      label: 'Particulars of Subscriber(s) cum Directors/Director of the Company',
       type: 'repeat',
       section: PART_B_SECTION.directors,
       entryLabel: 'Director',
@@ -886,7 +913,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         // older project reads as "yes", so its typed DIN stays on screen.
         {
           id: 'hasDin',
-          label: 'Does the director have a DIN?',
+          label: 'Whether the director has a valid DIN',
           type: 'segmented',
           options: [...PRE1_INDIA_RESIDENT_OPTIONS],
         },
@@ -916,9 +943,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         { id: 'firstName', label: 'First Name', type: 'text', required: true },
         { id: 'middleName', label: 'Middle Name', type: 'text' },
         { id: 'lastName', label: 'Surname', type: 'text', required: true },
-        { id: 'fatherName', label: "Father's name", type: 'text', required: true },
+        { id: 'fatherName', label: "Father's name (First Name, Middle Name, Surname)", type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'segmented', options: [...PRE1_GENDER_OPTIONS], required: true },
-        { id: 'dob', label: 'Date of Birth', type: 'date', required: true },
+        { id: 'dob', label: 'Date of Birth (DD/MM/YYYY)', type: 'date', required: true },
         {
           id: 'nationality',
           label: 'Nationality',
@@ -944,7 +971,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           id: 'highestEducationalQualification',
           label: 'Educational Qualification',
           type: 'select',
-          options: [...PRE6_QUALIFICATION_OPTIONS],
+          options: PART_B_QUALIFICATION_OPTIONS,
           required: true,
         },
         { id: 'mobileNumber', label: 'Mobile No (with country code)', type: 'text', required: true },
@@ -982,7 +1009,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           id: 'identityProofType',
           label: 'Identity Proof',
           type: 'select',
-          options: toOptions(DIRECTOR_IDENTITY_PROOF_OPTIONS),
+          options: PART_B_IDENTITY_PROOF_OPTIONS,
           helperText: 'Blank = Aadhaar card for a resident, passport for a non-resident.',
         },
         {
@@ -1021,7 +1048,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'otherCompanyInterestDetails',
-          label: 'Other companies / LLPs — name, CIN/LLPIN, designation, shareholding, dates',
+          label: 'Entities in which the director has interest — Name, CIN/LLPIN/FCRN/Registration Number, Designation, Percentage of Shareholding, dates',
           type: 'textarea',
           required: true,
           showWhen: { field: 'hasOtherCompanyInterest', value: 'yes' },
@@ -1054,7 +1081,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-16': [
     {
       id: 'subscribers',
-      label: 'First subscribers to the MOA',
+      label: 'First subscriber(s) to MOA',
       type: 'repeat',
       section: PART_B_SECTION.subscribers,
       entryLabel: 'Subscriber',
@@ -1088,11 +1115,12 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           showWhen: { field: 'type', value: 'individual' },
         },
         {
+          // MCA 6A(i) calls this the category of the entity.
           id: 'entityType',
-          label: 'Entity type',
+          label: 'Category',
           type: 'segmented',
           options: [
-            { value: 'body-corporate', label: 'Body corporate' },
+            { value: 'body-corporate', label: 'Body Corporate' },
             { value: 'llp', label: 'LLP' },
           ],
           required: true,
@@ -1100,7 +1128,8 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           // SB-03 and MCA 6A(i): a body corporate is an Indian company (CIN) or a company
-          // incorporated outside India (its foreign registration number).
+          // incorporated outside India (its unique identification number). An LLP is not
+          // asked this question; it gives its LLPIN instead.
           id: 'bodyCorporateOrigin',
           label: 'Domestic company or foreign company',
           type: 'segmented',
@@ -1113,7 +1142,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'name',
-          label: 'Full name',
+          label: 'Subscriber name (First Name, Middle Name, Surname)',
           type: 'text',
           required: true,
           labelWhen: [
@@ -1131,8 +1160,11 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           layout: 'short',
         },
         {
+          // The id stays foreignRegistrationNumber so that answers already stored keep working;
+          // the owner asked on 11 November 2026 for the question to read as the UIN.
           id: 'foreignRegistrationNumber',
-          label: 'Foreign company registration number (FRCN) or other registration number',
+          label: 'Unique Identification Number (UIN)',
+          helperText: 'The unique identification number of the foreign company.',
           type: 'text',
           required: true,
           showWhen: { field: 'bodyCorporateOrigin', value: 'foreign' },
@@ -1140,26 +1172,20 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'address',
-          label: 'Registered address of the body corporate',
+          label: 'Registered office address or Principal place of business',
           type: 'textarea',
           required: true,
           showWhen: { field: 'entityType', value: 'body-corporate' },
         },
         {
-          id: 'llpin',
-          label: 'LLPIN',
-          type: 'text',
-          placeholder: 'AAB-1234',
-          required: true,
-          showWhen: { field: 'entityType', value: 'llp' },
-          layout: 'short',
-        },
-        {
+          // SB-03 (owner, 11 November 2026): an LLP is asked nothing beyond the name, shares and
+          // value, so this question shows for a body corporate only. The LLPIN question was removed
+          // for the same reason; an LLPIN stored on an older project is no longer read.
           id: 'authorisedPerson',
-          label: 'Person authorized by the entity (6A(ii))',
+          label: 'Name of the person authorized by the entity (6A(ii))',
           type: 'text',
           required: true,
-          showWhen: { field: 'type', value: 'non-individual' },
+          showWhen: { field: 'entityType', value: 'body-corporate' },
         },
         { id: 'shares', label: 'Number of equity shares', type: 'text', required: true, layout: 'short' },
         { id: 'shareValue', label: 'Total amount (in INR)', type: 'text', required: true, layout: 'short' },

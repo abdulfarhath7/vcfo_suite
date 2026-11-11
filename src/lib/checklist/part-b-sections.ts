@@ -12,11 +12,11 @@
 export const PART_B_SECTION = {
   equityCapital: '3A(i) Equity share capital',
   preferenceCapital: '3A(ii) Preference share capital',
-  correspondenceAddress: '4A Correspondence address',
-  officeProof: '4B Proof of registered office',
-  subscribers: '5–6 First subscribers to the MOA',
+  correspondenceAddress: '4A Correspondence Address',
+  officeProof: '4B Proof of Office address',
+  subscribers: '5–6 First subscriber(s) to MOA',
   agileNominee: 'AGILE-PRO-S (INC-35) nominee',
-  directors: '7 Particulars of directors',
+  directors: '7 Particulars of Subscriber(s) cum Directors/Director of the Company',
 } as const;
 
 export type PartBSection = (typeof PART_B_SECTION)[keyof typeof PART_B_SECTION];

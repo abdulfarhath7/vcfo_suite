@@ -6,7 +6,7 @@ import { PART_B_SECTION, splitMcaSectionHeading } from './part-b-sections';
 describe('SB-01 Part B sections follow the MCA form', () => {
   it('splits the MCA number off a heading', () => {
     expect(splitMcaSectionHeading(PART_B_SECTION.equityCapital)).toEqual({ number: '3A(i)', name: 'Equity share capital' });
-    expect(splitMcaSectionHeading(PART_B_SECTION.correspondenceAddress)).toEqual({ number: '4A', name: 'Correspondence address' });
+    expect(splitMcaSectionHeading(PART_B_SECTION.correspondenceAddress)).toEqual({ number: '4A', name: 'Correspondence Address' });
     expect(splitMcaSectionHeading(PART_B_SECTION.subscribers)?.number).toBe('5–6');
     expect(splitMcaSectionHeading(PART_B_SECTION.directors)?.number).toBe('7');
     expect(splitMcaSectionHeading('NIC Codes')).toBeNull();
@@ -42,6 +42,6 @@ describe('SB-01 Part B sections follow the MCA form', () => {
 
   it('gives each section a usable tab slug', () => {
     expect(sectionSlug(PART_B_SECTION.equityCapital)).toBe('3a-i-equity-share-capital');
-    expect(sectionSlug(PART_B_SECTION.subscribers)).toBe('5-6-first-subscribers-to-the-moa');
+    expect(sectionSlug(PART_B_SECTION.subscribers)).toBe('5-6-first-subscriber-s-to-moa');
   });
 });

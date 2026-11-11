@@ -116,7 +116,7 @@ describe('buildAssistProfile', () => {
       key: 'director.2.gender',
       label: 'Gender',
       stepId: 'pre-15',
-      tabId: '7-particulars-of-directors',
+      tabId: '7-particulars-of-subscriber-s-cum-directors-director-of-the-company',
       directorIndex: 2,
       reason: MISSING_REASON.noMcaEquivalent,
     });
@@ -155,7 +155,7 @@ describe('buildAssistProfile', () => {
     const result = build(assistFullState([NR, noPan]));
     expect(result.profile.directors[1]).not.toHaveProperty('pan');
     expect(fixable(result.missing)).toEqual([
-      { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: '7-particulars-of-directors', directorIndex: 2 },
+      { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: '7-particulars-of-subscriber-s-cum-directors-director-of-the-company', directorIndex: 2 },
     ]);
   });
 
