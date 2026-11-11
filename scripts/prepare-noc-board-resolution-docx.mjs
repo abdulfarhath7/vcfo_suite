@@ -12,6 +12,7 @@
  * edits a Word file, re-check the ids with `unzip -p <file> word/comments.xml`.
  */
 import path from 'node:path';
+import { alignSignatureBlock } from './br-signature-block.mjs';
 import { tagCommentedDocx } from './docx-comment-tags.mjs';
 
 const dir = path.join(process.cwd(), 'public/templates');
@@ -54,6 +55,8 @@ tagCommentedDocx({
   ],
   directors: { loop: 12, drop: 13 },
   beforeCleanup: tagPlace,
+  // One font, aligned values and even spacing in the signature block.
+  beforeWrite: alignSignatureBlock,
 });
 
 // The parent only lends a word of its name; nothing about capital or directors.

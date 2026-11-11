@@ -11,6 +11,7 @@
  * edits the Word file, re-check the ids with `unzip -p <file> word/comments.xml`.
  */
 import path from 'node:path';
+import { alignSignatureBlock } from './br-signature-block.mjs';
 import { tagCommentedDocx } from './docx-comment-tags.mjs';
 
 const [, , source] = process.argv;
@@ -66,4 +67,6 @@ tagCommentedDocx({
     if (!xml.includes('{CERTIFICATION_PLACE}')) throw new Error('Place: USA not found');
     return xml;
   },
+  // One font, aligned values and even spacing in the signature block.
+  beforeWrite: alignSignatureBlock,
 });

@@ -60,6 +60,15 @@ Gotchas already paid for once. Append when something costs more than a minute to
   `node scripts/prepare-noc-board-resolution-docx.mjs`; both prepare scripts share
   `scripts/docx-comment-tags.mjs`. Standalone or an unanswered Indian role falls
   back to the foreign template.
+- The board resolution's signature block (foreign and Indian-investing templates) is
+  rewritten by `scripts/br-signature-block.mjs`, which both prepare scripts call through
+  the `beforeWrite` hook; `node scripts/br-signature-block.mjs` applies it to the tagged
+  templates in place and is safe to run twice. Keep one Word paragraph per label and per
+  value: the editor saves one line per paragraph and moves a tab or a line break inside a
+  paragraph to its start, so a tab-stop layout would break on the first save.
+- docx-preview writes the document defaults as a rule for every span (`.docx span`, the
+  theme font at 12 pt). A span the app adds inside the preview, such as the merge-field
+  highlight, must inherit its run's font, or it prints bigger and in another font.
 
 ## Spectrum styling (2026-11-11)
 
