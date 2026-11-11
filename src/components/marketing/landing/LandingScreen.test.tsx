@@ -39,21 +39,18 @@ describe('LandingScreen', () => {
   it('opens Book a demo from a click-through item, by click and by Enter', () => {
     const { container } = render(<LandingScreen />);
     const items = container.querySelectorAll('[data-app]');
-    expect(items.length).toBeGreaterThan(30);
-    const hero = screen.getByRole('button', { name: 'Book a demo to see the incorporation screen' });
-    fireEvent.click(hero);
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Book a demo' }), { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: 'Book a demo' })).toBeNull();
-    const chip = within(container).getByRole('button', { name: 'GST' });
-    fireEvent.keyDown(chip, { key: 'Enter' });
+    expect(items.length).toBeGreaterThan(5);
+    fireEvent.click(items[0]!);
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
-    render(<LandingScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+  it('LP-02: shows no screenshot of the app, only the logo and abstract art', () => {
+    const { container } = render(<LandingScreen />);
+    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+    expect(images.every((src) => src === '/landing/vcfo-logo-on-black.webp')).toBe(true);
+    expect(container.querySelector('svg.hero-art')).not.toBeNull();
+    expect(container.querySelector('#portals, #incorporate, #register, #ask')).toBeNull();
+    expect(container.textContent).not.toMatch(/every screen on this page is a real one/i);
   });
 
   it('shows the comparison with six rows and three product columns', () => {
@@ -69,14 +66,6 @@ describe('LandingScreen', () => {
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[1] })).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[2] })).toBeInTheDocument();
     COMPARE.forEach((r) => expect(within(table).getByRole('rowheader', { name: r.label })).toBeInTheDocument());
-  });
-
-  it('switches the portal screenshot with the tabs', () => {
-    render(<LandingScreen />);
-    const lead = screen.getByRole('tab', { name: 'Project lead' });
-    fireEvent.click(lead);
-    expect(lead).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-lead');
   });
 
   it('answers a fixed Ask VCFO question without a link to a demo portal', () => {

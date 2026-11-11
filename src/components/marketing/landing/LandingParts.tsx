@@ -179,3 +179,35 @@ export function CompareSection({ onDemo }: { onDemo: () => void }) {
     </section>
   );
 }
+
+/**
+ * LP-02: the hero shows an abstract picture of the benefit, never a screen of the product. A
+ * company in the centre, linked to the registrations and filings around it, and a ring that
+ * fills as the work is done. No labels, field names or data, so it describes nothing a
+ * competitor could copy. Same 2400:1375 box as the old screenshot, so nothing moves.
+ */
+export function HeroArt() {
+  const nodes = [
+    [96, 70], [384, 70], [62, 168], [418, 168], [150, 240], [330, 240],
+  ] as const;
+  return (
+    <svg className="hero-art" viewBox="0 0 480 275" role="img" aria-label="A company at the centre of its filings and registrations, each one on time">
+      <rect width="480" height="275" rx="14" className="ha-bg" />
+      <g className="ha-links">
+        {nodes.map(([x, y]) => (
+          <path key={`${x}-${y}`} d={`M240 140 Q ${(240 + x) / 2} ${y < 140 ? y - 10 : y + 10} ${x} ${y}`} />
+        ))}
+      </g>
+      <circle cx="240" cy="140" r="62" className="ha-ring-bg" />
+      <circle cx="240" cy="140" r="62" className="ha-ring" pathLength={100} />
+      <circle cx="240" cy="140" r="40" className="ha-core" />
+      <path d="M224 140 l11 11 l22 -24" className="ha-check" />
+      {nodes.map(([x, y], i) => (
+        <g key={`n${i}`} className="ha-node" style={{ animationDelay: `${i * 0.35}s` }}>
+          <circle cx={x} cy={y} r="17" />
+          <path d={`M${x - 6} ${y} l4 4 l8 -8`} />
+        </g>
+      ))}
+    </svg>
+  );
+}

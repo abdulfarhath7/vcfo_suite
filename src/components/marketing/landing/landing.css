@@ -645,3 +645,22 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .cmp-vh img { height: auto; max-height: 30px; }
   .lp .cmp-table tbody th { padding: 12px 14px; font-size: 13.5px; }
 }
+
+/* LP-02: the abstract hero picture that replaced the product screenshot. */
+.lp .frame-art { aspect-ratio: 2400 / 1375; background: var(--lp-raised); }
+.lp .hero-art { display: block; width: 100%; height: 100%; }
+.lp .hero-art .ha-bg { fill: var(--lp-raised); }
+.lp .hero-art .ha-links path { fill: none; stroke: var(--lp-brand); stroke-opacity: .35; stroke-width: 1.5; stroke-dasharray: 4 6; animation: ha-flow 6s linear infinite; }
+.lp .hero-art .ha-ring-bg { fill: none; stroke: var(--lp-brand); stroke-opacity: .15; stroke-width: 8; }
+.lp .hero-art .ha-ring { fill: none; stroke: var(--lp-brand); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 72 100; transform: rotate(-90deg); transform-origin: 240px 140px; animation: ha-fill 4s ease-out both; }
+.lp .hero-art .ha-core { fill: var(--lp-brand); fill-opacity: .18; }
+.lp .hero-art .ha-check { fill: none; stroke: var(--lp-brand); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.lp .hero-art .ha-node circle { fill: var(--lp-surface); stroke: var(--lp-brand); stroke-opacity: .6; stroke-width: 1.5; }
+.lp .hero-art .ha-node path { fill: none; stroke: #3ccf91; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: ha-tick 6s ease-in-out infinite; animation-delay: inherit; }
+@keyframes ha-flow { to { stroke-dashoffset: -40; } }
+@keyframes ha-fill { from { stroke-dasharray: 0 100; } }
+@keyframes ha-tick { 0%, 15% { opacity: 0; } 25%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .lp .hero-art .ha-links path, .lp .hero-art .ha-ring { animation: none; }
+  .lp .hero-art .ha-node path { animation: none; opacity: 1; }
+}
