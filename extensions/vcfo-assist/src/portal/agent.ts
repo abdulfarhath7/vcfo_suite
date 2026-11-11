@@ -7,11 +7,11 @@
  * and `clickSafe`, immediately before each write or click.
  */
 import { guardClick } from '../guards/dom';
-import { fillElement, showsValue, type FillResult } from './filler';
+import { fillWhenReady, showsValue, type FillResult } from './filler';
 import { findSrn } from './srn';
 import { Overlay } from './overlay';
 import { locate, scanDocument, elementFor, type ScanOptions } from './scanner';
-import { clean } from './label';
+import { clean, isVisible } from './label';
 import type { FieldTarget, GuardRefusal, RecipeGate, ScanResult, ScannedField } from '../shared/types';
 import { guardFill } from '../guards/dom';
 import { cssPath } from './label';
@@ -20,7 +20,9 @@ export type PortalRequest =
   | { type: 'ping' }
   | { type: 'scan'; opts: ScanOptions }
   | { type: 'prepareFill'; target: FieldTarget; label: string }
-  | { type: 'fill'; target: FieldTarget; value: string; label: string; bridgeTried: boolean }
+  | { type: 'fill'; target: FieldTarget; value: string; label: string; bridgeTried: boolean; opts?: FillOptions }
+  | { type: 'pageReady'; css: string }
+  | { type: 'closePopups'; css: string[] }
   | { type: 'click'; css?: string; text?: string; label: string; resultCss?: string }
   | { type: 'attach'; css: string; name: string; base64: string }
   | { type: 'highlightHuman'; gates: RecipeGate[] }
@@ -30,6 +32,14 @@ export type PortalRequest =
   | { type: 'cancelTeach' }
   | { type: 'banner'; text: string | null }
   | { type: 'clearOverlay' };
+
+/** MCA fill tuning: poll a dependent dropdown, and wait after a field that triggers a lookup. */
+export interface FillOptions {
+  /** Poll a select up to this long for the wanted option (0: no wait). */
+  optionsMs?: number;
+  /** Wait this long after the fill (a PIN code makes the portal look up area, city and state). */
+  settleMs?: number;
+}
 
 export interface ClickResult {
   ok: boolean;
@@ -77,7 +87,7 @@ export class PortalAgent {
     return { ok: true, som: box?.getAttribute('data-som') ?? target.som };
   }
 
-  fill(target: FieldTarget, value: string, bridgeTried: boolean): FillResult {
+  async fill(target: FieldTarget, value: string, bridgeTried: boolean, opts: FillOptions = {}): Promise<FillResult> {
     const el = locate(this.doc, target);
     if (!el) return { ok: false, reason: 'control not found' };
     const refused = guardFill(el);
@@ -87,18 +97,51 @@ export class PortalAgent {
     }
     if (bridgeTried && showsValue(el, value)) {
       this.overlay.mark(el, 'done', 'Filled');
+      await settle(opts.settleMs);
       return { ok: true, via: 'guideBridge' };
     }
-    const result = fillElement(el, value);
+    const result = await fillWhenReady(el, value, opts.optionsMs ?? 0);
     if (result.ok) {
       this.overlay.mark(el, 'done', 'Filled');
       if (!showsValue(el, value) && el.tagName !== 'SELECT' && (el as HTMLInputElement).type !== 'radio') {
         return { ok: false, reason: 'value did not stick' };
       }
+      await settle(opts.settleMs);
     } else if (result.refused) {
       this.overlay.mark(el, 'refused', `Refused: ${result.refused.reason} (${result.refused.code})`);
     }
     return result;
+  }
+
+  /** True when an element matching `css` exists and is visible (a page or wizard section is ready). */
+  pageReady(css: string): boolean {
+    let els: Element[] = [];
+    try {
+      els = Array.from(this.doc.querySelectorAll(css));
+    } catch {
+      return false;
+    }
+    return els.some((el) => isVisible(el));
+  }
+
+  /**
+   * Closes visible information pop-ups (MCA's `#okInfoModalBtn`). Each click is guarded like any
+   * other: a pop-up button that reads like Submit, Pay or Login is never clicked.
+   */
+  closePopups(selectors: string[]): number {
+    let n = 0;
+    for (const css of selectors) {
+      let el: Element | null = null;
+      try {
+        el = this.doc.querySelector(css);
+      } catch {
+        el = null;
+      }
+      if (!el || !isVisible(el) || guardClick(el)) continue;
+      (el as HTMLElement).click();
+      n += 1;
+    }
+    return n;
   }
 
   /** A button by CSS selector, or by its visible text (exact, then "starts with"), case-insensitive. */
@@ -231,7 +274,11 @@ export class PortalAgent {
       case 'prepareFill':
         return this.prepareFill(msg.target);
       case 'fill':
-        return this.fill(msg.target, msg.value, msg.bridgeTried);
+        return this.fill(msg.target, msg.value, msg.bridgeTried, msg.opts);
+      case 'pageReady':
+        return this.pageReady(msg.css);
+      case 'closePopups':
+        return this.closePopups(msg.css);
       case 'click':
         return this.click(msg.css, msg.text, msg.resultCss);
       case 'attach':
@@ -258,3 +305,5 @@ export class PortalAgent {
     }
   }
 }
+
+const settle = (ms: number | undefined): Promise<void> => (ms && ms > 0 ? new Promise((r) => setTimeout(r, Math.min(ms, 10_000))) : Promise.resolve());

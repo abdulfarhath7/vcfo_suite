@@ -28,7 +28,8 @@ export const SENTINELS = [
   'Dirtwo',
   'SENTE2222F',
   '09876543',
-  '9000000021',
+  '9681726354',
+  '9281726352',
 ];
 
 const PROFILE = {
@@ -44,16 +45,19 @@ const PROFILE = {
       category: 'Company limited by shares',
       subCategory: 'Indian non-government company',
       nicCode: '62011',
-      capital: { authorized: 1000000, subscribed: 100000, equity: { authorizedShares: 100000, faceValue: 10 } },
+      aoaEntrenched: false,
+      capital: { authorized: 1000000, subscribed: 100000, equity: { classes: 1, className: 'Equity', authorizedShares: 100000, subscribedShares: 10000, faceValue: 10 } },
     },
-    registeredOffice: { line1: 'Sentinel Tower 1', line2: 'Sentinel Road', pincode: '500081', state: 'Telangana', country: 'India', email: 'office@sentinel.test', mobile: '9000000001' },
+    registeredOffice: { line1: 'Sentinel Tower 1', line2: 'Sentinel Road', pincode: '500081', area: 'Gachibowli', state: 'Telangana', country: 'India', email: 'office@sentinel.test', mobile: '9581726353', longitude: '78.3489', latitude: '17.4401', rocOffice: 'Registrar of Companies, Hyderabad' },
+    // Subscriber 1 is also a director without a DIN (blocks 6c and 7b); subscriber 2 is not (6c).
     subscribers: [
-      { index: 1, kind: 'individual', isDirector: true, firstName: 'Subone', surName: 'Sentinelson', father: { firstName: 'Fatherone' }, dob: '01/02/1980', pan: 'SENTB1234C', email: 'sub1@sentinel.test', mobile: '9000000011', shares: { equity: { number: 5000 } } },
-      { index: 2, kind: 'individual', isDirector: false, firstName: 'Subtwo', surName: 'Sentineldottir', father: { firstName: 'Fathertwo' }, dob: '03/04/1985', pan: 'SENTC5678D', email: 'sub2@sentinel.test', mobile: '9000000012', shares: { equity: { number: 5000 } } },
+      { index: 1, kind: 'individual', isDirector: true, firstName: 'Subone', surName: 'Sentinelson', father: { firstName: 'Fatherone', surName: 'Sentinelson' }, gender: 'Male', dob: '01/02/1980', nationality: 'India', placeOfBirth: 'Hyderabad, Telangana', citizenOfIndia: true, residentInIndia: true, pan: 'SENTB1234C', email: 'sub1@sentinel.test', mobile: '9481726350', shares: { equity: { number: 5000 } } },
+      { index: 2, kind: 'individual', isDirector: false, firstName: 'Subtwo', surName: 'Sentineldottir', father: { firstName: 'Fathertwo', surName: 'Sentineldottir' }, gender: 'Female', dob: '03/04/1985', nationality: 'India', placeOfBirth: 'Pune, Maharashtra', pan: 'SENTC5678D', email: 'sub2@sentinel.test', mobile: '9381726351', shares: { equity: { number: 5000 } } },
     ],
+    // Director 1 has a DIN (block 7a); director 2 has none (block 7b, after the subscriber-director).
     directors: [
-      { id: 'e1', index: 1, firstName: 'Sentinel', surName: 'Sentinelli', din: '09876543', pan: 'SENTINELA1234Z', dob: '05/06/1975', email: 'sentinel@example.test', mobile: '9000000021' },
-      { id: 'e4', index: 2, firstName: 'Dirtwo', surName: 'Sentinelova', pan: 'SENTE2222F', dob: '07/08/1990', email: 'dir2@sentinel.test', mobile: '9000000022' },
+      { id: 'e1', index: 1, firstName: 'Sentinel', surName: 'Sentinelli', din: '09876543', pan: 'SENTINELA1234Z', dob: '05/06/1975', email: 'sentinel@example.test', mobile: '9681726354' },
+      { id: 'e4', index: 2, firstName: 'Dirtwo', surName: 'Sentinelova', father: { firstName: 'Fatherfour', surName: 'Sentinelova' }, gender: 'Female', nationality: 'India', citizenOfIndia: true, residentInIndia: true, pan: 'SENTE2222F', dob: '07/08/1990', email: 'dir2@sentinel.test', mobile: '9281726352' },
     ],
     agile: {},
     moa: {},
@@ -73,21 +77,45 @@ const ALLOWED = {
   patch: ['recipeId', 'recipeVersion', 'fieldKey', 'proposed', 'evidence', 'sourceTier', 'runId'],
 };
 
+const task = (id, title, form, extra = {}) => ({ type: 'task', id, title, form, status: 'later', recipeId: null, kind: 'portal-fill', ...extra });
+const SPICE_A = { id: 'spice-a', agent: 'incorporation', title: 'Name reservation', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', recipeVersion: SIGNED['spice-a'].recipe.version, stepId: 'pre-4', pack: 'mca-v3', kind: 'portal-fill', path: ['incorporation', 'spice-a'] };
+const SPICE_B = { id: 'spice-b', agent: 'incorporation', title: 'Incorporation form', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', recipeVersion: SIGNED['spice-b'].recipe.version, stepId: 'pre-10', pack: 'mca-v3', kind: 'portal-fill', path: ['incorporation', 'spice-b'] };
+const CHALLAN_281 = { id: 'challan-281', agent: 'compliance', title: 'Monthly TDS challan', form: 'Challan 281 (ITNS 281)', status: 'later', recipeId: null, pack: 'income-tax-efiling', kind: 'challan-prepare', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'PAY'], note: 'The agent prepares the challan; you create it and pay it through your own bank.', path: ['compliance', 'income-tax-tds', 'tds', 'challan-281'] };
+
+// Suite's catalog shape (API.md): the flat agents for older clients, the tree, and the packs.
 const CATALOG = {
   ok: true,
   liveEnabled: false,
+  liveHosts: [],
   extensionDisabled: false,
   minExtensionVersion: '0.1.0',
   firmContacts: { emails: ['desk@fake-firm.test'], phones: ['9123456780'] },
   mockHosts: ['localhost', '127.0.0.1'],
+  packs: [
+    { id: 'mca-v3', title: 'MCA V3 e-filing', hosts: ['www.mca.gov.in'], legalStatus: 'mock-only', needsCsOpinionFirst: false, live: false },
+    { id: 'income-tax-efiling', title: 'Income tax e-filing', hosts: ['eportal.incometax.gov.in'], legalStatus: 'mock-only', needsCsOpinionFirst: false, live: false },
+    { id: 'gst', title: 'GST portal', hosts: ['www.gst.gov.in'], legalStatus: 'mock-only', needsCsOpinionFirst: true, live: false },
+  ],
   agents: [
-    { id: 'incorporation', title: 'Incorporation', subAgents: [
-      { id: 'spice-a', agent: 'incorporation', title: 'Name reservation', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', recipeVersion: SIGNED['spice-a'].recipe.version, stepId: 'pre-4' },
-      { id: 'spice-b', agent: 'incorporation', title: 'Incorporation form', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', recipeVersion: SIGNED['spice-b'].recipe.version, stepId: 'pre-10' },
-    ] },
+    { id: 'incorporation', title: 'Incorporation', subAgents: [SPICE_A, SPICE_B] },
     { id: 'post-incorporation', title: 'Post-incorporation', subAgents: [{ id: 'inc-20a', title: 'Commencement of business', form: 'INC-20A', status: 'later', recipeId: null }] },
-    { id: 'registration', title: 'Registration', subAgents: [{ id: 'gst-reg-01', title: 'GST registration', form: 'GST REG-01', status: 'later', recipeId: null }] },
-    { id: 'compliance', title: 'Compliance', subAgents: [{ id: 'dir-3-kyc', title: 'Director KYC', form: 'DIR-3 KYC', status: 'later', recipeId: null }] },
+    { id: 'registration', title: 'Registration', subAgents: [{ id: 'gst-reg-01', title: 'GST registration', form: 'GST REG-01', status: 'later', recipeId: null, pack: 'gst' }] },
+    { id: 'compliance', title: 'Compliance', subAgents: [{ id: 'dir-3-kyc', title: 'Director KYC', form: 'DIR-3 KYC', status: 'later', recipeId: null }, CHALLAN_281] },
+  ],
+  tree: [
+    { type: 'group', id: 'incorporation', title: 'Incorporation', path: ['incorporation'], children: [{ type: 'task', ...SPICE_A }, { type: 'task', ...SPICE_B }] },
+    { type: 'group', id: 'post-incorporation', title: 'Post-incorporation', path: ['post-incorporation'], children: [task('inc-20a', 'Commencement of business', 'INC-20A', { pack: 'mca-v3' })] },
+    { type: 'group', id: 'registration', title: 'Registration', path: ['registration'], children: [task('gst-reg-01', 'GST registration', 'GST REG-01', { pack: 'gst' })] },
+    {
+      type: 'group',
+      id: 'compliance',
+      title: 'Compliance',
+      path: ['compliance'],
+      children: [
+        { type: 'group', id: 'mca-annual', title: 'MCA annual filings', children: [task('dir-3-kyc', 'Director KYC', 'DIR-3 KYC', { pack: 'mca-v3' })] },
+        { type: 'group', id: 'income-tax-tds', title: 'Income tax & TDS', children: [{ type: 'group', id: 'tds', title: 'TDS', children: [{ type: 'task', ...CHALLAN_281 }] }] },
+      ],
+    },
   ],
 };
 

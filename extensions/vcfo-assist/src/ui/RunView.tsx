@@ -6,6 +6,7 @@ import { LIVE_BLOCKED_MESSAGE } from '../engine/live';
 import type { PanelCommand, PanelState } from '../shared/messages';
 import type { FieldOutcome, Run } from '../shared/types';
 import type { UserEvent } from '../engine/runner';
+import { Chip, Section, StepMark, Tag, type ChipTone, type StepTone } from './spectrum';
 
 const MAX_PDF_BYTES = 7 * 1024 * 1024;
 
@@ -21,43 +22,42 @@ export function RunView({ state, run, send, agentColor }: { state: PanelState; r
   return (
     <>
       <section className="card run-head" style={{ ['--agent' as string]: agentColor }}>
-        <Robot color={agentColor} mood={mood} size={64} label={`${agent?.name ?? 'Agent'}: ${mood}`} />
+        <span className="robot-well">
+          <Robot color={agentColor} mood={mood} size={56} label={`${agent?.name ?? 'Agent'}: ${mood}`} />
+        </span>
         <div className="run-title">
           <span className="eyebrow">{agent?.name ?? run.agentId}</span>
           <strong>{sub?.name ?? run.subAgentId}</strong>
           <span className="muted small">
             {run.engagementName ?? run.engagementId} · <span className="mono">{run.portalHost}</span>
           </span>
-          <span className={`chip state-chip ${terminal ? (run.state === 'DONE' ? 'chip-positive' : 'chip-danger') : 'chip-brand'}`} data-testid="run-state">
+          <Chip className="state-chip" tone={terminal ? (run.state === 'DONE' ? 'ok' : 'bad') : run.wait ? 'teal' : 'prog'} data-testid="run-state">
             {run.state.replace(/_/g, ' ')}
-          </span>
+          </Chip>
         </div>
       </section>
 
       <YouDo run={run} send={send} event={event} />
 
-      <section className="card">
-        <h2 className="eyebrow">Checklist</h2>
+      <Section title="Checklist">
         <ol className="steps">
           {STEPS.map((s) => {
             const st = stepStatus(run, s.state);
             return (
               <li key={s.state} className={`step ${st}`}>
-                <span className="step-mark" aria-hidden="true">
-                  {st === 'done' ? '✓' : st === 'failed' ? '!' : st === 'current' ? '' : ''}
-                </span>
+                <StepMark state={st === 'done' ? 'done' : st === 'todo' ? 'next' : 'now'} tone={markTone(st, s.actor, run.wait)} />
                 <span className="step-label">{s.label}</span>
-                <span className={`chip ${s.actor === 'you' ? 'chip-teal' : 'chip-brand-soft'}`}>{s.actor === 'you' ? 'You' : 'Agent'}</span>
+                <Tag tone={s.actor === 'you' ? 'warn' : 'prog'}>{s.actor === 'you' ? 'You' : 'Agent'}</Tag>
               </li>
             );
           })}
         </ol>
-      </section>
+      </Section>
 
       <Meter run={run} />
 
       {run.srn && (
-        <section className="card srn-card" data-testid="srn">
+        <section className="card card-pad srn-card" data-testid="srn">
           <span className="eyebrow">SRN</span>
           <strong className="mono srn">{run.srn}</strong>
           <span className="muted small">{run.state === 'DONE' ? 'Written back to Suite.' : 'Writing back to Suite…'}</span>
@@ -68,7 +68,7 @@ export function RunView({ state, run, send, agentColor }: { state: PanelState; r
 
       <ActivityLog run={run} />
 
-      <div className="row pad">
+      <div className="row actions">
         {terminal ? (
           <button type="button" className="btn btn-primary" onClick={() => send({ cmd: 'reset' })}>
             New run
@@ -83,11 +83,21 @@ export function RunView({ state, run, send, agentColor }: { state: PanelState; r
   );
 }
 
+/**
+ * The live step's mark: red when the run stopped, teal while it waits on someone else (the
+ * certifier), orange when it is the person's own step, blurple while the agent works.
+ */
+function markTone(st: string, actor: 'agent' | 'you', wait: Run['wait']): StepTone {
+  if (st === 'failed') return 'bad';
+  if (wait?.kind === 'certifier') return 'teal';
+  return actor === 'you' || wait ? 'warn' : 'prog';
+}
+
 function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEvent) => void }) {
   const w = run.wait;
   if (run.state === 'FAILED') {
     return (
-      <section className="card you you-danger" role="alert">
+      <section className="card card-pad you you-danger" role="alert">
         <span className="eyebrow">Stopped</span>
         <p>{w?.kind === 'live_blocked' ? LIVE_BLOCKED_MESSAGE : w?.kind === 'disabled' ? w.message : run.error}</p>
       </section>
@@ -142,7 +152,7 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
       );
     case 'certifier':
       return (
-        <section className="card you you-warn" aria-live="polite" data-testid="certifier-wait">
+        <section className="card card-pad you you-wait" aria-live="polite" data-testid="certifier-wait">
           <span className="eyebrow">Waiting</span>
           <h3>Waiting for the certifier&apos;s checks in VCFO Suite</h3>
           <p>
@@ -183,6 +193,19 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
           </button>
         </YouCard>
       );
+    case 'human_step':
+      return (
+        <YouCard title="You do this: open the next part of the form">
+          <p>
+            <strong>{w.page}</strong>
+          </p>
+          <p>{w.text}</p>
+          <p className="muted small">The agent never opens sections or sub-panels itself. It goes on by itself once this part is open.</p>
+          <button type="button" className="btn btn-primary" onClick={() => event({ type: 'RETRY' })}>
+            Check again
+          </button>
+        </YouCard>
+      );
     case 'live_blocked':
       return (
         <YouCard title="Live portal blocked" tone="warn">
@@ -197,9 +220,9 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
 
 function YouCard({ title, tone, children }: { title: string; tone?: 'warn'; children: React.ReactNode }) {
   return (
-    <section className={`card you ${tone === 'warn' ? 'you-warn' : ''}`} aria-live="polite" data-testid="you-do">
+    <section className={`card card-pad you ${tone === 'warn' ? 'you-warn' : ''}`} aria-live="polite" data-testid="you-do">
       <span className="eyebrow">
-        <span className="chip chip-teal">You</span> do this
+        <Tag tone="warn" className="you-tag">You</Tag> do this
       </span>
       <h3>{title}</h3>
       {children}
@@ -225,9 +248,9 @@ function ConfirmCard({ run, event }: { run: Run; event: (e: UserEvent) => void }
           {rows.map((f) => (
             <tr key={f.key}>
               <td>{f.label}</td>
-              <td className="mono">{f.value}</td>
+              <td>{f.value}</td>
               <td>
-                <span className={`chip ${f.tier === 'T0' ? 'chip-muted' : 'chip-warn'}`} title={f.foundLabel}>
+                <span className={`chip tag mono-chip chip-${f.tier === 'T0' ? 'idle' : 'warn'}`} title={f.foundLabel}>
                   {f.tier}
                 </span>
               </td>
@@ -341,7 +364,7 @@ function DropZone({ onFile }: { onFile: (e: Omit<Drop, 'signers'>) => void }) {
 function Meter({ run }: { run: Run }) {
   const filled = run.fields.filter((f) => f.status === 'filled').length;
   return (
-    <section className="card meter" data-testid="meter">
+    <section className="card card-pad meter" data-testid="meter">
       <div>
         <span className="meter-n">{filled}</span>
         <span className="meter-l">fields filled</span>
@@ -373,10 +396,20 @@ const STATUS_TEXT: Record<FieldOutcome['status'], string> = {
   user: 'You fill',
 };
 
+const STATUS_TONE: Record<FieldOutcome['status'], ChipTone> = {
+  pending: 'idle',
+  planned: 'idle',
+  filled: 'ok',
+  refused: 'bad',
+  missing: 'idle',
+  placeholder: 'teal',
+  failed: 'bad',
+  user: 'teal',
+};
+
 function Fields({ fields }: { fields: FieldOutcome[] }) {
   return (
-    <details className="card" open>
-      <summary className="eyebrow">Fields</summary>
+    <Section as="details" title="Fields" open bodyClassName="flush">
       <ul className="fields">
         {fields.map((f) => (
           <li key={f.key} className={`field-row f-${f.status}`}>
@@ -385,31 +418,28 @@ function Fields({ fields }: { fields: FieldOutcome[] }) {
               {f.blank ? <span className="muted small"> · you fill this from the client&apos;s records</span> : null}
             </span>
             <span className="row">
-              {f.tier && <span className="chip chip-muted">{f.tier}</span>}
-              <span className={`chip ${f.status === 'filled' ? 'chip-positive' : f.status === 'refused' || f.status === 'failed' ? 'chip-danger' : 'chip-muted'}`}>
-                {STATUS_TEXT[f.status]}
-              </span>
+              {f.tier && <Tag className="mono-chip">{f.tier}</Tag>}
+              <Chip tone={STATUS_TONE[f.status]}>{STATUS_TEXT[f.status]}</Chip>
             </span>
           </li>
         ))}
       </ul>
-    </details>
+    </Section>
   );
 }
 
 function ActivityLog({ run }: { run: Run }) {
   const entries = [...run.log].reverse();
   return (
-    <details className="card" open>
-      <summary className="eyebrow">Activity</summary>
+    <Section as="details" title="Activity" open bodyClassName="flush">
       <ol className="log" data-testid="activity">
         {entries.map((l, i) => (
           <li key={`${l.t}-${i}`} className={`log-${l.kind}`}>
-            <time className="mono">{new Date(l.t).toLocaleTimeString('en-IN', { hour12: false })}</time>
+            <time>{new Date(l.t).toLocaleTimeString('en-IN', { hour12: false })}</time>
             <span>{l.text}</span>
           </li>
         ))}
       </ol>
-    </details>
+    </Section>
   );
 }

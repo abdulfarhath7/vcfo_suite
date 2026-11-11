@@ -49,7 +49,25 @@ function radioGroupLabel(first: Element): string {
 export interface ScanOptions {
   bridge?: BridgeNode[];
   hasGuideBridge?: boolean;
-  probes?: Array<Pick<RecipeField, 'key' | 'som' | 'css'>>;
+  probes?: Array<Pick<RecipeField, 'key' | 'som' | 'css' | 'nth' | 'nodeId'>>;
+}
+
+/** The control inside an AEM `.guideFieldNode` box (as the MCA filler found it). */
+export const GUIDE_WIDGET = 'select, textarea, input:not([type=hidden]):not([type=button]):not([type=submit]):not([type=reset]):not([type=image]):not([type=file])';
+
+/** The element itself when it is a form control, else the first control inside it (a field box). */
+export function controlIn(el: Element | null | undefined): Element | null {
+  if (!el) return null;
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return el;
+  return el.querySelector(GUIDE_WIDGET);
+}
+
+function queryAll(doc: Document, css: string): Element[] {
+  try {
+    return Array.from(doc.querySelectorAll(css));
+  } catch {
+    return [];
+  }
 }
 
 export function scanDocument(doc: Document, opts: ScanOptions = {}): ScanResult {
@@ -115,22 +133,24 @@ export function scanDocument(doc: Document, opts: ScanOptions = {}): ScanResult 
     });
   }
 
+  // T0 probes, the MCA lookup ladder: the SOM path, then the CSS selector's nth match (a
+  // `.guideFieldNode.<key>` box is searched for its control), then the captured node id.
   const probes: Record<string, string | null> = {};
+  const probeCounts: Record<string, number> = {};
+  const fieldOf = (control: Element | null): ScannedField | undefined => {
+    if (!control) return undefined;
+    const name = control.getAttribute('name');
+    return fields.find((f) => elementFor(f.uid) === control || (f.tag === 'radio' && Boolean(name) && f.name === name));
+  };
   for (const p of opts.probes ?? []) {
     let hit: ScannedField | undefined;
     if (p.som) hit = fields.find((f) => f.som === p.som);
     if (!hit && p.css) {
-      let el: Element | null = null;
-      try {
-        el = doc.querySelector(p.css);
-      } catch {
-        el = null;
-      }
-      if (el) {
-        const name = el.getAttribute('name');
-        hit = fields.find((f) => elementFor(f.uid) === el || (f.tag === 'radio' && f.name === name));
-      }
+      const els = queryAll(doc, p.css);
+      probeCounts[p.key] = els.length;
+      hit = fieldOf(controlIn(els[p.nth ?? 0]));
     }
+    if (!hit && p.nodeId) hit = fieldOf(controlIn(doc.getElementById(p.nodeId)));
     probes[p.key] = hit?.uid ?? null;
   }
 
@@ -140,7 +160,7 @@ export function scanDocument(doc: Document, opts: ScanOptions = {}): ScanResult 
   } catch {
     host = '';
   }
-  return { url, host, fields, probes, loginVisible, hasGuideBridge: Boolean(opts.hasGuideBridge) };
+  return { url, host, fields, probes, probeCounts, loginVisible, hasGuideBridge: Boolean(opts.hasGuideBridge) };
 }
 
 /** Find a control again: by uid, then SOM box, then CSS, then name. */

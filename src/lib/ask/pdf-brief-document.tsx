@@ -2,28 +2,29 @@ import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/render
 import type { AnswerEnvelope, Visual } from '@/data/ask/schema';
 import { visualText } from '@/lib/ask/visual-text';
 import { BRIEF_DISCLAIMER, type BriefItem } from './pdf-brief-types';
+import { PDF_COLORS, PDF_FONTS } from '@/lib/doc-style/spectrum-pdf';
 
-/** The branded brief document (F3). Plain print styling: no screen tokens reach a PDF. */
+/** The branded brief document (F3). Spectrum print palette (`@/lib/doc-style/spectrum-pdf`); no screen-only effects reach a PDF. */
 const s = StyleSheet.create({
-  page: { padding: 40, fontSize: 10.5, fontFamily: 'Helvetica', color: '#1f2433' },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, borderBottom: '1pt solid #d9dde6', paddingBottom: 10 },
+  page: { padding: 40, fontSize: 10.5, fontFamily: PDF_FONTS.ui, color: PDF_COLORS.ink },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, borderBottom: `1.5pt solid ${PDF_COLORS.rule}`, paddingBottom: 10 },
   logo: { width: 110, height: 28, objectFit: 'contain' },
   headerText: { marginLeft: 'auto', textAlign: 'right' },
-  company: { fontSize: 12, fontFamily: 'Helvetica-Bold' },
-  muted: { color: '#5b6478' },
+  company: { fontSize: 12, fontFamily: PDF_FONTS.uiBold },
+  muted: { color: PDF_COLORS.inkMuted },
   item: { marginBottom: 18 },
-  h: { fontSize: 14, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
-  badge: { fontSize: 8.5, color: '#2f7a66', marginBottom: 6 },
+  h: { fontSize: 14, fontFamily: PDF_FONTS.uiBold, marginBottom: 4 },
+  badge: { fontSize: 8.5, color: PDF_COLORS.positive, marginBottom: 6 },
   line: { fontSize: 11, lineHeight: 1.45, marginBottom: 8 },
-  label: { fontFamily: 'Helvetica-Bold', marginBottom: 2 },
+  label: { fontFamily: PDF_FONTS.uiBold, marginBottom: 2 },
   flowRow: { flexDirection: 'row', marginBottom: 8 },
-  stage: { flexGrow: 1, flexBasis: 0, border: '1pt solid #d9dde6', borderRadius: 4, padding: 6, marginRight: 4 },
-  stageHere: { borderColor: '#2f5fd8', backgroundColor: '#eef3ff' },
+  stage: { flexGrow: 1, flexBasis: 0, border: `1pt solid ${PDF_COLORS.line}`, borderRadius: 4, padding: 6, marginRight: 4 },
+  stageHere: { borderColor: PDF_COLORS.brand, backgroundColor: PDF_COLORS.brandSoft },
   row: { flexDirection: 'row', marginBottom: 2 },
-  key: { width: 130, color: '#5b6478' },
+  key: { width: 130, color: PDF_COLORS.inkMuted },
   bullet: { marginBottom: 2 },
-  sources: { fontSize: 8.5, color: '#5b6478', marginTop: 4 },
-  footer: { position: 'absolute', bottom: 24, left: 40, right: 40, fontSize: 8, color: '#5b6478', textAlign: 'center' },
+  sources: { fontSize: 8.5, color: PDF_COLORS.inkMuted, marginTop: 4 },
+  footer: { position: 'absolute', bottom: 24, left: 40, right: 40, fontSize: 8, color: PDF_COLORS.inkMuted, textAlign: 'center' },
 });
 
 function badgeText(answer: AnswerEnvelope, firmName: string): string {

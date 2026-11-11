@@ -1,4 +1,4 @@
-import { emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import { emailHeading, emailInk, emailLink, emailMuted, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 import { digestDate, isEmptyDigest, type DigestItem, type DigestSection, type WeeklyDigest } from '@/lib/digest/weekly-digest';
 
@@ -40,16 +40,16 @@ function sectionHtml(section: DigestSection): string {
   const rows = shown
     .map((item) => {
       const title = item.href
-        ? `<a href="${escapeHtml(absolute(item.href))}" style="color:#0F172A;font-weight:600;text-decoration:none;">${escapeHtml(item.title)}</a>`
-        : `<span style="color:#0F172A;font-weight:600;">${escapeHtml(item.title)}</span>`;
+        ? `<a href="${escapeHtml(absolute(item.href))}" class="sp-ink" style="color:inherit;text-decoration:none;">${emailInk(escapeHtml(item.title))}</a>`
+        : emailInk(escapeHtml(item.title));
       const rest = [item.detail, dateText(item)].filter(Boolean).map((s) => escapeHtml(s!)).join(' · ');
-      return `<li style="margin:0 0 6px;">${title}${rest ? ` <span style="color:#64748B;">· ${rest}</span>` : ''}</li>`;
+      return `<li style="margin:0 0 6px;">${title}${rest ? ` ${emailMuted(`· ${rest}`, 13)}` : ''}</li>`;
     })
     .join('');
-  const moreLine = more > 0 ? `<li style="margin:0 0 6px;color:#64748B;">and ${more} more</li>` : '';
-  return `<h2 style="margin:24px 0 8px;font-size:16px;line-height:1.4;font-weight:700;color:#0F172A;">${escapeHtml(section.title)} (${section.items.length})</h2>
-<ul style="margin:0 0 8px;padding-left:18px;font-size:14px;line-height:1.55;">${rows}${moreLine}</ul>
-<p style="margin:0 0 8px;font-size:14px;"><a href="${escapeHtml(absolute(section.href))}" style="color:#2563EB;text-decoration:none;font-weight:600;">${escapeHtml(section.linkLabel)}</a></p>`;
+  const moreLine = more > 0 ? `<li style="margin:0 0 6px;">${emailMuted(`and ${more} more`, 13)}</li>` : '';
+  return `${emailHeading(`${escapeHtml(section.title)} (${section.items.length})`, { status: section.title })}
+<ul style="margin:0 0 8px;padding-left:18px;font-size:14px;line-height:20px;">${rows}${moreLine}</ul>
+<p style="margin:0 0 8px;font-size:14px;">${emailLink(absolute(section.href), section.linkLabel, { bold: true })}</p>`;
 }
 
 function sectionText(section: DigestSection): string {
@@ -102,7 +102,7 @@ export function buildWeeklyDigestEmail(digest: WeeklyDigest, cadence: 'weekly' |
         emailParagraph(escapeHtml(intro)) +
         sections.map(sectionHtml).join('') +
         emailParagraph(
-          `<span style="font-size:13px;color:#64748B;">To stop these emails, ${stopLine} in <a href="${escapeHtml(settings)}" style="color:#2563EB;">Settings</a>.</span>`,
+          emailMuted(`To stop these emails, ${stopLine} in ${emailLink(settings, 'Settings')}.`, 13),
         ),
       footerNote,
     }),

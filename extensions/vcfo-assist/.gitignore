@@ -2,3 +2,12 @@ node_modules/
 .output/
 .wxt/
 e2e/artifacts/
+# Portal captures hold the person's session and may hold client data: never in git.
+captures/
+tools/recorder/steps/
+tools/recorder/profile/
+tools/recorder/.profile-*/
+tools/recorder/recorder.log
+tools/recorder/recorder.pid
+**/vcfo-captures/
+*.har

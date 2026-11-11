@@ -13,6 +13,7 @@ import type { Catalog, PatchProposal, ProfileResult, ResolvePayload, ResolveResp
 const MOCK_DIR = path.resolve(__dirname, '../../mock-portal');
 
 export function loadMockPage(file: 'spice-a.html' | 'spice-a-drift.html' | 'spice-b.html'): void {
+  document.head.innerHTML = '';
   const html = readFileSync(path.join(MOCK_DIR, file), 'utf8');
   const body = /<body>([\s\S]*)<\/body>/.exec(html)![1]!.replace(/<script[\s\S]*?<\/script>/g, '');
   document.body.innerHTML = body;
@@ -20,7 +21,7 @@ export function loadMockPage(file: 'spice-a.html' | 'spice-a-drift.html' | 'spic
   new Function(code)();
 }
 
-export function mockState(): { clicks: Record<string, number>; modelWrites: string[]; domEvents: string[] } {
+export function mockState(): { clicks: Record<string, number>; modelWrites: string[]; domEvents: string[]; infoClosed: boolean } {
   return (window as unknown as { __mock: ReturnType<typeof mockState> }).__mock;
 }
 
@@ -60,33 +61,42 @@ export const PROFILE_VALUES = [
   'Sentinelfirst',
 ];
 
-/** A Part B profile: capital, registered office, two subscribers and two directors (sentinel values). */
+/**
+ * A Part B profile (sentinel values): capital, registered office, two subscribers without a DIN
+ * (blocks 6c; subscriber 1 is also a director, so block 7b too) and two directors who are not
+ * subscribers (director 1 with a DIN, block 7a; director 2 without, block 7b).
+ */
 export const PART_B_PROFILE: ProfileResult = {
   ...SENTINEL_PROFILE,
   profile: {
     ...SENTINEL_PROFILE.profile,
     company: {
       ...(SENTINEL_PROFILE.profile.company as Record<string, unknown>),
-      capital: { authorized: 1000000, subscribed: 100000, equity: { authorizedShares: 100000, faceValue: 10 } },
+      aoaEntrenched: false,
+      capital: { authorized: 1000000, subscribed: 100000, equity: { classes: 1, className: 'Equity', authorizedShares: 100000, subscribedShares: 10000, faceValue: 10 } },
     },
     registeredOffice: {
       line1: 'Sentinel Tower 1',
       line2: 'Sentinel Road',
       pincode: '500081',
+      area: 'Gachibowli',
       city: 'Hyderabad',
       district: 'Hyderabad',
       state: 'Telangana',
       country: 'India',
       email: 'office@sentinel.test',
-      mobile: '9000000001',
+      mobile: '9581726353',
+      longitude: '78.3489',
+      latitude: '17.4401',
+      rocOffice: 'Registrar of Companies, Hyderabad',
     },
     subscribers: [
-      { index: 1, kind: 'individual', isDirector: true, firstName: 'Subone', surName: 'Sentinelson', father: { firstName: 'Fatherone' }, dob: '01/02/1980', pan: 'sentb1234c', email: 'sub1@sentinel.test', mobile: '9000000011', shares: { equity: { class: 'Equity', number: 5000 } } },
-      { index: 2, kind: 'individual', isDirector: false, firstName: 'Subtwo', surName: 'Sentineldottir', father: { firstName: 'Fathertwo' }, dob: '03/04/1985', pan: 'SENTC5678D', email: 'sub2@sentinel.test', mobile: '9000000012', shares: { equity: { class: 'Equity', number: 5000 } } },
+      { index: 1, kind: 'individual', isDirector: true, firstName: 'Subone', surName: 'Sentinelson', father: { firstName: 'Fatherone', surName: 'Sentinelson' }, gender: 'Male', dob: '01/02/1980', nationality: 'India', placeOfBirth: 'Hyderabad, Telangana', citizenOfIndia: true, residentInIndia: true, pan: 'sentb1234c', email: 'sub1@sentinel.test', mobile: '9481726350', shares: { equity: { class: 'Equity', number: 5000 } } },
+      { index: 2, kind: 'individual', isDirector: false, firstName: 'Subtwo', surName: 'Sentineldottir', father: { firstName: 'Fathertwo', surName: 'Sentineldottir' }, gender: 'Female', dob: '03/04/1985', nationality: 'India', placeOfBirth: 'Pune, Maharashtra', pan: 'SENTC5678D', email: 'sub2@sentinel.test', mobile: '9381726351', shares: { equity: { class: 'Equity', number: 5000 } } },
     ],
     directors: [
-      { id: 'e3', index: 1, firstName: 'Dirone', surName: 'Sentinelli', din: '09876543', pan: 'SENTD1111E', dob: '05/06/1975', email: 'dir1@sentinel.test', mobile: '9000000021' },
-      { id: 'e4', index: 2, firstName: 'Dirtwo', surName: 'Sentinelova', pan: 'SENTE2222F', dob: '07/08/1990', email: 'dir2@sentinel.test', mobile: '9000000022' },
+      { id: 'e3', index: 1, firstName: 'Dirone', surName: 'Sentinelli', din: '09876543', pan: 'SENTD1111E', dob: '05/06/1975', email: 'dir1@sentinel.test', mobile: '9681726354' },
+      { id: 'e4', index: 2, firstName: 'Dirtwo', surName: 'Sentinelova', father: { firstName: 'Fatherfour', surName: 'Sentinelova' }, gender: 'Female', nationality: 'India', citizenOfIndia: true, residentInIndia: true, pan: 'SENTE2222F', dob: '07/08/1990', email: 'dir2@sentinel.test', mobile: '9281726352' },
     ],
   },
   missing: [],
@@ -110,7 +120,7 @@ export const PART_B_VALUES = [
   'dir1@sentinel.test',
   'Dirtwo',
   'SENTE2222F',
-  '9000000021',
+  '9681726354',
 ];
 
 export class FakeSuite implements SuitePort {
@@ -219,8 +229,17 @@ export class JsdomPortal implements PortalPort {
   async bridgeSet(som: string, value: string) {
     return bridgeSetValue(som, value, SECRET_FIELD_PATTERN.source);
   }
-  async fill(target: Parameters<PortalAgent['fill']>[0], value: string, _label: string, bridgeTried: boolean) {
-    return this.agent.fill(target, value, bridgeTried);
+  fillOpts: Array<Parameters<PortalAgent['fill']>[3]> = [];
+  async fill(target: Parameters<PortalAgent['fill']>[0], value: string, _label: string, bridgeTried: boolean, opts?: Parameters<PortalAgent['fill']>[3]) {
+    this.fillOpts.push(opts);
+    // The tests do not sleep through the portal's lookups; the waits they asked for are recorded.
+    return this.agent.fill(target, value, bridgeTried, { optionsMs: Math.min(opts?.optionsMs ?? 0, 1000), settleMs: 0 });
+  }
+  async pageReady(css: string) {
+    return this.agent.pageReady(css);
+  }
+  async closePopups(css: string[]) {
+    return this.agent.closePopups(css);
   }
   async click(target: { css?: string; text?: string }, _label: string, resultCss?: string) {
     this.clickCalls.push(target.css ?? target.text ?? '');

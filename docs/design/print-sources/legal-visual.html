@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>VCFO Assist legal review (visual)</title>
+<!-- Render: node scripts/render-print.mjs docs/design/print-sources/legal-visual.html "docs/specs/mca-connect/reports/VCFO Assist legal review (visual).pdf" -->
+<!-- Verdict tones (one meaning each, every page): Allowed = ok, With conditions = prog,
+     Legal opinion = warn, Prohibited = bad. A later date (from ~May 2027) = idle. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../print-spectrum.css">
+<style>
+/* Layout for this document only; colours, type and components come from print-spectrum.css. */
+.ans { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.95); border-top: var(--stat-rule) solid var(--tone-mark); border-radius: var(--radius); box-shadow: 0 8px 22px -12px rgba(10, 37, 64, 0.45); padding: 4.5mm 5mm; }
+.ans .a { font: 700 23px/1.15 var(--font-ui); color: var(--tone); margin: 1.5mm 0; letter-spacing: -0.01em; }
+.ans p { margin: 0; color: var(--ink-2); font-size: 12.5px; }
+.vcard .t { font-size: 12px; color: var(--ink-muted); margin-top: 1mm; }
+.vcard .t b { color: var(--ink); font-weight: 500; }
+.vcard .fig { line-height: 1; }
+.dates p { display: flex; gap: 2mm; align-items: flex-start; margin: 0 0 1.6mm; }
+.dates .chip { flex: none; margin-top: 1px; }
+table.verdicts td { padding-top: 1.25mm; padding-bottom: 1.25mm; vertical-align: middle; }
+table.verdicts td.n { color: var(--ink-muted); font-weight: 500; text-align: center; width: 9mm; }
+table.verdicts td.who { color: var(--ink-muted); font-size: 11.5px; white-space: nowrap; width: 18mm; }
+table.verdicts td.v { width: 40mm; }
+/* Heat map: impact rows by likelihood columns, risk rises from positive-soft to a danger mix. */
+.heat { display: grid; grid-template-columns: 22mm repeat(3, 1fr); grid-template-rows: auto repeat(2, 26mm); gap: 2mm; }
+.heat .h { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); display: flex; align-items: center; justify-content: center; text-align: center; }
+.cell { border-radius: var(--radius); display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 2mm; padding: 2mm; border: 1px solid var(--line); }
+.heat-0 { background: var(--positive-soft); } .heat-1 { background: var(--warning-soft); }
+.heat-2 { background: var(--danger-soft); } .heat-3 { background: color-mix(in srgb, var(--danger-mid) 26%, var(--surface-raised)); }
+.dot { width: 8mm; height: 8mm; border-radius: var(--radius-mark); background: var(--surface-raised); border: 1px solid var(--line); display: grid; place-items: center; font-weight: 500; font-size: 12px; box-shadow: 0 8px 22px -12px rgba(10, 37, 64, 0.45); }
+.dot.hot { background: var(--danger); border-color: var(--danger); color: var(--on-status); }
+.risk td:first-child b { color: var(--danger); }
+.risk td { padding-top: 1.3mm; padding-bottom: 1.3mm; }
+.plan .st ul { margin: 1mm 0 0; padding-left: 4.5mm; font-size: 12px; }
+.plan .st li { margin: 0.6mm 0; }
+.plan .tag { margin-left: 1mm; }
+.p8 { --gap: 4mm; }
+.p8 td { padding-top: 1.2mm; padding-bottom: 1.2mm; }
+.p8 .grid2 ul { font-size: 12px !important; }
+.p8 .grid2 li { margin: 0.3mm 0; }
+.p8 .bottom p { font-size: 12.5px; }
+.bottom { background: var(--brand-soft); border-color: var(--brand-line); }
+</style></head><body>
+
+<!-- ============ PAGE 1: COVER ============ -->
+<section class="page">
+  <div class="wash">
+    <div class="kicker">SBC · VCFO Suite · Legal review · 10 November 2026</div>
+    <span class="mark-gold"></span>
+    <h1>Is VCFO Assist legal?<br>The picture in one look.</h1>
+    <p class="lead" style="margin-top:3mm">A visual summary of the research report <span class="mono">VCFO Assist legal review</span>: the extension that fills MCA forms, the AI that helps it, the laws that apply, where you could get stuck, and what to do by when.</p>
+    <div class="grid2" style="margin-top:5mm">
+      <div class="ans t-prog"><div class="kicker">Q1 · Extension filling MCA forms</div><div class="a">Looks legal, with conditions</div><p>Your own login, human pace, a person signs, submits and pays. MCA's published terms do not ban such tools.</p></div>
+      <div class="ans t-bad"><div class="kicker">Q2 · Real client data to Anthropic</div><div class="a">Not safe yet</div><p>Ask VCFO sends client facts to the US without client consent. That is already a CA confidentiality problem.</p></div>
+    </div>
+  </div>
+
+  <div>
+    <h3>All 24 activities reviewed, by verdict</h3>
+    <div class="grid4">
+      <div class="card stat vcard t-ok"><div class="fig">4</div><div class="t"><b>Allowed</b><br>Do it.</div></div>
+      <div class="card stat vcard t-prog"><div class="fig">8</div><div class="t"><b>Allowed with conditions</b><br>Do it, if the conditions hold.</div></div>
+      <div class="card stat vcard t-warn"><div class="fig">5</div><div class="t"><b>Needs legal opinion</b><br>Treat as "no" until a CS says yes.</div></div>
+      <div class="card stat vcard t-bad"><div class="fig">7</div><div class="t"><b>Prohibited</b><br>Never. The extension blocks its five by design.</div></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>The two real risks</h3>
+      <p><b>1. The certifier's signature.</b> Every punishment found was for signing something untrue, never for the software. ICAI removed a CA for <b>120 days</b> (Feb 2026) for dummy phone numbers in mandatory fields.</p>
+      <p><b>2. Ask VCFO.</b> Client facts go to Anthropic in the US. Names, addresses and phones are not masked. No client consent is on file.</p>
+    </div>
+    <div class="card dates">
+      <h3>The key dates</h3>
+      <p><span class="chip sm t-bad">Now</span><span>CA confidentiality · IT Act and SPDI Rules · CERT-In 6-hour reports and 180-day logs · Companies Act · Aadhaar Act</span></p>
+      <p><span class="chip sm t-warn">20 Nov 2026</span><span>Decide Ask VCFO's use of client data</span></p>
+      <p style="margin:0"><span class="chip sm t-idle">~13 May 2027</span><span>Most DPDP duties start. Penalties up to ₹250 crore.</span></p>
+    </div>
+  </div>
+
+  <div class="disclaimer"><b>Research, not legal advice.</b> Built from desk research and a read-only review of the firm's code. mca.gov.in blocked access, so MCA's terms come from an official 2018 copy. A practising CS or advocate must confirm every verdict in writing <strong>before any live MCA use</strong> and <strong>before Ask VCFO handles real client data</strong>. Under SBC's own rule, anything unclear counts as prohibited.</div>
+  <div class="foot"><span>VCFO Assist legal review · visual summary</span><span>1</span></div>
+</section>
+
+<!-- ============ PAGE 2: WHO DOES WHAT ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">Question 1</div><h2>Who does what in one SPICe+ filing</h2>
+  <p class="lead">Green steps are legal for the agent to do. Red steps stay with a person, by law. The line between them is what keeps the tool legal.</p></div>
+
+  <svg viewBox="0 0 700 520" width="100%">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fill-upcoming-mid"/></marker>
+    </defs>
+    <!-- lanes -->
+    <rect x="0" y="0" width="700" height="150" rx="6" class="fill-brand-soft"/>
+    <rect x="0" y="160" width="700" height="190" rx="6" class="fill-positive-soft"/>
+    <rect x="0" y="360" width="700" height="160" rx="6" class="fill-danger-soft"/>
+    <g font-size="12.5" font-weight="500" letter-spacing=".04em">
+      <text x="14" y="24" class="fill-brand-text">VCFO SUITE (your app, AWS Mumbai)</text>
+      <text x="14" y="184" class="fill-positive">AGENT (extension in the staff member's own session)</text>
+      <text x="14" y="384" class="fill-danger">PERSON (staff, certifier, signers) · never the agent</text>
+    </g>
+
+    <!-- suite boxes -->
+    <g font-size="11.5" class="fill-ink">
+      <rect x="20" y="40" width="200" height="90" rx="6" class="fill-surface-raised stroke-brand-line" stroke-width="1.5"/>
+      <text x="32" y="64" font-weight="500">Client profile</text>
+      <text x="32" y="82">Company, directors,</text><text x="32" y="98">capital, office</text>
+      <text x="32" y="116" class="fill-ink-muted">Verified by the firm</text>
+
+      <rect x="250" y="40" width="200" height="90" rx="6" class="fill-surface-raised stroke-brand-line" stroke-width="1.5"/>
+      <text x="262" y="64" font-weight="500">Signed recipe</text>
+      <text x="262" y="82">Which field gets which</text><text x="262" y="98">value (field map)</text>
+      <text x="262" y="116" class="fill-ink-muted">Ed25519 signature</text>
+
+      <rect x="480" y="40" width="200" height="90" rx="6" class="fill-surface-raised stroke-brand-line" stroke-width="1.5"/>
+      <text x="492" y="64" font-weight="500">Run log + SRN</text>
+      <text x="492" y="82">Every fill, refusal,</text><text x="492" y="98">heal and the SRN</text>
+      <text x="492" y="116" class="fill-ink-muted">Evidence at a hearing</text>
+    </g>
+
+    <!-- agent steps -->
+    <g font-size="11" class="fill-ink">
+      <rect x="20" y="200" width="150" height="62" rx="6" class="fill-surface-raised stroke-positive-mid" stroke-width="1.5"/>
+      <text x="30" y="222" font-weight="500">✓ Pull data</text><text x="30" y="240">from the open</text><text x="30" y="255">Suite tab</text>
+      <rect x="190" y="200" width="150" height="62" rx="6" class="fill-surface-raised stroke-positive-mid" stroke-width="1.5"/>
+      <text x="200" y="222" font-weight="500">✓ Fill fields</text><text x="200" y="240">Part A, Part B,</text><text x="200" y="255">AGILE, MoA, AoA</text>
+      <rect x="360" y="200" width="150" height="62" rx="6" class="fill-surface-raised stroke-positive-mid" stroke-width="1.5"/>
+      <text x="370" y="222" font-weight="500">✓ Save · Check</text><text x="370" y="240">· Download PDF</text><text x="370" y="255">one click each</text>
+      <rect x="530" y="200" width="150" height="62" rx="6" class="fill-surface-raised stroke-positive-mid" stroke-width="1.5"/>
+      <text x="540" y="222" font-weight="500">✓ Attach PDF</text><text x="540" y="240">the exact signed</text><text x="540" y="255">file (hash check)</text>
+      <rect x="530" y="280" width="150" height="56" rx="6" class="fill-surface-raised stroke-positive-mid" stroke-width="1.5"/>
+      <text x="540" y="302" font-weight="500">✓ Read SRN</text><text x="540" y="320">from the screen</text>
+    </g>
+
+    <!-- person steps -->
+    <g font-size="11" class="fill-ink">
+      <rect x="20" y="400" width="150" height="62" rx="6" class="fill-surface-raised stroke-danger-mid" stroke-width="1.5"/>
+      <text x="30" y="422" font-weight="500">✋ Log in</text><text x="30" y="440">own user ID,</text><text x="30" y="455">captcha, OTP</text>
+      <rect x="190" y="400" width="150" height="62" rx="6" class="fill-surface-raised stroke-danger-mid" stroke-width="1.5"/>
+      <text x="200" y="422" font-weight="500">✋ Check every field</text><text x="200" y="440">against originals,</text><text x="200" y="455">site visit, consents</text>
+      <rect x="360" y="400" width="150" height="62" rx="6" class="fill-surface-raised stroke-danger-mid" stroke-width="1.5"/>
+      <text x="370" y="422" font-weight="500">✋ Sign with DSC</text><text x="370" y="440">each signer, own</text><text x="370" y="455">token and PIN</text>
+      <rect x="530" y="400" width="150" height="62" rx="6" class="fill-surface-raised stroke-danger-mid" stroke-width="1.5"/>
+      <text x="540" y="422" font-weight="500">✋ Submit + Pay</text><text x="540" y="440">final click and</text><text x="540" y="455">payment</text>
+      <text x="20" y="500" font-size="11" class="fill-danger" font-weight="500">Agent filling any red step = unauthorised access or identity theft (IT Act s.43, s.66, s.66C). Blocked in code.</text>
+    </g>
+
+    <!-- arrows -->
+    <g class="stroke-upcoming-mid" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+      <path d="M120 130 V196"/>
+      <path d="M350 130 V196"/>
+      <path d="M170 231 H186"/><path d="M340 231 H356"/><path d="M510 231 H526"/>
+      <path d="M95 400 V266"/>
+      <path d="M265 266 V396"/>
+      <path d="M435 266 V396"/>
+      <path d="M510 431 H526"/>
+      <path d="M605 400 V340"/>
+      <path d="M605 280 V266"/>
+      <path d="M680 300 C700 250 700 160 650 132"/>
+    </g>
+  </svg>
+  <div class="legend"><span class="chip t-ok">✓ Agent may do</span><span class="chip t-prog">Conditions apply</span><span class="chip t-bad">✋ Person only</span></div>
+  <div class="grid2">
+    <div class="card"><h3>The order, step by step</h3>
+      <ol style="font-size:12.5px">
+        <li><b>Person</b> logs in with their own ID, captcha and OTP.</li>
+        <li><b>Agent</b> pulls the client profile and the signed recipe.</li>
+        <li><b>Agent</b> fills the fields, then saves, checks and downloads the PDF.</li>
+        <li><b>Person</b> checks every field against the originals.</li>
+        <li><b>Each signer</b> signs with their own DSC.</li>
+        <li><b>Agent</b> attaches the exact signed file.</li>
+        <li><b>Person</b> clicks Submit and pays.</li>
+        <li><b>Agent</b> reads the SRN and saves it with the run log.</li>
+      </ol></div>
+    <div class="card stat t-prog"><h3 class="tone-text">Conditions on every green step</h3>
+      <ul style="font-size:12.5px">
+        <li>A person is present and starts each fill.</li>
+        <li>No retry loops; back off on errors.</li>
+        <li><b>Never a dummy value</b> in a mandatory field.</li>
+        <li>No bulk or unattended runs.</li>
+        <li>Only the firm's own clients, only verified records.</li>
+        <li>Written CS sign-off before any live use.</li>
+      </ul></div>
+  </div>
+  <div class="foot"><span>Sources: MCA Website Policies (2018 copy); IT Act via India Code; CCA DSC custody rules</span><span>2</span></div>
+</section>
+
+<!-- ============ PAGE 3: VERDICT BOARD ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">Question 1 · detail</div><h2>Verdict for each extension act</h2>
+  <p class="lead">The 17 acts the review checked, colour-coded. The chip on the right shows the verdict.</p></div>
+  <div class="table-card">
+  <table class="verdicts">
+    <thead><tr><th style="text-align:center">#</th><th>Act</th><th>Who</th><th>Verdict</th></tr></thead>
+    <tbody>
+    <tr><td class="n">1</td><td>Staff logs in with own ID and types captcha and OTP</td><td class="who">Person</td><td class="v"><span class="chip col t-ok">Allowed</span></td></tr>
+    <tr><td class="n">2</td><td>Fill SPICe+ Part A from VCFO Suite data</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">3</td><td>Fill Part B, AGILE-PRO-S, e-MoA, e-AoA</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">4</td><td>Click Save draft and Check form</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">5</td><td>Download the PDF of your own form</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">6</td><td>Each signer signs with own DSC in emBridge</td><td class="who">Person</td><td class="v"><span class="chip col t-ok">Allowed · required</span></td></tr>
+    <tr><td class="n">7</td><td>Attach the signed PDF the user drops in</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">8</td><td>A person clicks final Submit and pays</td><td class="who">Person</td><td class="v"><span class="chip col t-ok">Allowed · required</span></td></tr>
+    <tr><td class="n">9</td><td>Read the SRN and status from the screen</td><td class="who">Agent</td><td class="v"><span class="chip col t-prog">With conditions</span></td></tr>
+    <tr><td class="n">10</td><td>Fill login, captcha or OTP, or solve a captcha</td><td class="who">Agent</td><td class="v"><span class="chip col t-bad">Prohibited</span></td></tr>
+    <tr><td class="n">11</td><td>Use a client's or director's MCA ID, or share an ID</td><td class="who">Anyone</td><td class="v"><span class="chip col t-bad">Prohibited</span></td></tr>
+    <tr><td class="n">12</td><td>Staff or the agent apply a signer's DSC</td><td class="who">Anyone</td><td class="v"><span class="chip col t-bad">Prohibited</span></td></tr>
+    <tr><td class="n">13</td><td>Call MCA endpoints directly or replay requests</td><td class="who">Agent</td><td class="v"><span class="chip col t-bad">Prohibited</span></td></tr>
+    <tr><td class="n">14</td><td>Unattended, batched or high-rate runs, data harvesting</td><td class="who">Agent</td><td class="v"><span class="chip col t-bad">Prohibited</span></td></tr>
+    <tr><td class="n">15</td><td>Fill the firm's own email or phone as the company's</td><td class="who">Agent</td><td class="v"><span class="chip col t-warn">Legal opinion</span></td></tr>
+    <tr><td class="n">16</td><td>Fill values read by AI or OCR without a field check</td><td class="who">Agent</td><td class="v"><span class="chip col t-warn">Legal opinion</span></td></tr>
+    <tr><td class="n">17</td><td>Use the same tool on GST, Udyam, DGFT or state portals</td><td class="who">Agent</td><td class="v"><span class="chip col t-warn">Legal opinion</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid2">
+    <div class="card stat t-prog"><h3 class="tone-text">The conditions behind every "With conditions" row</h3>
+      <ul style="font-size:12.5px">
+        <li>A person is present and starts each fill.</li>
+        <li>Every value comes from verified client records. <b>Never a dummy value</b> in a mandatory field.</li>
+        <li>No retry loops; back off on errors.</li>
+        <li>The certifier checks the filled form against originals before signing, and the check is logged.</li>
+        <li>A written CS sign-off exists before live use.</li>
+      </ul></div>
+    <div class="card"><h3>Why the GST portal is different</h3>
+      <p style="font-size:12.5px">GSTN's terms allow access <b>"only through the interfaces expressly authorised by GSTN"</b> and call scraping an offence. MCA's terms have no such clause; their only automation rule targets <b>"unusually high numbers of daily database accesses"</b>. So each new portal needs its own review.</p></div>
+  </div>
+  <div class="foot"><span>Sources: MCA Website Policies; ICAI DC/1891/2024; GSTN notice via TaxHeal; MCA V3 and ICSI FAQs</span><span>3</span></div>
+</section>
+
+<!-- ============ PAGE 4: AI DATA FLOW ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">Question 2</div><h2>Where client data goes when AI is used</h2>
+  <p class="lead">Two AI features, two very different risks. The field-matching AI sends labels only. Ask VCFO sends real client facts.</p></div>
+
+  <svg viewBox="0 0 700 300" width="100%">
+    <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fill-danger-mid"/></marker>
+      <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="fill-positive-mid"/></marker></defs>
+    <!-- TODAY -->
+    <rect x="0" y="0" width="340" height="300" rx="6" class="fill-danger-soft"/>
+    <text x="16" y="26" font-size="12.5" font-weight="500" letter-spacing=".04em" class="fill-danger">TODAY · production</text>
+    <g class="fill-ink">
+    <rect x="20" y="50" width="130" height="80" rx="6" class="fill-surface-raised stroke-line" stroke-width="1.5"/>
+    <text x="32" y="74" font-size="12" font-weight="500">🇮🇳 VCFO Suite</text><text x="32" y="92" font-size="10.5">AWS Mumbai</text><text x="32" y="110" font-size="10.5" class="fill-ink-muted">Ask VCFO chat</text>
+    <rect x="190" y="50" width="130" height="80" rx="6" class="fill-surface-raised stroke-line" stroke-width="1.5"/>
+    <text x="202" y="74" font-size="12" font-weight="500">🇺🇸 Anthropic API</text><text x="202" y="92" font-size="10.5">"global" processing</text><text x="202" y="110" font-size="10.5" class="fill-ink-muted">no India option</text>
+    </g>
+    <path d="M150 90 H186" class="stroke-danger-mid" stroke-width="3" marker-end="url(#ar2)"/>
+    <g font-size="10.5" class="fill-ink">
+      <text x="20" y="160" font-weight="500">What leaves India:</text>
+      <text x="20" y="178">✗ Names, addresses, emails, phones (not masked)</text>
+      <text x="20" y="195">✓ PAN, Aadhaar, passport, DIN masked</text>
+      <text x="20" y="212">✗ "Do" requests reach the model unmasked</text>
+      <text x="20" y="229">✗ Kept up to 30 days (flagged: up to 2 years)</text>
+      <text x="20" y="246">✗ No client consent on file</text>
+    </g>
+    <rect x="20" y="260" width="300" height="28" rx="6" class="fill-danger"/><text x="32" y="279" font-size="11.5" font-weight="500" class="fill-on-status">Real client data here: treat as PROHIBITED</text>
+
+    <!-- TARGET -->
+    <rect x="360" y="0" width="340" height="300" rx="6" class="fill-positive-soft"/>
+    <text x="376" y="26" font-size="12.5" font-weight="500" letter-spacing=".04em" class="fill-positive">TARGET · Bedrock India</text>
+    <g class="fill-ink">
+    <rect x="380" y="50" width="130" height="80" rx="6" class="fill-surface-raised stroke-line" stroke-width="1.5"/>
+    <text x="392" y="74" font-size="12" font-weight="500">🇮🇳 VCFO Suite</text><text x="392" y="92" font-size="10.5">AWS Mumbai</text><text x="392" y="110" font-size="10.5" class="fill-ink-muted">Ask VCFO chat</text>
+    <rect x="550" y="50" width="130" height="80" rx="6" class="fill-surface-raised stroke-line" stroke-width="1.5"/>
+    <text x="562" y="74" font-size="12" font-weight="500">🇮🇳 Bedrock India</text><text x="562" y="92" font-size="10.5">Mumbai + Hyderabad</text><text x="562" y="110" font-size="10.5" class="fill-ink-muted">"in." model IDs</text>
+    </g>
+    <path d="M510 90 H546" class="stroke-positive-mid" stroke-width="3" marker-end="url(#ar3)"/>
+    <g font-size="10.5" class="fill-ink">
+      <text x="380" y="160" font-weight="500">What changes:</text>
+      <text x="380" y="178">✓ Data stays in India, logs in Mumbai</text>
+      <text x="380" y="195">✓ Anthropic never sees prompts (AWS only)</text>
+      <text x="380" y="212">✓ Retention set to "none"</text>
+      <text x="380" y="229">✓ Not used for training</text>
+      <text x="380" y="246">! Still needs client consent + AWS DPA</text>
+    </g>
+    <rect x="380" y="260" width="300" height="28" rx="6" class="fill-brand"/><text x="392" y="279" font-size="11.5" font-weight="500" class="fill-on-status">Allowed WITH CONDITIONS · needs code change</text>
+  </svg>
+
+  <div class="grid2">
+    <div class="card flush"><div class="card-head"><h3>AI activity verdicts</h3></div>
+      <table style="font-size:12px">
+        <tbody>
+        <tr><td>Field-matching AI (labels only), any provider</td><td class="chip-cell"><span class="chip col t-prog">With conditions</span></td></tr>
+        <tr><td>Ask VCFO on public knowledge only</td><td class="chip-cell"><span class="chip col t-ok">Allowed</span></td></tr>
+        <tr><td>Ask VCFO, client data, Anthropic API, <b>no consent</b></td><td class="chip-cell"><span class="chip col t-bad">Prohibited</span></td></tr>
+        <tr><td>Ask VCFO, client data, Anthropic API, consent + DPA + ZDR</td><td class="chip-cell"><span class="chip col t-warn">Legal opinion</span></td></tr>
+        <tr><td>Ask VCFO, client data, Bedrock India, consent</td><td class="chip-cell"><span class="chip col t-prog">With conditions</span></td></tr>
+        <tr><td>Full Aadhaar numbers or images to any AI</td><td class="chip-cell"><span class="chip col t-bad">Prohibited</span></td></tr>
+        <tr><td>AI-read ID documents into portal fields, no check</td><td class="chip-cell"><span class="chip col t-warn">Legal opinion</span></td></tr>
+        </tbody>
+      </table></div>
+    <div class="card"><h3>Why it is a problem today, not in 2027</h3>
+      <p style="font-size:12.5px"><b>CA Act, Second Schedule, Part I, Clause (1):</b> disclosing client information "to any person other than his client ... without the consent of his client" is professional misconduct. In force now.</p>
+      <p style="font-size:12.5px"><b>SPDI Rules (IT Act s.43A):</b> transfers of sensitive data need consent or necessity. In force until ~May 2027.</p>
+      <p style="font-size:12.5px"><b>Anthropic Usage Policy (from 12 Nov 2026):</b> personal legal or tax advice is high-risk. A qualified person reviews the answer first, and the person is told AI was used.</p></div>
+  </div>
+  <div class="foot"><span>Sources: firm code review (infra/app.tf, src/lib/ask/*); Anthropic Commercial Terms, DPA, data residency docs, Usage Policy; AWS Bedrock data protection and India CRIS (29 Sep 2026)</span><span>4</span></div>
+</section>
+
+<!-- ============ PAGE 5: LAWS ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">Question 3</div><h2>Which laws apply, from when, and what they cost</h2>
+  <p class="lead">Most new data-protection duties start in May 2027. But five sets of rules already apply today.</p></div>
+
+  <svg viewBox="0 0 700 112" width="100%">
+    <rect x="20" y="52" width="660" height="8" rx="3" class="fill-upcoming-soft"/>
+    <rect x="20" y="52" width="250" height="8" rx="3" class="fill-danger-mid"/>
+    <rect x="270" y="52" width="410" height="8" rx="3" class="fill-upcoming-mid"/>
+    <rect x="31" y="45" width="22" height="22" rx="4" class="fill-danger-mid"/>
+    <text x="20" y="34" font-size="11.5" font-weight="500" class="fill-danger">NOW · 10 Nov 2026</text>
+    <g font-size="10" class="fill-ink"><text x="20" y="88">CA Act · IT Act · SPDI Rules</text><text x="20" y="102">CERT-In · Companies Act · Aadhaar</text></g>
+    <rect x="261" y="47" width="18" height="18" rx="4" class="fill-warning-mid"/>
+    <text x="222" y="34" font-size="11" font-weight="500" class="fill-warning">12–20 Nov 2026</text>
+    <text x="226" y="88" font-size="10" class="fill-ink">Usage Policy · Ask VCFO decision</text>
+    <rect x="649" y="45" width="22" height="22" rx="4" class="fill-surface-raised stroke-upcoming-mid" stroke-width="2"/>
+    <text x="545" y="34" font-size="11.5" font-weight="500" class="fill-upcoming">~13 MAY 2027</text>
+    <g font-size="10" class="fill-ink"><text x="520" y="88">DPDP duties start; SPDI Rules end</text><text x="520" y="102">Penalties up to ₹250 crore</text></g>
+  </svg>
+
+  <div class="table-card">
+  <table>
+    <thead><tr><th style="width:23%">Law</th><th>What SBC must do</th><th style="width:16%">In force</th><th style="width:22%">Maximum penalty</th></tr></thead>
+    <tbody>
+      <tr><td><b>CA Act + ICAI / ICSI duties</b></td><td>Client confidentiality. Due diligence before certifying. DSC owner keeps custody.</td><td><span class="chip sm t-bad">Now</span></td><td>Reprimand, fine, removal (120 days seen)</td></tr>
+      <tr><td><b>Companies Act 2013</b></td><td>True particulars (s.7). Personal certification on INC-8 / INC-32.</td><td><span class="chip sm t-bad">Now</span></td><td>s.448 → s.447: <b>6 months–10 years</b> jail, up to 3× amount</td></tr>
+      <tr><td><b>IT Act s.43, 66, 66C, 70</b></td><td>No access without permission. Never use another person's password or signature.</td><td><span class="chip sm t-bad">Now</span></td><td>s.66: 3 yrs / ₹5 lakh · s.66C: 3 yrs + ₹1 lakh</td></tr>
+      <tr><td><b>IT Act s.72A</b></td><td>No disclosure of personal data obtained under contract without consent.</td><td><span class="chip sm t-bad">Now</span></td><td>Civil penalty up to <b>₹25 lakh</b></td></tr>
+      <tr><td><b>IT Act s.43A + SPDI Rules 2011</b></td><td>Reasonable security for sensitive data; consent before transfer.</td><td><span class="chip sm t-bad">Now → May 2027</span></td><td>Compensation to the person harmed</td></tr>
+      <tr><td><b>CERT-In Directions 2022</b></td><td>Report incidents in <b>6 hours</b>. Keep logs <b>180 days</b>. Sync clocks. Name a contact.</td><td><span class="chip sm t-bad">Now</span></td><td>s.70B(7)</td></tr>
+      <tr><td><b>Aadhaar Act 2016</b></td><td>Use only for the stated purpose. Never display publicly. Store masked only.</td><td><span class="chip sm t-bad">Now</span></td><td>Not verified</td></tr>
+      <tr><td><b>DPDP Act 2023 + Rules 2025</b></td><td>Director notice and consent. Processor contracts. Safeguards. Logs 1 year. Breach notice in 72 hours.</td><td><span class="chip sm t-idle">~13 May 2027</span></td><td><b>₹250 cr</b> safeguards · <b>₹200 cr</b> breach notice · <b>₹50 cr</b> other</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="card"><h3>The penalty ladder, smallest to largest</h3>
+    <svg viewBox="0 0 700 116" width="100%">
+      <g font-size="10.5" class="fill-ink">
+        <rect x="0" y="8" width="60" height="20" rx="3" class="fill-upcoming-mid"/><text x="70" y="23">₹10,000 · ROC fine for wrong AOC-4 data (Feb 2026)</text>
+        <rect x="0" y="34" width="110" height="20" rx="3" class="fill-info-mid"/><text x="120" y="49">₹20,000 + 120-day removal · dummy values (ICAI, Feb 2026)</text>
+        <rect x="0" y="60" width="200" height="20" rx="3" class="fill-warning-mid"/><text x="210" y="75">₹25 lakh · s.72A disclosure without consent</text>
+        <rect x="0" y="86" width="420" height="20" rx="3" class="fill-danger-mid"/><text x="430" y="101">₹250 crore · DPDP failed safeguards (from 2027)</text>
+      </g>
+    </svg>
+    <p class="muted" style="margin:1mm 0 0;font-size:11.5px">Bars show order of size, not to scale. Jail terms (s.447, s.66, s.66C) sit outside this ladder and need intent or dishonesty.</p>
+  </div>
+  <div class="foot"><span>Sources: India Code (IT Act); ca2013.com (s.447); CERT-In FAQs; DPDPA.com (Rules, Schedule); AZB &amp; Partners; KSK; Khaitan &amp; Co; AdvocateKhoj (CA Act)</span><span>5</span></div>
+</section>
+
+<!-- ============ PAGE 6: RISKS ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">Question 4</div><h2>Where you could get stuck</h2>
+  <p class="lead">Thirteen ways it could go wrong, placed by how likely they are and how much they would hurt. Fix the top-right first.</p></div>
+
+  <div class="heat">
+    <div></div><div class="h">Low likelihood</div><div class="h">Medium likelihood</div><div class="h">High likelihood</div>
+    <div class="h">High impact</div>
+    <div class="cell heat-1"><span class="dot">2</span><span class="dot">8</span><span class="dot">9</span></div>
+    <div class="cell heat-2"><span class="dot">1</span><span class="dot">5</span><span class="dot">6</span><span class="dot">7</span><span class="dot">11</span></div>
+    <div class="cell heat-3"><span class="dot hot">4</span><span class="dot hot">10</span></div>
+    <div class="h">Medium impact</div>
+    <div class="cell heat-0"><span class="dot">13</span></div>
+    <div class="cell heat-1"><span class="dot">3</span></div>
+    <div class="cell heat-2"></div>
+  </div>
+
+  <div class="table-card">
+  <table class="risk">
+    <thead><tr><th style="width:5%">#</th><th style="width:40%">How it goes wrong</th><th style="width:21%">Real example</th><th>Control</th></tr></thead>
+    <tbody style="font-size:11.5px">
+      <tr><td><b>4</b></td><td><b>Ask VCFO sends client facts to Anthropic without consent</b></td><td>ICAEW warning (2024)</td><td>Pause or get written consent; move to Bedrock India</td></tr>
+      <tr><td><b>10</b></td><td><b>Director data has no lawful basis on 13 May 2027</b></td><td>—</td><td>Director notice + consent in the client questionnaire</td></tr>
+      <tr><td>1</td><td>Certifier ticks "personally visited" because the tool was fast</td><td>Bansal, reprimanded 2025</td><td>Due-diligence gate before the Submit card</td></tr>
+      <tr><td>5</td><td>Staff use someone else's session or DSC</td><td>Puneet Jain, reprimanded</td><td>One ID per person; DSC register; log device and IP</td></tr>
+      <tr><td>6</td><td>A hijacked extension update steals sessions</td><td>Cyberhaven, Dec 2024</td><td>Force-install, pinned updates, 2-person release</td></tr>
+      <tr><td>7</td><td>Ransomware hits; the 6-hour CERT-In report is missed</td><td>I4C alert on CA firms, 2026</td><td>Incident runbook with three clocks</td></tr>
+      <tr><td>11</td><td>Processor contracts missing in May 2027</td><td>—</td><td>DPAs with AWS, Anthropic, Resend, Inngest</td></tr>
+      <tr><td>2</td><td>The tool fills a dummy value to pass a mandatory field</td><td>Gubiligari, 120 days, 2026</td><td>Guard: never fill a value missing from source</td></tr>
+      <tr><td>8</td><td>Live MCA V3 terms turn out to bar automated tools</td><td>None found</td><td>CS reads the live terms first</td></tr>
+      <tr><td>9</td><td>MCA21 is notified as a "protected system" (s.70)</td><td>None found</td><td>Watch the Gazette; pause if notified</td></tr>
+      <tr><td>3</td><td>A mapping or AI heal error puts a wrong value in a filing</td><td>ROC ₹10,000, 2026</td><td>Review table; second check on AI-healed fields</td></tr>
+      <tr><td>13</td><td>A test run is pointed at the live portal</td><td>—</td><td>Live switch stays off; mock-only tests</td></tr>
+      <tr><td>12</td><td>Insurer refuses a claim tied to automation or cyber</td><td>Wording not found</td><td>Written insurer confirmation; cyber policy</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="foot"><span>Sources: ICAI DC/1720/2023, DC/1891/2024; TaxGuru; Taxscan; TechCrunch (Cyberhaven); I4C alert; ICAEW</span><span>6</span></div>
+</section>
+
+<!-- ============ PAGE 7: ACTION PLAN ============ -->
+<section class="page">
+  <div class="page-head"><div class="kicker">What to do</div><h2>The action plan, by date</h2>
+  <p class="lead">Eighteen actions, grouped by deadline. Owners: Owner (managing partner), CS, Dev, Super admin, Office.</p></div>
+  <div class="grid2 plan" style="flex:1;align-items:start">
+    <div class="steps">
+      <div class="st t-bad"><span class="step now"></span><div class="st-title">Now · ongoing</div><ul>
+        <li>Keep the live-portal switch off until the written CS opinion <span class="tag">Super admin</span></li></ul></div>
+      <div class="st t-bad"><span class="step now"></span><div class="st-title">Before 20 Nov 2026</div><ul>
+        <li>Decide Ask VCFO's use of real client data; until consent, limit it to non-client knowledge <span class="tag">Owner</span></li>
+        <li>"AI was used" notice + mandatory CA/CS review of AI answers on a client's legal or tax position <span class="tag">Dev, Owner</span></li>
+        <li>Send the updated CS questions; CS reads live MCA terms and the Gazette (reply by 15 Dec) <span class="tag">Owner, CS</span></li></ul></div>
+      <div class="st t-warn"><span class="step now"></span><div class="st-title">By 30 Nov 2026</div><ul>
+        <li>CERT-In: name a contact, write the 6-hour runbook, keep logs 180 days (aim for 1 year) <span class="tag">Owner, Dev</span></li></ul></div>
+      <div class="st t-warn"><span class="step now"></span><div class="st-title">Before the first live filing</div><ul>
+        <li>Guards: no placeholder values; company's own contact details; log filer, DSC holder, device and IP <span class="tag">Dev</span></li>
+        <li>Due-diligence gate in Suite: site-visit evidence, owner NOC, video-KYC, certifier attestation <span class="tag">Dev, CS</span></li>
+        <li>Harden extension updates: force-install, pinned URL, hardware MFA, 2-person release, kill switch <span class="tag">Dev</span></li></ul></div>
+    </div>
+    <div class="steps">
+      <div class="st t-info"><span class="step now"></span><div class="st-title">By 31 Dec 2026</div><ul>
+        <li>Ask the PI insurer in writing about tool-assisted filing and cyber; buy a cyber policy if needed <span class="tag">Owner</span></li></ul></div>
+      <div class="st t-info"><span class="step now"></span><div class="st-title">By 31 Jan 2027</div><ul>
+        <li>Engagement letter: tech-assisted preparation, AI use, sub-processor list, client consent <span class="tag">Owner, CS</span></li>
+        <li>Anthropic (if kept): record Terms + DPA, request zero data retention, turn off fallback <span class="tag">Owner, Dev</span></li></ul></div>
+      <div class="st t-info"><span class="step now"></span><div class="st-title">By 28 Feb 2027</div><ul>
+        <li>Move real-data Ask VCFO to Bedrock India: "in." model IDs, retention "none", test rejects global IDs <span class="tag">Dev</span></li></ul></div>
+      <div class="st t-info"><span class="step now"></span><div class="st-title">By 31 Mar 2027</div><ul>
+        <li>Masked Aadhaar only; encrypt PAN; mask names, addresses, phones where not needed <span class="tag">Dev</span></li>
+        <li>Director notice + consent step in the client questionnaire <span class="tag">Dev, CS</span></li></ul></div>
+      <div class="st t-idle"><span class="step now"></span><div class="st-title">By 15 Apr – 13 May 2027</div><ul>
+        <li>DPAs with every processor (AWS, Anthropic, Resend, Inngest) <span class="tag">Owner</span></li>
+        <li>Three-clock incident runbook + one tabletop drill <span class="tag">Owner, Dev</span></li>
+        <li>DPDP readiness review <span class="tag">CS, Owner</span></li></ul></div>
+      <div class="st t-teal"><span class="step now"></span><div class="st-title">Every month</div><ul>
+        <li>Watch: live MCA terms, s.70 notices, UIDAI rules, DPDP Gazette, Anthropic and AWS terms <span class="tag">CS</span></li></ul></div>
+    </div>
+  </div>
+  <div class="foot"><span>Full checklist with reasons: <span class="mono">docs/specs/mca-connect/reports/VCFO Assist legal review.md</span></span><span>7</span></div>
+</section>
+
+<!-- ============ PAGE 8: WHAT CHANGED + LIMITS ============ -->
+<section class="page p8">
+  <div class="page-head"><div class="kicker">Context</div><h2>What this changes, and what we could not check</h2></div>
+  <div class="card flush"><div class="card-head"><h3>Earlier research vs now</h3></div>
+    <table style="font-size:12px">
+      <thead><tr><th style="width:36%">Earlier position</th><th style="width:15%">Change</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td>Extension on the live portal: Needs CS opinion (terms unreadable)</td><td class="chip-cell"><span class="chip sm t-prog">Corrected</span></td><td>Terms read (2018 copy); no extension or bot clause. Allowed with conditions; CS sign-off still required.</td></tr>
+        <tr><td>s.72A penalty unclear (₹5 lakh or ₹25 lakh)</td><td class="chip-cell"><span class="chip sm t-ok">Resolved</span></td><td>Civil penalty up to ₹25 lakh since Nov 2023.</td></tr>
+        <tr><td>s.447 figures unverified</td><td class="chip-cell"><span class="chip sm t-ok">Confirmed</span></td><td>6 months to 10 years; fine up to 3× the amount.</td></tr>
+        <tr><td>s.70 protected system not checked</td><td class="chip-cell"><span class="chip sm t-warn">Narrowed</span></td><td>No MCA21 notification found; Gazette not searchable.</td></tr>
+        <tr><td>Cross-border transfer under DPDP unclear</td><td class="chip-cell"><span class="chip sm t-prog">Narrowed</span></td><td>No country restricted; s.16 starts ~May 2027. Live issues: CA confidentiality and SPDI.</td></tr>
+        <tr><td>DPDP penalty: ₹250 crore only</td><td class="chip-cell"><span class="chip sm t-prog">Extended</span></td><td>Also ₹200 crore (breach notice) and ₹50 crore (other).</td></tr>
+        <tr><td>Aadhaar Data Vault applies</td><td class="chip-cell"><span class="chip sm t-ok">Resolved</span></td><td>Now only for UIDAI requesting entities, not SBC. Keep masked Aadhaar only.</td></tr>
+        <tr><td>Enforcement targets the certificate, not the tool</td><td class="chip-cell"><span class="chip sm t-ok">Confirmed</span></td><td>Sharpened by the Feb 2026 dummy-values order.</td></tr>
+      </tbody>
+    </table></div>
+  <div class="grid2">
+    <div class="card"><h3>Changes for the design documents</h3>
+      <ul style="font-size:12.5px">
+        <li>SAFETY.md: fix the G9 text (emails and phones are refused, not masked).</li>
+        <li>Add a guard: never fill a value missing from the source data.</li>
+        <li>G14: log the certifier's own checks, and the DSC holder, device and IP.</li>
+        <li>G14: keep logs at least <b>one year</b>, not 180 days.</li>
+        <li>Add a guard for how the extension itself is updated.</li>
+        <li>CS-QUESTIONS.md: fix question 16 (Bedrock region) and add four questions.</li>
+      </ul></div>
+    <div class="card"><h3>Evidence limits</h3>
+      <ul style="font-size:12.5px">
+        <li>mca.gov.in and the Gazette blocked access.</li>
+        <li>MCA terms read from an official 2018 copy.</li>
+        <li>SPDI Rules, Aadhaar s.29, AWS DPA and ICAI's AI note not read in full.</li>
+        <li>Anthropic's two retention statements conflict.</li>
+        <li>Whether India-only processing works on the endpoint your code uses must be checked in the AWS Mumbai console.</li>
+        <li>No court has ruled on attended browser filling.</li>
+      </ul></div>
+  </div>
+  <div class="card bottom">
+    <h3>The bottom line</h3>
+    <p>The extension, which looked like the legal risk, is the most careful tool found on the market. The AI chat inside your own app is the part already exposed today, because of the oldest rule in the profession: do not share a client's affairs without the client's consent. So the next six months are a sequencing problem, not a legal block. <b>First:</b> client consent and the CERT-In runbook. <b>Then:</b> Bedrock India and director notices before May 2027. <b>And before any live filing:</b> a gate in Suite that will not show the Submit card until the certifier's own evidence is attached.</p>
+  </div>
+  <div class="disclaimer"><b>Research, not legal advice.</b> A practising Company Secretary or advocate must read the full report, check its sources and confirm each verdict in writing before live use of VCFO Assist or real-data use of Ask VCFO.</div>
+  <div class="foot"><span>VCFO Assist legal review · visual summary · 10 November 2026</span><span>8</span></div>
+</section>
+</body></html>

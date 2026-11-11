@@ -5,43 +5,57 @@ import { describe, expect, it } from 'vitest';
 import spiceA from './recipes/spice-a.json';
 import spiceB from './recipes/spice-b.json';
 import { canonicalJson, fieldRejectsPlaceholder, findRecipeField, parseRecipe, recipeSchema } from './recipe';
-import {
-  MOCK_SPICE_A_FIELD_NAMES,
-  MOCK_SPICE_B_FIELD_NAMES,
-  MOCK_SPICE_B_GROUPS,
-  mockSomPath,
-  mockSpiceBGroupName,
-  mockSpiceBGroupSomPath,
-  mockSpiceBSomPath,
-} from './mock-fields';
-import { getRecipe, listRecipes } from './registry';
+import { guideKeysOf } from './mock-fields';
+import { getPack, getRecipe, listPacks, listRecipes, rawRecipeFiles } from './registry';
+import { resolveRecipe } from './recipe';
 import { DEV_KEY_ID, devRecipeSigner, rawPublicKey, recipeSigner, signRecipe, verifyRecipeSignature } from './signing';
 import { createPublicKey } from 'node:crypto';
 
-describe('spice-a recipe', () => {
+/** The captured MCA schemas the recipes were rewritten from (abdulfarhath7/vcfo_assist@5e58bcf). */
+const SCHEMAS = path.resolve(__dirname, '../../../extensions/vcfo-assist/portal-data/mca-v3/schemas');
+const schemaKeys = (form: string): Set<string> => {
+  const raw = JSON.parse(readFileSync(path.join(SCHEMAS, `${form}.json`), 'utf8')) as { fields: Array<{ semantic: string[] }> };
+  return new Set(raw.fields.flatMap((f) => f.semantic));
+};
+const FORM_OF: Record<string, string> = { 'spice-a': 'spice-part-a', 'spice-b': 'spice-part-b', 'agile-pro-s': 'agile-pro-s', emoa: 'inc-33-emoa', eaoa: 'inc-34-eaoa' };
+
+describe('spice-a recipe (real MCA keys)', () => {
   const recipe = parseRecipe(spiceA);
 
-  it('parses against the schema as v1.1.0, checked against the mock', () => {
-    expect(recipe.id).toBe('spice-a');
-    expect(recipe.version).toBe('1.1.0');
-    expect(recipe.verifiedAgainst).toBe('mock');
-    expect(recipe.gates).toEqual(['LOGIN', 'DSC', 'SUBMIT', 'PAY']);
-    expect(recipe.pages[0]?.mockUrlPattern).toBe('/spice-a*.html');
+  it('parses as v2.0.0, checked against the capture, on the mca-v3 pack', () => {
+    expect(recipe).toMatchObject({ id: 'spice-a', version: '2.0.0', verifiedAgainst: 'capture', pack: 'mca-v3' });
+    expect(recipe.capturedFrom).toMatch(/5e58bcf/);
+    // Part A is a web form with no DSC: the person logs in, submits and pays.
+    expect(recipe.gates).toEqual(['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY']);
   });
 
-  it('carries the mock flow: Save, Check form, Download PDF and Attach PDF are safe; no safe label says sign', () => {
-    const safe = recipe.actions.filter((a) => a.kind === 'safe');
-    expect(safe.map((a) => a.id)).toEqual(['save-draft', 'check-form', 'download-pdf', 'attach-pdf']);
-    expect(safe.find((a) => a.id === 'attach-pdf')?.match.css).toBe('#signed-pdf');
-    for (const action of safe) expect(`${action.id} ${action.label}`).not.toMatch(/sign/i);
+  it('takes the real URL, ready check and info pop-up from the pack', () => {
+    const page = getRecipe('spice-a')!.pages[0]!;
+    expect(page.urlPattern).toBe('/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html');
+    expect(page.mockUrlPattern).toBe('/spice-a*.html');
+    expect(page.ready).toEqual({ css: '#guideContainer-rootPanel__ .guideFieldNode.type-of-company' });
+    expect(page.closePopups).toEqual([{ css: '#okInfoModalBtn' }]);
+    expect(getRecipe('spice-a')!.waits).toEqual({ readyMs: 30000, optionsMs: 8000, afterPincodeMs: 2000 });
   });
 
-  it('uses every mock field name exactly once, through the mock SOM convention', () => {
-    const names = recipe.fields.map((f) => f.som.match(/guideRootPanel\[0\]\.(\w+)\[0\]$/)?.[1]);
-    expect([...names].sort()).toEqual([...MOCK_SPICE_A_FIELD_NAMES].sort());
-    for (const field of recipe.fields) {
-      const name = field.som.match(/\.(\w+)\[0\]$/)![1] as (typeof MOCK_SPICE_A_FIELD_NAMES)[number];
-      expect(field.som).toBe(mockSomPath(name));
+  it('uses the real keys: type-of-company, proposedname1, proposedname2, nic-text-box', () => {
+    const css = Object.fromEntries(recipe.fields.map((f) => [f.key, f.css]));
+    expect(css['company.type']).toBe('.guideFieldNode.type-of-company');
+    expect(css['company.proposedNames[0]']).toBe('.guideFieldNode.proposedname1');
+    expect(css['company.proposedNames[1]']).toBe('.guideFieldNode.proposedname2');
+    expect(css['company.nicCode']).toBe('.guideFieldNode.nic-text-box');
+    expect(recipe.fields.filter((f) => f.waitForOptions).map((f) => f.key)).toEqual(['company.class', 'company.category', 'company.subCategory']);
+  });
+
+  it('carries the real buttons: Save and Auto check are safe; Submit and Pay are human', () => {
+    expect(recipe.actions.map((a) => [a.id, a.kind])).toEqual([['save-draft', 'safe'], ['auto-check', 'safe'], ['submit', 'human'], ['pay', 'human']]);
+  });
+
+  it('leaves the fields the capture lacks to the user', () => {
+    for (const key of ['company.nameSignificance', 'company.trademarkSimilar']) {
+      const f = recipe.fields.find((x) => x.key === key)!;
+      expect(f.askUser).toBe(true);
+      expect(f.note).toMatch(/not in the 2026-09-23 capture/);
     }
   });
 
@@ -50,30 +64,48 @@ describe('spice-a recipe', () => {
     expect(JSON.stringify(recipe)).not.toMatch(/"value"/);
   });
 
-  it('never lets the agent click Submit or Pay', () => {
-    const submit = recipe.actions.filter((a) => /submit|pay/i.test(a.label));
-    expect(submit.length).toBeGreaterThan(0);
-    for (const action of submit) expect(action.kind).toBe('human');
-  });
-
   it('has an SRN pattern that finds an MCA reference', () => {
     const srn = recipe.expect.find((e) => e.kind === 'srn')!;
     expect('Your SRN is AA1234567 for this form'.match(new RegExp(srn.pattern))?.[0]).toBe('AA1234567');
   });
 
   it('is served by the registry', () => {
-    expect(getRecipe('spice-a')?.version).toBe('1.1.0');
+    expect(getRecipe('spice-a')?.version).toBe('2.0.0');
     expect(getRecipe('nope')).toBeNull();
-    expect(listRecipes().map((r) => r.id)).toContain('spice-a');
+    expect(listRecipes().map((r) => r.id)).toEqual(['spice-a', 'spice-b', 'agile-pro-s', 'emoa', 'eaoa']);
+  });
+});
+
+describe('every MCA recipe binds real captured keys', () => {
+  it.each(Object.entries(FORM_OF))('%s: every verified key exists in the capture, and its node id too', (id, form) => {
+    const recipe = getRecipe(id)!;
+    const keys = schemaKeys(form);
+    const raw = JSON.parse(readFileSync(path.join(SCHEMAS, `${form}.json`), 'utf8')) as { fields: Array<{ id: string }> };
+    const ids = new Set(raw.fields.map((f) => f.id));
+    for (const field of recipe.fields) {
+      if (field.note?.startsWith('Unverified')) continue;
+      const key = /^\.guideFieldNode\.(.+)$/.exec(field.css ?? '')?.[1];
+      expect(key && keys.has(key), `${id} ${field.key} → ${field.css}`).toBe(true);
+      if (field.nodeId) expect(ids.has(field.nodeId), `${id} ${field.nodeId}`).toBe(true);
+    }
+    expect(recipe).toMatchObject({ verifiedAgainst: 'capture', pack: 'mca-v3' });
+    expect(guideKeysOf(recipe).length).toBeGreaterThan(0);
+  });
+
+  it('binds only keys the Assist profile has (src/lib/assist-profile/types.ts)', () => {
+    const allowed = /^(company\.(proposedNames\[\d\]|type|class|category|subCategory|nicCode|nameSignificance|trademarkSimilar|aoaEntrenched|capital\.equity\.(classes|className|authorizedShares|subscribedShares|faceValue))|registeredOffice\.(line1|line2|pincode|area|city|district|state|countryCode|mobile|email|longitude|latitude|rocOffice)|agile\.numberOfDirectors|moa\.witness\.(name|address)|aoa\.witness\.(name|addressDescriptionOccupation|dinPanMembership)|(subscribers|directors)\[\{i\}\]\.(din|firstName|middleName|surName|father\.(firstName|middleName|surName)|gender|dob|nationality|placeOfBirth|pan|email|mobile|citizenOfIndia|residentInIndia|designation|place|shares\.equity\.number))$/;
+    for (const recipe of listRecipes()) for (const f of recipe.fields) expect(f.key, `${recipe.id}`).toMatch(allowed);
   });
 });
 
 describe('recipe schema', () => {
   const base = parseRecipe(spiceA);
 
-  it('refuses a safe Submit action', () => {
-    const bad = { ...base, actions: [{ id: 'submit', label: 'Submit', kind: 'safe', match: { text: 'Submit' } }] };
-    expect(recipeSchema.safeParse(bad).success).toBe(false);
+  it('refuses a safe Submit, OTP, Confirm or Delete action', () => {
+    for (const label of ['Submit', 'Send OTP', 'Confirm', 'Delete', 'e-Verify']) {
+      const bad = { ...base, actions: [{ id: 'x', label, kind: 'safe', match: { text: label } }] };
+      expect(recipeSchema.safeParse(bad).success, label).toBe(false);
+    }
   });
 
   it('refuses duplicate field keys, unknown pages and a bad version', () => {
@@ -86,6 +118,13 @@ describe('recipe schema', () => {
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], value: 'X' }] }).success).toBe(false);
   });
 
+  it('needs a locator on every field, and a pack for a pack page', () => {
+    const { css: _css, nodeId: _n, ...bare } = base.fields[0]!;
+    expect(recipeSchema.safeParse({ ...base, fields: [bare] }).success).toBe(false);
+    const { pack: _pack, ...noPack } = base;
+    expect(recipeSchema.safeParse(noPack).success).toBe(false);
+  });
+
   it('noPlaceholder (G16) defaults to true for mandatory fields and may be declared', () => {
     expect(fieldRejectsPlaceholder({ required: true })).toBe(true);
     expect(fieldRejectsPlaceholder({ required: false })).toBe(false);
@@ -93,43 +132,88 @@ describe('recipe schema', () => {
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], noPlaceholder: true }] }).success).toBe(true);
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...base.fields[0], noPlaceholder: 'yes' }] }).success).toBe(false);
   });
+
+  it('stays backwards compatible: a recipe with its own URL, ready check and SOM paths and no pack parses', () => {
+    const legacy = {
+      id: 'legacy', version: '1.0.0', title: 'Legacy', subAgent: 'spice-a', verifiedAgainst: 'mock',
+      pages: [{ id: 'p', title: 'P', urlPattern: '/x*.html', ready: { som: 'guide[0]' } }],
+      fields: [{ key: 'company.type', page: 'p', som: 'guide[0].a[0]', css: '[name="a"]', label: 'A', required: true }],
+      actions: [], gates: ['LOGIN', 'DSC', 'SUBMIT', 'PAY'], expect: [],
+    };
+    expect(parseRecipe(legacy).pack).toBeUndefined();
+    expect(resolveRecipe(parseRecipe(legacy), new Map())).toEqual(parseRecipe(legacy));
+  });
 });
 
-describe('spice-b recipe', () => {
-  const recipe = parseRecipe(spiceB);
-
-  it('parses as v1.0.0 against the mock and is served by the registry', () => {
-    expect(recipe).toMatchObject({ id: 'spice-b', version: '1.0.0', subAgent: 'spice-b', verifiedAgainst: 'mock' });
-    expect(getRecipe('spice-b')?.fields).toHaveLength(recipe.fields.length);
-    expect(recipe.gates).toEqual(['LOGIN', 'DSC', 'SUBMIT', 'PAY']);
-  });
-
-  it('fills company, registered office, subscribers[] and directors[] through the mock field names', () => {
-    const singles = recipe.fields.filter((f) => !f.each);
-    expect(singles.map((f) => f.som).sort()).toEqual(MOCK_SPICE_B_FIELD_NAMES.map(mockSpiceBSomPath).sort());
-    for (const f of singles) expect(f.key).toMatch(/^(company|registeredOffice)\./);
-    for (const group of ['subscribers', 'directors'] as const) {
-      const fields = recipe.fields.filter((f) => f.each === group);
-      const names = MOCK_SPICE_B_GROUPS[group].fields;
-      expect(fields.map((f) => f.som).sort()).toEqual(names.map((n) => mockSpiceBGroupSomPath(group, n, '{i}')).sort());
-      expect(fields.map((f) => f.css).sort()).toEqual(names.map((n) => `[name="${mockSpiceBGroupName(group, n, '{n}')}"]`).sort());
-      for (const f of fields) {
-        expect(f.key.startsWith(`${group}[{i}].`)).toBe(true);
-        expect(f.label).toContain('{n}');
-      }
+describe('recipes reference their pack', () => {
+  it('every recipe names a pack the registry holds, its pages exist there, and its gates are the pack\'s', () => {
+    for (const recipe of rawRecipeFiles()) {
+      const pack = getPack(recipe.pack!)!;
+      expect(pack, recipe.id).toBeTruthy();
+      for (const page of recipe.pages) expect(pack.pages.some((p) => p.id === page.packPage), `${recipe.id} ${page.packPage}`).toBe(true);
+      for (const gate of recipe.gates) expect(pack.gates, `${recipe.id} ${gate}`).toContain(gate);
     }
   });
 
-  it('leaves the director designation to the user (Suite does not hold it)', () => {
-    expect(recipe.fields.find((f) => f.key === 'directors[{i}].designation')?.askUser).toBe(true);
+  it('refuses a recipe whose pack or pack page is unknown', () => {
+    const raw = parseRecipe(spiceA);
+    const packs = new Map(listPacks().map((p) => [p.id, p]));
+    expect(() => resolveRecipe({ ...raw, pack: 'nope' }, packs)).toThrow(/unknown pack/);
+    expect(() => resolveRecipe({ ...raw, pages: [{ id: 'part-a', packPage: 'nope' }] }, packs)).toThrow(/unknown pack page/);
+  });
+});
+
+describe('spice-b recipe (real MCA keys)', () => {
+  const recipe = parseRecipe(spiceB);
+
+  it('parses as v2.0.0 against the capture, with the four wizard sections as pack pages', () => {
+    expect(recipe).toMatchObject({ id: 'spice-b', version: '2.0.0', subAgent: 'spice-b', verifiedAgainst: 'capture', pack: 'mca-v3' });
+    expect(recipe.pages.map((p) => p.packPage)).toEqual(['spice-b-structure', 'spice-b-address', 'spice-b-subscribers', 'spice-b-directors']);
+    const served = getRecipe('spice-b')!;
+    for (const page of served.pages) {
+      expect(page.urlPattern).toBe('/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html');
+      expect(page.step).toMatch(/section|Add\/Edit/);
+    }
+    expect(recipe.gates).toEqual(['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT', 'PAY']);
   });
 
-  it('finds the template for a concrete repeating key', () => {
-    expect(findRecipeField(recipe, 'directors[1].din')?.key).toBe('directors[{i}].din');
-    expect(findRecipeField(recipe, 'subscribers[0].shares.equity.number')?.key).toBe('subscribers[{i}].shares.equity.number');
+  it('uses the real keys for capital, office and the subscriber and director blocks', () => {
+    const css = (key: string, slot?: string) => recipe.fields.find((f) => f.key === key && f.slot === slot)?.css;
+    expect(css('company.capital.equity.authorizedShares')).toBe('.guideFieldNode.numberofeshares_1');
+    expect(css('company.capital.equity.faceValue')).toBe('.guideFieldNode.amountpershare_1');
+    expect(css('registeredOffice.line1')).toBe('.guideFieldNode.correspondenceaddressline1');
+    expect(css('registeredOffice.pincode')).toBe('.guideFieldNode.correspondenceaddress_pinCode');
+    expect(css('registeredOffice.email')).toBe('.guideFieldNode.correspondenceaddress_emailID');
+    expect(css('subscribers[{i}].din', '6b')).toBe('.guideFieldNode.din6b');
+    expect(css('subscribers[{i}].firstName', '6c')).toBe('.guideFieldNode.firstName6c');
+    expect(css('directors[{i}].din', '7a')).toBe('.guideFieldNode.din7a');
+    expect(css('directors[{i}].pan', '7b')).toBe('.guideFieldNode.pan7b');
+    expect(css('directors[{i}].firstName', '7b')).toBe('.guideFieldNode.firstName7bp');
+    expect(recipe.fields.find((f) => f.key === 'registeredOffice.pincode')?.lookup).toBe(true);
+  });
+
+  it('splits subscribers and directors by DIN with `where`, and shares the director blocks with subscriber-directors', () => {
+    const where = (key: string, slot: string) => recipe.fields.find((f) => f.key === key && f.slot === slot)?.where;
+    expect(where('subscribers[{i}].din', '6b')).toEqual({ kind: 'individual', din: true });
+    expect(where('subscribers[{i}].firstName', '6c')).toEqual({ kind: 'individual', din: false });
+    expect(where('subscribers[{i}].din', '7a')).toEqual({ kind: 'individual', isDirector: true, din: true });
+    expect(where('directors[{i}].din', '7a')).toEqual({ din: true });
+    // Subscriber-directors come first, so they take the first director blocks.
+    const order = recipe.fields.map((f) => `${f.each}:${f.slot}`);
+    expect(order.indexOf('subscribers:7a')).toBeLessThan(order.indexOf('directors:7a'));
+  });
+
+  it('leaves the director designation to the user (Suite does not hold it)', () => {
+    for (const f of recipe.fields.filter((x) => x.key.endsWith('.designation'))) expect(f.askUser).toBe(true);
+  });
+
+  it('finds the template for a concrete repeating key, with its slot', () => {
+    expect(findRecipeField(recipe, 'directors[1].din@7a')?.key).toBe('directors[{i}].din');
+    expect(findRecipeField(recipe, 'subscribers[0].shares.equity.number@6b')?.slot).toBe('6b');
     expect(findRecipeField(recipe, 'registeredOffice.pincode')?.key).toBe('registeredOffice.pincode');
-    expect(findRecipeField(recipe, 'directors[x].din')).toBeNull();
-    expect(findRecipeField(recipe, 'directors[1].nope')).toBeNull();
+    expect(findRecipeField(recipe, 'directors[1].din')).toBeNull();
+    expect(findRecipeField(recipe, 'directors[x].din@7a')).toBeNull();
+    expect(findRecipeField(recipe, 'directors[1].nope@7a')).toBeNull();
   });
 });
 
@@ -137,14 +221,18 @@ describe('repeating fields (each)', () => {
   const base = parseRecipe(spiceB);
   const template = base.fields.find((f) => f.each === 'directors')!;
 
-  it('needs the key to start with the array and {i}, and a placeholder in the SOM path', () => {
+  it('needs the key to start with the array and {i}, and an instance in the selector (nth or a placeholder)', () => {
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...template, key: 'directors[0].firstName' }] }).success).toBe(false);
+    const { nth: _nth, ...noNth } = template;
+    expect(recipeSchema.safeParse({ ...base, fields: [noNth] }).success).toBe(false);
     expect(recipeSchema.safeParse({ ...base, fields: [{ ...template, som: 'a[0].director[0].firstName[0]' }] }).success).toBe(false);
   });
 
-  it('refuses a placeholder on a field without each', () => {
-    const { each: _each, ...plain } = template;
+  it('refuses a placeholder or a `where` on a field without each', () => {
+    const { each: _each, nth: _nth, where: _where, ...plain } = template;
     expect(recipeSchema.safeParse({ ...base, fields: [plain] }).success).toBe(false);
+    const single = base.fields.find((f) => !f.each)!;
+    expect(recipeSchema.safeParse({ ...base, fields: [{ ...single, where: { din: true } }] }).success).toBe(false);
   });
 });
 

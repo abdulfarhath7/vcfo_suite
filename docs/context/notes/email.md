@@ -126,3 +126,36 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - Board resolution "Send back" (`review_rejected` on `pre-2`): no client compose draft, no
   client bell; Resend to the leads with the manager's note. "Approve and send to client" keeps
   the existing `board_resolution_shared` compose to the client.
+
+## Spectrum email design (2026-11-11)
+
+- Every email goes through `renderEmailDocument` in `src/lib/email/email-layout.ts`, drawn in
+  VCFO Spectrum: surface canvas, one raised card with the `line` hairline and 6px corners, the
+  DashHero wash as the header band (letterhead, eyebrow, title), a primary `brand` button, a
+  sunken footer. Do not write hex colours in a template; use the helpers (`emailButton`,
+  `emailCallout`, `emailMetaTable`, `emailLabel`, `emailHeading`, `emailMuted`, `emailInk`,
+  `emailLink`, `emailQuote`, `emailSignature`, `emailStatusWord`, `emailStatusChip`,
+  `emailMono`) or `emailColor('<token>')`.
+- Colours come from `src/lib/email/spectrum-email-tokens.ts`, generated from
+  `docs/design/design-tokens.json` by `npm run tokens:email` (`scripts/design-tokens-email.mjs`
+  converts each OKLCH triplet to sRGB hex, because mail clients read neither CSS variables nor
+  oklch()). `spectrum-email-tokens.test.ts` fails when the file drifts from the JSON, so rerun
+  the script after any token change. `--check` prints whether the file is current.
+- Fonts follow `type.fonts` (R-28): Roboto for text, Roboto Mono for identifiers, loaded from
+  Google Fonts where the client allows it, Arial / Courier New otherwise. Outlook on Windows gets
+  Arial through an `[if mso]` style, because it falls back to Times when the first face is a web
+  font. `emailMetaTable` puts values whose label is CIN, DIN, PAN, SRN, ARN, GSTIN (or password)
+  in the mono face, and `emailIdentifiers` does the same for "CIN U7…" inside the footer.
+- Dark mode: `color-scheme` meta plus a `prefers-color-scheme: dark` stylesheet that re-colours
+  the `sp-*` classes with the dark tokens (Apple Mail, iOS, Outlook for Mac). Gmail web ignores
+  it and shows the light palette. The SBC letterhead swaps to the white mark only inside that
+  stylesheet; the white mark is hidden inline and with `mso-hide` everywhere else.
+- The DashHero gradient lives in its own `<style>` block (so a client that drops it keeps the dark
+  rules); Outlook shows the solid `brand-soft` band (`bgcolor`).
+- Status words keep their text; a label that starts with one of the six (Overdue, Due …,
+  Waiting, In progress, Not started, Done) gets its R-13 tone (`emailStatusTone`). Used by the
+  compliance reminder, My day, the weekly digest headings and the receivables digest.
+- Not converted on purpose: `src/lib/receivables/summary-email.ts` copies SBC finance's existing
+  black-header Calibri table format, and `src/jobs/compliance-reminders.ts` /
+  `src/jobs/saved-reports-send.ts` send bare unstyled HTML without the shell; wrapping them would
+  add header and footer text. WhatsApp templates are untouched.

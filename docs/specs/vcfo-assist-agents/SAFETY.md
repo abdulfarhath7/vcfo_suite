@@ -212,3 +212,26 @@ they mean a single mistake does not cause one.
 | Manifest and dependencies | The build fails on a new host permission, a new permission, or a listed solver package. | Extension CI |
 
 The phase 1 exit criteria in `ROADMAP.md` require all of these tests to pass.
+
+## Portal packs and tax tasks
+
+From step 2 of the plan, a task recipe no longer carries its own page map. It names a **portal
+pack** (`src/lib/assist-agents/packs/<portal>.json`), which holds the pages, selectors, waits and
+human gates for one website, and the recipe lists the pages in order and the Suite value for each
+field. The rules below apply to every pack and every tax task. They add to guards G1 to G18 and
+replace none of them. The "How it is enforced" column describes what step 2 of the plan must build
+and test; until that work lands, no pack exists, and guards G4, G5 and G11 already keep every tax
+portal off.
+
+| Rule | What it means | How it is enforced |
+|---|---|---|
+| Every pack starts mock-only | Each pack carries `legalStatus`, which starts as `mock-only`. A pack runs on its live hosts only when `legalStatus` is `cs-cleared` **and** a super admin has recorded a CS opinion that names those hosts in Suite. Either one alone is not enough. Approval for one portal never extends to another. | The per-pack live switch extends G11 and replaces the single `ASSIST_LIVE_PORTALS` flag. The recipe schema rejects a pack without `legalStatus`. A test runs a `mock-only` pack against a live host and expects a refusal before `PULL_PROFILE`. |
+| A pack can add gates, never remove a guard | A pack may name more human gates (for example an e-Verify button). It cannot mark a login, captcha, OTP, submit, pay, sign or e-verify control as `safe`. | The guards module still runs on every action (G4, G5, G15). A test signs a pack that marks Pay as `safe` and expects the click to be refused. |
+| Challans are prepared, never paid | For Challan 280 (advance tax) and Challan 281 (TDS), the agent fills the challan fields in the person's own session and stops before the payment mode and bank selection page. The person checks the preview, creates the challan and pays through their own bank. The agent never chooses a payment mode or bank, never clicks Pay Now or Pay Later, and never touches a bank page. | The income tax pack names the payment mode page as a `PAY` gate, so the engine enters `WAIT_SUBMIT_PAY` there (G5). "Pay Now", "Pay Later" and "Continue" on that page are on the deny list. |
+| TDS returns are file builders | Quarterly 24Q and 26Q returns are built as files from Suite data, ready for Protean's File Validation Utility (FVU). The person runs the FVU, uploads the file and signs it. The agent never fills the upload page, never uploads and never signs. | The return builder runs inside Suite as an Inngest job and touches no portal. There is no recipe for the upload page. |
+| E-verification is always the person's | EVC, Aadhaar OTP, net-banking verification and DSC signing stay with the person on every portal. The agent never clicks e-Verify or Generate EVC, never reads or routes an OTP, and never touches a DSC. | G3 and G6. The deny list adds e-Verify, Generate EVC, Aadhaar OTP and Verify buttons on the income tax and TRACES hosts. |
+| Captures follow `PORTAL-CAPTURE.md` | Packs are built only from recorder captures made under `PORTAL-CAPTURE.md`: the person's own login, the firm's own entity where possible, stopped before submit or pay, with login, captcha, OTP and client-data screens deleted. Raw HAR files, saved pages and screen recordings are not accepted. Raw captures never enter git; only the pack, the recipe and mock pages with every value removed are committed. | Claude scans each capture for password, cookie, token, PAN and Aadhaar patterns before reading it, and stops if one is found. A test scans the committed mock pages for the same patterns. |
+| GST stays "prepare data only" | Until a CS opinion answers question 30 in `CS-QUESTIONS.md`, a GST agent only prepares the data in Suite and the person types it into the portal. No GST pack exists with live hosts. | The extension manifest has no host permission for `gst.gov.in` or its subdomains, and the manifest test fails the build if one is added. |
+
+The open legal questions for these portals are in Part D of `CS-QUESTIONS.md` (questions 24 to 31).
+Until they are answered, every income tax, TRACES and GST pack stays `mock-only`.

@@ -1,0 +1,36 @@
+{
+  "id": "income-tax-efiling",
+  "title": "Income tax e-filing and e-Pay Tax (eportal.incometax.gov.in)",
+  "hosts": [
+    "eportal.incometax.gov.in"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "unknown",
+  "pages": [],
+  "selectors": {},
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "SUBMIT",
+    "PAY",
+    "EVC"
+  ],
+  "source": "Placeholder: no capture yet. Pages and selectors come from a recorder capture made under docs/specs/vcfo-assist-agents/PORTAL-CAPTURE.md.",
+  "notes": [
+    "Challan 280 (advance tax) and Challan 281 (TDS) are prepared by the agent and PAID by the person: the agent stops before the payment mode and bank page (a PAY gate).",
+    "E-verification (EVC, Aadhaar OTP, net banking) is always the person's.",
+    "The legal review covered MCA only; live use here needs the written CS opinion to name this portal (CS-QUESTIONS.md Part D)."
+  ]
+}

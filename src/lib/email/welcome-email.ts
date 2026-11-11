@@ -4,8 +4,13 @@ import { formatReplyTo, formatFromWithSender, sendEmail, type SendEmailResult } 
 import { loginUrl } from '@/lib/site-url';
 import {
   emailCallout,
+  emailInk,
+  emailLabel,
+  emailLink,
   emailMetaTable,
+  emailMuted,
   emailParagraph,
+  emailSignature,
   escapeHtml,
   renderEmailDocument,
 } from '@/lib/email/email-layout';
@@ -40,7 +45,7 @@ function buildDueListHtml(lines: DueLine[]): string {
   const items = lines
     .map(
       (line) =>
-        `<li style="margin-bottom:10px;"><strong>${escapeHtml(line.title)}</strong><br/><span style="color:#78716c;">${escapeHtml(line.timeline)}</span></li>`,
+        `<li style="margin-bottom:10px;">${emailInk(escapeHtml(line.title))}<br/>${emailMuted(escapeHtml(line.timeline), 13)}</li>`,
     )
     .join('');
   return `<ul style="padding-left:20px;margin:0 0 8px;">${items}</ul>`;
@@ -54,14 +59,14 @@ function buildDueListText(lines: DueLine[]): string {
 function buildCredentialsHtml(params: WelcomeEmailParams): string {
   if (params.setPasswordUrl) {
     return (
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;color:#78716c;font-weight:700;">Sign-in</p>` +
+      emailLabel('Sign-in') +
       emailMetaTable([{ label: 'Login email', value: params.clientEmail }]) +
-      emailParagraph(`<a href="${escapeHtml(params.setPasswordUrl)}">Set your password</a>. The link works for 7 days.`)
+      emailParagraph(`${emailLink(params.setPasswordUrl, 'Set your password')}. The link works for 7 days.`)
     );
   }
   if (params.clientPassword) {
     return (
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Sign-in credentials</p>` +
+      emailLabel('Sign-in credentials') +
       emailMetaTable([
         { label: 'Login email', value: params.clientEmail },
         { label: 'Temporary password', value: params.clientPassword },
@@ -119,18 +124,18 @@ function buildWelcomeEmail(params: WelcomeEmailParams): {
       emailParagraph(
         `We have set up your <strong>${escapeHtml(params.companyName)}</strong> engagement on VCFO Suite. Sign in to track documents, tasks, and upcoming compliance milestones.`,
       ) +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Project summary</p>` +
+      emailLabel('Project summary') +
       `<ul style="padding-left:20px;margin:0 0 18px;">${contextLines
         .map((line) => `<li style="margin-bottom:6px;">${escapeHtml(line)}</li>`)
         .join('')}</ul>` +
-      `<p style="margin:18px 0 8px;font-size:12px;letter-spacing:0.08em;text-transform:;color:#78716c;font-weight:700;">Upcoming milestones (${escapeHtml(params.stage)})</p>` +
+      emailLabel(`Upcoming milestones (${params.stage})`) +
       buildDueListHtml(dueLines) +
       credentialsHtml +
       emailParagraph(
         'For your security, sign in and change your password using <strong>Forgot password</strong> on the login page when convenient.',
       ),
     cta: { label: 'Open client portal', href: params.portalUrl },
-    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Regards,<br/><strong>${escapeHtml(params.managerName)}</strong><br/><a href="mailto:${escapeHtml(params.managerEmail)}" style="color:#2563EB;text-decoration:none;">${escapeHtml(params.managerEmail)}</a></p>`,
+    signatureHtml: emailSignature(params.managerName, params.managerEmail),
   });
 
   const text = `Dear ${params.clientName},

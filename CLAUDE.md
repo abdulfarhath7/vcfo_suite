@@ -107,7 +107,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - **Large views.** A big page keeps its JSX in the original file; state moves to a `use*` hook
   and closure render helpers to `create*`/`render*` factories in a sibling folder (for example
   `src/views/incorporation/milestone-form/`), so the rendered tree does not change.
-- **Fonts and imports.** Public Sans for UI, IBM Plex Mono for identifiers (`app/layout.tsx`).
+- **Fonts and imports.** Roboto for UI and Roboto Mono for identifiers (VCFO Spectrum rule R-28, `app/layout.tsx`, `docs/design/design-tokens.json`).
   `@/` maps to `src/`; `scripts/` and `e2e/` sit outside the `tsconfig` include list.
 
 ## Where the context lives
@@ -145,7 +145,6 @@ are not part of the port and were not committed. A second pass the same day buil
   before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
   the notice to carry a Teams link.
 
-- `src/lib/email/email-layout.ts` still has its own literal palette (not Spectrum yet).
 - `npm run lint` has 0 errors and 329 warnings (mostly `react-refresh/only-export-components`).
 - `CREDENTIALS_ENCRYPTION_KEY` is not set on App Runner yet, so portal credential features
   throw in production until it is added.

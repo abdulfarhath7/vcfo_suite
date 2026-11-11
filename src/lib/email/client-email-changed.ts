@@ -8,6 +8,7 @@ import {
   emailCallout,
   emailMetaTable,
   emailParagraph,
+  emailSignature,
   escapeHtml,
   renderEmailDocument,
 } from '@/lib/email/email-layout';
@@ -52,7 +53,7 @@ function buildClientEmailChangedEmail(params: ClientEmailChangedParams): {
         'If you did not expect this change, reply to this email and we will look into it.',
       ),
     cta: { label: 'Open VCFO Suite', href: loginUrl() },
-    signatureHtml: `<p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">Regards,<br/><strong>${escapeHtml(params.actorName)}</strong><br/><a href="mailto:${escapeHtml(params.actorEmail)}" style="color:#2563EB;text-decoration:none;">${escapeHtml(params.actorEmail)}</a></p>`,
+    signatureHtml: emailSignature(params.actorName, params.actorEmail),
   });
 
   const text = `Dear ${params.previousName},

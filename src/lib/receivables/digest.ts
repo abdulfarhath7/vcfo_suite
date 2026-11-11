@@ -1,4 +1,13 @@
-import { emailCallout, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import {
+  emailCallout,
+  emailColor,
+  emailHeading,
+  emailMuted,
+  emailParagraph,
+  emailStatusWord,
+  escapeHtml,
+  renderEmailDocument,
+} from '@/lib/email/email-layout';
 import { addDaysIso, daysLeft, sheetDate } from './dates';
 import type { SheetInvoice } from './model';
 
@@ -105,21 +114,20 @@ export function buildReceivablesDigest(input: DigestInput): ReceivablesDigest {
 
 export type DigestEmail = { subject: string; html: string; text: string };
 
-const H = 'margin:22px 0 8px;font-size:13px;font-weight:600;color:#0F172A;';
-const TABLE = 'width:100%;border-collapse:collapse;margin:0 0 6px;font-size:13px;';
-const TD = 'padding:7px 10px;border-top:1px solid #E2E8F0;vertical-align:top;';
+const TABLE = 'width:100%;border-collapse:collapse;margin:0 0 6px;font-size:13px;line-height:18px;';
+const TD = `padding:7px 10px;border-top:1.5px solid ${emailColor('line-soft')};vertical-align:top;`;
 
 function tableHtml(lines: Line[]): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="${TABLE}">${lines
     .map(
       (l) =>
-        `<tr><td style="${TD}color:#0F172A;">${escapeHtml(l.label)}<div style="font-size:12px;color:#64748B;">${escapeHtml(l.note)}</div></td><td style="${TD}text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${escapeHtml(digestInr(l.amountInr))}</td></tr>`,
+        `<tr><td class="sp-ink sp-line-soft" style="${TD}color:${emailColor('ink')};">${escapeHtml(l.label)}<div>${emailMuted(escapeHtml(l.note), 12)}</div></td><td class="sp-ink sp-line-soft" style="${TD}color:${emailColor('ink')};font-weight:600;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${escapeHtml(digestInr(l.amountInr))}</td></tr>`,
     )
     .join('')}</table>`;
 }
 
 function none(text: string): string {
-  return `<p style="margin:0 0 6px;font-size:13px;color:#64748B;">${escapeHtml(text)}</p>`;
+  return `<p style="margin:0 0 6px;">${emailMuted(escapeHtml(text), 13)}</p>`;
 }
 
 /** The Monday email. Returns null when the digest is empty (nothing to send). */
@@ -161,7 +169,7 @@ export function receivablesDigestEmail(input: DigestInput, d: ReceivablesDigest 
     sections.push({
       title: `Reminders that failed · ${d.failedReminders.length}`,
       html: `<table role="presentation" cellpadding="0" cellspacing="0" style="${TABLE}">${lines
-        .map((l) => `<tr><td style="${TD}">${escapeHtml(l.label)}<div style="font-size:12px;color:#B91C1C;">${escapeHtml(l.note)}</div></td></tr>`)
+        .map((l) => `<tr><td class="sp-ink sp-line-soft" style="${TD}color:${emailColor('ink')};">${escapeHtml(l.label)}<div style="font-size:12px;line-height:16px;">${emailStatusWord(l.note, 'bad')}</div></td></tr>`)
         .join('')}</table>`,
       text: lines.map((l) => `- ${l.label}: ${l.note}`),
     });
@@ -178,7 +186,7 @@ export function receivablesDigestEmail(input: DigestInput, d: ReceivablesDigest 
       emailParagraph(`Good morning ${escapeHtml(first)},`) +
       emailParagraph(`Here is ${escapeHtml(input.sheetName)} for the week. ${escapeHtml(digestInr(d.openInr))} is open in total.`) +
       (waiting ? emailCallout(escapeHtml(waiting)) : '') +
-      sections.map((s) => `<h3 style="${H}">${escapeHtml(s.title)}</h3>${s.html}`).join(''),
+      sections.map((s) => `${emailHeading(escapeHtml(s.title), { status: s.title })}${s.html}`).join(''),
     cta: { label: 'Open the sheet', href: input.url },
     footerNote: 'You get this every Monday for each sheet you manage. Turn it off in the sheet’s Reminders tab.',
   });
