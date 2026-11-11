@@ -20,6 +20,21 @@ The documents follow the app's own design system, VCFO Spectrum (`docs/design/de
 - **Shapes:** 6px corners on every box, a 1.5px hairline edge, a 3px coloured top edge like the app's KPI cards, rounded-square icon tiles, table heads on `surface-sunken`, no gradients, no shadows and no pills.
 - **Logo:** the files in `docs/specs/brand/logo/`.
 
+- **Type sizes:** each document uses one fixed set of sizes, and every piece of text is snapped to it when the file is built, so the same kind of text has the same size on every page.
+
+  | Role | Brochure | Corporate deck | One-pager |
+  |---|---|---|---|
+  | Tags and code badges | 7 | 7 | 7 |
+  | Captions, footer, small labels | 7.5 | 7.5 | 7.5 (also body text) |
+  | Card body, tables, section labels | 8.5 | 9 | 8.5 |
+  | Body text, lists, call-outs | 9.5 | 10 | — |
+  | Lede and card titles | 10.5 | 11.5 lede, 12 card titles | 9.5 |
+  | Panel headings / large card titles | 12 | 14 | 13 (call to action) |
+  | Sub-display and codes | 16 | 16 | — |
+  | Figures and hero codes | 22 | 36 | 19 |
+  | Page or slide titles | 24 | 28 | 25 (headline) |
+  | Cover headline | 36 (back cover 32) | 38 | — |
+
 All the tokens sit in one place, `build/shared.js`, so a later change to the design system means one edit and a rebuild.
 
 Roboto and Roboto Mono are free Google Fonts. Install both on any computer that edits the `.pptx` files, or PowerPoint will substitute another font. The PDFs have the fonts embedded.

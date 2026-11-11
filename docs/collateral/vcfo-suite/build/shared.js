@@ -221,12 +221,31 @@ async function loadIcons() {
 // ---------- Spectrum shape rules ----------
 // Every box gets the one 6px radius and a 1.5px hairline; a 3px coloured top edge is drawn the
 // way the app draws a KPI card's stat-rule. Full-bleed bands stay square.
-function spectrumShapes(pres) {
+// Snap a font size onto the document's type scale: a list of [upper bound, size] steps.
+function snapSize(scale, v) {
+  if (!scale || typeof v !== 'number') return v;
+  for (const [max, size] of scale) if (v <= max) return size;
+  return v;
+}
+function snapRuns(scale, text, o) {
+  if (o && o.fontSize) o.fontSize = snapSize(scale, o.fontSize);
+  if (Array.isArray(text)) for (const r of text) if (r && r.options && r.options.fontSize) r.options.fontSize = snapSize(scale, r.options.fontSize);
+}
+
+function spectrumShapes(pres, scale) {
   const pageW = pres.presLayout.width / 914400;
   const RECT = pres.shapes.RECTANGLE, ROUND = pres.shapes.ROUNDED_RECTANGLE;
   const orig = pres.addSlide.bind(pres);
   pres.addSlide = (opts) => {
     const slide = orig(opts);
+    const addText = slide.addText.bind(slide);
+    slide.addText = (text, o = {}) => { o = { ...o }; snapRuns(scale, text, o); return addText(text, o); };
+    const addTable = slide.addTable.bind(slide);
+    slide.addTable = (rows, o = {}) => {
+      o = { ...o }; snapRuns(scale, null, o);
+      for (const row of rows) for (const cell of row) if (cell && cell.options) { if (cell.options.fontSize) cell.options.fontSize = snapSize(scale, cell.options.fontSize); if (Array.isArray(cell.text)) snapRuns(scale, cell.text, null); }
+      return addTable(rows, o);
+    };
     const add = slide.addShape.bind(slide);
     let last = null;
     slide.addShape = (type, o) => {
@@ -252,9 +271,9 @@ function spectrumShapes(pres) {
 }
 
 // ---------- drawing helpers (all sizes in inches / points) ----------
-function mkDraw(pres, I) {
+function mkDraw(pres, I, { typeScale = null } = {}) {
   const C = scheme(pres);
-  spectrumShapes(pres);
+  spectrumShapes(pres, typeScale);
   const T = (slide, text, o) => slide.addText(text, { isTextBox: true, margin: 0, valign: 'top', ...o });
 
   // Small icon, optionally on a 6px icon tile (the app's IconChip), never a circle.
@@ -289,7 +308,7 @@ function mkDraw(pres, I) {
   }
 
   // "Coming soon" in the app's warning-banner colours (caution).
-  function soon(slide, x, y, { size = 6.5, h = 0.19 } = {}) {
+  function soon(slide, x, y, { size = 7, h = 0.19 } = {}) {
     if (!SOON) return 0;
     return pill(slide, 'COMING SOON', x, y, { h, size, fill: HEX.cautionSoft, color: HEX.caution, line: HEX.cautionLine, charSpacing: 0.6 });
   }
@@ -318,7 +337,7 @@ function mkDraw(pres, I) {
       rowH = Math.max(rowH, 0.2);
     }
     if (soonTag && SOON) {
-      const sw = 'COMING SOON'.length * 6.5 * 0.0098 + 0.26;
+      const sw = 'COMING SOON'.length * 7 * 0.0098 + 0.26;
       soon(slide, right - sw, cy);
       rowH = Math.max(rowH, 0.2);
     }

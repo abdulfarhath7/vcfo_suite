@@ -13,7 +13,10 @@ async function main(out) {
   pres.title = 'VCFO Suite corporate deck';
   pres.author = 'Steadfast Business Consulting';
   pres.company = 'Steadfast Business Consulting';
-  const { C, T, ico, pill, code, soon, card } = mkDraw(pres, I);
+  // Type scale (pt): 7 tag and badge · 7.5 caption and footer · 9 small text · 10 body ·
+// 12 card titles · 14 large card titles · 16 codes · 28 titles · 36 figures · 38 cover.
+  const TYPE = [[7.2, 7], [7.9, 7.5], [9.0, 9], [10.6, 10], [13.0, 12], [14.5, 14], [17, 16], [30, 28], [37, 36], [99, 38]];
+  const { C, T, ico, pill, code, soon, card } = mkDraw(pres, I, { typeScale: TYPE });
 
   const ph = (dark) => [
     { placeholder: { options: { name: 'eyebrow', type: 'body', x: M, y: 0.36, w: CW, h: 0.2, fontSize: 9, bold: true, color: dark ? C.orange : C.orangeText, margin: 0, valign: 'top', charSpacing: 1.5, align: 'left' }, text: '' } },
@@ -22,8 +25,8 @@ async function main(out) {
     { image: { data: dark ? LOGO.onBlack : LOGO.onWhite, x: M, y: H - 0.38, w: 0.2 * LOGO.ratio, h: 0.2, altText: 'VCFO Suite logo' } },
     { text: { text: 'Confidential · 2026', options: { x: M + 0.9, y: H - 0.38, w: 3, h: 0.2, fontSize: 7.5, color: dark ? HEX.soft : C.muted, margin: 0, valign: 'middle' } } },
   ];
-  pres.defineSlideMaster({ title: 'Deck light', background: { color: C.white }, objects: ph(false), slideNumber: { x: W - M - 0.5, y: H - 0.38, w: 0.5, h: 0.2, fontSize: 8, color: C.muted, align: 'right', margin: 0 } });
-  pres.defineSlideMaster({ title: 'Deck navy', background: { color: C.navy }, objects: ph(true), slideNumber: { x: W - M - 0.5, y: H - 0.38, w: 0.5, h: 0.2, fontSize: 8, color: HEX.soft, align: 'right', margin: 0 } });
+  pres.defineSlideMaster({ title: 'Deck light', background: { color: C.white }, objects: ph(false), slideNumber: { x: W - M - 0.5, y: H - 0.38, w: 0.5, h: 0.2, fontSize: 7.5, color: C.muted, align: 'right', margin: 0 } });
+  pres.defineSlideMaster({ title: 'Deck navy', background: { color: C.navy }, objects: ph(true), slideNumber: { x: W - M - 0.5, y: H - 0.38, w: 0.5, h: 0.2, fontSize: 7.5, color: HEX.soft, align: 'right', margin: 0 } });
   pres.defineSlideMaster({ title: 'Deck cover', background: { color: C.navy }, objects: [] });
 
   const slide = (dark, section) => pres.addSlide({ masterName: dark ? 'Deck navy' : 'Deck light', sectionTitle: section });
@@ -301,7 +304,7 @@ async function main(out) {
       T(s, b, { x: x + 0.7, y: y + 0.42, w: pw - 0.8, h: 0.26, fontSize: 9, color: C.muted, valign: 'middle' });
       if (sn && SOON) pill(s, 'SOON', x + pw - 0.55, y + 0.14, { h: 0.18, size: 6, fill: HEX.cautionSoft, color: HEX.caution, w: 0.42, charSpacing: 0.4 });
     });
-    T(s, SOON ? 'Every claim here is built in the platform and can be shown on a working company. Items marked soon are being rolled out now.' : 'Every claim here is a shipped feature we can show live.', { x: M, y: 4.38, w: CW, h: 0.4, fontSize: 11, bold: true, color: C.white, italic: true });
+    T(s, SOON ? 'Every claim here is built and can be shown on a working company. Items marked soon are rolling out now.' : 'Every claim here is a shipped feature we can show live.', { x: M, y: 4.38, w: CW, h: 0.4, fontSize: 11, bold: true, color: C.white, italic: true });
     s.addNotes('We prefer proof to adjectives, so here are the facts. Thirty-four SPICe+ steps. A board agenda library of two hundred and twenty-four items. Invoices in nine currencies. Hosting in AWS Mumbai. Below are six things we can open and show you on a working company today: per-director drafts, the approval gate, the board meeting loop, bank matching, Ask VCFO with citations and the audit log. Bank matching and the currencies are in the receivables module we are rolling out now.');
   }
 

@@ -14,7 +14,11 @@ async function main(out) {
   pres.title = 'VCFO Suite brochure';
   pres.author = 'Steadfast Business Consulting';
   pres.company = 'Steadfast Business Consulting';
-  const D = mkDraw(pres, I);
+  // Type scale (pt): 7 tag and badge · 7.5 caption · 8.5 card body, tables, labels · 9.5 body and lists ·
+// 10.5 lede and card titles · 12 panel headings · 16 sub-display · 22 figures and hero codes ·
+// 24 page titles · 32 back cover · 36 cover.
+  const TYPE = [[7.2, 7], [7.9, 7.5], [8.9, 8.5], [9.6, 9.5], [10.6, 10.5], [13.5, 12], [17.5, 16], [26.5, 22], [33, 32], [99, 36]];
+  const D = mkDraw(pres, I, { typeScale: TYPE });
   const { C, T, ico, pill, code, soon, card } = D;
 
   // ---------- layouts ----------
@@ -28,7 +32,7 @@ async function main(out) {
       { image: { data: LOGO.onWhite, x: M, y: H - 0.52, w: 0.22 * LOGO.ratio, h: 0.22, altText: 'VCFO Suite logo' } },
       { text: { text: 'Steadfast Business Consulting · app.sbctrack.in', options: { x: M + 0.95, y: H - 0.5, w: 4, h: 0.2, fontSize: 7.5, color: C.muted, margin: 0, valign: 'middle' } } },
     ],
-    slideNumber: { x: W - M - 0.5, y: H - 0.5, w: 0.5, h: 0.2, fontSize: 8, color: C.muted, align: 'right', margin: 0 },
+    slideNumber: { x: W - M - 0.5, y: H - 0.5, w: 0.5, h: 0.2, fontSize: 7.5, color: C.muted, align: 'right', margin: 0 },
   });
   pres.defineSlideMaster({ title: 'VCFO cover', background: { color: C.navy }, objects: [] });
 
@@ -647,7 +651,7 @@ async function main(out) {
       const dark = i < 3;
       s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: ch, fill: { color: dark ? C.navy : C.white }, line: dark ? { type: 'none' } : { color: HEX.line, width: 0.75 } });
       s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: 0.06, fill: { color: C.orange }, line: { type: 'none' } });
-      T(s, c, { x: x + 0.16, y: y + 0.2, w: cw - 0.3, h: 0.38, fontSize: c.length > 3 ? 15 : 20, bold: true, color: dark ? C.orange : C.orangeText, fontFace: MONO, valign: 'middle' });
+      T(s, c, { x: x + 0.16, y: y + 0.2, w: cw - 0.3, h: 0.38, fontSize: 16, bold: true, color: dark ? C.orange : C.orangeText, fontFace: MONO, valign: 'middle' });
       T(s, t, { x: x + 0.16, y: y + 0.66, w: cw - 0.3, h: 0.45, fontSize: 9.8, bold: true, color: dark ? C.white : C.navy, lineSpacingMultiple: 1.0 });
       T(s, b, { x: x + 0.16, y: y + 1.13, w: cw - 0.3, h: 0.9, fontSize: 8.2, color: dark ? HEX.soft : C.muted, lineSpacingMultiple: 1.1 });
     });

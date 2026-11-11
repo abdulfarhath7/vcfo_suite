@@ -14,7 +14,10 @@ async function main(out) {
   pres.title = 'VCFO Suite one-pager';
   pres.author = 'Steadfast Business Consulting';
   pres.company = 'Steadfast Business Consulting';
-  const { C, T, ico, pill, code, soon } = mkDraw(pres, I);
+  // Type scale (pt), nothing below 7: 7 tag, badge and list · 7.5 body and labels · 8.5 contact and
+// small headings · 9.5 lede and card titles · 13 call to action · 19 figures · 25 headline.
+  const TYPE = [[7.2, 7], [7.9, 7.5], [8.9, 8.5], [9.6, 9.5], [14, 13], [20, 19], [99, 25]];
+  const { C, T, ico, pill, code, soon } = mkDraw(pres, I, { typeScale: TYPE });
   pres.defineSlideMaster({ title: 'One-pager', background: { color: C.white }, objects: [] });
   pres.addSection({ title: 'One-pager' });
   const s = pres.addSlide({ masterName: 'One-pager', sectionTitle: 'One-pager' });
