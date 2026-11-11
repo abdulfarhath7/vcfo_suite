@@ -12,6 +12,7 @@ import { fileNamePart, standardDownloadName } from '@/lib/files/download-name';
  *   02_SPICe-Part-B         constitution (MOA, AOA, sheets), one folder per director,
  *                           declarations, then each Phase 2 step that holds uploads
  *   03_After-Incorporation  each Phase 3 and Phase 4 step that holds uploads
+ *   04_Project-Records      the answers, directors, subscribers and audit log (Excel, PR-02)
  *
  * This file is pure: it reads the document pack summary and `checklist_state`, never the
  * database or S3. The caller (`bundle.ts`) has already scoped both by the person's role, so the
@@ -22,7 +23,18 @@ import { fileNamePart, standardDownloadName } from '@/lib/files/download-name';
 export type DownloadSource =
   | { type: 'pack'; itemKey: string }
   | { type: 'br-signed'; path: string }
-  | { type: 'upload'; path: string };
+  | { type: 'upload'; path: string }
+  /** PR-02's project records, made as Excel files when downloaded. */
+  | { type: 'record'; record: ProjectRecord };
+
+export type ProjectRecord = 'answers' | 'directors' | 'subscribers' | 'audit';
+
+const PROJECT_RECORDS: Array<{ record: ProjectRecord; label: string; name: string }> = [
+  { record: 'answers', label: 'Answers to every step', name: 'Answers' },
+  { record: 'directors', label: 'Proposed directors', name: 'Directors' },
+  { record: 'subscribers', label: 'Subscribers', name: 'Subscribers' },
+  { record: 'audit', label: 'Audit log', name: 'Audit Log' },
+];
 
 export interface DownloadFile {
   /** Stable key the pop-up sends back: `pack:<itemKey>`, `br-signed`, `upload:<step>:<field>`. */
@@ -198,7 +210,18 @@ export function buildDownloadCatalog(input: CatalogInput): DownloadCatalog {
   const after = group('after', 'After incorporation', '03_After-Incorporation');
   addStepGroups(after, phaseItems(['post-inc-phase-3', 'registration-phase-4']), state, input.companyName);
 
-  root.groups = [partA, partB, after].filter((g) => g.groups.length || g.files.length);
+  // Project records: the PR-02 spreadsheets, so the pop-up covers the whole project ZIP.
+  const records = group('records', 'Project records (Excel)', '04_Project-Records', 'Project Records');
+  records.files = PROJECT_RECORDS.map(({ record, label, name }) => ({
+    key: `record:${record}`,
+    label,
+    fileName: standardDownloadName(name, input.companyName, 'xlsx'),
+    kind: 'generated' as const,
+    ready: true,
+    source: { type: 'record' as const, record },
+  }));
+
+  root.groups = [partA, partB, after, records].filter((g) => g.groups.length || g.files.length);
   return { companyName: input.companyName, root };
 }
 

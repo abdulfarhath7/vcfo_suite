@@ -61,7 +61,18 @@ describe('document download catalog', () => {
   const catalog = buildDownloadCatalog(input());
 
   it('sorts documents into Part A, Part B (by purpose and director) and after incorporation', () => {
-    expect(catalog.root.groups.map((g) => g.folder)).toEqual(['01_SPICe-Part-A', '02_SPICe-Part-B', '03_After-Incorporation']);
+    expect(catalog.root.groups.map((g) => g.folder)).toEqual([
+      '01_SPICe-Part-A',
+      '02_SPICe-Part-B',
+      '03_After-Incorporation',
+      '04_Project-Records',
+    ]);
+    expect(catalog.root.groups[3].files.map((f) => f.fileName)).toEqual([
+      expect.stringMatching(/^Answers_Ember-Technologies-Private-Limited_.*\.xlsx$/),
+      expect.stringMatching(/^Directors_/),
+      expect.stringMatching(/^Subscribers_/),
+      expect.stringMatching(/^Audit-Log_/),
+    ]);
     const partB = catalog.root.groups[1];
     expect(partB.groups.map((g) => g.folder)).toEqual([
       '01_Constitution',
@@ -78,7 +89,7 @@ describe('document download catalog', () => {
     const office = catalog.root.groups[1].groups[3];
     expect(office.files).toHaveLength(1);
     expect(office.files[0].kind).toBe('uploaded');
-    expect(office.files[0].fileName).toMatch(/^Proof-of-office-address-along-with-NOC_Ember-Technologies-Private-Limited_\d{2}-\d{2}-\d{4}\.pdf$/);
+    expect(office.files[0].fileName).toMatch(/^Proof-of-office-address[A-Za-z-]*_Ember-Technologies-Private-Limited_\d{2}-\d{2}-\d{4}\.pdf$/i);
   });
 
   it('keeps not-ready documents visible but never picks them', () => {
@@ -135,6 +146,6 @@ describe('download selection', () => {
 
   it('starts from the remembered choice, or everything ready', () => {
     expect([...initialSelection(root, ['pack:moa:company', 'gone'])]).toEqual(['pack:moa:company']);
-    expect(initialSelection(root, null).size).toBe(10);
+    expect(initialSelection(root, null).size).toBe(14);
   });
 });

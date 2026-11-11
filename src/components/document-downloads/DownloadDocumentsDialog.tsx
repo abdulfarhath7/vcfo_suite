@@ -162,10 +162,13 @@ export function DownloadDocumentsDialog({
   engagementId,
   open,
   onOpenChange,
+  selectAll = false,
 }: {
   engagementId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Start with every ready document ticked, not the remembered choice ("Download project (ZIP)"). */
+  selectAll?: boolean;
 }) {
   const { user } = useApp();
   const query = useQuery({
@@ -188,9 +191,9 @@ export function DownloadDocumentsDialog({
   useEffect(() => {
     if (!open || !root) return;
     const remembered = readRemembered(user?.id);
-    setSelected(initialSelection(root, remembered?.keys ?? null));
+    setSelected(initialSelection(root, selectAll ? null : remembered?.keys ?? null));
     setLayout(remembered?.layout ?? 'folders');
-  }, [open, root, user?.id]);
+  }, [open, root, user?.id, selectAll]);
 
   const picks = useMemo(() => (root ? quickPicks(root) : []), [root]);
   const count = selected.size;
@@ -263,7 +266,7 @@ export function DownloadDocumentsDialog({
             <div className="grid gap-3 text-[13px] sm:grid-cols-2">
               <div>
                 <p className="mb-1 font-medium text-ink">Format</p>
-                <p className="text-ink-muted">Word (.docx). Uploaded files come as they were sent.</p>
+                <p className="text-ink-muted">Word (.docx); project records in Excel. Uploaded files come as they were sent.</p>
               </div>
               <div>
                 <p className="mb-1 font-medium text-ink">Layout</p>
@@ -303,18 +306,33 @@ export function DownloadDocumentsDialog({
   );
 }
 
-/** The "Download documents" button beside the project name. Hidden for clients. */
-export function DownloadDocumentsButton({ engagementId, className }: { engagementId: string; className?: string }) {
+/**
+ * The "Download documents" button beside the project name. Hidden for clients. With `selectAll`
+ * it is PR-02's "Download project (ZIP)": the same pop-up, with every ready document ticked.
+ */
+export function DownloadDocumentsButton({
+  engagementId,
+  className,
+  selectAll = false,
+  label = 'Download documents',
+  testId = 'download-documents',
+}: {
+  engagementId: string;
+  className?: string;
+  selectAll?: boolean;
+  label?: string;
+  testId?: string;
+}) {
   const { user } = useApp();
   const [open, setOpen] = useState(false);
   if (!user || user.role === 'client') return null;
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className={cn('flex-none', className)} data-testid="download-documents">
+      <Button variant="outline" onClick={() => setOpen(true)} className={cn('flex-none', className)} data-testid={testId}>
         <Download className="mr-1 h-4 w-4" aria-hidden />
-        Download documents
+        {label}
       </Button>
-      <DownloadDocumentsDialog engagementId={engagementId} open={open} onOpenChange={setOpen} />
+      <DownloadDocumentsDialog engagementId={engagementId} open={open} onOpenChange={setOpen} selectAll={selectAll} />
     </>
   );
 }

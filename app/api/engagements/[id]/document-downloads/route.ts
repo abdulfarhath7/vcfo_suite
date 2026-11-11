@@ -32,6 +32,7 @@ const CONTENT_TYPES: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   zip: ZIP_CONTENT_TYPE,
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 };
 
 function contentTypeFor(fileName: string): string {
