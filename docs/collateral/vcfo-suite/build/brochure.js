@@ -136,7 +136,8 @@ async function main(out) {
     ];
     const cw = (CW - 0.2) / 2;
     cards.forEach(([c, t, b, ic], i) => {
-      card(s, { x: M + (i % 2) * (cw + 0.2), y: 5.9 + Math.floor(i / 2) * 1.75, w: cw, h: 1.58, codeText: c, title: t, body: b, iconName: ic, iconColor: HEX.orange, titleSize: 11, bodySize: 8.8 });
+      const fam = { U10: 'orange', U9: 'blue', U1: 'orange', U4: 'navy' }[c];
+      card(s, { x: M + (i % 2) * (cw + 0.2), y: 5.9 + Math.floor(i / 2) * 1.75, w: cw, h: 1.58, bar: C[fam], codeText: c, title: t, body: b, iconName: ic, iconColor: HEX[fam], titleSize: 11, bodySize: 8.8 });
     });
     strip(s, 9.6, 0.95, 'Our premise.', 'A company should never have to ask its advisers “where are we?”. The answer should already be on its screen, checked by a manager and backed by a team that is accountable for it.');
   }
@@ -220,7 +221,7 @@ async function main(out) {
     const body = rows.map(([m, isSoon, what, caps], i) => {
       const fill = { color: i % 2 ? HEX.white : HEX.off };
       const mod = [{ text: m, options: { bold: true, color: C.navy, breakLine: isSoon && SOON } }];
-      if (isSoon && SOON) mod.push({ text: 'COMING SOON', options: { bold: true, color: C.amber, fontSize: 6.5, charSpacing: 0.6 } });
+      if (isSoon && SOON) mod.push({ text: 'COMING SOON', options: { bold: true, color: HEX.caution, fontSize: 6.5, charSpacing: 0.6 } });
       return [
         { text: mod, options: { fill } },
         { text: what, options: { fill, color: C.navy } },
@@ -308,7 +309,7 @@ async function main(out) {
       ['Registrations', 'GST registration is laid out like the portal’s REG-01 tabs. Every other post-incorporation registration gets its own tracker.', 'stamp'],
       ['Yearly calendar', 'Each company gets its own calendar of GST, TDS, PF, ESI, ROC/MCA and FEMA events, statutory and non-statutory, with due-date reminders.', 'calendar'],
       ['Filings register', 'Every filing is recorded with its proof. “Mark filed” closes it, and the client sees the same entry in the portal.', 'checklist'],
-    ].forEach(([t, b, ic], i) => card(s, { x: M + i * (cw + 0.15), y: 2.55, w: cw, h: 1.95, bar: C.navy, iconName: ic, iconColor: HEX.white, iconBg: HEX.navy, iconSize: 0.42, title: t, body: b, titleSize: 10.5, bodySize: 8.5 }));
+    ].forEach(([t, b, ic], i) => card(s, { x: M + i * (cw + 0.15), y: 2.55, w: cw, h: 1.95, bar: C.blue, iconName: ic, iconColor: HEX.white, iconBg: HEX.blue, iconSize: 0.42, title: t, body: b, titleSize: 10.5, bodySize: 8.5 }));
 
     T(s, [{ text: 'One six-word status language, ', options: { bold: true, color: C.navy } }, { text: 'shared by the firm and the client on every screen.', options: { color: C.muted } }], { x: M, y: 4.72, w: CW, h: 0.25, fontSize: 9.5 });
     const words = [['Not started', HEX.grey], ['In progress', HEX.blue], ['Waiting', HEX.teal], ['Due soon', HEX.amber], ['Overdue', HEX.red], ['Done', HEX.green]];
@@ -484,12 +485,12 @@ async function main(out) {
 
     const py = 7.8;
     s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 1.45, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
-    s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 0.06, fill: { color: C.navy }, line: { type: 'none' } });
+    s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 0.06, fill: { color: C.green }, line: { type: 'none' } });
     T(s, 'Payroll and labour registers', { x: M + 0.18, y: py + 0.18, w: 3.5, h: 0.26, fontSize: 10.5, bold: true, color: C.navy });
     soon(s, W - M - 1.12, py + 0.2);
     [['rupee', 'Salary updates', 'Record changes as they happen.'], ['table', 'Payroll summary', 'One view of the month’s payroll.'], ['history', 'Labour registers', 'Statutory registers per establishment.']].forEach(([ic, t, b], i) => {
       const x = M + 0.18 + i * ((CW - 0.36) / 3);
-      ico(s, ic, x, py + 0.6, 0.38, HEX.navy, HEX.off);
+      ico(s, ic, x, py + 0.6, 0.38, HEX.green, HEX.off);
       T(s, t, { x: x + 0.48, y: py + 0.56, w: 1.75, h: 0.24, fontSize: 9, bold: true, color: C.navy });
       T(s, b, { x: x + 0.48, y: py + 0.8, w: 1.75, h: 0.5, fontSize: 8, color: C.muted });
     });

@@ -358,4 +358,9 @@ function mkDraw(pres, I, { typeScale = null } = {}) {
   return { C, T, ico, pill, code, soon, card };
 }
 
-module.exports = { HEX, THEME, MONO, R6, SOON, LOGO, scheme, loadIcons, mkDraw };
+// Family colours, used for a card's 3px top edge and its plain icon, the same on every page:
+// set up the company = orange, keep it compliant = blue (info), board and money = green (positive),
+// see and trust = navy, problems = red (danger).
+const FAMILY = { setup: 'orange', comply: 'blue', money: 'green', trust: 'navy', problem: 'red' };
+
+module.exports = { FAMILY, HEX, THEME, MONO, R6, SOON, LOGO, scheme, loadIcons, mkDraw };

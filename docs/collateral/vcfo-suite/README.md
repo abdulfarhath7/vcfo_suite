@@ -20,6 +20,8 @@ The documents follow the app's own design system, VCFO Spectrum (`docs/design/de
 - **Shapes:** 6px corners on every box, a 1.5px hairline edge, a 3px coloured top edge like the app's KPI cards, rounded-square icon tiles, table heads on `surface-sunken`, no gradients, no shadows and no pills.
 - **Logo:** the files in `docs/specs/brand/logo/`.
 
+- **Family colours:** a card's 3px top edge and its icon show which part of the product it belongs to, on every page: set up the company (U1, U2, U10) is orange, keep it compliant (U5, U6, U9) is blue, board and money (U7, U8, payroll) is green, see and trust (U3, U4, security) is navy, and problems are red. Summary pages that show all ten features (brochure page 13, deck slide 6) use the orange highlight for all of them.
+- **Fixed colour roles:** titles and card titles are navy ink, secondary text is `ink-muted`, small orange labels are the text-safe `highlight`, call-out strips are `brand-soft` with a `brand-text` lead, and every "Coming soon" is `caution` text on `caution-soft`. `build/audit_colors.py` lists every colour in a built file with its token name and marks anything off the palette.
 - **Type sizes:** each document uses one fixed set of sizes, and every piece of text is snapped to it when the file is built, so the same kind of text has the same size on every page.
 
   | Role | Brochure | Corporate deck | One-pager |

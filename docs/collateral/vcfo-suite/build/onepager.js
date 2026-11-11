@@ -77,7 +77,7 @@ async function main(out) {
   const u = [
     ['U1', 'One app, day 0 to every filing', 'Incorporation and compliance on the same record. No hand-over, no re-entry.', C.orange, false],
     ['U2', 'Documents write themselves', 'MCA drafts from the checklist answers, one set per director, one ZIP.', C.orange, false],
-    ['U3', 'Manager approval gate', 'Nothing reaches the client unchecked, and every action is logged.', C.orange, false],
+    ['U3', 'Manager approval gate', 'Nothing reaches the client unchecked, and every action is logged.', C.navy, false],
     ['U5', 'The app chases for you', 'Request lists, T-60/T-30/T-7 expiry alerts, notice escalations, client health.', C.blue, true],
     ['U6', 'Ask VCFO', 'Answers from the client’s actual status and files, with citations.', C.blue, false],
     ['U7·U8', 'Board meetings and receivables', 'Notice to signed resolution; collections with bank matching and nine currencies.', C.green, true],
