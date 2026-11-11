@@ -188,7 +188,7 @@ export function CompareSection({ onDemo }: { onDemo: () => void }) {
  */
 export function HeroArt() {
   const nodes = [
-    [96, 70], [384, 70], [62, 168], [418, 168], [150, 240], [330, 240],
+    [96, 70], [384, 70], [62, 168], [418, 168], [150, 240], [292, 246],
   ] as const;
   return (
     <svg className="hero-art" viewBox="0 0 480 275" role="img" aria-label="A company at the centre of its filings and registrations, each one on time">
