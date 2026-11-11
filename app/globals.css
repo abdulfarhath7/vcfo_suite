@@ -2587,3 +2587,16 @@ html[data-reduce-motion="true"] .discrete-panel {
   html, body { background: #fff !important; }
   .surface, section { break-inside: avoid; box-shadow: none !important; }
 }
+
+/* GL-01: the card a notification points at is highlighted for two seconds (NotifiedHighlight). */
+.notified-flash {
+  border-radius: 10px;
+  animation: notified-flash 2s ease-out;
+}
+@keyframes notified-flash {
+  0%, 60% { box-shadow: 0 0 0 3px oklch(var(--brand) / 0.55), 0 0 0 8px oklch(var(--brand) / 0.12); }
+  100% { box-shadow: 0 0 0 3px oklch(var(--brand) / 0), 0 0 0 8px oklch(var(--brand) / 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notified-flash { animation: none; box-shadow: 0 0 0 3px oklch(var(--brand) / 0.55); }
+}

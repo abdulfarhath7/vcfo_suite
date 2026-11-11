@@ -10,6 +10,7 @@ import { applyAppearanceAttributes } from "@/lib/ui/table-prefs";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
+import { NotifiedHighlight } from "@/components/notifications/NotifiedHighlight";
 
 const ComposeOutgoingEmailHost = dynamic(
   () =>
@@ -55,6 +56,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <AppProvider>
             {children}
             <ComposeOutgoingEmailHost />
+            <NotifiedHighlight />
           </AppProvider>
         </TooltipProvider>
       </LazyMotion>

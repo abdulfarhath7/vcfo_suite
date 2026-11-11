@@ -565,7 +565,7 @@ export function PageHead({
 }) {
   const go = useGo();
   return (
-    <section className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3" aria-label={label}>
+    <section data-notified-target className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3" aria-label={label}>
       <div className="min-w-0 flex-[1_1_320px]">
         <h1 className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
           <span className="min-w-0">{title}</span>

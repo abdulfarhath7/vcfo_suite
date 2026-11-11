@@ -166,7 +166,7 @@ export default function EngagementStepDetail() {
     (a) => a.target?.toLowerCase().includes(activityNeedle) || item.forms.some((f) => a.target?.toLowerCase().includes(f.toLowerCase())),
   );
   const stepTitleRow = (
-    <header className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+    <header data-notified-target className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
       {isClientRoute ? <PageBackButton className="-ml-1.5" /> : null}
       {selfMark ? <StepMark state={selfMark.state} tone={selfMark.tone} label={selfMark.label} /> : null}
       <div className="min-w-0 flex-[1_1_280px]">
