@@ -26,7 +26,7 @@ test('the project name field keeps the cursor for a 40-character name', async ({
 
   // Enter leaves the field and shows the same text as the title.
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: 'Edit project name' })).toHaveText(NAME);
+  await expect(page.locator('button[title="Edit project name"]')).toHaveText(NAME);
 
   await page.evaluate(() => window.localStorage.removeItem('vcfo.create-project.draft.v3'));
 });

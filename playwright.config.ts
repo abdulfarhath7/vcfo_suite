@@ -21,7 +21,7 @@ export default defineConfig({
   },
   projects: [
     // Tests tagged @mobile run only in the phone project.
-    { name: "chromium", use: { ...devices["Desktop Chrome"] }, grepInvert: /@mobile/, testIgnore: "**/uat/**" },
+    { name: "chromium", use: { ...devices["Desktop Chrome"], launchOptions: process.env.UAT_CHROMIUM ? { executablePath: process.env.UAT_CHROMIUM } : {} }, grepInvert: /@mobile/, testIgnore: "**/uat/**" },
     { name: "mobile", use: { ...devices["Pixel 7"] }, grep: /@mobile/, testIgnore: "**/uat/**" },
     // The user acceptance run (docs/specs/uat/TEST-PLAN.md): one worker, in plan order, against a
     // production build started with `next start`. Run with `--project=uat`.

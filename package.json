@@ -31,7 +31,7 @@
     "eval:knowledge:live": "node --conditions=react-server --import tsx tests/ask/evals/run-knowledge-live.ts",
     "eval:live": "node --conditions=react-server --import tsx tests/ask/evals/run-live.ts",
     "e2e": "playwright test",
-    "e2e:smoke": "playwright test e2e/smoke.spec.ts --reporter=list",
+    "e2e:smoke": "playwright test e2e/smoke.spec.ts e2e/link-audit.spec.ts --reporter=list",
     "db:up": "docker compose up -d --wait postgres minio",
     "db:down": "docker compose stop",
     "db:generate": "drizzle-kit generate",
