@@ -63,6 +63,7 @@ import { CategoryTabs } from './task-marks';
 import { TaskList } from './TaskList';
 import { taskHref, useClientTasks } from './task-api';
 import { STATUS_WORDS, showStat, showTasks, taskWord, type Category, type ClientTask } from './tasks';
+import { COMPLIANCES_NOT_STARTED, dueSoonEmpty, obligationsProgressBefore, waitingEmpty } from './empty-copy';
 import '../../css/compliances-board.css';
 
 export const OBLIGATIONS_BASE = portalHref('obligations');
@@ -166,7 +167,7 @@ function ObligationsBody({ today }: { today: string }) {
     ) : starts.isError ? (
       <Empty action={<Button size="sm" variant="secondary" onClick={() => void starts.refetch()}>Try again</Button>}>Could not load the obligations</Empty>
     ) : !beforeGroups.length ? (
-      <Empty>Starts after incorporation</Empty>
+      <Empty>{needle ? 'No obligations match your search' : `${COMPLIANCES_NOT_STARTED} Your obligations will appear here once compliances begin after incorporation.`}</Empty>
     ) : (
       <div>
         {beforeGroups.map((g) => {
@@ -286,7 +287,7 @@ function ObligationsBody({ today }: { today: string }) {
         <div className="grid min-w-0 gap-5">
           <SCard title="Due in the next 15 days" flush>
             {!after ? (
-              <Empty>After the certificate</Empty>
+              <Empty>{dueSoonEmpty(false)}</Empty>
             ) : q.isLoading ? (
               <div className="p-4">
                 <SkeletonRows rows={2} />
@@ -294,7 +295,7 @@ function ObligationsBody({ today }: { today: string }) {
             ) : dueAll.length ? (
               dueAll.slice(0, 8).map((d) => d.node)
             ) : (
-              <Empty />
+              <Empty>{dueSoonEmpty(true)}</Empty>
             )}
           </SCard>
           <SCard title="Waiting on client" meta={after ? waiting.length + waitTasks.length : undefined} flush>
@@ -324,17 +325,19 @@ function ObligationsBody({ today }: { today: string }) {
                 </ListRow>
               ))]
             ) : (
-              <Empty />
+              <Empty>{waitingEmpty(after)}</Empty>
             )}
           </SCard>
           <SCard title="Progress flow">
-            {hasStat ? (
+            {hasStat && !after ? (
+              // Before the certificate nothing can be filed, due or overdue, so a legend of zeros only alarms.
+              <Empty className="m-0 md:mx-0">{obligationsProgressBefore(starts.data?.upcoming.length ?? 0)}</Empty>
+            ) : hasStat ? (
               <>
                 {hasNs ? <h3 className="mb-2 text-[13px] font-medium text-ink-muted">Statutory</h3> : null}
                 <StackedBar
                   onPick={(k) => setStatus((cur) => (cur === k ? null : (k as CompStatus)))}
-                  // Before the certificate every listed obligation is upcoming, so the bar says so instead of 0.
-                  segments={STATUS_ORDER.map((s) => ({ key: s, label: WORD[s], value: after ? count(s) : s === 'up' ? before.length : 0, fill: FILL[s] }))}
+                  segments={STATUS_ORDER.map((s) => ({ key: s, label: WORD[s], value: count(s), fill: FILL[s] }))}
                 />
               </>
             ) : null}
