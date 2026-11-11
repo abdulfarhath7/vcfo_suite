@@ -39,12 +39,13 @@ export function BoardResolutionDocCards({
   engagement,
   doc,
   step,
-  role,
+  viewerRole: role,
 }: {
   engagement: Pick<Engagement, 'id' | 'slug' | 'companyName'>;
   doc: BoardResolutionDoc | null;
   step: 'draft' | 'signed';
-  role: string | undefined;
+  /** The viewer's role. Not named `role`, which JSX lint reads as an ARIA role. */
+  viewerRole: string | undefined;
 }) {
   const isClient = role === 'client';
   const [version, setVersion] = useState<{ n: number; at: string | null } | null>(null);

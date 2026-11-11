@@ -42,7 +42,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
     if (isIntern) {
       return brStatus === 'finalized' ? (
         <div className={className}>
-          <BoardResolutionClientEdit engagementId={engagement.id} role="intern" />
+          <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="intern" />
         </div>
       ) : null;
     }
@@ -53,8 +53,8 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="Draft Board Resolution">
             {engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
-                <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" role={props.role} />
-                {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} role={props.role ?? 'manager'} /> : null}
+                <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" viewerRole={props.role} />
+                {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} viewerRole={props.role ?? 'manager'} /> : null}
               </div>
             ) : null}
             {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
@@ -102,8 +102,8 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="Draft Board Resolution">
           {engagement && brStatus !== 'loading' ? (
             <div className="mb-3">
-              <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" role="client" />
-              {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} role="client" /> : null}
+              <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" viewerRole="client" />
+              {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="client" /> : null}
             </div>
           ) : null}
           {brStatus === 'loading' && (
@@ -139,7 +139,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="Signed Board Resolution">
             {props.engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
-                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" role={isClient ? 'client' : props.role} />
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
               </div>
             ) : null}
             {brStatus === 'signed' ? (
@@ -177,7 +177,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="Signed Board Resolution">
             {props.engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
-                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" role={isClient ? 'client' : props.role} />
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
               </div>
             ) : null}
           {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}

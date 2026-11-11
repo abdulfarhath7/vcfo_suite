@@ -50,7 +50,8 @@ function TrackedChange({ before, after }: { before: string; after: string }) {
  * chain. After a return the document is "With Lead and Client": both may edit it, and only the
  * Lead sends it to the Manager again. The server decides which buttons each role gets (`view.actions`).
  */
-export function BoardResolutionClientEdit({ engagementId, role }: { engagementId: string; role: string }) {
+// The viewer's role is `viewerRole`, because JSX lint reads a prop named `role` as an ARIA role.
+export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { engagementId: string; viewerRole: string }) {
   const [view, setView] = useState<ClientEditView | null>(null);
   const [editing, setEditing] = useState(false);
   const [paragraphs, setParagraphs] = useState<string[]>([]);
