@@ -1,5 +1,6 @@
 "use client";
 
+import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import { roleAppSegment } from '@/lib/auth-routes';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
@@ -352,6 +353,7 @@ export default function EngagementDetail() {
           actions={
             <>
               <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+              <DownloadDocumentsButton engagementId={eng.id} />
               <ProjectZipButton engagementId={eng.id} />
             </>
           }
