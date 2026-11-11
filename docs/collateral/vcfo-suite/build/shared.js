@@ -363,4 +363,8 @@ function mkDraw(pres, I, { typeScale = null } = {}) {
 // see and trust = navy, problems = red (danger).
 const FAMILY = { setup: 'orange', comply: 'blue', money: 'green', trust: 'navy', problem: 'red' };
 
-module.exports = { FAMILY, HEX, THEME, MONO, R6, SOON, LOGO, scheme, loadIcons, mkDraw };
+// Spacing (inches), from the app's tokens at 96 px per inch: space-2 between chips, space-3 between
+// cards in a grid, space-6 between page sections; a flow gap holds an arrow between steps.
+const SP = { chip: 8 / 96, grid: 12 / 96, section: 24 / 96, flow: 0.3 };
+
+module.exports = { SP, FAMILY, HEX, THEME, MONO, R6, SOON, LOGO, scheme, loadIcons, mkDraw };

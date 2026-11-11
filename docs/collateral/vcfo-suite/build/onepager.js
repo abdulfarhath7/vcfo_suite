@@ -1,6 +1,7 @@
 // VCFO Suite one-pager: one A4 portrait page (8.27 x 11.69 in). Nothing below 7pt.
 const pptxgen = require('pptxgenjs');
-const { HEX, THEME, MONO, SOON, LOGO, loadIcons, mkDraw } = require('./shared');
+const { HEX, THEME, MONO, SOON, LOGO, SP, loadIcons, mkDraw } = require('./shared');
+const GAP = SP.grid, CHIP = SP.chip, SECTION = SP.section, FLOW = SP.flow;
 const { applyTheme } = require('./vendor/apply_theme.js');
 
 const W = 8.27, H = 11.69, M = 0.5, CW = W - 2 * M;
@@ -33,9 +34,9 @@ async function main(out) {
   T(s, [{ text: 'Your company, incorporated and compliant — ', options: { color: C.white } }, { text: 'in one app.', options: { color: C.orange } }], { x: M, y: 1.2, w: 5.6, h: 0.92, fontSize: 25, bold: true, lineSpacingMultiple: 0.95 });
   T(s, 'VCFO Suite is the web app SBC, a CA and CMA-led firm, uses to set up your Indian company and run its whole compliance life, with you inside the same app.', { x: M, y: 2.14, w: 6.9, h: 0.42, fontSize: 9.5, color: HEX.soft, lineSpacingMultiple: 1.1 });
   const tiles = [['34', 'SPICe+ steps'], ['5', 'roles, one app'], ['1', 'record from day 0 to every filing'], ['2-in-1', 'platform + CA team']];
-  const tw = (CW - 3 * 0.12) / 4;
+  const tw = (CW - 3 * GAP) / 4;
   tiles.forEach(([big, t], i) => {
-    const x = M + i * (tw + 0.12), y = 2.68;
+    const x = M + i * (tw + GAP), y = 2.68;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: tw, h: 0.62, rectRadius: 0.06, fill: { color: C.navy2 }, line: { color: HEX.navy3, width: 0.75 } });
     const bw = big.length * 0.13 + 0.12;
     T(s, big, { x: x + 0.14, y, w: bw, h: 0.62, fontSize: 19, bold: true, color: C.orange, valign: 'middle' });
@@ -43,7 +44,7 @@ async function main(out) {
   });
 
   // 2 ─ Problem | Answer
-  const y2 = 3.72, lw = 3.35, rx = M + lw + 0.3, rw = CW - lw - 0.3;
+  const y2 = HH + SECTION, lw = 3.35, rx = M + lw + SECTION, rw = CW - lw - SECTION;
   label('THE PROBLEM', M, y2, 3, C.red);
   const prob = [
     'Incorporation runs on email, WhatsApp and Excel; the client never knows the status.',
@@ -58,9 +59,9 @@ async function main(out) {
   });
   label('THE VCFO ANSWER', rx, y2, 3);
   const steps = ['Set up', 'Document', 'Incorporate', 'Comply', 'Grow'];
-  const sw = (rw - 4 * 0.09) / 5;
+  const sw = (rw - 4 * CHIP) / 5;
   steps.forEach((t, i) => {
-    const x = rx + i * (sw + 0.09), y = y2 + 0.27;
+    const x = rx + i * (sw + CHIP), y = y2 + 0.27;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: sw, h: 0.52, rectRadius: 0.06, fill: { color: i === 4 ? C.orange : C.navy }, line: { type: 'none' } });
     T(s, [{ text: String(i + 1), options: { fontSize: 7.5, fontFace: MONO, color: i === 4 ? C.navy : C.orange, breakLine: true } }, { text: t, options: { fontSize: 7.8, color: i === 4 ? C.navy : C.white } }], { x, y, w: sw, h: 0.52, bold: true, align: 'center', valign: 'middle', lineSpacingMultiple: 1.05 });
   });
@@ -82,9 +83,9 @@ async function main(out) {
     ['U6', 'Ask VCFO', 'Answers from the client’s actual status and files, with citations.', C.blue, false],
     ['U7·U8', 'Board meetings and receivables', 'Notice to signed resolution; collections with bank matching and nine currencies.', C.green, true],
   ];
-  const cw = (CW - 2 * 0.14) / 3, ch = 0.98;
+  const cw = (CW - 2 * GAP) / 3, ch = 0.98;
   u.forEach(([c, t, b, bar, sn], i) => {
-    const x = M + (i % 3) * (cw + 0.14), y = y3 + 0.26 + Math.floor(i / 3) * (ch + 0.1);
+    const x = M + (i % 3) * (cw + GAP), y = y3 + 0.26 + Math.floor(i / 3) * (ch + GAP);
     s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: ch, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
     s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: 0.05, fill: { color: bar }, line: { type: 'none' } });
     code(s, c, x + 0.12, y + 0.16, { fill: C.navy, color: C.white, size: 7, h: 0.2, w: c.length > 3 ? 0.6 : 0.36 });
@@ -94,7 +95,7 @@ async function main(out) {
   });
 
   // 4 ─ What's inside | What you receive
-  const y4 = 8.1, iw = 4.75, rx2 = M + iw + 0.25, rw2 = CW - iw - 0.25;
+  const y4 = 8.1, iw = 4.75, rx2 = M + iw + SECTION, rw2 = CW - iw - SECTION;
   label('WHAT’S INSIDE', M, y4, 3);
   const inside = [
     ['Incorporation engine', '34 steps'],
@@ -110,10 +111,10 @@ async function main(out) {
     ['Firm cockpit', 'five roles, approvals'],
     ['Trust and security', 'vault, audit log'],
   ];
-  const colW = (iw - 0.15) / 2;
+  const colW = (iw - GAP) / 2;
   inside.forEach(([t, d], i) => {
     const col = Math.floor(i / 6), row = i % 6;
-    const x = M + col * (colW + 0.15), y = y4 + 0.24 + row * 0.25;
+    const x = M + col * (colW + GAP), y = y4 + 0.24 + row * 0.25;
     T(s, String(i + 1).padStart(2, '0'), { x, y, w: 0.24, h: 0.24, fontSize: 7, bold: true, color: C.orangeText, fontFace: MONO, valign: 'middle' });
     T(s, [{ text: t, options: { bold: true, color: C.navy } }, { text: d ? ' · ' + d : '', options: { color: C.muted } }], { x: x + 0.26, y, w: colW - 0.26, h: 0.24, fontSize: 7, valign: 'middle' });
   });
