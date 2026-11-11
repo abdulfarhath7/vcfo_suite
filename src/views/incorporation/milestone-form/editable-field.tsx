@@ -43,7 +43,7 @@ import { FieldReviewControls, FieldReviewMark } from './field-review';
 
 /** The editable control for one field, by field type (repeat groups render recursively). */
 export function createEditableFieldRenderer(
-  ctx: MilestoneFormCtx & FieldEditActions & Pick<ReadOnlyFieldRenderers, 'fieldShellClass'>,
+  ctx: MilestoneFormCtx & FieldEditActions & Pick<ReadOnlyFieldRenderers, 'fieldShellClass' | 'renderReadOnlyField'>,
 ) {
   const {
     isClient,
@@ -70,6 +70,7 @@ export function createEditableFieldRenderer(
     setField,
     handleFilePick,
     fieldShellClass,
+    renderReadOnlyField,
     directFlow,
     itemState,
   } = ctx;
@@ -129,7 +130,9 @@ export function createEditableFieldRenderer(
           <RepeatGroupEditor
             group={field}
             responses={draft}
-            renderField={(sub) => renderEditableField(sub)}
+            // A card field follows the same ownership rule as its grid cell: the client reads the
+            // lead's DIN check (DR-01), and the lead reads the client's answers (DR-02).
+            renderField={(sub) => (isCellReadOnly(sub.id) ? renderReadOnlyField(sub) : renderEditableField(sub))}
             grid={{
               onCellChange: (key, value) => setField(key, value),
               isCellReadOnly: (key) => isCellReadOnly(key),

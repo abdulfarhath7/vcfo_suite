@@ -16,7 +16,7 @@ export function fileNamePart(value: string | null | undefined): string {
   return (value ?? '')
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
-    // Control characters are not allowed in a file name, so stripping them is the point here.
+    // Control characters are not allowed in a file name on Windows, so they are removed on purpose.
     // eslint-disable-next-line no-control-regex
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, ' ')
     .replace(/[^A-Za-z0-9.()&+-]+/g, '-')

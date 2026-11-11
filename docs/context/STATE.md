@@ -226,7 +226,8 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
 - **Applications and Part B:**
   - SA-01 SRN field on every application; SA-02 editable name-approval expiry.
   - SB-01: Part B carries the MCA section numbers (`src/lib/checklist/part-b-sections.ts`, built from the owner's signed Part B PDF). Field ids are unchanged.
-  - SB-03: subscriber follow-ups. Shareholder or nominee; for a body corporate, domestic (CIN of 21 characters) or foreign (FRCN). Visibility cascades, and hidden answers are cleared on save.
+  - SB-03: subscriber follow-ups. Shareholder or nominee; for a body corporate, domestic (CIN of 21 characters) or foreign (Unique Identification Number, UIN, stored under the old field id `foreignRegistrationNumber`). An LLP is asked nothing beyond the name, shares and value (owner, 11 November): no domestic or foreign question, no LLPIN and no authorised person. The `llpin` question is gone, and an LLPIN stored on an older project is no longer read. Visibility cascades, and hidden answers are cleared on save.
+  - SB-01 follow-up (11 November): the Part B labels, option labels and section headings follow the wording of the MCA SPICe+ Part B form (INC-32). Field ids are unchanged. Part B keeps its own copies of the qualification and identity-proof lists (`withLabels` in `checklist-responses.ts`), so the generated documents still print the shared labels. The foreign company identifier stays "Unique Identification Number (UIN)" at the owner's request, although MCA says FRCN.
 - **Board resolution:**
   - BR-01/02 document cards; BR-03 the "who holds it" chip (`work-holder.ts`); BR-07 "Send to Lead".
   - BR-04/05/06: the client edits the sent draft. The firm's original is kept, and the edit is stored in `pre-2.brClientEdit`. Each save is audited before and after, and staff see tracked changes.

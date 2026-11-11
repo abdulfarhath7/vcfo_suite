@@ -54,7 +54,7 @@ describe('CopyForAssist', () => {
     render(<CopyForAssist engagementId="eng-1" hrefForMissing={hrefForMissing} />);
     expect(screen.getByText('1 missing').className).toContain('bg-warning-soft');
     fireEvent.click(screen.getByRole('button', { name: /show details/i }));
-    expect(screen.getByRole('link', { name: /Director 2 · PAN/ })).toHaveAttribute('href', '/step/pre-15?tab=7-particulars-of-directors');
+    expect(screen.getByRole('link', { name: /Director 2 · PAN/ })).toHaveAttribute('href', '/step/pre-15?tab=7-particulars-of-subscriber-s-cum-directors-director-of-the-company');
     expect(screen.getByText(/Pick the NIC row/)).toBeInTheDocument();
   });
 
