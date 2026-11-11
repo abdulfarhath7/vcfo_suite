@@ -1,8 +1,7 @@
 'use client';
 
 /**
- * The client journey map card for the top of the client home page: a tracker bar for a
- * ten-second glance (Incorporation, Post-incorporation, Registration, Compliance), a "Your next
+ * The client journey map card for the top of the client home page: a "Your next
  * step" banner (the first thing the client owes, else the current step) that opens the panel, then
  * a detail view of the selected stop as an expandable tree or a metro map, and a side panel for
  * the clicked node. See docs/specs/client-journey-map/PLAN.md. The tree is loaded on demand (`next/dynamic`, no SSR) so the home page stays
@@ -20,7 +19,6 @@ import type { HomeData } from '../useHome';
 import { dShort, sortNeeds, type NeedRow } from '../derive';
 import { stepHref } from '@/components/client-portal/routes';
 import { buildJourney, type JNode, type JStop } from './journey-model';
-import { TrackerBar } from './TrackerBar';
 import { JourneyMetro } from './JourneyMetro';
 import { NodePanel, type PanelNeed } from './NodePanel';
 import { Celebrate } from './Celebrate';
@@ -114,7 +112,7 @@ export function JourneyMap({ h, onNeed }: { h: HomeData; /** Acts on a need (the
     [h.model, h.regs, h.filings, h.today],
   );
   const [view, setView] = useState<ViewKind>('tree');
-  const [stopId, setStopId] = useState<JStop['id']>(journey.currentStopId);
+  const [stopId] = useState<JStop['id']>(journey.currentStopId);
   const [selected, setSelected] = useState<JNode | null>(null);
   /** Set when the banner opened the panel: the need shows on top of the step. */
   const [panelNeed, setPanelNeed] = useState<NeedRow | null>(null);
@@ -205,7 +203,8 @@ export function JourneyMap({ h, onNeed }: { h: HomeData; /** Acts on a need (the
       bodyClassName="relative grid gap-4"
     >
       <Celebrate engagementId={h.engagementId} stops={journey.stops} reduce={reduce} />
-      <TrackerBar stops={journey.stops} currentStopId={journey.currentStopId} selected={stop.id} onSelect={setStopId} reduce={reduce} />
+      {/* Owner, 11 Nov: the stage tracker with the runner is off the client home until it is redesigned.
+          `TrackerBar` stays in this folder so it can come back; the diagram shows the current stage. */}
       {next ? <NextStep title={next.title} sub={next.sub} cta={next.cta} waiting={next.waiting} kind={next.kind} onOpen={openNext} /> : null}
       {stop.total === 0 ? (
         <EmptyState title={EMPTY_STOP[stop.id]} />
