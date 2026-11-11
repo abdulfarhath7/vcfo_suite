@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { login, onLocalDb } from './helpers/login';
+import { demoEngagementId, login, onLocalDb } from './helpers/login';
 
 /**
  * GL-07 on a running app: a card's email goes out only from the "Send email" pop-up. Cancel sends
@@ -10,7 +10,7 @@ import { login, onLocalDb } from './helpers/login';
  * checked too. Makes a draft request list for Kestrel, so it runs on a local database only.
  */
 
-const KESTREL = '44c756ee-5043-41cb-b3e3-f87b6ce234b1';
+let KESTREL = '';
 const MAIL = join(process.cwd(), 'e2e/uat/results/mail.jsonl');
 
 function caughtSince(since: string): Array<{ subject: string; text?: string; html?: string; to: string | string[] }> {
@@ -27,6 +27,7 @@ test.beforeAll(async () => {
   await onLocalDb(async () => {
     local = true;
   });
+  KESTREL = await demoEngagementId('demo-kestrel-robotics');
 });
 
 test('a request list goes out only from the pop-up, with the edited words', async ({ page }) => {
