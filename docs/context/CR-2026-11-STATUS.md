@@ -15,8 +15,8 @@ what the code does.
 | Blocked on the owner | 1 | CD-05 |
 | **Total** | **39** | 21 complete, 18 still need work |
 
-\* Fixed on 11 November in branch `claude/relaxed-gates-iry9wm`. The fix is tested locally but is
-not committed or deployed yet (see "Board resolution fix" below).
+\* Fixed on 11 November in branch `claude/relaxed-gates-iry9wm`. The fix is committed and pushed,
+but not merged or deployed yet (see "Board resolution fix" below).
 
 Of the 8 P1 items, 3 are fully done (PR-01, BR-03, LP-02). GL-01, GL-07, GL-09, NV-02 and NV-04
 still need work.
