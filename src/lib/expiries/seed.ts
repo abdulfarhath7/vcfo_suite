@@ -1,6 +1,6 @@
 import { getRegistrationPhases } from '@/data/checklist';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
+import { directorEntriesFromDirectors, displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { isoOfText, type RegistrationFactsMap } from '@/lib/registrations/registration-facts';
 import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpirySource, type SubjectKind } from './model';
 
@@ -10,7 +10,9 @@ import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpiryS
  * (`buildRegistrationFacts`) and its current directors (`company_directors`).
  *
  *  - DSC: every proposed director (`pre-15`, or the legacy Part A slots) who answered "has a
- *    valid DSC" with a DSC expiry date. Keyed by the director's name.
+ *    valid DSC" with a DSC expiry date, and every DSC the firm made on KYC Review & DSC (`pre-7`,
+ *    the expiry typed beside each director's DSC proof). Keyed by the director's name; a DSC made
+ *    on `pre-7` replaces the one the director said they had.
  *  - DIR-3 KYC: every DIN holder among the proposed directors and the current company
  *    directors, deduplicated by DIN, due by `dir3KycDueOn`. Keyed by the DIN. The seed only
  *    inserts these (`sync: false`): the next year's date comes from marking the item renewed, so
@@ -54,6 +56,9 @@ export const REGISTRATION_STEP_KIND: Record<string, ExpiryKind> = {
   'reg-15': 'msme',
 };
 
+/** `nrDirectorDscExpiryDate`, `residentDirector2DscExpiryDate` …: the field after the director's prefix. */
+const PRE7_DSC_EXPIRY_SUFFIX = 'DscExpiryDate';
+
 const DIN = /^\d{8}$/;
 
 function cleanDin(value: string | null | undefined): string | null {
@@ -65,27 +70,41 @@ function stepTitle(stepId: string): string {
   return getRegistrationPhases().flatMap((p) => p.items).find((i) => i.id === stepId)?.title ?? stepId;
 }
 
+/**
+ * Steps whose answers feed the seed: the proposed directors (Part A `pre-1`, `pre-15`), the DSCs
+ * made on `pre-7`, and every registration step. A save of any other step leaves expiries alone.
+ */
+export function stepFeedsExpiries(stepId: string): boolean {
+  return stepId === 'pre-1' || stepId === 'pre-7' || stepId === 'pre-15' || stepId.startsWith('reg-');
+}
+
 export function seedRowsFor(input: SeedInput): SeedRow[] {
   const rows: SeedRow[] = [];
   const directors = readProposedDirectors(input.state);
 
-  for (const d of directors) {
-    const name = displayName(d.values);
-    if (!name) continue;
-    const expires = d.values.hasDsc === 'yes' ? isoOfText(d.values.dscExpiryDate) : null;
-    if (!expires) continue;
-    const din = cleanDin(d.values.din);
-    rows.push({
+  const dsc = new Map<string, SeedRow>();
+  const addDsc = (name: string, din: string | null, expires: string | null) => {
+    if (!name || !expires) return;
+    const sourceKey = `dsc:${subjectSlug(name)}`;
+    dsc.set(sourceKey, {
       subjectKind: 'person',
       subjectName: name,
       kind: 'dsc',
       referenceLabel: din ? `DIN ${din}` : null,
       expiresOn: expires,
       source: 'checklist',
-      sourceKey: `dsc:${subjectSlug(name)}`,
+      sourceKey,
       sync: true,
     });
+  };
+  for (const d of directors) {
+    addDsc(displayName(d.values), cleanDin(d.values.din), d.values.hasDsc === 'yes' ? isoOfText(d.values.dscExpiryDate) : null);
   }
+  const pre7 = input.state['pre-7']?.responses ?? {};
+  for (const entry of directorEntriesFromDirectors(directors)) {
+    addDsc(displayName(entry.director.values), cleanDin(entry.director.values.din), isoOfText(pre7[`${entry.fieldPrefix}${PRE7_DSC_EXPIRY_SUFFIX}`]));
+  }
+  rows.push(...dsc.values());
 
   const dinHolders = new Map<string, string>();
   for (const d of input.directors) {

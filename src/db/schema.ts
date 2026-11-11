@@ -1279,7 +1279,4 @@ export * from './schema-ask';
 export * from './schema-watch';
 export * from './schema-request-lists';
 export * from './schema-expiries';
-export * from './schema-notices';
-export * from './schema-compliance-events';
-export * from './schema-client-health';
 export * from './schema-assist';

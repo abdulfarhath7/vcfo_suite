@@ -17,6 +17,7 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { usePortal } from '../../PortalProvider';
+import { ExpiriesCard } from '@/components/compliances/ExpiriesCard';
 import { portalHref } from '../../routes';
 import {
   AREAS,
@@ -573,7 +574,11 @@ const DayPopover = forwardRef<
 
 const railCard = 'min-w-0 rounded-md border-1.5 border-line bg-surface-raised';
 
-/** The right rail (donut, Next deadline, Coming up); the phone page stacks it under the agenda. */
+/**
+ * The right rail (donut, Next deadline, Coming up, Expiries); the phone page stacks it under the
+ * agenda. The DSC made during incorporation can lapse before the company exists, so Expiries
+ * shows even when the rest of the rail waits for incorporation.
+ */
 export function Rail({
   after,
   loading,
@@ -594,9 +599,10 @@ export function Rail({
   openDrill: ReturnType<typeof useComp>['openDrill'];
 }) {
   const { today } = useComp();
+  const expiries = <ExpiriesCard showCompany={false} mayRenew={false} className={railCard} />;
   // Before incorporation the calendar card already says "Starts after incorporation"; a second
   // copy in the rail repeated it (twice in a row on a phone).
-  if (!after) return null;
+  if (!after) return <Island className="cal-rail">{expiries}</Island>;
   if (loading)
     return (
       <Island className="cal-rail">
@@ -620,6 +626,7 @@ export function Rail({
         <NextDeadlineCard next={next} over={over} todayMonthRows={todayMonthRows} railRows={railRows} onOpen={onOpen} openDrill={openDrill} nowKey={nowKey} />
       )}
       <ComingUp rows={comingUp(railRows, today, 7)} onOpen={onOpen} />
+      {expiries}
     </Island>
   );
 }

@@ -35,10 +35,16 @@ export interface ExpiryEmailPlan {
   text: string;
 }
 
-/** The staff page each role opens. Super admins have their own shell segment. */
-export function expiriesHref(role: string): string {
-  const seg = role === 'super_admin' ? 'super' : role === 'intern' ? 'lead' : role === 'manager' ? 'manager' : 'admin';
-  return `/app/${seg}/compliances/expiries`;
+/**
+ * Expiries live on the compliance calendar: the role's calendar, opened on the month of the
+ * expiry when one is given. The super admin's calendar is Practice · Compliances.
+ */
+export function expiriesHref(role: string, expiresOn?: string | null): string {
+  const base =
+    role === 'super_admin'
+      ? '/app/super/practice/compliances'
+      : `/app/${role === 'intern' ? 'lead' : role === 'manager' ? 'manager' : role === 'client' ? 'client' : 'admin'}/compliances/calendar`;
+  return expiresOn ? `${base}?date=${expiresOn}` : base;
 }
 
 function firstName(name: string): string {
@@ -93,7 +99,7 @@ export async function runExpiryAlert(itemId: string, stage: AlertStage, today: s
         body: copy.body,
         engagementId: item.engagementId,
         companyName: item.companyName,
-        href: expiriesHref(roleOf(p.id)),
+        href: expiriesHref(roleOf(p.id), item.expiresOn),
       })),
     );
   }
@@ -102,7 +108,7 @@ export async function runExpiryAlert(itemId: string, stage: AlertStage, today: s
   return recipients
     .filter((p) => p.email)
     .map((p) => {
-      const href = `${siteUrl()}${expiriesHref(roleOf(p.id))}`;
+      const href = `${siteUrl()}${expiriesHref(roleOf(p.id), item.expiresOn)}`;
       return {
         alertId,
         profileId: p.id,

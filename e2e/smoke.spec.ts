@@ -202,13 +202,8 @@ const STAFF_COMMON = [
   'compliances/calendar',
   'compliances/filings',
   'compliances/obligations',
-  // Wave 2 automation (docs/specs/automation/IDEAS-PLAN.md): expiries, notices, company events,
-  // client request lists and client health.
-  'compliances/expiries',
-  'compliances/notices',
-  'compliances/events',
+  // Wave 2 automation (docs/specs/automation/IDEAS-PLAN.md): client request lists.
   'requests',
-  'client-health',
   // R-51: the practice block's staff Incorporation page.
   'incorporation',
   'registrations',
@@ -234,10 +229,6 @@ const ROUTES: Record<DemoRole, Route[]> = {
     '/app/super/practice/payroll',
     '/app/super/team',
     '/app/super/requests',
-    '/app/super/client-health',
-    '/app/super/compliances/expiries',
-    '/app/super/compliances/notices',
-    '/app/super/compliances/events',
     '/app/super/growth',
     '/app/super/reports',
     '/app/super/announcements',

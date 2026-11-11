@@ -66,36 +66,6 @@ export function stepsCompletedPerWeek(
   return starts.map((d, i) => ({ w: plainDay(d), steps: counts[i] }));
 }
 
-export type Health = 'overdue' | 'waiting' | 'progress' | 'notStarted' | 'done';
-
-/** One word per project: overdue beats waiting, waiting beats in progress. */
-export function projectHealth(project: AnalyticsProject, itemIds: string[]): Health {
-  let open = 0;
-  let done = 0;
-  let waiting = false;
-  let progress = false;
-  for (const id of itemIds) {
-    const status = project.state[id]?.status ?? 'not-started';
-    if (status === 'not-applicable') continue;
-    if (status === 'overdue') return 'overdue';
-    if (status === 'completed') done += 1;
-    else open += 1;
-    if (status === 'awaiting-client') waiting = true;
-    if (status === 'in-progress') progress = true;
-  }
-  if (waiting) return 'waiting';
-  if (progress) return 'progress';
-  if (open === 0 && done > 0) return 'done';
-  if (done > 0) return 'progress';
-  return 'notStarted';
-}
-
-export function clientHealthCounts(projects: AnalyticsProject[], itemIds: string[]): Record<Health, number> {
-  const out: Record<Health, number> = { overdue: 0, waiting: 0, progress: 0, notStarted: 0, done: 0 };
-  for (const p of projects) out[projectHealth(p, itemIds)] += 1;
-  return out;
-}
-
 export interface LeadLoad {
   id: string;
   name: string;

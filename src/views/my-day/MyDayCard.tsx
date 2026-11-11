@@ -15,7 +15,6 @@ const TONE: Record<MyDayKind, ChipTone> = {
   approval: 'violet',
   client_reply: 'prog',
   expiry: 'warn',
-  notice: 'teal',
   request_list: 'idle',
   task: 'idle',
 };

@@ -47,7 +47,6 @@ import {
   type InternWorkItem,
 } from '@/lib/intern/intern-work';
 import type { Engagement } from '@/data/engagements';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 
 type Row = {
   e: Engagement;
@@ -314,7 +313,6 @@ function InternClientsInner() {
             <Chip tone={st.tone} fixed>
               {st.word}
             </Chip>
-            <ClientHealthChip engagementId={r.e.id} />
           </span>
         );
       },

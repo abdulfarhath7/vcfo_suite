@@ -71,6 +71,9 @@ import { fyRange, taskAsFilingRow, taskHintOf, taskIdOfRow, taskStatus } from '@
 import { statHref, taskHref } from '@/views/compliances/tasks/task-list';
 import { showStat, showTasks, type CatFilter } from '@/views/compliances/tasks/task-model';
 import { sep } from '@/lib/date-format';
+import { useExpiries, type ExpiryItem } from '@/hooks/use-expiries';
+import { ExpiriesCard, expiryTone, openExpiries } from '@/components/compliances/ExpiriesCard';
+import { daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
 
 type CalendarView = 'month' | 'year' | 'timeline' | 'statutory';
 const ALL_AREAS = 'all';
@@ -156,6 +159,14 @@ export function ComplianceCalendarView({
   // Tasks have no regulator: they show under the All area only.
   const tasks = useMemo(() => (showTasks(cat) && areaOn === ALL_AREAS ? allTasks : []), [allTasks, cat, areaOn]);
   const monthTasks = useMemo(() => tasks.filter((t) => t.dueDate.startsWith(monthKey)), [tasks, monthKey]);
+  // Expiries (DSC, DIR-3 KYC, licences) on their expiry date, from the dates typed on the steps.
+  // Like tasks they have no area, so an area pick hides them; the Non-statutory filter does too.
+  const expiryQuery = useExpiries({ engagementId: companyId !== ALL_COMPANIES ? companyId : null });
+  const expiries = useMemo(
+    () => (cat !== 'non-statutory' && areaOn === ALL_AREAS ? openExpiries(expiryQuery.data, Number.POSITIVE_INFINITY) : []),
+    [expiryQuery.data, cat, areaOn],
+  );
+  const monthExpiries = useMemo(() => expiries.filter((x) => x.expiresOn.startsWith(monthKey)), [expiries, monthKey]);
   const statCount = (view === 'month' ? sortByDueDate(rowsInMonth(allRows, monthKey)) : allRows).length;
   const taskCount = (view === 'month' ? allTasks.filter((t) => t.dueDate.startsWith(monthKey)) : allTasks).length;
   const recordHref = (row: FilingRow) => hrefs?.record?.(row) ?? statHref(basePath, row.obligationId, row.id);
@@ -180,8 +191,18 @@ export function ComplianceCalendarView({
             hollow: true,
             hint: taskHintOf(t, now),
           })),
+        )
+        .concat(
+          expiries.map((x) => ({
+            id: `expiry-${x.id}`,
+            date: x.expiresOn,
+            label: expiryLabel(x),
+            status: expiryCalendarStatus(x.daysLeft),
+            hollow: true,
+            hint: daysLeftLabel(x.daysLeft),
+          })),
         ),
-    [rows, tasks, areaOn, now],
+    [rows, tasks, expiries, areaOn, now],
   );
 
   // The rail always reads this calendar month (the donut is "this month", R-25).
@@ -223,6 +244,7 @@ export function ComplianceCalendarView({
   const listRows = monthRows.filter(inArea);
   const dayRows = (day: string) => listRows.filter((row) => row.dueDate.slice(0, 10) === day);
   const dayTasks = (day: string) => monthTasks.filter((t) => t.dueDate.slice(0, 10) === day);
+  const dayExpiries = (day: string) => monthExpiries.filter((x) => x.expiresOn === day);
 
   /**
    * GL-06: what the calendar shows, by due date. The month view exports the month in view; the
@@ -232,6 +254,7 @@ export function ComplianceCalendarView({
   const exportRows = (): ExcelCell[][] => {
     const filings = view === 'month' ? listRows : sortByDueDate(rows.filter(inArea));
     const taskList = view === 'month' ? monthTasks : tasks;
+    const expiryList = view === 'month' ? monthExpiries : expiries.filter((x) => x.expiresOn >= range.from && x.expiresOn <= range.to);
     return [
       ...filings.map((row) => ({
         due: row.dueDate.slice(0, 10),
@@ -240,6 +263,10 @@ export function ComplianceCalendarView({
       ...taskList.map((t) => ({
         due: t.dueDate.slice(0, 10),
         cells: [t.dueDate.slice(0, 10), t.title, t.companyName, t.periodLabel ?? null, 'Non-statutory', t.word] as ExcelCell[],
+      })),
+      ...expiryList.map((x) => ({
+        due: x.expiresOn,
+        cells: [x.expiresOn, expiryLabel(x), x.companyName, x.referenceLabel, 'Expiry', daysLeftLabel(x.daysLeft)] as ExcelCell[],
       })),
     ]
       .sort((a, b) => a.due.localeCompare(b.due))
@@ -406,7 +433,7 @@ export function ComplianceCalendarView({
                   marks={marks}
                   picked={pickedDay}
                   onPick={setPickedDay}
-                  dayTitle={(day) => <DayHead day={day} rows={dayRows(day)} tasks={dayTasks(day)} now={now} />}
+                  dayTitle={(day) => <DayHead day={day} rows={dayRows(day)} tasks={dayTasks(day)} expiries={dayExpiries(day)} now={now} />}
                   dayBody={(day) => (
                     <ul>
                       {dayRows(day).map((row) => (
@@ -414,6 +441,9 @@ export function ComplianceCalendarView({
                       ))}
                       {dayTasks(day).map((t) => (
                         <TaskPopRow key={`task-${t.id}`} task={t} now={now} href={taskLink(t)} />
+                      ))}
+                      {dayExpiries(day).map((x) => (
+                        <ExpiryPopRow key={`expiry-${x.id}`} item={x} />
                       ))}
                     </ul>
                   )}
@@ -444,6 +474,14 @@ export function ComplianceCalendarView({
             ) : null}
             <div className="md:col-span-2 lg:col-span-1">
               <ComingUpCard rows={upcoming} tasks={upcomingTasks} now={now} showCompany={showCompany} hrefOf={recordHref} taskHrefOf={taskLink} />
+            </div>
+            <div className="md:col-span-2 lg:col-span-1">
+              <ExpiriesCard
+                engagementId={companyId !== ALL_COMPANIES ? companyId : null}
+                showCompany={showCompany}
+                mayRenew={scope.audience !== 'client' && mayWrite}
+                className="surface"
+              />
             </div>
           </div>
         </div>
@@ -523,11 +561,11 @@ const DOT_MID: Partial<Record<ChipTone, string>> = {
 };
 
 /** The day popover head: a date tile, the long date and the count. */
-function DayHead({ day, rows, tasks = [], now }: { day: string; rows: FilingRow[]; tasks?: TaskRowDto[]; now: Date }) {
+function DayHead({ day, rows, tasks = [], expiries = [], now }: { day: string; rows: FilingRow[]; tasks?: TaskRowDto[]; expiries?: ExpiryItem[]; now: Date }) {
   const d = parseIsoDate(day)!;
-  const all = [...rows.map((row) => filingStatus(row, now)), ...tasks.map((t) => taskStatus(t, now))];
+  const all = [...rows.map((row) => filingStatus(row, now)), ...tasks.map((t) => taskStatus(t, now)), ...expiries.map((x) => expiryCalendarStatus(x.daysLeft))];
   const status = all.length ? worstStatus(all) : 'upcoming';
-  const count = rows.length + tasks.length;
+  const count = rows.length + tasks.length + expiries.length;
   return (
     <span className="flex items-center gap-2.5">
       <CalDateTile iso={day} status={status} className="h-11 w-10" />
@@ -536,7 +574,7 @@ function DayHead({ day, rows, tasks = [], now }: { day: string; rows: FilingRow[
           {LONG_DOW[d.getUTCDay()]} {d.getUTCDate()} {LONG_MON[d.getUTCMonth()]}
         </b>
         <span className="block text-[12px] font-normal text-ink-muted">
-          {tasks.length === 0 ? (count === 1 ? '1 filing' : `${count} filings`) : count === 1 ? '1 item' : `${count} items`}
+          {tasks.length === 0 && expiries.length === 0 ? (count === 1 ? '1 filing' : `${count} filings`) : count === 1 ? '1 item' : `${count} items`}
         </span>
       </span>
     </span>
@@ -561,6 +599,32 @@ function PopRow({ row, now, href }: { row: FilingRow; now: Date; href: string })
         </span>
         <WordChip filing word={filingWord(row, now)} />
       </Link>
+    </li>
+  );
+}
+
+/** "DSC expires · Ravi Kumar": the calendar's name for an expiry. */
+function expiryLabel(x: Pick<ExpiryItem, 'kindLabel' | 'subjectName'>): string {
+  return `${x.kindLabel} expires · ${x.subjectName}`;
+}
+
+/** One expiry of a day popover: what lapses, whose, and the days left. Renewal is on the Expiries card. */
+function ExpiryPopRow({ item }: { item: ExpiryItem }) {
+  return (
+    <li className="flex items-center gap-2 border-t border-line-soft px-4 py-2 first:border-t-0">
+      <span className="grid w-[34px] flex-none place-items-center">
+        <TaskSquare />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[13.5px] font-medium text-ink">{expiryLabel(item)}</span>
+        <span className="flex min-w-0 items-center gap-1.5 text-[12px] text-ink-muted">
+          <ClientDot id={item.engagementId} />
+          <span className="truncate">{[item.companyName, item.referenceLabel].filter(Boolean).join(' · ')}</span>
+        </span>
+      </span>
+      <Chip tone={expiryTone(item.daysLeft)} className="h-5 min-w-0 gap-1.5 px-1.5 text-[11.5px]">
+        {daysLeftLabel(item.daysLeft)}
+      </Chip>
     </li>
   );
 }

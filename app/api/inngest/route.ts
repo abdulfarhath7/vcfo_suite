@@ -27,12 +27,10 @@ import { watchDailySummary } from '@/jobs/watch-daily-summary';
 import { budgetAlerts } from '@/jobs/budget-alerts';
 import { requestListReminders } from '@/jobs/request-list-reminders';
 import { expiryAlerts } from '@/jobs/expiry-alerts';
-import { noticeEscalations } from '@/jobs/notice-escalations';
-import { clientHealthNightly } from '@/jobs/client-health-nightly';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, noticeEscalations, clientHealthNightly, myDayEmail, assistFilingDeadlines],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines],
 });

@@ -66,7 +66,6 @@ describe('pickableActions', () => {
   it('offers a lead the pickable areas and leaves checklist filling to the data router', async () => {
     const names = (await pickableActions(lead)).map((a) => a.name).sort();
     expect(names).toEqual([
-      'filing.recordEvent',
       'reminders.client',
       'reminders.draftEmail',
       'requests.create',

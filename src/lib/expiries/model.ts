@@ -92,6 +92,16 @@ export function expiryBand(days: number, renewed: boolean): ExpiryBand {
 }
 
 /** The words on the page and in alerts: "Expired 3 days ago", "Expires today", "12 days left". */
+/**
+ * The calendar status of an expiry, in the four words a filing uses: expired is overdue, within
+ * 30 days is due soon (the amber band), anything later is upcoming. A renewed item reads as filed.
+ */
+export function expiryCalendarStatus(days: number, renewed = false): 'filed' | 'overdue' | 'due-soon' | 'upcoming' {
+  if (renewed) return 'filed';
+  if (days < 0) return 'overdue';
+  return days <= 30 ? 'due-soon' : 'upcoming';
+}
+
 export function daysLeftLabel(days: number): string {
   if (days < 0) return days === -1 ? 'Expired yesterday' : `Expired ${-days} days ago`;
   if (days === 0) return 'Expires today';

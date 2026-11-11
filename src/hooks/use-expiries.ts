@@ -63,15 +63,3 @@ export function useMarkRenewed() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: [KEY] }),
   });
 }
-
-/** Staff add an item by hand. */
-export function useAddExpiry() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: { engagementId: string; kind: ExpiryKind; subjectName: string; expiresOn: string; referenceLabel?: string | null }): Promise<ExpiryItem> => {
-      const res = await fetch('/api/expiries', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) });
-      return (await json<{ item: ExpiryItem }>(res)).item;
-    },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: [KEY] }),
-  });
-}

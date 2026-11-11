@@ -505,6 +505,16 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       accept: '.pdf,image/*',
       required: true,
     },
+    // The new DSC's expiry goes on every role's compliance calendar (src/lib/expiries/seed.ts).
+    {
+      id: 'nrDirectorDscExpiryDate',
+      label: 'DSC expiry date - Non-resident Director',
+      type: 'date',
+      section: 'DSC creation (eMudhra)',
+      filledBy: 'intern',
+      required: true,
+      helperText: 'The "valid to" date on the new DSC. It is shown on the compliance calendar.',
+    },
     {
       id: 'residentDirectorDscSuccessMessageUrl',
       label: 'Digital Signature Certificate (DSC) success message - Resident Director',
@@ -513,6 +523,15 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       filledBy: 'intern',
       accept: '.pdf,image/*',
       required: true,
+    },
+    {
+      id: 'residentDirectorDscExpiryDate',
+      label: 'DSC expiry date - Resident Director',
+      type: 'date',
+      section: 'DSC creation (eMudhra)',
+      filledBy: 'intern',
+      required: true,
+      helperText: 'The "valid to" date on the new DSC. It is shown on the compliance calendar.',
     },
     // The draft documents themselves are listed and downloaded on the document
     // pack page; this section keeps only what they print (date, place, witness).
@@ -1770,10 +1789,36 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
     },
   ],
-  'reg-9': [],
-  'reg-10': [],
+  // Registrations that lapse ask for their expiry, which goes on every role's compliance calendar
+  // (src/lib/registrations/registration-facts.ts SOURCES, then src/lib/expiries/seed.ts).
+  'reg-9': [
+    {
+      id: 'shopsLicenceExpiryDate',
+      label: 'Shops & Establishment certificate valid until (leave blank if it has no expiry)',
+      type: 'date',
+      section: 'Shops & Establishment',
+      required: false,
+    },
+  ],
+  'reg-10': [
+    {
+      id: 'tradeLicenceExpiryDate',
+      label: 'Trade licence valid until',
+      type: 'date',
+      section: 'Trade Licence',
+      required: false,
+    },
+  ],
   'reg-11': [],
-  'reg-12': [],
+  'reg-12': [
+    {
+      id: 'trademarkValidUntil',
+      label: 'Trademark registration valid until (10 years from the application date)',
+      type: 'date',
+      section: 'Trademark Registration',
+      required: false,
+    },
+  ],
   'reg-13': [
     {
       id: 'clraRegistrationNumber',

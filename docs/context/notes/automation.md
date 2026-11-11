@@ -6,10 +6,10 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
 
 ## Shared rules
 
-- One migration, `0051_automation`, creates all eight new tables (`request_lists`,
+- One migration, `0051_automation`, created all eight new tables (`request_lists`,
   `request_list_items`, `expiry_items`, `expiry_alerts`, `notice_cases`, `company_events`,
-  `client_health_scores`, `sla_escalations`). It is additive. It must be applied on RDS before
-  deploy. Nothing in this wave has been run against a real database or Inngest yet.
+  `client_health_scores`, `sla_escalations`). `0055_remove_health_notices_events` drops the last
+  four (C, D and E were removed on 2026-11-11). Both must be applied on RDS before deploy.
 - The schema files (`src/db/schema-{request-lists,expiries,notices,compliance-events,client-health}.ts`)
   are re-exported from `src/db/schema.ts`. Repositories import from `@/db/schema`.
 - Every page is one view for every staff role (and for the client where it applies). The route
@@ -54,11 +54,25 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
 
 - **What it does.** One register of DSCs, DIR-3 KYC and registration renewals (GST, PF, ESI, PT,
   shops, FSSAI, trade licence, IEC, MSME, LEI, other), banded red (expired or 7 days or fewer),
-  amber (within 30 days) and green.
+  amber (within 30 days) and green. Since 2026-11-11 there is no Expiries page: the items show
+  on every role's compliance calendar.
+- **Where it shows.** The staff calendar (`ComplianceCalendarView`) marks each open item on its
+  date (a hollow square, like a task), lists it in the day pop-up and the Excel export, and shows
+  the `ExpiriesCard` in the rail: expired items and the next 90 days, with "Mark renewed" (and the
+  new date) for staff who may write filings. The client portal calendar shows the same card in
+  its rail, read only, even before incorporation. An area pick or the Non-statutory filter hides
+  expiries. Links from alerts and My day open the calendar on the expiry's month (`?date=`).
+- **Where the dates come from.** Part A or `pre-15` directors who already hold a DSC; KYC Review
+  & DSC (`pre-7`) asks the expiry of each DSC the firm makes, beside its proof, and requires it;
+  LEI (`reg-6`); Shops & Establishment (`reg-9`), Trade Licence (`reg-10`) and Trademark
+  (`reg-12`) ask theirs (optional); and the credentials workbook's reg rows. A `pre-7` date
+  replaces the `pre-15` one for the same director.
 - **Code.** `src/lib/expiries/` (`model.ts`, `seed.ts`, `alerts.ts`); repository
-  `src/db/repositories/expiry-items.ts`; routes `app/api/expiries/`; page
-  `src/views/expiries/ExpiriesPage.tsx` at `/app/<role>/compliances/expiries`, with "Mark
-  renewed" and "Add item".
+  `src/db/repositories/expiry-items.ts`; routes `app/api/expiries/` (GET for the calendars, PATCH
+  to mark renewed); card `src/components/compliances/ExpiriesCard.tsx`.
+- **Sync on save.** `applyChecklistPatch` calls `syncExpiryItemsForEngagement` after a save of a
+  step that feeds expiries (`stepFeedsExpiries`), so a typed date is on the calendar at once. It
+  never throws; the nightly job catches up.
 - **Approval points.** `registrations.setExpiry` (T2) adds or updates a date from Ask. The job
   never contacts a client: the draft client request it opens waits for a person to send it.
 - **Job.** `expiry-alerts`, daily at 07:40 India time. It first seeds items from the checklist
@@ -70,87 +84,21 @@ Gotchas for the six automation features built overnight on 2026-11-10 (commit 05
     missed 30 September stays red; the next year's date comes only from "Mark renewed".
   - An LEI with only a registration date renews yearly from it (`leiNextExpiry`), so a lapsed LEI
     can show as current.
-  - FSSAI and trade licence dates only come in by hand or from Ask. There is no WhatsApp nudge
-    for expiries.
+  - FSSAI dates only come in from Ask. There is no WhatsApp nudge for expiries.
 
-- Backlog guard: an item that has never alerted and expired more than 30 days ago (`isExpiryBacklog` in `src/lib/expiries/model.ts`) is closed quietly at the expired stage by `systemListDueExpiryAlerts`. It opens no task, draft, bell or email; the Expiries page still shows it in red.
+- Backlog guard: an item that has never alerted and expired more than 30 days ago (`isExpiryBacklog` in `src/lib/expiries/model.ts`) is closed quietly at the expired stage by `systemListDueExpiryAlerts`. It opens no task, draft, bell or email; the calendar still shows it in red.
 - A changed expiry date (by hand, from Ask, or from the backfill) clears `requestListId` with the alert stages, so the next cycle opens a fresh renewal draft.
 - Clients read the register without `notes` and `requestListId`.
 - `findExpiryItem` matches an exact name, else one unique whole-word prefix ("Ravi" finds "Ravi Kumar", not "Ravindra Singh"). Several matches, or a name with no Latin letters or digits, hold the `registrations.setExpiry` card. The card names the stored person whose date changes.
 
-## C. Notice desk
+## C, D and E. Removed on 2026-11-11
 
-- **What it does.** A GST, income tax, TDS or MCA notice becomes a case with its section, period,
-  DIN, demand, due and hearing dates, stage and owner. A reply and its document list are drafted
-  from the notice and the knowledge bank.
-- **Code.** `src/lib/notices/` (`model.ts`, `read-notice.ts`, `draft-reply.ts`,
-  `escalations.ts`); repository `src/db/repositories/notice-cases.ts`; routes `app/api/notices/`;
-  views `src/views/notices/` (`NoticesPage`, `NoticeIntake`, `NoticeDrawer`) at
-  `/app/<role>/compliances/notices`. Staff only. The Ask drop router has a `tax_notice`
-  destination (`src/lib/ask/drop/classify.ts`), so a dropped notice opens a case card.
-- **Approval points.** `compliance.openNotice` (T2) is "Open case" after the person checks the
-  fields the reader filled. `compliance.draftNoticeReply` (T1) writes a private draft only.
-  `compliance.requestNoticeDocuments` (T3) turns the document list into a client request list and
-  shows the recipients first. Moving a case to submitted or closed is the partner's approval, so
-  only admins and managers see those stages.
-- **Job.** `notice-escalations`, daily at 08:10 India time. Seven and two days before the reply
-  is due the owner and the manager get a bell and an email; once overdue the partner does too.
-  Nothing goes to a client.
-- **Gotchas.**
-  - The reader uses the Ask ingest text (`extractSourceText`) and one small-model call. Values
-    must appear in the notice text or they stay empty; dates and the demand are parsed by code.
-  - Each escalation is claimed once per due date, so an overdue notice escalates only once.
-  - There is no client portal view, no digest section, and tests only for `compliance.requestNoticeDocuments` among the three notice actions.
-
-- A case whose request list is still live (any status but cancelled) holds a second "Ask the client" approval, so the client never gets a second list and a second set of reminders.
-
-## D. Company events
-
-- **What it does.** A director appointed or resigned, a registered office change, an auditor
-  appointment, a share allotment, an increase in authorised capital or a resolution needing
-  MGT-14 starts its MCA form with the legal due date, a task and a draft client request.
-- **Code.** Rule table `src/data/event-triggers.ts`; `src/lib/compliance-events/` (`detect.ts`,
-  `plan.ts`, `record-change-hook.ts`); repository `src/db/repositories/compliance-events.ts`;
-  routes `app/api/compliance-events/`; page `src/views/compliance-events/EventsPage.tsx` at
-  `/app/<role>/compliances/events`.
-- **Approval points.** A checklist save after incorporation only proposes an event (no task).
-  `filing.recordEvent` (T2) is the review card: approving it creates the task and the draft
-  request. Staff can record an event by hand through the same card, and Ask can propose one.
-- **Job.** None. The checklist save hook in `src/lib/incorporation/apply-checklist-patch.ts`
-  runs inline, never throws, and logs a failure so the save stands.
-- **Gotchas.**
-  - The table is **`company_events`** (export `companyEvents`, type `CompanyEventRow`), but the
-    folders, routes and repository are still named `compliance-events`. The older
-    `compliance_events` table holds the manual ROC and FEMA filings and is a different thing.
-    Someone should decide whether to merge the two.
-  - Detection compares with the baseline kept on an open proposal, so a run of autosaves ends as
-    one proposal and typing the old value back withdraws it. A first answer is never a change.
-  - Board-meeting agenda items and the client change-request save do not propose events yet.
-
-## E. Client health and the SLA ladder
-
-- **What it does.** Each night every live client gets a score out of 100 and a band. Signals
-  take points off up to a cap each: oldest open document request, client silence, overdue
-  compliances, open notices and stuck steps. A fall of two bands opens a partner check-in task.
-  The SLA ladder tells the lead at 1x a stage's SLA, the manager at 2x and the partner at 3x.
-- **Code.** `src/lib/client-health/` (`score.ts`, `signals.ts`, `sla.ts`, `nightly.ts`,
-  `digest.ts`); SLA days in `src/data/sla.ts`; repository `src/db/repositories/client-health.ts`;
-  routes `app/api/client-health/`; chip `src/components/client-health/ClientHealthChip.tsx` on the
-  project lists and pages; board `src/views/client-health/ClientHealthBoard.tsx` at
-  `/app/<role>/client-health`.
-- **Approval points.** `statuses.setClientHealth` (T2) sets a band by hand; only managers and
-  admins see that card. The job writes tasks, bells and internal email only.
-- **Job.** `client-health-nightly`, daily at 02:10 India time. The weekly digest gains a
-  "Client health" section listing At risk and Critical clients.
-- **Gotchas.**
-  - Late receivables are never counted: receivable sheets belong to client organisations, not
-    engagements, so the signal is always null.
-  - A client who never replied counts silence from the engagement's creation once a week has
-    passed.
-  - Each SLA level is recorded in `sla_escalations` once per item and stage clock, so a retry or
-    the next night does not repeat it.
-
-- First sighting of a clock (no `sla_escalations` row for its item and stage label): every level reached is recorded, but only the highest is sent. A breach that began more than 30 days before it is first seen (`SLA_BACKLOG_DAYS`) is recorded and sent to nobody, so the first night after deploy does not flood the partner. The health board still shows those items.
+The owner removed the notice desk (C), company events (D) and client health with the SLA ladder
+(E). Migration `0055_remove_health_notices_events` drops `notice_cases`, `company_events`,
+`client_health_scores` and `sla_escalations`. Company events are to come back as non-statutory
+compliances. The Ask drop still reads a tax notice (`tax_notice`), files it in the vault's
+Notices folder and keeps its values off the client's checklist. The older `compliance_events`
+table of manual ROC and FEMA filings is a different thing and stays.
 
 ## F. My day
 

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/db/repositories/engagements', () => ({}));
 vi.mock('@/lib/email/send-after-response', () => ({}));
+vi.mock('@/db/repositories/expiry-items', () => ({}));
 
 const { ChecklistPatchRefused, checklistPatchForRole } = await import('./apply-checklist-patch');
 

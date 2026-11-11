@@ -39,7 +39,6 @@ import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
@@ -266,8 +265,6 @@ export function FirmProjectsPanel({
           <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
             {r.facts.health}
           </Chip>
-          {/* The computed band (nightly score) beside the manual health word. */}
-          <ClientHealthChip engagementId={r.eng.id} />
         </span>
       ),
     },

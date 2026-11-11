@@ -32,6 +32,22 @@ describe('seedRowsFor', () => {
     ]);
   });
 
+  it('adds the DSC the firm made on KYC Review & DSC (pre-7), which replaces an older one', () => {
+    const state = {
+      'pre-15': slice({
+        ...STATE['pre-15'].responses,
+        'directors.e1.indiaResident': 'yes',
+        'directors.e2.indiaResident': 'yes',
+      }),
+      'pre-7': slice({ residentDirectorDscExpiryDate: '2028-11-10', residentDirector2DscExpiryDate: '2028-11-12' }),
+    };
+    const rows = seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors: [], today: '2026-11-09' });
+    expect(rows.filter((r) => r.kind === 'dsc').map((r) => [r.subjectName, r.expiresOn, r.sourceKey])).toEqual([
+      ['Ravi Kumar', '2028-11-10', 'dsc:ravi-kumar'],
+      ['Asha Rao', '2028-11-12', 'dsc:asha-rao'],
+    ]);
+  });
+
   it('takes DIN holders from the current directors, skips ceased ones and deduplicates by DIN', () => {
     const rows = seedRowsFor({
       companyName: 'Acme',
