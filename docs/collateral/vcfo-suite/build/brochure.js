@@ -49,7 +49,7 @@ async function main(out) {
     T(s, codeText, { x: x + 0.2, y: y + 0.16, w: 0.9, h: 0.4, fontSize: 20, bold: true, color: C.orange, fontFace: MONO });
     if (soonTag) soon(s, x + w - 1.12, y + 0.18);
     T(s, title, { x: x + 1.05, y: y + 0.16, w: w - 1.25 - (soonTag && SOON ? 1.0 : 0), h: 0.4, fontSize: titleSize, bold: true, color: C.white, valign: 'middle' });
-    T(s, body, { x: x + 1.05, y: y + 0.58, w: w - 1.25, h: h - 0.68, fontSize: 8.8, color: HEX.soft, lineSpacingMultiple: 1.12 });
+    T(s, body, { x: x + 1.05, y: y + 0.54, w: w - 1.25, h: h - 0.7, fontSize: 8.8, color: HEX.soft, lineSpacingMultiple: 1.12 });
   };
   const label = (s, text, x, y, w = 3, color = C.orangeText) => T(s, text, { x, y, w, h: 0.2, fontSize: 8, bold: true, color, charSpacing: 1.4 });
 
@@ -236,8 +236,8 @@ async function main(out) {
     head(s, 'INCORPORATION ENGINE · DOCUMENT GENERATOR', 'Answer once. The documents write themselves',
       'The incorporation runs as a 34-step SPICe+ checklist in the order MCA expects. Every answer is stored once and flows into each MCA draft, for each director.');
     const hw = (CW - 0.2) / 2;
-    hero(s, M, 2.5, hw, 1.12, 'U1', 'One app, one record', 'The record built during incorporation becomes the company’s compliance record. Nobody re-enters it.');
-    hero(s, M + hw + 0.2, 2.5, hw, 1.12, 'U2', 'Documents write themselves', 'MCA drafts are generated from the checklist answers, one set per director, and download as one ZIP.');
+    hero(s, M, 2.45, hw, 1.28, 'U1', 'One app, one record', 'The record built during incorporation becomes the company’s compliance record. Nobody re-enters it.');
+    hero(s, M + hw + 0.2, 2.45, hw, 1.28, 'U2', 'Documents write themselves', 'MCA drafts are generated from the checklist answers, one set per director, and download as one ZIP.');
 
     // Left: checklist mock
     const lx = M, lw = 3.4, ly = 3.9;
@@ -443,7 +443,7 @@ async function main(out) {
       T(s, big, { x: fx + 0.18, y, w: 1.1, h: 0.78, fontSize: 20, bold: true, color: C.orange, valign: 'middle' });
       T(s, t, { x: fx + 1.3, y, w: fw - 1.45, h: 0.78, fontSize: 8.6, color: C.navy, valign: 'middle' });
     });
-    hero(s, M, 9.55, CW, 0.95, 'U7', 'Board meetings end to end', 'Notice, Teams, director Yes/No, minutes and signed resolutions, in one loop that the manager approves and the audit log records.');
+    hero(s, M, 9.45, CW, 1.08, 'U7', 'Board meetings end to end', 'Notice, Teams, director Yes/No, minutes and signed resolutions, in one loop that the manager approves and the audit log records.');
   }
 
   // =============== 9. RECEIVABLES + PAYROLL ===============
@@ -478,8 +478,8 @@ async function main(out) {
       if (big) T(s, big, { x: x + cw - 0.75, y: y + 0.1, w: 0.6, h: 0.5, fontSize: 24, bold: true, color: C.orange, align: 'right' });
     });
 
-    const py = 7.85;
-    s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 1.5, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
+    const py = 7.8;
+    s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 1.45, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
     s.addShape(pres.shapes.RECTANGLE, { x: M, y: py, w: CW, h: 0.06, fill: { color: C.navy }, line: { type: 'none' } });
     T(s, 'Payroll and labour registers', { x: M + 0.18, y: py + 0.18, w: 3.5, h: 0.26, fontSize: 10.5, bold: true, color: C.navy });
     soon(s, W - M - 1.12, py + 0.2);
@@ -489,7 +489,7 @@ async function main(out) {
       T(s, t, { x: x + 0.48, y: py + 0.56, w: 1.75, h: 0.24, fontSize: 9, bold: true, color: C.navy });
       T(s, b, { x: x + 0.48, y: py + 0.8, w: 1.75, h: 0.5, fontSize: 8, color: C.muted });
     });
-    hero(s, M, 9.55, CW, 0.95, 'U8', 'Receivables with bank matching and forex', 'The same app that keeps the company compliant also brings the cash in, which is why a CFO uses it and not only the company secretary.');
+    hero(s, M, 9.45, CW, 1.08, 'U8', 'Receivables with bank matching and forex', 'The same app that keeps the company compliant also brings the cash in, which is why a CFO uses it and not only the company secretary.');
   }
 
   // =============== 10. PORTAL + COCKPIT ===============

@@ -82,3 +82,9 @@ cd docs/collateral/vcfo-suite/build && npm install && ./build.sh
 ```
 
 `build.sh` writes the `.pptx` files to this folder, and the PDFs as well when LibreOffice is installed.
+
+After a rebuild, `build/audit_padding.py` checks every box on every page and reports any box whose content touches or crowds an edge, so the gap below the text matches the gap at the top and sides.
+
+```bash
+python3 build/audit_padding.py VCFO_Suite_Brochure.pptx VCFO_Suite_Brochure.pdf
+```

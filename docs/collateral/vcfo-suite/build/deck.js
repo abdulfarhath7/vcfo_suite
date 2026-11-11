@@ -130,8 +130,8 @@ async function main(out) {
       ['wallet', 'Receivables', 'Reminders, partner logins, camt bank matching, nine currencies, ageing and cash forecast.', true],
       ['table', 'Payroll and labour registers', 'Salary updates, payroll summary and statutory registers per establishment.', true],
     ];
-    const cw = (CW - 0.4) / 3, ch = 1.5;
-    m.forEach(([ic, t, b, sn], i) => card(s, { x: M + (i % 3) * (cw + 0.2), y: 1.75 + Math.floor(i / 3) * (ch + 0.15), w: cw, h: ch, bar: i < 3 ? C.orange : (i === 3 ? C.navy : C.green), iconName: ic, iconColor: HEX.orange, iconSize: 0.3, title: t, body: b, titleSize: 11.5, bodySize: 9.5, soonTag: sn }));
+    const cw = (CW - 0.4) / 3, ch = 1.58;
+    m.forEach(([ic, t, b, sn], i) => card(s, { x: M + (i % 3) * (cw + 0.2), y: 1.72 + Math.floor(i / 3) * (ch + 0.13), w: cw, h: ch, bar: i < 3 ? C.orange : (i === 3 ? C.navy : C.green), iconName: ic, iconColor: HEX.orange, iconSize: 0.3, title: t, body: b, titleSize: 11.5, bodySize: 9.3, soonTag: sn }));
     s.addNotes('Six modules sit on that one record. The incorporation engine runs the 34 SPICe+ steps in MCA order. The document generator turns the answers into every MCA draft, per director. The compliance calendar takes over after incorporation. Board meetings run from notice to signed minutes. Receivables and payroll with labour registers are built and are being rolled out now, which is why they carry the coming soon tag. The point is that none of these needs the data typed in again.');
   }
 
@@ -236,11 +236,11 @@ async function main(out) {
       ['globe', 'ROC and FEMA events', 'Annual and event-based filings, including foreign investment reporting.', false],
       ['history', 'Labour laws', 'Statutory registers generated per establishment.', true],
     ];
-    const cw = (CW - 0.4) / 3, ch = 1.2;
+    const cw = (CW - 0.4) / 3, ch = 1.32;
     c.forEach(([ic, t, b, sn], i) => card(s, { x: M + (i % 3) * (cw + 0.2), y: 1.72 + Math.floor(i / 3) * (ch + 0.12), w: cw, h: ch, bar: C.navy, iconName: ic, iconColor: HEX.orange, iconSize: 0.28, title: t, body: b, titleSize: 11, bodySize: 9, pad: 0.14, soonTag: sn }));
     const chips = ['Five roles', 'Manager approval gate', 'Audit log', 'Encrypted vault', 'Two-step sign-in', 'AWS Mumbai'];
     const cwid = (CW - 5 * 0.1) / 6;
-    chips.forEach((t, i) => pill(s, t, M + i * (cwid + 0.1), 4.45, { h: 0.34, size: 8.5, fill: C.navy, color: C.white, w: cwid, charSpacing: 0 }));
+    chips.forEach((t, i) => pill(s, t, M + i * (cwid + 0.1), 4.6, { h: 0.34, size: 8.5, fill: C.navy, color: C.white, w: cwid, charSpacing: 0 }));
     s.addNotes('Everything here was designed for Indian compliance from the start. SPICe+ and the Companies Act drive the incorporation. GST registration looks like the REG-01 tabs on the portal. TDS, PF, ESI, ROC and FEMA events are all in the yearly calendar, and labour registers are being rolled out. Underneath it all sit the controls a finance head expects: five roles, the approval gate, an audit log, an encrypted vault, two-step sign-in and hosting in AWS Mumbai.');
   }
 

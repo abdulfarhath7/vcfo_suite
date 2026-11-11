@@ -59,8 +59,7 @@ async function main(out) {
   steps.forEach((t, i) => {
     const x = rx + i * (sw + 0.09), y = y2 + 0.27;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: sw, h: 0.52, rectRadius: 0.06, fill: { color: i === 4 ? C.orange : C.navy }, line: { type: 'none' } });
-    T(s, String(i + 1), { x, y: y + 0.04, w: sw, h: 0.2, fontSize: 7.5, bold: true, color: i === 4 ? C.navy : C.orange, align: 'center', fontFace: MONO });
-    T(s, t, { x, y: y + 0.24, w: sw, h: 0.24, fontSize: 7.8, bold: true, color: i === 4 ? C.navy : C.white, align: 'center' });
+    T(s, [{ text: String(i + 1), options: { fontSize: 7.5, fontFace: MONO, color: i === 4 ? C.navy : C.orange, breakLine: true } }, { text: t, options: { fontSize: 7.8, color: i === 4 ? C.navy : C.white } }], { x, y, w: sw, h: 0.52, bold: true, align: 'center', valign: 'middle', lineSpacingMultiple: 1.05 });
   });
   T(s, [
     { text: 'The platform ', options: { bold: true } }, { text: 'holds one record, generates the documents, keeps the calendar and chases people for you.', options: { breakLine: true } },
