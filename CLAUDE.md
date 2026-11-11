@@ -80,6 +80,8 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
    Do not put secrets in the client bundle or commit `.env.local`. Do not bypass the seam
    "for just one query".
 8. Write docs and comments in plain full sentences. Do not commit unless the owner asks.
+9. **Ask the owner for the pull request name before creating one.** Never pick the title
+   yourself; ask, wait for the answer, and use it as the title.
 
 ## Conventions
 
@@ -137,6 +139,8 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- The statutory calendar import (`docs/context/STATE.md`, "Statutory calendar import") needs
+  migration `0055_statutory_calendars` on RDS before deploy.
 - Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
   before deploy, and each lead must reconnect Outlook once (new `Calendars.ReadWrite` scope) for
   the notice to carry a Teams link.
