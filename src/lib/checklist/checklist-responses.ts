@@ -119,6 +119,28 @@ function pre1ProposedDirectorFields(): ChecklistField[] {
   return out;
 }
 
+/**
+ * SA-01: every application the firm files with MCA records its acknowledgement number (SRN), with
+ * one label for all of them. The step cannot be completed while it is empty, and the number shows
+ * on the step card and in exports.
+ */
+export const SRN_FIELD_ID = 'acknowledgementNumber';
+export const SRN_LABEL = 'Acknowledgement number (SRN)';
+function srnField(section: string): ChecklistField {
+  return {
+    id: SRN_FIELD_ID,
+    label: SRN_LABEL,
+    type: 'text',
+    section,
+    filledBy: 'intern',
+    required: true,
+    placeholder: 'e.g. AB1234567',
+    helperText: 'The Service Request Number on the MCA acknowledgement of this filing.',
+  };
+}
+/** The steps that file an application: RUN / SPICe+ Part A, SPICe+ Part B, ADT-1 and INC-20A. */
+export const SRN_STEP_IDS: ReadonlySet<string> = new Set(['pre-4', 'pre-10', 'post-2', 'post-6']);
+
 export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   // Part A, in the order the client is asked (owner's list, 2026-11-02):
   // business description, the two proposed names, the foreign entity with its
@@ -350,6 +372,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
   ],
   'pre-3': [
+
     {
       id: 'signedBoardResolutionUrl',
       label: 'Signed board resolution',
@@ -360,6 +383,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
   ],
   'pre-4': [
+    srnField('Filing acknowledgement'),
     {
       id: 'nameApplicationAcknowledgementUrl',
       label: 'ROC name application acknowledgement',
@@ -376,7 +400,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'textarea',
       section: 'Filing acknowledgement',
       filledBy: 'intern',
-      placeholder: 'SRN, filing reference, or remarks for the client…',
+      placeholder: 'Filing reference or remarks for the client…',
     },
   ],
   'pre-5': [
@@ -1116,6 +1140,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
   ],
   'pre-10': [
+    srnField('Filing completion'),
     {
       id: 'spicePartBAndAgileFiledNotes',
       label: 'SPICe+ Part B and AGILE-PRO-S filing note',
@@ -1277,6 +1302,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   ],
   'post-2': [
     { id: 'auditorName', label: 'Proposed auditor / firm name', type: 'text' },
+    { ...srnField('Filing'), label: `${SRN_LABEL} of ADT-1` },
     {
       id: 'auditorDocsNotes',
       label: 'Board resolution & consent letters status',
@@ -1302,6 +1328,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   ],
   'post-5': [{ id: 'allotteeDetails', label: 'Details of allottees (Form SH-1)', type: 'textarea' }],
   'post-6': [
+    { ...srnField('Filing'), label: `${SRN_LABEL} of INC-20A` },
     {
       id: 'inc20aNotes',
       label: 'Commencement of business (INC-20A) status',
@@ -1904,7 +1931,9 @@ export function formatResponseSummary(
         : null;
       break;
     case 'pre-4':
-      summary = r.nameApplicationAcknowledgementUrl?.trim()
+      summary = r.acknowledgementNumber?.trim()
+        ? `SRN ${r.acknowledgementNumber.trim()}`
+        : r.nameApplicationAcknowledgementUrl?.trim()
         ? 'ROC acknowledgement on file'
         : r.nameApplicationFilingNotes?.trim()
           ? truncateSummary(r.nameApplicationFilingNotes)
@@ -1956,7 +1985,9 @@ export function formatResponseSummary(
       ]);
       break;
     case 'pre-10':
-      summary = r.spicePartBAndAgileFiledNotes?.trim()
+      summary = r.acknowledgementNumber?.trim()
+        ? `SRN ${r.acknowledgementNumber.trim()}`
+        : r.spicePartBAndAgileFiledNotes?.trim()
         ? truncateSummary(r.spicePartBAndAgileFiledNotes)
         : null;
       break;
@@ -1987,7 +2018,7 @@ export function formatResponseSummary(
         : null;
       break;
     case 'post-2':
-      summary = r.auditorName?.trim() ?? null;
+      summary = joinSummaryParts([r.auditorName?.trim(), r.acknowledgementNumber?.trim() ? `SRN ${r.acknowledgementNumber.trim()}` : undefined]);
       if (!summary && r.auditorDocsNotes?.trim()) {
         summary = truncateSummary(r.auditorDocsNotes);
       }
@@ -2002,7 +2033,11 @@ export function formatResponseSummary(
       summary = r.allotteeDetails?.trim() ? truncateSummary(r.allotteeDetails) : null;
       break;
     case 'post-6':
-      summary = r.inc20aNotes?.trim() ? truncateSummary(r.inc20aNotes) : null;
+      summary = r.acknowledgementNumber?.trim()
+        ? `SRN ${r.acknowledgementNumber.trim()}`
+        : r.inc20aNotes?.trim()
+          ? truncateSummary(r.inc20aNotes)
+          : null;
       break;
     case 'post-7':
       summary = joinSummaryParts([
@@ -2100,6 +2135,10 @@ export function validateInternDelivery(
   responses: ChecklistItemResponses,
 ): { ok: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
+
+  if (SRN_STEP_IDS.has(itemId) && !responses.acknowledgementNumber?.trim()) {
+    errors.acknowledgementNumber = 'Enter the acknowledgement number (SRN) of this filing.';
+  }
 
   if (itemId === 'pre-4') {
     if (!responses.nameApplicationAcknowledgementUrl?.trim()) {
