@@ -82,8 +82,8 @@ describe('lead and manager sections', () => {
       { id: 'f-next', name: 'GSTR-1', period: null, companyName: 'Beta', dueDate: '2026-11-09', filedOn: null },
     ],
     steps: [
-      { id: 'e1:pre-1', title: 'Name approval', companyName: 'Acme', status: 'overdue', href: '/app/intern/engagements/acme/step/name' },
-      { id: 'e1:pre-2', title: 'KYC', companyName: 'Acme', status: 'awaiting-client', href: '/app/intern/engagements/acme/step/kyc' },
+      { id: 'e1:pre-1', title: 'Name approval', companyName: 'Acme', status: 'overdue', href: '/app/lead/engagements/acme/step/name' },
+      { id: 'e1:pre-2', title: 'KYC', companyName: 'Acme', status: 'awaiting-client', href: '/app/lead/engagements/acme/step/kyc' },
       { id: 'e1:pre-3', title: 'Drafts', companyName: 'Acme', status: 'in-progress', href: '/x' },
     ],
     tasks: [
@@ -106,7 +106,7 @@ describe('lead and manager sections', () => {
   });
 
   it('links a lead to Today and a manager to the dashboard', () => {
-    expect(staffDigestSections('intern', input)[0]!.href).toBe('/app/intern/today');
+    expect(staffDigestSections('intern', input)[0]!.href).toBe('/app/lead/today');
     expect(staffDigestSections('manager', input)[0]!.href).toBe('/app/manager/dashboard');
   });
 });

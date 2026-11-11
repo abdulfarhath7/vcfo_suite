@@ -67,17 +67,17 @@ export function adminProjectStepPath(
 
 /** True for intern engagement detail, step, and board-resolution URLs. */
 export function isInternEngagementPathname(pathname: string): boolean {
-  return /^\/app\/intern\/engagements\/[^/]+/.test(pathname);
+  return /^\/app\/lead\/engagements\/[^/]+/.test(pathname);
 }
 
 /** True for intern checklist step detail (`…/engagements/{id}/step/…`). */
 export function isInternEngagementStepPathname(pathname: string): boolean {
-  return /^\/app\/intern\/engagements\/[^/]+\/step(?:\/|$)/.test(pathname);
+  return /^\/app\/lead\/engagements\/[^/]+\/step(?:\/|$)/.test(pathname);
 }
 
 /** Intern engagement detail (slug when available, else id / UUID). */
 export function internEngagementPath(project: ProjectRouteTarget): string {
-  return `/app/intern/engagements/${project.slug ?? project.id}`;
+  return `/app/lead/engagements/${project.slug ?? project.id}`;
 }
 
 /** Intern checklist step detail */
@@ -123,4 +123,35 @@ export function clientIncorporationStepPath(step: string | ChecklistItem): strin
 /** True for the client checklist step workspace (`/app/client/incorporation/step/…`). */
 export function isClientIncorporationStepPathname(pathname: string): boolean {
   return /^\/app\/client\/incorporation\/step(?:\/|$)/.test(pathname);
+}
+
+/**
+ * Added to a notification's link (GL-01). The step page that opens with it moves to the step's
+ * card and highlights it for two seconds (`useNotifiedHighlight`).
+ */
+export const NOTIFIED_HASH = '#notified';
+
+/**
+ * The exact step page of one role (GL-01): the notification pop-up, the notification list, the
+ * email and the realtime toast all build their target here, so "Open" lands on the step the
+ * notification names, not on a project home. `boardResolution` picks the board resolution page
+ * for the lead and the client, where that step lives.
+ */
+export function stepPathForRole(
+  role: string,
+  project: ProjectRouteTarget,
+  itemId: string,
+  options?: { boardResolution?: boolean },
+): string {
+  const path =
+    role === 'client'
+      ? options?.boardResolution
+        ? clientBoardResolutionPath()
+        : clientIncorporationStepPath(itemId)
+      : role === 'intern'
+        ? options?.boardResolution
+          ? internBoardResolutionPath(project)
+          : internEngagementStepPath(project, itemId)
+        : adminProjectStepPath(project, itemId, role === 'manager' ? 'manager' : 'admin');
+  return `${path}${NOTIFIED_HASH}`;
 }

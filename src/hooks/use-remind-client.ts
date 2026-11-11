@@ -1,22 +1,55 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { toastError, toastSuccess } from '@/lib/toast-errors';
+import { toastError } from '@/lib/toast-errors';
+import { requestEmailSend, type EmailDraftView } from '@/lib/email/request-email-send';
 import { sep } from '@/lib/date-format';
 
 /**
- * One-click "Remind" (G-15): `POST /api/engagements/:id/remind`. Returns whether the
- * reminder went out, so a caller can fall back to its old path (Mail) on a real failure.
- * A rate-limited item is not a failure: the toast says when the next one can go.
+ * "Remind" (G-15): `POST /api/engagements/:id/remind`. GL-07: the click opens the "Send email"
+ * pop-up with the drafted reminder, and only its Send sends. Returns whether the reminder went
+ * out, so a caller can fall back to its old path (Mail) on a real failure. A rate-limited item
+ * is not a failure (the toast says when the next one can go), and Cancel is not one either.
  */
 
-export type RemindOutcome = 'sent' | 'limited' | 'failed';
+export type RemindOutcome = 'sent' | 'limited' | 'failed' | 'cancelled';
 
 function timeLabel(iso: string): string {
   const d = new Date(iso);
   return sep(
     d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }),
   );
+}
+
+
+/**
+ * GL-07: one reminder through the "Send email" pop-up. The draft is read first, so a reminder
+ * already sent today is reported as `limited` without opening the pop-up.
+ */
+export async function remindWithEmail(input: { engagementId: string; itemKey: string; title: string; note?: string }, opts: { quiet?: boolean } = {}): Promise<RemindOutcome> {
+  try {
+    const url = `/api/engagements/${encodeURIComponent(input.engagementId)}/remind`;
+    const payload = { itemKey: input.itemKey, ...(input.note ? { note: input.note } : {}) };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, preview: true }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { draft?: EmailDraftView; error?: string; retryAt?: string };
+    if (res.ok && body.draft) {
+      const outcome = await requestEmailSend({ url, body: payload, draft: body.draft, title: `Remind the client · ${input.title}` });
+      return outcome.sent ? 'sent' : 'cancelled';
+    }
+    if (res.status === 429) {
+      if (!opts.quiet) toastError('Already reminded today', body.retryAt ? `Next reminder from ${timeLabel(body.retryAt)}` : undefined);
+      return 'limited';
+    }
+    if (!opts.quiet) toastError('Could not send the reminder', body.error);
+    return 'failed';
+  } catch {
+    if (!opts.quiet) toastError('Could not send the reminder');
+    return 'failed';
+  }
 }
 
 export function useRemindClient() {
@@ -27,32 +60,9 @@ export function useRemindClient() {
     async (input: { engagementId: string; itemKey: string; title: string; note?: string }): Promise<RemindOutcome> => {
       setPending(input.itemKey);
       try {
-        const res = await fetch(`/api/engagements/${encodeURIComponent(input.engagementId)}/remind`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemKey: input.itemKey, ...(input.note ? { note: input.note } : {}) }),
-        });
-        const body = (await res.json().catch(() => ({}))) as {
-          channels?: string[];
-          error?: string;
-          retryAt?: string;
-        };
-        if (res.ok) {
-          setSent((prev) => new Set(prev).add(input.itemKey));
-          const by = body.channels?.includes('whatsapp') ? 'Email and WhatsApp' : 'Email';
-          toastSuccess(`Reminder sent · ${input.title}`, by, { id: `remind:${input.itemKey}` });
-          return 'sent';
-        }
-        if (res.status === 429) {
-          setSent((prev) => new Set(prev).add(input.itemKey));
-          toastError(
-            'Already reminded today',
-            body.retryAt ? `Next reminder from ${timeLabel(body.retryAt)}` : undefined,
-          );
-          return 'limited';
-        }
-        toastError('Could not send the reminder', body.error);
-        return 'failed';
+        const outcome = await remindWithEmail(input);
+        if (outcome === 'sent' || outcome === 'limited') setSent((prev) => new Set(prev).add(input.itemKey));
+        return outcome;
       } catch {
         toastError('Could not send the reminder');
         return 'failed';

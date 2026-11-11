@@ -69,7 +69,7 @@ export function BoardResolutionDocPreview({
   onCorruptionAutoRepair,
   mergeFields,
   activeMergeFieldKey = null,
-  previewLabel = 'Draft Word document',
+  previewLabel = 'Word document',
   docMeta,
 }: BoardResolutionDocPreviewProps & { ref?: Ref<BoardResolutionDocPreviewHandle> }) {
   const url = downloadUrl ?? `/api/engagements/${engagementId}/board-resolution/download`;
@@ -110,7 +110,7 @@ function BoardResolutionDocPreviewInner({
   onCorruptionAutoRepair,
   mergeFields,
   activeMergeFieldKey = null,
-  previewLabel = 'Draft Word document',
+  previewLabel = 'Word document',
   docMeta,
   fetchUrl,
 }: BoardResolutionDocPreviewProps & { ref?: Ref<BoardResolutionDocPreviewHandle>; fetchUrl: string }) {

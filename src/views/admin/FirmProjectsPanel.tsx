@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { PhaseBar } from '@/components/ui/step-track';
@@ -38,6 +39,7 @@ import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
+import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
@@ -258,11 +260,15 @@ export function FirmProjectsPanel({
     {
       key: 'health',
       header: 'Health',
-      width: '172px',
+      width: '232px',
       render: (r) => (
-        <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
-          {r.facts.health}
-        </Chip>
+        <span className="flex items-center gap-1.5">
+          <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
+            {r.facts.health}
+          </Chip>
+          {/* The computed band (nightly score) beside the manual health word. */}
+          <ClientHealthChip engagementId={r.eng.id} />
+        </span>
       ),
     },
     // The Today card reads only; the row menu is on the Projects list.
@@ -508,6 +514,23 @@ export function FirmProjectsPanel({
       )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1">{filters}</div>
+        {/* GL-06: every row the filters keep, in the grid's order (worst health first). */}
+        <ExportToExcelButton
+          title="Projects"
+          columns={['Client', 'Now at', 'Project lead', 'Progress', 'Manager', 'Stage', 'Next', 'Health']}
+          rows={() =>
+            rows.map((r) => [
+              r.eng.companyName,
+              r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : null,
+              r.leadNames[0] ?? null,
+              `${r.pct}%`,
+              managerName(r.eng.managerId ?? r.eng.adminId),
+              STAGE_WORD[r.facts.stage],
+              nextScheduleDate(r.eng.schedule, todayIso),
+              r.facts.health,
+            ])
+          }
+        />
       </div>
       {rows.length === 0 && !engagementsLoading ? (
         <div className="md:hidden">

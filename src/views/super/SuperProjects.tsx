@@ -9,6 +9,7 @@ import { SEO } from '@/components/SEO';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { AssignClientDialog } from '@/components/super/assign/AssignClientDialog';
 import { useSuperStaff } from '@/components/super/assign/use-super-staff';
 import { AreaPill, Chip } from '@/components/ui/spectrum-chip';
@@ -213,10 +214,30 @@ function SuperProjectsInner() {
         title="All clients"
         meta={`${rows.length} of ${overview.engagements.length}`}
         right={
-          <Button size="sm" onClick={() => setAssignOpen(true)}>
-            <UserPlus aria-hidden />
-            Assign client
-          </Button>
+          <>
+            <Button size="sm" onClick={() => setAssignOpen(true)}>
+              <UserPlus aria-hidden />
+              Assign client
+            </Button>
+            {/* GL-06: every client the chips keep, in the server's urgency order. */}
+            <ExportToExcelButton
+              title="Clients"
+              columns={['Client', 'Now at', 'Project lead', 'Progress', 'Admin', 'Manager', 'Stage', 'Next', 'Health']}
+              rows={() =>
+                rows.map((row) => [
+                  row.companyName,
+                  [stepCode(row.currentStep?.id), row.currentStep?.title ?? 'Every step is done'].filter(Boolean).join(' '),
+                  row.leadName ?? null,
+                  `${row.progress.pct}%`,
+                  adminOf(row.managerId),
+                  row.managerName ?? 'Unassigned',
+                  superStageWord(row),
+                  nextDue.get(row.id) ?? null,
+                  superStateChip(row).word,
+                ])
+              }
+            />
+          </>
         }
         flush
       >

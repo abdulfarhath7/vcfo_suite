@@ -17,7 +17,7 @@ Everything is committed and pushed to the branch `claude/laughing-albattani-03ny
 |---|---|---|
 | Client journey map | The first card on the client home. It has a stage tracker, a "Your next step" banner, a tree or metro map of the stage, and a side panel with the step's checklist. | `src/components/client-portal/pages/home/journey/`, `docs/specs/client-journey-map/` |
 | Agents design | Four robot agents (Incorporation, Post-incorporation, Registration, Compliance) and their sub-agents. Safety rules, research notes, roadmap and the questions for the CS. | `docs/specs/vcfo-assist-agents/` (start at `README.md`) |
-| Agents backend in Suite | Agent catalog, signed recipes, the field resolver (T3 heal), the run log, the recipe patch queue and the SRN write-back to the step's filing note. Migration `0050_assist_agents`. | `src/lib/assist-agents/`, `app/api/assist/*`, `app/api/engagements/[id]/assist-runs`, `API.md` |
+| Agents backend in Suite | Agent catalog, signed recipes, the field resolver (T3 heal), the run log, the recipe patch queue and the SRN write-back to the step's filing note. Migration `0052_assist_agents`. | `src/lib/assist-agents/`, `app/api/assist/*`, `app/api/engagements/[id]/assist-runs`, `API.md` |
 | Staff "Assist runs" page | Recent agent runs and the recipe fixes waiting for review, for super admin, admin, manager and project lead. It has a sidebar entry for each of them. | `/app/{super,admin,manager,intern}/assist-runs`, `src/views/assist/AssistRunsPage.tsx` |
 | Step hint (new tonight) | A small card on the staff step page when an agent covers that step. It names the sub-agent and its status (Beta or Coming later), and says to open the side panel in Chrome. Clients never see it. | `src/components/assist-profile/AssistAgentHint.tsx` |
 | Chrome extension | The side panel, the run state machine, the heal ladder, guards, and a mock portal for testing. | `extensions/vcfo-assist/` |
@@ -29,7 +29,7 @@ Everything is committed and pushed to the branch `claude/laughing-albattani-03ny
 These steps assume the local stack from `docs/specs/client-journey-map/TESTING.md`. On a laptop with Docker, use `npm run infra:up` and `npm run dev` instead.
 
 ```bash
-npm run db:migrate          # applies 0050_assist_agents
+npm run db:migrate          # applies 0052_assist_agents
 npm run db:seed && npm run db:seed-demo
 npm run dev                 # http://localhost:3000
 ```
@@ -40,7 +40,7 @@ Every demo login below uses the password `demo1234`.
 |---|---|---|
 | Client journey map | `client-kestrel@demo.vcfo.local` (mid incorporation) or `client-northwind@demo.vcfo.local` (early Part A) | `/app/client/overview` |
 | Assist runs page as admin | `admin-nadia@demo.vcfo.local` | `/app/admin/assist-runs`, or "Assist runs" in the sidebar |
-| Assist runs page as lead | `lead-arjun@demo.vcfo.local` | `/app/intern/assist-runs` |
+| Assist runs page as lead | `lead-arjun@demo.vcfo.local` | `/app/lead/assist-runs` |
 | Step hint | either staff login above | Northwind, step 4 Name Application: `/app/admin/projects/demo-northwind-analytics/step/pre-4` |
 
 The local database already holds two sample runs on Northwind (one done with SRN AB1234567, one waiting) and one recipe fix to review. A fresh database has none, and the page shows an empty state that explains how runs appear.
@@ -69,7 +69,7 @@ Screenshots are in `docs/specs/vcfo-assist-agents/screens/` (`assist-runs.png`, 
 | Item | What to do |
 |---|---|
 | CS opinion | Live portals stay off. Runs start only on the mock (`localhost`, `127.0.0.1`). After the written CS opinion is recorded, set `ASSIST_LIVE_PORTALS=true`. The questions are in `docs/specs/vcfo-assist-agents/CS-QUESTIONS.md`. |
-| RDS migration | Apply `0050_assist_agents` on RDS before you deploy this branch. |
+| RDS migration | Apply `0052_assist_agents` on RDS before you deploy this branch. |
 | Recipe signing key | Recipes are signed with Ed25519. The development key works on mock hosts only. For production, create the key pair with `node scripts/assist-recipe-keygen.mjs`, store the private key as a server secret, and paste the public key into the extension's `RECIPE_PUBLIC_KEYS` (`prod`). Until then the extension refuses every live host. See `extensions/vcfo-assist/README.md` and `.env.example`. |
 | SOM paths | The SPICe+ Part A recipe was checked against the mock only. Someone must record the real MCA form and confirm each SOM path before any live run. |
 | Name significance and trademark | Suite does not collect them, so the profile has no such fields. The agent highlights them and leaves them for the user to fill. |

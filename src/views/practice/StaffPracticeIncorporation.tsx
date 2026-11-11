@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Landmark } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -11,6 +12,7 @@ import { Chip } from '@/components/ui/spectrum-chip';
 import { PhaseBar } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { SuperNumberStrip, SuperPageError } from '@/components/super/parts/super-parts';
 import { shortCompany, todayKey } from '@/components/super/parts/super-text';
 import { plainDay } from '@/lib/date-format';
@@ -24,6 +26,46 @@ import {
 } from '@/lib/practice/practice-incorporation';
 import type { CurrentStepDays } from '@/lib/metrics/practice-metrics';
 import { cn } from '@/lib/utils';
+import { internOverviewPhases } from '@/lib/intern/intern-overview-progress';
+import { stepSlugForItemId } from '@/lib/slug';
+import { INCORPORATION_VIEWS, type IncorporationView } from '@/components/shell/sidebar-items';
+
+/**
+ * NV-01: the Incorporation sub-items open this list with a view. SPICe+ Part A and Part B show
+ * the clients whose current step is in that part; Board resolutions the clients at the board
+ * resolution steps; Documents every client, each row opening its document pack.
+ */
+const VIEW_TITLE: Record<IncorporationView, string> = {
+  'part-a': 'SPICe+ Part A',
+  'part-b': 'SPICe+ Part B',
+  'board-resolutions': 'Board resolutions',
+  documents: 'Documents',
+};
+const PART_A = new Set(internOverviewPhases()[0]?.items.map((i) => i.id) ?? []);
+const PART_B = new Set(internOverviewPhases()[1]?.items.map((i) => i.id) ?? []);
+const BOARD_RESOLUTION_STEPS = new Set(['pre-2', 'pre-3']);
+
+function viewOf(value: string | null): IncorporationView | null {
+  return (INCORPORATION_VIEWS as readonly string[]).includes(value ?? '') ? (value as IncorporationView) : null;
+}
+
+function inView(view: IncorporationView | null, stepId: string | undefined): boolean {
+  if (!view || view === 'documents') return true;
+  if (!stepId) return false;
+  if (view === 'part-a') return PART_A.has(stepId);
+  if (view === 'part-b') return PART_B.has(stepId);
+  return BOARD_RESOLUTION_STEPS.has(stepId);
+}
+
+/** Where a row opens in this view: the part's current step, the board resolution or the documents. */
+function rowHrefFor(view: IncorporationView | null, c: PracticeIncorporationClient): string {
+  const base = c.summary.href;
+  if (view === 'documents') return `${base}/documents`;
+  if (view === 'board-resolutions') return `${base}/board-resolution`;
+  const stepId = c.summary.currentStep?.id;
+  if ((view === 'part-a' || view === 'part-b') && stepId) return `${base}/step/${stepSlugForItemId(stepId)}`;
+  return base;
+}
 import { stepNumbers } from '@/lib/client-portal/documents';
 
 /**
@@ -72,6 +114,7 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
   const practiceQuery = usePracticeMetrics();
   const steps = practiceQuery.data?.currentStep;
   const [withWho, setWithWho] = useState<WithKey>('');
+  const view = viewOf(useSearchParams()?.get('view') ?? null);
   const today = todayKey();
   const clientsHref = practiceClientsHref(base);
 
@@ -81,9 +124,10 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
   const rows = useMemo(
     () =>
       all
+        .filter((c) => inView(view, c.summary.currentStep?.id))
         .filter((c) => !withWho || superOwnerOf(c.summary) === withWho)
         .sort((a, b) => a.summary.progress.done - b.summary.progress.done),
-    [all, withWho],
+    [all, withWho, view],
   );
 
   const seo = (
@@ -213,21 +257,44 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
           ]}
         />
         <DashSection
-          title="Incorporation"
+          title={view ? `Incorporation · ${VIEW_TITLE[view]}` : 'Incorporation'}
           meta={loading ? undefined : String(rows.length)}
           headIcon={{ icon: Landmark, tone: 'blue' }}
           right={
-            <SpectrumTabs
-              label="With"
-              value={withWho}
-              onChange={(v) => setWithWho(v as WithKey)}
-              items={[
-                { key: '', label: 'All', count: all.length },
-                { key: 'client', label: 'Client', count: count('client') },
-                { key: 'sbc', label: 'SBC', count: count('sbc') },
-                { key: 'manager', label: 'Manager', count: count('manager') },
-              ]}
-            />
+            <>
+              <SpectrumTabs
+                label="With"
+                value={withWho}
+                onChange={(v) => setWithWho(v as WithKey)}
+                items={[
+                  { key: '', label: 'All', count: all.length },
+                  { key: 'client', label: 'Client', count: count('client') },
+                  { key: 'sbc', label: 'SBC', count: count('sbc') },
+                  { key: 'manager', label: 'Manager', count: count('manager') },
+                ]}
+              />
+              <ExportToExcelButton
+                title={view ? `Incorporation · ${VIEW_TITLE[view]}` : 'Incorporation'}
+                columns={['Client', 'Current step', 'Steps', 'With', 'Days', 'Next', 'Status']}
+                rows={() =>
+                  rows.map((c) => {
+                    const step = steps?.[c.summary.id];
+                    const owner = superOwnerOf(c.summary);
+                    const code = stepCode(c.summary.currentStep?.id);
+                    const title = c.summary.currentStep?.title ?? 'Every step is done';
+                    return [
+                      c.summary.companyName,
+                      code ? `${code} ${title}` : title,
+                      `${c.summary.progress.done} / ${c.summary.progress.total}`,
+                      owner ? WITH_WORD[owner] : null,
+                      step?.days ?? null,
+                      step?.dueOn ?? c.nextDueDate ?? null,
+                      superStateChip(c.summary).word,
+                    ];
+                  })
+                }
+              />
+            </>
           }
           flush
           bodyClassName="px-2 pb-2"
@@ -237,7 +304,7 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
             columns={columns}
             rows={rows}
             rowKey={(c) => c.summary.id}
-            rowHref={(c) => c.summary.href}
+            rowHref={(c) => rowHrefFor(view, c)}
             rowClassName={(c) => (isLateRow(c, steps?.[c.summary.id], today) ? 'text-danger' : undefined)}
             loading={loading}
             empty={all.length === 0 ? 'No clients in incorporation' : 'No client matches this filter'}

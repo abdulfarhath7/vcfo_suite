@@ -24,8 +24,28 @@ const EXPORT_KEEP_DAYS = 30;
 export async function recordExportFileForUser(
   ctx: AuthContext,
   row: { kind: string; format: string; fileName: string; sizeBytes: number; objectKey: string | null },
-): Promise<void> {
-  await db.insert(exportFiles).values({ ...row, sizeBytes: Math.max(0, Math.round(row.sizeBytes)), madeBy: ctx.userId });
+): Promise<string | null> {
+  const [inserted] = await db
+    .insert(exportFiles)
+    .values({ ...row, sizeBytes: Math.max(0, Math.round(row.sizeBytes)), madeBy: ctx.userId })
+    .returning({ id: exportFiles.id });
+  return inserted?.id ?? null;
+}
+
+/**
+ * GL-06 / PR-02: the person's own background export, for the link in their "ready" notification.
+ * Only the maker, only while the copy is kept (30 days). Writes `export.download`.
+ */
+export async function exportFileForOwner(ctx: AuthContext, id: string, now = new Date()): Promise<{ key: string; fileName: string; format: string } | null> {
+  const [r] = await db.select().from(exportFiles).where(eq(exportFiles.id, id)).limit(1);
+  if (!r || !r.objectKey || r.madeBy !== ctx.userId) return null;
+  if (r.createdAt.getTime() <= now.getTime() - EXPORT_KEEP_DAYS * 86400000) return null;
+  await recordAuditEvent(ctx, {
+    action: 'export.download',
+    summary: `Downloaded ${r.fileName}`,
+    metadata: { exportId: r.id, kind: r.kind, format: r.format },
+  });
+  return { key: r.objectKey, fileName: r.fileName, format: r.format };
 }
 
 export async function listExportFilesForDev(ctx: AuthContext, now = new Date()): Promise<ExportRow[]> {

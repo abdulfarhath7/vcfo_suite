@@ -19,6 +19,7 @@ import {
   tabStripOverflowState,
   tabStripScrollChunk,
 } from '@/views/incorporation/intern-section-tab-strip';
+import { splitMcaSectionHeading } from '@/lib/checklist/part-b-sections';
 
 export function Pre1SectionCard({
   index,
@@ -35,6 +36,9 @@ export function Pre1SectionCard({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  // SB-01: a Part B heading carries its MCA section number ("3A(i) …"); the
+  // chip shows that number instead of the running count.
+  const mca = splitMcaSectionHeading(title);
   return (
     <section className="surface relative overflow-hidden bg-surface-sunken/50">
       <div className="accent-bar absolute left-0 top-3 bottom-3 w-[3px]" aria-hidden />
@@ -53,10 +57,13 @@ export function Pre1SectionCard({
               )}
               aria-hidden
             >
-              {complete ? <Check className="w-3 h-3 inline" /> : String(index).padStart(2, '0')}
+              {complete && <Check className={cn('w-3 h-3 inline', mca && 'mr-1')} />}
+              {mca ? mca.number : complete ? null : String(index).padStart(2, '0')}
             </span>
             <span className="min-w-0 flex-1 pt-0.5">
-              <h3 className="text-base font-semibold leading-snug text-ink">{title}</h3>
+              <h3 className="text-base font-semibold leading-snug text-ink">
+                {mca ? <><span className="sr-only">Section {mca.number}: </span>{mca.name}</> : title}
+              </h3>
             </span>
             <ChevronDown className={cn('w-4 h-4 shrink-0 text-ink-muted transition-transform mt-1', open && 'rotate-180')} />
           </button>
@@ -395,8 +402,10 @@ export function InternSectionHeadingNav({
                 aria-selected={selected}
                 onClick={() => onSelect(index)}
                 className={cn(
-                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] font-medium transition-colors',
-                  selected ? 'text-ink' : 'text-ink-muted hover:text-ink',
+                  'relative inline-flex h-full shrink-0 items-center whitespace-nowrap px-3 text-[14px] transition-colors',
+                  // GL-03, the same open-tab style as `SpectrumTabs`: brand wash, bold brand text
+                  // and a 3px underline; the other tabs are muted with no line.
+                  selected ? 'bg-brand-soft font-semibold text-brand-text' : 'font-medium text-ink-muted hover:text-ink',
                 )}
               >
                 <span className="inline-flex items-center gap-1.5">
@@ -416,7 +425,7 @@ export function InternSectionHeadingNav({
                   ) : null}
                 </span>
                 {selected ? (
-                  <span className="absolute inset-x-3 -bottom-[1.5px] h-0.5 bg-brand" aria-hidden />
+                  <span className="absolute inset-x-0 -bottom-[1.5px] h-[3px] bg-brand" aria-hidden />
                 ) : null}
               </button>
             );

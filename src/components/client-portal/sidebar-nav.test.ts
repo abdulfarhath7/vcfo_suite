@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('next-auth/react', () => ({ signOut: vi.fn() }));
 
-const { portalNav } = await import('./Sidebar');
+const { portalNav, currentLeaf } = await import('./Sidebar');
 
 /**
  * R-51 (D-29): the client sidebar keeps its order — Incorporation, Compliances, Registrations
@@ -41,5 +41,27 @@ describe('client portal sidebar (R-51)', () => {
 
   it('once incorporated: the order it had before R-51 is kept', () => {
     expect(nav(true).slice(1, 4).map((n) => n.t)).toEqual(['Compliances', 'Registrations', 'Incorporation']);
+  });
+});
+
+describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
+  const inc = portalNav({ after: false, unread: 0, inc: '6/25', docs: 0 })[1]!;
+
+  it('lists the overview and the four phases', () => {
+    expect(inc.kids?.map((k) => k.t)).toEqual([
+      'Overview',
+      '1 · Name application',
+      '2 · Incorporation',
+      '3 · Post-incorporation',
+      '4 · Registration',
+    ]);
+  });
+
+  it('marks the phase being read, and the overview for the other incorporation pages', () => {
+    const kids = inc.kids!;
+    expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/phase/2')?.t).toBe('2 · Incorporation');
+    expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/step/pre-1')?.t).toBe('Overview');
+    expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation')?.t).toBe('Overview');
+    expect(currentLeaf(kids, 'home', '/app/client')).toBeUndefined();
   });
 });

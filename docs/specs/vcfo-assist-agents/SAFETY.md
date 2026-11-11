@@ -165,7 +165,7 @@ they mean a single mistake does not cause one.
   the part to its left can be spoofed by the caller.
 - **Retention (G14).** Runs, their evidence and attestations are kept for **at least one year**
   (DPDP Rule 8(3); CERT-In's 180 days is the floor). No job deletes them. Migration
-  `0051_assist_filing_safeguards` made `assist_agent_runs.user_id` `ON DELETE SET NULL` (it was
+  `0054_assist_filing_safeguards` made `assist_agent_runs.user_id` `ON DELETE SET NULL` (it was
   `CASCADE`), so deleting a staff account no longer deletes that person's runs; the name and email
   stay on the row. The app only soft-deletes engagements. The demo purge and seed scripts
   hard-delete engagements, and with them their runs, so they must never run on a database that

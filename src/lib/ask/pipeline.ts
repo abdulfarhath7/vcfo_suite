@@ -20,6 +20,7 @@ import { findSavedAnswer, saveAnswer, type SavedAnswerKey } from '@/db/repositor
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { firmDisplayName } from '@/lib/shell/brand';
 import { assertAskRole, AskForbiddenError, shellAllowedForRole } from '@/lib/ask/access';
+import { capabilityAnswer, isCapabilityQuestion, staffCapabilityText } from '@/lib/ask/capabilities';
 import { askBudgets, askConfig, askFeatures, askFlags } from '@/lib/ask/config';
 import { contextAnswer } from '@/lib/ask/context-answer';
 import { sanitizeLinks, type DestinationScope } from '@/lib/ask/destinations';
@@ -53,13 +54,17 @@ import { shortlistTopics } from '@/lib/ask/topic-match';
 import { CLIENT_TOOLS, type ClientToolContext } from '@/lib/ask/tools/client';
 import { loadStaffData } from '@/lib/ask/tools/staff-data';
 import { STAFF_TOOLS, type StaffData } from '@/lib/ask/tools/staff';
+import { STAFF_AREA_TOOLS } from '@/lib/ask/tools/staff-areas';
+import { MY_DAY_TOOLS } from '@/lib/ask/tools/my-day';
 import {
   applicabilityFromSnapshot,
+  getTopic,
   isReviewed,
   resolveTopicForViewer,
   topicToAnswer,
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
+import { pickAndPrepare } from '@/lib/ask/do/pick-action';
 import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
 
 /**
@@ -126,6 +131,27 @@ function ensureAskLead(answer: AnswerEnvelope, shell: AskShell): AnswerEnvelope 
   if (shell !== 'client' || answer.actions.includes('askLead')) return answer;
   return { ...answer, actions: [...answer.actions, 'askLead'] };
 }
+
+/** "I'm not certain" with a source under it reads as a contradiction, so an uncertain line cites nothing. */
+const UNCERTAIN_LINE = /\b(?:not (?:certain|sure)|(?:don't|do not|doesn't|does not) cover|no source covers|can't find|cannot find)\b/i;
+
+function withoutUncertainCitations(answer: AnswerEnvelope): AnswerEnvelope {
+  return UNCERTAIN_LINE.test(answer.line) && answer.citations.length > 0 ? { ...answer, citations: [] } : answer;
+}
+
+/** Follow-up chips only for topics written for this reader: a lead does not need "What is SPICe+ Part A?". */
+function relatedForShell(answer: AnswerEnvelope, shell: AskShell): AnswerEnvelope {
+  if (!answer.related || answer.related.length === 0) return answer;
+  const audience = personaFor(shell);
+  const related = answer.related.filter((slug) => {
+    const topic = getTopic(slug);
+    return topic && (topic.audience === 'both' || topic.audience === audience);
+  });
+  return related.length === answer.related.length ? answer : { ...answer, related: related.length > 0 ? related : undefined };
+}
+
+/** A short question about the chat itself; a long one that only contains the words is a real question. */
+const CAPABILITY_MAX_WORDS = 14;
 
 /** Client answers never offer staff actions, staff answers never client ones. */
 function actionsForShell(answer: AnswerEnvelope, shell: AskShell, preview: boolean): AnswerEnvelope {
@@ -238,7 +264,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       startedAt?: number;
     },
   ) => {
-    let final = actionsForShell(answer, shell, preview);
+    let final = relatedForShell(withoutUncertainCitations(actionsForShell(answer, shell, preview)), shell);
     // Every link, templated or model-written, is scope-checked here (§7.7).
     if (final.links && final.links.length > 0) {
       const links = sanitizeLinks(final.links, await linkScope(final.links));
@@ -327,6 +353,11 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
   const metricRole = shell === 'client' ? 'client' : ctx.role;
   const metricEnv = { ctx, shell, engagementId, now };
   const topicContext = { depth: request.depth, snapshot };
+  if (typed && typed.split(/\s+/).length <= CAPABILITY_MAX_WORDS && isCapabilityQuestion(typed)) {
+    if (await stopIfKilled('greeting_local')) return;
+    await finish(await capabilityAnswer(ctx.role, shell), { path: 'greeting_local' });
+    return;
+  }
   if (typed) {
     const local = await localMatch(typed, { env: metricEnv, role: metricRole, ...topicContext });
     if (local) {
@@ -391,12 +422,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   const startedAt = Date.now();
   let guard: GuardResult;
+  // The record on screen helps the router and the action picker; with client data off it is left out.
+  const onScreenLine = clientData ? (page?.line ?? null) : null;
   try {
     // A follow-up rarely names its subject, so the previous question helps to pick the topics.
     const lastAsked = modelHistory.findLast((m) => m.sender === 'user')?.text ?? '';
     const topics = shortlistTopics(`${message} ${lastAsked}`, audience).map((t) => ({ slug: t.slug, question: t.question }));
     const metrics = metricsForRole(metricRole).map((m) => m.name);
-    const onScreenLine = clientData ? page?.line : null;
     const routed = onScreenLine ? `${message}\n\n(${onScreenLine})` : message;
     guard = (await runGuard(provider, { model: config.models.guard, shell, message: routed, history: modelHistory, topics, metrics })).result;
   } catch (error) {
@@ -413,9 +445,37 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     await finish(greetingAnswer(shell), { path: 'router_refusal', guard, startedAt });
     return;
   }
+  if (guard.intent === 'capabilities') {
+    await finish(await capabilityAnswer(ctx.role, shell), { path: 'router_refusal', guard, startedAt });
+    return;
+  }
   if (guard.intent === 'do_work') {
+    if (shell !== 'client' && typed && attachmentIds.length === 0 && clientData) {
+      // A plain request ("remind Trial about the NOC") goes to the registered actions first; a
+      // request to fill answers falls through to the data router below. The picker uses the same
+      // masked provider; with client data off it is skipped, as every model step of the Do path is.
+      const prepared = await pickAndPrepare({
+        ctx,
+        message: typed,
+        pagePath: request.page?.path,
+        onScreen: onScreenLine,
+        conversationId,
+        provider,
+        model: config.models.extract,
+        now,
+      }).catch((error) => {
+        console.error('[ask-vcfo] action pick failed', error);
+        return null;
+      });
+      if (prepared) {
+        await finish(prepared, { path: 'fixed_workflow', guard, startedAt });
+        return;
+      }
+    }
     if (shell !== 'client' && (await doWork({ guard, startedAt }))) return;
-    await finish(limitAnswer(shell, 'doWork'), { path: 'router_refusal', guard, startedAt });
+    // Staff get the list of what does work, not a bare "can't".
+    const refusal = shell === 'client' ? limitAnswer(shell, 'doWork') : await capabilityAnswer(ctx.role, shell, REFUSAL_COPY.doWorkStaff);
+    await finish(refusal, { path: 'router_refusal', guard, startedAt });
     return;
   }
 
@@ -474,7 +534,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
             toolCard = staffToolCard(t.definition.name, data, input) ?? toolCard;
             return t.run(data, input);
           },
-        }));
+        })).concat(
+          [...Object.values(STAFF_AREA_TOOLS), ...Object.values(MY_DAY_TOOLS)].map((t) => ({
+            definition: t.definition,
+            run: async (input: Record<string, unknown>) => t.run({ ctx, data: await loadStaff() }, input),
+          })),
+        );
+  // With client data off the model gets no tools and no snapshot.
   const tools = flags.killedPaths.has('tool_answer') || !clientData ? [] : allTools;
   const modelSnapshot = clientData ? snapshot : null;
 
@@ -511,6 +577,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       depth,
       decision,
       tools,
+      capabilities: shell === 'client' ? undefined : await staffCapabilityText(ctx.role),
       validate: (raw, toolResultTexts) => {
         const vctx = { shell, allowedCitationIds, toolResultTexts: [...toolResultTexts, ...datedSources] };
         const full = validateAnswer(enrich(raw), vctx);
@@ -538,12 +605,12 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       { line: result.textOnly.slice(0, 1200), citations: [], actions: [], origin: 'generated', depth },
       { shell, allowedCitationIds, toolResultTexts: [...output.toolResultTexts, ...datedSources] },
     );
-    answer = fallback.ok === true ? { ...fallback.answer, ...(toolCard ? { visual: toolCard } : {}) } : uncertainAnswer();
+    answer = fallback.ok === true ? { ...fallback.answer, ...(toolCard ? { visual: toolCard } : {}) } : uncertainAnswer(shell);
   } else {
     // An invalid visual degrades to text; anything else to the safe fallback.
     const errors = 'errors' in result ? result.errors : [];
     console.warn('[ask-vcfo] answer rejected', errors);
-    answer = uncertainAnswer();
+    answer = uncertainAnswer(shell);
   }
   if (decision) {
     answer = ensureAskLead(

@@ -156,7 +156,7 @@ const preInc: ChecklistItem[] = [
       'Proposed Company Names — 2 names ending "Private Limited"',
       'Foreign Entity Details — Name, Address, Country and State of incorporation; Certificate of Incorporation (attachment)',
       'Proposed Directors — 2/3/4; First name + Last name (+ optional middle), Gender and India residency each; at least one India resident',
-      'Proposed Share Capital Structure — Authorized and Initial Paid-up (INR), nominal value per equity share (e.g. 10,00,000 / 1,00,000 / INR 10)',
+      'Proposed Share Capital Structure — Authorized and Paid-up (INR), nominal value per equity share (e.g. 10,00,000 / 1,00,000 / INR 10)',
       'Person Signing the Board Resolution — Name, Designation; KYC of the person signing (attachment)',
       'NIC Codes — filled by the project lead',
     ],

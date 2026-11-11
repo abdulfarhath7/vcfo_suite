@@ -104,7 +104,7 @@ function plainDate(iso: string): string {
 /**
  * Filing hits: one per register row whose form, area, period or company matches. Rows that
  * still need attention come first (the nearest due date), then filed rows.
- * `complianceBase` is the shell's root (`/app/intern`, `/app/manager`, `/app/admin`).
+ * `complianceBase` is the shell's root (`/app/lead`, `/app/manager`, `/app/admin`).
  */
 export function filingHits(rows: readonly FilingRow[], query: string, complianceBase: string, now: Date, limit = 6): SearchHit[] {
   const hits = rows
@@ -160,7 +160,7 @@ export function obligationHits(rows: readonly FilingRow[], query: string, compli
 
 /** The shell root whose Compliances pages a role opens (super admin uses the firm scope). */
 export function complianceBaseForRole(role: string): string {
-  if (role === 'intern') return '/app/intern';
+  if (role === 'intern') return '/app/lead';
   if (role === 'manager') return '/app/manager';
   return '/app/admin';
 }

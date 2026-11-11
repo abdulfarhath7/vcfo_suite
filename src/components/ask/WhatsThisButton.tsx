@@ -1,6 +1,6 @@
 'use client';
 
-import { HelpCircle } from 'lucide-react';
+import { Eye, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAskOptional } from './ask-context';
 
@@ -48,15 +48,17 @@ export function WhatsThisButton({
           onOpen();
         }}
         aria-label={`What's this: ${label}`}
+        title="What's this step?"
         className={cn(
+          // Staff see an eye icon, not the words (owner, 10 Nov).
           variant === 'outline'
-            ? 'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border-1.5 border-line bg-surface-raised px-3 text-[13px] font-medium text-ink hover:bg-surface-sunken'
-            : 'inline-flex shrink-0 items-center text-[12px] font-medium text-brand-text hover:underline',
+            ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border-1.5 border-line bg-surface-raised text-ink hover:bg-surface-sunken'
+            : 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-brand-text hover:bg-brand-soft',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring/40',
           className,
         )}
       >
-        What&apos;s this?
+        <Eye className="h-4 w-4" aria-hidden />
       </button>
     );
   }

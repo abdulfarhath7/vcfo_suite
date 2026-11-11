@@ -6,6 +6,7 @@ import { watchProcess } from '@/jobs/watch-process';
 import { watchDailySummary } from '@/jobs/watch-daily-summary';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
+import { askDrop } from '@/jobs/ask-drop';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
 import { weeklyDigest } from '@/jobs/weekly-digest';
@@ -23,6 +24,12 @@ import { receivablesFxRates } from '@/jobs/receivables-fx-rates';
 import { receivablesDigest } from '@/jobs/receivables-digest';
 import { devCleanup } from '@/jobs/dev-cleanup';
 import { budgetAlerts } from '@/jobs/budget-alerts';
+import { requestListReminders } from '@/jobs/request-list-reminders';
+import { expiryAlerts } from '@/jobs/expiry-alerts';
+import { noticeEscalations } from '@/jobs/notice-escalations';
+import { clientHealthNightly } from '@/jobs/client-health-nightly';
+import { myDayEmail } from '@/jobs/my-day-email';
+import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -36,6 +43,7 @@ export function registeredJobs(): JobFunction[] {
     announcementFeeds,
     whatsappSend,
     askIngest,
+    askDrop,
     askIndexRefresh,
     askIndexSweep,
     complianceReminders,
@@ -58,5 +66,11 @@ export function registeredJobs(): JobFunction[] {
     watchCheck,
     watchProcess,
     watchDailySummary,
+    requestListReminders,
+    expiryAlerts,
+    noticeEscalations,
+    clientHealthNightly,
+    myDayEmail,
+    assistFilingDeadlines,
   ]);
 }

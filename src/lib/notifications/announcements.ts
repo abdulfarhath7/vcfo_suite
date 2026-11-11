@@ -306,7 +306,7 @@ export function roleAnnouncementsPath(role: Role): string {
     case 'manager':
       return '/app/manager/announcements';
     case 'intern':
-      return '/app/intern/announcements';
+      return '/app/lead/announcements';
     case 'client':
       return '/app/client/announcements';
   }

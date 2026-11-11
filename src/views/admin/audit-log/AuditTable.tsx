@@ -29,7 +29,8 @@ import {
   type AuditResultWord,
   auditEventTitle,
 } from '@/views/admin/audit-log/audit-filters';
-import { auditEventsCsv, downloadCsv } from '@/views/admin/audit-log/audit-csv';
+import { AUDIT_EXPORT_HEAD, auditEventCells, auditEventsCsv, downloadCsv } from '@/views/admin/audit-log/audit-csv';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { logBrowserExport } from '@/lib/exports/log-export-client';
 
 /** Plain date and time, for example "14 Oct 10:42" (R-05); the year shows only when it is not this year. */
@@ -437,7 +438,7 @@ export function AuditTable({
             {filtered.length === events.length ? `${events.length} events` : `${filtered.length} of ${events.length} events`}
           </span>
         ) : null}
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <AuditHeadFilters
             filters={filters}
             onChange={onFiltersChange}
@@ -447,6 +448,12 @@ export function AuditTable({
               downloadCsv(csv, exportName);
               logBrowserExport('audit_log', exportName, csv);
             }}
+          />
+          {/* GL-06: beside the CSV export, the same columns over every event the filters keep. */}
+          <ExportToExcelButton
+            title={title}
+            columns={AUDIT_EXPORT_HEAD}
+            rows={() => filtered.map((ev) => auditEventCells(ev, engagementsByDbId))}
           />
         </div>
       </header>

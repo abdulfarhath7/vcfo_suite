@@ -27,7 +27,8 @@ export interface DigestItem {
   href?: string;
 }
 
-export type DigestSectionKey = 'overdue' | 'due' | 'needs' | 'changes' | 'waiting' | 'stuck';
+/** `health` is the staff "Client health" section (src/lib/client-health/digest.ts). */
+export type DigestSectionKey = 'overdue' | 'due' | 'needs' | 'changes' | 'waiting' | 'stuck' | 'health';
 
 export interface DigestSection {
   key: DigestSectionKey;
@@ -233,10 +234,10 @@ export interface StaffDigestInput {
 export function staffPaths(role: 'intern' | 'manager') {
   if (role === 'intern') {
     return {
-      work: '/app/intern/today',
-      filings: '/app/intern/compliances/filings',
-      waiting: '/app/intern/requests',
-      settings: '/app/intern/settings',
+      work: '/app/lead/today',
+      filings: '/app/lead/compliances/filings',
+      waiting: '/app/lead/requests',
+      settings: '/app/lead/settings',
     };
   }
   return {

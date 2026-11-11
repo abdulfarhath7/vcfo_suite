@@ -37,7 +37,7 @@ const ROUTE_BASE = {
   super: '/app/super/practice/budgets',
   admin: '/app/admin/budgets',
   manager: '/app/manager/budgets',
-  lead: '/app/intern/budgets',
+  lead: '/app/lead/budgets',
   client: '/app/client/budgets',
 };
 

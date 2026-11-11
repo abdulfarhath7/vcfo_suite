@@ -14,8 +14,11 @@ export function Ic({ children }: { children: React.ReactNode }) {
 }
 
 /** The hero stage word: typed, held, erased and retyped, one stage after the other. */
-export function SwapWord({ words, start }: { words: string[]; start: boolean }) {
+export function SwapWord({ words, start, onWord }: { words: string[]; start: boolean; onWord?: (index: number) => void }) {
   const [text, setText] = React.useState(words[0]);
+  // LP-03: the hero picture changes at the moment the next word starts to type.
+  const onWordRef = React.useRef(onWord);
+  onWordRef.current = onWord;
   React.useEffect(() => {
     if (!start || reduceMotion()) return;
     let wi = 0;
@@ -30,6 +33,7 @@ export function SwapWord({ words, start }: { words: string[]; start: boolean }) 
     const erase = () => {
       if (!cur.length) {
         wi = (wi + 1) % words.length;
+        onWordRef.current?.(wi);
         timer = setTimeout(() => type(words[wi], 1), 260);
         return;
       }
@@ -177,5 +181,93 @@ export function CompareSection({ onDemo }: { onDemo: () => void }) {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * LP-02: the hero shows an abstract picture of the benefit, never a screen of the product. A
+ * company in the centre, linked to the registrations and filings around it, and a ring that
+ * fills as the work is done. No labels, field names or data, so it describes nothing a
+ * competitor could copy. Same 2400:1375 box as the old screenshot, so nothing moves.
+ */
+/** LP-03: one picture per headline word, in the order of SWAP_WORDS. */
+const HERO_SCENE_LABELS = [
+  "A year of statutory dates, each one filed on time",
+  "An incorporation moving step by step to the certificate",
+  "A company at the centre of its registrations, each one on time",
+];
+
+/**
+ * The hero picture (LP-02: vector only, no screenshot). LP-03: one scene for each rotating headline
+ * word, crossfading in step with the word in one fixed 480 × 275 frame, so the hero never shifts.
+ * Under reduced motion nothing moves and each scene shows its last frame.
+ */
+export function HeroArt({ active = 0 }: { active?: number }) {
+  const nodes = [
+    [96, 70], [384, 70], [62, 168], [418, 168], [150, 240], [292, 246],
+  ] as const;
+  const months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+  const steps = ["Name", "Board resolution", "SPICe+", "Filing", "Certificate"];
+  const scene = (i: number) => `ha-scene${i === active ? " is-active" : ""}`;
+  return (
+    <svg className="hero-art" viewBox="0 0 480 275" role="img" aria-label={HERO_SCENE_LABELS[active] ?? HERO_SCENE_LABELS[0]}>
+      <rect width="480" height="275" rx="14" className="ha-bg" />
+
+      {/* compliance: the twelve months of the statutory year tick off one after another */}
+      <g className={scene(0)} data-scene="compliance">
+        {months.map((m, i) => {
+          // Kept clear of the two floating labels in the frame's top-left and bottom-right corners.
+          const x = 92 + (i % 4) * 84;
+          const y = 62 + Math.floor(i / 4) * 52;
+          return (
+            <g key={m} className="ha-month" style={{ animationDelay: `${i * 0.18}s` }}>
+              <rect x={x} y={y} width="72" height="44" rx="7" />
+              <text x={x + 10} y={y + 18}>{m}</text>
+              <path d={`M${x + 44} ${y + 26} l6 6 l11 -12`} />
+            </g>
+          );
+        })}
+      </g>
+
+      {/* incorporation: five steps light up in turn and end at the certificate */}
+      <g className={scene(1)} data-scene="incorporation">
+        <path d="M70 138 H410" className="ha-track" />
+        <path d="M70 138 H410" className="ha-track-fill" pathLength={100} />
+        {steps.map((label, i) => {
+          const x = 70 + i * 85;
+          return (
+            <g key={label} className="ha-step" style={{ animationDelay: `${0.3 + i * 0.45}s` }}>
+              <circle cx={x} cy="138" r="16" />
+              <path d={`M${x - 6} 138 l4 4 l8 -8`} />
+              <text x={x} y={i % 2 ? 186 : 104} textAnchor="middle">{label}</text>
+            </g>
+          );
+        })}
+        <g className="ha-cert">
+          <rect x="370" y="196" width="80" height="56" rx="6" />
+          <path d="M384 214 h52 M384 226 h36" />
+          <circle cx="436" cy="238" r="9" />
+        </g>
+      </g>
+
+      {/* registration: the company at the centre, connected to every registration */}
+      <g className={scene(2)} data-scene="registration">
+        <g className="ha-links">
+          {nodes.map(([x, y]) => (
+            <path key={`${x}-${y}`} d={`M240 140 Q ${(240 + x) / 2} ${y < 140 ? y - 10 : y + 10} ${x} ${y}`} />
+          ))}
+        </g>
+        <circle cx="240" cy="140" r="62" className="ha-ring-bg" />
+        <circle cx="240" cy="140" r="62" className="ha-ring" pathLength={100} />
+        <circle cx="240" cy="140" r="40" className="ha-core" />
+        <path d="M224 140 l11 11 l22 -24" className="ha-check" />
+        {nodes.map(([x, y], i) => (
+          <g key={`n${i}`} className="ha-node" style={{ animationDelay: `${i * 0.35}s` }}>
+            <circle cx={x} cy={y} r="17" />
+            <path d={`M${x - 6} ${y} l4 4 l8 -8`} />
+          </g>
+        ))}
+      </g>
+    </svg>
   );
 }

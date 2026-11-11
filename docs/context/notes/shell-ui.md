@@ -35,7 +35,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   from `internOverviewPhaseForItem` / intern overview titles (`SPICe+ Part A/B`,
   Post-incorporation, Registration) — Director KYC is Part B in the catalog.
   Intern Registration also inserts the rail sub-header (General, FEMA, …).
-- Home links to the role home (`/app/intern/today`, staff dashboard, client
+- Home links to the role home (`/app/lead/today`, staff dashboard, client
   Inbox). Every non-leaf crumb is a `Link`. Phase → first catalog step of that
   part (`…/step/{slug}`); company → engagement/project page; Docs → Vault;
   Updates → Announcements. The leaf is `aria-current` (not a link). Separator

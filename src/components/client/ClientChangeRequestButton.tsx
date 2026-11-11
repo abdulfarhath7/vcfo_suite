@@ -87,7 +87,7 @@ export function ClientChangeRequestButton({
             disabled={!note.trim() || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? 'Sending…' : 'Send'}
+            {mutation.isPending ? 'Sending…' : 'Send to Lead'}
           </Button>
         </DialogFooter>
       </DialogContent>

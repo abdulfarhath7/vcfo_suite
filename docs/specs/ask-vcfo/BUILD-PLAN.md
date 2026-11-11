@@ -173,7 +173,7 @@ any path adds to `ask_usage_daily` through `systemRecordAskUsage`, and calls are
 - The merge runs straight after the read, before the model, because that is the cheapest place for it.
 - Watch records its token use through `ask-usage.ts` on the `watch` path since the track merge, so one roll-up and one daily budget cover every path.
 - The chat seam is `localUpdates` in `local-match.ts`, after the strict metrics, so "any new clients this month" stays a count. `updatesThisWeekMetric` is the catalog's `updates.this_week`. Both answer on the `metric_local` path with no model call, and the metric maps a filing's law area to Watch's area keys.
-- `listRegUpdates` and the review routes keep to `app/api/watch/*`; the page is also at `app/app/intern/watch/`, read-only, since project leads may add an update.
+- `listRegUpdates` and the review routes keep to `app/api/watch/*`; the page is also at `app/app/lead/watch/`, read-only, since project leads may add an update.
 - Publish and reject commit in one transaction with their board row and chat card, so a failure leaves an update waiting and never half published. A rejected update gives up its content hash, so a later copy of the same document is read and not swallowed by that row.
 - A scan waits, and does not fail, when the day's budget is spent or no model is configured. A draft the model summarised as made goes to `needs_attention`, because code can correct its label but not its wording. A date on a draft is the comment deadline, so it never shows as a new due date.
 - `feed` rows still read "From VCFOSuite" on the board and popup. That is the existing, tested rule, and each row carries its source link and quote.

@@ -140,6 +140,7 @@ export function NoticeTab({ meeting }: { meeting: MeetingDto }) {
             <b className="font-medium">Copied from the last meeting · {meeting.dates.lastMeetingNo}</b> — directors, time, mode, venue, CC list and agenda items. Change only what is new.
           </Banner>
         ) : null}
+        <SendNoticeBanner meeting={meeting} />
         {!editable && (meeting.status === 'draft' || meeting.status === 'pending_approval') ? (
           <Banner tone="info">
             <Lock className="mr-1 inline h-3.5 w-3.5" aria-hidden /> The notice waits for the manager. Only the manager edits it now.
@@ -523,14 +524,14 @@ export function NoticeTab({ meeting }: { meeting: MeetingDto }) {
                   onClick={async () => {
                     if (!(await save(true))) return;
                     try {
-                      await actions.approve.mutateAsync();
-                      toastSaved('Approved · sending the notice', { kind: 'saved', sub: `Goes to ${invited.size} directors with the calendar invite; the bell confirms when it is out` });
+                      const r = await actions.approve.mutateAsync();
+                      toastSaved(r.sent ? 'Approved and sent' : 'Approved', { kind: 'saved', sub: r.sent ? `Sent to ${invited.size} directors with the calendar invite` : 'The notice is not sent yet. Use "Send notice".' });
                     } catch (e) {
                       toastError(errorMessage(e, 'Could not approve'));
                     }
                   }}
                 >
-                  <Send aria-hidden /> {meeting.version > 1 || dirty ? 'Approve my version and send' : 'Approve and send'}
+                  <Send aria-hidden /> {meeting.version > 1 || dirty ? 'Approve my version' : 'Approve'}
                 </Button>
               </div>
             </div>
@@ -540,7 +541,7 @@ export function NoticeTab({ meeting }: { meeting: MeetingDto }) {
         {editable || meeting.can.submit ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-surface px-5 py-3.5">
             <span className={cn('text-[13px]', blanks.length ? 'font-medium text-warning' : 'text-ink-2')}>
-              {blanks.length ? `${blanks.length === 1 ? '1 field' : `${blanks.length} fields`} to fill before sending.` : meeting.can.submit ? 'The manager approves. Then VCFO emails the notice.' : 'Save your edits, then decide.'}
+              {blanks.length ? `${blanks.length === 1 ? '1 field' : `${blanks.length} fields`} to fill before sending.` : meeting.can.submit ? 'The manager approves. Then the notice email opens to check and send.' : 'Save your edits, then decide.'}
             </span>
             <div className="flex gap-2">
               <Button variant="secondary" disabled={!dirty || busy} onClick={() => void save()}>
@@ -570,5 +571,35 @@ export function NoticeTab({ meeting }: { meeting: MeetingDto }) {
 
       <AgendaPickerDialog open={picker} onOpenChange={setPicker} meetingType={d.meetingType} agenda={d.agenda} engagementId={meeting.engagementId} onApply={(agenda) => set({ agenda })} />
     </div>
+  );
+}
+
+/**
+ * GL-07: an approved notice that was not sent yet (the pop-up was cancelled). Shown on the Notice
+ * and Replies tabs; the button opens the "Send email" pop-up again.
+ */
+export function SendNoticeBanner({ meeting }: { meeting: MeetingDto }) {
+  const actions = useMeetingActions(meeting.id);
+  if (!meeting.can.sendNotice) return null;
+  return (
+    <Banner tone="info">
+      <span className="flex flex-wrap items-center gap-3">
+        <span>The notice is approved and not sent yet. Check the email and send it to the directors.</span>
+        <Button
+          size="sm"
+          disabled={actions.sendNotice.isPending}
+          onClick={async () => {
+            try {
+              const r = await actions.sendNotice.mutateAsync();
+              if (r.sent) toastSaved('Notice sent', { kind: 'saved', sub: 'The directors got the notice with the calendar invite' });
+            } catch (e) {
+              toastError(errorMessage(e, 'Could not send the notice'));
+            }
+          }}
+        >
+          <Send aria-hidden /> Send notice
+        </Button>
+      </span>
+    </Banner>
   );
 }

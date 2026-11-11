@@ -33,7 +33,7 @@ import { shortDate, type RecordTimeline, type TimelineRow } from '@/components/t
  *   - a task belongs to the lead it is assigned to (`tasks.assigned_to` = the lead's profile).
  * Each item keeps its owner, its status word and area, and a `row` in the `TeamTaskRow` shape
  * that the Reassign dialog takes. Links point at the staff project pages under `projectBase`,
- * not the lead's own `/app/intern` pages. Pure: no React, no `db`.
+ * not the lead's own `/app/lead` pages. Pure: no React, no `db`.
  */
 
 export interface TeamLead {

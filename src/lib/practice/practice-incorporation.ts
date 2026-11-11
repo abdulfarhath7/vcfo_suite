@@ -13,9 +13,9 @@ export type PracticeIncorporationClient = Pick<
 >;
 
 /** The staff shells that have their own Incorporation page. */
-export type PracticeShellBase = '/app/admin' | '/app/manager' | '/app/intern';
+export type PracticeShellBase = '/app/admin' | '/app/manager' | '/app/lead';
 
 /** The client list each staff shell opens from the empty state ("View clients"). */
 export function practiceClientsHref(base: PracticeShellBase): string {
-  return base === '/app/intern' ? '/app/intern/clients' : `${base}/projects`;
+  return base === '/app/lead' ? '/app/lead/clients' : `${base}/projects`;
 }

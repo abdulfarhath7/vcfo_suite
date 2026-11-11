@@ -9,7 +9,7 @@ import {
 } from '@/lib/projects/project-step-path';
 import type { StaffPathBase } from '@/lib/projects/project-step-path';
 
-export const LEAD_BASE = '/app/intern';
+export const LEAD_BASE = '/app/lead';
 export const CLIENT_BASE = '/app/client';
 /** A staff shell, the Project Lead's own one, which has different pages, or the client's. */
 export type AskLinkBase = StaffPathBase | typeof LEAD_BASE | typeof CLIENT_BASE;
@@ -114,8 +114,9 @@ export function resolveHref(dest: Destination, base: AskLinkBase): string {
     case 'compliance':
       return withArrival(`${staff}/compliances/filings`, dest.filter);
     case 'composeReminder': {
-      const subject = 'Reminder: action needed on your project';
-      const body = 'Hello,\n\nA quick reminder that a step on your project is waiting on you. Please complete it in the client portal when you can.\n\nThank you.';
+      const subject = dest.subject || 'Reminder: action needed on your project';
+      const body =
+        dest.body || 'Hello,\n\nA quick reminder that a step on your project is waiting on you. Please complete it in the client portal when you can.\n\nThank you.';
       return `${staff}/mail?${new URLSearchParams({ subject, body })}`;
     }
   }

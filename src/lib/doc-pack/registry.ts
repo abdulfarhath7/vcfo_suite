@@ -27,6 +27,7 @@ import {
   subscriptionWitnessInputs,
 } from '@/lib/doc-pack/inputs';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { PART_B_SECTION } from '@/lib/checklist/part-b-sections';
 import { SUBSCRIBER_DETAILS_STEP_ID } from '@/lib/incorporation-docs/subscription-sheet';
 import type { DocDefinition, DocPackContext, DocPackDirector, RequiredInput } from '@/lib/doc-pack/types';
 
@@ -65,7 +66,7 @@ function subscriberDirectorInputs(director: DocPackDirector): RequiredInput[] {
 
 /** A body corporate listed on `pre-16`: its address (body corporate only) and share count. */
 function corporateSubscriberInputs(entryIndex: number, address: string, shares: number): RequiredInput[] {
-  const tabId = sectionSlug('Subscribers');
+  const tabId = sectionSlug(PART_B_SECTION.subscribers);
   return [
     {
       key: `subscriber.${entryIndex}.address`,

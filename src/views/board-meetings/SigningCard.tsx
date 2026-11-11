@@ -56,7 +56,7 @@ export function SigningPanel({ meeting, doc, canAct }: { meeting: MeetingDto; do
     actions.sendForSignature.mutate(
       { docId: doc.id, reminder },
       {
-        onSuccess: () => toastSaved(reminder ? 'Reminder sent' : 'Sent to the directors to sign'),
+        onSuccess: (m) => (m ? toastSaved(reminder ? 'Reminder sent' : 'Sent to the directors to sign') : undefined),
         onError: (e) => toastError('Could not send', errorMessage(e)),
       },
     );
@@ -65,7 +65,7 @@ export function SigningPanel({ meeting, doc, canAct }: { meeting: MeetingDto; do
     actions.uploadSigned.mutate(
       { docId: doc.id, file },
       {
-        onSuccess: () => toastSaved('Signed copy saved and locked', { sub: 'The final copy is emailed to the directors, admin and lead' }),
+        onSuccess: (r) => toastSaved('Signed copy saved and locked', { sub: r.emailed ? 'The final copy went to the directors, admin and lead' : 'The final copy is not sent yet. Use "Send the signed copy".' }),
         onError: (e) => toastError('Could not upload', errorMessage(e)),
       },
     );
@@ -122,6 +122,22 @@ export function SigningPanel({ meeting, doc, canAct }: { meeting: MeetingDto; do
         <p className="m-0 flex items-center gap-2 text-[13px] text-ink-muted">
           <Lock className="h-4 w-4" aria-hidden /> Locked {stamp(doc.lockedAt)}. No edits.
           {doc.finalSentAt ? ` Final copy emailed ${stamp(doc.finalSentAt)}.` : ''}
+          {!doc.finalSentAt && canAct ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2"
+              disabled={actions.sendFinalCopy.isPending}
+              onClick={() =>
+                actions.sendFinalCopy.mutate(doc.id, {
+                  onSuccess: (m) => (m ? toastSaved('Signed copy sent', { sub: 'To the directors, admin and lead' }) : undefined),
+                  onError: (e) => toastError('Could not send', errorMessage(e)),
+                })
+              }
+            >
+              <Send className="h-4 w-4" aria-hidden /> Send the signed copy
+            </Button>
+          ) : null}
         </p>
       ) : canAct ? (
         <div className="flex flex-wrap gap-2">

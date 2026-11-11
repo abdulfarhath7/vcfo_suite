@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
@@ -47,6 +48,7 @@ export function Phase1StepPanel({
   const [brStatus, setBrStatus] = useState<
     'loading' | 'none' | 'draft' | 'finalized' | 'signed'
   >('loading');
+  const [brDoc, setBrDoc] = useState<BoardResolutionDoc | null>(null);
 
   if (brFetchKey !== brFetchScopeRef.current) {
     brFetchScopeRef.current = brFetchKey;
@@ -75,6 +77,7 @@ export function Phase1StepPanel({
     void fetchBoardResolutionInDb(engagement.id)
       .then((doc) => {
         if (cancelled) return;
+        setBrDoc(doc ?? null);
         if (!doc) setBrStatus('none');
         else if (doc.signedStoragePath?.trim()) setBrStatus('signed');
         else if (doc.status === 'finalized') setBrStatus('finalized');
@@ -97,6 +100,8 @@ export function Phase1StepPanel({
       isClient={isClient}
       isIntern={isIntern}
       brStatus={brStatus}
+      brDoc={brDoc}
+      role={isClient ? 'client' : user?.role}
       deliveredToClient={deliveredToClient}
       itemState={itemState}
       incorpDraftLabelOptions={incorpDraftLabelOptions}

@@ -10,7 +10,7 @@ export function roleHomePath(role: Role): string {
     case 'manager':
       return '/app/manager/dashboard';
     case 'intern':
-      return '/app/intern/today';
+      return '/app/lead/today';
     case 'client':
       return '/app/client/overview';
     case 'developer':
@@ -61,7 +61,7 @@ export function roleNotificationsPath(role: Role): string {
     case 'manager':
       return '/app/manager/notifications';
     case 'intern':
-      return '/app/intern/notifications';
+      return '/app/lead/notifications';
     case 'client':
       return '/app/client/notifications';
     case 'developer':
@@ -83,7 +83,7 @@ export function roleSettingsPath(role: Role): string {
     case 'manager':
       return '/app/manager/settings';
     case 'intern':
-      return '/app/intern/settings';
+      return '/app/lead/settings';
     case 'client':
       return '/app/client/settings';
     case 'developer':
@@ -100,7 +100,7 @@ export function roleSettingsPath(role: Role): string {
  * callback) keep `roleSettingsPath`. A client partner's account page is `/receivables/account`.
  */
 export function roleProfilePath(role: Role): string {
-  if (role === 'admin' || role === 'manager' || role === 'intern') return `/app/${role}/profile`;
+  if (role === 'admin' || role === 'manager' || role === 'intern') return `/app/${roleAppSegment(role)}/profile`;
   if (role === 'super_admin') return '/app/super/profile';
   if (role === 'client') return '/app/client/profile';
   if (role === 'developer') return '/app/dev/profile';
@@ -128,8 +128,30 @@ export function roleAskPath(role: Role | null | undefined): string | null {
     case 'manager':
     case 'intern':
     case 'client':
-      return `/app/${role}/ask`;
+      return `/app/${roleAppSegment(role)}/ask`;
     default:
       return null;
+  }
+}
+
+/**
+ * The URL segment of a role's pages under /app. The project lead's role is stored as
+ * `intern`, but its pages live under /app/lead (owner, 10 Nov 2026); old /app/intern links
+ * are redirected by the proxy.
+ */
+export function roleAppSegment(role: string | null | undefined): string {
+  switch (role) {
+    case 'super_admin':
+      return 'super';
+    case 'intern':
+      return 'lead';
+    case 'developer':
+      return 'dev';
+    case 'manager':
+    case 'client':
+    case 'admin':
+      return role;
+    default:
+      return 'admin';
   }
 }

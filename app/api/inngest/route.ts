@@ -7,6 +7,7 @@ import { dailyDigest } from '@/jobs/daily-digest';
 import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
+import { askDrop } from '@/jobs/ask-drop';
 import { askIndexRefresh, askIndexSweep } from '@/jobs/ask-index-refresh';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
@@ -24,8 +25,14 @@ import { watchCheck } from '@/jobs/watch-check';
 import { watchProcess } from '@/jobs/watch-process';
 import { watchDailySummary } from '@/jobs/watch-daily-summary';
 import { budgetAlerts } from '@/jobs/budget-alerts';
+import { requestListReminders } from '@/jobs/request-list-reminders';
+import { expiryAlerts } from '@/jobs/expiry-alerts';
+import { noticeEscalations } from '@/jobs/notice-escalations';
+import { clientHealthNightly } from '@/jobs/client-health-nightly';
+import { myDayEmail } from '@/jobs/my-day-email';
+import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, noticeEscalations, clientHealthNightly, myDayEmail, assistFilingDeadlines],
 });

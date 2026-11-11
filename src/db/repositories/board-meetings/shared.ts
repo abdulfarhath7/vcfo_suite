@@ -170,7 +170,7 @@ export async function firmAdmins(): Promise<PersonLite[]> {
 
 function portalOf(role: string): string {
   if (role === 'super_admin') return 'super';
-  if (role === 'intern') return 'intern';
+  if (role === 'intern') return 'lead';
   if (role === 'manager') return 'manager';
   if (role === 'client') return 'client';
   return 'admin';

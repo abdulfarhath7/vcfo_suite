@@ -6,6 +6,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { FilterSelect } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Term } from '@/components/ui/term';
@@ -333,6 +334,32 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   const filterRef = useRef<HTMLSpanElement>(null);
   useListKeys(listRef, filterRef);
 
+  /**
+   * GL-06: every row the filters keep, in the order the grids show them: the statutory rows group
+   * by group, then (in "All", or alone in "Non-statutory") the tasks week by week. A task has no
+   * law or last filed date, so those cells stay empty.
+   */
+  const exportRows = (): ExcelCell[][] => [
+    ...(hasStat
+      ? gridGroups.flatMap((g) =>
+          g.rows.map((r) => [
+            r.group.name,
+            r.row.companyName,
+            areaLabel(r.group.area),
+            r.detail?.ownerName ?? null,
+            r.lastFiled ?? null,
+            r.word,
+            r.nextDue ?? r.row.dueDate,
+          ]),
+        )
+      : []),
+    ...(hasNs
+      ? taskGroups(shownTasks).flatMap((g) =>
+          g.rows.map((t) => [t.title, t.companyName, 'Non-statutory', t.owner?.name ?? null, null, t.word, t.dueDate]),
+        )
+      : []),
+  ];
+
   const head = (
     <span ref={filterRef} className="contents">
       {sole ? null : (
@@ -372,6 +399,12 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           }}
         />
       ) : null}
+      <ExportToExcelButton
+        title={cat === 'ns' ? 'Non-statutory tasks' : 'Obligations'}
+        client={companyId !== ALL_COMPANIES ? (picked?.companyName ?? null) : null}
+        columns={['Obligation', 'Client', 'Law', 'Lead', 'Last filed', 'Status', 'Next due']}
+        rows={exportRows}
+      />
     </span>
   );
 

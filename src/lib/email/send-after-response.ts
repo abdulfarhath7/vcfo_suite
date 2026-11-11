@@ -47,7 +47,7 @@ type NotifyInput = Parameters<typeof notifyEngagementEvent>[0];
  * draft from the answer.
  */
 export async function notifyEngagementEventSoon(input: NotifyInput): Promise<EmailDispatchResult> {
-  if (!input.inAppOnly && opensClientOutgoingDraft(input.event, input.itemId)) return notifyEngagementEvent(input);
+  if (!input.inAppOnly && opensClientOutgoingDraft(input.event, input.itemId, input.actorRole)) return notifyEngagementEvent(input);
   return emailAfterResponse(input.actorUserId, () => notifyEngagementEvent(input), { itemId: input.itemId });
 }
 

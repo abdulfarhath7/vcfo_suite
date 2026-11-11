@@ -136,7 +136,7 @@ describe('listPracticeIncorporation — cross-tenant scoping', () => {
 
   it("opens each row in the caller's own shell", async () => {
     const [lead] = await listPracticeIncorporation(ctx('intern', 'user-lead-a'));
-    expect(lead.summary.href).toBe('/app/intern/engagements/acme-india');
+    expect(lead.summary.href).toBe('/app/lead/engagements/acme-india');
     const [mgr] = await listPracticeIncorporation(ctx('manager'));
     expect(mgr.summary.href).toBe('/app/manager/projects/acme-india');
     const admin = await listPracticeIncorporation(ctx('admin'));

@@ -8,7 +8,7 @@ import { adminProjectPath, adminProjectStepPath, internEngagementPath, internEng
  * the shell the signed-in role can open. The extension does not know the role, so it opens
  * `GET /api/assist/step-link/[id]?step=` and Suite redirects here.
  *
- *   project lead (intern)   /app/intern/engagements/{slug}/step/{stepSlug}
+ *   project lead (intern)   /app/lead/engagements/{slug}/step/{stepSlug}
  *   manager                 /app/manager/projects/{slug}/step/{stepSlug}
  *   admin and super admin   /app/admin/projects/{slug}/step/{stepSlug}   (super has no project routes)
  *

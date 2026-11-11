@@ -17,26 +17,37 @@ export type ExportKind =
   | 'partner_report'
   | 'client_audit'
   /** An act-wise archive of one batch of labour registers. */
-  | 'labour_registers_zip';
+  | 'labour_registers_zip'
+  /** PR-02: the whole project as one ZIP, made in the background. */
+  | 'project_zip'
+  /** GL-06: a list exported to Excel, made in the background. */
+  | 'table_xlsx';
 
 /** The largest file kept in S3; a bigger one is logged without a copy. */
 const EXPORT_COPY_MAX_BYTES = 50 * 1024 * 1024;
 
-const TYPES: Record<string, string> = { csv: 'text/csv', zip: 'application/zip', pdf: 'application/pdf' };
+export const EXPORT_CONTENT_TYPES: Record<string, string> = {
+  csv: 'text/csv',
+  zip: 'application/zip',
+  pdf: 'application/pdf',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+const TYPES = EXPORT_CONTENT_TYPES;
 
 function exportKey(fileName: string, now = new Date()): string {
   const safe = fileName.replace(/[^\w.-]+/g, '_').slice(0, 120) || 'export';
   return `exports/${now.toISOString().slice(0, 7)}/${randomUUID()}-${safe}`;
 }
 
+/** Returns the export's id, so a background export can link to its copy (null when not logged). */
 export async function recordExport(
   ctx: AuthContext,
-  input: { kind: ExportKind; format: 'csv' | 'zip' | 'pdf'; fileName: string; body: Uint8Array | string },
-): Promise<void> {
+  input: { kind: ExportKind; format: 'csv' | 'zip' | 'pdf' | 'xlsx'; fileName: string; body: Uint8Array | string; maxCopyBytes?: number },
+): Promise<string | null> {
   try {
     const size = typeof input.body === 'string' ? Buffer.byteLength(input.body) : input.body.byteLength;
     let key: string | null = null;
-    if (size <= EXPORT_COPY_MAX_BYTES) {
+    if (size <= (input.maxCopyBytes ?? EXPORT_COPY_MAX_BYTES)) {
       key = exportKey(input.fileName);
       try {
         await putObject(key, input.body, TYPES[input.format]);
@@ -45,9 +56,11 @@ export async function recordExport(
         key = null;
       }
     }
-    await recordExportFileForUser(ctx, { kind: input.kind, format: input.format, fileName: input.fileName, sizeBytes: size, objectKey: key });
+    const id = await recordExportFileForUser(ctx, { kind: input.kind, format: input.format, fileName: input.fileName, sizeBytes: size, objectKey: key });
+    return key ? id : null;
   } catch (err) {
     console.warn('[exports] not logged', err instanceof Error ? err.message : err);
+    return null;
   }
 }
 

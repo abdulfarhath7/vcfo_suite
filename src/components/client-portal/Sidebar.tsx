@@ -17,7 +17,7 @@ import { Keyboard, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { openShortcuts } from '@/components/shell/ShortcutSheet';
 import { Lu, ShellIcon, type LuName } from './icons';
 import { usePortal } from './PortalProvider';
-import { activeKeyFor, portalHref, PORTAL_TITLES, type PortalRouteKey } from './routes';
+import { activeKeyFor, phaseHref, portalHref, PORTAL_TITLES, type PortalRouteKey } from './routes';
 import { showsBeforeAfterSwitch, type ClientPortalContact } from '@/lib/client-portal/types';
 
 /** The full Ask VCFO page in the client portal. */
@@ -122,6 +122,22 @@ export interface NavLeaf {
   t: string;
   badge?: string;
   hot?: boolean;
+  /** A page below the route key (an incorporation phase); current when the path is at or under it. */
+  href?: string;
+}
+
+/** Where a sidebar child links to. */
+export function leafHref(c: NavLeaf): string {
+  return c.href ?? portalHref(c.k);
+}
+
+/**
+ * The current child of a group: one whose own page holds the path, else the first child
+ * whose route key is current (Incorporation's Overview for a step page).
+ */
+export function currentLeaf(kids: NavLeaf[], act: PortalRouteKey | null, pathname: string): NavLeaf | undefined {
+  const p = pathname.replace(/\/+$/, '');
+  return kids.find((c) => c.href && (p === c.href || p.startsWith(`${c.href}/`))) ?? kids.find((c) => !c.href && c.k === act);
 }
 export interface NavItem extends Partial<NavLeaf> {
   g?: string;
@@ -163,7 +179,21 @@ export function portalNav({
   inc: string | undefined;
   docs: number;
 }): NavItem[] {
-  const incorporation: NavItem = { k: 'incorporation', t: 'Incorporation', i: 'landmark', badge: inc };
+  // Incorporation opens into its phases (owner, 10 Nov), like Compliances.
+  const incorporation: NavItem = {
+    g: 'incorporation',
+    t: 'Incorporation',
+    i: 'landmark',
+    badge: inc,
+    kids: [
+      { k: 'incorporation', t: 'Overview' },
+      // The phase names the portal's own phase pages use (src/data/checklist.ts).
+      { k: 'incorporation', t: '1 · Name application', href: phaseHref(1) },
+      { k: 'incorporation', t: '2 · Incorporation', href: phaseHref(2) },
+      { k: 'incorporation', t: '3 · Post-incorporation', href: phaseHref(3) },
+      { k: 'incorporation', t: '4 · Registration', href: phaseHref(4) },
+    ],
+  };
   const compliances: NavItem = {
     g: 'compliances',
     t: 'Compliances',
@@ -207,6 +237,7 @@ export function portalNav({
         { k: 'notifications', t: 'Notifications', badge: unread ? String(unread) : undefined, hot: unread > 0 },
       ],
     },
+    { k: 'requests', t: 'Requests', i: 'clipboard-list' },
     { k: 'documents', t: 'Documents', i: 'folder-open', badge: docs ? String(docs) : undefined },
     { k: 'knowledge-bank', t: 'Library', i: 'library' },
     { k: 'credentials', t: 'Credentials', i: 'key-round' },
@@ -400,7 +431,7 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
   const { pillRef, railRef, place } = usePill(navRef, drawer ? 'drawer' : 'full', [act, JSON.stringify(open)]);
 
   const isOpen = (n: NavItem) => {
-    const has = n.kids?.some((c) => c.k === act) ?? false;
+    const has = n.kids ? Boolean(currentLeaf(n.kids, act, pathname)) : false;
     return open[n.g!] === undefined ? has : open[n.g!]!;
   };
   const toggleGroup = (g: string, value: boolean) => {
@@ -414,13 +445,13 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
     };
     follow();
   };
-  const onLeaf = (e: React.MouseEvent, k: PortalRouteKey, label: string) => {
+  const onLeaf = (e: React.MouseEvent, k: PortalRouteKey, label: string, href?: string, current?: boolean) => {
     e.preventDefault();
-    if (k === act && k !== 'home') {
+    if ((current ?? k === act) && k !== 'home') {
       toast(`You are already on ${label}`);
       return;
     }
-    go(k);
+    go(href ?? k);
   };
 
   const company = shell?.companyShort ?? '';
@@ -455,7 +486,8 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
         {nav.map((n) => {
           if (n.kids) {
             const o = isOpen(n);
-            const has = n.kids.some((c) => c.k === act);
+            const cur = currentLeaf(n.kids, act, pathname);
+            const has = Boolean(cur);
             return (
               <Fragment key={n.g}>
                 <button
@@ -479,12 +511,12 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
                   <div inert={!o ? true : undefined}>
                     {n.kids.map((c) => (
                       <a
-                        key={c.k}
-                        href={portalHref(c.k)}
+                        key={leafHref(c)}
+                        href={leafHref(c)}
                         className="vps-i"
-                        aria-current={c.k === act ? 'page' : undefined}
+                        aria-current={c === cur ? 'page' : undefined}
                         tabIndex={o ? undefined : -1}
-                        onClick={(e) => onLeaf(e, c.k, c.t)}
+                        onClick={(e) => onLeaf(e, c.k, c.t, c.href, c === cur)}
                       >
                         <span className="vps-t">{c.t}</span>
                         <Badge b={c.badge} hot={c.hot} />
@@ -715,21 +747,22 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
   if (fly) {
     if (fly.key.startsWith('g:')) {
       const n = nav.find((x) => x.g === fly.key.slice(2));
+      const flyCur = n?.kids ? currentLeaf(n.kids, act, pathname) : undefined;
       flyBody = (
         <>
           <div className="vps-fh">{n?.t}</div>
           {n?.kids?.map((c) => (
             <a
-              key={c.k}
-              href={portalHref(c.k)}
+              key={leafHref(c)}
+              href={leafHref(c)}
               className="vps-fi"
               role="menuitem"
-              aria-current={c.k === act ? 'page' : undefined}
+              aria-current={c === flyCur ? 'page' : undefined}
               onClick={(e) => {
                 e.preventDefault();
                 closeFly();
-                if (c.k === act) toast(`You are already on ${c.t}`);
-                else go(c.k);
+                if (c === flyCur) toast(`You are already on ${c.t}`);
+                else go(c.href ?? c.k);
               }}
             >
               <span className="vps-ft">{c.t}</span>
@@ -795,7 +828,7 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
         <span className="vps-rail" aria-hidden="true" ref={railRef} />
         {nav.map((n) => {
           if (n.kids) {
-            const has = n.kids.some((c) => c.k === act);
+            const has = Boolean(currentLeaf(n.kids, act, pathname));
             return (
               <button
                 key={n.g}
@@ -804,7 +837,7 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
                 aria-haspopup="true"
                 aria-expanded={fly?.key === `g:${n.g}`}
                 data-cur={has ? '1' : undefined}
-                data-tip={`${n.t}${n.badge ? ` · ${n.badge} new` : ''}`}
+                data-tip={`${n.t}${n.g === 'incorporation' && n.badge ? ` · ${n.badge} steps to COI` : n.badge ? ` · ${n.badge} new` : ''}`}
                 onClick={(e) => openFly(e, `g:${n.g}`)}
               >
                 <span className="vps-ic">

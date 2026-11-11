@@ -1,5 +1,6 @@
 "use client";
 
+import { roleAppSegment } from '@/lib/auth-routes';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
@@ -70,9 +71,12 @@ import {
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
-import { RecordDocumentsButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+import { RecordDocumentsButton,
+  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
+import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
+import { McaFilingCard } from '@/components/incorporation/McaFilingCard';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -330,7 +334,7 @@ export default function EngagementDetail() {
       <SEO
         title={`${eng.companyName} — VCFO Suite`}
         description={`GCC setup project workspace for ${eng.companyName}.`}
-        path={`/app/${user?.role}/engagements/${eng.id}`}
+        path={`/app/${roleAppSegment(user?.role)}/engagements/${eng.id}`}
       />
 
       {isIntern ? (
@@ -338,9 +342,19 @@ export default function EngagementDetail() {
           companyName={eng.companyName}
           clientEmail={eng.clientEmail}
           engagementId={eng.id}
-          badge={<RecordStageChip engagement={eng} state={checklistState} />}
+          badge={
+            <span className="inline-flex items-center gap-2">
+              <RecordStageChip engagement={eng} state={checklistState} />
+              <ClientHealthChip engagementId={eng.id} />
+            </span>
+          }
           meta={<RecordMetaLine engagement={eng} />}
-          actions={<RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />}
+          actions={
+            <>
+              <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+              <ProjectZipButton engagementId={eng.id} />
+            </>
+          }
           stats={
             <RecordStats>
               <RecordNumbers
@@ -360,7 +374,7 @@ export default function EngagementDetail() {
           />
 
           {recordTab !== 'overview' ? (
-            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/intern" />
+            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/lead" />
           ) : (
             <>
               {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
@@ -401,7 +415,8 @@ export default function EngagementDetail() {
               )}
 
               {/* Spec T6: the SPICe+ Part B attachments, under the SPICe+ steps. */}
-              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/intern" />
+              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/lead" />
+              <McaFilingCard engagementId={eng.id} />
             </>
           )}
         </InternEngagementOverview>
@@ -537,6 +552,7 @@ export default function EngagementDetail() {
           {activeBucket === 'pre-inc' ? (
             <SpiceAttachmentsCard engagementId={eng.id} shellBase={shellRootOf(pathname)} className="mt-4" />
           ) : null}
+          {activeBucket === 'pre-inc' ? <McaFilingCard engagementId={eng.id} className="mt-4" /> : null}
         </>
       )}
     </PageTransition>

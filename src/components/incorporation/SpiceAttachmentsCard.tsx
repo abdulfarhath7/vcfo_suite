@@ -29,7 +29,7 @@ function StatusChip({ status }: { status: SpiceAttachmentStatus }) {
  * SPICe+ attachments (spec T6 of the Board resolution (NOC) page): the documents SPICe+ Part B
  * needs, each with Not started, Waiting or Done from existing records. The accepted board
  * resolution links to its Vault copy. Staff engagement page only; `shellBase` is the shell root
- * (`/app/intern`, `/app/manager`, `/app/admin`, `/app/super`) for the Vault link.
+ * (`/app/lead`, `/app/manager`, `/app/admin`, `/app/super`) for the Vault link.
  */
 export function SpiceAttachmentsCard({
   engagementId,

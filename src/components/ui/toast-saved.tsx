@@ -22,7 +22,7 @@ export interface SavedToastOptions {
   onUndo?: () => void;
   /** One small action, for example "View". */
   action?: { label: string; onClick: () => void };
-  /** Milliseconds on screen. 5000 by default. */
+  /** Milliseconds on screen (GL-02): 3000, or 6000 when the toast has an Undo or an action. */
   duration?: number;
   /** A stable id replaces an earlier toast with the same id instead of stacking. */
   id?: string;
@@ -38,7 +38,7 @@ const SMALL_BUTTON =
  *
  *   toastSaved('Filing saved', { kind: 'filed', sub: 'GSTR-3B is ready' });
  */
-export function toastSaved(text: string, { kind = 'saved', sub, onUndo, action, duration = 5000, id }: SavedToastOptions = {}): string {
+export function toastSaved(text: string, { kind = 'saved', sub, onUndo, action, duration = onUndo || action ? 6000 : 3000, id }: SavedToastOptions = {}): string {
   const k = KIND[kind];
   return toast.custom(
     (t) => (

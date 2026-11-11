@@ -67,7 +67,10 @@ export const PRE1_DIRECTOR_INDIA_RESIDENT_IDS = [
   'director4IndiaResident',
 ] as const;
 
-const PRE1_MIN_DIRECTORS = 2;
+/** A private company needs at least two directors (CD-01: checked when the section is submitted). */
+export const PRE1_MIN_DIRECTORS = 2;
+/** CD-02: a new section opens with one director card. */
+const PRE1_FIRST_DIRECTOR_COUNT = 1;
 const PRE1_MAX_DIRECTORS = 4;
 const PRE1_DEFAULT_DIRECTOR_COUNT = PRE1_MIN_DIRECTORS;
 
@@ -138,7 +141,9 @@ const PRE1_REQUIRED_FILE_IDS = ['certificateOfIncorporationUrl', 'passportUrl'] 
 export function parseDirectorCount(responses: ChecklistItemResponses): number {
   const raw = (responses.directorCount ?? String(PRE1_DEFAULT_DIRECTOR_COUNT)).trim();
   const n = Number.parseInt(raw, 10);
-  if (n >= PRE1_MIN_DIRECTORS && n <= PRE1_MAX_DIRECTORS) return n;
+  // CD-01: the count is the number of director cards, from one up; an older answer with no count
+  // keeps the two slots it always showed.
+  if (n >= 1 && n <= PRE1_MAX_DIRECTORS) return n;
   return PRE1_DEFAULT_DIRECTOR_COUNT;
 }
 
@@ -252,6 +257,9 @@ export function validatePre1Responses(
 function validatePre1Directors(responses: ChecklistItemResponses): Record<string, string> {
   const errors: Record<string, string> = {};
   const count = parseDirectorCount(responses);
+  if (count < PRE1_MIN_DIRECTORS) {
+    errors.directorCount = `A private company needs at least ${PRE1_MIN_DIRECTORS} directors. Add another director.`;
+  }
   let hasResident = false;
   for (let i = 0; i < count; i += 1) {
     for (const id of [PRE1_DIRECTOR_FIRST_NAME_IDS[i]!, PRE1_DIRECTOR_LAST_NAME_IDS[i]!]) {
@@ -354,7 +362,7 @@ export function applyPre1EngagementDefaults(
     next.nominalValuePerEquityShare = PRE1_DEFAULT_NOMINAL_VALUE_PER_EQUITY_SHARE;
   }
   if (!next.directorCount?.trim()) {
-    next.directorCount = String(PRE1_DEFAULT_DIRECTOR_COUNT);
+    next.directorCount = String(PRE1_FIRST_DIRECTOR_COUNT);
   }
   return next;
 }

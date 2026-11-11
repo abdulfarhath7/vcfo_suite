@@ -13,7 +13,7 @@ describe('DashHero (H3c)', () => {
       <DashHero
         title="Good morning, Asha"
         stats={[
-          { label: 'Overdue', value: 3, hot: true, sub: '2 clients', href: '/app/intern/tasks?focus=overdue' },
+          { label: 'Overdue', value: 3, hot: true, sub: '2 clients', href: '/app/lead/tasks?focus=overdue' },
           { label: 'Due this week', value: 7, note: '3 new' },
         ]}
       >
@@ -22,7 +22,7 @@ describe('DashHero (H3c)', () => {
     );
     expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Asha' })).toBeInTheDocument();
     const link = screen.getByRole('link', { name: 'Overdue: 3, 2 clients. Open the list' });
-    expect(link).toHaveAttribute('href', '/app/intern/tasks?focus=overdue');
+    expect(link).toHaveAttribute('href', '/app/lead/tasks?focus=overdue');
     expect(screen.getByText('3')).toHaveClass('text-danger');
     expect(screen.getByText('3 new')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();

@@ -6,7 +6,7 @@ import { validateIncorpDocsGeneration } from '@/lib/api/incorporation-docs-error
 import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import { FINALIZED_BR, director, fullState } from '@/lib/doc-pack/__tests__/fixtures';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
-import { incorpDocDownloadFilename, incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
+import { incorpDocStandardDownloadName, incorpDraftDocSlotsFromResponses } from '@/lib/incorporation-docs/paths';
 import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 /**
@@ -96,7 +96,7 @@ describe('document pack ↔ Pre-7 panel parity', () => {
         pre16,
         director: item.audience,
       });
-      const panelFilename = incorpDocDownloadFilename(doc, item.audience, {
+      const panelFilename = incorpDocStandardDownloadName(doc, item.audience, inputs.engagement.companyName, {
         pre6: directorResponsesFromState(checklistState).pre6,
       });
 

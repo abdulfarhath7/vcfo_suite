@@ -11,7 +11,7 @@ import {
 
 /**
  * Document pack URLs — client-safe. `shell` is `'intern'` for the lead's
- * `/app/intern/engagements/…` routes; anything else is a staff base or role
+ * `/app/lead/engagements/…` routes; anything else is a staff base or role
  * resolved by `staffProjectBase`.
  */
 

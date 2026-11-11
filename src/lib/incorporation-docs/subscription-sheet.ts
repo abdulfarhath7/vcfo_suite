@@ -436,7 +436,7 @@ export function collectSubscriptionSheetMissingFields(
       plan.representative === 'non-resident' ? 'Non-resident director' : 'Authorised representative',
     );
     if (corporate.entryIndex === null && !pre1.paidUpShareCapital?.trim()) {
-      missing.push('Initial Paid-up Share Capital (Pre-1)');
+      missing.push('Paid-up Share Capital (Pre-1)');
     }
     return missing;
   }

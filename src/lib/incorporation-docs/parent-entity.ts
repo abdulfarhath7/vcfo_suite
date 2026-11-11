@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import type { ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import type { IncorpMergeInput } from '@/lib/incorporation-docs/shared';
 import {
@@ -15,7 +16,7 @@ export function resolveParentEntityName(
   pre1: ChecklistItemResponses,
   engagement?: IncorpMergeInput['engagement'],
 ): string {
-  return pickString(pre1.parentEntityName, engagement?.parentEntityName, '[Parent entity name]');
+  return properNameCase(pickString(pre1.parentEntityName, engagement?.parentEntityName, '[Parent entity name]'));
 }
 
 export function resolveParentEntityAddress(

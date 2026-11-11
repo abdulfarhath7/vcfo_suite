@@ -370,3 +370,25 @@ describe('Pre-2 template by NOC variant', () => {
     expect(text).toContain('“Sampada Tech Private Limited” or  such other name');
   });
 });
+
+describe('letter casing in the resolution (GL-09)', () => {
+  it('prints a company and a person typed in lower case with capital letters', () => {
+    const fields = buildBoardResolutionMergeFields({
+      pre1: {
+        parentEntityName: 'ember holdings llp',
+        proposedName1: 'ember technologies private limited',
+        proposedName2: 'ember labs private limited',
+        director1FirstName: 'asha',
+        director1LastName: 'rao',
+        director1IndiaResident: 'yes',
+        signatoryFirstName: 'hasan',
+        signatoryLastName: 'askari',
+      },
+    });
+    expect(fields.PARENT_ENTITY_NAME).toBe('Ember Holdings LLP');
+    expect(fields.PROPOSED_NAME_1).toBe('Ember Technologies Private Limited');
+    expect(fields.PROPOSED_NAMES).toBe('Ember Technologies Private Limited and Ember Labs Private Limited');
+    expect(fields.INDIAN_DIRECTOR_LINE).toContain('Asha Rao');
+    expect(fields.SIGNATORY_NAME).toBe('Hasan Askari');
+  });
+});

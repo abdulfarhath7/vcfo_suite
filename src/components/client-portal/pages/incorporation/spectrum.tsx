@@ -10,6 +10,7 @@
  * Tailwind class, so the parts give each text span its own colour and weight, and actions
  * that look like buttons are `<button>` elements that call `portal.go`.
  */
+import { workHolder, workHolderLabel, type WorkHolderTeam } from '@/lib/checklist/work-holder';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ListChecks, RefreshCw, Upload } from 'lucide-react';
 import { useRef, useState, type ComponentProps, type MouseEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -112,10 +113,10 @@ export function ListRow({ children, className, onClick, label }: { children: Rea
   return <div className={base}>{children}</div>;
 }
 
-/** Empty list body (R-05, R-48): a dashed area with the action. */
+/** Empty list body (R-05, R-48): a plain-edged area with the action. */
 export function Empty({ children = 'None', action }: { children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="m-4 flex flex-col items-center gap-2.5 rounded-md border-dash-fine px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5">
+    <div className="m-4 flex flex-col items-center gap-2.5 rounded-md border-fine px-4 py-6 text-center text-[13px] text-ink-muted md:mx-5">
       <span>{children}</span>
       {action}
     </div>
@@ -290,10 +291,15 @@ export function StackedBar({
 const isLive = (s: PortalStep) => s.kind === 'you' || s.kind === 'prog' || s.kind === 'with';
 const isUp = (s: PortalStep) => s.kind === 'up' || s.kind === 'next';
 
-/** Who holds a live step now: the company for the client's move, else SBC or MCA. */
-export function holderOf(s: PortalStep, company: string): string {
-  if (s.kind === 'you' || s.kind === 'prog') return company;
-  return s.owner === 'mca' ? 'MCA' : 'SBC';
+/**
+ * Who holds a live step now: the company for the client's move, else the firm's role with the
+ * first name of the Lead or the Manager ("Lead · Divya"), the Admin, or MCA.
+ */
+export function holderOf(s: PortalStep, company: string, team?: WorkHolderTeam): string {
+  // BR-03: the real holder, from the one function every role reads.
+  const holder = workHolder(s);
+  if (!holder || holder === 'client') return company;
+  return workHolderLabel(holder, 'client', team).replace(/^With /, '');
 }
 
 export function markState(s: PortalStep): 'done' | 'now' | 'next' {
@@ -316,12 +322,12 @@ export function stepChip(s: PortalStep): { tone: ChipTone; label: string } {
 }
 
 /** Line under a step title: "Done 26 Sep", "With Northwind · due 9 Oct", "Starts after step 10". */
-export function stepSub(s: PortalStep, prev: PortalStep | undefined, company: string): { text: string; cls: string } {
+export function stepSub(s: PortalStep, prev: PortalStep | undefined, company: string, team?: WorkHolderTeam): { text: string; cls: string } {
   if (s.kind === 'done') return { text: s.doneOn ? `Done ${fmtDay(s.doneOn)}` : 'Done', cls: 'text-ink-muted' };
   if (isUp(s)) return { text: prev ? `Starts after step ${prev.n}` : 'Opens later', cls: 'text-ink-muted' };
   const due = s.due ? ` · due ${fmtDay(s.due)}` : '';
   const cls = s.late ? 'text-danger' : s.kind === 'you' ? 'text-waiting' : 'text-brand-text';
-  return { text: `With ${holderOf(s, company)}${due}`, cls };
+  return { text: `With ${holderOf(s, company, team)}${due}`, cls };
 }
 
 /** The phase the client is in: the first with an open step, else the last. */
@@ -382,6 +388,7 @@ export function StepRow({
   prev,
   company,
   lead,
+  manager,
   lastRow,
   above,
   focus,
@@ -393,6 +400,8 @@ export function StepRow({
   prev?: PortalStep;
   company: string;
   lead?: string;
+  /** The engagement's Manager, named in the holder line when the Manager holds the step. */
+  manager?: string;
   lastRow: boolean;
   /** The row above in this list (R-58: the line joins its mark to this one). Unset on the first row. */
   above?: PortalStep;
@@ -405,7 +414,7 @@ export function StepRow({
   const go = useGo();
   const live = isLive(s);
   const tint = focus ?? live;
-  const sub = stepSub(s, prev, company);
+  const sub = stepSub(s, prev, company, { lead, manager });
   const chip = stepChip(s);
   const href = stepHref(s.id);
   return (
@@ -459,6 +468,7 @@ export function St5Card({
   model,
   company,
   lead,
+  manager,
   link,
   className,
   title = 'Incorporation',
@@ -468,6 +478,7 @@ export function St5Card({
   model: PortalIncorporationModel;
   company: string;
   lead?: string;
+  manager?: string;
   link?: { label: string; onClick: () => void };
   className?: string;
   title?: string;
@@ -522,7 +533,7 @@ export function St5Card({
       </div>
       <ol className="mt-5 flex flex-col border-t border-line-soft pt-3 max-sm:mt-3">
         {shown.map((s, i) => (
-          <StepRow key={s.id} s={s} prev={prevOf(s)} company={company} lead={lead} lastRow={i === shown.length - 1} above={shown[i - 1]} onStep={onStep} />
+          <StepRow key={s.id} s={s} prev={prevOf(s)} company={company} lead={lead} manager={manager} lastRow={i === shown.length - 1} above={shown[i - 1]} onStep={onStep} />
         ))}
       </ol>
       {hidden.length > 0 ? (
@@ -562,7 +573,7 @@ export function PageHead({
 }) {
   const go = useGo();
   return (
-    <section className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3" aria-label={label}>
+    <section data-notified-target className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3" aria-label={label}>
       <div className="min-w-0 flex-[1_1_320px]">
         <h1 className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
           <span className="min-w-0">{title}</span>
@@ -675,8 +686,8 @@ export function DropZone({
         if (f) onFile(f);
       }}
       className={cn(
-        'drop-zone flex items-center gap-3 rounded-md border-dash-fine bg-surface-raised px-4 py-3.5',
-        over && 'bg-brand-soft [--dash-color:oklch(var(--brand))]',
+        'drop-zone flex items-center gap-3 rounded-md border-fine bg-surface-raised px-4 py-3.5',
+        over && 'bg-brand-soft [--edge-color:oklch(var(--brand))]',
         busy && 'opacity-70',
         className,
       )}

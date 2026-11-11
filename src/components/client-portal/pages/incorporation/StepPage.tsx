@@ -71,6 +71,8 @@ import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
+import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 
 /* ---------------- answers ---------------- */
 
@@ -147,6 +149,7 @@ function ChangeDialog({
   to,
   heading = 'Request a change',
   placeholder = 'What should change?',
+  sendLabel = 'Send to Lead',
   onClose,
   onSend,
 }: {
@@ -154,6 +157,8 @@ function ChangeDialog({
   to?: string;
   heading?: string;
   placeholder?: string;
+  /** BR-07: the request goes to the project lead. */
+  sendLabel?: string;
   onClose: () => void;
   onSend: (note: string) => Promise<void>;
 }) {
@@ -185,7 +190,7 @@ function ChangeDialog({
           </Button>
           <Button disabled={!note.trim() || busy} onClick={() => void send()}>
             <MessageSquare size={16} strokeWidth={1.6} aria-hidden />
-            {busy ? 'Sending…' : 'Send'}
+            {busy ? 'Sending…' : sendLabel}
           </Button>
         </>
       }
@@ -211,6 +216,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const goTo = useGo();
   const qc = useQueryClient();
   const viewer = useDocViewer();
+  const [panelOpen, togglePanel] = useSidePanelOpen(d.engagementId ? `client:${d.engagementId}` : null);
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
@@ -314,10 +320,12 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     const st = approvalStateOf(s?.slice);
     return st === 'pending_client' || st === 'client_approved';
   })();
+  // BR-07: "Request a change" always opens the typed request on every step; the chatbot stays
+  // an optional second path that makes the same record.
+  void canChange;
   const requestChange = () => {
     if (!s) return;
-    if (canChange) setChangeOpen(true);
-    else openChat(`I want to request a change to step ${s.n} · ${s.title}`);
+    setChangeOpen(true);
   };
   const sendChange = async (note: string) => {
     if (!s || !d.engagementId) return;
@@ -537,6 +545,13 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const dirty = Object.keys(draft).length > 0;
   // C-219: a step SBC or MCA holds gets "Message <lead>" in the card foot.
   const leadFirst = d.leadName ? firstName(d.leadName) : '';
+  // BR-03: the chip follows the real workflow state and names the Lead or the Manager by first
+  // name ("With Manager · Anita"); the line under it gives the time since the hand-over. The
+  // admin has no name on the project team, so the chip names the role only ("With Admin").
+  const holder = s ? workHolder(s) : null;
+  const holderTeam = { lead: d.leadName, manager: d.managerName };
+  const holderSince = sinceHandOver(s?.slice?.lastEditedAt ?? s?.since);
+  const holderLine = holderSince ? (holderSince === 'just now' ? 'Handed over just now' : `Handed over ${holderSince} ago`) : 'SBC is working on it';
 
   const openPortal = (form: string) => {
     if (!portalLink) return;
@@ -686,7 +701,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
         : k === 'prog'
           ? { state: 'now', title: `In progress${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.due ? `Fill the remaining answers and submit by ${fmt(s.due)}` : 'Fill the remaining answers and submit', bad: late }
           : k === 'with'
-            ? { state: 'now', title: `With ${s.owner === 'mca' ? 'MCA' : 'SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: s.owner === 'mca' ? 'MCA reviews the filing' : `${leadFirst || 'SBC'} is working on it` }
+            ? { state: 'now', title: `${holder ? workHolderLabel(holder, 'client', holderTeam) : 'With SBC'}${s.due ? ` · due ${fmt(s.due)}` : ''}`, sub: holder === 'mca' ? 'MCA reviews the filing' : holderLine }
             : { state: 'next', title: 'Not started', sub: prev ? `Opens after step ${prev.n} · ${prev.title}` : 'Opens later' };
 
   const answersCard = (
@@ -839,7 +854,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
               </>
             }
           />
-          <Cols>
+          {/* GL-05: the side panel (phase steps) can be pushed aside for more room. */}
+          <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
             <Col>
               {stepForm ?? (docsCount > 0 ? (
                 <SpectrumTabs
@@ -855,7 +871,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
               ) : null)}
               {stepForm ? null : showDocs ? docsCard : answersCard}
             </Col>
-            <Col>{rail}</Col>
+            <SidePanelHandle open={panelOpen} onToggle={togglePanel} />
+            <Col className={panelOpen ? undefined : 'lg:hidden'}>{rail}</Col>
           </Cols>
           <Pager
             prev={prev ? { href: stepHrefOf(prev), label: `${prev.n} · ${prev.title}` } : { href: portalHref('incorporation'), label: 'All phases' }}
@@ -870,6 +887,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           to={leadFirst || undefined}
           heading="Message"
           placeholder={leadFirst ? `Write to ${leadFirst}` : 'Write to your team'}
+          sendLabel="Send"
           onClose={() => setMsgOpen(false)}
           onSend={sendMessage}
         />

@@ -247,13 +247,21 @@ export function sendsFromActorMailbox(event: EngagementProcessEvent): boolean {
   return event === 'lead_requested_review' || event === 'client_fill_requested';
 }
 
-/** Lead/manager → client: in-app compose + Graph Mail.Send. */
+/**
+ * GL-07: a staff action whose email goes to the client never sends by itself. The answer carries
+ * a draft, the "Send email" pop-up opens with it filled in, and the email leaves only when the
+ * person clicks Send. Scheduled reminders and digests stay automatic (the change list's proposal).
+ */
 export function opensClientOutgoingDraft(
   event: EngagementProcessEvent,
   itemId?: string,
+  actorRole?: string | null,
 ): boolean {
   if (itemId && isBoardResolutionSendBack(event, itemId)) return false;
+  if (event === 'step_submitted') return directFlowEmailPlan(event, actorRole) === 'clients';
   return (
+    event === 'client_fill_approved' ||
+    event === 'step_awaiting_client_approval' ||
     event === 'review_accepted' ||
     event === 'review_rejected' ||
     event === 'delivered' ||

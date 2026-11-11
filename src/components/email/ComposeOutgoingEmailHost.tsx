@@ -96,7 +96,9 @@ export function ComposeOutgoingEmailHost() {
     setSending(true);
     try {
       const edited = body !== initialBody;
-      const res = await fetch('/api/outlook/send', {
+      // GL-07: from the person's own Outlook when it is connected; otherwise the firm's address
+      // sends it in their name, so a missing mailbox never blocks the email.
+      const res = await fetch(connected ? '/api/outlook/send' : '/api/email/send-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,6 +107,8 @@ export function ComposeOutgoingEmailHost() {
           subject: subject.trim(),
           text: body,
           html: edited ? undefined : draft?.html,
+          engagementId: draft?.engagementId,
+          itemId: draft?.itemId,
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string; from?: string };
@@ -158,7 +162,8 @@ export function ComposeOutgoingEmailHost() {
     <Dialog open={open} onOpenChange={(next) => { if (!next) close(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Email client</DialogTitle>
+          <DialogTitle>Send email</DialogTitle>
+          <p className="text-[13px] text-ink-muted">Nothing is sent until you click Send. Check and change anything first.</p>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -172,9 +177,7 @@ export function ComposeOutgoingEmailHost() {
                   ? 'Checking Outlook…'
                   : connected && msEmail
                     ? msEmail
-                    : configured
-                      ? 'Outlook not connected'
-                      : 'Outlook not configured (Azure app)'
+                    : `${user?.name ?? 'You'} via the firm's address (Outlook not connected)`
               }
             />
           </div>
@@ -225,7 +228,7 @@ export function ComposeOutgoingEmailHost() {
           <AccentButton type="button" variant="ghost" onClick={close} disabled={sending}>
             Cancel
           </AccentButton>
-          <AccentButton type="button" onClick={() => void send()} disabled={sending || !connected}>
+          <AccentButton type="button" onClick={() => void send()} disabled={sending || loadingStatus}>
             {sending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

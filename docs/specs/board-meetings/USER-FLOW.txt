@@ -1,4 +1,4 @@
- app.sbctrack.in/app/intern            Director's inbox                 app.sbctrack.in/app/client
+ app.sbctrack.in/app/lead            Director's inbox                 app.sbctrack.in/app/client
            |                                  |                                    |
            v                                  |                                    |
       [Lead login]                            |                                    |

@@ -82,7 +82,7 @@ export function useEngagementStepDetail() {
   const listRedirect = isClientRoute
     ? clientIncorporationPath()
     : isInternRoute
-      ? '/app/intern/clients'
+      ? '/app/lead/clients'
       : staffRole === 'admin'
         ? '/app/admin/projects'
         : '/app/manager/projects';

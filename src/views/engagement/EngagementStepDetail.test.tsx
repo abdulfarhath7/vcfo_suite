@@ -146,7 +146,7 @@ describe('EngagementStepDetail', () => {
   it('shows grey loading shapes until the engagement list has settled', async () => {
     app.engagements = [];
     app.engagementsSettled = false;
-    await renderPage('/app/intern/engagements/acme-pvt-ltd/step/foo', { id: 'acme-pvt-ltd', stepId: 'pre-2' });
+    await renderPage('/app/lead/engagements/acme-pvt-ltd/step/foo', { id: 'acme-pvt-ltd', stepId: 'pre-2' });
     expect(screen.getByLabelText('Loading the step')).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryByTestId('RedirectTo')).toBeNull();
   });
@@ -174,7 +174,7 @@ describe('EngagementStepDetail', () => {
   });
 
   it('gives the lead the editable workspace with the phase rail and the document pack', async () => {
-    const { container } = await renderPage('/app/intern/engagements/acme-pvt-ltd/step/board-resolution-draft', {
+    const { container } = await renderPage('/app/lead/engagements/acme-pvt-ltd/step/board-resolution-draft', {
       id: 'acme-pvt-ltd',
       stepId: 'board-resolution-draft',
     });
@@ -207,7 +207,7 @@ describe('EngagementStepDetail', () => {
   });
 
   it('opens another step from the rail', async () => {
-    await renderPage('/app/intern/engagements/acme-pvt-ltd/step/board-resolution-draft', { id: 'acme-pvt-ltd', stepId: 'board-resolution-draft' });
+    await renderPage('/app/lead/engagements/acme-pvt-ltd/step/board-resolution-draft', { id: 'acme-pvt-ltd', stepId: 'board-resolution-draft' });
     const rail = propsOf('ChecklistJourneyRail');
     expect(rail.selectedId).toBe('pre-2');
     expect(rail.onSelect).toBe('fn');
@@ -223,7 +223,7 @@ describe('EngagementStepDetail', () => {
         lastEditedByRole: 'client',
       },
     });
-    const { container } = await renderPage('/app/intern/engagements/acme-pvt-ltd/step/name-application', {
+    const { container } = await renderPage('/app/lead/engagements/acme-pvt-ltd/step/name-application', {
       id: 'acme-pvt-ltd',
       stepId: 'name-application',
     });

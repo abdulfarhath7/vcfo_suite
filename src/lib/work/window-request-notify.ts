@@ -49,7 +49,7 @@ export async function notifyWindowDecided(input: {
         body: input.note ?? '',
         engagementId: recipients.appId,
         companyName: recipients.companyName,
-        href: '/app/intern/tasks?view=plan',
+        href: '/app/lead/tasks?view=plan',
       },
     ]);
   } catch (err) {

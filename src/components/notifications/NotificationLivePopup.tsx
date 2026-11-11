@@ -51,7 +51,7 @@ function NotificationGenieCard({
   const message = item.body.trim() || item.title;
   const extraTitle = Boolean(item.title && item.body && item.title !== item.body);
   const canOpen = notificationHrefIsNavigable(item.href);
-  const { user } = useApp();
+  const { user, markNotificationRead } = useApp();
   /* The popup stays the first stop; only this button goes to the full Notifications page. */
   const pageHref = user && user.role !== 'developer' ? roleNotificationsPath(user.role) : null;
 
@@ -102,7 +102,30 @@ function NotificationGenieCard({
           ) : null}
           {canOpen ? (
             <Button asChild variant="outline">
-              <Link href={item.href}>Open</Link>
+              {/* GL-01: Open marks the notification read and puts the card away. */}
+              {/* A ready export links to its file (GL-06, PR-02): a plain download link, not a page. */}
+              {item.href?.startsWith('/api/') ? (
+                <a
+                  href={item.href}
+                  download
+                  onClick={() => {
+                    markNotificationRead(item.id);
+                    onParked();
+                  }}
+                >
+                  Download
+                </a>
+              ) : (
+                <Link
+                  href={item.href}
+                  onClick={() => {
+                    markNotificationRead(item.id);
+                    onParked();
+                  }}
+                >
+                  Open
+                </Link>
+              )}
             </Button>
           ) : null}
         </>

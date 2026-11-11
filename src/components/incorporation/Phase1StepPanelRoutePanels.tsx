@@ -12,6 +12,8 @@ import { formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation
 import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
+import { BoardResolutionDocCards } from '@/components/incorporation/BoardResolutionDocCards';
+import { BoardResolutionClientEdit } from '@/components/incorporation/BoardResolutionClientEdit';
 import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
 import {
@@ -35,13 +37,26 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
   const { engagement, className, isClient, isIntern, brStatus, itemState, getStateForEngagement } = props;
     if (!engagement) return null;
 
-    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields.
-    if (isIntern) return null;
+    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields. The
+    // client's edit (BR-04, BR-05) is the lead's to receive, correct and send back, so it shows.
+    if (isIntern) {
+      return brStatus === 'finalized' ? (
+        <div className={className}>
+          <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="intern" />
+        </div>
+      ) : null;
+    }
 
     if (!isClient) {
       return (
         <div className={className}>
           <PanelShell title="Draft Board Resolution">
+            {engagement && brStatus !== 'loading' ? (
+              <div className="mb-3">
+                <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" viewerRole={props.role} />
+                {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} viewerRole={props.role ?? 'manager'} /> : null}
+              </div>
+            ) : null}
             {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
             {brStatus === 'none' && (
               <p className="text-ink-faint">
@@ -85,6 +100,12 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
     return (
       <div className={className}>
         <PanelShell title="Draft Board Resolution">
+          {engagement && brStatus !== 'loading' ? (
+            <div className="mb-3">
+              <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" viewerRole="client" />
+              {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="client" /> : null}
+            </div>
+          ) : null}
           {brStatus === 'loading' && (
             <p className="text-ink-faint">Checking status…</p>
           )}
@@ -116,6 +137,11 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
       return (
         <div className={className}>
           <PanelShell title="Signed Board Resolution">
+            {props.engagement && brStatus !== 'loading' ? (
+              <div className="mb-3">
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
+              </div>
+            ) : null}
             {brStatus === 'signed' ? (
               <p className="flex items-center gap-1.5 text-positive">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -149,6 +175,11 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
     return (
       <div className={className}>
         <PanelShell title="Signed Board Resolution">
+            {props.engagement && brStatus !== 'loading' ? (
+              <div className="mb-3">
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
+              </div>
+            ) : null}
           {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
           {brStatus === 'signed' ? (
             <p className="flex items-center gap-1.5 text-positive">

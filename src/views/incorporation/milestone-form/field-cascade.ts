@@ -45,7 +45,10 @@ export function cascadeDraftFieldChange(
     next.parentEntityTrademarkUrl = '';
   }
   if (itemId === 'pre-5' && fieldId === 'nameApprovalDate') {
-    next.nameApprovalExpiryDate = computeMcaNameApprovalExpiryDate(value);
+    // SA-02: a new approval date recalculates the expiry, unless staff set the expiry by hand.
+    const before = (prev.nameApprovalExpiryDate ?? '').trim();
+    const wasCalculated = !before || before === computeMcaNameApprovalExpiryDate(prev.nameApprovalDate ?? '');
+    if (wasCalculated) next.nameApprovalExpiryDate = computeMcaNameApprovalExpiryDate(value);
   }
   if (itemId === 'pre-1' && fieldId === 'nicCode') {
     next.nicBusinessType = nicBusinessType(value)?.description ?? '';

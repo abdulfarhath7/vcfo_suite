@@ -421,7 +421,7 @@ Errors: `400 attestation_incomplete`, `400 unknown_document`, `400 personal_data
 
 `assist_agent_runs` (with its evidence) and `assist_run_attestations` are kept for **at least one
 year** (DPDP Rule 8(3); CERT-In's 180 days is the floor). No job deletes them, and since migration
-`0051_assist_filing_safeguards` deleting a staff account sets `user_id` / `certifier_id` to null
+`0054_assist_filing_safeguards` deleting a staff account sets `user_id` / `certifier_id` to null
 instead of deleting the rows. See SAFETY.md G14.
 
 ## GET /api/assist/step-link/[id]?step=<stepId>
@@ -431,7 +431,7 @@ open, so the extension does not need to know the role:
 
 | Role | Lands on |
 |---|---|
-| Project lead (`intern`) | `/app/intern/engagements/{slug}/step/{stepSlug}` |
+| Project lead (`intern`) | `/app/lead/engagements/{slug}/step/{stepSlug}` |
 | Manager | `/app/manager/projects/{slug}/step/{stepSlug}` |
 | Admin, super admin | `/app/admin/projects/{slug}/step/{stepSlug}` |
 
@@ -511,7 +511,7 @@ every extension refetches it (`recipe_outdated` on the next run start).
 `/api/assist/runs`, `/api/assist/engagements/[id]/runs` and `/api/assist/engagements/[id]/result`
 serve the older `assist_runs` table (migration 0029): the "Start filing" state per compliance
 filing period or registration, which the client portal also shows. The agent run log here is a
-separate table, `assist_agent_runs` (migration `0050_assist_agents`), and is staff-only.
+separate table, `assist_agent_runs` (migration `0052_assist_agents`), and is staff-only.
 
 ## Where the code lives
 
@@ -530,6 +530,6 @@ separate table, `assist_agent_runs` (migration `0050_assist_agents`), and is sta
 | Certifier's checks (rules) | `src/lib/assist-agents/attestation.ts` |
 | DSC signer references | `src/lib/assist-agents/dsc-signers.ts` |
 | Repositories | `src/db/repositories/assist-agent-runs.ts`, `assist-attestations.ts`, `assist-patches.ts` |
-| Tables | `src/db/schema-assist.ts`, `src/db/migrations/0050_assist_agents.sql`, `0051_assist_filing_safeguards.sql` |
+| Tables | `src/db/schema-assist.ts`, `src/db/migrations/0052_assist_agents.sql`, `0054_assist_filing_safeguards.sql` |
 | Staff page | `src/views/assist/AssistRunsPage.tsx` and `AssistRunDetail.tsx`, `/app/{super,admin,manager,intern}/assist-runs` |
 | Distribution, kill switch | `DISTRIBUTION.md` |

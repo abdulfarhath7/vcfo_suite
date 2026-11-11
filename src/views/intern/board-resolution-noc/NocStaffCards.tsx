@@ -169,7 +169,7 @@ export function NocTemplateCard({
               <Tag tone="warn">Answers changed after release</Tag>
             </span>
             <Button size="sm" disabled={makingAgain || accepted} onClick={() => void onMakeAgain()}>
-              {makingAgain ? 'Making the draft…' : 'Make the draft again'}
+              {makingAgain ? 'Making it again…' : 'Make it again'}
             </Button>
           </>
         ) : null}

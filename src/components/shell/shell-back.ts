@@ -1,5 +1,5 @@
 /** Intern clients list — keep equal to `INTERN_CLIENTS_HREF` in InternClientsNav. */
-const INTERN_CLIENTS_HREF = '/app/intern/clients';
+const INTERN_CLIENTS_HREF = '/app/lead/clients';
 
 /** Strip query/hash and a trailing slash (except `/`). */
 export function normalizeShellPathname(pathname: string): string {
@@ -14,26 +14,26 @@ export function normalizeShellPathname(pathname: string): string {
  * (Profile / footer), not this list — nested back should show there.
  */
 const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
-  '/app/intern/today',
-  '/app/intern/tasks',
-  '/app/intern/announcements',
-  '/app/intern/watch',
-  '/app/intern/assist-runs',
-  '/app/intern/notifications',
+  '/app/lead/today',
+  '/app/lead/tasks',
+  '/app/lead/announcements',
+  '/app/lead/watch',
+  '/app/lead/assist-runs',
+  '/app/lead/notifications',
   INTERN_CLIENTS_HREF,
-  '/app/intern/vault',
-  '/app/intern/mail',
-  '/app/intern/compliances/calendar',
-  '/app/intern/compliances/filings',
-  '/app/intern/compliances/obligations',
-  '/app/intern/incorporation',
-  '/app/intern/registrations',
-  '/app/intern/labour-registers',
-  '/app/intern/budgets',
-  '/app/intern/payroll',
-  '/app/intern/knowledge-bank',
-  '/app/intern/analytics',
-  '/app/intern/audit-log',
+  '/app/lead/vault',
+  '/app/lead/mail',
+  '/app/lead/compliances/calendar',
+  '/app/lead/compliances/filings',
+  '/app/lead/compliances/obligations',
+  '/app/lead/incorporation',
+  '/app/lead/registrations',
+  '/app/lead/labour-registers',
+  '/app/lead/budgets',
+  '/app/lead/payroll',
+  '/app/lead/knowledge-bank',
+  '/app/lead/analytics',
+  '/app/lead/audit-log',
   '/app/manager/dashboard',
   '/app/manager/announcements',
   '/app/manager/watch',
@@ -111,7 +111,7 @@ const SHELL_PRIMARY_PATHS: ReadonlySet<string> = new Set([
 ]);
 
 const ROLE_INDEX_PATHS = new Set([
-  '/app/intern',
+  '/app/lead',
   '/app/manager',
   '/app/admin',
   '/app/super',
@@ -119,7 +119,7 @@ const ROLE_INDEX_PATHS = new Set([
 ]);
 
 const ROLE_HOME: Record<string, string> = {
-  intern: '/app/intern/today',
+  lead: '/app/lead/today',
   manager: '/app/manager/dashboard',
   admin: '/app/admin/dashboard',
   super: '/app/super/dashboard',
@@ -173,8 +173,8 @@ export function shellBackFallbackPath(pathname: string): string {
     return '/app/client/incorporation';
   }
 
-  /* /app/intern/engagements/:id → clients (there is no engagements list). */
-  if (role === 'intern' && parts[2] === 'engagements' && parts.length === 4) {
+  /* /app/lead/engagements/:id → clients (there is no engagements list). */
+  if (role === 'lead' && parts[2] === 'engagements' && parts.length === 4) {
     return INTERN_CLIENTS_HREF;
   }
 

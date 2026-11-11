@@ -29,7 +29,7 @@ describe('ST5 helpers', () => {
 
   it('names who holds a live step', () => {
     expect(holderOf(step({ kind: 'you', owner: 'sbc' }), 'Northwind')).toBe('Northwind');
-    expect(holderOf(step({ kind: 'with', owner: 'sbc' }), 'Northwind')).toBe('SBC');
+    expect(holderOf(step({ kind: 'with', owner: 'sbc' }), 'Northwind')).toBe('Lead');
     expect(holderOf(step({ kind: 'with', owner: 'mca' }), 'Northwind')).toBe('MCA');
   });
 

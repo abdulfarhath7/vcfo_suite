@@ -95,7 +95,7 @@ describe('handleDoWork', () => {
   });
 
   it('uses the page in view when the message names no company', async () => {
-    await run(DATA, { page: '/app/intern/projects/kestrel/step/pre-15' });
+    await run(DATA, { page: '/app/lead/projects/kestrel/step/pre-15' });
     expect(createChangeset.mock.calls[0]![1].draft.engagementId).toBe(kestrel.id);
   });
 
@@ -117,14 +117,14 @@ describe('handleDoWork', () => {
   });
 
   it('says it cannot find a company out of reach, reads nothing and reveals nothing', async () => {
-    const result = await run(`Add this for Zeta Industries\n${DATA}`, { page: '/app/intern/projects/acme' });
+    const result = await run(`Add this for Zeta Industries\n${DATA}`, { page: '/app/lead/projects/acme' });
     expect(result!.answer.line).toMatch(/cannot find Zeta Industries among your projects/);
     expect(createChangeset).not.toHaveBeenCalled();
     expect(lockRun).not.toHaveBeenCalled();
   });
 
   it('asks when a document names another company, and writes no row for it', async () => {
-    const result = await run(`Company: Zeta Industries\n${DATA}`, { page: '/app/intern/projects/acme' });
+    const result = await run(`Company: Zeta Industries\n${DATA}`, { page: '/app/lead/projects/acme' });
     expect(result!.answer.line).toMatch(/names Zeta Industries, not Acme/);
     expect(createChangeset).not.toHaveBeenCalled();
     expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_reply');
@@ -174,6 +174,14 @@ describe('isDataMessage', () => {
     expect(isDataMessage(DATA)).toBe(true);
     expect(isDataMessage('x '.repeat(1100))).toBe(true);
     expect(isDataMessage('How many companies are incorporated this year?')).toBe(false);
+  });
+
+  it('takes loose prose pasted with a fill instruction, but not the instruction alone or a question', () => {
+    const email = 'Please fill this in for Acme.\nHi team, our new director is Asha Rao, she lives in Indiranagar, Bengaluru and her father is Mohan Rao.';
+    expect(isDataMessage(email)).toBe(true);
+    expect(isDataMessage('Fill this in for Acme')).toBe(false);
+    expect(isDataMessage('Can you add these details for Acme from the email I sent you yesterday about the new director?')).toBe(false);
+    expect(isDataMessage('Hi team, our new director is Asha Rao, she lives in Indiranagar, Bengaluru and her father is Mohan Rao.')).toBe(false);
   });
 });
 

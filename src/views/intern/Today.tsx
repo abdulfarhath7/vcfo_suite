@@ -18,6 +18,7 @@ import { LeadActionQueue } from '@/components/intern/LeadActionQueue';
 import { LeadPhaseProgress } from '@/components/intern/LeadPhaseProgress';
 import { FilingsMatrix } from '@/components/intern/FilingsMatrix';
 import { LeadSideRail } from '@/components/intern/LeadSideRail';
+import { MyDayCard } from '@/views/my-day/MyDayCard';
 import { TodayScopeTabs } from '@/components/staff/today/today-parts';
 import { engagementInScope, todayStatusOf, type TodayScope } from '@/components/staff/today/today-rows';
 import type { InternWorkItem } from '@/lib/intern/intern-work';
@@ -73,7 +74,7 @@ export default function InternToday() {
       <SEO
         title="Today — VCFO Suite"
         description="What needs you, what’s waiting, and what’s due this week."
-        path="/app/intern/today"
+        path="/app/lead/today"
       />
 
       <div className="flex flex-col gap-5">
@@ -92,6 +93,8 @@ export default function InternToday() {
 
         <div className={GRID}>
           <div className="flex min-w-0 flex-col gap-5">
+            {/* IDEAS-PLAN F: the ranked plan for today, above the Action queue. */}
+            <MyDayCard />
             <LeadActionQueue
               userId={user?.id ?? ''}
               items={items}

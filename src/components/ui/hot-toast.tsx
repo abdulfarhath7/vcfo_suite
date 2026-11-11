@@ -1,12 +1,14 @@
 "use client";
 
-import { Toaster } from "react-hot-toast";
+import { useEffect } from "react";
+import toast, { ToastBar, Toaster, useToasterStore } from "react-hot-toast";
 import {
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
   Info,
   Loader2,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,7 +71,27 @@ function loadingToastIcon() {
   return <ToastStatusIcon variant="loading" Icon={Loader2} spin />;
 }
 
+/** GL-02: at most three toasts show at one time; the oldest goes first. */
+export const TOAST_LIMIT = 3;
+/** GL-02: a toast closes after 3 seconds; an error (and a toast with Undo) stays 6 seconds. */
+export const TOAST_MS = 3000;
+export const TOAST_ERROR_MS = 6000;
+
+/** The ids to close so that only the newest `limit` visible toasts stay. Newest first in `toasts`. */
+export function toastsOverLimit<T extends { id: string; visible: boolean }>(toasts: T[], limit = TOAST_LIMIT): string[] {
+  return toasts
+    .filter((t) => t.visible)
+    .slice(limit)
+    .map((t) => t.id);
+}
+
 export function HotToaster() {
+  // The store lists the newest toast first, so everything after the third visible one is older.
+  const { toasts } = useToasterStore();
+  useEffect(() => {
+    for (const id of toastsOverLimit(toasts)) toast.dismiss(id);
+  }, [toasts]);
+
   return (
     <Toaster
       position="bottom-left"
@@ -83,15 +105,15 @@ export function HotToaster() {
         bottom: "var(--toast-bottom, 24px)",
       }}
       toastOptions={{
-        duration: 4500,
+        duration: TOAST_MS,
         style: getToastVariantStyle("default"),
         success: {
-          duration: 4000,
+          duration: TOAST_MS,
           style: getToastVariantStyle("success"),
           icon: successToastIcon(),
         },
         error: {
-          duration: 6000,
+          duration: TOAST_ERROR_MS,
           style: getToastVariantStyle("error"),
           icon: errorToastIcon(),
         },
@@ -100,10 +122,35 @@ export function HotToaster() {
           icon: loadingToastIcon(),
         },
         blank: {
+          duration: TOAST_MS,
           style: getToastVariantStyle("info"),
           icon: infoToastIcon(),
         },
       }}
-    />
+    >
+      {/* Every toast has a close X, and the timer stops while the pointer is on the stack
+          (GL-02). A loading toast closes itself when the work ends. Custom toasts (undo,
+          saved) draw their own X. */}
+      {(t) => (
+        <ToastBar toast={t}>
+          {({ icon, message }) => (
+            <>
+              {icon}
+              {message}
+              {t.type !== "loading" ? (
+                <button
+                  type="button"
+                  onClick={() => toast.dismiss(t.id)}
+                  aria-label="Close notification"
+                  className="-mr-1 ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-surface-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </>
+          )}
+        </ToastBar>
+      )}
+    </Toaster>
   );
 }

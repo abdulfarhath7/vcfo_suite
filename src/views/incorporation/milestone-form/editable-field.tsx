@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { FieldHelpButton } from '@/components/ask/FieldHelpButton';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { GLOSSARY } from '@/data/ask/glossary';
@@ -7,7 +8,11 @@ import type { ChecklistField } from '@/data/checklist';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import { addRepeatEntry, isRepeatField, removeRepeatEntry } from '@/lib/checklist/checklist-repeat';
-import { countWords, formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation';
+import { countWords, formatPre1DateDisplay, parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
+import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist/checklist-responses';
+import { DirectorCards, Pre1DirectorsView } from './director-count-control';
+import { isClientOnlyField, isLeadOnlyField } from '@/lib/incorporation/pre-inc-direct-flow';
+import { FieldInfoButton } from './field-info-button';
 import { getPre6DirectorNameOptions } from '@/lib/checklist/checklist-pre6-validation';
 import { maxUploadSizeLabel } from '@/lib/upload-limits';
 import { Input } from '@/components/ui/input';
@@ -38,9 +43,11 @@ import { FieldReviewControls, FieldReviewMark } from './field-review';
 
 /** The editable control for one field, by field type (repeat groups render recursively). */
 export function createEditableFieldRenderer(
-  ctx: MilestoneFormCtx & FieldEditActions & Pick<ReadOnlyFieldRenderers, 'fieldShellClass'>,
+  ctx: MilestoneFormCtx & FieldEditActions & Pick<ReadOnlyFieldRenderers, 'fieldShellClass' | 'renderReadOnlyField'>,
 ) {
   const {
+    isClient,
+    fields,
     item,
     engagementId,
     compactChrome,
@@ -63,12 +70,22 @@ export function createEditableFieldRenderer(
     setField,
     handleFilePick,
     fieldShellClass,
+    renderReadOnlyField,
+    directFlow,
+    itemState,
   } = ctx;
+
+  /** A grid cell follows the same ownership rule as the field it edits (DR-01, DR-02). */
+  const isCellReadOnly = (key: string) =>
+    (isClient && directFlow && isLeadOnlyField(item.id, key)) ||
+    (!isClient && directFlow && isClientOnlyField(item.id, key, itemState));
 
   const renderEditableField = (
     field: ChecklistField,
-    options?: { showUnlock?: boolean },
-  ) => {
+    options?: { showUnlock?: boolean; inDirectorCard?: boolean },
+  ): ReactNode => {
+    // CD-02: a director's fields render inside that director's card, not in the section's list.
+    if (item.id === 'pre-1' && /^director\d/.test(field.id) && !options?.inDirectorCard) return null;
     const error = shownErrors[field.id];
     const warning = shownWarnings[field.id];
     const errorId = fieldErrorId(item.id, field.id);
@@ -93,6 +110,7 @@ export function createEditableFieldRenderer(
               {field.required && <span className="text-danger ml-0.5" aria-hidden>*</span>}
             </Label>
             <FieldReviewControls engagementId={engagementId} itemId={item.id} fieldId={field.id} label={field.label} />
+            {field.helperText?.trim() ? <FieldInfoButton label={field.label} text={field.helperText.trim()} /> : null}
             <FieldHelpButton stepId={item.id} fieldId={field.id} label={field.label} />
             {(() => {
               // Help icon only where Ask VCFO has something to say about the field.
@@ -112,7 +130,14 @@ export function createEditableFieldRenderer(
           <RepeatGroupEditor
             group={field}
             responses={draft}
-            renderField={(sub) => renderEditableField(sub)}
+            // A card field follows the same ownership rule as its grid cell: the client reads the
+            // lead's DIN check (DR-01), and the lead reads the client's answers (DR-02).
+            renderField={(sub) => (isCellReadOnly(sub.id) ? renderReadOnlyField(sub) : renderEditableField(sub))}
+            grid={{
+              onCellChange: (key, value) => setField(key, value),
+              isCellReadOnly: (key) => isCellReadOnly(key),
+              errors: shownErrors,
+            }}
             onAdd={() => {
               userEditedRef.current = true;
               setDraft((prev) => ({ ...prev, ...addRepeatEntry(prev, field).patch }));
@@ -130,6 +155,36 @@ export function createEditableFieldRenderer(
               });
               if (autoSaveEnabled) scheduleAutoSave(false);
             }}
+          />
+        ) : item.id === 'pre-1' && field.id === 'directorCount' ? (
+          <Pre1DirectorsView
+            fields={fields}
+            values={draft as Record<string, string>}
+            errors={shownErrors}
+            isCellReadOnly={isCellReadOnly}
+            onCellChange={(key, value) => setField(key, value)}
+            cards={
+          <DirectorCards
+            count={parseDirectorCount(draft)}
+            values={draft as Record<string, string>}
+            error={error}
+            renderSlot={(n) =>
+              fields
+                .filter((f) => f.id.startsWith(`director${n}`) && !/^director\d+Din$/.test(f.id))
+                .map((f) => renderEditableField({ ...f, showWhen: undefined, label: f.label.replace(/^Director \d+ — /, '') }, { inDirectorCard: true }))
+            }
+            onChange={(next) => {
+              userEditedRef.current = true;
+              setDraft(next);
+              setFieldErrors((prev) => {
+                const rest = { ...prev };
+                delete rest.directorCount;
+                return rest;
+              });
+              if (autoSaveEnabled) scheduleAutoSave(false);
+            }}
+          />
+            }
           />
         ) : field.type === 'segmented' && field.options ? (
           <SegmentedPicker
@@ -322,7 +377,35 @@ export function createEditableFieldRenderer(
             </label>
           </div>
         ) : field.type === 'date' ? (
-          item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' ? (
+          item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' && !isClient ? (
+            // SA-02: staff may change the expiry; the calculated date is the default and an
+            // edited date is marked, with a way back to the calculated one.
+            <div className="space-y-1.5">
+              <NoirDatePicker
+                id={`${item.id}-${field.id}`}
+                value={draft[field.id] ?? ''}
+                onChange={(v) => setField(field.id, v)}
+                onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
+                invalid={Boolean(error)}
+                describedBy={error ? errorId : undefined}
+                className={cn(error && 'border-danger')}
+              />
+              {(() => {
+                const calculated = computeMcaNameApprovalExpiryDate(draft.nameApprovalDate ?? '');
+                const value = draft[field.id]?.trim() ?? '';
+                if (!calculated || !value || value === calculated) return null;
+                return (
+                  <p className="flex flex-wrap items-center gap-2 text-[12px] text-ink-muted">
+                    <span className="rounded-sm bg-warning-soft px-1.5 py-0.5 font-medium text-warning">Edited</span>
+                    Calculated date: {formatPre1DateDisplay(calculated) ?? calculated}
+                    <button type="button" className="font-medium text-brand-text hover:underline" onClick={() => setField(field.id, calculated)}>
+                      Use the calculated date
+                    </button>
+                  </p>
+                );
+              })()}
+            </div>
+          ) : item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' ? (
             <p
               className={cn(
                 'text-sm leading-relaxed',

@@ -77,7 +77,7 @@ function uploaderLabel(file: KnowledgeBankFile): string {
 }
 
 interface Props {
-  basePath: "/app/admin/knowledge-bank" | "/app/manager/knowledge-bank" | "/app/intern/knowledge-bank";
+  basePath: "/app/admin/knowledge-bank" | "/app/manager/knowledge-bank" | "/app/lead/knowledge-bank";
 }
 
 export default function KnowledgeBankPage({ basePath }: Props) {

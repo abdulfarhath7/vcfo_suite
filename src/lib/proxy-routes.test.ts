@@ -60,7 +60,7 @@ describe('proxyRedirect, staff and clients', () => {
   });
 
   it('sends other roles from the partner pages to their home', () => {
-    expect(proxyRedirect('/receivables', '', 'intern')).toBe('/app/intern/today');
+    expect(proxyRedirect('/receivables', '', 'intern')).toBe('/app/lead/today');
     expect(proxyRedirect('/receivables', '', 'client')).toBe('/app/client/overview');
     expect(proxyRedirect('/receivables', '', 'developer')).toBe('/app/dev/overview');
   });
@@ -115,5 +115,19 @@ describe('proxyRedirect, shared views', () => {
     expect(isReceivablesSharePath('/receivables/s')).toBe(false);
     expect(isReceivablesSharePath(path)).toBe(true);
     expect(isReceivablesPartnerPath(path)).toBe(false);
+  });
+});
+
+describe('lead pages moved from /app/intern to /app/lead (owner, 10 Nov 2026)', () => {
+  it('sends an old link to the same page under /app/lead, keeping the query', () => {
+    expect(proxyRedirect('/app/intern/engagements/acme/step/pre-1', '?tab=2', 'intern')).toBe(
+      '/app/lead/engagements/acme/step/pre-1?tab=2',
+    );
+    expect(proxyRedirect('/app/intern', '', null)).toBe('/app/lead');
+  });
+
+  it('lets a lead into /app/lead and keeps other roles out of it', () => {
+    expect(proxyRedirect('/app/lead/today', '', 'intern')).toBeNull();
+    expect(proxyRedirect('/app/lead/today', '', 'manager')).toBe('/app/manager/dashboard');
   });
 });

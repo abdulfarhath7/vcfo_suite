@@ -1,4 +1,4 @@
 'use client';
 
-export const INTERN_CLIENTS_HREF = '/app/intern/clients';
+export const INTERN_CLIENTS_HREF = '/app/lead/clients';
 

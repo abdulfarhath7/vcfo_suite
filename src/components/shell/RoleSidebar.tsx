@@ -248,6 +248,7 @@ function SidebarNavBody({
           if (isNavGroup(it)) {
             const isCompliances = it.id.startsWith('compliances:');
             const isUpdates = it.id.startsWith('updates:');
+            const isIncorporation = it.id.startsWith('incorporation:');
             return (
               <SidebarNavGroup
                 key={it.id}
@@ -263,7 +264,16 @@ function SidebarNavBody({
                 ink={ink}
                 hoverFollow={hoverFollow}
                 stacked={stacked}
-                badge={isUpdates ? unreadNotificationCount : isCompliances && !inDevConsole ? complianceDueCount : undefined}
+                activeAlso={it.activeAlso}
+                badge={
+                  isUpdates
+                    ? unreadNotificationCount
+                    : isCompliances && !inDevConsole
+                      ? complianceDueCount
+                      : isIncorporation && showsIncorporationCount(user.role)
+                        ? incorporatingCount
+                        : undefined
+                }
                 tag={isCompliances && (user.role === 'intern' || user.role === 'manager') ? <NewTag ink={ink} /> : undefined}
               />
             );
@@ -317,7 +327,7 @@ function SidebarNavBody({
             );
           }
           const active = pathname.startsWith(it.to);
-          const showInternBadge = user.role === 'intern' && it.to === '/app/intern/tasks';
+          const showInternBadge = user.role === 'intern' && it.to === '/app/lead/tasks';
           const showApprovals = it.to === approvalsHref(user.role, staffBase);
           const showDev = (user.role === 'developer' || inDevConsole) && DEV_COUNT_HREFS.has(it.to);
           // P-129: the super admin's Risks row counts the open risks (not urgent, so not red).

@@ -46,7 +46,7 @@ export function renderMilestoneFieldGroups(
     (enforceClientLock && submissionLocked && !isFieldEditableForClient(itemState, fieldId)) ||
     (isClient && directFlow && isLeadOnlyField(item.id, fieldId)) ||
     // The project lead reads the client's own answers (Part A) and fills only the NIC codes.
-    (!isClient && directFlow && isClientOnlyField(item.id, fieldId));
+    (!isClient && directFlow && isClientOnlyField(item.id, fieldId, itemState));
 
   const showUnlock = showFieldUnlock && submissionLocked && !isClient;
   const groupsForRender =
@@ -65,7 +65,7 @@ export function renderMilestoneFieldGroups(
      * untouched.
      */
     const recordLayout =
-      (isClient || formReadOnly || (directFlow && group.fields.every((field) => isClientOnlyField(item.id, field.id)))) &&
+      (isClient || formReadOnly || (directFlow && group.fields.every((field) => isClientOnlyField(item.id, field.id, itemState)))) &&
       group.fields.every((field) => fieldIsReadOnly(field.id));
 
     const fieldsBlock = recordLayout ? (

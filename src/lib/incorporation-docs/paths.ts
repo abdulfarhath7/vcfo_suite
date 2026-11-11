@@ -1,3 +1,5 @@
+import { standardDownloadName } from '@/lib/files/download-name';
+import { properNameCase } from '@/lib/names/name-casing';
 import {
   audiencesForDoc,
   draftUrlFieldFor,
@@ -104,6 +106,23 @@ export function incorpDocDownloadFilename(
   if (!displayName) return base;
   const slug = slugifyCompanyName(displayName);
   return base.replace(/\.docx$/i, `-${slug}.docx`);
+}
+
+/**
+ * The name a draft downloads as (GL-08): `<Document>[-<Director>]_<Client>_<DD-MM-YYYY>.docx`,
+ * for example `DIR-2-Asha-Rao_Ember-Technologies-Private-Limited_11-11-2026.docx`. The stored
+ * object keeps `incorpDocDownloadFilename`, so a download never moves a file.
+ */
+export function incorpDocStandardDownloadName(
+  doc: IncorpDocKind,
+  audience: IncorpDocAudience,
+  clientName: string | null | undefined,
+  options?: IncorpDraftLabelOptions,
+  on: Date = new Date(),
+): string {
+  const label = INCORP_DOC_DEFINITIONS[doc].label.replace(/\s+[—–-]\s+/g, ' ');
+  const person = properNameCase(directorDisplayName(audience, options));
+  return standardDownloadName(person ? `${label} ${person}` : label, clientName, 'docx', on);
 }
 
 /** Flatten API `paths` into checklist response field ids → storage paths. */
