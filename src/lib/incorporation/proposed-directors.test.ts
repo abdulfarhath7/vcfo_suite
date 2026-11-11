@@ -180,6 +180,20 @@ describe('validatePre16Responses — subscriber details', async () => {
     expect(validatePre16Responses({ ...llp.responses, [`subscribers.${llp.entryId}.llpin`]: 'aab-1234' }).ok).toBe(true);
   });
 
+  it('a foreign body corporate needs its UIN; an LLP never needs the origin, the CIN or the UIN', () => {
+    const foreign = sub({ type: 'non-individual', entityType: 'body-corporate', bodyCorporateOrigin: 'foreign', name: 'Acme GmbH', address: 'Berlin', authorisedPerson: 'R Iyer', shares: '10', shareValue: '100' });
+    expect(validatePre16Responses(foreign.responses).errors[`subscribers.${foreign.entryId}.foreignRegistrationNumber`]).toBe('This field is required.');
+    const fields = resolveFieldLabels(expandRepeatEntry(group as never, foreign.entryId), foreign.responses);
+    expect(fields.find((f) => f.id === `subscribers.${foreign.entryId}.foreignRegistrationNumber`)?.label).toBe('Unique Identification Number (UIN)');
+
+    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100', llpin: 'AAB-1234', authorisedPerson: 'R Iyer' });
+    const result = validatePre16Responses(llp.responses);
+    expect(result.ok).toBe(true);
+    expect(result.errors[`subscribers.${llp.entryId}.bodyCorporateOrigin`]).toBeUndefined();
+    expect(result.errors[`subscribers.${llp.entryId}.cin`]).toBeUndefined();
+    expect(result.errors[`subscribers.${llp.entryId}.foreignRegistrationNumber`]).toBeUndefined();
+  });
+
   it('shares must be a whole number and the value a positive amount', () => {
     const { responses, entryId } = sub({ type: 'individual', name: 'A', shares: '1.5', shareValue: '0' });
     const errors = validatePre16Responses(responses).errors;

@@ -1100,7 +1100,8 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           // SB-03 and MCA 6A(i): a body corporate is an Indian company (CIN) or a company
-          // incorporated outside India (its foreign registration number).
+          // incorporated outside India (its unique identification number). An LLP is not
+          // asked this question; it gives its LLPIN instead.
           id: 'bodyCorporateOrigin',
           label: 'Domestic company or foreign company',
           type: 'segmented',
@@ -1131,8 +1132,11 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           layout: 'short',
         },
         {
+          // The id stays foreignRegistrationNumber so that answers already stored keep working;
+          // the owner asked on 11 November 2026 for the question to read as the UIN.
           id: 'foreignRegistrationNumber',
-          label: 'Foreign company registration number (FRCN) or other registration number',
+          label: 'Unique Identification Number (UIN)',
+          helperText: 'The unique identification number of the foreign company.',
           type: 'text',
           required: true,
           showWhen: { field: 'bodyCorporateOrigin', value: 'foreign' },

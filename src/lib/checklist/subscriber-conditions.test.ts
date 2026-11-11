@@ -25,6 +25,25 @@ describe('SB-03 subscriber conditional questions', () => {
     expect(foreign).not.toContain('cin');
   });
 
+  it('labels the foreign company identifier as the UIN under the old field id', () => {
+    const field = group.entryFields.find((f) => f.id === 'foreignRegistrationNumber');
+    expect(field?.label).toBe('Unique Identification Number (UIN)');
+    expect(field?.required).toBe(true);
+    expect(JSON.stringify(group.entryFields)).not.toMatch(/FRCN/);
+  });
+
+  it('asks an LLP no domestic or foreign question, and neither the CIN nor the UIN', () => {
+    const ids = shown({ subscribers: 'e1', [k('type')]: 'non-individual', [k('entityType')]: 'llp' });
+    expect(ids).not.toContain('bodyCorporateOrigin');
+    expect(ids).not.toContain('cin');
+    expect(ids).not.toContain('foreignRegistrationNumber');
+    expect(ids).toContain('llpin');
+    expect(ids).toContain('authorisedPerson');
+    // A stale origin answer from an earlier body corporate choice must not bring the CIN back.
+    const stale = shown({ subscribers: 'e1', [k('type')]: 'non-individual', [k('entityType')]: 'llp', [k('bodyCorporateOrigin')]: 'foreign' });
+    expect(stale).not.toContain('foreignRegistrationNumber');
+  });
+
   it('hides the chain under a stale answer', () => {
     // Switched back to Individual: the old entity type and origin must not keep the CIN visible.
     const ids = shown({ subscribers: 'e1', [k('type')]: 'individual', [k('entityType')]: 'body-corporate', [k('bodyCorporateOrigin')]: 'domestic' });

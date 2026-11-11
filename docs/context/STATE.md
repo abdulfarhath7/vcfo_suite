@@ -226,7 +226,7 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
 - **Applications and Part B:**
   - SA-01 SRN field on every application; SA-02 editable name-approval expiry.
   - SB-01: Part B carries the MCA section numbers (`src/lib/checklist/part-b-sections.ts`, built from the owner's signed Part B PDF). Field ids are unchanged.
-  - SB-03: subscriber follow-ups. Shareholder or nominee; for a body corporate, domestic (CIN of 21 characters) or foreign (FRCN). Visibility cascades, and hidden answers are cleared on save.
+  - SB-03: subscriber follow-ups. Shareholder or nominee; for a body corporate, domestic (CIN of 21 characters) or foreign (Unique Identification Number, UIN, stored under the old field id `foreignRegistrationNumber`). An LLP is asked no domestic or foreign question; it still gives its LLPIN and the authorised person. Visibility cascades, and hidden answers are cleared on save.
 - **Board resolution:**
   - BR-01/02 document cards; BR-03 the "who holds it" chip (`work-holder.ts`); BR-07 "Send to Lead".
   - BR-04/05/06: the client edits the sent draft. The firm's original is kept, and the edit is stored in `pre-2.brClientEdit`. Each save is audited before and after, and staff see tracked changes.
