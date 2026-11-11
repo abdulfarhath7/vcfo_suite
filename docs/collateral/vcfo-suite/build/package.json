@@ -1,0 +1,17 @@
+{
+  "name": "vcfo-suite-collateral",
+  "private": true,
+  "description": "Generators for the VCFO Suite brochure, corporate deck and one-pager.",
+  "scripts": {
+    "build": "./build.sh"
+  },
+  "dependencies": {
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
+    "@expo-google-fonts/public-sans": "^0.4.2",
+    "pptxgenjs": "^4.0.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-icons": "^5.7.0",
+    "sharp": "^0.35.5"
+  }
+}
