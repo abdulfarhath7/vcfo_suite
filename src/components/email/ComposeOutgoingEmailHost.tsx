@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2, Paperclip, X } from 'lucide-react';
+import { readFileBase64 } from '@/lib/files/read-base64';
+import { announceEmailSent } from '@/components/email/StepEmailsSent';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +40,9 @@ export function ComposeOutgoingEmailHost() {
   const [connected, setConnected] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [sending, setSending] = useState(false);
+  // GL-07: files the person adds before sending; removed with the X on each.
+  const [files, setFiles] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const open = Boolean(draft) && isStaffRole(user?.role);
 
@@ -82,6 +87,7 @@ export function ComposeOutgoingEmailHost() {
   const close = () => {
     setDraft(null);
     setSending(false);
+    setFiles([]);
   };
 
   const send = async () => {
@@ -93,8 +99,15 @@ export function ComposeOutgoingEmailHost() {
       toastError('Cannot send', 'Add at least one recipient and a subject.');
       return;
     }
+    if (files.reduce((n, f) => n + f.size, 0) > 10 * 1024 * 1024) {
+      toastError('Attachments too large', 'Keep the files under 10 MB in all.');
+      return;
+    }
     setSending(true);
     try {
+      const attachments = await Promise.all(
+        files.map(async (f) => ({ name: f.name, contentType: f.type || undefined, contentBase64: await readFileBase64(f) })),
+      );
       const edited = body !== initialBody;
       // GL-07: from the person's own Outlook when it is connected; otherwise the firm's address
       // sends it in their name, so a missing mailbox never blocks the email.
@@ -109,6 +122,7 @@ export function ComposeOutgoingEmailHost() {
           html: edited ? undefined : draft?.html,
           engagementId: draft?.engagementId,
           itemId: draft?.itemId,
+          ...(attachments.length ? { attachments } : {}),
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string; from?: string };
@@ -135,6 +149,7 @@ export function ComposeOutgoingEmailHost() {
           href: '#',
         },
       );
+      announceEmailSent();
       close();
     } catch (err) {
       toastEmailDispatch(
@@ -209,6 +224,43 @@ export function ComposeOutgoingEmailHost() {
               className="min-h-[180px]"
               value={body}
               onChange={(e) => setBody(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Attachments</Label>
+            {files.length ? (
+              <ul className="space-y-1">
+                {files.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-md border border-line px-2 py-1 text-[13px]">
+                    <Paperclip className="h-3.5 w-3.5 flex-none text-ink-muted" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      className="rounded p-0.5 text-ink-muted hover:text-ink"
+                      aria-label={`Remove ${f.name}`}
+                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <AccentButton type="button" variant="outline" size="sm" disabled={files.length >= 5} onClick={() => fileRef.current?.click()}>
+              <Paperclip className="mr-1 h-3.5 w-3.5" aria-hidden />
+              Add a file
+            </AccentButton>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              className="hidden"
+              aria-label="Add attachments"
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                e.target.value = '';
+                setFiles((prev) => [...prev, ...picked].slice(0, 5));
+              }}
             />
           </div>
         </div>

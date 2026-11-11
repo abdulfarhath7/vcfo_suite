@@ -1,6 +1,7 @@
 "use client";
 
 import { NOT_PERMITTED_HASH } from '@/lib/projects/project-step-path';
+import { StepEmailsSent } from '@/components/email/StepEmailsSent';
 import { ClientFileRequestsPanel } from "@/components/incorporation/ClientFileRequestsPanel";
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { redirect } from 'next/navigation';
@@ -446,6 +447,7 @@ export default function EngagementStepDetail() {
                 {!isClientRoute ? <FillOwnerBanner engagement={eng} itemId={item.id} /> : null}
                 {stepForm}
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+                {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
               </div>
               <SidePanelHandle open={panelOpen} onToggle={togglePanel} className="lg:sticky lg:top-[var(--shell-sticky-top)]" />
               {/* GL-05: the panel can be pushed aside; below lg it always stacks under the form. */}
@@ -455,6 +457,7 @@ export default function EngagementStepDetail() {
             <>
               {stepForm}
               {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+              {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
             </>
           )}
         </div>
@@ -479,6 +482,7 @@ export default function EngagementStepDetail() {
             {assistHint}
             {stepForm}
             {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+            {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
           </div>
         </div>
       )}

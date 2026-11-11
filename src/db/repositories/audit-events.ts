@@ -81,6 +81,8 @@ export interface ListAuditEventsOptions {
    */
   beforeId?: string;
   limit?: number;
+  /** Only rows with this action, e.g. `email.sent` (GL-07: who emailed from a step, and when). */
+  action?: string;
 }
 
 /**
@@ -132,6 +134,8 @@ export async function listAuditEvents(
   // Audit page (`client-audit.ts`), never staff-only actions on their engagement.
   const clientAudit = ctx.role === 'client' ? await import('@/db/repositories/client-audit') : null;
   if (clientAudit) conds.push(clientAudit.clientVisibleAuditPredicate());
+
+  if (options.action) conds.push(eq(auditEvents.action, options.action));
 
   if (options.before && !Number.isNaN(options.before.getTime())) {
     if (options.beforeId) {
