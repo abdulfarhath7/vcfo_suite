@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SendNoticeBanner } from './NoticeTab';
 import { BellRing, CalendarPlus, CalendarX2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,7 @@ export function RepliesTab({ meeting }: { meeting: MeetingDto }) {
 
   const remind = () =>
     actions.remind.mutate(undefined, {
-      onSuccess: (r) => toastSaved(r.sent ? `Reminder sent to ${r.sent} director${r.sent === 1 ? '' : 's'}` : 'Everyone has replied'),
+      onSuccess: (r) => (r ? toastSaved(r.sent ? `Reminder sent to ${r.sent} director${r.sent === 1 ? '' : 's'}` : 'Everyone has replied') : undefined),
       onError: (e) => toastError('Could not send the reminder', errorMessage(e)),
     });
   const reschedule = () =>
@@ -49,7 +50,8 @@ export function RepliesTab({ meeting }: { meeting: MeetingDto }) {
     );
   const cancel = () =>
     actions.cancel.mutate(reason.trim(), {
-      onSuccess: () => {
+      onSuccess: (m) => {
+        if (!m) return; // the cancellation email was not sent, so the meeting stays as it was
         setPanel('none');
         toastSaved('Meeting cancelled', { sub: meeting.sentAt ? 'The directors got a cancellation' : undefined });
       },
@@ -58,6 +60,7 @@ export function RepliesTab({ meeting }: { meeting: MeetingDto }) {
 
   return (
     <div className="grid grid-cols-1 gap-5">
+      <SendNoticeBanner meeting={meeting} />
       {meeting.status === 'cancelled' ? (
         <Banner tone="bad">
           Cancelled {stamp(meeting.cancelledAt)}. {meeting.cancelReason}

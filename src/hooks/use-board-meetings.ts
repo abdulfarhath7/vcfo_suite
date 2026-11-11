@@ -5,6 +5,7 @@
  * and /api/agenda-library. Every route scopes by the caller's AuthContext in its repository.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { requestEmailSend, type EmailDraftView } from '@/lib/email/request-email-send';
 import type { MeetingDto, MeetingListRow, DirectorDto, LibraryItemDto, TemplateDto } from '@/lib/board-meetings/wire';
 import type { AgendaItem, MeetingRecipient } from '@/lib/board-meetings/model';
 import type { AgendaTopic } from '@/data/board-agenda-library';
@@ -121,21 +122,65 @@ export function useMeetingActions(id: string) {
     fd.set('file', file);
     return call(path, { method: 'POST', body: fd }, 'the file');
   };
+  /**
+   * GL-07: a card's email goes out only from the "Send email" pop-up. Resolves with the fresh
+   * meeting after Send, or null on Cancel (nothing was sent, and nothing changed).
+   */
+  const viaEmail = async (path: string, title: string, body?: Record<string, unknown>): Promise<MeetingDto | null> => {
+    const outcome = await requestEmailSend<{ meeting?: MeetingDto }>({ url: `/api/board-meetings${path}`, body, title });
+    if (!outcome.sent) return null;
+    if (outcome.result?.meeting) done(outcome.result.meeting);
+    else void qc.invalidateQueries({ queryKey: [...MEETINGS_KEY, 'one', id] });
+    return outcome.result?.meeting ?? null;
+  };
   return {
     patch: useMutation({ mutationFn: (p: MeetingPatch) => call(`/${id}`, json('PATCH', p)) }),
     submit: useMutation({ mutationFn: () => call(`/${id}/submit`, json('POST')) }),
-    approve: useMutation({ mutationFn: () => call(`/${id}/approve`, json('POST')) }),
+    /** Approve, then open the notice in the pop-up. `sent` is false when the approver cancels it. */
+    approve: useMutation({
+      mutationFn: async () => {
+        await call(`/${id}/approve`, json('POST'));
+        const sent = await viaEmail(`/${id}/send-notice`, 'Send the notice to the directors');
+        return { sent: Boolean(sent) };
+      },
+    }),
+    /** An approved notice that was not sent yet (the pop-up was cancelled). */
+    sendNotice: useMutation({ mutationFn: async () => ({ sent: Boolean(await viaEmail(`/${id}/send-notice`, 'Send the notice to the directors')) }) }),
     sendBack: useMutation({ mutationFn: (note: string) => call(`/${id}/send-back`, json('POST', { note })) }),
     reschedule: useMutation({ mutationFn: (b: { meetingDate: string; meetingTime: string; reason: string }) => call(`/${id}/reschedule`, json('POST', b)) }),
-    cancel: useMutation({ mutationFn: (reason: string) => call(`/${id}/cancel`, json('POST', { reason })) }),
+    /** Cancel; when the notice went out, the cancellation email goes through the pop-up. Null when it was not sent. */
+    cancel: useMutation({
+      mutationFn: async (reason: string) => {
+        const preview = await readJson<{ draft: EmailDraftView | null }>(await fetch(`/api/board-meetings/${id}/cancel`, json('POST', { reason, preview: true })), 'the meeting');
+        if (!preview.draft) return call(`/${id}/cancel`, json('POST', { reason }));
+        const outcome = await requestEmailSend<{ meeting?: MeetingDto }>({ url: `/api/board-meetings/${id}/cancel`, body: { reason }, draft: preview.draft, title: 'Send the cancellation' });
+        if (!outcome.sent) return null;
+        if (outcome.result?.meeting) done(outcome.result.meeting);
+        return outcome.result?.meeting ?? null;
+      },
+    }),
     remind: useMutation({
-      mutationFn: async () => readJson<{ sent: number }>(await fetch(`/api/board-meetings/${id}/remind`, json('POST')), 'the reminder'),
+      mutationFn: async () => {
+        const outcome = await requestEmailSend<{ sent: number }>({ url: `/api/board-meetings/${id}/remind`, title: 'Remind the directors to reply' });
+        return outcome.sent ? { sent: outcome.result?.sent ?? 0 } : null;
+      },
     }),
     uploadMom: useMutation({ mutationFn: (file: File) => upload(`/${id}/mom`, file) }),
     addResolution: useMutation({ mutationFn: (b: ResolutionBody) => call(`/${id}/resolutions`, json('POST', b)) }),
     editResolution: useMutation({ mutationFn: ({ docId, body }: { docId: string; body: ResolutionBody }) => call(`/documents/${docId}`, json('PATCH', body)) }),
-    sendForSignature: useMutation({ mutationFn: ({ docId, reminder }: { docId: string; reminder?: boolean }) => call(`/documents/${docId}/send${reminder ? '?reminder=1' : ''}`, json('POST')) }),
-    uploadSigned: useMutation({ mutationFn: ({ docId, file }: { docId: string; file: File }) => upload(`/documents/${docId}/signed`, file) }),
+    sendForSignature: useMutation({
+      mutationFn: ({ docId, reminder }: { docId: string; reminder?: boolean }) =>
+        viaEmail(`/documents/${docId}/send${reminder ? '?reminder=1' : ''}`, reminder ? 'Remind the directors to sign' : 'Send for signature'),
+    }),
+    /** Upload the signed copy (it locks), then open the final-copy email in the pop-up. */
+    uploadSigned: useMutation({
+      mutationFn: async ({ docId, file }: { docId: string; file: File }) => {
+        await upload(`/documents/${docId}/signed`, file);
+        return { emailed: Boolean(await viaEmail(`/documents/${docId}/final-copy`, 'Send the signed copy')) };
+      },
+    }),
+    /** A locked document whose signed copy was not emailed yet. */
+    sendFinalCopy: useMutation({ mutationFn: (docId: string) => viaEmail(`/documents/${docId}/final-copy`, 'Send the signed copy') }),
   };
 }
 

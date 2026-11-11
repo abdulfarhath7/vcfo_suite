@@ -199,6 +199,8 @@ export interface MeetingDto {
     uploadMom: boolean;
     addResolution: boolean;
     remind: boolean;
+    /** GL-07: the notice is approved and not sent yet; staff send it through the "Send email" pop-up. */
+    sendNotice: boolean;
   };
 }
 
@@ -325,6 +327,7 @@ function permissions(ctx: AuthContext, meeting: MeetingRow, today: string): Meet
     uploadMom: staff && after && s !== 'cancelled' && s !== 'draft' && s !== 'pending_approval',
     addResolution: staff && after && (s === 'sent' || s === 'held') && !meeting.lockedAt,
     remind: staff && s === 'sent',
+    sendNotice: staff && s === 'approved',
   };
 }
 
@@ -827,7 +830,7 @@ export async function submitMeeting(ctx: AuthContext, meetingId: string): Promis
   return buildDto(ctx, next, engagement);
 }
 
-/** Manager approves: the route sends the notice right after (`sendNotice`). */
+/** Manager approves. GL-07: the notice is sent from the "Send email" pop-up (`/send-notice` route), not here. */
 export async function approveMeeting(ctx: AuthContext, meetingId: string): Promise<MeetingRow> {
   if (!canApprove(ctx.role)) throw forbidden();
   const { meeting } = await scopedMeetingForWrite(ctx, meetingId);

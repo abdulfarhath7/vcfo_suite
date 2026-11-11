@@ -20,6 +20,12 @@ const ComposeOutgoingEmailHost = dynamic(
   { ssr: false },
 );
 
+// GL-07: the "Send email" pop-up every card action opens before an email goes out.
+const SendEmailDialogHost = dynamic(
+  () => import("@/components/email/SendEmailDialogHost").then((mod) => ({ default: mod.SendEmailDialogHost })),
+  { ssr: false },
+);
+
 export function Providers({ children }: { children: ReactNode }) {
   // The person's density and text size (Profile > Appearance) go on <html> once per load.
   useEffect(() => applyAppearanceAttributes(), []);
@@ -56,6 +62,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <AppProvider>
             {children}
             <ComposeOutgoingEmailHost />
+            <SendEmailDialogHost />
             <NotifiedHighlight />
           </AppProvider>
         </TooltipProvider>

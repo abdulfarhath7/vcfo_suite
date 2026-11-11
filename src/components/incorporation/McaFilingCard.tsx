@@ -339,6 +339,7 @@ function Signers({ bundle, filing, signed }: { bundle: FilingBundle; filing: Fil
               { form: filing.form },
               {
                 onSuccess: (out) => {
+                  if (!out) return; // the pop-up was cancelled: nothing was sent
                   const sent = out.requests.filter((r) => r.outcome === 'sent').length;
                   toast.success(`${sent} of ${out.requests.length} signers emailed`);
                 },
@@ -349,7 +350,7 @@ function Signers({ bundle, filing, signed }: { bundle: FilingBundle; filing: Fil
         >
           Email the PDF to signers
         </Button>
-        <span className="text-[12.5px] text-ink-muted">{filing.reviewedAt ? 'Each signer gets a separate email. Nothing goes out until you press this.' : 'Available after the professional approves the PDF.'}</span>
+        <span className="text-[12.5px] text-ink-muted">{filing.reviewedAt ? 'Each signer gets a separate email. You check it before it goes, and nothing goes out until you press Send.' : 'Available after the professional approves the PDF.'}</span>
       </div>
     </Block>
   );

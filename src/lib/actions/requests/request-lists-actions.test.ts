@@ -20,7 +20,7 @@ vi.mock('@/db/repositories/engagements', () => ({ getEngagementById: (...a: unkn
 vi.mock('@/db/repositories/ask-attachments', () => ({ getOwnAskAttachments: vi.fn() }));
 vi.mock('@/storage/s3', () => ({ getObjectBuffer: vi.fn() }));
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: (...a: unknown[]) => recordAuditEvent(...a) }));
-vi.mock('@/lib/email/send-email', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }));
+vi.mock('@/lib/email/send-email', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a), formatReplyTo: (p: { name?: string; email?: string }) => p.email ?? '' }));
 
 const { sendList } = await import('./send-list');
 const { createListFromTemplate } = await import('./create-list-from-template');
@@ -86,7 +86,7 @@ describe('requests.sendList', () => {
     expect(result).toMatchObject({ ok: true, summary: 'Sent "GST monthly data · Oct 2026" to 1 client contact' });
     expect(markRequestListSent).toHaveBeenCalledWith(lead, LIST, actx.now);
     expect(sendEmail).toHaveBeenCalledTimes(1);
-    expect(sendEmail.mock.calls[0]![0]).toMatchObject({ to: 'cfo@acme.test', purpose: 'request-list.sent' });
+    expect(sendEmail.mock.calls[0]![0]).toMatchObject({ to: ['cfo@acme.test'], purpose: 'request-list.sent' });
     expect(recordAuditEvent).toHaveBeenCalledWith(lead, expect.objectContaining({ engagementId: ENG, action: 'request_list.sent' }));
   });
 

@@ -12,7 +12,10 @@ import {
 } from '@/db/repositories/client-reminders';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { formatReplyTo, sendEmail } from '@/lib/email/send-email';
-import { buildReminderEmail } from '@/lib/messages/message-emails';
+import { composeReminderEmail } from '@/lib/messages/message-emails';
+import { draftView, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
+import { recordEmailSent } from '@/lib/email/record-email-sent';
+import type { EngagementParty } from '@/db/repositories/engagement-recipients';
 import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { firstNameOf } from '@/lib/notify/templates';
 import { whatsappConsentOf } from '@/lib/reminders/reminder-rules';
@@ -36,17 +39,26 @@ export type SendReminderResult =
   | { ok: true; channels: ReminderChannel[] }
   | { ok: false; status: 400 | 404 | 429 | 502 | 503; error: string; retryAt?: string };
 
-export async function sendClientReminder(
+type Prepared =
+  | { ok: false; result: Extract<SendReminderResult, { ok: false }> }
+  | { ok: true; target: Extract<Awaited<ReturnType<typeof resolveReminderTarget>>, { ok: true }>['target']; clients: EngagementParty[]; composed: ComposedEmail; note: string | null };
+
+/** Scope, the 24-hour limit, the client contacts and the drafted email (GL-07: nothing sent yet). */
+async function prepareReminder(
   ctx: AuthContext,
   engagementId: string,
   input: { itemKey: string; note?: string | null },
-  now: Date = new Date(),
-): Promise<SendReminderResult> {
+  now: Date,
+): Promise<Prepared> {
   const resolved = await resolveReminderTarget(ctx, engagementId, input.itemKey);
   if (resolved.ok === false) {
-    return resolved.reason === 'invalid_item'
-      ? { ok: false, status: 400, error: 'This item cannot be reminded' }
-      : { ok: false, status: 404, error: 'Engagement not found' };
+    return {
+      ok: false,
+      result:
+        resolved.reason === 'invalid_item'
+          ? { ok: false, status: 400, error: 'This item cannot be reminded' }
+          : { ok: false, status: 404, error: 'Engagement not found' },
+    };
   }
   const target = resolved.target;
 
@@ -54,9 +66,12 @@ export async function sendClientReminder(
   if (last) {
     return {
       ok: false,
-      status: 429,
-      error: 'A reminder for this item went out in the last 24 hours',
-      retryAt: new Date(last.getTime() + REMINDER_WINDOW_MS).toISOString(),
+      result: {
+        ok: false,
+        status: 429,
+        error: 'A reminder for this item went out in the last 24 hours',
+        retryAt: new Date(last.getTime() + REMINDER_WINDOW_MS).toISOString(),
+      },
     };
   }
 
@@ -68,46 +83,80 @@ export async function sendClientReminder(
         ? [recipients.client]
         : []
     : [];
-  if (clients.length === 0) return { ok: false, status: 400, error: 'No client email on this engagement' };
+  if (clients.length === 0) return { ok: false, result: { ok: false, status: 400, error: 'No client email on this engagement' } };
 
   const note = input.note?.trim() || null;
-  const copy = buildReminderEmail({
+  const composed = composeReminderEmail({
     companyName: target.companyName,
     itemTitle: target.itemTitle,
     senderName: ctx.name,
     note,
     portalHref: target.clientPath,
+    to: clients.map((c) => c.email).filter((e): e is string => Boolean(e)),
+    replyTo: formatReplyTo({ name: ctx.name, email: ctx.email }),
   });
+  return { ok: true, target, clients, composed, note };
+}
+
+/** GL-07: the reminder as a draft for the "Send email" pop-up. */
+export async function previewClientReminder(
+  ctx: AuthContext,
+  engagementId: string,
+  input: { itemKey: string; note?: string | null },
+  now: Date = new Date(),
+): Promise<{ ok: true; draft: EmailDraftView } | Extract<SendReminderResult, { ok: false }>> {
+  const prepared = await prepareReminder(ctx, engagementId, input, now);
+  if (prepared.ok === false) return prepared.result;
+  return { ok: true, draft: draftView(prepared.composed) };
+}
+
+/**
+ * Send the reminder. With `edits` (the pop-up's Send), one email goes to the edited To and Cc
+ * with the edited subject, message and attachments. Without them (the Ask approval card, which
+ * is its own Send), each client contact gets the drafted email.
+ */
+export async function sendClientReminder(
+  ctx: AuthContext,
+  engagementId: string,
+  input: { itemKey: string; note?: string | null },
+  now: Date = new Date(),
+  edits?: EmailEdits,
+): Promise<SendReminderResult> {
+  const prepared = await prepareReminder(ctx, engagementId, input, now);
+  if (prepared.ok === false) return prepared.result;
+  const { target, clients, composed, note } = prepared;
 
   const deliveries: ReminderDeliveryInput[] = [];
   let emailed = 0;
   let notConfigured = 0;
-  for (const party of clients) {
-    const result = await sendEmail({
-      to: party.email,
-      replyTo: formatReplyTo({ name: ctx.name, email: ctx.email }),
-      subject: copy.subject,
-      html: copy.html,
-      text: copy.text,
-      purpose: 'reminder.client',
-    }).catch((err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : 'send_failed' }));
+  const outgoing = edits
+    ? [{ input: withEdits(composed, edits), parties: edits.to.map((addr) => ({ email: addr, userId: clients.find((c) => c.email?.toLowerCase() === addr.toLowerCase())?.userId ?? null })) }]
+    : clients.map((party) => ({
+        input: { ...withEdits(composed, { to: [party.email], cc: [], subject: composed.subject, message: composed.message, dropAttachments: [], addAttachments: [] }) },
+        parties: [{ email: party.email, userId: party.userId }],
+      }));
+  for (const send of outgoing) {
+    const result = await sendEmail(send.input).catch((err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : 'send_failed' }));
     const skipped = 'skipped' in result && result.skipped === true;
-    if (result.ok) emailed += 1;
-    if (skipped) notConfigured += 1;
-    deliveries.push({
-      recipientProfileId: party.userId,
-      channel: 'email',
-      toAddress: party.email,
-      providerMessageId: 'providerMessageId' in result ? (result.providerMessageId ?? null) : null,
-      status: result.ok ? 'sent' : skipped ? 'skipped' : 'failed',
-      skipReason: skipped ? 'disabled' : null,
-      errorCode: !result.ok && !skipped ? (result.error ?? 'send_failed').slice(0, 120) : null,
-    });
+    for (const party of send.parties) {
+      if (result.ok) emailed += 1;
+      if (skipped) notConfigured += 1;
+      deliveries.push({
+        recipientProfileId: party.userId,
+        channel: 'email',
+        toAddress: party.email,
+        providerMessageId: 'providerMessageId' in result ? (result.providerMessageId ?? null) : null,
+        status: result.ok ? 'sent' : skipped ? 'skipped' : 'failed',
+        skipReason: skipped ? 'disabled' : null,
+        errorCode: !result.ok && !skipped ? (('error' in result ? result.error : null) ?? 'send_failed').slice(0, 120) : null,
+      });
+    }
   }
+  const sentTo = outgoing.flatMap((o) => o.parties.map((p) => p.email));
 
   if (emailed === 0) {
     await recordReminderDeliveries(ctx, target, deliveries);
-    return notConfigured === clients.length
+    return notConfigured === sentTo.length
       ? { ok: false, status: 503, error: 'Email is not set up' }
       : { ok: false, status: 502, error: 'The reminder email could not be sent' };
   }
@@ -151,6 +200,9 @@ export async function sendClientReminder(
     summary: `Reminded the client: ${target.itemTitle}`,
     metadata: { itemKey: target.itemKey, channels, note, recipients: emailed },
   });
+  // GL-07: who sent it, when (the row), to whom and the subject.
+  const sentInput = outgoing[0]!.input;
+  await recordEmailSent(ctx, { to: sentTo, cc: sentInput.cc ?? [], subject: sentInput.subject, engagementId: target.engagementDbId, itemId: target.itemKey, via: 'firm' });
 
   return { ok: true, channels };
 }

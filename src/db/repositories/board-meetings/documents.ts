@@ -204,6 +204,22 @@ export async function updateResolution(ctx: AuthContext, docId: string, input: R
 }
 
 /** Mark sent for signature and log one "sent" (or "reminded") event per signer. The route emails. */
+/** GL-07: the checks of `markSentForSignature`, without writing, for the pop-up's draft. */
+export async function checkSendForSignature(ctx: AuthContext, docId: string, reminder = false): Promise<{ doc: DocumentRow; meeting: MeetingRow }> {
+  const { doc, meeting } = await scopedDocumentForWrite(ctx, docId);
+  if (doc.kind === 'mom' && !doc.fileKey) throw invalid('no_file');
+  if (doc.signerIds.length === 0) throw invalid('signers_required');
+  if (reminder && doc.status !== 'sent') throw conflict('not_sent');
+  return { doc, meeting };
+}
+
+/** GL-07: the signed copy goes out from the pop-up after the upload locked the document. */
+export async function checkFinalCopy(ctx: AuthContext, docId: string): Promise<{ doc: DocumentRow; meeting: MeetingRow }> {
+  const { doc, meeting } = await scopedDocumentForWrite(ctx, docId);
+  if (doc.status !== 'locked') throw conflict('not_locked');
+  return { doc, meeting };
+}
+
 export async function markSentForSignature(ctx: AuthContext, docId: string, reminder = false): Promise<{ doc: DocumentRow; meeting: MeetingRow }> {
   const { doc, meeting } = await scopedDocumentForWrite(ctx, docId);
   if (doc.kind === 'mom' && !doc.fileKey) throw invalid('no_file');

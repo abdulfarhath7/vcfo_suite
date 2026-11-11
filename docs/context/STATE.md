@@ -206,7 +206,16 @@ page shows a "VCFO Assist can fill ..." hint card on every step the catalog maps
 Built and tested (unit tests, typecheck, and the flows below on a local build):
 
 - **Global:** GL-01 notification Open goes to the exact step and flashes it; GL-02 toasts (3 at most, 3 s, 6 s with Undo, close X); GL-03 active tab; GL-04 help icon; GL-05 side panel toggle kept per user; GL-06 "Export to Excel" on the Projects, Clients, obligations, calendar, approvals, audit log and request lists screens; GL-08 standard file names; GL-09 proper-case names in documents.
-- **GL-07, partly done:** client-facing step emails (client fill approved, awaiting client approval, step submitted to the client) open the compose pop-up instead of sending. The fallback send is `/api/email/send-draft`; `email.sent` is audited. **Not done yet:** request-list send, board meeting notices and signature requests, and the Remind buttons still send at once.
+- **GL-07, done:** no card emails anyone by itself. Each send opens one shared "Send email" pop-up (`src/components/email/SendEmailDialogHost.tsx`, opened with `requestEmailSend`). The person can change To, Cc, Subject, the message and the attachments. Cancel sends nothing; only Send sends.
+  - Each action's route answers `{ preview: true }` with a draft and sends only for `{ email }` (`src/lib/email/email-edits.ts`). Fixed parts (buttons, the agenda, reply rows, links) stay below the edited message.
+  - Covered:
+    - Client step emails (the Outlook compose host from earlier).
+    - The client Remind (single and bulk).
+    - Request-list send.
+    - Board meetings: the notice after approval, the "Send notice" button, cancellation, the attendance reminder, sending for signature, and the signed copy (the upload now only locks it).
+    - Filing signature requests: each signer still gets a separate email, and Cc is refused.
+  - Every send writes `email.sent` (who, when, to, subject); board meetings also log a meeting event.
+  - Scheduled reminders and digests stay automatic, as the CR proposes. The Ask chat's approval card counts as its own Send. Tested in `e2e/send-email-popup.spec.ts`, using the UAT mail catcher when it is loaded.
 - **Navigation:** NV-01/02 Incorporation sidebar group; NV-03 breadcrumb links; NV-04 link audit (`e2e/link-audit.spec.ts`, 178 links pass).
 - **Client details and directors:**
   - CD-01/02 director cards (2 to 4).
