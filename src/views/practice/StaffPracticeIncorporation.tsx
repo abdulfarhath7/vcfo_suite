@@ -12,6 +12,7 @@ import { Chip } from '@/components/ui/spectrum-chip';
 import { PhaseBar } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { SuperNumberStrip, SuperPageError } from '@/components/super/parts/super-parts';
 import { shortCompany, todayKey } from '@/components/super/parts/super-text';
 import { plainDay } from '@/lib/date-format';
@@ -260,17 +261,40 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
           meta={loading ? undefined : String(rows.length)}
           headIcon={{ icon: Landmark, tone: 'blue' }}
           right={
-            <SpectrumTabs
-              label="With"
-              value={withWho}
-              onChange={(v) => setWithWho(v as WithKey)}
-              items={[
-                { key: '', label: 'All', count: all.length },
-                { key: 'client', label: 'Client', count: count('client') },
-                { key: 'sbc', label: 'SBC', count: count('sbc') },
-                { key: 'manager', label: 'Manager', count: count('manager') },
-              ]}
-            />
+            <>
+              <SpectrumTabs
+                label="With"
+                value={withWho}
+                onChange={(v) => setWithWho(v as WithKey)}
+                items={[
+                  { key: '', label: 'All', count: all.length },
+                  { key: 'client', label: 'Client', count: count('client') },
+                  { key: 'sbc', label: 'SBC', count: count('sbc') },
+                  { key: 'manager', label: 'Manager', count: count('manager') },
+                ]}
+              />
+              <ExportToExcelButton
+                title={view ? `Incorporation · ${VIEW_TITLE[view]}` : 'Incorporation'}
+                columns={['Client', 'Current step', 'Steps', 'With', 'Days', 'Next', 'Status']}
+                rows={() =>
+                  rows.map((c) => {
+                    const step = steps?.[c.summary.id];
+                    const owner = superOwnerOf(c.summary);
+                    const code = stepCode(c.summary.currentStep?.id);
+                    const title = c.summary.currentStep?.title ?? 'Every step is done';
+                    return [
+                      c.summary.companyName,
+                      code ? `${code} ${title}` : title,
+                      `${c.summary.progress.done} / ${c.summary.progress.total}`,
+                      owner ? WITH_WORD[owner] : null,
+                      step?.days ?? null,
+                      step?.dueOn ?? c.nextDueDate ?? null,
+                      superStateChip(c.summary).word,
+                    ];
+                  })
+                }
+              />
+            </>
           }
           flush
           bodyClassName="px-2 pb-2"

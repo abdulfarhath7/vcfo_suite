@@ -71,7 +71,8 @@ import {
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
-import { RecordDocumentsButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+import { RecordDocumentsButton,
+  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
@@ -348,7 +349,12 @@ export default function EngagementDetail() {
             </span>
           }
           meta={<RecordMetaLine engagement={eng} />}
-          actions={<RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />}
+          actions={
+            <>
+              <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+              <ProjectZipButton engagementId={eng.id} />
+            </>
+          }
           stats={
             <RecordStats>
               <RecordNumbers

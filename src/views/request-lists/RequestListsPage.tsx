@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -93,6 +94,21 @@ export function RequestListsPage() {
               <Button size="sm" onClick={() => setCreating((v) => !v)}>
                 New list
               </Button>
+              {/* GL-06: every list in the tab in view, in the list's order. */}
+              <ExportToExcelButton
+                title="Request lists"
+                columns={['List', 'Client', 'Due', 'Reminders sent', 'Items in', 'Status']}
+                rows={() =>
+                  shown.map((l) => [
+                    l.title,
+                    l.companyName,
+                    l.dueOn,
+                    l.reminderCount,
+                    `${l.progress.done} of ${l.progress.total}`,
+                    (STATUS_WORD[l.status] ?? STATUS_WORD.draft!).word,
+                  ])
+                }
+              />
             </div>
           )
         }

@@ -103,15 +103,29 @@ function NotificationGenieCard({
           {canOpen ? (
             <Button asChild variant="outline">
               {/* GL-01: Open marks the notification read and puts the card away. */}
-              <Link
-                href={item.href}
-                onClick={() => {
-                  markNotificationRead(item.id);
-                  onParked();
-                }}
-              >
-                Open
-              </Link>
+              {/* A ready export links to its file (GL-06, PR-02): a plain download link, not a page. */}
+              {item.href?.startsWith('/api/') ? (
+                <a
+                  href={item.href}
+                  download
+                  onClick={() => {
+                    markNotificationRead(item.id);
+                    onParked();
+                  }}
+                >
+                  Download
+                </a>
+              ) : (
+                <Link
+                  href={item.href}
+                  onClick={() => {
+                    markNotificationRead(item.id);
+                    onParked();
+                  }}
+                >
+                  Open
+                </Link>
+              )}
             </Button>
           ) : null}
         </>

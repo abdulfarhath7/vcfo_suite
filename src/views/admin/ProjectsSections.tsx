@@ -10,6 +10,7 @@ import { ChevronRight, Plus, MapPin, Trash2 } from 'lucide-react';
 import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { Chip, Tag } from '@/components/ui/spectrum-chip';
@@ -283,6 +284,22 @@ export function ProjectsView(props: ProjectsViewProps) {
           Start GCC project
         </Link>
       </Button>
+      {/* GL-06: every row the table's filters keep (the board shows every project), with the grid's columns. */}
+      <ExportToExcelButton
+        title="Projects"
+        columns={['Client', 'Contact', 'Stage', 'Now', 'Project leads', 'All steps', 'Status']}
+        rows={() =>
+          (view === 'board' ? enriched : shownRows).map((item) => [
+            item.e.companyName,
+            item.e.clientDisplayName ?? null,
+            STAGE_WORD[item.facts.stage],
+            item.facts.now ? `${item.facts.now.code} ${item.facts.now.title}` : null,
+            leadLabelOf(item),
+            `${item.facts.done}/${item.facts.total}`,
+            item.facts.health,
+          ])
+        }
+      />
     </div>
   );
 

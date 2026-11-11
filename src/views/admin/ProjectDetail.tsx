@@ -20,7 +20,8 @@ import { RaiseEscalationButton } from '@/components/super/escalations/RaiseEscal
 import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
-import { RecordDocumentsButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+import { RecordDocumentsButton,
+  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 
@@ -115,6 +116,7 @@ export default function ProjectDetail() {
             {/* G-20: raise the client to an admin or the super admin. */}
             <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
             <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+            <ProjectZipButton engagementId={eng.id} />
           </div>
         </div>
         <RecordStats>

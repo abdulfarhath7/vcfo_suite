@@ -181,7 +181,10 @@ export function Pre1DirectorsView({
   const byId = new Map(fields.map((f) => [f.id, f]));
   const columns = fields
     .filter((f) => /^director1[A-Z]/.test(f.id) && f.id !== 'director1Din')
-    .map((f) => ({ id: f.id.slice('director1'.length), label: f.label.replace(/^Director \d+ — /, ''), field: f }));
+    .map((f) => {
+      const label = f.label.replace(/^Director \d+ — /, '');
+      return { id: f.id.slice('director1'.length), label: label.charAt(0).toUpperCase() + label.slice(1), field: f };
+    });
   const rows = Array.from({ length: count }, (_, i) => i + 1).map((n) => {
     const name = [values[`director${n}FirstName`], values[`director${n}LastName`]].map((v) => (v ?? '').trim()).filter(Boolean).join(' ');
     return {

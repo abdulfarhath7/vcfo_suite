@@ -6,6 +6,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
@@ -106,6 +107,16 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
           ) : (
             String(rows.length)
           )
+        }
+        right={
+          // GL-06: every pending milestone the kind filter keeps, in the list's order.
+          <ExportToExcelButton
+            title="Approvals"
+            columns={['Step', 'Client', 'Kind', 'Note']}
+            rows={() =>
+              shown.map((row) => [checklistItemLabel(row.itemId), row.companyName, pendingApprovalKind(row), row.clientFill?.note ?? null])
+            }
+          />
         }
         bodyClassName="p-0"
       >

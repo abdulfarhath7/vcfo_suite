@@ -11,6 +11,7 @@ import { DashSection } from '@/components/dash/DashSection';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
 import { AreaPill, Chip, REG_WORD, type ChipTone } from '@/components/ui/spectrum-chip';
 import { regOf } from '@/lib/ui/regulator';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -223,6 +224,28 @@ export function ComplianceCalendarView({
   const dayRows = (day: string) => listRows.filter((row) => row.dueDate.slice(0, 10) === day);
   const dayTasks = (day: string) => monthTasks.filter((t) => t.dueDate.slice(0, 10) === day);
 
+  /**
+   * GL-06: what the calendar shows, by due date. The month view exports the month in view; the
+   * year and timeline views export the financial year. Both keep the company, category and area
+   * filters. Tasks have no law, so that cell reads "Non-statutory".
+   */
+  const exportRows = (): ExcelCell[][] => {
+    const filings = view === 'month' ? listRows : sortByDueDate(rows.filter(inArea));
+    const taskList = view === 'month' ? monthTasks : tasks;
+    return [
+      ...filings.map((row) => ({
+        due: row.dueDate.slice(0, 10),
+        cells: [row.dueDate.slice(0, 10), row.particular, row.companyName, row.periodLabel ?? null, areaLabel(row.compliance), filingWord(row, now)] as ExcelCell[],
+      })),
+      ...taskList.map((t) => ({
+        due: t.dueDate.slice(0, 10),
+        cells: [t.dueDate.slice(0, 10), t.title, t.companyName, t.periodLabel ?? null, 'Non-statutory', t.word] as ExcelCell[],
+      })),
+    ]
+      .sort((a, b) => a.due.localeCompare(b.due))
+      .map((x) => x.cells);
+  };
+
   return (
     <PageTransition>
       <SEO
@@ -298,6 +321,16 @@ export function ComplianceCalendarView({
                 Filings
               </Link>
             </Button>
+            {/* The "By act" grid reads its own register, so the export shows on the other views. */}
+            {view !== 'statutory' ? (
+              <ExportToExcelButton
+                title="Compliance calendar"
+                client={picked?.companyName ?? null}
+                columns={['Due date', 'Filing', 'Client', 'Period', 'Law', 'Status']}
+                rows={exportRows}
+                className="h-8"
+              />
+            ) : null}
           </span>
         </div>
 
