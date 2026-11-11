@@ -13,6 +13,7 @@ import { isDeliveredToClient, type ChecklistItemStateSlice } from '@/lib/checkli
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { ManagerBoardResolutionReview } from '@/components/incorporation/ManagerBoardResolutionReview';
 import { BoardResolutionDocCards } from '@/components/incorporation/BoardResolutionDocCards';
+import { BoardResolutionClientEdit } from '@/components/incorporation/BoardResolutionClientEdit';
 import { clientBoardResolutionPath } from '@/lib/projects/project-step-path';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/client';
 import {
@@ -36,8 +37,15 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
   const { engagement, className, isClient, isIntern, brStatus, itemState, getStateForEngagement } = props;
     if (!engagement) return null;
 
-    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields.
-    if (isIntern) return null;
+    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields. The
+    // client's edit (BR-04, BR-05) is the lead's to receive, correct and send back, so it shows.
+    if (isIntern) {
+      return brStatus === 'finalized' ? (
+        <div className={className}>
+          <BoardResolutionClientEdit engagementId={engagement.id} role="intern" />
+        </div>
+      ) : null;
+    }
 
     if (!isClient) {
       return (
@@ -46,6 +54,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
             {engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
                 <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" role={props.role} />
+                {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} role={props.role ?? 'manager'} /> : null}
               </div>
             ) : null}
             {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}
@@ -94,6 +103,7 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
           {engagement && brStatus !== 'loading' ? (
             <div className="mb-3">
               <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" role="client" />
+              {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} role="client" /> : null}
             </div>
           ) : null}
           {brStatus === 'loading' && (

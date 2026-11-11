@@ -86,6 +86,8 @@ function pre1ProposedDirectorFields(): ChecklistField[] {
       ],
       helperText: 'A private company needs at least two directors, and at least one of them must live in India.',
       required: true,
+      // The director cards and the CD-03 grid need the full width of the form.
+      layout: 'full',
     },
   ];
   for (let n = 1; n <= 4; n += 1) {

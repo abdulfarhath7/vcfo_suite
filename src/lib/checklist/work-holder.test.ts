@@ -53,3 +53,16 @@ describe('sinceHandOver', () => {
     expect(sinceHandOver(undefined, now)).toBeNull();
   });
 });
+
+describe('BR-05 holder of a client edit', () => {
+  it('follows the edit through the chain', async () => {
+    const { workHolder } = await import('./work-holder');
+    const at = (stage: string) => workHolder({ kind: 'done', owner: 'sbc', slice: { brClientEdit: { stage, content: '', updatedAt: '' } } as never });
+    expect(at('editing')).toBe('client');
+    expect(at('sent')).toBe('lead');
+    expect(at('manager')).toBe('manager');
+    expect(at('admin')).toBe('admin');
+    expect(at('returned')).toBe('lead');
+    expect(at('final')).toBeNull();
+  });
+});

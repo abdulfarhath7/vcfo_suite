@@ -1,4 +1,5 @@
 import type { AuthUser } from '@/lib/auth';
+import { parseClientEditState, type ClientEditState } from '@/lib/board-resolution/client-edit';
 import type { Engagement } from '@/data/engagements';
 import {
   type ChecklistItemResponses,
@@ -82,6 +83,7 @@ const ITEM_META_KEYS = new Set([
   'approvalStage',
   'fillAssignedTo',
   'openedNotifiedAt',
+  'brClientEdit',
   'reviewedAt',
   'reviewedBy',
   'rejectionNote',
@@ -125,6 +127,8 @@ export interface ChecklistItemStateSlice {
   fillAssignedTo?: 'client' | 'lead';
   /** DR-03: when the client was told this step is open (set once, so the notice goes out once). */
   openedNotifiedAt?: string;
+  /** BR-04 / BR-05: the client's edit of the board resolution and where it is in the chain (on `pre-2`). */
+  brClientEdit?: ClientEditState;
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionNote?: string;
@@ -355,6 +359,7 @@ export function normalizeChecklistItemSlice(
     approvalStage: obj.approvalStage === 'manager' || obj.approvalStage === 'admin' ? obj.approvalStage : undefined,
     fillAssignedTo: obj.fillAssignedTo === 'lead' || obj.fillAssignedTo === 'client' ? obj.fillAssignedTo : undefined,
     openedNotifiedAt: typeof obj.openedNotifiedAt === 'string' ? obj.openedNotifiedAt : undefined,
+    brClientEdit: parseClientEditState(obj.brClientEdit),
     reviewedAt: typeof obj.reviewedAt === 'string' ? obj.reviewedAt : undefined,
     reviewedBy: typeof obj.reviewedBy === 'string' ? obj.reviewedBy : undefined,
     rejectionNote: typeof obj.rejectionNote === 'string' ? obj.rejectionNote : undefined,

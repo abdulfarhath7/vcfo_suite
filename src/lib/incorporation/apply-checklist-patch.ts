@@ -58,7 +58,9 @@ export function checklistPatchForRole(
   prevSlice: ChecklistItemStateSlice | undefined,
   now: string,
 ): Partial<ChecklistItemStateSlice> {
-  let patch = patchFields;
+  // Workflow records only the server's own actions write (BR-05, DR-03), never a form save.
+  const { brClientEdit: _bce, openedNotifiedAt: _ona, ...savable } = patchFields;
+  let patch: Partial<ChecklistItemStateSlice> = savable;
   const directFlow = isDirectFlowStep(itemId);
   if (ctx.role === 'client' && directFlow) {
     // Direct flow: the client writes answers only, never a lead-only field,
@@ -69,7 +71,7 @@ export function checklistPatchForRole(
     patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
   } else if (ctx.role === 'intern' && directFlow && patchFields.responses) {
     // Direct flow: the project lead never overwrites the client's own answers (Part A).
-    patch = { ...patchFields, responses: stripClientOnlyResponses(itemId, patchFields.responses, prevSlice) };
+    patch = { ...savable, responses: stripClientOnlyResponses(itemId, patchFields.responses, prevSlice) };
   } else if (ctx.role === 'client') {
     const {
       reviewStatus: _rs,

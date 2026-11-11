@@ -1,5 +1,6 @@
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { isAwaitingReview, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { clientEditHolder } from '@/lib/board-resolution/client-edit';
 
 /**
  * WHO HOLDS THE WORK NOW (BR-03). One function for every role and every step, so the Lead, the
@@ -29,6 +30,9 @@ export interface WorkHolderInput {
 }
 
 export function workHolder(step: WorkHolderInput): WorkHolder | null {
+  // BR-05: a client edit of the board resolution names its own holder at each stage.
+  const edit = step.slice?.brClientEdit;
+  if (edit && edit.stage !== 'final') return clientEditHolder(edit.stage);
   if (step.kind === 'you' || step.kind === 'prog') return 'client';
   if (step.kind !== 'with') return null;
   if (step.owner === 'mca') return 'mca';
