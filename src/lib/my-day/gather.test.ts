@@ -14,14 +14,12 @@ const NOW = new Date('2026-11-10T04:00:00Z'); // 09:30 in India
 const listTasks = vi.fn();
 const listDocumentRequests = vi.fn();
 const listExpiryItems = vi.fn();
-const listNoticeCases = vi.fn();
 const listRequestLists = vi.fn();
 const pendingApprovals = vi.fn();
 
 vi.mock('@/db/repositories/tasks', () => ({ listTasks: (...a: unknown[]) => listTasks(...a) }));
 vi.mock('@/db/repositories/document-requests', () => ({ listDocumentRequests: (...a: unknown[]) => listDocumentRequests(...a) }));
 vi.mock('@/db/repositories/expiry-items', () => ({ listExpiryItems: (...a: unknown[]) => listExpiryItems(...a) }));
-vi.mock('@/db/repositories/notice-cases', () => ({ listNoticeCases: (...a: unknown[]) => listNoticeCases(...a) }));
 vi.mock('@/db/repositories/request-lists', () => ({ listRequestLists: (...a: unknown[]) => listRequestLists(...a) }));
 vi.mock('@/lib/ask/tools/staff-data', () => ({ loadStaffData: vi.fn() }));
 vi.mock('@/lib/ask/tools/staff', () => ({
@@ -58,10 +56,6 @@ beforeEach(() => {
     { id: 'x-soon', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', kindLabel: 'DSC', subjectName: 'R. Shah', expiresOn: '2026-11-13', daysLeft: 3, renewedAt: null },
     { id: 'x-gone', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', kindLabel: 'Trade licence', subjectName: 'Acme', expiresOn: '2026-11-08', daysLeft: -2, renewedAt: null },
   ]);
-  listNoticeCases.mockResolvedValue([
-    { id: 'n-near', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', label: 'GST notice u/s 61', responseDueOn: '2026-11-12', daysLeft: 2, open: true, ownerId: 'other' },
-    { id: 'n-far', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', label: 'IT notice', responseDueOn: '2026-12-30', daysLeft: 50, open: true, ownerId: null },
-  ]);
   listRequestLists.mockResolvedValue([
     { id: 'r-stalled', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', title: 'GST October', status: 'sent', dueOn: null, lastRemindedAt: null, firstSentAt: '2026-11-01T05:00:00Z', progress: { total: 4, done: 2, percent: 50 } },
     { id: 'r-fresh', engagementId: 'db-1', companyName: 'Acme Pvt Ltd', title: 'TDS Q2', status: 'sent', dueOn: null, lastRemindedAt: '2026-11-09T05:00:00Z', firstSentAt: '2026-11-02T05:00:00Z', progress: { total: 4, done: 0, percent: 0 } },
@@ -94,11 +88,8 @@ describe('gatherMyDayItems for a lead', () => {
     expect(byId['docreq:d-up']).toMatchObject({ kind: 'client_reply', href: '/app/lead/requests' });
     expect(byId['docreq:d-pend']).toBeUndefined();
 
-    expect(byId['expiry:x-soon']).toMatchObject({ kind: 'expiry', weight: 4, href: '/app/lead/compliances/expiries' });
+    expect(byId['expiry:x-soon']).toMatchObject({ kind: 'expiry', weight: 4, href: '/app/lead/compliances/calendar?date=2026-11-13' });
     expect(byId['expiry:x-gone']).toMatchObject({ kind: 'overdue', weight: 2 });
-
-    expect(byId['notice:n-near']).toMatchObject({ kind: 'notice', weight: 5, href: '/app/lead/compliances/notices' });
-    expect(byId['notice:n-far']).toBeUndefined();
 
     expect(byId['reqlist:r-stalled']).toMatchObject({ kind: 'request_list', weight: 9, href: '/app/lead/requests' });
     expect(byId['reqlist:r-fresh']).toBeUndefined();
@@ -106,11 +97,10 @@ describe('gatherMyDayItems for a lead', () => {
 
   it('reads every source with the caller’s own context', async () => {
     await gatherMyDayItems(lead, { now: NOW, data });
-    for (const fn of [listTasks, listDocumentRequests, listExpiryItems, listNoticeCases, listRequestLists]) {
+    for (const fn of [listTasks, listDocumentRequests, listExpiryItems, listRequestLists]) {
       expect(fn.mock.calls[0]![0]).toBe(lead);
     }
     expect(listExpiryItems.mock.calls[0]![1]).toEqual({ withinDays: 7 });
-    expect(listNoticeCases.mock.calls[0]![1]).toEqual({ open: true });
   });
 
   it('ranks the plan: overdue by days late first, then due today, and so on', async () => {
@@ -123,17 +113,16 @@ describe('gatherMyDayItems for a lead', () => {
       'step:acme:pre-1',
       'docreq:d-up',
       'expiry:x-soon',
-      'notice:n-near',
       'reqlist:r-stalled',
       'task:t-open',
     ]);
   });
 
   it('keeps the other sources when one fails', async () => {
-    listNoticeCases.mockRejectedValue(new Error('relation does not exist'));
+    listRequestLists.mockRejectedValue(new Error('relation does not exist'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const items = await gatherMyDayItems(lead, { now: NOW, data });
-    expect(items.some((i) => i.kind === 'notice')).toBe(false);
+    expect(items.some((i) => i.kind === 'request_list')).toBe(false);
     expect(items.some((i) => i.id === 'filing:f-late')).toBe(true);
     warn.mockRestore();
   });
@@ -149,9 +138,8 @@ describe('gatherMyDayItems for managers and admins', () => {
     expect(items.find((i) => i.id === 'task:t-open')).toBeUndefined();
   });
 
-  it('leaves out a notice another person owns for a firm-wide admin', async () => {
+  it('links an admin to the firm shell', async () => {
     const items = await gatherMyDayItems(admin, { now: NOW, data });
-    expect(items.find((i) => i.id === 'notice:n-near')).toBeUndefined();
     expect(items.find((i) => i.id === 'filing:f-late')!.href).toBe('/app/admin/compliances/filings');
   });
 });

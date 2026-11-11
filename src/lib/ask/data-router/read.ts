@@ -49,7 +49,7 @@ const DOC_TYPES = [
   'rent_agreement',
   'bank_document',
   'company_letter',
-  /** A notice from a tax, GST, TDS or company-law authority; the drop opens a notice case. */
+  /** A notice from a tax, GST, TDS or company-law authority; the drop files it in the vault. */
   'tax_notice',
   'form',
   'other',

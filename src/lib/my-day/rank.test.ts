@@ -8,7 +8,7 @@ function item(over: Partial<MyDayItem> & Pick<MyDayItem, 'id' | 'kind'>): MyDayI
 
 describe('rankMyDay', () => {
   it('orders the bands as the spec lists them', () => {
-    const kinds = ['task', 'request_list', 'notice', 'expiry', 'client_reply', 'approval', 'due_today', 'overdue'] as const;
+    const kinds = ['task', 'request_list', 'expiry', 'client_reply', 'approval', 'due_today', 'overdue'] as const;
     const ranked = rankMyDay(kinds.map((kind) => item({ id: kind, kind, weight: 999 })));
     expect(ranked.map((r) => r.kind)).toEqual([...kinds].reverse());
   });
@@ -48,7 +48,7 @@ describe('rankMyDay', () => {
     const counts = countMyDay([item({ id: '1', kind: 'overdue' }), item({ id: '2', kind: 'overdue' }), item({ id: '3', kind: 'task' })]);
     expect(counts.overdue).toBe(2);
     expect(counts.task).toBe(1);
-    expect(counts.notice).toBe(0);
+    expect(counts.expiry).toBe(0);
   });
 });
 

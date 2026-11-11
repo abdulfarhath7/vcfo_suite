@@ -24,7 +24,6 @@ import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
   ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 
 /**
  * STAFF CLIENT RECORD (admin + manager; prototype `ClientRecordScreen`).
@@ -108,7 +107,6 @@ export default function ProjectDetail() {
               <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                 <h1 className="min-w-0 text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">{eng.companyName}</h1>
                 <RecordStageChip engagement={eng} state={state} />
-                <ClientHealthChip engagementId={eng.id} />
               </div>
               <RecordMetaLine engagement={eng} />
             </div>

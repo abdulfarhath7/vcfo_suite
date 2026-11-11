@@ -174,6 +174,30 @@ function srnField(section: string): ChecklistField {
 /** The steps that file an application: RUN / SPICe+ Part A, SPICe+ Part B, ADT-1 and INC-20A. */
 export const SRN_STEP_IDS: ReadonlySet<string> = new Set(['pre-4', 'pre-10', 'post-2', 'post-6']);
 
+/**
+ * The DSC a portal registers for the company's authorised signatory (EPFO on PF, ICEGATE). Its
+ * holder may not be a director, so the step asks whose DSC it is and when it expires; the date
+ * goes on the compliance calendar (src/lib/expiries/seed.ts).
+ */
+function signatoryDscFields(section: string, portal: string): ChecklistField[] {
+  return [
+    {
+      id: 'signatoryDscHolderName',
+      label: `Authorised signatory whose DSC is registered on ${portal}`,
+      type: 'text',
+      section,
+      required: false,
+    },
+    {
+      id: 'signatoryDscExpiryDate',
+      label: 'That DSC is valid until',
+      type: 'date',
+      section,
+      required: false,
+    },
+  ];
+}
+
 export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   // Part A, in the order the client is asked (owner's list, 2026-11-02):
   // business description, the two proposed names, the foreign entity with its
@@ -504,6 +528,16 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       accept: '.pdf,image/*',
       required: true,
     },
+    // The new DSC's expiry goes on every role's compliance calendar (src/lib/expiries/seed.ts).
+    {
+      id: 'nrDirectorDscExpiryDate',
+      label: 'DSC expiry date - Non-resident Director',
+      type: 'date',
+      section: 'DSC creation (eMudhra)',
+      filledBy: 'intern',
+      required: true,
+      helperText: 'The "valid to" date on the new DSC. It is shown on the compliance calendar.',
+    },
     {
       id: 'residentDirectorDscSuccessMessageUrl',
       label: 'Digital Signature Certificate (DSC) success message - Resident Director',
@@ -512,6 +546,15 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       filledBy: 'intern',
       accept: '.pdf,image/*',
       required: true,
+    },
+    {
+      id: 'residentDirectorDscExpiryDate',
+      label: 'DSC expiry date - Resident Director',
+      type: 'date',
+      section: 'DSC creation (eMudhra)',
+      filledBy: 'intern',
+      required: true,
+      helperText: 'The "valid to" date on the new DSC. It is shown on the compliance calendar.',
     },
     // The draft documents themselves are listed and downloaded on the document
     // pack page; this section keeps only what they print (date, place, witness).
@@ -1627,6 +1670,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'DSC / E-Sign',
       placeholder: 'Credentials status, activation date, or remarks…',
     },
+    ...signatoryDscFields('DSC / E-Sign', 'EPFO'),
   ],
   'reg-2': [
     {
@@ -1813,10 +1857,36 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       required: true,
     },
   ],
-  'reg-9': [],
-  'reg-10': [],
+  // Registrations that lapse ask for their expiry, which goes on every role's compliance calendar
+  // (src/lib/registrations/registration-facts.ts SOURCES, then src/lib/expiries/seed.ts).
+  'reg-9': [
+    {
+      id: 'shopsLicenceExpiryDate',
+      label: 'Shops & Establishment certificate valid until (leave blank if it has no expiry)',
+      type: 'date',
+      section: 'Shops & Establishment',
+      required: false,
+    },
+  ],
+  'reg-10': [
+    {
+      id: 'tradeLicenceExpiryDate',
+      label: 'Trade licence valid until',
+      type: 'date',
+      section: 'Trade Licence',
+      required: false,
+    },
+  ],
   'reg-11': [],
-  'reg-12': [],
+  'reg-12': [
+    {
+      id: 'trademarkValidUntil',
+      label: 'Trademark registration valid until (10 years from the application date)',
+      type: 'date',
+      section: 'Trademark Registration',
+      required: false,
+    },
+  ],
   'reg-13': [
     {
       id: 'clraRegistrationNumber',
@@ -1871,6 +1941,16 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       type: 'textarea',
       section: 'MSME Registration',
       placeholder: 'NIC codes, category (Micro/Small/Medium), or remarks…',
+    },
+  ],
+  'reg-16': [...signatoryDscFields('ICEGATE Registration', 'ICEGATE')],
+  'reg-17': [
+    {
+      id: 'trademarkRenewedValidUntil',
+      label: 'Renewed trademark valid until (10 years from the last expiry)',
+      type: 'date',
+      section: 'Trademark Renewal',
+      required: false,
     },
   ],
 };

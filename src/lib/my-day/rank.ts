@@ -6,14 +6,13 @@
  * its own block of 1000 points, so a kind higher up the list always beats one lower down, and the
  * weight orders items inside one block. The gatherer sets the weight as follows:
  *
- *   1. overdue       days late (a filing, task, notice reply or expiry whose date has passed)
+ *   1. overdue       days late (a filing, task or expiry whose date has passed)
  *   2. due_today     0, so due-today items keep the date and title order
  *   3. approval      days the approval has waited on me
  *   4. client_reply  days since the client replied or uploaded (waiting for my review)
  *   5. expiry        7 minus days left (expiring within 7 days; the soonest weighs most)
- *   6. notice        7 minus days to the response date (within 7 days; the soonest weighs most)
- *   7. request_list  days since the last move on a stalled client request list
- *   8. task          days since the task was last touched, so a forgotten task floats up
+ *   6. request_list  days since the last move on a stalled client request list
+ *   7. task          days since the task was last touched, so a forgotten task floats up
  *
  * Ties break on the due date (earliest first, undated last), then the company, then the title,
  * so the order is stable between the card and the email.
@@ -25,7 +24,6 @@ export const MY_DAY_KINDS = [
   'approval',
   'client_reply',
   'expiry',
-  'notice',
   'request_list',
   'task',
 ] as const;
@@ -66,7 +64,6 @@ export const MY_DAY_LABEL: Record<MyDayKind, string> = {
   approval: 'Approval',
   client_reply: 'Client reply',
   expiry: 'Expiring',
-  notice: 'Notice',
   request_list: 'Request list',
   task: 'Task',
 };

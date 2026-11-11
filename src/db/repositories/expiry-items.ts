@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, notInArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { companyDirectors, engagementCredentials, engagements, profiles } from '@/db/schema';
 import { expiryAlerts, expiryItems, type ExpiryItemRow } from '@/db/schema';
@@ -12,6 +12,7 @@ import { normalizeEngagementChecklistState } from '@/lib/checklist/checklist-sta
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { buildRegistrationFacts } from '@/lib/registrations/registration-facts';
 import {
+  CALENDAR_ONLY_KINDS,
   daysUntil,
   dueAlertStage,
   EXPIRY_KIND_LABEL,
@@ -28,7 +29,8 @@ import {
   type ExpirySource,
   type SubjectKind,
 } from '@/lib/expiries/model';
-import { seedRowsFor, type SeedRow } from '@/lib/expiries/seed';
+import { NAME_APPROVAL_SOURCE_KEY, seedRowsFor, type SeedRow } from '@/lib/expiries/seed';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 
 /**
  * EXPIRY ITEMS REPOSITORY (IDEAS-PLAN wave 2, section B) — DSCs, DIR-3 KYC and registration
@@ -412,16 +414,25 @@ async function upsertSeedRows(engagementId: string, rows: SeedRow[]): Promise<nu
   return touched;
 }
 
-/**
- * The backfill: every live engagement's DSC, DIR-3 KYC and registration expiries, from its
- * checklist, its credentials "reg" rows and its current directors. Idempotent.
- */
-export async function systemSeedExpiryItems(today: string): Promise<{ engagements: number; touched: number }> {
-  const engs = await db
-    .select({ id: engagements.id, companyName: engagements.companyName, checklistState: engagements.checklistState })
-    .from(engagements)
-    .where(isNull(engagements.deletedAt));
-  if (engs.length === 0) return { engagements: 0, touched: 0 };
+interface SeedEngagement {
+  id: string;
+  companyName: string;
+  checklistState: unknown;
+  incorporationDate: string | null;
+  stage: string | null;
+}
+
+const SEED_ENGAGEMENT_COLUMNS = {
+  id: engagements.id,
+  companyName: engagements.companyName,
+  checklistState: engagements.checklistState,
+  incorporationDate: engagements.incorporationDate,
+  stage: engagements.stage,
+};
+
+/** Seed rows for a set of engagements from their checklist, credentials "reg" rows and directors. */
+async function seedEngagements(engs: SeedEngagement[], today: string): Promise<number> {
+  if (engs.length === 0) return 0;
   const ids = engs.map((e) => e.id);
   const regRows = await db
     .select({ engagementId: engagementCredentials.engagementId, rowKey: engagementCredentials.rowKey, fields: engagementCredentials.fields })
@@ -445,10 +456,49 @@ export async function systemSeedExpiryItems(today: string): Promise<{ engagement
       registrationFacts: facts,
       directors: dirRows.filter((d) => d.engagementId === e.id).map((d) => ({ name: d.name, din: d.din ?? null, ceasedOn: d.ceasedOn ?? null })),
       today,
+      incorporated: isIncorporated(e, state),
     });
     touched += await upsertSeedRows(e.id, rows);
+    // The name approval stops mattering once Part B is filed or the company is incorporated, and
+    // the seed then stops sending it: remove the seeded item so the calendar drops it.
+    if (!rows.some((r) => r.sourceKey === NAME_APPROVAL_SOURCE_KEY)) {
+      const gone = await db
+        .delete(expiryItems)
+        .where(and(eq(expiryItems.engagementId, e.id), eq(expiryItems.sourceKey, NAME_APPROVAL_SOURCE_KEY), eq(expiryItems.source, 'checklist')))
+        .returning({ id: expiryItems.id });
+      touched += gone.length;
+    }
   }
-  return { engagements: engs.length, touched };
+  return touched;
+}
+
+/**
+ * After a checklist save: bring one engagement's DSC, DIR-3 KYC and registration expiries up to
+ * date, so a date typed on a step (a new DSC on KYC Review & DSC, a licence's expiry) shows on the
+ * compliance calendar at once instead of after the nightly job. Anyone who may read the
+ * engagement may trigger it, the client included: the rows only mirror the engagement's own
+ * records, and a date set by hand is never overwritten. Returns how many rows changed.
+ */
+export async function syncExpiryItemsForEngagement(ctx: AuthContext, engagementId: string, today: string = istToday()): Promise<number> {
+  const [dbId] = await readableIds(ctx, engagementId);
+  if (!dbId) return 0;
+  const engs = await db
+    .select(SEED_ENGAGEMENT_COLUMNS)
+    .from(engagements)
+    .where(and(eq(engagements.id, dbId), isNull(engagements.deletedAt)));
+  return seedEngagements(engs, today);
+}
+
+/**
+ * The backfill: every live engagement's DSC, DIR-3 KYC and registration expiries, from its
+ * checklist, its credentials "reg" rows and its current directors. Idempotent.
+ */
+export async function systemSeedExpiryItems(today: string): Promise<{ engagements: number; touched: number }> {
+  const engs = await db
+    .select(SEED_ENGAGEMENT_COLUMNS)
+    .from(engagements)
+    .where(isNull(engagements.deletedAt));
+  return { engagements: engs.length, touched: await seedEngagements(engs, today) };
 }
 
 export interface DueExpiryAlert {
@@ -460,14 +510,21 @@ export interface DueExpiryAlert {
  * Items with an alert stage due today (not renewed, within 60 days or expired). An item first
  * seen long after it expired (`isExpiryBacklog`, for example a DSC that lapsed years ago and was
  * just backfilled) is closed quietly at the expired stage: no task, draft, bell or email. The
- * Expiries page still shows it in red.
+ * compliance calendar still shows it in red.
  */
 export async function systemListDueExpiryAlerts(today: string): Promise<DueExpiryAlert[]> {
   const rows = await db
     .select({ id: expiryItems.id, expiresOn: expiryItems.expiresOn, lastAlertStage: expiryItems.lastAlertStage, renewedAt: expiryItems.renewedAt })
     .from(expiryItems)
     .innerJoin(engagements, eq(engagements.id, expiryItems.engagementId))
-    .where(and(isNull(expiryItems.renewedAt), isNull(engagements.deletedAt), lte(expiryItems.expiresOn, addDays(today, 60))));
+    .where(
+      and(
+        isNull(expiryItems.renewedAt),
+        isNull(engagements.deletedAt),
+        lte(expiryItems.expiresOn, addDays(today, 60)),
+        notInArray(expiryItems.kind, [...CALENDAR_ONLY_KINDS]),
+      ),
+    );
   const out: DueExpiryAlert[] = [];
   const backlog: string[] = [];
   for (const r of rows) {

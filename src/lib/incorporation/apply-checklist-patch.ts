@@ -11,8 +11,9 @@ import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
 import { stampDinChecks } from '@/lib/checklist/din-verification';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
 import { hiddenEntryAnswersPatch, isRepeatField } from '@/lib/checklist/checklist-repeat';
-import { proposeEventsFromChecklistSave } from '@/lib/compliance-events/record-change-hook';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
+import { syncExpiryItemsForEngagement } from '@/db/repositories/expiry-items';
+import { stepFeedsExpiries } from '@/lib/expiries/seed';
 import { emptyEmailDispatch, type EmailDispatchResult } from '@/lib/email/email-dispatch';
 import { leadManagerRequestNotifyPlan } from '@/lib/email/lead-manager-request-notify';
 import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
@@ -146,9 +147,13 @@ export async function applyChecklistPatch(
 
   const checklistState = await patchChecklistItem(ctx, appOrDbEngagementId, itemId, patch);
 
-  // A changed registered office, auditor or director list on an incorporated company proposes a
-  // compliance event for the lead to confirm. Additive: the hook never throws, so the save stands.
-  await proposeEventsFromChecklistSave(ctx, { engagement: before, itemId, prevSlice, nextSlice: checklistState[itemId] });
+  // A DSC or licence expiry typed on this step goes on the compliance calendar at once. Additive:
+  // a failure is logged and the save stands; the nightly expiry job catches up.
+  if (stepFeedsExpiries(itemId)) {
+    await syncExpiryItemsForEngagement(ctx, appOrDbEngagementId).catch((error) => {
+      console.warn('[expiries] sync after checklist save failed', error instanceof Error ? error.message : error);
+    });
+  }
 
   // Autosave is responses-only and must not fan out. Request / Submit /
   // Email manager again send reviewSource or resendManagerEmail.

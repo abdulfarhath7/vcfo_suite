@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { doneTaskRows, isTaskRow, normStage, taskAsRow, taskCal, taskHint, taskWord, weekGroups, weekOf, type ClientTask } from './tasks';
+import { dayWords, doneTaskRows, expiryAsRow, isExpiryRow, isTaskRow, normStage, taskAsRow, taskCal, taskHint, taskWord, weekGroups, weekOf, type ClientTask } from './tasks';
+import type { ExpiryItem } from '@/hooks/use-expiries';
 
 const TODAY = '2026-10-14'; // a Wednesday
 
@@ -65,5 +66,37 @@ describe('client tasks', () => {
     expect(done).toHaveLength(1);
     expect(done[0]!.filedOn).toBe('2026-10-12');
     expect(done[0]!.proofCount).toBe(1);
+  });
+});
+
+describe('expiries on the client calendar', () => {
+  const item = {
+    id: 'x1',
+    engagementId: 'e1',
+    companyName: 'Acme',
+    subjectKind: 'person',
+    subjectName: 'Ravi Kumar',
+    kind: 'dsc',
+    kindLabel: 'DSC',
+    referenceLabel: 'DIN 01234567',
+    expiresOn: '2026-11-14',
+    daysLeft: 3,
+    band: 'red',
+    source: 'checklist',
+    renewedAt: null,
+    notes: null,
+    lastAlertStage: null,
+    requestListId: null,
+    updatedAt: '2026-11-11T00:00:00Z',
+  } as ExpiryItem;
+
+  it('draws an expiry like a task on its date, says the days left, and counts it as an expiry', () => {
+    const row = expiryAsRow(item);
+    expect(row).toMatchObject({ id: 'expiry:x1', name: 'DSC expires · Ravi Kumar', dueDate: '2026-11-14', companyName: 'Acme', period: '3 days left' });
+    expect(isTaskRow(row) && isExpiryRow(row)).toBe(true);
+    expect(isExpiryRow(taskAsRow({ ...row.task, expiry: null }))).toBe(false);
+    expect(taskHint(row.task)).toBe('3 days left');
+    expect(taskCal(row.task, '2026-11-11')).toBe('due');
+    expect(dayWords([row, taskAsRow({ ...row.task, id: 't1', expiry: null })])).toBe('1 task · 1 expiry');
   });
 });

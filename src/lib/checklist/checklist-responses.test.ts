@@ -40,8 +40,8 @@ describe('stepRemarks field', () => {
   });
 
   it('provides remarks-only form for steps with no other mapped fields', () => {
-    const reg9 = checklist.find((c) => c.id === 'reg-9')!;
-    expect(getClientResponseFields(reg9)).toEqual([STEP_REMARKS_FIELD]);
+    const reg11 = checklist.find((c) => c.id === 'reg-11')!;
+    expect(getClientResponseFields(reg11)).toEqual([STEP_REMARKS_FIELD]);
   });
 
   it('is optional for section completion', () => {

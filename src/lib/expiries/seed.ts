@@ -1,6 +1,7 @@
-import { getRegistrationPhases } from '@/data/checklist';
+import { coerceStatusCode, getRegistrationPhases } from '@/data/checklist';
+import { isChecklistStepSequentiallyComplete } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
+import { directorEntriesFromDirectors, displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { isoOfText, type RegistrationFactsMap } from '@/lib/registrations/registration-facts';
 import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpirySource, type SubjectKind } from './model';
 
@@ -10,15 +11,22 @@ import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpiryS
  * (`buildRegistrationFacts`) and its current directors (`company_directors`).
  *
  *  - DSC: every proposed director (`pre-15`, or the legacy Part A slots) who answered "has a
- *    valid DSC" with a DSC expiry date. Keyed by the director's name.
+ *    valid DSC" with a DSC expiry date, and every DSC the firm made on KYC Review & DSC (`pre-7`,
+ *    the expiry typed beside each director's DSC proof). Keyed by the director's name; a DSC made
+ *    on `pre-7` replaces the one the director said they had.
+ *  - DSC of the authorised signatory a portal registers (PF `reg-1`, ICEGATE `reg-16`): the holder
+ *    and expiry typed on that step, keyed by the holder's name like a director's DSC.
+ *  - Name approval: the MCA name approval expiry on `pre-5`, only until SPICe+ Part B (`pre-10`)
+ *    is filed or the company is incorporated. The calendar shows it; it raises no renewal alert.
  *  - DIR-3 KYC: every DIN holder among the proposed directors and the current company
  *    directors, deduplicated by DIN, due by `dir3KycDueOn`. Keyed by the DIN. The seed only
  *    inserts these (`sync: false`): the next year's date comes from marking the item renewed, so
  *    a missed 30 September stays red instead of quietly moving on.
  *  - Registrations: every registration step whose facts carry an expiry (the step's answer, or
  *    the issue date and renewal period typed on the credentials workbook). LEI with only a
- *    registration date renews yearly from it (`leiNextExpiry`). Keyed by the step id, and kept in
- *    step with the facts (`sync: true`).
+ *    registration date renews yearly from it (`leiNextExpiry`). A Trademark Renewal date
+ *    (`reg-17`) replaces the Trademark Registration one (`reg-12`). Keyed by the step id, and kept
+ *    in step with the facts (`sync: true`).
  */
 
 export interface SeedRow {
@@ -39,6 +47,8 @@ export interface SeedInput {
   registrationFacts: RegistrationFactsMap;
   directors: Array<{ name: string; din: string | null; ceasedOn: string | null }>;
   today: string;
+  /** `isIncorporated` for the engagement; a name approval no longer matters once it is. */
+  incorporated?: boolean;
 }
 
 /** Registration steps and the expiry kind each one tracks; the rest are "other". */
@@ -54,6 +64,9 @@ export const REGISTRATION_STEP_KIND: Record<string, ExpiryKind> = {
   'reg-15': 'msme',
 };
 
+/** `nrDirectorDscExpiryDate`, `residentDirector2DscExpiryDate` …: the field after the director's prefix. */
+const PRE7_DSC_EXPIRY_SUFFIX = 'DscExpiryDate';
+
 const DIN = /^\d{8}$/;
 
 function cleanDin(value: string | null | undefined): string | null {
@@ -65,24 +78,69 @@ function stepTitle(stepId: string): string {
   return getRegistrationPhases().flatMap((p) => p.items).find((i) => i.id === stepId)?.title ?? stepId;
 }
 
+/**
+ * Steps whose answers feed the seed: the proposed directors (Part A `pre-1`, `pre-15`), the DSCs
+ * made on `pre-7`, and every registration step. A save of any other step leaves expiries alone.
+ */
+export function stepFeedsExpiries(stepId: string): boolean {
+  return FEEDING_STEPS.has(stepId) || stepId.startsWith('reg-');
+}
+
+/** Directors and DSCs (pre-1, pre-7, pre-15), the name approval and the steps that end it. */
+const FEEDING_STEPS: ReadonlySet<string> = new Set(['pre-1', 'pre-5', 'pre-7', 'pre-10', 'pre-12', 'pre-15']);
+
+/** Steps that register the authorised signatory's DSC on a portal. */
+const SIGNATORY_DSC_STEPS = ['reg-1', 'reg-16'] as const;
+
+/** The name approval source key; the repository removes the item once the seed stops sending it. */
+export const NAME_APPROVAL_SOURCE_KEY = 'name:pre-5';
+
 export function seedRowsFor(input: SeedInput): SeedRow[] {
   const rows: SeedRow[] = [];
   const directors = readProposedDirectors(input.state);
 
-  for (const d of directors) {
-    const name = displayName(d.values);
-    if (!name) continue;
-    const expires = d.values.hasDsc === 'yes' ? isoOfText(d.values.dscExpiryDate) : null;
-    if (!expires) continue;
-    const din = cleanDin(d.values.din);
-    rows.push({
+  const dsc = new Map<string, SeedRow>();
+  const addDsc = (name: string, din: string | null, expires: string | null) => {
+    if (!name || !expires) return;
+    const sourceKey = `dsc:${subjectSlug(name)}`;
+    dsc.set(sourceKey, {
       subjectKind: 'person',
       subjectName: name,
       kind: 'dsc',
       referenceLabel: din ? `DIN ${din}` : null,
       expiresOn: expires,
       source: 'checklist',
-      sourceKey: `dsc:${subjectSlug(name)}`,
+      sourceKey,
+      sync: true,
+    });
+  };
+  for (const d of directors) {
+    addDsc(displayName(d.values), cleanDin(d.values.din), d.values.hasDsc === 'yes' ? isoOfText(d.values.dscExpiryDate) : null);
+  }
+  const pre7 = input.state['pre-7']?.responses ?? {};
+  for (const entry of directorEntriesFromDirectors(directors)) {
+    addDsc(displayName(entry.director.values), cleanDin(entry.director.values.din), isoOfText(pre7[`${entry.fieldPrefix}${PRE7_DSC_EXPIRY_SUFFIX}`]));
+  }
+  for (const stepId of SIGNATORY_DSC_STEPS) {
+    const r = input.state[stepId]?.responses ?? {};
+    const expires = isoOfText(r.signatoryDscExpiryDate);
+    if (expires) addDsc(r.signatoryDscHolderName?.trim() || 'Authorised signatory', null, expires);
+  }
+  rows.push(...dsc.values());
+
+  const nameExpiry = isoOfText(input.state['pre-5']?.responses?.nameApprovalExpiryDate);
+  const partB = input.state['pre-10'];
+  const partBFiled = Boolean(partB && isChecklistStepSequentiallyComplete(coerceStatusCode(partB.status), partB, 'pre-10'));
+  if (nameExpiry && !input.incorporated && !partBFiled) {
+    const approved = input.state['pre-5']?.responses?.approvedCompanyName?.trim();
+    rows.push({
+      subjectKind: 'company',
+      subjectName: input.companyName,
+      kind: 'name_approval',
+      referenceLabel: approved ? `File SPICe+ Part B for ${approved} before this date` : 'File SPICe+ Part B before this date',
+      expiresOn: nameExpiry,
+      source: 'checklist',
+      sourceKey: NAME_APPROVAL_SOURCE_KEY,
       sync: true,
     });
   }
@@ -112,6 +170,7 @@ export function seedRowsFor(input: SeedInput): SeedRow[] {
   }
 
   for (const [stepId, facts] of Object.entries(input.registrationFacts)) {
+    if (stepId === 'reg-12' && input.registrationFacts['reg-17']?.expiresOn) continue;
     const kind = REGISTRATION_STEP_KIND[stepId] ?? 'other';
     let expiresOn = facts.expiresOn;
     if (!expiresOn && kind === 'lei') {

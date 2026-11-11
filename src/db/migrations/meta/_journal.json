@@ -393,6 +393,13 @@
       "when": 1794405357079,
       "tag": "0055_statutory_calendars",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1794417104222,
+      "tag": "0056_remove_health_notices_events",
+      "breakpoints": true
     }
   ]
 }

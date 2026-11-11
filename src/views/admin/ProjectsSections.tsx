@@ -41,7 +41,6 @@ import type { Engagement } from '@/data/engagements';
 import { STUCK_LABEL } from '@/lib/projects/project-stuck';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { useApp } from '@/context/AppContext';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 
 type View = 'table' | 'board';
@@ -249,7 +248,6 @@ export function ProjectsView(props: ProjectsViewProps) {
               {item.facts.health}
             </Chip>
           </span>
-          <ClientHealthChip engagementId={item.e.id} />
         </span>
       ),
     },
