@@ -26,5 +26,5 @@ export function LeadPhaseProgress({
     [engagements, getState, now],
   );
   if (rows.length === 0) return null;
-  return <PhaseProgressGrid rows={rows} meta={`${rows.length} incorporating`} empty="No company is incorporating." />;
+  return <PhaseProgressGrid rows={rows} meta={`${rows.length} incorporating`} empty="No company is incorporating. A client appears here with its Part A, Part B and post-incorporation progress once its incorporation project starts." />;
 }

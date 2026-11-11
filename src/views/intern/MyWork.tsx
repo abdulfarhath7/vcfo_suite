@@ -629,6 +629,11 @@ export function WorkScreen({
               onReassign={setMoving}
               loading={engagementsLoading}
               onClearFilters={anyFilter ? clearAll : undefined}
+              emptyTitle={
+                workItems.length === 0
+                  ? 'No tasks yet. Steps, filings and requests on your clients appear here once a project starts.'
+                  : 'No tasks match these filters'
+              }
               changedAt={changedAt}
               taskStatusOf={taskStatusOf}
               filingInstanceOf={filingInstanceOf}
@@ -768,6 +773,7 @@ function ListView({
   onReassign,
   loading,
   onClearFilters,
+  emptyTitle = 'No tasks match these filters',
   changedAt,
   taskStatusOf,
   filingInstanceOf,
@@ -781,6 +787,8 @@ function ListView({
   onReassign?: (item: InternWorkItem) => void;
   loading?: boolean;
   onClearFilters?: () => void;
+  /** What the empty list says: no work at all, or the filters hide every item. */
+  emptyTitle?: string;
   changedAt?: (item: InternWorkItem) => string | undefined;
   taskStatusOf?: (item: InternWorkItem) => StatusCode | undefined;
   /** The filing's `compliance_instances.id`, when the register has it; Mark done files it. */
@@ -977,7 +985,7 @@ function ListView({
         }
         pageSize={12}
         minWidth={team ? 960 : 800}
-        empty="No tasks match these filters"
+        empty={emptyTitle}
         loading={loading}
         onClearFilters={onClearFilters}
         stickyHead

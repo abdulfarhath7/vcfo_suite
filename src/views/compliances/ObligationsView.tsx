@@ -495,9 +495,29 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           </div>
           <div className="grid min-w-0 gap-3">
             <FlowCard title="This month" steps={flowSteps} />
-            <RailCard title={cat === 'stat' ? 'Due in the next 15 days' : cat === 'ns' ? 'This week' : 'Due soon'} items={soonItems} />
-            <RailCard title="Waiting on client" items={waitingItems} />
-            <RailCard title={cat === 'stat' ? 'Filed recently' : 'Done recently'} items={doneItems} />
+            <RailCard
+              title={cat === 'stat' ? 'Due in the next 15 days' : cat === 'ns' ? 'This week' : 'Due soon'}
+              items={soonItems}
+              empty={
+                cat === 'ns'
+                  ? 'Nothing due this week. Tasks due this week appear here.'
+                  : 'Nothing due in the next 15 days. Filings appear here 15 days before their due date.'
+              }
+            />
+            <RailCard
+              title="Waiting on client"
+              items={waitingItems}
+              empty="Nothing is waiting on a client. A filing or task appears here while the client owes data for it."
+            />
+            <RailCard
+              title={cat === 'stat' ? 'Filed recently' : 'Done recently'}
+              items={doneItems}
+              empty={
+                cat === 'stat'
+                  ? 'Nothing filed yet. Filings appear here once they are marked filed.'
+                  : 'Nothing done yet. Work appears here once it is marked done.'
+              }
+            />
           </div>
         </div>
       </div>

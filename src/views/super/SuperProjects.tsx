@@ -94,6 +94,11 @@ function SuperProjectsInner() {
   const staff = useSuperStaff();
   const adminOf = staff.adminNameOf;
 
+  // The empty list says why: no client in the firm yet, or the filters hide every one.
+  const emptyTitle =
+    overview && overview.engagements.length === 0
+      ? 'No clients yet. Each client appears here once an admin starts its project.'
+      : 'No client matches these filters';
   const rows = useMemo(() => {
     if (!overview) return [];
     return overview.engagements.filter(
@@ -248,14 +253,14 @@ function SuperProjectsInner() {
             rows={rows}
             rowKey={(row) => row.id}
             onRowClick={(row) => router.push(row.href)}
-            empty="No client matches these filters"
+            empty={emptyTitle}
             minWidth={1040}
             pageSize={17}
           />
         </div>
         <div className="divide-y divide-line-soft md:hidden">
           {rows.length === 0 ? (
-            <p className="px-2 py-6 text-center text-[13px] text-ink-muted">No client matches these filters</p>
+            <p className="px-2 py-6 text-center text-[13px] text-ink-muted">{emptyTitle}</p>
           ) : (
             rows.map((row) => (
               <button key={row.id} type="button" className="block w-full px-2 py-3 text-left" onClick={() => router.push(row.href)}>

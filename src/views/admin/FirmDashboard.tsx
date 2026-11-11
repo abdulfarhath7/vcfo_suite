@@ -245,7 +245,7 @@ export default function FirmDashboard() {
         <PhaseProgressGrid
           rows={phaseRows}
           meta={`${phaseRows.length} incorporating`}
-          empty="No company is incorporating."
+          empty="No company is incorporating. A client appears here with its Part A, Part B and post-incorporation progress once its incorporation project starts."
           extraColumns={[
             {
               key: 'manager',
@@ -265,7 +265,7 @@ export default function FirmDashboard() {
               caption="Managers"
               rows={managerStrip}
               rowKey={(row) => row.managerId}
-              empty="No open Pre/Post projects."
+              empty="No manager has an open client yet. Each manager appears here with their clients once a project is assigned to them."
               minWidth={canSetCapacity ? 860 : 760}
               columns={[
                 {

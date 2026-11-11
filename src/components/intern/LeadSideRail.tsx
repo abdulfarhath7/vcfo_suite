@@ -24,7 +24,7 @@ export function LeadSideRail({ items, mailHref = '/app/lead/mail', title = 'Wait
     <div className="flex flex-col gap-5" data-intern-waiting-on>
       <DashSection title={title} meta={all.length ? String(all.length) : undefined} bodyClassName="p-0">
         {waiting.length === 0 ? (
-          <EmptyState title="Nothing waiting" className="m-4" />
+          <EmptyState title="Nothing is waiting on a client. Steps and documents a client still owes appear here, each with Remind." className="m-4" />
         ) : (
           <ul>
             {waiting.map((item) => (

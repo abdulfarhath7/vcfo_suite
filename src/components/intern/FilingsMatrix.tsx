@@ -85,7 +85,7 @@ export function FilingsMatrix({ filings, engagements, now }: { filings: Complian
   return (
     <DashSection title={`Clients × filings · ${MONTHS[Number(month.slice(5, 7)) - 1]}`} meta={String(rows.length)} flush>
       {rows.length === 0 ? (
-        <EmptyState title="No filings due this month" className="m-4" />
+        <EmptyState title="No filings due this month. Each incorporated client appears here with the filings that fall due in the month." className="m-4" />
       ) : (
         <>
         <div className="max-w-full overflow-x-auto">

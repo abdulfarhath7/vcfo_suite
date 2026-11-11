@@ -121,7 +121,7 @@ function LatestList({
       ) : shown.length === 0 ? (
         <div className="p-4">
           <EmptyState
-            title={items.length === 0 ? 'Nothing on the board yet' : 'None'}
+            title={items.length === 0 ? 'Nothing on the board yet. Announcements from the firm appear here as they are posted.' : 'No announcement of this kind yet'}
             action={
               items.length > 0 ? (
                 <Button type="button" variant="outline" size="sm" onClick={() => setFilter('all')}>
@@ -223,7 +223,7 @@ function FeedsSection({
       </form>
       {sources.length === 0 ? (
         <div className="px-4 pb-4">
-          <EmptyState title="No feeds yet" className="min-h-[72px] py-4" />
+          <EmptyState title="No feeds yet. Add an official RSS feed above and its updates appear here." className="min-h-[72px] py-4" />
         </div>
       ) : (
         <ul className="border-t border-line-soft">

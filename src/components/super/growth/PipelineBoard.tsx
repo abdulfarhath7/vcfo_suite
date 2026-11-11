@@ -92,7 +92,7 @@ export function PipelineBoard({ prospects, linkedCompany, onEdit, onMove, onConv
               <span className="rounded-sm bg-surface-raised px-1.5 text-[12px] font-medium text-ink-muted">{items.length}</span>
             </h3>
             {items.length === 0 ? (
-              <EmptyState title="None" className="min-h-[72px] bg-surface-raised py-4 text-[13px]" />
+              <EmptyState title="No prospect at this stage. Move a card here as it progresses." className="min-h-[72px] bg-surface-raised py-4 text-[13px]" />
             ) : (
               <ul className="grid gap-2">
                 {items.map((p) => (
