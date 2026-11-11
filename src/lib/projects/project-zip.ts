@@ -15,7 +15,7 @@ import { tablesWorkbook } from '@/lib/exports/table-xlsx';
 import { answersTable, entriesTable, groupOf, PROJECT_ZIP_FOLDERS as FOLDERS, type Responses } from '@/lib/projects/project-zip-tables';
 import { standardDownloadName } from '@/lib/files/download-name';
 import { createUniqueNamer, zipEntryPath } from '@/lib/zip/entry-names';
-import { createZipStream, type ZipEntrySource } from '@/lib/zip/zip-writer';
+import { collectZipStream, createZipStream, type ZipEntrySource } from '@/lib/zip/zip-writer';
 import { downloadBoardResolutionDocx, downloadSignedBoardResolution } from '@/storage/board-resolution';
 import { bucketKey, getObjectBuffer } from '@/storage/s3';
 
@@ -42,25 +42,6 @@ function uploadedFiles(state: Record<string, { responses?: Responses } | undefin
       const path = field.type === 'file' ? responses[field.id]?.trim() : '';
       if (path && !/^https?:/i.test(path)) out.push({ step: item.title, path });
     }
-  }
-  return out;
-}
-
-async function collect(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    size += value.byteLength;
-  }
-  const out = new Uint8Array(size);
-  let at = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, at);
-    at += chunk.byteLength;
   }
   return out;
 }
@@ -132,7 +113,7 @@ export async function buildProjectZip(
     ];
   });
 
-  const bytes = await collect(createZipStream(entries));
+  const bytes = await collectZipStream(createZipStream(entries));
   return {
     bytes,
     fileName: standardDownloadName('Project', company, 'zip'),

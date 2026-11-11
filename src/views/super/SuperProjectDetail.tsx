@@ -1,5 +1,6 @@
 'use client';
 
+import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import Link from 'next/link';
 import { ProjectZipButton } from '@/views/client-record/RecordHeadParts';
 import { useState } from 'react';
@@ -270,6 +271,7 @@ export default function SuperProjectDetail() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <DownloadDocumentsButton engagementId={summary.id} />
               <ProjectZipButton engagementId={summary.id} />
               <RaiseEscalationButton
                 engagementId={summary.id}

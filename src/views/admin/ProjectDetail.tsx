@@ -1,5 +1,6 @@
 "use client";
 
+import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter, redirect } from 'next/navigation';
 import { RedirectTo } from '@/components/routing/RedirectTo';
@@ -116,6 +117,7 @@ export default function ProjectDetail() {
             {/* G-20: raise the client to an admin or the super admin. */}
             <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
             <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+            <DownloadDocumentsButton engagementId={eng.id} />
             <ProjectZipButton engagementId={eng.id} />
           </div>
         </div>
