@@ -17,7 +17,7 @@ describe('PR-02 project ZIP contents', () => {
     });
     expect(table.columns).toEqual(['Step', 'Section', 'Question', 'Answer']);
     expect(table.rows).toContainEqual(['Capital Structure', '3A(i) Equity share capital', 'Equity share capital', 'Yes']);
-    expect(table.rows).toContainEqual(['Proposed Directors', '7 Particulars of directors', 'First Name · Director 1', 'Asha']);
+    expect(table.rows).toContainEqual(['Proposed Directors', '7 Particulars of Subscriber(s) cum Directors/Director of the Company', 'First Name · Director 1', 'Asha']);
     expect(table.rows).toContainEqual(expect.arrayContaining(['123-photo.jpg']));
   });
 

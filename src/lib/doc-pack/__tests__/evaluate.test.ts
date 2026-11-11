@@ -63,7 +63,7 @@ describe('evaluateDocPack', () => {
     for (const item of d2.filter((i) => i.docId !== 'deposit-declaration')) {
       expect(item.status).toBe('needs-inputs');
       expect(item.missing).toEqual([
-        { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: '7-particulars-of-directors', directorIndex: 2 },
+        { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: '7-particulars-of-subscriber-s-cum-directors-director-of-the-company', directorIndex: 2 },
       ]);
     }
     // Company docs are untouched by a resident director's PAN.
@@ -108,7 +108,7 @@ describe('evaluateDocPack', () => {
     const letter = summary.items.find((i) => i.docId === 'acceptance-letter');
     expect(letter?.status).toBe('needs-inputs');
     expect(letter?.missing).toEqual([
-      { key: 'directors.nonResident', label: 'A non-resident director', stepId: 'pre-15', tabId: '7-particulars-of-directors' },
+      { key: 'directors.nonResident', label: 'A non-resident director', stepId: 'pre-15', tabId: '7-particulars-of-subscriber-s-cum-directors-director-of-the-company' },
     ]);
   });
 
@@ -211,7 +211,7 @@ describe('answers that replaced hardcoded values', () => {
       'director.1.nationality',
       'director.1.residenceProofType',
     ]);
-    expect(dir2?.missing.every((m) => m.stepId === 'pre-15' && m.tabId === '7-particulars-of-directors')).toBe(true);
+    expect(dir2?.missing.every((m) => m.stepId === 'pre-15' && m.tabId === '7-particulars-of-subscriber-s-cum-directors-director-of-the-company')).toBe(true);
     expect(summary.items.find((i) => i.key === 'inc-9:non-resident')?.missing.map((m) => m.key)).toEqual([
       'director.1.signingPlace',
     ]);
@@ -276,7 +276,7 @@ describe('independent companies', () => {
         key: 'subscribers.any',
         label: 'Subscribers to the memorandum and the shares each takes',
         stepId: 'pre-16',
-        tabId: '5-6-first-subscribers-to-the-moa',
+        tabId: '5-6-first-subscriber-s-to-moa',
       },
     ]);
 

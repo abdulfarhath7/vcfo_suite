@@ -167,7 +167,7 @@ describe('validatePre16Responses — subscriber details', async () => {
     expect(validatePre16Responses(sub({ type: 'individual', holding: 'shareholder', name: 'Asha Rao', shares: '100', shareValue: '1000' }).responses).ok).toBe(true);
   });
 
-  it('a body corporate needs a CIN and address; an LLP needs an LLPIN; both need the authorised person', () => {
+  it('a body corporate needs a CIN, an address and the authorised person; an LLP needs only the name, shares and value', () => {
     const bc = sub({ type: 'non-individual', entityType: 'body-corporate', bodyCorporateOrigin: 'domestic', name: 'Acme Ltd', shares: '10', shareValue: '100', cin: 'bad' });
     const bcErrors = validatePre16Responses(bc.responses).errors;
     expect(bcErrors[`subscribers.${bc.entryId}.cin`]).toMatch(/21 characters/);
@@ -175,9 +175,11 @@ describe('validatePre16Responses — subscriber details', async () => {
     expect(bcErrors[`subscribers.${bc.entryId}.authorisedPerson`]).toBe('This field is required.');
     expect(bcErrors[`subscribers.${bc.entryId}.llpin`]).toBeUndefined();
 
-    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100', llpin: '12', authorisedPerson: 'R Iyer' });
-    expect(validatePre16Responses(llp.responses).errors[`subscribers.${llp.entryId}.llpin`]).toMatch(/AAB-1234/);
-    expect(validatePre16Responses({ ...llp.responses, [`subscribers.${llp.entryId}.llpin`]: 'aab-1234' }).ok).toBe(true);
+    // SB-03 (owner, 11 November 2026): an LLP is asked nothing further, so an old LLPIN is not checked.
+    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100', llpin: '12' });
+    expect(validatePre16Responses(llp.responses).ok).toBe(true);
+    const llpEmpty = validatePre16Responses(sub({ type: 'non-individual', entityType: 'llp' }).responses).errors;
+    expect(Object.keys(llpEmpty).map((key) => key.split('.').pop()).sort()).toEqual(['name', 'shareValue', 'shares']);
   });
 
   it('a foreign body corporate needs its UIN; an LLP never needs the origin, the CIN or the UIN', () => {
@@ -186,12 +188,13 @@ describe('validatePre16Responses — subscriber details', async () => {
     const fields = resolveFieldLabels(expandRepeatEntry(group as never, foreign.entryId), foreign.responses);
     expect(fields.find((f) => f.id === `subscribers.${foreign.entryId}.foreignRegistrationNumber`)?.label).toBe('Unique Identification Number (UIN)');
 
-    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100', llpin: 'AAB-1234', authorisedPerson: 'R Iyer' });
+    const llp = sub({ type: 'non-individual', entityType: 'llp', name: 'Acme LLP', shares: '10', shareValue: '100' });
     const result = validatePre16Responses(llp.responses);
     expect(result.ok).toBe(true);
     expect(result.errors[`subscribers.${llp.entryId}.bodyCorporateOrigin`]).toBeUndefined();
     expect(result.errors[`subscribers.${llp.entryId}.cin`]).toBeUndefined();
     expect(result.errors[`subscribers.${llp.entryId}.foreignRegistrationNumber`]).toBeUndefined();
+    expect(result.errors[`subscribers.${llp.entryId}.authorisedPerson`]).toBeUndefined();
   });
 
   it('shares must be a whole number and the value a positive amount', () => {
@@ -206,7 +209,7 @@ describe('validatePre16Responses — subscriber details', async () => {
     const fields = resolveFieldLabels(expandRepeatEntry(group as never, entryId), responses);
     expect(fields.find((f) => f.id === `subscribers.${entryId}.name`)?.label).toBe('Name of the LLP');
     const plain = resolveFieldLabels(expandRepeatEntry(group as never, entryId), { ...responses, [`subscribers.${entryId}.entityType`]: '' });
-    expect(plain.find((f) => f.id === `subscribers.${entryId}.name`)?.label).toBe('Full name');
+    expect(plain.find((f) => f.id === `subscribers.${entryId}.name`)?.label).toBe('Subscriber name (First Name, Middle Name, Surname)');
   });
 });
 
