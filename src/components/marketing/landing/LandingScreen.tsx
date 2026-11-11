@@ -177,24 +177,24 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               <path className="line" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80" />
               <g className="node" style={st("--i:0")} data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="60" cy="130" r="30" /><circle className="c" cx="60" cy="130" r="18" /><text className="n" x="60" y="135">1</text>
-                <text className="t" x="60" y="178">Name and papers</text><text className="s" x="60" y="196">5 steps, about 2 weeks</text><text className="w" x="60" y="214">CLIENT + FIRM</text>
+                <text className="t" x="60" y="178">Name and papers</text><text className="s" x="60" y="196">About two weeks</text><text className="w" x="60" y="214">CLIENT + FIRM</text>
               </g>
               <g className="node" style={st("--i:1")} data-app="inc-phase" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="264" cy="80" r="30" /><circle className="c" cx="264" cy="80" r="18" /><text className="n" x="264" y="85">2</text>
-                <text className="t" x="264" y="30">Incorporation</text><text className="s" x="264" y="48">11 steps, SPICe+ with MCA</text><text className="w" x="264" y="14">FIRM + MCA</text>
+                <text className="t" x="264" y="30">Incorporation</text><text className="s" x="264" y="48">Filed with the registrar</text><text className="w" x="264" y="14">FIRM + MCA</text>
               </g>
               <g className="node coi" style={st("--i:2")} data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="pulse" cx="468" cy="130" r="20" />
                 <path className="d" d="M 468 112 L 486 130 L 468 148 L 450 130 Z" />
-                <text className="t" x="468" y="178">Certificate of Incorporation</text><text className="s" x="468" y="196">CIN, PAN and TAN arrive</text><text className="w" x="468" y="214">DAY 0</text>
+                <text className="t" x="468" y="178">Certificate of Incorporation</text><text className="s" x="468" y="196">The company exists</text><text className="w" x="468" y="214">DAY 0</text>
               </g>
               <g className="node" style={st("--i:3")} data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="672" cy="80" r="30" /><circle className="c" cx="672" cy="80" r="18" /><text className="n" x="672" y="85">3</text>
-                <text className="t" x="672" y="30">The first 180 days</text><text className="s" x="672" y="48">11 steps with statutory clocks</text><text className="w" x="672" y="14">FIRM</text>
+                <text className="t" x="672" y="30">The first 180 days</text><text className="s" x="672" y="48">Statutory clocks start</text><text className="w" x="672" y="14">FIRM</text>
               </g>
               <g className="node" style={st("--i:4")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="876" cy="130" r="30" /><circle className="c" cx="876" cy="130" r="18" /><text className="n" x="876" y="135">4</text>
-                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">23 items, only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
+                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">Only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
               </g>
               <g className="node loop" style={st("--i:5")} data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="1080" cy="80" r="30" /><circle className="c" cx="1080" cy="80" r="18" />
@@ -203,11 +203,11 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               </g>
             </svg>
             <ol className="journey-list">
-              <li data-n="1" data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}><b>Name and papers</b><span>5 steps, about 2 weeks. Client and firm.</span></li>
-              <li data-n="2" data-app="inc-phase" role="button" aria-haspopup="dialog" tabIndex={0}><b>Incorporation</b><span>11 steps, SPICe+ with MCA. Firm and MCA.</span></li>
-              <li className="coi" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><b>Certificate of Incorporation</b><span>Day 0. CIN, PAN and TAN arrive.</span></li>
-              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 180 days</b><span>11 steps with statutory clocks. The firm.</span></li>
-              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>23 items, only the ones that apply. The firm.</span></li>
+              <li data-n="1" data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}><b>Name and papers</b><span>About two weeks. Client and firm.</span></li>
+              <li data-n="2" data-app="inc-phase" role="button" aria-haspopup="dialog" tabIndex={0}><b>Incorporation</b><span>Filed with the registrar. Firm and MCA.</span></li>
+              <li className="coi" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><b>Certificate of Incorporation</b><span>Day 0. The company exists.</span></li>
+              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 180 days</b><span>Statutory clocks start. The firm.</span></li>
+              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>Only the ones that apply. The firm.</span></li>
               <li className="loop" data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}><b>Compliance, every year</b><span>Monthly, quarterly and annual filings. Firm and client.</span></li>
             </ol>
           </div>

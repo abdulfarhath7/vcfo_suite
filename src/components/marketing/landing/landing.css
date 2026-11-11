@@ -131,6 +131,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .hero .glow-a { width: 1100px; height: 700px; left: 62%; top: -40px; transform: translateX(-50%); }
 .lp .hero .glow-b { width: 700px; height: 500px; left: 72%; top: 260px; }
 .lp .hero-beams { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+/* The beams fade out over the text column, so no line ever crosses the headline or the lead. */
+.lp .hero-beams path { -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 42%, #000 62%); mask-image: linear-gradient(90deg, transparent 0, transparent 42%, #000 62%); }
 .lp .hero-beams path { fill: none; stroke: var(--lp-brand); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 160 1400; animation: lp-beam 9s linear infinite; }
 .lp .hero-beams path:nth-child(2) { animation-delay: -3s; stroke-opacity: .55; }
 .lp .hero-beams path:nth-child(3) { animation-delay: -6s; stroke-opacity: .35; }

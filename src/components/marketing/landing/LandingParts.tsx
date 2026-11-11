@@ -207,7 +207,7 @@ export function HeroArt({ active = 0 }: { active?: number }) {
     [96, 70], [384, 70], [62, 168], [418, 168], [150, 240], [292, 246],
   ] as const;
   const months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
-  const steps = ["Name", "Board resolution", "SPICe+", "Filing", "Certificate"];
+  const steps = ["Name", "Papers", "Filing", "Approval", "Certificate"];
   const scene = (i: number) => `ha-scene${i === active ? " is-active" : ""}`;
   return (
     <svg className="hero-art" viewBox="0 0 480 275" role="img" aria-label={HERO_SCENE_LABELS[active] ?? HERO_SCENE_LABELS[0]}>
@@ -243,10 +243,11 @@ export function HeroArt({ active = 0 }: { active?: number }) {
             </g>
           );
         })}
+        {/* Centred under the track, clear of the "Needs you" chip in the frame's bottom-right corner. */}
         <g className="ha-cert">
-          <rect x="370" y="196" width="80" height="56" rx="6" />
-          <path d="M384 214 h52 M384 226 h36" />
-          <circle cx="436" cy="238" r="9" />
+          <rect x="200" y="200" width="80" height="56" rx="6" />
+          <path d="M214 218 h52 M214 230 h36" />
+          <circle cx="266" cy="242" r="9" />
         </g>
       </g>
 
