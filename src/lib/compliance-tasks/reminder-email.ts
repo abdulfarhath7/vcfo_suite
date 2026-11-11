@@ -1,4 +1,4 @@
-import { emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import { emailParagraph, emailStatusWord, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 
 /**
@@ -24,7 +24,16 @@ function dayMonth(iso: string): string {
 }
 
 function reminderLineText(l: ReminderLine): string {
-  return `${l.label}: ${l.title} for ${l.companyName}, due ${dayMonth(l.dueDate)}`;
+  return `${l.label}: ${reminderLineRest(l)}`;
+}
+
+function reminderLineRest(l: ReminderLine): string {
+  return `${l.title} for ${l.companyName}, due ${dayMonth(l.dueDate)}`;
+}
+
+/** The same line with the label as a Spectrum status word ("Overdue, daily" in the overdue tone). */
+function reminderLineHtml(l: ReminderLine): string {
+  return `${emailStatusWord(l.label)}: ${escapeHtml(reminderLineRest(l))}`;
 }
 
 function firstName(name: string): string {
@@ -43,7 +52,7 @@ export function buildComplianceReminderEmail(input: { recipientName: string; lin
       title: n === 1 ? input.lines[0]!.label : `${n} reminders today`,
       bodyHtml:
         emailParagraph(`Hi ${escapeHtml(firstName(input.recipientName))},`) +
-        items.map((line) => emailParagraph(escapeHtml(line))).join(''),
+        input.lines.map((line) => emailParagraph(reminderLineHtml(line))).join(''),
       cta: { label: 'Open VCFO Suite', href },
     }),
     text: [`Hi ${firstName(input.recipientName)},`, ...items, `Open VCFO Suite: ${href}`].join('\n\n'),

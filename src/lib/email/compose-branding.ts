@@ -1,8 +1,10 @@
 import {
+  emailColor,
   emailParagraph,
   escapeHtml,
   renderEmailDocument,
 } from '@/lib/email/email-layout';
+import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 
 export type EmailBranding = 'sbc' | 'plain';
 
@@ -20,7 +22,7 @@ export function emailBrandingLabel(branding: EmailBranding): string {
 
 export function htmlFromPlainText(text: string): string {
   const escaped = escapeHtml(text).replace(/\n/g, '<br />');
-  return `<div style="font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.55;color:#0F172A;">${escaped}</div>`;
+  return `<div style="font-family:${SPECTRUM_EMAIL_FONTS.sans};font-size:14px;line-height:1.55;color:${emailColor('ink')};">${escaped}</div>`;
 }
 
 export function plainTextFromHtml(html: string): string {
