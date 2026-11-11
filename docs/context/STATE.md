@@ -280,6 +280,8 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
 
 - **Board resolution in the client portal (11 Nov, follow-up):** the client edit (BR-04/05) was only mounted on a staff screen. It is now on the client's Board resolution page and on client steps 2 and 3 (`StepBoardResolution.tsx`); the Lead sees the draft on step 2; "Send to the firm" goes through the GL-07 Send email pop-up (`previewClientEditSend`). The item-by-item status of the whole CR, checked against the code, is in `docs/context/CR-2026-11-STATUS.md`.
 
+- **P1 fixes (11 Nov, follow-up):** GL-09 name casing in every generator (with a per-template test), GL-01 step links for every notification plus the overview fallback and the `#not-permitted` reason, GL-07 attachments in the step email pop-up and "Emails sent from this step" (`GET /api/engagements/:id/emails-sent`), NV-01 super admin views, NV-02 e2e (`e2e/incorporation-sidebar.spec.ts`) and a deeper NV-04 link audit. The two e2e specs have not been run yet. Status per item: `docs/context/CR-2026-11-STATUS.md`.
+
 Notes:
 - **Background exports (GL-06, PR-02)** run in `after()` (`src/lib/exports/background-export.ts`). The file is kept in `export_files` and S3 `exports/` for 30 days, and only its maker can download it, through `/api/exports/[id]`. No migration was needed.
 - **Waiting on the owner:**

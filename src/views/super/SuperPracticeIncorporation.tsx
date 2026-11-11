@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { ChevronRight, Clock } from 'lucide-react';
 import { useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import StaffPracticeIncorporation from '@/views/practice/StaffPracticeIncorporation';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -34,6 +36,13 @@ import { superEngagementHref } from '@/lib/super/super-overview';
 const SUPER_INCORPORATION_HREF = '/app/super/practice/incorporation';
 
 export default function SuperPracticeIncorporation() {
+  // NV-01: the sidebar's SPICe+ Part A, Part B, Board resolutions and Documents leaves open the
+  // shared list in that view (the super admin works in the admin shell), not this overview again.
+  const view = useSearchParams()?.get('view');
+  return view ? <StaffPracticeIncorporation base="/app/admin" /> : <SuperIncorporationOverview />;
+}
+
+function SuperIncorporationOverview() {
   const query = useSuperInsights();
   const insights = query.data;
   // Days in each stage and expected certificates come from the step events (G-13).
