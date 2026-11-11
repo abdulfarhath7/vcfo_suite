@@ -159,11 +159,22 @@ describe('channel rules', () => {
     expect(emailsStaffViaResend('board_resolution_shared')).toBe(false);
   });
 
-  it('routes client-fill mail: staff Resend for ask/decline, direct send on approval', () => {
+  it('routes client-fill mail: staff Resend for ask/decline; the approval opens the Send pop-up', () => {
     expect(emailsStaffViaResend('client_fill_requested')).toBe(true);
     expect(emailsStaffViaResend('client_fill_declined')).toBe(true);
     expect(emailsStaffViaResend('client_fill_approved')).toBe(false);
-    expect(opensClientOutgoingDraft('client_fill_approved')).toBe(false);
+    expect(opensClientOutgoingDraft('client_fill_approved')).toBe(true);
+  });
+
+  it('GL-07: no staff action emails the client by itself', () => {
+    for (const event of ['client_fill_approved', 'step_awaiting_client_approval', 'review_accepted', 'docs_shared', 'request_created'] as const) {
+      expect(opensClientOutgoingDraft(event)).toBe(true);
+    }
+    // A lead's direct-flow submit goes to the client through the pop-up; a client's own submit is staff news.
+    expect(opensClientOutgoingDraft('step_submitted', 'pre-4', 'intern')).toBe(true);
+    expect(opensClientOutgoingDraft('step_submitted', 'pre-1', 'client')).toBe(false);
+    // The board resolution sent back is the lead's news, never a client email.
+    expect(opensClientOutgoingDraft('review_rejected', 'pre-2')).toBe(false);
   });
 
   it('sends the lead→manager ask from the lead mailbox', () => {

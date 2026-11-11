@@ -643,7 +643,10 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     // Client → staff: Resend From company_name@sbctrack.in
     // Intern → manager: Graph from the lead mailbox when connected, else Resend
     // Lead/manager → client: in-app compose + Graph Mail.Send (CC admin + lead on accept)
-    if (!input.inAppOnly && opensClientOutgoingDraft(input.event, input.itemId)) {
+    // The manager's approval and a lead's direct-flow submit build their own drafts below (GL-07).
+    const ownDraft =
+      input.event === 'client_fill_approved' || input.event === 'step_awaiting_client_approval' || input.event === 'step_submitted';
+    if (!input.inAppOnly && !ownDraft && opensClientOutgoingDraft(input.event, input.itemId)) {
       email.outgoingDraft = buildOutgoingClientDraft(
         input,
         recipients,
@@ -725,48 +728,19 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
           title: input.requestLabel,
         });
 
-        let sentViaOutlook = false;
-        if (input.outlookCtx) {
-          try {
-            await sendMailViaOutlook(input.outlookCtx, {
-              to,
-              ...(cc.length > 0 ? { cc } : {}),
-              subject: copy.subject,
-              html: copy.html,
-              text: copy.text,
-            });
-            for (const addr of to) {
-              email.attempted += 1;
-              email.sent.push(addr);
-            }
-            pushEmailSubject(email, copy.subject);
-            sentViaOutlook = true;
-          } catch (err) {
-            const message = err instanceof Error ? err.message : 'outlook_send_failed';
-            if (message !== 'outlook_not_connected' && message !== 'outlook_not_configured') {
-              console.error('[notify] outlook manager→client fill request failed', message);
-            }
-          }
-        }
-
-        if (!sentViaOutlook) {
-          for (const addr of to) {
-            queue.push({
-              to: addr,
-              subject: copy.subject,
-              run: () =>
-                sendEmail({
-                  to: addr,
-                  cc,
-                  from: fromForCompany(recipients),
-                  replyTo: actor ? formatReplyTo(actor) : undefined,
-                  subject: copy.subject,
-                  html: copy.html,
-                  text: copy.text,
-                  purpose: `progress.${input.event}.client`,
-                }),
-            });
-          }
+        // GL-07: no automatic email. The manager reviews it in the "Send email" pop-up; on Accept the
+        // review_accepted draft already went to the client, so this one only fills in when it is alone.
+        if (!email.outgoingDraft) {
+          email.outgoingDraft = {
+            to,
+            ...(cc.length > 0 ? { cc } : {}),
+            subject: copy.subject,
+            html: copy.html,
+            text: copy.text,
+            engagementId: recipients.appId,
+            companyName: company,
+            itemId: input.itemId,
+          };
         }
       }
     }
@@ -792,22 +766,19 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
         audience: 'client',
         actor: directActor,
       });
-      for (const addr of to) {
-        queue.push({
-          to: addr,
+      // GL-07: the lead reviews the client email in the "Send email" pop-up; nothing leaves by itself.
+      void actor;
+      if (to.length > 0 && !email.outgoingDraft) {
+        email.outgoingDraft = {
+          to,
+          ...(cc.length > 0 ? { cc } : {}),
           subject: copy.subject,
-          run: () =>
-            sendEmail({
-              to: addr,
-              cc,
-              from: fromForCompany(recipients),
-              replyTo: actor ? formatReplyTo(actor) : undefined,
-              subject: copy.subject,
-              html: copy.html,
-              text: copy.text,
-              purpose: `progress.${input.event}.client`,
-            }),
-        });
+          html: copy.html,
+          text: copy.text,
+          engagementId: recipients.appId,
+          companyName: company,
+          itemId: input.itemId,
+        };
       }
     }
 

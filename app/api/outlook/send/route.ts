@@ -20,6 +20,7 @@ import {
 import type { GraphFileAttachment } from '@/lib/outlook/oauth';
 import { getObjectBuffer } from '@/storage/s3';
 import { publicErrorMessage } from '@/lib/api-error';
+import { recordEmailSent } from '@/lib/email/record-email-sent';
 
 const emailList = z.union([z.string().email(), z.array(z.string().email())]);
 
@@ -46,6 +47,9 @@ const bodySchema = z.object({
     .optional(),
   /** Vault documents (documents-table ids) attached by reference; read through the scoped repository. */
   documentIds: z.array(z.string().uuid()).max(ATTACHMENTS_MAX_COUNT).optional(),
+  /** The project and step the email is about, for the audit record (GL-07). */
+  engagementId: z.string().trim().max(100).optional(),
+  itemId: z.string().trim().max(100).optional(),
 });
 
 type SendBody = z.infer<typeof bodySchema>;
@@ -244,6 +248,8 @@ export async function POST(request: Request) {
       text: text || undefined,
       attachments: attached.attachments,
     });
+    // GL-07: the audit log records who sent what, to whom, and when.
+    await recordEmailSent(guard.ctx, { to, cc, subject: data.subject, engagementId: data.engagementId, itemId: data.itemId, via: 'outlook' });
     return NextResponse.json({
       ok: true,
       from: sent.msEmail,
