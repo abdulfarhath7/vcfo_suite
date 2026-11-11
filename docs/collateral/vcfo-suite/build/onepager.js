@@ -18,7 +18,7 @@ async function main(out) {
   pres.defineSlideMaster({ title: 'One-pager', background: { color: C.white }, objects: [] });
   pres.addSection({ title: 'One-pager' });
   const s = pres.addSlide({ masterName: 'One-pager', sectionTitle: 'One-pager' });
-  const label = (t, x, y, w = 3, color = C.orange) => T(s, t, { x, y, w, h: 0.18, fontSize: 7.5, bold: true, color, charSpacing: 1.4 });
+  const label = (t, x, y, w = 3, color = C.orangeText) => T(s, t, { x, y, w, h: 0.18, fontSize: 7.5, bold: true, color, charSpacing: 1.4 });
 
   // 1 ─ Hero
   const HH = 3.5;
@@ -26,8 +26,8 @@ async function main(out) {
   s.addShape(pres.shapes.RECTANGLE, { x: 0, y: 0, w: W, h: 0.06, fill: { color: C.orange }, line: { type: 'none' } });
   s.addImage({ data: LOGO.onBlack, x: M, y: 0.32, w: 1.65, h: 1.65 / LOGO.ratio, altText: 'VCFO Suite by SBC logo' });
   T(s, 'app.sbctrack.in', { x: W - M - 2, y: 0.4, w: 2, h: 0.25, fontSize: 8.5, color: HEX.soft, align: 'right', fontFace: MONO });
-  label('STEADFAST BUSINESS CONSULTING', M, 0.98, 4);
-  T(s, [{ text: 'Your company, incorporated and compliant — ', options: { color: C.white } }, { text: 'in one app.', options: { color: C.orange } }], { x: M, y: 1.2, w: 6.9, h: 0.92, fontSize: 25, bold: true, lineSpacingMultiple: 0.95 });
+  label('STEADFAST BUSINESS CONSULTING', M, 0.98, 4, C.orange);
+  T(s, [{ text: 'Your company, incorporated and compliant — ', options: { color: C.white } }, { text: 'in one app.', options: { color: C.orange } }], { x: M, y: 1.2, w: 5.6, h: 0.92, fontSize: 25, bold: true, lineSpacingMultiple: 0.95 });
   T(s, 'VCFO Suite is the web app SBC, a CA and CMA-led firm, uses to set up your Indian company and run its whole compliance life, with you inside the same app.', { x: M, y: 2.14, w: 6.9, h: 0.42, fontSize: 9.5, color: HEX.soft, lineSpacingMultiple: 1.1 });
   const tiles = [['34', 'SPICe+ steps'], ['5', 'roles, one app'], ['1', 'record from day 0 to every filing'], ['2-in-1', 'platform + CA team']];
   const tw = (CW - 3 * 0.12) / 4;
@@ -86,7 +86,7 @@ async function main(out) {
     s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: ch, fill: { color: C.white }, line: { color: HEX.line, width: 0.75 } });
     s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: 0.05, fill: { color: bar }, line: { type: 'none' } });
     code(s, c, x + 0.12, y + 0.16, { fill: C.navy, color: C.white, size: 7, h: 0.2, w: c.length > 3 ? 0.6 : 0.36 });
-    if (sn && SOON) pill(s, 'COMING SOON', x + cw - 0.92, y + 0.16, { h: 0.18, size: 6, fill: 'FFF4DC', color: C.amber, w: 0.8, charSpacing: 0.4 });
+    if (sn && SOON) pill(s, 'COMING SOON', x + cw - 0.92, y + 0.16, { h: 0.18, size: 6, fill: HEX.cautionSoft, color: HEX.caution, w: 0.8, charSpacing: 0.4 });
     T(s, t, { x: x + 0.12, y: y + 0.4, w: cw - 0.24, h: 0.2, fontSize: 9, bold: true, color: C.navy });
     T(s, b, { x: x + 0.12, y: y + 0.6, w: cw - 0.24, h: 0.36, fontSize: 7.4, color: C.muted, lineSpacingMultiple: 1.05 });
   });
@@ -112,7 +112,7 @@ async function main(out) {
   inside.forEach(([t, d], i) => {
     const col = Math.floor(i / 6), row = i % 6;
     const x = M + col * (colW + 0.15), y = y4 + 0.24 + row * 0.25;
-    T(s, String(i + 1).padStart(2, '0'), { x, y, w: 0.24, h: 0.24, fontSize: 7, bold: true, color: C.orange, fontFace: MONO, valign: 'middle' });
+    T(s, String(i + 1).padStart(2, '0'), { x, y, w: 0.24, h: 0.24, fontSize: 7, bold: true, color: C.orangeText, fontFace: MONO, valign: 'middle' });
     T(s, [{ text: t, options: { bold: true, color: C.navy } }, { text: d ? ' · ' + d : '', options: { color: C.muted } }], { x: x + 0.26, y, w: colW - 0.26, h: 0.24, fontSize: 7, valign: 'middle' });
   });
   label('WHAT YOU RECEIVE', rx2, y4, 3);

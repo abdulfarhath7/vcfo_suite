@@ -16,7 +16,7 @@ async function main(out) {
   const { C, T, ico, pill, code, soon, card } = mkDraw(pres, I);
 
   const ph = (dark) => [
-    { placeholder: { options: { name: 'eyebrow', type: 'body', x: M, y: 0.36, w: CW, h: 0.2, fontSize: 9, bold: true, color: C.orange, margin: 0, valign: 'top', charSpacing: 1.5, align: 'left' }, text: '' } },
+    { placeholder: { options: { name: 'eyebrow', type: 'body', x: M, y: 0.36, w: CW, h: 0.2, fontSize: 9, bold: true, color: dark ? C.orange : C.orangeText, margin: 0, valign: 'top', charSpacing: 1.5, align: 'left' }, text: '' } },
     { placeholder: { options: { name: 'title', type: 'title', x: M, y: 0.58, w: CW, h: 0.5, fontSize: 28, bold: true, color: dark ? C.white : C.navy, margin: 0, valign: 'top', align: 'left' }, text: '' } },
     { placeholder: { options: { name: 'lede', type: 'body', x: M, y: 1.12, w: 8.2, h: 0.46, fontSize: 11.5, color: dark ? HEX.soft : C.muted, margin: 0, valign: 'top', align: 'left' }, text: '' } },
     { image: { data: dark ? LOGO.onBlack : LOGO.onWhite, x: M, y: H - 0.38, w: 0.2 * LOGO.ratio, h: 0.2, altText: 'VCFO Suite logo' } },
@@ -67,7 +67,7 @@ async function main(out) {
     const cw = (CW - 0.4) / 3;
     p.forEach(([ic, t, b], i) => card(s, { x: M + i * (cw + 0.2), y: 1.8, w: cw, h: 2.4, bar: C.red, iconName: ic, iconColor: HEX.white, iconBg: HEX.red, iconSize: 0.5, title: t, titleLines: 2, body: b, titleSize: 13, bodySize: 10.5, pad: 0.2 }));
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: M, y: 4.38, w: CW, h: 0.55, rectRadius: 0.06, fill: { color: C.tint }, line: { type: 'none' } });
-    T(s, [{ text: 'And then:  ', options: { bold: true, color: C.orange } }, { text: 'licences and DSCs lapse silently, tax notices are answered late, board papers scatter across inboxes and collections are chased by hand.', options: { color: C.navy } }], { x: M + 0.2, y: 4.38, w: CW - 0.4, h: 0.55, fontSize: 10.5, valign: 'middle' });
+    T(s, [{ text: 'And then:  ', options: { bold: true, color: C.brandText } }, { text: 'licences and DSCs lapse silently, tax notices are answered late, board papers scatter across inboxes and collections are chased by hand.', options: { color: C.navy } }], { x: M + 0.2, y: 4.38, w: CW - 0.4, h: 0.55, fontSize: 10.5, valign: 'middle' });
     s.addNotes('Here is what we hear at almost every first meeting. The incorporation runs on email, WhatsApp and Excel, so the founder has to call us to know the status. The same director details get typed into ten documents, and one typo sends the filing back. And once the certificate of incorporation arrives, compliance moves into a diary or a different tool. After that come the quieter failures: lapsed licences, late notice replies, scattered board papers and collections chased by hand.');
   }
 
@@ -138,7 +138,7 @@ async function main(out) {
   // 6 ─ What makes it different (navy)
   {
     const s = slide(true, 'Product');
-    head(s, 'WHAT MAKES IT DIFFERENT', 'Ten things only VCFO Suite does', 'The first four are the reason most clients choose us. The other six are why they stay.');
+    head(s, 'WHAT MAKES IT DIFFERENT', 'Ten things only VCFO Suite does', 'The first four, in white, are the reason most clients choose us. The other six are why they stay.');
     const u = [
       ['U1', 'Incorporation to compliance'], ['U2', 'Documents write themselves'], ['U3', 'Manager approval gate'], ['U4', 'The client is inside the app'], ['U5', 'The app chases for you'],
       ['U6', 'Ask VCFO knows the actual status'], ['U7', 'Board meetings end to end'], ['U8', 'Receivables with forex'], ['U9', 'India-native, not adapted'], ['U10', 'Platform + CA/CMA team'],
@@ -152,13 +152,14 @@ async function main(out) {
     u.forEach(([c, t], i) => {
       const x = M + (i % 5) * (tw + 0.15), y = 1.72 + Math.floor(i / 5) * (th + 0.15);
       const hot = i < 4;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: tw, h: th, rectRadius: 0.07, fill: { color: hot ? C.orange : C.navy2 }, line: hot ? { type: 'none' } : { color: HEX.navy3, width: 0.75 } });
-      T(s, c, { x: x + 0.15, y: y + 0.12, w: 0.8, h: 0.34, fontSize: 15, bold: true, color: hot ? C.navy : C.orange, fontFace: MONO });
-      if (soonSet.has(c) && SOON) pill(s, 'SOON', x + tw - 0.55, y + 0.17, { h: 0.18, size: 6, fill: 'FFF4DC', color: C.amber, w: 0.42, charSpacing: 0.4 });
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x, y, w: tw, h: th, rectRadius: 0.07, fill: { color: hot ? C.white : C.navy2 }, line: hot ? { type: 'none' } : { color: HEX.navy3, width: 0.75 } });
+      if (hot) s.addShape(pres.shapes.RECTANGLE, { x, y, w: tw, h: 0.06, fill: { color: C.orange }, line: { type: 'none' } });
+      T(s, c, { x: x + 0.15, y: y + 0.12, w: 0.8, h: 0.34, fontSize: 15, bold: true, color: hot ? C.orangeText : C.orange, fontFace: MONO });
+      if (soonSet.has(c) && SOON) pill(s, 'SOON', x + tw - 0.55, y + 0.17, { h: 0.18, size: 6, fill: HEX.cautionSoft, color: HEX.caution, w: 0.42, charSpacing: 0.4 });
       T(s, t, { x: x + 0.15, y: y + 0.5, w: tw - 0.25, h: 0.55, fontSize: 10, bold: true, color: hot ? C.navy : C.white, lineSpacingMultiple: 1.0 });
-      T(s, sub[c], { x: x + 0.15, y: y + 1.05, w: tw - 0.25, h: 0.42, fontSize: 8, color: hot ? C.navy : HEX.soft, lineSpacingMultiple: 1.05 });
+      T(s, sub[c], { x: x + 0.15, y: y + 1.05, w: tw - 0.25, h: 0.42, fontSize: 8, color: hot ? C.muted : HEX.soft, lineSpacingMultiple: 1.05 });
     });
-    s.addNotes('If you remember one slide, make it this one. These are the ten things that set VCFO Suite apart. The four in orange matter most: incorporation and compliance on one record, documents that write themselves, a manager approval gate so nothing unchecked reaches the client, and the client working inside the app instead of chasing emails. The other six, from automation and Ask VCFO to board meetings, receivables and our own CA team, are why clients stay with us year after year.');
+    s.addNotes('If you remember one slide, make it this one. These are the ten things that set VCFO Suite apart. The four in white matter most: incorporation and compliance on one record, documents that write themselves, a manager approval gate so nothing unchecked reaches the client, and the client working inside the app instead of chasing emails. The other six, from automation and Ask VCFO to board meetings, receivables and our own CA team, are why clients stay with us year after year.');
   }
 
   // 7 ─ How one step moves
@@ -177,7 +178,7 @@ async function main(out) {
       const x = M + i * (bw + 0.3);
       const gate = i === 2;
       s.addShape(pres.shapes.RECTANGLE, { x, y: by, w: bw, h: bh, fill: { color: gate ? C.navy : C.off }, line: { type: 'none' } });
-      T(s, String(i + 1), { x: x + 0.15, y: by + 0.14, w: 0.4, h: 0.3, fontSize: 12, bold: true, color: C.orange, fontFace: MONO });
+      T(s, String(i + 1), { x: x + 0.15, y: by + 0.14, w: 0.4, h: 0.3, fontSize: 12, bold: true, color: gate ? C.orange : C.orangeText, fontFace: MONO });
       ico(s, ic, x + 0.15, by + 0.55, 0.5, gate ? HEX.navy : HEX.white, HEX.orange);
       T(s, t, { x: x + 0.15, y: by + 1.15, w: bw - 0.25, h: 0.48, fontSize: 11, bold: true, color: gate ? C.white : C.navy, lineSpacingMultiple: 1.0 });
       T(s, b, { x: x + 0.15, y: by + 1.62, w: bw - 0.25, h: 0.42, fontSize: 9, color: gate ? HEX.soft : C.muted });
@@ -207,7 +208,7 @@ async function main(out) {
       if (big) T(s, big, { x: x + 0.15, y: y + 0.62, w: cw - 0.3, h: 0.3, fontSize: 12, bold: true, color: C.orange, fontFace: MONO });
       T(s, b, { x: x + 0.15, y: y + (big ? 0.95 : 0.65), w: cw - 0.3, h: 0.45, fontSize: 8.8, color: HEX.soft });
     });
-    if (SOON) pill(s, 'AUTOMATION COMING SOON', W - M - 1.75, 0.34, { h: 0.22, size: 6.5, fill: 'FFF4DC', color: C.amber, line: HEX.amber, w: 1.75, charSpacing: 0.6 });
+    if (SOON) pill(s, 'AUTOMATION COMING SOON', W - M - 1.75, 0.34, { h: 0.22, size: 6.5, fill: HEX.cautionSoft, color: HEX.caution, line: HEX.cautionLine, w: 1.75, charSpacing: 0.6 });
     const rx = M + lw + 0.25, rw = CW - lw - 0.25;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: rx, y: 1.75, w: rw, h: 3.05, rectRadius: 0.07, fill: { color: C.white }, line: { type: 'none' } });
     ico(s, 'bot', rx + 0.2, 1.92, 0.42, HEX.navy, HEX.orange);
@@ -247,7 +248,7 @@ async function main(out) {
   {
     const s = slide(false, 'Product');
     head(s, 'ONE APP, FIVE ROLES', 'One record, and each role sees its part', 'Role scoping is applied to every query. A client never sees another client’s data (U3, U4).');
-    const hdr = (t) => ({ text: t, options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 8.5, charSpacing: 1 } });
+    const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 8.5, charSpacing: 1 } });
     const rows = [
       ['Super admin', 'Runs the firm: users, settings, every client', 'Everything, firm-wide'],
       ['Admin', 'Runs day-to-day work across clients', 'All clients and reports'],
@@ -257,7 +258,7 @@ async function main(out) {
     ];
     const body = rows.map((r, i) => r.map((c, j) => ({ text: c, options: { fill: { color: i === 4 ? HEX.tint : (i % 2 ? HEX.white : HEX.off) }, bold: j === 0, color: j === 0 ? C.navy : (j === 1 ? C.navy : C.muted) } })));
     s.addTable([[hdr('ROLE'), hdr('MAIN JOB'), hdr('WHAT THEY SEE')], ...body], {
-      x: M, y: 1.75, w: 5.7, colW: [1.15, 2.45, 2.1], fontSize: 9.5, fontFace: 'Public Sans', valign: 'middle', margin: [0.05, 0.1, 0.05, 0.1], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.32, 0.52, 0.52, 0.52, 0.52, 0.52],
+      x: M, y: 1.75, w: 5.7, colW: [1.15, 2.45, 2.1], fontSize: 9.5, fontFace: THEME.bodyFontFace, valign: 'middle', margin: [0.05, 0.1, 0.05, 0.1], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.32, 0.52, 0.52, 0.52, 0.52, 0.52],
     });
     // Screenshot placeholder in a phone frame
     const px = 7.0, pw = 1.75, py = 1.6, phh = 3.35;
@@ -281,7 +282,7 @@ async function main(out) {
       navyCard(s, x, y, tw, 1.1);
       T(s, big, { x: x + 0.18, y: y + 0.1, w: tw - 0.3, h: 0.6, fontSize: 36, bold: true, color: C.orange, valign: 'middle' });
       T(s, t, { x: x + 0.18, y: y + 0.72, w: tw - 0.3, h: 0.28, fontSize: 9.5, color: C.white });
-      if (sn && SOON) pill(s, 'SOON', x + tw - 0.6, y + 0.15, { h: 0.18, size: 6, fill: 'FFF4DC', color: C.amber, w: 0.42, charSpacing: 0.4 });
+      if (sn && SOON) pill(s, 'SOON', x + tw - 0.6, y + 0.15, { h: 0.18, size: 6, fill: HEX.cautionSoft, color: HEX.caution, w: 0.42, charSpacing: 0.4 });
     });
     const p = [
       ['docs', 'Per-director MCA drafts', 'One set per director, one ZIP.', false],
@@ -298,7 +299,7 @@ async function main(out) {
       ico(s, ic, x + 0.14, y + 0.17, 0.44, HEX.white, HEX.navy);
       T(s, t, { x: x + 0.7, y: y + 0.12, w: pw - 0.8, h: 0.28, fontSize: 10.5, bold: true, color: C.navy, valign: 'middle' });
       T(s, b, { x: x + 0.7, y: y + 0.42, w: pw - 0.8, h: 0.26, fontSize: 9, color: C.muted, valign: 'middle' });
-      if (sn && SOON) pill(s, 'SOON', x + pw - 0.55, y + 0.14, { h: 0.18, size: 6, fill: 'FFF4DC', color: C.amber, w: 0.42, charSpacing: 0.4 });
+      if (sn && SOON) pill(s, 'SOON', x + pw - 0.55, y + 0.14, { h: 0.18, size: 6, fill: HEX.cautionSoft, color: HEX.caution, w: 0.42, charSpacing: 0.4 });
     });
     T(s, SOON ? 'Every claim here is built in the platform and can be shown on a working company. Items marked soon are being rolled out now.' : 'Every claim here is a shipped feature we can show live.', { x: M, y: 4.38, w: CW, h: 0.4, fontSize: 11, bold: true, color: C.white, italic: true });
     s.addNotes('We prefer proof to adjectives, so here are the facts. Thirty-four SPICe+ steps. A board agenda library of two hundred and twenty-four items. Invoices in nine currencies. Hosting in AWS Mumbai. Below are six things we can open and show you on a working company today: per-director drafts, the approval gate, the board meeting loop, bank matching, Ask VCFO with citations and the audit log. Bank matching and the currencies are in the receivables module we are rolling out now.');
@@ -332,10 +333,10 @@ async function main(out) {
     const cw = (CW - 0.4) / 3;
     c.forEach(([ic, t, b], i) => {
       const x = M + i * (cw + 0.2), y = 1.8;
-      navyCard(s, x, y, cw, 2.3, i === 0 ? C.orange : C.navy2);
-      ico(s, ic, x + 0.22, y + 0.25, 0.6, i === 0 ? HEX.white : HEX.navy, i === 0 ? HEX.navy : HEX.orange);
-      T(s, t, { x: x + 0.22, y: y + 1.0, w: cw - 0.4, h: 0.5, fontSize: 13.5, bold: true, color: i === 0 ? C.navy : C.white, lineSpacingMultiple: 1.0 });
-      T(s, b, { x: x + 0.22, y: y + 1.5, w: cw - 0.4, h: 0.72, fontSize: 9.8, color: i === 0 ? C.navy : HEX.soft });
+      navyCard(s, x, y, cw, 2.3, i === 0 ? C.brand : C.navy2);
+      ico(s, ic, x + 0.22, y + 0.25, 0.6, i === 0 ? HEX.brand : HEX.navy, i === 0 ? HEX.white : HEX.orange);
+      T(s, t, { x: x + 0.22, y: y + 1.0, w: cw - 0.4, h: 0.5, fontSize: 13.5, bold: true, color: C.white, lineSpacingMultiple: 1.0 });
+      T(s, b, { x: x + 0.22, y: y + 1.5, w: cw - 0.4, h: 0.72, fontSize: 9.8, color: i === 0 ? C.white : HEX.soft });
     });
     T(s, [{ text: 'info@sbcllp.in', options: { bold: true, color: C.white } }, { text: '   ·   ', options: { color: C.orange } }, { text: 'app.sbctrack.in', options: { bold: true, color: C.white } }, { text: '   ·   ', options: { color: C.orange } }, { text: 'Steadfast Business Consulting', options: { color: HEX.soft } }], { x: M, y: 4.38, w: CW, h: 0.4, fontSize: 12, valign: 'middle' });
     s.addNotes('There are three easy ways to start. We can schedule a full demo on a working company. You can start with one company, a new incorporation or one Indian subsidiary, and judge us on the result. Or we can do a compliance health check on an existing company, load its obligations into the calendar and show you what is due, late or missing. Whichever you choose, the contact details are on screen, and we are happy to set up the next step today.');
@@ -362,7 +363,7 @@ async function main(out) {
     const tbl = (list, x) => s.addTable(list.map(([m, f], i) => [
       { text: m, options: { bold: true, color: C.navy, fill: { color: i % 2 ? HEX.white : HEX.off } } },
       { text: f, options: { color: C.muted, fill: { color: i % 2 ? HEX.white : HEX.off } } },
-    ]), { x, y: 1.2, w: (CW - 0.2) / 2, colW: [1.3, (CW - 0.2) / 2 - 1.3], fontSize: 8, fontFace: 'Public Sans', valign: 'middle', margin: [0.04, 0.08, 0.04, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: 0.6 });
+    ]), { x, y: 1.2, w: (CW - 0.2) / 2, colW: [1.3, (CW - 0.2) / 2 - 1.3], fontSize: 8, fontFace: THEME.bodyFontFace, valign: 'middle', margin: [0.04, 0.08, 0.04, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: 0.6 });
     tbl(mods.slice(0, 6), M);
     tbl(mods.slice(6), M + (CW - 0.2) / 2 + 0.2);
     s.addNotes('This appendix is for reference after the meeting. It lists all twelve module groups and their main features in one place, from the incorporation engine and document generator through the compliance calendar, board meetings and receivables, to the client portal, firm cockpit and the security controls. Items marked soon are built and are being rolled out to production now. If you would like to see any of these live, we can open the app and show you.');

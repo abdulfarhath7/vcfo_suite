@@ -5,16 +5,24 @@ These are the three sales documents built from the prompts in `VCFO-SUITE-COLLAT
 | File | Format | Where the unique features lead |
 |---|---|---|
 | `VCFO_Suite_Brochure.pptx` / `.pdf` | 14 pages, A4 portrait | The cover (U1 to U4), page 2, the hero panels on pages 5 to 10, and page 13 (all ten) |
-| `VCFO_Suite_Corporate_Deck.pptx` / `.pdf` | 14 slides, 16:9, speaker notes on every slide (74 to 83 words each) | Slide 4 (the whole tool), slide 6 (all ten, U1 to U4 in orange), slide 8 (U5, U6) and slide 11 (proof) |
+| `VCFO_Suite_Corporate_Deck.pptx` / `.pdf` | 14 slides, 16:9, speaker notes on every slide (74 to 83 words each) | Slide 4 (the whole tool), slide 6 (all ten, U1 to U4 on white cards), slide 8 (U5, U6) and slide 11 (proof) |
 | `VCFO_Suite_One_Pager.pptx` / `.pdf` | 1 page, A4 portrait | The "What makes it different" band in the centre and the "Proven in the platform" chip row |
 
 The `.pptx` files are fully editable. The PDFs have the fonts embedded and are ready to print or attach to an email.
 
-## Brand
+## Design system
 
-The documents use navy `#15263B`, logo orange `#E9792F` for highlights only, and the logo gradient once (a thin rule on the brochure and deck covers). Surfaces are white and `#FBF7F1`. The status colours and the six status words (Not started, In progress, Waiting, Due soon, Overdue, Done) match the app. Text is set in Public Sans, and identifiers in IBM Plex Mono. The logo comes from `docs/specs/brand/logo/`.
+The documents follow the app's own design system, VCFO Spectrum (`docs/design/design-tokens.json`, version 2), so a client sees the same look on paper as in the app. They do not use the older palette in the prompt file (navy `#15263B`, orange `#E9792F`, warm `#FBF7F1`, Public Sans).
 
-Public Sans and IBM Plex Mono are free Google Fonts. Install both on any computer that edits the `.pptx` files, or PowerPoint will substitute another font.
+- **Type:** Roboto for text and Roboto Mono for identifiers, as in `app/layout.tsx`.
+- **Colour:** navy `#0a2540` (ink and sidebar) and the cool surface `#f6f8fb`. Orange `#f26b1d` is used for marks and large figures, and `#b54708` when orange is small text. Indigo `#635bff`, the app's action colour, marks the main call to action and the call-out strips.
+- **Status colours:** the app's tokens with the six status words: Done `#0b7a43`, In progress `#0a5fc2`, Waiting `#06708c`, Due soon `#9a4d00`, Overdue `#c0182f`, Not started `#4e5d73`. "Coming soon" uses the warning-banner colours (`caution`).
+- **Shapes:** 6px corners on every box, a 1.5px hairline edge, a 3px coloured top edge like the app's KPI cards, rounded-square icon tiles, table heads on `surface-sunken`, no gradients, no shadows and no pills.
+- **Logo:** the files in `docs/specs/brand/logo/`.
+
+All the tokens sit in one place, `build/shared.js`, so a later change to the design system means one edit and a rebuild.
+
+Roboto and Roboto Mono are free Google Fonts. Install both on any computer that edits the `.pptx` files, or PowerPoint will substitute another font. The PDFs have the fonts embedded.
 
 ## "Coming soon" tags
 
@@ -67,7 +75,7 @@ Good optional additions are the SPICe+ checklist with red marks (brochure page 5
 
 ## Rebuilding
 
-The generators are in `build/`. `shared.js` holds the brand kit (colours, icons, cards, badges), and `brochure.js`, `deck.js` and `onepager.js` each build one file. They use pptxgenjs, and `vendor/apply_theme.js` writes the brand colours into each file's theme, so changing a theme colour in PowerPoint recolours the whole document.
+The generators are in `build/`. `shared.js` holds the brand kit (colours, icons, cards, badges), and `brochure.js`, `deck.js` and `onepager.js` each build one file. They use pptxgenjs. `shared.js` also turns every box into a 6px-cornered Spectrum box, and `vendor/apply_theme.js` writes the Spectrum colours into each file's theme, so changing a theme colour in PowerPoint recolours the whole document.
 
 ```bash
 cd docs/collateral/vcfo-suite/build && npm install && ./build.sh

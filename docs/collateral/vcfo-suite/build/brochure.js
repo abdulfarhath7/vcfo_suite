@@ -22,7 +22,7 @@ async function main(out) {
     title: 'VCFO page',
     background: { color: C.white },
     objects: [
-      { placeholder: { options: { name: 'eyebrow', type: 'body', x: M, y: 0.6, w: CW, h: 0.22, fontSize: 8.5, bold: true, color: C.orange, margin: 0, valign: 'top', charSpacing: 1.5 }, text: '' } },
+      { placeholder: { options: { name: 'eyebrow', type: 'body', x: M, y: 0.6, w: CW, h: 0.22, fontSize: 8.5, bold: true, color: C.orangeText, margin: 0, valign: 'top', charSpacing: 1.5 }, text: '' } },
       { placeholder: { options: { name: 'title', type: 'title', x: M, y: 0.86, w: CW, h: 0.8, fontSize: 24, bold: true, color: C.navy, margin: 0, valign: 'top', lineSpacingMultiple: 0.95 }, text: '' } },
       { placeholder: { options: { name: 'lede', type: 'body', x: M, y: 1.72, w: 6.5, h: 0.62, fontSize: 10.5, color: C.muted, margin: 0, valign: 'top', lineSpacingMultiple: 1.12 }, text: '' } },
       { image: { data: LOGO.onWhite, x: M, y: H - 0.52, w: 0.22 * LOGO.ratio, h: 0.22, altText: 'VCFO Suite logo' } },
@@ -39,7 +39,7 @@ async function main(out) {
     if (lede) s.addText(lede, { placeholder: 'lede', align: 'left', valign: 'top' });
   };
   // Tinted call-out strip at the foot of a page.
-  const strip = (s, y, h, lead, text, { fill = C.tint, leadColor = C.orange, color = C.navy, size = 9.5 } = {}) => {
+  const strip = (s, y, h, lead, text, { fill = C.tint, leadColor = C.brandText, color = C.navy, size = 9.5 } = {}) => {
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: M, y, w: CW, h, rectRadius: 0.08, fill: { color: fill }, line: { type: 'none' } });
     T(s, [{ text: lead + '  ', options: { bold: true, color: leadColor } }, { text, options: { color } }], { x: M + 0.25, y, w: CW - 0.5, h, fontSize: size, valign: 'middle', lineSpacingMultiple: 1.12 });
   };
@@ -51,7 +51,7 @@ async function main(out) {
     T(s, title, { x: x + 1.05, y: y + 0.16, w: w - 1.25 - (soonTag && SOON ? 1.0 : 0), h: 0.4, fontSize: titleSize, bold: true, color: C.white, valign: 'middle' });
     T(s, body, { x: x + 1.05, y: y + 0.58, w: w - 1.25, h: h - 0.68, fontSize: 8.8, color: HEX.soft, lineSpacingMultiple: 1.12 });
   };
-  const label = (s, text, x, y, w = 3, color = C.orange) => T(s, text, { x, y, w, h: 0.2, fontSize: 8, bold: true, color, charSpacing: 1.4 });
+  const label = (s, text, x, y, w = 3, color = C.orangeText) => T(s, text, { x, y, w, h: 0.2, fontSize: 8, bold: true, color, charSpacing: 1.4 });
 
   // =============== 1. COVER ===============
   pres.addSection({ title: 'Cover' });
@@ -80,7 +80,7 @@ async function main(out) {
       T(s, small, { x: x + 0.16, y: y + 0.66, w: tw - 0.3, h: 0.45, fontSize: 8.5, color: HEX.soft, lineSpacingMultiple: 1.1 });
     });
 
-    label(s, 'WHAT ONLY VCFO SUITE DOES', M, 7.0, 4);
+    label(s, 'WHAT ONLY VCFO SUITE DOES', M, 7.0, 4, C.orange);
     T(s, 'Ten unique features · the first four below · all ten on page 13', { x: M + 3.0, y: 7.0, w: CW - 3.0, h: 0.2, fontSize: 8, color: HEX.soft, align: 'right' });
     const u = [
       ['U1', 'Incorporation to compliance', 'In one app, on the same record from the questionnaire to every filing. No hand-over, no re-entry.'],
@@ -115,7 +115,7 @@ async function main(out) {
 
     const px = M + 3.85, pw = CW - 3.85;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: px, y: 2.55, w: pw, h: 2.72, rectRadius: 0.08, fill: { color: C.navy }, line: { type: 'none' } });
-    label(s, 'THE SHORT VERSION', px + 0.25, 2.78, 2.5);
+    label(s, 'THE SHORT VERSION', px + 0.25, 2.78, 2.5, C.orange);
     T(s, 'One app. One record. One accountable team.', { x: px + 0.25, y: 3.05, w: pw - 0.5, h: 0.8, fontSize: 17, bold: true, color: C.white, lineSpacingMultiple: 0.98 });
     [['U1', 'The record that incorporates the company also runs its compliance.'], ['U4', 'The client works in the app, not on email threads.'], ['U10', 'SBC’s CA and CMA team is part of the engagement.']].forEach(([c, t], i) => {
       const y = 3.98 + i * 0.4;
@@ -157,7 +157,7 @@ async function main(out) {
     });
     const rx = M + lw + 0.2, rw = CW - lw - 0.2;
     s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: rx, y: 2.55, w: rw, h: 3.6, rectRadius: 0.08, fill: { color: C.navy }, line: { type: 'none' } });
-    label(s, 'THE CONSEQUENCES', rx + 0.2, 2.75, rw - 0.4);
+    label(s, 'THE CONSEQUENCES', rx + 0.2, 2.75, rw - 0.4, C.orange);
     const cons = ['Late fees and penalties on missed ROC, GST and TDS dates.', 'Licences, DSCs and registrations that lapse unnoticed.', 'Directors embarrassed by notices, resubmissions and unsigned minutes.', 'Months lost between deciding to incorporate and being ready to trade.'];
     T(s, cons.map((t, i) => ({ text: t, options: { bullet: { indent: 10 }, breakLine: i < cons.length - 1, paraSpaceAfter: 7 } })), { x: rx + 0.2, y: 3.08, w: rw - 0.35, h: 2.95, fontSize: 9.3, color: C.white, lineSpacingMultiple: 1.12 });
 
@@ -201,7 +201,7 @@ async function main(out) {
       T(s, sub, { x: M + i * sw, y: cy + r + 0.3, w: sw, h: 0.34, fontSize: 7.5, color: C.muted, align: 'center' });
     });
 
-    const hdr = (t) => ({ text: t, options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 8, charSpacing: 1 } });
+    const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 8, charSpacing: 1 } });
     const rows = [
       ['Incorporation engine', false, 'Runs the 34-step SPICe+ checklist in MCA order.', 'Part A name intake; Part B capital, office, directors, subscribers, KYC and DSC; steps open in order; red marks on missing fields; auto-save.'],
       ['Document generator', false, 'Builds the MCA drafts from the checklist answers.', 'MOA, AOA, DIR-2, DIR-8, subscription sheets, declarations, letters, board resolution; one set per director; one ZIP.'],
@@ -224,7 +224,7 @@ async function main(out) {
       ];
     });
     s.addTable([[hdr('MODULE'), hdr('WHAT IT DOES'), hdr('KEY CAPABILITIES')], ...body], {
-      x: M, y: 3.85, w: CW, colW: [1.55, 2.05, 3.47], fontSize: 8, fontFace: 'Public Sans', valign: 'middle',
+      x: M, y: 3.85, w: CW, colW: [1.55, 2.05, 3.47], fontSize: 8, fontFace: THEME.bodyFontFace, valign: 'middle',
       margin: [0.05, 0.08, 0.05, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.28, ...rows.map(() => 0.55)],
     });
     strip(s, 9.55, 0.95, 'Five roles, one approval gate.', 'Super admin, admin, manager, project lead and client share one app. A lead’s draft stays hidden until a manager approves it, so the client only ever sees checked work.');
@@ -259,7 +259,7 @@ async function main(out) {
       T(s, t, { x: lx + 0.75, y, w: 1.45, h: 0.3, fontSize: 8.8, bold: true, color: C.navy, valign: 'middle' });
       pill(s, st, lx + lw - 1.05, y + 0.04, { h: 0.22, size: 7, fill: col, color: C.white, w: 0.87, charSpacing: 0 });
     });
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: lx + 0.18, y: ly + 3.0, w: lw - 0.36, h: 0.45, rectRadius: 0.05, fill: { color: 'FBE9E7' }, line: { type: 'none' } });
+    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: lx + 0.18, y: ly + 3.0, w: lw - 0.36, h: 0.45, rectRadius: 0.05, fill: { color: HEX.dangerSoft }, line: { type: 'none' } });
     ico(s, 'alert', lx + 0.28, ly + 3.09, 0.26, HEX.red);
     T(s, 'Red marks show the missing fields before anyone submits.', { x: lx + 0.62, y: ly + 3.0, w: lw - 0.85, h: 0.45, fontSize: 8, color: C.red, bold: true, valign: 'middle' });
 
@@ -311,7 +311,7 @@ async function main(out) {
     const pw = (CW - 5 * 0.1) / 6;
     words.forEach(([t, c], i) => pill(s, t, M + i * (pw + 0.1), 5.05, { h: 0.32, size: 8.5, fill: c, color: C.white, w: pw, charSpacing: 0 }));
 
-    const hdr = (t) => ({ text: t, options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 8, charSpacing: 1 } });
+    const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 8, charSpacing: 1 } });
     const rows = [
       ['GST', 'Every GST-registered company', 'Monthly or quarterly returns, and the annual return'],
       ['TDS', 'Every company that deducts tax at source', 'Monthly deposits and quarterly returns'],
@@ -330,7 +330,7 @@ async function main(out) {
       ];
     });
     s.addTable([[hdr('OBLIGATION'), hdr('WHO'), hdr('WHEN'), hdr('WHERE IT SHOWS')], ...body], {
-      x: M, y: 5.65, w: CW, colW: [1.05, 2.25, 2.0, 1.77], fontSize: 8.3, fontFace: 'Public Sans', valign: 'middle',
+      x: M, y: 5.65, w: CW, colW: [1.05, 2.25, 2.0, 1.77], fontSize: 8.3, fontFace: THEME.bodyFontFace, valign: 'middle',
       margin: [0.05, 0.08, 0.05, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.3, ...rows.map(() => 0.48)],
     });
     T(s, 'Exact due dates follow the current notifications for each law and are kept up to date by SBC’s team.', { x: M, y: 8.92, w: CW, h: 0.22, fontSize: 7.5, italic: true, color: C.muted });
@@ -520,7 +520,7 @@ async function main(out) {
     });
 
     T(s, 'One app, five roles', { x: M, y: 6.65, w: 3, h: 0.28, fontSize: 11.5, bold: true, color: C.navy });
-    const hdr = (t) => ({ text: t, options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 7.8, align: 'center' } });
+    const hdr = (t) => ({ text: t, options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 7.8, align: 'center' } });
     const Y = '✓', N = '–';
     const rows = [
       ['Firm users and settings', Y, Y, N, N, N],
@@ -531,8 +531,8 @@ async function main(out) {
       ['Approved documents, due dates, messages', Y, Y, Y, Y, Y],
     ];
     const body = rows.map((r, i) => r.map((c, j) => ({ text: c, options: { fill: { color: i % 2 ? HEX.white : HEX.off }, color: j === 0 ? C.navy : (c === Y ? C.green : C.navy), bold: j === 0 || c === Y, align: j === 0 ? 'left' : 'center', fontSize: c === Y ? 10 : 8 } })));
-    s.addTable([[{ text: 'FEATURE', options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 7.8 } }, hdr('SUPER ADMIN'), hdr('ADMIN'), hdr('MANAGER'), hdr('LEAD'), hdr('CLIENT')], ...body], {
-      x: M, y: 7.02, w: CW, colW: [2.42, 0.93, 0.93, 0.93, 0.93, 0.93], fontSize: 8, fontFace: 'Public Sans', valign: 'middle',
+    s.addTable([[{ text: 'FEATURE', options: { bold: true, color: C.muted, fill: { color: HEX.sunken }, fontSize: 7.8 } }, hdr('SUPER ADMIN'), hdr('ADMIN'), hdr('MANAGER'), hdr('LEAD'), hdr('CLIENT')], ...body], {
+      x: M, y: 7.02, w: CW, colW: [2.42, 0.93, 0.93, 0.93, 0.93, 0.93], fontSize: 8, fontFace: THEME.bodyFontFace, valign: 'middle',
       margin: [0.04, 0.08, 0.04, 0.08], border: { type: 'solid', color: HEX.line, pt: 0.5 }, rowH: [0.3, ...rows.map(() => 0.34)],
     });
     T(s, 'Simplified view. The platform applies the exact rules to every query, so a client never sees another client’s data.', { x: M, y: 9.42, w: CW, h: 0.22, fontSize: 7.5, italic: true, color: C.muted });
@@ -600,11 +600,11 @@ async function main(out) {
     ph.forEach(([t, list, ic], i) => {
       const x = M + i * (pw + 0.15);
       s.addShape(pres.shapes.RECTANGLE, { x, y: py, w: pw, h: phh, fill: { color: i === 3 ? C.navy : C.white }, line: i === 3 ? { type: 'none' } : { color: HEX.line, width: 0.75 } });
-      T(s, 'PHASE ' + (i + 1), { x: x + 0.15, y: py + 0.18, w: pw - 0.3, h: 0.2, fontSize: 7.5, bold: true, color: C.orange, charSpacing: 1.2 });
+      T(s, 'PHASE ' + (i + 1), { x: x + 0.15, y: py + 0.18, w: pw - 0.3, h: 0.2, fontSize: 7.5, bold: true, color: i === 3 ? C.orange : C.orangeText, charSpacing: 1.2 });
       ico(s, ic, x + pw - 0.5, py + 0.14, 0.32, i === 3 ? HEX.orange : HEX.navy);
       T(s, t, { x: x + 0.15, y: py + 0.55, w: pw - 0.3, h: 0.62, fontSize: 10, bold: true, color: i === 3 ? C.white : C.navy, lineSpacingMultiple: 1.0 });
       T(s, list.map((l, k) => ({ text: l, options: { bullet: { indent: 8 }, breakLine: k < list.length - 1, paraSpaceAfter: 5 } })), { x: x + 0.15, y: py + 1.28, w: pw - 0.25, h: 1.7, fontSize: 8.3, color: i === 3 ? HEX.soft : C.muted, lineSpacingMultiple: 1.1 });
-      T(s, '[SBC to confirm] weeks', { x: x + 0.15, y: py + phh - 0.42, w: pw - 0.3, h: 0.25, fontSize: 7, bold: true, color: i === 3 ? C.orange : C.orange, fontFace: MONO });
+      T(s, '[SBC to confirm] weeks', { x: x + 0.15, y: py + phh - 0.42, w: pw - 0.3, h: 0.25, fontSize: 7, bold: true, color: i === 3 ? C.orange : C.orangeText, fontFace: MONO });
     });
     const tiles = [['34', 'checklist steps tracked on screen from day one'], ['5', 'roles set up at project start, including the client'], ['[SBC to confirm]', 'days from first call to certificate of incorporation']];
     const tw = (CW - 0.3) / 3;
@@ -647,7 +647,7 @@ async function main(out) {
       const dark = i < 3;
       s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: ch, fill: { color: dark ? C.navy : C.white }, line: dark ? { type: 'none' } : { color: HEX.line, width: 0.75 } });
       s.addShape(pres.shapes.RECTANGLE, { x, y, w: cw, h: 0.06, fill: { color: C.orange }, line: { type: 'none' } });
-      T(s, c, { x: x + 0.16, y: y + 0.2, w: cw - 0.3, h: 0.38, fontSize: c.length > 3 ? 15 : 20, bold: true, color: C.orange, fontFace: MONO, valign: 'middle' });
+      T(s, c, { x: x + 0.16, y: y + 0.2, w: cw - 0.3, h: 0.38, fontSize: c.length > 3 ? 15 : 20, bold: true, color: dark ? C.orange : C.orangeText, fontFace: MONO, valign: 'middle' });
       T(s, t, { x: x + 0.16, y: y + 0.66, w: cw - 0.3, h: 0.45, fontSize: 9.8, bold: true, color: dark ? C.white : C.navy, lineSpacingMultiple: 1.0 });
       T(s, b, { x: x + 0.16, y: y + 1.13, w: cw - 0.3, h: 0.9, fontSize: 8.2, color: dark ? HEX.soft : C.muted, lineSpacingMultiple: 1.1 });
     });
@@ -673,7 +673,7 @@ async function main(out) {
   {
     const s = pres.addSlide({ masterName: 'VCFO cover', sectionTitle: 'Contact' });
     s.addImage({ data: LOGO.onBlack, x: M, y: 0.85, w: 2.3, h: 2.3 / LOGO.ratio, altText: 'VCFO Suite by SBC logo' });
-    label(s, 'GET STARTED', M, 2.3, 3);
+    label(s, 'GET STARTED', M, 2.3, 3, C.orange);
     T(s, 'Let’s set up your company properly', { x: M, y: 2.6, w: 6.5, h: 1.3, fontSize: 32, bold: true, color: C.white, lineSpacingMultiple: 0.95 });
     T(s, 'Choose where to start. Each option is a conversation with SBC’s team, with the app open on the table.', { x: M, y: 4.0, w: 6.2, h: 0.6, fontSize: 11.5, color: HEX.soft });
     const opts = [
@@ -683,10 +683,11 @@ async function main(out) {
     ];
     opts.forEach(([ic, t, b], i) => {
       const y = 4.95 + i * 1.32;
-      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: M, y, w: CW, h: 1.15, rectRadius: 0.08, fill: { color: C.navy2 }, line: { color: C.navy3, width: 0.75 } });
-      ico(s, ic, M + 0.25, y + 0.3, 0.55, HEX.navy, HEX.orange);
+      const act = i === 0;
+      s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: M, y, w: CW, h: 1.15, rectRadius: 0.08, fill: { color: act ? C.brand : C.navy2 }, line: act ? { type: 'none' } : { color: C.navy3, width: 0.75 } });
+      ico(s, ic, M + 0.25, y + 0.3, 0.55, act ? HEX.brand : HEX.navy, act ? HEX.white : HEX.orange);
       T(s, t, { x: M + 1.05, y: y + 0.2, w: CW - 1.3, h: 0.3, fontSize: 13, bold: true, color: C.white });
-      T(s, b, { x: M + 1.05, y: y + 0.55, w: CW - 1.3, h: 0.5, fontSize: 9.5, color: HEX.soft });
+      T(s, b, { x: M + 1.05, y: y + 0.55, w: CW - 1.3, h: 0.5, fontSize: 9.5, color: act ? C.white : HEX.soft });
     });
     const cy = 9.1;
     s.addShape(pres.shapes.LINE, { x: M, y: cy, w: CW, h: 0, line: { color: HEX.navy3, width: 0.75 } });
