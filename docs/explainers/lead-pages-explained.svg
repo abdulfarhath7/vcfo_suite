@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1060" viewBox="0 0 1400 1060" font-family="Public Sans, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="1400" height="1060" fill="#eef2f8"/>
+  <text x="20" y="42" font-size="26" font-weight="700" fill="#14213d">Lead portal: what these four pages show</text>
+  <text x="20" y="64" font-size="14" fill="#5b6475">Sample data, made up for this picture. Today = 11 Nov 2026.</text>
+
+  <!-- ============ 1. CLIENT HEALTH ============ -->
+  <g transform="translate(20,84)">
+    <rect width="670" height="470" rx="14" fill="#fff" stroke="#d9dfeb"/>
+    <text x="24" y="40" font-size="22" font-weight="700" fill="#14213d">1. Client health</text>
+    <text x="24" y="64" font-size="13" fill="#5b6475">Score out of 100, every night. Problems take points off. Fix red first.</text>
+
+    <!-- row -->
+    <g transform="translate(0,84)">
+      <text x="24" y="28" font-size="15" font-weight="700" fill="#14213d">Acme Tech Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">No problems found</text>
+      <rect x="320" y="17" width="180" height="12" rx="6" fill="#edf0f5"/><rect x="320" y="17" width="166" height="12" rx="6" fill="#2f9e6a"/>
+      <text x="512" y="28" font-size="16" font-weight="700" fill="#14213d">92</text>
+      <rect x="560" y="12" width="88" height="24" rx="12" fill="#e3f4ec"/><text x="604" y="29" font-size="12" font-weight="700" fill="#1f7a50" text-anchor="middle">Good</text>
+      <line x1="24" y1="72" x2="646" y2="72" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,170)">
+      <text x="24" y="28" font-size="15" font-weight="700" fill="#14213d">Bharat Foods LLP</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">Bank statement asked 19 days ago (-12) · 1 overdue filing (-8)</text>
+      <rect x="320" y="17" width="180" height="12" rx="6" fill="#edf0f5"/><rect x="320" y="17" width="128" height="12" rx="6" fill="#e0a020"/>
+      <text x="512" y="28" font-size="16" font-weight="700" fill="#14213d">71</text>
+      <rect x="560" y="12" width="88" height="24" rx="12" fill="#fdf1d8"/><text x="604" y="29" font-size="12" font-weight="700" fill="#9a6a00" text-anchor="middle">Watch</text>
+      <line x1="24" y1="72" x2="646" y2="72" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,256)">
+      <text x="24" y="28" font-size="15" font-weight="700" fill="#14213d">Kaveri Textiles Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">Silent 30 days (-15) · 2 overdue filings (-16) · 1 notice (-6) · ...</text>
+      <rect x="320" y="17" width="180" height="12" rx="6" fill="#edf0f5"/><rect x="320" y="17" width="94" height="12" rx="6" fill="#e07a20"/>
+      <text x="512" y="28" font-size="16" font-weight="700" fill="#14213d">52</text>
+      <rect x="560" y="12" width="88" height="24" rx="12" fill="#fde6d6"/><text x="604" y="29" font-size="12" font-weight="700" fill="#a34a0a" text-anchor="middle">At risk</text>
+      <line x1="24" y1="72" x2="646" y2="72" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,342)">
+      <text x="24" y="28" font-size="15" font-weight="700" fill="#14213d">Nova Pharma Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">4 overdue filings (-32) · 2 notices (-12) · step blocked (-15) · ...</text>
+      <rect x="320" y="17" width="180" height="12" rx="6" fill="#edf0f5"/><rect x="320" y="17" width="61" height="12" rx="6" fill="#d64545"/>
+      <text x="512" y="28" font-size="16" font-weight="700" fill="#14213d">34</text>
+      <rect x="560" y="12" width="88" height="24" rx="12" fill="#fbe1e1"/><text x="604" y="29" font-size="12" font-weight="700" fill="#a82828" text-anchor="middle">Critical</text>
+      <text x="24" y="76" font-size="12" font-weight="700" fill="#a82828">Fell 2 bands this week: partner gets a check-in task.</text>
+    </g>
+  </g>
+
+  <!-- ============ 2. EXPIRIES ============ -->
+  <g transform="translate(710,84)">
+    <rect width="670" height="470" rx="14" fill="#fff" stroke="#d9dfeb"/>
+    <text x="24" y="40" font-size="22" font-weight="700" fill="#14213d">2. Expiries</text>
+    <text x="24" y="64" font-size="13" fill="#5b6475">Everything with an end date. Alerts at 60, 30 and 7 days, and on expiry.</text>
+    <circle cx="30" cy="88" r="6" fill="#d64545"/><text x="42" y="92" font-size="12" fill="#5b6475">Red: expired or 7 days or less</text>
+    <circle cx="240" cy="88" r="6" fill="#e0a020"/><text x="252" y="92" font-size="12" fill="#5b6475">Amber: within 30 days</text>
+    <circle cx="420" cy="88" r="6" fill="#2f9e6a"/><text x="432" y="92" font-size="12" fill="#5b6475">Green: more than 30 days</text>
+
+    <g font-size="12" fill="#5b6475">
+      <text x="24" y="124" font-weight="700">ITEM</text><text x="270" y="124" font-weight="700">CLIENT</text><text x="440" y="124" font-weight="700">EXPIRES</text>
+    </g>
+    <line x1="24" y1="134" x2="646" y2="134" stroke="#d9dfeb"/>
+
+    <g transform="translate(0,134)">
+      <rect x="0" y="4" width="6" height="56" fill="#d64545"/>
+      <text x="24" y="28" font-size="14" font-weight="700" fill="#14213d">DIR-3 KYC</text><text x="24" y="48" font-size="12" fill="#5b6475">Priya Shah (director)</text>
+      <text x="270" y="36" font-size="13" fill="#14213d">Bharat Foods LLP</text>
+      <text x="440" y="28" font-size="13" fill="#14213d">30 Sep 2026</text><text x="440" y="48" font-size="12" font-weight="700" fill="#a82828">Expired 42 days ago</text>
+      <line x1="24" y1="64" x2="646" y2="64" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,198)">
+      <rect x="0" y="4" width="6" height="56" fill="#d64545"/>
+      <text x="24" y="28" font-size="14" font-weight="700" fill="#14213d">DSC (digital signature)</text><text x="24" y="48" font-size="12" fill="#5b6475">Ravi Kumar · needed for MGT-7 filing!</text>
+      <text x="270" y="36" font-size="13" fill="#14213d">Acme Tech Pvt Ltd</text>
+      <text x="440" y="28" font-size="13" fill="#14213d">14 Nov 2026</text><text x="440" y="48" font-size="12" font-weight="700" fill="#a82828">In 3 days</text>
+      <rect x="560" y="18" width="88" height="26" rx="6" fill="#fff" stroke="#2f6fde"/><text x="604" y="35" font-size="11" font-weight="700" fill="#2f6fde" text-anchor="middle">Mark renewed</text>
+      <line x1="24" y1="64" x2="646" y2="64" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,262)">
+      <rect x="0" y="4" width="6" height="56" fill="#e0a020"/>
+      <text x="24" y="28" font-size="14" font-weight="700" fill="#14213d">FSSAI licence</text><text x="24" y="48" font-size="12" fill="#5b6475">Food business licence</text>
+      <text x="270" y="36" font-size="13" fill="#14213d">Bharat Foods LLP</text>
+      <text x="440" y="28" font-size="13" fill="#14213d">3 Dec 2026</text><text x="440" y="48" font-size="12" font-weight="700" fill="#9a6a00">In 22 days</text>
+      <line x1="24" y1="64" x2="646" y2="64" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,326)">
+      <rect x="0" y="4" width="6" height="56" fill="#2f9e6a"/>
+      <text x="24" y="28" font-size="14" font-weight="700" fill="#14213d">LEI</text><text x="24" y="48" font-size="12" fill="#5b6475">Legal entity identifier</text>
+      <text x="270" y="36" font-size="13" fill="#14213d">Nova Pharma Pvt Ltd</text>
+      <text x="440" y="28" font-size="13" fill="#14213d">26 Dec 2026</text><text x="440" y="48" font-size="12" font-weight="700" fill="#1f7a50">In 45 days</text>
+      <line x1="24" y1="64" x2="646" y2="64" stroke="#edf0f5"/>
+    </g>
+    <g transform="translate(0,390)">
+      <text x="24" y="30" font-size="12" fill="#5b6475">Each alert: renewal task for you + draft request to client (not sent until you send it).</text>
+      <rect x="24" y="44" width="96" height="28" rx="6" fill="#2f6fde"/><text x="72" y="62" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">+ Add item</text>
+    </g>
+  </g>
+
+  <!-- ============ 3. NOTICES ============ -->
+  <g transform="translate(20,574)">
+    <rect width="670" height="470" rx="14" fill="#fff" stroke="#d9dfeb"/>
+    <text x="24" y="40" font-size="22" font-weight="700" fill="#14213d">3. Notices</text>
+    <text x="24" y="64" font-size="13" fill="#5b6475">Govt letters (GST, income tax, TDS, MCA) as cases. Never miss a reply date.</text>
+
+    <!-- notice 1 -->
+    <g transform="translate(0,84)">
+      <rect x="24" y="8" width="44" height="22" rx="5" fill="#e6efff"/><text x="46" y="24" font-size="11" font-weight="700" fill="#2f6fde" text-anchor="middle">GST</text>
+      <text x="80" y="24" font-size="15" font-weight="700" fill="#14213d">ASMT-10 · Kaveri Textiles Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">FY 2024-25 · Demand ₹4,20,000 · Reply due 13 Nov</text>
+      <rect x="520" y="8" width="126" height="24" rx="12" fill="#fbe1e1"/><text x="583" y="25" font-size="12" font-weight="700" fill="#a82828" text-anchor="middle">Due in 2 days</text>
+      <g transform="translate(40,72)" font-size="10" fill="#5b6475" text-anchor="middle">
+        <line x1="0" y1="0" x2="500" y2="0" stroke="#d9dfeb" stroke-width="3"/><line x1="0" y1="0" x2="300" y2="0" stroke="#2f6fde" stroke-width="3"/>
+        <circle cx="0" r="7" fill="#2f6fde"/><circle cx="100" r="7" fill="#2f6fde"/><circle cx="200" r="7" fill="#2f6fde"/><circle cx="300" r="9" fill="#2f6fde" stroke="#bcd3fb" stroke-width="4"/><circle cx="400" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="500" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/>
+        <text x="0" y="24">Received</text><text x="100" y="24">Analysed</text><text x="200" y="24">Docs asked</text><text x="300" y="24" font-weight="700" fill="#2f6fde">Reply drafted</text><text x="400" y="24">Submitted</text><text x="500" y="24">Closed</text>
+      </g>
+      <line x1="24" y1="118" x2="646" y2="118" stroke="#edf0f5"/>
+    </g>
+    <!-- notice 2 -->
+    <g transform="translate(0,206)">
+      <rect x="24" y="8" width="44" height="22" rx="5" fill="#f1e9ff"/><text x="46" y="24" font-size="11" font-weight="700" fill="#6a3fc4" text-anchor="middle">IT</text>
+      <text x="80" y="24" font-size="15" font-weight="700" fill="#14213d">Sec 143(1)(a) · Nova Pharma Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">AY 2025-26 · Adjustment ₹1,10,000 · Reply due 17 Nov</text>
+      <rect x="520" y="8" width="126" height="24" rx="12" fill="#fdf1d8"/><text x="583" y="25" font-size="12" font-weight="700" fill="#9a6a00" text-anchor="middle">Due in 6 days</text>
+      <g transform="translate(40,72)" font-size="10" fill="#5b6475" text-anchor="middle">
+        <line x1="0" y1="0" x2="500" y2="0" stroke="#d9dfeb" stroke-width="3"/><line x1="0" y1="0" x2="100" y2="0" stroke="#2f6fde" stroke-width="3"/>
+        <circle cx="0" r="7" fill="#2f6fde"/><circle cx="100" r="9" fill="#2f6fde" stroke="#bcd3fb" stroke-width="4"/><circle cx="200" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="300" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="400" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="500" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/>
+        <text x="0" y="24">Received</text><text x="100" y="24" font-weight="700" fill="#2f6fde">Analysed</text><text x="200" y="24">Docs asked</text><text x="300" y="24">Reply drafted</text><text x="400" y="24">Submitted</text><text x="500" y="24">Closed</text>
+      </g>
+      <line x1="24" y1="118" x2="646" y2="118" stroke="#edf0f5"/>
+    </g>
+    <!-- notice 3 -->
+    <g transform="translate(0,328)">
+      <rect x="24" y="8" width="44" height="22" rx="5" fill="#e3f4ec"/><text x="46" y="24" font-size="11" font-weight="700" fill="#1f7a50" text-anchor="middle">TDS</text>
+      <text x="80" y="24" font-size="15" font-weight="700" fill="#14213d">Sec 200A intimation · Acme Tech Pvt Ltd</text>
+      <text x="24" y="50" font-size="12" fill="#5b6475">Q2 FY 2026-27 · Demand ₹18,500 · Reply was due 8 Nov</text>
+      <rect x="520" y="8" width="126" height="24" rx="12" fill="#d64545"/><text x="583" y="25" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Overdue 3 days</text>
+      <g transform="translate(40,72)" font-size="10" fill="#5b6475" text-anchor="middle">
+        <line x1="0" y1="0" x2="500" y2="0" stroke="#d9dfeb" stroke-width="3"/>
+        <circle cx="0" r="9" fill="#2f6fde" stroke="#bcd3fb" stroke-width="4"/><circle cx="100" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="200" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="300" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="400" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/><circle cx="500" r="7" fill="#fff" stroke="#c3cad8" stroke-width="2"/>
+        <text x="0" y="24" font-weight="700" fill="#2f6fde">Received</text><text x="100" y="24">Analysed</text><text x="200" y="24">Docs asked</text><text x="300" y="24">Reply drafted</text><text x="400" y="24">Submitted</text><text x="500" y="24">Closed</text>
+      </g>
+      <text x="24" y="122" font-size="12" font-weight="700" fill="#a82828">Overdue: partner alerted too. Submitted and Closed need a manager or admin.</text>
+    </g>
+  </g>
+
+  <!-- ============ 4. COMPANY EVENTS ============ -->
+  <g transform="translate(710,574)">
+    <rect width="670" height="470" rx="14" fill="#fff" stroke="#d9dfeb"/>
+    <text x="24" y="40" font-size="22" font-weight="700" fill="#14213d">4. Company events</text>
+    <text x="24" y="64" font-size="13" fill="#5b6475">Company changed something, so an MCA form is due. App proposes, you approve.</text>
+
+    <!-- event 1: proposed -->
+    <g transform="translate(0,84)">
+      <rect x="16" y="0" width="638" height="112" rx="10" fill="#fffaf0" stroke="#f0d9a6"/>
+      <text x="36" y="28" font-size="15" font-weight="700" fill="#14213d">Registered office moved</text>
+      <rect x="560" y="12" width="80" height="24" rx="12" fill="#fdf1d8"/><text x="600" y="29" font-size="12" font-weight="700" fill="#9a6a00" text-anchor="middle">Proposed</text>
+      <text x="36" y="50" font-size="12" fill="#5b6475">Bharat Foods LLP · on 8 Nov · spotted from a checklist edit</text>
+      <rect x="36" y="62" width="62" height="22" rx="5" fill="#14213d"/><text x="67" y="78" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">INC-22</text>
+      <text x="108" y="78" font-size="12" fill="#14213d">due 8 Dec (30 days)</text>
+      <rect x="440" y="62" width="96" height="28" rx="6" fill="#2f6fde"/><text x="488" y="80" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">Approve</text>
+      <rect x="546" y="62" width="94" height="28" rx="6" fill="#fff" stroke="#c3cad8"/><text x="593" y="80" font-size="12" font-weight="700" fill="#5b6475" text-anchor="middle">Dismiss</text>
+    </g>
+    <!-- event 2: tracked -->
+    <g transform="translate(0,208)">
+      <text x="36" y="28" font-size="15" font-weight="700" fill="#14213d">Director resigned: Ravi Kumar</text>
+      <rect x="560" y="12" width="80" height="24" rx="12" fill="#e6efff"/><text x="600" y="29" font-size="12" font-weight="700" fill="#2f6fde" text-anchor="middle">Tracked</text>
+      <text x="36" y="50" font-size="12" fill="#5b6475">Acme Tech Pvt Ltd · on 4 Nov · told in Ask VCFO chat</text>
+      <rect x="36" y="62" width="62" height="22" rx="5" fill="#14213d"/><text x="67" y="78" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">DIR-12</text>
+      <text x="108" y="78" font-size="12" fill="#14213d">due 4 Dec (30 days) · task made · client asked for documents</text>
+      <line x1="24" y1="100" x2="646" y2="100" stroke="#edf0f5"/>
+    </g>
+    <!-- event 3: done -->
+    <g transform="translate(0,318)">
+      <text x="36" y="28" font-size="15" font-weight="700" fill="#14213d">Shares allotted: 50,000 equity</text>
+      <rect x="560" y="12" width="80" height="24" rx="12" fill="#e3f4ec"/><text x="600" y="29" font-size="12" font-weight="700" fill="#1f7a50" text-anchor="middle">Done</text>
+      <text x="36" y="50" font-size="12" fill="#5b6475">Nova Pharma Pvt Ltd · on 20 Oct · added by hand</text>
+      <rect x="36" y="62" width="62" height="22" rx="5" fill="#14213d"/><text x="67" y="78" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">PAS-3</text>
+      <text x="108" y="78" font-size="12" fill="#14213d">due 4 Nov (15 days) · filed 1 Nov</text>
+    </g>
+    <text x="36" y="452" font-size="12" fill="#5b6475">Also: ADT-1 (auditor, 15 days) · SH-7 (capital up, 30 days) · MGT-14 (resolution, 30 days)</text>
+  </g>
+</svg>
