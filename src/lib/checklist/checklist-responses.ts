@@ -2,6 +2,7 @@ import { addDays, format } from 'date-fns';
 import { checklist, type ChecklistField, type ChecklistItem } from '@/data/checklist';
 import type { OwnershipType } from '@/data/engagements';
 import { PART_A_STEP_ID, partAFieldsFor } from '@/lib/checklist/part-a-sections';
+import { PART_B_SECTION } from '@/lib/checklist/part-b-sections';
 import { GST_REG_FIELDS } from '@/lib/checklist/gst-registration-fields';
 import { expandDirectorSlotFields, withoutUnusedDirectorSlots } from '@/lib/incorporation/incorp-director-slots';
 import { PRE15_MAX_OTHER_INTERESTS } from '@/lib/incorporation/other-company-interests';
@@ -741,9 +742,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-13': [
     {
       id: 'equityShares',
-      label: 'Equity shares',
+      label: 'Equity share capital',
       type: 'segmented',
-      section: 'Capital structure',
+      section: PART_B_SECTION.equityCapital,
       options: [...PRE1_INDIA_RESIDENT_OPTIONS],
       helperText: 'Select at least one share class.',
       required: true,
@@ -752,7 +753,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       id: 'equityQuantity',
       label: 'Number of equity shares',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.equityCapital,
       placeholder: 'e.g. 10000',
       required: true,
       showWhen: { field: 'equityShares', value: 'yes' },
@@ -760,9 +761,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'equityNominalValue',
-      label: 'Nominal value per equity share (INR)',
+      label: 'Nominal amount per share (in INR)',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.equityCapital,
       placeholder: 'e.g. 10',
       required: true,
       showWhen: { field: 'equityShares', value: 'yes' },
@@ -771,18 +772,18 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     {
       // Derived: quantity × nominal value. Filled in by the form, never typed.
       id: 'equityTotal',
-      label: 'Equity share capital (INR)',
+      label: 'Total amount (in INR)',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.equityCapital,
       helperText: 'Shares × nominal value.',
       showWhen: { field: 'equityShares', value: 'yes' },
       layout: 'full',
     },
     {
       id: 'preferenceShares',
-      label: 'Preference shares',
+      label: 'Preference share capital',
       type: 'segmented',
-      section: 'Capital structure',
+      section: PART_B_SECTION.preferenceCapital,
       options: [...PRE1_INDIA_RESIDENT_OPTIONS],
       required: true,
     },
@@ -790,7 +791,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       id: 'preferenceQuantity',
       label: 'Number of preference shares',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.preferenceCapital,
       placeholder: 'e.g. 1000',
       required: true,
       showWhen: { field: 'preferenceShares', value: 'yes' },
@@ -798,9 +799,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'preferenceNominalValue',
-      label: 'Nominal value per preference share (INR)',
+      label: 'Nominal amount per share (in INR)',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.preferenceCapital,
       placeholder: 'e.g. 100',
       required: true,
       showWhen: { field: 'preferenceShares', value: 'yes' },
@@ -808,9 +809,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'preferenceTotal',
-      label: 'Preference share capital (INR)',
+      label: 'Total amount (in INR)',
       type: 'text',
-      section: 'Capital structure',
+      section: PART_B_SECTION.preferenceCapital,
       helperText: 'Shares × nominal value.',
       showWhen: { field: 'preferenceShares', value: 'yes' },
       layout: 'full',
@@ -819,24 +820,24 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-14': [
     {
       id: 'registeredOfficeCompleteAddress',
-      label: 'Complete address of the proposed registered office',
+      label: 'Correspondence address (Line 1, Line 2, area or locality, city, district, pin code)',
       type: 'textarea',
-      section: 'Registered office',
+      section: PART_B_SECTION.correspondenceAddress,
       required: true,
     },
     {
       id: 'registeredOfficeState',
-      label: 'State / union territory of the registered office',
+      label: 'State/UT',
       type: 'select',
-      section: 'Registered office',
+      section: PART_B_SECTION.correspondenceAddress,
       options: toOptions(INDIAN_STATE_OPTIONS),
       helperText: `Printed in clause II of the memorandum. ${NEEDED_FOR_DOCUMENTS}`,
     },
     {
       id: 'registeredOfficeNocUrl',
-      label: 'No-objection certificate from the owner',
+      label: 'Proof of office address along with NOC',
       type: 'file',
-      section: 'Registered office',
+      section: PART_B_SECTION.officeProof,
       accept: '.pdf,image/*',
       required: true,
     },
@@ -844,7 +845,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       id: 'registeredOfficeUtilityBillType',
       label: 'Utility bill type',
       type: 'select',
-      section: 'Registered office',
+      section: PART_B_SECTION.officeProof,
       options: [...PRE6_UTILITY_BILL_OPTIONS],
       required: true,
     },
@@ -852,14 +853,14 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       id: 'registeredOfficeUtilityBillNumber',
       label: 'Utility bill number',
       type: 'text',
-      section: 'Registered office',
+      section: PART_B_SECTION.officeProof,
       required: true,
     },
     {
       id: 'registeredOfficeUtilityBillCopyUrl',
-      label: 'Copy of utility bill (not older than two months)',
+      label: 'Copy of the utility bills (not older than two months)',
       type: 'file',
-      section: 'Registered office',
+      section: PART_B_SECTION.officeProof,
       accept: '.pdf,image/*',
       required: true,
     },
@@ -867,9 +868,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
   'pre-15': [
     {
       id: 'directors',
-      label: 'Proposed directors',
+      label: 'Particulars of directors',
       type: 'repeat',
-      section: 'Directors',
+      section: PART_B_SECTION.directors,
       entryLabel: 'Director',
       minEntries: 2,
       maxEntries: 15,
@@ -877,18 +878,14 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         'At least two directors, at least one of them resident in India. The KYC captured here feeds DIR-2, DIR-8, INC-9 and the DSC application.',
       required: true,
       entryFields: [
-        // Identity — carried over unchanged from SPICe+ Part A.
-        { id: 'firstName', label: 'First Name (as per PAN / passport)', type: 'text', required: true },
+        // 7A(i) / 7D(i) Basic details, in the order of the MCA SPICe+ Part B form.
+        { id: 'din', label: 'Director Identification Number (DIN)', type: 'text' },
+        { id: 'firstName', label: 'First Name', type: 'text', required: true },
         { id: 'middleName', label: 'Middle Name', type: 'text' },
-        { id: 'lastName', label: 'Last Name', type: 'text', required: true },
+        { id: 'lastName', label: 'Surname', type: 'text', required: true },
+        { id: 'fatherName', label: "Father's name", type: 'text', required: true },
         { id: 'gender', label: 'Gender', type: 'segmented', options: [...PRE1_GENDER_OPTIONS], required: true },
-        {
-          id: 'indiaResident',
-          label: 'Resident of India?',
-          type: 'segmented',
-          options: [...PRE1_INDIA_RESIDENT_OPTIONS],
-          required: true,
-        },
+        { id: 'dob', label: 'Date of Birth', type: 'date', required: true },
         {
           id: 'nationality',
           label: 'Nationality',
@@ -896,29 +893,11 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           options: toOptions(COUNTRY_OPTIONS),
           helperText: `Printed on DIR-2, the PAN undertaking and the subscription sheets. Blank = India for a resident. ${NEEDED_FOR_DOCUMENTS}`,
         },
-        { id: 'din', label: 'Director Identification Number (DIN), if any', type: 'text' },
-        { id: 'hasDsc', label: 'Has a valid DSC token?', type: 'segmented', options: [...PRE1_INDIA_RESIDENT_OPTIONS] },
         {
-          id: 'dscExpiryDate',
-          label: 'DSC token expiry date',
-          type: 'date',
-          required: true,
-          showWhen: { field: 'hasDsc', value: 'yes' },
-        },
-        {
-          id: 'dscAvailabilitySlots',
-          label: 'Two 30-minute slots for the DSC video verification',
-          type: 'text',
-          showWhen: { field: 'hasDsc', value: 'no' },
-        },
-        // KYC — the Director KYC step folded into each entry.
-        { id: 'dob', label: 'Date of birth', type: 'date', required: true },
-        { id: 'fatherName', label: "Father's name", type: 'text', required: true },
-        {
-          id: 'highestEducationalQualification',
-          label: 'Highest educational qualification',
-          type: 'select',
-          options: [...PRE6_QUALIFICATION_OPTIONS],
+          id: 'indiaResident',
+          label: 'Whether resident in India',
+          type: 'segmented',
+          options: [...PRE1_INDIA_RESIDENT_OPTIONS],
           required: true,
         },
         {
@@ -928,13 +907,20 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           options: [...PRE6_OCCUPATION_OPTIONS],
           required: true,
         },
-        { id: 'mobileNumber', label: 'Mobile number incl. country code', type: 'text', required: true },
-        { id: 'personalMailId', label: 'Personal e-mail', type: 'text', required: true },
-        { id: 'officialMailId', label: 'Official e-mail', type: 'text' },
+        {
+          id: 'highestEducationalQualification',
+          label: 'Educational Qualification',
+          type: 'select',
+          options: [...PRE6_QUALIFICATION_OPTIONS],
+          required: true,
+        },
+        { id: 'mobileNumber', label: 'Mobile No (with country code)', type: 'text', required: true },
+        { id: 'personalMailId', label: 'email ID', type: 'text', required: true },
+        { id: 'officialMailId', label: 'Official email ID', type: 'text' },
         // Resident: Aadhaar + PAN. Non-resident: passport (+ driving licence).
         { id: 'aadhaarNumber', label: 'Aadhaar number', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
         { id: 'aadhaarCopyUrl', label: 'Copy of Aadhaar card', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
-        { id: 'panNumber', label: 'PAN', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
+        { id: 'panNumber', label: 'Income tax-PAN', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
         { id: 'panCopyUrl', label: 'Copy of PAN card', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'yes' } },
         { id: 'passportNumber', label: 'Passport number', type: 'text', required: true, showWhen: { field: 'indiaResident', value: 'no' } },
         { id: 'passportCopyUrl', label: 'Copy of passport', type: 'file', required: true, showWhen: { field: 'indiaResident', value: 'no' } },
@@ -961,14 +947,14 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'identityProofType',
-          label: 'Proof of identity attached to DIR-2',
+          label: 'Identity Proof',
           type: 'select',
           options: toOptions(DIRECTOR_IDENTITY_PROOF_OPTIONS),
           helperText: 'Blank = Aadhaar card for a resident, passport for a non-resident.',
         },
         {
           id: 'residenceProofType',
-          label: 'Proof of residence attached to DIR-2',
+          label: 'Residential Proof',
           type: 'select',
           options: toOptions(DIRECTOR_RESIDENCE_PROOF_OPTIONS),
           showWhen: { field: 'indiaResident', value: 'no' },
@@ -976,7 +962,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'residenceProofOther',
-          label: 'Proof of residence — document name',
+          label: 'Residential Proof — document name',
           type: 'text',
           showWhen: { field: 'residenceProofType', value: 'other' },
         },
@@ -995,7 +981,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         // Existing interests (INC-9 / DIR-8 disclosure).
         {
           id: 'hasOtherCompanyInterest',
-          label: 'Any Indian company',
+          label: 'Whether the director has interest in other entities (7A(ii))',
           type: 'segmented',
           options: [...PRE1_INDIA_RESIDENT_OPTIONS],
           required: true,
@@ -1014,15 +1000,30 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           label: 'CS membership no. / COP no., if any (printed on DIR-2)',
           type: 'text',
         },
+        // Not on the MCA form: the DSC application needs these.
+        { id: 'hasDsc', label: 'Has a valid DSC token?', type: 'segmented', options: [...PRE1_INDIA_RESIDENT_OPTIONS] },
+        {
+          id: 'dscExpiryDate',
+          label: 'DSC token expiry date',
+          type: 'date',
+          required: true,
+          showWhen: { field: 'hasDsc', value: 'yes' },
+        },
+        {
+          id: 'dscAvailabilitySlots',
+          label: 'Two 30-minute slots for the DSC video verification',
+          type: 'text',
+          showWhen: { field: 'hasDsc', value: 'no' },
+        },
       ],
     },
   ],
   'pre-16': [
     {
       id: 'subscribers',
-      label: 'Subscribers',
+      label: 'First subscribers to the MOA',
       type: 'repeat',
-      section: 'Subscribers',
+      section: PART_B_SECTION.subscribers,
       entryLabel: 'Subscriber',
       minEntries: 0,
       maxEntries: 50,
@@ -1042,6 +1043,18 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           required: true,
         },
         {
+          // SB-03: an individual holds shares in their own name or as a nominee.
+          id: 'holding',
+          label: 'Shareholder or nominee shareholder',
+          type: 'segmented',
+          options: [
+            { value: 'shareholder', label: 'Shareholder' },
+            { value: 'nominee', label: 'Nominee shareholder' },
+          ],
+          required: true,
+          showWhen: { field: 'type', value: 'individual' },
+        },
+        {
           id: 'entityType',
           label: 'Entity type',
           type: 'segmented',
@@ -1051,6 +1064,19 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
           ],
           required: true,
           showWhen: { field: 'type', value: 'non-individual' },
+        },
+        {
+          // SB-03 and MCA 6A(i): a body corporate is an Indian company (CIN) or a company
+          // incorporated outside India (its foreign registration number).
+          id: 'bodyCorporateOrigin',
+          label: 'Domestic company or foreign company',
+          type: 'segmented',
+          options: [
+            { value: 'domestic', label: 'Domestic company' },
+            { value: 'foreign', label: 'Foreign company' },
+          ],
+          required: true,
+          showWhen: { field: 'entityType', value: 'body-corporate' },
         },
         {
           id: 'name',
@@ -1064,11 +1090,19 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'cin',
-          label: 'CIN',
+          label: 'Corporate identity number (CIN)',
           type: 'text',
           placeholder: 'U72900KA2026PTC123456',
           required: true,
-          showWhen: { field: 'entityType', value: 'body-corporate' },
+          showWhen: { field: 'bodyCorporateOrigin', value: 'domestic' },
+          layout: 'short',
+        },
+        {
+          id: 'foreignRegistrationNumber',
+          label: 'Foreign company registration number (FRCN) or other registration number',
+          type: 'text',
+          required: true,
+          showWhen: { field: 'bodyCorporateOrigin', value: 'foreign' },
           layout: 'short',
         },
         {
@@ -1089,27 +1123,27 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
         },
         {
           id: 'authorisedPerson',
-          label: 'Authorised person signing for the entity',
+          label: 'Person authorized by the entity (6A(ii))',
           type: 'text',
           required: true,
           showWhen: { field: 'type', value: 'non-individual' },
         },
-        { id: 'shares', label: 'Number of shares', type: 'text', required: true, layout: 'short' },
-        { id: 'shareValue', label: 'Value of shares (INR)', type: 'text', required: true, layout: 'short' },
+        { id: 'shares', label: 'Number of equity shares', type: 'text', required: true, layout: 'short' },
+        { id: 'shareValue', label: 'Total amount (in INR)', type: 'text', required: true, layout: 'short' },
       ],
     },
     {
       id: 'shareholderAuthorizedPerson',
       label: 'Authorised person subscribing on behalf of the parent entity (INC-35)',
       type: 'text',
-      section: 'INC-35 nominee',
+      section: PART_B_SECTION.agileNominee,
       helperText: 'Dependent companies only — the parent’s representative who signs the subscription.',
     },
     {
       id: 'shareholderNominee',
       label: 'Nominee shareholder of one share (INC-35)',
       type: 'text',
-      section: 'INC-35 nominee',
+      section: PART_B_SECTION.agileNominee,
       helperText: 'The individual holding one share as nominee where the parent is the sole subscriber.',
     },
   ],

@@ -8,6 +8,8 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
+import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
+import { hiddenEntryAnswersPatch, isRepeatField } from '@/lib/checklist/checklist-repeat';
 import { proposeEventsFromChecklistSave } from '@/lib/compliance-events/record-change-hook';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { emptyEmailDispatch, type EmailDispatchResult } from '@/lib/email/email-dispatch';
@@ -44,6 +46,9 @@ export class ChecklistPatchRefused extends Error {
 export type ChecklistPatchInput = { resendManagerEmail?: unknown } & Partial<ChecklistItemStateSlice>;
 
 /** What this person may write of the patch they sent. Pure; throws when the step is closed to them. */
+/** Steps whose hidden questions lose their answers on save (SB-03). */
+const CLEAR_HIDDEN_ANSWER_STEP_IDS: ReadonlySet<string> = new Set(['pre-16']);
+
 export function checklistPatchForRole(
   ctx: Pick<AuthContext, 'role' | 'name'>,
   itemId: string,
@@ -62,7 +67,7 @@ export function checklistPatchForRole(
     patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
   } else if (ctx.role === 'intern' && directFlow && patchFields.responses) {
     // Direct flow: the project lead never overwrites the client's own answers (Part A).
-    patch = { ...patchFields, responses: stripClientOnlyResponses(itemId, patchFields.responses) };
+    patch = { ...patchFields, responses: stripClientOnlyResponses(itemId, patchFields.responses, prevSlice) };
   } else if (ctx.role === 'client') {
     const {
       reviewStatus: _rs,
@@ -102,6 +107,15 @@ export function checklistPatchForRole(
       } = patch;
       patch = draftOnly;
     }
+  }
+  if (patch.responses && CLEAR_HIDDEN_ANSWER_STEP_IDS.has(itemId)) {
+    // SB-03: a changed subscriber type clears the answers of the questions it hides.
+    const merged = { ...(prevSlice?.responses ?? {}), ...patch.responses };
+    const cleared: Record<string, string> = {};
+    for (const field of CLIENT_RESPONSE_FIELDS[itemId] ?? []) {
+      if (isRepeatField(field)) Object.assign(cleared, hiddenEntryAnswersPatch(merged, field));
+    }
+    if (Object.keys(cleared).length) patch = { ...patch, responses: { ...patch.responses, ...cleared } };
   }
   if (directFlow && patch.responses && Object.keys(patch.responses).length > 0) {
     patch = { ...patch, ...lastEditedPatch({ actorName: ctx.name, actorRole: ctx.role, now }) };

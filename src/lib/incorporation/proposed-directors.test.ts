@@ -162,11 +162,13 @@ describe('validatePre16Responses — subscriber details', async () => {
     expect(errors[`subscribers.${entryId}.shares`]).toBe('This field is required.');
     expect(errors[`subscribers.${entryId}.entityType`]).toBeUndefined();
     expect(errors[`subscribers.${entryId}.cin`]).toBeUndefined();
-    expect(validatePre16Responses(sub({ type: 'individual', name: 'Asha Rao', shares: '100', shareValue: '1000' }).responses).ok).toBe(true);
+    // SB-03: an individual says whether they hold the shares as a nominee.
+    expect(errors[`subscribers.${entryId}.holding`]).toBe('This field is required.');
+    expect(validatePre16Responses(sub({ type: 'individual', holding: 'shareholder', name: 'Asha Rao', shares: '100', shareValue: '1000' }).responses).ok).toBe(true);
   });
 
   it('a body corporate needs a CIN and address; an LLP needs an LLPIN; both need the authorised person', () => {
-    const bc = sub({ type: 'non-individual', entityType: 'body-corporate', name: 'Acme Ltd', shares: '10', shareValue: '100', cin: 'bad' });
+    const bc = sub({ type: 'non-individual', entityType: 'body-corporate', bodyCorporateOrigin: 'domestic', name: 'Acme Ltd', shares: '10', shareValue: '100', cin: 'bad' });
     const bcErrors = validatePre16Responses(bc.responses).errors;
     expect(bcErrors[`subscribers.${bc.entryId}.cin`]).toMatch(/21 characters/);
     expect(bcErrors[`subscribers.${bc.entryId}.address`]).toBe('This field is required.');

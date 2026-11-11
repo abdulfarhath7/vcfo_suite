@@ -142,7 +142,7 @@ export function validatePre16Responses(responses: ChecklistItemResponses): StepV
   const errors = validateRepeatEntries(responses, group, (entry) => {
     const e = missingRequiredEntryFields(group, entry);
     const v = entry.values;
-    if (v.entityType === 'body-corporate' && v.cin?.trim() && !CIN_RE.test(v.cin.trim().toUpperCase())) {
+    if (v.bodyCorporateOrigin === 'domestic' && v.cin?.trim() && !CIN_RE.test(v.cin.trim().toUpperCase())) {
       e.cin = 'A CIN is 21 characters, e.g. U72900KA2026PTC123456.';
     }
     if (v.entityType === 'llp' && v.llpin?.trim() && !LLPIN_RE.test(v.llpin.trim().toUpperCase())) {

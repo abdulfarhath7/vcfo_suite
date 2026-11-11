@@ -101,7 +101,7 @@ describe('buildAssistProfile', () => {
     const result = build(state);
     expect(result.profile).not.toHaveProperty('registeredOffice');
     const item = result.missing.find((m) => m.key === 'company.registeredOffice');
-    expect(item).toMatchObject({ stepId: 'pre-14', tabId: 'registered-office' });
+    expect(item).toMatchObject({ stepId: 'pre-14', tabId: '4a-correspondence-address' });
     expect(item?.reason).toBeUndefined();
     expect(result.notes.some((n) => n.key === 'registeredOffice.lines')).toBe(false);
   });
@@ -116,7 +116,7 @@ describe('buildAssistProfile', () => {
       key: 'director.2.gender',
       label: 'Gender',
       stepId: 'pre-15',
-      tabId: 'directors',
+      tabId: '7-particulars-of-directors',
       directorIndex: 2,
       reason: MISSING_REASON.noMcaEquivalent,
     });
@@ -155,7 +155,7 @@ describe('buildAssistProfile', () => {
     const result = build(assistFullState([NR, noPan]));
     expect(result.profile.directors[1]).not.toHaveProperty('pan');
     expect(fixable(result.missing)).toEqual([
-      { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: 'directors', directorIndex: 2 },
+      { key: 'director.2.pan', label: 'PAN', stepId: 'pre-15', tabId: '7-particulars-of-directors', directorIndex: 2 },
     ]);
   });
 

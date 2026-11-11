@@ -9,6 +9,7 @@ import {
 } from '@/lib/incorporation-docs/parent-entity';
 import { resolveProposedCompanyName } from '@/lib/incorporation-docs/shared';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { PART_B_SECTION } from '@/lib/checklist/part-b-sections';
 import type { DocPackContext, DocPackDirector, RequiredInput } from '@/lib/doc-pack/types';
 import { parentCountryAnswer } from '@/lib/incorporation/parent-jurisdiction';
 import { REGISTERED_OFFICE_STATE_FIELD_ID } from '@/lib/checklist/registered-office-responses';
@@ -30,10 +31,10 @@ const filled = (value: string | undefined): boolean => Boolean(value?.trim());
 const isPlaceholder = (value: string): boolean => !value || value.startsWith('[');
 
 const NAME_APPROVAL_TAB = sectionSlug('Name Approval');
-const REGISTERED_OFFICE_TAB = sectionSlug('Registered office');
-const DIRECTORS_TAB = sectionSlug('Directors');
+const REGISTERED_OFFICE_TAB = sectionSlug(PART_B_SECTION.correspondenceAddress);
+const DIRECTORS_TAB = sectionSlug(PART_B_SECTION.directors);
 const DRAFT_DOCS_TAB = sectionSlug('Draft Incorporation Docs');
-const SUBSCRIBERS_TAB = sectionSlug('Subscribers');
+const SUBSCRIBERS_TAB = sectionSlug(PART_B_SECTION.subscribers);
 
 export const companyName: RequiredInput = {
   key: 'company.name',

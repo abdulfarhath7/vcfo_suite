@@ -1,5 +1,6 @@
 import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
+import { announceOpenedSteps } from '@/lib/checklist/step-opened-notify';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -94,6 +95,8 @@ export async function POST(request: Request, context: RouteContext) {
           { status: 422 },
         );
       }
+      // DR-03: a completed submit can open Proposed directors; the client hears it once.
+      if (result.outcome !== 'waiting_on_lead') after(() => announceOpenedSteps(guard.ctx, id));
       // Every party hears a completed submit; a client's submit that stopped
       // on the NIC codes is the lead's news. Autosave never reaches here.
       const email = await notifyEngagementEventSoon({

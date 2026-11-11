@@ -65,8 +65,26 @@ const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
  * the shared remarks (owner decision 2026-11-02 for Part A). The project lead
  * reads what the client entered and types only the NIC codes.
  */
-const CLIENT_OWNED_STEP_IDS: ReadonlySet<string> = new Set(['pre-1']);
+/** DR-02: the Proposed directors step (SPICe+ Part B). */
+export const PROPOSED_DIRECTORS_STEP_ID = 'pre-15';
+const CLIENT_OWNED_STEP_IDS: ReadonlySet<string> = new Set(['pre-1', PROPOSED_DIRECTORS_STEP_ID]);
 const SHARED_FIELD_IDS: ReadonlySet<string> = new Set(['stepRemarks']);
+
+/**
+ * DR-02: the Proposed directors step (SPICe+ Part B) belongs to the client like Part A: the lead
+ * reads it. DR-04: a manager or admin can hand it to the lead ("Assign to Lead"); the client keeps
+ * edit access, so both can fill it, until it is assigned back.
+ */
+/** The steps a manager or admin may assign to the lead. */
+export const ASSIGNABLE_FILL_STEP_IDS: ReadonlySet<string> = new Set([PROPOSED_DIRECTORS_STEP_ID]);
+
+/** Any step state; the rule reads only its `fillAssignedTo`. */
+type FillSlice = object | null | undefined;
+
+/** The step was handed to the project lead (DR-04). */
+export function isFillAssignedToLead(itemId: string, slice: FillSlice): boolean {
+  return ASSIGNABLE_FILL_STEP_IDS.has(itemId) && (slice as { fillAssignedTo?: string } | null | undefined)?.fillAssignedTo === 'lead';
+}
 
 /** Whole steps that only the project lead can edit. Empty by owner decision. */
 export const LEAD_ONLY_STEP_IDS: ReadonlySet<string> = new Set();
@@ -94,8 +112,9 @@ export function isLeadOnlyField(itemId: string, fieldId: string): boolean {
 }
 
 /** True for a field the client fills and the project lead only reads (Part A except the NIC codes). */
-export function isClientOnlyField(itemId: string, fieldId: string): boolean {
+export function isClientOnlyField(itemId: string, fieldId: string, slice?: FillSlice): boolean {
   if (!CLIENT_OWNED_STEP_IDS.has(itemId)) return false;
+  if (isFillAssignedToLead(itemId, slice)) return false;
   const root = fieldId.split('.')[0] ?? fieldId;
   return !isLeadOnlyField(itemId, fieldId) && !SHARED_FIELD_IDS.has(root);
 }
@@ -114,8 +133,8 @@ function isFirmRole(role: string): boolean {
  * - Manager / admin: reads a direct-flow step (reopen is a separate action);
  *   other steps keep their current staff rules.
  */
-export function canRoleEditField(role: string, itemId: string, fieldId: string): boolean {
-  if (role === 'intern') return !isClientOnlyField(itemId, fieldId);
+export function canRoleEditField(role: string, itemId: string, fieldId: string, slice?: FillSlice): boolean {
+  if (role === 'intern') return !isClientOnlyField(itemId, fieldId, slice);
   if (role === 'client') return isDirectFlowStep(itemId) && !isLeadOnlyField(itemId, fieldId);
   if (isFirmRole(role)) return !isDirectFlowStep(itemId);
   return false;
@@ -137,10 +156,11 @@ export function stripLeadOnlyResponses(
 export function stripClientOnlyResponses(
   itemId: string,
   responses: Record<string, string>,
+  slice?: FillSlice,
 ): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(responses)) {
-    if (!isClientOnlyField(itemId, key)) out[key] = value;
+    if (!isClientOnlyField(itemId, key, slice)) out[key] = value;
   }
   return out;
 }

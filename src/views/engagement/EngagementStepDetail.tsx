@@ -35,6 +35,7 @@ import { shortDate } from '@/components/timeline/timeline-model';
 import { docPackStepPath } from '@/lib/doc-pack/paths';
 import { useEngagementStepDetail } from '@/views/engagement/step-detail/use-engagement-step-detail';
 import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { FillOwnerBanner } from '@/components/incorporation/FillOwnerBanner';
 import { cn } from '@/lib/utils';
 import { createStepView } from '@/views/engagement/step-detail/create-step-view';
 
@@ -440,6 +441,7 @@ export default function EngagementStepDetail() {
               )}
             >
               <div className="min-w-0">
+                {!isClientRoute ? <FillOwnerBanner engagement={eng} itemId={item.id} /> : null}
                 {stepForm}
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
               </div>

@@ -80,6 +80,8 @@ const ITEM_META_KEYS = new Set([
   'reviewStatus',
   'reviewSource',
   'approvalStage',
+  'fillAssignedTo',
+  'openedNotifiedAt',
   'reviewedAt',
   'reviewedBy',
   'rejectionNote',
@@ -119,6 +121,10 @@ export interface ChecklistItemStateSlice {
    * Absent on a request made before the two-stage chain; it then reads as `manager`.
    */
   approvalStage?: 'manager' | 'admin';
+  /** DR-04: a client-owned step the manager or admin handed to the lead (`lead`), or back (`client`). */
+  fillAssignedTo?: 'client' | 'lead';
+  /** DR-03: when the client was told this step is open (set once, so the notice goes out once). */
+  openedNotifiedAt?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionNote?: string;
@@ -347,6 +353,8 @@ export function normalizeChecklistItemSlice(
         ? obj.reviewSource
         : undefined,
     approvalStage: obj.approvalStage === 'manager' || obj.approvalStage === 'admin' ? obj.approvalStage : undefined,
+    fillAssignedTo: obj.fillAssignedTo === 'lead' || obj.fillAssignedTo === 'client' ? obj.fillAssignedTo : undefined,
+    openedNotifiedAt: typeof obj.openedNotifiedAt === 'string' ? obj.openedNotifiedAt : undefined,
     reviewedAt: typeof obj.reviewedAt === 'string' ? obj.reviewedAt : undefined,
     reviewedBy: typeof obj.reviewedBy === 'string' ? obj.reviewedBy : undefined,
     rejectionNote: typeof obj.rejectionNote === 'string' ? obj.rejectionNote : undefined,
