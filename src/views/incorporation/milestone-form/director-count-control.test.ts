@@ -16,3 +16,14 @@ describe('withDirectorCount', () => {
     expect(withDirectorCount({ directorCount: '2' }, 1).directorCount).toBe('2');
   });
 });
+
+describe('name approval expiry (SA-02)', () => {
+  it('recalculates when the approval date changes, unless staff set the expiry by hand', async () => {
+    const { cascadeDraftFieldChange } = await import('./field-cascade');
+    const { computeMcaNameApprovalExpiryDate } = await import('@/lib/checklist/checklist-responses');
+    const calculated = cascadeDraftFieldChange('pre-5', {}, 'nameApprovalDate', '2026-11-01');
+    expect(calculated.nameApprovalExpiryDate).toBe(computeMcaNameApprovalExpiryDate('2026-11-01'));
+    const edited = { ...calculated, nameApprovalExpiryDate: '2027-02-15' };
+    expect(cascadeDraftFieldChange('pre-5', edited, 'nameApprovalDate', '2026-11-05').nameApprovalExpiryDate).toBe('2027-02-15');
+  });
+});

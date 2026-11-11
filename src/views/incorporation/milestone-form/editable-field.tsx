@@ -8,6 +8,7 @@ import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import { RepeatGroupEditor } from '@/views/incorporation/RepeatGroupEditor';
 import { addRepeatEntry, isRepeatField, removeRepeatEntry } from '@/lib/checklist/checklist-repeat';
 import { countWords, formatPre1DateDisplay, parseDirectorCount } from '@/lib/checklist/checklist-pre1-validation';
+import { computeMcaNameApprovalExpiryDate } from '@/lib/checklist/checklist-responses';
 import { DirectorCountControl, withDirectorCount } from './director-count-control';
 import { FieldInfoButton } from './field-info-button';
 import { getPre6DirectorNameOptions } from '@/lib/checklist/checklist-pre6-validation';
@@ -43,6 +44,7 @@ export function createEditableFieldRenderer(
   ctx: MilestoneFormCtx & FieldEditActions & Pick<ReadOnlyFieldRenderers, 'fieldShellClass'>,
 ) {
   const {
+    isClient,
     item,
     engagementId,
     compactChrome,
@@ -339,7 +341,35 @@ export function createEditableFieldRenderer(
             </label>
           </div>
         ) : field.type === 'date' ? (
-          item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' ? (
+          item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' && !isClient ? (
+            // SA-02: staff may change the expiry; the calculated date is the default and an
+            // edited date is marked, with a way back to the calculated one.
+            <div className="space-y-1.5">
+              <NoirDatePicker
+                id={`${item.id}-${field.id}`}
+                value={draft[field.id] ?? ''}
+                onChange={(v) => setField(field.id, v)}
+                onBlur={() => autoSaveEnabled && scheduleAutoSave(true)}
+                invalid={Boolean(error)}
+                describedBy={error ? errorId : undefined}
+                className={cn(error && 'border-danger')}
+              />
+              {(() => {
+                const calculated = computeMcaNameApprovalExpiryDate(draft.nameApprovalDate ?? '');
+                const value = draft[field.id]?.trim() ?? '';
+                if (!calculated || !value || value === calculated) return null;
+                return (
+                  <p className="flex flex-wrap items-center gap-2 text-[12px] text-ink-muted">
+                    <span className="rounded-sm bg-warning-soft px-1.5 py-0.5 font-medium text-warning">Edited</span>
+                    Calculated date: {formatPre1DateDisplay(calculated) ?? calculated}
+                    <button type="button" className="font-medium text-brand-text hover:underline" onClick={() => setField(field.id, calculated)}>
+                      Use the calculated date
+                    </button>
+                  </p>
+                );
+              })()}
+            </div>
+          ) : item.id === 'pre-5' && field.id === 'nameApprovalExpiryDate' ? (
             <p
               className={cn(
                 'text-sm leading-relaxed',

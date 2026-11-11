@@ -403,7 +403,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       section: 'Name Approval',
       filledBy: 'intern',
       required: true,
-      helperText: `Valid for ${MCA_NAME_APPROVAL_VALIDITY_DAYS} days from the approval date (set automatically).`,
+      helperText: `Valid for ${MCA_NAME_APPROVAL_VALIDITY_DAYS} days from the approval date. Calculated for you; the project lead, manager or admin can change it.`,
     },
     {
       id: 'mcaApprovalLetterUrl',
