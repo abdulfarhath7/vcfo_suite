@@ -26,6 +26,7 @@ import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import type { NocState } from '@/lib/noc/state';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
+import { BoardResolutionClientEdit } from '@/components/incorporation/BoardResolutionClientEdit';
 import { FitToWidth } from '@/components/board-resolution/FitToWidth';
 import {
   DocFiles,
@@ -555,6 +556,11 @@ export default function BoardPage() {
                   </section>
                 </div>
               </div>
+
+              {/* BR-04, BR-05: the client edits the draft here, confirms and sends it to the firm. */}
+              {visible && d.engagementId ? (
+                <BoardResolutionClientEdit engagementId={d.engagementId} viewerRole="client" refreshKey={doc?.updatedAt ?? undefined} />
+              ) : null}
             </>
           )}
 

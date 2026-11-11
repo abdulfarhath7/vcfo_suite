@@ -278,6 +278,8 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
 - **Projects:** PR-01 name field focus; PR-02 "Download project (ZIP)" for the Lead, Manager and Admin. The ZIP is made in the background, with one folder per item type.
 - **Landing:** LP-01 light theme by default with a dark toggle, set before paint, contrast tested; LP-02 no screenshots; LP-03 one hero scene per headline word.
 
+- **Board resolution in the client portal (11 Nov, follow-up):** the client edit (BR-04/05) was only mounted on a staff screen. It is now on the client's Board resolution page and on client steps 2 and 3 (`StepBoardResolution.tsx`); the Lead sees the draft on step 2; "Send to the firm" goes through the GL-07 Send email pop-up (`previewClientEditSend`). The item-by-item status of the whole CR, checked against the code, is in `docs/context/CR-2026-11-STATUS.md`.
+
 Notes:
 - **Background exports (GL-06, PR-02)** run in `after()` (`src/lib/exports/background-export.ts`). The file is kept in `export_files` and S3 `exports/` for 30 days, and only its maker can download it, through `/api/exports/[id]`. No migration was needed.
 - **Waiting on the owner:**
