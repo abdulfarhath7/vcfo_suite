@@ -200,3 +200,35 @@ filing note. Open bug: `record-srn.ts` passes a slug to `getEngagementById`, so 
 answers `checklist_refused` when the run URL uses the project slug (a uuid works). The staff step
 page shows a "VCFO Assist can fill ..." hint card on every step the catalog maps
 (`src/components/assist-profile/AssistAgentHint.tsx`). The owner's summary is `docs/OVERNIGHT-REPORT.md`.
+
+## Change request VCFO-CR-2026-11 (11 Nov 2026, on `claude/brave-shannon-c5e0wi`, not merged or deployed)
+
+Built and tested (unit tests, typecheck, and the flows below on a local build):
+
+- **Global:** GL-01 notification Open goes to the exact step and flashes it; GL-02 toasts (3 at most, 3 s, 6 s with Undo, close X); GL-03 active tab; GL-04 help icon; GL-05 side panel toggle kept per user; GL-06 "Export to Excel" on the Projects, Clients, obligations, calendar, approvals, audit log and request lists screens; GL-08 standard file names; GL-09 proper-case names in documents.
+- **GL-07, partly done:** client-facing step emails (client fill approved, awaiting client approval, step submitted to the client) open the compose pop-up instead of sending. The fallback send is `/api/email/send-draft`; `email.sent` is audited. **Not done yet:** request-list send, board meeting notices and signature requests, and the Remind buttons still send at once.
+- **Navigation:** NV-01/02 Incorporation sidebar group; NV-03 breadcrumb links; NV-04 link audit (`e2e/link-audit.spec.ts`, 178 links pass).
+- **Client details and directors:**
+  - CD-01/02 director cards (2 to 4).
+  - CD-03 and SB-02: one `DirectorGrid` with a Cards / Grid switch, for Part A and Part B.
+  - DR-01 DIN check: the lead records Verified, Mismatch or Not found; the server stamps who and when. With no DIN, the badge reads "DIN to be applied in SPICe+".
+  - DR-02 only the client fills Proposed directors; DR-04 adds "Assign to Lead" (`fillAssignedTo`).
+  - DR-03: a one-time notice when Proposed directors opens (`openedNotifiedAt`).
+- **Applications and Part B:**
+  - SA-01 SRN field on every application; SA-02 editable name-approval expiry.
+  - SB-01: Part B carries the MCA section numbers (`src/lib/checklist/part-b-sections.ts`, built from the owner's signed Part B PDF). Field ids are unchanged.
+  - SB-03: subscriber follow-ups. Shareholder or nominee; for a body corporate, domestic (CIN of 21 characters) or foreign (FRCN). Visibility cascades, and hidden answers are cleared on save.
+- **Board resolution:**
+  - BR-01/02 document cards; BR-03 the "who holds it" chip (`work-holder.ts`); BR-07 "Send to Lead".
+  - BR-04/05/06: the client edits the sent draft. The firm's original is kept, and the edit is stored in `pre-2.brClientEdit`. Each save is audited before and after, and staff see tracked changes.
+  - The chain runs edit → confirm → email → receipt → Manager → Admin → final. The Admin cannot approve before the Manager, and a return needs a reason and goes to the Lead.
+  - Each move sends one notice to every participant. `e2e/board-resolution-client-edit.spec.ts` runs the chain on a local app.
+- **Projects:** PR-01 name field focus; PR-02 "Download project (ZIP)" for the Lead, Manager and Admin. The ZIP is made in the background, with one folder per item type.
+- **Landing:** LP-01 light theme by default with a dark toggle, set before paint, contrast tested; LP-02 no screenshots; LP-03 one hero scene per headline word.
+
+Notes:
+- **Background exports (GL-06, PR-02)** run in `after()` (`src/lib/exports/background-export.ts`). The file is kept in `export_files` and S3 `exports/` for 30 days, and only its maker can download it, through `/api/exports/[id]`. No migration was needed.
+- **Waiting on the owner:**
+  - CD-05 field details.
+  - The board resolution layout reference Word file (Part 3 of the 10 Nov list).
+  - Confirmation of the open CR questions. Each was built to the CR's own proposal: DIN check is manual, the DR-03 email is sent manually by the lead, and after a return the Lead corrects the edited board resolution.
