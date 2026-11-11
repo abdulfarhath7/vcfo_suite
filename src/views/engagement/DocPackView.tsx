@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, usePathname, useSearchParams } from 'next/navigation';
-import { Check, Download } from 'lucide-react';
 
 import { HexgridLoader } from '@/components/common/HexgridLoader';
 import { DocPackPreviewDialog } from '@/components/doc-pack/DocPackPreviewDialog';
@@ -11,7 +10,7 @@ import { DocPackPreviewPanel } from '@/components/doc-pack/DocPackPreviewPanel';
 import { DocPackRow } from '@/components/doc-pack/DocPackRow';
 import { DOC_STATUS_TAG_TONE } from '@/components/doc-pack/DocStatusChip';
 import { EmptyStateIllustrated } from '@/components/noir';
-import { Button } from '@/components/ui/button';
+import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { Tag } from '@/components/ui/spectrum-chip';
@@ -24,7 +23,6 @@ import {
   DOC_PACK_PART_PARAM,
   docPackItemUrl,
   docPackStepPath,
-  docPackZipUrl,
   parseDocPart,
   type DocPackShell,
 } from '@/lib/doc-pack/paths';
@@ -75,15 +73,6 @@ export default function DocPackView() {
   );
   const [pickedKey, setPickedKey] = useState<string | null>(null);
   const [largeItem, setLargeItem] = useState<DocPackItem | null>(null);
-  const [zipped, setZipped] = useState(false);
-
-  // The zip button says how many files went into the .zip for two seconds after a click.
-  useEffect(() => {
-    if (!zipped) return;
-    const timer = window.setTimeout(() => setZipped(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, [zipped]);
-
   const pack = useDocPack(eng?.id);
 
   if (!eng) {
@@ -108,7 +97,6 @@ export default function DocPackView() {
   const items = summary?.items.filter((item) => part === 'all' || item.part === part) ?? [];
   const countFor = (filter: PartFilter) =>
     summary ? summary.items.filter((item) => filter === 'all' || item.part === filter).length : 0;
-  const readyCount = summary?.counts.ready ?? 0;
   const parts = (['part-a', 'part-b'] as const)
     .filter((key) => part === 'all' || key === part)
     .map((key) => ({ key, items: items.filter((item) => item.part === key) }))
@@ -146,21 +134,8 @@ export default function DocPackView() {
               : null}
           </p>
         </div>
-        {summary ? (
-          readyCount > 0 ? (
-            <Button asChild>
-              <a href={docPackZipUrl(eng.id)} download onClick={() => setZipped(true)} aria-live="polite">
-                {zipped ? <Check strokeWidth={1.6} aria-hidden /> : <Download strokeWidth={1.6} aria-hidden />}
-                {zipped ? `${readyCount} ${readyCount === 1 ? 'file' : 'files'} in the .zip` : `Download ready (${readyCount}) as .zip`}
-              </a>
-            </Button>
-          ) : (
-            <Button type="button" disabled title="Nothing is ready to download yet">
-              <Download strokeWidth={1.6} aria-hidden />
-              Download ready (0) as .zip
-            </Button>
-          )
-        ) : null}
+        {/* CR-2026-11: one pop-up picks any set of documents, uploads included. */}
+        <DownloadDocumentsButton engagementId={eng.id} />
       </header>
 
       {pack.isError ? (
