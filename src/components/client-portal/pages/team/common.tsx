@@ -512,9 +512,16 @@ export function SidePanel({
       }
     };
     document.addEventListener('keydown', key, true);
+    // The Ask VCFO pill sits over the panel's bottom-right corner, where the footer's main action
+    // is (for example a notification's "Open the step"). Like the bottom sheets, the panel sends
+    // the launcher away while it is open, and leaves the class alone if something else set it.
+    const cp = document.querySelector('.cp');
+    const ownsSheetClass = Boolean(cp && !cp.classList.contains('sheet-open'));
+    if (ownsSheetClass) cp?.classList.add('sheet-open');
     return () => {
       clearTimeout(t);
       document.removeEventListener('keydown', key, true);
+      if (ownsSheetClass) cp?.classList.remove('sheet-open');
       last?.focus?.({ preventScroll: true });
     };
   }, []);

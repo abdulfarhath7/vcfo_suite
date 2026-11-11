@@ -85,6 +85,8 @@ describe('shellBreadcrumb', () => {
     expect(labels('/app/lead/compliances/filings')).toEqual(['Compliances', 'Filings']);
     expect(hrefs('/app/lead/compliances/filings')).toEqual(['/app/lead/compliances/calendar', null]);
     expect(labels('/app/admin/compliances/calendar')).toEqual(['Compliances', 'Calendar']);
+    // The super admin has no calendar route of its own; the parent opens the firm-wide one.
+    expect(hrefs('/app/super/compliances/expiries')).toEqual(['/app/admin/compliances/calendar', null]);
     expect(shellBreadcrumb('/app/client/compliances/filings').icon).toBe('calendar');
   });
 });
