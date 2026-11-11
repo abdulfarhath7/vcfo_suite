@@ -11,14 +11,17 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const one = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : undefined);
+  // The portal reverts Tailwind's reset outside a `.cp-tw` island, and this view is all Tailwind.
   return (
-    <PayrollPage
-      shellBase="/app/client"
-      company={one('company')}
-      cycle={one('cycle')}
-      tab={one('tab')}
-      stateCode={one('state')}
-      canEdit={false}
-    />
+    <div className="cp-tw">
+      <PayrollPage
+        shellBase="/app/client"
+        company={one('company')}
+        cycle={one('cycle')}
+        tab={one('tab')}
+        stateCode={one('state')}
+        canEdit={false}
+      />
+    </div>
   );
 }
