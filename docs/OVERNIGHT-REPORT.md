@@ -40,7 +40,7 @@ Every demo login below uses the password `demo1234`.
 |---|---|---|
 | Client journey map | `client-kestrel@demo.vcfo.local` (mid incorporation) or `client-northwind@demo.vcfo.local` (early Part A) | `/app/client/overview` |
 | Assist runs page as admin | `admin-nadia@demo.vcfo.local` | `/app/admin/assist-runs`, or "Assist runs" in the sidebar |
-| Assist runs page as lead | `lead-arjun@demo.vcfo.local` | `/app/intern/assist-runs` |
+| Assist runs page as lead | `lead-arjun@demo.vcfo.local` | `/app/lead/assist-runs` |
 | Step hint | either staff login above | Northwind, step 4 Name Application: `/app/admin/projects/demo-northwind-analytics/step/pre-4` |
 
 The local database already holds two sample runs on Northwind (one done with SRN AB1234567, one waiting) and one recipe fix to review. A fresh database has none, and the page shows an empty state that explains how runs appear.

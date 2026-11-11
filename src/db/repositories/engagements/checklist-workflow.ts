@@ -171,7 +171,7 @@ export async function submitDirectFlowStep(
   }
 
   const sent =
-    ctx.role === 'client' ? stripLeadOnlyResponses(itemId, responses) : stripClientOnlyResponses(itemId, responses);
+    ctx.role === 'client' ? stripLeadOnlyResponses(itemId, responses) : stripClientOnlyResponses(itemId, responses, slice);
   const merged: Record<string, string> = { ...(slice?.responses ?? {}) };
   for (const [key, value] of Object.entries(sent)) merged[key] = value;
 
@@ -183,7 +183,7 @@ export async function submitDirectFlowStep(
   });
   const blocking: Record<string, string> = {};
   for (const [key, message] of Object.entries(validation.errors)) {
-    if (canRoleEditField(ctx.role, itemId, key)) blocking[key] = message;
+    if (canRoleEditField(ctx.role, itemId, key, slice)) blocking[key] = message;
   }
 
   const now = new Date().toISOString();

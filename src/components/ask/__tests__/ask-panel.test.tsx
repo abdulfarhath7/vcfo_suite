@@ -168,7 +168,7 @@ describe('robot launcher and sidebar link (owner decision 2 Nov 2026)', () => {
   it('makes the sidebar Ask VCFO a link to the full page', () => {
     role = 'intern';
     render(wrap(<AskShellMount userRole="intern"><AskLauncher variant="sidebar" withShortcut={false} /></AskShellMount>));
-    expect(screen.getByRole('link', { name: /Ask VCFO/ })).toHaveAttribute('href', '/app/intern/ask');
+    expect(screen.getByRole('link', { name: /Ask VCFO/ })).toHaveAttribute('href', '/app/lead/ask');
   });
 });
 
@@ -176,7 +176,7 @@ describe('full page path (owner item F4)', () => {
   it('gives every Ask role its own page and the developer none', async () => {
     const { roleAskPath } = await import('@/lib/auth-routes');
     expect(roleAskPath('client')).toBe('/app/client/ask');
-    expect(roleAskPath('intern')).toBe('/app/intern/ask');
+    expect(roleAskPath('intern')).toBe('/app/lead/ask');
     expect(roleAskPath('manager')).toBe('/app/manager/ask');
     expect(roleAskPath('admin')).toBe('/app/admin/ask');
     expect(roleAskPath('super_admin')).toBe('/app/super/ask');

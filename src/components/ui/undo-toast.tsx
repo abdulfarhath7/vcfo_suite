@@ -15,7 +15,7 @@ const UNDO_TOAST_ID = 'vcfo-undo';
  *
  *   toastUndo('All marked read', () => restore());
  */
-export function toastUndo(text: string, onUndo?: () => void, { duration = 5000 }: { duration?: number } = {}): string {
+export function toastUndo(text: string, onUndo?: () => void, { duration = 6000 }: { duration?: number } = {}): string {
   return toast.custom(
     (t) => (
       <div

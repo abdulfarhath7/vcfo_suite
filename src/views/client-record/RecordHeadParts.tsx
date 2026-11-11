@@ -3,6 +3,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { RecordStat } from '@/components/incorporation/RecordHead';
@@ -260,6 +262,34 @@ export function RecordDocumentsButton({ engagement, onOpen }: { engagement: Enga
   return (
     <Button variant="outline" onClick={onOpen} className="flex-none">
       Documents {docs.data ? docs.data.length : ''}
+    </Button>
+  );
+}
+
+/**
+ * PR-02: "Download project (ZIP)" beside the project name, for the Lead, the Manager and the
+ * Admin. The archive is made in the background; the bell says when it is ready, with a link.
+ */
+export function ProjectZipButton({ engagementId }: { engagementId: string }) {
+  const { user } = useApp();
+  const [busy, setBusy] = useState(false);
+  if (!user || user.role === 'client') return null;
+  const start = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/engagements/${encodeURIComponent(engagementId)}/project-zip`, { method: 'POST' });
+      if (!res.ok) throw new Error('zip_failed');
+      toast.success('Making the project ZIP. You can keep working; you will get a notification with the link when it is ready.');
+    } catch {
+      toast.error('The project ZIP did not start. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button variant="outline" onClick={start} disabled={busy} className="flex-none" data-testid="project-zip">
+      <Download className="mr-1 h-4 w-4" aria-hidden />
+      Download project (ZIP)
     </Button>
   );
 }

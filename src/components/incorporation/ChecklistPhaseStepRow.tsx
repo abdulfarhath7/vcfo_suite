@@ -12,6 +12,9 @@ import { initialsOf } from '@/components/ui/avatar-stack';
 import { stepMarkForGate } from '@/components/incorporation/step-mark-for-gate';
 import { BoardResolutionStepLink } from '@/components/incorporation/BoardResolutionStepLink';
 import { shortDate, daysBetween } from '@/components/timeline/timeline-model';
+import { Eye } from 'lucide-react';
+import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
+import { workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 import { cn } from '@/lib/utils';
 
 /**
@@ -70,11 +73,20 @@ export function ChecklistPhaseStepRow({
   const state = base.state;
   const live = state === 'now';
   const waiting = gate.kind === 'waiting';
+  const withManager = isLeadRequestPending(facts?.slice);
   const late = Boolean(facts?.late) && live;
   const tone: StepTone = sentBack ? 'bad' : base.tone;
 
+  // BR-03: staff read the same holder as the client, from the one shared function.
+  const held = facts ? workHolder(facts) : null;
   const holder =
-    facts?.owner === 'client' ? shortCompany(engagement.companyName) : facts?.owner === 'mca' ? 'MCA' : 'SBC';
+    held === 'client' || (!held && facts?.owner === 'client')
+      ? shortCompany(engagement.companyName)
+      : held
+        ? workHolderLabel(held).replace(/^With /, '')
+        : facts?.owner === 'mca'
+          ? 'MCA'
+          : 'SBC';
   const days = facts?.since ? Math.max(0, daysBetween(facts.since, today)) : null;
   const typical = getChecklistStepTimelineLabel(item);
 
@@ -130,9 +142,11 @@ export function ChecklistPhaseStepRow({
             <button
               type="button"
               onClick={() => onAbout(item)}
-              className="relative z-[1] hidden flex-none whitespace-nowrap text-[12px] font-medium text-brand-text hover:underline sm:inline"
+              aria-label={`What's this: ${item.title}`}
+              title="What's this step?"
+              className="relative z-[1] inline-flex h-7 w-7 flex-none items-center justify-center rounded-md text-brand-text hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              What&apos;s this?
+              <Eye className="h-4 w-4" aria-hidden />
             </button>
           ) : null}
         </span>
@@ -144,7 +158,13 @@ export function ChecklistPhaseStepRow({
         ) : null}
       </span>
       <span className="flex flex-none items-center gap-3">
-        {live && leadName ? (
+        {live && withManager ? (
+          // Sent for approval: the step waits on the manager, not the lead (owner, 10 Nov).
+          <span className="hidden items-center gap-1.5 text-[12.5px] text-ink-muted md:inline-flex">
+            <UserFace initials="M" className="h-6 w-6 bg-waiting-soft text-[10px] font-medium text-waiting" />
+            Manager approval
+          </span>
+        ) : live && leadName ? (
           <span className="hidden items-center gap-1.5 text-[12.5px] text-ink-muted md:inline-flex">
             <UserFace initials={initialsOf(leadName)} className="h-6 w-6 bg-brand-soft text-[10px] font-medium text-brand-text" />
             {leadName}

@@ -30,7 +30,7 @@ test('T-17 Budgets and variance', async ({ browser }) => {
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead creates a budget for Kaveri Foods (FY starting April 2026).' }, async () => {
     if (budgetId) return { caption: 'The budget already exists.' };
-    await lead.goto('/app/intern/budgets');
+    await lead.goto('/app/lead/budgets');
     await settle(lead, /New budget/);
     await lead.getByRole('button', { name: /New budget/ }).first().click();
     const d = lead.getByRole('dialog');
@@ -53,7 +53,7 @@ test('T-17 Budgets and variance', async ({ browser }) => {
   });
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead fills the budget lines: amounts for each month of the first sections.' }, async () => {
-    await lead.goto(`/app/intern/budgets/${budgetId}`);
+    await lead.goto(`/app/lead/budgets/${budgetId}`);
     await settle(lead, /Master Budget|Budget/);
     const tabs = await lead.getByRole('tablist', { name: 'Budget tabs' }).getByRole('tab').allInnerTexts();
     let filled = 0;
@@ -96,7 +96,7 @@ test('T-17 Budgets and variance', async ({ browser }) => {
   });
 
   await step(lead, { test: T, step: 3, role: 'lead2', caption: 'The lead opens Variance, enters the actual costs for April and submits.' }, async () => {
-    await lead.goto(`/app/intern/budgets/${budgetId}`);
+    await lead.goto(`/app/lead/budgets/${budgetId}`);
     await settle(lead, /Variance/);
     await lead.getByRole('tab', { name: 'Variance' }).first().click();
     await lead.waitForTimeout(1500);
@@ -130,7 +130,7 @@ test('T-17 Budgets and variance', async ({ browser }) => {
   });
 
   await step(lead, { test: T, step: 4, role: 'lead2', caption: 'The lead submits the April variance again; the manager approves it.' }, async () => {
-    await lead.goto(`/app/intern/budgets/${budgetId}`);
+    await lead.goto(`/app/lead/budgets/${budgetId}`);
     await settle(lead, /Variance/);
     await lead.getByRole('tab', { name: 'Variance' }).first().click();
     await lead.waitForTimeout(1500);

@@ -1,3 +1,4 @@
+import { messageHtml, type ComposedEmail } from '@/lib/email/email-edits';
 import { emailMetaTable, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 
@@ -66,4 +67,45 @@ export function buildRequestListEmail(input: RequestListEmailInput): { subject: 
     .filter((l) => l !== '')
     .join('\n');
   return { subject, html, text };
+}
+
+/**
+ * GL-07: the first send of a request list as a draft. The message is the words the person can
+ * change in the "Send email" pop-up; the item list, the due date and the button stay below it.
+ */
+export function composeRequestListEmail(input: RequestListEmailInput & { to: string[]; replyTo?: string }): ComposedEmail {
+  const href = absolute(CLIENT_REQUESTS_PATH);
+  const open = input.openItems.length;
+  const shown = input.openItems.slice(0, 15);
+  const listHtml = `<ul style="margin:12px 0 0;padding-left:18px;">${shown
+    .map((i) => `<li style="margin:4px 0;"><strong>${escapeHtml(KIND_WORD[i.kind] ?? 'Send')}:</strong> ${escapeHtml(i.label)}</li>`)
+    .join('')}${open > shown.length ? `<li>and ${open - shown.length} more</li>` : ''}</ul>`;
+  const meta = input.dueOn ? emailMetaTable([{ label: 'Due', value: input.dueOn }]) : '';
+  const base = buildRequestListEmail(input);
+  const message = [
+    `We need the items below from ${input.companyName} for ${input.title}.`,
+    'Documents upload straight into your portal. Answers and confirmations take a click each.',
+  ].join('\n\n');
+  return {
+    to: input.to,
+    cc: [],
+    subject: base.subject,
+    message,
+    html: (m) =>
+      renderEmailDocument({
+        eyebrow: 'Request list',
+        title: input.title,
+        bodyHtml: messageHtml(m) + listHtml + meta,
+        cta: { label: 'Open your requests', href },
+        ...(input.senderName ? { footerNote: `Sent by ${input.senderName}` } : {}),
+      }),
+    text: (m) =>
+      [m, '', ...shown.map((i) => `- ${KIND_WORD[i.kind] ?? 'Send'}: ${i.label}`), open > shown.length ? `- and ${open - shown.length} more` : '', input.dueOn ? `\nDue: ${input.dueOn}` : '', `\nOpen: ${href}`]
+        .filter((l) => l !== '')
+        .join('\n'),
+    attachments: [],
+    replyTo: input.replyTo,
+    purpose: 'request-list.sent',
+    fixed: 'the list of items, the due date and the "Open your requests" button',
+  };
 }

@@ -58,7 +58,7 @@ describe('items and progress', () => {
   });
 
   it('links each role to its Requests page', () => {
-    expect(requestsPageHref('intern')).toBe('/app/intern/requests');
+    expect(requestsPageHref('intern')).toBe('/app/lead/requests');
     expect(requestsPageHref('super_admin')).toBe('/app/super/requests');
     expect(requestsPageHref('client')).toBe('/app/client/requests');
   });

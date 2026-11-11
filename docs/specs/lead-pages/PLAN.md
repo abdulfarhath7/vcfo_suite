@@ -7,7 +7,7 @@ Lead = code role `intern`. Owner said: design everything in a canvas, no approva
    (owner's final copy). Take its look: colours, cards, icons (option 4 = Lucide coloured line in a 32 px tinted
    tile), greeting card, timeline, calendar (grid lines between dates, whole-box highlighted today),
    before/after switch, compact contacts, smiling avatar chat, new logo, responsive at all sizes.
-2. Feature source = this repo (`app/app/intern/**`, `src/views/intern`, `src/components/intern`). Every existing
+2. Feature source = this repo (`app/app/lead/**`, `src/views/intern`, `src/components/intern`). Every existing
    Lead feature stays. Remove nothing.
 3. New features are marked NEW.
 4. Already approved Lead designs: S1 layout + client colours + greeting card; owner's compliance health design;

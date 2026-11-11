@@ -25,6 +25,17 @@ export const metadata: Metadata = {
   openGraph: { title: TITLE, description: DESCRIPTION },
 };
 
+/**
+ * LP-01: apply the visitor's saved landing theme before the first paint, so a returning dark-theme
+ * visitor never sees a light flash. With no saved choice the page stays light (the default).
+ */
+const THEME_BEFORE_PAINT = `try{var t=localStorage.getItem('vcfo.lp-theme');if(t==='dark')document.documentElement.dataset.lpTheme='dark';else delete document.documentElement.dataset.lpTheme}catch(e){}`;
+
 export default function HomePage() {
-  return <LandingPage fontClass={`${sans.variable} ${mono.variable} ${poppins.variable}`} />;
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: THEME_BEFORE_PAINT }} />
+      <LandingPage fontClass={`${sans.variable} ${mono.variable} ${poppins.variable}`} />
+    </>
+  );
 }

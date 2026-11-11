@@ -229,7 +229,7 @@ describe('ObligationsView', () => {
   it('hides New task from a lead (S-4)', () => {
     search = new URLSearchParams('cat=ns');
     appState.user = { id: 'lead-1', role: 'intern' };
-    render(<ObligationsView basePath="/app/intern/compliances" scope={scope} />);
+    render(<ObligationsView basePath="/app/lead/compliances" scope={scope} />);
     expect(screen.queryByRole('button', { name: /New task/ })).toBeNull();
     appState.user = { id: 'u-manager', role: 'manager' };
   });

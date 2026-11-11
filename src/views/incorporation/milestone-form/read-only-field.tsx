@@ -6,6 +6,9 @@ import {
   repeatEntries,
   resolveFieldLabels,
 } from '@/lib/checklist/checklist-repeat';
+import { DinStatusBadge } from '@/components/incorporation/DinStatusBadge';
+import { DinCheckControl } from '@/components/incorporation/DinCheckControl';
+import { DIN_GROUP_ID } from '@/lib/checklist/din-verification';
 import { formatPre1DateDisplay } from '@/lib/checklist/checklist-pre1-validation';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +35,9 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
     displayValues,
     toggleFieldUnlock,
   } = ctx;
+
+  /** DR-01: the lead records the DIN check on the client's read-only director cards. */
+  const leadRecordsDin = item.id === 'pre-15' && !isClient && directFlow && !ctx.readOnly && !ctx.formReadOnly;
 
   /** Lead-only field on the client's form: read-only, with a line saying who fills it. */
   const leadOnlyNote = (fieldId: string) =>
@@ -90,9 +96,17 @@ export function createReadOnlyFieldRenderers(ctx: MilestoneFormCtx & FieldEditAc
         <div className="space-y-3">
           {entries.map((entry) => (
             <div key={entry.id} className="rounded-md border border-line/70 px-3 py-2">
-              <p className="mb-1.5 text-[12px] font-semibold tracking-[.07em] uppercase text-ink-muted">
-                {field.entryLabel ?? 'Entry'} {entry.index}
-              </p>
+              <div className="mb-1.5 flex flex-wrap items-center gap-3">
+                <p className="text-[12px] font-semibold tracking-[.07em] uppercase text-ink-muted">
+                  {field.entryLabel ?? 'Entry'} {entry.index}
+                </p>
+                {field.id === DIN_GROUP_ID && !leadRecordsDin ? <DinStatusBadge responses={displayValues} entryId={entry.id} /> : null}
+              </div>
+              {field.id === DIN_GROUP_ID && leadRecordsDin ? (
+                <div className="mb-2">
+                  <DinCheckControl values={displayValues} entryId={entry.id} onChange={ctx.setField} />
+                </div>
+              ) : null}
               <dl className="milestone-record">
                 {resolveFieldLabels(applyShowWhen(expandRepeatEntry(field, entry.id), displayValues), displayValues).map((sub) => (
                   <div key={sub.id} className="milestone-record-row">

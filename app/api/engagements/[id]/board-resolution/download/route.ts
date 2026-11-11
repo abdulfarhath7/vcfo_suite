@@ -6,7 +6,7 @@ import {
 import { boardResolutionAuthErrorResponse } from '@/lib/api/board-resolution-errors';
 import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
 import { requireAnyRole } from '@/auth/guards';
-import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-resolution-storage';
+import { boardResolutionDownloadName } from '@/lib/board-resolution/board-resolution-storage';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -91,7 +91,7 @@ export async function GET(_request: Request, context: RouteContext) {
     headers: {
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${BOARD_RESOLUTION_DOCX_FILENAME}"`,
+      'Content-Disposition': `attachment; filename="${boardResolutionDownloadName(access.row?.companyName)}"`,
       'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',

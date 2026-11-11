@@ -1,5 +1,6 @@
 import 'server-only';
 import { sendEmail } from '@/lib/email/send-email';
+import { draftView, messageHtml, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
 import { emailCallout, emailMetaTable, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 import { getObjectBuffer, bucketKey } from '@/storage/s3';
@@ -101,22 +102,10 @@ async function teamsFor(bundle: Bundle, leadId: string | null): Promise<{ link: 
   return r ? { link: r.joinUrl, eventId: r.eventId } : null;
 }
 
-export async function sendNotice(meetingId: string, opts: { leadId: string | null; notifyIds: string[]; update: boolean }): Promise<{ sent: boolean; to: number; cc: number; teams: boolean }> {
-  let bundle = await systemMeetingBundle(meetingId);
-  if (!bundle) return { sent: false, to: 0, cc: 0, teams: false };
-  const today = todayIst();
-  const teams = await teamsFor(bundle, opts.leadId);
-  const { agenda } = await finalAgenda(bundle.meeting);
-  const marked = await systemMarkSent(meetingId, {
-    noticeOn: today,
-    shortNotice: isShortNotice(today, bundle.meeting.meetingDate),
-    agenda,
-    bumpSequence: opts.update,
-    ...(teams ? { teamsLink: teams.link, teamsEventId: teams.eventId } : {}),
-  });
-  if (!marked) return { sent: false, to: 0, cc: 0, teams: false };
-  bundle = { ...bundle, meeting: marked };
-  const m = marked;
+/** The notice email for a meeting as it stands (GL-07: built for the pop-up, then for the send). */
+async function composeNotice(bundle: Bundle, update: boolean, today: string): Promise<ComposedEmail> {
+  const m = bundle.meeting;
+  const { agenda } = await finalAgenda(m);
   const notice = noticeFor(m, bundle.company, bundle.directors, agenda, today);
   const docx = noticeDocx(notice);
   const ev = eventOf(bundle, m.teamsLink);
@@ -133,80 +122,149 @@ export async function sendNotice(meetingId: string, opts: { leadId: string | nul
     })
     .join('');
   const agendaHtml = `<ol style="margin:0 0 14px 18px;padding:0;">${notice.agenda.map((a) => `<li style="margin:0 0 4px;">${escapeHtml(a.text)}${a.subs.length ? `<ul style="margin:4px 0 0 0;padding-left:16px;">${a.subs.map((s) => `<li>${escapeHtml(s.text)}</li>`).join('')}</ul>` : ''}</li>`).join('')}</ol>`;
-  const html = renderEmailDocument({
-    eyebrow: opts.update ? 'Updated notice' : 'Notice of meeting',
-    title: `${kind} · ${bundle.company.name}`,
-    bodyHtml: [
-      emailParagraph(opts.update ? 'The meeting has changed. The updated notice and agenda are attached; your calendar updates the event you already have.' : `${escapeHtml(notice.salutation)} The notice and agenda of the meeting are attached.`),
-      emailMetaTable([
-        { label: 'Meeting no.', value: m.meetingNo },
-        { label: 'Date and time', value: when },
-        { label: 'Mode', value: MODE_LABEL[m.mode as MeetingMode] ?? m.mode },
-        { label: 'Venue', value: m.venue || '—' },
-      ]),
-      m.teamsLink ? emailParagraph(btn(m.teamsLink, 'Join on Microsoft Teams', true)) : '',
-      emailParagraph(`<b>Add to calendar:</b> ${btn(outlookCalendarLink(ev), 'Outlook')}${btn(googleCalendarLink(ev), 'Google Calendar')} — or open the attached .ics file.`),
-      replyRows ? `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Will you attend?</p><table role="presentation" style="width:100%;border-collapse:collapse;">${replyRows}</table><p style="margin:4px 0 14px;font-size:12px;color:#64748B;">Each director uses the buttons on their own row. No sign-in is needed.</p>` : '',
-      `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Agenda</p>${agendaHtml}`,
-      m.shortNotice ? emailCallout('This notice is sent less than 7 days before the meeting (Sec 173(3)). Please confirm your consent to shorter notice by reply.') : '',
-    ].join(''),
-    footerNote: `${bundle.company.name}${bundle.company.cin ? ` · CIN ${bundle.company.cin}` : ''}. Sent by SBC through VCFO Suite.`,
-  });
-  const text = `${kind} · ${bundle.company.name}\n${m.meetingNo}\n${when}\n${m.venue}\n${m.teamsLink ? `Join: ${m.teamsLink}\n` : ''}\nThe notice and agenda are attached.`;
+  const message = update
+    ? 'The meeting has changed. The updated notice and agenda are attached; your calendar updates the event you already have.'
+    : `${notice.salutation} The notice and agenda of the meeting are attached.`;
+  const fixedHtml = [
+    emailMetaTable([
+      { label: 'Meeting no.', value: m.meetingNo },
+      { label: 'Date and time', value: when },
+      { label: 'Mode', value: MODE_LABEL[m.mode as MeetingMode] ?? m.mode },
+      { label: 'Venue', value: m.venue || '—' },
+    ]),
+    m.teamsLink ? emailParagraph(btn(m.teamsLink, 'Join on Microsoft Teams', true)) : '',
+    emailParagraph(`<b>Add to calendar:</b> ${btn(outlookCalendarLink(ev), 'Outlook')}${btn(googleCalendarLink(ev), 'Google Calendar')} — or open the attached .ics file.`),
+    replyRows ? `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Will you attend?</p><table role="presentation" style="width:100%;border-collapse:collapse;">${replyRows}</table><p style="margin:4px 0 14px;font-size:12px;color:#64748B;">Each director uses the buttons on their own row. No sign-in is needed.</p>` : '',
+    `<p style="margin:18px 0 6px;font-weight:600;color:#0A2540;">Agenda</p>${agendaHtml}`,
+    m.shortNotice || isShortNotice(today, m.meetingDate) ? emailCallout('This notice is sent less than 7 days before the meeting (Sec 173(3)). Please confirm your consent to shorter notice by reply.') : '',
+  ].join('');
   const file = slug(m.meetingNo);
+  return {
+    to,
+    cc,
+    subject: `${update ? 'Updated notice' : 'Notice'} of ${kind} · ${m.meetingNo} · ${shortDate(m.meetingDate)}`,
+    message,
+    html: (msg) =>
+      renderEmailDocument({
+        eyebrow: update ? 'Updated notice' : 'Notice of meeting',
+        title: `${kind} · ${bundle.company.name}`,
+        bodyHtml: messageHtml(msg) + fixedHtml,
+        footerNote: `${bundle.company.name}${bundle.company.cin ? ` · CIN ${bundle.company.cin}` : ''}. Sent by SBC through VCFO Suite.`,
+      }),
+    text: (msg) => `${msg}\n\n${kind} · ${bundle.company.name}\n${m.meetingNo}\n${when}\n${m.venue}\n${m.teamsLink ? `Join: ${m.teamsLink}\n` : ''}`,
+    attachments: [
+      { filename: `Notice_and_Agenda_${file}.docx`, content: docx, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      { filename: `${file}.ics`, content: new TextEncoder().encode(ics), contentType: 'text/calendar; method=REQUEST; charset=utf-8' },
+    ],
+    purpose: 'board_meeting.notice',
+    fixed: 'the meeting details, the Teams link (made when you send, if the lead has Outlook connected), calendar links, the attendance buttons for each director and the agenda',
+  };
+}
+
+/** GL-07: the notice as a draft for the "Send email" pop-up. Nothing changes and nothing is sent. */
+export async function previewNotice(meetingId: string, update: boolean): Promise<EmailDraftView | null> {
+  const bundle = await systemMeetingBundle(meetingId);
+  if (!bundle) return null;
+  return draftView(await composeNotice(bundle, update, todayIst()));
+}
+
+/**
+ * Send the notice, from the "Send email" pop-up's Send (GL-07). The Teams meeting is made, the
+ * meeting turns `sent`, and the edited email goes out with the Word notice and the invite.
+ */
+export async function sendNotice(
+  meetingId: string,
+  opts: { leadId: string | null; notifyIds: string[]; update: boolean; edits?: EmailEdits },
+): Promise<{ sent: boolean; to: number; cc: number; teams: boolean; subject?: string; toList?: string[]; ccList?: string[] }> {
+  let bundle = await systemMeetingBundle(meetingId);
+  if (!bundle) return { sent: false, to: 0, cc: 0, teams: false };
+  const today = todayIst();
+  const teams = await teamsFor(bundle, opts.leadId);
+  const { agenda } = await finalAgenda(bundle.meeting);
+  const marked = await systemMarkSent(meetingId, {
+    noticeOn: today,
+    shortNotice: isShortNotice(today, bundle.meeting.meetingDate),
+    agenda,
+    bumpSequence: opts.update,
+    ...(teams ? { teamsLink: teams.link, teamsEventId: teams.eventId } : {}),
+  });
+  if (!marked) return { sent: false, to: 0, cc: 0, teams: false };
+  bundle = { ...bundle, meeting: marked };
+  const m = marked;
+  const composed = await composeNotice(bundle, opts.update, today);
+  const mail = opts.edits
+    ? withEdits(composed, opts.edits)
+    : withEdits(composed, { to: composed.to, cc: composed.cc, subject: composed.subject, message: composed.message, dropAttachments: [], addAttachments: [] });
+  const to = Array.isArray(mail.to) ? mail.to : [mail.to];
+  const cc = mail.cc ?? [];
   let sent = false;
-  if (to.length) {
-    const res = await sendEmail({
-      to,
-      cc,
-      subject: `${opts.update ? 'Updated notice' : 'Notice'} of ${kind} · ${m.meetingNo} · ${shortDate(m.meetingDate)}`,
-      html,
-      text,
-      purpose: 'board_meeting.notice',
-      attachments: [
-        { filename: `Notice_and_Agenda_${file}.docx`, content: docx, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-        { filename: `${file}.ics`, content: new TextEncoder().encode(ics), contentType: 'text/calendar; method=REQUEST; charset=utf-8' },
-      ],
-    });
-    sent = res.ok;
-  }
-  // The notice is sent after the approval has answered, so a failed email is told in the bell.
+  if (to.length) sent = (await sendEmail(mail)).ok;
   if (to.length && !sent) {
     await bell(bundle, opts.notifyIds, `Notice not sent: ${m.meetingNo}`, 'The email to the directors failed. It is kept in the developer console for a retry.');
   } else {
     await bell(bundle, opts.notifyIds, `${opts.update ? 'Updated notice' : 'Notice'} sent: ${m.meetingNo}`, `Emailed to ${to.length} and CC ${cc.length}. ${m.teamsLink ? 'Teams link included.' : 'No Teams link.'}`);
   }
-  return { sent, to: to.length, cc: cc.length, teams: Boolean(m.teamsLink) };
+  return { sent, to: to.length, cc: cc.length, teams: Boolean(m.teamsLink), subject: mail.subject, toList: to, ccList: cc };
 }
 
-export async function sendCancellation(meetingId: string, opts: { leadId: string | null; notifyIds: string[]; wasSent: boolean }): Promise<void> {
-  const bundle = await systemMeetingBundle(meetingId);
-  if (!bundle) return;
+function composeCancellation(bundle: Bundle): ComposedEmail | null {
   const m = bundle.meeting;
-  if (m.teamsEventId && opts.leadId) await systemTeamsMeeting(opts.leadId, { kind: 'cancel', eventId: m.teamsEventId, comment: m.cancelReason ?? 'Cancelled' });
-  if (!opts.wasSent) return;
   const { to, cc } = people(bundle);
-  if (!to.length) return;
+  if (!to.length) return null;
   const ev = eventOf(bundle, m.teamsLink);
   const kind = KIND_LABEL[m.kind as MeetingKind] ?? 'Board meeting';
-  await sendEmail({
+  const message = `The meeting ${m.meetingNo} on ${longDate(m.meetingDate)} is cancelled.${m.cancelReason ? `\n\nReason: ${m.cancelReason}` : ''}`;
+  return {
     to,
     cc,
     subject: `Cancelled: ${kind} · ${m.meetingNo} · ${shortDate(m.meetingDate)}`,
-    html: renderEmailDocument({
-      eyebrow: 'Meeting cancelled',
-      title: `${kind} · ${bundle.company.name}`,
-      bodyHtml: [
-        emailParagraph(`The meeting ${escapeHtml(m.meetingNo)} on ${escapeHtml(longDate(m.meetingDate))} is cancelled.`),
-        m.cancelReason ? emailCallout(`Reason: ${escapeHtml(m.cancelReason)}`) : '',
-        emailParagraph('Your calendar removes the event when you open the attached file.'),
-      ].join(''),
-    }),
-    text: `Cancelled: ${m.meetingNo} on ${longDate(m.meetingDate)}. ${m.cancelReason ?? ''}`,
-    purpose: 'board_meeting.cancel',
+    message,
+    html: (msg) =>
+      renderEmailDocument({
+        eyebrow: 'Meeting cancelled',
+        title: `${kind} · ${bundle.company.name}`,
+        bodyHtml: messageHtml(msg) + emailParagraph('Your calendar removes the event when you open the attached file.'),
+      }),
+    text: (msg) => msg,
     attachments: [{ filename: `${slug(m.meetingNo)}-cancel.ics`, content: new TextEncoder().encode(meetingIcs(ev, 'CANCEL')), contentType: 'text/calendar; method=CANCEL; charset=utf-8' }],
-  });
+    purpose: 'board_meeting.cancel',
+    fixed: 'a line that the calendar file removes the event',
+  };
+}
+
+/** GL-07: the cancellation email as a draft, for a meeting whose notice went out. */
+export async function previewCancellation(meetingId: string, reason: string): Promise<EmailDraftView | null> {
+  const bundle = await systemMeetingBundle(meetingId);
+  if (!bundle) return null;
+  const composed = composeCancellation({ ...bundle, meeting: { ...bundle.meeting, cancelReason: reason || bundle.meeting.cancelReason } });
+  return composed ? draftView(composed) : null;
+}
+
+export async function sendCancellation(meetingId: string, opts: { leadId: string | null; notifyIds: string[]; wasSent: boolean; edits?: EmailEdits }): Promise<SentMail | null> {
+  const bundle = await systemMeetingBundle(meetingId);
+  if (!bundle) return null;
+  const m = bundle.meeting;
+  if (m.teamsEventId && opts.leadId) await systemTeamsMeeting(opts.leadId, { kind: 'cancel', eventId: m.teamsEventId, comment: m.cancelReason ?? 'Cancelled' });
+  if (!opts.wasSent) return null;
+  const composed = composeCancellation(bundle);
+  if (!composed) return null;
+  const sent = await sendComposed(composed, opts.edits);
   await bell(bundle, opts.notifyIds, `Meeting cancelled: ${m.meetingNo}`, m.cancelReason ?? '');
+  return sent;
+}
+
+/** What went out, for the audit record and the card (GL-07). */
+export interface SentMail {
+  ok: boolean;
+  to: string[];
+  cc: string[];
+  subject: string;
+}
+
+async function sendComposed(composed: ComposedEmail, edits?: EmailEdits): Promise<SentMail> {
+  const mail = withEdits(composed, edits ?? { to: composed.to, cc: composed.cc, subject: composed.subject, message: composed.message, dropAttachments: [], addAttachments: [] });
+  const res = await sendEmail(mail);
+  return { ok: res.ok, to: Array.isArray(mail.to) ? mail.to : [mail.to], cc: mail.cc ?? [], subject: mail.subject };
 }
 
 async function documentFile(doc: NonNullable<Awaited<ReturnType<typeof systemDocument>>>, bundle: Bundle, which: 'file' | 'signed'): Promise<{ filename: string; content: Uint8Array; contentType: string } | null> {
@@ -233,61 +291,92 @@ async function documentFile(doc: NonNullable<Awaited<ReturnType<typeof systemDoc
   return { filename: `Resolution_${slug(doc.title).slice(0, 60)}.docx`, content: buf, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
 }
 
-export async function sendForSignature(docId: string, opts: { lead: { name: string; email: string } | null; reminder: boolean }): Promise<number> {
+async function composeSignature(docId: string, opts: { lead: { name: string; email: string } | null; reminder: boolean }): Promise<{ composed: ComposedEmail; signers: number } | null> {
   const doc = await systemDocument(docId);
-  if (!doc) return 0;
+  if (!doc) return null;
   const bundle = await systemMeetingBundle(doc.meetingId);
-  if (!bundle) return 0;
+  if (!bundle) return null;
   const signers = doc.signerIds.map((id) => bundle.directors.find((d) => d.id === id)).filter((d): d is NonNullable<typeof d> => Boolean(d?.email));
-  if (!signers.length) return 0;
+  if (!signers.length) return null;
   const att = await documentFile(doc, bundle, 'file');
   const what = doc.kind === 'mom' ? 'the minutes of meeting' : 'a resolution passed after the meeting';
-  await sendEmail({
-    to: signers.map((s) => s.email!),
-    cc: opts.lead ? [opts.lead.email] : [],
-    replyTo: opts.lead ? `${opts.lead.name} <${opts.lead.email}>` : undefined,
-    subject: `${opts.reminder ? 'Reminder: ' : ''}Please sign ${doc.kind === 'mom' ? 'the MoM' : 'the resolution'} · ${bundle.meeting.meetingNo}`,
-    html: renderEmailDocument({
-      eyebrow: opts.reminder ? 'Reminder · signature needed' : 'Signature needed',
-      title: doc.title,
-      bodyHtml: [
-        emailParagraph(`Please sign ${what} of ${escapeHtml(bundle.company.name)} (${escapeHtml(bundle.meeting.meetingNo)}, ${escapeHtml(longDate(bundle.meeting.meetingDate))}) and return the signed copy by replying to this email.`),
-        doc.kind === 'resolution' ? emailCallout(escapeHtml(doc.description)) : '',
-        emailMetaTable(signers.map((s) => ({ label: s.name, value: s.din ? `DIN ${s.din}` : 'Director' }))),
-      ].join(''),
-    }),
-    text: `Please sign ${what} of ${bundle.company.name} and reply with the signed copy.`,
-    purpose: 'board_meeting.signature',
-    attachments: att ? [att] : [],
-  });
-  return signers.length;
+  const message = `Please sign ${what} of ${bundle.company.name} (${bundle.meeting.meetingNo}, ${longDate(bundle.meeting.meetingDate)}) and return the signed copy by replying to this email.`;
+  return {
+    signers: signers.length,
+    composed: {
+      to: signers.map((s) => s.email!),
+      cc: opts.lead ? [opts.lead.email] : [],
+      replyTo: opts.lead ? `${opts.lead.name} <${opts.lead.email}>` : undefined,
+      subject: `${opts.reminder ? 'Reminder: ' : ''}Please sign ${doc.kind === 'mom' ? 'the MoM' : 'the resolution'} · ${bundle.meeting.meetingNo}`,
+      message,
+      html: (msg) =>
+        renderEmailDocument({
+          eyebrow: opts.reminder ? 'Reminder · signature needed' : 'Signature needed',
+          title: doc.title,
+          bodyHtml: [
+            messageHtml(msg),
+            doc.kind === 'resolution' ? emailCallout(escapeHtml(doc.description)) : '',
+            emailMetaTable(signers.map((s) => ({ label: s.name, value: s.din ? `DIN ${s.din}` : 'Director' }))),
+          ].join(''),
+        }),
+      text: (msg) => msg,
+      attachments: att ? [att] : [],
+      purpose: 'board_meeting.signature',
+      fixed: doc.kind === 'resolution' ? 'the text of the resolution and the list of signing directors' : 'the list of signing directors',
+    },
+  };
 }
 
-export async function sendFinalCopy(docId: string, opts: { ccEmails: string[]; notifyIds: string[] }): Promise<number> {
+/** GL-07: the signature request as a draft. */
+export async function previewForSignature(docId: string, opts: { lead: { name: string; email: string } | null; reminder: boolean }): Promise<EmailDraftView | null> {
+  const built = await composeSignature(docId, opts);
+  return built ? draftView(built.composed) : null;
+}
+
+export async function sendForSignature(docId: string, opts: { lead: { name: string; email: string } | null; reminder: boolean; edits?: EmailEdits }): Promise<{ count: number; mail: SentMail | null }> {
+  const built = await composeSignature(docId, opts);
+  if (!built) return { count: 0, mail: null };
+  const mail = await sendComposed(built.composed, opts.edits);
+  return { count: built.signers, mail };
+}
+
+async function composeFinalCopy(docId: string, ccEmails: string[]) {
   const doc = await systemDocument(docId);
-  if (!doc || doc.status !== 'locked') return 0;
+  if (!doc || doc.status !== 'locked') return null;
   const bundle = await systemMeetingBundle(doc.meetingId);
-  if (!bundle) return 0;
+  if (!bundle) return null;
   const today = todayIst();
   const current = bundle.directors.filter((d) => (!d.ceasedOn || d.ceasedOn > today) && d.email);
+  if (!current.length) return null;
   const att = await documentFile(doc, bundle, 'signed');
-  if (!current.length) return 0;
-  await sendEmail({
+  const message = `The signed copy of ${doc.kind === 'mom' ? 'the minutes of meeting' : 'the resolution'} of ${bundle.company.name} (${bundle.meeting.meetingNo}) is attached for your records. It is now locked in VCFO Suite.`;
+  const composed: ComposedEmail = {
     to: current.map((d) => d.email!),
-    cc: [...new Set(opts.ccEmails.filter(Boolean))],
+    cc: [...new Set(ccEmails.filter(Boolean))],
     subject: `Signed copy · ${doc.title} · ${bundle.meeting.meetingNo}`,
-    html: renderEmailDocument({
-      eyebrow: 'Signed and locked',
-      title: doc.title,
-      bodyHtml: emailParagraph(`The signed copy of ${doc.kind === 'mom' ? 'the minutes of meeting' : 'the resolution'} of ${escapeHtml(bundle.company.name)} (${escapeHtml(bundle.meeting.meetingNo)}) is attached for your records. It is now locked in VCFO Suite.`),
-    }),
-    text: `Signed copy of ${doc.title} (${bundle.meeting.meetingNo}) attached.`,
-    purpose: 'board_meeting.final_copy',
+    message,
+    html: (msg) => renderEmailDocument({ eyebrow: 'Signed and locked', title: doc.title, bodyHtml: messageHtml(msg) }),
+    text: (msg) => msg,
     attachments: att ? [att] : [],
-  });
+    purpose: 'board_meeting.final_copy',
+  };
+  return { doc, bundle, current, composed };
+}
+
+/** GL-07: the signed copy email as a draft. */
+export async function previewFinalCopy(docId: string, ccEmails: string[]): Promise<EmailDraftView | null> {
+  const built = await composeFinalCopy(docId, ccEmails);
+  return built ? draftView(built.composed) : null;
+}
+
+export async function sendFinalCopy(docId: string, opts: { ccEmails: string[]; notifyIds: string[]; edits?: EmailEdits }): Promise<{ count: number; mail: SentMail | null }> {
+  const built = await composeFinalCopy(docId, opts.ccEmails);
+  if (!built) return { count: 0, mail: null };
+  const { doc, bundle, current, composed } = built;
+  const mail = await sendComposed(composed, opts.edits);
   await systemMarkFinalSent(doc.id, current.map((d) => d.id));
-  await bell(bundle, opts.notifyIds, `Signed and locked: ${doc.title}`, `Final copy emailed to ${current.length} directors.`);
-  return current.length;
+  await bell(bundle, opts.notifyIds, `Signed and locked: ${doc.title}`, `Final copy emailed to ${mail.to.length} directors.`);
+  return { count: mail.to.length, mail };
 }
 
 async function bell(bundle: Bundle, userIds: string[], title: string, body: string): Promise<void> {
@@ -331,14 +420,11 @@ export async function remindLead(input: { meetingId: string; lead: { id: string;
   ]).catch(() => []);
 }
 
-/** Remind directors who have not replied (one email, To those directors only). */
-export async function remindNonResponders(meetingId: string, replied: string[]): Promise<number> {
-  const bundle = await systemMeetingBundle(meetingId);
-  if (!bundle) return 0;
+function composeReplyReminder(bundle: Bundle, replied: string[]): ComposedEmail | null {
   const m = bundle.meeting;
   const { directors } = people(bundle);
   const open = directors.filter((d) => d.email && !replied.includes(d.id));
-  if (!open.length) return 0;
+  if (!open.length) return null;
   const base = siteUrl();
   const rows = open
     .map((d) => {
@@ -348,16 +434,36 @@ export async function remindNonResponders(meetingId: string, replied: string[]):
     })
     .join('');
   const kind = KIND_LABEL[m.kind as MeetingKind] ?? 'Board meeting';
-  await sendEmail({
+  return {
     to: open.map((d) => d.email!),
+    cc: [],
     subject: `Reminder: will you attend? ${kind} · ${m.meetingNo} · ${shortDate(m.meetingDate)}`,
-    html: renderEmailDocument({
-      eyebrow: 'Reminder',
-      title: `${kind} · ${bundle.company.name}`,
-      bodyHtml: emailParagraph(`The meeting is on ${escapeHtml(shortDate(m.meetingDate))} at ${escapeHtml(noticeTime(m.meetingTime))} IST. Please tell us if you will attend.`) + `<table role="presentation" style="width:100%;border-collapse:collapse;">${rows}</table>`,
-    }),
-    text: `Reminder: ${kind} ${m.meetingNo} on ${shortDate(m.meetingDate)}. Please reply from the notice email.`,
+    message: `The meeting is on ${shortDate(m.meetingDate)} at ${noticeTime(m.meetingTime)} IST. Please tell us if you will attend.`,
+    html: (msg) =>
+      renderEmailDocument({
+        eyebrow: 'Reminder',
+        title: `${kind} · ${bundle.company.name}`,
+        bodyHtml: messageHtml(msg) + `<table role="presentation" style="width:100%;border-collapse:collapse;">${rows}</table>`,
+      }),
+    text: (msg) => `${msg}\nPlease reply from the notice email.`,
+    attachments: [],
     purpose: 'board_meeting.reply_reminder',
-  });
-  return open.length;
+    fixed: 'the attendance buttons for each director who has not replied',
+  };
+}
+
+/** GL-07: the attendance reminder as a draft. */
+export async function previewReplyReminder(meetingId: string, replied: string[]): Promise<EmailDraftView | null> {
+  const bundle = await systemMeetingBundle(meetingId);
+  const composed = bundle ? composeReplyReminder(bundle, replied) : null;
+  return composed ? draftView(composed) : null;
+}
+
+/** Remind directors who have not replied (one email, To those directors only). */
+export async function remindNonResponders(meetingId: string, replied: string[], edits?: EmailEdits): Promise<{ count: number; mail: SentMail | null }> {
+  const bundle = await systemMeetingBundle(meetingId);
+  const composed = bundle ? composeReplyReminder(bundle, replied) : null;
+  if (!composed) return { count: 0, mail: null };
+  const mail = await sendComposed(composed, edits);
+  return { count: mail.to.length, mail };
 }

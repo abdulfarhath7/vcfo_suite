@@ -1,3 +1,4 @@
+import { downloadDateStamp } from '@/lib/files/download-name';
 import PizZip from 'pizzip';
 import { describe, expect, it } from 'vitest';
 
@@ -23,19 +24,22 @@ const PRE7 = {
   boardResolutionDraftForIncorpUrl: 'eng/boardResolutionDraftForIncorpUrl/1-e.docx',
 };
 
-const root = incorpDraftsZipRoot('Test Company Private Limited');
+const CLIENT = 'Test Company Private Limited';
+const root = incorpDraftsZipRoot(CLIENT);
+/** GL-08: `<Document>_<Client>_<DD-MM-YYYY>.docx`. */
+const named = (doc: string) => `${doc}_Test-Company-Private-Limited_${downloadDateStamp()}.docx`;
 const load = async (path: string) => Buffer.from(`bytes:${path}`);
 
 describe('incorporation drafts zip', () => {
   it('lays out Company and one folder per director; no board resolution', async () => {
     const links = incorpDraftDocLinksFromResponses(PRE7, { pre6 });
-    const { buffer, included } = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6), load);
-    expect(root).toBe('test-company-private-limited-incorporation-drafts');
+    const { buffer, included } = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6, CLIENT), load);
+    expect(root).toBe(`Incorporation-Drafts_Test-Company-Private-Limited_${downloadDateStamp()}`);
     expect(included.sort()).toEqual([
-      `${root}/Alpha Director/dir-2-non-resident-director-alpha-director.docx`,
-      `${root}/Beta Director/dir-2-resident-director-beta-director.docx`,
-      `${root}/Company/moa.docx`,
-      `${root}/Gamma Director/dir-2-resident-director-2-gamma-director.docx`,
+      `${root}/Alpha Director/${named('DIR-2-Alpha-Director')}`,
+      `${root}/Beta Director/${named('DIR-2-Beta-Director')}`,
+      `${root}/Company/${named('INC-33-MOA')}`,
+      `${root}/Gamma Director/${named('DIR-2-Gamma-Director')}`,
     ]);
     expect(Object.keys(new PizZip(buffer).files).some((f) => f.includes('board'))).toBe(false);
   });
@@ -46,10 +50,10 @@ describe('incorporation drafts zip', () => {
       sharedIncorpDraftDocs: ['dir-2:resident-2', 'moa:company'],
     };
     const links = filterClientVisibleIncorpDrafts(PRE7, pre7State, { pre6 });
-    const { included } = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6), load);
+    const { included } = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6, CLIENT), load);
     expect(included.sort()).toEqual([
-      `${root}/Company/moa.docx`,
-      `${root}/Gamma Director/dir-2-resident-director-2-gamma-director.docx`,
+      `${root}/Company/${named('INC-33-MOA')}`,
+      `${root}/Gamma Director/${named('DIR-2-Gamma-Director')}`,
     ]);
   });
 
@@ -59,10 +63,10 @@ describe('incorporation drafts zip', () => {
 
   it('unreadable files are reported, not fatal', async () => {
     const links = incorpDraftDocLinksFromResponses({ moaDraftUrl: PRE7.moaDraftUrl, aoaDraftUrl: 'x' }, { pre6 });
-    const result = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6), async (p) =>
+    const result = await buildIncorpDraftsZip(incorpDraftZipEntries(links, root, pre6, CLIENT), async (p) =>
       p === 'x' ? null : Buffer.from('ok'),
     );
-    expect(result.included).toEqual([`${root}/Company/moa.docx`]);
-    expect(result.missing).toEqual([`${root}/Company/aoa.docx`]);
+    expect(result.included).toEqual([`${root}/Company/${named('INC-33-MOA')}`]);
+    expect(result.missing).toEqual([`${root}/Company/${named('INC-34-AOA')}`]);
   });
 });

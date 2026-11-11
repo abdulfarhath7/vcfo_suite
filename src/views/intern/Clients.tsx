@@ -12,6 +12,7 @@ import { CardHeadTile } from '@/components/common/CardHeadTile';
 import { shortCompany } from '@/components/super/parts/super-text';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { FilterChip } from '@/components/ui/filter-chip';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { ClientIdentityTile } from '@/views/client-record/client-identity';
 import {
   CLIENT_HEALTHS,
@@ -335,7 +336,7 @@ function InternClientsInner() {
   );
   return (
     <PageTransition>
-      <SEO title="Clients — VCFO Suite" description="Engagements assigned to you and how far each company is through setup." path="/app/intern/clients" />
+      <SEO title="Clients — VCFO Suite" description="Engagements assigned to you and how far each company is through setup." path="/app/lead/clients" />
       <h1 className="sr-only">Clients</h1>
 
       {myEngagements.length === 0 && !engagementsLoading ? (
@@ -357,6 +358,22 @@ function InternClientsInner() {
                 onChange={setHealth}
               />
               <FilterChip label="Next" value={nextWin} options={NEXT_OPTIONS} onChange={setNextWin} />
+              {/* GL-06: every client the filters keep, with the grid's columns. */}
+              <ExportToExcelButton
+                title="Clients"
+                columns={['Client', 'Contact', 'Stage', 'Now', 'Team', 'Phases 1–3', 'Status']}
+                rows={() =>
+                  rows.map((r) => [
+                    r.e.companyName,
+                    r.e.clientDisplayName ?? null,
+                    STAGE_WORD[r.facts.stage],
+                    r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : null,
+                    r.people.join(', '),
+                    `${r.progress.phases.slice(0, 3).reduce((n, p) => n + p.done, 0)}/${r.progress.phases.slice(0, 3).reduce((n, p) => n + p.total, 0)}`,
+                    rowStatus(r).word,
+                  ])
+                }
+              />
             </div>
           </div>
           {/* Saved views sit in their own row under the head (prototype `ClientsGrid`). */}

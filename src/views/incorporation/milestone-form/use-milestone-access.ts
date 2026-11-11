@@ -46,7 +46,7 @@ export function useMilestoneAccess({ item, variant, readOnly, itemState }: Miles
         directFlow
           ? isClient
             ? stripLeadOnlyResponses(item.id, partial)
-            : stripClientOnlyResponses(item.id, partial)
+            : stripClientOnlyResponses(item.id, partial, itemState)
           : partial,
         enforceClientLock,
       ),

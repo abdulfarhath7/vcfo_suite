@@ -89,5 +89,7 @@ describe('snapshot and compare (T3, T4)', () => {
       { key: 'PARENT_ENTITY_NAME', label: 'Parent name', before: 'Parent A', after: 'Parent B' },
     ]);
     expect(diffNocFields(a, a)).toEqual([]);
+    // A change of letter case alone (GL-09 re-cases names) does not read as a changed answer.
+    expect(diffNocFields({ ...a, PARENT_ENTITY_NAME: 'parent a' }, a)).toEqual([]);
   });
 });

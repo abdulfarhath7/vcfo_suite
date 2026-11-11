@@ -77,12 +77,12 @@ describe('gatherMyDayItems for a lead', () => {
     const items = await gatherMyDayItems(lead, { now: NOW, data });
     const byId = Object.fromEntries(items.map((i) => [i.id, i]));
 
-    expect(byId['filing:f-late']).toMatchObject({ kind: 'overdue', weight: 3, engagementId: 'acme', href: '/app/intern/compliances/filings' });
+    expect(byId['filing:f-late']).toMatchObject({ kind: 'overdue', weight: 3, engagementId: 'acme', href: '/app/lead/compliances/filings' });
     expect(byId['filing:f-today']).toMatchObject({ kind: 'due_today', weight: 0 });
     expect(byId['filing:f-filed']).toBeUndefined();
     expect(byId['filing:f-later']).toBeUndefined();
 
-    expect(byId['task:t-mine']).toMatchObject({ kind: 'overdue', weight: 1, href: '/app/intern/tasks' });
+    expect(byId['task:t-mine']).toMatchObject({ kind: 'overdue', weight: 1, href: '/app/lead/tasks' });
     expect(byId['task:t-open']).toMatchObject({ kind: 'task', weight: 5 });
     expect(byId['task:t-other']).toBeUndefined();
     expect(byId['task:t-done']).toBeUndefined();
@@ -91,16 +91,16 @@ describe('gatherMyDayItems for a lead', () => {
     expect(byId['step:acme:pre-1']).toMatchObject({ kind: 'client_reply', weight: 2 });
     expect(byId['step:acme:pre-2']).toBeUndefined();
 
-    expect(byId['docreq:d-up']).toMatchObject({ kind: 'client_reply', href: '/app/intern/requests' });
+    expect(byId['docreq:d-up']).toMatchObject({ kind: 'client_reply', href: '/app/lead/requests' });
     expect(byId['docreq:d-pend']).toBeUndefined();
 
-    expect(byId['expiry:x-soon']).toMatchObject({ kind: 'expiry', weight: 4, href: '/app/intern/compliances/expiries' });
+    expect(byId['expiry:x-soon']).toMatchObject({ kind: 'expiry', weight: 4, href: '/app/lead/compliances/expiries' });
     expect(byId['expiry:x-gone']).toMatchObject({ kind: 'overdue', weight: 2 });
 
-    expect(byId['notice:n-near']).toMatchObject({ kind: 'notice', weight: 5, href: '/app/intern/compliances/notices' });
+    expect(byId['notice:n-near']).toMatchObject({ kind: 'notice', weight: 5, href: '/app/lead/compliances/notices' });
     expect(byId['notice:n-far']).toBeUndefined();
 
-    expect(byId['reqlist:r-stalled']).toMatchObject({ kind: 'request_list', weight: 9, href: '/app/intern/requests' });
+    expect(byId['reqlist:r-stalled']).toMatchObject({ kind: 'request_list', weight: 9, href: '/app/lead/requests' });
     expect(byId['reqlist:r-fresh']).toBeUndefined();
   });
 

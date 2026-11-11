@@ -32,7 +32,7 @@ vi.mock('@/context/AppContext', () => ({ useApp: () => useApp() }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
-  usePathname: () => '/app/intern/engagements/acme/step/name-application',
+  usePathname: () => '/app/lead/engagements/acme/step/name-application',
 }));
 vi.mock('@/components/ask/FieldHelpButton', () => ({ FieldHelpButton: () => null }));
 vi.mock('@/components/ask/WhatsThisButton', () => ({ WhatsThisButton: () => null }));

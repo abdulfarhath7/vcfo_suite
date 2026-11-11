@@ -142,7 +142,7 @@ describe('syncRecordChangeProposals', () => {
     expect(out).toHaveLength(1);
     const insert = calls.find((c) => c.op === 'insert')!;
     expect(insert.values).toMatchObject({ status: 'proposed', source: 'record_change', createdBy: null, details: { baseline: 'Old', address: 'New' } });
-    expect(createNotificationsForUsers).toHaveBeenCalledWith([expect.objectContaining({ userId: 'user-lead', href: '/app/intern/compliances/events' })]);
+    expect(createNotificationsForUsers).toHaveBeenCalledWith([expect.objectContaining({ userId: 'user-lead', href: '/app/lead/compliances/events' })]);
   });
 
   it('updates the open proposal on the next autosave instead of adding one', async () => {

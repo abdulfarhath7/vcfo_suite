@@ -35,7 +35,7 @@ async function askInClientChat(page: Page, question: string) {
 const STAFF_CASES: Array<{ role: DemoRole; shell: string; line: RegExp; link: RegExp }> = [
   { role: 'admin', shell: '/app/admin', line: /in FY \d{4}-\d{2} across the firm/, link: /\/app\/admin\/projects/ },
   { role: 'manager', shell: '/app/manager', line: /in FY \d{4}-\d{2} on your projects/, link: /\/app\/manager\/projects/ },
-  { role: 'lead', shell: '/app/intern', line: /in FY \d{4}-\d{2} on your projects/, link: /\/app\/intern\/clients/ },
+  { role: 'lead', shell: '/app/lead', line: /in FY \d{4}-\d{2} on your projects/, link: /\/app\/lead\/clients/ },
 ];
 
 for (const { role, shell, line, link } of STAFF_CASES) {
@@ -66,7 +66,7 @@ test('a lead sees only their own number, and the row opens the lead page', async
   const answer = await ask(panel, 'How many companies are in progress?');
   await expect(answer).toContainText('on your projects');
   const row = answer.locator('[data-visual="projectRows"] a').first();
-  await expect(row).toHaveAttribute('href', /^\/app\/intern\/engagements\//);
+  await expect(row).toHaveAttribute('href', /^\/app\/lead\/engagements\//);
 });
 
 const COMPANY_FACT = /Your company, Kestrel.+ (was incorporated|has not been incorporated yet)/;

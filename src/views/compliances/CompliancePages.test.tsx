@@ -114,7 +114,7 @@ describe('CompliancePages', () => {
 
   it('shows the skeleton until the roster has settled', () => {
     app({ engagements: [], engagementsSettled: false });
-    render(<FilingsPage basePath="/app/intern/compliances" />);
+    render(<FilingsPage basePath="/app/lead/compliances" />);
     expect(screen.queryByTestId('filings')).toBeNull();
     expect(screen.getByLabelText('Loading filings')).toHaveAttribute('aria-busy', 'true');
   });
@@ -141,18 +141,18 @@ describe('CompliancePages', () => {
 
   it('sends a lead with no incorporated company from Registrations to Today', () => {
     app({ user: { id: 'u-lead', role: 'intern' }, engagements: [engagement({ id: 'kestrel' })] });
-    render(<RegistrationsPage shellBase="/app/intern" />);
+    render(<RegistrationsPage shellBase="/app/lead" />);
     expect(screen.queryByTestId('registrations')).toBeNull();
-    expect(screen.getByTestId('redirect').dataset.href).toBe('/app/intern/today');
+    expect(screen.getByTestId('redirect').dataset.href).toBe('/app/lead/today');
   });
 
   it('R-51: shows a lead with no incorporated company an empty state on every Compliances page', () => {
     app({ user: { id: 'u-lead', role: 'intern' }, engagements: [engagement({ id: 'kestrel' })] });
     for (const page of [
-      <ComplianceCalendarPage key="c" basePath="/app/intern/compliances" />,
-      <FilingsPage key="f" basePath="/app/intern/compliances" />,
-      <ObligationsPage key="o" basePath="/app/intern/compliances" />,
-      <ObligationPage key="r" basePath="/app/intern/compliances" obligationId="gst-3b" />,
+      <ComplianceCalendarPage key="c" basePath="/app/lead/compliances" />,
+      <FilingsPage key="f" basePath="/app/lead/compliances" />,
+      <ObligationsPage key="o" basePath="/app/lead/compliances" />,
+      <ObligationPage key="r" basePath="/app/lead/compliances" obligationId="gst-3b" />,
     ]) {
       const { unmount } = render(page);
       expect(screen.getByText('No incorporated clients yet')).toBeTruthy();

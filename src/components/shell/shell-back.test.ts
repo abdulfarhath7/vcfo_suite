@@ -13,31 +13,31 @@ describe('shouldShowShellBack', () => {
   });
 
   it('hides only on intern Today / role index, not other intern pages', () => {
-    expect(shouldShowShellBack('/app/intern/today')).toBe(false);
-    expect(shouldShowShellBack('/app/intern')).toBe(false);
-    expect(shouldShowShellBack('/app/intern/tasks')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/announcements')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/notifications')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/clients')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/clients/')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/vault')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/compliances/calendar')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/knowledge-bank')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/mail')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/analytics')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/audit-log')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/today')).toBe(false);
+    expect(shouldShowShellBack('/app/lead')).toBe(false);
+    expect(shouldShowShellBack('/app/lead/tasks')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/announcements')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/notifications')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/clients')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/clients/')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/vault')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/compliances/calendar')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/knowledge-bank')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/mail')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/analytics')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/audit-log')).toBe(true);
   });
 
   it('shows on intern settings, engagement, step, and board-resolution', () => {
-    expect(shouldShowShellBack('/app/intern/settings')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/engagements/pexpo-inc')).toBe(true);
-    expect(shouldShowShellBack('/app/intern/engagements/pexpo-inc/step/spice-part-a')).toBe(
+    expect(shouldShowShellBack('/app/lead/settings')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/engagements/pexpo-inc')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/engagements/pexpo-inc/step/spice-part-a')).toBe(
       true,
     );
-    expect(shouldShowShellBack('/app/intern/engagements/pexpo-inc/board-resolution')).toBe(
+    expect(shouldShowShellBack('/app/lead/engagements/pexpo-inc/board-resolution')).toBe(
       true,
     );
-    expect(shouldShowShellBack('/app/intern/compliances/filings')).toBe(true);
+    expect(shouldShowShellBack('/app/lead/compliances/filings')).toBe(true);
   });
 
   it('hides on other-role homes only; other primary pages get a back control', () => {
@@ -68,17 +68,17 @@ describe('shouldShowShellBack', () => {
 
 describe('shellBackFallbackPath', () => {
   it('returns clients from intern engagement detail', () => {
-    expect(shellBackFallbackPath('/app/intern/engagements/pexpo-inc')).toBe(
-      '/app/intern/clients',
+    expect(shellBackFallbackPath('/app/lead/engagements/pexpo-inc')).toBe(
+      '/app/lead/clients',
     );
   });
 
   it('returns the engagement from intern step and board-resolution', () => {
-    expect(shellBackFallbackPath('/app/intern/engagements/pexpo-inc/step/pre-2')).toBe(
-      '/app/intern/engagements/pexpo-inc',
+    expect(shellBackFallbackPath('/app/lead/engagements/pexpo-inc/step/pre-2')).toBe(
+      '/app/lead/engagements/pexpo-inc',
     );
-    expect(shellBackFallbackPath('/app/intern/engagements/pexpo-inc/board-resolution')).toBe(
-      '/app/intern/engagements/pexpo-inc',
+    expect(shellBackFallbackPath('/app/lead/engagements/pexpo-inc/board-resolution')).toBe(
+      '/app/lead/engagements/pexpo-inc',
     );
   });
 
@@ -91,14 +91,14 @@ describe('shellBackFallbackPath', () => {
   });
 
   it('returns role home from settings', () => {
-    expect(shellBackFallbackPath('/app/intern/settings')).toBe('/app/intern/today');
+    expect(shellBackFallbackPath('/app/lead/settings')).toBe('/app/lead/today');
     expect(shellBackFallbackPath('/app/manager/settings')).toBe('/app/manager/dashboard');
     expect(shellBackFallbackPath('/app/client/settings')).toBe('/app/client/overview');
     expect(shellBackFallbackPath('/app/super/settings')).toBe('/app/super/dashboard');
   });
 
   it('walks up to home from the Compliances children, never the redirecting group index', () => {
-    expect(shellBackFallbackPath('/app/intern/compliances/calendar')).toBe('/app/intern/today');
+    expect(shellBackFallbackPath('/app/lead/compliances/calendar')).toBe('/app/lead/today');
     expect(shellBackFallbackPath('/app/manager/compliances/filings')).toBe('/app/manager/dashboard');
     expect(shellBackFallbackPath('/app/admin/compliances/filings')).toBe('/app/admin/dashboard');
     expect(shellBackFallbackPath('/app/client/compliances/calendar')).toBe('/app/client/overview');
@@ -113,15 +113,15 @@ describe('shellBackFallbackPath', () => {
 
 describe('resolveShellBackAction', () => {
   it('uses history when the session can go back', () => {
-    expect(resolveShellBackAction('/app/intern/engagements/pexpo-inc', 3)).toEqual({
+    expect(resolveShellBackAction('/app/lead/engagements/pexpo-inc', 3)).toEqual({
       kind: 'history',
     });
   });
 
   it('uses the parent path when history length is 1', () => {
-    expect(resolveShellBackAction('/app/intern/engagements/pexpo-inc', 1)).toEqual({
+    expect(resolveShellBackAction('/app/lead/engagements/pexpo-inc', 1)).toEqual({
       kind: 'href',
-      href: '/app/intern/clients',
+      href: '/app/lead/clients',
     });
   });
 });
@@ -129,8 +129,8 @@ describe('resolveShellBackAction', () => {
 describe('resolveShellBackAction — step workspaces', () => {
   it('walks up to the phase list from a lead step, even with history to burn', () => {
     expect(
-      resolveShellBackAction('/app/intern/engagements/pexpo-inc/step/name-application', 9),
-    ).toEqual({ kind: 'href', href: '/app/intern/engagements/pexpo-inc' });
+      resolveShellBackAction('/app/lead/engagements/pexpo-inc/step/name-application', 9),
+    ).toEqual({ kind: 'href', href: '/app/lead/engagements/pexpo-inc' });
   });
 
   it('walks up to the phase list from a client step', () => {
@@ -147,7 +147,7 @@ describe('resolveShellBackAction — step workspaces', () => {
   });
 
   it('still prefers history off a step route', () => {
-    expect(resolveShellBackAction('/app/intern/engagements/pexpo-inc', 3)).toEqual({
+    expect(resolveShellBackAction('/app/lead/engagements/pexpo-inc', 3)).toEqual({
       kind: 'history',
     });
   });

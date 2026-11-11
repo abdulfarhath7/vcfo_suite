@@ -1,3 +1,4 @@
+import { messageHtml, type ComposedEmail } from '@/lib/email/email-edits';
 import { emailCallout, emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 
@@ -92,5 +93,35 @@ export function buildReminderEmail(input: {
     text: `${input.itemTitle} for ${input.companyName} is waiting on you.${
       note ? `\n\n${input.senderName}: ${note}` : ''
     }\n\nOpen: ${href}`,
+  };
+}
+
+/**
+ * GL-07: the reminder as a draft. The message is the words the person can change in the
+ * "Send email" pop-up; the "Open client portal" button stays below it.
+ */
+export function composeReminderEmail(input: {
+  companyName: string;
+  itemTitle: string;
+  senderName: string;
+  note?: string | null;
+  portalHref: string;
+  to: string[];
+  replyTo?: string;
+}): ComposedEmail {
+  const href = absolute(input.portalHref);
+  const note = input.note?.trim();
+  const message = `${input.itemTitle} for ${input.companyName} is waiting on you.${note ? `\n\n${input.senderName}: ${note}` : ''}`;
+  return {
+    to: input.to,
+    cc: [],
+    subject: `${input.companyName}: reminder · ${input.itemTitle}`,
+    message,
+    html: (m) => renderEmailDocument({ eyebrow: 'Reminder', title: input.itemTitle, bodyHtml: messageHtml(m), cta: { label: 'Open client portal', href } }),
+    text: (m) => `${m}\n\nOpen: ${href}`,
+    attachments: [],
+    replyTo: input.replyTo,
+    purpose: 'reminder.client',
+    fixed: 'the "Open client portal" button',
   };
 }

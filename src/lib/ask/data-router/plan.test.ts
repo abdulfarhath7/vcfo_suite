@@ -110,13 +110,20 @@ describe('planRows', () => {
   });
 
   it('asks for the answer a condition depends on, before the row that needs it', () => {
-    const { draft } = planRows(input([place('director.aadhaar', '2345 6789 0123')], openAt('pre-15')));
+    // DR-04: Proposed directors assigned to the lead, so only the condition holds the row.
+    const assigned = { 'pre-15': { fillAssignedTo: 'lead' } as ChecklistItemStateSlice };
+    const { draft } = planRows(input([place('director.aadhaar', '2345 6789 0123')], openAt('pre-15', assigned)));
     expect(target(draft.rows[0]!).fieldId).toBe('indiaResident');
     expect(draft.rows[0]!.newValue).toBe('');
     expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'answer', ok: false }));
     expect(target(draft.rows[1]!).fieldId).toBe('aadhaarNumber');
     expect(draft.rows[1]!.heldReason).toMatch(/resident/i);
     expect(draft.rows[1]!.displayNew).not.toContain('2345');
+  });
+
+  it("DR-02: holds a lead's row on Proposed directors while the client fills it", () => {
+    const { draft } = planRows(input([place('director.din', '01234567')], openAt('pre-15')));
+    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'owner', ok: false, message: 'Held: The client fills this field.' }));
   });
 
   it('shows a wrong format as a question on the row, with the value masked', () => {

@@ -1,4 +1,5 @@
 import type { AuthUser } from '@/lib/auth';
+import { parseClientEditState, type ClientEditState } from '@/lib/board-resolution/client-edit';
 import type { Engagement } from '@/data/engagements';
 import {
   type ChecklistItemResponses,
@@ -79,6 +80,10 @@ const ITEM_META_KEYS = new Set([
   'unlockedFields',
   'reviewStatus',
   'reviewSource',
+  'approvalStage',
+  'fillAssignedTo',
+  'openedNotifiedAt',
+  'brClientEdit',
   'reviewedAt',
   'reviewedBy',
   'rejectionNote',
@@ -113,6 +118,17 @@ export interface ChecklistItemStateSlice {
   reviewStatus?: ChecklistReviewStatus;
   /** Distinguishes client KYC submit vs lead requesting manager approval */
   reviewSource?: ChecklistReviewSource;
+  /**
+   * Whose approval a lead's request waits for (BR-03, BR-05): the manager first, then the admin.
+   * Absent on a request made before the two-stage chain; it then reads as `manager`.
+   */
+  approvalStage?: 'manager' | 'admin';
+  /** DR-04: a client-owned step the manager or admin handed to the lead (`lead`), or back (`client`). */
+  fillAssignedTo?: 'client' | 'lead';
+  /** DR-03: when the client was told this step is open (set once, so the notice goes out once). */
+  openedNotifiedAt?: string;
+  /** BR-04 / BR-05: the client's edit of the board resolution and where it is in the chain (on `pre-2`). */
+  brClientEdit?: ClientEditState;
   reviewedAt?: string;
   reviewedBy?: string;
   rejectionNote?: string;
@@ -340,6 +356,10 @@ export function normalizeChecklistItemSlice(
       obj.reviewSource === 'client_submission' || obj.reviewSource === 'lead_manager_request'
         ? obj.reviewSource
         : undefined,
+    approvalStage: obj.approvalStage === 'manager' || obj.approvalStage === 'admin' ? obj.approvalStage : undefined,
+    fillAssignedTo: obj.fillAssignedTo === 'lead' || obj.fillAssignedTo === 'client' ? obj.fillAssignedTo : undefined,
+    openedNotifiedAt: typeof obj.openedNotifiedAt === 'string' ? obj.openedNotifiedAt : undefined,
+    brClientEdit: parseClientEditState(obj.brClientEdit),
     reviewedAt: typeof obj.reviewedAt === 'string' ? obj.reviewedAt : undefined,
     reviewedBy: typeof obj.reviewedBy === 'string' ? obj.reviewedBy : undefined,
     rejectionNote: typeof obj.rejectionNote === 'string' ? obj.rejectionNote : undefined,

@@ -132,7 +132,7 @@ test.describe.serial('calendar change proposals', () => {
 
   test('a project lead reads a card and has no buttons on it', async ({ page }) => {
     await login(page, 'lead');
-    await page.goto('/app/intern/watch');
+    await page.goto('/app/lead/watch');
     await expect(page.getByText('Review queue')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Approve' })).toHaveCount(0);
     const refused = await page.request.post('/api/watch/proposals/00000000-0000-0000-0000-000000000001', { data: { decision: 'approved' } });

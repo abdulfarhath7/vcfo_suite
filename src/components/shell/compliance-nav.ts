@@ -13,7 +13,7 @@ import type { SidebarNavLeaf } from '@/components/shell/SidebarNavGroup';
  */
 export function compliancesBasePath(role: string | undefined, staffBase: string): string {
   if (role === 'client') return '/app/client';
-  if (role === 'intern') return '/app/intern';
+  if (role === 'intern') return '/app/lead';
   if (role === 'admin' || role === 'super_admin') return '/app/admin';
   return staffBase;
 }

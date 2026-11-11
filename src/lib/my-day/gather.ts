@@ -42,7 +42,7 @@ export function myDayBase(role: string): AskLinkBase {
 }
 
 function shellSegment(role: string): string {
-  return role === 'super_admin' ? 'super' : role === 'intern' ? 'intern' : role === 'manager' ? 'manager' : 'admin';
+  return role === 'super_admin' ? 'super' : role === 'intern' ? 'lead' : role === 'manager' ? 'manager' : 'admin';
 }
 
 async function safe<T>(label: string, read: () => Promise<T[]>): Promise<T[]> {

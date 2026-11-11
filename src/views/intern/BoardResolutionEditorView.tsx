@@ -191,7 +191,7 @@ export function BoardResolutionEditorView(p: BoardResolutionEditorProps) {
       setSending(false);
     }
   };
-  const stageWord = signed ? 'Signed' : isFinalized && sentToClientAt ? 'Sent' : isFinalized ? 'Finalized' : withManager ? 'With manager' : 'Draft';
+  const stageWord = signed ? 'Signed' : isFinalized && sentToClientAt ? 'Sent' : isFinalized ? 'Finalized' : withManager ? 'With manager' : 'In progress';
   const stageTone = signed || isFinalized ? 'ok' : withManager ? 'teal' : 'warn';
   const records = noc ? nocRecords(noc) : {};
   const docType = noc ? nocDocType(noc.variant, { notary: noc.foreignParent && !noc.notaryStepsOff }) : null;

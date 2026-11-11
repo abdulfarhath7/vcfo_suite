@@ -1,6 +1,7 @@
 'use client';
 
 import { GlossaryText } from '@/components/ask/GlossaryTerm';
+import { remindWithEmail } from '@/hooks/use-remind-client';
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -368,21 +369,17 @@ export function FilingsView({
     let sent = 0;
     let limited = 0;
     let failed = 0;
+    let cancelled = 0;
+    // GL-07: each reminder opens the "Send email" pop-up; only its Send sends.
     for (const row of open) {
-      try {
-        const res = await fetch(`/api/engagements/${encodeURIComponent(row.engagementId)}/remind`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemKey: `filing:${row.id}` }),
-        });
-        if (res.ok) sent += 1;
-        else if (res.status === 429) limited += 1;
-        else failed += 1;
-      } catch {
-        failed += 1;
-      }
+      const outcome = await remindWithEmail({ engagementId: row.engagementId, itemKey: `filing:${row.id}`, title: row.particular }, { quiet: true });
+      if (outcome === 'sent') sent += 1;
+      else if (outcome === 'limited') limited += 1;
+      else if (outcome === 'cancelled') cancelled += 1;
+      else failed += 1;
     }
     setReminding(false);
+    if (!sent && !limited && !failed && cancelled) return;
     const many = (n: number) => `${n} ${n === 1 ? 'filing' : 'filings'}`;
     const rest = [limited ? `${many(limited)} already reminded today` : '', failed ? `${many(failed)} could not be sent` : '']
       .filter(Boolean)

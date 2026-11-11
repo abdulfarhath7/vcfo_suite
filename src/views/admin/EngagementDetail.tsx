@@ -1,5 +1,6 @@
 "use client";
 
+import { roleAppSegment } from '@/lib/auth-routes';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
@@ -70,7 +71,8 @@ import {
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
-import { RecordDocumentsButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+import { RecordDocumentsButton,
+  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
@@ -332,7 +334,7 @@ export default function EngagementDetail() {
       <SEO
         title={`${eng.companyName} — VCFO Suite`}
         description={`GCC setup project workspace for ${eng.companyName}.`}
-        path={`/app/${user?.role}/engagements/${eng.id}`}
+        path={`/app/${roleAppSegment(user?.role)}/engagements/${eng.id}`}
       />
 
       {isIntern ? (
@@ -347,7 +349,12 @@ export default function EngagementDetail() {
             </span>
           }
           meta={<RecordMetaLine engagement={eng} />}
-          actions={<RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />}
+          actions={
+            <>
+              <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+              <ProjectZipButton engagementId={eng.id} />
+            </>
+          }
           stats={
             <RecordStats>
               <RecordNumbers
@@ -367,7 +374,7 @@ export default function EngagementDetail() {
           />
 
           {recordTab !== 'overview' ? (
-            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/intern" />
+            <RecordTabPanel tab={recordTab} engagement={eng} shellBase="/app/lead" />
           ) : (
             <>
               {INTERN_YOU_ARE_HERE_ENABLED && internNow ? (
@@ -408,7 +415,7 @@ export default function EngagementDetail() {
               )}
 
               {/* Spec T6: the SPICe+ Part B attachments, under the SPICe+ steps. */}
-              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/intern" />
+              <SpiceAttachmentsCard engagementId={eng.id} shellBase="/app/lead" />
               <McaFilingCard engagementId={eng.id} />
             </>
           )}

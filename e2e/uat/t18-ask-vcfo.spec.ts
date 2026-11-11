@@ -48,7 +48,7 @@ test('T-18 Ask VCFO (chatbot)', async ({ browser }) => {
 
   const lead = await as(browser, 'lead2');
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead opens the Ask VCFO panel from the launcher and sees suggestions.' }, async () => {
-    await lead.goto('/app/intern/today');
+    await lead.goto('/app/lead/today');
     await settle(lead);
     await lead.locator('button[aria-controls="ask-panel"]').first().click();
     const panel = lead.locator('#ask-panel');

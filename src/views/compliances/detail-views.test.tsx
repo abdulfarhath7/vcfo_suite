@@ -176,7 +176,7 @@ describe('Non-statutory task page (4.3)', () => {
         return { status: 200, body: { task: current } };
       },
     };
-    wrap(<TaskDetailView basePath="/app/intern/compliances" taskId="t1" />);
+    wrap(<TaskDetailView basePath="/app/lead/compliances" taskId="t1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit for review' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'stage', stage: 'review' }));
     expect(await screen.findByRole('button', { name: 'Submitted' })).toBeDisabled();
@@ -263,7 +263,7 @@ describe('Non-statutory task page (4.3)', () => {
   it('hides edit and delete from a lead who did not upload the file', async () => {
     appState.user = { id: 'lead-1', role: 'intern' };
     routes = { 'GET /api/compliances/tasks/t1': () => ({ status: 200, body: { task: task({ can: { ...task().can, edit: false } }) } }) };
-    wrap(<TaskDetailView basePath="/app/intern/compliances" taskId="t1" />);
+    wrap(<TaskDetailView basePath="/app/lead/compliances" taskId="t1" />);
     await screen.findByRole('region', { name: 'Header' });
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Delete / })).toBeNull();
@@ -410,7 +410,7 @@ describe('Statutory detail page (4.2)', () => {
       }),
       'PATCH /api/compliances/statutory/i1': () => ({ status: 200, body: { detail: stat({ primaryAction: 'submit', stage: 'review' }) } }),
     };
-    wrap(<StatDetailView basePath="/app/intern/compliances" obligationId="gst-3b" instanceId="i1" />);
+    wrap(<StatDetailView basePath="/app/lead/compliances" obligationId="gst-3b" instanceId="i1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Submit for review' }));
     await waitFor(() => expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ action: 'submit' }));
     expect(screen.queryByRole('button', { name: 'Edit schedule' })).toBeNull();

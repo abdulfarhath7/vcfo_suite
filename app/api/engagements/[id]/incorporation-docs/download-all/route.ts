@@ -67,7 +67,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const root = incorpDraftsZipRoot(engagement.companyName, engagement.slug);
   const { buffer, included } = await buildIncorpDraftsZip(
-    incorpDraftZipEntries(links, root, pre6),
+    incorpDraftZipEntries(links, root, pre6, engagement.companyName),
     async (storagePath) => {
       const bytes = await downloadIncorpDocx(storagePath);
       // Read-only: a repaired copy goes in the zip, storage is left as is.

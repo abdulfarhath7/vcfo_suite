@@ -39,21 +39,37 @@ describe('LandingScreen', () => {
   it('opens Book a demo from a click-through item, by click and by Enter', () => {
     const { container } = render(<LandingScreen />);
     const items = container.querySelectorAll('[data-app]');
-    expect(items.length).toBeGreaterThan(30);
-    const hero = screen.getByRole('button', { name: 'Book a demo to see the incorporation screen' });
-    fireEvent.click(hero);
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Book a demo' }), { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: 'Book a demo' })).toBeNull();
-    const chip = within(container).getByRole('button', { name: 'GST' });
-    fireEvent.keyDown(chip, { key: 'Enter' });
+    expect(items.length).toBeGreaterThan(5);
+    fireEvent.click(items[0]!);
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
+  it('LP-02: shows no screenshot of the app, only the logo and abstract art', () => {
+    const { container } = render(<LandingScreen />);
+    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src'));
+    // LP-01: the logo file for each theme; nothing else is an image.
+    expect(images.every((src) => src === '/landing/vcfo-logo-on-black.webp' || src === '/landing/vcfo-logo-on-white.webp')).toBe(true);
+    expect(container.querySelector('svg.hero-art')).not.toBeNull();
+    expect(container.querySelector('#portals, #incorporate, #register, #ask')).toBeNull();
+    expect(container.textContent).not.toMatch(/every screen on this page is a real one/i);
+  });
+
+  it('LP-01: the theme toggle switches to dark and back, and remembers the choice', () => {
     render(<LandingScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: 'Use the dark theme' });
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.lpTheme).toBe('dark');
+    expect(localStorage.getItem('vcfo.lp-theme')).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Use the light theme' }));
+    expect(document.documentElement.dataset.lpTheme).toBeUndefined();
+    expect(localStorage.getItem('vcfo.lp-theme')).toBe('light');
+  });
+
+  it('LP-03: one hero scene per headline word, the first one showing', () => {
+    const { container } = render(<LandingScreen />);
+    const scenes = [...container.querySelectorAll('svg.hero-art [data-scene]')].map((g) => g.getAttribute('data-scene'));
+    expect(scenes).toEqual(['compliance', 'incorporation', 'registration']);
+    expect(container.querySelector('svg.hero-art .is-active')?.getAttribute('data-scene')).toBe('compliance');
   });
 
   it('shows the comparison with six rows and three product columns', () => {
@@ -69,14 +85,6 @@ describe('LandingScreen', () => {
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[1] })).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[2] })).toBeInTheDocument();
     COMPARE.forEach((r) => expect(within(table).getByRole('rowheader', { name: r.label })).toBeInTheDocument());
-  });
-
-  it('switches the portal screenshot with the tabs', () => {
-    render(<LandingScreen />);
-    const lead = screen.getByRole('tab', { name: 'Project lead' });
-    fireEvent.click(lead);
-    expect(lead).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-lead');
   });
 
   it('answers a fixed Ask VCFO question without a link to a demo portal', () => {

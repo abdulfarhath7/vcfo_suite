@@ -38,13 +38,14 @@ function block(role: Role, staffBase: string) {
 function expectBlockShape(three: NavEntry[]) {
   expect(three.map(label)).toEqual([...PRACTICE_BLOCK_LABELS]);
   const [inc, comp, reg] = three;
-  expect(isNavGroup(inc) || isNavSectionBreak(inc) ? null : inc.icon).toBe(Landmark);
+  // NV-01: staff Incorporation is a dropdown (the client keeps a plain link).
+  expect(isNavSectionBreak(inc) ? null : inc.icon).toBe(Landmark);
   expect(isNavGroup(comp) ? comp.icon : null).toBe(CalendarCheck);
   expect(isNavGroup(reg) || isNavSectionBreak(reg) ? null : reg.icon).toBe(BadgeCheck);
 }
 
 const STAFF: Array<{ role: Role; base: string; before: string }> = [
-  { role: 'intern', base: '/app/intern', before: 'Clients' },
+  { role: 'intern', base: '/app/lead', before: 'Clients' },
   { role: 'manager', base: '/app/manager', before: 'Project leads' },
   { role: 'admin', base: '/app/admin', before: 'Managers' },
 ];
@@ -58,6 +59,10 @@ describe('practice block (R-51)', () => {
       expectBlockShape(b.three);
       expect(b.three.flatMap(hrefs)).toEqual([
         `${base}/incorporation`,
+        `${base}/incorporation?view=part-a`,
+        `${base}/incorporation?view=part-b`,
+        `${base}/incorporation?view=board-resolutions`,
+        `${base}/incorporation?view=documents`,
         `${base}/compliances/obligations`,
         `${base}/compliances/calendar`,
         `${base}/compliances/filings`,
@@ -73,7 +78,7 @@ describe('practice block (R-51)', () => {
   }
 
   it('lead: Compliances is always there, whatever the clients', () => {
-    expect(sidebarItemsFor('intern', '/app/intern').map(label)).toContain('Compliances');
+    expect(sidebarItemsFor('intern', '/app/lead').map(label)).toContain('Compliances');
   });
 
   it('super admin: the block replaces Practice areas, after Clients, on the Practice routes', () => {
@@ -84,6 +89,10 @@ describe('practice block (R-51)', () => {
     expect(b.items.map(label)).not.toContain('Practice areas');
     expect(b.three.flatMap(hrefs)).toEqual([
       '/app/super/practice/incorporation',
+      '/app/super/practice/incorporation?view=part-a',
+      '/app/super/practice/incorporation?view=part-b',
+      '/app/super/practice/incorporation?view=board-resolutions',
+      '/app/super/practice/incorporation?view=documents',
       '/app/super/practice/compliances',
       '/app/super/practice/filings',
       '/app/super/compliances/expiries',
@@ -121,10 +130,10 @@ describe('practice block (R-51)', () => {
 
 describe('withOfficialUpdates', () => {
   it('adds the leaf to the Updates group only, on the role base', () => {
-    const items = withOfficialUpdates(sidebarItemsFor('intern', '/app/intern'));
+    const items = withOfficialUpdates(sidebarItemsFor('intern', '/app/lead'));
     const updates = items.find((entry) => isNavGroup(entry) && entry.label === 'Updates');
-    expect(isNavGroup(updates!) && updates.items.map((leaf) => leaf.to)).toContain('/app/intern/watch');
-    expect(sidebarItemsFor('intern', '/app/intern').flatMap((entry) => (isNavGroup(entry) ? entry.items : [])).some((leaf) => leaf.to.endsWith('/watch'))).toBe(false);
+    expect(isNavGroup(updates!) && updates.items.map((leaf) => leaf.to)).toContain('/app/lead/watch');
+    expect(sidebarItemsFor('intern', '/app/lead').flatMap((entry) => (isNavGroup(entry) ? entry.items : [])).some((leaf) => leaf.to.endsWith('/watch'))).toBe(false);
   });
 });
 
@@ -135,7 +144,7 @@ describe('withAssistRuns', () => {
     ['super_admin', '/app/super/assist-runs'],
     ['admin', '/app/admin/assist-runs'],
     ['manager', '/app/manager/assist-runs'],
-    ['intern', '/app/intern/assist-runs'],
+    ['intern', '/app/lead/assist-runs'],
   ] as const)('%s gets Assist runs right after the tools break', (role, href) => {
     const items = withAssistRuns(sidebarItemsFor(role, '/app/manager'), role, '/app/manager');
     const at = items.findIndex((e) => isNavSectionBreak(e));

@@ -18,7 +18,7 @@ import { login, onLocalDb, openAsk } from './helpers/login';
 test.describe.configure({ mode: 'serial', timeout: 240_000 });
 
 const SLUG = 'demo-kestrel-robotics';
-const STEP_PATH = `/app/intern/engagements/${SLUG}/step/proposed-directors`;
+const STEP_PATH = `/app/lead/engagements/${SLUG}/step/proposed-directors`;
 const FIXTURES = path.resolve('tests/ask/evals/fill/fixtures');
 
 let saved: unknown = null;
@@ -146,7 +146,7 @@ test('a labelled paste makes a card and shows masked text in the chat', async ({
 test('the full page takes a paste too, and the card fits a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
   await login(page, 'lead');
-  await page.goto('/app/intern/ask');
+  await page.goto('/app/lead/ask');
   await typeUntilReady(page.locator('#ask-composer').first(), page.locator('body'), 'For Kestrel Robotics\nName: Ravi Menon\nPAN: DEFPM5678K\nDIN: 07654321');
   const card = page.locator('section[aria-label^="Details for"]').last();
   await expect(card).toBeVisible({ timeout: 90_000 });
@@ -252,7 +252,7 @@ test.describe('a dropped folder for two clients', () => {
 
   test('shows progress, comes back after the panel is closed, and files the labour group with undo', async ({ page }) => {
     await login(page, 'lead');
-    await page.goto('/app/intern');
+    await page.goto('/app/lead');
     let panel = await openAsk(page);
 
     // 1. Drop the folder and ask for it to be filled in.
@@ -291,7 +291,7 @@ test.describe('a dropped folder for two clients', () => {
     expect(paysheet?.fileName).toBe('paysheet.xlsx');
     expect((await registerSlot(SLUG, 'KA', 'attendance'))[0]?.fileName).toBe('attendance.xlsx');
     if (paysheet) {
-      await page.goto(`/app/intern/labour-registers?batch=${paysheet.batchId}`);
+      await page.goto(`/app/lead/labour-registers?batch=${paysheet.batchId}`);
       await expect(page.getByText('paysheet.xlsx').first()).toBeVisible({ timeout: 60_000 });
     }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { requestEmailSend } from '@/lib/email/request-email-send';
 import type { RequestListDetail, RequestListSummary } from '@/db/repositories/request-lists';
 
 /** Browser calls for the request list page. Types only come from the repository; no db import. */
@@ -58,4 +59,8 @@ export const reviewItem = (id: string, itemId: string, decision: 'accepted' | 'r
 
 export const fetchSendReview = (id: string) => fetch(`/api/request-lists/${id}/send`, { cache: 'no-store' }).then((r) => json<{ review: SendReview }>(r)).then((b) => b.review);
 
-export const confirmSend = (id: string) => send(`/api/request-lists/${id}/send`, 'POST', { confirm: true }).then((r) => json<{ summary: string }>(r));
+/** GL-07: opens the "Send email" pop-up; resolves with the summary once the person presses Send, or null on Cancel. */
+export const confirmSend = (id: string, title?: string) =>
+  requestEmailSend<{ summary: string }>({ url: `/api/request-lists/${id}/send`, body: { confirm: true }, title: title ? `Send "${title}"` : 'Send the request list' }).then((o) =>
+    o.sent ? (o.result ?? { summary: 'Sent' }) : null,
+  );

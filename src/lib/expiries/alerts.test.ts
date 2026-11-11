@@ -45,7 +45,7 @@ describe('runExpiryAlert', () => {
     expect(ensureDraft).toHaveBeenCalledWith('x-1', expect.objectContaining({ dueOn: '2026-11-14' }));
     const bells = notify.mock.calls[0]![0] as Array<{ userId: string; href: string; body: string }>;
     expect(bells.map((b) => [b.userId, b.href])).toEqual([
-      [LEAD.id, '/app/intern/compliances/expiries'],
+      [LEAD.id, '/app/lead/compliances/expiries'],
       [MANAGER.id, '/app/manager/compliances/expiries'],
     ]);
     expect(bells[0]!.body).toContain('It lapses before AOC-4 due 29 Nov 2026');

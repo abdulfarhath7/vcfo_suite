@@ -102,7 +102,7 @@ export function progressLine(items: ReadonlyArray<{ status: string }>): string {
 export function requestsPageHref(role: string): string {
   if (role === 'super_admin') return '/app/super/requests';
   if (role === 'admin') return '/app/admin/requests';
-  if (role === 'intern') return '/app/intern/requests';
+  if (role === 'intern') return '/app/lead/requests';
   if (role === 'client') return '/app/client/requests';
   return '/app/manager/requests';
 }

@@ -23,7 +23,7 @@ describe('diffChecklistForNotifications', () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.title).toBe('Board resolution ready');
     expect(items[0]?.body).toMatch(/download and sign/i);
-    expect(items[0]?.href).toBe('/app/client/board-resolution');
+    expect(items[0]?.href).toBe('/app/client/board-resolution#notified');
   });
 
   it('notifies intern on client submit', () => {
@@ -40,7 +40,7 @@ describe('diffChecklistForNotifications', () => {
     );
     expect(items).toHaveLength(1);
     expect(items[0]?.kind).toBe('checklist.submit');
-    expect(items[0]?.href).toContain('/app/intern/engagements/');
+    expect(items[0]?.href).toContain('/app/lead/engagements/');
   });
 
   it('labels lead→manager approval requests distinctly', () => {

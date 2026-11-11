@@ -131,7 +131,7 @@ describe('labour.uploadSheet', () => {
     expect(repo.openBatch).toHaveBeenCalledWith(lead, { engagementId: ACME.id, stateCode: 'KA', periodFrom: '2026-08-01', periodTo: '2026-08-31' });
     expect(repo.recordUpload).toHaveBeenCalledWith(lead, expect.objectContaining({ batchId: 'b1', slot: 'paysheet', rowCount: 2 }));
     if (!result.ok) return;
-    expect(result.href).toBe('/app/intern/labour-registers?batch=b1');
+    expect(result.href).toBe('/app/lead/labour-registers?batch=b1');
     expect(result.undo).toMatchObject({ batchId: 'b1', slot: 'paysheet', uploadId: 'up-new', previous: { id: 'up-old', fileName: 'july-fix.xlsx' } });
   });
 

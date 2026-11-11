@@ -46,7 +46,7 @@ Changed:
 - `GET /api/engagements/:id/board-resolution/noc` (client and staff; the client gets no `staff` block and never the file name).
 - `POST /api/engagements/:id/board-resolution/noc` (staff): `check`, `accept`, `send_back`, `change_template`, `notary_steps`.
 - `GET /api/engagements/:id/board-resolution/versions` (staff).
-- Staff pages (unchanged paths): `/app/intern/engagements/[id]/board-resolution`, `/app/manager/projects/[slug]/board-resolution`, `/app/admin/projects/[slug]/board-resolution`, `/app/super/projects/[id]/board-resolution`.
+- Staff pages (unchanged paths): `/app/lead/engagements/[id]/board-resolution`, `/app/manager/projects/[slug]/board-resolution`, `/app/admin/projects/[slug]/board-resolution`, `/app/super/projects/[id]/board-resolution`.
 
 ## Schema added (no migration written, none run)
 

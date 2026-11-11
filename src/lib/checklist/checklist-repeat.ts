@@ -163,7 +163,21 @@ export function removeRepeatEntry(
  * `showWhen`, so the same test works inside an entry.
  */
 export function applyShowWhen(fields: ChecklistField[], responses: ChecklistItemResponses): ChecklistField[] {
-  return fields.filter((field) => !field.showWhen || showWhenMatches(field.showWhen, responses[field.showWhen.field]));
+  // SB-03: visibility cascades. A question whose parent question is hidden is hidden too, even
+  // while the parent still holds a stale answer (Individual → entity type → company origin → CIN).
+  const byId = new Map(fields.map((field) => [field.id, field]));
+  const memo = new Map<string, boolean>();
+  const visible = (field: ChecklistField, depth = 0): boolean => {
+    if (!field.showWhen) return true;
+    const cached = memo.get(field.id);
+    if (cached !== undefined) return cached;
+    const parent = byId.get(field.showWhen.field);
+    const parentVisible = !parent || depth > 8 || visible(parent, depth + 1);
+    const result = parentVisible && showWhenMatches(field.showWhen, responses[field.showWhen.field]);
+    memo.set(field.id, result);
+    return result;
+  };
+  return fields.filter((field) => visible(field));
 }
 
 /** True when a stored value satisfies a `showWhen` rule (`value`, or any of `anyOf`). */
@@ -217,12 +231,42 @@ export function validateRepeatEntries(
 /** Required template fields that are empty (honouring per-entry `showWhen`). */
 export function missingRequiredEntryFields(group: RepeatField, entry: RepeatEntry): Record<string, string> {
   const errors: Record<string, string> = {};
+  // Cascading visibility (SB-03): a question under a hidden question is not required.
+  const shown = new Set(applyShowWhen(group.entryFields, entry.values).map((field) => field.id));
   for (const field of group.entryFields) {
     if (!field.required) continue;
-    if (field.showWhen && !showWhenMatches(field.showWhen, entry.values[field.showWhen.field])) continue;
+    if (!shown.has(field.id)) continue;
     if (!(entry.values[field.id] ?? '').trim()) {
       errors[field.id] = field.type === 'file' ? 'Please upload a document.' : 'This field is required.';
     }
   }
   return errors;
+}
+
+/**
+ * SB-03: a patch that empties every entry answer whose question is now hidden by its `showWhen`.
+ * It cascades: a hidden question's answer is cleared first, so the questions that depend on it
+ * hide too (switching a subscriber to "Individual" clears the entity type, then the company
+ * origin, then the CIN). Returns only the keys that change.
+ */
+export function hiddenEntryAnswersPatch(
+  responses: ChecklistItemResponses,
+  group: RepeatField,
+): ChecklistItemResponses {
+  const patch: ChecklistItemResponses = {};
+  for (const entry of repeatEntries(responses, group)) {
+    const values = { ...entry.values };
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const field of group.entryFields) {
+        if (!field.showWhen || !values[field.id]) continue;
+        if (showWhenMatches(field.showWhen, values[field.showWhen.field])) continue;
+        values[field.id] = '';
+        patch[repeatFieldId(group.id, entry.id, field.id)] = '';
+        changed = true;
+      }
+    }
+  }
+  return patch;
 }

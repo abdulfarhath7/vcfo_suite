@@ -72,6 +72,9 @@ function labelFor(key: string): string {
  * The values that differ between two snapshots, in merge-key order. A key missing on one side
  * (a date dropped because no date was given) is not a change.
  */
+/** Fields that hold a company name, which the resolution re-cases (GL-09). */
+const CAPITALISED_KEYS: ReadonlySet<string> = new Set(['PARENT_ENTITY_NAME', 'PROPOSED_NAME_1', 'PROPOSED_NAME_2', 'PROPOSED_NAMES']);
+
 export function diffNocFields(
   before: Readonly<Record<string, string>> | null | undefined,
   after: Readonly<Record<string, string>> | null | undefined,
@@ -83,7 +86,10 @@ export function diffNocFields(
     if (!(key in before) || !(key in after)) continue;
     const a = String(before[key] ?? '');
     const b = String(after[key] ?? '');
-    if (a !== b) out.push({ key, label: labelFor(key), before: a, after: b });
+    // Company names are re-cased since GL-09 (11 Nov 2026). A NOC released before then
+    // stored them as typed, so a change of letter case alone is not a changed answer.
+    const sameIgnoringCase = CAPITALISED_KEYS.has(key) && a.toUpperCase() === b.toUpperCase();
+    if (a !== b && !sameIgnoringCase) out.push({ key, label: labelFor(key), before: a, after: b });
   }
   return out;
 }

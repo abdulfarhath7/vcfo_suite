@@ -1,4 +1,5 @@
 import 'server-only';
+import { roleAppSegment } from '@/lib/auth-routes';
 
 import { z } from 'zod';
 import { stateByCode } from '@/data/labour-registers/states';
@@ -72,7 +73,7 @@ export const SLOT_LABEL: Record<UploadSlot, string> = {
 
 /** The batch screen for this role; the super admin's sits under the practice area. */
 function registerHref(role: string, batchId: string): string {
-  const base = role === 'super_admin' ? '/app/super/practice' : `/app/${role}`;
+  const base = role === 'super_admin' ? '/app/super/practice' : `/app/${roleAppSegment(role)}`;
   return `${base}/labour-registers?batch=${batchId}`;
 }
 

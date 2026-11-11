@@ -6,28 +6,35 @@ import { AUDIT_CATEGORY_LABELS, auditAreaOf, auditResultWord } from '@/views/adm
 
 const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
+/** The export columns, shared by the CSV and the Excel export (GL-06). */
+export const AUDIT_EXPORT_HEAD = ['Date', 'Time', 'Event', 'Summary', 'Area', 'Who', 'Role', 'Email', 'Result', 'Project'];
+
+/** One event as the export cells, in the order of `AUDIT_EXPORT_HEAD`. */
+export function auditEventCells(ev: AuditEventRow, engagementsByDbId: Map<string, string>): string[] {
+  const when = new Date(ev.created_at);
+  const project = ev.engagement_id ? engagementsByDbId.get(ev.engagement_id) ?? '' : '';
+  return [
+    format(when, 'd MMM yyyy'),
+    format(when, 'HH:mm'),
+    formatAuditActionLabel(ev.action),
+    ev.summary ?? '',
+    AUDIT_CATEGORY_LABELS[auditAreaOf(ev.action)],
+    formatActorDisplay(ev),
+    ROLE_UI_LABEL[mapDbRoleToAppRole(ev.actor_role)],
+    ev.actor_email ?? '',
+    auditResultWord(ev),
+    project,
+  ];
+}
+
 /** The rows in view as CSV text (prototype Audit export). One line per event, newest first. */
 export function auditEventsCsv(events: AuditEventRow[], engagementsByDbId: Map<string, string>): string {
-  const head = ['Date', 'Time', 'Event', 'Summary', 'Area', 'Who', 'Role', 'Email', 'Result', 'Project'];
-  const lines = events.map((ev) => {
-    const when = new Date(ev.created_at);
-    const project = ev.engagement_id ? engagementsByDbId.get(ev.engagement_id) ?? '' : '';
-    return [
-      format(when, 'd MMM yyyy'),
-      format(when, 'HH:mm'),
-      formatAuditActionLabel(ev.action),
-      ev.summary ?? '',
-      AUDIT_CATEGORY_LABELS[auditAreaOf(ev.action)],
-      formatActorDisplay(ev),
-      ROLE_UI_LABEL[mapDbRoleToAppRole(ev.actor_role)],
-      ev.actor_email ?? '',
-      auditResultWord(ev),
-      project,
-    ]
+  const lines = events.map((ev) =>
+    auditEventCells(ev, engagementsByDbId)
       .map((v) => quote(String(v)))
-      .join(',');
-  });
-  return [head.join(','), ...lines].join('\n');
+      .join(','),
+  );
+  return [AUDIT_EXPORT_HEAD.join(','), ...lines].join('\n');
 }
 
 /** Save the CSV text through a temporary link. Browser only. */

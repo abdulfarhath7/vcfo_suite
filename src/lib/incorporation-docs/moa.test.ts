@@ -65,7 +65,7 @@ describe('collectMoaMissingFields', () => {
     });
 
     expect(missing).toContain('Authorized Share Capital (Pre-1)');
-    expect(missing).toContain('Initial Paid-up Share Capital (Pre-1)');
+    expect(missing).toContain('Paid-up Share Capital (Pre-1)');
     expect(missing).toContain('Nominal Value of Each Equity Share (Pre-1)');
   });
 });

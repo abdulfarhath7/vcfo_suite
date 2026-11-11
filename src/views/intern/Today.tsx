@@ -74,7 +74,7 @@ export default function InternToday() {
       <SEO
         title="Today — VCFO Suite"
         description="What needs you, what’s waiting, and what’s due this week."
-        path="/app/intern/today"
+        path="/app/lead/today"
       />
 
       <div className="flex flex-col gap-5">

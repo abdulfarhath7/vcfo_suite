@@ -24,8 +24,14 @@ describe('checklistPatchForRole', () => {
   });
 
   it('stamps who edited a direct-flow step', () => {
+    // DR-04: Proposed directors assigned to the lead, so the lead's answers are kept.
+    const patch = checklistPatchForRole(lead, 'pre-15', { responses: { directors: 'e1' } }, { fillAssignedTo: 'lead' } as never, NOW);
+    expect(patch).toMatchObject({ lastEditedByName: 'Divya', lastEditedAt: NOW, responses: { directors: 'e1' } });
+  });
+
+  it('DR-02: drops a lead\'s answers on Proposed directors while the client fills it', () => {
     const patch = checklistPatchForRole(lead, 'pre-15', { responses: { directors: 'e1' } }, undefined, NOW);
-    expect(patch).toMatchObject({ lastEditedByName: 'Divya', lastEditedAt: NOW });
+    expect(patch.responses ?? {}).toEqual({});
   });
 
   it('refuses a client on a direct-flow step already submitted', () => {

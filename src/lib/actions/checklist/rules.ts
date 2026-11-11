@@ -71,8 +71,8 @@ export function needsManagerApproval(stepId: string): boolean {
   return stepId === MANAGER_APPROVAL_STEP_ID;
 }
 
-function ownerMessage(stepId: string, key: string): string {
-  return isClientOnlyField(stepId, key) ? 'The client fills this field.' : 'The project lead fills this field.';
+function ownerMessage(stepId: string, key: string, slice?: object | null): string {
+  return isClientOnlyField(stepId, key, slice) ? 'The client fills this field.' : 'The project lead fills this field.';
 }
 
 /** A value already on the screen for the same fact, on another step. */
@@ -148,8 +148,10 @@ export function checkResponseRow(input: {
     checks.push({ rule: 'gate', ok: true });
   }
 
-  const owner = canRoleEditField(role, target.stepId, key);
-  checks.push({ rule: 'owner', ok: owner, ...(owner ? {} : { message: `Held: ${ownerMessage(target.stepId, key)}` }) });
+  // DR-04: a step the manager assigned to the lead is the lead's to fill.
+  const slice = state[target.stepId];
+  const owner = canRoleEditField(role, target.stepId, key, slice);
+  checks.push({ rule: 'owner', ok: owner, ...(owner ? {} : { message: `Held: ${ownerMessage(target.stepId, key, slice)}` }) });
 
   const field = fieldOf(target);
   if (!field) checks.push({ rule: 'condition', ok: false, message: 'Held: this field is not on the step.' });

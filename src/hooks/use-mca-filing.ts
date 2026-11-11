@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { requestEmailSend } from '@/lib/email/request-email-send';
 import type { FilingForm, FilingPatch } from '@/lib/mca-filing/filing-state';
 import type { SignerPortalFacts } from '@/lib/mca-filing/readiness';
 import type { AssistAttachmentItem, FilingBundle, PacketSummaryDto, SignatureRequestEntry } from '@/lib/mca-filing/types';
@@ -70,9 +71,16 @@ export function useMcaFilingActions(engagementId: string) {
     mutationFn: (input: { form: FilingForm; note?: string }) => send(`${path}/filing/review`, { method: 'POST', body: JSON.stringify(input) }),
     onSuccess,
   });
+  /** GL-07: opens the "Send email" pop-up; resolves with null when the person cancels it. */
   const askSignatures = useMutation({
-    mutationFn: (input: { form: FilingForm; signerIds?: string[] }) =>
-      send<{ requests: SignatureRequestEntry[] }>(`${path}/filing/signature-requests`, { method: 'POST', body: JSON.stringify(input) }),
+    mutationFn: async (input: { form: FilingForm; signerIds?: string[] }) => {
+      const outcome = await requestEmailSend<{ requests: SignatureRequestEntry[] }>({
+        url: `${path}/filing/signature-requests`,
+        body: input,
+        title: 'Ask the signers to sign',
+      });
+      return outcome.sent ? (outcome.result ?? { requests: [] }) : null;
+    },
     onSuccess,
   });
   const signerFacts = useMutation({

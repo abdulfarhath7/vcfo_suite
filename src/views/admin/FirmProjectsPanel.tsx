@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Eyebrow } from '@/components/noir';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { PhaseBar } from '@/components/ui/step-track';
@@ -513,6 +514,23 @@ export function FirmProjectsPanel({
       )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1">{filters}</div>
+        {/* GL-06: every row the filters keep, in the grid's order (worst health first). */}
+        <ExportToExcelButton
+          title="Projects"
+          columns={['Client', 'Now at', 'Project lead', 'Progress', 'Manager', 'Stage', 'Next', 'Health']}
+          rows={() =>
+            rows.map((r) => [
+              r.eng.companyName,
+              r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : null,
+              r.leadNames[0] ?? null,
+              `${r.pct}%`,
+              managerName(r.eng.managerId ?? r.eng.adminId),
+              STAGE_WORD[r.facts.stage],
+              nextScheduleDate(r.eng.schedule, todayIso),
+              r.facts.health,
+            ])
+          }
+        />
       </div>
       {rows.length === 0 && !engagementsLoading ? (
         <div className="md:hidden">

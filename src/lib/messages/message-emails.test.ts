@@ -7,12 +7,12 @@ describe('message emails', () => {
       companyName: 'Acme',
       senderName: 'Ravi',
       body: 'Is <b>this</b> fine?\n\nThanks',
-      inboxHref: '/app/intern/today',
+      inboxHref: '/app/lead/today',
     });
     expect(copy.subject).toContain('Acme: message from Ravi');
     expect(copy.html).toContain('Is &lt;b&gt;this&lt;/b&gt; fine?');
     expect(copy.html).not.toContain('<b>this</b>');
-    expect(copy.text).toContain('/app/intern/today');
+    expect(copy.text).toContain('/app/lead/today');
   });
 
   it('names the staff sender on a reply', () => {

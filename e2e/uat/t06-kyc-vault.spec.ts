@@ -24,7 +24,7 @@ test('T-06 KYC, DSC and document vault', async ({ browser }) => {
 
   await step(lead, { test: T, step: 1, role: 'lead', caption: 'The lead sends the client a request for each KYC document from the Vault.' }, async () => {
     const have = await sql<{ n: number }>(`select count(*)::int n from document_requests where engagement_id = $1`, [trackA.id]).catch(() => [{ n: 0 }]);
-    await lead.goto('/app/intern/vault');
+    await lead.goto('/app/lead/vault');
     await settle(lead);
     const entity = lead.getByRole('combobox', { name: /Client|Entity/ }).locator('visible=true').first();
     if (await entity.count()) {

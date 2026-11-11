@@ -3,8 +3,10 @@ import 'server-only';
 import { z } from 'zod';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { getRequestList, markRequestListSent, type RequestListDetail } from '@/db/repositories/request-lists';
-import { sendEmail } from '@/lib/email/send-email';
-import { buildRequestListEmail } from '@/lib/request-lists/emails';
+import { formatReplyTo, sendEmail } from '@/lib/email/send-email';
+import { draftView, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
+import { recordEmailSent } from '@/lib/email/record-email-sent';
+import { composeRequestListEmail } from '@/lib/request-lists/emails';
 import { isItemDone } from '@/lib/request-lists/model';
 import type { ChangesetDraft } from '@/lib/ask/changeset/types';
 import { clientRecipients, jsonTarget, oneRow, recheckOf, STAFF_ROLES, unavailable } from '../shared';
@@ -82,35 +84,61 @@ export const sendList = defineAction({
   roles: STAFF_ROLES,
   preview: previewSendList,
   recheck: async (actx, value) => (await check(actx, value)).checked,
-  async execute(actx, value) {
-    const { checked } = await check(actx, value);
-    if (!checked.canApply) return { ok: false, error: checked.heldReason ?? 'This list cannot be sent.' };
-    const sent = await markRequestListSent(actx.auth, value.listId, actx.now);
-    const recipients = await clientRecipients(sent.engagementId);
-    const copy = buildRequestListEmail({
-      companyName: sent.companyName,
-      title: sent.title,
-      dueOn: sent.dueOn,
-      openItems: sent.items.filter((i) => !isItemDone(i.status)),
-      totalItems: sent.items.length,
-      reminder: 0,
-      senderName: actx.auth.name,
-    });
-    let emailed = 0;
-    for (const r of recipients) {
-      if (!r.email) continue;
-      const res = await sendEmail({ to: r.email, subject: copy.subject, html: copy.html, text: copy.text, purpose: 'request-list.sent' }).catch(() => ({ ok: false as const }));
-      if (res.ok) emailed += 1;
-    }
-    await recordAuditEvent(actx.auth, {
-      engagementId: sent.engagementId,
-      action: 'request_list.sent',
-      summary: `Sent the request list "${sent.title}" (${sent.items.length} items)`,
-      metadata: { listId: sent.id, items: sent.items.length, recipients: recipients.length, emailed, via: actx.via },
-    });
-    return {
-      ok: true,
-      summary: emailed > 0 ? `Sent "${sent.title}" to ${emailed} client contact${emailed === 1 ? '' : 's'}` : `Marked "${sent.title}" sent; the email could not go out`,
-    };
-  },
+  execute: (actx, value) => deliverList(actx, value),
 });
+
+function composeFor(actx: ActionContext, list: RequestListDetail, to: string[]): ComposedEmail {
+  return composeRequestListEmail({
+    companyName: list.companyName,
+    title: list.title,
+    dueOn: list.dueOn,
+    openItems: list.items.filter((i) => !isItemDone(i.status)),
+    totalItems: list.items.length,
+    reminder: 0,
+    senderName: actx.auth.name,
+    to,
+    replyTo: formatReplyTo({ name: actx.auth.name, email: actx.auth.email }),
+  });
+}
+
+/** GL-07: the first email of a draft list, for the "Send email" pop-up. Nothing is sent. */
+export async function previewSendListEmail(actx: ActionContext, value: Input): Promise<{ draft: EmailDraftView } | { error: string }> {
+  const { checked, list } = await check(actx, value);
+  if (!list) return { error: 'This list is not available.' };
+  if (!checked.canApply) return { error: checked.heldReason ?? 'This list cannot be sent.' };
+  const recipients = await clientRecipients(list.engagementId);
+  return { draft: draftView(composeFor(actx, list, recipients.map((r) => r.email).filter((e): e is string => Boolean(e)))) };
+}
+
+/**
+ * Send the list. With `edits` (the screen's pop-up Send) one email goes to the edited To and Cc
+ * with the edited words; without (the Ask approval card) each client contact gets the draft.
+ */
+export async function deliverList(actx: ActionContext, value: Input, edits?: EmailEdits) {
+  const { checked } = await check(actx, value);
+  if (!checked.canApply) return { ok: false as const, error: checked.heldReason ?? 'This list cannot be sent.' };
+  const sent = await markRequestListSent(actx.auth, value.listId, actx.now);
+  const recipients = await clientRecipients(sent.engagementId);
+  const emails = recipients.map((r) => r.email).filter((e): e is string => Boolean(e));
+  const composed = composeFor(actx, sent, emails);
+  const outgoing = edits
+    ? [withEdits(composed, edits)]
+    : emails.map((to) => withEdits(composed, { to: [to], cc: [], subject: composed.subject, message: composed.message, dropAttachments: [], addAttachments: [] }));
+  let emailed = 0;
+  for (const mail of outgoing) {
+    const res = await sendEmail(mail).catch(() => ({ ok: false as const }));
+    if (res.ok) emailed += Array.isArray(mail.to) ? mail.to.length : 1;
+  }
+  const to = outgoing.flatMap((m) => (Array.isArray(m.to) ? m.to : [m.to]));
+  await recordAuditEvent(actx.auth, {
+    engagementId: sent.engagementId,
+    action: 'request_list.sent',
+    summary: `Sent the request list "${sent.title}" (${sent.items.length} items)`,
+    metadata: { listId: sent.id, items: sent.items.length, recipients: to.length, emailed, via: actx.via, subject: outgoing[0]?.subject ?? null },
+  });
+  if (emailed > 0) await recordEmailSent(actx.auth, { to, cc: outgoing[0]?.cc ?? [], subject: outgoing[0]!.subject, engagementId: sent.engagementId, itemId: `request-list:${sent.id}`, via: 'firm' });
+  return {
+    ok: true as const,
+    summary: emailed > 0 ? `Sent "${sent.title}" to ${emailed} client contact${emailed === 1 ? '' : 's'}` : `Marked "${sent.title}" sent; the email could not go out`,
+  };
+}

@@ -46,7 +46,7 @@ const FILTER_OFF = 'border-line-strong text-ink-2 hover:bg-surface-sunken';
 
 export default function DocumentVaultPage() {
   return (
-    <Suspense fallback={<VaultPageSkeleton path="/app/intern/vault" />}>
+    <Suspense fallback={<VaultPageSkeleton path="/app/lead/vault" />}>
       <DocumentVaultPageContent />
     </Suspense>
   );

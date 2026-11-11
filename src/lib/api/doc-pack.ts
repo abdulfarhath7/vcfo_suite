@@ -1,3 +1,4 @@
+import { standardDownloadName } from '@/lib/files/download-name';
 import 'server-only';
 
 import { NextResponse } from 'next/server';
@@ -11,7 +12,7 @@ import { evaluateDocPack, docPackItemByKey } from '@/lib/doc-pack/evaluate';
 import type { DocPackItem, DocPackSummary } from '@/lib/doc-pack/types';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
 import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
-import { incorpDocDownloadFilename } from '@/lib/incorporation-docs/paths';
+import { incorpDocStandardDownloadName } from '@/lib/incorporation-docs/paths';
 import { downloadIncorpDocx } from '@/lib/incorporation-docs/storage';
 import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { slugifyCompanyName } from '@/lib/slug';
@@ -116,13 +117,13 @@ export async function renderDocPackItem(
     if (!bytes) throw new DocPackError('The board resolution file could not be loaded.', 404, 'download_failed');
     return {
       buffer: sanitizeBoardResolutionDocxBuffer(Buffer.from(bytes)),
-      filename: BOARD_RESOLUTION_DOCX_FILENAME,
+      filename: standardDownloadName('Board Resolution', engagement.companyName, 'docx'),
     };
   }
 
   const { doc } = item.generate;
   const { pre6 } = directorResponsesFromState(checklistState);
-  const filename = incorpDocDownloadFilename(doc, item.audience, { pre6 });
+  const filename = incorpDocStandardDownloadName(doc, item.audience, engagement.companyName, { pre6 });
 
   if (item.source === 'attached' && item.storagePath) {
     const bytes = await downloadIncorpDocx(item.storagePath);
@@ -152,16 +153,14 @@ export async function renderDocPackItem(
 }
 
 function docPackZipFilename(engagement: { companyName: string; slug?: string }, now = new Date()): string {
-  const slug = engagement.slug?.trim() || slugifyCompanyName(engagement.companyName);
-  const day = now.toISOString().slice(0, 10);
-  return `${slug}-pre-incorporation-${day}.zip`;
+  return standardDownloadName('Pre-Incorporation Documents', engagement.companyName, 'zip', now);
 }
 
 /** The file name an item downloads as, known before it is rendered. */
 function docPackItemFilename(inputs: DocPackInputs, item: DocPackItem): string {
-  if (item.generate.kind === 'board-resolution') return BOARD_RESOLUTION_DOCX_FILENAME;
+  if (item.generate.kind === 'board-resolution') return standardDownloadName('Board Resolution', inputs.engagement.companyName, 'docx');
   const { pre6 } = directorResponsesFromState(inputs.checklistState);
-  return incorpDocDownloadFilename(item.generate.doc, item.audience, { pre6 });
+  return incorpDocStandardDownloadName(item.generate.doc, item.audience, inputs.engagement.companyName, { pre6 });
 }
 
 /**

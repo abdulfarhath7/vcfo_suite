@@ -61,7 +61,7 @@ test('T-07 Manager approvals and step visibility', async ({ browser }) => {
     return { caption: `Rejected. Stored: status "${st.status}", review "${st.reviewStatus ?? '—'}".` };
   });
   await step(lead, { test: T, step: 2, role: 'lead2', caption: 'The lead sees the step back with the manager\'s reason.' }, async () => {
-    await lead.goto(`/app/intern/engagements/${trackB.slug}/step/pt-registration`);
+    await lead.goto(`/app/lead/engagements/${trackB.slug}/step/pt-registration`);
     await settle(lead, 'PT Registration');
     await expect(seen(lead, /different establishment/)).toBeVisible();
     return { marks: [{ at: seen(lead, /different establishment/), kind: 'ok', n: 1 }] };
@@ -69,7 +69,7 @@ test('T-07 Manager approvals and step visibility', async ({ browser }) => {
 
   // 3. Ask the client to fill, through the manager.
   await step(lead, { test: T, step: 3, role: 'lead2', caption: 'The lead asks the manager to send LEI Registration to the client to fill.' }, async () => {
-    await lead.goto(`/app/intern/engagements/${trackB.slug}/step/legal-entity-identifier`);
+    await lead.goto(`/app/lead/engagements/${trackB.slug}/step/legal-entity-identifier`);
     await settle(lead, 'LEI Registration');
     await lead.getByRole('button', { name: /Request client to fill/ }).locator('visible=true').first().click();
     const d = lead.getByRole('dialog');

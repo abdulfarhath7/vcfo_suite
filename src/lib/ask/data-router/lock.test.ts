@@ -18,19 +18,19 @@ describe('lockEngagement', () => {
   });
 
   it('never falls back to the page when the message names a company out of reach', () => {
-    const lock = lockEngagement({ message: 'Add this for Zeta Industries', pagePath: '/app/intern/projects/kestrel', engagements });
+    const lock = lockEngagement({ message: 'Add this for Zeta Industries', pagePath: '/app/lead/projects/kestrel', engagements });
     expect(lock).toEqual({ kind: 'unknown', mentioned: 'Zeta Industries' });
   });
 
   it('uses the page, then the only project, then asks', () => {
-    expect(lockEngagement({ message: 'Add this as director 2', pagePath: '/app/intern/projects/kestrel/step/pre-15', engagements })).toEqual({ kind: 'locked', engagement: kestrel });
+    expect(lockEngagement({ message: 'Add this as director 2', pagePath: '/app/lead/projects/kestrel/step/pre-15', engagements })).toEqual({ kind: 'locked', engagement: kestrel });
     expect(lockEngagement({ message: 'Add this', engagements: [kestrel] })).toEqual({ kind: 'locked', engagement: kestrel });
     expect(lockEngagement({ message: 'Add this', engagements })).toEqual({ kind: 'unknown', mentioned: null });
   });
 
   it('never locks to a company outside the scoped list it is given', () => {
-    expect(lockEngagement({ message: 'Add this for Zeta', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: 'Zeta' });
-    expect(lockEngagement({ message: 'Add this', pagePath: '/app/intern/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: null });
+    expect(lockEngagement({ message: 'Add this for Zeta', pagePath: '/app/lead/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: 'Zeta' });
+    expect(lockEngagement({ message: 'Add this', pagePath: '/app/lead/projects/zeta', engagements: [] })).toEqual({ kind: 'unknown', mentioned: null });
   });
 });
 

@@ -102,7 +102,7 @@ export function RecordTabBar({
   );
 }
 
-/** The body of a non-overview tab. `shellBase` is `/app/admin`, `/app/manager` or `/app/intern`. */
+/** The body of a non-overview tab. `shellBase` is `/app/admin`, `/app/manager` or `/app/lead`. */
 export function RecordTabPanel({ tab, engagement, shellBase }: { tab: Exclude<RecordTabKey, 'overview'>; engagement: Engagement; shellBase: string }) {
   const { getStateForEngagement } = useApp();
   const pathname = usePathname();

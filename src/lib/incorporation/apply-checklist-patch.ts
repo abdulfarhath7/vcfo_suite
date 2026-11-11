@@ -8,6 +8,9 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
+import { stampDinChecks } from '@/lib/checklist/din-verification';
+import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
+import { hiddenEntryAnswersPatch, isRepeatField } from '@/lib/checklist/checklist-repeat';
 import { proposeEventsFromChecklistSave } from '@/lib/compliance-events/record-change-hook';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { emptyEmailDispatch, type EmailDispatchResult } from '@/lib/email/email-dispatch';
@@ -19,6 +22,7 @@ import {
   isWaitingOnLead,
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
+  PROPOSED_DIRECTORS_STEP_ID,
   stripClientOnlyResponses,
   stripLeadOnlyResponses,
 } from '@/lib/incorporation/pre-inc-direct-flow';
@@ -44,6 +48,9 @@ export class ChecklistPatchRefused extends Error {
 export type ChecklistPatchInput = { resendManagerEmail?: unknown } & Partial<ChecklistItemStateSlice>;
 
 /** What this person may write of the patch they sent. Pure; throws when the step is closed to them. */
+/** Steps whose hidden questions lose their answers on save (SB-03). */
+const CLEAR_HIDDEN_ANSWER_STEP_IDS: ReadonlySet<string> = new Set(['pre-16']);
+
 export function checklistPatchForRole(
   ctx: Pick<AuthContext, 'role' | 'name'>,
   itemId: string,
@@ -51,7 +58,9 @@ export function checklistPatchForRole(
   prevSlice: ChecklistItemStateSlice | undefined,
   now: string,
 ): Partial<ChecklistItemStateSlice> {
-  let patch = patchFields;
+  // Workflow records only the server's own actions write (BR-05, DR-03), never a form save.
+  const { brClientEdit: _bce, openedNotifiedAt: _ona, ...savable } = patchFields;
+  let patch: Partial<ChecklistItemStateSlice> = savable;
   const directFlow = isDirectFlowStep(itemId);
   if (ctx.role === 'client' && directFlow) {
     // Direct flow: the client writes answers only, never a lead-only field,
@@ -62,7 +71,7 @@ export function checklistPatchForRole(
     patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
   } else if (ctx.role === 'intern' && directFlow && patchFields.responses) {
     // Direct flow: the project lead never overwrites the client's own answers (Part A).
-    patch = { ...patchFields, responses: stripClientOnlyResponses(itemId, patchFields.responses) };
+    patch = { ...savable, responses: stripClientOnlyResponses(itemId, patchFields.responses, prevSlice) };
   } else if (ctx.role === 'client') {
     const {
       reviewStatus: _rs,
@@ -102,6 +111,19 @@ export function checklistPatchForRole(
       } = patch;
       patch = draftOnly;
     }
+  }
+  if (patch.responses && itemId === PROPOSED_DIRECTORS_STEP_ID) {
+    // DR-01: the server stamps who checked a DIN and when.
+    patch = { ...patch, responses: stampDinChecks(prevSlice?.responses ?? {}, patch.responses, ctx.name, now) };
+  }
+  if (patch.responses && CLEAR_HIDDEN_ANSWER_STEP_IDS.has(itemId)) {
+    // SB-03: a changed subscriber type clears the answers of the questions it hides.
+    const merged = { ...(prevSlice?.responses ?? {}), ...patch.responses };
+    const cleared: Record<string, string> = {};
+    for (const field of CLIENT_RESPONSE_FIELDS[itemId] ?? []) {
+      if (isRepeatField(field)) Object.assign(cleared, hiddenEntryAnswersPatch(merged, field));
+    }
+    if (Object.keys(cleared).length) patch = { ...patch, responses: { ...patch.responses, ...cleared } };
   }
   if (directFlow && patch.responses && Object.keys(patch.responses).length > 0) {
     patch = { ...patch, ...lastEditedPatch({ actorName: ctx.name, actorRole: ctx.role, now }) };

@@ -94,7 +94,16 @@ export function NotificationItem({
             </span>
           ) : null}
         </button>
-        {expanded && canOpen ? (
+        {expanded && canOpen && item.href?.startsWith('/api/') ? (
+          <a
+            href={item.href}
+            download
+            className="mb-2 ml-[56px] inline-flex items-center gap-0.5 text-[12px] font-medium text-brand-text hover:underline"
+          >
+            Download
+            <ArrowUpRight className="h-3 w-3" strokeWidth={2} aria-hidden />
+          </a>
+        ) : expanded && canOpen ? (
           <Link
             href={item.href}
             className="mb-2 ml-[56px] inline-flex items-center gap-0.5 text-[12px] font-medium text-brand-text hover:underline"

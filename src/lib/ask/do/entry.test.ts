@@ -95,7 +95,7 @@ describe('handleDoWork', () => {
   });
 
   it('uses the page in view when the message names no company', async () => {
-    await run(DATA, { page: '/app/intern/projects/kestrel/step/pre-15' });
+    await run(DATA, { page: '/app/lead/projects/kestrel/step/pre-15' });
     expect(createChangeset.mock.calls[0]![1].draft.engagementId).toBe(kestrel.id);
   });
 
@@ -117,14 +117,14 @@ describe('handleDoWork', () => {
   });
 
   it('says it cannot find a company out of reach, reads nothing and reveals nothing', async () => {
-    const result = await run(`Add this for Zeta Industries\n${DATA}`, { page: '/app/intern/projects/acme' });
+    const result = await run(`Add this for Zeta Industries\n${DATA}`, { page: '/app/lead/projects/acme' });
     expect(result!.answer.line).toMatch(/cannot find Zeta Industries among your projects/);
     expect(createChangeset).not.toHaveBeenCalled();
     expect(lockRun).not.toHaveBeenCalled();
   });
 
   it('asks when a document names another company, and writes no row for it', async () => {
-    const result = await run(`Company: Zeta Industries\n${DATA}`, { page: '/app/intern/projects/acme' });
+    const result = await run(`Company: Zeta Industries\n${DATA}`, { page: '/app/lead/projects/acme' });
     expect(result!.answer.line).toMatch(/names Zeta Industries, not Acme/);
     expect(createChangeset).not.toHaveBeenCalled();
     expect(updateRun.mock.calls.at(-1)![2].status).toBe('waiting_reply');

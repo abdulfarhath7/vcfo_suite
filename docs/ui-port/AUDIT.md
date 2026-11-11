@@ -83,7 +83,7 @@ work left after that.
 | Compliances · Calendar and Filings | `src/views/compliances/*` | `CompliancesScreen.tsx`, `FilingsScreen.tsx` | Restyle |
 | Compliances · Obligations, grouped by filing | `src/views/compliances/FilingsView.tsx` (matrix) | `ObligationsScreen.tsx` | Build (same data as Filings) |
 | Registrations list and item | none | `RegistrationsScreen.tsx`, `ItemScreen.tsx` | Build (checklist registration steps) |
-| Requests (`/app/intern/requests`), compliance tracker | `app/app/intern/{requests,compliance/tracker}` | none | Keep + restyle |
+| Requests (`/app/lead/requests`), compliance tracker | `app/app/lead/{requests,compliance/tracker}` | none | Keep + restyle |
 | Settings and Profile | `src/views/settings/*` | `ProfileScreen.tsx` | Restyle |
 
 ## Manager

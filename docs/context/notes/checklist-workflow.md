@@ -100,7 +100,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - **Lead compliance gate**: `isIncorporated` now also true when `stage !== 'Pre-Incorporation'`.
   `complianceEngagementsForRole('intern', …)` filters to incorporated engagements — used by the
   sidebar (Compliances group hidden when empty), `useInternPortfolio` (filings on Today), and
-  `CompliancePages` (redirect to `/app/intern/today` when the lead has none). Other roles untouched.
+  `CompliancePages` (redirect to `/app/lead/today` when the lead has none). Other roles untouched.
 - Cross-tenant repository tests for the schedule accessor remain in the deferred bucket
   (DB-backed tests are run manually — see STATE.md).
 

@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -93,6 +94,21 @@ export function RequestListsPage() {
               <Button size="sm" onClick={() => setCreating((v) => !v)}>
                 New list
               </Button>
+              {/* GL-06: every list in the tab in view, in the list's order. */}
+              <ExportToExcelButton
+                title="Request lists"
+                columns={['List', 'Client', 'Due', 'Reminders sent', 'Items in', 'Status']}
+                rows={() =>
+                  shown.map((l) => [
+                    l.title,
+                    l.companyName,
+                    l.dueOn,
+                    l.reminderCount,
+                    `${l.progress.done} of ${l.progress.total}`,
+                    (STATUS_WORD[l.status] ?? STATUS_WORD.draft!).word,
+                  ])
+                }
+              />
             </div>
           )
         }
@@ -438,11 +454,12 @@ function AddItem({ busy, onAdd }: { busy: boolean; onAdd: (body: { kind: string;
 
 /**
  * The review before a list goes out: the exact recipients, the items, and every check. Nothing is
- * sent until the person clicks "Approve and send"; the server runs the checks again at that click.
+ * sent until the person writes the email and presses Send (GL-07); the server runs the checks again then.
  */
 function SendReviewPanel({ id, onCancel, onSent }: { id: string; onCancel: () => void; onSent: () => void }) {
   const q = useQuery<SendReview>({ queryKey: [...REQUEST_LISTS_KEY, id, 'review'], queryFn: () => fetchSendReview(id), staleTime: 0 });
-  const m = useMutation({ mutationFn: () => confirmSend(id), onSuccess: onSent });
+  // GL-07: "Write the email" opens the Send email pop-up; the list is sent only on its Send.
+  const m = useMutation({ mutationFn: () => confirmSend(id, q.data?.title), onSuccess: (result) => (result ? onSent() : undefined) });
   const review = q.data;
   return (
     <div className="m-4 rounded-md border-1.5 border-line-strong bg-surface-raised p-4" role="region" aria-label="Review before sending">
@@ -472,7 +489,7 @@ function SendReviewPanel({ id, onCancel, onSent }: { id: string; onCancel: () =>
           {m.error ? <p className="text-[13px] text-danger">{(m.error as Error).message}</p> : null}
           <div className="flex gap-2">
             <Button size="sm" disabled={Boolean(review.heldReason) || m.isPending} onClick={() => m.mutate()}>
-              {m.isPending ? 'Sending…' : 'Approve and send'}
+              {m.isPending ? 'Writing the email…' : 'Write the email'}
             </Button>
             <Button size="sm" variant="quiet" onClick={onCancel}>
               Not now

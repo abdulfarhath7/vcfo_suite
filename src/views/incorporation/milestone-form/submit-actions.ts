@@ -192,7 +192,7 @@ export function createSubmitActions(ctx: MilestoneFormCtx) {
     const validation = validateStep(submitDraft);
     const blocking: Record<string, string> = {};
     for (const [key, message] of Object.entries(validation.errors)) {
-      if (canRoleEditField(role, item.id, key)) blocking[key] = message;
+      if (canRoleEditField(role, item.id, key, itemState)) blocking[key] = message;
     }
     setFieldWarnings(validation.warnings);
 

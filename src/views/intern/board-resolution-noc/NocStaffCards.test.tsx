@@ -90,7 +90,7 @@ describe('NocTemplateCard', () => {
     const onMakeAgain = vi.fn();
     render(<NocTemplateCard noc={noc} {...props} onMakeAgain={onMakeAgain} />);
     expect(screen.getByText('Answers changed after release')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Make the draft again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Make it again' }));
     expect(onMakeAgain).toHaveBeenCalled();
   });
 });

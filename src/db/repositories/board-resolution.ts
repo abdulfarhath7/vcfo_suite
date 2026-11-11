@@ -325,6 +325,12 @@ export async function setSignedBoardResolution(
   if (!existing || existing.status !== 'finalized') {
     throw new Error('Board resolution is not finalized');
   }
+  // BR-05: while the client's edited version is with the firm, the signed copy waits for the
+  // final document the lead sends back.
+  const edit = checklistStateFromRow(engagement)[MANAGER_APPROVAL_STEP_ID]?.brClientEdit;
+  if (edit && edit.stage !== 'final' && edit.stage !== 'editing') {
+    throw new Error('The edited board resolution is still with the firm. Upload the signed copy after the final version comes back.');
+  }
 
   const now = new Date();
   const [row] = await db

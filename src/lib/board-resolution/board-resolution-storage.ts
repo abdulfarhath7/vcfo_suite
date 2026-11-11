@@ -1,3 +1,4 @@
+import { standardDownloadName } from '@/lib/files/download-name';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import {
   EXTENSION_TO_MIME,
@@ -23,6 +24,21 @@ import {
 export const ENGAGEMENT_DOCUMENTS_BUCKET = 'engagement-documents';
 
 export const BOARD_RESOLUTION_DOCX_FILENAME = 'board-resolution.docx';
+
+/** The name a downloaded board resolution gets (GL-08); the stored object keeps its fixed key. */
+export function boardResolutionDownloadName(companyName: string | null | undefined, on: Date = new Date()): string {
+  return standardDownloadName('Board Resolution', companyName, 'docx', on);
+}
+
+/** The name the signed copy downloads as; it keeps the uploaded file's type (pdf or docx). */
+export function signedBoardResolutionDownloadName(
+  companyName: string | null | undefined,
+  storagePath: string,
+  on: Date = new Date(),
+): string {
+  const ext = /\.([A-Za-z0-9]+)$/.exec(storagePath)?.[1] ?? 'pdf';
+  return standardDownloadName('Board Resolution Signed', companyName, ext, on);
+}
 
 const UNSUPPORTED_MESSAGE = 'Use a PDF or Word (.docx) file.';
 

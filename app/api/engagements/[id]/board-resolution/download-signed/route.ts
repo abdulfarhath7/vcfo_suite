@@ -4,6 +4,7 @@ import {
   fetchBoardResolutionForApi,
 } from '@/lib/api/board-resolution-access';
 import { requireAnyRole } from '@/auth/guards';
+import { signedBoardResolutionDownloadName } from '@/lib/board-resolution/board-resolution-storage';
 import {
   contentTypeForSignedBoardResolutionPath,
   downloadFilenameForSignedBoardResolution,
@@ -12,7 +13,7 @@ import { downloadSignedBoardResolution } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
@@ -53,13 +54,14 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'download_failed' }, { status: 404 });
   }
 
-  const filename = downloadFilenameForSignedBoardResolution(storagePath);
+  const filename = signedBoardResolutionDownloadName(access.row?.companyName, storagePath);
 
   return new NextResponse(new Uint8Array(bytes), {
     status: 200,
     headers: {
       'Content-Type': contentTypeForSignedBoardResolutionPath(storagePath),
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      // BR-02: `?inline=1` opens the signed copy in the browser for "Open"; otherwise it downloads.
+      'Content-Disposition': `${new URL(request.url).searchParams.get('inline') === '1' ? 'inline' : 'attachment'}; filename="${filename}"`,
       'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',

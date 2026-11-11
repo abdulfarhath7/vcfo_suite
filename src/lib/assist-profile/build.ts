@@ -27,6 +27,7 @@ import { readNicCodes } from '@/lib/incorporation/nic-2008';
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, repeatEntries } from '@/lib/checklist/checklist-repeat';
 import { sectionSlug } from '@/lib/doc-pack/section-slug';
+import { PART_B_SECTION } from '@/lib/checklist/part-b-sections';
 import type { DocPackContext, RequiredInput } from '@/lib/doc-pack/types';
 import {
   COUNTRY_INDIA,
@@ -79,9 +80,9 @@ const PLACEHOLDER = /^\[/;
 
 const PROPOSED_NAMES_TAB = sectionSlug(PART_A_SECTION.proposedNames);
 const NIC_TAB = sectionSlug(PART_A_SECTION.nicCodes);
-const REGISTERED_OFFICE_TAB = sectionSlug('Registered office');
-const DIRECTORS_TAB = sectionSlug('Directors');
-const SUBSCRIBERS_TAB = sectionSlug('Subscribers');
+const REGISTERED_OFFICE_TAB = sectionSlug(PART_B_SECTION.correspondenceAddress);
+const DIRECTORS_TAB = sectionSlug(PART_B_SECTION.directors);
+const SUBSCRIBERS_TAB = sectionSlug(PART_B_SECTION.subscribers);
 /** pre-7 section holding the signing place and the subscription witness. */
 const DRAFT_DOCS_TAB = sectionSlug('Draft Incorporation Docs');
 

@@ -68,6 +68,38 @@ export interface NavGroupDef {
   icon: NavIcon;
   iconTone?: string;
   items: SidebarNavLeaf[];
+  /** Pages outside the leaves that still belong to the group (a client's step pages for Incorporation). */
+  activeAlso?: RegExp;
+}
+
+/** The Incorporation views a sub-item opens on the client list (`?view=`). */
+export const INCORPORATION_VIEWS = ['part-a', 'part-b', 'board-resolutions', 'documents'] as const;
+export type IncorporationView = (typeof INCORPORATION_VIEWS)[number];
+
+/**
+ * NV-01: Incorporation opens into Overview, SPICe+ Part A, SPICe+ Part B, Board resolutions and
+ * Documents, like Compliances. Staff have no all-client page for each part, so each sub-item opens
+ * the Incorporation client list with that view (the change list: "when no client is selected, a
+ * sub-item opens the client list first"); a row then opens that part for the client. NV-02:
+ * Overview is the Incorporation main page, and the group stays highlighted on a client's
+ * incorporation pages (step, documents and board resolution).
+ */
+export function incorporationGroup(base: string): NavGroupDef {
+  const main = `${base}/incorporation`;
+  return {
+    id: `incorporation:${base}`,
+    label: 'Incorporation',
+    icon: Landmark,
+    iconTone: TONE.work,
+    items: [
+      { to: main, label: 'Overview', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=part-a`, label: 'SPICe+ Part A', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=part-b`, label: 'SPICe+ Part B', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=board-resolutions`, label: 'Board resolutions', icon: Landmark, iconTone: TONE.work },
+      { to: `${main}?view=documents`, label: 'Documents', icon: Landmark, iconTone: TONE.work },
+    ],
+    activeAlso: /^\/app\/(lead\/engagements\/[^/]+|(?:admin|manager|super)\/projects\/[^/]+)\/(?:step|documents|board-resolution)(?:\/|$)/,
+  };
 }
 
 export type NavSectionBreak = { kind: 'break'; id: string };
@@ -139,7 +171,7 @@ export function withOfficialUpdates(items: NavEntry[]): NavEntry[] {
 export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string, inDevConsole = false): NavEntry[] {
   if (inDevConsole) return items;
   const base =
-    role === 'super_admin' ? '/app/super' : role === 'admin' ? '/app/admin' : role === 'intern' ? '/app/intern' : role === 'manager' ? staffBase : null;
+    role === 'super_admin' ? '/app/super' : role === 'admin' ? '/app/admin' : role === 'intern' ? '/app/lead' : role === 'manager' ? staffBase : null;
   if (!base) return items;
   const at = items.findIndex((entry) => isNavSectionBreak(entry) && entry.id === NAV_TOOLS_BREAK.id);
   const item: NavItem = { to: `${base}/assist-runs`, label: 'Assist runs', icon: Bot, iconTone: TONE.work };
@@ -161,7 +193,7 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
   if (role === 'super_admin') {
     const practice = '/app/super/practice';
     return [
-      { to: `${practice}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
+      incorporationGroup(practice),
       compliancesGroup(practice, [
         { ...complianceLeaves(practice)[0], to: `${practice}/compliances` },
         { ...complianceLeaves(practice)[2], to: `${practice}/filings` },
@@ -171,7 +203,9 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
     ];
   }
   return [
-    { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work },
+    role === 'client'
+      ? { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work }
+      : incorporationGroup(base),
     role === 'client'
       ? compliancesGroup(compliancesBasePath(role, base))
       : compliancesGroup(compliancesBasePath(role, base), [
@@ -328,26 +362,26 @@ function managerItems(staffBase: string): NavEntry[] {
 }
 
 /** Intern clients list — keep equal to `INTERN_CLIENTS_HREF` in InternClientsNav. */
-const INTERN_CLIENTS = '/app/intern/clients';
+const INTERN_CLIENTS = '/app/lead/clients';
 
 /* R-51: the lead always sees Compliances; with no incorporated client the pages show
    "No incorporated clients yet" instead of sending the lead to Today. */
 const internItems: NavEntry[] = [
-  { to: '/app/intern/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
-  { to: '/app/intern/tasks', label: 'Work', icon: ListChecks, iconTone: TONE.work },
-  requestsItem('/app/intern'),
-  clientHealthItem('/app/intern'),
+  { to: '/app/lead/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
+  { to: '/app/lead/tasks', label: 'Work', icon: ListChecks, iconTone: TONE.work },
+  requestsItem('/app/lead'),
+  clientHealthItem('/app/lead'),
   { to: INTERN_CLIENTS, label: 'Clients', icon: Building2, iconTone: TONE.people },
-  ...practiceBlock('intern', '/app/intern'),
-  labourRegistersItem('/app/intern'),
-  payrollItem('/app/intern'),
-  budgetsItem('/app/intern'),
-  updatesGroup('/app/intern'),
-  { to: '/app/intern/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
-  docsGroup('/app/intern', Archive),
+  ...practiceBlock('intern', '/app/lead'),
+  labourRegistersItem('/app/lead'),
+  payrollItem('/app/lead'),
+  budgetsItem('/app/lead'),
+  updatesGroup('/app/lead'),
+  { to: '/app/lead/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
+  docsGroup('/app/lead', Archive),
   NAV_TOOLS_BREAK,
-  { to: '/app/intern/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
-  { to: '/app/intern/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
+  { to: '/app/lead/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
+  { to: '/app/lead/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
 
 /**

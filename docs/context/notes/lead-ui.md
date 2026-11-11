@@ -103,8 +103,8 @@ Gotchas already paid for once. Append when something costs more than a minute to
   (`mode !== 'open'`). Do **not** call
   `setSidebarCollapsed(true)` on intern project open — that used to rewrite
   Keep open (`open`) to Auto. Intern Clients list expand is visual only
-  (`shellDesktopNavExpanded` in `intern-sidebar.ts`): auto + `/app/intern/clients`
-  takes rail width; auto + `/app/intern/engagements/…` stays collapsed for
+  (`shellDesktopNavExpanded` in `intern-sidebar.ts`): auto + `/app/lead/clients`
+  takes rail width; auto + `/app/lead/engagements/…` stays collapsed for
   workspace width; Keep open/closed are never mutated by the route.
   Nav scrollers use
   `.sidebar-scroll` (no visible bar). Search is a tool button, not a fake input.
@@ -172,11 +172,11 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 ## Intern Today + My work
 
-- Today (`/app/intern/today`) is one greeting hero (greeting + inline stats + today’s
+- Today (`/app/lead/today`) is one greeting hero (greeting + inline stats + today’s
   focus) plus week strip, action queue, phase progress, compliance health, waiting-on.
   Stats deep-link into My work with `?focus=`. Helpers: `src/lib/intern/intern-work.ts`.
   Appearance (hero/sidebar/motion) is localStorage `vcfo.shell.appearance`.
-- My work (`/app/intern/tasks`) is List / Board / Timeline of the same classified items
+- My work (`/app/lead/tasks`) is List / Board / Timeline of the same classified items
   (steps + filings + pending document requests). Nav badge = needs-action count.
   `groupInternWeekQueueByCompany` still exists for tests; Today no longer renders that grid.
   This week strip maps intern work onto IST days: due/complete dates stay on
@@ -204,7 +204,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   — no 3-item cap; `parseInternFocus` keeps legacy pins. Staff dashboards show a
   grouped open-todos panel (`TeamTodosPanel`). Action queue expanded companies
   persist as `vcfo.intern.queue.expanded.{userId}` (engagement id set; not accordion).
-- Intern **Requests** page is gone. `/app/intern/requests` redirects to My work.
+- Intern **Requests** page is gone. `/app/lead/requests` redirects to My work.
   Pending document requests still show on Today / My work (`waiting-request`);
   client Inbox/Documents and staff project Documents still use the data layer.
 
@@ -226,7 +226,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   footer pair (same break after Docs on admin/manager). Settings stays in the
   footer. Staff roles that have both Send email and Docs put Send email
   immediately above Docs. Do not set `position` on `.shell-sidebar-skin`.
-- Vault is `/app/intern/vault` (shared view `src/views/vault/DocumentVaultPage.tsx`).
+- Vault is `/app/lead/vault` (shared view `src/views/vault/DocumentVaultPage.tsx`).
   Manager/admin already had `/vault`. Files are grouped by assigned company,
   then phase (pre-inc / post-inc / FEMA / statutory) then checklist step.
   Search matches file name (and company); results show file + company + path.

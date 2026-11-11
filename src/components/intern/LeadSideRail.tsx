@@ -15,7 +15,7 @@ import { internWaitingItems, type InternWorkItem } from '@/lib/intern/intern-wor
    still owes. Each row has the company tile, the item, the company and how long it has waited,
    and the reminder or nudge action. What the client owes gets the
    one-click Remind (G-15), with Mail as the fallback when the reminder cannot go out. */
-export function LeadSideRail({ items, mailHref = '/app/intern/mail', title = 'Waiting on client' }: { items: InternWorkItem[]; mailHref?: string; title?: string }) {
+export function LeadSideRail({ items, mailHref = '/app/lead/mail', title = 'Waiting on client' }: { items: InternWorkItem[]; mailHref?: string; title?: string }) {
   const router = useRouter();
   const all = internWaitingItems(items);
   const waiting = all.slice(0, 5);

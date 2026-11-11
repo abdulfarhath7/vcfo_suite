@@ -109,7 +109,7 @@ export function RegistrationView({
   const renewal = renewalLine(facts, now);
   const date = regDateLabel(row, now);
   const stepHref =
-    shellBase === '/app/intern'
+    shellBase === '/app/lead'
       ? internEngagementStepPath(engagement, item)
       : adminProjectStepPath(engagement, item, shellBase === '/app/manager' ? '/app/manager' : '/app/admin');
   const marks = stageMarks(row);

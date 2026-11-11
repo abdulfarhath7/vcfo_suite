@@ -48,6 +48,6 @@ export function stamp(iso: string | null | undefined): string {
 /** The staff compliances base for a role; super admin uses the admin pages (no super route). */
 export function meetingsBase(role: string | null | undefined): string {
   if (role === 'manager') return '/app/manager/compliances';
-  if (role === 'intern') return '/app/intern/compliances';
+  if (role === 'intern') return '/app/lead/compliances';
   return '/app/admin/compliances';
 }

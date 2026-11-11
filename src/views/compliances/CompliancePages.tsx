@@ -57,7 +57,7 @@ function useComplianceScope(): {
   return { settled: engagementsSettled, scope, leadHasNothing };
 }
 
-const LEAD_HOME = '/app/intern/today';
+const LEAD_HOME = '/app/lead/today';
 
 /**
  * R-51: the lead always has Compliances in the sidebar. With no incorporated client yet the
@@ -130,7 +130,7 @@ export function SuperFilingsPage() {
 
 /**
  * Registrations sit outside Compliances in the nav but read the same scoped
- * roster: `shellBase` is the shell's root (`/app/intern`, `/app/manager`,
+ * roster: `shellBase` is the shell's root (`/app/lead`, `/app/manager`,
  * `/app/admin`), so the list lives at `{shellBase}/registrations` and a step
  * opens in that shell's own project routes.
  */

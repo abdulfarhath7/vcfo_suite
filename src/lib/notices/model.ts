@@ -83,7 +83,7 @@ export function noticeLabel(c: { authority: string; section: string | null; peri
 
 /** The staff page each role opens. Super admins have their own shell segment. */
 export function noticesHref(role: string): string {
-  const seg = role === 'super_admin' ? 'super' : role === 'intern' ? 'intern' : role === 'manager' ? 'manager' : 'admin';
+  const seg = role === 'super_admin' ? 'super' : role === 'intern' ? 'lead' : role === 'manager' ? 'manager' : 'admin';
   return `/app/${seg}/compliances/notices`;
 }
 

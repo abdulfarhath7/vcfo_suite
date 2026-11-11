@@ -37,7 +37,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 
 ## Folder map
 
-- `app/` — Next.js routes only. `app/app/{super,admin,manager,intern,client}` are thin shells
+- `app/` — Next.js routes only. `app/app/{super,admin,manager,lead,client}` are thin shells
   that render a view; `app/api/*` are the ~35 route handlers; `app/globals.css` holds tokens.
 - `src/views/` — the real page components, one folder per area and role.
 - `src/components/` — shared UI. `shell/` (staff sidebar, top bar), `dash/` (DashHero,

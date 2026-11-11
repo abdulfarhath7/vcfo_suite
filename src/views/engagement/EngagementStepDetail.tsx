@@ -34,6 +34,9 @@ import { useState } from 'react';
 import { shortDate } from '@/components/timeline/timeline-model';
 import { docPackStepPath } from '@/lib/doc-pack/paths';
 import { useEngagementStepDetail } from '@/views/engagement/step-detail/use-engagement-step-detail';
+import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { FillOwnerBanner } from '@/components/incorporation/FillOwnerBanner';
+import { cn } from '@/lib/utils';
 import { createStepView } from '@/views/engagement/step-detail/create-step-view';
 
 /** The record's names for the phases (prototype `PHASES`), for the staff step head and rail. */
@@ -59,6 +62,7 @@ const PHASE_RAIL: Record<string, string> = {
 export default function EngagementStepDetail() {
   const state = useEngagementStepDetail();
   const [stepTab, setStepTab] = useState('forms');
+  const [panelOpen, togglePanel] = useSidePanelOpen(state.user?.id);
   const {
     router,
     queryClient,
@@ -166,7 +170,7 @@ export default function EngagementStepDetail() {
     (a) => a.target?.toLowerCase().includes(activityNeedle) || item.forms.some((f) => a.target?.toLowerCase().includes(f.toLowerCase())),
   );
   const stepTitleRow = (
-    <header className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+    <header data-notified-target className="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
       {isClientRoute ? <PageBackButton className="-ml-1.5" /> : null}
       {selfMark ? <StepMark state={selfMark.state} tone={selfMark.tone} label={selfMark.label} /> : null}
       <div className="min-w-0 flex-[1_1_280px]">
@@ -189,7 +193,7 @@ export default function EngagementStepDetail() {
       {isClientRoute ? (
         <WhatsThisButton kind="step" refId={item.id} label={item.title} />
       ) : (
-        <WhatsThisButton kind="step" refId={item.id} label={item.title} variant="outline" className="h-control-md px-3.5 text-[14px]" onOpen={() => setAboutOpen(true)} />
+        <WhatsThisButton kind="step" refId={item.id} label={item.title} variant="outline" className="h-control-md w-auto aspect-square" onOpen={() => setAboutOpen(true)} />
       )}
       {/* Narrow screens lose the rail (and its card); this stands in, never both. */}
       {docPackHref ? (
@@ -430,12 +434,20 @@ export default function EngagementStepDetail() {
           {stepWindowBar}
           {assistHint}
           {internPhase ? (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+            <div
+              className={cn(
+                'grid gap-4 lg:items-start',
+                panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_300px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]',
+              )}
+            >
               <div className="min-w-0">
+                {!isClientRoute ? <FillOwnerBanner engagement={eng} itemId={item.id} /> : null}
                 {stepForm}
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
               </div>
-              {internPhaseRail}
+              <SidePanelHandle open={panelOpen} onToggle={togglePanel} className="lg:sticky lg:top-[var(--shell-sticky-top)]" />
+              {/* GL-05: the panel can be pushed aside; below lg it always stacks under the form. */}
+              <div className={cn('min-w-0', !panelOpen && 'lg:hidden')}>{internPhaseRail}</div>
             </div>
           ) : (
             <>

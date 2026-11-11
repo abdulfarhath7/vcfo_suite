@@ -19,7 +19,7 @@ import type { Message } from '@/lib/messages/types';
  */
 
 /** Where the lead triages client messages (the Inbox card on Today). */
-const LEAD_INBOX_PATH = '/app/intern/today';
+const LEAD_INBOX_PATH = '/app/lead/today';
 /** The client's messages page in the portal. */
 const CLIENT_MESSAGES_PATH = '/app/client/messages';
 

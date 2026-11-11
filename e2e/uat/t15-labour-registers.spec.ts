@@ -19,7 +19,7 @@ test('T-15 Labour registers', async ({ browser }) => {
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead picks Karnataka and Kaveri Foods, and opens the October 2026 batch.' }, async () => {
     if (batchUrl) return { caption: 'The batch is already open.' };
-    await lead.goto('/app/intern/labour-registers');
+    await lead.goto('/app/lead/labour-registers');
     await settle(lead, /Karnataka/);
     await lead.getByText('Karnataka', { exact: true }).locator('visible=true').first().click();
     await lead.locator('#lr-client').selectOption({ label: 'Kaveri Foods Private Limited' });

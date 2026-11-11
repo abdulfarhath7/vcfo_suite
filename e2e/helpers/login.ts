@@ -112,3 +112,20 @@ export async function askClientChat(chat: Locator, question: string) {
   await input.fill(question);
   await input.press('Enter');
 }
+
+/**
+ * The id of a demo project, found by its slug. The demo seed makes new ids on every run, so a spec
+ * must not hard-code one. Set E2E_<SLUG>_ID (for example E2E_DEMO_KESTREL_ROBOTICS_ID) to use a
+ * database that is not on this machine.
+ */
+export async function demoEngagementId(slug: string): Promise<string> {
+  const fromEnv = process.env[`E2E_${slug.toUpperCase().replace(/-/g, '_')}_ID`];
+  if (fromEnv) return fromEnv;
+  let id: string | undefined;
+  await onLocalDb(async (db) => {
+    const res = await db.query<{ id: string }>('select id from engagements where slug = $1', [slug]);
+    id = res.rows[0]?.id;
+  });
+  if (!id) throw new Error(`No demo project "${slug}". Run npm run db:seed-demo, or set its E2E_*_ID.`);
+  return id;
+}

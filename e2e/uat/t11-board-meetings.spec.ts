@@ -15,7 +15,7 @@ test('T-11 Board meetings', async ({ browser }) => {
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead creates the first board meeting from Compliances › Obligations.' }, async () => {
     if (meetingUrl) return { caption: 'The meeting already exists.' };
-    await lead.goto('/app/intern/compliances/obligations');
+    await lead.goto('/app/lead/compliances/obligations');
     await settle(lead);
     const menu = lead.getByRole('button', { name: /New task|New meeting/ }).locator('visible=true').first();
     await menu.click();
@@ -71,12 +71,16 @@ test('T-11 Board meetings', async ({ browser }) => {
   });
 
   const mgr = await as(browser, 'manager');
-  await step(mgr, { test: T, step: 3, role: 'manager', caption: 'The manager approves the notice ("Approve and send").' }, async () => {
-    await mgr.goto(meetingUrl!.replace('/app/intern/', '/app/manager/'));
+  await step(mgr, { test: T, step: 3, role: 'manager', caption: 'The manager approves the notice, checks the email in the "Send email" pop-up and sends it (GL-07).' }, async () => {
+    await mgr.goto(meetingUrl!.replace('/app/lead/', '/app/manager/'));
     await settle(mgr, /notice/i);
-    const ap = mgr.getByRole('button', { name: /^Approve and send/ }).locator('visible=true').first();
+    const ap = mgr.getByRole('button', { name: /^Approve/ }).locator('visible=true').first();
     await shot(mgr, { test: T, step: 3, role: 'manager', status: 'pass', caption: 'The manager sees the notice waiting for approval.', marks: [{ at: ap, kind: 'focus', n: 1 }] });
     await ap.click();
+    // GL-07: approving opens the notice email; nothing goes out until Send.
+    const dialog = mgr.getByTestId('send-email-dialog');
+    await expect(dialog).toBeVisible({ timeout: 30_000 });
+    await dialog.getByRole('button', { name: 'Send', exact: true }).click();
     await mgr.waitForTimeout(4000);
     await expect(seen(mgr, /Approved|sent|Sent/)).toBeVisible();
     return { marks: [{ at: seen(mgr, /Approved|sent|Sent/), kind: 'ok', n: 1 }] };

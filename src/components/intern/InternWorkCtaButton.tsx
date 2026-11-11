@@ -36,11 +36,11 @@ export function InternWorkCtaButton({
     if (cta.action === 'remind-client') {
       // One-click reminder (G-15); Mail stays the fallback when the route cannot send.
       if (!remindKey) {
-        router.push('/app/intern/mail');
+        router.push('/app/lead/mail');
         return;
       }
       const outcome = await remind({ engagementId: item.engagementId, itemKey: remindKey, title: item.title });
-      if (outcome === 'failed') router.push('/app/intern/mail');
+      if (outcome === 'failed') router.push('/app/lead/mail');
       return;
     }
     if (cta.action === 'complete-task') {

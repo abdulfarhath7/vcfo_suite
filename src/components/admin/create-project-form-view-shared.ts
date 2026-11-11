@@ -81,7 +81,8 @@ export type CreateProjectFormViewProps = {
   fieldError: (key: CreateProjectFieldErrorKey) => string;
   pwStrength: 'weak' | 'fair' | 'strong' | null;
   submit: () => void | Promise<void>;
-  saveDraft: () => void;
+  /** A new project's answers were autosaved in this browser at least once. */
+  draftSaved: boolean;
   companyTypeValid: boolean;
   canSubmit: boolean;
   /** Editing an existing project — same form, PATCH semantics. */

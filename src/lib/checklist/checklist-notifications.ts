@@ -2,13 +2,7 @@ import { getItem } from '@/data/checklist';
 import type { Role } from '@/lib/auth';
 import type { EngagementChecklistState } from '@/lib/projects/engagements-db';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import {
-  adminProjectStepPath,
-  clientBoardResolutionPath,
-  internBoardResolutionPath,
-  internEngagementPath,
-  internEngagementStepPath,
-} from '@/lib/projects/project-step-path';
+import { stepPathForRole } from '@/lib/projects/project-step-path';
 import type { Engagement } from '@/data/engagements';
 import { directFlowRoleLabel, isDirectFlowStep } from '@/lib/incorporation/pre-inc-direct-flow';
 
@@ -96,20 +90,10 @@ function notificationHref(
   role: Role,
   engagement: Pick<Engagement, 'id' | 'slug'>,
   itemId: string,
-  kind: NotificationKind,
+  _kind: NotificationKind,
 ): string {
-  if (role === 'client') {
-    if (itemId === 'pre-2' || itemId === 'pre-3') return clientBoardResolutionPath();
-    return '/app/client/incorporation';
-  }
-  if (role === 'intern') {
-    if (kind === 'request.uploaded' || kind === 'request.created') {
-      return internEngagementPath(engagement);
-    }
-    if (itemId === 'pre-2' || itemId === 'pre-3') return internBoardResolutionPath(engagement);
-    return internEngagementStepPath(engagement, itemId);
-  }
-  return adminProjectStepPath(engagement, itemId, role);
+  // GL-01: the exact step for every role and every kind (a request used to open the project home).
+  return stepPathForRole(role, engagement, itemId, { boardResolution: itemId === 'pre-2' || itemId === 'pre-3' });
 }
 
 function sharedDocsGrew(

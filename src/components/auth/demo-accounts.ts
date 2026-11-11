@@ -7,7 +7,7 @@
  */
 export const DEMO_ACCOUNTS = [
   { label: 'Client', email: 'client@vcfo.local', title: 'Client portal', home: '/app/client/overview' },
-  { label: 'Lead', email: 'intern@vcfo.local', title: 'Project lead', home: '/app/intern/today' },
+  { label: 'Lead', email: 'intern@vcfo.local', title: 'Project lead', home: '/app/lead/today' },
   { label: 'Manager', email: 'manager@vcfo.local', title: 'Manager', home: '/app/manager/dashboard' },
   { label: 'Admin', email: 'admin@vcfo.local', title: 'Admin', home: '/app/admin/dashboard' },
   { label: 'Super admin', email: 'super@vcfo.local', title: 'Super admin', home: '/app/super/dashboard' },

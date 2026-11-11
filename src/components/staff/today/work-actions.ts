@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { remindWithEmail } from '@/hooks/use-remind-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import type { StatusCode } from '@/data/checklist';
@@ -61,27 +62,23 @@ export interface RemindTarget {
 }
 
 /**
- * Sends one reminder per target, one after another, and shows one A1 toast with the outcome.
+ * Opens one reminder per target, one after another, and shows one A1 toast with the outcome.
  * An item already reminded today counts as "already reminded", not as a failure.
  */
 export async function remindMany(targets: RemindTarget[]): Promise<{ sent: number; limited: number; failed: number }> {
   let sent = 0;
   let limited = 0;
   let failed = 0;
+  let cancelled = 0;
+  // GL-07: each reminder opens the "Send email" pop-up; only its Send sends.
   for (const t of targets) {
-    try {
-      const res = await fetch(`/api/engagements/${encodeURIComponent(t.engagementId)}/remind`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemKey: t.itemKey }),
-      });
-      if (res.ok) sent += 1;
-      else if (res.status === 429) limited += 1;
-      else failed += 1;
-    } catch {
-      failed += 1;
-    }
+    const outcome = await remindWithEmail(t, { quiet: true });
+    if (outcome === 'sent') sent += 1;
+    else if (outcome === 'limited') limited += 1;
+    else if (outcome === 'cancelled') cancelled += 1;
+    else failed += 1;
   }
+  if (sent === 0 && limited === 0 && failed === 0 && cancelled > 0) return { sent, limited, failed };
   const notes = [limited ? `${limited} already reminded today` : '', failed ? `${failed} could not be sent` : ''].filter(Boolean);
   if (sent > 0) {
     toastSaved(sent === 1 && targets.length === 1 ? `Reminder sent · ${targets[0]!.title}` : `${plural(sent, 'reminder', 'reminders')} sent`, {

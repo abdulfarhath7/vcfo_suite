@@ -1,5 +1,6 @@
 import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
+import { announceOpenedSteps } from '@/lib/checklist/step-opened-notify';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -57,6 +58,8 @@ export async function POST(request: Request, context: RouteContext) {
     // turn. Separate from `review_accepted`, which is the team's own record of
     // the decision. A failure here must not fail the review that already
     // committed, so it is reported alongside rather than thrown.
+    // DR-03: an accepted step can open Proposed directors; the client hears it once.
+    if (body.data.action === 'accept') after(() => announceOpenedSteps(guard.ctx, id));
     let clientApprovalEmail: Awaited<ReturnType<typeof notifyEngagementEvent>> | null = null;
     if (body.data.action === 'accept') {
       clientApprovalEmail = await notifyEngagementEventSoon({

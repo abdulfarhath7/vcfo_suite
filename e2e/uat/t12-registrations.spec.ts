@@ -20,7 +20,7 @@ test('T-12 Registrations', async ({ browser }) => {
   const lead = await as(browser, 'lead2');
 
   await step(lead, { test: T, step: 1, role: 'lead2', caption: 'The lead opens Registrations and sees the list for Kaveri Foods.' }, async () => {
-    await lead.goto('/app/intern/registrations');
+    await lead.goto('/app/lead/registrations');
     await settle(lead, /GST/);
     return { marks: [{ at: seen(lead, /GST/), kind: 'focus', n: 1 }] };
   });

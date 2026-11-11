@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { previewSendList, sendList } from '@/lib/actions/requests/send-list';
+import { deliverList, previewSendList, previewSendListEmail } from '@/lib/actions/requests/send-list';
+import { EmailStepSchema } from '@/lib/email/email-edits';
 import type { ActionContext } from '@/lib/actions/types';
 import { requestListError, STAFF } from '../../_respond';
 
@@ -14,8 +15,9 @@ const UUID = z.string().uuid();
  *
  * GET  /api/request-lists/:id/send — the review: what goes out, to whom, and any check that holds
  *      it. Reads only.
- * POST /api/request-lists/:id/send { confirm: true } — the person's approval click. The action's
- *      checks run again as that person, and only then does it execute.
+ * POST /api/request-lists/:id/send { preview: true } — the drafted email for the "Send email"
+ *      pop-up (GL-07). { email } — the pop-up's Send: the action's checks run again as that
+ *      person, and only then does it execute, sending the edited email.
  */
 function actionContext(auth: ActionContext['auth']): ActionContext {
   return { auth, engagementId: null, conversationId: null, runId: null, now: new Date(), via: 'route' };
@@ -50,10 +52,17 @@ export async function POST(request: Request, context: RouteContext) {
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const { id } = await context.params;
   if (!UUID.safeParse(id).success) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const body = await parseJsonBody(request, z.object({ confirm: z.literal(true) }));
+  const body = await parseJsonBody(request, z.object({ confirm: z.literal(true).optional() }).merge(EmailStepSchema));
   if (body.ok === false) return NextResponse.json({ error: 'Confirm the send first' }, { status: 400 });
   try {
-    const result = await sendList.execute(actionContext(guard.ctx), { listId: id });
+    // GL-07: `preview` gives the "Send email" pop-up its draft; only its Send (`email`) sends.
+    if (body.data.preview) {
+      const draft = await previewSendListEmail(actionContext(guard.ctx), { listId: id });
+      if ('error' in draft) return NextResponse.json({ error: draft.error }, { status: 409 });
+      return NextResponse.json(draft);
+    }
+    if (!body.data.email) return NextResponse.json({ error: 'Open the email and press Send.' }, { status: 400 });
+    const result = await deliverList(actionContext(guard.ctx), { listId: id }, body.data.email);
     if (result.ok === false) return NextResponse.json({ error: result.error }, { status: 409 });
     return NextResponse.json(result);
   } catch (e) {

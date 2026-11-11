@@ -10,12 +10,19 @@ import { applyAppearanceAttributes } from "@/lib/ui/table-prefs";
 import { HotToaster } from "@/components/ui/hot-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
+import { NotifiedHighlight } from "@/components/notifications/NotifiedHighlight";
 
 const ComposeOutgoingEmailHost = dynamic(
   () =>
     import("@/components/email/ComposeOutgoingEmailHost").then((mod) => ({
       default: mod.ComposeOutgoingEmailHost,
     })),
+  { ssr: false },
+);
+
+// GL-07: the "Send email" pop-up every card action opens before an email goes out.
+const SendEmailDialogHost = dynamic(
+  () => import("@/components/email/SendEmailDialogHost").then((mod) => ({ default: mod.SendEmailDialogHost })),
   { ssr: false },
 );
 
@@ -55,6 +62,8 @@ export function Providers({ children }: { children: ReactNode }) {
           <AppProvider>
             {children}
             <ComposeOutgoingEmailHost />
+            <SendEmailDialogHost />
+            <NotifiedHighlight />
           </AppProvider>
         </TooltipProvider>
       </LazyMotion>

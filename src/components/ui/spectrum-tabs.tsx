@@ -43,7 +43,7 @@ export function SpectrumTabs({
       <div
         role="tablist"
         aria-label={label}
-        className={cn('flex max-w-full items-end gap-5 overflow-x-auto border-b-1.5 border-line [scrollbar-width:none]', className)}
+        className={cn('flex max-w-full items-end gap-1.5 overflow-x-auto border-b-1.5 border-line [scrollbar-width:none]', className)}
       >
         {items.map((t) => {
           const on = t.key === value;
@@ -58,8 +58,12 @@ export function SpectrumTabs({
                 onChange(t.key);
               }}
               className={cn(
-                '-mb-[1.5px] inline-flex h-10 items-center gap-1.5 whitespace-nowrap border-b-2 text-[14px] font-medium transition-colors',
-                on ? 'border-brand text-ink' : 'border-transparent text-ink-muted hover:text-ink',
+                // GL-03: the open tab has a 3px brand underline, brand-colour bold text and a
+                // light wash, so it is not shown by colour alone; the others are muted with no line.
+                '-mb-[1.5px] inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-[3px] px-2.5 text-[14px] transition-colors',
+                on
+                  ? 'border-brand bg-brand-soft font-semibold text-brand-text'
+                  : 'border-transparent font-medium text-ink-muted hover:text-ink',
               )}
             >
               {t.label}
