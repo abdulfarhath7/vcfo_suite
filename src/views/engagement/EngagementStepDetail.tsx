@@ -1,5 +1,6 @@
 "use client";
 
+import { NOT_PERMITTED_HASH } from '@/lib/projects/project-step-path';
 import { ClientFileRequestsPanel } from "@/components/incorporation/ClientFileRequestsPanel";
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { redirect } from 'next/navigation';
@@ -113,7 +114,8 @@ export default function EngagementStepDetail() {
     // routes; on the client route `eng` is derived from it, so redirecting on
     // that tick bounced the reader out of a step they were allowed to read.
     if (!engagementsSettled || !user) return <StepLoadingShapes />;
-    return <RedirectTo href={listRedirect} />;
+    // GL-01: the nearest page this person may open, which then says why the step did not open.
+    return <RedirectTo href={`${listRedirect}${NOT_PERMITTED_HASH}`} />;
   }
   /* S-519: an unknown step shows a "Step" card with a outlined "No step" area, not a bounce. */
   if (!item) {

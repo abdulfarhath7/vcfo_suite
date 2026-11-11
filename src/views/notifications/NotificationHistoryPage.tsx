@@ -24,6 +24,7 @@ import {
   formatNotificationWhen,
   groupNotificationsForHistory,
   notificationHrefIsNavigable,
+  notificationOpenHref,
   type NotificationHistoryGroup,
 } from '@/lib/notifications/notification-dismiss';
 import { NOTIFICATION_KIND_LABEL } from '@/lib/notifications/notification-popup';
@@ -155,7 +156,9 @@ function NotificationRow({
 /** The detail side panel (prototype SidePanel): eyebrow, chip, From / When / Area, the text, and the link. */
 function NotificationPanel({ item, onClose }: { item: AppNotification | null; onClose: () => void }) {
   const look = item ? NOTIFICATION_KIND_LOOK[item.kind] : null;
-  const canOpen = item ? notificationHrefIsNavigable(item.href) : false;
+  const { user } = useApp();
+  // GL-01: the step it names, or the project overview for an old notification without a link.
+  const openHref = item ? notificationOpenHref(item, user?.role) : null;
   return (
     <Sheet open={item !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-[440px]">
@@ -184,9 +187,9 @@ function NotificationPanel({ item, onClose }: { item: AppNotification | null; on
                 <p className="whitespace-pre-wrap break-words text-[13.5px] text-ink-2">{item.body}</p>
               ) : null}
             </div>
-            {canOpen ? (
+            {openHref ? (
               <div className="mt-auto flex justify-end border-t border-line-soft px-5 py-3">
-                <Link href={item.href} className={buttonVariants({ size: 'sm' })} onClick={onClose}>
+                <Link href={openHref} className={buttonVariants({ size: 'sm' })} onClick={onClose}>
                   Open
                 </Link>
               </div>
