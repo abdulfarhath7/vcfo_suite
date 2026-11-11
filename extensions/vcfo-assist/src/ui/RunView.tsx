@@ -183,6 +183,19 @@ function YouDo({ run, send, event }: { run: Run; send: Send; event: (e: UserEven
           </button>
         </YouCard>
       );
+    case 'human_step':
+      return (
+        <YouCard title="You do this: open the next part of the form">
+          <p>
+            <strong>{w.page}</strong>
+          </p>
+          <p>{w.text}</p>
+          <p className="muted small">The agent never opens sections or sub-panels itself. It goes on by itself once this part is open.</p>
+          <button type="button" className="btn btn-primary" onClick={() => event({ type: 'RETRY' })}>
+            Check again
+          </button>
+        </YouCard>
+      );
     case 'live_blocked':
       return (
         <YouCard title="Live portal blocked" tone="warn">

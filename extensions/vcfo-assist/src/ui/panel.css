@@ -83,6 +83,14 @@ details.card > summary { cursor: pointer; list-style-position: inside; }
 .subs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .sub { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; background: var(--sunken); }
 .sub-main { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.tree { margin-top: 6px; }
+.tree .tree { padding-left: 12px; border-left: 2px solid var(--line); }
+.tree-group { list-style: none; }
+.tree-toggle { all: unset; cursor: pointer; display: block; padding: 6px 4px; border-radius: 6px; }
+.tree-toggle:focus-visible { outline: 2px solid var(--brand); }
+.crumbs { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 4px; }
+.crumb { all: unset; cursor: pointer; color: var(--brand); }
 .portal-line { display: flex; gap: 8px; align-items: center; margin: 0; }
 
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; border: 0; white-space: nowrap; }

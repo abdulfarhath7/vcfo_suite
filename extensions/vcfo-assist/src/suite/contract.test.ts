@@ -63,7 +63,7 @@ describe.skipIf(!present)("Suite API contract (Suite's own zod schemas)", async 
       if (s.path === '/api/assist/resolve') {
         const body = s.body as Record<string, unknown>;
         expect(Object.keys(body).every((k) => RESOLVE_KEYS.includes(k))).toBe(true);
-        expect(['spice-a', 'spice-b']).toContain(body.recipeId);
+        expect(['spice-a', 'spice-b', 'agile-pro-s', 'emoa', 'eaoa']).toContain(body.recipeId);
       }
     }
     const outbound = JSON.stringify(sent.filter((s) => s.method !== 'GET').map((s) => s.body));
@@ -87,8 +87,16 @@ describe.skipIf(!present)("Suite API contract (Suite's own zod schemas)", async 
     await engine.settle();
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
-    await engine.send({ type: 'CONFIRM_FILL' });
-    await engine.settle();
+    // Part B's wizard: the person opens sections 2 to 4 (li.listep); the agent fills each one.
+    for (const section of ['structure', 'address', 'subscribers', 'directors']) {
+      if (section !== 'structure') {
+        (document.querySelector(`li.listep[data-section="${section}"]`) as HTMLElement).click();
+        await engine.tick();
+        await engine.settle();
+      }
+      await engine.send({ type: 'CONFIRM_FILL' });
+      await engine.settle();
+    }
     await engine.send(await pdfDrop());
     await engine.settle();
     document.getElementById('btn-submit')!.click();
@@ -111,8 +119,7 @@ describe.skipIf(!present)("Suite API contract (Suite's own zod schemas)", async 
     await engine.settle();
     await engine.send({ type: 'CONFIRM_FILL' });
     await engine.settle();
-    await engine.send(await pdfDrop());
-    await engine.settle();
+    // Part A has no DSC step.
     document.getElementById('btn-submit')!.click();
     document.getElementById('btn-pay')!.click();
     await engine.tick();

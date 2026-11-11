@@ -1,81 +1,24 @@
-/**
- * The mock SPICe+ Part A portal's field names. The extension's mock portal mirrors this list, and
- * `recipes/spice-a.json` builds every SOM path from it, so the two cannot drift apart. The live
- * portal's names are not known yet (the recipe says `verifiedAgainst: "mock"`).
- */
-export const MOCK_SPICE_A_FIELD_NAMES = [
-  'proposedName1',
-  'proposedName2',
-  'significance',
-  'companyType',
-  'companyClass',
-  'companyCategory',
-  'companySubCategory',
-  'mainDivision',
-  'trademarkSimilar',
-] as const;
-export type MockSpiceAFieldName = (typeof MOCK_SPICE_A_FIELD_NAMES)[number];
-
-/** The mock's AEM root panel; every Part A field sits directly under it. */
-export const MOCK_SPICE_A_ROOT = 'guide[0].guide1[0].guideRootPanel[0]';
-
-/** The SOM path of one mock field, the convention the mock portal follows. */
-export function mockSomPath(name: MockSpiceAFieldName): string {
-  return `${MOCK_SPICE_A_ROOT}.${name}[0]`;
-}
+import type { Recipe } from './recipe';
 
 /**
- * The mock SPICe+ Part B portal (`extensions/vcfo-assist/mock-portal/spice-b.html`). Single fields
- * sit directly under the root panel, like Part A. Directors and subscribers are AEM repeatable
- * panels: instance `i` (0-based) of a group is `<root>.<group>[0].<item>[i]`, and its fields sit
- * under that. `recipes/spice-b.json` builds every SOM path from these lists.
+ * The mock portal pages and the recipes they stand in for. The mocks carry the REAL MCA field keys
+ * (the semantic class on `.guideFieldNode`, from the captures in
+ * `extensions/vcfo-assist/portal-data/mca-v3/`), so the extension's tests and e2e run the real
+ * selectors. `extensions/vcfo-assist/src/recipes/recipes.test.ts` fails when a mock page stops
+ * carrying a key one of these recipes uses. The drift page renames one key on purpose.
  */
-export const MOCK_SPICE_B_ROOT = MOCK_SPICE_A_ROOT;
-
-export const MOCK_SPICE_B_FIELD_NAMES = [
-  'authorisedCapital',
-  'subscribedCapital',
-  'equityShares',
-  'faceValue',
-  'officeLine1',
-  'officeLine2',
-  'officePincode',
-  'officeCity',
-  'officeDistrict',
-  'officeState',
-  'officeEmail',
-  'officeMobile',
-] as const;
-export type MockSpiceBFieldName = (typeof MOCK_SPICE_B_FIELD_NAMES)[number];
-
-export const MOCK_SPICE_B_GROUPS = {
-  subscribers: {
-    panel: 'subscribers',
-    item: 'subscriber',
-    fields: ['firstName', 'surName', 'fatherFirstName', 'dob', 'pan', 'email', 'mobile', 'shares'],
-  },
-  directors: {
-    panel: 'directors',
-    item: 'director',
-    fields: ['firstName', 'surName', 'din', 'pan', 'dob', 'email', 'mobile', 'designation'],
-  },
+export const MOCK_PAGES = {
+  'spice-a.html': 'spice-a',
+  'spice-b.html': 'spice-b',
 } as const;
-export type MockSpiceBGroup = keyof typeof MOCK_SPICE_B_GROUPS;
 
-/** How many blocks of each group the mock page shows. */
-export const MOCK_SPICE_B_BLOCKS = 2;
-
-export function mockSpiceBSomPath(name: MockSpiceBFieldName): string {
-  return `${MOCK_SPICE_B_ROOT}.${name}[0]`;
+/** `.guideFieldNode.proposedname1` → `proposedname1`: the MCA semantic key in a recipe selector. */
+export function guideKeyOf(css: string | undefined): string | null {
+  const m = /^\.guideFieldNode\.([A-Za-z_][\w-]*)$/.exec((css ?? '').trim());
+  return m?.[1] ?? null;
 }
 
-/** The SOM path of one repeating field; `index` is a number, or `{i}` in a recipe template. */
-export function mockSpiceBGroupSomPath<G extends MockSpiceBGroup>(group: G, field: (typeof MOCK_SPICE_B_GROUPS)[G]['fields'][number], index: number | '{i}'): string {
-  const g = MOCK_SPICE_B_GROUPS[group];
-  return `${MOCK_SPICE_B_ROOT}.${g.panel}[0].${g.item}[${index}].${field}[0]`;
-}
-
-/** The mock's `name` attribute of one repeating field: `director1Din` for director 1 (1-based). */
-export function mockSpiceBGroupName<G extends MockSpiceBGroup>(group: G, field: (typeof MOCK_SPICE_B_GROUPS)[G]['fields'][number], n: number | '{n}'): string {
-  return `${MOCK_SPICE_B_GROUPS[group].item}${n}${field.charAt(0).toUpperCase()}${field.slice(1)}`;
+/** Every MCA key a recipe's fields find their control by, once each, in recipe order. */
+export function guideKeysOf(recipe: Pick<Recipe, 'fields'>): string[] {
+  return [...new Set(recipe.fields.map((f) => guideKeyOf(f.css)).filter((k): k is string => Boolean(k)))];
 }

@@ -1,0 +1,33 @@
+{
+  "id": "protean-tin",
+  "title": "Protean TIN (TDS returns: RPU and FVU)",
+  "hosts": [
+    "www.protean-tinpan.com",
+    "tin.tin.nsdl.com"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "unknown",
+  "pages": [],
+  "selectors": {},
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [],
+  "gates": [
+    "LOGIN",
+    "SUBMIT",
+    "DSC"
+  ],
+  "source": "Placeholder: no capture yet. Pages and selectors come from a recorder capture made under docs/specs/vcfo-assist-agents/PORTAL-CAPTURE.md.",
+  "notes": [
+    "Quarterly TDS returns (24Q, 26Q) are FILES built from VCFO Suite data for Protean's Return Preparation and File Validation Utilities. They are not web forms; the person validates, uploads and signs.",
+    "No recipe fills or uploads on this portal."
+  ]
+}

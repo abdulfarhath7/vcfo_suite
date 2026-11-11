@@ -81,6 +81,7 @@ const WAIT_TEXT: Record<WaitInfo['kind'], string> = {
   disabled: 'switched off in Suite',
   live_blocked: 'live portal blocked',
   wrong_page: 'the portal tab shows another page',
+  human_step: 'waiting for you to open the next part of the form',
   suite_error: 'Suite did not answer',
 };
 
@@ -214,7 +215,7 @@ export class RunEngine {
         await this.move('ATTACH', 'signed PDF dropped');
         break;
       case 'RETRY':
-        if (wait?.kind === 'check_failed' || wait?.kind === 'suite_error' || wait?.kind === 'wrong_page' || wait?.kind === 'certifier') {
+        if (wait?.kind === 'check_failed' || wait?.kind === 'suite_error' || wait?.kind === 'wrong_page' || wait?.kind === 'certifier' || wait?.kind === 'human_step') {
           this.patch({ wait: undefined });
           await this.save();
         }
@@ -234,7 +235,8 @@ export class RunEngine {
     const run = this.run;
     if (!run || this.driving || TERMINAL.has(run.state)) return;
     // A wrong-page wait clears by itself once the user opens the recipe's page.
-    if (run.state === 'WAIT_LOGIN' || run.state === 'WAIT_SUBMIT_PAY' || run.wait?.kind === 'wrong_page') await this.drive();
+    // So does a wizard-section wait once the person opens that section.
+    if (run.state === 'WAIT_LOGIN' || run.state === 'WAIT_SUBMIT_PAY' || run.wait?.kind === 'wrong_page' || run.wait?.kind === 'human_step') await this.drive();
   }
 
   async reset(): Promise<void> {
@@ -454,7 +456,21 @@ export class RunEngine {
       return this.waitFor({ kind: 'wrong_page', page: page.title, path });
     }
     if (this.run!.wait?.kind === 'wrong_page') this.patch({ wait: undefined });
-    if (!run.phase || run.phase === 'plan') return this.planPage();
+    if (!run.phase || run.phase === 'plan') {
+      // Information pop-ups (MCA's #okInfoModalBtn) are closed first; each click is guarded.
+      if (page.closePopups?.length) {
+        const closed = await this.portal().closePopups(page.closePopups).catch(() => 0);
+        if (closed) await this.log('info', `closed ${closed} information pop-up(s)`);
+      }
+      // The page, or its wizard section or Add/Edit sub-panel, must be open. Opening it is the person's step.
+      if (page.readyCss && !(await this.portal().pageReady(page.readyCss).catch(() => false))) {
+        const text = page.step ?? 'Waiting for the form to finish loading.';
+        if (this.run!.wait?.kind !== 'human_step') await this.log('gate', `"${page.title}": ${text}`);
+        return this.waitFor({ kind: 'human_step', page: page.title, text });
+      }
+      if (this.run!.wait?.kind === 'human_step') this.patch({ wait: undefined });
+      return this.planPage();
+    }
 
     // phase === 'write': the user confirmed this exact table.
     const portal = this.portal();
@@ -474,7 +490,12 @@ export class RunEngine {
         const r = await portal.bridgeSet(som, f.value);
         bridgeTried = r.ok;
       }
-      const result = await portal.fill(f.target, f.value, f.label, bridgeTried);
+      const def = page.fields.find((x) => x.key === f.key);
+      const waits = recipe.waits;
+      const result = await portal.fill(f.target, f.value, f.label, bridgeTried, {
+        optionsMs: def?.waitForOptions ? (waits?.optionsMs ?? DEFAULT_OPTIONS_MS) : 0,
+        settleMs: def?.lookup ? (waits?.afterPincodeMs ?? DEFAULT_LOOKUP_MS) : 0,
+      });
       if (result.ok) {
         this.setField(f.key, { status: 'filled', via: result.via });
         await this.log('fill', `filled "${f.label}" (${f.tier}, ${result.via})`);
@@ -508,7 +529,7 @@ export class RunEngine {
     const scan = await portal.scan({
       bridge: bridge.nodes,
       hasGuideBridge: bridge.present,
-      probes: page.fields.map((f) => ({ key: f.key, som: f.som, css: f.css })),
+      probes: page.fields.map((f) => ({ key: f.key, som: f.som, css: f.css, nth: f.nth, nodeId: f.nodeId })),
     });
     await this.log('info', `scanned ${scan.fields.length} controls on ${page.title}${bridge.present ? ' (guideBridge found)' : ''}`);
 
@@ -563,6 +584,11 @@ export class RunEngine {
         const target = { uid: r.candidate.uid, som: r.candidate.som, css: r.candidate.css, name: r.candidate.name };
         this.upsertField({ key: field.key, label: field.label, status: 'planned', tier: r.tier, target, value, foundLabel: r.candidate.label });
         if (r.tier !== 'T0') await this.heal(field.key, r.tier, field.label, r.candidate.label);
+        continue;
+      }
+      if ('notHere' in r) {
+        this.upsertField({ key: field.key, label: field.label, status: 'user', note: r.reason });
+        await this.log('info', `"${field.label}": ${r.reason}`);
         continue;
       }
       if ('refused' in r) {
@@ -932,6 +958,9 @@ export class RunEngine {
 }
 
 const RECORDS_NOTE = "You fill this from the client's records";
+/** MCA's waits when a recipe carries none: dependent dropdowns 8 s, PIN code lookups 2 s. */
+const DEFAULT_OPTIONS_MS = 8000;
+const DEFAULT_LOOKUP_MS = 2000;
 
 /** The control the recipe's own SOM path or selector found (T0), to mark it; null when none did. */
 function probeTarget(scan: { probes: Record<string, string | null>; fields: Array<{ uid: string; som: string | null; css: string; name: string }> }, key: string): FieldTarget | undefined {

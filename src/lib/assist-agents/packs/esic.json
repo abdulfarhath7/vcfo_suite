@@ -1,0 +1,34 @@
+{
+  "id": "esic",
+  "title": "ESIC employer portal",
+  "hosts": [
+    "www.esic.gov.in",
+    "portal.esic.gov.in"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "unknown",
+  "pages": [],
+  "selectors": {},
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "SUBMIT",
+    "PAY"
+  ],
+  "source": "Placeholder: no capture yet. Pages and selectors come from a recorder capture made under docs/specs/vcfo-assist-agents/PORTAL-CAPTURE.md.",
+  "notes": [
+    "Each portal needs its own review (legal review, row 17). Mock only until a CS opinion names this portal."
+  ]
+}

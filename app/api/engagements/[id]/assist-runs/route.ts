@@ -24,7 +24,8 @@ export async function GET(_request: Request, context: RouteContext) {
 /**
  * POST /api/engagements/[id]/assist-runs — start a run of one sub-agent. The agent, recipe id and
  * recipe version come from the server's catalog, not the body. A live portal host is refused
- * until `ASSIST_LIVE_PORTALS=true` (the CS opinion gate); the mock host always works. The run
+ * unless the task's own portal pack is live (`cs-cleared` and named in `ASSIST_LIVE_PACKS`; the CS
+ * opinion gate); the mock host always works. The run
  * keeps the evidence log: the user, the MCA login label, the device and the client IP.
  */
 export async function POST(request: Request, context: RouteContext) {
@@ -39,7 +40,7 @@ export async function POST(request: Request, context: RouteContext) {
   if (body.data.recipeVersion && body.data.recipeVersion !== recipe.version) {
     return json({ ok: false, error: 'recipe_outdated', recipeVersion: recipe.version }, 409);
   }
-  if (!assistHostAllowed(body.data.portalHost)) return json({ ok: false, error: 'live_portals_disabled' }, 403);
+  if (!assistHostAllowed(body.data.portalHost, process.env, sub.pack ?? recipe.pack ?? null)) return json({ ok: false, error: 'live_portals_disabled' }, 403);
   const { id } = await context.params;
   try {
     const run = await createAgentRun(

@@ -1,0 +1,125 @@
+{
+  "id": "mca-v3",
+  "title": "MCA V3 e-filing (www.mca.gov.in)",
+  "hosts": [
+    "www.mca.gov.in"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "aem",
+  "pages": [
+    {
+      "id": "spice-a",
+      "title": "SPICe+ Part A",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html",
+      "mockUrlPattern": "/spice-a*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.type-of-company"
+    },
+    {
+      "id": "spice-b-structure",
+      "title": "SPICe+ Part B, section 1: structure and capital",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+      "mockUrlPattern": "/spice-b*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.aoaEntrenched",
+      "step": "Open section 1 (structure of the company) in the form's step list."
+    },
+    {
+      "id": "spice-b-address",
+      "title": "SPICe+ Part B, section 2: address of the company",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+      "mockUrlPattern": "/spice-b*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.correspondenceaddressline1",
+      "step": "Click Next, or open section 2 (address of the company) in the form's step list. Mobile and email OTP verification on this section are yours."
+    },
+    {
+      "id": "spice-b-subscribers",
+      "title": "SPICe+ Part B, section 4: subscribers",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+      "mockUrlPattern": "/spice-b*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.din6b, #guideContainer-rootPanel__ .guideFieldNode.firstName6c",
+      "step": "Open the subscribers section, and each subscriber's Add/Edit panel, yourself. The agent fills the blocks that are open; save each sub-panel yourself."
+    },
+    {
+      "id": "spice-b-directors",
+      "title": "SPICe+ Part B, section 5: directors",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+      "mockUrlPattern": "/spice-b*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.din7a, #guideContainer-rootPanel__ .guideFieldNode.firstName7bp",
+      "step": "Open the directors section, and each director's Add/Edit panel, yourself. The agent fills the blocks that are open; save each sub-panel yourself."
+    },
+    {
+      "id": "agile-pro-s",
+      "title": "AGILE-PRO-S (INC-35)",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/AgilePro.html",
+      "mockUrlPattern": "/agile-pro-s*.html",
+      "readySelector": "#guideContainer-rootPanel__"
+    },
+    {
+      "id": "inc-33",
+      "title": "e-MoA (INC-33)",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/INC-33.html",
+      "mockUrlPattern": "/inc-33*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.tableApplicableToCompany"
+    },
+    {
+      "id": "inc-34",
+      "title": "e-AoA (INC-34)",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/INC-34.html",
+      "mockUrlPattern": "/inc-34*.html",
+      "readySelector": "#guideContainer-rootPanel__ .guideFieldNode.table_applicable_company"
+    },
+    {
+      "id": "inc-9",
+      "title": "INC-9 declaration",
+      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/INC-9.html",
+      "mockUrlPattern": "/inc-9*.html",
+      "readySelector": "#guideContainer-rootPanel__"
+    },
+    {
+      "id": "login",
+      "title": "MCA login (the person's)",
+      "urlPattern": "/content/mca/global/en/foportal/fologin.html",
+      "readySelector": "#guideContainer-rootPanel__"
+    }
+  ],
+  "selectors": {
+    "rootPanel": "#guideContainer-rootPanel__",
+    "fieldNode": ".guideFieldNode",
+    "fieldLabel": ".guideFieldLabel",
+    "wizardStep": "li.listep",
+    "wizardStepText": "li.listep .text",
+    "loggedIn": "#welcomeUser",
+    "infoModalOk": "#okInfoModalBtn"
+  },
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [
+    {
+      "id": "info-modal",
+      "label": "Information pop-up (OK)",
+      "css": "#okInfoModalBtn"
+    }
+  ],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "DSC",
+    "SUBMIT",
+    "PAY"
+  ],
+  "source": "Recorder captures of 2026-09-23, consolidated from abdulfarhath7/vcfo_assist at 5e58bcf (extensions/vcfo-assist/portal-data/mca-v3/).",
+  "notes": [
+    "MCA V3 forms are Adobe AEM Adaptive Forms. Each field is a .guideFieldNode carrying a semantic class (proposedname1, din7a, correspondenceaddress_pinCode); recipes find fields by that class and its instance, then by the captured node id, then by label.",
+    "The login page loads a devtools blocker (clientlib-devtool.js). VCFO Assist never blocks or works around it; the person uses a normal Chrome and the extension.",
+    "The legal review rates attended filling on MCA 'Allowed with conditions' subject to the written CS opinion; until it is recorded this pack stays mock-only.",
+    "Part B is a wizard (li.listep sections) with Add/Edit sub-panels for each subscriber and director. Opening a section or a sub-panel is the person's step; the agent fills what is open."
+  ]
+}

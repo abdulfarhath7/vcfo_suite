@@ -5,7 +5,7 @@ import { applyTransform, getPath } from './values';
 import { liveAllowedFor, isMockHost } from './live';
 import { RECIPE_PUBLIC_KEYS, canonicalJson, validateRecipe, verifySignature } from './recipe';
 import { globMatch, pageMatchesUrl } from './url';
-import { expandFields, expandRecipe, MAX_REPEAT } from './expand';
+import { entryMatches, expandFields, expandRecipe, MAX_REPEAT } from './expand';
 import { normalizeRecipe } from '../recipes/normalize';
 import { BUNDLED_RECIPES } from '../recipes';
 import { FakeSuite, JsdomPortal, MemoryStore, PART_B_PROFILE, PART_B_VALUES, PROFILE_VALUES, SENTINEL_PROFILE, loadMockPage, mockState, pdfDrop } from '../test/mock-env';
@@ -27,6 +27,12 @@ function setup(page: Parameters<typeof loadMockPage>[0] = 'spice-a.html') {
 }
 
 const value = (name: string) => (document.querySelector(`[name="${name}"]`) as HTMLInputElement).value;
+const checked = (name: string) => (document.querySelector(`input[name="${name}"]:checked`) as HTMLInputElement | null)?.value ?? null;
+
+/** Part B's wizard: the person opens a section from the step list (li.listep), as on MCA. */
+function openSection(id: string) {
+  (document.querySelector(`li.listep[data-section="${id}"]`) as HTMLElement).click();
+}
 const states = (run: Run): RunState[] =>
   run.log.filter((l) => l.kind === 'transition').map((l) => l.text.split(' → ')[1]!.split(' ')[0] as RunState);
 
@@ -63,6 +69,13 @@ describe('values', () => {
     expect(getPath({ a: { b: ['x', 'y'] } }, 'a.b.1')).toBe('y');
     expect(applyTransform('Test Co', 'upper')).toBe('TEST CO');
     expect(applyTransform('2026-01-31', 'date')).toBe('31/01/2026');
+    // MCA dates are DD/MM/YYYY, from any of the shapes Suite or a person might hold.
+    expect(applyTransform('2026-01-31T00:00:00Z', 'date')).toBe('31/01/2026');
+    expect(applyTransform('2026/1/5', 'date')).toBe('05/01/2026');
+    expect(applyTransform('5-1-2026', 'date')).toBe('05/01/2026');
+    expect(applyTransform('31.01.2026', 'date')).toBe('31/01/2026');
+    expect(applyTransform('2026-13-01', 'date')).toBeUndefined();
+    expect(applyTransform('Jan 5 2026', 'date')).toBeUndefined();
     expect(applyTransform(false, 'yesNo')).toBe('No');
     expect(applyTransform('62011', 'nicDivision')).toBe('62');
     expect(applyTransform(undefined, 'upper')).toBeUndefined();
@@ -85,16 +98,23 @@ describe('recipes (G15)', () => {
   const raw = () => structuredClone(bundled.recipe) as Raw;
 
   it('the bundled recipes carry the dev signature, verify on the mock and are well formed', async () => {
-    expect(Object.keys(BUNDLED_RECIPES).sort()).toEqual(['spice-a', 'spice-b']);
+    expect(Object.keys(BUNDLED_RECIPES).sort()).toEqual(['agile-pro-s', 'eaoa', 'emoa', 'spice-a', 'spice-b']);
     for (const signed of Object.values(BUNDLED_RECIPES)) {
       expect(signed).toMatchObject({ alg: 'ed25519', keyId: 'dev' });
       expect(await verifySignature(signed, '127.0.0.1')).toEqual({ ok: true, keyId: 'dev' });
       expect(validateRecipe(normalizeRecipe(signed.recipe))).toEqual([]);
     }
     const recipe = normalizeRecipe(bundled.recipe);
-    expect(recipe.attachCss).toBe('#signed-pdf');
-    expect(recipe.actions.filter((a) => a.kind === 'safe').map((a) => a.role)).toEqual(['save', 'check', 'download']);
+    // Part A has no DSC step and no attach slot on MCA V3: Save and Auto check only.
+    expect(recipe.attachCss).toBeUndefined();
+    expect(recipe.actions.filter((a) => a.kind === 'safe').map((a) => a.role)).toEqual(['save', 'check']);
+    expect(recipe.gates.map((g) => g.kind)).toEqual(['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY']);
     expect(recipe.gates.find((g) => g.kind === 'SUBMIT')).toMatchObject({ text: 'Submit' });
+    expect(recipe.pages[0]).toMatchObject({ readyCss: '#guideContainer-rootPanel__ .guideFieldNode.type-of-company', closePopups: ['#okInfoModalBtn'] });
+    expect(recipe.waits).toEqual({ readyMs: 30000, optionsMs: 8000, afterPincodeMs: 2000 });
+    const b = normalizeRecipe(BUNDLED_RECIPES['spice-b']!.recipe);
+    expect(b.attachCss).toContain('#signed-pdf');
+    expect(b.pages.map((pg) => pg.id)).toEqual(['structure', 'address', 'subscribers', 'directors']);
   });
 
   it('the dev key is refused on a live host, before its signature counts', async () => {
@@ -139,7 +159,7 @@ describe('recipes (G15)', () => {
 });
 
 describe('page check (urlPattern)', () => {
-  const page = { urlPattern: '/content/mca/global/en/mca/e-filing/incorporation-change-services/spice-plus*', mockUrlPattern: '/spice-a*.html' };
+  const page = { urlPattern: '/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html', mockUrlPattern: '/spice-a*.html' };
 
   it('matches the glob against the whole path', () => {
     expect(globMatch('/spice-a*.html', '/spice-a.html')).toBe(true);
@@ -149,35 +169,54 @@ describe('page check (urlPattern)', () => {
     expect(globMatch('/a.c', '/abc')).toBe(false);
   });
 
-  it('uses the mock pattern on a mock host and the portal pattern elsewhere', () => {
+  it('uses the mock pattern on a mock host and the real MCA URL elsewhere', () => {
     expect(pageMatchesUrl(page, 'http://127.0.0.1:4318/spice-a.html')).toBe(true);
     expect(pageMatchesUrl(page, 'http://127.0.0.1:4318/spice-b.html')).toBe(false);
-    expect(pageMatchesUrl(page, 'https://www.mca.gov.in/content/mca/global/en/mca/e-filing/incorporation-change-services/spice-plus.html')).toBe(true);
+    expect(pageMatchesUrl(page, 'https://www.mca.gov.in/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html')).toBe(true);
     expect(pageMatchesUrl(page, 'https://www.mca.gov.in/spice-a.html')).toBe(false);
     expect(pageMatchesUrl(page, 'not a url')).toBe(false);
   });
 });
 
-describe('repeating groups (each)', () => {
+describe('repeating groups (each, where, nth)', () => {
   const recipe = normalizeRecipe(BUNDLED_RECIPES['spice-b']!.recipe);
-  const templates = recipe.pages[0]!.fields;
+  const templates = recipe.pages.flatMap((p) => p.fields);
 
-  it('turns each template into one field per profile entry, block by block', () => {
+  it('splits subscribers and directors into the MCA blocks by DIN, and numbers each block per selector', () => {
     const fields = expandFields(templates, PART_B_PROFILE.profile);
-    const directors = fields.filter((f) => f.key.startsWith('directors['));
-    expect(directors.map((f) => f.key).slice(0, 3)).toEqual(['directors[0].firstName', 'directors[0].surName', 'directors[0].din']);
-    expect(directors).toHaveLength(2 * templates.filter((f) => f.each === 'directors').length);
-    const din2 = fields.find((f) => f.key === 'directors[1].din')!;
-    expect(din2).toMatchObject({ label: 'Director 2: DIN', css: '[name="director2Din"]', name: 'director2Din', som: 'guide[0].guide1[0].guideRootPanel[0].directors[0].director[1].din[0]' });
-    expect(din2.each).toBeUndefined();
+    // Both subscribers have no DIN: block 6c, entries 1 and 2.
+    expect(fields.filter((f) => f.css === '.guideFieldNode.firstName6c').map((f) => [f.key, f.nth])).toEqual([
+      ['subscribers[0].firstName@6c', 0],
+      ['subscribers[1].firstName@6c', 1],
+    ]);
+    expect(fields.some((f) => f.key.endsWith('@6b'))).toBe(false);
+    // Block 7b: the subscriber-director first, then the director without a DIN.
+    expect(fields.filter((f) => f.css === '.guideFieldNode.firstName7bp').map((f) => [f.key, f.path, f.nth])).toEqual([
+      ['subscribers[0].firstName@7b', 'subscribers[0].firstName', 0],
+      ['directors[1].firstName@7b', 'directors[1].firstName', 1],
+    ]);
+    // Block 7a: the director with a DIN.
+    expect(fields.filter((f) => f.css === '.guideFieldNode.din7a').map((f) => [f.key, f.nth])).toEqual([['directors[0].din@7a', 0]]);
+    const din = fields.find((f) => f.key === 'directors[0].din@7a')!;
+    expect(din).toMatchObject({ label: 'Director 1: DIN' });
+    expect(din.each).toBeUndefined();
+    expect(din.where).toBeUndefined();
     expect(fields.filter((f) => f.key.includes('{'))).toEqual([]);
+  });
+
+  it('filters entries with where: true is present, false is absent, a string is equal', () => {
+    expect(entryMatches({ din: '01234567' }, { din: true })).toBe(true);
+    expect(entryMatches({ din: '' }, { din: true })).toBe(false);
+    expect(entryMatches({}, { din: false })).toBe(true);
+    expect(entryMatches({ kind: 'bodyCorporate' }, { kind: 'individual' })).toBe(false);
+    expect(entryMatches({ isDirector: false }, { isDirector: true })).toBe(false);
   });
 
   it('fills no block for an empty or absent array, and caps a huge one', () => {
     const none = expandFields(templates, { ...PART_B_PROFILE.profile, directors: [], subscribers: undefined });
     expect(none.some((f) => /^(directors|subscribers)\[/.test(f.key))).toBe(false);
-    const many = expandFields(templates, { directors: Array.from({ length: 99 }, () => ({})) });
-    expect(many.filter((f) => f.key.endsWith('.din'))).toHaveLength(MAX_REPEAT);
+    const many = expandFields(templates, { directors: Array.from({ length: 99 }, () => ({ din: '01234567' })) });
+    expect(many.filter((f) => f.key.endsWith('.din@7a'))).toHaveLength(MAX_REPEAT);
   });
 
   it('leaves a recipe without templates as it is', () => {
@@ -186,7 +225,7 @@ describe('repeating groups (each)', () => {
   });
 });
 
-describe('run engine on the mock portal', () => {
+describe('run engine on the mock portal (real MCA keys)', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });
@@ -202,28 +241,35 @@ describe('run engine on the mock portal', () => {
     await engine.settle();
     expect(engine.run!.state).toBe('FILL');
     expect(engine.run!.wait).toEqual({ kind: 'confirm' });
+    // The MCA information pop-up was closed, through the guarded click.
+    expect(mockState().infoClosed).toBe(true);
     // G13: nothing is written before the user confirms the table.
     expect(mockState().modelWrites).toEqual([]);
-    expect(value('proposedName1')).toBe('');
+    expect(value('proposedname1')).toBe('');
     const planned = engine.run!.fields.filter((f) => f.status === 'planned');
     expect(planned.map((f) => f.key).sort()).toEqual(
       ['company.category', 'company.class', 'company.nicCode', 'company.proposedNames[0]', 'company.proposedNames[1]', 'company.subCategory', 'company.type'].sort(),
     );
+    // T0 is the real key class (.guideFieldNode.<key>).
     expect(planned.every((f) => f.tier === 'T0')).toBe(true);
     // askUser fields are the user's, whatever the profile holds.
     expect(engine.run!.fields.filter((f) => f.status === 'user').map((f) => f.key).sort()).toEqual(['company.nameSignificance', 'company.trademarkSimilar']);
 
     await engine.send({ type: 'CONFIRM_FILL' });
     await engine.settle();
-    expect(value('proposedName1')).toBe('Sentinel Alpha Private Limited');
-    expect(value('proposedName2')).toBe('Sentinel Beta Private Limited');
+    expect(value('proposedname1')).toBe('Sentinel Alpha Private Limited');
+    expect(value('proposedname2')).toBe('Sentinel Beta Private Limited');
     expect(value('significance')).toBe('');
-    expect(value('companyType')).toBe('NEW');
-    expect(value('companySubCategory')).toBe('ING');
-    expect(value('mainDivision')).toBe('62');
-    expect((document.querySelector('input[name="trademarkSimilar"]:checked') as HTMLInputElement | null)).toBeNull();
-    // The writes went through guideBridge, the primary path.
-    expect(mockState().modelWrites).toContain('proposedName1');
+    expect(value('type-of-company')).toBe('New Company (Others)');
+    // Dependent dropdowns: their options load after the field before them, and the agent waits.
+    expect(value('class-of-company')).toBe('Private');
+    expect(value('category-of-company')).toBe('Company limited by shares');
+    expect(value('subcategory-of-company')).toBe('Indian non-government company');
+    expect(value('nic-text-box')).toBe('62011');
+    expect(checked('trademarkSimilar')).toBeNull();
+    expect(portal.fillOpts.filter((o) => (o?.optionsMs ?? 0) > 0)).toHaveLength(3);
+    // The writes went through guideBridge first, and the DOM saw input, keyup and change.
+    expect(mockState().modelWrites).toContain('proposedname1');
     expect(engine.run!.fields.filter((f) => f.status === 'filled')).toHaveLength(7);
     expect(engine.run!.aiCalls).toBe(0);
     expect(suite.resolvePayloads).toHaveLength(0);
@@ -235,17 +281,15 @@ describe('run engine on the mock portal', () => {
       expect((document.getElementById(id) as HTMLInputElement).value).toBe('');
     }
 
-    expect(engine.run!.state).toBe('WAIT_DSC');
-    await engine.send(await pdfDrop());
-    await engine.settle();
-    expect(engine.run!.error).toBeUndefined();
+    // Part A has no DSC step: straight to Submit and Pay once Auto check passes.
     expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
     await engine.tick();
     await engine.settle();
     expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
     expect(mockState().clicks['btn-submit']).toBeUndefined();
     expect(mockState().clicks['btn-pay']).toBeUndefined();
-    expect(portal.clickedIds).toEqual(['btn-check', 'btn-download', 'btn-check']);
+    expect(mockState().clicks['btn-send-otp']).toBeUndefined();
+    expect(portal.clickedIds).toEqual(['btn-check', 'btn-check']);
     expect(portal.agent.overlay.snapshot().filter((m) => m.kind === 'human')).toHaveLength(2);
 
     // The human clicks Submit and Pay.
@@ -278,23 +322,20 @@ describe('run engine on the mock portal', () => {
     expect(engine.run!.state).toBe('FILL');
   });
 
-  it('resumes from storage after a restart (WAIT_DSC)', async () => {
-    const { engine, store, suite, portal } = setup();
+  it('waits for the form to be ready (#guideContainer-rootPanel__) before it plans anything', async () => {
+    const { engine } = setup();
+    const root = document.getElementById('guideContainer-rootPanel__')!;
+    root.hidden = true;
     await engine.start(START);
     await engine.settle();
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
-    await engine.send({ type: 'CONFIRM_FILL' });
+    expect(engine.run!.wait).toMatchObject({ kind: 'human_step', page: 'SPICe+ Part A' });
+    expect(engine.run!.fields).toEqual([]);
+    root.hidden = false;
+    await engine.tick();
     await engine.settle();
-    expect(engine.run!.state).toBe('WAIT_DSC');
-
-    const again = new RunEngine({ suite, store, portalFor: () => portal, bundledRecipes: BUNDLED_RECIPES });
-    await again.restore();
-    await again.settle();
-    expect(again.run!.state).toBe('WAIT_DSC');
-    await again.send(await pdfDrop());
-    await again.settle();
-    expect(again.run!.state).toBe('WAIT_SUBMIT_PAY');
+    expect(engine.run!.wait).toEqual({ kind: 'confirm' });
   });
 
   it('resumes the FILL confirmation after a restart without writing anything', async () => {
@@ -317,16 +358,16 @@ describe('run engine on the mock portal', () => {
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
     const name2 = engine.run!.fields.find((f) => f.key === 'company.proposedNames[1]')!;
-    expect(name2).toMatchObject({ tier: 'T1', foundLabel: 'Proposed Name (Option 2)' });
+    expect(name2).toMatchObject({ tier: 'T1', foundLabel: 'Proposed Name II (Option 2)' });
     await engine.send({ type: 'CONFIRM_FILL' });
     await engine.settle();
     expect(value('nameOption2')).toBe('Sentinel Beta Private Limited');
-    expect(value('proposedName1')).toBe('Sentinel Alpha Private Limited');
+    expect(value('proposedname1')).toBe('Sentinel Alpha Private Limited');
     expect(engine.run!.aiTokens).toBe(0);
     expect(suite.resolvePayloads).toHaveLength(0);
     expect(suite.patches).toHaveLength(1);
-    expect(suite.patches[0]).toMatchObject({ fieldKey: 'company.proposedNames[1]', sourceTier: 'T1', proposed: { css: 'input#nameOption2', som: 'guide[0].guide1[0].guideRootPanel[0].nameOption2[0]', label: 'Proposed Name (Option 2)' } });
-    expect(engine.run!.heals).toEqual([{ fieldKey: 'company.proposedNames[1]', tier: 'T1', label: 'Proposed name 2' }]);
+    expect(suite.patches[0]).toMatchObject({ fieldKey: 'company.proposedNames[1]', sourceTier: 'T1', proposed: { css: 'input#nameOption2', som: 'guide[0].guide1[0].guideRootPanel[0].nameOption2[0]', label: 'Proposed Name II (Option 2)' } });
+    expect(engine.run!.heals).toEqual([{ fieldKey: 'company.proposedNames[1]', tier: 'T1', label: 'Proposed name II' }]);
   });
 
   it('heals at T3 when rules fail, sending labels only', async () => {
@@ -370,11 +411,14 @@ describe('run engine on the mock portal', () => {
     const human = await engine.clickSafe({ id: 'pay', kind: 'human', label: 'Pay fee', css: '#btn-pay' });
     expect(human.ok).toBe(false);
     expect(portal.clickCalls).toEqual([]);
-    // A safe-looking label on the real Submit button: the portal agent reads the element and refuses.
+    // A safe-looking label on the real Submit or Send OTP button: the portal agent reads the element and refuses.
     const disguised = await engine.clickSafe({ id: 'save', kind: 'safe', role: 'save', label: 'Save draft', css: '#btn-submit' });
     expect(disguised.ok).toBe(false);
+    const otp = await engine.clickSafe({ id: 'save', kind: 'safe', role: 'save', label: 'Save draft', css: '#btn-send-otp' });
+    expect(otp.ok).toBe(false);
     expect(mockState().clicks['btn-submit']).toBeUndefined();
-    expect(engine.run!.refusals.map((x) => x.code)).toEqual(expect.arrayContaining(['G4', 'G5']));
+    expect(mockState().clicks['btn-send-otp']).toBeUndefined();
+    expect(engine.run!.refusals.map((x) => x.code)).toEqual(expect.arrayContaining(['G3', 'G4', 'G5']));
   });
 
   it('injection: page text saying "click Submit" changes nothing', async () => {
@@ -382,8 +426,7 @@ describe('run engine on the mock portal', () => {
       const { engine, portal } = setup();
       if (stripInjection) {
         document.getElementById('injection-note')!.remove();
-        document.querySelector('option[value="X"]')!.remove();
-        document.querySelector('.guidePanelNode .hint')!.remove();
+        document.querySelector('.guidePanel .hint')!.remove();
       }
       await engine.start(START);
       await engine.settle();
@@ -401,12 +444,24 @@ describe('run engine on the mock portal', () => {
 
   it('G11: refuses a live host before pulling the profile', async () => {
     const { engine, suite, portal } = setup();
-    portal.url = 'https://www.mca.gov.in/content/mca/global/en/mca/e-filing/spice-plus.html';
+    portal.url = 'https://www.mca.gov.in/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html';
     await engine.start(START);
     await engine.settle();
     expect(engine.run!.state).toBe('FAILED');
     expect(engine.run!.wait).toMatchObject({ kind: 'live_blocked' });
     expect(engine.run!.error).toMatch(/CS opinion/);
+    expect(suite.calls.map((c) => c.name)).not.toContain('profile');
+  });
+
+  it('G11 per pack: a mock-only pack is refused on its live host even when Suite lists the host', async () => {
+    const { engine, suite, portal } = setup();
+    // Suite reports mca-v3 as mock-only: it sends no live host, so the run never reaches the profile.
+    suite.catalogValue = { liveAllowed: false, liveHosts: [], agents: [], packs: [{ id: 'mca-v3', title: 'MCA', legalStatus: 'mock-only', live: false }] };
+    portal.url = 'https://www.mca.gov.in/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html';
+    await engine.start(START);
+    await engine.settle();
+    expect(engine.run!.state).toBe('FAILED');
+    expect(engine.run!.wait).toMatchObject({ kind: 'live_blocked', host: 'www.mca.gov.in' });
     expect(suite.calls.map((c) => c.name)).not.toContain('profile');
   });
 
@@ -438,7 +493,7 @@ describe('run engine on the mock portal', () => {
     await engine.start(START);
     await engine.settle();
     expect(engine.run!.recipeFrom).toBe('suite');
-    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toEqual({ subAgent: 'spice-a', portalHost: '127.0.0.1', recipeVersion: '1.1.0', fieldsTotal: 9, state: 'PULL_PROFILE' });
+    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toEqual({ subAgent: 'spice-a', portalHost: '127.0.0.1', recipeVersion: '2.0.0', fieldsTotal: 9, state: 'PULL_PROFILE' });
   });
 
   it('fills nothing while the portal tab shows another page, and goes on once the form page is back', async () => {
@@ -465,7 +520,7 @@ describe('run engine on the mock portal', () => {
     portal.url = 'http://127.0.0.1:4318/spice-a.html';
     await engine.send({ type: 'RETRY' });
     await engine.settle();
-    expect(value('proposedName1')).toBe('Sentinel Alpha Private Limited');
+    expect(value('proposedname1')).toBe('Sentinel Alpha Private Limited');
   });
 
   it('G12: refuses to start in a tab that is not in front, and refuses a second run', async () => {
@@ -493,21 +548,21 @@ describe('run engine on the mock portal', () => {
     await engine.settle();
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
-    // The user clears a required field before confirming; the portal check then fails.
+    // The user clears a required field before confirming; Auto check then fails.
     const fields = engine.run!.fields;
-    (engine as unknown as { p: { run: Run } }).p.run.fields = fields.map((f) => (f.key === 'company.type' ? { ...f, status: 'missing' } : f));
+    (engine as unknown as { p: { run: Run } }).p.run.fields = fields.map((f) => (f.key === 'company.proposedNames[0]' ? { ...f, status: 'missing' } : f));
     await engine.send({ type: 'CONFIRM_FILL' });
     await engine.settle();
     expect(engine.run!.state).toBe('CHECK');
     expect(engine.run!.wait).toMatchObject({ kind: 'check_failed' });
-    (document.querySelector('[name="companyType"]') as HTMLSelectElement).value = 'NEW';
+    (document.querySelector('[name="proposedname1"]') as HTMLInputElement).value = 'Typed By The User Private Limited';
     await engine.send({ type: 'RETRY' });
     await engine.settle();
-    expect(engine.run!.state).toBe('WAIT_DSC');
+    expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
   });
 });
 
-describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
+describe('SPICe+ Part B on the mock portal (wizard sections, real MCA keys)', () => {
   const START_B = { ...START, subAgentId: 'spice-b', recipeId: 'spice-b' };
 
   function setupB() {
@@ -517,46 +572,101 @@ describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
     return env;
   }
 
-  it('fills company, office, two subscribers and two directors at T0 with 0 AI calls, and stops at the human gates', async () => {
+  /** Logs in, then confirms each wizard section, opening sections 2 to 4 itself as the person would. */
+  async function fillAllSections(engine: RunEngine) {
+    await engine.send({ type: 'LOGGED_IN' });
+    await engine.settle();
+    for (const section of ['structure', 'address', 'subscribers', 'directors']) {
+      if (section !== 'structure') {
+        expect(engine.run!.wait).toMatchObject({ kind: 'human_step' });
+        openSection(section);
+        await engine.tick();
+        await engine.settle();
+      }
+      expect(engine.run!.wait, section).toEqual({ kind: 'confirm' });
+      await engine.send({ type: 'CONFIRM_FILL' });
+      await engine.settle();
+    }
+  }
+
+  it('fills the four sections, two subscriber and three director blocks at T0 with 0 AI calls, and stops at the human gates', async () => {
     const { engine, suite, portal } = setupB();
     await engine.start(START_B);
     await engine.settle();
-    expect(engine.run!.recipeVersion).toBe('1.0.0');
+    expect(engine.run!.recipeVersion).toBe('2.0.0');
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
     expect(engine.run!.wait).toEqual({ kind: 'confirm' });
     expect(mockState().modelWrites).toEqual([]);
-    const planned = engine.run!.fields.filter((f) => f.status === 'planned');
-    expect(planned.every((f) => f.tier === 'T0')).toBe(true);
-    // Director 2 has no DIN in the profile: it is the user's, not a guess.
-    expect(engine.run!.fields.find((f) => f.key === 'directors[1].din')).toMatchObject({ status: 'missing' });
-    expect(engine.run!.fields.filter((f) => f.status === 'user').map((f) => f.key)).toEqual(['directors[0].designation', 'directors[1].designation']);
-    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toMatchObject({ subAgent: 'spice-b', fieldsTotal: 12 + 2 * 8 + 2 * 8 });
+    // Only section 1 is planned until the person opens section 2.
+    expect(engine.run!.fields.every((f) => f.key.startsWith('company.'))).toBe(true);
+    const expected = expandRecipe(normalizeRecipe(BUNDLED_RECIPES['spice-b']!.recipe), PART_B_PROFILE.profile).pages.reduce((n, p) => n + p.fields.length, 0);
+    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toMatchObject({ subAgent: 'spice-b', fieldsTotal: expected });
 
     await engine.send({ type: 'CONFIRM_FILL' });
     await engine.settle();
-    expect(value('authorisedCapital')).toBe('1000000');
-    expect(value('faceValue')).toBe('10');
-    expect(value('officeLine1')).toBe('Sentinel Tower 1');
-    expect(value('officeState')).toBe('TG');
-    expect(value('subscriber1FirstName')).toBe('Subone');
-    expect(value('subscriber1Pan')).toBe('SENTB1234C');
-    expect(value('subscriber1Dob')).toBe('01/02/1980');
-    expect(value('subscriber2Shares')).toBe('5000');
-    expect(value('director1Din')).toBe('09876543');
-    expect(value('director2FirstName')).toBe('Dirtwo');
-    expect(value('director2Din')).toBe('');
-    expect(value('director1Designation')).toBe('');
-    expect(mockState().modelWrites).toContain('director2FirstName');
+    expect(value('numberofeshares_1')).toBe('100000');
+    expect(value('subeshare_1')).toBe('10000');
+    expect(value('amountpershare_1')).toBe('10');
+    expect(checked('aoaEntrenched')).toBe('No');
+    // Section 2 is the person's to open (the li.listep wizard); the agent waits and never clicks it.
+    expect(engine.run!.wait).toMatchObject({ kind: 'human_step', page: 'SPICe+ Part B, section 2: address of the company' });
+    expect(portal.clickedIds).toEqual([]);
+    openSection('address');
+    await engine.tick();
+    await engine.settle();
+    expect(engine.run!.wait).toEqual({ kind: 'confirm' });
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    expect(value('correspondenceaddressline1')).toBe('Sentinel Tower 1');
+    expect(value('correspondenceaddress_pinCode')).toBe('500081');
+    // The area list loads after the PIN code; the PIN code asked for the lookup wait.
+    expect(value('Area1')).toBe('Gachibowli');
+    expect(portal.fillOpts.some((o) => o?.settleMs === 2000)).toBe(true);
+    expect(value('correspondenceaddress_emailID')).toBe('office@sentinel.test');
+    expect(mockState().clicks['btn-send-otp']).toBeUndefined();
+    expect(mockState().clicks['btn-verify-otp']).toBeUndefined();
+
+    openSection('subscribers');
+    await engine.tick();
+    await engine.settle();
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    expect(value('firstName6c')).toBe('Subone');
+    expect(value('firstName6c__2')).toBe('Subtwo');
+    expect(value('pan6c')).toBe('SENTB1234C');
+    expect(value('date6c')).toBe('01/02/1980');
+    expect(value('fatherSurName__2')).toBe('Sentineldottir');
+    expect(value('nationality')).toBe('India');
+    expect(value('din6b')).toBe('');
+
+    openSection('directors');
+    await engine.tick();
+    await engine.settle();
+    // Designations are the user's (Suite does not hold them).
+    expect(engine.run!.fields.filter((f) => f.status === 'user').map((f) => f.key).sort()).toEqual(['directors[0].designation@7a', 'directors[1].designation@7b', 'subscribers[0].designation@7b']);
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    // Block 7a: the director with a DIN. Block 7b: the subscriber-director, then the director without one.
+    expect(value('din7a')).toBe('09876543');
+    expect(value('din7a__2')).toBe('');
+    expect(value('firstName7bp')).toBe('Subone');
+    expect(value('firstName7bp__2')).toBe('Dirtwo');
+    expect(value('pan7b__2')).toBe('SENTE2222F');
+    expect(checked('citizenOfIndia7b')).toBe('Yes');
+    expect(value('designation7a_1')).toBe('');
+    expect(mockState().modelWrites).toContain('firstName7bp__2');
     expect(engine.run!.aiCalls).toBe(0);
     expect(suite.resolvePayloads).toHaveLength(0);
+    expect(engine.run!.fields.filter((f) => f.tier && f.tier !== 'T0')).toEqual([]);
     expect(engine.run!.state).toBe('WAIT_DSC');
 
     await engine.send(await pdfDrop());
     await engine.settle();
     expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
     expect(mockState().clicks['btn-submit']).toBeUndefined();
-    expect(portal.clickedIds).toEqual(['btn-check', 'btn-download', 'btn-check']);
+    // The captured Part B has no Auto check button: the agent clicks Download PDF only.
+    expect(portal.clickedIds).toEqual(['btn-download']);
     document.getElementById('btn-submit')!.click();
     document.getElementById('btn-pay')!.click();
     await engine.tick();
@@ -566,6 +676,31 @@ describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
 
     const sent = JSON.stringify(suite.calls.filter((c) => c.name !== 'profile'));
     for (const v of [...PART_B_VALUES, ...PROFILE_VALUES]) expect(sent).not.toContain(v);
+  });
+
+  it('leaves a block whose Add/Edit panel is not open to the person, never healing into another block', async () => {
+    const { engine } = setupB();
+    // Only one 6c block is open on the page.
+    document.querySelectorAll('fieldset[data-block="6c"]')[1]!.remove();
+    await engine.start(START_B);
+    await engine.settle();
+    await engine.send({ type: 'LOGGED_IN' });
+    await engine.settle();
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    openSection('address');
+    await engine.tick();
+    await engine.settle();
+    await engine.send({ type: 'CONFIRM_FILL' });
+    await engine.settle();
+    openSection('subscribers');
+    await engine.tick();
+    await engine.settle();
+    const second = engine.run!.fields.find((f) => f.key === 'subscribers[1].firstName@6c')!;
+    expect(second).toMatchObject({ status: 'user' });
+    expect(second.note).toMatch(/open the Add\/Edit panel for block 2/);
+    expect(engine.run!.fields.find((f) => f.key === 'subscribers[0].firstName@6c')).toMatchObject({ status: 'planned', tier: 'T0' });
+    expect(engine.run!.aiCalls).toBe(0);
   });
 
   it('keeps the expanded plan across a restart', async () => {
@@ -579,7 +714,30 @@ describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
     await again.settle();
     await again.send({ type: 'CONFIRM_FILL' });
     await again.settle();
-    expect(value('director2Pan')).toBe('SENTE2222F');
+    for (const section of ['address', 'subscribers', 'directors']) {
+      openSection(section);
+      await again.tick();
+      await again.settle();
+      await again.send({ type: 'CONFIRM_FILL' });
+      await again.settle();
+    }
+    expect(value('pan7b__2')).toBe('SENTE2222F');
+  });
+
+  it('resumes from storage after a restart (WAIT_DSC)', async () => {
+    const { engine, store, suite, portal } = setupB();
+    await engine.start(START_B);
+    await engine.settle();
+    await fillAllSections(engine);
+    expect(engine.run!.state).toBe('WAIT_DSC');
+
+    const again = new RunEngine({ suite, store, portalFor: () => portal, bundledRecipes: BUNDLED_RECIPES });
+    await again.restore();
+    await again.settle();
+    expect(again.run!.state).toBe('WAIT_DSC');
+    await again.send(await pdfDrop());
+    await again.settle();
+    expect(again.run!.state).toBe('WAIT_SUBMIT_PAY');
   });
 
   it('refuses to fill the Part B recipe on the Part A page', async () => {
@@ -589,11 +747,48 @@ describe('SPICe+ Part B on the mock portal (repeating groups)', () => {
     await engine.settle();
     await engine.send({ type: 'LOGGED_IN' });
     await engine.settle();
-    expect(engine.run!.wait).toMatchObject({ kind: 'wrong_page', page: 'SPICe+ Part B' });
+    expect(engine.run!.wait).toMatchObject({ kind: 'wrong_page', page: 'SPICe+ Part B, section 1: structure and capital' });
+  });
+
+  it('evidence: the MCA login label, the device and the signers reach Suite as labels and refs only', async () => {
+    loadMockPage('spice-b.html');
+    const suite = new FakeSuite();
+    suite.profileValue = PART_B_PROFILE;
+    const portal = new JsdomPortal();
+    portal.url = 'http://127.0.0.1:4318/spice-b.html';
+    const engine = new RunEngine({
+      suite,
+      store: new MemoryStore(),
+      portalFor: () => portal,
+      bundledRecipes: BUNDLED_RECIPES,
+      extensionVersion: '0.2.0',
+      device: async () => ({ installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' }),
+    });
+    await engine.start({ ...START_B, mcaLoginLabel: 'lead@sbcfirm.in' });
+    await engine.settle();
+    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toMatchObject({
+      mcaLoginLabel: 'lead@sbcfirm.in',
+      device: { installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' },
+      extensionVersion: '0.2.0',
+    });
+    expect(engine.run!.signerChoices!.map((c) => c.ref)).toEqual(['director:e3', 'director:e4', 'subscriber:1', 'subscriber:2', 'professional:self']);
+    await fillAllSections(engine);
+    // A drop with no signer (or one the panel never offered) is not taken.
+    await engine.send(await pdfDrop(undefined, []));
+    await engine.settle();
+    await engine.send(await pdfDrop(undefined, ['director:forged']));
+    await engine.settle();
+    expect(engine.run!.state).toBe('WAIT_DSC');
+    await engine.send(await pdfDrop(undefined, ['director:e3', 'professional:self']));
+    await engine.settle();
+    expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
+    expect(suite.updates.at(-1)!.dscSigners).toEqual(['director:e3', 'professional:self']);
+    const sent = JSON.stringify(suite.calls.filter((c) => c.name !== 'profile'));
+    for (const v of PART_B_VALUES) expect(sent).not.toContain(v);
   });
 });
 
-describe('filing safeguards (G16, G17, G18, evidence)', () => {
+describe('filing safeguards (G16, G17, G18)', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });
@@ -622,8 +817,8 @@ describe('filing safeguards (G16, G17, G18, evidence)', () => {
     ]);
     await env.engine.send({ type: 'CONFIRM_FILL' });
     await env.engine.settle();
-    expect(value('proposedName1')).toBe('');
-    expect(value('proposedName2')).toBe('');
+    expect(value('proposedname1')).toBe('');
+    expect(value('proposedname2')).toBe('');
     expect(env.engine.run!.log.some((l) => l.text.startsWith('G16:'))).toBe(true);
     const last = env.suite.updates.at(-1)!;
     expect(last.blanks).toEqual(
@@ -638,11 +833,11 @@ describe('filing safeguards (G16, G17, G18, evidence)', () => {
   it('G16: a mandatory field Suite lacks is marked for the client’s records; an optional one is only listed', async () => {
     const env = setup();
     const company = { ...(SENTINEL_PROFILE.profile.company as Record<string, unknown>) };
-    delete company.nicCode;
+    delete company.type;
     company.proposedNames = ['Sentinel Alpha Private Limited'];
     env.suite.profileValue = { ...SENTINEL_PROFILE, profile: { ...SENTINEL_PROFILE.profile, company } };
     await toConfirm(env);
-    expect(env.engine.run!.fields.find((f) => f.key === 'company.nicCode')).toMatchObject({ status: 'missing', blank: 'missing' });
+    expect(env.engine.run!.fields.find((f) => f.key === 'company.type')).toMatchObject({ status: 'missing', blank: 'missing' });
     const optional = env.engine.run!.fields.find((f) => f.key === 'company.proposedNames[1]')!;
     expect(optional.status).toBe('missing');
     expect(optional.blank).toBeUndefined();
@@ -653,8 +848,6 @@ describe('filing safeguards (G16, G17, G18, evidence)', () => {
     env.suite.attestationValue = { recorded: false };
     await toConfirm(env);
     await env.engine.send({ type: 'CONFIRM_FILL' });
-    await env.engine.settle();
-    await env.engine.send(await pdfDrop());
     await env.engine.settle();
     expect(env.engine.run!.state).toBe('WAIT_SUBMIT_PAY');
     expect(env.engine.run!.wait).toEqual({ kind: 'certifier' });
@@ -678,8 +871,6 @@ describe('filing safeguards (G16, G17, G18, evidence)', () => {
     env.suite.attestationValue = { recorded: false };
     await toConfirm(env);
     await env.engine.send({ type: 'CONFIRM_FILL' });
-    await env.engine.settle();
-    await env.engine.send(await pdfDrop());
     await env.engine.settle();
     document.getElementById('btn-submit')!.click();
     document.getElementById('btn-pay')!.click();
@@ -720,43 +911,5 @@ describe('filing safeguards (G16, G17, G18, evidence)', () => {
     expect(env.engine.run!.state).toBe('READY');
     expect(env.engine.run!.wait).toMatchObject({ kind: 'suite_error' });
     expect(env.suite.calls.some((c) => c.name === 'profile')).toBe(false);
-  });
-
-  it('evidence: the MCA login label, the device and the signers reach Suite as labels and refs only', async () => {
-    loadMockPage('spice-a.html');
-    const suite = new FakeSuite();
-    const portal = new JsdomPortal();
-    const engine = new RunEngine({
-      suite,
-      store: new MemoryStore(),
-      portalFor: () => portal,
-      bundledRecipes: BUNDLED_RECIPES,
-      extensionVersion: '0.2.0',
-      device: async () => ({ installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' }),
-    });
-    await engine.start({ ...START, mcaLoginLabel: 'lead@sbcfirm.in' });
-    await engine.settle();
-    expect(suite.calls.find((c) => c.name === 'createRun')!.body).toMatchObject({
-      mcaLoginLabel: 'lead@sbcfirm.in',
-      device: { installId: '0f6c1a2e-1111-4222-8333-944445555666', userAgent: 'TestAgent/1.0' },
-      extensionVersion: '0.2.0',
-    });
-    expect(engine.run!.signerChoices!.map((c) => c.ref)).toEqual(['director:e1', 'professional:self']);
-    await engine.send({ type: 'LOGGED_IN' });
-    await engine.settle();
-    await engine.send({ type: 'CONFIRM_FILL' });
-    await engine.settle();
-    // A drop with no signer (or one the panel never offered) is not taken.
-    await engine.send(await pdfDrop(undefined, []));
-    await engine.settle();
-    await engine.send(await pdfDrop(undefined, ['director:forged']));
-    await engine.settle();
-    expect(engine.run!.state).toBe('WAIT_DSC');
-    await engine.send(await pdfDrop(undefined, ['director:e1', 'professional:self']));
-    await engine.settle();
-    expect(engine.run!.state).toBe('WAIT_SUBMIT_PAY');
-    expect(suite.updates.at(-1)!.dscSigners).toEqual(['director:e1', 'professional:self']);
-    const sent = JSON.stringify(suite.calls.filter((c) => c.name !== 'profile'));
-    for (const v of PROFILE_VALUES) expect(sent).not.toContain(v);
   });
 });

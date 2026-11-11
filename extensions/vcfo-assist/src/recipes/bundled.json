@@ -5,84 +5,100 @@
     "spice-a": {
       "recipe": {
         "id": "spice-a",
-        "version": "1.1.0",
+        "version": "2.0.0",
         "title": "SPICe+ Part A (name reservation)",
         "subAgent": "spice-a",
-        "verifiedAgainst": "mock",
+        "verifiedAgainst": "capture",
+        "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+        "pack": "mca-v3",
+        "waits": {
+          "readyMs": 30000,
+          "optionsMs": 8000,
+          "afterPincodeMs": 2000
+        },
         "pages": [
           {
             "id": "part-a",
+            "packPage": "spice-a",
             "title": "SPICe+ Part A",
-            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/spice-plus*",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/spice.html",
             "mockUrlPattern": "/spice-a*.html",
             "ready": {
-              "som": "guide[0].guide1[0].guideRootPanel[0]"
-            }
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.type-of-company"
+            },
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
           }
         ],
         "fields": [
           {
             "key": "company.type",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].companyType[0]",
-            "css": "[name=\"companyType\"]",
-            "label": "Type of company",
+            "css": ".guideFieldNode.type-of-company",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist__",
+            "label": "1(a) Type of company",
             "transform": "none",
             "required": true
           },
           {
             "key": "company.class",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].companyClass[0]",
-            "css": "[name=\"companyClass\"]",
-            "label": "Class of company",
+            "css": ".guideFieldNode.class-of-company",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co__",
+            "label": "Class of the company",
             "transform": "none",
-            "required": true
+            "required": true,
+            "waitForOptions": true
           },
           {
             "key": "company.category",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].companyCategory[0]",
-            "css": "[name=\"companyCategory\"]",
+            "css": ".guideFieldNode.category-of-company",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co_1813708729__",
             "label": "Category of the company",
             "transform": "none",
-            "required": true
+            "required": true,
+            "waitForOptions": true
           },
           {
             "key": "company.subCategory",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].companySubCategory[0]",
-            "css": "[name=\"companySubCategory\"]",
+            "css": ".guideFieldNode.subcategory-of-company",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co_175619313__",
             "label": "Sub-category of the company",
             "transform": "none",
             "required": true,
-            "note": "Derived from the project ownership; confirm the selection on the portal."
+            "note": "Derived from the project ownership; confirm the selection on the portal.",
+            "waitForOptions": true
           },
           {
             "key": "company.nicCode",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].mainDivision[0]",
-            "css": "[name=\"mainDivision\"]",
-            "label": "Main division of industrial activity of the company",
-            "transform": "nicDivision",
-            "required": true,
-            "note": "The NIC row itself is picked from the popup by the user."
+            "css": ".guideFieldNode.nic-text-box",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-panel_1663114232_cop-panel_1119548299-panel-guidetextbox__",
+            "label": "NIC code search",
+            "transform": "none",
+            "required": false,
+            "note": "The agent types the NIC code into the search box; you pick the row from the popup table (Main NIC Code is read-only)."
           },
           {
             "key": "company.proposedNames[0]",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].proposedName1[0]",
-            "css": "[name=\"proposedName1\"]",
-            "label": "Proposed name 1",
+            "css": ".guideFieldNode.proposedname1",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel_copy-panel-panel-guidetextbox_1884163__",
+            "label": "Proposed name I",
             "transform": "none",
             "required": true
           },
           {
             "key": "company.proposedNames[1]",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].proposedName2[0]",
-            "css": "[name=\"proposedName2\"]",
-            "label": "Proposed name 2",
+            "css": ".guideFieldNode.proposedname2",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel_copy-panel-panel_2003762916-guidetextbox_4394968__",
+            "label": "Proposed name II",
             "transform": "none",
             "required": false,
             "note": "Only before name approval; after approval one name is filed."
@@ -90,24 +106,22 @@
           {
             "key": "company.nameSignificance",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].significance[0]",
-            "css": "[name=\"significance\"]",
+            "css": ".guideFieldNode.significance",
             "label": "Significance of key/coined word(s) of the proposed name",
             "transform": "none",
             "required": true,
             "askUser": true,
-            "note": "Suite does not collect this yet; the user types it on the portal."
+            "note": "Unverified: this field was not in the 2026-09-23 capture, so its selector is a guess. Suite does not collect it yet; you type it on the portal."
           },
           {
             "key": "company.trademarkSimilar",
             "page": "part-a",
-            "som": "guide[0].guide1[0].guideRootPanel[0].trademarkSimilar[0]",
-            "css": "[name=\"trademarkSimilar\"]",
+            "css": ".guideFieldNode.trademarkSimilar",
             "label": "Whether the proposed name is similar to a registered trademark",
             "transform": "yesNo",
             "required": true,
             "askUser": true,
-            "note": "Suite does not collect this yet; the user answers it on the portal."
+            "note": "Unverified: this field was not in the 2026-09-23 capture, so its selector is a guess. Suite does not collect it yet; you answer it on the portal."
           }
         ],
         "actions": [
@@ -120,27 +134,11 @@
             }
           },
           {
-            "id": "check-form",
-            "label": "Check form",
+            "id": "auto-check",
+            "label": "Auto check",
             "kind": "safe",
             "match": {
-              "text": "Check form"
-            }
-          },
-          {
-            "id": "download-pdf",
-            "label": "Download PDF",
-            "kind": "safe",
-            "match": {
-              "text": "Download PDF"
-            }
-          },
-          {
-            "id": "attach-pdf",
-            "label": "Attach PDF",
-            "kind": "safe",
-            "match": {
-              "css": "#signed-pdf"
+              "text": "Auto check"
             }
           },
           {
@@ -162,7 +160,8 @@
         ],
         "gates": [
           "LOGIN",
-          "DSC",
+          "CAPTCHA",
+          "OTP",
           "SUBMIT",
           "PAY"
         ],
@@ -175,319 +174,964 @@
           {
             "id": "saved",
             "kind": "text",
-            "pattern": "[Ss]aved successfully"
+            "pattern": "[Ss]aved successfully|[Dd]raft saved"
           },
           {
             "id": "checked",
             "kind": "text",
-            "pattern": "[Cc]heck passed"
-          },
-          {
-            "id": "pdf-ready",
-            "kind": "text",
-            "pattern": "PDF ready"
+            "pattern": "[Cc]heck passed|[Nn]o errors"
           }
         ]
       },
-      "sig": "CzB+z7bznDzxJp2rZjMEk0PckxFJzMyIrSoxv9JcOIHGSRjq6x4U4jhnIi8ii82egkzfwcqiG8GkNUzkzp1GBQ==",
+      "sig": "oI7PmYg/fN5JBZohmRWdfks++jDMJUghzS0/3ELNLCCGiN/6P+bHzfksfKinLuTdQU+6zRCuo0OQ9cKnIehhDg==",
       "alg": "ed25519",
       "keyId": "dev"
     },
     "spice-b": {
       "recipe": {
         "id": "spice-b",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "title": "SPICe+ Part B (incorporation)",
         "subAgent": "spice-b",
-        "verifiedAgainst": "mock",
+        "verifiedAgainst": "capture",
+        "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+        "pack": "mca-v3",
+        "waits": {
+          "readyMs": 30000,
+          "optionsMs": 8000,
+          "afterPincodeMs": 2000
+        },
         "pages": [
           {
-            "id": "part-b",
-            "title": "SPICe+ Part B",
-            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/spice-plus*",
+            "id": "structure",
+            "packPage": "spice-b-structure",
+            "title": "SPICe+ Part B, section 1: structure and capital",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
             "mockUrlPattern": "/spice-b*.html",
             "ready": {
-              "som": "guide[0].guide1[0].guideRootPanel[0]"
-            }
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.aoaEntrenched"
+            },
+            "step": "Open section 1 (structure of the company) in the form's step list.",
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          },
+          {
+            "id": "address",
+            "packPage": "spice-b-address",
+            "title": "SPICe+ Part B, section 2: address of the company",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+            "mockUrlPattern": "/spice-b*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.correspondenceaddressline1"
+            },
+            "step": "Click Next, or open section 2 (address of the company) in the form's step list. Mobile and email OTP verification on this section are yours.",
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          },
+          {
+            "id": "subscribers",
+            "packPage": "spice-b-subscribers",
+            "title": "SPICe+ Part B, section 4: subscribers",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+            "mockUrlPattern": "/spice-b*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.din6b, #guideContainer-rootPanel__ .guideFieldNode.firstName6c"
+            },
+            "step": "Open the subscribers section, and each subscriber's Add/Edit panel, yourself. The agent fills the blocks that are open; save each sub-panel yourself.",
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          },
+          {
+            "id": "directors",
+            "packPage": "spice-b-directors",
+            "title": "SPICe+ Part B, section 5: directors",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/SpicePartB.html",
+            "mockUrlPattern": "/spice-b*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.din7a, #guideContainer-rootPanel__ .guideFieldNode.firstName7bp"
+            },
+            "step": "Open the directors section, and each director's Add/Edit panel, yourself. The agent fills the blocks that are open; save each sub-panel yourself.",
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
           }
         ],
         "fields": [
           {
-            "key": "company.capital.authorized",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].authorisedCapital[0]",
-            "css": "[name=\"authorisedCapital\"]",
-            "label": "Authorised capital (in Rs.)",
-            "transform": "rupeeAmount",
+            "key": "company.aoaEntrenched",
+            "page": "structure",
+            "css": ".guideFieldNode.aoaEntrenched",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-guideradiobutton__",
+            "label": "1(a) Whether AOA is entrenched?",
+            "transform": "yesNo",
             "required": true
           },
           {
-            "key": "company.capital.subscribed",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribedCapital[0]",
-            "css": "[name=\"subscribedCapital\"]",
-            "label": "Subscribed capital (in Rs.)",
-            "transform": "rupeeAmount",
-            "required": true
+            "key": "company.capital.equity.classes",
+            "page": "structure",
+            "css": ".guideFieldNode.numberOfClasses",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-guidetextbox_2081517__",
+            "label": "Number of classes of equity shares",
+            "transform": "none",
+            "required": false
+          },
+          {
+            "key": "company.capital.equity.className",
+            "page": "structure",
+            "css": ".guideFieldNode.classe1",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-panel1615197479558-table_copy-HeaderRow-headerItem1640690566958__",
+            "label": "Class of equity shares",
+            "transform": "none",
+            "required": false
           },
           {
             "key": "company.capital.equity.authorizedShares",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].equityShares[0]",
-            "css": "[name=\"equityShares\"]",
-            "label": "Number of equity shares",
+            "page": "structure",
+            "css": ".guideFieldNode.numberofeshares_1",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-panel1615197479558-table_copy-Row1-headerItem1640690900398__",
+            "label": "Authorised equity shares (number)",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "company.capital.equity.subscribedShares",
+            "page": "structure",
+            "css": ".guideFieldNode.subeshare_1",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-panel1615197479558-table_copy-Row1-tableItem1__",
+            "label": "Subscribed equity shares (number)",
             "transform": "none",
             "required": true
           },
           {
             "key": "company.capital.equity.faceValue",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].faceValue[0]",
-            "css": "[name=\"faceValue\"]",
+            "page": "structure",
+            "css": ".guideFieldNode.amountpershare_1",
+            "nodeId": "guideContainer-rootPanel-panel_437033673-panel_1893196917-panel1615197479558-table_copy-Row1640691143683-tableItem1640691143685__",
             "label": "Nominal amount per equity share (in Rs.)",
             "transform": "rupeeAmount",
             "required": true
           },
           {
             "key": "registeredOffice.line1",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeLine1[0]",
-            "css": "[name=\"officeLine1\"]",
-            "label": "Address line I",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddressline1",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-guidetextbox_copy_11__",
+            "label": "Registered office: Line 1",
             "transform": "none",
-            "required": true,
-            "note": "Suite holds the registered office as one address, so the profile has no split lines yet; the user types them."
+            "required": true
           },
           {
             "key": "registeredOffice.line2",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeLine2[0]",
-            "css": "[name=\"officeLine2\"]",
-            "label": "Address line II",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddressline2",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-guidetextbox_copy_11_1762140590__",
+            "label": "Registered office: Line 2",
             "transform": "none",
-            "required": false,
-            "note": "Suite holds the registered office as one address, so the profile has no split lines yet; the user types them."
+            "required": false
           },
           {
             "key": "registeredOffice.pincode",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officePincode[0]",
-            "css": "[name=\"officePincode\"]",
-            "label": "PIN code",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddress_pinCode",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-guidetextbox_copy_11_762323347__",
+            "label": "Registered office: PIN code",
             "transform": "none",
             "required": true,
-            "note": "Suite holds the registered office as one address, so the profile has no split lines yet; the user types them."
+            "note": "The portal fills area, city, district and state from the PIN code.",
+            "lookup": true
           },
           {
-            "key": "registeredOffice.city",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeCity[0]",
-            "css": "[name=\"officeCity\"]",
-            "label": "City",
+            "key": "registeredOffice.area",
+            "page": "address",
+            "css": ".guideFieldNode.Area1",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-guidedropdownlist__",
+            "label": "Registered office: Area/Locality",
             "transform": "none",
-            "required": false,
-            "note": "The portal fills it from the PIN code."
+            "required": true,
+            "waitForOptions": true
           },
           {
-            "key": "registeredOffice.district",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeDistrict[0]",
-            "css": "[name=\"officeDistrict\"]",
-            "label": "District",
+            "key": "registeredOffice.countryCode",
+            "page": "address",
+            "css": ".guideFieldNode.countryCode_4A",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel_268113884-guidedropdownlist_17__",
+            "label": "Mobile number country code",
             "transform": "none",
-            "required": false,
-            "note": "The portal fills it from the PIN code."
-          },
-          {
-            "key": "registeredOffice.state",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeState[0]",
-            "css": "[name=\"officeState\"]",
-            "label": "State / Union territory",
-            "transform": "none",
-            "required": false,
-            "note": "The portal fills it from the PIN code."
-          },
-          {
-            "key": "registeredOffice.email",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeEmail[0]",
-            "css": "[name=\"officeEmail\"]",
-            "label": "Email ID of the company",
-            "transform": "none",
-            "required": true
+            "required": false
           },
           {
             "key": "registeredOffice.mobile",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].officeMobile[0]",
-            "css": "[name=\"officeMobile\"]",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddress_MobileNumber",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel_268113884-guidenumericbox__",
             "label": "Mobile number of the company",
             "transform": "none",
-            "required": true
+            "required": true,
+            "note": "The mobile OTP verification on the portal is yours."
           },
           {
-            "key": "subscribers[{i}].firstName",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].firstName[0]",
-            "css": "[name=\"subscriber{n}FirstName\"]",
-            "label": "Subscriber {n}: first name",
+            "key": "registeredOffice.email",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddress_emailID",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel_839850985-guidetextbox_copy_11__",
+            "label": "Email ID of the company",
             "transform": "none",
             "required": true,
-            "each": "subscribers"
+            "note": "The email OTP verification on the portal is yours."
           },
           {
-            "key": "subscribers[{i}].surName",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].surName[0]",
-            "css": "[name=\"subscriber{n}SurName\"]",
-            "label": "Subscriber {n}: surname",
+            "key": "registeredOffice.longitude",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddress_longitudeifYes",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel-guidetextbox_copy__",
+            "label": "Longitude of the registered office",
+            "transform": "none",
+            "required": false
+          },
+          {
+            "key": "registeredOffice.latitude",
+            "page": "address",
+            "css": ".guideFieldNode.correspondenceaddress_latitudeifYes",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel-guidenumericbox_copy__",
+            "label": "Latitude of the registered office",
+            "transform": "none",
+            "required": false
+          },
+          {
+            "key": "registeredOffice.rocOffice",
+            "page": "address",
+            "css": ".guideFieldNode.facorrespondenceaddress_proposedCompanyRegistered",
+            "nodeId": "guideContainer-rootPanel-panel_2001397683-panel_1902152287-panel_1966601478-guidenumericbox_6907__",
+            "label": "Office of the Registrar of Companies",
+            "transform": "none",
+            "required": false,
+            "waitForOptions": true
+          },
+          {
+            "key": "subscribers[{i}].din",
+            "slot": "6b",
+            "page": "subscribers",
+            "css": ".guideFieldNode.din6b",
+            "nth": 0,
+            "label": "Subscriber {n}: DIN (subscriber with DIN)",
             "transform": "none",
             "required": true,
-            "each": "subscribers"
-          },
-          {
-            "key": "subscribers[{i}].father.firstName",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].fatherFirstName[0]",
-            "css": "[name=\"subscriber{n}FatherFirstName\"]",
-            "label": "Subscriber {n}: father's first name",
-            "transform": "none",
-            "required": true,
-            "each": "subscribers"
-          },
-          {
-            "key": "subscribers[{i}].dob",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].dob[0]",
-            "css": "[name=\"subscriber{n}Dob\"]",
-            "label": "Subscriber {n}: date of birth",
-            "transform": "toMcaDate",
-            "required": true,
-            "each": "subscribers"
-          },
-          {
-            "key": "subscribers[{i}].pan",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].pan[0]",
-            "css": "[name=\"subscriber{n}Pan\"]",
-            "label": "Subscriber {n}: income-tax PAN",
-            "transform": "upper",
-            "required": true,
-            "each": "subscribers"
-          },
-          {
-            "key": "subscribers[{i}].email",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].email[0]",
-            "css": "[name=\"subscriber{n}Email\"]",
-            "label": "Subscriber {n}: email ID",
-            "transform": "none",
-            "required": true,
-            "each": "subscribers"
-          },
-          {
-            "key": "subscribers[{i}].mobile",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].mobile[0]",
-            "css": "[name=\"subscriber{n}Mobile\"]",
-            "label": "Subscriber {n}: mobile number",
-            "transform": "none",
-            "required": true,
-            "each": "subscribers"
+            "note": "The portal fills the name from the DIN.",
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": true
+            }
           },
           {
             "key": "subscribers[{i}].shares.equity.number",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].subscribers[0].subscriber[{i}].shares[0]",
-            "css": "[name=\"subscriber{n}Shares\"]",
-            "label": "Subscriber {n}: number of equity shares subscribed",
+            "slot": "6b",
+            "page": "subscribers",
+            "css": ".guideFieldNode.noofequityshares6b",
+            "nth": 0,
+            "label": "Subscriber {n}: Equity shares subscribed (subscriber with DIN)",
             "transform": "none",
             "required": true,
-            "each": "subscribers"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": true
+            }
           },
           {
-            "key": "directors[{i}].firstName",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].firstName[0]",
-            "css": "[name=\"director{n}FirstName\"]",
-            "label": "Director {n}: first name",
+            "key": "subscribers[{i}].firstName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.firstName6c",
+            "nth": 0,
+            "label": "Subscriber {n}: First name",
             "transform": "none",
             "required": true,
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].surName",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].surName[0]",
-            "css": "[name=\"director{n}SurName\"]",
-            "label": "Director {n}: surname",
-            "transform": "none",
-            "required": true,
-            "each": "directors"
-          },
-          {
-            "key": "directors[{i}].din",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].din[0]",
-            "css": "[name=\"director{n}Din\"]",
-            "label": "Director {n}: DIN",
+            "key": "subscribers[{i}].middleName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.middleName6c",
+            "nth": 0,
+            "label": "Subscriber {n}: Middle name",
             "transform": "none",
             "required": false,
-            "note": "Only a director who already holds a DIN; the others get one with this form.",
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].pan",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].pan[0]",
-            "css": "[name=\"director{n}Pan\"]",
-            "label": "Director {n}: income-tax PAN",
-            "transform": "upper",
+            "key": "subscribers[{i}].surName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.surName6c",
+            "nth": 0,
+            "label": "Subscriber {n}: Surname",
+            "transform": "none",
             "required": true,
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].dob",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].dob[0]",
-            "css": "[name=\"director{n}Dob\"]",
-            "label": "Director {n}: date of birth",
+            "key": "subscribers[{i}].father.firstName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.fatherFirstName",
+            "nth": 0,
+            "label": "Subscriber {n}: Father's first name",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].father.middleName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.fatherMiddleName",
+            "nth": 0,
+            "label": "Subscriber {n}: Father's middle name",
+            "transform": "none",
+            "required": false,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].father.surName",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.fatherSurName",
+            "nth": 0,
+            "label": "Subscriber {n}: Father's surname",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].gender",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.gender6c",
+            "nth": 0,
+            "label": "Subscriber {n}: Gender",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].dob",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.date6c",
+            "nth": 0,
+            "label": "Subscriber {n}: Date of birth (DD/MM/YYYY)",
             "transform": "toMcaDate",
             "required": true,
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].email",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].email[0]",
-            "css": "[name=\"director{n}Email\"]",
-            "label": "Director {n}: email ID",
+            "key": "subscribers[{i}].nationality",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.nationality",
+            "nth": 0,
+            "label": "Subscriber {n}: Nationality",
             "transform": "none",
             "required": true,
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].mobile",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].mobile[0]",
-            "css": "[name=\"director{n}Mobile\"]",
-            "label": "Director {n}: mobile number",
+            "key": "subscribers[{i}].placeOfBirth",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.placeOfBirth",
+            "nth": 0,
+            "label": "Subscriber {n}: Place of birth (district and state)",
+            "transform": "none",
+            "required": false,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].pan",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.pan6c",
+            "nth": 0,
+            "label": "Subscriber {n}: Income-tax PAN",
+            "transform": "upper",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].email",
+            "slot": "6c",
+            "page": "subscribers",
+            "css": ".guideFieldNode.textbox1641292661235",
+            "nth": 0,
+            "label": "Subscriber {n}: Email ID",
             "transform": "none",
             "required": true,
-            "each": "directors"
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "din": false
+            }
           },
           {
-            "key": "directors[{i}].designation",
-            "page": "part-b",
-            "som": "guide[0].guide1[0].guideRootPanel[0].directors[0].director[{i}].designation[0]",
-            "css": "[name=\"director{n}Designation\"]",
-            "label": "Director {n}: designation",
+            "key": "subscribers[{i}].din",
+            "slot": "7a",
+            "page": "directors",
+            "css": ".guideFieldNode.din7a",
+            "nth": 0,
+            "label": "Subscriber {n}: DIN (director with DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": true
+            }
+          },
+          {
+            "key": "subscribers[{i}].shares.equity.number",
+            "slot": "7a",
+            "page": "directors",
+            "css": ".guideFieldNode.equityshares7a",
+            "nth": 0,
+            "label": "Subscriber {n}: Equity shares held (director with DIN)",
+            "transform": "none",
+            "required": false,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": true
+            }
+          },
+          {
+            "key": "subscribers[{i}].designation",
+            "slot": "7a",
+            "page": "directors",
+            "css": ".guideFieldNode.designation7a_1",
+            "nth": 0,
+            "label": "Subscriber {n}: Designation (director with DIN)",
             "transform": "none",
             "required": true,
             "askUser": true,
-            "note": "Suite does not hold each director's designation; the user chooses it on the portal.",
-            "each": "directors"
+            "note": "Suite does not hold the designation yet; you choose it on the portal.",
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": true
+            }
+          },
+          {
+            "key": "subscribers[{i}].firstName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.firstName7bp",
+            "nth": 0,
+            "label": "Subscriber {n}: First name (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].middleName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.middleName7bp",
+            "nth": 0,
+            "label": "Subscriber {n}: Middle name (director without DIN)",
+            "transform": "none",
+            "required": false,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].surName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.surName7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Surname (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].father.firstName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.fatherFirstName7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Father's first name (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].father.surName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.fatherSurName7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Father's surname (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].gender",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.gender7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Gender (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].dob",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.date7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Date of birth (director without DIN)",
+            "transform": "toMcaDate",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].nationality",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.nationality7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Nationality (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].citizenOfIndia",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.citizenOfIndia7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Whether citizen of India (director without DIN)",
+            "transform": "yesNo",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].residentInIndia",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.residentInIndia7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Whether resident in India (director without DIN)",
+            "transform": "yesNo",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].pan",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.pan7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Income-tax PAN (director without DIN)",
+            "transform": "upper",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].mobile",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.mobile7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Mobile number (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].email",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.emailID7b",
+            "nth": 0,
+            "label": "Subscriber {n}: Email ID (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "subscribers[{i}].designation",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.designation7b_1",
+            "nth": 0,
+            "label": "Subscriber {n}: Designation (director without DIN)",
+            "transform": "none",
+            "required": true,
+            "askUser": true,
+            "note": "Suite does not hold the designation yet; you choose it on the portal.",
+            "each": "subscribers",
+            "where": {
+              "kind": "individual",
+              "isDirector": true,
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].din",
+            "slot": "7a",
+            "page": "directors",
+            "css": ".guideFieldNode.din7a",
+            "nth": 0,
+            "label": "Director {n}: DIN",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": true
+            }
+          },
+          {
+            "key": "directors[{i}].designation",
+            "slot": "7a",
+            "page": "directors",
+            "css": ".guideFieldNode.designation7a_1",
+            "nth": 0,
+            "label": "Director {n}: Designation",
+            "transform": "none",
+            "required": true,
+            "askUser": true,
+            "note": "Suite does not hold the designation yet; you choose it on the portal.",
+            "each": "directors",
+            "where": {
+              "din": true
+            }
+          },
+          {
+            "key": "directors[{i}].firstName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.firstName7bp",
+            "nth": 0,
+            "label": "Director {n}: First name",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].middleName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.middleName7bp",
+            "nth": 0,
+            "label": "Director {n}: Middle name",
+            "transform": "none",
+            "required": false,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].surName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.surName7b",
+            "nth": 0,
+            "label": "Director {n}: Surname",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].father.firstName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.fatherFirstName7b",
+            "nth": 0,
+            "label": "Director {n}: Father's first name",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].father.surName",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.fatherSurName7b",
+            "nth": 0,
+            "label": "Director {n}: Father's surname",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].gender",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.gender7b",
+            "nth": 0,
+            "label": "Director {n}: Gender",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].dob",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.date7b",
+            "nth": 0,
+            "label": "Director {n}: Date of birth (DD/MM/YYYY)",
+            "transform": "toMcaDate",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].nationality",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.nationality7b",
+            "nth": 0,
+            "label": "Director {n}: Nationality",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].citizenOfIndia",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.citizenOfIndia7b",
+            "nth": 0,
+            "label": "Director {n}: Whether citizen of India",
+            "transform": "yesNo",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].residentInIndia",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.residentInIndia7b",
+            "nth": 0,
+            "label": "Director {n}: Whether resident in India",
+            "transform": "yesNo",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].pan",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.pan7b",
+            "nth": 0,
+            "label": "Director {n}: Income-tax PAN",
+            "transform": "upper",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].mobile",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.mobile7b",
+            "nth": 0,
+            "label": "Director {n}: Mobile number",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].email",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.emailID7b",
+            "nth": 0,
+            "label": "Director {n}: Email ID",
+            "transform": "none",
+            "required": true,
+            "each": "directors",
+            "where": {
+              "din": false
+            }
+          },
+          {
+            "key": "directors[{i}].designation",
+            "slot": "7b",
+            "page": "directors",
+            "css": ".guideFieldNode.designation7b_1",
+            "nth": 0,
+            "label": "Director {n}: Designation",
+            "transform": "none",
+            "required": true,
+            "askUser": true,
+            "note": "Suite does not hold the designation yet; you choose it on the portal.",
+            "each": "directors",
+            "where": {
+              "din": false
+            }
           }
         ],
         "actions": [
@@ -497,14 +1141,6 @@
             "kind": "safe",
             "match": {
               "text": "Save"
-            }
-          },
-          {
-            "id": "check-form",
-            "label": "Check form",
-            "kind": "safe",
-            "match": {
-              "text": "Check form"
             }
           },
           {
@@ -520,7 +1156,7 @@
             "label": "Attach PDF",
             "kind": "safe",
             "match": {
-              "css": "#signed-pdf"
+              "css": ".guideFieldNode.fileAttachmentSRN input[type=\"file\"], #signed-pdf"
             }
           },
           {
@@ -542,6 +1178,8 @@
         ],
         "gates": [
           "LOGIN",
+          "CAPTCHA",
+          "OTP",
           "DSC",
           "SUBMIT",
           "PAY"
@@ -555,21 +1193,341 @@
           {
             "id": "saved",
             "kind": "text",
-            "pattern": "[Ss]aved successfully"
-          },
-          {
-            "id": "checked",
-            "kind": "text",
-            "pattern": "[Cc]heck passed"
+            "pattern": "[Ss]aved successfully|[Dd]raft saved"
           },
           {
             "id": "pdf-ready",
             "kind": "text",
-            "pattern": "PDF ready"
+            "pattern": "PDF ready|[Dd]ownloaded"
           }
         ]
       },
-      "sig": "SRk2Iizuca0vdZHXscg9TonI4/km3B+1w7F3Ot4rCGxbU0Ocxu7APnZVepM0vomcBrlRXEwouB9FdLzjmKKtBw==",
+      "sig": "qV94AWT1KTshKL4S57fzpok3mQGLAEmI2cjkdRbaEZuI/aDVNHT5/04RIIIvHqPGFbFU0QVbqLwSXvS2FwzfBg==",
+      "alg": "ed25519",
+      "keyId": "dev"
+    },
+    "agile-pro-s": {
+      "recipe": {
+        "id": "agile-pro-s",
+        "version": "1.0.0",
+        "title": "AGILE-PRO-S (INC-35)",
+        "subAgent": "agile-pro-s",
+        "verifiedAgainst": "capture",
+        "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+        "pack": "mca-v3",
+        "waits": {
+          "readyMs": 30000,
+          "optionsMs": 8000,
+          "afterPincodeMs": 2000
+        },
+        "pages": [
+          {
+            "id": "agile",
+            "packPage": "agile-pro-s",
+            "title": "AGILE-PRO-S (INC-35)",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/AgilePro.html",
+            "mockUrlPattern": "/agile-pro-s*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__"
+            },
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "key": "registeredOffice.state",
+            "page": "agile",
+            "css": ".guideFieldNode.block1-state",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670-panel-panel_500603721-panel-guidedropdownlist_co_1280164639__",
+            "label": "2 State (same as entered in SPICe+)",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "registeredOffice.district",
+            "page": "agile",
+            "css": ".guideFieldNode.block1-district",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670-panel-panel_500603721-panel-guidedropdownlist_co_1577004477__",
+            "label": "3 District (same as entered in SPICe+)",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "agile.numberOfDirectors",
+            "page": "agile",
+            "css": ".guideFieldNode.b3-number-of-director",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670-panel_copy_copy-panel_1376092333-panel_628673295-guidetextbox__",
+            "label": "Number of director details to be entered",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "registeredOffice.city",
+            "page": "agile",
+            "css": ".guideFieldNode.b5-declaration-place",
+            "nodeId": "guideContainer-rootPanel-panel_2017717670-panel_2121992028-panel_1372729152-panel-guidetextbox__",
+            "label": "Declaration: place",
+            "transform": "none",
+            "required": false,
+            "note": "The place of signing. Suite uses the registered office city; change it on the portal if the declaration is signed elsewhere."
+          }
+        ],
+        "actions": [
+          {
+            "id": "save-draft",
+            "label": "Save",
+            "kind": "safe",
+            "match": {
+              "text": "Save"
+            }
+          },
+          {
+            "id": "submit",
+            "label": "Submit",
+            "kind": "human",
+            "match": {
+              "text": "Submit"
+            }
+          }
+        ],
+        "gates": [
+          "LOGIN",
+          "CAPTCHA",
+          "OTP",
+          "DSC",
+          "SUBMIT"
+        ],
+        "expect": [
+          {
+            "id": "saved",
+            "kind": "text",
+            "pattern": "[Ss]aved successfully"
+          }
+        ]
+      },
+      "sig": "tCgTAdshQ1qYq2hP6TEO864GdwOQk42hobjvQwK3aLETnKw1SDL7Xtg1qdR7mzGCzsnJBmhHP6t6kPkl96+qDg==",
+      "alg": "ed25519",
+      "keyId": "dev"
+    },
+    "emoa": {
+      "recipe": {
+        "id": "emoa",
+        "version": "1.0.0",
+        "title": "e-MoA (INC-33)",
+        "subAgent": "emoa",
+        "verifiedAgainst": "capture",
+        "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+        "pack": "mca-v3",
+        "waits": {
+          "readyMs": 30000,
+          "optionsMs": 8000,
+          "afterPincodeMs": 2000
+        },
+        "pages": [
+          {
+            "id": "moa",
+            "packPage": "inc-33",
+            "title": "e-MoA (INC-33)",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/INC-33.html",
+            "mockUrlPattern": "/inc-33*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.tableApplicableToCompany"
+            },
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "key": "company.proposedNames[0]",
+            "page": "moa",
+            "css": ".guideFieldNode.nameOfCompany",
+            "nodeId": "guideContainer-rootPanel-formData1643834073649-nameOfCompany__",
+            "label": "1 The name of the company is",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "registeredOffice.state",
+            "page": "moa",
+            "css": ".guideFieldNode.regOfficeState",
+            "nodeId": "guideContainer-rootPanel-formData1643834073649-regOfficeState__",
+            "label": "2 The registered office of the company will be situated in the State of",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "moa.witness.name",
+            "page": "moa",
+            "css": ".guideFieldNode.personFullName",
+            "nodeId": "guideContainer-rootPanel-formData1643834073649-panel-personfullname__",
+            "label": "Witness: full name",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "moa.witness.address",
+            "page": "moa",
+            "css": ".guideFieldNode.resident",
+            "nodeId": "guideContainer-rootPanel-formData1643834073649-panel-resident__",
+            "label": "Witness: resident of",
+            "transform": "none",
+            "required": true
+          }
+        ],
+        "actions": [
+          {
+            "id": "save-draft",
+            "label": "Save",
+            "kind": "safe",
+            "match": {
+              "text": "Save"
+            }
+          },
+          {
+            "id": "submit",
+            "label": "Submit",
+            "kind": "human",
+            "match": {
+              "text": "Submit"
+            }
+          }
+        ],
+        "gates": [
+          "LOGIN",
+          "DSC",
+          "SUBMIT"
+        ],
+        "expect": [
+          {
+            "id": "saved",
+            "kind": "text",
+            "pattern": "[Ss]aved successfully"
+          }
+        ]
+      },
+      "sig": "9Ht8SqbzLpYlxJ4l191NB0oq5+3mazmo2X6OMXnRZA4UhCMDjcHRGrtk859GyxlOSCP8LiiTAQz8B7hXjVPnCA==",
+      "alg": "ed25519",
+      "keyId": "dev"
+    },
+    "eaoa": {
+      "recipe": {
+        "id": "eaoa",
+        "version": "1.0.0",
+        "title": "e-AoA (INC-34)",
+        "subAgent": "eaoa",
+        "verifiedAgainst": "capture",
+        "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+        "pack": "mca-v3",
+        "waits": {
+          "readyMs": 30000,
+          "optionsMs": 8000,
+          "afterPincodeMs": 2000
+        },
+        "pages": [
+          {
+            "id": "aoa",
+            "packPage": "inc-34",
+            "title": "e-AoA (INC-34)",
+            "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/INC-34.html",
+            "mockUrlPattern": "/inc-34*.html",
+            "ready": {
+              "css": "#guideContainer-rootPanel__ .guideFieldNode.table_applicable_company"
+            },
+            "closePopups": [
+              {
+                "css": "#okInfoModalBtn"
+              }
+            ]
+          }
+        ],
+        "fields": [
+          {
+            "key": "company.proposedNames[0]",
+            "page": "aoa",
+            "css": ".guideFieldNode.company_name",
+            "nodeId": "guideContainer-rootPanel-panel_1207220159-panel-guidetextbox_copy_1266423628__",
+            "label": "The name of the company",
+            "transform": "none",
+            "required": false
+          },
+          {
+            "key": "subscribers[{i}].place",
+            "page": "aoa",
+            "css": ".guideFieldNode.place",
+            "nth": 0,
+            "label": "Subscriber {n}: place of signing",
+            "transform": "none",
+            "required": true,
+            "each": "subscribers"
+          },
+          {
+            "key": "aoa.witness.name",
+            "page": "aoa",
+            "css": ".guideFieldNode.name",
+            "nodeId": "guideContainer-rootPanel-panel_1008082752-panel_copy_copy-panel-panel_1021139935_cop-table_copy-Row1-tableItem1__",
+            "label": "Witness: name",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "aoa.witness.addressDescriptionOccupation",
+            "page": "aoa",
+            "css": ".guideFieldNode.witnessAddrDescOccpn",
+            "nodeId": "guideContainer-rootPanel-panel_1008082752-panel_copy_copy-panel-panel_1021139935_cop-table_copy-Row1-headerItem1615200350145__",
+            "label": "Witness: address, description and occupation",
+            "transform": "none",
+            "required": true
+          },
+          {
+            "key": "aoa.witness.dinPanMembership",
+            "page": "aoa",
+            "css": ".guideFieldNode.dinNumber",
+            "nodeId": "guideContainer-rootPanel-panel_1008082752-panel_copy_copy-panel-panel_1021139935_cop-table_copy-Row1-headerItem1615200351572__",
+            "label": "Witness: DIN, PAN or membership number",
+            "transform": "none",
+            "required": true
+          }
+        ],
+        "actions": [
+          {
+            "id": "save-draft",
+            "label": "Save",
+            "kind": "safe",
+            "match": {
+              "text": "Save"
+            }
+          },
+          {
+            "id": "submit",
+            "label": "Submit",
+            "kind": "human",
+            "match": {
+              "text": "Submit"
+            }
+          }
+        ],
+        "gates": [
+          "LOGIN",
+          "DSC",
+          "SUBMIT"
+        ],
+        "expect": [
+          {
+            "id": "saved",
+            "kind": "text",
+            "pattern": "[Ss]aved successfully"
+          }
+        ]
+      },
+      "sig": "K12lWeKxe9eTnq0NmYFA/VhV51kNffRADnyvsnUgDF9gfF49af8bF1bmBlHO09UGOJtEDfmAI7FlkZNGbHb+BQ==",
       "alg": "ed25519",
       "keyId": "dev"
     }

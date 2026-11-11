@@ -9,7 +9,7 @@
  * The paths and response shapes follow docs/specs/vcfo-assist-agents/API.md.
  */
 import type { AttestationStatus, ResolveContext, RunCreate, RunUpdate, SuitePort } from '../engine/ports';
-import type { Catalog, EngagementSummary, PatchProposal, ProfileResult, ResolvePayload, ResolveResponse, SignedRecipe } from '../shared/types';
+import type { Catalog, CatalogNode, CatalogPack, CatalogSubAgent, EngagementSummary, PatchProposal, ProfileResult, ResolvePayload, ResolveResponse, SignedRecipe } from '../shared/types';
 
 export const DEFAULT_SUITE_ORIGINS: readonly string[] = ['http://localhost:3000', 'https://app.sbctrack.in'];
 
@@ -97,16 +97,71 @@ export function parseEngagements(json: unknown): EngagementSummary[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const TASK_KINDS = new Set(['portal-fill', 'file-builder', 'challan-prepare']);
+const STATUSES = new Set(['ready', 'beta', 'later']);
+
+function parseTask(s: Record<string, unknown>): CatalogSubAgent {
+  const title = String(s.title ?? s.name ?? s.id);
+  const form = typeof s.form === 'string' ? s.form : undefined;
+  const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+  return {
+    id: String(s.id),
+    name: form && form !== title ? `${form} (${title.charAt(0).toLowerCase()}${title.slice(1)})` : title,
+    form,
+    recipeId: str(s.recipeId),
+    stepId: str(s.stepId),
+    status: STATUSES.has(String(s.status)) ? (s.status as CatalogSubAgent['status']) : undefined,
+    pack: str(s.pack),
+    kind: TASK_KINDS.has(String(s.kind)) ? (s.kind as CatalogSubAgent['kind']) : undefined,
+    gates: Array.isArray(s.gates) ? s.gates.filter((g): g is string => typeof g === 'string') : undefined,
+    note: str(s.note),
+    path: Array.isArray(s.path) ? s.path.map(String) : undefined,
+  };
+}
+
+/** No catalog nests deeper than this; a deeper node is dropped, never followed. */
+export const MAX_TREE_DEPTH = 8;
+
+function parseNode(n: unknown, depth: number): CatalogNode | null {
+  if (!isObj(n) || depth > MAX_TREE_DEPTH) return null;
+  if (n.type === 'group' && Array.isArray(n.children)) {
+    return {
+      type: 'group',
+      id: String(n.id),
+      name: String(n.title ?? n.name ?? n.id),
+      children: n.children.map((c) => parseNode(c, depth + 1)).filter((c): c is CatalogNode => Boolean(c)),
+    };
+  }
+  return { type: 'task', ...parseTask(n) };
+}
+
 /**
- * Suite's catalog: `{ liveEnabled, mockHosts, agents: [{ id, title, subAgents: [{ id, title, form,
- * recipeId, status, portalHost }] }] }`. Anything but an explicit `true` keeps live use off. Suite's
- * `mockHosts` is ignored on purpose: the extension's own mock list cannot be widened by a server.
+ * Suite's catalog: `{ liveEnabled, liveHosts, packs, tree, agents: [{ id, title, subAgents }] }`.
+ * Anything but an explicit `true` keeps live use off. Suite's `mockHosts` is ignored on purpose:
+ * the extension's own mock list cannot be widened by a server. Without a `tree` (an older Suite),
+ * the panel builds one level from `agents`.
  */
 export function parseCatalog(json: unknown): Catalog {
   const body = isObj(json) && isObj(json.catalog) ? json.catalog : json;
   if (!isObj(body) || !Array.isArray(body.agents)) return DEFAULT_CATALOG;
   const contacts = isObj(body.firmContacts) ? body.firmContacts : {};
   const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  const agents = body.agents.filter(isObj).map((a) => ({
+    id: String(a.id),
+    name: String(a.title ?? a.name ?? a.id),
+    subAgents: (Array.isArray(a.subAgents) ? a.subAgents : []).filter(isObj).map(parseTask),
+  }));
+  const tree = Array.isArray(body.tree) ? body.tree.map((n) => parseNode(n, 1)).filter((n): n is CatalogNode => Boolean(n)) : undefined;
+  const packs: CatalogPack[] | undefined = Array.isArray(body.packs)
+    ? body.packs.filter(isObj).map((p) => ({
+        id: String(p.id),
+        title: String(p.title ?? p.id),
+        legalStatus: p.legalStatus === 'cs-cleared' ? 'cs-cleared' : 'mock-only',
+        // A pack counts as live only when Suite says so and it is cleared.
+        live: p.live === true && p.legalStatus === 'cs-cleared',
+        needsCsOpinionFirst: p.needsCsOpinionFirst === true,
+      }))
+    : undefined;
   return {
     liveAllowed: body.liveEnabled === true || body.liveAllowed === true,
     liveHosts: Array.isArray(body.liveHosts) ? body.liveHosts.map(String) : undefined,
@@ -114,21 +169,9 @@ export function parseCatalog(json: unknown): Catalog {
     extensionDisabled: Boolean(body.extensionDisabled),
     minExtensionVersion: typeof body.minExtensionVersion === 'string' ? body.minExtensionVersion : null,
     firmContacts: { emails: strings(contacts.emails).map((e) => e.toLowerCase()), phones: strings(contacts.phones).map((p) => p.replace(/\D/g, '').slice(-10)) },
-    agents: body.agents.filter(isObj).map((a) => ({
-      id: String(a.id),
-      name: String(a.title ?? a.name ?? a.id),
-      subAgents: (Array.isArray(a.subAgents) ? a.subAgents : []).filter(isObj).map((s) => {
-        const title = String(s.title ?? s.name ?? s.id);
-        const form = typeof s.form === 'string' ? s.form : undefined;
-        return {
-          id: String(s.id),
-          name: form && form !== title ? `${form} (${title.charAt(0).toLowerCase()}${title.slice(1)})` : title,
-          form,
-          recipeId: typeof s.recipeId === 'string' && s.recipeId ? s.recipeId : undefined,
-          stepId: typeof s.stepId === 'string' && s.stepId ? s.stepId : undefined,
-        };
-      }),
-    })),
+    agents,
+    tree,
+    packs,
   };
 }
 

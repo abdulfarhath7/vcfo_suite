@@ -1,0 +1,27 @@
+{
+  "$comment": "Sentinel values only, for the offline harness. Never a real person's data.",
+  "company": {
+    "proposedNames": ["Sentinel Alpha Private Limited", "Sentinel Beta Private Limited"],
+    "type": "New Company (Others)",
+    "class": "Private",
+    "category": "Company limited by shares",
+    "subCategory": "Indian non-government company",
+    "nicCode": "62011",
+    "aoaEntrenched": false,
+    "capital": { "equity": { "classes": 1, "className": "Equity", "authorizedShares": 100000, "subscribedShares": 10000, "faceValue": 10 } }
+  },
+  "registeredOffice": {
+    "line1": "Sentinel Tower 1", "line2": "Sentinel Road", "pincode": "500081", "area": "Gachibowli",
+    "city": "Hyderabad", "district": "Hyderabad", "state": "Telangana", "email": "office@sentinel.test", "mobile": "9581726353",
+    "longitude": "78.3489", "latitude": "17.4401", "rocOffice": "Registrar of Companies, Hyderabad"
+  },
+  "subscribers": [
+    { "index": 1, "kind": "individual", "isDirector": true, "firstName": "Subone", "surName": "Sentinelson", "father": { "firstName": "Fatherone", "surName": "Sentinelson" }, "gender": "Male", "dob": "01/02/1980", "nationality": "India", "placeOfBirth": "Hyderabad, Telangana", "citizenOfIndia": true, "residentInIndia": true, "pan": "SENTB1234C", "email": "sub1@sentinel.test", "mobile": "9481726350", "place": "Hyderabad", "shares": { "equity": { "class": "Equity", "number": 5000 } } }
+  ],
+  "directors": [
+    { "id": "e3", "index": 1, "firstName": "Dirone", "surName": "Sentinelli", "din": "SENTINEL", "pan": "SENTD1111E", "dob": "05/06/1975", "email": "dir1@sentinel.test", "mobile": "9681726354" }
+  ],
+  "agile": { "numberOfDirectors": 2 },
+  "moa": { "witness": { "name": "Sentinel Witness", "address": "Sentinel Lane, Hyderabad" } },
+  "aoa": { "witness": { "name": "Sentinel Witness", "addressDescriptionOccupation": "Sentinel Lane; Chartered Accountant", "dinPanMembership": "M-0000" } }
+}

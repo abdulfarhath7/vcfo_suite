@@ -1,0 +1,86 @@
+{
+  "id": "agile-pro-s",
+  "version": "1.0.0",
+  "title": "AGILE-PRO-S (INC-35)",
+  "subAgent": "agile-pro-s",
+  "verifiedAgainst": "capture",
+  "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+  "pack": "mca-v3",
+  "pages": [
+    {
+      "id": "agile",
+      "packPage": "agile-pro-s"
+    }
+  ],
+  "fields": [
+    {
+      "key": "registeredOffice.state",
+      "css": ".guideFieldNode.block1-state",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670-panel-panel_500603721-panel-guidedropdownlist_co_1280164639__",
+      "label": "2 State (same as entered in SPICe+)",
+      "transform": "none",
+      "required": true,
+      "page": "agile"
+    },
+    {
+      "key": "registeredOffice.district",
+      "css": ".guideFieldNode.block1-district",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670-panel-panel_500603721-panel-guidedropdownlist_co_1577004477__",
+      "label": "3 District (same as entered in SPICe+)",
+      "transform": "none",
+      "required": true,
+      "page": "agile"
+    },
+    {
+      "key": "agile.numberOfDirectors",
+      "css": ".guideFieldNode.b3-number-of-director",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670-panel_copy_copy-panel_1376092333-panel_628673295-guidetextbox__",
+      "label": "Number of director details to be entered",
+      "transform": "none",
+      "required": true,
+      "page": "agile"
+    },
+    {
+      "key": "registeredOffice.city",
+      "css": ".guideFieldNode.b5-declaration-place",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670-panel_2121992028-panel_1372729152-panel-guidetextbox__",
+      "label": "Declaration: place",
+      "transform": "none",
+      "required": false,
+      "note": "The place of signing. Suite uses the registered office city; change it on the portal if the declaration is signed elsewhere.",
+      "page": "agile"
+    }
+  ],
+  "actions": [
+    {
+      "id": "save-draft",
+      "label": "Save",
+      "kind": "safe",
+      "match": {
+        "text": "Save"
+      }
+    },
+    {
+      "id": "submit",
+      "label": "Submit",
+      "kind": "human",
+      "match": {
+        "text": "Submit"
+      }
+    }
+  ],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "DSC",
+    "SUBMIT"
+  ],
+  "expect": [
+    {
+      "id": "saved",
+      "kind": "text",
+      "pattern": "[Ss]aved successfully"
+    }
+  ]
+}
