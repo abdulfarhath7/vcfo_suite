@@ -3,8 +3,9 @@ import { login } from './helpers/login';
 
 /**
  * The client journey map on the client home page (docs/specs/client-journey-map/PLAN.md): the map
- * is the first card, the tracker selects a stage, a branch opens, the panel lists the checklist and
- * "Open step" goes to the step page. Needs `npm run db:seed-demo` (client kestrel is mid
+ * is the first and only card on top, showing the current stage (the stage tracker is off until it is
+ * redesigned, owner 11 Nov), a branch opens, the panel lists the checklist and "Open step" goes to the
+ * step page. Needs `npm run db:seed-demo` (client kestrel is mid
  * incorporation).
  */
 
@@ -24,16 +25,10 @@ test('client opens the journey map, a branch and the step panel', async ({ page 
   await login(page, 'client');
   await page.goto('/app/client/overview');
 
-  const stages = page.getByRole('group', { name: 'Journey stages' });
-  await expect(stages).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('main h2, main h3').first()).toHaveText(/Your journey/);
-
-  // Incorporation is the current stage, so it starts selected.
-  const incorporation = stages.getByRole('button', { name: /^Incorporation:/ });
-  await expect(incorporation).toHaveAttribute('aria-pressed', 'true');
-  await stages.getByRole('button', { name: /^Post-incorporation:/ }).click();
-  await incorporation.click();
-  await expect(incorporation).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('main h2, main h3').first()).toHaveText(/Your journey/, { timeout: 30_000 });
+  // Owner, 11 Nov: no stage tracker (and no runner) and no company card with number tiles.
+  await expect(page.getByRole('group', { name: 'Journey stages' })).toHaveCount(0);
+  await expect(page.getByText('Steps done')).toHaveCount(0);
 
   // Open a closed branch of the tree.
   const canvas = page.getByRole('application');
@@ -88,16 +83,14 @@ test('under reduced motion nothing loops and the map is still there', async ({ p
   await login(page, 'client');
   await page.goto('/app/client/overview');
 
-  const stages = page.getByRole('group', { name: 'Journey stages' });
-  await expect(stages).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId('journey-next')).toBeVisible();
+  await expect(page.getByTestId('journey-next')).toBeVisible({ timeout: 30_000 });
   const canvas = page.getByRole('application');
   await expect(canvas.locator('[role=button][aria-label*=" of "]').first()).toBeVisible();
   // No SVG edge animation and no CSS animation runs inside the journey card.
   await expect(canvas.locator('animate')).toHaveCount(0);
   // Nothing in the journey card moves: no infinite CSS or WAAPI animation, and the inline styles
-  // framer-motion writes (the runner's bob, the progress shimmer) do not change over time.
-  const card = page.locator('section, div').filter({ has: stages }).filter({ has: canvas }).last();
+  // framer-motion writes (the progress shimmer) do not change over time.
+  const card = page.locator('section, div').filter({ has: page.getByTestId('journey-next') }).filter({ has: canvas }).last();
   const looping = await page.evaluate(() => document.getAnimations().filter((a) => a.effect?.getTiming().iterations === Infinity).length);
   expect(looping).toBe(0);
   const styles = () => card.evaluate((el) => [...el.querySelectorAll('[style]')].map((n) => n.getAttribute('style')).join('|'));
@@ -105,6 +98,4 @@ test('under reduced motion nothing loops and the map is still there', async ({ p
   const first = await styles();
   await page.waitForTimeout(700);
   expect(await styles()).toBe(first);
-  // The tracker's runner is on the current stage (no run from the first stop).
-  await expect(stages.getByRole('button', { name: /^Incorporation:/ })).toHaveAttribute('aria-pressed', 'true');
 });

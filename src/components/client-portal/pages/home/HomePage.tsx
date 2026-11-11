@@ -3,11 +3,10 @@
 /**
  * Client portal Home (`/app/client/overview`), VCFO Spectrum (prototype
  * src/screens/client/HomeScreen.tsx). The journey map (`journey/JourneyMap`) comes first, then
- * the shared compact home card (`DashHero`, R-17), then
  * two columns: the wide one with the ST5 steps card and the Gantt timeline, the 360px one with
  * what the client owes and who holds the work. After the COI the compliance cards join and
  * Registrations runs full width. Below 1024px the columns dissolve and `order` sets the phone
- * card order, so phones show the same cards at 390px; the home card's tiles wrap there.
+ * card order, so phones show the same cards at 390px.
  *
  * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing.
  *
@@ -29,7 +28,7 @@ import '../../css/home-m.css';
 import { Island, St5Card } from '../incorporation/spectrum';
 import { useHome } from './useHome';
 import { useDownload, useNeedUpload } from './ui';
-import { ActivityCard, AlertsCard, DocsCard, HoldsCard, HomeCard, NeedsCard, SbcCard } from './CardsA';
+import { ActivityCard, AlertsCard, DocsCard, HoldsCard, NeedsCard, SbcCard } from './CardsA';
 import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, TimelineCard } from './CardsB';
 import { TimelineEditor } from './TimelineEditor';
 import { MeetingsCard } from './MeetingsCard';
@@ -170,8 +169,10 @@ export function HomePage() {
   return (
     <div className="cp-home">
       <Island className={FRAME}>
+        {/* Owner, 11 Nov: the journey diagram is the one card on top. The company card with the
+            number tiles (HomeCard) is off the client home: the cards beside it already say what is
+            waiting, and the numbers worried clients. */}
         <JourneyMap h={h} onNeed={upload} />
-        <HomeCard h={h} onUpload={upload} />
         {h.after ? (
           <>
             <div className={COLS}>
