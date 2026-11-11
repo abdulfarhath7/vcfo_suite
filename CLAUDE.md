@@ -80,6 +80,8 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
    Do not put secrets in the client bundle or commit `.env.local`. Do not bypass the seam
    "for just one query".
 8. Write docs and comments in plain full sentences. Do not commit unless the owner asks.
+9. **Ask the owner for the pull request's name every time before you create one**, and wait for
+   the answer. Never choose the title yourself, even when the owner says "raise the PR now".
 
 ## Conventions
 
