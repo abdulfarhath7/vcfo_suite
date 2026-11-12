@@ -11,7 +11,7 @@ import { ObligationsView } from '@/views/compliances/ObligationsView';
 import { RegistrationsView } from '@/views/compliances/RegistrationsView';
 import { useRegister } from '@/views/compliances/use-register';
 import { preIncorporationIdsOf, type ComplianceScope } from '@/views/compliances/compliance-scope';
-import { registrationRows } from '@/views/compliances/registration-rows';
+import { registrationTabCount } from '@/views/compliances/registration-rows';
 import { RecordDocumentsPanel, useRecordDocuments } from '@/views/client-record/RecordDocuments';
 import { DirectorsPanel } from '@/views/board-meetings/DirectorsPanel';
 import { StaffClientTeam } from '@/components/client-portal/pages/team';
@@ -77,10 +77,7 @@ export function RecordTabBar({
   const docs = useRecordDocuments(engagement.id);
   const register = useRegister(useMemo(() => new Date(), []));
   const obligationCount = register.rows.filter((r) => r.engagementId === engagement.id).length;
-  const regCount = useMemo(() => {
-    const rows = registrationRows([engagement], getStateForEngagement, new Date());
-    return rows.filter((r) => r.word !== 'Not needed').length;
-  }, [engagement, getStateForEngagement]);
+  const regCount = useMemo(() => registrationTabCount(engagement, getStateForEngagement, new Date()), [engagement, getStateForEngagement]);
 
   return (
     <SpectrumTabs

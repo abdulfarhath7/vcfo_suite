@@ -69,3 +69,17 @@ export function complianceEngagementsForRole<T extends IncorporationEngagement &
   if (role !== 'intern') return [...engagements];
   return engagements.filter((e) => isIncorporated(e, stateFor(e) ?? null));
 }
+
+/**
+ * Every role's gate for registration rows (the command palette, the client record's
+ * Registrations count): only incorporated engagements carry registrations, because a company
+ * has no statutory life before its Certificate of Incorporation. Unlike
+ * `complianceEngagementsForRole`, this applies to leads, managers, admins and the super admin
+ * alike.
+ */
+export function incorporatedEngagements<T extends IncorporationEngagement>(
+  engagements: readonly T[],
+  stateFor: (engagement: T) => IncorporationChecklistState | undefined,
+): T[] {
+  return engagements.filter((e) => isIncorporated(e, stateFor(e) ?? null));
+}

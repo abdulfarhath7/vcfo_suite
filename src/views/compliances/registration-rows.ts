@@ -6,6 +6,7 @@ import { coerceRegistrationWorkflowStage, type RegistrationWorkflowStage } from 
 import { computeDueDate } from '@/lib/projects/deadlines';
 import { windowForStep } from '@/lib/projects/schedule-windows';
 import { REG_ROWS } from '@/lib/client-portal/credentials';
+import { incorporatedEngagements } from '@/lib/compliance/incorporation-state';
 import type { Owner } from '@/components/ui/spectrum-chip';
 import { daysUntil, plainDate, type SixWord } from '@/lib/compliance/spectrum-status';
 
@@ -224,4 +225,20 @@ export function regDateLabel(r: RegistrationRow, now: Date): { text: string; cla
   const days = daysUntil(r.dueDate, now);
   if (days !== null && days < 0) return { text: `${-days}d late`, className: 'font-medium text-danger' };
   return { text: `By ${plainDate(r.dueDate, now)}`, className: r.word === 'Waiting' ? 'font-medium text-waiting' : undefined };
+}
+
+/**
+ * The client record's Registrations tab count. It follows the list's rule
+ * (`RegistrationsView` drops pre-COI engagements): before the Certificate of Incorporation
+ * there is no count and the badge is hidden; after it, the registrations that apply are
+ * counted as before.
+ */
+export function registrationTabCount(
+  engagement: Engagement,
+  stateFor: (engagement: Engagement) => Record<string, ChecklistItemStateSlice> | undefined,
+  now: Date,
+): number | undefined {
+  const inScope = incorporatedEngagements([engagement], stateFor);
+  if (!inScope.length) return undefined;
+  return registrationRows(inScope, stateFor, now).filter((r) => r.word !== 'Not needed').length;
 }

@@ -32,7 +32,7 @@ import {
 } from "@/lib/documents/vault-documents";
 import type { Role } from "@/lib/auth";
 import { getActiveCatalogItems, coerceStatusCode, type StatusCode } from "@/data/checklist";
-import { complianceEngagementsForRole } from "@/lib/compliance/incorporation-state";
+import { incorporatedEngagements } from "@/lib/compliance/incorporation-state";
 import { registrationRows } from "@/views/compliances/registration-rows";
 import {
   REG_LABEL,
@@ -389,7 +389,8 @@ export function CommandPalette() {
     }
 
     const regBase = `${complianceBaseForRole(role ?? "")}/registrations`;
-    const regEngagements = complianceEngagementsForRole(role, engagements, getStateForEngagement);
+    // Registrations exist only after the Certificate of Incorporation, for every staff role.
+    const regEngagements = incorporatedEngagements(engagements, getStateForEngagement);
     for (const r of registrationRows(regEngagements, getStateForEngagement, new Date())) {
       out.push({
         id: `reg:${r.key}`,

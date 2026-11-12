@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
+import { complianceEngagementsForRole, incorporatedEngagements } from '@/lib/compliance/incorporation-state';
 import {
   CERTIFICATE_OF_INCORPORATION_STEP_ID,
   isIncorporated,
@@ -99,5 +99,20 @@ describe('complianceEngagementsForRole', () => {
     for (const role of ['manager', 'admin', 'super_admin', 'client']) {
       expect(complianceEngagementsForRole(role, rows, noState).map((r) => r.id)).toEqual(['pre', 'post', 'reg']);
     }
+  });
+});
+
+describe('incorporatedEngagements', () => {
+  const pre = { id: 'pre', incorporationDate: null, stage: 'Pre-Incorporation' };
+  const post = { id: 'post', incorporationDate: '2026-02-14', stage: 'Pre-Incorporation' };
+  const regStart = { id: 'reg', incorporationDate: null, stage: 'Registration' };
+
+  it('drops pre-COI engagements and keeps incorporated ones, with no role exemption', () => {
+    expect(incorporatedEngagements([pre, post, regStart], () => undefined).map((e) => e.id)).toEqual(['post', 'reg']);
+  });
+
+  it('counts a terminal COI step as incorporated', () => {
+    const state = { [CERTIFICATE_OF_INCORPORATION_STEP_ID]: { status: 'completed' } };
+    expect(incorporatedEngagements([pre], () => state as never).map((e) => e.id)).toEqual(['pre']);
   });
 });

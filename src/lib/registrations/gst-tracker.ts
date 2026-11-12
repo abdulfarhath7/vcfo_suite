@@ -60,12 +60,19 @@ const isIso = (v: string | null | undefined): v is string => Boolean(v && /^\d{4
 /**
  * The registration's day from the firm calendar: the start of the step's schedule window
  * when a manager has set one; else the statutory deadline (two weeks after incorporation).
+ *
+ * A company has no GST life before its Certificate of Incorporation, so when the caller
+ * says the engagement is not incorporated yet (`incorporated: false`, from `isIncorporated`)
+ * there is no day at all, even if a schedule window was planned. Leaving `incorporated` out
+ * keeps the date-only behaviour for callers that have not asked.
  */
 export function gstSchedule(input: {
   schedule: EngagementSchedule | null | undefined;
   incorporationDate: string | null | undefined;
   rule: DeadlineRule;
+  incorporated?: boolean;
 }): GstSchedule {
+  if (input.incorporated === false) return { date: null, source: null };
   const win = windowForStep(input.schedule, GST_STEP_ID);
   if (win && isIso(win.from)) return { date: win.from, source: 'calendar' };
   if (!isIso(input.incorporationDate)) return { date: null, source: null };
