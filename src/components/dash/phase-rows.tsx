@@ -27,6 +27,8 @@ export interface PhaseStep {
   /** "2–3 days"; empty shows a dash. */
   time?: string;
   href?: string;
+  /** A row that is not a checklist step (Incorporation Documents): no "What's this?". */
+  noAbout?: boolean;
 }
 
 export interface Phase {
@@ -125,7 +127,7 @@ export function PhaseRows({
                           ) : (
                             s.title
                           )}
-                          {onAbout ? (
+                          {onAbout && !s.noAbout ? (
                             <button type="button" onClick={() => onAbout(s.n)} className="ml-2.5 whitespace-nowrap text-[11.5px] font-semibold text-brand-text hover:underline">
                               What&apos;s this?
                             </button>

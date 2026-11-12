@@ -12,6 +12,23 @@ import type { SuperEngagementDetail, SuperJourneyStep } from '@/lib/super/super-
 import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
 import { cn } from '@/lib/utils';
+import { INCORPORATION_DOCUMENTS_TITLE } from '@/components/doc-pack/IncorporationDocumentsJourneyRow';
+
+/** INCORPORATION DOCUMENTS follows KYC Review & DSC (owner, 12 November 2026); not a checklist step. */
+function incorporationDocumentsRow(kyc: SuperJourneyStep): PhaseStep {
+  return {
+    n: -1,
+    code: 'Docs',
+    title: INCORPORATION_DOCUMENTS_TITLE.toUpperCase(),
+    owner: 'sbc',
+    status: kyc.kind === 'done' ? 'Open' : 'Not started',
+    tone: kyc.kind === 'done' ? 'prog' : 'idle',
+    time: 'DIR-2, DIR-8, INC-9 … per director',
+    // The documents page sits beside the step pages the journey already links to.
+    href: kyc.href ? kyc.href.replace(/\/step\/[^/]+$/, '/documents') : undefined,
+    noAbout: true,
+  };
+}
 
 /**
  * The whole journey for one engagement, as the firm sees it (ST5, rule R-22).
@@ -131,12 +148,12 @@ function phaseRows(detail: SuperEngagementDetail): Phase[] {
       status,
       tone: status === 'Done' ? 'ok' : status === 'In progress' ? 'prog' : 'idle',
       // SB-01: Part B runs in MCA form order and shows its MCA section; `n` stays the journey position.
-      steps: orderByMcaSection(group.steps, ({ step }) => step.id).map(({ step, n }): PhaseStep => {
+      steps: orderByMcaSection(group.steps, ({ step }) => step.id).flatMap(({ step, n }): PhaseStep[] => {
         const chip = statusOf(step);
         const item = items.get(step.id);
         const owner = step.awaitingReview ? 'manager' : step.owner === 'client' ? 'client' : 'sbc';
         const code = partBStepDisplayLabel(step.id);
-        return {
+        const row: PhaseStep = {
           n,
           ...(code ? { code } : {}),
           title: step.title,
@@ -147,6 +164,7 @@ function phaseRows(detail: SuperEngagementDetail): Phase[] {
           time: item ? getChecklistStepTimelineLabel(item) : undefined,
           href: step.href,
         };
+        return step.id === 'pre-7' ? [row, incorporationDocumentsRow(step)] : [row];
       }),
     };
   });
