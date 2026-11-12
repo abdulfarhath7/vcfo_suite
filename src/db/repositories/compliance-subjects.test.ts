@@ -164,13 +164,13 @@ describe('compliance inputs', () => {
     expect(inserts[0]!.values).not.toHaveProperty('submittedAt');
     expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), expect.any(String), 'reg-4', {
       responses: { gstinNumber: '29AAKCA4821M1Z5', gstRegistrationDate: '2026-11-25' },
-    });
+    }, { serverCopy: true });
   });
 
   it('lets the project lead record the LUT tracker', async () => {
     assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: row() });
     expect(await inputs.saveSubjectFields(ctx('intern'), { engagementId: OWN, kind: 'registration', key: 'reg-5', side: 'sbc', values: { arn: 'AD2911260012345' } })).toBe(true);
-    expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), expect.any(String), 'reg-5', { responses: { lutArn: 'AD2911260012345' } });
+    expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), expect.any(String), 'reg-5', { responses: { lutArn: 'AD2911260012345' } }, { serverCopy: true });
   });
 
   it.each(['manager', 'intern'] as const)('reads and writes nothing on a foreign engagement (%s)', async (role) => {

@@ -52,12 +52,18 @@ export async function patchChecklistItem(
   appEngagementId: string,
   itemId: string,
   patch: Partial<ChecklistItemStateSlice>,
+  /**
+   * `serverCopy`: the patch is a repository's own copy of values the caller was already
+   * allowed to save elsewhere (the GST and LUT trackers' GSTIN and LUT values), not the
+   * client editing the step, so the client's step-order lock does not apply.
+   */
+  opts?: { serverCopy?: boolean },
 ): Promise<EngagementChecklistState> {
   const existing = await getEngagementById(ctx, engagementDbId(appEngagementId));
   if (!existing) throw new Error('Engagement not found or not permitted');
 
   const persisted = checklistStateFromRow(existing);
-  if (ctx.role === 'client') {
+  if (ctx.role === 'client' && !opts?.serverCopy) {
     const lockMessage = sequentialLockMessage(itemId, persisted);
     if (lockMessage) {
       throw new Error(lockMessage);

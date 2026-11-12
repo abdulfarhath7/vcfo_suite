@@ -268,7 +268,7 @@ export async function saveSubjectFields(
   const mirror = tracker ? trackerChecklistMirror(input.key, Object.fromEntries(entries)) : null;
   if (mirror) {
     try {
-      await patchChecklistItem(ctx, appEngagementId(scope.dbId), input.key, { responses: mirror });
+      await patchChecklistItem(ctx, appEngagementId(scope.dbId), input.key, { responses: mirror }, { serverCopy: true });
     } catch (e) {
       console.error('[compliance-inputs] tracker checklist copy failed', input.key, e);
     }
