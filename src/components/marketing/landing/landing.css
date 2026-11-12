@@ -72,8 +72,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .lead { font-size: 19px; line-height: 1.55; color: var(--lp-ink-muted); max-width: 56ch; }
 .lp .body { font-size: 16px; line-height: 1.65; color: var(--lp-ink-muted); max-width: 58ch; }
 .lp .mono { font-family: var(--lp-font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--lp-ink-faint); }
-.lp .section { position: relative; padding: 112px 0; overflow-x: clip; scroll-margin-top: 68px; }
-.lp .section-head { margin-bottom: 56px; }
+.lp .section { position: relative; padding: 72px 0; overflow-x: clip; scroll-margin-top: 68px; }
+.lp .section-head { margin-bottom: 40px; }
 .lp .section-head .body { margin-top: 18px; }
 .lp .stage { display: inline-flex; align-items: center; gap: 10px; height: 28px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid var(--lp-line-soft); background: var(--lp-raised); font-size: 12px; font-weight: 600; color: var(--lp-ink-muted); margin-bottom: 20px; }
 .lp .stage b { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 999px; background: var(--lp-brand); color: var(--lp-on-brand); font-family: var(--lp-font-mono); font-size: 11px; font-weight: 500; }
@@ -195,8 +195,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 .lp .story { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: start; }
 .lp .story-steps { display: grid; gap: 8px; }
-.lp .story-step { padding: 28px 0 28px 28px; border-left: 2px solid var(--lp-line); min-height: 52vh; display: flex; flex-direction: column; justify-content: center; transition: border-color 300ms ease; }
-.lp .story-step:first-child { min-height: 40vh; }
+.lp .story-step { padding: 28px 0 28px 28px; border-left: 2px solid var(--lp-line); min-height: 34vh; display: flex; flex-direction: column; justify-content: center; transition: border-color 300ms ease; }
+.lp .story-step:first-child { min-height: 24vh; }
 .lp .story-step .h3 { color: var(--lp-ink-faint); transition: color 300ms ease; font-size: 22px; letter-spacing: -0.01em; }
 .lp .story-step p { margin-top: 10px; font-size: 15px; line-height: 1.6; color: var(--lp-ink-faint); max-width: 44ch; transition: color 300ms ease; }
 .lp .story-step .whos { display: flex; gap: 6px; margin-top: 14px; opacity: 0.45; transition: opacity 300ms ease; }
@@ -396,6 +396,10 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 .lp .cal-ui { margin-top: 64px; }
 .lp .cal-ui .h3 { margin-bottom: 16px; }
+/* The client calendar sits beside its caption, at a size that keeps the screenshot sharp. */
+.lp .cal-ui > .reveal:first-child { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); column-gap: 40px; align-items: center; }
+.lp .cal-ui > .reveal:first-child .h3 { grid-column: 1 / -1; }
+.lp .cal-ui > .reveal:first-child .caption { margin-top: 0; font-size: 15px; line-height: 1.6; }
 .lp .cal-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .lp .cal-two figure { margin: 0; padding: 10px 10px 4px; }
 .lp .cal-two .frame { border-radius: var(--lp-r-lg); box-shadow: none; }
@@ -484,7 +488,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .faq summary .icon { color: var(--lp-ink-faint); transition: transform 240ms var(--lp-ease); }
 .lp .faq details[open] summary .icon { transform: rotate(180deg); }
 .lp .faq .a { padding: 0 0 22px; font-size: 15px; line-height: 1.65; color: var(--lp-ink-muted); max-width: 62ch; }
-.lp .cta { text-align: center; padding: 140px 0; overflow: hidden; }
+.lp .cta { text-align: center; padding: 96px 0; overflow: hidden; }
 .lp .cta .glow-a { width: 900px; height: 600px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .lp .cta .big { position: relative; font-size: clamp(2.1rem, 4.6vw, 3.6rem); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; }
 .lp .cta .big span { display: block; opacity: 0; transform: translateY(14px); transition: opacity 700ms var(--lp-ease), transform 700ms var(--lp-ease); transition-delay: calc(var(--i) * 140ms); }
@@ -545,6 +549,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .sg { opacity: 1 !important; }
   .lp .split, .lp .ask, .lp .comply-grid { grid-template-columns: 1fr; gap: 40px; }
   .lp .cal-two { grid-template-columns: 1fr; }
+  .lp .cal-ui > .reveal:first-child { grid-template-columns: 1fr; }
+  .lp .cal-ui > .reveal:first-child .caption { margin-top: 20px; }
   .lp .trust { grid-template-columns: 1fr 1fr; }
   .lp .footer-grid { grid-template-columns: 1fr 1fr; }
   .lp .tab-head { grid-template-columns: 1fr; gap: 16px; }
@@ -576,7 +582,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 @media (max-width: 639px) {
   .lp { --lp-gutter: 16px; }
-  .lp .section { padding: 72px 0; }
+  .lp .section { padding: 48px 0; }
   .lp .hero { padding: 48px 0 64px; }
   .lp .hero-copy .h1 .swap-line { white-space: normal; }
   .lp .hero-ctas .btn { width: 100%; }
