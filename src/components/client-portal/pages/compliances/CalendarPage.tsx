@@ -199,12 +199,21 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   const fyRows = useMemo(() => (statOn ? statFy : []), [statOn, statFy]);
   const taskFy = useMemo(() => allTasks.filter((r) => fyOfIso(r.dueDate) === fy), [allTasks, fy]);
   const fyTasks = useMemo(() => (tasksOn ? taskFy : []), [tasksOn, taskFy]);
+  // Before incorporation the company has no filings of its own, so the rail (next deadline,
+  // coming up) uses the SBC statutory calendar of this year, from today on: a past statutory date
+  // is not an overdue filing of a company that does not exist yet.
+  const sbcTodayQ = useStatutoryCalendar(fyKeyFromStartYear(todayFy));
+  const railSbc = useMemo(
+    () => (!after && statOn ? sbcInArea((sbcTodayQ.data?.calendar.deadlines ?? []).map(sbcAsRow), area).filter((r) => r.dueDate >= today) : []),
+    [after, statOn, sbcTodayQ.data, area, today],
+  );
   const railRows = useMemo(
     () => [
       ...(after && statOn ? [...(qToday.data?.rows ?? []), ...(nearFyEnd ? qNext.data?.rows ?? [] : [])] : []),
+      ...railSbc,
       ...(tasksOn ? allTasks.filter((r) => fyOfIso(r.dueDate) === todayFy || (nearFyEnd && fyOfIso(r.dueDate) === todayFy + 1)) : []),
     ],
-    [after, statOn, tasksOn, allTasks, todayFy, qToday.data, qNext.data, nearFyEnd],
+    [after, statOn, tasksOn, allTasks, todayFy, qToday.data, qNext.data, nearFyEnd, railSbc],
   );
   const monthAll = useMemo(() => fyRows.filter((r) => r.dueDate.startsWith(month)), [fyRows, month]);
   const monthTasks = useMemo(() => fyTasks.filter((r) => r.dueDate.startsWith(month)), [fyTasks, month]);
@@ -380,7 +389,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
         </div>
       </div>
 
-      <div className="cal-layout" style={{ display: 'grid', gridTemplateColumns: after ? 'minmax(0,1fr) 340px' : 'minmax(0,1fr)', gap: 16, alignItems: 'start' }}>
+      <div className="cal-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 16, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           <div className="card t" data-calbody="" data-view={view} style={{ padding: 12, position: 'relative' }}>
             {emptyOverlay ? (
@@ -415,7 +424,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
                   Try again
                 </button>
               </div>
-            ) : view === 'month' || !after ? (
+            ) : view === 'month' ? (
               <MonthGrid
                 month={month}
                 rows={loading ? [] : monthRows}
@@ -440,7 +449,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
                 />
               </Island>
             ) : (
-              <TimelineView fyStart={fy} rows={[...filterArea(fyRows, area), ...fyTasks]} today={today} onOpen={openDetail} />
+              <TimelineView fyStart={fy} rows={[...filterArea(fyRows, area), ...sbcInArea(sbcFy, area), ...fyTasks]} today={today} onOpen={openDetail} />
             )}
             {loading && view === 'month' ? (
               <Island className="absolute inset-x-3.5 bottom-3.5 top-11">
@@ -452,7 +461,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
         <Rail
           after={after}
           loading={loading}
-          monthAll={[...monthAll, ...monthTasks]}
+          monthAll={[...monthAll, ...(after ? [] : sbcInArea(sbcMonth, area).filter((r) => r.dueDate >= today)), ...monthTasks]}
           month={month}
           railRows={railRows}
           nowKey={nowKey}
@@ -691,9 +700,9 @@ export function Rail({
 }) {
   const { today } = useComp();
   const expiries = <ExpiriesCard showCompany={false} mayRenew={false} className={railCard} />;
-  // Before incorporation the calendar card already says compliances have not started; a second
-  // copy in the rail repeated it (twice in a row on a phone).
-  if (!after) return <Island className="cal-rail">{expiries}</Island>;
+  // Before incorporation the rail still shows its cards: the caller fills them from the SBC
+  // statutory calendar (owner, 12 Nov). `after` only tells the loading state apart.
+  void after;
   if (loading)
     return (
       <Island className="cal-rail">
