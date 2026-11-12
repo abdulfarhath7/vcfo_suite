@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { adminNameResolver } from '@/lib/super/super-clients-list';
 
 /**
  * The firm's people and the manager-to-admin lines, for the super admin's assign dialogs, the
@@ -64,8 +65,7 @@ export function useSuperStaff() {
       firmAdmins,
       adminOfManager,
       /** The admin over a manager, by the manager's profile id. */
-      adminNameOf: (managerId: string | null | undefined) =>
-        (managerId ? adminOfManager.get(managerId)?.name : undefined) ?? null,
+      adminNameOf: adminNameResolver(all, lines.data ?? []),
     };
   }, [people.data, people.isPending, people.isError, lines.data, lines.isPending, lines.isError]);
 }

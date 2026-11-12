@@ -262,3 +262,11 @@ export function alertCopy(input: {
   parts.push('A renewal task is open and a draft request for the renewal documents is ready to review and send.');
   return { title, body: parts.join(' '), taskTitle: `Renew ${what} (${input.companyName})` };
 }
+
+/** The items a calendar shows: not renewed, expired or expiring within `days`, soonest first. */
+export function openExpiryItems<T extends { renewedAt: string | null; daysLeft: number; expiresOn: string }>(
+  items: readonly T[] | undefined,
+  days: number,
+): T[] {
+  return (items ?? []).filter((x) => !x.renewedAt && x.daysLeft <= days).sort((a, b) => a.expiresOn.localeCompare(b.expiresOn));
+}

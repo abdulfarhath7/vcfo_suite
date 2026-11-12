@@ -19,7 +19,6 @@ import {
   HEALTH_LABEL,
   idleLabel,
   stepCode,
-  superAreaOf,
   superPhaseTrack,
   superStageWord,
   superStateChip,
@@ -35,11 +34,8 @@ import { shortCompany, todayKey } from '@/components/super/parts/super-text';
 import { plainDay } from '@/lib/date-format';
 import { useSuperOverview } from '@/hooks/use-super-overview';
 import { useSuperInsights } from '@/views/super/use-super-insights';
-import {
-  needsAttention,
-  SUPER_PROJECTS_HREF,
-  type SuperEngagementSummary,
-} from '@/lib/super/super-overview';
+import { SUPER_PROJECTS_HREF, type SuperEngagementSummary } from '@/lib/super/super-overview';
+import { filterSuperClients, superNextDue } from '@/lib/super/super-clients-list';
 import { cn } from '@/lib/utils';
 
 /**
@@ -72,13 +68,6 @@ function parseFilter(value: string | null): Filter {
   return value === 'attention' || value === 'firm' || value === 'client' ? value : 'all';
 }
 
-function matchesFilter(summary: SuperEngagementSummary, filter: Filter): boolean {
-  if (filter === 'attention') return needsAttention(summary);
-  if (filter === 'firm') return summary.currentStep?.owner === 'firm';
-  if (filter === 'client') return summary.currentStep?.owner === 'client';
-  return true;
-}
-
 function SuperProjectsInner() {
   const params = useSearchParams();
   const router = useRouter();
@@ -99,37 +88,18 @@ function SuperProjectsInner() {
     overview && overview.engagements.length === 0
       ? 'No clients yet. Each client appears here once an admin starts its project.'
       : 'No client matches these filters';
-  const rows = useMemo(() => {
-    if (!overview) return [];
-    return overview.engagements.filter(
-      (summary) =>
-        matchesFilter(summary, filter) &&
-        (!stage || superStageWord(summary) === stage) &&
-        (!area || superAreaOf(summary) === area) &&
-        (!admin || (adminOf(summary.managerId) ?? 'Unassigned') === admin) &&
-        (!manager || (summary.managerName ?? 'Unassigned') === manager),
-    );
-  }, [overview, filter, stage, area, admin, manager, adminOf]);
+  // The filters are shared with the server's Excel export (GL-06).
+  const rows = useMemo(
+    () => (overview ? filterSuperClients(overview.engagements, { filter, stage, area, admin, manager }, adminOf) : []),
+    [overview, filter, stage, area, admin, manager, adminOf],
+  );
 
   /**
    * The client's next date: the end of the current step's window (insights), else the earliest
    * open filing, from the insights read or the overview's 90-day filing window.
    */
   const insights = useSuperInsights().data;
-  const nextDue = useMemo(() => {
-    const out = new Map<string, string>();
-    for (const c of insights?.clients ?? []) {
-      const due = c.currentStepDue ?? c.nextDueDate;
-      if (due) out.set(c.summary.id, due.slice(0, 10));
-    }
-    for (const filing of overview?.filings ?? []) {
-      if (filing.status === 'filed') continue;
-      if (insights?.clients.some((c) => c.summary.id === filing.engagementId)) continue;
-      const current = out.get(filing.engagementId);
-      if (!current || filing.dueDate < current) out.set(filing.engagementId, filing.dueDate);
-    }
-    return out;
-  }, [overview, insights]);
+  const nextDue = useMemo(() => superNextDue(overview, insights), [overview, insights]);
 
   const seo = (
     <SEO
@@ -224,24 +194,8 @@ function SuperProjectsInner() {
               <UserPlus aria-hidden />
               Assign client
             </Button>
-            {/* GL-06: every client the chips keep, in the server's urgency order. */}
-            <ExportToExcelButton
-              title="Clients"
-              columns={['Client', 'Now at', 'Project lead', 'Progress', 'Admin', 'Manager', 'Stage', 'Next', 'Health']}
-              rows={() =>
-                rows.map((row) => [
-                  row.companyName,
-                  [stepCode(row.currentStep?.id), row.currentStep?.title ?? 'Every step is done'].filter(Boolean).join(' '),
-                  row.leadName ?? null,
-                  `${row.progress.pct}%`,
-                  adminOf(row.managerId),
-                  row.managerName ?? 'Unassigned',
-                  superStageWord(row),
-                  nextDue.get(row.id) ?? null,
-                  superStateChip(row).word,
-                ])
-              }
-            />
+            {/* GL-06: the server rebuilds every client the chips keep, in its urgency order. */}
+            <ExportToExcelButton title="Clients" source={{ source: 'super-clients', filter, stage, area, admin, manager }} />
           </>
         }
         flush

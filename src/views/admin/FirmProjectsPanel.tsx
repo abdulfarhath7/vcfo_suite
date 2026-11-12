@@ -15,22 +15,21 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FilterChip, FilterChipRow } from '@/components/ui/filter-chip';
 import { AvatarStack } from '@/components/ui/avatar-stack';
 import { SavedViews, type ViewFilters } from '@/components/ui/saved-views';
-import { engagementChangedAt } from '@/components/staff/today/today-rows';
-import { CLIENT_LIST_VIEWS, useClientTableTools, windowEndsThisWeek } from '@/views/admin/clients-table-tools';
-import { isIncorporated } from '@/lib/compliance/incorporation-state';
+import { CLIENT_LIST_VIEWS, useClientTableTools } from '@/views/admin/clients-table-tools';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import { ClientIdentityTile } from '@/views/client-record/client-identity';
 import { AssignClientDialog, assignManagerInDb } from '@/views/admin/clients/AssignClientDialog';
 import {
   CLIENT_HEALTHS,
   ClientsLegend,
-  HEALTH_RANK as CLIENT_HEALTH_RANK,
   HEALTH_TONE,
   HolderSquare,
   STAGE_CHIP_TONE,
   STAGE_WORD,
-  clientRowFacts,
+  nextScheduleDate,
+  shortDate,
 } from '@/views/admin/clients/client-row';
+import { firmManagerName, firmProjectRows, type FirmProjectPhase } from '@/lib/projects/firm-project-rows';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -38,25 +37,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
-import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
+import { STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
-import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
-import { sep } from '@/lib/date-format';
-import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
-
-/** The earliest window end that is still ahead (or the latest one if all have passed). */
-function nextScheduleDate(schedule: EngagementSchedule | null | undefined, todayIso: string): string | null {
-  const ends = [schedule?.incorporation?.to, ...Object.values(schedule?.steps ?? {}).map((w) => w?.to)].filter(
-    (d): d is string => Boolean(d),
-  );
-  if (ends.length === 0) return null;
-  const ahead = ends.filter((d) => d >= todayIso).sort();
-  return ahead[0] ?? ends.sort().at(-1) ?? null;
-}
-function shortDate(iso: string): string {
-  return sep(new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }));
-}
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -67,7 +50,7 @@ async function fetchManagers(): Promise<ManagerOption[]> {
   return (body.managers ?? []) as ManagerOption[];
 }
 
-type PhaseFilter = 'all' | 'Pre-Incorporation' | 'Post-Incorporation';
+type PhaseFilter = FirmProjectPhase;
 
 /**
  * `?view=` keys this list understands: the saved views, plus the admin home card's
@@ -134,56 +117,14 @@ export function FirmProjectsPanel({
     queryFn: fetchManagers,
     staleTime: 5 * 60_000,
   });
-  const managerName = (id: string | undefined | null) => {
-    if (!id) return 'Unassigned';
-    return managersQuery.data?.find((m) => m.id === id)?.name ?? 'Project manager';
-  };
+  const managerName = (id: string | undefined | null) => firmManagerName(managersQuery.data, id);
 
-  const rows = useMemo(() => {
-    // Every client shows, incorporating and compliance (prototype admin Clients).
-    return engagements
-      .filter((e) => (phase === 'all' ? true : e.stage === phase))
-      .filter((e) => (!manager ? true : (e.managerId ?? e.adminId ?? 'unassigned') === manager))
-      .filter((e) => (!scope ? true : isIncorporated(e, getStateForEngagement(e)) === (scope === 'compliance')))
-      .map((e) => {
-        const state = getStateForEngagement(e);
-        const progress = internCompanyPhaseProgress(e, state);
-        const leadIds = [...new Set([e.internId, ...(e.leadIds ?? [])].filter((id): id is string => Boolean(id)))];
-        const done = progress.phases.reduce((n, p) => n + p.done, 0);
-        const total = progress.phases.reduce((n, p) => n + p.total, 0);
-        return {
-          eng: e,
-          reason: deriveStuckReason(e, state),
-          step: progress.currentLabel.split(' · ').slice(0, 2).join(' · '),
-          phaseDone: progress.phases.map((p) => p.done),
-          phaseTotals: progress.phases.map((p) => p.total),
-          phaseNames: progress.phases.map((p) => p.title),
-          pct: total ? Math.round((done / total) * 100) : 0,
-          leadNames: leadIds.map((id) => leadName(id)).filter((n): n is string => Boolean(n)),
-          changedAt: engagementChangedAt(state),
-          facts: clientRowFacts(e, state),
-        };
-      })
-      .filter((r) => (!stuck ? true : r.reason === stuck))
-      .filter((r) => (!health ? true : r.facts.health === health))
-      .filter((r) =>
-        show === 'overdue'
-          ? r.eng.health === 'overdue'
-          : show === 'week'
-            ? windowEndsThisWeek(r.eng.schedule)
-            : show === 'waiting'
-              ? r.reason === 'waiting_client'
-              : show === 'stuck'
-                ? r.reason !== 'on_track'
-                : true,
-      )
-      .sort(
-        (a, b) =>
-          CLIENT_HEALTH_RANK[a.facts.health] - CLIENT_HEALTH_RANK[b.facts.health] ||
-          a.eng.companyName.localeCompare(b.eng.companyName),
-      );
+  // The rows, filters and order are shared with the server's Excel export (GL-06).
+  const rows = useMemo(
+    () => firmProjectRows(engagements, getStateForEngagement, leadName, { phase, stuck, manager, show, scope, health }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- leadName reads `leads`, listed here
-  }, [engagements, getStateForEngagement, phase, stuck, manager, show, scope, leads, health]);
+    [engagements, getStateForEngagement, phase, stuck, manager, show, scope, leads, health],
+  );
 
   const managerIds = new Set(
     engagements.map((e) => e.managerId ?? e.adminId ?? 'unassigned'),
@@ -520,23 +461,8 @@ export function FirmProjectsPanel({
       )}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="min-w-0 flex-1">{filters}</div>
-        {/* GL-06: every row the filters keep, in the grid's order (worst health first). */}
-        <ExportToExcelButton
-          title="Projects"
-          columns={['Client', 'Now at', 'Project lead', 'Progress', 'Manager', 'Stage', 'Next', 'Health']}
-          rows={() =>
-            rows.map((r) => [
-              r.eng.companyName,
-              r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : null,
-              r.leadNames[0] ?? null,
-              `${r.pct}%`,
-              managerName(r.eng.managerId ?? r.eng.adminId),
-              STAGE_WORD[r.facts.stage],
-              nextScheduleDate(r.eng.schedule, todayIso),
-              r.facts.health,
-            ])
-          }
-        />
+        {/* GL-06: the server rebuilds every row the filters keep, in the grid's order (worst health first). */}
+        <ExportToExcelButton title="Projects" source={{ source: 'firm-projects', phase, stuck, manager, show, scope, health }} />
       </div>
       {rows.length === 0 && !engagementsLoading ? (
         <div className="md:hidden">

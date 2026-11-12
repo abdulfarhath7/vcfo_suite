@@ -11,7 +11,8 @@ import { DashSection } from '@/components/dash/DashSection';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
+import { calendarSelection, expiryLabel, sbcTag } from '@/lib/compliance/calendar-selection';
 import { useExcelExport, type ExcelExportInput } from '@/hooks/use-excel-export';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { FilterSelect } from '@/components/ui/native-select';
@@ -46,7 +47,6 @@ import {
   ALL_COMPANIES,
   normaliseCompanyParam,
   pickedCompany,
-  rowsForCompany,
   soleCompany,
   type ComplianceScope,
 } from '@/views/compliances/compliance-scope';
@@ -73,16 +73,15 @@ import { UrgencyPill } from '@/components/compliances/TaskMarks';
 import { useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
 import { fyRange, taskAsFilingRow, taskHintOf, taskIdOfRow, taskStatus } from '@/views/compliances/tasks/task-calendar';
 import { statHref, taskHref } from '@/views/compliances/tasks/task-list';
-import { showStat, showTasks, type CatFilter } from '@/views/compliances/tasks/task-model';
+import { showStat, type CatFilter } from '@/views/compliances/tasks/task-model';
 import { sep } from '@/lib/date-format';
 import { useExpiries, type ExpiryItem } from '@/hooks/use-expiries';
-import { ExpiriesCard, expiryTone, openExpiries } from '@/components/compliances/ExpiriesCard';
+import { ExpiriesCard, expiryTone } from '@/components/compliances/ExpiriesCard';
 import { daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
 import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
 import { StatutoryCalendarImport } from '@/components/admin/StatutoryCalendarImport';
 import { fyKeyFromStartYear } from '@/lib/statutory-calendar/fy';
-import { deadlineTagLabel, statutoryArea } from '@/lib/statutory-calendar/acts';
-import { ACT_META, type StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
+import type { StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
 import { statutoryStatus } from '@/components/admin/statutory-calendar-utils';
 
 type CalendarView = 'month' | 'year' | 'timeline' | 'statutory';
@@ -150,8 +149,6 @@ export function ComplianceCalendarView({
   const fyStartYear = financialYearForDate(month).startYear;
   const query = useFilings({ fyStartYear });
   const scopedRows = useMemo(() => query.data?.rows ?? [], [query.data?.rows]);
-  const allRows = useMemo(() => rowsForCompany(scopedRows, companyId), [scopedRows, companyId]);
-  const rows = useMemo(() => (showStat(cat) ? allRows : []), [allRows, cat]);
 
   // Non-statutory tasks of the financial year in view (C-3), by their end date.
   const range = fyRange(fyStartYear);
@@ -161,7 +158,6 @@ export function ComplianceCalendarView({
   const monthKey = monthKeyForDate(month);
   const nowKey = monthKeyForDate(now);
   const months = useMemo(() => financialYearMonths(fyStartYear), [fyStartYear]);
-  const monthRows = useMemo(() => sortByDueDate(rowsInMonth(rows, monthKey)), [rows, monthKey]);
 
   /**
    * The SBC statutory calendar (the file the admin imports) for the year in view. Every role sees
@@ -169,42 +165,31 @@ export function ComplianceCalendarView({
    * (owner, 12 Nov 2026). It counts as statutory, and the area tabs narrow it with the filings.
    */
   const statutoryQuery = useStatutoryCalendar(fyKeyFromStartYear(fyStartYear));
-  const sbcAll = useMemo(
-    () =>
-      showStat(cat)
-        ? (statutoryQuery.data?.calendar.deadlines ?? []).map((d) => ({ ...d, area: statutoryArea(d) }))
-        : [],
-    [statutoryQuery.data, cat],
-  );
-  const sbcMonth = useMemo(() => sbcAll.filter((d) => d.date.startsWith(monthKey)), [sbcAll, monthKey]);
 
-  // Area chips count what the view shows: this month in month view, the year otherwise.
-  const counted = view === 'month' ? monthRows : rows;
-  const countedSbc = view === 'month' ? sbcMonth : sbcAll;
-  const areas = useMemo(
-    () => [...new Set([...counted.map((row) => row.compliance), ...countedSbc.map((d) => d.area)])].sort((a, b) => a.localeCompare(b)),
-    [counted, countedSbc],
-  );
-  const areasOn = useMemo(() => areaPick.filter((a) => areas.includes(a)), [areaPick, areas]);
-  const allAreas = areasOn.length === 0;
-  const areaOn = areasOn.length === 1 ? areasOn[0]! : ALL_AREAS;
-  const sbcShown = useMemo(() => sbcAll.filter((d) => allAreas || areasOn.includes(d.area)), [sbcAll, allAreas, areasOn]);
-  const sbcMonthShown = useMemo(() => sbcShown.filter((d) => d.date.startsWith(monthKey)), [sbcShown, monthKey]);
-  const inArea = (row: FilingRow) => allAreas || areasOn.includes(row.compliance);
-  // Tasks have no regulator: they show under the All area only.
-  const tasks = useMemo(() => (showTasks(cat) && allAreas ? allTasks : []), [allTasks, cat, allAreas]);
-  const monthTasks = useMemo(() => tasks.filter((t) => t.dueDate.startsWith(monthKey)), [tasks, monthKey]);
   // Expiries (DSC, DIR-3 KYC, licences) on their expiry date, from the dates typed on the steps.
   // Like tasks they have no area, so an area pick hides them; the Non-statutory filter does too.
   // Only a company picked by hand narrows them: a lead whose calendar holds one incorporated
   // company still sees the DSC expiries of the projects still being incorporated.
   const expiryCompany = !sole && companyId !== ALL_COMPANIES ? companyId : null;
   const expiryQuery = useExpiries({ engagementId: expiryCompany });
-  const expiries = useMemo(
-    () => (cat !== 'non-statutory' && allAreas ? openExpiries(expiryQuery.data, Number.POSITIVE_INFINITY) : []),
-    [expiryQuery.data, cat, allAreas],
+  // What the calendar shows, selected as the server's Excel export selects it (GL-06).
+  const sel = useMemo(
+    () =>
+      calendarSelection({
+        scopedRows,
+        companyId,
+        cat,
+        view,
+        monthKey,
+        areaPick,
+        allTasks,
+        expiryItems: expiryQuery.data,
+        deadlines: statutoryQuery.data?.calendar.deadlines ?? [],
+      }),
+    [scopedRows, companyId, cat, view, monthKey, areaPick, allTasks, expiryQuery.data, statutoryQuery.data],
   );
-  const monthExpiries = useMemo(() => expiries.filter((x) => x.expiresOn.startsWith(monthKey)), [expiries, monthKey]);
+  const { allRows, rows, counted, countedSbc, areas, areasOn, allAreas, sbcShown, sbcMonthShown, inArea, tasks, monthTasks, expiries, monthExpiries, listRows } = sel;
+  const areaOn = areasOn.length === 1 ? areasOn[0]! : ALL_AREAS;
   const sbcCountAll = statutoryQuery.data?.calendar.deadlines ?? [];
   const statCount =
     (view === 'month' ? sortByDueDate(rowsInMonth(allRows, monthKey)) : allRows).length +
@@ -290,43 +275,11 @@ export function ComplianceCalendarView({
   // A filing opens its record: the statutory detail page of that client's period (S-2).
   const factOf = (row: FilingRow) => facts.data?.rows.find((f) => f.id === row.id);
 
-  const listRows = monthRows.filter(inArea);
   const dayRows = (day: string) => listRows.filter((row) => row.dueDate.slice(0, 10) === day);
   const dayTasks = (day: string) => monthTasks.filter((t) => t.dueDate.slice(0, 10) === day);
   const dayExpiries = (day: string) => monthExpiries.filter((x) => x.expiresOn === day);
   const daySbc = (day: string) => sbcMonthShown.filter((d) => d.date === day);
 
-  /**
-   * GL-06: what the calendar shows, by due date. The month view exports the month in view; the
-   * year and timeline views export the financial year. Both keep the company, category and area
-   * filters. Tasks have no law, so that cell reads "Non-statutory".
-   */
-  const exportRows = (): ExcelCell[][] => {
-    const filings = view === 'month' ? listRows : sortByDueDate(rows.filter(inArea));
-    const taskList = view === 'month' ? monthTasks : tasks;
-    const expiryList = view === 'month' ? monthExpiries : expiries.filter((x) => x.expiresOn >= range.from && x.expiresOn <= range.to);
-    const sbcList = view === 'month' ? sbcMonthShown : sbcShown;
-    return [
-      ...sbcList.map((d) => ({
-        due: d.date,
-        cells: [d.date, d.title, 'SBC statutory calendar', d.note ?? null, sbcTag(d), FILING_WORD[statutoryStatus(d.date, todayIso)]] as ExcelCell[],
-      })),
-      ...filings.map((row) => ({
-        due: row.dueDate.slice(0, 10),
-        cells: [row.dueDate.slice(0, 10), row.particular, row.companyName, row.periodLabel ?? null, areaLabel(row.compliance), filingWord(row, now)] as ExcelCell[],
-      })),
-      ...taskList.map((t) => ({
-        due: t.dueDate.slice(0, 10),
-        cells: [t.dueDate.slice(0, 10), t.title, t.companyName, t.periodLabel ?? null, 'Non-statutory', t.word] as ExcelCell[],
-      })),
-      ...expiryList.map((x) => ({
-        due: x.expiresOn,
-        cells: [x.expiresOn, expiryLabel(x), x.companyName, x.referenceLabel, 'Expiry', daysLeftLabel(x.daysLeft)] as ExcelCell[],
-      })),
-    ]
-      .sort((a, b) => a.due.localeCompare(b.due))
-      .map((x) => x.cells);
-  };
 
   // Toolbar parts, shared by the admin's toolbar and everyone else's.
   /** The admin (who can import the calendar file) gets the two-row toolbar with menus. */
@@ -394,11 +347,11 @@ export function ComplianceCalendarView({
       </Link>
     </Button>
   );
-  const exportInput = {
+  // GL-06: the server selects what the calendar shows with these filters, not the rows on screen.
+  const exportInput: ExcelExportInput = {
     title: 'Compliance calendar',
     client: picked?.companyName ?? null,
-    columns: ['Due date', 'Filing', 'Client', 'Period', 'Law', 'Status'],
-    rows: exportRows,
+    source: { source: 'compliance-calendar', companyId, sole: Boolean(sole), monthKey, view, cat, areas: areasOn },
   };
   const exportButton = <ExportToExcelButton {...exportInput} className="h-8" />;
   const importMenu = statutoryQuery.data?.canImport ? (
@@ -778,10 +731,6 @@ function ExportMenuItem(input: ExcelExportInput) {
 /** Areas only the SBC calendar has; they keep their own name, as the regulator words would merge them (STPI/SEZ read "FEMA"). */
 const SBC_OWN_AREAS = new Set(['STPI/SEZ', 'RERA', 'Transfer Pricing']);
 
-/** The short act tag of an SBC statutory calendar deadline: "GST", "IT", "APRERA". */
-function sbcTag(d: Pick<StatutoryDeadline, 'act' | 'actLabel'>): string {
-  return deadlineTagLabel(d, ACT_META[d.act].label);
-}
 
 /** One SBC statutory calendar deadline of a day popover: the act, the filing, its note, the status. */
 function SbcPopRow({ deadline, todayIso }: { deadline: StatutoryDeadline; todayIso: string }) {
@@ -800,9 +749,6 @@ function SbcPopRow({ deadline, todayIso }: { deadline: StatutoryDeadline; todayI
 }
 
 /** "DSC expires · Ravi Kumar": the calendar's name for an expiry. */
-function expiryLabel(x: Pick<ExpiryItem, 'kindLabel' | 'subjectName'>): string {
-  return `${x.kindLabel} expires · ${x.subjectName}`;
-}
 
 /** One expiry of a day popover: what lapses, whose, and the days left. Renewal is on the Expiries card. */
 function ExpiryPopRow({ item }: { item: ExpiryItem }) {

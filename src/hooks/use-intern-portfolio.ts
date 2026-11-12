@@ -12,17 +12,15 @@ import type { BoardResolutionProgressSnapshot } from '@/lib/client/client-progre
 import { useComplianceFilings } from '@/hooks/use-compliance-filings';
 import { useFilings } from '@/hooks/use-filings';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
-import { buildInternWorkItems, internAssignedToEngagement, internWorkKpis } from '@/lib/intern/intern-work';
+import { internWorkKpis } from '@/lib/intern/intern-work';
+import { leadEngagements, leadFilingWindows, leadWorkItems } from '@/lib/intern/lead-portfolio';
 
 /** Intern-scoped engagements, checklist queue, and progress from AppContext. */
 export function useInternPortfolio() {
   const { user, engagements, requests, tasks, getStateForEngagement } = useApp();
   const internId = user?.internId ?? '';
 
-  const myEngagements = useMemo(
-    () => (internId ? engagements.filter((e) => internAssignedToEngagement(e, internId)) : []),
-    [engagements, internId],
-  );
+  const myEngagements = useMemo(() => leadEngagements(engagements, internId), [engagements, internId]);
 
   const boardResolutionByEngagement = useMemo(
     () => ({} as Record<string, BoardResolutionProgressSnapshot>),
@@ -82,38 +80,23 @@ export function useInternPortfolio() {
   // Manager-set compliance windows live on the DB register rows; the Today
   // filings are computed client-side, so join them by the shared instance key.
   const register = useFilings();
-  const filingWindows = useMemo(() => {
-    const out: Record<string, { from: string; to: string }> = {};
-    for (const row of register.data?.rows ?? []) {
-      if (!row.windowFrom || !row.windowTo) continue;
-      out[`${row.engagementId}:${row.obligationId}:${row.dueDate}:${row.periodLabel ?? ''}`] = {
-        from: row.windowFrom,
-        to: row.windowTo,
-      };
-    }
-    return out;
-  }, [register.data]);
+  const filingWindows = useMemo(() => leadFilingWindows(register.data?.rows ?? []), [register.data]);
 
-  // Tasks a manager assigned to this lead, and client questions handed to them (G-12). Rows
-  // with a checklist key mirror a step and are already step items.
+  // The same builder as the server's Excel export of the lead's Clients (GL-06).
   const userId = user?.id ?? '';
-  const myTasks = useMemo(
-    () => (userId ? tasks.filter((t) => t.assigneeId === userId && !t.checklistKey) : []),
-    [tasks, userId],
-  );
-
   const workItems = useMemo(
     () =>
-      buildInternWorkItems({
-        engagements: myEngagements,
-        getChecklistState: getStateForEngagement,
+      leadWorkItems({
+        myEngagements,
+        stateOf: getStateForEngagement,
         internId,
+        userId,
         filings,
         filingWindows,
         requests: myRequests,
-        tasks: myTasks,
+        tasks,
       }),
-    [myEngagements, getStateForEngagement, internId, filings, filingWindows, myRequests, myTasks],
+    [myEngagements, getStateForEngagement, internId, userId, filings, filingWindows, myRequests, tasks],
   );
 
   const kpis = useMemo(() => internWorkKpis(workItems, new Date()), [workItems]);

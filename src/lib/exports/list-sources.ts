@@ -5,6 +5,15 @@ import { listEngagements } from '@/db/repositories/engagements';
 import type { AuditEventRow } from '@/lib/audit/audit-log';
 import { checklistItemLabel } from '@/lib/audit/audit-log';
 import { loadStaffEngagements } from '@/lib/ask/tools/staff-data';
+import type { ListSource } from '@/lib/exports/list-source-schema';
+import { complianceCalendarTable, obligationsTable, requestListsTable } from '@/lib/exports/sources/compliance-lists';
+import {
+  firmProjectsTable,
+  leadClientsTable,
+  managerProjectsTable,
+  practiceIncorporationTable,
+  superClientsTable,
+} from '@/lib/exports/sources/staff-lists';
 import type { ExportTable, TableCell } from '@/lib/exports/table-xlsx';
 import {
   listPendingApprovals,
@@ -16,20 +25,18 @@ import { AUDIT_EXPORT_HEAD, auditEventCells } from '@/views/admin/audit-log/audi
 import { filterAuditEvents, type AuditFilters } from '@/views/admin/audit-log/audit-filters';
 
 /**
- * GL-06: the server side of "Export to Excel". A list whose rows the server can rebuild names its
- * source, and the rows are read here through the repositories with the caller's `AuthContext`, so
- * the file holds every matching row (not only the pages loaded) and never more than the role may
- * see. Lists whose columns are worked out in the browser send their rows, and
- * `scopeRowsToClients` drops any row about a client outside the caller's scope.
+ * GL-06: the server side of "Export to Excel". Every list names its source and sends its filters
+ * (`ListSourceSchema`); the rows are read here through the repositories with the caller's
+ * `AuthContext`, so the file holds every matching row (not only the pages loaded) and never more
+ * than the role may see. Only the Directors grid, whose cells may hold answers not yet saved,
+ * still sends its rows; `keepScopedRows` drops any row about a client outside the caller's scope.
  */
 
 /** The audit log reads 500 events a page; an export stops at this many matching rows. */
 export const AUDIT_EXPORT_MAX_ROWS = 50_000;
 const AUDIT_PAGE = 500;
 
-export type ListSource =
-  | { source: 'audit-log'; engagementId?: string | null; filters: AuditFilters }
-  | { source: 'approvals'; scope: 'firm' | 'manager'; kind: 'all' | PendingApprovalKindKey };
+export type { ListSource } from '@/lib/exports/list-source-schema';
 
 const IST_DATE = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' });
 const IST_TIME = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -96,10 +103,33 @@ export const APPROVALS_EXPORT_HEAD = ['Step', 'Client', 'Kind', 'Note'];
 
 /** The table a named source exports, read with the caller's scope. */
 export async function listSourceTable(ctx: AuthContext, title: string, input: ListSource): Promise<ExportTable> {
-  if (input.source === 'audit-log') {
-    return { sheet: title, columns: AUDIT_EXPORT_HEAD, rows: await auditLogExportRows(ctx, input) };
+  const table = await sourceTable(ctx, input);
+  return { sheet: title, ...table };
+}
+
+async function sourceTable(ctx: AuthContext, input: ListSource): Promise<Omit<ExportTable, 'sheet'>> {
+  switch (input.source) {
+    case 'audit-log':
+      return { columns: AUDIT_EXPORT_HEAD, rows: await auditLogExportRows(ctx, { ...input, filters: input.filters as AuditFilters }) };
+    case 'approvals':
+      return { columns: APPROVALS_EXPORT_HEAD, rows: await approvalsExportRows(ctx, input) };
+    case 'firm-projects':
+      return firmProjectsTable(ctx, input);
+    case 'manager-projects':
+      return managerProjectsTable(ctx, input);
+    case 'lead-clients':
+      return leadClientsTable(ctx, input);
+    case 'super-clients':
+      return superClientsTable(ctx, input);
+    case 'practice-incorporation':
+      return practiceIncorporationTable(ctx, input);
+    case 'obligations':
+      return obligationsTable(ctx, input);
+    case 'compliance-calendar':
+      return complianceCalendarTable(ctx, input);
+    case 'request-lists':
+      return requestListsTable(ctx, input);
   }
-  return { sheet: title, columns: APPROVALS_EXPORT_HEAD, rows: await approvalsExportRows(ctx, input) };
 }
 
 /** The column that names the client, when the list has one ("Client"). */

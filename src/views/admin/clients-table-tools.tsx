@@ -24,15 +24,7 @@ export const CLIENT_LIST_VIEWS: SavedView[] = [
   { key: 'waiting', label: 'Waiting on clients', filters: { show: 'waiting' } },
 ];
 
-/** The next manager-set window end (YYYY-MM-DD) falls within seven days from today. */
-export function windowEndsThisWeek(schedule: Engagement['schedule'], now = new Date()): boolean {
-  const today = now.toISOString().slice(0, 10);
-  const end = new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10);
-  const ends = [schedule?.incorporation?.to, ...Object.values(schedule?.steps ?? {}).map((w) => w?.to)].filter(
-    (d): d is string => Boolean(d),
-  );
-  return ends.some((d) => d.slice(0, 10) >= today && d.slice(0, 10) <= end);
-}
+export { windowEndsThisWeek } from '@/lib/projects/client-row-facts';
 
 /**
  * Row selection, the bulk bar (Assign, Remind, Export), the row quick actions (Open, Remind,
