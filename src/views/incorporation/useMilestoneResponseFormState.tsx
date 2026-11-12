@@ -37,6 +37,7 @@ import { createReadOnlyFieldRenderers } from './milestone-form/read-only-field';
 import { createEditableFieldRenderer } from './milestone-form/editable-field';
 import { renderMilestoneFieldGroups } from './milestone-form/field-groups';
 import type { MilestoneFormCtx } from './milestone-form/types';
+import { useStepLockMessage } from '@/hooks/use-step-lock';
 
 export interface MilestoneResponseFormStateProps {
   item: ChecklistItem;
@@ -70,6 +71,8 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     aboveFooterActions,
     sectionTabs = false,
   } = props;
+  // A lead may fill a locked step ahead, but its Submit stays off until the step opens.
+  const stepLockMessage = useStepLockMessage(engagementId ?? clientId, item.id);
   const sources = useMilestoneSources({ item, clientId, engagementId, responsesOverride, variant });
   const draftState = useMilestoneDraft({ item, ...sources });
   const ui = useMilestoneUiState();
@@ -239,6 +242,7 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     showStaffSaveFooter,
     staffSaveStatus,
     staffSaveStatusText,
+    stepLockMessage,
     stepPendingItems,
     structuredSectionLabels,
     submissionLocked,

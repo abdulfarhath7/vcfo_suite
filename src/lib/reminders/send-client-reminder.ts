@@ -58,7 +58,7 @@ function stepIdOf(itemKey: string): string | null {
 
 export type SendReminderResult =
   | { ok: true; channels: ReminderChannel[] }
-  | { ok: false; status: 400 | 404 | 429 | 502 | 503; error: string; retryAt?: string };
+  | { ok: false; status: 400 | 404 | 409 | 429 | 502 | 503; error: string; retryAt?: string };
 
 type Prepared =
   | { ok: false; result: Extract<SendReminderResult, { ok: false }> }
@@ -73,6 +73,10 @@ async function prepareReminder(
 ): Promise<Prepared> {
   const resolved = await resolveReminderTarget(ctx, engagementId, input.itemKey);
   if (resolved.ok === false) {
+    if (resolved.reason === 'step_locked') {
+      // 409: the step is real but locked behind an earlier one, so the client owes nothing yet.
+      return { ok: false, result: { ok: false, status: 409, error: `This step is not open yet. ${resolved.message}` } };
+    }
     return {
       ok: false,
       result:

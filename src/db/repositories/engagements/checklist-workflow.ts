@@ -33,7 +33,11 @@ import { clientChangesNameExpiry } from '@/lib/checklist/name-approval-expiry';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
-import { sequentialLockMessage } from '@/lib/checklist/checklist-step-gate';
+import {
+  ChecklistStepLockedError,
+  sequentialLockMessage,
+  staffStatusLockMessage,
+} from '@/lib/checklist/checklist-step-gate';
 import type { EngagementChecklistState } from './scope';
 import { getEngagementById, toAppEngagement, assertEngagementAccess, checklistStateFromRow } from './read';
 import { updateChecklistState, updateEngagement } from './write';
@@ -62,6 +66,11 @@ export async function patchChecklistItem(
     if (lockMessage) {
       throw new Error(lockMessage);
     }
+  } else {
+    // Staff may prepare a locked step's answers ahead, but may not move it forward
+    // (in progress, overdue, requested, accepted, completed or delivered).
+    const lockMessage = staffStatusLockMessage(itemId, patch, persisted);
+    if (lockMessage) throw new ChecklistStepLockedError(lockMessage);
   }
 
   // The merge runs inside updateChecklistState's row lock, on the state as

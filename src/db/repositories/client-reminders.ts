@@ -12,7 +12,8 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
-import { assertEngagementAccess } from '@/db/repositories/engagements';
+import { assertEngagementAccess, checklistStateFromRow } from '@/db/repositories/engagements';
+import { sequentialLockMessage } from '@/lib/checklist/checklist-step-gate';
 import { isMessageStaff } from '@/db/repositories/client-messages';
 import { appEngagementId, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { clientIncorporationPath } from '@/lib/projects/project-step-path';
@@ -52,7 +53,8 @@ export interface ReminderTarget {
 
 export type ResolveReminderResult =
   | { ok: true; target: ReminderTarget }
-  | { ok: false; reason: 'not_found' | 'invalid_item' };
+  | { ok: false; reason: 'not_found' | 'invalid_item' }
+  | { ok: false; reason: 'step_locked'; message: string };
 
 const FILINGS_PATH = '/app/client/compliances/filings';
 
@@ -78,6 +80,9 @@ export async function resolveReminderTarget(
     if (engagementDbId(ref.engagementId) !== access.dbId) return { ok: false, reason: 'invalid_item' };
     const def = getItem(ref.stepId);
     if (!def) return { ok: false, reason: 'invalid_item' };
+    // A step behind the sequential lock is not the client's to do yet, so nobody reminds them of it.
+    const lockMessage = sequentialLockMessage(def.id, checklistStateFromRow(access.row));
+    if (lockMessage) return { ok: false, reason: 'step_locked', message: lockMessage };
     return {
       ok: true,
       target: { ...base, kind: 'step', itemTitle: def.title, clientPath: clientIncorporationPath(def.id) },

@@ -1,4 +1,5 @@
 import { publicErrorMessage } from '@/lib/api-error';
+import { ChecklistStepLockedError } from '@/lib/checklist/checklist-step-gate';
 import { notifyEngagementEventSoon } from '@/lib/email/send-after-response';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -86,6 +87,7 @@ export async function POST(request: Request, context: RouteContext) {
       email,
     });
   } catch (err) {
+    if (err instanceof ChecklistStepLockedError) return NextResponse.json({ error: err.message }, { status: 409 });
     const message = publicErrorMessage(err, 'client_fill_failed');
     const friendly: Record<string, string> = {
       client_fill_already_pending: 'This step is already waiting on manager approval.',

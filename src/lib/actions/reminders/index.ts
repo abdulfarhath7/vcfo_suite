@@ -28,7 +28,10 @@ async function check(actx: ActionContext, input: RemindInput) {
   const loaded = await loadEngagement(actx.auth, input.engagementId);
   if (!loaded) return unavailable();
   const resolved = await resolveReminderTarget(actx.auth, input.engagementId, itemKeyOf(input.stepId));
-  if (resolved.ok === false) return unavailable(resolved.reason === 'invalid_item' ? 'This step cannot be reminded.' : undefined);
+  if (resolved.ok === false) {
+    if (resolved.reason === 'step_locked') return unavailable(`Not remindable yet. ${resolved.message}`);
+    return unavailable(resolved.reason === 'invalid_item' ? 'This step cannot be reminded.' : undefined);
+  }
   const last = await lastReminderWithinWindow(actx.auth, resolved.target, actx.now);
   const recipients = await clientRecipients(loaded.row.id);
   return recheckOf(

@@ -47,6 +47,7 @@ vi.mock('@/db/client', () => ({
 const assertEngagementAccess = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...a: unknown[]) => assertEngagementAccess(...a),
+  checklistStateFromRow: (row: { checklistState?: Record<string, never> }) => row.checklistState ?? {},
   listScopedEngagementIds: vi.fn(),
 }));
 
@@ -104,6 +105,17 @@ describe('resolveReminderTarget', () => {
       expect(out.target.clientPath).toContain('/app/client/incorporation');
       expect(out.target.itemTitle.length).toBeGreaterThan(0);
     }
+  });
+
+  it('refuses a step that is behind the sequential lock, with the lock message', async () => {
+    assertEngagementAccess.mockResolvedValue(allowed);
+    const out = await repo.resolveReminderTarget(ctx('intern'), OWN, `step:${OWN}:post-1`);
+    expect(out.ok).toBe(false);
+    if (out.ok === false) {
+      expect(out.reason).toBe('step_locked');
+      if (out.reason === 'step_locked') expect(out.message).toMatch(/This opens after .+ is complete/);
+    }
+    expect(calls).toHaveLength(0);
   });
 
   it('rejects a key that does not parse', async () => {

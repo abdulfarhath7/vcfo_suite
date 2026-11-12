@@ -51,3 +51,14 @@ describe('applyChecklistPatch SRN link', () => {
     await expect(applyChecklistPatch(LEAD, ENG, 'pre-4', { responses: { acknowledgementNumber: 'x' } })).resolves.toBeDefined();
   });
 });
+
+describe('applyChecklistPatch on a locked step', () => {
+  it('answers a refused status move with a 409 and the lock message', async () => {
+    const { ChecklistStepLockedError } = await import('@/lib/checklist/checklist-step-gate');
+    const { ChecklistPatchRefused } = await import('./apply-checklist-patch');
+    patchChecklistItem.mockRejectedValueOnce(new ChecklistStepLockedError('This opens after Part A is complete.'));
+    const save = applyChecklistPatch(LEAD, ENG, 'post-1', { status: 'in-progress' });
+    await expect(save).rejects.toBeInstanceOf(ChecklistPatchRefused);
+    await expect(save).rejects.toMatchObject({ status: 409, message: 'This opens after Part A is complete.' });
+  });
+});

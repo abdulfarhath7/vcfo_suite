@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/context/AppContext';
+import { useStepLockMessage } from '@/hooks/use-step-lock';
 import {
   internLeadManagerRequestPatch,
   isAwaitingReview,
@@ -28,6 +29,7 @@ export function RequestManagerApproval({
 }) {
   const { user, updateItem } = useApp();
   const [busy, setBusy] = useState(false);
+  const lockMessage = useStepLockMessage(engagementId, itemId);
 
   if (user?.role !== 'intern') return null;
   // Direct-flow steps have no approval; the board resolution goes to the
@@ -61,6 +63,8 @@ export function RequestManagerApproval({
   };
 
   const primary = emphasis === 'primary';
+  // A locked step can be drafted ahead but not sent for approval (the server refuses it too).
+  const locked = Boolean(lockMessage) && !awaitingLeadRequest;
 
   return (
     <div className={className}>
@@ -68,7 +72,8 @@ export function RequestManagerApproval({
         type="button"
         size="sm"
         variant={primary ? 'default' : 'outline'}
-        disabled={busy}
+        disabled={busy || locked}
+        title={locked ? lockMessage ?? undefined : undefined}
         onClick={() => void request(awaitingLeadRequest)}
         className={primary ? 'w-full cursor-pointer' : 'cursor-pointer'}
       >
@@ -80,6 +85,7 @@ export function RequestManagerApproval({
             ? 'Email manager again'
             : 'Request manager approval'}
       </Button>
+      {locked ? <p className="mt-1.5 text-[12px] text-ink-muted">{lockMessage}</p> : null}
     </div>
   );
 }
