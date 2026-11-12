@@ -3,6 +3,7 @@ import 'server-only';
 import { and, asc, gte, inArray, lte } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { complianceInstances, complianceObligations } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import {
   assertEngagementAccess,
@@ -147,6 +148,7 @@ async function loadComplianceRunway(
     .where(
       and(
         inArray(complianceInstances.engagementId, [dbEngagementId]),
+        filingAfterIncorporation,
         gte(complianceInstances.dueDate, ymd(now)),
         lte(complianceInstances.dueDate, ymd(horizon)),
       ),

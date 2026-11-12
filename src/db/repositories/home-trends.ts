@@ -13,6 +13,7 @@ import {
   notificationDeliveries,
   tasks,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import {
@@ -365,6 +366,7 @@ async function leadTrends(ctx: AuthContext, now: Date): Promise<DailyRebuild> {
           .where(
             and(
               inArray(complianceInstances.engagementId, ids),
+              filingAfterIncorporation,
               gte(complianceInstances.dueDate, first.ymd),
               lte(complianceInstances.dueDate, last.ymd),
             ),
@@ -466,6 +468,7 @@ async function clientTrends(ctx: AuthContext, engagementId: string | undefined, 
       .where(
         and(
           eq(complianceInstances.engagementId, dbId),
+          filingAfterIncorporation,
           gte(complianceInstances.dueDate, `${fyStartOfYmd(first.ymd)}-04-01`),
           lte(complianceInstances.dueDate, addDaysYmd(last.ymd, 15)),
           lt(complianceInstances.createdAt, last.end),

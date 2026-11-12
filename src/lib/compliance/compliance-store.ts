@@ -11,6 +11,7 @@ import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { extractTriggersFromChecklist } from '@/lib/compliance/extract-triggers';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import type { EntityLegalForm } from '@/lib/compliance/types';
 import { withCalendarChanges, type CalendarChange } from '@/lib/watch/calendar-proposal';
 
@@ -33,6 +34,8 @@ export function computeAllFilings(
         entityLegalForm: (engagement.entityLegalForm ?? 'company') as EntityLegalForm,
         triggers,
         ownerId: engagement.internId,
+        // A company that is not incorporated yet has no filings, on any role's screen.
+        incorporated: isIncorporated(engagement, state),
       }),
       calendarChanges,
     );

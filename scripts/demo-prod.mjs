@@ -32,6 +32,12 @@
  * (npm run clients:reset:prod). It only counts unless `--yes` is also given; with
  * `--yes` it first takes a manual RDS snapshot and waits for it, so the deleted
  * test data can be restored from the snapshot if anything was wanted after all.
+ *
+ * `--pre-coi-filings` runs scripts/cleanup-pre-incorporation-filings.ts instead
+ * (npm run filings:pre-coi:prod): it lists the filings of companies not yet
+ * incorporated, or dated before incorporation, that nobody worked on. It only
+ * lists unless `--yes` is also given; with `--yes` it first takes a manual RDS
+ * snapshot, as the client reset does, and then deletes them.
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { connect } from 'node:net';
@@ -44,6 +50,7 @@ function arg(name, fallback) {
 
 const remove = process.argv.includes('--remove');
 const resetClients = process.argv.includes('--reset-clients');
+const preCoiFilings = process.argv.includes('--pre-coi-filings');
 const migrate = process.argv.includes('--migrate');
 const confirmed = process.argv.includes('--yes');
 const dbId = arg('db', 'vcfo-suite-db');
@@ -119,8 +126,8 @@ if (!nat) {
 
 /* ---- 1b. A snapshot before a reset that deletes ---- */
 
-if (resetClients && confirmed) {
-  const snapshotId = `${dbId}-before-client-reset-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`;
+if ((resetClients || preCoiFilings) && confirmed) {
+  const snapshotId = `${dbId}-before-${preCoiFilings ? 'pre-coi-filings' : 'client-reset'}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`;
   console.log(`Taking RDS snapshot ${snapshotId} before deleting anything…`);
   aws(['rds', 'create-db-snapshot', '--db-instance-identifier', dbId, '--db-snapshot-identifier', snapshotId]);
   execFileSync(
@@ -217,7 +224,9 @@ const seed = spawn(
   process.execPath,
   [
     ...(migrate ? ['node_modules/drizzle-kit/bin.cjs', 'migrate'] : ['--conditions=react-server', '--import', 'tsx']),
-    ...(migrate ? [] : resetClients
+    ...(migrate ? [] : preCoiFilings
+      ? ['scripts/cleanup-pre-incorporation-filings.ts', ...(confirmed ? ['--yes'] : [])]
+      : resetClients
       ? ['scripts/reset-client-data.ts', ...(confirmed ? ['--yes'] : [])]
       : ['scripts/seed-demo-clients.ts', ...(remove ? ['--remove'] : [])]),
   ],

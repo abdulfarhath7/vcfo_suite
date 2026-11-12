@@ -39,6 +39,9 @@ vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...args: unknown[]) => assertEngagementAccess(...args),
 }));
 
+// The incorporation guard is its own SQL; a marker keeps the captured clause plain data.
+vi.mock('@/db/repositories/filing-incorporation', () => ({ filingAfterIncorporation: { __afterIncorporation: true } }));
+
 // Capture what `inArray` was given, which is the whole point of the test.
 let inArrayIds: string[] = [];
 vi.mock('drizzle-orm', async () => {
@@ -186,5 +189,10 @@ describe('getFilings — shape', () => {
     // Apr 2026 → Mar 2027, the Indian FY the deck is laid out on.
     expect(JSON.stringify(capturedWhere)).toContain('2026-04-01');
     expect(JSON.stringify(capturedWhere)).toContain('2027-03-31');
+  });
+
+  it('hides filings of a company that is not incorporated, or dated before it', async () => {
+    await getFilings(clientCtx);
+    expect(JSON.stringify(capturedWhere)).toContain('__afterIncorporation');
   });
 });

@@ -42,6 +42,9 @@ function triggerDate(
     case 'pt_registration':
       return triggers.ptRegistrationDate ?? null;
     case 'fixed_annual':
+      // An engagement that started at Registration or Compliance was incorporated before we
+      // met it and may carry no date; `generateComplianceInstances` only gets here for one
+      // that is incorporated, so the open anchor never reaches a pre-incorporation company.
       return triggers.incorporationDate ?? '2000-01-01';
     case 'event':
     case 'manual':
@@ -202,6 +205,30 @@ export interface GenerateInstancesInput {
   ownerId: string;
   asOfDate?: Date;
   horizonMonths?: number;
+  /**
+   * Whether the company is incorporated, from `isIncorporated` (the incorporation date, a
+   * Registration or Compliance start, or a complete Certificate of Incorporation step).
+   * Omitted, it is true only when `triggers.incorporationDate` is set. A company that is not
+   * incorporated has no statutory filings, so the generator returns none.
+   */
+  incorporated?: boolean;
+}
+
+/**
+ * True when a generated period can exist for a company incorporated on `incorporationDate`:
+ * it falls due on or after that day and does not end before it. A period that straddles the
+ * day (the month or financial year of incorporation) is kept, because the company owes that
+ * filing for the part of the period after incorporation.
+ */
+export function periodAfterIncorporation(
+  period: { dueDate: string; periodEnd?: string | null },
+  incorporationDate: string | null | undefined,
+): boolean {
+  const inc = incorporationDate?.trim();
+  if (!inc) return true;
+  if (period.dueDate < inc) return false;
+  if (period.periodEnd && period.periodEnd < inc) return false;
+  return true;
 }
 
 export function generateComplianceInstances(input: GenerateInstancesInput): ComplianceInstance[] {
@@ -209,6 +236,13 @@ export function generateComplianceInstances(input: GenerateInstancesInput): Comp
   const horizonEnd = addMonths(asOf, input.horizonMonths ?? HORIZON_MONTHS);
   const horizonStart = toIso(startOfMonth(addMonths(asOf, -PAST_HORIZON_MONTHS)));
   const out: ComplianceInstance[] = [];
+
+  // No statutory filing exists before the company does (owner report, Emburse): without
+  // this, the fixed-calendar obligations (advance tax, DIR-3 KYC, DPT-3, MSME-1) fell back to
+  // the open anchor in `triggerDate` and filled a pre-incorporation company with overdue rows.
+  const incorporationDate = input.triggers.incorporationDate?.trim() || null;
+  const incorporated = input.incorporated ?? Boolean(incorporationDate);
+  if (!incorporated) return out;
 
   const genInput: GeneratorInput = {
     engagementId: input.engagementId,
@@ -252,6 +286,6 @@ export function generateComplianceInstances(input: GenerateInstancesInput): Comp
   }
 
   return out
-    .filter((instance) => instance.dueDate >= horizonStart)
+    .filter((instance) => instance.dueDate >= horizonStart && periodAfterIncorporation(instance, incorporationDate))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }

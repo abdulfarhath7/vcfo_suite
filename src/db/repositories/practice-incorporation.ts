@@ -3,6 +3,7 @@ import 'server-only';
 import { and, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { complianceInstances, profiles } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager } from '@/lib/auth';
 import {
@@ -92,6 +93,7 @@ async function loadNextDue(scopedDbIds: string[], now: Date): Promise<Map<string
     .where(
       and(
         inArray(complianceInstances.engagementId, scopedDbIds),
+        filingAfterIncorporation,
         lte(complianceInstances.dueDate, ymd(horizon)),
         ne(complianceInstances.status, 'filed'),
         isNull(complianceInstances.filedOn),

@@ -10,6 +10,7 @@ import {
   engagementManagers,
   engagementStepEvents,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import { normalizeEngagementSchedule, windowForStep } from '@/lib/projects/schedule-windows';
 import { pastMonthEnds, type FilingHistoryRow, type FilingReopen } from '@/lib/metrics/home-trends';
 import { coerceStatusCode, getRegistrationPhases } from '@/data/checklist';
@@ -178,6 +179,7 @@ async function loadFilings(
     .where(
       and(
         inArray(complianceInstances.engagementId, scopedDbIds),
+        filingAfterIncorporation,
         gte(complianceInstances.dueDate, ymd(floor)),
         lte(complianceInstances.dueDate, ymd(horizon)),
       ),
@@ -455,6 +457,7 @@ async function loadInsightFilings(
     .where(
       and(
         inArray(complianceInstances.engagementId, scopedDbIds),
+        filingAfterIncorporation,
         lte(complianceInstances.dueDate, ymd(horizon)),
         or(
           gte(complianceInstances.dueDate, floor),
@@ -577,6 +580,7 @@ async function loadFilingHistory(scopedDbIds: string[], now: Date) {
       .where(
         and(
           inArray(complianceInstances.engagementId, scopedDbIds),
+          filingAfterIncorporation,
           lte(complianceInstances.dueDate, last.ymd),
           lt(complianceInstances.createdAt, last.end),
           or(

@@ -2,6 +2,7 @@ import 'server-only';
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { complianceInstanceWorkflow, complianceInstances } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { currentFyRange, statusWord } from '@/lib/compliance-tasks/model';
 import { scopeIds, today } from '@/db/repositories/compliance-tasks/shared';
@@ -53,7 +54,7 @@ export async function getComplianceCounts(
     })
     .from(complianceInstances)
     .leftJoin(complianceInstanceWorkflow, eq(complianceInstanceWorkflow.instanceId, complianceInstances.id))
-    .where(and(inArray(complianceInstances.engagementId, ids), gte(complianceInstances.dueDate, range.from), lte(complianceInstances.dueDate, range.to)));
+    .where(and(inArray(complianceInstances.engagementId, ids), gte(complianceInstances.dueDate, range.from), lte(complianceInstances.dueDate, range.to), filingAfterIncorporation));
 
   const statutory = empty();
   for (const r of rows) {
