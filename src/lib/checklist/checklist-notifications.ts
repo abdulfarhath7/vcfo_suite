@@ -188,7 +188,7 @@ export function diffChecklistForNotifications(
           engagementId,
           companyName,
           itemId,
-          href: '/app/client/incorporation',
+          href: notificationHref(ctx.viewerRole, ctx.engagement, itemId, 'docs.share'),
         });
       }
     }
@@ -237,7 +237,7 @@ export function diffChecklistForNotifications(
         engagementId,
         companyName,
         itemId,
-        href: '/app/client/incorporation',
+        href: notificationHref(ctx.viewerRole, ctx.engagement, itemId, 'checklist.review'),
       });
     }
   }

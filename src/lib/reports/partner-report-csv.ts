@@ -1,4 +1,5 @@
 import type { PartnerReportData } from './partner-report';
+import { standardDownloadName } from '@/lib/files/download-name';
 
 /**
  * The partner report as a CSV file that Excel opens (P-225). The app has no XLSX package, and
@@ -37,6 +38,7 @@ export function partnerReportCsv(data: PartnerReportData, opts: { firmName: stri
   return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
 
-export function partnerReportCsvFilename(monthLabel: string): string {
-  return `SBC-partner-report-${monthLabel.replace(/\s+/g, '-')}.csv`;
+/** GL-08: `Partner-Report-October-2026_SBC_<DD-MM-YYYY>.csv`; the firm stands in for the client. */
+export function partnerReportCsvFilename(monthLabel: string, on: Date = new Date()): string {
+  return standardDownloadName(`Partner Report ${monthLabel}`, 'SBC', 'csv', on);
 }

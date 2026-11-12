@@ -31,6 +31,8 @@ export interface BoardResolutionDoc {
   signedStoragePath?: string | null;
   signedUploadedAt?: string | null;
   signedUploadedBy?: string | null;
+  /** BR-02: the uploader's display name, resolved by the repository for the reader's role. */
+  signedUploadedByName?: string | null;
   /** When staff sent the finalized document to the client for signing (S-573). */
   sentToClientAt?: string | null;
   sentToClientBy?: string | null;
@@ -664,5 +666,8 @@ export function parseBoardResolutionRpcPayload(data: unknown): BoardResolutionDo
         : typeof row.signed_uploaded_by === 'string'
           ? row.signed_uploaded_by
           : null,
+    ...(typeof row.signedUploadedByName === 'string' && row.signedUploadedByName.trim()
+      ? { signedUploadedByName: row.signedUploadedByName.trim() }
+      : {}),
   };
 }

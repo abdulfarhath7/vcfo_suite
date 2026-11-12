@@ -52,10 +52,6 @@ export function isInlineType(contentType: string): boolean {
   return contentType === 'application/pdf' || contentType.startsWith('image/');
 }
 
-/** Up to this many files, and this many uploads among them, the ZIP streams straight back. */
-export const DIRECT_MAX_FILES = 25;
-export const DIRECT_MAX_UPLOADS = 5;
-
 export interface LoadedCatalog {
   ctx: AuthContext;
   inputs: DocPackInputs;
@@ -121,12 +117,6 @@ async function recordWorkbook(loaded: LoadedCatalog, record: ProjectRecord): Pro
 
 export function pickDownloadFiles(loaded: LoadedCatalog, keys: readonly string[]): PickedFile[] {
   return pickFiles(loaded.catalog, keys);
-}
-
-/** Small selections stream back at once; anything bigger is made in the background. */
-export function shouldBuildInBackground(picked: readonly PickedFile[]): boolean {
-  const uploads = picked.filter((p) => p.file.kind === 'uploaded').length;
-  return picked.length > DIRECT_MAX_FILES || uploads > DIRECT_MAX_UPLOADS;
 }
 
 /** The ZIP as a stream: each file is read only when the writer reaches it. */

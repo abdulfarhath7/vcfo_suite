@@ -202,7 +202,9 @@ describe('listClientDocumentsZip — one access check, no bytes read', () => {
     expect(zip?.missing).toBe(0);
     expect(zip?.entries).toHaveLength(1);
     expect(zip?.entries[0]).toMatchObject({ key: 'engagement-documents/own/requests/bill.pdf', sizeBytes: 4 });
-    expect(zip?.entries[0]?.name).toMatch(/\/Electricity bill\.pdf$/);
+    // GL-08: the file inside the ZIP and the ZIP itself carry the standard name.
+    expect(zip?.entries[0]?.name).toMatch(/\/Electricity-bill_Northwind-India-Private-Limited_\d{2}-\d{2}-\d{4}\.pdf$/);
+    expect(zip?.filename).toMatch(/^Documents_Northwind-India-Private-Limited_\d{2}-\d{2}-\d{4}\.zip$/);
   });
 
   it('staff without an engagement id get null', async () => {

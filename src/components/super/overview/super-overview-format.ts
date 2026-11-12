@@ -1,5 +1,5 @@
 import { sep } from '@/lib/date-format';
-import { CHART_STATUS, type ChartColor } from '@/components/charts';
+import { CHART_STATUS, type ChartColor } from '@/components/charts/chart-theme';
 import { getActiveCatalogItems } from '@/data/checklist';
 import type { SuperEngagementSummary } from '@/lib/super/super-overview';
 

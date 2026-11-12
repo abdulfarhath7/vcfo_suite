@@ -54,7 +54,7 @@ vi.mock('@/db/repositories/engagements', () => ({
   listScopedEngagementIds: (...a: unknown[]) => listScopedEngagementIds(...a),
 }));
 
-const { recordAuditEvent, listAuditEvents } = await import('@/db/repositories/audit-events');
+const { auditChecklistItemPatch, recordAuditEvent, listAuditEvents } = await import('@/db/repositories/audit-events');
 
 const dialect = new PgDialect();
 const OWN = '11111111-1111-1111-1111-111111111101';
@@ -182,6 +182,31 @@ describe('recordAuditEvent', () => {
       recordAuditEvent(ctx('manager'), { action: 'x', summary: 'y' }),
     ).resolves.toBeUndefined();
     warn.mockRestore();
+  });
+});
+
+describe('auditChecklistItemPatch — name approval expiry (SA-02)', () => {
+  const previous = { 'pre-5': { responses: { nameApprovalExpiryDate: '2026-11-21' } } };
+  const inserts = () => calls.filter((c) => c.op === 'insert').map((c) => c.values as Record<string, unknown>);
+
+  it('records the old value, the new value and the user for a changed expiry date', async () => {
+    auditChecklistItemPatch(ctx('intern'), OWN, 'pre-5', { responses: { nameApprovalExpiryDate: '2026-11-30' } }, previous);
+    await Promise.resolve();
+    const [row] = inserts();
+    expect(row).toMatchObject({
+      actorUserId: 'user-intern',
+      actorRole: 'intern',
+      engagementId: OWN,
+      action: 'checklist.name_expiry_change',
+      metadata: { itemId: 'pre-5', fieldId: 'nameApprovalExpiryDate', oldValue: '2026-11-21', newValue: '2026-11-30' },
+    });
+  });
+
+  it('records nothing when the date did not change or another field changed', async () => {
+    auditChecklistItemPatch(ctx('intern'), OWN, 'pre-5', { responses: { nameApprovalExpiryDate: '2026-11-21' } }, previous);
+    auditChecklistItemPatch(ctx('intern'), OWN, 'pre-5', { responses: { approvedCompanyName: 'Acme' } }, previous);
+    await Promise.resolve();
+    expect(inserts()).toEqual([]);
   });
 });
 

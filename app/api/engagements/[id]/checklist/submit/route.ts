@@ -9,7 +9,8 @@ import {
   submitChecklistItem,
   submitDirectFlowStep,
 } from '@/db/repositories/engagements';
-import { isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { CLIENT_ONLY_FIELDS_REFUSED, isDirectFlowStep, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { NAME_EXPIRY_CLIENT_REFUSED } from '@/lib/checklist/name-approval-expiry';
 import {
   BOARD_RESOLUTION_WITH_MANAGER,
   requestBoardResolutionApproval,
@@ -27,11 +28,14 @@ const bodySchema = z.object({
 const FRIENDLY: Record<string, string> = {
   step_already_submitted: 'This step is already submitted. Ask for a change to edit it.',
   step_waiting_on_lead: 'Your project lead is finishing this step.',
+  client_only_fields: CLIENT_ONLY_FIELDS_REFUSED,
+  name_expiry_staff_only: NAME_EXPIRY_CLIENT_REFUSED,
   board_resolution_not_generated: 'Generate the board resolution first.',
   [BOARD_RESOLUTION_WITH_MANAGER]: BOARD_RESOLUTION_WITH_MANAGER,
 };
 
 function errorStatus(message: string): number {
+  if (message === 'client_only_fields' || message === 'name_expiry_staff_only') return 403;
   if (message.includes('Only clients') || message.includes('Only the client or the project lead')) return 403;
   if (message.includes('not found') || message.includes('not permitted')) return 404;
   if (message in FRIENDLY) return 409;

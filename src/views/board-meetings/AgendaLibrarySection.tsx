@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { Download, Pencil, Search, Upload } from 'lucide-react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { DashSection } from '@/components/dash/DashSection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,7 @@ export function AgendaLibrarySection({ canEdit }: { canEdit: boolean }) {
     const blob = new Blob([libraryCsv(items ?? [])], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'SBC_agenda_library.csv';
+    a.download = standardDownloadName('Agenda Library', 'SBC', 'csv');
     a.click();
     URL.revokeObjectURL(a.href);
   };

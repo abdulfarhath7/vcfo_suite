@@ -43,9 +43,24 @@ export function useSidePanelOpen(userId: string | null | undefined): [boolean, (
 /**
  * GL-05: the handle on the left edge of the side panel. One push closes the panel and gives its
  * width to the form; the handle stays at the right edge so the next push opens it again. Desktop
- * only: below 1024px the panel already stacks under the form.
+ * only: below 1024px the panel already stacks under the form. `side` says where the panel sits (the
+ * Manager and Admin step pages keep their step list on the left), so the chevron points the way the
+ * panel moves.
  */
-export function SidePanelHandle({ open, onToggle, className }: { open: boolean; onToggle: () => void; className?: string }) {
+export function SidePanelHandle({
+  open,
+  onToggle,
+  className,
+  side = 'right',
+}: {
+  open: boolean;
+  onToggle: () => void;
+  className?: string;
+  side?: 'left' | 'right';
+}) {
+  const closeIcon = side === 'right' ? ChevronRight : ChevronLeft;
+  const openIcon = side === 'right' ? ChevronLeft : ChevronRight;
+  const Icon = open ? closeIcon : openIcon;
   return (
     <button
       type="button"
@@ -58,7 +73,7 @@ export function SidePanelHandle({ open, onToggle, className }: { open: boolean; 
         className,
       )}
     >
-      {open ? <ChevronRight className="h-4 w-4" aria-hidden /> : <ChevronLeft className="h-4 w-4" aria-hidden />}
+      <Icon className="h-4 w-4" aria-hidden />
     </button>
   );
 }

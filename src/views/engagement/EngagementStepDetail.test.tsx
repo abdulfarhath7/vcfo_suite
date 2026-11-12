@@ -151,11 +151,11 @@ describe('EngagementStepDetail', () => {
     expect(screen.queryByTestId('RedirectTo')).toBeNull();
   });
 
-  it('sends a reader without the engagement back to their list', async () => {
+  it('sends a reader without the engagement back to their list, which says why (GL-01)', async () => {
     app.engagements = [];
     app.user = { id: 'user-manager', role: 'manager' };
     await renderPage('/app/manager/projects/missing/step/pre-2', { id: 'missing', stepId: 'pre-2' });
-    expect(propsOf('RedirectTo').href).toBe('/app/manager/projects');
+    expect(propsOf('RedirectTo').href).toBe('/app/manager/projects#not-permitted');
   });
 
   it('shows the No step card for an unknown step and opens the company from it', async () => {

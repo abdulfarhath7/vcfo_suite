@@ -106,3 +106,43 @@ export function requestsPageHref(role: string): string {
   if (role === 'client') return '/app/client/requests';
   return '/app/manager/requests';
 }
+
+/** The status word of a list, as the Request lists page shows it. */
+export const REQUEST_LIST_STATUS_WORD: Record<RequestListStatus, string> = {
+  draft: 'Draft',
+  sent: 'Waiting on client',
+  complete: 'Complete',
+  cancelled: 'Cancelled',
+};
+
+export type RequestListTab = 'open' | 'drafts' | 'closed';
+
+type ListRow = {
+  title: string;
+  companyName: string;
+  dueOn: string | null;
+  reminderCount: number;
+  status: RequestListStatus;
+  progress: { total: number; done: number };
+};
+
+/** The lists of one staff tab: Open are sent, Drafts are drafts, Closed are complete or cancelled. */
+export function requestListsInTab<T extends Pick<ListRow, 'status'>>(lists: readonly T[], tab: RequestListTab): T[] {
+  return lists.filter((l) =>
+    tab === 'open' ? l.status === 'sent' : tab === 'drafts' ? l.status === 'draft' : l.status === 'complete' || l.status === 'cancelled',
+  );
+}
+
+export const REQUEST_LISTS_EXPORT_HEAD = ['List', 'Client', 'Due', 'Reminders sent', 'Items in', 'Status'];
+
+/** One list as the GL-06 export cells, in the order of `REQUEST_LISTS_EXPORT_HEAD`. */
+export function requestListExportCells(l: ListRow): Array<string | number | null> {
+  return [
+    l.title,
+    l.companyName,
+    l.dueOn,
+    l.reminderCount,
+    `${l.progress.done} of ${l.progress.total}`,
+    REQUEST_LIST_STATUS_WORD[l.status] ?? REQUEST_LIST_STATUS_WORD.draft,
+  ];
+}

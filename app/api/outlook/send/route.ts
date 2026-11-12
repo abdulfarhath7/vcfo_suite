@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole, type AuthContext } from '@/auth/guards';
 import { rejectLargeBody } from '@/lib/api/body-limit';
@@ -21,6 +21,7 @@ import type { GraphFileAttachment } from '@/lib/outlook/oauth';
 import { getObjectBuffer } from '@/storage/s3';
 import { publicErrorMessage } from '@/lib/api-error';
 import { recordEmailSent } from '@/lib/email/record-email-sent';
+import { queueStepWhatsAppAfterSend } from '@/lib/email/step-whatsapp-after-send';
 
 const emailList = z.union([z.string().email(), z.array(z.string().email())]);
 
@@ -50,6 +51,8 @@ const bodySchema = z.object({
   /** The project and step the email is about, for the audit record (GL-07). */
   engagementId: z.string().trim().max(100).optional(),
   itemId: z.string().trim().max(100).optional(),
+  /** The client WhatsApp nudge the drafted step email carries; queued only after the email is sent (GL-07). */
+  whatsappEvent: z.enum(['coi_issued', 'document_delivered']).optional(),
 });
 
 type SendBody = z.infer<typeof bodySchema>;
@@ -250,6 +253,15 @@ export async function POST(request: Request) {
     });
     // GL-07: the audit log records who sent what, to whom, and when.
     await recordEmailSent(guard.ctx, { to, cc, subject: data.subject, engagementId: data.engagementId, itemId: data.itemId, via: 'outlook' });
+    // WhatsApp after the email and after the response, so it can never slow or block the send.
+    after(() =>
+      queueStepWhatsAppAfterSend(guard.ctx, {
+        whatsappEvent: data.whatsappEvent,
+        engagementId: data.engagementId,
+        itemId: data.itemId,
+        sentTo: [...to, ...cc],
+      }),
+    );
     return NextResponse.json({
       ok: true,
       from: sent.msEmail,

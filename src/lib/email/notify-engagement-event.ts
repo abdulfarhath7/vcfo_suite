@@ -11,6 +11,8 @@ import {
   pushEmailSubject,
   type EmailDispatchResult,
   type OutgoingEmailDraft,
+  type StepWhatsAppEvent,
+  COI_ITEM_ID,
 } from '@/lib/email/email-dispatch';
 import {
   approvalBellLines,
@@ -36,9 +38,6 @@ import {
   type SendEmailResult,
 } from '@/lib/email/send-email';
 import type { NotificationKind } from '@/lib/checklist/checklist-notifications';
-import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
-import { firstNameOf } from '@/lib/notify/templates';
-import type { NotifyEvent } from '@/lib/notify/types';
 import {
   clientIncorporationPath,
   internBoardResolutionPath,
@@ -116,16 +115,13 @@ function emailKind(event: EngagementProcessEvent): ProgressEmailKind | null {
   }
 }
 
-/** Certificate of Incorporation step — accepting it is the `coi_issued` nudge. */
-const COI_ITEM_ID = 'pre-12';
-
 /**
  * Which process events also earn a WhatsApp nudge.
  *
  * Returns null for everything else — WhatsApp is a small, chosen subset, not a
  * mirror of the email fan-out. Email is unaffected either way.
  */
-function whatsappEventFor(input: NotifyInput): NotifyEvent | null {
+function whatsappEventFor(input: NotifyInput): StepWhatsAppEvent | null {
   if (input.event === 'delivered') {
     // `inAppOnly` marks a re-deliver; only the first Deliver nudges.
     return input.inAppOnly ? null : 'document_delivered';
@@ -887,22 +883,11 @@ export async function notifyEngagementEvent(input: NotifyInput): Promise<EmailDi
     email.failed = [...new Set(email.failed)];
     email.subjects = [...new Set(email.subjects ?? [])];
 
-    // WhatsApp last, on the background path, so a WhatsApp send can never
-    // slow this request or change anything above. Never throws.
+    // GL-07: WhatsApp goes out only after the email. The client email for these events is a
+    // draft, so the nudge rides on it and the send route queues it once the email has gone.
     const whatsappEvent = whatsappEventFor(input);
-    if (whatsappEvent) {
-      await queueWhatsAppSends(
-        clientParties(recipients).map((party) => ({
-          engagementId: recipients.appId,
-          recipientProfileId: party.userId,
-          event: whatsappEvent,
-          variables: {
-            firstName: firstNameOf(party.name),
-            companyName: company,
-            stepTitle: title,
-          },
-        })),
-      );
+    if (whatsappEvent && email.outgoingDraft) {
+      email.outgoingDraft = { ...email.outgoingDraft, whatsappEvent };
     }
   } catch (err) {
     console.error('[notify] engagement event failed', input.event, err);

@@ -142,7 +142,6 @@ export interface BoardResolutionEditorProps {
 
 export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
   const {
-    BOARD_RESOLUTION_DOCX_FILENAME,
     applyLatestTemplate,
     busy,
     doc,
@@ -266,7 +265,7 @@ export function BoardResolutionEditorDocPanel(p: BoardResolutionEditorProps) {
 
                       href={downloadHref}
 
-                      download={BOARD_RESOLUTION_DOCX_FILENAME}
+                      download=""
 
                       className={buttonVariants({ variant: 'default' })}
 

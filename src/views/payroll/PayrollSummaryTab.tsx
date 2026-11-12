@@ -1,6 +1,7 @@
 'use client';
 
 import { BadgeCheck, Download, RotateCcw } from 'lucide-react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import type { PayrollCycle } from '@/lib/payroll/cycle';
@@ -20,7 +21,6 @@ export function PayrollSummaryTab({ payroll, cycle, companyName }: { payroll: Pa
   const days = Number(cycle.to.slice(-2));
   const totals = totalsFor(state.rows, days);
   const salariesReady = state.salaryStatus === 'Done';
-  const fileBase = `${companyName.replace(/[^A-Za-z0-9]+/g, '-')}-${cycle.key}`;
 
   const tiles = [
     { label: 'Workers', value: String(totals.workers) },
@@ -47,7 +47,7 @@ export function PayrollSummaryTab({ payroll, cycle, companyName }: { payroll: Pa
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="lg" disabled={state.rows.length === 0} onClick={() => downloadText(`payroll-summary-${fileBase}.csv`, summaryToCsv(state.rows, days))}>
+          <Button variant="outline" size="lg" disabled={state.rows.length === 0} onClick={() => downloadText(standardDownloadName(`Payroll Summary ${cycle.key}`, companyName, 'csv'), summaryToCsv(state.rows, days))}>
             <Download aria-hidden />
             Download summary
           </Button>

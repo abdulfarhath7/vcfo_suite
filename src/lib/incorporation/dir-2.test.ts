@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildDir2MergeFields } from '@/lib/incorporation/dir-2';
+import { buildDir2MergeFields, dir2DownloadFilename } from '@/lib/incorporation/dir-2';
 
 const pre6Base = {
   nrDirectorFirstName: 'Justin',
@@ -24,6 +24,16 @@ const pre6Base = {
   residentDirectorPanNumber: 'ABCDE1234F',
   residentDirectorUtilityBillType: 'electricity',
 };
+
+describe('dir2DownloadFilename (GL-08)', () => {
+  it('names the DIR-2 after the director and the client, with the date in India', () => {
+    const on = new Date('2026-11-11T06:00:00Z');
+    expect(dir2DownloadFilename('resident', 'ember technologies private limited', pre6Base, on)).toBe(
+      'DIR-2-Priya-Sharma_Ember-Technologies-Private-Limited_11-11-2026.docx',
+    );
+    expect(dir2DownloadFilename('non-resident', 'Ember', undefined, on)).toBe('DIR-2_Ember_11-11-2026.docx');
+  });
+});
 
 describe('buildDir2MergeFields', () => {
   it('maps non-resident director from Pre-6 KYC', () => {

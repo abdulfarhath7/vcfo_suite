@@ -89,10 +89,18 @@ export async function listBatches(ctx: AuthContext, opts: { engagementId?: strin
 
 /** One batch, or null when the caller may not see it. */
 export async function getBatch(ctx: AuthContext, batchId: string): Promise<BatchRow | null> {
+  return (await getBatchWithClient(ctx, batchId))?.batch ?? null;
+}
+
+/** A batch with its client company, for the standard download name (GL-08). Same scope as `getBatch`. */
+export async function getBatchWithClient(
+  ctx: AuthContext,
+  batchId: string,
+): Promise<{ batch: BatchRow; companyName: string | null } | null> {
   const [row] = await db.select().from(labourRegisterBatches).where(eq(labourRegisterBatches.id, batchId)).limit(1);
   if (!row) return null;
   const access = await engagement(ctx, row.engagementId);
-  return access ? row : null;
+  return access ? { batch: row, companyName: access.row.companyName ?? null } : null;
 }
 
 /**

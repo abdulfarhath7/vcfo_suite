@@ -32,6 +32,26 @@ export const FILING_FORM_LABEL: Record<FilingForm, string> = {
   'spice-part-b': 'SPICe+ Part B',
 };
 
+/**
+ * SA-01: the checklist step that holds each form's acknowledgement number (SRN), in its
+ * `acknowledgementNumber` field. The filing card, the checklist step and the assist agents read and
+ * write that one field; the filing row keeps its copy only for the SRN date and the upload clock.
+ */
+export const FILING_FORM_STEP_ID: Record<FilingForm, string> = {
+  'spice-part-a': 'pre-4',
+  'spice-part-b': 'pre-10',
+};
+
+/** The form whose SRN a checklist step holds, or null. */
+export function filingFormForStep(stepId: string): FilingForm | null {
+  return FILING_FORMS.find((form) => FILING_FORM_STEP_ID[form] === stepId) ?? null;
+}
+
+/** The SRN the card shows: the step's acknowledgement number first, else the filing row's. */
+export function linkedSrn(stepSrn: string | null | undefined, rowSrn: string | null): string | null {
+  return stepSrn?.trim() || rowSrn;
+}
+
 export const FILING_STATE_LABEL: Record<FilingState, string> = {
   data_ready: 'Data ready',
   part_a_filling: 'Part A being filled',

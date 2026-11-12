@@ -95,6 +95,37 @@ export function internBoardResolutionPath(project: ProjectRouteTarget): string {
   return `${internEngagementPath(project)}/board-resolution`;
 }
 
+/** Board resolution editor in the admin or manager shell (S-556, S-557, P-112). */
+export function adminBoardResolutionPath(
+  project: ProjectRouteTarget,
+  baseOrRole?: StaffPathBase,
+): string {
+  return `${adminProjectPath(project, baseOrRole)}/board-resolution`;
+}
+
+/**
+ * The board resolution page the viewer may open. Shared components (the step row on a project
+ * page, the document cards on the two board resolution steps) build their link here, so a
+ * manager or an admin is never sent into the lead's area, which the shell guard refuses.
+ * `pathname` keeps the viewer in the shell they are in: a super admin stays in the admin,
+ * manager or lead shell they opened the project from.
+ */
+export function boardResolutionPathFor(
+  role: string | null | undefined,
+  project: ProjectRouteTarget,
+  pathname?: string | null,
+): string {
+  if (role === 'client') return clientBoardResolutionPath();
+  if (role === 'intern') return internBoardResolutionPath(project);
+  if (role === 'super_admin' && pathname && isInternEngagementPathname(pathname)) {
+    return internBoardResolutionPath(project);
+  }
+  return adminBoardResolutionPath(
+    project,
+    staffProjectBaseFromPathname(pathname, role === 'manager' ? 'manager' : 'admin'),
+  );
+}
+
 /** Client read-only board resolution */
 export function clientBoardResolutionPath(): string {
   return '/app/client/board-resolution';
@@ -130,6 +161,19 @@ export function isClientIncorporationStepPathname(pathname: string): boolean {
  * card and highlights it for two seconds (`useNotifiedHighlight`).
  */
 export const NOTIFIED_HASH = '#notified';
+
+/**
+ * GL-01: added to the nearest page the app opens when the person may not open the step a link
+ * names (not on the project's team, or the project is gone). The page then says why.
+ */
+export const NOT_PERMITTED_HASH = '#not-permitted';
+
+/** The project overview for a role: where an old notification without a step link opens (GL-01). */
+export function projectPathForRole(role: string, project: ProjectRouteTarget): string {
+  if (role === 'client') return clientIncorporationPath();
+  if (role === 'intern') return internEngagementPath(project);
+  return adminProjectPath(project, role === 'manager' ? 'manager' : 'admin');
+}
 
 /**
  * The exact step page of one role (GL-01): the notification pop-up, the notification list, the

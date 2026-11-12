@@ -2,7 +2,7 @@
 
 /**
  * Client portal runtime — the React port of prototype proto.js + shell.js glue:
- * shell data, Before / After state, theme, toast with Undo, the shared
+ * shell data, Before / After state, theme, toast with Undo (the app's shared toaster), the shared
  * drill-down pop-up (rule 14), the point tooltip, and the Ask VCFO chat switch.
  */
 import {
@@ -24,12 +24,13 @@ import {
   type ClientPortalShell,
   type PortalViewState,
 } from '@/lib/client-portal/types';
-import { Check, ChevronRight, X } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Chip, OwnerChip, type ChipTone, type Owner } from '@/components/ui/spectrum-chip';
 import { StepMark, type StepState, type StepTone } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { portalHref, type PortalRouteKey } from './routes';
+import { portalHref, type PortalCrumbInput, type PortalRouteKey } from './routes';
+import { showPortalToast } from './portal-toast';
 import { PortalModal } from './pages/incorporation/modal';
 
 export interface DrillTab {
@@ -83,9 +84,6 @@ export interface ToastOptions {
   action?: { label: string; onClick: () => void };
 }
 
-/** How long a toast stays (prototype useUndoToast, 5 s). Deferred actions with Undo wait this long. */
-const TOAST_MS = 5000;
-
 export interface PortalContextValue {
   /** Set when staff view one client's page in their own shell (`StaffPortalProvider`); a client never has it. */
   engagementId?: string;
@@ -112,9 +110,10 @@ export interface PortalContextValue {
   go: (key: PortalRouteKey | string) => void;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
-  /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]). */
-  crumbs: string[] | null;
-  setCrumbs: (trail: string[] | null) => void;
+  /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]).
+      A crumb may carry the page it opens; otherwise `portalTrail` finds it from the label (NV-03). */
+  crumbs: PortalCrumbInput[] | null;
+  setCrumbs: (trail: PortalCrumbInput[] | null) => void;
 }
 
 export type PortalTextSize = 'small' | 'default' | 'large';
@@ -156,12 +155,12 @@ export function usePortalOptional(): PortalContextValue | null {
 }
 
 /** A page sets the top-bar location trail while it is mounted. */
-export function usePortalCrumbs(trail: string[] | null) {
+export function usePortalCrumbs(trail: PortalCrumbInput[] | null) {
   const ctx = useContext(PortalContext);
-  const key = trail ? trail.join('\u0000') : '';
+  const key = trail ? JSON.stringify(trail) : '';
   useEffect(() => {
     if (!ctx) return;
-    ctx.setCrumbs(key ? key.split('\u0000') : null);
+    ctx.setCrumbs(key ? (JSON.parse(key) as PortalCrumbInput[]) : null);
     return () => ctx.setCrumbs(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -286,18 +285,8 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
     return () => mq.removeEventListener('change', apply);
   }, [rootRef]);
 
-  /* ---------- toast (prototype useUndoToast: one at a time, 5 s, Undo) ---------- */
-  const [toastState, setToastState] = useState<(ToastOptions & { msg: string; n: number }) | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toast = useCallback((msg: string, opts?: ToastOptions) => {
-    setToastState((prev) => ({ ...opts, msg, n: (prev?.n ?? 0) + 1 }));
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastState(null), TOAST_MS);
-  }, []);
-  const hideToast = useCallback(() => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToastState(null);
-  }, []);
+  /* ---------- toast: the app's shared toaster, in the portal's theme (GL-02) ---------- */
+  const toast = useCallback((msg: string, opts?: ToastOptions) => void showPortalToast(msg, opts, theme), [theme]);
 
   /* ---------- Before / After ---------- */
   const after = shell ? effectiveAfter(shell) : false;
@@ -333,7 +322,7 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [crumbs, setCrumbs] = useState<string[] | null>(null);
+  const [crumbs, setCrumbs] = useState<PortalCrumbInput[] | null>(null);
 
   const go = useCallback(
     (key: PortalRouteKey | string) => {
@@ -375,7 +364,6 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
   return (
     <PortalContext.Provider value={value}>
       {children}
-      <PortalToast state={toastState} onClose={hideToast} onUndone={() => toast('Undone')} />
       <PointTip tip={tip} />
       {drillCfg ? <DrillDialog cfg={drillCfg} onClose={() => setDrillCfg(null)} go={go} toast={toast} /> : null}
     </PortalContext.Provider>
@@ -393,84 +381,6 @@ function PointTip({ tip }: { tip: { x: number; y: number; text: string } | null 
   return (
     <div ref={ref} id="vp-tip" role="tooltip" className={tip ? 'on' : undefined} style={pos ? { left: pos.left, top: pos.top } : undefined}>
       {tip?.text}
-    </div>
-  );
-}
-
-/**
- * A2 dark toast (one line, Undo) or A1 white toast with a status tile (`kind`), VCFO Spectrum
- * B-16. Bottom left of the page on a desk, above the phone tab bar on a phone. It sits inside
- * the portal root, so the tokens follow the portal's light or dark theme.
- */
-function PortalToast({ state, onClose, onUndone }: { state: (ToastOptions & { msg: string; n: number }) | null; onClose: () => void; onUndone: () => void }) {
-  if (!state) return <div id="vp-toast" role="status" aria-live="polite" className="cp-tw" />;
-  const undo = state.undo
-    ? () => {
-        state.undo?.();
-        onUndone();
-      }
-    : undefined;
-  const place =
-    'fixed bottom-[132px] left-1/2 z-[2147483001] max-w-[calc(100vw-32px)] -translate-x-1/2 md:bottom-16 md:left-[calc(var(--vp-side-w,248px)+20px)] md:translate-x-0 motion-safe:animate-in motion-safe:fade-in-0';
-  const small =
-    'inline-flex h-control-sm flex-none items-center rounded-md border-1.5 border-line-strong bg-surface-raised px-2.5 text-[13px] font-medium text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25';
-  return (
-    <div id="vp-toast" role="status" aria-live="polite" className="cp-tw" data-n={state.n}>
-      {state.kind ? (
-        <div key={state.n} className={cn(place, 'flex w-[380px] items-start gap-2.5 rounded-md border-1.5 border-line bg-surface-raised p-3.5 text-ink shadow-float')}>
-          <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-mark bg-positive-soft text-positive" aria-hidden>
-            <Check size={14} strokeWidth={1.6} />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-            <b className="text-[14px] font-medium leading-[22px]">{state.msg}</b>
-            {state.sub ? <span className="text-[13px] leading-[19px] text-ink-2">{state.sub}</span> : null}
-          </span>
-          {state.action ? (
-            <button
-              type="button"
-              className={small}
-              onClick={() => {
-                state.action?.onClick();
-                onClose();
-              }}
-            >
-              {state.action.label}
-            </button>
-          ) : null}
-          {undo ? (
-            <button type="button" className={small} onClick={undo}>
-              Undo
-            </button>
-          ) : null}
-          <button type="button" aria-label="Dismiss" onClick={onClose} className="grid h-[30px] w-6 flex-none place-items-center rounded-mark text-ink-muted hover:bg-ink/[.06] hover:text-ink">
-            <X size={14} strokeWidth={1.6} aria-hidden />
-          </button>
-        </div>
-      ) : (
-        <div key={state.n} className={cn(place, 'flex items-center gap-3 rounded-md bg-side px-4 py-2.5 text-[13.5px] text-white shadow-float')}>
-          <span className="min-w-0 truncate">{state.msg}</span>
-          {state.action ? (
-            <button
-              type="button"
-              className="flex-none rounded-sm font-medium text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-              onClick={() => {
-                state.action?.onClick();
-                onClose();
-              }}
-            >
-              {state.action.label}
-            </button>
-          ) : null}
-          {undo ? (
-            <button type="button" className="flex-none rounded-sm font-medium text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" onClick={undo}>
-              Undo
-            </button>
-          ) : null}
-          <button type="button" aria-label="Dismiss" onClick={onClose} className="grid h-6 w-6 flex-none place-items-center rounded-sm text-side-ink hover:bg-white/[.12]">
-            <X size={14} strokeWidth={1.6} aria-hidden />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -413,6 +413,7 @@ export async function listClientAuditEvents(
   const out: ClientAuditPage = {
     events,
     nextBefore: rows.length > limit && last ? `${last.createdAt.toISOString()}|${last.id}` : null,
+    companyName: company,
   };
   if (opts.withSummary) out.summary = await summary(dbId);
   return out;

@@ -50,6 +50,8 @@ export function RepeatGroupEditor({
     onCellChange: (cellKey: string, value: string) => void;
     isCellReadOnly: (cellKey: string) => boolean;
     errors?: Record<string, string | undefined>;
+    /** The project, for the client name in the Excel export's file name. */
+    engagementId?: string;
   };
 }) {
   const entries = repeatEntries(responses, group);
@@ -87,6 +89,7 @@ export function RepeatGroupEditor({
           readOnly={grid.isCellReadOnly}
           errors={grid.errors}
           onChange={grid.onCellChange}
+          engagementId={grid.engagementId}
         />
       ) : null}
       {!(gridOn && view === 'grid') && entries.map((entry) => (

@@ -188,7 +188,6 @@ export function DocsMobile({
   const title = curFolder?.label ?? 'Documents';
   const crumb = ['Documents', ...path.slice(0, -1).map((p) => (byId.get(p) as TFolder | undefined)?.label.split(' — ')[0] ?? '')].join(' / ');
   const backLabel = path.length > 1 ? (byId.get(path[path.length - 2]!) as TFolder | undefined)?.label ?? 'Documents' : 'Documents';
-  const t = zip.toast;
 
   return (
     <div className="vdm">
@@ -415,27 +414,6 @@ export function DocsMobile({
             </div>
           </div>
         </PagePortal>
-      ) : null}
-
-      {t ? (
-        <div role="status" aria-live="polite" style={{ position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--vp-launch-h, 76px) + 8px)', zIndex: 2147482302, padding: '10px 12px', borderRadius: 6, background: 'oklch(var(--side))', color: 'oklch(var(--on-brand))', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: 'var(--shadow-float)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{t.error ?? (t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`)}</span>
-            <span className="mono" style={{ fontSize: 11, opacity: 0.75 }}>
-              {t.error || t.copy ? '' : t.done ? `${t.total} files` : `${t.n} of ${t.total}`}
-            </span>
-            <button type="button" aria-label="Dismiss" onClick={zip.dismiss} style={{ width: 32, height: 32, border: 0, borderRadius: 6, background: 'none', color: 'oklch(var(--on-brand))', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" />
-              </svg>
-            </button>
-          </div>
-          {!t.done ? (
-            <div style={{ height: 4, borderRadius: 3, background: 'oklch(100% 0 0 / .18)', overflow: 'hidden' }}>
-              <span style={{ display: 'block', height: '100%', background: 'oklch(var(--brand))', width: `${t.total ? (t.n / t.total) * 100 : 0}%`, transition: 'width .25s' }} />
-            </div>
-          ) : null}
-        </div>
       ) : null}
     </div>
   );

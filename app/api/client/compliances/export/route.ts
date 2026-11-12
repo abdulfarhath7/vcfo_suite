@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { getPortalFilings } from '@/db/repositories/client-compliances';
 import { parseFyParam } from '@/lib/compliance/filings';
+import { standardDownloadName } from '@/lib/files/download-name';
 import {
   AREAS,
   fyLabelOf,
@@ -32,7 +33,9 @@ export async function GET(request: Request) {
   if (area && area !== 'all' && AREAS.some((a) => a.id === area)) rows = rows.filter((r) => r.area === area);
   const status = p.get('status') as CompStatus | 'all' | null;
   if (status && status !== 'all' && ['ok', 'due', 'over', 'up'].includes(status)) rows = rows.filter((r) => statusOf(r, today) === status);
-  const name = `filings-${fy ? fyLabelOf(fy).replace(/\s+/g, '-') : 'all'}${cadence ? `-${cadence}` : ''}.csv`;
+  // GL-08: `Filings-<FY>[-<cadence>]_<Client>_<DD-MM-YYYY>.csv`; the client name only when every row is one company.
+    const companies = new Set(rows.map((r) => r.companyName));
+    const name = standardDownloadName(`Filings ${fy ? fyLabelOf(fy) : 'All'}${cadence ? ` ${cadence}` : ''}`, companies.size === 1 ? [...companies][0] : null, 'csv');
   return new Response('﻿' + filingsCsv(rows, today), {
     headers: {
       'content-type': 'text/csv; charset=utf-8',

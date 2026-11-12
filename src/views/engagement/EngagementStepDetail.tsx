@@ -1,5 +1,7 @@
 "use client";
 
+import { NOT_PERMITTED_HASH } from '@/lib/projects/project-step-path';
+import { StepEmailsSent } from '@/components/email/StepEmailsSent';
 import { ClientFileRequestsPanel } from "@/components/incorporation/ClientFileRequestsPanel";
 import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { redirect } from 'next/navigation';
@@ -37,6 +39,9 @@ import { useEngagementStepDetail } from '@/views/engagement/step-detail/use-enga
 import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
 import { FillOwnerBanner } from '@/components/incorporation/FillOwnerBanner';
 import { cn } from '@/lib/utils';
+import { RemindClientButton } from '@/components/reminders/RemindClientButton';
+import { canSendStepOpenedEmail } from '@/lib/checklist/step-opened';
+import { itemKey } from '@/lib/work/item-key';
 import { createStepView } from '@/views/engagement/step-detail/create-step-view';
 
 /** The record's names for the phases (prototype `PHASES`), for the staff step head and rail. */
@@ -113,7 +118,8 @@ export default function EngagementStepDetail() {
     // routes; on the client route `eng` is derived from it, so redirecting on
     // that tick bounced the reader out of a step they were allowed to read.
     if (!engagementsSettled || !user) return <StepLoadingShapes />;
-    return <RedirectTo href={listRedirect} />;
+    // GL-01: the nearest page this person may open, which then says why the step did not open.
+    return <RedirectTo href={`${listRedirect}${NOT_PERMITTED_HASH}`} />;
   }
   /* S-519: an unknown step shows a "Step" card with a outlined "No step" area, not a bounce. */
   if (!item) {
@@ -190,6 +196,17 @@ export default function EngagementStepDetail() {
         </p>
       </div>
       {selfStatus && showHeadStatus ? <ChecklistStatusPill status={selfStatus} /> : null}
+      {/* DR-03: the Lead emails the client that Proposed directors is open (GL-07 pop-up, never automatic). */}
+      {isInternRoute && canSendStepOpenedEmail(user?.role, item.id, checklistState) ? (
+        <RemindClientButton
+          engagementId={eng.id}
+          itemKey={itemKey({ kind: 'step', engagementId: eng.id, stepId: item.id })}
+          title={item.title}
+          purpose="step-opened"
+          label="Send email"
+          doneLabel="Email sent"
+        />
+      ) : null}
       {isClientRoute ? (
         <WhatsThisButton kind="step" refId={item.id} label={item.title} />
       ) : (
@@ -444,6 +461,7 @@ export default function EngagementStepDetail() {
                 {!isClientRoute ? <FillOwnerBanner engagement={eng} itemId={item.id} /> : null}
                 {stepForm}
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+                {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
               </div>
               <SidePanelHandle open={panelOpen} onToggle={togglePanel} className="lg:sticky lg:top-[var(--shell-sticky-top)]" />
               {/* GL-05: the panel can be pushed aside; below lg it always stacks under the form. */}
@@ -453,16 +471,32 @@ export default function EngagementStepDetail() {
             <>
               {stepForm}
               {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+              {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
             </>
           )}
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]">
-          <aside className="hidden lg:block lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start">
+        <div
+          className={cn(
+            'grid gap-5 lg:items-start',
+            panelOpen ? 'lg:grid-cols-[minmax(14rem,16rem)_auto_minmax(0,1fr)]' : 'lg:grid-cols-[auto_minmax(0,1fr)]',
+          )}
+        >
+          {/* GL-05: the Manager and Admin step list can be pushed aside too; the form takes the width. */}
+          <aside
+            className={cn('hidden lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start', panelOpen && 'lg:block')}
+            data-step-progress-rail
+          >
             <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
               <ChecklistJourneyRail items={railItems} selectedId={item.id} onSelect={openStep} />
             </Surface>
           </aside>
+          <SidePanelHandle
+            open={panelOpen}
+            onToggle={togglePanel}
+            side="left"
+            className="lg:sticky lg:top-[var(--shell-sticky-top)]"
+          />
 
           <div className="min-w-0">
             {checklistLoading && (
@@ -477,6 +511,7 @@ export default function EngagementStepDetail() {
             {assistHint}
             {stepForm}
             {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
+            {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
           </div>
         </div>
       )}

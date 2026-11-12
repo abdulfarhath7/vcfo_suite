@@ -5,7 +5,10 @@ import {
   isValidPre1Date,
   isValidPre1Gender,
   isValidPre1NominalValuePerEquityShare,
+  pre1CompanyKind,
   pre1GenderLabel,
+  pre1TooFewDirectorsMessage,
+  PRE1_MIN_DIRECTORS_BY_KIND,
   validatePre1Responses,
 } from '@/lib/checklist/checklist-pre1-validation';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
@@ -163,6 +166,24 @@ describe('validatePre1Responses proposed directors', () => {
   it('requires at least one India-resident director', () => {
     const { errors } = validatePre1Responses({ ...two, director1IndiaResident: 'no' });
     expect(errors.director1IndiaResident).toMatch(/resident in India/i);
+  });
+
+  it('CD-01: takes the minimum number of directors from the kind of company', () => {
+    const one = { ...two, directorCount: '1', director1IndiaResident: 'yes' };
+    expect(validatePre1Responses({ ...one, proposedName1: 'Acme Labs Private Limited' }).errors.directorCount).toBe(
+      'A private limited company needs at least 2 directors. Add another director.',
+    );
+    expect(validatePre1Responses({ ...two, proposedName1: 'Acme Labs Private Limited' }).errors.directorCount).toBeUndefined();
+    expect(validatePre1Responses({ ...one, proposedName1: 'Acme Labs (OPC) Private Limited' }).errors.directorCount).toBeUndefined();
+  });
+
+  it('CD-01: knows the minimum for every kind of company', () => {
+    expect(PRE1_MIN_DIRECTORS_BY_KIND).toEqual({ private_limited: 2, public_limited: 3, opc: 1, llp: 2 });
+    expect(pre1CompanyKind({ proposedName1: 'Acme (OPC) Private Limited' })).toBe('opc');
+    expect(pre1CompanyKind({ proposedName1: 'Acme Private Limited' })).toBe('private_limited');
+    expect(pre1CompanyKind({})).toBe('private_limited');
+    expect(pre1TooFewDirectorsMessage('public_limited')).toBe('A public limited company needs at least 3 directors. Add another director.');
+    expect(pre1TooFewDirectorsMessage('llp')).toBe('An LLP needs at least 2 designated partners. Add another designated partner.');
   });
 
   it('requires the board resolution date (the client gives it) but never the company mail', () => {

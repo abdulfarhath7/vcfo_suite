@@ -25,4 +25,11 @@ describe('side panel', () => {
     rerender(<SidePanelHandle open={open} onToggle={() => (open = !open)} />);
     expect(screen.getByRole('button', { name: 'Show the progress panel' })).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('points the chevron the way a left-hand panel moves', () => {
+    const { container, rerender } = render(<SidePanelHandle open onToggle={() => {}} side="left" />);
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('lucide-chevron-left');
+    rerender(<SidePanelHandle open={false} onToggle={() => {}} side="left" />);
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('lucide-chevron-right');
+  });
 });

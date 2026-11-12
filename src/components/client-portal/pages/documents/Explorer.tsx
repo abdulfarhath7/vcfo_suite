@@ -40,7 +40,7 @@ import {
   type TFolder,
   type View,
 } from './model';
-import { copyText, docLink, downloadNode, ZipToast, type useZipToast } from './shared-ui';
+import { copyText, docLink, downloadNode, type useZipToast } from './shared-ui';
 import type { DrillTarget } from './Drill';
 
 const EYE = 'M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z';
@@ -645,7 +645,6 @@ export function DocsExplorer({ data, model, view, setView, zip, glowId, selectId
         />
       </div>
 
-      {zip.toast ? <ZipToast t={zip.toast} onClose={zip.dismiss} /> : null}
     </section>
   );
 }

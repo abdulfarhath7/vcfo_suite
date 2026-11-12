@@ -6,7 +6,7 @@ import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { FilterSelect } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
-import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
+import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { AreaPill } from '@/components/ui/spectrum-chip';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { Term } from '@/components/ui/term';
@@ -46,6 +46,13 @@ import { useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
 import { NewTaskButton } from '@/views/compliances/tasks/new-task';
 import { NewWorkMenu } from '@/views/board-meetings/NewMeetingDialog';
 import { statHref, taskColumns, taskGroups, taskHref, taskRowMatches } from '@/views/compliances/tasks/task-list';
+import {
+  obligationBuckets,
+  obligationFlatRows,
+  shownObligationTasks,
+  type ObligationFlatRow,
+  type ObligationGroupBy,
+} from '@/lib/compliance/obligations-list';
 import type { Category } from '@/views/compliances/tasks/task-model';
 import {
   dueWithinSoon,
@@ -53,12 +60,11 @@ import {
   groupObligations,
   matchesFilter,
   waitingOnClient,
-  type ObligationClientRow,
   type ObligationFilter,
   type ObligationGroup,
 } from '@/lib/compliance/obligation-groups';
 
-type GroupBy = 'filing' | 'frequency' | 'law';
+type GroupBy = ObligationGroupBy;
 
 /** S-8: the strip labels follow the category in view. */
 const STRIP_LABELS: Record<Category, [string, string, string, string, string]> = {
@@ -66,13 +72,6 @@ const STRIP_LABELS: Record<Category, [string, string, string, string, string]> =
   ns: ['Overdue', 'Due this week', 'Waiting on client', 'Done', 'Not started'],
   all: ['Overdue', 'Due soon', 'Waiting on client', 'Filed or done', 'Upcoming'],
 };
-const FREQUENCIES: Array<[string, string]> = [
-  ['monthly', 'Monthly'],
-  ['quarterly', 'Quarterly'],
-  ['half-yearly', 'Half-yearly'],
-  ['annual', 'Annual'],
-  ['one-time', 'One-time'],
-];
 const FREQ_DOT: Record<string, string> = {
   monthly: 'bg-brand',
   quarterly: 'bg-identity',
@@ -81,10 +80,7 @@ const FREQ_DOT: Record<string, string> = {
   'one-time': 'bg-upcoming-mid',
 };
 
-/** One client row with its obligation, for the flat "by frequency" and "by law" lists. */
-interface FlatRow extends ObligationClientRow {
-  group: ObligationGroup;
-}
+type FlatRow = ObligationFlatRow;
 
 /** "3 days late", "Today", "In 4 days". */
 function dueWords(iso: string, now: Date): string {
@@ -143,7 +139,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   const register = useRegister(now);
   const rows = rowsForCompany(register.rows, companyId);
   const groups = groupObligations(rows, register.details, now);
-  const allClientRows = groups.flatMap((g) => g.rows.map((r) => ({ ...r, group: g })));
+  const allClientRows = obligationFlatRows(groups);
 
   const setParams = params.set;
 
@@ -153,8 +149,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   // Non-statutory tasks (S-3). The client filter applies to them too; not-applicable rows stay hidden.
   const tasksQuery = useTasks({ engagementId: companyId !== ALL_COMPANIES ? companyId : undefined });
   const tasks: TaskRowDto[] = useMemo(() => (tasksQuery.data?.tasks ?? []).filter((t) => !t.hidden), [tasksQuery.data?.tasks]);
-  const ofType = (t: TaskRowDto) => (workType === 'all' ? true : workType === 'meeting' ? Boolean(t.boardMeetingId) : !t.boardMeetingId);
-  const shownTasks = tasks.filter((t) => ofType(t) && taskRowMatches(t, filter));
+  const shownTasks = shownObligationTasks(tasks, workType, filter);
   const tHref = (t: TaskRowDto) => taskHref(basePath, t.id, t.boardMeetingId);
 
   const count = (f: ObligationFilter) => allClientRows.filter((r) => matchesFilter(r, f, now)).length;
@@ -171,22 +166,12 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   ];
 
   const shownFlat: FlatRow[] = allClientRows.filter((r) => matchesFilter(r, filter, now));
-  const gridGroups: GridGroup<FlatRow>[] =
-    groupBy === 'filing'
-      ? groups.map((g) => {
-          const list = shownFlat.filter((r) => r.group.obligationId === g.obligationId);
-          return { id: g.obligationId, label: g.name, rows: list, head: <FilingHead group={g} /> };
-        })
-      : groupBy === 'law'
-        ? [...new Set(groups.map((g) => g.area))]
-            .sort((a, b) => a.localeCompare(b))
-            .map((a) => ({ id: a, label: areaLabel(a), dot: areaSwatch(a), rows: shownFlat.filter((r) => r.group.area === a) }))
-        : FREQUENCIES.map(([key, label]) => ({
-            id: key,
-            label,
-            dot: FREQ_DOT[key],
-            rows: shownFlat.filter((r) => r.group.frequency.trim().toLowerCase() === key),
-          }));
+  // The groups are shared with the server's Excel export (GL-06); the page adds the band heads and dots.
+  const gridGroups: GridGroup<FlatRow>[] = obligationBuckets(groups, shownFlat, groupBy).map((b) =>
+    b.group
+      ? { id: b.id, label: b.label, rows: b.rows, head: <FilingHead group={b.group} /> }
+      : { id: b.id, label: b.label, rows: b.rows, dot: groupBy === 'law' ? areaSwatch(b.id) : FREQ_DOT[b.id] },
+  );
 
   const statusCol: GridColumn<FlatRow> = { key: 'status', label: 'Status', width: 128, render: (r) => <WordChip word={r.word} /> };
   const dueCol: GridColumn<FlatRow> = {
@@ -334,31 +319,6 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   const filterRef = useRef<HTMLSpanElement>(null);
   useListKeys(listRef, filterRef);
 
-  /**
-   * GL-06: every row the filters keep, in the order the grids show them: the statutory rows group
-   * by group, then (in "All", or alone in "Non-statutory") the tasks week by week. A task has no
-   * law or last filed date, so those cells stay empty.
-   */
-  const exportRows = (): ExcelCell[][] => [
-    ...(hasStat
-      ? gridGroups.flatMap((g) =>
-          g.rows.map((r) => [
-            r.group.name,
-            r.row.companyName,
-            areaLabel(r.group.area),
-            r.detail?.ownerName ?? null,
-            r.lastFiled ?? null,
-            r.word,
-            r.nextDue ?? r.row.dueDate,
-          ]),
-        )
-      : []),
-    ...(hasNs
-      ? taskGroups(shownTasks).flatMap((g) =>
-          g.rows.map((t) => [t.title, t.companyName, 'Non-statutory', t.owner?.name ?? null, null, t.word, t.dueDate]),
-        )
-      : []),
-  ];
 
   const head = (
     <span ref={filterRef} className="contents">
@@ -399,11 +359,11 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
           }}
         />
       ) : null}
+      {/* GL-06: the server rebuilds every row the filters keep, in the order the grids show them. */}
       <ExportToExcelButton
         title={cat === 'ns' ? 'Non-statutory tasks' : 'Obligations'}
         client={companyId !== ALL_COMPANIES ? (picked?.companyName ?? null) : null}
-        columns={['Obligation', 'Client', 'Law', 'Lead', 'Last filed', 'Status', 'Next due']}
-        rows={exportRows}
+        source={{ source: 'obligations', companyId, groupBy, state: filter, cat, workType }}
       />
     </span>
   );

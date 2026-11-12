@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { tabStateClass } from '@/components/ui/tab-classes';
 import {
   activeView,
   addSavedView,
@@ -70,15 +71,15 @@ export function SavedViews({ storageKey, views, current, onApply, className }: S
           const picked = v.key === on;
           const custom = mine.some((m) => m.key === v.key);
           return (
-            <span key={v.key} className={cn('inline-flex flex-none items-center rounded-sm', picked && 'bg-brand text-on-brand shadow-shine')}>
+            <span key={v.key} className={cn('inline-flex flex-none items-center', picked ? 'rounded-t-sm' : 'rounded-sm', tabStateClass(picked))}>
               <button
                 type="button"
                 role="tab"
                 aria-selected={picked}
                 onClick={() => onApply({ ...v.filters })}
                 className={cn(
-                  'inline-flex h-[22px] items-center whitespace-nowrap rounded-sm px-3 text-[13px] font-medium transition-colors',
-                  picked ? 'text-on-brand' : 'text-ink-2 hover:text-ink',
+                  // GL-03: the wrapper carries the shared open-tab look; the text inherits it.
+                  'inline-flex h-[22px] items-center whitespace-nowrap rounded-sm px-3 text-[13px] transition-colors',
                   picked && custom && 'pr-1.5',
                 )}
               >
@@ -90,7 +91,7 @@ export function SavedViews({ storageKey, views, current, onApply, className }: S
                   onClick={() => remove(v.key)}
                   aria-label={`Remove view ${v.label}`}
                   title="Remove view"
-                  className="mr-1 grid h-4 w-4 place-items-center rounded-sm text-on-brand hover:bg-white/[.18]"
+                  className="mr-1 grid h-4 w-4 place-items-center rounded-sm text-brand-text hover:bg-brand/[.12]"
                 >
                   <X className="h-3 w-3" strokeWidth={1.6} aria-hidden />
                 </button>

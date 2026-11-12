@@ -10,9 +10,8 @@ import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { pendingApprovalKind, usePendingApprovals } from '@/hooks/use-pending-approvals';
+import { pendingApprovalKindKey, type PendingApprovalKindKey } from '@/lib/projects/pending-approvals';
 import { checklistItemLabel } from '@/lib/audit/audit-log';
-import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
-import type { PendingApprovalRow } from '@/lib/projects/pending-approvals';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import { adminProjectStepPath } from '@/lib/projects/project-step-path';
 import { ProjectChangeRequestsPanel } from '@/views/admin/ProjectChangeRequestsPanel';
@@ -20,7 +19,7 @@ import { DateChangeRequestsPanel } from '@/components/work/DateChangeRequestsPan
 import { PlainPageHead } from '@/views/admin/PlainPageHead';
 import { MeetingApprovalsPanel } from '@/views/board-meetings/MeetingApprovalsPanel';
 
-type KindKey = 'client' | 'lead' | 'send' | 'board';
+type KindKey = PendingApprovalKindKey;
 
 const KIND_LABEL: Record<KindKey, string> = {
   client: 'Client submit',
@@ -29,11 +28,7 @@ const KIND_LABEL: Record<KindKey, string> = {
   board: 'Board resolution',
 };
 
-function kindKey(row: PendingApprovalRow): KindKey {
-  if (row.clientFill) return 'send';
-  if (row.itemId === MANAGER_APPROVAL_STEP_ID) return 'board';
-  return row.reviewSource === 'lead_manager_request' ? 'lead' : 'client';
-}
+const kindKey = pendingApprovalKindKey;
 
 /** Two-letter company tile (prototype ClientCodeTile): a 6px square in the soft blurple. */
 function CompanyTile({ name }: { name: string }) {
@@ -109,14 +104,9 @@ export default function ApprovalsInbox({ scope }: { scope: 'firm' | 'manager' })
           )
         }
         right={
-          // GL-06: every pending milestone the kind filter keeps, in the list's order.
-          <ExportToExcelButton
-            title="Approvals"
-            columns={['Step', 'Client', 'Kind', 'Note']}
-            rows={() =>
-              shown.map((row) => [checklistItemLabel(row.itemId), row.companyName, pendingApprovalKind(row), row.clientFill?.note ?? null])
-            }
-          />
+          // GL-06: every pending milestone the kind filter keeps, read again on the server with the
+          // viewer's scope, so the file never holds a project the viewer cannot see.
+          <ExportToExcelButton title="Approvals" source={{ source: 'approvals', scope, kind: activeKind }} />
         }
         bodyClassName="p-0"
       >

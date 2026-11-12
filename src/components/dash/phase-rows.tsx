@@ -17,6 +17,8 @@ import { Chevron } from '@/components/ui/chevron';
  */
 export interface PhaseStep {
   n: number;
+  /** Shown in the # column in place of `n` (a SPICe+ Part B step shows its MCA section, "MCA 5–6"). */
+  code?: string;
   title: string;
   owner: Owner;
   ownerLabel?: string;
@@ -114,7 +116,7 @@ export function PhaseRows({
                   <tbody>
                     {p.steps.map((s) => (
                       <tr key={s.n}>
-                        <td className="num font-mono text-ink-faint">{s.n}</td>
+                        <td className="num font-mono text-ink-faint">{s.code ?? s.n}</td>
                         <td className="font-medium">
                           {s.href ? (
                             <Link href={s.href} className="hover:underline">

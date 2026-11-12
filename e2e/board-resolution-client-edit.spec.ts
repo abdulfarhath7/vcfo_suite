@@ -4,7 +4,8 @@ import { login, onLocalDb, type DemoRole } from './helpers/login';
 /**
  * BR-04 / BR-05 / BR-06 on a running app: the client edits the firm's board resolution, and the
  * edit goes edit → confirm → email → receipt → Manager → Admin → back to the Client, with every
- * out-of-order move refused. A return goes to the Lead and the Client, who may both edit it, and
+ * out-of-order move refused. The email step follows GL-07: a preview answers the draft and the
+ * move is made only with the email the client sends from the pop-up. A return goes to the Lead and the Client, who may both edit it, and
  * only the Lead sends it to the Manager again. Seeds a finalized draft for Kestrel, so it runs on a local database only.
  */
 
@@ -49,7 +50,7 @@ async function as(browser: Browser, role: DemoRole): Promise<APIRequestContext> 
 
 async function call(req: APIRequestContext, method: 'GET' | 'PUT' | 'POST', data?: unknown) {
   const res = await req.fetch(API, { method, data });
-  return { status: res.status(), body: (await res.json()) as { view?: { stage: string | null; holder: string | null; actions?: string[]; changes: unknown[]; audit?: Array<{ summary: string }>; original: string[] }; code?: string } };
+  return { status: res.status(), body: (await res.json()) as { view?: { stage: string | null; holder: string | null; actions?: string[]; changes: unknown[]; audit?: Array<{ summary: string }>; original: string[] }; draft?: { to: string[]; cc: string[]; subject: string; message: string } | null; code?: string } };
 }
 
 test('the client edit goes through the seven steps in order', async ({ browser }) => {
@@ -73,8 +74,23 @@ test('the client edit goes through the seven steps in order', async ({ browser }
 
   expect((await call(client, 'POST', { action: 'send' })).body.code).toBe('wrong_stage');
   expect((await call(client, 'POST', { action: 'confirm' })).body.view?.stage).toBe('confirmed');
+  // GL-07: "Send to the firm" goes out only from the Send email pop-up. A bare send is refused
+  // and moves nothing; the preview answers the draft to the Lead; the pop-up's Send makes the move.
+  const bare = await call(client, 'POST', { action: 'send', note: 'We added the office city.' });
+  expect(bare.status).toBe(409);
+  expect(bare.body.code).toBe('email_needed');
+  const preview = await call(client, 'POST', { action: 'send', preview: true });
+  expect(preview.status).toBe(200);
+  const draft = preview.body.draft!;
+  expect(draft.to.length).toBeGreaterThan(0);
+  expect(draft.subject).not.toBe('');
+  expect((await call(client, 'GET')).body.view?.stage).toBe('confirmed');
   // BR-03: the client reads the Lead's first name in the chip.
-  const sent = await call(client, 'POST', { action: 'send', note: 'We added the office city.' });
+  const sent = await call(client, 'POST', {
+    action: 'send',
+    note: 'We added the office city.',
+    email: { to: draft.to, cc: draft.cc, subject: draft.subject, message: draft.message },
+  });
   expect(sent.body.view?.stage).toBe('sent');
   expect(sent.body.view?.holder).toMatch(/^With Lead( · \S+)?$/);
 

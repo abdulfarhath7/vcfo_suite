@@ -7,7 +7,7 @@ import { WordChip } from '@/views/compliances/spectrum-parts';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { plainDate } from '@/lib/compliance/spectrum-status';
 import type { TaskRowDto } from '@/views/compliances/tasks/api';
-import { WEEK_GROUPS, type StripKey } from '@/views/compliances/tasks/task-model';
+import { taskRowMatches, tasksByWeek } from '@/views/compliances/tasks/task-model';
 
 /**
  * The non-statutory task table of the staff Obligations list (prototype ns-parts, S-3): a T1
@@ -39,22 +39,10 @@ function meetingPageHref(basePath: string, meetingId: string): string {
 
 /** Rows group by end-date week: This week, Next week, Later, Done (latest done first). */
 export function taskGroups(tasks: TaskRowDto[]): GridGroup<TaskRowDto>[] {
-  const sorted = [...tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.title.localeCompare(b.title));
-  return WEEK_GROUPS.map((g) => {
-    const rows = sorted.filter((t) => t.week === g);
-    return { id: `week-${g}`, label: g, dot: WEEK_DOT[g], rows: g === 'Done' ? rows.reverse() : rows };
-  });
+  return tasksByWeek(tasks).map(({ week, rows }) => ({ id: `week-${week}`, label: week, dot: WEEK_DOT[week], rows }));
 }
 
-/** The strip keys on task rows, from the server's word and week (S-8). */
-export function taskRowMatches(t: TaskRowDto, f: StripKey): boolean {
-  if (f === 'overdue') return t.word === 'Overdue';
-  if (f === 'soon') return t.word !== 'Overdue' && t.word !== 'Done' && t.week === 'This week';
-  if (f === 'waiting') return t.word === 'Waiting';
-  if (f === 'done') return t.word === 'Done';
-  if (f === 'none') return (t.stage === 'not-started' || t.stage === 'ready') && t.word !== 'Overdue';
-  return true;
-}
+export { taskRowMatches };
 
 /** T1 columns: Task (name + client), Start, End, Urgency, Visibility, Owner, Status. Phones keep Task, End and Status. */
 export function taskColumns(now: Date): GridColumn<TaskRowDto>[] {

@@ -123,6 +123,28 @@ export function taskMatches(t: TaskLike, f: StripKey, now: Date): boolean {
   return true;
 }
 
+/** The fields of a task row (`TaskRowDto`) the strip and the week groups read. */
+export type TaskRowLike = { title: string; dueDate: string; word: string; week: WeekGroup; stage: string };
+
+/** The strip keys on task rows, from the server's word and week (S-8). */
+export function taskRowMatches(t: TaskRowLike, f: StripKey): boolean {
+  if (f === 'overdue') return t.word === 'Overdue';
+  if (f === 'soon') return t.word !== 'Overdue' && t.word !== 'Done' && t.week === 'This week';
+  if (f === 'waiting') return t.word === 'Waiting';
+  if (f === 'done') return t.word === 'Done';
+  if (f === 'none') return (t.stage === 'not-started' || t.stage === 'ready') && t.word !== 'Overdue';
+  return true;
+}
+
+/** Rows by end-date week: This week, Next week, Later, Done (latest done first). */
+export function tasksByWeek<T extends TaskRowLike>(tasks: readonly T[]): Array<{ week: WeekGroup; rows: T[] }> {
+  const sorted = [...tasks].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.title.localeCompare(b.title));
+  return WEEK_GROUPS.map((g) => {
+    const rows = sorted.filter((t) => t.week === g);
+    return { week: g, rows: g === 'Done' ? rows.reverse() : rows };
+  });
+}
+
 /** The four calendar statuses of a task, by the rule of a staff filing: done, late, within 7 days, later. */
 export type TaskCal = 'filed' | 'due-soon' | 'overdue' | 'upcoming';
 export function taskCal(t: Pick<TaskLike, 'stage' | 'endDate'>, now: Date): TaskCal {

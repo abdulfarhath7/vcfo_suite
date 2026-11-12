@@ -16,6 +16,8 @@ import { Eye } from 'lucide-react';
 import { isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 import { cn } from '@/lib/utils';
+import { StepEmailSentLine } from '@/components/email/StepEmailsSent';
+import type { SentEmailRow } from '@/lib/email/sent-email';
 
 /**
  * One step row inside a phase (prototype `StepList` row, R-22 ST5).
@@ -45,6 +47,7 @@ export function ChecklistPhaseStepRow({
   connector = false,
   connectorAbove,
   today = new Date().toISOString().slice(0, 10),
+  lastEmail,
 }: {
   item: ChecklistItem;
   gate: ChecklistStepGate;
@@ -67,6 +70,8 @@ export function ChecklistPhaseStepRow({
   /** R-58: draw the line up to the mark of the row above; 'done' when that step is done. */
   connectorAbove?: 'done' | 'todo';
   today?: string;
+  /** GL-07: the newest email sent from this step, shown as one compact line under the status. */
+  lastEmail?: SentEmailRow | null;
 }) {
   const base = stepMarkForGate(gate);
   const sentBack = facts?.slice?.reviewStatus === 'rejected' && gate.kind !== 'done';
@@ -151,6 +156,7 @@ export function ChecklistPhaseStepRow({
           ) : null}
         </span>
         {sub ? <span className={cn('truncate text-[12.5px]', subTone)}>{sub}</span> : null}
+        {lastEmail ? <StepEmailSentLine email={lastEmail} /> : null}
         {withDoc ? (
           <span className="relative z-[1] mt-1.5 block">
             <BoardResolutionStepLink engagement={engagement} />

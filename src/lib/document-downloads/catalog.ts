@@ -1,4 +1,5 @@
 import { getIncorporationPhases, type ChecklistItem } from '@/data/checklist';
+import { orderByMcaSection } from '@/lib/checklist/part-b-sections';
 import { CLIENT_RESPONSE_FIELDS, type ChecklistItemResponses } from '@/lib/checklist/checklist-responses';
 import { expandRepeatFields, repeatFieldLabel } from '@/lib/checklist/checklist-repeat';
 import type { DocPackItem } from '@/lib/doc-pack/types';
@@ -204,7 +205,8 @@ export function buildDownloadCatalog(input: CatalogInput): DownloadCatalog {
       partB.groups.push(g);
     }
   }
-  addStepGroups(partB, phaseItems(['pre-inc-phase-2']), state, input.companyName);
+  // SB-01: the Part B step folders follow the MCA form order (3A, 4, 5–6, 7).
+  addStepGroups(partB, orderByMcaSection(phaseItems(['pre-inc-phase-2']), (i) => i.id), state, input.companyName);
 
   // After incorporation: the Phase 3 and Phase 4 uploads.
   const after = group('after', 'After incorporation', '03_After-Incorporation');

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { use, useEffect, useState, type ReactNode } from 'react';
 import { LayoutGrid, Rows3 } from 'lucide-react';
 import type { ChecklistField } from '@/data/checklist';
+import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
+import { AppContext } from '@/context/app-context-store';
 import { cn } from '@/lib/utils';
 
 /** One column of the grid: a director field template. */
@@ -102,66 +104,101 @@ function Cell({ field, value, disabled, label, onChange }: {
   );
 }
 
+/** The text a cell shows, for the Excel export: the option label, "Uploaded", or the answer. */
+export function directorCellText(field: ChecklistField, value: string | undefined): ExcelCell {
+  const raw = (value ?? '').trim();
+  if (!raw) return null;
+  if (field.type === 'file') return 'Uploaded';
+  return field.options?.find((opt) => opt.value === raw)?.label ?? raw;
+}
+
+/** The grid as export rows: the director, then one cell per question (empty when not asked). */
+export function directorGridExportRows(
+  rows: DirectorGridRow[],
+  columns: DirectorGridColumn[],
+  values: Record<string, string | undefined>,
+): ExcelCell[][] {
+  return rows.map((row) => [
+    row.title,
+    ...columns.map((col) => (row.shown(col.id) ? directorCellText(col.field, values[row.cellKey(col.id)]) : null)),
+  ]);
+}
+
 /**
  * CD-03 / SB-02: the directors side by side, one row each and one column per question. The grid
  * edits the same answers as the cards, so the two views always agree, and the same validation
  * runs on Submit. The name column stays in view while the grid scrolls sideways; Tab moves along
  * the row. Part A and Part B both use this one component.
  */
-export function DirectorGrid({ rows, columns, values, readOnly, errors, onChange }: {
+export function DirectorGrid({ rows, columns, values, readOnly, errors, onChange, engagementId }: {
   rows: DirectorGridRow[];
   columns: DirectorGridColumn[];
   values: Record<string, string | undefined>;
   readOnly: (cellKey: string) => boolean;
   errors?: Record<string, string | undefined>;
   onChange: (cellKey: string, value: string) => void;
+  /** The project, so the GL-08 file name of the Excel export carries the client name. */
+  engagementId?: string;
 }) {
+  const app = use(AppContext);
+  const client = engagementId ? app?.engagements.find((e) => e.id === engagementId || e.slug === engagementId)?.companyName ?? null : null;
   return (
-    <div className="overflow-x-auto rounded-md border border-line" data-testid="director-grid">
-      <table className="w-max min-w-full border-collapse text-left">
-        <thead>
-          <tr className="bg-surface-sunken">
-            <th scope="col" className="sticky left-0 z-10 min-w-[180px] border-b border-r border-line bg-surface-sunken px-3 py-2 text-[12px] font-semibold text-ink-muted">
-              Director
-            </th>
-            {columns.map((col) => (
-              <th key={col.id} scope="col" className="border-b border-line px-2 py-2 text-[12px] font-semibold text-ink-muted">
-                {col.label}
-                {col.field.required ? <span className="ml-0.5 text-danger" aria-hidden>*</span> : null}
+    <div className="grid gap-2">
+      {/* GL-06: the grid's rows and columns as an Excel file, at the top right of the list. */}
+      <div className="flex justify-end">
+        <ExportToExcelButton
+          title="Directors"
+          client={client}
+          columns={['Director', ...columns.map((col) => col.label)]}
+          rows={() => directorGridExportRows(rows, columns, values)}
+        />
+      </div>
+      <div className="overflow-x-auto rounded-md border border-line" data-testid="director-grid">
+        <table className="w-max min-w-full border-collapse text-left">
+          <thead>
+            <tr className="bg-surface-sunken">
+              <th scope="col" className="sticky left-0 z-10 min-w-[180px] border-b border-r border-line bg-surface-sunken px-3 py-2 text-[12px] font-semibold text-ink-muted">
+                Director
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} className="border-b border-line-soft last:border-b-0">
-              <th scope="row" className="sticky left-0 z-10 border-r border-line bg-surface-raised px-3 py-1.5 align-top">
-                <span className="block text-[13px] font-medium text-ink">{row.title}</span>
-                {row.badge ? <span className="mt-1 block">{row.badge}</span> : null}
-              </th>
-              {columns.map((col) => {
-                const key = row.cellKey(col.id);
-                if (!row.shown(col.id)) {
-                  return <td key={col.id} className="px-2 py-1.5 text-[12px] text-ink-muted" aria-label={`${col.label}: not asked`}>·</td>;
-                }
-                const error = errors?.[key];
-                return (
-                  <td key={col.id} className="px-2 py-1.5 align-top">
-                    <Cell
-                      field={col.field}
-                      label={`${col.label} · ${row.title}`}
-                      value={values[key] ?? ''}
-                      disabled={readOnly(key)}
-                      onChange={(v) => onChange(key, v)}
-                    />
-                    {error ? <p className="mt-0.5 max-w-[200px] text-[11.5px] text-danger">{error}</p> : null}
-                  </td>
-                );
-              })}
+              {columns.map((col) => (
+                <th key={col.id} scope="col" className="border-b border-line px-2 py-2 text-[12px] font-semibold text-ink-muted">
+                  {col.label}
+                  {col.field.required ? <span className="ml-0.5 text-danger" aria-hidden>*</span> : null}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key} className="border-b border-line-soft last:border-b-0">
+                <th scope="row" className="sticky left-0 z-10 border-r border-line bg-surface-raised px-3 py-1.5 align-top">
+                  <span className="block text-[13px] font-medium text-ink">{row.title}</span>
+                  {row.badge ? <span className="mt-1 block">{row.badge}</span> : null}
+                </th>
+                {columns.map((col) => {
+                  const key = row.cellKey(col.id);
+                  if (!row.shown(col.id)) {
+                    return <td key={col.id} className="px-2 py-1.5 text-[12px] text-ink-muted" aria-label={`${col.label}: not asked`}>·</td>;
+                  }
+                  const error = errors?.[key];
+                  return (
+                    <td key={col.id} className="px-2 py-1.5 align-top">
+                      <Cell
+                        field={col.field}
+                        label={`${col.label} · ${row.title}`}
+                        value={values[key] ?? ''}
+                        disabled={readOnly(key)}
+                        onChange={(v) => onChange(key, v)}
+                      />
+                      {error ? <p className="mt-0.5 max-w-[200px] text-[11.5px] text-danger">{error}</p> : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

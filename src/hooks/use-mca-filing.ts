@@ -32,7 +32,9 @@ export function useMcaFiling(engagementId: string | null | undefined) {
       const res = await fetch(`${base(engagementId as string)}/filing`);
       if (res.status === 503) return null;
       if (!res.ok) throw new Error('Could not load the MCA filing record.');
-      return (await res.json()) as FilingBundle;
+      const body = (await res.json()) as FilingBundle & { setUp?: boolean };
+      // The read answers `setUp: false` (not an error status) while VCFO Assist is off.
+      return body.setUp === false ? null : body;
     },
     enabled: Boolean(engagementId),
     staleTime: 15_000,

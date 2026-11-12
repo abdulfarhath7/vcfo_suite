@@ -1,3 +1,4 @@
+import { isAdminOrManager } from '@/lib/auth';
 import { isAwaitingReview } from '@/lib/checklist/checklist-item-review';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { DIN_LEAD_ONLY_ENTRY_FIELD_IDS } from '@/lib/checklist/din-verification';
@@ -149,6 +150,37 @@ export function stripClientOnlyResponses(
     if (!isClientOnlyField(itemId, key, slice)) out[key] = value;
   }
   return out;
+}
+
+/** DR-02: the error a staff save gets when it would change the client's own answers. */
+export const CLIENT_ONLY_FIELDS_REFUSED =
+  'Only the client fills this section. A manager or admin can assign it to the project lead.';
+
+/**
+ * DR-02: the client-only fields a non-client save would change. The server refuses such a save
+ * instead of dropping the answers without a word. A key sent with the stored value is not a
+ * change: the staff form leaves those keys out, but an older bundle may echo them back.
+ *
+ * - Project lead: the client's own answers, unless a manager or admin assigned the step to the
+ *   lead (DR-04). The lead-only fields (the NIC codes, the DIN check) stay the lead's.
+ * - Manager / admin: the client's own answers always; the assignment hands the step to the lead,
+ *   not to them.
+ * - Client: never refused here.
+ */
+export function clientOnlyFieldsChangedBy(
+  role: string,
+  itemId: string,
+  sent: Record<string, string> | null | undefined,
+  slice?: FillSlice,
+): string[] {
+  if (role === 'client' || !sent) return [];
+  const forLead = role === 'intern';
+  if (!forLead && !isAdminOrManager(role)) return [];
+  const stored = (slice as { responses?: Record<string, string> } | null | undefined)?.responses ?? {};
+  return Object.keys(sent).filter(
+    (key) =>
+      isClientOnlyField(itemId, key, forLead ? slice : undefined) && (sent[key] ?? '') !== (stored[key] ?? ''),
+  );
 }
 
 export function directFlowRoleLabel(role: string | null | undefined): DirectFlowRoleLabel {

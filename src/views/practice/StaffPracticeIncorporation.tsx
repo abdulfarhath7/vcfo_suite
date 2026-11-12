@@ -24,9 +24,15 @@ import {
   type PracticeIncorporationClient,
   type PracticeShellBase,
 } from '@/lib/practice/practice-incorporation';
-import type { CurrentStepDays } from '@/lib/metrics/practice-metrics';
 import { cn } from '@/lib/utils';
-import { internOverviewPhases } from '@/lib/intern/intern-overview-progress';
+import {
+  PRACTICE_WITH_WORD,
+  incorporatingClients,
+  isLatePracticeRow,
+  practiceIncorporationRows,
+  practiceStepCode,
+  type PracticeWithKey,
+} from '@/lib/practice/practice-incorporation-list';
 import { stepSlugForItemId } from '@/lib/slug';
 import { INCORPORATION_VIEWS, type IncorporationView } from '@/components/shell/sidebar-items';
 
@@ -41,20 +47,9 @@ const VIEW_TITLE: Record<IncorporationView, string> = {
   'board-resolutions': 'Board resolutions',
   documents: 'Documents',
 };
-const PART_A = new Set(internOverviewPhases()[0]?.items.map((i) => i.id) ?? []);
-const PART_B = new Set(internOverviewPhases()[1]?.items.map((i) => i.id) ?? []);
-const BOARD_RESOLUTION_STEPS = new Set(['pre-2', 'pre-3']);
 
 function viewOf(value: string | null): IncorporationView | null {
   return (INCORPORATION_VIEWS as readonly string[]).includes(value ?? '') ? (value as IncorporationView) : null;
-}
-
-function inView(view: IncorporationView | null, stepId: string | undefined): boolean {
-  if (!view || view === 'documents') return true;
-  if (!stepId) return false;
-  if (view === 'part-a') return PART_A.has(stepId);
-  if (view === 'part-b') return PART_B.has(stepId);
-  return BOARD_RESOLUTION_STEPS.has(stepId);
 }
 
 /**
@@ -80,7 +75,6 @@ function rowHrefFor(view: IncorporationView | null, c: PracticeIncorporationClie
   if ((view === 'part-a' || view === 'part-b') && stepId) return `${base}/step/${stepSlugForItemId(stepId)}`;
   return base;
 }
-import { stepNumbers } from '@/lib/client-portal/documents';
 
 /**
  * INCORPORATION on the admin, manager and lead shells (rule R-51, D-29; prototype
@@ -99,29 +93,10 @@ import { stepNumbers } from '@/lib/client-portal/documents';
  * on the manager's review) takes its place.
  */
 
-type WithKey = '' | 'client' | 'sbc' | 'manager';
-
-const WITH_WORD: Record<Exclude<WithKey, ''>, string> = { client: 'Client', sbc: 'SBC', manager: 'Manager' };
-
-const STEP_NO = stepNumbers();
-
-/**
- * The step's number in the client order ("Step 10"), as the project page shows it. The internal
- * id ("pre-7") counts differently, so showing it made one step look like two.
- */
-function stepCode(stepId: string | undefined): string | null {
-  const n = stepId ? STEP_NO[stepId]?.n : undefined;
-  return n ? `Step ${n}` : null;
-}
-
-/** A row is late when a step is overdue, the client is blocked, or the step's window has passed. */
-function isLateRow(c: PracticeIncorporationClient, step: CurrentStepDays | undefined, today: string): boolean {
-  return (
-    c.summary.stateKey === 'overdue' ||
-    c.summary.stuckReason === 'blocked' ||
-    Boolean(step?.dueOn && step.dueOn < today)
-  );
-}
+type WithKey = PracticeWithKey;
+const WITH_WORD = PRACTICE_WITH_WORD;
+const stepCode = practiceStepCode;
+const isLateRow = isLatePracticeRow;
 
 export default function StaffPracticeIncorporation({ base }: { base: PracticeShellBase }) {
   const query = usePracticeIncorporation();
@@ -132,17 +107,11 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
   const today = todayKey();
   const clientsHref = practiceClientsHref(base);
 
-  const all = useMemo(() => (query.data ?? []).filter((c) => !c.summary.incorporated), [query.data]);
+  const all = useMemo(() => incorporatingClients(query.data ?? []), [query.data]);
   const count = (w: Exclude<WithKey, ''>) => all.filter((c) => superOwnerOf(c.summary) === w).length;
   const late = all.filter((c) => isLateRow(c, steps?.[c.summary.id], today)).length;
-  const rows = useMemo(
-    () =>
-      all
-        .filter((c) => inView(view, c.summary.currentStep?.id))
-        .filter((c) => !withWho || superOwnerOf(c.summary) === withWho)
-        .sort((a, b) => a.summary.progress.done - b.summary.progress.done),
-    [all, withWho, view],
-  );
+  // The rows and their order are shared with the server's Excel export (GL-06).
+  const rows = useMemo(() => practiceIncorporationRows(all, view, withWho), [all, withWho, view]);
 
   const seo = (
     <SEO
@@ -289,24 +258,7 @@ export default function StaffPracticeIncorporation({ base }: { base: PracticeShe
               />
               <ExportToExcelButton
                 title={view ? `Incorporation · ${VIEW_TITLE[view]}` : 'Incorporation'}
-                columns={['Client', 'Current step', 'Steps', 'With', 'Days', 'Next', 'Status']}
-                rows={() =>
-                  rows.map((c) => {
-                    const step = steps?.[c.summary.id];
-                    const owner = superOwnerOf(c.summary);
-                    const code = stepCode(c.summary.currentStep?.id);
-                    const title = c.summary.currentStep?.title ?? 'Every step is done';
-                    return [
-                      c.summary.companyName,
-                      code ? `${code} ${title}` : title,
-                      `${c.summary.progress.done} / ${c.summary.progress.total}`,
-                      owner ? WITH_WORD[owner] : null,
-                      step?.days ?? null,
-                      step?.dueOn ?? c.nextDueDate ?? null,
-                      superStateChip(c.summary).word,
-                    ];
-                  })
-                }
+                source={{ source: 'practice-incorporation', view, withWho }}
               />
             </>
           }

@@ -91,6 +91,13 @@ export function Phase1StepPanel({
     };
   }, [engagement?.id, item.id]);
 
+  // BR-02: an upload on the signed step's card updates the status line below it at once.
+  const onBrDocChange = (doc: BoardResolutionDoc | null) => {
+    if (!doc) return;
+    setBrDoc(doc);
+    setBrStatus(doc.signedStoragePath?.trim() ? 'signed' : doc.status === 'finalized' ? 'finalized' : 'draft');
+  };
+
   return (
     <Phase1StepPanelRoutes
       item={item}
@@ -101,6 +108,7 @@ export function Phase1StepPanel({
       isIntern={isIntern}
       brStatus={brStatus}
       brDoc={brDoc}
+      onBrDocChange={onBrDocChange}
       role={isClient ? 'client' : user?.role}
       deliveredToClient={deliveredToClient}
       itemState={itemState}

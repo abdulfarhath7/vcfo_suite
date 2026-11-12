@@ -28,7 +28,8 @@ import './portal-css';
 export function ClientPortalShell({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLDivElement>(null);
   return (
-    <div className="cp" ref={rootRef} data-theme="light">
+    // data-cp-shell moves the shared toaster beside the portal's side rail (globals.css, GL-02).
+    <div className="cp" ref={rootRef} data-theme="light" data-cp-shell="">
       <AskProvider>
         <PortalProvider rootRef={rootRef}>
           <ShellBody>{children}</ShellBody>
