@@ -13,6 +13,7 @@ import {
   type QuestionnaireQuestion,
 } from '@/data/compliance-questionnaire';
 import { cn } from '@/lib/utils';
+import { tabStateClass } from '@/components/ui/tab-classes';
 
 const YES_NO = [
   { value: 'yes', label: 'Yes' },
@@ -110,11 +111,10 @@ export function CreateProjectQuestionnaire({
               aria-selected={isActive}
               onClick={() => setActiveId(section.id)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
+                'inline-flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-[12px] transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                isActive
-                  ? 'bg-surface-raised text-ink shadow-sm'
-                  : 'text-ink-muted hover:text-ink',
+                // GL-03: the shared open-tab look (underline, bold brand text).
+                tabStateClass(isActive),
               )}
             >
               {section.title}

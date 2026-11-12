@@ -8,6 +8,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { TOAST_ERROR_MS, TOAST_MS } from '@/components/ui/hot-toast';
+import { usePortalOptional } from '@/components/client-portal/PortalProvider';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
 import type { ViewerDoc } from './DocViewer';
 import { engagementParam, fileUrl } from './model';
@@ -55,7 +60,7 @@ export function PagePortal({ children, page = 'documents' }: { children: ReactNo
   return createPortal(<div className={`cp-${page}`}>{children}</div>, el);
 }
 
-/* ---------------- ZIP / copy toast (docs board .toast) ---------------- */
+/* ---------------- ZIP / copy toast ---------------- */
 
 export interface ZipToastState {
   name: string;
@@ -66,35 +71,57 @@ export interface ZipToastState {
   error?: string;
 }
 
+/** One id for the ZIP and copy toast, so its progress updates in place instead of stacking. */
+export const ZIP_TOAST_ID = 'cp-zip';
+
 /**
- * Real ZIP download: streams `/api/client/documents/zip?folder=` and maps the
- * received bytes onto the board's "n of total" files counter (gold bar).
+ * How long the ZIP toast stays (GL-02): open while the ZIP is built, then 3 seconds when it is
+ * done or a link was copied, and 6 seconds for an error.
+ */
+export function zipToastDuration(t: ZipToastState): number {
+  if (!t.done) return Infinity;
+  return t.error ? TOAST_ERROR_MS : TOAST_MS;
+}
+
+/**
+ * Real ZIP download: streams `/api/client/documents/zip?folder=` and maps the received bytes
+ * onto an "n of total" files counter. The toast goes through the app's one `react-hot-toast`
+ * Toaster (GL-02), so it has the shared timings, limit, close X and pause on hover.
  */
 export function useZipToast() {
-  const [toast, setToast] = useState<ZipToastState | null>(null);
   const ctrl = useRef<AbortController | null>(null);
-  const hide = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const portal = usePortalOptional();
+  // Staff see a portal page in their own shell and theme; only the client portal has its own.
+  const theme = portal && !portal.engagementId ? portal.theme : undefined;
+  const themeRef = useRef(theme);
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
 
   const dismiss = useCallback(() => {
     ctrl.current?.abort();
     ctrl.current = null;
-    if (hide.current) clearTimeout(hide.current);
-    setToast(null);
+    toast.dismiss(ZIP_TOAST_ID);
   }, []);
 
-  const autoHide = useCallback(() => {
-    if (hide.current) clearTimeout(hide.current);
-    hide.current = setTimeout(() => setToast(null), 3200);
-  }, []);
+  const show = useCallback(
+    (t: ZipToastState) => {
+      toast.custom((rt) => <ZipToast t={t} visible={rt.visible} theme={themeRef.current} onClose={dismiss} />, {
+        id: ZIP_TOAST_ID,
+        duration: zipToastDuration(t),
+        position: 'bottom-left',
+      });
+    },
+    [dismiss],
+  );
 
   const startZip = useCallback(
     async (folder: string, name: string, total: number) => {
       ctrl.current?.abort();
-      if (hide.current) clearTimeout(hide.current);
       const ac = new AbortController();
       ctrl.current = ac;
       const zipName = `${name}.zip`;
-      setToast({ name: zipName, total: Math.max(1, total), n: 0, done: false });
+      show({ name: zipName, total: Math.max(1, total), n: 0, done: false });
       try {
         const res = await fetch(`/api/client/documents/zip?folder=${encodeURIComponent(folder)}${engagementParam()}`, { signal: ac.signal });
         if (!res.ok) {
@@ -113,69 +140,68 @@ export function useZipToast() {
             if (done) break;
             chunks.push(value);
             got += value.length;
-            if (len) setToast({ name: zipName, total: files, n: Math.min(files - 1, Math.floor((got / len) * files)), done: false });
+            if (len) show({ name: zipName, total: files, n: Math.min(files - 1, Math.floor((got / len) * files)), done: false });
           }
         }
         const blob = reader ? new Blob(chunks as BlobPart[], { type: 'application/zip' }) : await res.blob();
         const url = URL.createObjectURL(blob);
         triggerDownload(url, zipName);
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
-        setToast({ name: zipName, total: files, n: files, done: true });
-        autoHide();
+        show({ name: zipName, total: files, n: files, done: true });
       } catch (e) {
         if ((e as Error).name === 'AbortError') return;
-        setToast({ name: zipName, total: 0, n: 0, done: true, error: (e as Error).message });
-        autoHide();
+        show({ name: zipName, total: 0, n: 0, done: true, error: (e as Error).message });
       }
     },
-    [autoHide],
+    [show],
   );
 
   const copied = useCallback(() => {
     ctrl.current?.abort();
-    setToast({ name: 'Link copied', total: 0, n: 0, done: true, copy: true });
-    autoHide();
-  }, [autoHide]);
+    show({ name: 'Link copied', total: 0, n: 0, done: true, copy: true });
+  }, [show]);
 
-  useEffect(() => () => {
-    ctrl.current?.abort();
-    if (hide.current) clearTimeout(hide.current);
-  }, []);
+  useEffect(() => () => ctrl.current?.abort(), []);
 
-  return { toast, startZip, copied, dismiss };
+  return { startZip, copied, dismiss };
 }
 
-export function ZipToast({ t, onClose }: { t: ZipToastState; onClose: () => void }) {
+/** The A2 dark toast line with a status tile (green done, red error, quiet while it works) and a progress bar. */
+export function ZipToast({ t, visible = true, theme, onClose }: { t: ZipToastState; visible?: boolean; theme?: 'light' | 'dark'; onClose: () => void }) {
   const text = t.error ? t.error : t.copy ? 'Link copied' : t.done ? `Downloaded ${t.name}` : `Preparing ${t.name}…`;
   const count = t.error || t.copy ? '' : t.done ? `${t.total} files` : `${t.n} of ${t.total}`;
-  /* R-48: a toast with a status tile (green done, red error, quiet while it works) */
-  const tile = t.done ? (t.error ? 'oklch(var(--danger-mid))' : 'oklch(var(--positive-mid))') : 'oklch(100% 0 0 / .14)';
+  const tile = t.done ? (t.error ? 'bg-danger-mid' : 'bg-positive-mid') : 'bg-white/[.14]';
   return (
-    <div className="toast" role="status" aria-live="polite">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ width: 22, height: 22, borderRadius: 4, background: tile, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+    <div
+      data-theme={theme}
+      role="status"
+      aria-live="polite"
+      className={cn(
+        'pointer-events-auto flex w-[380px] max-w-[calc(100vw-32px)] flex-col gap-2 rounded-md bg-side px-3 py-2.5 text-white shadow-float',
+        visible ? 'opacity-100' : 'opacity-0',
+        'transition-opacity duration-150 motion-reduce:transition-none',
+      )}
+    >
+      <div className="flex items-center gap-2.5">
+        <span className={cn('grid h-[22px] w-[22px] flex-none place-items-center rounded-mark', tile)} aria-hidden>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d={t.done ? (t.error ? 'M12 7v6 M12 16.5h.01' : 'M5 12.5l4.5 4.5L19 7.5') : 'M6 3.5h8l4 4v13H6Z M10 3.5v2 M10 7.5v2 M10 11.5v2'} />
           </svg>
         </span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{text}</span>
-        <span className="mono" style={{ fontSize: 12, opacity: 0.75 }}>
-          {count}
-        </span>
+        <span className="min-w-0 flex-1 text-[13px] font-medium">{text}</span>
+        <span className="font-mono text-[12px] opacity-75">{count}</span>
         <button
           type="button"
           aria-label="Dismiss"
           onClick={onClose}
-          style={{ width: 24, height: 24, border: 0, borderRadius: 4, background: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          className="grid h-6 w-6 flex-none place-items-center rounded-sm text-side-ink hover:bg-white/[.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          <X className="h-3.5 w-3.5" strokeWidth={1.6} aria-hidden />
         </button>
       </div>
       {!t.done ? (
-        <div className="ztbar">
-          <span style={{ width: `${t.total ? (t.n / t.total) * 100 : 0}%` }} />
+        <div className="h-1 overflow-hidden rounded-[3px] bg-white/[.18]">
+          <span className="block h-full bg-brand transition-[width] duration-200" style={{ width: `${t.total ? (t.n / t.total) * 100 : 0}%` }} />
         </div>
       ) : null}
     </div>
