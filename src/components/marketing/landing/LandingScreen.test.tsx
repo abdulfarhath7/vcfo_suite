@@ -56,6 +56,16 @@ describe('LandingScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
+  it('LP-01: the theme toggle switches between dark and light, and remembers the choice', () => {
+    render(<LandingScreen />);
+    fireEvent.click(screen.getByRole('button', { name: 'Use the dark theme' }));
+    expect(document.documentElement.dataset.lpTheme).toBe('dark');
+    expect(localStorage.getItem('vcfo.lp-theme')).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Use the light theme' }));
+    expect(document.documentElement.dataset.lpTheme).toBeUndefined();
+    expect(localStorage.getItem('vcfo.lp-theme')).toBe('light');
+  });
+
   it('shows the comparison with six rows and three product columns', () => {
     render(<LandingScreen />);
     expect(

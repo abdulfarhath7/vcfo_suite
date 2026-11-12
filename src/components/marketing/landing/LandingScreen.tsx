@@ -35,13 +35,29 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
   const openDemo = () => setDemo(true);
   const closeMenu = () => setMenu(false);
   const heroReady = intro !== "pre";
+  // LP-01: the theme lives on <html> (set before paint by app/page.tsx); this mirrors it for the toggle.
+  // Dark is the default; a visitor who picks light keeps it on this device.
+  const [dark, setDark] = React.useState(true);
+  React.useEffect(() => setDark(document.documentElement.dataset.lpTheme === "dark"), []);
+  const toggleTheme = () => {
+    const next = !dark;
+    if (next) document.documentElement.dataset.lpTheme = "dark";
+    else delete document.documentElement.dataset.lpTheme;
+    try {
+      localStorage.setItem("vcfo.lp-theme", next ? "dark" : "light");
+    } catch {
+      /* storage blocked: the choice lasts this visit */
+    }
+    setDark(next);
+  };
 
   // The logo reveal plays on every load, from the top of the page, and never under reduced motion.
   // A link from another page to a section ("/#journey" from /roles) lands on that section once the reveal ends.
   React.useEffect(() => {
     const el = root.current;
     const hero = el?.querySelector<HTMLElement>(".hero");
-    const navImg = el?.querySelector<HTMLElement>(".nav-logo img");
+    // The logo the current theme shows (LP-01): the intro lands on that one.
+    const navImg = Array.from(el?.querySelectorAll<HTMLElement>(".nav-logo img") ?? []).find((img) => img.offsetParent !== null) ?? null;
     if (!el || !hero || !navImg || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setIntro("done");
       return;
@@ -87,7 +103,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
       <header className={`nav${scrolled ? " scrolled" : ""}${menu ? " open" : ""}`} id="top">
         <div className="container nav-row">
           <a className="nav-logo" href="#top" aria-label="VCFO Suite by SBC, home">
-            <img src="/landing/vcfo-logo-on-black.webp" alt="VCFO Suite by SBC" width="138" height="30" />
+            <img className="logo-light" src="/landing/vcfo-logo-on-white.webp" alt="VCFO Suite by SBC" width="138" height="30" />
+            <img className="logo-dark" src="/landing/vcfo-logo-on-black.webp" alt="VCFO Suite by SBC" width="138" height="30" />
           </a>
           <nav className="nav-links" aria-label="Primary">
             <a href="#journey">How it works</a>
@@ -97,6 +114,10 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <a href="#faq">FAQ</a>
           </nav>
           <div className="nav-actions">
+            <button className="theme-toggle" type="button" onClick={toggleTheme} aria-pressed={dark} aria-label={dark ? "Use the light theme" : "Use the dark theme"} title={dark ? "Light theme" : "Dark theme"}>
+              <span className="icon ic-sun"><Ic><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></Ic></span>
+              <span className="icon ic-moon"><Ic><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></Ic></span>
+            </button>
             <Link className="btn btn-ghost btn-sm" href={SIGN_IN_HREF}>Sign in</Link>
             <button className="btn btn-primary btn-sm" type="button" onClick={openDemo}>Book a demo</button>
             <button className="nav-toggle" type="button" aria-expanded={menu} aria-controls="nav-mobile" aria-label="Menu" onClick={() => setMenu((m) => !m)}>
@@ -579,7 +600,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container">
           <div className="footer-grid">
             <div className="footer-logo">
-              <img src="/landing/vcfo-logo-on-black.webp" alt="VCFO Suite by SBC" width="156" height="34" />
+              <img className="logo-light" src="/landing/vcfo-logo-on-white.webp" alt="VCFO Suite by SBC" width="156" height="34" />
+              <img className="logo-dark" src="/landing/vcfo-logo-on-black.webp" alt="VCFO Suite by SBC" width="156" height="34" />
               <p>Company secretarial, incorporation and compliance for India companies, on one record.</p>
             </div>
             <div>
