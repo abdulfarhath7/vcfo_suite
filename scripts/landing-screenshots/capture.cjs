@@ -10,7 +10,7 @@ const [, , BASE = 'http://localhost:3200', OUT = 'out', ...only] = process.argv;
 const PW = 'demo1234';
 const SHOTS = [
   { name: 'hero-incorporation', login: 'client-northwind@demo.vcfo.local', path: '/app/client/incorporation', w: 1200, h: 688 },
-  { name: 'portal-client', login: 'client-northwind@demo.vcfo.local', path: '/app/client/overview', w: 1000, h: 573, click: 'Metro' },
+  { name: 'portal-client', login: 'client-northwind@demo.vcfo.local', path: '/app/client/overview', w: 1300, h: 745, click: ['Tree', 'Fit'] },
   { name: 'filings-client', login: 'client-solstice@demo.vcfo.local', path: '/app/client/compliances/filings', w: 1000, h: 811 },
   { name: 'calendar-client', login: 'client-northwind@demo.vcfo.local', path: '/app/client/compliances/calendar', w: 1200, h: 900, grid: true },
   { name: 'ask-vcfo', login: 'client-northwind@demo.vcfo.local', path: '/app/client/overview', w: 1200, h: 800, ask: true },
@@ -73,9 +73,9 @@ async function settle(p, keepLauncher = false) {
       await p.setViewportSize({ width: s.w + side, height: s.h });
       await p.waitForTimeout(1500);
     }
-    if (s.click) {
-      // A view switch on the page, such as the journey map's "Fit" or "Metro".
-      await p.locator(`button:has-text("${s.click}")`).first().click({ timeout: 5000 }).catch((e) => console.log('click', e.message.split('\n')[0]));
+    // Buttons to press first, in order, such as the journey map's "Tree" view and its "Fit".
+    for (const label of [].concat(s.click || [])) {
+      await p.locator(`button:has-text("${label}")`).first().click({ timeout: 5000 }).catch((e) => console.log('click', e.message.split('\n')[0]));
       await p.waitForTimeout(1500);
     }
     await p.mouse.move(s.w + side - 2, s.h - 2); // no hover state on anything
