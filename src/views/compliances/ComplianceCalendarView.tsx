@@ -4,7 +4,7 @@ import { WhatsThisButton } from '@/components/ask/WhatsThisButton';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, ChevronRight, ExternalLink, FileText } from 'lucide-react';
+import { ArrowRight, ChevronRight, ExternalLink, FileSpreadsheet, FileText } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { DashSection } from '@/components/dash/DashSection';
@@ -12,6 +12,10 @@ import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ExportToExcelButton, type ExcelCell } from '@/components/ui/export-to-excel-button';
+import { useExcelExport, type ExcelExportInput } from '@/hooks/use-excel-export';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { FilterSelect } from '@/components/ui/native-select';
+import { AreaFilterMenu, type AreaFilterOption } from '@/components/compliances/AreaFilterMenu';
 import { AreaPill, Chip, REG_WORD, type ChipTone } from '@/components/ui/spectrum-chip';
 import { regOf } from '@/lib/ui/regulator';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -133,7 +137,8 @@ export function ComplianceCalendarView({
   const [pickedDay, setPickedDay] = useState<string | null>(() => (dateParam ? dateParam.toISOString().slice(0, 10) : null));
   // Month opens first; it carries every deadline of the SBC statutory calendar (below) for every role.
   const [view, setView] = useState<CalendarView>('month');
-  const [area, setArea] = useState<string>(ALL_AREAS);
+  // The areas (acts) picked; none picked means all. The admin's Acts menu picks several; the area tabs one.
+  const [areaPick, setAreaPick] = useState<string[]>([]);
   // C-1: All, Statutory, Non-statutory. The filter applies to every view and the rail (C-4).
   const [cat, setCat] = useState<CatFilter>('all');
   const [pickedId, setPickedId] = useState<string>(() => normaliseCompanyParam(params.get('company'), engagements));
@@ -180,12 +185,14 @@ export function ComplianceCalendarView({
     () => [...new Set([...counted.map((row) => row.compliance), ...countedSbc.map((d) => d.area)])].sort((a, b) => a.localeCompare(b)),
     [counted, countedSbc],
   );
-  const areaOn = area !== ALL_AREAS && areas.includes(area) ? area : ALL_AREAS;
-  const sbcShown = useMemo(() => sbcAll.filter((d) => areaOn === ALL_AREAS || d.area === areaOn), [sbcAll, areaOn]);
+  const areasOn = useMemo(() => areaPick.filter((a) => areas.includes(a)), [areaPick, areas]);
+  const allAreas = areasOn.length === 0;
+  const areaOn = areasOn.length === 1 ? areasOn[0]! : ALL_AREAS;
+  const sbcShown = useMemo(() => sbcAll.filter((d) => allAreas || areasOn.includes(d.area)), [sbcAll, allAreas, areasOn]);
   const sbcMonthShown = useMemo(() => sbcShown.filter((d) => d.date.startsWith(monthKey)), [sbcShown, monthKey]);
-  const inArea = (row: FilingRow) => areaOn === ALL_AREAS || row.compliance === areaOn;
+  const inArea = (row: FilingRow) => allAreas || areasOn.includes(row.compliance);
   // Tasks have no regulator: they show under the All area only.
-  const tasks = useMemo(() => (showTasks(cat) && areaOn === ALL_AREAS ? allTasks : []), [allTasks, cat, areaOn]);
+  const tasks = useMemo(() => (showTasks(cat) && allAreas ? allTasks : []), [allTasks, cat, allAreas]);
   const monthTasks = useMemo(() => tasks.filter((t) => t.dueDate.startsWith(monthKey)), [tasks, monthKey]);
   // Expiries (DSC, DIR-3 KYC, licences) on their expiry date, from the dates typed on the steps.
   // Like tasks they have no area, so an area pick hides them; the Non-statutory filter does too.
@@ -194,8 +201,8 @@ export function ComplianceCalendarView({
   const expiryCompany = !sole && companyId !== ALL_COMPANIES ? companyId : null;
   const expiryQuery = useExpiries({ engagementId: expiryCompany });
   const expiries = useMemo(
-    () => (cat !== 'non-statutory' && areaOn === ALL_AREAS ? openExpiries(expiryQuery.data, Number.POSITIVE_INFINITY) : []),
-    [expiryQuery.data, cat, areaOn],
+    () => (cat !== 'non-statutory' && allAreas ? openExpiries(expiryQuery.data, Number.POSITIVE_INFINITY) : []),
+    [expiryQuery.data, cat, allAreas],
   );
   const monthExpiries = useMemo(() => expiries.filter((x) => x.expiresOn.startsWith(monthKey)), [expiries, monthKey]);
   const sbcCountAll = statutoryQuery.data?.calendar.deadlines ?? [];
@@ -209,7 +216,7 @@ export function ComplianceCalendarView({
   const marks: CalendarMark[] = useMemo(
     () =>
       rows
-        .filter((row) => areaOn === ALL_AREAS || row.compliance === areaOn)
+        .filter((row) => allAreas || areasOn.includes(row.compliance))
         .map((row) => ({
         id: row.id,
         date: row.dueDate.slice(0, 10),
@@ -244,7 +251,7 @@ export function ComplianceCalendarView({
             status: statutoryStatus(d.date, todayIso),
           })),
         ),
-    [rows, tasks, expiries, sbcShown, areaOn, now, todayIso],
+    [rows, tasks, expiries, sbcShown, allAreas, areasOn, now, todayIso],
   );
 
   // The rail always reads this calendar month (the donut is "this month", R-25).
@@ -321,6 +328,92 @@ export function ComplianceCalendarView({
       .map((x) => x.cells);
   };
 
+  // Toolbar parts, shared by the admin's toolbar and everyone else's.
+  /** The admin (who can import the calendar file) gets the two-row toolbar with menus. */
+  const compactBar = Boolean(statutoryQuery.data?.canImport);
+  const areaOptions: AreaFilterOption[] = areas.map((a) => {
+    const reg = SBC_OWN_AREAS.has(a) ? null : regOf(a);
+    return {
+      key: a,
+      label: reg ? REG_WORD[reg] : SBC_OWN_AREAS.has(a) ? a : areaLabel(a),
+      count: counted.filter((row) => row.compliance === a).length + countedSbc.filter((d) => d.area === a).length,
+      dot: reg ? `bg-reg-${reg}` : 'bg-upcoming-mid',
+    };
+  });
+  const companyPicker = sole ? null : (
+    <Select value={companyId} onValueChange={setPickedId}>
+      <SelectTrigger aria-label="Company" className="h-8 w-auto min-w-[150px] max-w-[220px] flex-none gap-2 text-[13px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_COMPANIES}>All companies</SelectItem>
+        {engagements.map((e) => (
+          <SelectItem key={e.id} value={e.id}>
+            {e.companyName}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+  const monthBlock = (
+    <>
+      <span className={cn(view !== 'month' && 'invisible')} aria-hidden={view !== 'month' || undefined}>
+        <MonthNav
+          value={monthKey}
+          now={nowKey}
+          onChange={(key) => {
+            setMonth(new Date(`${key}-01T00:00:00Z`));
+            setPickedDay(null);
+          }}
+        />
+      </span>
+      <span className="inline-flex h-8 flex-none items-center rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning">
+        {financialYearLabel(fyStartYear)}
+      </span>
+    </>
+  );
+  const viewTabs = (
+    <SpectrumTabs
+      label="Calendar view"
+      items={[
+        { key: 'month', label: 'Month' },
+        { key: 'year', label: 'Year' },
+        { key: 'timeline', label: 'Timeline' },
+        // The firm's act grid; named "By act" so it does not read like the Statutory filter (C-1).
+        { key: 'statutory', label: 'By act' },
+      ]}
+      value={view}
+      onChange={(v) => setView(v as CalendarView)}
+    />
+  );
+  const filingsButton = (
+    <Button size="sm" variant="secondary" className="h-8" asChild>
+      <Link href={filingsHref()}>
+        <FileText aria-hidden />
+        Filings
+      </Link>
+    </Button>
+  );
+  const exportInput = {
+    title: 'Compliance calendar',
+    client: picked?.companyName ?? null,
+    columns: ['Due date', 'Filing', 'Client', 'Period', 'Law', 'Status'],
+    rows: exportRows,
+  };
+  const exportButton = <ExportToExcelButton {...exportInput} className="h-8" />;
+  const importMenu = statutoryQuery.data?.canImport ? (
+    <StatutoryCalendarImport
+      data={statutoryQuery.data}
+      onPublished={(fyKey) => {
+        // Open the imported year on its first month, with its deadlines on the grid.
+        setMonth(new Date(`${fyKey.slice(0, 4)}-04-01T00:00:00Z`));
+        setPickedDay(null);
+        setView('month');
+      }}
+      extraItems={view !== 'statutory' ? <ExportMenuItem {...exportInput} /> : null}
+    />
+  ) : null;
+
   return (
     <PageTransition>
       <SEO
@@ -332,106 +425,72 @@ export function ComplianceCalendarView({
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
         <h1 className="sr-only">Compliance calendar</h1>
 
-        {/* Calendar bar: company, month, FY, area, view and the way to Filings. */}
-        {/* The By act view is the full statutory calendar with its own year and act filters, so the
-            register's company, category, month, year and area controls step aside there. */}
-        {view === 'statutory' ? null : (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {sole ? null : (
-            <Select value={companyId} onValueChange={setPickedId}>
-              <SelectTrigger aria-label="Company" className="h-8 w-auto min-w-[150px] max-w-[220px] flex-none gap-2 text-[13px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_COMPANIES}>All companies</SelectItem>
-                {engagements.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.companyName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
-        </div>
-        )}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {view === 'statutory' ? null : (
+        {compactBar ? (
           <>
-          <span className={cn(view !== 'month' && 'invisible')} aria-hidden={view !== 'month' || undefined}>
-            <MonthNav
-              value={monthKey}
-              now={nowKey}
-              onChange={(key) => {
-                setMonth(new Date(`${key}-01T00:00:00Z`));
-                setPickedDay(null);
-              }}
-            />
-          </span>
-          <span className="inline-flex h-8 flex-none items-center rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning">
-            {financialYearLabel(fyStartYear)}
-          </span>
+            {/* The admin's toolbar (owner, 12 Nov 2026, idea A): where you are on the first row, what
+                you filter on the second, and the calendar file and export in one menu. */}
+            <div className="flex flex-wrap items-center gap-2">
+              {view === 'statutory' ? null : monthBlock}
+              <span className="ml-auto flex flex-none items-center">{viewTabs}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {view === 'statutory' ? null : (
+                <>
+                  {companyPicker}
+                  <FilterSelect
+                    aria-label="Category"
+                    className="flex-none [&>select]:h-8"
+                    value={cat}
+                    onChange={(event) => setCat(event.target.value as CatFilter)}
+                    options={[
+                      { value: 'all', label: `Statutory and non-statutory · ${statCount + taskCount}` },
+                      { value: 'statutory', label: `Statutory · ${statCount}` },
+                      { value: 'non-statutory', label: `Non-statutory · ${taskCount}` },
+                    ]}
+                  />
+                  {cat === 'non-statutory' ? null : <AreaFilterMenu options={areaOptions} value={areasOn} onChange={setAreaPick} />}
+                </>
+              )}
+              <span className="ml-auto flex flex-none flex-wrap items-center gap-1.5">
+                {filingsButton}
+                {importMenu}
+              </span>
+            </div>
           </>
-          )}
-          {cat === 'non-statutory' || view === 'statutory' ? null : (
-            <SpectrumTabs
-              label="Filter by area"
-              className="min-w-0"
-              items={[
-                { key: ALL_AREAS, label: 'All', count: counted.length + countedSbc.length },
-                ...areas.map((a) => ({
-                  key: a,
-                  label: SBC_OWN_AREAS.has(a) ? a : regOf(a) ? REG_WORD[regOf(a)!] : areaLabel(a),
-                  count: counted.filter((row) => row.compliance === a).length + countedSbc.filter((d) => d.area === a).length,
-                })),
-              ]}
-              value={areaOn}
-              onChange={setArea}
-            />
-          )}
-          <span className="ml-auto flex flex-none flex-wrap items-center gap-1.5">
-            <SpectrumTabs
-              label="Calendar view"
-              items={[
-                { key: 'month', label: 'Month' },
-                { key: 'year', label: 'Year' },
-                { key: 'timeline', label: 'Timeline' },
-                // The firm's act grid; named "By act" so it does not read like the Statutory filter (C-1).
-                { key: 'statutory', label: 'By act' },
-              ]}
-              value={view}
-              onChange={(v) => setView(v as CalendarView)}
-            />
-            {/* The admin's Download template and Import calendar sit here, on every view of the page. */}
-            {statutoryQuery.data?.canImport ? (
-              <StatutoryCalendarImport
-                data={statutoryQuery.data}
-                onPublished={(fyKey) => {
-                  // Open the imported year on its first month, with its deadlines on the grid.
-                  setMonth(new Date(`${fyKey.slice(0, 4)}-04-01T00:00:00Z`));
-                  setPickedDay(null);
-                  setView('month');
-                }}
-              />
-            ) : null}
-            <Button size="sm" variant="secondary" className="h-8" asChild>
-              <Link href={filingsHref()}>
-                <FileText aria-hidden />
-                Filings
-              </Link>
-            </Button>
-            {/* The "By act" grid reads its own register, so the export shows on the other views. */}
-            {view !== 'statutory' ? (
-              <ExportToExcelButton
-                title="Compliance calendar"
-                client={picked?.companyName ?? null}
-                columns={['Due date', 'Filing', 'Client', 'Period', 'Law', 'Status']}
-                rows={exportRows}
-                className="h-8"
-              />
-            ) : null}
-          </span>
-        </div>
+        ) : (
+          <>
+            {/* Calendar bar: company, month, FY, area, view and the way to Filings. */}
+            {/* The By act view is the full statutory calendar with its own year and act filters, so the
+                register's company, category, month, year and area controls step aside there. */}
+            {view === 'statutory' ? null : (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {companyPicker}
+                <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {view === 'statutory' ? null : monthBlock}
+              {cat === 'non-statutory' || view === 'statutory' ? null : (
+                <SpectrumTabs
+                  label="Filter by area"
+                  className="min-w-0"
+                  items={[
+                    { key: ALL_AREAS, label: 'All', count: counted.length + countedSbc.length },
+                    ...areaOptions.map((o) => ({ key: o.key, label: o.label, count: o.count })),
+                  ]}
+                  value={areaOn}
+                  onChange={(key) => setAreaPick(key === ALL_AREAS ? [] : [key])}
+                />
+              )}
+              <span className="ml-auto flex flex-none flex-wrap items-center gap-1.5">
+                {viewTabs}
+                {filingsButton}
+                {/* The "By act" grid reads its own register, so the export shows on the other views. */}
+                {view !== 'statutory' ? exportButton : null}
+              </span>
+            </div>
+          </>
+        )}
 
         {view !== 'statutory' ? (
           pickedPreIncorporation ? (
@@ -699,6 +758,20 @@ function PopRow({ row, now, href }: { row: FilingRow; now: Date; href: string })
         <WordChip filing word={filingWord(row, now)} />
       </Link>
     </li>
+  );
+}
+
+/** Export to Excel as an item of the admin's Calendar file menu. */
+function ExportMenuItem(input: ExcelExportInput) {
+  const { start, busy } = useExcelExport(input);
+  return (
+    <DropdownMenuItem disabled={busy} onSelect={() => void start()} className="flex items-start gap-2.5">
+      <FileSpreadsheet className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+      <span>
+        Export to Excel
+        <span className="block text-[12px] text-ink-muted">What the calendar shows</span>
+      </span>
+    </DropdownMenuItem>
   );
 }
 

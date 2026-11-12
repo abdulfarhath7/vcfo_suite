@@ -18,9 +18,12 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/components/SEO', () => ({ SEO: () => null }));
 // The SBC statutory calendar of the year in view (the imported file): shown to every role on Month and Year.
+let canImport = false;
 let sbcDeadlines: { id: string; date: string; act: string; title: string; note?: string }[] = [];
 vi.mock('@/hooks/use-statutory-calendar', () => ({
-  useStatutoryCalendar: () => ({ data: { calendar: { deadlines: sbcDeadlines }, canImport: false, importableYears: [], years: [] } }),
+  useStatutoryCalendar: () => ({
+    data: { calendar: { deadlines: sbcDeadlines }, canImport, importableYears: ['2027-28'], years: [], currentFy: '2026-27' },
+  }),
   useStatutoryCalendarImport: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('@/hooks/use-expiries', () => ({
@@ -144,6 +147,7 @@ const { ComplianceCalendarView } = await import('@/views/compliances/ComplianceC
 
 beforeEach(() => {
   sbcDeadlines = [];
+  canImport = false;
   setWindow.mockClear();
   toastUndo.mockClear();
   push.mockClear();
@@ -188,6 +192,31 @@ describe('ComplianceCalendarView bar', () => {
     expect(screen.getByText('Turnover above INR 50 Mn')).toBeInTheDocument();
     // The area tabs count the SBC deadlines too: Labour laws exists only because of the file.
     expect(screen.getByRole('tab', { name: /^Labour\s*1$/ })).toBeInTheDocument();
+  });
+
+  it('gives the admin the two-row toolbar: dropdown filters and one Calendar file menu', () => {
+    canImport = true;
+    sbcDeadlines = [
+      { id: 'sd-a', date: '2099-10-20', act: 'GST', title: 'GSTR-1 (SBC)' },
+      { id: 'sd-b', date: '2099-10-25', act: 'LABOUR', title: 'PF and ESI (SBC)' },
+    ];
+    search = new URLSearchParams('date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/admin/compliances" scope={scope} />);
+    expect(screen.getByRole('combobox', { name: 'Category' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Acts: All acts/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Calendar file/ })).toBeInTheDocument();
+    // The tab rows and the separate buttons are gone for the admin.
+    expect(screen.queryByRole('tablist', { name: 'Filter by area' })).toBeNull();
+    expect(screen.queryByRole('tablist', { name: 'Category' })).toBeNull();
+    expect(screen.queryByTestId('export-to-excel')).toBeNull();
+  });
+
+  it('keeps the tab toolbar for roles that cannot import', () => {
+    search = new URLSearchParams('date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);
+    expect(screen.getByRole('tablist', { name: 'Filter by area' })).toBeInTheDocument();
+    expect(screen.getByTestId('export-to-excel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Calendar file/ })).toBeNull();
   });
 
   it('groups one filing for several clients in Coming up', () => {

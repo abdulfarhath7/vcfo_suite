@@ -121,3 +121,19 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - Timeline keeps filings only: the file's deadlines have no start dates to draw a window from.
 - The client's "Your compliances haven't started yet" note shows only on a month with nothing on
   it, as the file's deadlines fill the month before incorporation.
+
+## Admin calendar toolbar (2026-11-12, toolbar idea A)
+
+- The owner chose idea A for the Compliances calendar toolbar, for the admin only ("admin contains
+  more options"): row one is the month picker, the FY chip and the view switch; row two is the
+  company picker, a Category dropdown, an Acts dropdown (`AreaFilterMenu`: tick several acts, each
+  with its dot and count, Clear for all), Filings, and one "Calendar file" menu
+  (`StatutoryCalendarImport`) with Download template, Download FY filled in, Import calendar and
+  Export to Excel. Every other role keeps the tab toolbar. The switch is `compactBar`
+  (`canImport` from GET /api/statutory-calendar), in the same `ComplianceCalendarView`.
+- The area filter is a list now (`areaPick`, none = all); the tab toolbar sets one area at a time.
+- The app's `DropdownMenuItem` cannot take `asChild` (it appends a shortcut slot after its
+  children), so the download items call `window.location.assign` on the template route, which
+  answers as an attachment and leaves the page where it is.
+- `useExcelExport` (src/hooks/use-excel-export.ts) is the export behind `ExportToExcelButton`, for
+  a menu item that exports the same way.
