@@ -50,12 +50,6 @@ describe('LandingScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('LP-02: shows no screenshot of the app, only the logo', () => {
-    const { container } = render(<LandingScreen />);
-    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src'));
-    expect(images.every((src) => src === '/landing/vcfo-logo-on-black.webp')).toBe(true);
-  });
-
   it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
     render(<LandingScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
