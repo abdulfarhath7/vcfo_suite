@@ -15,11 +15,9 @@ import { MEETING_MODES, MEETING_TYPES, MODE_LABEL, TYPE_LABEL, type MeetingMode,
 import { addDaysIso, todayIst } from '@/lib/board-meetings/dates';
 import { useCreateMeeting, useMeetings } from '@/hooks/use-board-meetings';
 import { Field } from './parts';
+import { MEETINGS_AFTER_COI, meetingReadyCompanies, type MeetingCompany } from './view-model';
 
-export interface MeetingCompany {
-  id: string;
-  name: string;
-}
+export type { MeetingCompany };
 
 /**
  * NEW MEETING — company, kind, type, date, time and mode; "Copy the agenda and directors from
@@ -45,7 +43,9 @@ export function NewMeetingDialog({
 }) {
   const router = useRouter();
   const create = useCreateMeeting();
-  const [company, setCompany] = useState(defaultCompany ?? companies[0]?.id ?? '');
+  const ready = meetingReadyCompanies(companies);
+  const [company, setCompany] = useState(ready.find((c) => c.id === defaultCompany)?.id ?? ready[0]?.id ?? '');
+  const incorporatedOn = ready.find((c) => c.id === company)?.incorporatedOn ?? undefined;
   const [kind, setKind] = useState<'board' | 'agm' | 'egm'>('board');
   // Null until the user picks: a company with no earlier meeting gets "First board meeting".
   const [picked, setPicked] = useState<MeetingType | null>(defaultType ?? (postInc ? 'first' : null));
@@ -95,7 +95,7 @@ export function NewMeetingDialog({
         </DialogHeader>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Company" className="col-span-2">
-            <FilterSelect size="md" value={company} onChange={(e) => setCompany(e.target.value)} options={companies.map((c) => ({ value: c.id, label: c.name }))} />
+            <FilterSelect size="md" value={company} onChange={(e) => setCompany(e.target.value)} options={ready.map((c) => ({ value: c.id, label: c.name }))} />
           </Field>
           <Field label="Meeting">
             <FilterSelect
@@ -113,7 +113,7 @@ export function NewMeetingDialog({
             <FilterSelect size="md" value={type} onChange={(e) => setPicked(e.target.value as MeetingType)} options={MEETING_TYPES.map((t) => ({ value: t, label: TYPE_LABEL[t] }))} />
           </Field>
           <Field label="Date">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" value={date} min={incorporatedOn} onChange={(e) => setDate(e.target.value)} />
           </Field>
           <Field label="Time (IST)">
             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -171,6 +171,8 @@ export function NewWorkMenu({
   basePath: string;
 }) {
   const [open, setOpen] = useState(false);
+  // Stage gate: no meeting before the Certificate of Incorporation of at least one company.
+  const canMeet = meetingReadyCompanies(companies).length > 0;
   return (
     <>
       {canCreateTask ? (
@@ -182,15 +184,31 @@ export function NewWorkMenu({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={onTask}>Task</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setOpen(true)}>Meeting</DropdownMenuItem>
+            {canMeet ? (
+              <DropdownMenuItem onSelect={() => setOpen(true)}>Meeting</DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem disabled className="flex-col items-start gap-0.5">
+                Meeting
+                <span className="text-[12px] text-ink-muted">{MEETINGS_AFTER_COI}</span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : (
+      ) : canMeet ? (
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus aria-hidden /> New meeting
         </Button>
+      ) : (
+        <span className="inline-flex items-center gap-2" title={MEETINGS_AFTER_COI}>
+          <Button size="sm" disabled aria-describedby="new-meeting-after-coi">
+            <Plus aria-hidden /> New meeting
+          </Button>
+          <span id="new-meeting-after-coi" className="text-[12.5px] text-ink-muted">
+            After incorporation
+          </span>
+        </span>
       )}
-      {open ? <NewMeetingDialog open={open} onOpenChange={setOpen} companies={companies} defaultCompany={defaultCompany} basePath={basePath} /> : null}
+      {open && canMeet ? <NewMeetingDialog open={open} onOpenChange={setOpen} companies={companies} defaultCompany={defaultCompany} basePath={basePath} /> : null}
     </>
   );
 }

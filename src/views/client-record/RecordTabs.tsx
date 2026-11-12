@@ -112,7 +112,14 @@ export function RecordTabPanel({ tab, engagement, shellBase }: { tab: Exclude<Re
   );
   if (tab === 'registrations') return <RegistrationsView shellBase={shellBase} scope={scope} embedded />;
   if (tab === 'obligations') return <RecordObligations engagement={engagement} shellBase={shellBase} scope={scope} projectHref={pathname} />;
-  if (tab === 'directors') return <DirectorsPanel engagementId={engagement.id} compliancesBase={`${shellBase === '/app/super' ? '/app/admin' : shellBase}/compliances`} />;
+  if (tab === 'directors')
+    return (
+      <DirectorsPanel
+        engagementId={engagement.id}
+        compliancesBase={`${shellBase === '/app/super' ? '/app/admin' : shellBase}/compliances`}
+        preIncorporation={scope.preIncorporationIds.has(engagement.id)}
+      />
+    );
   if (tab === 'documents') return <RecordDocumentsPanel engagement={engagement} vaultHref={`${shellBase}/vault`} />;
   if (tab === 'team') return <StaffClientTeam engagementId={engagement.id} projectHref={pathname} />;
   return <EngagementNotesPanel engagementId={engagement.id} />;

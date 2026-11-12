@@ -2,8 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { complianceEngagementsForRole } from '@/lib/compliance/incorporation-state';
 import {
   CERTIFICATE_OF_INCORPORATION_STEP_ID,
+  incorporationDateOf,
   isIncorporated,
 } from '@/lib/compliance/incorporation-state';
+
+describe('incorporationDateOf', () => {
+  const coi = (date: string) => ({ [CERTIFICATE_OF_INCORPORATION_STEP_ID]: { status: 'completed', responses: { dateOfIncorporation: date } } }) as never;
+  it('prefers the engagement date, then the COI step date, else null', () => {
+    expect(incorporationDateOf({ incorporationDate: '2026-02-14' }, coi('2026-02-10'))).toBe('2026-02-14');
+    expect(incorporationDateOf({ incorporationDate: null }, coi('2026-02-10'))).toBe('2026-02-10');
+    expect(incorporationDateOf({ incorporationDate: null }, coi('not a date'))).toBeNull();
+    expect(incorporationDateOf({ stage: 'Registration' })).toBeNull();
+  });
+});
 
 describe('isIncorporated', () => {
   it('is true when the incorporation date is set', () => {

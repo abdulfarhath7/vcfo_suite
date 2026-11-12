@@ -35,6 +35,8 @@ const ERROR_TEXT: Record<string, string> = {
   cannot_cancel: 'This meeting cannot be cancelled.',
   not_sent: 'The notice is not sent yet.',
   held_in_future: 'A meeting that already happened needs a date of today or earlier.',
+  not_incorporated: 'Board meetings and directors start after the Certificate of Incorporation.',
+  before_incorporation: 'The meeting date cannot be before the date of incorporation.',
 };
 
 export class MeetingApiError extends Error {

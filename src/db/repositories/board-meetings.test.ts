@@ -51,6 +51,12 @@ vi.mock('@/db/repositories/engagements', () => ({
 }));
 vi.mock('@/db/repositories/notifications', () => ({ createNotificationsForUsers: vi.fn(async () => []) }));
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: vi.fn(async () => undefined) }));
+// The proposed directors of Part B (`pre-15`), set per test.
+let proposed: Array<{ id: string; index: number; values: Record<string, string> }> = [];
+vi.mock('@/lib/incorporation/proposed-directors', () => ({
+  readProposedDirectors: () => proposed,
+  displayName: (v: Record<string, string>) => [v.firstName, v.lastName].filter(Boolean).join(' '),
+}));
 
 const repo = await import('@/db/repositories/board-meetings');
 const dialect = new PgDialect();
@@ -86,6 +92,91 @@ beforeEach(() => {
   vi.clearAllMocks();
   calls.length = 0;
   results = [];
+  proposed = [];
+});
+
+describe('board meetings · stage gate (no meetings or directors before COI)', () => {
+  const preCoi = { id: OWN, incorporationDate: null, stage: 'Pre-Incorporation' };
+  const postCoi = { id: OWN, companyName: 'Nimbus Labs', incorporationDate: '2026-09-01', stage: 'Pre-Incorporation' };
+
+  it('refuses a meeting for a company that is not incorporated, writing nothing', async () => {
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: preCoi });
+    await expect(repo.createMeeting(ctx('manager'), { engagementId: OWN, meetingDate: '2026-09-10', meetingTime: '11:00', meetingType: 'first' })).rejects.toMatchObject({ status: 409, code: 'not_incorporated' });
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('refuses a meeting dated before the incorporation date, writing nothing', async () => {
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    await expect(repo.createMeeting(ctx('intern'), { engagementId: OWN, meetingDate: '2026-08-20', meetingTime: '11:00' })).rejects.toMatchObject({ status: 422, code: 'before_incorporation' });
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('after COI a meeting on or after the incorporation date passes the gate and is inserted', async () => {
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    // No query result for the insert, so the call stops at `create_failed` after the insert.
+    await expect(repo.createMeeting(ctx('manager'), { engagementId: OWN, meetingDate: '2026-09-01', meetingTime: '11:00' })).rejects.toMatchObject({ code: 'create_failed' });
+    expect(calls.some((c) => c.op === 'insert')).toBe(true);
+  });
+
+  it('refuses a reschedule to a date before the incorporation date', async () => {
+    results = [[meetingRow({ engagementId: OWN, status: 'sent' })]];
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    await expect(repo.rescheduleMeeting(ctx('intern'), MEETING, { meetingDate: '2026-08-01', meetingTime: '11:00', reason: 'x' })).rejects.toMatchObject({ status: 422, code: 'before_incorporation' });
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('before COI the directors list is empty, nothing is seeded, and adding a director is refused', async () => {
+    proposed = [{ id: 'p1', index: 1, values: { firstName: 'Asha', lastName: 'Rao', din: '12345678' } }];
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: preCoi });
+    expect(await repo.listDirectors(ctx('manager'), OWN)).toEqual([]);
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: preCoi });
+    await expect(repo.addDirector(ctx('manager'), OWN, { name: 'Asha Rao' })).rejects.toMatchObject({ status: 409, code: 'not_incorporated' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('after COI the first read seeds the Part B directors appointed on the incorporation date', async () => {
+    proposed = [{ id: 'p1', index: 1, values: { firstName: 'Asha', lastName: 'Rao', din: '1234 5678', officialMailId: 'asha@x.in' } }];
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    results = [[], []];
+    await repo.listDirectors(ctx('manager'), OWN);
+    const insert = calls.find((c) => c.op === 'insert');
+    expect(insert?.values).toEqual([expect.objectContaining({ engagementId: OWN, name: 'Asha Rao', din: '12345678', appointedOn: '2026-09-01', source: 'incorporation' })]);
+  });
+
+  it('rows seeded before COI get the incorporation date and the Part B DIN on the next read, once', async () => {
+    proposed = [{ id: 'p1', index: 1, values: { firstName: 'Asha', lastName: 'Rao', din: '12345678' } }];
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    results = [
+      [
+        { id: 'd1', name: 'asha  rao', din: null, appointedOn: null, source: 'incorporation' },
+        { id: 'd2', name: 'Manual Person', din: null, appointedOn: null, source: 'manual' },
+      ],
+    ];
+    await repo.listDirectors(ctx('manager'), OWN);
+    const updates = calls.filter((c) => c.op === 'update');
+    expect(updates).toHaveLength(1);
+    expect(updates[0]!.set).toMatchObject({ appointedOn: '2026-09-01', din: '12345678' });
+    expect(calls.some((c) => c.op === 'insert')).toBe(false);
+
+    // Already filled: the next read changes nothing.
+    calls.length = 0;
+    assertEngagementAccess.mockResolvedValueOnce({ ok: true, dbId: OWN, row: postCoi });
+    results = [[{ id: 'd1', name: 'Asha Rao', din: '12345678', appointedOn: '2026-09-01', source: 'incorporation' }]];
+    await repo.listDirectors(ctx('manager'), OWN);
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('the reminders job skips meetings of companies that are not incorporated', async () => {
+    const draftOwn = meetingRow({ id: 'm-own', engagementId: OWN, status: 'draft', meetingDate: '2026-09-05' });
+    const draftOther = meetingRow({ id: 'm-other', engagementId: OTHER, status: 'draft', meetingDate: '2026-09-05' });
+    results = [[draftOwn, draftOther], [postCoi, { id: OTHER, incorporationDate: null, stage: 'Pre-Incorporation' }]];
+    expect((await repo.systemDraftsToPrepare('2026-09-01')).map((m) => m.id)).toEqual(['m-own']);
+
+    const sentOwn = meetingRow({ id: 'm-own', engagementId: OWN, status: 'held', meetingDate: '2026-08-01' });
+    const sentOther = meetingRow({ id: 'm-other', engagementId: OTHER, status: 'held', meetingDate: '2026-08-01' });
+    results = [[sentOwn, sentOther], [postCoi, { id: OTHER, incorporationDate: null, stage: 'Pre-Incorporation' }], []];
+    expect((await repo.systemMomOpen('2026-09-01')).map((r) => r.meeting.id)).toEqual(['m-own']);
+  });
 });
 
 describe('board meetings · reads', () => {

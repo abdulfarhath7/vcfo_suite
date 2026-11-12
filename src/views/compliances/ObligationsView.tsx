@@ -45,6 +45,7 @@ import { CategoryTabs } from '@/components/compliances/CategoryTabs';
 import { useTasks, type TaskRowDto } from '@/views/compliances/tasks/api';
 import { NewTaskButton } from '@/views/compliances/tasks/new-task';
 import { NewWorkMenu } from '@/views/board-meetings/NewMeetingDialog';
+import { incorporationDateOf } from '@/lib/compliance/incorporation-state';
 import { statHref, taskColumns, taskGroups, taskHref, taskRowMatches } from '@/views/compliances/tasks/task-list';
 import {
   obligationBuckets,
@@ -124,7 +125,7 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
   const cat: Category = catParam === 'ns' || catParam === 'all' ? catParam : 'stat';
   const hasStat = cat !== 'ns';
   const hasNs = cat !== 'stat';
-  const { user } = useApp();
+  const { user, getStateForEngagement } = useApp();
   // S-4: admin and manager create non-statutory tasks; leads do not. Super admin has the same rights.
   const canCreate = isAdminOrManager(user?.role);
   // Board meetings: every staff role (the lead included) can start one; clients cannot.
@@ -339,7 +340,12 @@ export function ObligationsView({ basePath, scope, embedded = false }: { basePat
         <NewWorkMenu
           canCreateTask={canCreate}
           onTask={() => setTaskRequest((n) => n + 1)}
-          companies={engagements.map((e) => ({ id: e.id, name: e.companyName }))}
+          companies={engagements.map((e) => ({
+            id: e.id,
+            name: e.companyName,
+            preIncorporation: scope.preIncorporationIds.has(e.id),
+            incorporatedOn: incorporationDateOf(e, getStateForEngagement(e)),
+          }))}
           defaultCompany={companyId !== ALL_COMPANIES ? companyId : sole?.id}
           basePath={basePath}
         />

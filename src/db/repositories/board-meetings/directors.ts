@@ -8,12 +8,13 @@ import type { EngagementDbRow } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { addDaysIso, isIsoDate, todayIst } from '@/lib/board-meetings/dates';
-import { UUID, invalid, notFound, scopedEngagement } from './shared';
+import { UUID, conflict, incorporationOf, invalid, notFound, scopedEngagement } from './shared';
 
 /**
  * COMPANY DIRECTORS — the director list of one client company over time. The director picker
  * of every notice reads the current ones (no `ceased_on`, or one after the meeting date).
- * The first read copies the proposed directors from the incorporation checklist (`pre-15`).
+ * After incorporation, the first read copies the proposed directors from the incorporation
+ * checklist (`pre-15`), appointed on the incorporation date; before it the list is empty.
  * Adding a director or marking one as left records a DIR-12 event-based filing (30 days).
  * Staff in scope read and write; clients read their own company's current directors.
  */
@@ -48,17 +49,28 @@ export function toDirectorDto(r: DirectorRow, onDate: string = todayIst()): Dire
   };
 }
 
-/** Copy the proposed directors from the incorporation answers when the list is still empty. */
+const nameKey = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Seed the director list from the incorporation answers (Part B, `pre-15`), only once the
+ * company is incorporated: the proposed directors become directors on the incorporation
+ * date. Nothing is seeded before the Certificate of Incorporation.
+ *
+ * When rows were already seeded (including by the older code before COI, with no
+ * appointment date), the next read fills what is still blank: the appointment date from the
+ * incorporation date, and the DIN from the Part B entry of the same name. A value already
+ * present is never overwritten, so repeated reads change nothing.
+ */
 export async function systemSeedDirectors(engagement: EngagementDbRow): Promise<void> {
-  const existing = await db.select({ id: companyDirectors.id }).from(companyDirectors).where(eq(companyDirectors.engagementId, engagement.id)).limit(1);
-  if (existing.length) return;
+  const inc = incorporationOf(engagement);
+  if (!inc.incorporated) return;
   let proposed: ReturnType<typeof readProposedDirectors>;
   try {
     proposed = readProposedDirectors(checklistStateFromRow(engagement) as never);
   } catch {
     proposed = [];
   }
-  const rows = proposed
+  const fromPartB = proposed
     .map((d) => {
       const name = displayName(d.values).trim();
       if (!name) return null;
@@ -70,16 +82,38 @@ export async function systemSeedDirectors(engagement: EngagementDbRow): Promise<
         email,
         phone: (d.values.mobileNumber ?? '').trim() || null,
         designation: 'Director',
-        appointedOn: engagement.incorporationDate ?? null,
+        appointedOn: inc.date,
         source: 'incorporation',
       };
     })
     .filter((x): x is NonNullable<typeof x> => Boolean(x));
-  if (rows.length) await db.insert(companyDirectors).values(rows);
+
+  const existing = await db
+    .select({ id: companyDirectors.id, name: companyDirectors.name, din: companyDirectors.din, appointedOn: companyDirectors.appointedOn, source: companyDirectors.source })
+    .from(companyDirectors)
+    .where(eq(companyDirectors.engagementId, engagement.id));
+  if (existing.length === 0) {
+    if (fromPartB.length) await db.insert(companyDirectors).values(fromPartB);
+    return;
+  }
+  for (const row of existing) {
+    if (row.source !== 'incorporation') continue;
+    const match = fromPartB.find((p) => nameKey(p.name) === nameKey(row.name));
+    const patch: { appointedOn?: string; din?: string } = {};
+    if (!row.appointedOn && inc.date) patch.appointedOn = inc.date;
+    if (!row.din && match?.din && DIN.test(match.din)) patch.din = match.din;
+    if (Object.keys(patch).length === 0) continue;
+    await db
+      .update(companyDirectors)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(companyDirectors.id, row.id), eq(companyDirectors.engagementId, engagement.id)));
+  }
 }
 
 export async function listDirectors(ctx: AuthContext, engagementId: string, opts: { includePast?: boolean; onDate?: string } = {}): Promise<DirectorDto[]> {
   const engagement = await scopedEngagement(ctx, engagementId, true);
+  // A company has no directors on record before its Certificate of Incorporation.
+  if (!incorporationOf(engagement).incorporated) return [];
   await systemSeedDirectors(engagement);
   const rows = await db.select().from(companyDirectors).where(eq(companyDirectors.engagementId, engagement.id)).orderBy(asc(companyDirectors.createdAt), asc(companyDirectors.name));
   const all = rows.map((r) => toDirectorDto(r, opts.onDate));
@@ -133,6 +167,8 @@ export async function addDirector(ctx: AuthContext, engagementId: string, input:
   if (ctx.role === 'client') throw notFound();
   const engagement = await scopedEngagement(ctx, engagementId);
   checkInput(input);
+  // Adding a director records a DIR-12 filing, which a company only has after incorporation.
+  if (!incorporationOf(engagement).incorporated) throw conflict('not_incorporated');
   await systemSeedDirectors(engagement);
   const appointedOn = input.appointedOn || todayIst();
   const [row] = await db

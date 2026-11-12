@@ -25,8 +25,9 @@ const empty: Form = { name: '', din: '', email: '', phone: '', designation: 'Dir
  * calendar), fix an email or DIN, or mark one as left. Past directors stay for old meetings.
  * Below, the company's meetings, newest first.
  */
-export function DirectorsPanel({ engagementId, compliancesBase }: { engagementId: string; compliancesBase: string }) {
-  const q = useDirectors(engagementId, true);
+export function DirectorsPanel({ engagementId, compliancesBase, preIncorporation = false }: { engagementId: string; compliancesBase: string; preIncorporation?: boolean }) {
+  // Before the Certificate of Incorporation there are no directors on record (stage gate).
+  const q = useDirectors(preIncorporation ? null : engagementId, true);
   const meetings = useMeetings(engagementId);
   const acts = useDirectorActions();
   const [form, setForm] = useState<{ id: string | null; f: Form } | null>(null);
@@ -73,7 +74,7 @@ export function DirectorsPanel({ engagementId, compliancesBase }: { engagementId
         title="Directors"
         meta={String(current.length)}
         right={
-          form ? null : (
+          form || preIncorporation ? null : (
             <Button size="sm" onClick={() => setForm({ id: null, f: { ...empty, appointedOn: todayIst() } })}>
               <Plus className="h-4 w-4" aria-hidden /> Add director
             </Button>
@@ -111,7 +112,7 @@ export function DirectorsPanel({ engagementId, compliancesBase }: { engagementId
             </div>
           </div>
         ) : null}
-        {q.isPending ? (
+        {q.isPending && !preIncorporation ? (
           <div className="p-4">
             <SkeletonRows rows={3} />
           </div>
@@ -194,7 +195,9 @@ export function DirectorsPanel({ engagementId, compliancesBase }: { engagementId
               {current.length + past.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="border-t border-line-soft px-4 py-4 text-ink-muted">
-                    No directors yet. They come from the incorporation form, or add them here.
+                    {preIncorporation
+                      ? 'Directors appear here after incorporation, from the directors named in the incorporation form.'
+                      : 'No directors yet. They come from the incorporation form, or add them here.'}
                   </td>
                 </tr>
               ) : null}
