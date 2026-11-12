@@ -52,8 +52,9 @@ function findGroup(root: PublicDownloadGroup, id: string): PublicDownloadGroup |
 }
 
 /**
- * The quick picks above the tree: each part, each director, every uploaded file, and everything.
- * A pick with nothing ready is left out.
+ * The quick picks above the tree: each part, each director and every uploaded file. "Whole project"
+ * is its own one-click row at the top of the pop-up, so it is not a pick. A pick with nothing ready
+ * is left out.
  */
 export function quickPicks(root: PublicDownloadGroup): QuickPick[] {
   const picks: QuickPick[] = [];
@@ -74,13 +75,5 @@ export function quickPicks(root: PublicDownloadGroup): QuickPick[] {
       .filter((f) => f.ready && f.kind === 'uploaded')
       .map((f) => f.key),
   );
-  add('all', 'Everything', readyKeysIn(root));
   return picks;
-}
-
-/** The remembered choice, kept to the files this engagement has ready; everything when none fit. */
-export function initialSelection(root: PublicDownloadGroup, remembered: readonly string[] | null): Set<string> {
-  const ready = readyKeysIn(root);
-  const kept = remembered ? ready.filter((k) => remembered.includes(k)) : [];
-  return new Set(kept.length ? kept : ready);
 }

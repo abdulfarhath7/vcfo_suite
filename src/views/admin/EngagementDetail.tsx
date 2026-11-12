@@ -73,7 +73,7 @@ import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJ
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
-  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+  RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
 import { McaFilingCard } from '@/components/incorporation/McaFilingCard';
@@ -352,7 +352,6 @@ export default function EngagementDetail() {
             <>
               <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
               <DownloadDocumentsButton engagementId={eng.id} />
-              <ProjectZipButton engagementId={eng.id} />
             </>
           }
           stats={

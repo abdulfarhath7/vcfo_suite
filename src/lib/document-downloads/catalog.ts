@@ -153,7 +153,7 @@ export function buildDownloadCatalog(input: CatalogInput): DownloadCatalog {
   const state = input.state ?? {};
   const phases = getIncorporationPhases();
   const phaseItems = (ids: string[]) => phases.filter((p) => ids.includes(p.id)).flatMap((p) => p.items);
-  const root = group('all', 'All documents', '', 'Company Documents');
+  const root = group('all', 'All documents', '', 'Project');
 
   // Part A: the board resolution, then the Phase 1 uploads.
   const partA = group('part-a', 'SPICe+ Part A', '01_SPICe-Part-A', 'SPICe Part A');
