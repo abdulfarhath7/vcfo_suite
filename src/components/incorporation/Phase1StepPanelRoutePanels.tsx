@@ -37,14 +37,19 @@ export function Phase1Pre2Panel(props: Phase1StepPanelRoutesProps) {
   const { engagement, className, isClient, isIntern, brStatus, itemState, getStateForEngagement } = props;
     if (!engagement) return null;
 
-    // Intern CTA lives in the form-card footer (`aboveFooterActions`), not above the fields. The
-    // client's edit (BR-04, BR-05) is the lead's to receive, correct and send back, so it shows.
+    // BR-01: the Lead sees the generated draft on the step too. The generate and send buttons
+    // stay in the form-card footer (`aboveFooterActions`). The client's edit (BR-04, BR-05) is the
+    // Lead's to receive, correct and send back, so it shows once the draft is with the client.
     if (isIntern) {
-      return brStatus === 'finalized' ? (
+      if (brStatus === 'loading') return null;
+      return (
         <div className={className}>
-          <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="intern" />
+          <PanelShell title="Draft Board Resolution">
+            <BoardResolutionDocCards engagement={engagement} doc={props.brDoc ?? null} step="draft" viewerRole="intern" />
+            {brStatus === 'finalized' ? <BoardResolutionClientEdit engagementId={engagement.id} viewerRole="intern" /> : null}
+          </PanelShell>
         </div>
-      ) : null;
+      );
     }
 
     if (!isClient) {

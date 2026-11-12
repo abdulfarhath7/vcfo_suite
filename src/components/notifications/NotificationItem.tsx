@@ -5,9 +5,10 @@ import { ArrowUpRight, Trash2 } from "lucide-react";
 import type { AppNotification } from "@/lib/checklist/checklist-notifications";
 import {
   formatNotificationWhen,
-  notificationHrefIsNavigable,
+  notificationOpenHref,
 } from "@/lib/notifications/notification-dismiss";
 import { NotificationKindTile } from "@/components/notifications/notification-kind";
+import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 
 function isOutboundKind(kind: AppNotification["kind"]): boolean {
@@ -49,7 +50,10 @@ export function NotificationItem({
   const fresh = !item.read;
   const context = notificationContextLine(item);
   const when = formatNotificationWhen(item.createdAt);
-  const canOpen = showOpenLink && notificationHrefIsNavigable(item.href);
+  const { user } = useApp();
+  // GL-01: the step it names, or the project overview for an old notification without a link.
+  const openHref = notificationOpenHref(item, user?.role);
+  const canOpen = Boolean(showOpenLink && openHref);
   const dismissed = Boolean(item.dismissedAt);
 
   return (
@@ -94,9 +98,9 @@ export function NotificationItem({
             </span>
           ) : null}
         </button>
-        {expanded && canOpen && item.href?.startsWith('/api/') ? (
+        {expanded && canOpen && openHref?.startsWith('/api/') ? (
           <a
-            href={item.href}
+            href={openHref}
             download
             className="mb-2 ml-[56px] inline-flex items-center gap-0.5 text-[12px] font-medium text-brand-text hover:underline"
           >
@@ -105,7 +109,7 @@ export function NotificationItem({
           </a>
         ) : expanded && canOpen ? (
           <Link
-            href={item.href}
+            href={openHref ?? '#'}
             className="mb-2 ml-[56px] inline-flex items-center gap-0.5 text-[12px] font-medium text-brand-text hover:underline"
           >
             Open

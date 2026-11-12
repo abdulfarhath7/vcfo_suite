@@ -507,6 +507,7 @@ export function SidebarNavDisclosure({
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={labelForAria}
+        data-active={sectionActive ? 'true' : undefined}
         onClick={() => setOpen((value) => !value)}
         className={triggerClass}
         {...hoverAttrs}

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { diffWords, type ClientEditAction } from '@/lib/board-resolution/client-edit';
 import type { ClientEditView } from '@/lib/board-resolution/client-edit-flow';
+import { requestEmailSend, type EmailDraftView } from '@/lib/email/request-email-send';
 import { cn } from '@/lib/utils';
 
 const ACTION_LABEL: Partial<Record<ClientEditAction, string>> = {
@@ -21,10 +22,9 @@ const ACTION_LABEL: Partial<Record<ClientEditAction, string>> = {
   'send-final': 'Send final to Client',
 };
 
-/** Actions that open a box for text first: the return reason, the client's message. */
+/** Actions that open a box for text first: the return reason. */
 const NEEDS_TEXT: Partial<Record<ClientEditAction, { label: string; required: boolean; placeholder: string }>> = {
   return: { label: 'Reason for the return', required: true, placeholder: 'What must the Lead and the Client change?' },
-  send: { label: 'Message to the firm (optional)', required: false, placeholder: 'e.g. We changed the date of the meeting in paragraph 3.' },
 };
 
 function TrackedChange({ before, after }: { before: string; after: string }) {
@@ -51,7 +51,16 @@ function TrackedChange({ before, after }: { before: string; after: string }) {
  * Lead sends it to the Manager again. The server decides which buttons each role gets (`view.actions`).
  */
 // The viewer's role is `viewerRole`, because JSX lint reads a prop named `role` as an ARIA role.
-export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { engagementId: string; viewerRole: string }) {
+export function BoardResolutionClientEdit({
+  engagementId,
+  viewerRole: role,
+  refreshKey,
+}: {
+  engagementId: string;
+  viewerRole: string;
+  /** Changes when the board resolution changes elsewhere (realtime), so the panel reloads. */
+  refreshKey?: string;
+}) {
   const [view, setView] = useState<ClientEditView | null>(null);
   const [editing, setEditing] = useState(false);
   const [paragraphs, setParagraphs] = useState<string[]>([]);
@@ -72,7 +81,7 @@ export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { 
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, refreshKey]);
 
   const call = async (method: 'PUT' | 'POST', body: unknown) => {
     setBusy(true);
@@ -110,6 +119,36 @@ export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { 
       setAsking(null);
       setNote('');
     }
+  };
+  // GL-07: "Send to the firm" opens the shared Send email pop-up to the Lead. Cancel sends
+  // nothing and the edit stays with the client. With no Lead email there is no draft, and the
+  // move goes ahead with the in-app notice alone.
+  const sendToFirm = async () => {
+    setBusy(true);
+    let draft: EmailDraftView | null = null;
+    try {
+      const res = await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', preview: true }) });
+      const json = (await res.json().catch(() => ({}))) as { draft?: EmailDraftView | null; error?: string };
+      if (!res.ok) {
+        toast.error(json.error ?? 'That did not work. Try again.');
+        return;
+      }
+      draft = json.draft ?? null;
+    } finally {
+      setBusy(false);
+    }
+    if (!draft) {
+      await act('send');
+      return;
+    }
+    const outcome = await requestEmailSend({
+      url: base,
+      body: { action: 'send' },
+      title: 'Send the edited board resolution to your Lead',
+      sendLabel: 'Send to the firm',
+      draft,
+    });
+    if (outcome.sent) await load();
   };
 
   return (
@@ -185,7 +224,7 @@ export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { 
               size="sm"
               variant={action === 'return' ? 'outline' : 'default'}
               disabled={busy}
-              onClick={() => (NEEDS_TEXT[action] ? setAsking(action) : void act(action))}
+              onClick={() => (action === 'send' ? void sendToFirm() : NEEDS_TEXT[action] ? setAsking(action) : void act(action))}
             >
               {ACTION_LABEL[action] ?? action}
             </Button>
@@ -199,7 +238,7 @@ export function BoardResolutionClientEdit({ engagementId, viewerRole: role }: { 
           <Textarea id="br-client-edit-note" value={note} placeholder={NEEDS_TEXT[asking]!.placeholder} onChange={(e) => setNote(e.target.value)} />
           <div className="flex gap-2">
             <Button type="button" size="sm" disabled={busy || (NEEDS_TEXT[asking]!.required && !note.trim())} onClick={() => act(asking, note)}>
-              {asking === 'send' ? 'Send' : ACTION_LABEL[asking]}
+              {ACTION_LABEL[asking]}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => setAsking(null)}>Cancel</Button>
           </div>

@@ -132,6 +132,19 @@ export function isClientIncorporationStepPathname(pathname: string): boolean {
 export const NOTIFIED_HASH = '#notified';
 
 /**
+ * GL-01: added to the nearest page the app opens when the person may not open the step a link
+ * names (not on the project's team, or the project is gone). The page then says why.
+ */
+export const NOT_PERMITTED_HASH = '#not-permitted';
+
+/** The project overview for a role: where an old notification without a step link opens (GL-01). */
+export function projectPathForRole(role: string, project: ProjectRouteTarget): string {
+  if (role === 'client') return clientIncorporationPath();
+  if (role === 'intern') return internEngagementPath(project);
+  return adminProjectPath(project, role === 'manager' ? 'manager' : 'admin');
+}
+
+/**
  * The exact step page of one role (GL-01): the notification pop-up, the notification list, the
  * email and the realtime toast all build their target here, so "Open" lands on the step the
  * notification names, not on a project home. `boardResolution` picks the board resolution page

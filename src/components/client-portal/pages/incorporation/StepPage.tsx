@@ -66,6 +66,7 @@ import {
   type IncData,
 } from './data';
 import { stepFiles } from './StepTable';
+import { BOARD_RESOLUTION_STEPS, StepBoardResolution } from './StepBoardResolution';
 import { prefillNotes } from '@/lib/client-portal/step-progress';
 import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
@@ -857,6 +858,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           {/* GL-05: the side panel (phase steps) can be pushed aside for more room. */}
           <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
             <Col>
+              {/* BR-01, BR-02, BR-04: the draft, the signed copy and the client's edit on steps 2 and 3. */}
+              {BOARD_RESOLUTION_STEPS.has(s.id) && d.engagementId ? <StepBoardResolution engagementId={d.engagementId} stepId={s.id} /> : null}
               {stepForm ?? (docsCount > 0 ? (
                 <SpectrumTabs
                   variant="underline"
