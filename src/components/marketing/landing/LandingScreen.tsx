@@ -11,8 +11,6 @@ import { playIntro } from "./intro";
 import { AskGuide } from "./AskGuide";
 import { BookDemoDialog } from "../BookDemoDialog";
 
-type Tab = "client" | "lead" | "manager" | "admin" | "super";
-const TABS: Tab[] = ["client", "lead", "manager", "admin", "super"];
 type Intro = "pre" | "logo" | "done";
 
 /**
@@ -28,9 +26,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
   const [menu, setMenu] = React.useState(false);
   const [scrolled, setScrolled] = React.useState(false);
   const [demo, setDemo] = React.useState(false);
-  const [tab, setTab] = React.useState<Tab>("client");
   const [intro, setIntro] = React.useState<Intro>("pre");
-  const tabsRef = React.useRef<HTMLDivElement>(null);
   useLandingMotion(root, setScrolled);
   const openDemo = () => setDemo(true);
   const closeMenu = () => setMenu(false);
@@ -73,15 +69,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
     return playIntro({ root: el, hero, navImg, release: () => setIntro("logo"), finish });
   }, []);
 
-  const tabKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    const i = TABS.indexOf(tab);
-    const next = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
-    if (next === null) return;
-    e.preventDefault();
-    const t = TABS[(next + TABS.length) % TABS.length];
-    setTab(t);
-    tabsRef.current?.querySelector<HTMLButtonElement>(`#tab-${t}`)?.focus();
-  };
 
   // Cards, chips and screenshots carry `data-app`: a click, or Enter on a focused item, opens Book a demo.
   const open = (target: EventTarget | null, e: React.SyntheticEvent) => {
@@ -110,7 +97,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <a href="#journey">How it works</a>
             <a href="#incorporate">Incorporation</a>
             <a href="#comply">Compliance</a>
-            <a href="#portals">Portals</a>
             <a href="#faq">FAQ</a>
           </nav>
           <div className="nav-actions">
@@ -130,7 +116,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <a onClick={closeMenu} href="#journey">How it works</a>
           <a onClick={closeMenu} href="#incorporate">Incorporation</a>
           <a onClick={closeMenu} href="#comply">Compliance</a>
-          <a onClick={closeMenu} href="#portals">Portals</a>
           <a onClick={closeMenu} href="#faq">FAQ</a>
           <Link onClick={closeMenu} href={SIGN_IN_HREF}>Sign in</Link>
         </div>
@@ -425,20 +410,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <div className="cal-ui">
             <div className="reveal">
               <h3 className="h3">The same year, inside the portal</h3>
-              <div className="frame" data-app="compliances" aria-label="Book a demo to see the compliance calendar" role="button" aria-haspopup="dialog" tabIndex={0}>
-                <img src="/landing/calendar-client.webp" alt={"Compliance calendar month view: a grid of the month with each statutory filing on its due date."} width="2268" height="1258" />
-              </div>
-              <p className="caption"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
-            </div>
-            <div className="cal-two reveal">
-              <figure className="card" data-stagger style={st("--i:0")}>
-                <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt={"Client filings view: filings by month for the financial year, progress by area, and each filing with its status and acknowledgement."} width="2000" height="1622" /></div>
-                <figcaption><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</figcaption>
-              </figure>
-              <figure className="card" data-stagger style={st("--i:1")}>
-                <div className="frame" data-app="lead-compliances" aria-label="Book a demo to see the project lead calendar" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/calendar-lead.webp" alt={"Project lead's compliance calendar month view: the statutory filings of every company on their due dates."} width="1556" height="1262" /></div>
-                <figcaption><b>The firm&apos;s side.</b> The project lead sees every statutory date across every company, grouped by day, with a reminder button on each.</figcaption>
-              </figure>
+              <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt={"Client filings view: filings by month for the financial year, progress by area, and each filing with its status and acknowledgement."} width="2000" height="1622" /></div>
+              <p className="caption"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Ic></span><span><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</span></p>
             </div>
           </div>
         </div>
@@ -480,52 +453,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
 
       {/* The VCFO way vs. the old way (board C2) */}
       <CompareSection onDemo={openDemo} />
-
-      {/* Portals */}
-      <section className="section" id="portals">
-        <div className="glow glow-info" style={st("width:800px;height:500px;right:-250px;top:30%")}></div>
-        <div className="container">
-          <div className="section-head reveal">
-            <h2 className="h2">Three portals. One engagement.</h2>
-            <p className="body">The whole firm for the partner, oversight for the admin, overview for the manager, focus for the project lead, clarity for the client. Nobody forwards a spreadsheet.</p>
-          </div>
-          <div className="reveal">
-            <div className="tab-head">
-              <div className="tabs" role="tablist" aria-label="Portals" ref={tabsRef}>
-                <button className="tab" type="button" role="tab" id="tab-client" aria-selected={tab === "client"} aria-controls="panel-client" tabIndex={tab === "client" ? 0 : -1} onClick={() => setTab("client")} onKeyDown={tabKey}>Client</button>
-                <button className="tab" type="button" role="tab" id="tab-lead" aria-selected={tab === "lead"} aria-controls="panel-lead" tabIndex={tab === "lead" ? 0 : -1} onClick={() => setTab("lead")} onKeyDown={tabKey}>Project lead</button>
-                <button className="tab" type="button" role="tab" id="tab-manager" aria-selected={tab === "manager"} aria-controls="panel-manager" tabIndex={tab === "manager" ? 0 : -1} onClick={() => setTab("manager")} onKeyDown={tabKey}>Manager</button>
-                <button className="tab" type="button" role="tab" id="tab-admin" aria-selected={tab === "admin"} aria-controls="panel-admin" tabIndex={tab === "admin" ? 0 : -1} onClick={() => setTab("admin")} onKeyDown={tabKey}>Admin</button>
-                <button className="tab" type="button" role="tab" id="tab-super" aria-selected={tab === "super"} aria-controls="panel-super" tabIndex={tab === "super" ? 0 : -1} onClick={() => setTab("super")} onKeyDown={tabKey}>Super admin</button>
-              </div>
-              <div className="tab-desc">
-                <div hidden={tab !== "client"}><p>What is waiting on the client, what the firm holds, and when the certificate is expected.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Upload and approve in place</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Timeline with the expected date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Ask VCFO for the next step</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the client portal</button></div>
-                <div hidden={tab !== "lead"}><p>Today&apos;s action queue across every company the lead runs.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>This week&apos;s statutory filings</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Compliance health ring per company</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Who each step is waiting on</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the project lead portal</button></div>
-                <div hidden={tab !== "manager"}><p>Every task your team owns, by project lead, company and status, and each lead&apos;s workload side by side.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Team tasks with a live status breakdown</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each project lead&apos;s work, by area and by status</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a to-do to a project lead in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the manager portal</button></div>
-                <div hidden={tab !== "admin"}><p>Every client, every manager, and where things are stuck, on one screen.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each client&apos;s stage, owner and next date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Managers&apos; load and on-time rate</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a client to a manager</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the admin portal</button></div>
-                <div hidden={tab !== "super"}><p>The whole firm at one place: clients, admins, managers, work and risk.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Incorporations, registrations and filings side by side</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Risks, team load and growth on one screen</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>A monthly partner report in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the super admin portal</button></div>
-              </div>
-            </div>
-            <div className="tabpanel">
-              <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"} data-app="home">
-                <img src="/landing/portal-client.webp" alt={"Client portal home: the current stage, the next step with its due date, and the journey as a tree of every step with its progress."} width="2600" height="1490" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"} data-app="lead-home">
-                <img src="/landing/portal-lead.webp" alt={"Project lead Today screen: the home card with five numbers, the day's work by company and the inbox."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"} data-app="mgr-home">
-                <img src="/landing/portal-manager.webp" alt={"Manager Today screen: the home card with five numbers and the team's day, overdue work first."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"} data-app="admin-home">
-                <img src="/landing/portal-admin.webp" alt={"Admin Today screen: clients, incorporating, in compliance, overdue and not on track, and the day's work across the firm."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"} data-app="super-home">
-                <img src="/landing/portal-super.webp" alt={"Super admin overview: the firm's numbers, incorporation progress, registrations and this month's compliances."} width="2000" height="1146" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Ask VCFO */}
       <section className="section" id="ask">
@@ -610,7 +537,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
                 <li><a href="#journey">How it works</a></li>
                 <li><a href="#incorporate">Incorporation</a></li>
                 <li><a href="#comply">Compliance calendar</a></li>
-                <li><a href="#portals">Portals</a></li>
                 <li><a href="#ask">Ask VCFO</a></li>
               </ul>
             </div>

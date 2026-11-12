@@ -1,6 +1,6 @@
 # Landing page screenshots
 
-The ten product screenshots on the landing page (`public/landing/*.webp`) are taken from a local
+The product screenshots on the landing page (`public/landing/*.webp`) are taken from a local
 copy of the app whose demo data has been made anonymous. No screenshot may show a real client,
 person, address or identifier. The SBC logo in the app's top bar stays; the sidebar never shows.
 
@@ -26,8 +26,7 @@ person, address or identifier. The SBC logo in the app's top bar stays; the side
    ```
 
    Each shot is taken at twice the pixel density. The window is widened by the sidebar's width and
-   the sidebar is cropped off, so the top bar and logo stay. The two calendars are cropped to the
-   month grid alone, and the Ask VCFO shot is the chat panel alone.
+   the sidebar is cropped off, so the top bar and logo stay. The Ask VCFO shot is the chat panel alone.
 4. Look at every image for a name, address or number that should not be there before you use it.
    Convert each PNG to WebP (quality 88) into `public/landing/`, and set the matching `width`,
    `height` and alt text in `src/components/marketing/landing/LandingScreen.tsx`.

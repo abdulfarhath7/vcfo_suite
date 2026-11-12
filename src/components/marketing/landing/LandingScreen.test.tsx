@@ -50,10 +50,13 @@ describe('LandingScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
-    render(<LandingScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+  it('has no portals section and no calendar screenshot, and keeps the filings screenshot', () => {
+    const { container } = render(<LandingScreen />);
+    expect(container.querySelector('#portals')).toBeNull();
+    expect(container.querySelector('a[href="#portals"]')).toBeNull();
+    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src') ?? '');
+    expect(images.some((src) => /calendar-|portal-/.test(src))).toBe(false);
+    expect(images).toContain('/landing/filings-client.webp');
   });
 
   it('LP-01: the theme toggle switches between dark and light, and remembers the choice', () => {
@@ -79,14 +82,6 @@ describe('LandingScreen', () => {
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[1] })).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[2] })).toBeInTheDocument();
     COMPARE.forEach((r) => expect(within(table).getByRole('rowheader', { name: r.label })).toBeInTheDocument());
-  });
-
-  it('switches the portal screenshot with the tabs', () => {
-    render(<LandingScreen />);
-    const lead = screen.getByRole('tab', { name: 'Project lead' });
-    fireEvent.click(lead);
-    expect(lead).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-lead');
   });
 
   it('answers a fixed Ask VCFO question without a link to a demo portal', () => {
