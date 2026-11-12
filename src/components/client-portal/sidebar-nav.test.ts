@@ -47,13 +47,12 @@ describe('client portal sidebar (R-51)', () => {
 describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
   const inc = portalNav({ after: false, unread: 0, inc: '6/25', docs: 0 })[1]!;
 
-  it('lists the overview and the four phases', () => {
+  it('lists the overview and phases 1 to 3; Registrations has its own item', () => {
     expect(inc.kids?.map((k) => k.t)).toEqual([
       'Overview',
       '1 · Name application',
       '2 · Incorporation',
       '3 · Post-incorporation',
-      '4 · Registration',
     ]);
   });
 
@@ -63,5 +62,14 @@ describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
     expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation/step/pre-1')?.t).toBe('Overview');
     expect(currentLeaf(kids, 'incorporation', '/app/client/incorporation')?.t).toBe('Overview');
     expect(currentLeaf(kids, 'home', '/app/client')).toBeUndefined();
+  });
+});
+
+describe('client portal sidebar: going back to a main page', () => {
+  it('counts only the page itself as "already there", not a page under it', async () => {
+    const { isSameNavPage } = await import('./Sidebar');
+    expect(isSameNavPage('/app/client/registrations', '/app/client/registrations')).toBe(true);
+    expect(isSameNavPage('/app/client/registrations/', '/app/client/registrations')).toBe(true);
+    expect(isSameNavPage('/app/client/registrations/gst', '/app/client/registrations')).toBe(false);
   });
 });

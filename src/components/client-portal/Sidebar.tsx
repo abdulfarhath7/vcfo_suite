@@ -135,6 +135,11 @@ export function leafHref(c: NavLeaf): string {
  * The current child of a group: one whose own page holds the path, else the first child
  * whose route key is current (Incorporation's Overview for a step page).
  */
+/** True when the address is the nav item's own page, not a page under it. */
+export function isSameNavPage(pathname: string, target: string): boolean {
+  return pathname.replace(/\/+$/, '') === target;
+}
+
 export function currentLeaf(kids: NavLeaf[], act: PortalRouteKey | null, pathname: string): NavLeaf | undefined {
   const p = pathname.replace(/\/+$/, '');
   return kids.find((c) => c.href && (p === c.href || p.startsWith(`${c.href}/`))) ?? kids.find((c) => !c.href && c.k === act);
@@ -191,7 +196,7 @@ export function portalNav({
       { k: 'incorporation', t: '1 · Name application', href: phaseHref(1) },
       { k: 'incorporation', t: '2 · Incorporation', href: phaseHref(2) },
       { k: 'incorporation', t: '3 · Post-incorporation', href: phaseHref(3) },
-      { k: 'incorporation', t: '4 · Registration', href: phaseHref(4) },
+      // Phase 4 (Registration) is not listed: Registrations has its own sidebar item (owner, 12 Nov).
     ],
   };
   const compliances: NavItem = {
@@ -447,7 +452,10 @@ function SidebarFull({ drawer, onPin }: { drawer?: boolean; onPin?: () => void }
   };
   const onLeaf = (e: React.MouseEvent, k: PortalRouteKey, label: string, href?: string, current?: boolean) => {
     e.preventDefault();
-    if ((current ?? k === act) && k !== 'home') {
+    // Only the page itself counts as "already there". From a page under it (a GST record under
+    // Registrations, a task under Obligations) the item goes back to its main page.
+    const target = (href ?? portalHref(k)).split(/[?#]/)[0]!.replace(/\/+$/, '');
+    if (isSameNavPage(pathname, target) && (current ?? k === act) && k !== 'home') {
       toast(`You are already on ${label}`);
       return;
     }
@@ -761,7 +769,7 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
               onClick={(e) => {
                 e.preventDefault();
                 closeFly();
-                if (c === flyCur) toast(`You are already on ${c.t}`);
+                if (c === flyCur && isSameNavPage(pathname, leafHref(c).split(/[?#]/)[0]!.replace(/\/+$/, ''))) toast(`You are already on ${c.t}`);
                 else go(c.href ?? c.k);
               }}
             >
@@ -859,7 +867,7 @@ function SidebarRail({ onPin, onPeek }: { onPin?: () => void; onPeek?: (open: bo
               onClick={(e) => {
                 e.preventDefault();
                 closeFly();
-                if (n.k === act && n.k !== 'home') toast(`You are already on ${PORTAL_TITLES[n.k!]}`);
+                if (n.k === act && n.k !== 'home' && isSameNavPage(pathname, portalHref(n.k!))) toast(`You are already on ${PORTAL_TITLES[n.k!]}`);
                 else go(n.k!);
               }}
             >
