@@ -26,6 +26,8 @@ const PAIRS = [
   ['ink-faint', 'surface-raised', 4.5], ['ink-faint', 'surface', 4.5], ['ink-faint', 'surface-sunken', 4.5],
   ['brand', 'surface', 4.5], ['brand', 'surface-raised', 4.5], ['brand', 'surface-sunken', 4.5], ['brand', 'brand-soft', 4.5],
   ['brand-strong', 'surface-raised', 4.5],
+  // GL-03: the active tab is brand-text on a brand-soft wash; the tab bar sits on any surface.
+  ['brand-text', 'brand-soft', 4.5], ['brand-text', 'surface', 4.5], ['brand-text', 'surface-raised', 4.5], ['brand-text', 'surface-sunken', 4.5],
   ['on-brand', 'brand', 4.5], ['on-brand', 'brand-strong', 4.5],
   ['highlight', 'surface-raised', 4.5], ['highlight', 'surface', 4.5], ['highlight', 'highlight-soft', 4.5],
   ['positive', 'surface-raised', 4.5], ['positive', 'surface', 4.5], ['positive', 'positive-soft', 4.5],

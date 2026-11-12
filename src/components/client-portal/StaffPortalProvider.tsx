@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { ClientPortalShell } from '@/lib/client-portal/types';
 import { PORTAL_SHELL_KEY, PortalContext, type PortalContextValue } from './PortalProvider';
-import { toastUndo } from '@/components/ui/undo-toast';
+import { showPortalToast } from './portal-toast';
 import { RedirectTo } from '@/components/routing/RedirectTo';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
 import './portal-css';
@@ -45,7 +45,7 @@ export function StaffPortalProvider({ engagementId, projectHref, children }: { e
       setTextSize: noop,
       prefs: shell?.prefs,
       savePrefs: noop,
-      toast: (msg, opts) => void toastUndo(msg, opts?.undo),
+      toast: (msg, opts) => void showPortalToast(msg, opts),
       drill: noop,
       tipAt: noop,
       chatOpen: false,

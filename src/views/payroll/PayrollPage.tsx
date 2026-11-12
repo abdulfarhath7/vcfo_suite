@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { DashHeroCompanyTile } from '@/components/dash/DashHero';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
+import { tabStateClass } from '@/components/ui/tab-classes';
 import {
   checkDates,
   cutoffLocalLabel,
@@ -272,8 +273,10 @@ export function PayrollPage({ shellBase, company, cycle: cycleKey, tab, stateCod
               aria-selected={on}
               onClick={() => go({ tab: t.key })}
               className={cn(
-                'border-b-[3px] px-2 pb-3 pt-2 text-[16px] transition-colors sm:text-[18px]',
-                on ? 'border-brand text-brand-text' : 'border-line text-ink hover:text-brand-text',
+                // GL-03: the shared open-tab look (3px underline, bold brand text, light wash);
+                // the bar's own rule sits under every tab.
+                'rounded-t-md border-b border-line px-2 pb-3 pt-2 text-[16px] transition-colors sm:text-[18px]',
+                tabStateClass(on),
               )}
             >
               {t.label}

@@ -3,6 +3,7 @@
 import toast from 'react-hot-toast';
 import { Check, X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TOAST_ERROR_MS, TOAST_MS } from '@/components/ui/hot-toast';
 
 /** A1 kinds: what the status tile shows. */
 export type SavedToastKind = 'saved' | 'filed' | 'uploaded';
@@ -26,6 +27,8 @@ export interface SavedToastOptions {
   duration?: number;
   /** A stable id replaces an earlier toast with the same id instead of stacking. */
   id?: string;
+  /** The client portal keeps its own light or dark theme; the toast follows it. */
+  theme?: 'light' | 'dark';
 }
 
 const SMALL_BUTTON =
@@ -38,11 +41,12 @@ const SMALL_BUTTON =
  *
  *   toastSaved('Filing saved', { kind: 'filed', sub: 'GSTR-3B is ready' });
  */
-export function toastSaved(text: string, { kind = 'saved', sub, onUndo, action, duration = onUndo || action ? 6000 : 3000, id }: SavedToastOptions = {}): string {
+export function toastSaved(text: string, { kind = 'saved', sub, onUndo, action, duration = onUndo || action ? TOAST_ERROR_MS : TOAST_MS, id, theme }: SavedToastOptions = {}): string {
   const k = KIND[kind];
   return toast.custom(
     (t) => (
       <div
+        data-theme={theme}
         role="status"
         aria-live="polite"
         className={cn(

@@ -3,22 +3,39 @@
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TOAST_ERROR_MS, TOAST_MS } from '@/components/ui/hot-toast';
 
 /** One id for every A2 toast, so a new one replaces the last instead of stacking. */
 const UNDO_TOAST_ID = 'vcfo-undo';
 
 /**
  * A2 dark toast (VCFO Spectrum B-16): one line on the navy fill, an optional Undo, and a close
- * button, through the app's one `react-hot-toast` Toaster. One at a time, 5 seconds. Use it after
- * an action that can be taken back ("Marked done", "3 tasks reassigned"). For "Saved" and
- * "Uploaded" use the white `toastSaved` instead.
+ * button, through the app's one `react-hot-toast` Toaster. One at a time; it stays 3 seconds, or
+ * 6 seconds when it has an Undo or an action (GL-02). Use it after an action that can be taken
+ * back ("Marked done", "3 tasks reassigned"). For "Saved" and "Uploaded" use the white
+ * `toastSaved` instead.
  *
  *   toastUndo('All marked read', () => restore());
  */
-export function toastUndo(text: string, onUndo?: () => void, { duration = 6000 }: { duration?: number } = {}): string {
+export function toastUndo(
+  text: string,
+  onUndo?: () => void,
+  {
+    action,
+    theme,
+    duration = onUndo || action ? TOAST_ERROR_MS : TOAST_MS,
+  }: {
+    duration?: number;
+    /** One small action, for example "View". */
+    action?: { label: string; onClick: () => void };
+    /** The client portal keeps its own light or dark theme; the toast follows it. */
+    theme?: 'light' | 'dark';
+  } = {},
+): string {
   return toast.custom(
     (t) => (
       <div
+        data-theme={theme}
         role="status"
         aria-live="polite"
         className={cn(
@@ -28,6 +45,18 @@ export function toastUndo(text: string, onUndo?: () => void, { duration = 6000 }
         )}
       >
         <span className="min-w-0 truncate">{text}</span>
+        {action ? (
+          <button
+            type="button"
+            className="flex-none rounded-sm font-medium text-white underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            onClick={() => {
+              action.onClick();
+              toast.dismiss(t.id);
+            }}
+          >
+            {action.label}
+          </button>
+        ) : null}
         {onUndo ? (
           <button
             type="button"

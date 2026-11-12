@@ -2574,6 +2574,23 @@ html[data-reduce-motion="true"] .discrete-panel {
     --toast-bottom: 80px;
   }
 }
+/* GL-02: the client portal uses the same toaster; its toasts sit beside the portal's side rail
+   (248px, 72px from 768px to 1279px) and, on a phone, above its tab bar and Ask launcher. */
+:root:has([data-cp-shell]) {
+  --toast-left: calc(248px + 20px);
+  --toast-bottom: 64px;
+}
+@media (max-width: 1279px) {
+  :root:has([data-cp-shell]) {
+    --toast-left: calc(72px + 20px);
+  }
+}
+@media (max-width: 767px) {
+  :root:has([data-cp-shell]) {
+    --toast-left: 16px;
+    --toast-bottom: 132px;
+  }
+}
 
 /* Every card, panel and section has a 1px edge in the line token, as in the prototype. Many views
    write their frame as `rounded-md border-1.5 border-line` inline; this one rule sets all of those
