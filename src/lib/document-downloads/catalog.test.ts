@@ -9,7 +9,7 @@ import {
   publicCatalog,
   type CatalogInput,
 } from '@/lib/document-downloads/catalog';
-import { groupTickState, initialSelection, quickPicks, toggleGroup } from '@/lib/document-downloads/selection';
+import { groupTickState, quickPicks, readyKeysIn, toggleGroup } from '@/lib/document-downloads/selection';
 
 const ON = new Date('2026-11-11T06:00:00Z');
 
@@ -112,7 +112,7 @@ describe('document download catalog', () => {
       'SPICe-Part-B_Ember-Technologies-Private-Limited_11-11-2026.zip',
     );
     expect(bundleZipName(catalog, ['pack:moa:company', 'br-signed'], ON)).toBe(
-      'Company-Documents_Ember-Technologies-Private-Limited_11-11-2026.zip',
+      'Project_Ember-Technologies-Private-Limited_11-11-2026.zip',
     );
   });
 
@@ -124,14 +124,13 @@ describe('document download catalog', () => {
 describe('download selection', () => {
   const { root } = publicCatalog(buildDownloadCatalog(input()));
 
-  it('offers each part, each director with ready files, uploads and everything', () => {
+  it('offers each part, each director with ready files and uploads, but not the whole project', () => {
     expect(quickPicks(root).map((p) => p.id)).toEqual([
       'part-a',
       'part-b',
       'part-b/directors/resident',
       'after',
       'uploaded',
-      'all',
     ]);
   });
 
@@ -144,8 +143,7 @@ describe('download selection', () => {
     expect(groupTickState(directors, toggleGroup(directors, on))).toBe('none');
   });
 
-  it('starts from the remembered choice, or everything ready', () => {
-    expect([...initialSelection(root, ['pack:moa:company', 'gone'])]).toEqual(['pack:moa:company']);
-    expect(initialSelection(root, null).size).toBe(14);
+  it('counts every ready file for the whole project download', () => {
+    expect(readyKeysIn(root)).toHaveLength(14);
   });
 });

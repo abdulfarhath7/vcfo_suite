@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { ChevronRight, Download, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,7 +14,6 @@ import type { PublicDownloadGroup } from '@/lib/document-downloads/catalog';
 import { downloadDocumentKeys, type DownloadLayout } from '@/lib/document-downloads/client';
 import {
   groupTickState,
-  initialSelection,
   publicFilesIn,
   quickPicks,
   readyKeysIn,
@@ -26,30 +25,24 @@ import { cn } from '@/lib/utils';
 
 type Layout = DownloadLayout;
 
-/** The last choice, per person, so a Lead who always takes "Part B" finds it ticked. */
+/** Only the layout is remembered, per person; the pop-up always opens with nothing ticked. */
 function rememberKey(userId: string | undefined) {
-  return `vcfo.document-downloads.${userId ?? 'staff'}`;
+  return `vcfo.document-downloads.layout.${userId ?? 'staff'}`;
 }
 
-function readRemembered(userId: string | undefined): { keys: string[]; layout: Layout } | null {
+function readLayout(userId: string | undefined): Layout {
   try {
-    const raw = window.localStorage.getItem(rememberKey(userId));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { keys?: unknown; layout?: unknown };
-    return {
-      keys: Array.isArray(parsed.keys) ? parsed.keys.filter((k): k is string => typeof k === 'string') : [],
-      layout: parsed.layout === 'flat' ? 'flat' : 'folders',
-    };
+    return window.localStorage.getItem(rememberKey(userId)) === 'flat' ? 'flat' : 'folders';
   } catch {
-    return null;
+    return 'folders';
   }
 }
 
-function writeRemembered(userId: string | undefined, keys: string[], layout: Layout) {
+function writeLayout(userId: string | undefined, layout: Layout) {
   try {
-    window.localStorage.setItem(rememberKey(userId), JSON.stringify({ keys, layout }));
+    window.localStorage.setItem(rememberKey(userId), layout);
   } catch {
-    // Private windows may refuse storage; the choice is simply not remembered.
+    // Private windows may refuse storage; the layout is simply not remembered.
   }
 }
 
@@ -82,97 +75,112 @@ function GroupRows({
   selected: Set<string>;
   setSelected: (next: Set<string>) => void;
 }) {
+  // Every section starts closed, so the not-ready rows of a new project do not fill the list.
+  const [expanded, setExpanded] = useState(false);
   const total = publicFilesIn(group).length;
   const ready = readyKeysIn(group).length;
+  const listId = `dl-group-${group.id.replace(/[^\w-]/g, '-')}`;
   return (
-    <li className={cn(depth === 0 && 'border-b border-line py-2 last:border-b-0')}>
-      <label className="flex cursor-pointer items-start gap-2 py-1" style={{ paddingLeft: depth * 20 }}>
-        <TickBox
-          label={group.label}
-          state={groupTickState(group, selected)}
-          disabled={ready === 0}
-          onChange={() => setSelected(toggleGroup(group, selected))}
-        />
-        <span className={cn('min-w-0 flex-1 text-[14px] text-ink', depth === 0 && 'font-medium')}>{group.label}</span>
-        <span className="flex-none text-[12px] text-ink-muted">
-          {ready === total ? `${total} ${total === 1 ? 'file' : 'files'}` : `${ready} of ${total} ready`}
-        </span>
-      </label>
-      <ul>
-        {group.files.map((file) => (
-          <li key={file.key}>
-            <label
-              className={cn('flex items-start gap-2 py-1', file.ready ? 'cursor-pointer' : 'cursor-not-allowed text-ink-muted')}
-              style={{ paddingLeft: (depth + 1) * 20 }}
-              title={file.ready ? file.fileName : file.reason}
-            >
-              <TickBox
-                label={file.label}
-                state={selected.has(file.key) ? 'all' : 'none'}
-                disabled={!file.ready}
-                onChange={() => {
-                  const next = new Set(selected);
-                  if (next.has(file.key)) next.delete(file.key);
-                  else next.add(file.key);
-                  setSelected(next);
-                }}
-              />
-              <span className="min-w-0 flex-1 text-[13px]">{file.label}</span>
-              {file.ready ? (
-                file.kind === 'uploaded' ? <Tag className="flex-none">Uploaded</Tag> : null
-              ) : (
-                <Tag tone="warn" className="flex-none">Not ready</Tag>
-              )}
-            </label>
-          </li>
-        ))}
-        {group.groups.map((sub) => (
-          <GroupRows key={sub.id} group={sub} depth={depth + 1} selected={selected} setSelected={setSelected} />
-        ))}
-      </ul>
+    <li className={cn(depth === 0 && 'border-b border-line py-1.5 last:border-b-0')}>
+      <div className="flex items-center gap-1.5 py-1" style={{ paddingLeft: depth * 20 }}>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          aria-controls={listId}
+          aria-label={`${expanded ? 'Hide' : 'Show'} ${group.label}`}
+          className="grid h-6 w-6 flex-none place-items-center rounded text-ink-muted hover:bg-surface-sunken hover:text-ink"
+        >
+          <ChevronRight className={cn('h-4 w-4 transition-transform', expanded && 'rotate-90')} aria-hidden />
+        </button>
+        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
+          <TickBox
+            label={group.label}
+            state={groupTickState(group, selected)}
+            disabled={ready === 0}
+            onChange={() => setSelected(toggleGroup(group, selected))}
+          />
+          <span className={cn('min-w-0 flex-1 text-[14px] text-ink', depth === 0 && 'font-medium')}>{group.label}</span>
+          <span className="flex-none text-[12px] tabular-nums text-ink-muted">
+            {ready === total ? `${total} ${total === 1 ? 'file' : 'files'}` : `${ready} of ${total} ready`}
+          </span>
+        </label>
+      </div>
+      {expanded ? (
+        <ul id={listId}>
+          {group.files.map((file) => (
+            <li key={file.key}>
+              <label
+                className={cn('flex items-start gap-2 py-1', file.ready ? 'cursor-pointer' : 'cursor-not-allowed text-ink-muted')}
+                style={{ paddingLeft: (depth + 1) * 20 + 30 }}
+                title={file.ready ? file.fileName : file.reason}
+              >
+                <TickBox
+                  label={file.label}
+                  state={selected.has(file.key) ? 'all' : 'none'}
+                  disabled={!file.ready}
+                  onChange={() => {
+                    const next = new Set(selected);
+                    if (next.has(file.key)) next.delete(file.key);
+                    else next.add(file.key);
+                    setSelected(next);
+                  }}
+                />
+                <span className="min-w-0 flex-1 text-[13px]">{file.label}</span>
+                {file.ready ? (
+                  file.kind === 'uploaded' ? <Tag className="flex-none">Uploaded</Tag> : null
+                ) : (
+                  <Tag tone="warn" className="flex-none">Not ready</Tag>
+                )}
+              </label>
+            </li>
+          ))}
+          {group.groups.map((sub) => (
+            <GroupRows key={sub.id} group={sub} depth={depth + 1} selected={selected} setSelected={setSelected} />
+          ))}
+        </ul>
+      ) : null}
     </li>
   );
 }
 
 /**
- * "Download documents" pop-up (CR-2026-11, staff only): quick picks, the tree of every document by
- * part, section and director, Word files only for now, and folders or one flat folder. One file
- * downloads as itself; a large set is made in the background with a link in the bell.
+ * "Download documents" pop-up (CR-2026-11, staff only). The top row downloads the whole project in
+ * one click (it replaced the separate "Download project (ZIP)" button). Below it, quick picks and
+ * the tree of every document by part, section and director, each section closed until opened, and
+ * nothing ticked until the person picks. Word files only for now; folders or one flat folder. One
+ * file downloads as itself; a large set is made in the background with a link in the bell.
  */
 export function DownloadDocumentsDialog({
   engagementId,
   open,
   onOpenChange,
-  selectAll = false,
 }: {
   engagementId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Start with every ready document ticked, not the remembered choice ("Download project (ZIP)"). */
-  selectAll?: boolean;
 }) {
   const { user } = useApp();
   const query = useDocumentCatalog(engagementId, open);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [layout, setLayout] = useState<Layout>('folders');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'project' | 'picked' | null>(null);
   const root = query.data?.root;
 
   useEffect(() => {
-    if (!open || !root) return;
-    const remembered = readRemembered(user?.id);
-    setSelected(initialSelection(root, selectAll ? null : remembered?.keys ?? null));
-    setLayout(remembered?.layout ?? 'folders');
-  }, [open, root, user?.id, selectAll]);
+    if (!open) return;
+    setSelected(new Set());
+    setLayout(readLayout(user?.id));
+  }, [open, user?.id]);
 
   const picks = useMemo(() => (root ? quickPicks(root) : []), [root]);
+  const projectKeys = useMemo(() => (root ? readyKeysIn(root) : []), [root]);
   const count = selected.size;
 
-  async function download() {
-    if (!count) return;
-    setBusy(true);
-    const keys = [...selected];
-    writeRemembered(user?.id, keys, layout);
+  async function download(keys: string[], which: 'project' | 'picked') {
+    if (!keys.length || busy) return;
+    setBusy(which);
+    writeLayout(user?.id, layout);
     try {
       const out = await downloadDocumentKeys(engagementId, keys, layout);
       if (out.queued) {
@@ -182,7 +190,7 @@ export function DownloadDocumentsDialog({
     } catch (err) {
       toastError('The download did not start', errorMessage(err));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -191,9 +199,7 @@ export function DownloadDocumentsDialog({
       <DialogContent className="max-w-2xl" data-testid="download-documents-dialog">
         <DialogHeader>
           <DialogTitle>Download documents</DialogTitle>
-          <DialogDescription>
-            {query.data?.companyName ?? 'Choose the documents you want.'} Pick a set below, then add or remove single documents.
-          </DialogDescription>
+          <DialogDescription>{query.data?.companyName ?? 'Download the whole project or choose documents.'}</DialogDescription>
         </DialogHeader>
 
         {query.isLoading ? (
@@ -204,7 +210,26 @@ export function DownloadDocumentsDialog({
           <p className="py-6 text-[14px] text-danger">{errorMessage(query.error)}</p>
         ) : root && root.groups.length ? (
           <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Quick picks">
+            <div className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-surface-sunken/40 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-medium text-ink">Whole project (ZIP)</p>
+                <p className="text-[12.5px] text-ink-muted">
+                  Every ready document, upload and project record · {projectKeys.length} {projectKeys.length === 1 ? 'file' : 'files'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={() => void download(projectKeys, 'project')}
+                disabled={!projectKeys.length || busy !== null}
+                data-testid="download-whole-project"
+              >
+                {busy === 'project' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
+                Download all
+              </Button>
+            </div>
+
+            <p className="text-[12px] font-medium uppercase tracking-[.07em] text-ink-muted">Or choose documents</p>
+            <div className="-mt-2 flex flex-wrap gap-2" role="group" aria-label="Quick picks">
               {picks.map((pick) => (
                 <Button key={pick.id} type="button" size="sm" variant="outline" onClick={() => setSelected(new Set(pick.keys))}>
                   {pick.label}
@@ -247,15 +272,15 @@ export function DownloadDocumentsDialog({
 
         <DialogFooter className="items-center gap-2 sm:justify-between">
           <span className="text-[13px] text-ink-muted" aria-live="polite">
-            {count} {count === 1 ? 'file' : 'files'} chosen
+            {count ? `${count} ${count === 1 ? 'file' : 'files'} chosen` : 'Nothing chosen yet'}
           </span>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={download} disabled={!count || busy} data-testid="download-documents-submit">
-              {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
-              {count === 1 ? 'Download file' : 'Download ZIP'}
+            <Button type="button" onClick={() => void download([...selected], 'picked')} disabled={!count || busy !== null} data-testid="download-documents-submit">
+              {busy === 'picked' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
+              {count === 1 ? 'Download file' : 'Download chosen'}
             </Button>
           </div>
         </DialogFooter>
@@ -265,32 +290,20 @@ export function DownloadDocumentsDialog({
 }
 
 /**
- * The "Download documents" button beside the project name. Hidden for clients. With `selectAll`
- * it is PR-02's "Download project (ZIP)": the same pop-up, with every ready document ticked.
+ * The one "Download documents" button on the project header and the document pack page. Hidden for
+ * clients. The whole project is the top row of its pop-up.
  */
-export function DownloadDocumentsButton({
-  engagementId,
-  className,
-  selectAll = false,
-  label = 'Download documents',
-  testId = 'download-documents',
-}: {
-  engagementId: string;
-  className?: string;
-  selectAll?: boolean;
-  label?: string;
-  testId?: string;
-}) {
+export function DownloadDocumentsButton({ engagementId, className }: { engagementId: string; className?: string }) {
   const { user } = useApp();
   const [open, setOpen] = useState(false);
   if (!user || user.role === 'client') return null;
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)} className={cn('flex-none', className)} data-testid={testId}>
+      <Button variant="outline" onClick={() => setOpen(true)} className={cn('flex-none', className)} data-testid="download-documents">
         <Download className="mr-1 h-4 w-4" aria-hidden />
-        {label}
+        Download documents
       </Button>
-      <DownloadDocumentsDialog engagementId={engagementId} open={open} onOpenChange={setOpen} selectAll={selectAll} />
+      <DownloadDocumentsDialog engagementId={engagementId} open={open} onOpenChange={setOpen} />
     </>
   );
 }

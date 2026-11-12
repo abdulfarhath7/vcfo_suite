@@ -2,7 +2,6 @@
 
 import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import Link from 'next/link';
-import { ProjectZipButton } from '@/views/client-record/RecordHeadParts';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ExternalLink, FileSignature, ListPlus, Mail, MoreHorizontal, Repeat, TriangleAlert } from 'lucide-react';
@@ -272,7 +271,6 @@ export default function SuperProjectDetail() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <DownloadDocumentsButton engagementId={summary.id} />
-              <ProjectZipButton engagementId={summary.id} />
               <RaiseEscalationButton
                 engagementId={summary.id}
                 companyName={summary.companyName}
