@@ -30,6 +30,8 @@ import { BeforeFilingCard, FilingThreadCard } from '@/views/compliances/record-c
 import { obligationChecklist } from '@/data/before-filing';
 import { FilingProofCell, FilingWindowCell } from '@/views/compliances/filing-actions';
 import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards';
+import { LateFeeAmount } from '@/components/compliances/LateFee';
+import { formatRupees, totalLateFees } from '@/lib/compliance/late-fees';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
 import { statHref } from '@/views/compliances/tasks/task-list';
 import {
@@ -102,6 +104,8 @@ export function ObligationView({
   const fyRows = rowsInFinancialYear(scoped, register.fyStartYear);
   const fyFiled = fyRows.filter((r) => r.filedOn).length;
   const risk = group.rows.map((r) => r.detail?.penaltyRisk).find(Boolean);
+  // A1.5: what the late filings of this period have cost so far, from the late-fee rules.
+  const lateFees = totalLateFees(group.rows.map((r) => r.row), now);
   const flow = flowCounts(group.rows.map((r) => r.row), register.details);
   const soon = scoped.filter((r) => dueWithinSoon(r, now)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const waiting = scoped.filter((r) => waitingOnClient(r, register.details.get(r.id), now));
@@ -151,6 +155,7 @@ export function ObligationView({
       render: (row) => register.details.get(row.id)?.ownerName ?? <span className="text-ink-faint">—</span>,
     },
     { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip filing word={filingWord(row, now)} /> },
+    { key: 'lateFee', header: 'Late fee', width: '128px', render: (row) => <LateFeeAmount filing={row} now={now} /> },
     { key: 'window', header: 'Window', width: '176px', render: (row) => <FilingWindowCell row={row} mayWrite={mayWrite} /> },
     {
       key: 'proof',
@@ -188,6 +193,7 @@ export function ObligationView({
       ),
     },
     { key: 'ref', header: 'Reference', render: refCell },
+    { key: 'lateFee', header: 'Late fee', width: '128px', render: (row) => <LateFeeAmount filing={row} now={now} /> },
     { key: 'status', header: 'Status', width: '128px', render: (row) => <WordChip filing word={filingWord(row, now)} /> },
   ];
   const history = [...scoped].sort((a, b) => b.dueDate.localeCompare(a.dueDate) || a.companyName.localeCompare(b.companyName));
@@ -266,6 +272,12 @@ export function ObligationView({
               {fyFiled} of {fyRows.length} filed
             </Fact>
             {risk ? <Fact k="Penalty risk">{RISK_WORD[risk] ?? risk}</Fact> : null}
+            {lateFees.count ? (
+              <Fact k="Late fees so far" className="text-danger">
+                {formatRupees(lateFees.amount)}
+                <span className="ml-1.5 text-[13px] font-normal text-ink-muted">est. · {lateFees.count} filing{lateFees.count === 1 ? '' : 's'}</span>
+              </Fact>
+            ) : null}
           </div>
         </header>
 
@@ -278,7 +290,7 @@ export function ObligationView({
                 rows={group.rows.map((r) => r.row)}
                 rowKey={(row) => row.id}
                 pageSize={20}
-                minWidth={showClient ? 1100 : 960}
+                minWidth={showClient ? 1228 : 1088}
                 empty="No clients"
               />
             </DashSection>
