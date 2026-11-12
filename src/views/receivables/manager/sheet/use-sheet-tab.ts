@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { sheetDate } from '@/lib/receivables/dates';
@@ -155,7 +156,7 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
   const bulkAssign = (partnerId: string | null, name: string) =>
     bulk.assignPartner.mutate({ ids: pickedRows.map((r) => r.id), partnerId }, { onSuccess: (r) => bulkDone(`Assigned to ${name}`, r), onError: (e) => toastError('Not saved', errorText(e)) });
   const exportPicked = () => {
-    downloadCsv(`receivables-${data.sheet.clientOrgName.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase()}-${today}.csv`, invoicesCsv(pickedRows, data.partners, today));
+    downloadCsv(standardDownloadName('Receivables', data.sheet.clientOrgName, 'csv'), invoicesCsv(pickedRows, data.partners, today));
     toastSuccess(`Exported ${pickedRows.length} invoice${pickedRows.length === 1 ? '' : 's'}`);
   };
 

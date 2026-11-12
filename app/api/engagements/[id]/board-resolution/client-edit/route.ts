@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { publicErrorMessage } from '@/lib/api-error';
-import { actOnClientEdit, clientEditContent, getClientEditView, saveClientEdit } from '@/lib/board-resolution/client-edit-flow';
+import { actOnClientEdit, clientEditContent, getClientEditView, previewClientEditSend, saveClientEdit } from '@/lib/board-resolution/client-edit-flow';
+import { EmailStepSchema } from '@/lib/email/email-edits';
 import { patchBoardResolutionDocxBuffer, sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
 import { standardDownloadName } from '@/lib/files/download-name';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
@@ -11,6 +12,7 @@ import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 /*
  * BR-04 / BR-05: the client's edit of the board resolution. GET reads it (with `?download=1`,
  * the client's version as a Word file), PUT saves the paragraphs, POST makes one workflow move.
+ * For "send", POST with `preview: true` answers the email draft, and the move carries `email`.
  * The repository rules decide who may do what; this only parses and answers.
  */
 
@@ -24,6 +26,7 @@ const FRIENDLY: Record<string, string> = {
   wrong_stage: 'The board resolution has moved on. Refresh the page.',
   return_needs_reason: 'Add the reason for the return.',
   no_client_edit: 'There is no edited version yet.',
+  email_needed: 'Open the email and press Send.',
 };
 
 function fail(err: unknown) {
@@ -70,10 +73,12 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 }
 
-const ActBody = z.object({
-  action: z.enum(['confirm', 'send', 'receive', 'manager-approve', 'admin-approve', 'return', 'resubmit', 'send-final']),
-  note: z.string().max(2000).optional().nullable(),
-});
+const ActBody = z
+  .object({
+    action: z.enum(['confirm', 'send', 'receive', 'manager-approve', 'admin-approve', 'return', 'resubmit', 'send-final']),
+    note: z.string().max(2000).optional().nullable(),
+  })
+  .merge(EmailStepSchema);
 
 export async function POST(request: Request, context: RouteContext) {
   const guard = await requireAnyRole(...ROLES);
@@ -82,7 +87,13 @@ export async function POST(request: Request, context: RouteContext) {
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   const { id } = await context.params;
   try {
-    return NextResponse.json({ view: await actOnClientEdit(guard.ctx, id, body.data.action, body.data.note) });
+    const { action, note, preview, email } = body.data;
+    // GL-07: "Send to the firm" answers a draft for the Send email pop-up; only its Send moves on.
+    if (preview) {
+      if (action !== 'send') return NextResponse.json({ error: 'There is nothing to send for this step.' }, { status: 400 });
+      return NextResponse.json({ draft: await previewClientEditSend(guard.ctx, id) });
+    }
+    return NextResponse.json({ view: await actOnClientEdit(guard.ctx, id, action, note, email) });
   } catch (err) {
     return fail(err);
   }

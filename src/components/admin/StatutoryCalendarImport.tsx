@@ -1,14 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Upload } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { ChevronDown, Download, FileDown, Upload } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FilterSelect } from '@/components/ui/native-select';
 import { useStatutoryCalendarImport } from '@/hooks/use-statutory-calendar';
 import { fyBounds } from '@/lib/statutory-calendar/fy';
-import type { StatutoryCalendarImportResponse } from '@/lib/statutory-calendar/types';
+import type { StatutoryCalendarImportResponse, StatutoryCalendarResponse } from '@/lib/statutory-calendar/types';
 import { toastSuccess } from '@/lib/toast-errors';
 
 const TEMPLATE_URL = '/api/statutory-calendar/template';
@@ -30,19 +37,25 @@ function plural(n: number, one: string, many = `${one}s`) {
  * Excel row; "Publish" is enabled only for a clean file and replaces that year's calendar.
  */
 export function StatutoryCalendarImport({
-  importableYears,
-  defaultYear,
-  sourceYear,
+  data,
   onPublished,
+  extraItems,
 }: {
-  /** The years the server accepts, oldest first. */
-  importableYears: readonly string[];
-  /** The year the dialog opens on. */
-  defaultYear: string;
-  /** A year with a calendar, offered as a filled template to start from. */
-  sourceYear: string | null;
+  /** GET /api/statutory-calendar: the years the server accepts, the years with a calendar, this year. */
+  data: Pick<StatutoryCalendarResponse, 'importableYears' | 'years' | 'currentFy'>;
   onPublished: (fy: string) => void;
+  /** More menu items under a line, such as Export to Excel. */
+  extraItems?: ReactNode;
 }) {
+  const importableYears = data.importableYears;
+  /** The dialog opens on the first coming year with no calendar, else on next year. */
+  const withCalendar = new Set(data.years.map((y) => y.fy));
+  const defaultYear =
+    importableYears.find((key) => key > data.currentFy && !withCalendar.has(key)) ??
+    importableYears.find((key) => key > data.currentFy) ??
+    data.currentFy;
+  /** The newest year with a calendar, offered as a filled template to start from. */
+  const sourceYear = data.years[0]?.fy ?? null;
   const [open, setOpen] = useState(false);
   const [fy, setFy] = useState(defaultYear);
   const [file, setFile] = useState<File | null>(null);
@@ -88,16 +101,51 @@ export function StatutoryCalendarImport({
 
   return (
     <>
-      <Button asChild variant="secondary" size="sm">
-        <a href={TEMPLATE_URL} download>
-          <Download aria-hidden />
-          Download template
-        </a>
-      </Button>
-      <Button variant="strong" size="sm" onClick={openDialog}>
-        <Upload aria-hidden />
-        Import calendar
-      </Button>
+      {/* One "Calendar file" menu instead of a row of buttons (owner, 12 Nov 2026: toolbar idea A). */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" size="sm" className="h-8">
+            Calendar file
+            <ChevronDown aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[250px]">
+          {/* The route answers as an attachment, so going to it downloads the file and the page stays. */}
+          <DropdownMenuItem onSelect={() => window.location.assign(TEMPLATE_URL)} className="flex items-start gap-2.5">
+            <Download className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+            <span>
+              Download template
+              <span className="block text-[12px] text-ink-muted">Blank, to fill in a new year</span>
+            </span>
+          </DropdownMenuItem>
+          {sourceYear ? (
+            <DropdownMenuItem
+              onSelect={() => window.location.assign(`${TEMPLATE_URL}?fy=${encodeURIComponent(sourceYear)}`)}
+              className="flex items-start gap-2.5"
+            >
+              <FileDown className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+              <span>
+                Download {fyBounds(sourceYear).label}
+                <span className="block text-[12px] text-ink-muted">The template filled in, to start from</span>
+              </span>
+            </DropdownMenuItem>
+          ) : null}
+          {/* The dialog opens after the menu has closed, so focus moves into it cleanly. */}
+          <DropdownMenuItem onSelect={() => setTimeout(openDialog, 0)} className="flex items-start gap-2.5">
+            <Upload className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+            <span>
+              Import calendar
+              <span className="block text-[12px] text-ink-muted">Replace a financial year</span>
+            </span>
+          </DropdownMenuItem>
+          {extraItems ? (
+            <>
+              <DropdownMenuSeparator />
+              {extraItems}
+            </>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Modal
         open={open}

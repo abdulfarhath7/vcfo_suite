@@ -4,7 +4,8 @@ import { requireAnyRole } from '@/auth/guards';
 import { rejectLargeBody } from '@/lib/api/body-limit';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { resolveVaultFiles, type ResolvedVaultFile, type VaultFileRef } from '@/db/repositories/documents';
-import { createUniqueNamer, zipArchiveName, zipEntryPath } from '@/lib/zip/entry-names';
+import { createUniqueNamer, zipEntryPath } from '@/lib/zip/entry-names';
+import { standardDownloadName, standardNameFromFile } from '@/lib/files/download-name';
 import { createZipStream, type ZipEntrySource } from '@/lib/zip/zip-writer';
 import { listObjects } from '@/storage/s3';
 import { contentDisposition, openObjectStream, ZIP_MAX_BYTES, ZIP_MAX_FILES } from '../_lib/object-response';
@@ -120,19 +121,25 @@ export async function POST(request: Request) {
     metadata: { files: present.length, bytes, engagements: engagementIds },
   });
 
+  // GL-08: the archive and each file in it follow `<Document>_<Client>_<DD-MM-YYYY>.<ext>`; the
+  // client name only when the selection is one client's.
+  const companies = [...new Set(present.map((f) => f.companyName ?? ''))];
+  const client = companies.length === 1 ? companies[0] : null;
+  const label = name && (!client || name.trim().toLowerCase() !== client.trim().toLowerCase()) ? name : 'Documents';
+  const archiveName = standardDownloadName(label, client, 'zip');
   const unique = createUniqueNamer();
   const entries: ZipEntrySource[] = present.map((f) => ({
-    name: unique(zipEntryPath(f.folder, f.fileName)),
+    name: unique(zipEntryPath(f.folder, standardNameFromFile(f.fileName, f.companyName))),
     modified: f.createdAt ? new Date(f.createdAt) : undefined,
     open: async () => (await openObjectStream(f.storageKey))?.body ?? null,
   }));
-  const stream = recordStreamExport(auth.ctx, { kind: 'vault_zip', format: 'zip', fileName: zipArchiveName(name) }, createZipStream(entries, { maxBytes: MAX_BYTES }));
+  const stream = recordStreamExport(auth.ctx, { kind: 'vault_zip', format: 'zip', fileName: archiveName }, createZipStream(entries, { maxBytes: MAX_BYTES }));
 
   return new Response(stream, {
     status: 200,
     headers: {
       'Content-Type': 'application/zip',
-      'Content-Disposition': contentDisposition('attachment', zipArchiveName(name)),
+      'Content-Disposition': contentDisposition('attachment', archiveName),
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
     },

@@ -26,10 +26,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * LP-01: apply the visitor's saved landing theme before the first paint, so a returning dark-theme
- * visitor never sees a light flash. With no saved choice the page stays light (the default).
+ * LP-01: apply the visitor's landing theme before the first paint, so there is never a flash of the
+ * wrong theme. Dark is the default; a visitor who chose light on this device gets light.
  */
-const THEME_BEFORE_PAINT = `try{var t=localStorage.getItem('vcfo.lp-theme');if(t==='dark')document.documentElement.dataset.lpTheme='dark';else delete document.documentElement.dataset.lpTheme}catch(e){}`;
+const THEME_BEFORE_PAINT = `try{if(localStorage.getItem('vcfo.lp-theme')==='light')delete document.documentElement.dataset.lpTheme;else document.documentElement.dataset.lpTheme='dark'}catch(e){document.documentElement.dataset.lpTheme='dark'}`;
 
 export default function HomePage() {
   return (

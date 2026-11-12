@@ -8,16 +8,13 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { Bell, ChevronLeft, ChevronRight, ListChecks, Maximize2 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
 import { useApp } from '@/context/AppContext';
-import { isFirmWideAdmin } from '@/lib/auth';
 import {
   ACT_META,
   ACT_SWATCH,
-  deadlineAppliesTo,
   type StatutoryAct,
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
-import { CompanyPicker } from '@/components/admin/CompanyPicker';
-import { StatutoryCalendarImport } from '@/components/admin/StatutoryCalendarImport';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FilterSelect } from '@/components/ui/native-select';
 import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
 import { deadlineTagLabel } from '@/lib/statutory-calendar/acts';
@@ -263,8 +260,7 @@ export function StatutoryCalendar({
   engagements,
   trackerHref,
   showBack,
-  companyId: controlledCompanyId,
-  onCompanyChange,
+  companyId = 'all',
   audience = 'staff',
 }: {
   engagements: Engagement[];
@@ -273,13 +269,10 @@ export function StatutoryCalendar({
   /** Place the shell back chevron beside the section title (intern calendar). */
   showBack?: boolean;
   /**
-   * Controlled company selection (`'all'` or an engagement id). When set, the
-   * picker inside this grid drives the caller too — the shared compliance
-   * views use it so one picker narrows the statutory grid and the register
-   * together. Omit to keep the picker self-contained.
+   * The company the page has picked (`'all'` or an engagement id). It only decides whether the
+   * pre-incorporation notice shows; the grid always lists every deadline of the year.
    */
   companyId?: string;
-  onCompanyChange?: (id: string) => void;
   /** Wording of the pre-COI notice for a narrowed company. */
   audience?: PreIncorporationScope['audience'];
 }) {
@@ -305,10 +298,7 @@ export function StatutoryCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fy.key]);
   const [mode, setMode] = useState<StatutoryCalendarMode>('minimized');
-  const { sidebarMode, setSidebarMode, user, getStateForEngagement } = useApp();
-  /** Admin and super see the full master calendar; leads and managers only the
-      deadlines that apply to a client in their own scoped portfolio. */
-  const firmWide = isFirmWideAdmin(user?.role);
+  const { sidebarMode, setSidebarMode, getStateForEngagement } = useApp();
   /** True when maximizing unpinned the sidebar — minimize must re-pin it. */
   const unpinnedForMax = useRef(false);
 
@@ -348,12 +338,6 @@ export function StatutoryCalendar({
     writeCalendarViewPrefs({ mode: nextMode });
   };
   const [monthDir, setMonthDir] = useState<1 | -1>(1);
-  const [ownCompanyId, setOwnCompanyId] = useState<string>('all');
-  const companyId = controlledCompanyId ?? ownCompanyId;
-  const setCompanyId = (id: string) => {
-    if (controlledCompanyId === undefined) setOwnCompanyId(id);
-    onCompanyChange?.(id);
-  };
   const [scope, setScope] = useState<Scope>('all');
   const [mutedActs, setMutedActs] = useState<Set<StatutoryAct>>(() => new Set());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -368,8 +352,6 @@ export function StatutoryCalendar({
   }, []);
 
   const company = companyId === 'all' ? null : engagements.find((e) => e.id === companyId) ?? null;
-  /** A picker needs a choice; a single-company scope is simply that company. */
-  const showPicker = engagements.length > 1;
 
   /** Pre-COI companies, read off the list in hand — the count needs no query. */
   const preIncorporationCount = useMemo(
@@ -382,17 +364,16 @@ export function StatutoryCalendar({
 
   const calendarChanges = useCalendarChanges();
 
-  /** Company + scope, but before category mutes — legend counts must not vanish. */
+  /**
+   * Every deadline of the year, for every role, whatever companies they hold: the owner asked on
+   * 12 Nov 2026 that the full calendar is always shown. Only the person's own filters narrow it:
+   * All / Overdue here, and the act filter (`mutedActs`) after this.
+   */
   const scoped = useMemo(() => {
-    return withMovedDeadlines(deadlines, calendarChanges).filter((d) => {
-      if (company && !deadlineAppliesTo(d, company)) return false;
-      if (!firmWide && !company && !engagements.some((e) => deadlineAppliesTo(d, e))) {
-        return false;
-      }
-      if (scope === 'overdue' && statutoryStatus(d.date, todayIso) !== 'overdue') return false;
-      return true;
-    });
-  }, [deadlines, company, scope, todayIso, firmWide, engagements, calendarChanges]);
+    return withMovedDeadlines(deadlines, calendarChanges).filter(
+      (d) => scope !== 'overdue' || statutoryStatus(d.date, todayIso) === 'overdue',
+    );
+  }, [deadlines, scope, todayIso, calendarChanges]);
 
   const visible = useMemo(() => scoped.filter((d) => !mutedActs.has(d.act)), [scoped, mutedActs]);
 
@@ -424,6 +405,10 @@ export function StatutoryCalendar({
     }
     return counts;
   }, [scoped, monthPrefix]);
+
+  /** The act tab that matches the legend: All, one act, or none when several are picked there. */
+  const unmuted = ACTS.filter((act) => !mutedActs.has(act));
+  const actFilter = unmuted.length === ACTS.length ? 'all' : unmuted.length === 1 ? unmuted[0] : '';
 
   const cells = useMemo(() => buildStatutoryMonthGrid(viewMonth), [viewMonth]);
 
@@ -517,15 +502,6 @@ export function StatutoryCalendar({
     keys.add(fy.key);
     return [...keys].sort((a, b) => b.localeCompare(a));
   }, [calendarData, fy.key]);
-  /** The import dialog opens on the first importable year with no calendar, else on next year. */
-  const importable = calendarData?.importableYears ?? [];
-  const withCalendar = new Set((calendarData?.years ?? []).map((y) => y.fy));
-  const currentFy = calendarData?.currentFy ?? fy.key;
-  const nextImportYear =
-    importable.find((key) => key > currentFy && !withCalendar.has(key)) ??
-    importable.find((key) => key > currentFy) ??
-    currentFy;
-  const importSourceYear = calendarData?.years[0]?.fy ?? null;
 
   const title = showBack ? (
     <PageBackCluster>
@@ -558,24 +534,6 @@ export function StatutoryCalendar({
           )}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {showPicker ? (
-            <CompanyPicker
-              engagements={engagements}
-              value={companyId}
-              onChange={(id) => {
-                setCompanyId(id);
-                setSelectedDay(null);
-              }}
-            />
-          ) : null}
-          {calendarData?.canImport ? (
-            <StatutoryCalendarImport
-              importableYears={calendarData.importableYears}
-              defaultYear={nextImportYear}
-              sourceYear={importSourceYear}
-              onPublished={setFyKey}
-            />
-          ) : null}
           {trackerHref ? (
             <Link
               href={trackerHref}
@@ -595,6 +553,20 @@ export function StatutoryCalendar({
           </button>
         </div>
       </div>
+
+      <SpectrumTabs
+        label="Filter by act"
+        className="mb-3 max-w-full"
+        value={actFilter}
+        onChange={(key) => {
+          setMutedActs(key === 'all' ? new Set() : new Set(ACTS.filter((act) => act !== key)));
+          setSelectedDay(null);
+        }}
+        items={[
+          { key: 'all', label: 'All', count: ACTS.reduce((sum, act) => sum + actCounts[act], 0) },
+          ...ACTS.map((act) => ({ key: act, label: ACT_META[act].label, count: actCounts[act] })),
+        ]}
+      />
 
       {company && companyPreIncorporation ? (
         <PreIncorporationNotice
@@ -629,7 +601,7 @@ export function StatutoryCalendar({
             ) : calendarData?.calendar.source === 'none' ? (
               <p className="stat-cal-empty">
                 There is no calendar for {fy.label} yet.
-                {calendarData.canImport ? ' Use Import calendar to add one from the Excel template.' : ' The admin adds it.'}
+                {calendarData.canImport ? ' Use Import calendar at the top of the page to add one from the Excel template.' : ' The admin adds it.'}
               </p>
             ) : calendarQuery.isPending ? (
               <p className="stat-cal-empty">Loading the {fy.label} calendar.</p>

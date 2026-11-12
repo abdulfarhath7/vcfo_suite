@@ -7,10 +7,13 @@ import { assistSetUp } from '@/lib/assist-runs/runs';
 import { FILING_FORMS, FilingRefusal } from '@/lib/mca-filing/filing-state';
 import { z } from 'zod';
 
+/** The staff roles every MCA filing route admits. */
+export const ASSIST_STAFF_ROLES = ['super_admin', 'admin', 'manager', 'intern'] as const;
+
 /** Shared by every MCA filing route: 503 while Assist is off, staff only, one error shape. */
 export async function assistStaff(): Promise<{ ok: true; ctx: AuthContext } | { ok: false; response: NextResponse }> {
   if (!assistSetUp()) return { ok: false, response: NextResponse.json({ ok: false, error: 'assist_not_set_up' }, { status: 503 }) };
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = await requireAnyRole(...ASSIST_STAFF_ROLES);
   if (guard.ok === false) return { ok: false, response: NextResponse.json({ ok: false, error: guard.error }, { status: guard.status }) };
   return { ok: true, ctx: guard.ctx };
 }

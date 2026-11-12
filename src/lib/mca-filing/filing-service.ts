@@ -26,7 +26,10 @@ import { sendEmail } from '@/lib/email/send-email';
 import { messageHtml, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
 import { recordEmailSent } from '@/lib/email/record-email-sent';
 import { readProposedDirectors } from '@/lib/incorporation/proposed-directors';
-import { FILING_FORMS, FILING_FORM_LABEL, FilingRefusal, istDate, type FilingForm } from '@/lib/mca-filing/filing-state';
+import { FILING_FORMS, FILING_FORM_LABEL, FILING_FORM_STEP_ID, FilingRefusal, istDate, linkedSrn, type FilingForm } from '@/lib/mca-filing/filing-state';
+import { SRN_FIELD_ID } from '@/lib/checklist/checklist-responses';
+import { applyChecklistPatch } from '@/lib/incorporation/apply-checklist-patch';
+import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
 import { packetHash } from '@/lib/mca-filing/packet-hash';
 import { filingReadiness, packetContent, repeatCauses, signerReadiness, type FilingReadiness, type PacketPart } from '@/lib/mca-filing/readiness';
 import { comparePdfText, flattenExpected } from '@/lib/mca-filing/pdf-compare';
@@ -52,7 +55,7 @@ async function filingProfile(ctx: AuthContext, engagementParam: string) {
   const { inputs } = access;
   const result = buildAssistProfile(buildDocPackContext({ state: inputs.checklistState, brRow: inputs.brRow, engagement: inputs.engagement }));
   const signers = knownSigners(result.profile, readProposedDirectors(inputs.checklistState));
-  return { result, signers };
+  return { result, signers, checklistState: inputs.checklistState };
 }
 
 /** Remark causes count over the last 12 months. */
@@ -97,7 +100,11 @@ export async function filingBundle(ctx: AuthContext, engagementParam: string): P
   return {
     engagementId: records.engagementId,
     companyName: records.companyName,
-    filings: records.filings,
+    // SA-01: the SRN shown is the one on the matching checklist step (`acknowledgementNumber`).
+    filings: records.filings.map((filing) => ({
+      ...filing,
+      srn: linkedSrn(profile?.checklistState[FILING_FORM_STEP_ID[filing.form]]?.responses?.[SRN_FIELD_ID], filing.srn),
+    })),
     documents: records.documents,
     missing,
     signers,
@@ -106,6 +113,26 @@ export async function filingBundle(ctx: AuthContext, engagementParam: string): P
     causes,
     readiness,
   };
+}
+
+/**
+ * SA-01: an SRN saved on the filing card goes onto the matching checklist step's
+ * `acknowledgementNumber` through the ordinary staff save, so the step, its exports and the card
+ * show one number. Additive: a refused save is logged and the filing record stands.
+ */
+export async function recordFilingSrnOnStep(ctx: AuthContext, engagementDbId: string, form: FilingForm, srn: string | null): Promise<boolean> {
+  if (!srn) return false;
+  const stepId = FILING_FORM_STEP_ID[form];
+  try {
+    const row = await getEngagementById(ctx, engagementDbId);
+    if (!row) return false;
+    if (checklistStateFromRow(row)[stepId]?.responses?.[SRN_FIELD_ID]?.trim() === srn) return true;
+    await applyChecklistPatch(ctx, engagementDbId, stepId, { responses: { [SRN_FIELD_ID]: srn } });
+    return true;
+  } catch (error) {
+    console.warn('[mca-filing] SRN not written to the checklist step', error instanceof Error ? error.message : error);
+    return false;
+  }
 }
 
 /** Record what staff confirmed about one signer's MCA set-up. Null when out of scope. */

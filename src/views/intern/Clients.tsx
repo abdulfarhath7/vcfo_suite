@@ -20,46 +20,32 @@ import {
   NowCell,
   STAGE_CHIP_TONE,
   STAGE_WORD,
-  clientRowFacts,
-  nextInWeek,
   shortDate,
-  type ClientRowFacts,
   type ClientStage,
 } from '@/views/admin/clients/client-row';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
+import { Chip } from '@/components/ui/spectrum-chip';
 import { PhaseBar } from '@/components/ui/step-track';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AvatarStack } from '@/components/ui/avatar-stack';
 import { SavedViews, type SavedView, type ViewFilters } from '@/components/ui/saved-views';
 import type { BulkAction } from '@/components/ui/bulk-bar';
 import { RowMoreMenu, RowQuickActions } from '@/components/staff/today/row-actions';
-import { workItemChangedAt } from '@/components/staff/today/today-rows';
 import { copyRowLink, exportRowsCsv, remindMany } from '@/components/staff/today/work-actions';
 import { remindableItemKey } from '@/lib/reminders/reminder-rules';
 import type { DirectoryPerson } from '@/lib/email/directory-filter';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { internEngagementPath } from '@/lib/projects/project-step-path';
+import type { InternWorkItem } from '@/lib/intern/intern-work';
 import {
-  filterInternWork,
-  internCompanyPhaseProgress,
-  type InternCompanyPhaseProgress,
-  type InternWorkItem,
-} from '@/lib/intern/intern-work';
-import type { Engagement } from '@/data/engagements';
+  filterLeadClients,
+  leadClientRows,
+  leadClientStatus,
+  leadFirstPhasesSteps,
+  type LeadClientRow,
+} from '@/lib/intern/lead-client-rows';
 
-type Row = {
-  e: Engagement;
-  pct: number;
-  progress: InternCompanyPhaseProgress;
-  /** Stage, Now, next date and health, derived from the step state (`clientRowFacts`). */
-  facts: ClientRowFacts;
-  /** The lead's work items on this client, for the views, Remind and the change time. */
-  items: InternWorkItem[];
-  /** People who work on the client (managers and leads), from the staff directory. */
-  people: string[];
-  changedAt?: string;
-};
+type Row = LeadClientRow;
 
 /** E-06: the default views of the lead's Clients; `?view=` opens one. */
 const CLIENT_VIEWS: SavedView[] = [
@@ -69,13 +55,6 @@ const CLIENT_VIEWS: SavedView[] = [
   { key: 'waiting', label: 'Waiting on clients', filters: { show: 'waiting' } },
 ];
 
-/** Whether a client has work in the view: overdue, due this week, or waiting on the client. */
-function inShow(show: string, items: InternWorkItem[], now: Date): boolean {
-  if (show === 'overdue') return filterInternWork(items, { focus: 'overdue' }, now).length > 0;
-  if (show === 'week') return filterInternWork(items, { focus: 'due' }, now).some((i) => i.kind !== 'done');
-  if (show === 'waiting') return filterInternWork(items, { tag: 'client' }, now).length > 0;
-  return true;
-}
 
 /** The same staff directory the managers card reads. */
 async function fetchDirectory(): Promise<DirectoryPerson[]> {
@@ -93,15 +72,7 @@ const remindTargets = (rows: Row[]) =>
       .map(({ i, key }) => ({ engagementId: i.engagementId, itemKey: key, title: i.title })),
   );
 
-/** Lead client status (prototype `clientStatus`): Stuck, Not started, In progress or Done. */
-function rowStatus(r: Row): { word: string; tone: ChipTone } {
-  if (r.progress.stuck) return { word: 'Stuck', tone: 'bad' };
-  const done = r.progress.phases.reduce((n, p) => n + p.done, 0);
-  const total = r.progress.phases.reduce((n, p) => n + p.total, 0);
-  if (total > 0 && done >= total) return { word: 'Done', tone: 'ok' };
-  if (done === 0) return { word: 'Not started', tone: 'idle' };
-  return { word: 'In progress', tone: 'prog' };
-}
+const rowStatus = leadClientStatus;
 
 const NEXT_OPTIONS = [
   { value: 'week', label: 'This week' },
@@ -127,7 +98,7 @@ export default function InternClients() {
 }
 
 function InternClientsInner() {
-  const { myEngagements, progressByEngagement, workItems } = useInternPortfolio();
+  const { myEngagements, workItems } = useInternPortfolio();
   const { user, getStateForEngagement, engagementsLoading } = useApp();
   const router = useRouter();
   const params = useSearchParams();
@@ -150,32 +121,12 @@ function InternClientsInner() {
     }
   }, [viewParam]);
 
-  const all: Row[] = useMemo(() => {
-    const firm = (directory.data ?? []).filter((p) => p.kind === 'firm' && p.status !== 'inactive' && (p.role === 'manager' || p.role === 'intern'));
-    return myEngagements.map((e) => {
-      const state = getStateForEngagement(e);
-      const items = workItems.filter((i) => i.engagementId === e.id);
-      const people = firm.filter((p) => p.projects.some((pr) => pr.id === e.id || pr.slug === e.slug)).map((p) => p.name);
-      const stamps = items.map((i) => workItemChangedAt(i, i.catalogId ? state[i.catalogId] : undefined)).filter(Boolean) as string[];
-      return {
-        e,
-        pct: progressByEngagement.get(e.id) ?? 0,
-        progress: internCompanyPhaseProgress(e, state),
-        facts: clientRowFacts(e, state, now),
-        items,
-        people,
-        changedAt: stamps.sort().at(-1),
-      };
-    });
-  }, [myEngagements, progressByEngagement, getStateForEngagement, workItems, directory.data, now]);
-  const todayIso = now.toISOString().slice(0, 10);
-  const rows = all.filter(
-    (r) =>
-      (!stage || r.facts.stage === stage) &&
-      inShow(show, r.items, now) &&
-      (!health || r.facts.health === health) &&
-      nextInWeek(r.facts.next, todayIso, nextWin),
+  // Rows and filters are shared with the server's Excel export (GL-06).
+  const all: Row[] = useMemo(
+    () => leadClientRows({ myEngagements, stateOf: getStateForEngagement, workItems, directory: directory.data ?? [], now }),
+    [myEngagements, getStateForEngagement, workItems, directory.data, now],
   );
+  const rows = filterLeadClients(all, { stage, show, health, nextWin }, now);
   const rowSig = rows.map((r) => r.e.id).join('|');
   // Clients that leave the list (a filter, a refetch) leave the selection too.
   useEffect(() => {
@@ -298,7 +249,7 @@ function InternClientsInner() {
       align: 'right',
       render: (r) => (
         <span className="text-[13px] tabular-nums text-ink-muted" title={`${r.pct}% done`}>
-          {r.progress.phases.slice(0, 3).reduce((n, p) => n + p.done, 0)}/{r.progress.phases.slice(0, 3).reduce((n, p) => n + p.total, 0)}
+          {leadFirstPhasesSteps(r)}
         </span>
       ),
     },
@@ -356,22 +307,8 @@ function InternClientsInner() {
                 onChange={setHealth}
               />
               <FilterChip label="Next" value={nextWin} options={NEXT_OPTIONS} onChange={setNextWin} />
-              {/* GL-06: every client the filters keep, with the grid's columns. */}
-              <ExportToExcelButton
-                title="Clients"
-                columns={['Client', 'Contact', 'Stage', 'Now', 'Team', 'Phases 1–3', 'Status']}
-                rows={() =>
-                  rows.map((r) => [
-                    r.e.companyName,
-                    r.e.clientDisplayName ?? null,
-                    STAGE_WORD[r.facts.stage],
-                    r.facts.now ? `${r.facts.now.code} ${r.facts.now.title}` : null,
-                    r.people.join(', '),
-                    `${r.progress.phases.slice(0, 3).reduce((n, p) => n + p.done, 0)}/${r.progress.phases.slice(0, 3).reduce((n, p) => n + p.total, 0)}`,
-                    rowStatus(r).word,
-                  ])
-                }
-              />
+              {/* GL-06: the server rebuilds every client the filters keep, with the grid's columns. */}
+              <ExportToExcelButton title="Clients" source={{ source: 'lead-clients', stage, show, health, nextWin }} />
             </div>
           </div>
           {/* Saved views sit in their own row under the head (prototype `ClientsGrid`). */}

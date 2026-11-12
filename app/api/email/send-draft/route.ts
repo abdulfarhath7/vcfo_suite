@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { sendEmail } from '@/lib/email/send-email';
 import { formatFromWithSender, formatReplyTo } from '@/lib/email/send-email-shared';
 import { recordEmailSent } from '@/lib/email/record-email-sent';
+import { queueStepWhatsAppAfterSend } from '@/lib/email/step-whatsapp-after-send';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { publicErrorMessage } from '@/lib/api-error';
 
@@ -16,7 +17,16 @@ const bodySchema = z.object({
   html: z.string().max(50000).optional(),
   engagementId: z.string().trim().max(100).optional(),
   itemId: z.string().trim().max(100).optional(),
+  /** The client WhatsApp nudge the drafted step email carries; queued only after the email is sent (GL-07). */
+  whatsappEvent: z.enum(['coi_issued', 'document_delivered']).optional(),
+  /** Files the person added in the pop-up (GL-07), as base64; at most 5 and 10 MB in all. */
+  attachments: z
+    .array(z.object({ name: z.string().trim().min(1).max(200), contentType: z.string().max(200).optional(), contentBase64: z.string().min(1).max(14_000_000) }))
+    .max(5)
+    .optional(),
 });
+
+const ATTACHMENTS_MAX_BYTES = 10 * 1024 * 1024;
 
 /**
  * POST /api/email/send-draft (GL-07). The "Send email" pop-up sends here when the person has no
@@ -30,6 +40,14 @@ export async function POST(request: Request) {
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ ok: false, error: body.error }, { status: body.status });
   const { to, cc, subject, text, html, engagementId, itemId } = body.data;
+  const attachments = (body.data.attachments ?? []).map((a) => ({
+    filename: a.name,
+    contentType: a.contentType || 'application/octet-stream',
+    content: Uint8Array.from(Buffer.from(a.contentBase64, 'base64')),
+  }));
+  if (attachments.reduce((n, a) => n + a.content.byteLength, 0) > ATTACHMENTS_MAX_BYTES) {
+    return NextResponse.json({ ok: false, error: 'The attachments are larger than 10 MB in all.' }, { status: 413 });
+  }
 
   if (engagementId) {
     const access = await assertEngagementAccess(guard.ctx, engagementId);
@@ -48,6 +66,7 @@ export async function POST(request: Request) {
           html: html ?? `<div style="white-space:pre-wrap;font-family:system-ui,sans-serif">${escapeHtml(text)}</div>`,
           text,
           purpose: 'manual.send-draft',
+          ...(attachments.length ? { attachments } : {}),
         }),
       ),
     );
@@ -55,6 +74,9 @@ export async function POST(request: Request) {
     const failed = to.filter((_, i) => !results[i]?.ok);
     await recordEmailSent(guard.ctx, { to: sent, cc, subject, engagementId, itemId, via: 'firm' });
     if (sent.length === 0) return NextResponse.json({ ok: false, error: 'send_failed', failed }, { status: 502 });
+    // WhatsApp after the email and after the response, so it can never slow or block the send.
+    const sentTo = [...sent, ...(cc ?? [])];
+    after(() => queueStepWhatsAppAfterSend(guard.ctx, { whatsappEvent: body.data.whatsappEvent, engagementId, itemId, sentTo }));
     return NextResponse.json({ ok: true, sent, failed });
   } catch (err) {
     return NextResponse.json({ ok: false, error: publicErrorMessage(err, 'send_failed') }, { status: 500 });

@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import { getItem } from '@/data/checklist';
 import { formatShareCountClause } from '@/lib/board-resolution/board-resolution';
 import { parsePre1BoardResolutionDate } from '@/lib/checklist/checklist-pre1-validation';
@@ -291,7 +292,7 @@ function nationalityFor(pre6: ChecklistItemResponses, audience: IncorpDirectorAu
 }
 
 function witnessFields(pre7: ChecklistItemResponses = {}) {
-  const name = (pre7[SUBSCRIPTION_WITNESS_FIELDS.name] ?? '').trim();
+  const name = properNameCase(pre7[SUBSCRIPTION_WITNESS_FIELDS.name]);
   const address = (pre7[SUBSCRIPTION_WITNESS_FIELDS.address] ?? '').trim();
   const membership = (pre7[SUBSCRIPTION_WITNESS_FIELDS.membershipNumber] ?? '').trim();
   return {
@@ -315,7 +316,7 @@ function subscriberRow(
     engagement?.ownershipType !== 'independent' && nominee !== '' && nameKey(nominee) === nameKey(individual.name);
   return {
     SL_NO: String(position),
-    SUBSCRIBER_FULL_NAME: pickString(a ? directorField(pre6, a, 'FullName') : '', individual.name, '[Subscriber name]'),
+    SUBSCRIBER_FULL_NAME: pickString(a ? directorField(pre6, a, 'FullName') : '', properNameCase(individual.name), '[Subscriber name]'),
     NOMINEE_OF: isNominee ? resolveParentEntityName(pre1, engagement) : '',
     SUBSCRIBER_RELATION: a && relationOf(pre6, a) === 'daughter of' ? 'D/o' : 'S/o',
     SUBSCRIBER_FATHER_NAME: pickString(a ? directorField(pre6, a, 'FatherName') : '', "[Father's name]"),
@@ -368,7 +369,7 @@ export function buildSubscriptionSheetMergeFields(
     signingDate(input);
 
   const fields: SubscriptionSheetMergeFields = {
-    PARENT_ENTITY_NAME: corporate.name,
+    PARENT_ENTITY_NAME: properNameCase(corporate.name),
     PARENT_ENTITY_ADDRESS: corporate.address,
     SUBSCRIPTION_DATE: formatSubscriptionDate(resolutionDate),
     SUBSCRIBER_FULL_NAME: pickString(directorField(pre6, rep, 'FullName'), '[Subscriber name]'),

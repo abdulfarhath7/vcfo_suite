@@ -148,6 +148,9 @@ export function resolveProposedCompanyName(
   );
 }
 
+/** Director answers that are person names, cased by `properNameCase` (GL-09). */
+const PERSON_NAME_SUFFIXES: ReadonlySet<string> = new Set(['FatherName', 'MotherName', 'FirstName', 'MiddleName', 'LastName', 'SpouseName']);
+
 export function directorField(
   pre6: ChecklistItemResponses,
   director: IncorpDocAudience,
@@ -158,7 +161,9 @@ export function directorField(
   if (suffix === 'FullName') {
     return properNameCase(resolvePre6DisplayNameForPrefix(pre6, prefix));
   }
-  return (pre6[`${prefix}${suffix}`] ?? '').trim();
+  const value = (pre6[`${prefix}${suffix}`] ?? '').trim();
+  // GL-09: every person name (father's, first, last) prints with capital letters.
+  return PERSON_NAME_SUFFIXES.has(suffix) ? properNameCase(value) : value;
 }
 
 function isResidentAudience(director: IncorpDirectorAudience): boolean {

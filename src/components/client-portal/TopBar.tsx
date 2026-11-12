@@ -3,7 +3,7 @@
 /**
  * Top bar, VCFO Spectrum (prototype src/components/shell/TopBar.tsx): 60 px, white, a 1.5 px
  * line under it. SBC logo, then the location trail ("Compliances / Filings", the last part
- * in ink 500), the 380 px search field with Ctrl K, the Before/After pill (desktop),
+ * in ink 500, every other part a link, NV-03), the 380 px search field with Ctrl K, the Before/After pill (desktop),
  * Announcements and Notifications (6 px square icon buttons, square red count) and the
  * theme switch. No profile and no Ask VCFO button in the top bar (R-45).
  */
@@ -11,7 +11,7 @@ import { Moon, Sun } from 'lucide-react';
 import { Fragment, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { usePortal } from './PortalProvider';
-import { crumbsFor, activeKeyFor, portalHref } from './routes';
+import { activeKeyFor, portalHref, portalTrail } from './routes';
 import { BeforeAfterPill, useBreakpoint, useShowBeforeAfter } from './Sidebar';
 
 export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => void; hasAnnouncements: boolean }) {
@@ -19,13 +19,13 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
   const { shell, go, theme, toggleTheme, setDrawerOpen, crumbs } = usePortal();
   const showBa = useShowBeforeAfter();
   const bp = useBreakpoint();
-  const { mid, crumb } = crumbsFor(pathname);
   const act = activeKeyFor(pathname);
   const notif = shell?.badges.notifications ?? 0;
   const themeLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   /* The trail is the sidebar's words ("Compliances / Filings"). A page may set its own trail
-     (for example a step page); otherwise the route gives an optional middle part and the page. */
-  const trail = crumbs && crumbs.length ? crumbs : [...(mid ? [mid] : []), crumb];
+     (for example a step page); otherwise the route gives an optional middle part and the page.
+     Every part but the last opens the page it names (NV-03). */
+  const trail = portalTrail(pathname, crumbs);
 
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -74,14 +74,29 @@ export function PortalTopBar({ onSearch, hasAnnouncements }: { onSearch: () => v
               /* Phones show the page only. */
               const cls = last ? 'tbar-cur' : 'tbar-mid';
               return (
-                <Fragment key={`${c}-${i}`}>
+                <Fragment key={`${c.label}-${i}`}>
                   {i > 0 ? (
                     <li aria-hidden="true" className="tbar-sep tbar-mid">
                       /
                     </li>
                   ) : null}
                   <li className={cls} aria-current={last ? 'page' : undefined}>
-                    {c}
+                    {!last && c.href ? (
+                      <a
+                        href={c.href}
+                        className="tbar-link"
+                        onClick={(e) => {
+                          /* A modified click opens a new tab as usual; a plain one stays in the portal. */
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                          e.preventDefault();
+                          go(c.href!);
+                        }}
+                      >
+                        {c.label}
+                      </a>
+                    ) : (
+                      c.label
+                    )}
                   </li>
                 </Fragment>
               );

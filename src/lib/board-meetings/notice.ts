@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import { longDate, noticeDate, noticeTime } from './dates';
 import type { AgendaItem, MeetingKind, MeetingMode } from './model';
 
@@ -80,7 +81,14 @@ function standardBody(input: NoticeInput): string[] {
   return body;
 }
 
-export function buildNotice(input: NoticeInput): NoticeDoc {
+export function buildNotice(raw: NoticeInput): NoticeDoc {
+  // GL-09: the company, the signatory and the addressees print with capital letters.
+  const input: NoticeInput = {
+    ...raw,
+    companyName: properNameCase(raw.companyName),
+    signatory: raw.signatory ? { ...raw.signatory, name: properNameCase(raw.signatory.name) } : raw.signatory,
+    to: raw.to.map((t) => ({ ...t, name: properNameCase(t.name) })),
+  };
   const title = input.kind === 'board' ? 'BOARD MEETING' : input.kind === 'agm' ? 'ANNUAL GENERAL MEETING' : 'EXTRAORDINARY GENERAL MEETING';
   const agenda = input.agenda.map((a, i) => ({
     n: String(i + 1),

@@ -15,6 +15,7 @@ import {
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { repairIncorpDocxAtPath } from '@/lib/incorporation-docs/storage';
 import { checklistStateFromRow } from '@/db/repositories/engagements';
+import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -83,7 +84,7 @@ export async function GET(request: Request, context: RouteContext) {
     headers: {
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${dir2DownloadFilename(director)}"`,
+      'Content-Disposition': `attachment; filename="${dir2DownloadFilename(director, access.row.companyName, directorResponsesFromState(checklistState).pre6)}"`,
       'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',

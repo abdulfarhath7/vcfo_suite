@@ -73,10 +73,11 @@ import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJ
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
-  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+  RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
 import { McaFilingCard } from '@/components/incorporation/McaFilingCard';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 
 const ALL_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'fema', 'statutory'];
 const INTERN_BUCKETS: Bucket[] = ['pre-inc', 'post-inc', 'statutory'];
@@ -233,6 +234,8 @@ export default function EngagementDetail() {
     );
 
   const renderChecklistRow = (it: (typeof checklist)[number], displayOrder: number) => {
+    // SB-01: a SPICe+ Part B step is listed in MCA order, so it shows its MCA section, not "Step n".
+    const stepLabel = partBStepDisplayLabel(it.id, `Step ${displayOrder}`);
     const responses = extractItemResponses(it, checklistState[it.id]);
     const gate = getStepGate(gates, it.id);
     const openStep = () => {
@@ -251,7 +254,7 @@ export default function EngagementDetail() {
           gate={gate}
           engagement={eng}
           onOpen={openStep}
-          stepNumber={displayOrder}
+          stepLabel={stepLabel}
         />
       );
     }
@@ -273,7 +276,7 @@ export default function EngagementDetail() {
         <StepMark state={mark.state} tone={mark.tone} label={mark.label} />
         <div className="min-w-0">
           <div className="flex min-w-0 items-baseline gap-2">
-            <span className="flex-none font-mono text-[12px] text-ink-muted">Step {displayOrder}</span>
+            <span className="flex-none font-mono text-[12px] text-ink-muted">{stepLabel}</span>
             <span
               className={
                 'min-w-0 truncate text-[14px] ' +
@@ -352,7 +355,6 @@ export default function EngagementDetail() {
             <>
               <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
               <DownloadDocumentsButton engagementId={eng.id} />
-              <ProjectZipButton engagementId={eng.id} />
             </>
           }
           stats={
@@ -542,7 +544,9 @@ export default function EngagementDetail() {
                   {phase.subtitle ? <span className="text-[12.5px] text-ink-muted">{phase.subtitle}</span> : null}
                 </div>
                 <div role="region" aria-label={phase.title}>
-                  {phase.items.map((it) => renderChecklistRow(it, phaseStepNumber(b, it.id, it.order)))}
+                  {orderByMcaSection(phase.items, (it) => it.id).map((it) =>
+                    renderChecklistRow(it, phaseStepNumber(b, it.id, it.order)),
+                  )}
                 </div>
               </section>
             );

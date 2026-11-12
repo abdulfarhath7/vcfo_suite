@@ -1,4 +1,5 @@
 import { companyShortName } from '@/lib/client-portal/company';
+import { standardDownloadName } from '@/lib/files/download-name';
 import 'server-only';
 
 import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
@@ -510,15 +511,6 @@ export interface ResolvedClientFile {
   contentType: string;
 }
 
-async function resolveClientDocumentFile(
-  ctx: AuthContext,
-  ref: string,
-  engagementId?: string,
-): Promise<ResolvedClientFile | null> {
-  const mine = await documentsEngagement(ctx, engagementId);
-  return mine ? resolveFileIn(ctx, mine, ref) : null;
-}
-
 /** Resolve one ref inside an engagement the caller was already checked against. */
 async function resolveFileIn(
   ctx: AuthContext,
@@ -574,12 +566,15 @@ export async function readClientDocumentFile(
   ctx: AuthContext,
   ref: string,
   engagementId?: string,
-): Promise<(ResolvedClientFile & { bytes: Buffer }) | null> {
-  const file = await resolveClientDocumentFile(ctx, ref, engagementId);
+): Promise<(ResolvedClientFile & { bytes: Buffer; companyName: string }) | null> {
+  const mine = await documentsEngagement(ctx, engagementId);
+  if (!mine) return null;
+  const file = await resolveFileIn(ctx, mine, ref);
   if (!file) return null;
   const bytes = await getObjectBuffer(file.key);
   if (!bytes) return null;
-  return { ...file, bytes };
+  // The client company comes with the file for the standard download name (GL-08).
+  return { ...file, bytes, companyName: mine.row.companyName };
 }
 
 /* ------------------------------------------------------------------ */
@@ -623,11 +618,13 @@ export async function listClientDocumentsZip(
   });
 
   let rootName = `${payload.companyShort} documents`;
+  let docName = 'Documents';
   if (folder.startsWith('phase:')) {
     const ph = folder.slice(6);
     rootName = ph === OTHER_PHASE_ID ? OTHER_PHASE_TITLE : Object.values(steps).find((s) => s.phaseId === ph)?.phaseTitle ?? rootName;
   } else if (folder.startsWith('step:')) rootName = steps[folder.slice(5)]?.title ?? rootName;
   else if (byCategory) rootName = DOC_CATEGORIES.find((c) => c.id === folder.slice(4))?.name ?? rootName;
+  if (folder !== 'all') docName = rootName;
   rootName = zipSegment(rootName);
 
   // The board resolution row is read once for both of its refs.
@@ -642,7 +639,10 @@ export async function listClientDocumentsZip(
       missing += 1;
       continue;
     }
-    const ext = file.fileName.includes('.') ? `.${file.fileName.split('.').pop()}` : '';
+    // GL-08: each file is `<Document>_<Client>_<DD-MM-YYYY>.<ext>`, numbered when a name repeats.
+    const ext = file.fileName.includes('.') ? (file.fileName.split('.').pop() ?? '') : 'bin';
+    const fileName = standardDownloadName(nd.label, payload.companyName, ext);
+    const stem = fileName.slice(0, -(ext.length + 1));
     const st = nd.stepId ? steps[nd.stepId] : undefined;
     const parts: string[] = [rootName];
     if (folder === 'all' || folder.startsWith('phase:')) {
@@ -651,12 +651,12 @@ export async function listClientDocumentsZip(
     } else if (byCategory && st) {
       parts.push(zipSegment(`${st.n} · ${st.title}`));
     }
-    let path = `${parts.join('/')}/${zipSegment(nd.label)}${ext}`;
-    for (let k = 2; used.has(path); k += 1) path = `${parts.join('/')}/${zipSegment(nd.label)} (${k})${ext}`;
+    let path = `${parts.join('/')}/${fileName}`;
+    for (let k = 2; used.has(path); k += 1) path = `${parts.join('/')}/${stem} (${k}).${ext.toLowerCase()}`;
     used.add(path);
     entries.push({ name: path, key: file.key, sizeBytes: nd.sizeBytes ?? null });
   }
-  return { engagementId: payload.engagementId, filename: `${rootName}.zip`, entries, missing };
+  return { engagementId: payload.engagementId, filename: standardDownloadName(docName, payload.companyName, 'zip'), entries, missing };
 }
 
 /* ------------------------------------------------------------------ */

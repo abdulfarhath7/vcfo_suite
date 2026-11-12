@@ -10,6 +10,7 @@ import { CircleHelp, ListChecks } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
 import { cn } from '@/lib/utils';
+import { orderByMcaSection } from '@/lib/checklist/part-b-sections';
 import { Button } from '@/components/ui/button';
 import { StepMark } from '@/components/ui/step-track';
 import { SkeletonRows } from '@/components/ui/empty-state';
@@ -47,7 +48,8 @@ function SubSteps({ subs }: { subs: SubStep[] }) {
 /** The ST5 list of one phase (prototype JourneyCard). Long phases show nine steps around the focus until expanded. */
 function JourneyCard({ p, focus, d }: { p: PortalPhase; focus: string; d: IncData }) {
   const [all, setAll] = useState(false);
-  const l = p.steps;
+  // SB-01: Part B is listed in MCA form order; the focus step still comes from the gates.
+  const l = orderByMcaSection(p.steps, (x) => x.id);
   let list = l;
   if (l.length > 11 && !all) {
     const i = l.findIndex((x) => x.id === focus);

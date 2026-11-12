@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import { defaultDates, type PayrollCycle } from '@/lib/payroll/cycle';
 import type { SalaryRow } from '@/lib/payroll/salaries';
 
@@ -137,7 +138,7 @@ export function downloadText(filename: string, text: string, type = 'text/csv;ch
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = standardNameFromFile(filename);
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -24,7 +24,6 @@ import {
   NowCell,
   STAGE_CHIP_TONE,
   STAGE_WORD,
-  nextInWeek,
   shortDate,
   type ClientRowFacts,
 } from '@/views/admin/clients/client-row';
@@ -32,7 +31,8 @@ import { EFilingGrid, GRID_SUB, type EFilingColumn } from '@/components/dash/EFi
 import { PhaseBar } from '@/components/ui/step-track';
 import { AvatarStack } from '@/components/ui/avatar-stack';
 import { SavedViews, type ViewFilters } from '@/components/ui/saved-views';
-import { CLIENT_LIST_VIEWS, useClientTableTools, windowEndsThisWeek } from '@/views/admin/clients-table-tools';
+import { CLIENT_LIST_VIEWS, useClientTableTools } from '@/views/admin/clients-table-tools';
+import { filterProjectList, leadLabelOf, type ProjectListItem } from '@/lib/projects/project-list-rows';
 import { RecordTile } from '@/components/incorporation/RecordHead';
 import { HealthChip, PersonAvatar } from '@/views/admin/firm-people/parts';
 import { adminProjectPath, staffNewProjectPath, staffProjectBaseFromPathname } from '@/lib/projects/project-step-path';
@@ -46,21 +46,7 @@ import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 type View = 'table' | 'board';
 type Router = ReturnType<typeof useRouter>;
 
-interface EnrichedItem {
-  e: Engagement;
-  pct: number;
-  done: number;
-  total: number;
-  intern: { id: string; name: string; initials?: string } | undefined;
-  leads?: Array<{ id: string; name: string; initials?: string }>;
-  stuck: import('@/lib/projects/project-stuck').StuckReason;
-  /** ST5 phase track (four bars sized by step count). */
-  phases?: Array<{ done: number; total: number; title: string }>;
-  /** E-08: the latest step edit, submit, review or delivery time. */
-  changedAt?: string;
-  /** Stage, Now, next date and health from the step state (`clientRowFacts`). */
-  facts: ClientRowFacts;
-}
+type EnrichedItem = ProjectListItem;
 
 export interface ProjectsViewProps {
   engagements: Engagement[];
@@ -93,18 +79,6 @@ function ProgressCell({ pct }: { pct: number }) {
   );
 }
 
-/** Which saved-view filter a project passes (E-06). */
-function inShow(show: string, item: EnrichedItem): boolean {
-  if (show === 'overdue') return item.e.health === 'overdue';
-  if (show === 'week') return windowEndsThisWeek(item.e.schedule);
-  if (show === 'waiting') return item.stuck === 'waiting_client';
-  return true;
-}
-
-function leadLabelOf(item: EnrichedItem): string {
-  return item.leads && item.leads.length > 0 ? item.leads.map((l) => l.name).join(', ') : (item.intern?.name ?? 'Unassigned');
-}
-
 export function ProjectsView(props: ProjectsViewProps) {
   const {
   engagementsLoading,
@@ -123,20 +97,14 @@ export function ProjectsView(props: ProjectsViewProps) {
   const [stage, setStage] = useState('');
   const [health, setHealth] = useState('');
   const [nextWin, setNextWin] = useState('');
-  const todayIso = new Date().toISOString().slice(0, 10);
   // E-05: a home card tile opens the list on one saved view.
   const viewParam = params?.get('view') ?? null;
   useEffect(() => {
     const v = CLIENT_LIST_VIEWS.find((x) => x.key === viewParam);
     if (v) setShow(v.filters.show ?? '');
   }, [viewParam]);
-  const shownRows = enriched.filter(
-    (item) =>
-      inShow(show, item) &&
-      (!stage || item.facts.stage === stage) &&
-      (!health || item.facts.health === health) &&
-      nextInWeek(item.facts.next, todayIso, nextWin),
-  );
+  // The filters are shared with the server's Excel export (GL-06).
+  const shownRows = filterProjectList(enriched, { show, stage, health, nextWin });
   const anyFilter = Boolean(show || stage || health || nextWin);
   const clearFilters = () => {
     setShow('');
@@ -282,22 +250,8 @@ export function ProjectsView(props: ProjectsViewProps) {
           Start GCC project
         </Link>
       </Button>
-      {/* GL-06: every row the table's filters keep (the board shows every project), with the grid's columns. */}
-      <ExportToExcelButton
-        title="Projects"
-        columns={['Client', 'Contact', 'Stage', 'Now', 'Project leads', 'All steps', 'Status']}
-        rows={() =>
-          (view === 'board' ? enriched : shownRows).map((item) => [
-            item.e.companyName,
-            item.e.clientDisplayName ?? null,
-            STAGE_WORD[item.facts.stage],
-            item.facts.now ? `${item.facts.now.code} ${item.facts.now.title}` : null,
-            leadLabelOf(item),
-            `${item.facts.done}/${item.facts.total}`,
-            item.facts.health,
-          ])
-        }
-      />
+      {/* GL-06: the server rebuilds every row the table's filters keep (the board shows every project). */}
+      <ExportToExcelButton title="Projects" source={{ source: 'manager-projects', view, show, stage, health, nextWin }} />
     </div>
   );
 

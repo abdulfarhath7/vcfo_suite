@@ -14,7 +14,7 @@ import { roleNotificationsPath } from '@/lib/auth-routes';
 import { useShellAppearance } from '@/hooks/use-shell-appearance';
 import {
   formatNotificationWhen,
-  notificationHrefIsNavigable,
+  notificationOpenHref,
 } from '@/lib/notifications/notification-dismiss';
 import {
   NOTIFICATION_BELL_SELECTOR,
@@ -50,8 +50,10 @@ function NotificationGenieCard({
 }) {
   const message = item.body.trim() || item.title;
   const extraTitle = Boolean(item.title && item.body && item.title !== item.body);
-  const canOpen = notificationHrefIsNavigable(item.href);
   const { user, markNotificationRead } = useApp();
+  // GL-01: the step it names, or the project overview for an old notification without a link.
+  const openHref = notificationOpenHref(item, user?.role);
+  const canOpen = Boolean(openHref);
   /* The popup stays the first stop; only this button goes to the full Notifications page. */
   const pageHref = user && user.role !== 'developer' ? roleNotificationsPath(user.role) : null;
 
@@ -104,9 +106,9 @@ function NotificationGenieCard({
             <Button asChild variant="outline">
               {/* GL-01: Open marks the notification read and puts the card away. */}
               {/* A ready export links to its file (GL-06, PR-02): a plain download link, not a page. */}
-              {item.href?.startsWith('/api/') ? (
+              {openHref?.startsWith('/api/') ? (
                 <a
-                  href={item.href}
+                  href={openHref}
                   download
                   onClick={() => {
                     markNotificationRead(item.id);
@@ -117,7 +119,7 @@ function NotificationGenieCard({
                 </a>
               ) : (
                 <Link
-                  href={item.href}
+                  href={openHref ?? '#'}
                   onClick={() => {
                     markNotificationRead(item.id);
                     onParked();

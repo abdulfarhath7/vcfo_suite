@@ -5,6 +5,7 @@ import {
   shellBreadcrumb,
   shellCrumbParent,
 } from './shell-crumbs';
+import { PAGE_ROUTES, isPage, routeSamples } from '@/test/page-routes';
 
 function labels(pathname: string) {
   return shellBreadcrumb(pathname).segments.map((seg) => seg.label);
@@ -108,5 +109,28 @@ describe('resolveShellCrumbCurrent', () => {
   it('reads the leaf of the trail', () => {
     expect(resolveShellCrumbCurrent(shellBreadcrumb('/app/lead/engagements/acme-holdings/documents'), [])).toBe('Documents');
     expect(resolveShellCrumbCurrent(shellBreadcrumb('/app/lead/clients'), [])).toBe('Clients');
+  });
+});
+
+/* NV-03: every crumb but the last links to a page that exists. The routes are read from the
+   `app/app` folder, so a new or removed page is checked without editing this test. */
+const ROUTES = PAGE_ROUTES;
+
+describe('NV-03: crumb links', () => {
+  it('reads the page routes', () => {
+    expect(ROUTES).toContain('/app/client/incorporation/phase/[n]');
+    expect(isPage('/app/client/incorporation/phase')).toBe(false);
+  });
+
+  it.each(ROUTES.flatMap(routeSamples))('links every crumb but the last to a real page on %s', (pathname) => {
+    const segments = shellBreadcrumb(pathname).segments;
+    expect(segments.at(-1)?.href).toBeNull();
+    const dead = segments.slice(0, -1).filter((s) => s.href !== null && !isPage(s.href));
+    expect(dead).toEqual([]);
+  });
+
+  it('names the client phase page after its SPICe+ part and links Incorporation', () => {
+    expect(labels('/app/client/incorporation/phase/1')).toEqual(['Incorporation', 'SPICe+ Part A']);
+    expect(hrefs('/app/client/incorporation/phase/1')).toEqual(['/app/client/incorporation', null]);
   });
 });

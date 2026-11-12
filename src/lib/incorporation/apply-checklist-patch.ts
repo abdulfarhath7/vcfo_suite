@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
+import { isAdminOrManager } from '@/lib/auth';
 import {
   checklistStateFromRow,
   getEngagementById,
@@ -9,7 +10,10 @@ import {
 } from '@/db/repositories/engagements';
 import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
 import { stampDinChecks } from '@/lib/checklist/din-verification';
-import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
+import { CLIENT_RESPONSE_FIELDS, SRN_FIELD_ID } from '@/lib/checklist/checklist-responses';
+import { updateFiling } from '@/db/repositories/assist-filings';
+import { filingFormForStep } from '@/lib/mca-filing/filing-state';
+import { clientChangesNameExpiry, NAME_EXPIRY_CLIENT_REFUSED } from '@/lib/checklist/name-approval-expiry';
 import { hiddenEntryAnswersPatch, isRepeatField } from '@/lib/checklist/checklist-repeat';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { syncExpiryItemsForEngagement } from '@/db/repositories/expiry-items';
@@ -21,6 +25,8 @@ import {
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
+  CLIENT_ONLY_FIELDS_REFUSED,
+  clientOnlyFieldsChangedBy,
   lastEditedPatch,
   MANAGER_APPROVAL_STEP_ID,
   PROPOSED_DIRECTORS_STEP_ID,
@@ -38,11 +44,16 @@ import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
  * the manager's (`reviewChecklistItem`).
  */
 
-/** The step cannot take this person's save as it stands. The route answers 409. */
+/**
+ * The step cannot take this person's save as it stands. The route answers with `status`: 409 when
+ * the step is closed for now, 403 when this role may never write the field (DR-02).
+ */
 export class ChecklistPatchRefused extends Error {
-  constructor(message: string) {
+  readonly status: 403 | 409;
+  constructor(message: string, status: 403 | 409 = 409) {
     super(message);
     this.name = 'ChecklistPatchRefused';
+    this.status = status;
   }
 }
 
@@ -63,16 +74,27 @@ export function checklistPatchForRole(
   const { brClientEdit: _bce, openedNotifiedAt: _ona, ...savable } = patchFields;
   let patch: Partial<ChecklistItemStateSlice> = savable;
   const directFlow = isDirectFlowStep(itemId);
+  if (directFlow && clientOnlyFieldsChangedBy(ctx.role, itemId, patchFields.responses, prevSlice).length > 0) {
+    // DR-02: the lead, a manager or an admin may not change the client's own answers.
+    throw new ChecklistPatchRefused(CLIENT_ONLY_FIELDS_REFUSED, 403);
+  }
   if (ctx.role === 'client' && directFlow) {
     // Direct flow: the client writes answers only, never a lead-only field,
     // and only while the step is open to them.
     if (isDirectFlowStepComplete(itemId, prevSlice) || isWaitingOnLead(itemId, prevSlice)) {
       throw new ChecklistPatchRefused('This step is submitted. Ask for a change to edit it.');
     }
+    if (clientChangesNameExpiry(itemId, patchFields.responses, prevSlice?.responses)) {
+      // SA-02: the client reads the name approval expiry date; staff change it.
+      throw new ChecklistPatchRefused(NAME_EXPIRY_CLIENT_REFUSED, 403);
+    }
     patch = { responses: stripLeadOnlyResponses(itemId, patchFields.responses ?? {}) };
   } else if (ctx.role === 'intern' && directFlow && patchFields.responses) {
-    // Direct flow: the project lead never overwrites the client's own answers (Part A).
+    // Direct flow: client-only keys sent with the stored value are dropped (a change was refused above).
     patch = { ...savable, responses: stripClientOnlyResponses(itemId, patchFields.responses, prevSlice) };
+  } else if (directFlow && patchFields.responses && isAdminOrManager(ctx.role)) {
+    // DR-02: a manager or admin save keeps no client-only key either, whoever the step is assigned to.
+    patch = { ...savable, responses: stripClientOnlyResponses(itemId, patchFields.responses) };
   } else if (ctx.role === 'client') {
     const {
       reviewStatus: _rs,
@@ -152,6 +174,16 @@ export async function applyChecklistPatch(
   if (stepFeedsExpiries(itemId)) {
     await syncExpiryItemsForEngagement(ctx, appOrDbEngagementId).catch((error) => {
       console.warn('[expiries] sync after checklist save failed', error instanceof Error ? error.message : error);
+    });
+  }
+
+  // SA-01: a staff member's acknowledgement number on Part A or Part B is the filing card's SRN
+  // too. Additive: a refused SRN (bad format) is logged and the checklist save stands.
+  const filingForm = filingFormForStep(itemId);
+  const nextSrn = patch.responses?.[SRN_FIELD_ID]?.trim();
+  if (filingForm && ctx.role !== 'client' && nextSrn && nextSrn !== prevSlice?.responses?.[SRN_FIELD_ID]?.trim()) {
+    await updateFiling(ctx, appOrDbEngagementId, filingForm, { srn: nextSrn }).catch((error) => {
+      console.warn('[mca-filing] SRN not copied to the filing record', error instanceof Error ? error.message : error);
     });
   }
 

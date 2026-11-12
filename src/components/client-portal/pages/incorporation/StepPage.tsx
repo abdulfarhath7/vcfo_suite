@@ -40,6 +40,7 @@ import { itemKey } from '@/lib/work/item-key';
 import { useApp } from '@/context/AppContext';
 import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';
 import { cn } from '@/lib/utils';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
@@ -47,7 +48,7 @@ import { StepLink, StepMark } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge } from '@/components/ui/file-badge';
 import { SkeletonRows } from '@/components/ui/empty-state';
-import { portalHref } from '../../routes';
+import { phaseHref, portalHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
@@ -66,12 +67,14 @@ import {
   type IncData,
 } from './data';
 import { stepFiles } from './StepTable';
+import { BOARD_RESOLUTION_STEPS, StepBoardResolution } from './StepBoardResolution';
 import { prefillNotes } from '@/lib/client-portal/step-progress';
 import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
 import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { StepEmailsSent } from '@/components/email/StepEmailsSent';
 import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 
 /* ---------------- answers ---------------- */
@@ -211,16 +214,20 @@ const PHASE_PART: Record<number, string> = { 1: 'SPICe+ Part A', 2: 'SPICe+ Part
 
 export default function StepPage({ stepParam }: { stepParam: string }) {
   const d = useIncData();
-  const { engagementsSettled } = useApp();
+  const { engagementsSettled, user } = useApp();
   const { go, openChat, toast } = usePortal();
   const goTo = useGo();
   const qc = useQueryClient();
   const viewer = useDocViewer();
-  const [panelOpen, togglePanel] = useSidePanelOpen(d.engagementId ? `client:${d.engagementId}` : null);
+  // GL-05: the open or closed panel is kept for each user, like on the staff step pages.
+  const [panelOpen, togglePanel] = useSidePanelOpen(user?.id);
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
-  usePortalCrumbs(s ? ['Incorporation', PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, s.title] : ['Incorporation', 'Step']);
+  /* NV-03: the SPICe+ part opens its phase page, so "SPICe+ Part A" goes back to Part A. */
+  usePortalCrumbs(
+    s ? ['Incorporation', { label: PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, href: phaseHref(s.phaseNo) }, s.title] : ['Incorporation', 'Step'],
+  );
   const catalog = useMemo(() => getActiveCatalogItems(), []);
   const ci = s ? catalog.findIndex((c) => c.id === s.id) : -1;
   const prev = ci > 0 ? d.model.byId[catalog[ci - 1]!.id] : undefined;
@@ -514,7 +521,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const docsDone = requests.filter((r) => r.fulfilledAt).length + otherFiles.length;
   const chip = stepChip(s);
   const late = s.late && k !== 'done';
-  const inPhase = phase.steps;
+  // SB-01: the side list runs Part B in MCA form order. Previous and next still follow the checklist.
+  const inPhase = orderByMcaSection(phase.steps, (y) => y.id);
   const portalLink = s.n !== 2 ? portalFor(s.item) : null;
   const forms = (s.item.forms ?? []).slice(0, 3).map(formLabel);
   const showDocs = view === 'docs' && docsCount > 0;
@@ -789,7 +797,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                   <StepMark state={markState(y)} tone={markTone(y)} label={ch.label} />
                 </span>
                 <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                  <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {y.n}</span>
+                  <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">{partBStepDisplayLabel(y.id, `Step ${y.n}`)}</span>
                   <span className={cn('truncate text-[14px] text-ink', cur ? 'font-medium' : 'font-normal')}>{y.title}</span>
                 </span>
                 <span className={cn('hidden flex-none text-[12px] font-medium sm:inline', ownerTone[y.owner])}>{o === 'You' ? d.short : o}</span>
@@ -814,7 +822,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                 <span className="font-mono text-[12.5px] text-ink-2">Step {s.n}</span>
                 <Dot />
                 <span>
-                  Phase {s.phaseNo} · {phase.name} · step {inPhase.indexOf(s) + 1} of {inPhase.length}
+                  Phase {s.phaseNo} · {phase.name} · step {phase.steps.indexOf(s) + 1} of {phase.steps.length}
                 </span>
                 {s.doneOn || s.due ? (
                   <>
@@ -857,6 +865,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           {/* GL-05: the side panel (phase steps) can be pushed aside for more room. */}
           <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
             <Col>
+              {/* BR-01, BR-02, BR-04: the draft, the signed copy and the client's edit on steps 2 and 3. */}
+              {BOARD_RESOLUTION_STEPS.has(s.id) && d.engagementId ? <StepBoardResolution engagementId={d.engagementId} stepId={s.id} /> : null}
               {stepForm ?? (docsCount > 0 ? (
                 <SpectrumTabs
                   variant="underline"
@@ -870,6 +880,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                 />
               ) : null)}
               {stepForm ? null : showDocs ? docsCard : answersCard}
+              {/* GL-07: who emailed this client about the step, when, to whom and the subject. */}
+              {d.engagementId ? <StepEmailsSent engagementId={d.engagementId} itemId={s.id} title="Emails sent to you about this step" /> : null}
             </Col>
             <SidePanelHandle open={panelOpen} onToggle={togglePanel} />
             <Col className={panelOpen ? undefined : 'lg:hidden'}>{rail}</Col>

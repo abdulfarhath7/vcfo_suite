@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createAgentRunSchema, proposePatchSchema, updateAgentRunSchema } from './api-schemas';
-import { appendSrn, srnLine } from './record-srn';
+import { srnToWrite } from './record-srn';
 
 describe('assist agent request bodies', () => {
   it('accepts progress with heals and an SRN, upper-casing the SRN', () => {
@@ -53,14 +53,14 @@ describe('labels-only check reads text fields, never ids', () => {
   });
 });
 
-describe('SRN write-back text', () => {
-  const at = new Date('2026-11-09T10:00:00Z');
-  it('appends one line and never replaces the lead’s note', () => {
-    expect(appendSrn(undefined, 'AA1234567', at)).toBe(srnLine('AA1234567', at));
-    expect(appendSrn('Filed after client call.', 'AA1234567', at)).toBe('Filed after client call.\nSRN AA1234567 (VCFO Assist, 2026-11-09)');
+describe('SRN write-back value (SA-01)', () => {
+  it('fills an empty acknowledgement number with the SRN', () => {
+    expect(srnToWrite(undefined, 'AA1234567')).toEqual({ write: 'AA1234567' });
+    expect(srnToWrite('  ', 'AA1234567')).toEqual({ write: 'AA1234567' });
   });
-  it('writes nothing when the note already names the SRN', () => {
-    expect(appendSrn('SRN AA1234567 filed', 'AA1234567', at)).toBeNull();
+  it('never replaces a number the lead typed', () => {
+    expect(srnToWrite('aa1234567', 'AA1234567')).toEqual({ keep: 'same' });
+    expect(srnToWrite('BB7654321', 'AA1234567')).toEqual({ keep: 'differs' });
   });
 });
 

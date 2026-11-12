@@ -350,7 +350,8 @@ function managerItems(staffBase: string): NavEntry[] {
 const INTERN_CLIENTS = '/app/lead/clients';
 
 /* R-51: the lead always sees Compliances; with no incorporated client the pages show
-   "No incorporated clients yet" instead of sending the lead to Today. */
+   "No incorporated clients yet" instead of sending the lead to Today. The Calendar is the
+   exception: it still opens on the full statutory calendar (12 Nov 2026). */
 const internItems: NavEntry[] = [
   { to: '/app/lead/today', label: 'Today', icon: LayoutDashboard, iconTone: TONE.home },
   { to: '/app/lead/tasks', label: 'Work', icon: ListChecks, iconTone: TONE.work },

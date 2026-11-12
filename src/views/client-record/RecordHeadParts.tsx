@@ -3,7 +3,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { RecordStat } from '@/components/incorporation/RecordHead';
@@ -265,11 +264,3 @@ export function RecordDocumentsButton({ engagement, onOpen }: { engagement: Enga
   );
 }
 
-/**
- * PR-02: "Download project (ZIP)" beside the project name, for staff. It opens the "Download
- * documents" pop-up with every ready document and project record ticked; a large set is made in
- * the background and the bell gives the link.
- */
-export function ProjectZipButton({ engagementId }: { engagementId: string }) {
-  return <DownloadDocumentsButton engagementId={engagementId} selectAll label="Download project (ZIP)" testId="project-zip" />;
-}

@@ -57,9 +57,10 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - The filing tracker lives on `<base>/compliance/tracker` for intern, admin,
   and manager alike (header “Filing tracker” link on the calendar). The old
   admin/manager in-page tabs are gone.
-- Deadline scoping: admin/super see the full master calendar; managers and
-  leads only see deadlines that apply to a client in their role-scoped
-  portfolio (`deadlineAppliesTo` over `engagements`, which the API scopes).
+- Deadline scoping (changed 2026-11-12, owner): every role, clients included, sees every
+  deadline of the year on the statutory calendar, whatever companies they hold and even with
+  none. Nothing is filtered by `deadlineAppliesTo` any more; people narrow it themselves with the
+  act tabs (All, GST, IT, ...), the legend, and All / Overdue.
 - Layout is two panels: the month's deadlines grouped by date on the left
   (`.stat-cal-list`), a compact month navigator + legend on the right
   (`.stat-cal-nav`, sticky from `lg`). The old FY heat strip and the act chip
@@ -99,3 +100,40 @@ Gotchas already paid for once. Append when something costs more than a minute to
   The unit test round-trips all 241 built-in rows through the template.
 - `deadline.id` stays `sd-<date>-<position>`, so Watch's moved-deadline lines (`withMovedDeadlines`)
   still apply to imported years.
+
+## Full statutory calendar for every role (2026-11-12)
+
+- The owner asked that every role sees every deadline of the file by default. So the SBC
+  statutory calendar (`useStatutoryCalendar` for the year in view) is merged into the Month and
+  Year views of the staff page (`ComplianceCalendarView`, marks labelled "GST · GSTR-1", a
+  `SbcPopRow` in the day popover, rows in the Excel export) and of the client portal
+  (`CalendarPage`, as `SbcRow`s from `sbcAsRow` in `tasks.ts`, which open nothing).
+- Area tabs: on staff, `statutoryArea` maps an act to the register's area name (IT to "Income
+  Tax", MCA to "Companies Act, 2013" or "LLP Act", LABOUR to "Labour Laws", FEMA to "FEMA / RBI");
+  STPI/SEZ, RERA and Transfer Pricing keep their own names (`SBC_OWN_AREAS`), because the
+  regulator words would show STPI/SEZ as a second "FEMA". On the portal, STPI/SEZ counts under
+  FEMA, TP under Income tax, LABOUR under Payroll, and RERA under All only.
+- `StatutoryCalendar` (By act) no longer filters by company or role, and has act tabs over its
+  list that share `mutedActs` with the legend. A lead with no incorporated client gets the
+  Calendar page; the other Compliances pages keep "No incorporated clients yet".
+- The import buttons (`StatutoryCalendarImport`, which works out its own default year from the
+  GET response) are in the page's top bar, not inside By act, so the admin finds them on Month.
+- Timeline keeps filings only: the file's deadlines have no start dates to draw a window from.
+- The client's "Your compliances haven't started yet" note shows only on a month with nothing on
+  it, as the file's deadlines fill the month before incorporation.
+
+## Admin calendar toolbar (2026-11-12, toolbar idea A)
+
+- The owner chose idea A for the Compliances calendar toolbar, for the admin only ("admin contains
+  more options"): row one is the month picker, the FY chip and the view switch; row two is the
+  company picker, a Category dropdown, an Acts dropdown (`AreaFilterMenu`: tick several acts, each
+  with its dot and count, Clear for all), Filings, and one "Calendar file" menu
+  (`StatutoryCalendarImport`) with Download template, Download FY filled in, Import calendar and
+  Export to Excel. Every other role keeps the tab toolbar. The switch is `compactBar`
+  (`canImport` from GET /api/statutory-calendar), in the same `ComplianceCalendarView`.
+- The area filter is a list now (`areaPick`, none = all); the tab toolbar sets one area at a time.
+- The app's `DropdownMenuItem` cannot take `asChild` (it appends a shortcut slot after its
+  children), so the download items call `window.location.assign` on the template route, which
+  answers as an attachment and leaves the page where it is.
+- `useExcelExport` (src/hooks/use-excel-export.ts) is the export behind `ExportToExcelButton`, for
+  a menu item that exports the same way.

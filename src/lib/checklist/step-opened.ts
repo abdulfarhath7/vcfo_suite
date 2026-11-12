@@ -18,3 +18,15 @@ export function shouldAnnounceStepOpened(itemId: string, state: State): boolean 
   if (isDirectFlowStepComplete(itemId, slice ?? null)) return false;
   return sequentialLockMessage(itemId, state) === null;
 }
+
+/**
+ * DR-03: true when the Lead's step page shows "Send email" for the step-opened email. Only the
+ * Lead (`intern`) sends it (owner decision), only on an announced step, and only while the step
+ * is open and not yet complete.
+ */
+export function canSendStepOpenedEmail(role: string | null | undefined, itemId: string, state: State): boolean {
+  if (role !== 'intern') return false;
+  if (!ANNOUNCED_ON_OPEN_STEP_IDS.includes(itemId)) return false;
+  if (isDirectFlowStepComplete(itemId, state?.[itemId] ?? null)) return false;
+  return sequentialLockMessage(itemId, state) === null;
+}

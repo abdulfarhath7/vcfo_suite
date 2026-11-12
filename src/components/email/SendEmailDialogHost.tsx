@@ -1,5 +1,7 @@
 'use client';
 
+import { readFileBase64 } from '@/lib/files/read-base64';
+import { announceEmailSent } from '@/components/email/StepEmailsSent';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -21,13 +23,6 @@ function addresses(value: string): string[] {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-async function readBase64(file: File): Promise<string> {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < buf.length; i += 0x8000) binary += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-  return btoa(binary);
-}
 
 /**
  * GL-07: the one "Send email" pop-up. A card action opens it through `requestEmailSend`; it loads
@@ -101,7 +96,7 @@ export function SendEmailDialogHost() {
     setSending(true);
     try {
       const addAttachments = await Promise.all(
-        added.map(async (f) => ({ filename: f.name, contentType: f.type || undefined, contentBase64: await readBase64(f) })),
+        added.map(async (f) => ({ filename: f.name, contentType: f.type || undefined, contentBase64: await readFileBase64(f) })),
       );
       const email = {
         to: toList,
@@ -123,6 +118,7 @@ export function SendEmailDialogHost() {
         return;
       }
       toast.success(`Email sent to ${toList.length} ${toList.length === 1 ? 'person' : 'people'}.`);
+      announceEmailSent();
       close(true, json);
     } catch {
       toast.error('The email did not send. Try again.');

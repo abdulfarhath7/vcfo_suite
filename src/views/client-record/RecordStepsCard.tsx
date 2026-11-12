@@ -17,8 +17,10 @@ import {
   internOverviewPhases,
   internPhaseStepCounts,
 } from '@/lib/intern/intern-overview-progress';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { recordStepPlace } from '@/views/client-record/RecordHeadParts';
 import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
+import { useLatestSentEmailByStep } from '@/components/email/StepEmailsSent';
 
 /** The record's names for the four phases (prototype `PHASE_LABEL`); the timeline card uses the same words. */
 const PHASE_LABEL: Record<string, string> = {
@@ -58,6 +60,8 @@ export function RecordStepsCard({
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const phases = useMemo(() => internOverviewPhases(), []);
+  // GL-07: each step card shows who last emailed from it, when, to whom and the subject.
+  const lastEmails = useLatestSentEmailByStep(engagement.id);
   const model = useMemo(() => buildIncorporationModel(state, engagement.schedule ?? null, today), [state, engagement.schedule, today]);
   const now = useMemo(() => internOverviewNow(gates), [gates]);
   const [about, setAbout] = useState<{ id: string; label: string } | null>(null);
@@ -82,13 +86,14 @@ export function RecordStepsCard({
       gate={getStepGate(gates, it.id)}
       engagement={engagement}
       onOpen={onOpen}
-      stepLabel={recordStepPlace(it.id)?.code}
+      stepLabel={partBStepDisplayLabel(it.id, recordStepPlace(it.id)?.code)}
       facts={model.byId[it.id]}
       leadName={leadName}
-      onAbout={(item) => setAbout({ id: item.id, label: recordStepPlace(item.id)?.code ?? `Step ${index + 1}` })}
+      onAbout={(item) => setAbout({ id: item.id, label: partBStepDisplayLabel(item.id, recordStepPlace(item.id)?.code ?? `Step ${index + 1}`) })}
       connector={index < count - 1}
       connectorAbove={above ? (getStepGate(gates, above.id).kind === 'done' ? 'done' : 'todo') : undefined}
       today={today}
+      lastEmail={lastEmails.get(it.id)}
     />
   );
 
@@ -140,7 +145,9 @@ export function RecordStepsCard({
               </>
             );
           }
-          return <div className="flex flex-col">{phase.items.map((it, i) => row(it, i, phase.items.length, phase.items[i - 1]))}</div>;
+          // SB-01: Part B is listed in MCA form order; the gates still follow the checklist order.
+          const shown = orderByMcaSection(phase.items, (it) => it.id);
+          return <div className="flex flex-col">{shown.map((it, i) => row(it, i, shown.length, shown[i - 1]))}</div>;
         }}
       </InternPhaseTabs>
       <StepAboutPanel

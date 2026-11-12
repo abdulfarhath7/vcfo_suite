@@ -29,9 +29,8 @@ import {
   type AuditResultWord,
   auditEventTitle,
 } from '@/views/admin/audit-log/audit-filters';
-import { AUDIT_EXPORT_HEAD, auditEventCells, auditEventsCsv, downloadCsv } from '@/views/admin/audit-log/audit-csv';
+import { auditCsvHref } from '@/views/admin/audit-log/audit-csv';
 import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
-import { logBrowserExport } from '@/lib/exports/log-export-client';
 
 /** Plain date and time, for example "14 Oct 10:42" (R-05); the year shows only when it is not this year. */
 function plainWhen(iso: string): string {
@@ -316,6 +315,7 @@ export function AuditTable({
   onLoadOlder,
   loadingOlder = false,
   recordHref,
+  engagementId = null,
 }: {
   title: string;
   events: AuditEventRow[];
@@ -332,6 +332,8 @@ export function AuditTable({
   loadingOlder?: boolean;
   /** The record an event belongs to (its project), for the panel's footer link; null when there is none. */
   recordHref?: (ev: AuditEventRow) => string | null;
+  /** The project of the "By project" tab, so the Excel export reads that project's events. */
+  engagementId?: string | null;
 }) {
   const [picked, setPicked] = useState<AuditEventRow | null>(null);
   const [day, setDay] = useState<string | null>(null);
@@ -443,17 +445,18 @@ export function AuditTable({
             filters={filters}
             onChange={onFiltersChange}
             events={events}
-            onExport={() => {
-              const csv = auditEventsCsv(filtered, engagementsByDbId);
-              downloadCsv(csv, exportName);
-              logBrowserExport('audit_log', exportName, csv);
-            }}
+            onExport={() =>
+              // The server builds the CSV from every event the filters keep, not only the pages
+              // loaded here, and logs it (the same source as the Excel export).
+              window.location.assign(auditCsvHref({ engagementId, filters, name: exportName, client: engagementId ? title : null }))
+            }
           />
-          {/* GL-06: beside the CSV export, the same columns over every event the filters keep. */}
+          {/* GL-06: beside the CSV export, the same columns over every event the filters keep. The
+              server reads every page with the viewer's scope, not only the pages loaded here. */}
           <ExportToExcelButton
             title={title}
-            columns={AUDIT_EXPORT_HEAD}
-            rows={() => filtered.map((ev) => auditEventCells(ev, engagementsByDbId))}
+            client={engagementId ? title : null}
+            source={{ source: 'audit-log', engagementId, filters }}
           />
         </div>
       </header>

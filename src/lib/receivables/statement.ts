@@ -1,4 +1,5 @@
 import { addDaysIso, monthStart } from './dates';
+import { standardDownloadName } from '@/lib/files/download-name';
 import type { SheetInvoice } from './model';
 
 /**
@@ -183,7 +184,7 @@ export function buildStatement(rows: readonly StatementSourceRow[], query: State
   };
 }
 
-/** "Statement Duravant 01-Aug-26 to 03-Nov-26.xlsx" style file name, safe for a header. */
-export function statementFileName(orgOrClient: string, from: string, to: string): string {
-  return `Statement ${orgOrClient} ${from} to ${to}.xlsx`.replace(/[^\w .-]/g, '');
+/** The standard download name (GL-08), with the period: `Statement-2026-09-01-to-2026-09-30_Duravant_11-11-2026.xlsx`. */
+export function statementFileName(orgOrClient: string, from: string, to: string, on: Date = new Date()): string {
+  return standardDownloadName(`Statement ${from} to ${to}`, orgOrClient, 'xlsx', on);
 }

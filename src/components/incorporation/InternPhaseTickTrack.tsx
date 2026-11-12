@@ -2,6 +2,7 @@
 
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { getStepGate } from '@/lib/checklist/checklist-step-gate';
+import { orderByMcaSection } from '@/lib/checklist/part-b-sections';
 import { cn } from '@/lib/utils';
 import styles from './intern-engagement-overview.module.css';
 
@@ -29,7 +30,8 @@ export function InternPhaseTickTrack({
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       aria-hidden
     >
-      {items.map((item) => {
+      {/* SB-01: Part B ticks run in MCA form order, like the step lists. */}
+      {orderByMcaSection(items, (item) => item.id).map((item) => {
         const done = getStepGate(gates, item.id).kind === 'done';
         return (
           <span

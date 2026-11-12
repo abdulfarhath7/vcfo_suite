@@ -22,7 +22,7 @@ import { canSetScheduleWindows } from '@/lib/projects/schedule-windows';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
-  ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
+  RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
 
 /**
@@ -116,7 +116,6 @@ export default function ProjectDetail() {
             <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
             <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
             <DownloadDocumentsButton engagementId={eng.id} />
-            <ProjectZipButton engagementId={eng.id} />
           </div>
         </div>
         <RecordStats>

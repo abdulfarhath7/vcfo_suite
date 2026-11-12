@@ -76,6 +76,8 @@ export const TOAST_LIMIT = 3;
 /** GL-02: a toast closes after 3 seconds; an error (and a toast with Undo) stays 6 seconds. */
 export const TOAST_MS = 3000;
 export const TOAST_ERROR_MS = 6000;
+/** GL-02: the stack sits in a bottom corner, so `reverseOrder` puts the newest toast on top. */
+export const TOAST_NEWEST_ON_TOP = true;
 
 /** The ids to close so that only the newest `limit` visible toasts stay. Newest first in `toasts`. */
 export function toastsOverLimit<T extends { id: string; visible: boolean }>(toasts: T[], limit = TOAST_LIMIT): string[] {
@@ -95,6 +97,9 @@ export function HotToaster() {
   return (
     <Toaster
       position="bottom-left"
+      /* GL-02: the newest toast is on top. In a bottom corner react-hot-toast puts the newest
+         next to the edge (the bottom) unless the order is reversed. */
+      reverseOrder={TOAST_NEWEST_ON_TOP}
       gutter={10}
       containerStyle={{
         top: "calc(var(--shell-sticky-top) + 0.5rem)",

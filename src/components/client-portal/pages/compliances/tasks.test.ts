@@ -100,3 +100,21 @@ describe('expiries on the client calendar', () => {
     expect(dayWords([row, taskAsRow({ ...row.task, id: 't1', expiry: null })])).toBe('1 task · 1 expiry');
   });
 });
+
+describe('SBC statutory calendar rows', () => {
+  it('draws a deadline as a row that opens nothing, under its portal area tab', async () => {
+    const { sbcAsRow, sbcInArea, isSbcRow, isTaskRow, sbcTag } = await import('./tasks');
+    const gst = sbcAsRow({ id: 'sd-1', date: '2026-11-11', act: 'GST', title: 'GSTR-1' });
+    const rera = sbcAsRow({ id: 'sd-2', date: '2026-11-14', act: 'RERA', actLabel: 'TGRERA', title: 'QPR Q2' });
+    const pf = sbcAsRow({ id: 'sd-3', date: '2026-11-15', act: 'LABOUR', title: 'PF and ESI', note: 'By the 15th' });
+    expect(isSbcRow(gst)).toBe(true);
+    expect(isTaskRow(gst)).toBe(false);
+    expect(gst).toMatchObject({ id: 'sbc:sd-1', dueDate: '2026-11-11', filedOn: null, sbcArea: 'GST' });
+    expect(pf.period).toBe('By the 15th');
+    expect(sbcTag(rera.sbc)).toBe('TGRERA');
+    // RERA has no portal area, so it shows under All only.
+    expect(sbcInArea([gst, rera, pf], 'all')).toHaveLength(3);
+    expect(sbcInArea([gst, rera, pf], 'PAY')).toEqual([pf]);
+    expect(sbcInArea([gst, rera, pf], 'MCA')).toEqual([]);
+  });
+});

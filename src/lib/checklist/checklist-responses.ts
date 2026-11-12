@@ -110,7 +110,7 @@ function pre1ProposedDirectorFields(): ChecklistField[] {
         { value: '3', label: '3' },
         { value: '4', label: '4' },
       ],
-      helperText: 'A private company needs at least two directors, and at least one of them must live in India.',
+      helperText: 'A private limited company needs at least two directors and a one person company one; at least one of them must live in India.',
       required: true,
       // The director cards and the CD-03 grid need the full width of the form.
       layout: 'full',
@@ -171,7 +171,12 @@ function srnField(section: string): ChecklistField {
     helperText: 'The Service Request Number on the MCA acknowledgement of this filing.',
   };
 }
-/** The steps that file an application: RUN / SPICe+ Part A, SPICe+ Part B, ADT-1 and INC-20A. */
+/**
+ * The steps that file an application: RUN / SPICe+ Part A, SPICe+ Part B, ADT-1 and INC-20A. The
+ * other filings (FC-GPR on post-7, MGT-4/5/6 on post-8, INC-22 on post-11) already had a required
+ * SRN field of their own; they keep those ids, so stored answers stay where they are, and take
+ * the same label.
+ */
 export const SRN_STEP_IDS: ReadonlySet<string> = new Set(['pre-4', 'pre-10', 'post-2', 'post-6']);
 
 /**
@@ -1522,7 +1527,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'fcgprSrn',
-      label: 'RBI / FIRMS Acknowledgement / SRN',
+      label: `${SRN_LABEL} of FC-GPR`,
       type: 'text',
       section: 'FC-GPR Filing',
       placeholder: 'Filing reference or SRN',
@@ -1578,7 +1583,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'inc22Srn',
-      label: 'INC-22 SRN',
+      label: `${SRN_LABEL} of INC-22`,
       type: 'text',
       section: 'INC-22 Filing',
       placeholder: 'Service Request Number from MCA portal',
@@ -1603,7 +1608,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'mgt4Srn',
-      label: 'MGT-4 SRN',
+      label: `${SRN_LABEL} of MGT-4`,
       type: 'text',
       section: 'Nominee Shareholder',
       placeholder: 'Service Request Number from MCA portal',
@@ -1618,7 +1623,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'mgt5Srn',
-      label: 'MGT-5 SRN',
+      label: `${SRN_LABEL} of MGT-5`,
       type: 'text',
       section: 'Nominee Shareholder',
       placeholder: 'Service Request Number from MCA portal',
@@ -1633,7 +1638,7 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
     },
     {
       id: 'mgt6Srn',
-      label: 'MGT-6 SRN',
+      label: `${SRN_LABEL} of MGT-6`,
       type: 'text',
       section: 'Nominee Shareholder',
       placeholder: 'Service Request Number from MCA portal',

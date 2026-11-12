@@ -17,6 +17,10 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/app/manager/compliances/obligations',
 }));
 vi.mock('@/components/SEO', () => ({ SEO: () => null }));
+vi.mock('@/hooks/use-statutory-calendar', () => ({
+  useStatutoryCalendar: () => ({ data: { calendar: { deadlines: [] }, canImport: false, importableYears: [], years: [] } }),
+  useStatutoryCalendarImport: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 vi.mock('@/hooks/use-expiries', () => ({
   useExpiries: () => ({ data: [], isPending: false }),
   useMarkRenewed: () => ({ mutate: vi.fn(), isPending: false, isError: false }),

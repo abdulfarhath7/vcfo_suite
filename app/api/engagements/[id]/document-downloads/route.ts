@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { DOCX_CONTENT_TYPE, ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
+import { contentDisposition } from '../../../documents/_lib/object-response';
 import { bundleZipName, publicCatalog } from '@/lib/document-downloads/catalog';
 import {
+  downloadContentType,
   downloadZipStream,
   loadDownloadCatalog,
   openDownloadFile,
   pickDownloadFiles,
-  shouldBuildInBackground,
   type DownloadLayout,
 } from '@/lib/document-downloads/bundle';
 import { exportInBackground } from '@/lib/exports/background-export';
@@ -25,24 +25,6 @@ const BUNDLE_MAX_BYTES = 300 * 1024 * 1024;
 
 const NO_STORE = 'private, no-store, max-age=0, must-revalidate';
 
-const CONTENT_TYPES: Record<string, string> = {
-  docx: DOCX_CONTENT_TYPE,
-  pdf: 'application/pdf',
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  zip: ZIP_CONTENT_TYPE,
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-};
-
-function contentTypeFor(fileName: string): string {
-  return CONTENT_TYPES[fileName.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
-}
-
-function attachment(fileName: string): string {
-  return `attachment; filename="${fileName.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
-}
-
 /** GET /api/engagements/[id]/document-downloads: the tree the "Download documents" pop-up shows. */
 export async function GET(_request: Request, context: RouteContext) {
   const guard = await requireAnyRole(...STAFF);
@@ -55,8 +37,9 @@ export async function GET(_request: Request, context: RouteContext) {
 
 /**
  * POST /api/engagements/[id]/document-downloads with `{ keys, layout }`.
- * One file comes back as itself; a small set as a ZIP at once; a large set answers 202 and the
- * ZIP is made in the background, with a Download link in the bell when it is ready.
+ * One file comes back as itself. Two or more always answer 202: the ZIP is made in a background
+ * job, so the person keeps working, and the bell (with a toast while the page is open) gives the
+ * Download link when it is ready (PR-02).
  */
 export async function POST(request: Request, context: RouteContext) {
   const guard = await requireAnyRole(...STAFF);
@@ -76,7 +59,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const { engagement } = loaded.inputs;
-  const audit = (fileName: string, mode: 'file' | 'zip' | 'background') =>
+  const audit = (fileName: string, mode: 'file' | 'background') =>
     recordAuditEvent(guard.ctx, {
       engagementId: loaded.inputs.dbId,
       action: 'documents.download',
@@ -91,30 +74,21 @@ export async function POST(request: Request, context: RouteContext) {
     await audit(file.fileName, 'file');
     return new Response(new Uint8Array(bytes), {
       status: 200,
-      headers: { 'Content-Type': contentTypeFor(file.fileName), 'Content-Disposition': attachment(file.fileName), 'Cache-Control': NO_STORE },
+      headers: { 'Content-Type': downloadContentType(file.fileName), 'Content-Disposition': contentDisposition('attachment', file.fileName), 'Cache-Control': NO_STORE },
     });
   }
 
-  if (shouldBuildInBackground(picked)) {
-    const fileName = bundleZipName(loaded.catalog, picked.map((p) => p.file.key));
-    await audit(fileName, 'background');
-    exportInBackground(guard.ctx, {
-      kind: 'document_bundle',
-      format: 'zip',
-      fileName,
-      label: 'the documents ZIP',
-      engagementId: engagement.id,
-      companyName: engagement.companyName,
-      maxCopyBytes: BUNDLE_MAX_BYTES,
-      build: () => collectZipStream(downloadZipStream(loaded, picked, layout).stream),
-    });
-    return NextResponse.json({ queued: true, fileName, count: picked.length }, { status: 202 });
-  }
-
-  const zip = downloadZipStream(loaded, picked, layout);
-  await audit(zip.fileName, 'zip');
-  return new Response(zip.stream, {
-    status: 200,
-    headers: { 'Content-Type': ZIP_CONTENT_TYPE, 'Content-Disposition': attachment(zip.fileName), 'Cache-Control': NO_STORE },
+  const fileName = bundleZipName(loaded.catalog, picked.map((p) => p.file.key));
+  await audit(fileName, 'background');
+  exportInBackground(guard.ctx, {
+    kind: 'document_bundle',
+    format: 'zip',
+    fileName,
+    label: 'the documents ZIP',
+    engagementId: engagement.id,
+    companyName: engagement.companyName,
+    maxCopyBytes: BUNDLE_MAX_BYTES,
+    build: () => collectZipStream(downloadZipStream(loaded, picked, layout).stream),
   });
+  return NextResponse.json({ queued: true, fileName, count: picked.length }, { status: 202 });
 }

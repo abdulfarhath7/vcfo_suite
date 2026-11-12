@@ -16,12 +16,19 @@ export function RemindClientButton({
   title,
   onFailed,
   className,
+  purpose,
+  label = 'Remind',
+  doneLabel = 'Reminded',
 }: {
   engagementId: string;
   itemKey: string;
   title: string;
   onFailed?: () => void;
   className?: string;
+  /** DR-03: `step-opened` sends the "step is open" email (the Lead's "Send email" on Proposed directors). */
+  purpose?: 'reminder' | 'step-opened';
+  label?: string;
+  doneLabel?: string;
 }) {
   const { remind, pending, sent } = useRemindClient();
   const done = sent.has(itemKey);
@@ -35,11 +42,11 @@ export function RemindClientButton({
       onClick={async (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const outcome = await remind({ engagementId, itemKey, title });
+        const outcome = await remind({ engagementId, itemKey, title, purpose });
         if (outcome === 'failed') onFailed?.();
       }}
     >
-      {done ? 'Reminded' : 'Remind'}
+      {done ? doneLabel : label}
     </Button>
   );
 }

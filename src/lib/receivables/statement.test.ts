@@ -96,5 +96,5 @@ describe('parseStatementQuery', () => {
 });
 
 it('makes a safe file name', () => {
-  expect(statementFileName('Duravant / "US"', '2026-09-01', '2026-09-30')).toBe('Statement Duravant  US 2026-09-01 to 2026-09-30.xlsx');
+  expect(statementFileName('Duravant / "US"', '2026-09-01', '2026-09-30', new Date('2026-11-11T06:00:00Z'))).toBe('Statement-2026-09-01-to-2026-09-30_Duravant-US_11-11-2026.xlsx');
 });

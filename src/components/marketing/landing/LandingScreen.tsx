@@ -1,11 +1,11 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- the landing logo is a fixed-size image */
-/* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role -- the journey and 180-day list rows are click-through items (role="button", tabIndex 0, Enter and Space handled on the root), kept as list items so the lists still read as lists */
+/* eslint-disable @next/next/no-img-element -- the landing shows fixed screenshots at their own sizes, as the old v6 landing did */
+/* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role -- the journey and 45-day list rows are click-through items (role="button", tabIndex 0, Enter and Space handled on the root), kept as list items so the lists still read as lists */
 import "./landing.css";
 import * as React from "react";
 import Link from "next/link";
 import { SIGN_IN_HREF, SWAP_WORDS } from "./content";
-import { CompareSection, HeroArt, Ic, SwapWord } from "./LandingParts";
+import { CompareSection, ComplianceRing, Ic, SwapWord } from "./LandingParts";
 import { st, useLandingMotion } from "./landing-motion";
 import { playIntro } from "./intro";
 import { AskGuide } from "./AskGuide";
@@ -31,10 +31,9 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
   const openDemo = () => setDemo(true);
   const closeMenu = () => setMenu(false);
   const heroReady = intro !== "pre";
-  // LP-03: the hero picture follows the rotating headline word.
-  const [wordIndex, setWordIndex] = React.useState(0);
   // LP-01: the theme lives on <html> (set before paint by app/page.tsx); this mirrors it for the toggle.
-  const [dark, setDark] = React.useState(false);
+  // Dark is the default; a visitor who picks light keeps it on this device.
+  const [dark, setDark] = React.useState(true);
   React.useEffect(() => setDark(document.documentElement.dataset.lpTheme === "dark"), []);
   const toggleTheme = () => {
     const next = !dark;
@@ -96,8 +95,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           </a>
           <nav className="nav-links" aria-label="Primary">
             <a href="#journey">How it works</a>
-            <a href="#record">The record</a>
-            <a href="#trust">Security</a>
+            <a href="#incorporate">Incorporation</a>
+            <a href="#comply">Compliance</a>
             <a href="#faq">FAQ</a>
           </nav>
           <div className="nav-actions">
@@ -115,8 +114,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         </div>
         <div className="nav-mobile container" id="nav-mobile">
           <a onClick={closeMenu} href="#journey">How it works</a>
-          <a onClick={closeMenu} href="#record">The record</a>
-          <a onClick={closeMenu} href="#trust">Security</a>
+          <a onClick={closeMenu} href="#incorporate">Incorporation</a>
+          <a onClick={closeMenu} href="#comply">Compliance</a>
           <a onClick={closeMenu} href="#faq">FAQ</a>
           <Link onClick={closeMenu} href={SIGN_IN_HREF}>Sign in</Link>
         </div>
@@ -132,7 +131,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container hero-grid">
           <div className="hero-copy">
             <p className="kicker enter d1">Incorporate. Register. Comply.</p>
-            <h1 className="h1 enter d2">Your complete <span className="swap-line"><SwapWord words={SWAP_WORDS} start={heroReady} onWord={setWordIndex} /></span> companion.</h1>
+            <h1 className="h1 enter d2">Your complete <span className="swap-line"><SwapWord words={SWAP_WORDS} start={heroReady} /></span> companion.</h1>
             <p className="lead enter d3">One record from the first form to every filing after. Your firm runs it. Your clients see it.</p>
             <div className="hero-ctas enter d4">
               <button className="btn btn-primary" type="button" onClick={openDemo}>Book a demo <span className="icon"><Ic><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></Ic></span></button>
@@ -141,11 +140,10 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             </div>
           </div>
           <div className="hero-shot enter d4">
-            {/* LP-02: no screenshot of the product; an abstract picture of the benefit. */}
-            <div className="float float-a" aria-hidden="true"><span className="pill pill-positive">Filed</span><span className="t"><span>On time, with proof</span></span></div>
-            <div className="float float-b" aria-hidden="true"><span className="pill pill-highlight">Needs you</span><span className="t"><span>One thing left to do</span></span></div>
-            <div className="frame frame-art">
-              <HeroArt active={wordIndex} />
+            <div className="float float-a" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-positive">Filed</span><span className="t"><span>GSTR-3B, September</span><span className="mono">Acknowledgement attached</span></span></div>
+            <div className="float float-b" data-app="inc-step-7" aria-label="Book a demo to see step 7, registered office address" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-highlight">Needs you</span><span className="t"><span>Utility bill for the office</span><span className="mono">Due 9 Oct</span></span></div>
+            <div className="frame" data-app="incorporation" aria-label="Book a demo to see the incorporation screen" role="button" aria-haspopup="dialog" tabIndex={0}>
+              <img src="/landing/hero-incorporation.webp" alt={"VCFO Suite client portal, incorporation view: days to the Certificate of Incorporation, steps done, the current steps with who holds each one, what is up next and the incorporation status."} width="2400" height="1376" fetchPriority="high" />
             </div>
           </div>
         </div>
@@ -156,7 +154,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container">
           <div className="facts-grid reveal">
             <div className="fact" data-stagger style={st("--i:0")} data-app="incorporation" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="25">0</div><p className="what">steps in every incorporation, from the name application to the post-incorporation filings. Registrations have their own page.</p></div>
-            <div className="fact" data-stagger style={st("--i:1")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="23">0</div><p className="what">registrations and RBI reportings after the certificate, from PAN and GST to FC-GPR.</p></div>
+            <div className="fact" data-stagger style={st("--i:1")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="24">0</div><p className="what">registrations and RBI reportings after the certificate, from PAN and GST to FC-GPR.</p></div>
             <div className="fact" data-stagger style={st("--i:2")} data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="6">0</div><p className="what">regulators on one statutory calendar: MCA, GST, Income tax, Payroll, FEMA and Labour.</p></div>
             <div className="fact" data-stagger style={st("--i:3")} data-app="audit" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="1">0</div><p className="what">record that the client, the parent entity and the firm all read, with the same status words.</p></div>
           </div>
@@ -172,7 +170,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <p className="body">Four stages happen once. The calendar repeats every year. The firm runs every step; the client sees every step, with who holds it and when it is due.</p>
           </div>
           <div className="journey reveal" data-reveal="journey">
-            <svg viewBox="-30 0 1180 230" role="img" aria-label="The journey: name and papers, incorporation, certificate of incorporation, the first 180 days, registrations, then compliance every year.">
+            <svg viewBox="-30 0 1180 230" role="img" aria-label="The journey: name and papers, incorporation, certificate of incorporation, the first 45 days, registrations, then compliance every year.">
               <path className="line-glow" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80" />
               <path className="line" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80" />
               <g className="node" style={st("--i:0")} data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}>
@@ -190,11 +188,11 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               </g>
               <g className="node" style={st("--i:3")} data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="672" cy="80" r="30" /><circle className="c" cx="672" cy="80" r="18" /><text className="n" x="672" y="85">3</text>
-                <text className="t" x="672" y="30">The first 180 days</text><text className="s" x="672" y="48">11 steps with statutory clocks</text><text className="w" x="672" y="14">FIRM</text>
+                <text className="t" x="672" y="30">The first 45 days</text><text className="s" x="672" y="48">11 steps with statutory clocks</text><text className="w" x="672" y="14">FIRM</text>
               </g>
               <g className="node" style={st("--i:4")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="876" cy="130" r="30" /><circle className="c" cx="876" cy="130" r="18" /><text className="n" x="876" y="135">4</text>
-                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">23 items, only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
+                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">24 items, only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
               </g>
               <g className="node loop" style={st("--i:5")} data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="1080" cy="80" r="30" /><circle className="c" cx="1080" cy="80" r="18" />
@@ -206,12 +204,223 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               <li data-n="1" data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}><b>Name and papers</b><span>5 steps, about 2 weeks. Client and firm.</span></li>
               <li data-n="2" data-app="inc-phase" role="button" aria-haspopup="dialog" tabIndex={0}><b>Incorporation</b><span>11 steps, SPICe+ with MCA. Firm and MCA.</span></li>
               <li className="coi" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><b>Certificate of Incorporation</b><span>Day 0. CIN, PAN and TAN arrive.</span></li>
-              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 180 days</b><span>11 steps with statutory clocks. The firm.</span></li>
-              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>23 items, only the ones that apply. The firm.</span></li>
+              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 45 days</b><span>11 steps the law gives up to 180 days for. The firm.</span></li>
+              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>24 items, only the ones that apply. The firm.</span></li>
               <li className="loop" data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}><b>Compliance, every year</b><span>Monthly, quarterly and annual filings. Firm and client.</span></li>
             </ol>
           </div>
-          <p className="caption reveal"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" /></Ic></span>Every stage shows the same three things: who holds it, when it is due, and the document that proves it.</p>
+          <p className="caption reveal"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="1" /></Ic></span>Every node on this line is a page in the portal, and every step on that page shows the same three things: who holds it, when it is due, and the document that proves it.</p>
+        </div>
+      </section>
+
+      {/* Incorporation story */}
+      <section className="section" id="incorporate">
+        <div className="container">
+          <div className="section-head reveal">
+            <span className="stage"><b>1</b>Stages 1 and 2</span>
+            <h2 className="h2">From a name on a wish list to a certificate from MCA.</h2>
+            <p className="body">Sixteen steps pass between the client, the firm and the Ministry of Corporate Affairs. The diagram follows one document at a time. Scroll, and watch it move.</p>
+          </div>
+          <div className="story" data-story>
+            <div className="story-steps">
+              <div className="story-step" data-step="1">
+                <h3 className="h3">The client tells you about the company</h3>
+                <p>Names they like, the directors, the share capital, the registered office and the parent company. One questionnaire, answered once. Every document after this is generated from it.</p>
+                <div className="whos"><span className="who who-you"><i>C</i>Client</span><span className="who who-sbc"><i>F</i>Firm reviews</span></div>
+              </div>
+              <div className="story-step" data-step="2">
+                <h3 className="h3">A board resolution, drafted and signed</h3>
+                <p>You draft the resolution from their answers. The client prints it on the parent letterhead, signs, and uploads. The project lead checks it the same day.</p>
+                <div className="whos"><span className="who who-sbc"><i>F</i>Firm drafts</span><span className="who who-you"><i>C</i>Client signs</span></div>
+              </div>
+              <div className="story-step" data-step="3">
+                <h3 className="h3">The name is reserved with MCA</h3>
+                <p>You file the name application. MCA usually answers within a week, and the approved name is held for 20 days while the rest is prepared.</p>
+                <div className="whos"><span className="who who-sbc"><i>F</i>Firm files</span><span className="who who-mca"><i>M</i>MCA approves</span></div>
+              </div>
+              <div className="story-step" data-step="4">
+                <h3 className="h3">Documents generated, signed with a digital signature</h3>
+                <p>The memorandum, the articles, each director&apos;s consent (DIR-2) and declaration (INC-9), the subscriber sheets: all generated, not retyped. Directors get a digital signature and sign.</p>
+                <div className="whos"><span className="who who-sbc"><i>F</i>Firm generates</span><span className="who who-you"><i>C</i>Directors sign</span></div>
+              </div>
+              <div className="story-step" data-step="5">
+                <h3 className="h3">SPICe+ filed, certificate issued</h3>
+                <p>You file SPICe+ Part B with AGILE-PRO-S. If MCA raises remarks, you answer them. Then the Certificate of Incorporation arrives with the CIN, PAN and TAN, and the clock for stage 3 starts.</p>
+                <div className="whos"><span className="who who-sbc"><i>F</i>Firm files</span><span className="who who-mca"><i>M</i>MCA issues</span></div>
+              </div>
+            </div>
+            <div className="story-stage">
+              <div className="card stage-panel">
+                <svg className="swim" viewBox="0 0 600 560" role="img" aria-label="Swimlane diagram with three columns, Client, Firm and MCA, showing how documents move between them during incorporation.">
+                  <defs>
+                    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path className="ah" d="M 0 0 L 10 5 L 0 10 z" /></marker>
+                    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path className="ah2" d="M 0 0 L 10 5 L 0 10 z" /></marker>
+                  </defs>
+                  {/* columns */}
+                  <rect className="col-h" x="20" y="14" width="160" height="34" rx="8" /><text className="col-t" x="100" y="36">CLIENT</text>
+                  <rect className="col-h" x="220" y="14" width="160" height="34" rx="8" /><text className="col-t" x="300" y="36">FIRM</text>
+                  <rect className="col-h" x="420" y="14" width="160" height="34" rx="8" /><text className="col-t" x="500" y="36">MCA</text>
+                  <line className="lane" x1="100" y1="60" x2="100" y2="548" /><line className="lane" x1="300" y1="60" x2="300" y2="548" /><line className="lane" x1="500" y1="60" x2="500" y2="548" />
+                  {/* step 1: questionnaire */}
+                  <g className="sg s1">
+                    <rect className="doc" x="30" y="72" width="140" height="58" rx="8" />
+                    <line className="doc-l" x1="46" y1="90" x2="140" y2="90" /><line className="doc-l" x1="46" y1="102" x2="118" y2="102" /><line className="doc-l" x1="46" y1="114" x2="130" y2="114" />
+                    <text className="lbl" x="100" y="148" textAnchor="middle">Company details</text>
+                    <path className="arrow" d="M 176 101 L 222 101" />
+                    <rect className="doc" x="228" y="83" width="144" height="36" rx="8" />
+                    <text className="lbl" x="300" y="105" textAnchor="middle">Firm reviews</text>
+                  </g>
+                  {/* step 2: board resolution */}
+                  <g className="sg s2">
+                    <rect className="doc" x="225" y="166" width="150" height="48" rx="8" />
+                    <text className="lbl" x="300" y="186" textAnchor="middle">Board resolution</text><text className="sub" x="300" y="202" textAnchor="middle">drafted from the answers</text>
+                    <path className="arrow back" d="M 219 190 L 181 190" />
+                    <rect className="doc" x="25" y="166" width="150" height="48" rx="8" />
+                    <text className="lbl" x="100" y="186" textAnchor="middle">Signed, uploaded</text><text className="sub" x="100" y="202" textAnchor="middle">on letterhead</text>
+                    <circle className="badge" cx="171" cy="168" r="9" /><path className="tick" d="M 167 168 l 3 3 l 5.5 -6" />
+                  </g>
+                  {/* step 3: name reservation */}
+                  <g className="sg s3">
+                    <rect className="doc" x="225" y="242" width="150" height="48" rx="8" />
+                    <text className="lbl" x="300" y="262" textAnchor="middle">Name application</text><text className="sub" x="300" y="278" textAnchor="middle">RUN, Part A</text>
+                    <path className="arrow" d="M 381 266 L 419 266" />
+                    <rect className="badge" x="425" y="242" width="150" height="48" rx="8" />
+                    <text className="badge-t" x="500" y="262">Name approved</text><text className="sub" x="500" y="278" textAnchor="middle">held for 20 days</text>
+                  </g>
+                  {/* step 4: generated documents + DSC */}
+                  <g className="sg s4">
+                    <rect className="doc" x="231" y="318" width="150" height="48" rx="8" transform="rotate(-5 306 342)" />
+                    <rect className="doc" x="228" y="321" width="150" height="48" rx="8" transform="rotate(-2.5 303 345)" />
+                    <rect className="doc" x="225" y="324" width="150" height="48" rx="8" />
+                    <text className="lbl" x="300" y="344" textAnchor="middle">MOA, AOA, DIR-2</text><text className="sub" x="300" y="360" textAnchor="middle">INC-9, declarations</text>
+                    <path className="arrow back" d="M 219 348 L 181 348" />
+                    <rect className="doc" x="25" y="324" width="150" height="48" rx="8" />
+                    <text className="lbl" x="100" y="344" textAnchor="middle">Signed with DSC</text><text className="sub" x="100" y="360" textAnchor="middle">each director</text>
+                    <circle className="badge" cx="171" cy="326" r="9" /><path className="tick" d="M 167 326 l 3 3 l 5.5 -6" />
+                  </g>
+                  {/* step 5: SPICe+ and certificate */}
+                  <g className="sg s5">
+                    <rect className="doc" x="225" y="400" width="150" height="48" rx="8" />
+                    <text className="lbl" x="300" y="420" textAnchor="middle">SPICe+ Part B</text><text className="sub" x="300" y="436" textAnchor="middle">with AGILE-PRO-S</text>
+                    <path className="arrow" d="M 381 424 L 500 424 L 500 456" />
+                    <rect className="cert-glow" x="418" y="460" width="164" height="88" rx="14" />
+                    <rect className="cert" x="428" y="468" width="144" height="72" rx="10" />
+                    <text className="lbl" x="500" y="492" textAnchor="middle">Certificate</text>
+                    <text className="sub" x="500" y="508" textAnchor="middle">of Incorporation</text>
+                    <text className="sub" x="500" y="526" textAnchor="middle" style={st("font-family: var(--lp-font-mono); font-size: 10px; letter-spacing: .06em")}>CIN · PAN · TAN</text>
+                    <circle className="badge" cx="568" cy="470" r="9" /><path className="tick" d="M 564 470 l 3 3 l 5.5 -6" />
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Post-incorporation timeline */}
+      <section className="section" id="after">
+        <div className="glow glow-info" style={st("width:700px;height:500px;left:-200px;top:20%")}></div>
+        <div className="container">
+          <div className="section-head reveal">
+            <span className="stage"><b>3</b>Stage 3</span>
+            <h2 className="h2">The first 45 days after the certificate.</h2>
+            <p className="body">The law gives up to 180 days for some of these steps. The firm closes all eleven in about 45, and the portal still counts every statutory deadline and sends a reminder before each one runs out.</p>
+            <div className="tl-stats"><span className="pill pill-brand">11 steps</span><span className="pill pill-positive">Done in about 45 days</span><span className="pill pill-neutral">The law allows up to 180</span></div>
+          </div>
+          <div className="tl reveal" data-reveal="tl" aria-label="Timeline of the first 45 days after incorporation">
+            <div className="axis"><div className="axis-fill"></div>
+              <span className="tick" style={st("left:0%")}>DAY 0</span><span className="tick" style={st("left:15.6%")}>7</span><span className="tick" style={st("left:33.3%")}>15</span><span className="tick" style={st("left:66.7%")}>30</span><span className="tick" style={st("left:100%")}>DAY 45</span>
+            </div>
+            <div className="pin coi up first" style={st("left:0%;--i:0")}><div className="card pc" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>CIN, PAN and TAN arrive. Every clock starts today.</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin down" style={st("left:15.6%;--i:1")}><div className="card pc" data-app="inc-step-17" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 7</span><b>Bank account, letterhead and name board</b><span>The account opens as soon as the bank clears KYC.</span><span className="law">Law: 30 days · bank: no clock</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin up" style={st("left:33.3%;--i:2")}><div className="card pc" data-app="inc-step-15" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 15</span><b>First board meeting, and what it decides</b><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Auditor appointed (ADT-1)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Registered office confirmed (INC-22)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Nominee shareholder forms (MGT-4, 5, 6)</li></ul><span className="law">Law: 30 days</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin down" style={st("left:66.7%;--i:3")}><div className="card pc" data-app="inc-step-19" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 30</span><b>Capital in, share certificates (SH-1)</b><span>The parent sends the subscription money, the shares are allotted and the certificates issued.</span><span className="law">Law: SH-1 within 60 days</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin up last" style={st("left:100%;--i:4")}><div className="card pc" data-app="inc-step-20" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono done">By day 45</span><b>FC-GPR and commencement (INC-20A)</b><span>FC-GPR goes to the RBI and INC-20A is filed. The company may start business, and Stage 4 begins.</span><span className="law">Law: FC-GPR 30 days after allotment</span><span className="law">Law: INC-20A 180 days</span></div><span className="stem"></span><span className="dot"></span></div>
+          </div>
+          <ol className="tl-list reveal">
+            <li className="card"><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>CIN, PAN and TAN arrive. Every clock starts today.</span></li>
+            <li className="card"><span className="mono">By day 7</span><b>Bank account, letterhead and name board</b><span>Law: 30 days; the bank account has no clock.</span></li>
+            <li className="card"><span className="mono">By day 15</span><b>First board meeting, auditor (ADT-1), registered office (INC-22), nominee shareholder forms</b><span>Law: 30 days.</span></li>
+            <li className="card"><span className="mono">By day 30</span><b>Capital in, share certificates (SH-1)</b><span>Law: SH-1 within 60 days.</span></li>
+            <li className="card"><span className="mono">By day 45</span><b>FC-GPR and commencement (INC-20A)</b><span>Law: FC-GPR 30 days after allotment; INC-20A 180 days.</span></li>
+          </ol>
+          <p className="caption reveal"><span className="icon"><Ic><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></Ic></span>Day targets assume the bank clears KYC and the parent sends the capital on time. The portal still counts each statutory deadline, and the client sees the same countdown the project lead sees.</p>
+        </div>
+      </section>
+
+      {/* Registrations hub */}
+      <section className="section" id="register">
+        <div className="container">
+          <div className="section-head reveal">
+            <span className="stage"><b>4</b>Stage 4</span>
+            <h2 className="h2">Every registration and filing the company needs, and none it does not.</h2>
+            <p className="body">Thirty-two registrations, reportings and MCA filings across six areas. The firm switches on the ones that apply to the company, and each becomes a step with an owner and a date.</p>
+          </div>
+          <div className="hub reveal" data-reveal="hub">
+            <svg className="wires" viewBox="0 0 1120 640" preserveAspectRatio="none" aria-hidden="true">
+              <path className="wire" style={st("--i:0")} d="M 560 300 C 460 300 300 150 150 150" />
+              <path className="wire" style={st("--i:1")} d="M 560 300 C 660 300 820 150 970 150" />
+              <path className="wire" style={st("--i:2")} d="M 560 300 C 460 300 300 450 150 450" />
+              <path className="wire" style={st("--i:3")} d="M 560 300 C 660 300 820 450 970 450" />
+              <path className="wire" style={st("--i:4")} d="M 560 300 L 560 560" />
+              <path className="wire" style={st("--i:5")} d="M 560 300 L 560 79" />
+            </svg>
+            <div className="card centre"><span className="ring1"></span><span className="ring2"></span><b>Your company</b><span className="mono">CIN · PAN · TAN</span></div>
+            <div className="card cluster c-mca card-hover" data-app="compliances" style={st("--i:5")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M10 18v-7" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M12 2 20 7H4z" /></Ic></span></span><b>Company law (MCA)</b><span>8</span></header><div className="chips"><span className="chip">ADT-1</span><span className="chip">INC-20A</span><span className="chip">INC-22</span><span className="chip">DIR-3 KYC</span><span className="chip">DPT-3</span><span className="chip">MSME-1</span><span className="chip">AOC-4</span><span className="chip">MGT-7</span></div></div>
+            <div className="card cluster c-tax card-hover" data-app="inc-phase-4" style={st("--i:0")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /><path d="M8 11h8" /><path d="M8 7h8" /><path d="M9 7a4 4 0 0 1 0 8H8l3 2" /></Ic></span></span><b>Tax</b><span>4</span></header><div className="chips"><span className="chip">PAN and TAN</span><span className="chip" data-app="inc-step-26" role="button" aria-haspopup="dialog" tabIndex={0}>GST</span><span className="chip" data-app="inc-step-34" role="button" aria-haspopup="dialog" tabIndex={0}>LUT for exports</span><span className="chip" data-app="inc-step-29" role="button" aria-haspopup="dialog" tabIndex={0}>Professional tax</span></div></div>
+            <div className="card cluster c-lab card-hover" data-app="inc-phase-4" style={st("--i:1")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" /></Ic></span></span><b>Labour</b><span>5</span></header><div className="chips"><span className="chip" data-app="inc-step-27" role="button" aria-haspopup="dialog" tabIndex={0}>PF</span><span className="chip" data-app="inc-step-28" role="button" aria-haspopup="dialog" tabIndex={0}>ESI</span><span className="chip" data-app="inc-step-36" role="button" aria-haspopup="dialog" tabIndex={0}>Shops and Establishment</span><span className="chip" data-app="inc-step-37" role="button" aria-haspopup="dialog" tabIndex={0}>CLRA</span><span className="chip" data-app="inc-step-38" role="button" aria-haspopup="dialog" tabIndex={0}>POSH committee</span></div></div>
+            <div className="card cluster c-trade card-hover" data-app="inc-phase-4" style={st("--i:2")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M12 16h.01" /><path d="M16 16h.01" /><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M8 16h.01" /></Ic></span></span><b>Trade</b><span>7</span></header><div className="chips"><span className="chip" data-app="inc-step-33" role="button" aria-haspopup="dialog" tabIndex={0}>IEC</span><span className="chip" data-app="inc-step-32" role="button" aria-haspopup="dialog" tabIndex={0}>ICEGATE</span><span className="chip" data-app="inc-step-39" role="button" aria-haspopup="dialog" tabIndex={0}>Trade licence</span><span className="chip" data-app="inc-step-31" role="button" aria-haspopup="dialog" tabIndex={0}>MSME</span><span className="chip" data-app="inc-step-30" role="button" aria-haspopup="dialog" tabIndex={0}>LEI</span><span className="chip" data-app="inc-step-35" role="button" aria-haspopup="dialog" tabIndex={0}>STPI</span><span className="chip">Sector regulator licence</span></div></div>
+            <div className="card cluster c-rbi card-hover" data-app="inc-phase-4" style={st("--i:3")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></Ic></span></span><b>RBI and FEMA</b><span>5</span></header><div className="chips"><span className="chip" data-app="inc-step-44" role="button" aria-haspopup="dialog" tabIndex={0}>FC-GPR</span><span className="chip" data-app="inc-step-45" role="button" aria-haspopup="dialog" tabIndex={0}>FDI reporting</span><span className="chip" data-app="inc-step-46" role="button" aria-haspopup="dialog" tabIndex={0}>ODI reporting</span><span className="chip" data-app="inc-step-47" role="button" aria-haspopup="dialog" tabIndex={0}>FLA return</span><span className="chip" data-app="inc-step-48" role="button" aria-haspopup="dialog" tabIndex={0}>FC-TRS</span></div></div>
+            <div className="card cluster c-ip card-hover" data-app="inc-phase-4" style={st("--i:4")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13" /><path d="M20 15.5a2.5 2.5 0 0 0-2.5-2.5h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1z" /><path d="M5 22h14" /></Ic></span></span><b>Intellectual property</b><span>3</span></header><div className="chips"><span className="chip" data-app="inc-step-40" role="button" aria-haspopup="dialog" tabIndex={0}>Trademark</span><span className="chip" data-app="inc-step-41" role="button" aria-haspopup="dialog" tabIndex={0}>Trademark renewal</span><span className="chip" data-app="inc-step-42" role="button" aria-haspopup="dialog" tabIndex={0}>Patent</span></div></div>
+          </div>
+          <p className="caption reveal"><span className="icon"><Ic><path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" /></Ic></span>A software subsidiary with no exports never sees IEC or ICEGATE. A company with no foreign capital never sees FC-GPR. The MCA filings run on their own clocks from the certificate date and the financial year.</p>
+        </div>
+      </section>
+
+      {/* Compliance ring */}
+      <section className="section" id="comply">
+        <div className="glow glow-brand" style={st("width:900px;height:600px;left:-300px;top:10%")}></div>
+        <div className="container">
+          <div className="section-head reveal">
+            <span className="stage loop"><b>∞</b>Every year</span>
+            <h2 className="h2">Then the calendar takes over.</h2>
+            <p className="body">A private company files something almost every week of the year. Every filing on this ring has a due date, an owner and a reminder in the portal. Nothing depends on someone remembering.</p>
+          </div>
+          <div className="comply-grid">
+            <div className="ring-wrap reveal" data-reveal="ring" data-app="compliances" aria-label="Book a demo to see the compliance calendar" role="button" aria-haspopup="dialog" tabIndex={0}>
+              <ComplianceRing />
+            </div>
+            <div className="reveal">
+              <h3 className="h3">What a financial year looks like</h3>
+              <ul className="legend">
+                <li><i style={st("background:var(--lp-d3)")}></i><span><b>GST.</b> GSTR-1 by the 11th and GSTR-3B by the 20th, every month. GSTR-9 once a year.</span></li>
+                <li><i style={st("background:var(--lp-d1)")}></i><span><b>Income tax.</b> TDS paid by the 7th each month, TDS returns each quarter, advance tax in June, September, December and March, Form 16 in June.</span></li>
+                <li><i style={st("background:var(--lp-d5)")}></i><span><b>MCA.</b> MBP-1 and DIR-8 in April, MSME-1 twice a year, DPT-3 in June, DIR-3 KYC in September, AOC-4 and MGT-7 after the annual general meeting.</span></li>
+                <li><i style={st("background:var(--lp-d4)")}></i><span><b>Labour.</b> Professional tax by the 10th, PF and ESI by the 15th, every month.</span></li>
+                <li><i style={st("background:var(--lp-d2)")}></i><span><b>RBI.</b> The FLA return by 15 July for every company with foreign capital.</span></li>
+              </ul>
+              <div className="card nudge" data-app="notifications" aria-label="How a reminder works. Book a demo to see notifications." role="button" aria-haspopup="dialog" tabIndex={0}>
+                <div className="box"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span><b>Due date</b><span>from the calendar</span></div>
+                <div className="arr a"><i></i></div>
+                <div className="box"><span className="icon"><Ic><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M22 8c0-2.3-.8-4.3-2-6" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /><path d="M4 2C2.8 3.7 2 5.7 2 8" /></Ic></span><b>Reminder</b><span>email is the record, WhatsApp the reminder</span></div>
+                <div className="arr b"><i></i></div>
+                <div className="box"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Ic></span><b>Filed</b><span>acknowledgement attached</span></div>
+              </div>
+            </div>
+          </div>
+          <div className="cal-ui">
+            <div className="reveal">
+              <h3 className="h3">The same year, inside the portal</h3>
+              <div className="frame" data-app="compliances" aria-label="Book a demo to see the compliance calendar" role="button" aria-haspopup="dialog" tabIndex={0}>
+                <img src="/landing/calendar-client.webp" alt={"Compliance calendar month view: a grid of the month with each statutory filing on its due date."} width="2268" height="1258" />
+              </div>
+              <p className="caption"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
+            </div>
+            <div className="reveal">
+              <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt={"Client filings view: filings by month for the financial year, progress by area, and each filing with its status and acknowledgement."} width="2000" height="1622" /></div>
+              <p className="caption"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Ic></span><span><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</span></p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -234,15 +443,15 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               <div className="boundary"></div>
               <span className="mono boundary-label">Firm review</span>
               <span className="mono boundary-label right">On record</span>
-              <div className="rec l1"><span className="mono">Step</span><span className="t">A step</span></div>
-              <div className="rec l2"><span className="mono">Filing</span><span className="t">A filing</span></div>
-              <div className="rec l3"><span className="mono">Document</span><span className="t">A document</span></div>
-              <div className="rec l4"><span className="mono">Filing</span><span className="t">A filing</span></div>
-              <div className="rec l5"><span className="mono">Step</span><span className="t">A step</span></div>
+              <div className="rec l1"><span className="mono">Step</span><span className="t">KYC review and DSC</span></div>
+              <div className="rec l2"><span className="mono">Filing</span><span className="t">GSTR-3B, Sept</span></div>
+              <div className="rec l3"><span className="mono">Document</span><span className="t">Proof of address</span></div>
+              <div className="rec l4"><span className="mono">Filing</span><span className="t">ADT-1 appointment</span></div>
+              <div className="rec l5"><span className="mono">Step</span><span className="t">Subscriber details</span></div>
               <div className="out l1"><span className="pill pill-brand">In progress</span></div>
-              <div className="out l2"><span className="pill pill-positive">Filed</span></div>
+              <div className="out l2"><span className="pill pill-positive">Filed 20 Oct</span></div>
               <div className="out l3"><span className="pill pill-highlight">Needs you</span></div>
-              <div className="out l4"><span className="pill pill-warning">Due soon</span></div>
+              <div className="out l4"><span className="pill pill-warning">Due 14 Nov</span></div>
               <div className="out l5"><span className="pill pill-positive">Completed</span></div>
             </div>
           </div>
@@ -251,6 +460,28 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
 
       {/* The VCFO way vs. the old way (board C2) */}
       <CompareSection onDemo={openDemo} />
+
+      {/* Ask VCFO */}
+      <section className="section" id="ask">
+        <div className="container">
+          <div className="ask">
+            <div className="reveal">
+              <div className="panel" data-app="home-chat" aria-label="Book a demo to try Ask VCFO" role="button" aria-haspopup="dialog" tabIndex={0}>
+                <img src="/landing/ask-vcfo.webp" alt={"Ask VCFO panel inside the client portal, answering from the client's own project data, with suggested questions."} width="760" height="1120" />
+              </div>
+            </div>
+            <div className="reveal">
+              <h2 className="h2">Ask VCFO answers from the project, not from a brochure.</h2>
+              <p className="body" style={st("margin-top:16px")}>A client asks where the incorporation stands, which documents are missing or when a filing is due, and gets the answer from their own engagement data. Anything the assistant cannot answer is handed to the firm&apos;s team with the context attached.</p>
+              <ul className="qs" aria-label="Example questions">
+                <li data-stagger style={st("--i:0")} data-app="home-chat" role="button" aria-haspopup="dialog" tabIndex={0}><span className="icon"><Ic><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></Ic></span>What is my next step?</li>
+                <li data-stagger style={st("--i:1")} data-app="home-chat" role="button" aria-haspopup="dialog" tabIndex={0}><span className="icon"><Ic><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></Ic></span>Where is my incorporation now?</li>
+                <li data-stagger style={st("--i:2")} data-app="home-chat" role="button" aria-haspopup="dialog" tabIndex={0}><span className="icon"><Ic><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></Ic></span>Which documents are missing?</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Trust */}
       <section className="section" id="trust">
@@ -276,7 +507,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           </div>
           <div className="faq reveal">
             <details><summary>Who is VCFO Suite for?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">Firms that incorporate and keep companies compliant in India, and their clients: Indian founders, and foreign parents setting up a subsidiary or a global capability centre. The firm, the Indian team and the parent entity all log in to the same record.</p></details>
-            <details><summary>Is it only for SBC?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">No. SBC built it and runs its own engagements on it. Another firm gets its own workspace, with its own people, clients and calendar.</p></details>
+            <details><summary>Is it only for SBC?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">No. SBC built it and runs its engagements on it, which is why every screen on this page is a real one. Another firm gets its own workspace, with its own people, clients and calendar.</p></details>
             <details><summary>What does the client actually do in the portal?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">Answer the questionnaire, upload the documents each step asks for, approve board resolutions, sign with a DSC, and watch the timeline. Questions go to Ask VCFO or to the people named on the engagement.</p></details>
             <details><summary>Which filings does the calendar cover?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">MCA, GST, Income tax, Payroll, FEMA and Labour obligations for the financial year, generated from the certificate date and the registrations the company holds. Each one carries its statutory due date.</p></details>
             <details><summary>How are we reminded?<span className="icon"><Ic><path d="m6 9 6 6 6-6" /></Ic></span></summary><p className="a">Every due date emails the owner of the step. With consent, a WhatsApp reminder goes out as well. The email is always the record; WhatsApp never replaces it.</p></details>
@@ -311,9 +542,9 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               <span className="mono">Product</span>
               <ul>
                 <li><a href="#journey">How it works</a></li>
-                <li><a href="#record">The record</a></li>
-                <li><a href="#trust">Security</a></li>
-                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#incorporate">Incorporation</a></li>
+                <li><a href="#comply">Compliance calendar</a></li>
+                <li><a href="#ask">Ask VCFO</a></li>
               </ul>
             </div>
             <div>

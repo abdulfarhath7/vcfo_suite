@@ -10,21 +10,18 @@ import { findSubAgent } from './catalog';
  * save (`applyChecklistPatch`, the path the checklist autosave and Ask VCFO use), so the same role
  * rules apply and the save is audited.
  *
- * Deliberately small: only a sub-agent with an `srnField` (an existing free-text filing note the
- * lead fills, for example pre-4 `nameApplicationFilingNotes`) writes anything, it appends one line
- * and never replaces what the lead wrote, and it changes no status, review or lock field. A
- * responses-only patch sends no email. Everything else keeps the SRN on the run only.
+ * SA-01: the SRN goes into the step's "Acknowledgement number (SRN)" field (`srnField`, which is
+ * `acknowledgementNumber`), the one field the step card, the exports and the MCA filing card read.
+ * The run fills an empty field and never replaces a different number the lead typed; it changes
+ * no status, review or lock field. A responses-only patch sends no email. A task without an
+ * `srnField` keeps its SRN on the run only.
  */
 
-export function srnLine(srn: string, at: Date): string {
-  return `SRN ${srn} (VCFO Assist, ${at.toISOString().slice(0, 10)})`;
-}
-
-/** The note with the SRN line appended, or null when the note already names this SRN. */
-export function appendSrn(existing: string | undefined, srn: string, at: Date): string | null {
-  const text = (existing ?? '').trimEnd();
-  if (text.includes(srn)) return null;
-  return text ? `${text}\n${srnLine(srn, at)}` : srnLine(srn, at);
+/** Write the SRN into an empty field; keep a field that already holds this SRN or another one. */
+export function srnToWrite(existing: string | undefined, srn: string): { write: string } | { keep: 'same' | 'differs' } {
+  const current = (existing ?? '').trim();
+  if (!current) return { write: srn };
+  return current.toUpperCase() === srn.trim().toUpperCase() ? { keep: 'same' } : { keep: 'differs' };
 }
 
 export type SrnWriteBack = { recorded: true; stepId: string; field: string } | { recorded: false; reason: string };
@@ -38,7 +35,6 @@ export async function recordRunSrn(
   engagementDbId: string,
   subAgentId: string,
   srn: string,
-  at: Date = new Date(),
 ): Promise<SrnWriteBack> {
   const sub = findSubAgent(subAgentId);
   if (!sub?.stepId || !sub.srnField) return { recorded: false, reason: 'no_step_field' };
@@ -46,9 +42,12 @@ export async function recordRunSrn(
     const row = await getEngagementById(ctx, engagementDbId);
     if (!row) return { recorded: false, reason: 'not_found' };
     const current = checklistStateFromRow(row)[sub.stepId]?.responses?.[sub.srnField];
-    const next = appendSrn(typeof current === 'string' ? current : undefined, srn, at);
-    if (next === null) return { recorded: true, stepId: sub.stepId, field: sub.srnField };
-    await applyChecklistPatch(ctx, engagementDbId, sub.stepId, { responses: { [sub.srnField]: next } });
+    const plan = srnToWrite(typeof current === 'string' ? current : undefined, srn);
+    if ('keep' in plan) {
+      // The lead typed another number: the run keeps its SRN and the lead decides.
+      return plan.keep === 'same' ? { recorded: true, stepId: sub.stepId, field: sub.srnField } : { recorded: false, reason: 'srn_differs' };
+    }
+    await applyChecklistPatch(ctx, engagementDbId, sub.stepId, { responses: { [sub.srnField]: plan.write } });
     return { recorded: true, stepId: sub.stepId, field: sub.srnField };
   } catch (error) {
     // The run keeps the SRN either way; a refused save (a locked step) is reported, not thrown.

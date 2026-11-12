@@ -125,3 +125,37 @@ export function composeReminderEmail(input: {
     fixed: 'the "Open client portal" button',
   };
 }
+
+/**
+ * DR-03: the Lead's email that the Proposed directors step is open. Same words as the in-app
+ * notice the client already has: fill the details of each proposed director, with the project
+ * name and a link to the step. The Lead reads and edits it in the GL-07 pop-up before it goes.
+ */
+export function composeStepOpenedEmail(input: {
+  companyName: string;
+  itemTitle: string;
+  senderName: string;
+  note?: string | null;
+  stepHref: string;
+  to: string[];
+  replyTo?: string;
+}): ComposedEmail {
+  const href = absolute(input.stepHref);
+  const note = input.note?.trim();
+  const message =
+    `${input.itemTitle} for ${input.companyName} is open.\n\n` +
+    `Please fill the details of each proposed director. Open the step to start.` +
+    `${note ? `\n\n${input.senderName}: ${note}` : ''}`;
+  return {
+    to: input.to,
+    cc: [],
+    subject: `${input.companyName}: ${input.itemTitle} is open`,
+    message,
+    html: (m) => renderEmailDocument({ eyebrow: 'Step open', title: input.itemTitle, bodyHtml: messageHtml(m), cta: { label: 'Open the step', href } }),
+    text: (m) => `${m}\n\nOpen the step: ${href}`,
+    attachments: [],
+    replyTo: input.replyTo,
+    purpose: 'step_opened.client',
+    fixed: 'the "Open the step" button',
+  };
+}

@@ -19,6 +19,10 @@ html[data-theme="dark"] .tbar-logo .tbar-logo-d{display:block}
 .tbar-ol li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tbar-ol li.tbar-sep{flex:none;overflow:visible;color:oklch(var(--ink-faint))}
 .tbar-ol li.tbar-cur{flex:none;max-width:100%;font-weight:500;color:oklch(var(--ink))}
+/* NV-03: every crumb but the last is a link, underlined on hover and on keyboard focus like the staff top bar. */
+.tbar-link{color:inherit;text-decoration:none;text-underline-offset:4px;border-radius:2px;transition:color .15s}
+.tbar-link:hover,.tbar-link:focus-visible{color:oklch(var(--ink));text-decoration:underline}
+.tbar-link:focus-visible{outline:2px solid oklch(var(--focus-ring));outline-offset:-2px}
 .tbar-r{margin-left:auto;flex:none;display:flex;align-items:center;gap:6px}
 .tbar-srch{display:flex;align-items:center;gap:8px;width:380px;height:36px;padding:0 8px 0 12px;box-sizing:border-box;border-radius:6px;border:1.5px solid oklch(var(--line));background:oklch(var(--surface-sunken));color:oklch(var(--ink-muted));font:400 14px var(--font-sans),sans-serif;cursor:text}
 .tbar-srch:hover{border-color:oklch(var(--line-strong))}

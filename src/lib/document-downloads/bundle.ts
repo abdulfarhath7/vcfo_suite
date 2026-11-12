@@ -3,7 +3,7 @@ import 'server-only';
 import type { AuthContext } from '@/auth/guards';
 import { listAuditEvents } from '@/db/repositories/audit-events';
 import { getDocPackInputs, type DocPackInputs } from '@/db/repositories/doc-pack';
-import { docPackItemFilename, renderDocPackItem } from '@/lib/api/doc-pack';
+import { DOCX_CONTENT_TYPE, docPackItemFilename, renderDocPackItem, ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
 import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
 import { stripDocxHighlights } from '@/lib/incorporation-docs/docx-sanitize';
 import type { DocPackItem } from '@/lib/doc-pack/types';
@@ -32,9 +32,26 @@ import {
 
 export type DownloadLayout = 'folders' | 'flat';
 
-/** Up to this many files, and this many uploads among them, the ZIP streams straight back. */
-export const DIRECT_MAX_FILES = 25;
-export const DIRECT_MAX_UPLOADS = 5;
+const CONTENT_TYPES: Record<string, string> = {
+  docx: DOCX_CONTENT_TYPE,
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  zip: ZIP_CONTENT_TYPE,
+};
+
+/** The content type a file is served with, from its extension. */
+export function downloadContentType(fileName: string): string {
+  return CONTENT_TYPES[fileName.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
+}
+
+/** Types a browser may show inline; everything else is always sent as an attachment. */
+export function isInlineType(contentType: string): boolean {
+  return contentType === 'application/pdf' || contentType.startsWith('image/');
+}
 
 export interface LoadedCatalog {
   ctx: AuthContext;
@@ -102,12 +119,6 @@ async function recordWorkbook(loaded: LoadedCatalog, record: ProjectRecord): Pro
 
 export function pickDownloadFiles(loaded: LoadedCatalog, keys: readonly string[]): PickedFile[] {
   return pickFiles(loaded.catalog, keys);
-}
-
-/** Small selections stream back at once; anything bigger is made in the background. */
-export function shouldBuildInBackground(picked: readonly PickedFile[]): boolean {
-  const uploads = picked.filter((p) => p.file.kind === 'uploaded').length;
-  return picked.length > DIRECT_MAX_FILES || uploads > DIRECT_MAX_UPLOADS;
 }
 
 /** The ZIP as a stream: each file is read only when the writer reaches it. */

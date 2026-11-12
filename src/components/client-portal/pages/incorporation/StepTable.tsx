@@ -14,6 +14,7 @@ import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { getStepAttachmentRequirements } from '@/lib/checklist/checklist-step-attachments';
 import type { OwnershipType } from '@/data/engagements';
 import { cn } from '@/lib/utils';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { Button } from '@/components/ui/button';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
 import { StepMark } from '@/components/ui/step-track';
@@ -152,7 +153,8 @@ export function StepTable({
             </tr>
           </thead>
           <tbody>
-            {phase.steps.map((x) => {
+            {/* SB-01: Part B rows run in MCA form order and show their MCA section, not "Step n". */}
+            {orderByMcaSection(phase.steps, (x) => x.id).map((x) => {
               const head = p === 4 ? internRegistrationHeadingForTitle(x.title) : '';
               const showHead = head && head !== g;
               if (head) g = head;
@@ -183,7 +185,7 @@ export function StepTable({
                     </td>
                     <td className={cn('sticky left-10 z-[1]', STICKY_BG)}>
                       <a href={href} onClick={(e) => { e.stopPropagation(); goTo(href)(e); }} className="flex min-w-[200px] items-baseline gap-2" aria-label={`Open step ${x.n} · ${x.title}`}>
-                        <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {x.n}</span>
+                        <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">{partBStepDisplayLabel(x.id, `Step ${x.n}`)}</span>
                         <span className="step-name truncate text-[14px] font-medium text-ink" title={x.title}>
                           {x.title}
                         </span>

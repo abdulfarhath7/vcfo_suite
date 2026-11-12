@@ -39,25 +39,30 @@ describe('LandingScreen', () => {
   it('opens Book a demo from a click-through item, by click and by Enter', () => {
     const { container } = render(<LandingScreen />);
     const items = container.querySelectorAll('[data-app]');
-    expect(items.length).toBeGreaterThan(5);
-    fireEvent.click(items[0]!);
+    expect(items.length).toBeGreaterThan(30);
+    const hero = screen.getByRole('button', { name: 'Book a demo to see the incorporation screen' });
+    fireEvent.click(hero);
+    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Book a demo' }), { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Book a demo' })).toBeNull();
+    const chip = within(container).getByRole('button', { name: 'GST' });
+    fireEvent.keyDown(chip, { key: 'Enter' });
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('LP-02: shows no screenshot of the app, only the logo and abstract art', () => {
+  it('has no portals section, one calendar screenshot and the filings screenshot', () => {
     const { container } = render(<LandingScreen />);
-    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src'));
-    // LP-01: the logo file for each theme; nothing else is an image.
-    expect(images.every((src) => src === '/landing/vcfo-logo-on-black.webp' || src === '/landing/vcfo-logo-on-white.webp')).toBe(true);
-    expect(container.querySelector('svg.hero-art')).not.toBeNull();
-    expect(container.querySelector('#portals, #incorporate, #register, #ask')).toBeNull();
-    expect(container.textContent).not.toMatch(/every screen on this page is a real one/i);
+    expect(container.querySelector('#portals')).toBeNull();
+    expect(container.querySelector('a[href="#portals"]')).toBeNull();
+    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src') ?? '');
+    expect(images.filter((src) => src.includes('calendar-'))).toEqual(['/landing/calendar-client.webp']);
+    expect(images.some((src) => src.includes('portal-'))).toBe(false);
+    expect(images).toContain('/landing/filings-client.webp');
   });
 
-  it('LP-01: the theme toggle switches to dark and back, and remembers the choice', () => {
+  it('LP-01: the theme toggle switches between dark and light, and remembers the choice', () => {
     render(<LandingScreen />);
-    const toggle = screen.getByRole('button', { name: 'Use the dark theme' });
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('button', { name: 'Use the dark theme' }));
     expect(document.documentElement.dataset.lpTheme).toBe('dark');
     expect(localStorage.getItem('vcfo.lp-theme')).toBe('dark');
     fireEvent.click(screen.getByRole('button', { name: 'Use the light theme' }));
@@ -65,11 +70,26 @@ describe('LandingScreen', () => {
     expect(localStorage.getItem('vcfo.lp-theme')).toBe('light');
   });
 
-  it('LP-03: one hero scene per headline word, the first one showing', () => {
+  it('shows the first 45 days with each legal deadline beside its target', () => {
     const { container } = render(<LandingScreen />);
-    const scenes = [...container.querySelectorAll('svg.hero-art [data-scene]')].map((g) => g.getAttribute('data-scene'));
-    expect(scenes).toEqual(['compliance', 'incorporation', 'registration']);
-    expect(container.querySelector('svg.hero-art .is-active')?.getAttribute('data-scene')).toBe('compliance');
+    expect(screen.getByRole('heading', { name: 'The first 45 days after the certificate.' })).toBeInTheDocument();
+    const pins = [...container.querySelectorAll('.tl .pin')];
+    expect(pins.map((p) => p.querySelector('.mono')?.textContent)).toEqual(['Day 0', 'By day 7', 'By day 15', 'By day 30', 'By day 45']);
+    // Every target after day 0 still states the law's own deadline.
+    expect(pins.slice(1).every((p) => p.querySelector('.law')?.textContent?.startsWith('Law:'))).toBe(true);
+    expect(container.querySelector('.tl')?.textContent).toContain('DAY 45');
+  });
+
+  it('shows six areas on the registrations hub, Company law (MCA) among them', () => {
+    const { container } = render(<LandingScreen />);
+    expect(container.querySelectorAll('.hub .cluster')).toHaveLength(6);
+    const mca = container.querySelector('.hub .c-mca')!;
+    expect(mca.querySelector('header b')?.textContent).toBe('Company law (MCA)');
+    expect(mca.querySelectorAll('.chip')).toHaveLength(8);
+    const trade = [...container.querySelectorAll('.hub .c-trade .chip')].map((c) => c.textContent);
+    expect(trade).toContain('Sector regulator licence');
+    const total = [...container.querySelectorAll('.hub .cluster .chip')].length;
+    expect(total).toBe(32);
   });
 
   it('shows the comparison with six rows and three product columns', () => {
@@ -97,5 +117,48 @@ describe('LandingScreen', () => {
     expect(within(panel).queryByText('Open the screen')).toBeNull();
     fireEvent.keyDown(panel, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: 'Ask VCFO' })).toBeNull();
+  });
+});
+
+describe('LandingScreen scroll reveal', () => {
+  it('with reduced motion nothing waits: every block is shown and the root is not marked', () => {
+    const { container } = render(<LandingScreen />);
+    const root = container.querySelector<HTMLElement>('.lp')!;
+    expect(root.dataset.motion).toBeUndefined();
+    const blocks = [...container.querySelectorAll('.reveal')];
+    expect(blocks.length).toBeGreaterThan(10);
+    expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+  });
+
+  describe('with motion on', () => {
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({ ...realMatchMedia(query), matches: false })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('marks the root only while the script runs, and shows every block before printing', () => {
+      const { container, unmount } = render(<LandingScreen />);
+      const root = container.querySelector<HTMLElement>('.lp')!;
+      // The "before" frame in landing.css applies only under data-motion.
+      expect(root.dataset.motion).toBe('ready');
+      const blocks = [...container.querySelectorAll('.reveal')];
+      expect(blocks.some((b) => !b.classList.contains('in'))).toBe(true);
+      window.dispatchEvent(new Event('beforeprint'));
+      expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+      unmount();
+      expect(root.dataset.motion).toBeUndefined();
+    });
+
+    it('shows a block already on screen that is still waiting, after the safety delay', () => {
+      vi.useFakeTimers();
+      const { container } = render(<LandingScreen />);
+      const blocks = [...container.querySelectorAll('.reveal')];
+      expect(blocks.some((b) => !b.classList.contains('in'))).toBe(true);
+      // jsdom has no layout: every block reports a top of 0, so each counts as on screen.
+      vi.advanceTimersByTime(2600);
+      expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+    });
   });
 });

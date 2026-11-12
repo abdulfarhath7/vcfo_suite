@@ -5,6 +5,7 @@ import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { sendEmail } from '@/lib/email/send-email';
 import { emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
+import { roleAppSegment } from '@/lib/auth-routes';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { GST_STEP_ID } from '@/lib/registrations/gst-tracker';
 import { PAUSED, skipWhenPaused, withRunNow } from '@/jobs/dev-controls';
@@ -37,8 +38,8 @@ export const gstRegistrationStart = inngest.createFunction(
         const body =
           'GST registration is scheduled for today on the firm calendar. The authorised signatory files the application and the LUT on the GST portal in their own session, and the ARN is then recorded in the tool.';
         const people = [
-          team.lead ? { ...team.lead, base: '/app/intern' } : null,
-          team.manager ? { ...team.manager, base: '/app/manager' } : null,
+          team.lead ? { ...team.lead, base: `/app/${roleAppSegment('intern')}` } : null,
+          team.manager ? { ...team.manager, base: `/app/${roleAppSegment('manager')}` } : null,
         ].filter((p): p is NonNullable<typeof p> => p !== null);
         for (const person of people) {
           const href = `${person.base}/registrations/${recordKey}`;

@@ -66,6 +66,37 @@ describe('buildInternWorkItems', () => {
   // resolution after it is the pre-incorporation step that keeps approval.
   const PRE1_DONE = { 'pre-1': { status: 'completed' as const, reviewStatus: 'accepted' as const } };
 
+  it('lists a returned client edit of the board resolution for the lead until they resubmit (BR-05)', () => {
+    const finalizedPre2 = {
+      status: 'completed' as const,
+      reviewStatus: 'accepted' as const,
+      deliveredToClientAt: '2026-08-01T10:00:00.000Z',
+      completedOn: '2026-08-01',
+    };
+    const build = (stage: 'returned' | 'manager') =>
+      buildInternWorkItems({
+        engagements: [engagement],
+        internId: 'intern-a',
+        now,
+        getChecklistState: () => ({
+          ...PRE1_DONE,
+          'pre-2': {
+            ...finalizedPre2,
+            brClientEdit: { stage, content: 'x', updatedAt: '2026-08-19T10:00:00.000Z', returnNote: 'Fix the date' },
+          },
+        }),
+      }).find((i) => i.catalogId === 'pre-2');
+
+    const returned = build('returned');
+    expect(returned?.kind).toBe('rejected');
+    expect(returned?.why).toMatch(/Returned/);
+    expect(returned?.href).toBe('/app/lead/engagements/eng-1/step/board-resolution-draft');
+    expect(internWorkKpis([returned!], now).action.rejected).toBe(1);
+
+    // After "Resubmit" the stage is `manager`: the finalized step is not the lead's work any more.
+    expect(build('manager')).toBeUndefined();
+  });
+
   it('puts rejected, client-review, and deliver into the action KPI', () => {
     const rejectedEng = { ...engagement, id: 'eng-rej', companyName: 'Rejected Co' };
     const deliverEng = { ...engagement, id: 'eng-del', companyName: 'Deliver Co' };

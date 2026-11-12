@@ -2,6 +2,7 @@
 
 import type { MouseEvent } from 'react';
 import { cn } from '@/lib/utils';
+import { tabStateClass } from '@/components/ui/tab-classes';
 
 /** Event a tab switch sends up the tree. A card (`DashSection`) shows its L1 shapes for 300 ms. */
 export const TAB_SWITCH_EVENT = 'vcfo:tab-switch';
@@ -11,8 +12,8 @@ function announce(e: MouseEvent<HTMLButtonElement>) {
 }
 
 /* VCFO Spectrum tabs (rule R-11; prototype src/components/ui/Tabs.tsx). A segmented switch
-   (N5, the default) is for filters: a quiet track, the picked option blurple with white text.
-   Underline tabs (N4) are for views of one record: a 2px blurple underline. */
+   (N5, the default) is for filters: a quiet track. Underline tabs (N4) are for views of one
+   record and sit on a rule. Both mark the open tab the same way (GL-03, `tab-classes.ts`). */
 
 export interface SpectrumTabItem {
   key: string;
@@ -58,12 +59,9 @@ export function SpectrumTabs({
                 onChange(t.key);
               }}
               className={cn(
-                // GL-03: the open tab has a 3px brand underline, brand-colour bold text and a
-                // light wash, so it is not shown by colour alone; the others are muted with no line.
-                '-mb-[1.5px] inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-[3px] px-2.5 text-[14px] transition-colors',
-                on
-                  ? 'border-brand bg-brand-soft font-semibold text-brand-text'
-                  : 'border-transparent font-medium text-ink-muted hover:text-ink',
+                // The button overlaps the bar's rule by 1.5px, so the 3px underline covers it.
+                '-mb-[1.5px] inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-t-md px-2.5 text-[14px] transition-colors',
+                tabStateClass(on),
               )}
             >
               {t.label}
@@ -99,13 +97,14 @@ export function SpectrumTabs({
               onChange(t.key);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-mark px-3 text-[13px] font-medium transition-colors',
+              'inline-flex items-center gap-1.5 whitespace-nowrap px-3 text-[13px] transition-colors',
               size === 'sm' ? 'h-[22px]' : 'h-7',
-              on ? 'bg-brand text-on-brand shadow-shine' : 'text-ink-2 hover:text-ink',
+              on ? 'rounded-t-mark' : 'rounded-mark',
+              tabStateClass(on),
             )}
           >
             {t.label}
-            {t.count !== undefined ? <span className={cn('text-[12px] font-medium', on ? 'text-on-brand/85' : 'text-ink-muted')}>{t.count}</span> : null}
+            {t.count !== undefined ? <span className={cn('text-[12px] font-medium', on ? 'text-brand-text' : 'text-ink-muted')}>{t.count}</span> : null}
           </button>
         );
       })}

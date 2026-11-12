@@ -1,4 +1,5 @@
 import type { ChipTone } from '@/components/ui/spectrum-chip';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import {
   filingStatus,
   parseIsoDate,
@@ -135,7 +136,7 @@ export function downloadCsv(name: string, csv: string): void {
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = name;
+  a.download = standardNameFromFile(name);
   a.click();
   URL.revokeObjectURL(url);
 }

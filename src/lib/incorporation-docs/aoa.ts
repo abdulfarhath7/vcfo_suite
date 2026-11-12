@@ -8,6 +8,7 @@ import {
   type IncorpMergeInput,
 } from '@/lib/incorporation-docs/shared';
 import { resolvePre6DirectorDisplayName } from '@/lib/person-name';
+import { properNameCase } from '@/lib/names/name-casing';
 
 export interface AoaMergeFields {
   PROPOSED_COMPANY_NAME: string;
@@ -27,7 +28,8 @@ function directorSalutation(gender: string | undefined): string {
 }
 
 function formatAoaDirectorLine(index: number, name: string, gender: string | undefined): string {
-  const clean = stripDirectorSalutation(name).trim();
+  // GL-09: a name typed in lower case prints with capital letters.
+  const clean = properNameCase(stripDirectorSalutation(name));
   if (!clean) return `${index}. [Director name]`;
   return `${index}. ${directorSalutation(gender)} ${clean}`;
 }
