@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Building2, ChevronRight, Eye, EyeOff, Globe2, KeyRound, Landmark, Lightbulb, Receipt, Users, type LucideIcon } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Building2, ChevronRight, Eye, EyeOff, Globe2, KeyRound, Landmark, Lightbulb, Receipt, ShieldCheck, Users, type LucideIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { apiFetch } from '@/lib/projects/engagements-db';
+import { AppApiError, toastError, toastSuccess } from '@/lib/toast-errors';
 import { WordChip } from '@/views/compliances/spectrum-parts';
 import type { RegCategory, RegistrationRow } from '@/views/compliances/registration-rows';
 
@@ -20,7 +23,8 @@ import type { RegCategory, RegistrationRow } from '@/views/compliances/registrat
  * Opening a box:
  * - GST Registration and LUT Filing keep their own process: each client opens the tracker
  *   built for them (`GstRegistrationTracker`, `LutRegistrationTracker`) on the record page.
- * - Every other registration shows, for now, only the portal username and password.
+ * - Every other registration shows the portal username and password, saved encrypted in the
+ *   client credentials workbook.
  * - Labour Registers opens the labour registers page, where the role has one.
  */
 
@@ -221,17 +225,15 @@ function OwnProcessList({ box, hrefOf }: { box: RegBox; hrefOf: (row: Registrati
 }
 
 /**
- * Every other registration: the portal username and password, one client at a time. Nothing is
- * saved yet; the values stay on this screen until the encrypted credentials store is wired in.
+ * Every other registration: the portal username and password, one client at a time, read from and
+ * saved to the encrypted credentials workbook (Login sheet) through
+ * `/api/engagements/[id]/registration-login`. Staff only; the client sees the same login in its
+ * own workbook behind a manager-approved grant.
  */
 function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationRow) => string }) {
   const [rowKey, setRowKey] = useState(box.rows[0]?.key ?? '');
-  const [values, setValues] = useState<Record<string, { username: string; password: string }>>({});
-  const [show, setShow] = useState(false);
   const row = box.rows.find((r) => r.key === rowKey) ?? box.rows[0];
   if (!row) return <p className="text-[13.5px] text-ink-muted">No client has this registration yet.</p>;
-  const value = values[row.key] ?? { username: '', password: '' };
-  const set = (patch: Partial<typeof value>) => setValues((prev) => ({ ...prev, [row.key]: { ...value, ...patch } }));
   const id = (field: string) => `reg-login-${box.id}-${field}`;
 
   return (
@@ -242,10 +244,7 @@ function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationR
           <select
             id={id('client')}
             value={row.key}
-            onChange={(event) => {
-              setRowKey(event.target.value);
-              setShow(false);
-            }}
+            onChange={(event) => setRowKey(event.target.value)}
             className="h-control-md rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {box.rows.map((r) => (
@@ -258,11 +257,84 @@ function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationR
       ) : (
         <p className="text-[14px] font-medium text-ink">{row.engagement.companyName}</p>
       )}
+      {/* Keyed by client, so switching clients starts from that client's saved login. */}
+      <LoginForm key={row.key} box={box} row={row} hrefOf={hrefOf} id={id} />
+    </div>
+  );
+}
 
-      <div className="grid gap-3 rounded-2xl border-1.5 border-line bg-surface-sunken/60 p-4">
+const LOGIN_ERROR: Record<string, string> = {
+  forbidden: 'You do not have access to this client.',
+  not_found: 'This client could not be found.',
+  empty_value: 'Enter a username or a password.',
+};
+
+function loginErrorText(error: unknown): string {
+  const code = error instanceof AppApiError ? error.code : undefined;
+  return (code && LOGIN_ERROR[code]) || (error instanceof Error ? error.message : 'The login could not be saved.');
+}
+
+type SavedLogin = { username: string; password: string };
+
+function LoginForm({
+  box,
+  row,
+  hrefOf,
+  id,
+}: {
+  box: RegBox;
+  row: RegistrationRow;
+  hrefOf: (row: RegistrationRow) => string;
+  id: (field: string) => string;
+}) {
+  const queryClient = useQueryClient();
+  const path = `/api/engagements/${encodeURIComponent(row.engagement.id)}/registration-login`;
+  const queryKey = ['registration-login', row.engagement.id, box.id] as const;
+  const saved = useQuery({
+    queryKey,
+    queryFn: () =>
+      apiFetch<{ ok: true; login: SavedLogin }>(`${path}?step=${encodeURIComponent(box.id)}`, {
+        fallbackError: 'The saved login could not be loaded.',
+        cache: 'no-store',
+      }).then((body) => body.login),
+    staleTime: 0,
+  });
+  const [draft, setDraft] = useState<SavedLogin | null>(null);
+  const [show, setShow] = useState(false);
+  const value: SavedLogin = draft ?? saved.data ?? { username: '', password: '' };
+  const dirty =
+    draft !== null && (draft.username !== (saved.data?.username ?? '') || draft.password !== (saved.data?.password ?? ''));
+  const set = (patch: Partial<SavedLogin>) => setDraft({ ...value, ...patch });
+
+  const save = useMutation({
+    mutationFn: () =>
+      apiFetch<{ ok: true; login: SavedLogin }>(path, {
+        method: 'PUT',
+        body: JSON.stringify({ step: box.id, username: value.username, password: value.password }),
+        fallbackError: 'The login could not be saved.',
+      }).then((body) => body.login),
+    onSuccess: (login) => {
+      queryClient.setQueryData(queryKey, login);
+      setDraft(null);
+      setShow(false);
+      toastSuccess(`${box.name} login saved for ${row.engagement.companyName}`);
+    },
+    onError: (error) => toastError('Login not saved', loginErrorText(error)),
+  });
+
+  return (
+    <>
+      <form
+        className="grid gap-3 rounded-2xl border-1.5 border-line bg-surface-sunken/60 p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (dirty && !save.isPending) save.mutate();
+        }}
+      >
         <p className="flex items-center gap-2 text-[13px] font-medium text-ink-2">
           <KeyRound className="h-4 w-4 text-brand-text" aria-hidden />
           {box.name} portal login
+          {saved.isLoading ? <span className="font-normal text-ink-muted">· loading…</span> : null}
         </p>
         <div className="grid gap-1.5">
           <Label htmlFor={id('username')}>Username</Label>
@@ -272,6 +344,7 @@ function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationR
             value={value.username}
             onChange={(event) => set({ username: event.target.value })}
             placeholder="Portal username"
+            disabled={saved.isLoading}
           />
         </div>
         <div className="grid gap-1.5">
@@ -285,6 +358,7 @@ function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationR
               onChange={(event) => set({ password: event.target.value })}
               placeholder="Portal password"
               className="pr-10"
+              disabled={saved.isLoading}
             />
             <button
               type="button"
@@ -296,17 +370,24 @@ function PortalLogin({ box, hrefOf }: { box: RegBox; hrefOf: (row: RegistrationR
             </button>
           </div>
         </div>
-        <p className="text-[12px] text-ink-muted">Not saved yet: the login stays on this screen until secure storage is switched on.</p>
-      </div>
+        {saved.isError ? (
+          <p className="text-[12px] text-danger">{loginErrorText(saved.error)}</p>
+        ) : (
+          <p className="flex items-center gap-1.5 text-[12px] text-ink-muted">
+            <ShieldCheck className="h-3.5 w-3.5 text-positive" aria-hidden />
+            Stored encrypted in the client&apos;s credentials workbook. Every change is logged.
+          </p>
+        )}
+      </form>
 
       <div className="flex items-center justify-between gap-3">
         <Link href={hrefOf(row)} className="text-[13px] font-medium text-brand-text hover:underline">
           Open the full record →
         </Link>
-        <Button type="button" disabled title="Secure storage for portal logins is not switched on yet">
-          Save login
+        <Button type="button" onClick={() => save.mutate()} disabled={!dirty || save.isPending || saved.isLoading}>
+          {save.isPending ? 'Saving…' : 'Save login'}
         </Button>
       </div>
-    </div>
+    </>
   );
 }
