@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   pageTitleRepeatsTrail,
@@ -7,6 +5,7 @@ import {
   shellBreadcrumb,
   shellCrumbParent,
 } from './shell-crumbs';
+import { PAGE_ROUTES, isPage, routeSamples } from '@/test/page-routes';
 
 function labels(pathname: string) {
   return shellBreadcrumb(pathname).segments.map((seg) => seg.label);
@@ -115,30 +114,7 @@ describe('resolveShellCrumbCurrent', () => {
 
 /* NV-03: every crumb but the last links to a page that exists. The routes are read from the
    `app/app` folder, so a new or removed page is checked without editing this test. */
-const APP_DIR = path.join(process.cwd(), 'app', 'app');
-
-function pageRoutes(dir = APP_DIR, prefix = '/app'): string[] {
-  const out: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.isFile() && entry.name === 'page.tsx') out.push(prefix);
-    if (entry.isDirectory()) out.push(...pageRoutes(path.join(dir, entry.name), `${prefix}/${entry.name}`));
-  }
-  return out;
-}
-
-const ROUTES = pageRoutes();
-const ROUTE_RES = ROUTES.map((r) => new RegExp(`^${r.replace(/\[[^\]]+\]/g, '[^/]+')}$`));
-const isPage = (href: string) => ROUTE_RES.some((re) => re.test(href));
-
-/** Sample values for the dynamic segments: a slug and a raw id, a real step and a phase number. */
-function samples(route: string): string[] {
-  const fill = (id: string) =>
-    route
-      .replace('[stepId]', 'name-application')
-      .replace('[n]', '1')
-      .replace(/\[[^\]]+\]/g, id);
-  return [...new Set([fill('pexpo-inc'), fill('0c3489fd-fb41-4b22-9e1a-111111111111')])];
-}
+const ROUTES = PAGE_ROUTES;
 
 describe('NV-03: crumb links', () => {
   it('reads the page routes', () => {
@@ -146,7 +122,7 @@ describe('NV-03: crumb links', () => {
     expect(isPage('/app/client/incorporation/phase')).toBe(false);
   });
 
-  it.each(ROUTES.flatMap(samples))('links every crumb but the last to a real page on %s', (pathname) => {
+  it.each(ROUTES.flatMap(routeSamples))('links every crumb but the last to a real page on %s', (pathname) => {
     const segments = shellBreadcrumb(pathname).segments;
     expect(segments.at(-1)?.href).toBeNull();
     const dead = segments.slice(0, -1).filter((s) => s.href !== null && !isPage(s.href));
