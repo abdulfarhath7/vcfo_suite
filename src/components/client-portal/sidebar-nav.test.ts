@@ -65,3 +65,12 @@ describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
     expect(currentLeaf(kids, 'home', '/app/client')).toBeUndefined();
   });
 });
+
+describe('client portal sidebar: going back to a main page', () => {
+  it('counts only the page itself as "already there", not a page under it', async () => {
+    const { isSameNavPage } = await import('./Sidebar');
+    expect(isSameNavPage('/app/client/registrations', '/app/client/registrations')).toBe(true);
+    expect(isSameNavPage('/app/client/registrations/', '/app/client/registrations')).toBe(true);
+    expect(isSameNavPage('/app/client/registrations/gst', '/app/client/registrations')).toBe(false);
+  });
+});
