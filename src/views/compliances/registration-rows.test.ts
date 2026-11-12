@@ -8,6 +8,7 @@ import {
   regFlow,
   registrationKey,
   registrationRows,
+  registrationTabCount,
   workbookRowKey,
 } from '@/views/compliances/registration-rows';
 
@@ -114,5 +115,19 @@ describe('record keys', () => {
     expect(workbookRowKey({ title: 'GST Registration' })).toBe('gst');
     expect(workbookRowKey({ title: 'Shops & Establishment' })).toBe('se');
     expect(workbookRowKey({ title: 'ODI Reporting' })).toBeUndefined();
+  });
+});
+
+describe('registrationTabCount', () => {
+  it('is hidden before the Certificate of Incorporation, like the list', () => {
+    const pre = engagement({ stage: 'Pre-Incorporation', incorporationDate: null });
+    expect(registrationTabCount(pre, () => ({}), NOW)).toBeUndefined();
+  });
+
+  it('counts the registrations that apply once incorporated', () => {
+    const post = engagement();
+    const expected = registrationRows([post], () => ({}), NOW).filter((r) => r.word !== 'Not needed').length;
+    expect(expected).toBeGreaterThan(0);
+    expect(registrationTabCount(post, () => ({}), NOW)).toBe(expected);
   });
 });

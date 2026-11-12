@@ -27,6 +27,7 @@ import { InfoButton } from '@/components/ui/info-button';
 import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
 import { GST_STEP_ID, gstSchedule } from '@/lib/registrations/gst-tracker';
 import { LUT_STEP_ID } from '@/lib/registrations/lut-tracker';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { LutRegistrationTracker, LutScheduleDate } from '@/components/compliances/LutRegistrationTracker';
 import { getItem } from '@/data/checklist';
 import { todayIST } from '@/lib/compliance/filings';
@@ -122,10 +123,12 @@ export function RegistrationView({
   const marks = stageMarks(row);
   // GST registration runs on its own tracker: dates from the firm calendar, milestones from the portal.
   const isGst = item.id === GST_STEP_ID && row.word !== 'Not needed';
-  const gstDates = isGst ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: item.deadline }) : null;
+  // Before the Certificate of Incorporation the GST day is never shown as scheduled or due.
+  const incorporated = isIncorporated(engagement, getStateForEngagement(engagement) ?? null);
+  const gstDates = isGst ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: item.deadline, incorporated }) : null;
   // The LUT runs on its own tracker and is filed on the GST registration day.
   const isLut = item.id === LUT_STEP_ID && row.word !== 'Not needed';
-  const lutDay = isLut ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline }) : null;
+  const lutDay = isLut ? gstSchedule({ schedule: engagement.schedule, incorporationDate: engagement.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline, incorporated }) : null;
   const stagesDone = marks.filter((m) => m === 'done').length;
   const lateDays = row.word === 'Overdue' && row.dueDate ? -(daysUntil(row.dueDate, now) ?? 0) : 0;
   const kbHref = `${shellBase}/knowledge-bank?q=${encodeURIComponent(row.name)}`;

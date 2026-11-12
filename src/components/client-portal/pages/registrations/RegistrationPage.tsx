@@ -75,14 +75,16 @@ function Record({ r, engagement, credsError, credsLoading }: { r: RegItem; engag
   const { go, after, shell } = usePortal();
   const companyShort = shell?.companyShort || 'You';
   const today = todayIso();
-  // GST registration runs on its own tracker; the client reads it.
+  // GST registration runs on its own tracker; the client reads it. Before the Certificate of
+  // Incorporation (the shell's `incorporated` flag) the GST day is never shown as due.
+  const incorporated = shell ? shell.incorporated : undefined;
   const gstDates =
     r.stepId === GST_STEP_ID && !r.notNeeded
-      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: r.step.item.deadline })
+      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: r.step.item.deadline, incorporated })
       : null;
   const lutDay =
     r.stepId === LUT_STEP_ID && !r.notNeeded
-      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline })
+      ? gstSchedule({ schedule: engagement?.schedule, incorporationDate: engagement?.incorporationDate, rule: getItem(GST_STEP_ID)!.deadline, incorporated })
       : null;
   const parts = subList(r.step);
   const filings = useAllFilings(after && Boolean(startsFilings(r.stepId)));

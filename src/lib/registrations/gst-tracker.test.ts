@@ -16,6 +16,19 @@ describe('gstSchedule', () => {
     expect(gstSchedule({ schedule: null, incorporationDate: '2026-10-01', rule })).toEqual({ date: '2026-10-15', source: 'deadline' });
   });
 
+  it('has no date before the Certificate of Incorporation, even with a planned window', () => {
+    expect(
+      gstSchedule({ schedule: window('2026-11-18', '2026-11-25'), incorporationDate: null, rule, incorporated: false }),
+    ).toEqual({ date: null, source: null });
+    expect(gstDueToday(gstSchedule({ schedule: window('2026-11-18', '2026-11-25'), incorporationDate: null, rule, incorporated: false }), {}, '2026-11-18')).toBe(false);
+  });
+
+  it('keeps the calendar day once incorporated', () => {
+    expect(
+      gstSchedule({ schedule: window('2026-11-18', '2026-11-25'), incorporationDate: '2026-10-01', rule, incorporated: true }),
+    ).toEqual({ date: '2026-11-18', source: 'calendar' });
+  });
+
   it('has no date without either', () => {
     expect(gstSchedule({ schedule: null, incorporationDate: null, rule })).toEqual({ date: null, source: null });
   });
