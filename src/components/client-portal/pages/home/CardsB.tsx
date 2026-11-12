@@ -716,7 +716,7 @@ export function PostIncCard({ h, className }: { h: HomeData; className?: string 
             <span className="mt-2 flex items-center gap-3">
               <Bar pct={p.usedPct} tone={p.overDays ? 'bad' : p.owner === 'client' ? 'warn' : 'prog'} className="flex-1" />
               <span className={cn('w-28 flex-none text-right text-[12.5px]', p.overDays ? 'font-medium text-danger' : 'text-ink-muted')}>
-                {p.overDays ? `overdue ${plural(p.overDays, 'day')}` : p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : 'no time limit'}
+                {p.overDays ? `overdue ${plural(p.overDays, 'day')}` : p.limitDays && p.day != null ? `day ${p.day} of ${p.limitDays}` : p.limitDays ? `${p.limitDays} days from COI` : 'no time limit'}
               </span>
             </span>
           </span>

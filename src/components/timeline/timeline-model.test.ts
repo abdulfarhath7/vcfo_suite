@@ -61,6 +61,25 @@ describe('buildRecordTimeline', () => {
     expect(p1.note).toEqual({ text: 'Stuck', bad: true });
   });
 
+  it('does not mark a locked Phase 3 step as Stuck before COI when its window end has passed', () => {
+    const t = buildRecordTimeline({
+      state: {},
+      schedule: { incorporation: window('2026-10-01', '2026-12-30'), steps: { 'post-1': window('2026-09-01', '2026-09-20') } },
+      today: '2026-10-20',
+    });
+    const p3 = t.rows.find((r) => r.id === 'post-inc-phase-3')!;
+    expect(p3.note?.bad).not.toBe(true);
+  });
+
+  it('still marks the phase of an open step past its window end as Stuck', () => {
+    const t = buildRecordTimeline({
+      state: {},
+      schedule: { incorporation: window('2026-10-01', '2026-12-30'), steps: { 'pre-1': window('2026-09-01', '2026-09-20') } },
+      today: '2026-10-20',
+    });
+    expect(t.rows[0]!.note).toEqual({ text: 'Stuck', bad: true });
+  });
+
   it('switches to the after-COI rows with counts and the COI diamond on Incorporation', () => {
     const t = buildRecordTimeline({ state: {}, incorporationDate: '2026-06-28', today: '2026-10-20' });
     expect(t.incorporating).toBe(false);

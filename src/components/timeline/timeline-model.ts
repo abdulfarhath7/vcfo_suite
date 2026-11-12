@@ -1,6 +1,7 @@
 import { sep } from '@/lib/date-format';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { buildIncorporationModel, type PortalPhase, type PortalStep } from '@/lib/client-portal/step-model';
+import { isOpenLateStep } from '@/lib/client-portal/step-late';
 import type { EngagementSchedule } from '@/lib/projects/schedule-windows';
 
 /**
@@ -162,7 +163,7 @@ function statusOf(p: PortalPhase): RowStatus {
 
 function isLate(p: PortalPhase, plan: [string, string] | null, today: string): boolean {
   if (p.state === 'done') return false;
-  return p.steps.some((s) => s.late) || (p.state === 'active' && !!plan && today > plan[1]);
+  return p.steps.some(isOpenLateStep) || (p.state === 'active' && !!plan && today > plan[1]);
 }
 
 /** Monday ticks across the axis, every week, or every second or fourth week when the labels would touch. */

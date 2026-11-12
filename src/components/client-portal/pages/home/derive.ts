@@ -651,7 +651,9 @@ export function buildPostInc(model: PortalIncorporationModel, incorporationDate:
     const text = stepTimelineText(s);
     const m = /within\s+(\d+)\s+days/i.exec(text);
     const limit = m ? Number(m[1]) : undefined;
-    const dueDate = anchor && limit ? addDays(anchor, limit) : s.due;
+    // Before the COI (no incorporation date) a post-incorporation step has no statutory clock:
+    // no due date and no overdue count. The step window is only a plan, not a due date.
+    const dueDate = !anchor ? undefined : limit ? addDays(anchor, limit) : s.due;
     const day = anchor ? Math.max(0, days(anchor, today)) : undefined;
     const overDays = dueDate && dueDate < today ? days(dueDate, today) : 0;
     const usedPct = overDays ? 100 : limit && day != null ? Math.min(100, (day / limit) * 100) : 0;
