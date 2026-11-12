@@ -47,7 +47,7 @@ import { StepLink, StepMark } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { FileBadge } from '@/components/ui/file-badge';
 import { SkeletonRows } from '@/components/ui/empty-state';
-import { portalHref } from '../../routes';
+import { phaseHref, portalHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { triggerDownload } from '../documents/file-types';
@@ -223,7 +223,10 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
-  usePortalCrumbs(s ? ['Incorporation', PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, s.title] : ['Incorporation', 'Step']);
+  /* NV-03: the SPICe+ part opens its phase page, so "SPICe+ Part A" goes back to Part A. */
+  usePortalCrumbs(
+    s ? ['Incorporation', { label: PHASE_PART[s.phaseNo] ?? `Phase ${s.phaseNo}`, href: phaseHref(s.phaseNo) }, s.title] : ['Incorporation', 'Step'],
+  );
   const catalog = useMemo(() => getActiveCatalogItems(), []);
   const ci = s ? catalog.findIndex((c) => c.id === s.id) : -1;
   const prev = ci > 0 ? d.model.byId[catalog[ci - 1]!.id] : undefined;

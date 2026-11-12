@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { Chip, OwnerChip, type ChipTone, type Owner } from '@/components/ui/spectrum-chip';
 import { StepMark, type StepState, type StepTone } from '@/components/ui/step-track';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { portalHref, type PortalRouteKey } from './routes';
+import { portalHref, type PortalCrumbInput, type PortalRouteKey } from './routes';
 import { showPortalToast } from './portal-toast';
 import { PortalModal } from './pages/incorporation/modal';
 
@@ -110,9 +110,10 @@ export interface PortalContextValue {
   go: (key: PortalRouteKey | string) => void;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
-  /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]). */
-  crumbs: string[] | null;
-  setCrumbs: (trail: string[] | null) => void;
+  /** Page-set location trail after "Home" (e.g. ["Incorporation", "SPICe+ Part B", "Registered Office Address"]).
+      A crumb may carry the page it opens; otherwise `portalTrail` finds it from the label (NV-03). */
+  crumbs: PortalCrumbInput[] | null;
+  setCrumbs: (trail: PortalCrumbInput[] | null) => void;
 }
 
 export type PortalTextSize = 'small' | 'default' | 'large';
@@ -154,12 +155,12 @@ export function usePortalOptional(): PortalContextValue | null {
 }
 
 /** A page sets the top-bar location trail while it is mounted. */
-export function usePortalCrumbs(trail: string[] | null) {
+export function usePortalCrumbs(trail: PortalCrumbInput[] | null) {
   const ctx = useContext(PortalContext);
-  const key = trail ? trail.join('\u0000') : '';
+  const key = trail ? JSON.stringify(trail) : '';
   useEffect(() => {
     if (!ctx) return;
-    ctx.setCrumbs(key ? key.split('\u0000') : null);
+    ctx.setCrumbs(key ? (JSON.parse(key) as PortalCrumbInput[]) : null);
     return () => ctx.setCrumbs(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
@@ -321,7 +322,7 @@ export function PortalProvider({ children, rootRef }: { children: ReactNode; roo
   const closeChat = useCallback(() => setChatOpen(false), []);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [crumbs, setCrumbs] = useState<string[] | null>(null);
+  const [crumbs, setCrumbs] = useState<PortalCrumbInput[] | null>(null);
 
   const go = useCallback(
     (key: PortalRouteKey | string) => {
