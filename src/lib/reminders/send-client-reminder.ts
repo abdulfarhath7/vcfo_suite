@@ -12,7 +12,10 @@ import {
 } from '@/db/repositories/client-reminders';
 import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipients';
 import { formatReplyTo, sendEmail } from '@/lib/email/send-email';
-import { composeReminderEmail } from '@/lib/messages/message-emails';
+import { composeReminderEmail, composeStepOpenedEmail } from '@/lib/messages/message-emails';
+import { ANNOUNCED_ON_OPEN_STEP_IDS } from '@/lib/checklist/step-opened';
+import { clientIncorporationStepPath } from '@/lib/projects/project-step-path';
+import { parseItemKey } from '@/lib/work/item-key';
 import { draftView, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
 import { recordEmailSent } from '@/lib/email/record-email-sent';
 import type { EngagementParty } from '@/db/repositories/engagement-recipients';
@@ -35,6 +38,24 @@ import { whatsappConsentOf } from '@/lib/reminders/reminder-rules';
 
 export type ReminderChannel = 'email' | 'whatsapp';
 
+/**
+ * What the email says. `reminder` is the G-15 nudge; `step-opened` is the DR-03 email that the
+ * Proposed directors step is open (only for the steps in `ANNOUNCED_ON_OPEN_STEP_IDS`).
+ */
+export type ReminderPurpose = 'reminder' | 'step-opened';
+
+export interface ReminderInput {
+  itemKey: string;
+  note?: string | null;
+  purpose?: ReminderPurpose;
+}
+
+/** The checklist step id behind a step item key (`step:<engagement>:<stepId>`), else null. */
+function stepIdOf(itemKey: string): string | null {
+  const ref = parseItemKey(itemKey);
+  return ref?.kind === 'step' ? ref.stepId : null;
+}
+
 export type SendReminderResult =
   | { ok: true; channels: ReminderChannel[] }
   | { ok: false; status: 400 | 404 | 429 | 502 | 503; error: string; retryAt?: string };
@@ -47,7 +68,7 @@ type Prepared =
 async function prepareReminder(
   ctx: AuthContext,
   engagementId: string,
-  input: { itemKey: string; note?: string | null },
+  input: ReminderInput,
   now: Date,
 ): Promise<Prepared> {
   const resolved = await resolveReminderTarget(ctx, engagementId, input.itemKey);
@@ -61,6 +82,11 @@ async function prepareReminder(
     };
   }
   const target = resolved.target;
+  const stepId = stepIdOf(target.itemKey);
+  const stepOpened = input.purpose === 'step-opened';
+  if (stepOpened && (!stepId || !ANNOUNCED_ON_OPEN_STEP_IDS.includes(stepId))) {
+    return { ok: false, result: { ok: false, status: 400, error: 'This step has no opening email' } };
+  }
 
   const last = await lastReminderWithinWindow(ctx, target, now);
   if (last) {
@@ -86,15 +112,28 @@ async function prepareReminder(
   if (clients.length === 0) return { ok: false, result: { ok: false, status: 400, error: 'No client email on this engagement' } };
 
   const note = input.note?.trim() || null;
-  const composed = composeReminderEmail({
-    companyName: target.companyName,
-    itemTitle: target.itemTitle,
-    senderName: ctx.name,
-    note,
-    portalHref: target.clientPath,
-    to: clients.map((c) => c.email).filter((e): e is string => Boolean(e)),
-    replyTo: formatReplyTo({ name: ctx.name, email: ctx.email }),
-  });
+  const to = clients.map((c) => c.email).filter((e): e is string => Boolean(e));
+  const replyTo = formatReplyTo({ name: ctx.name, email: ctx.email });
+  const composed =
+    stepOpened && stepId
+      ? composeStepOpenedEmail({
+          companyName: target.companyName,
+          itemTitle: target.itemTitle,
+          senderName: ctx.name,
+          note,
+          stepHref: clientIncorporationStepPath(stepId),
+          to,
+          replyTo,
+        })
+      : composeReminderEmail({
+          companyName: target.companyName,
+          itemTitle: target.itemTitle,
+          senderName: ctx.name,
+          note,
+          portalHref: target.clientPath,
+          to,
+          replyTo,
+        });
   return { ok: true, target, clients, composed, note };
 }
 
@@ -102,7 +141,7 @@ async function prepareReminder(
 export async function previewClientReminder(
   ctx: AuthContext,
   engagementId: string,
-  input: { itemKey: string; note?: string | null },
+  input: ReminderInput,
   now: Date = new Date(),
 ): Promise<{ ok: true; draft: EmailDraftView } | Extract<SendReminderResult, { ok: false }>> {
   const prepared = await prepareReminder(ctx, engagementId, input, now);
@@ -118,7 +157,7 @@ export async function previewClientReminder(
 export async function sendClientReminder(
   ctx: AuthContext,
   engagementId: string,
-  input: { itemKey: string; note?: string | null },
+  input: ReminderInput,
   now: Date = new Date(),
   edits?: EmailEdits,
 ): Promise<SendReminderResult> {
@@ -197,12 +236,20 @@ export async function sendClientReminder(
   await recordAuditEvent(ctx, {
     engagementId: target.engagementDbId,
     action: REMINDER_AUDIT_ACTION,
-    summary: `Reminded the client: ${target.itemTitle}`,
-    metadata: { itemKey: target.itemKey, channels, note, recipients: emailed },
+    summary: input.purpose === 'step-opened' ? `Emailed the client that ${target.itemTitle} is open` : `Reminded the client: ${target.itemTitle}`,
+    metadata: { itemKey: target.itemKey, channels, note, recipients: emailed, purpose: input.purpose ?? 'reminder' },
   });
-  // GL-07: who sent it, when (the row), to whom and the subject.
+  // GL-07: who sent it, when (the row), to whom and the subject. A step reminder is filed under
+  // the step id, the key the step page and the step cards read; other items keep their item key.
   const sentInput = outgoing[0]!.input;
-  await recordEmailSent(ctx, { to: sentTo, cc: sentInput.cc ?? [], subject: sentInput.subject, engagementId: target.engagementDbId, itemId: target.itemKey, via: 'firm' });
+  await recordEmailSent(ctx, {
+    to: sentTo,
+    cc: sentInput.cc ?? [],
+    subject: sentInput.subject,
+    engagementId: target.engagementDbId,
+    itemId: stepIdOf(target.itemKey) ?? target.itemKey,
+    via: 'firm',
+  });
 
   return { ok: true, channels };
 }

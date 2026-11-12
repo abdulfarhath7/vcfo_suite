@@ -24,7 +24,8 @@ import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit/audit-log
  * Insert: any authenticated user; actor_user_id forced to session user.
  */
 
-function toRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
+/** A database row as the shared `AuditEventRow` (also read by `sent-emails.ts`). */
+export function toAuditEventRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
   return {
     id: r.id,
     created_at: r.createdAt.toISOString(),
@@ -164,13 +165,13 @@ export async function listAuditEvents(
   if (clientAudit) {
     // Client-safe projection: no staff e-mail addresses, ids or metadata.
     return rows.map((r) => ({
-      ...toRow(r),
+      ...toAuditEventRow(r),
       actor_email: null,
       summary: clientAudit.scrubForClient(r.summary),
       metadata: {},
     }));
   }
-  return rows.map(toRow);
+  return rows.map(toAuditEventRow);
 }
 
 function isMilestoneDocStoragePath(value: string): boolean {
