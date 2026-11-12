@@ -27,8 +27,8 @@ describe('active tab style', () => {
     expect(TAB_INACTIVE).not.toMatch(/shadow|font-semibold/);
   });
 
-  it.each(['segmented', 'underline'] as const)('gives the %s SpectrumTabs one selected tab with the shared look', (variant) => {
-    render(<SpectrumTabs variant={variant} items={items} value="b" onChange={() => {}} label="Views" />);
+  it('gives the underline SpectrumTabs one selected tab with the shared look', () => {
+    render(<SpectrumTabs variant="underline" items={items} value="b" onChange={() => {}} label="Views" />);
     const tabs = screen.getAllByRole('tab');
     expect(tabs.filter((t) => t.getAttribute('aria-selected') === 'true')).toHaveLength(1);
     const open = screen.getByRole('tab', { name: 'Documents' });
@@ -36,6 +36,15 @@ describe('active tab style', () => {
     const closed = screen.getByRole('tab', { name: 'Overview' });
     expect(classesOf(closed)).not.toContain('font-semibold');
     expect(classesOf(closed)).toContain('text-ink-muted');
+  });
+
+  it('keeps the segmented switch on the R-11 blurple fill, like Before / After', () => {
+    render(<SpectrumTabs variant="segmented" items={items} value="b" onChange={() => {}} label="Views" />);
+    expect(screen.getByRole('tablist').getAttribute('data-tabs')).toBe('segmented');
+    const open = screen.getByRole('tab', { name: 'Documents' });
+    expect(classesOf(open)).toEqual(expect.arrayContaining(['bg-brand', 'text-on-brand']));
+    expect(classesOf(open)).not.toContain('bg-brand-soft');
+    expect(classesOf(screen.getByRole('tab', { name: 'Overview' }))).not.toContain('bg-brand');
   });
 
   it('gives the Radix TabsTrigger the same open-tab look and no filled pill', () => {
