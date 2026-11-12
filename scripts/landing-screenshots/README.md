@@ -26,7 +26,8 @@ person, address or identifier. The SBC logo in the app's top bar stays; the side
    ```
 
    Each shot is taken at twice the pixel density. The window is widened by the sidebar's width and
-   the sidebar is cropped off, so the top bar and logo stay. The Ask VCFO shot is the chat panel alone.
+   the sidebar is cropped off, so the top bar and logo stay. The client calendar is cropped to the
+   month grid alone, and the Ask VCFO shot is the chat panel alone.
 4. Look at every image for a name, address or number that should not be there before you use it.
    Convert each PNG to WebP (quality 88) into `public/landing/`, and set the matching `width`,
    `height` and alt text in `src/components/marketing/landing/LandingScreen.tsx`.

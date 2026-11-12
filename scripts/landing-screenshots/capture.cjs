@@ -11,6 +11,7 @@ const PW = 'demo1234';
 const SHOTS = [
   { name: 'hero-incorporation', login: 'client-northwind@demo.vcfo.local', path: '/app/client/incorporation', w: 1200, h: 688 },
   { name: 'filings-client', login: 'client-solstice@demo.vcfo.local', path: '/app/client/compliances/filings', w: 1000, h: 811 },
+  { name: 'calendar-client', login: 'client-northwind@demo.vcfo.local', path: '/app/client/compliances/calendar', w: 1200, h: 900, grid: true },
   { name: 'ask-vcfo', login: 'client-northwind@demo.vcfo.local', path: '/app/client/overview', w: 1200, h: 800, ask: true },
 ];
 
@@ -68,7 +69,24 @@ async function settle(p, keepLauncher = false) {
     }
     await p.mouse.move(s.w + side - 2, s.h - 2); // no hover state on anything
     const file = path.join(OUT, `${s.name}.png`);
-    if (s.ask) {
+    if (s.grid) {
+      // The month grid alone: the bordered card that holds the weekday header.
+      const findGrid = () => {
+        let el = [...document.querySelectorAll('*')].find((e) => /^mon$/i.test(e.textContent.trim()) && e.children.length === 0);
+        while (el && el.parentElement) {
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          if (r.width > 500 && r.height > 300 && cs.borderTopWidth !== '0px' && parseFloat(cs.borderRadius) > 0) break;
+          el = el.parentElement;
+        }
+        return el;
+      };
+      await p.evaluate(`(${findGrid})().scrollIntoView({ block: 'center' })`);
+      await p.waitForTimeout(800);
+      const r = await p.evaluate(`(() => { const r = (${findGrid})().getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; })()`);
+      const pad = 12;
+      await p.screenshot({ path: file, clip: { x: r.x - pad, y: r.y - pad, width: r.width + pad * 2, height: r.height + pad * 2 } });
+    } else if (s.ask) {
       const launch = p.locator('#vp-launch button').first();
       await launch.click({ timeout: 10000 }).catch((e) => console.log('launcher', e.message.split('\n')[0]));
       await p.addStyleTag({ content: LAUNCHER });
