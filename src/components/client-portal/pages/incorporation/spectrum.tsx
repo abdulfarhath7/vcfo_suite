@@ -575,14 +575,19 @@ export function PageHead({
 }) {
   const go = useGo();
   return (
-    <section data-notified-target className="flex min-w-0 flex-wrap items-end gap-x-6 gap-y-3" aria-label={label}>
-      <div className="min-w-0 flex-[1_1_320px]">
-        <h1 className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[22px] font-medium tracking-[-0.01em] text-ink md:text-[28px]">
-          <span className="min-w-0">{title}</span>
+    <section data-notified-target className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3" aria-label={label}>
+      {/* No page titles (design system, TOKENS.md): the breadcrumb and the active nav item name
+          the page. The title stays for screen readers only; the first visible row is the page's
+          status, facts and controls. */}
+      <h1 className="sr-only">{title}</h1>
+      {chips || meta ? (
+        <div className="flex min-w-0 flex-[1_1_320px] flex-wrap items-center gap-x-3 gap-y-1 text-[13.5px] text-ink-muted">
           {chips}
-        </h1>
-        {meta ? <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ink-muted">{meta}</div> : null}
-      </div>
+          {meta ? <div className="flex flex-wrap items-center gap-x-2 gap-y-1">{meta}</div> : null}
+        </div>
+      ) : (
+        <div className="flex-1" />
+      )}
       {links?.length || actions ? (
         <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
           {links?.map((l) => (
