@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- the landing logo is a fixed-size image */
+/* eslint-disable @next/next/no-img-element -- the landing shows fixed screenshots at their own sizes, as the old v6 landing did */
 /* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role -- the journey and 180-day list rows are click-through items (role="button", tabIndex 0, Enter and Space handled on the root), kept as list items so the lists still read as lists */
 import "./landing.css";
 import * as React from "react";
@@ -136,8 +136,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <div className="hero-shot enter d4">
             <div className="float float-a" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-positive">Filed</span><span className="t"><span>GSTR-3B, September</span><span className="mono">Acknowledgement attached</span></span></div>
             <div className="float float-b" data-app="inc-step-7" aria-label="Book a demo to see step 7, registered office address" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-highlight">Needs you</span><span className="t"><span>Utility bill for the office</span><span className="mono">Due 9 Oct</span></span></div>
-            {/* LP-02: the product screenshot is removed; the frame keeps its size so nothing moves. */}
-            <div className="frame frame-art" data-app="incorporation" aria-label="Book a demo to see the incorporation screen" role="button" aria-haspopup="dialog" tabIndex={0}>
+            <div className="frame" data-app="incorporation" aria-label="Book a demo to see the incorporation screen" role="button" aria-haspopup="dialog" tabIndex={0}>
+              <img src="/landing/hero-incorporation.webp" alt="VCFO Suite client portal, incorporation view for Northwind Technologies India Pvt Ltd: 22 days to the Certificate of Incorporation, 6 of 25 steps done, the current steps with who holds each one, this week's tasks and the incorporation status." width="1986" height="1138" fetchPriority="high" />
             </div>
           </div>
         </div>
@@ -404,13 +404,18 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <div className="cal-ui">
             <div className="reveal">
               <h3 className="h3">The same year, inside the portal</h3>
+              <div className="frame" data-app="compliances" aria-label="Book a demo to see the compliance calendar" role="button" aria-haspopup="dialog" tabIndex={0}>
+                <img src="/landing/calendar-client.webp" alt="Client compliance calendar for Northwind Technologies: October grid with TDS, GST, PF and ESI dates, the next deadline GSTR-1 in 3 days, and the coming-up list with status words." width="1655" height="948" />
+              </div>
               <p className="caption"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
             </div>
             <div className="cal-two reveal">
               <figure className="card" data-stagger style={st("--i:0")}>
+                <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt="Client filings view for a quarter: donut of filed, due soon, overdue and upcoming, bars by area, and a table with due date, filing, frequency, status and proof." width="1324" height="606" /></div>
                 <figcaption><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</figcaption>
               </figure>
               <figure className="card" data-stagger style={st("--i:1")}>
+                <div className="frame" data-app="lead-compliances" aria-label="Book a demo to see the project lead calendar" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/calendar-lead.webp" alt="Project lead's statutory calendar: October deadlines listed by day across GST, income tax and labour, with a month picker and a legend by regulator." width="1324" height="759" /></div>
                 <figcaption><b>The firm&apos;s side.</b> The project lead sees every statutory date across every company, grouped by day, with a reminder button on each.</figcaption>
               </figure>
             </div>
@@ -473,11 +478,28 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
                 <button className="tab" type="button" role="tab" id="tab-super" aria-selected={tab === "super"} aria-controls="panel-super" tabIndex={tab === "super" ? 0 : -1} onClick={() => setTab("super")} onKeyDown={tabKey}>Super admin</button>
               </div>
               <div className="tab-desc">
-                <div role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"}><p>What is waiting on the client, what the firm holds, and when the certificate is expected.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Upload and approve in place</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Timeline with the expected date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Ask VCFO for the next step</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the client portal</button></div>
-                <div role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"}><p>Today&apos;s action queue across every company the lead runs.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>This week&apos;s statutory filings</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Compliance health ring per company</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Who each step is waiting on</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the project lead portal</button></div>
-                <div role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"}><p>Every task your team owns, by project lead, company and status, and each lead&apos;s workload side by side.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Team tasks with a live status breakdown</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each project lead&apos;s work, by area and by status</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a to-do to a project lead in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the manager portal</button></div>
-                <div role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"}><p>Every client, every manager, and where things are stuck, on one screen.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each client&apos;s stage, owner and next date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Managers&apos; load and on-time rate</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a client to a manager</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the admin portal</button></div>
-                <div role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"}><p>The whole firm at one place: clients, admins, managers, work and risk.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Incorporations, registrations and filings side by side</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Risks, team load and growth on one screen</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>A monthly partner report in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the super admin portal</button></div>
+                <div hidden={tab !== "client"}><p>What is waiting on the client, what the firm holds, and when the certificate is expected.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Upload and approve in place</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Timeline with the expected date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Ask VCFO for the next step</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the client portal</button></div>
+                <div hidden={tab !== "lead"}><p>Today&apos;s action queue across every company the lead runs.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>This week&apos;s statutory filings</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Compliance health ring per company</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Who each step is waiting on</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the project lead portal</button></div>
+                <div hidden={tab !== "manager"}><p>Every task your team owns, by project lead, company and status, and each lead&apos;s workload side by side.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Team tasks with a live status breakdown</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each project lead&apos;s work, by area and by status</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a to-do to a project lead in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the manager portal</button></div>
+                <div hidden={tab !== "admin"}><p>Every client, every manager, and where things are stuck, on one screen.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each client&apos;s stage, owner and next date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Managers&apos; load and on-time rate</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a client to a manager</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the admin portal</button></div>
+                <div hidden={tab !== "super"}><p>The whole firm at one place: clients, admins, managers, work and risk.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Incorporations, registrations and filings side by side</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Risks, team load and growth on one screen</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>A monthly partner report in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the super admin portal</button></div>
+              </div>
+            </div>
+            <div className="tabpanel">
+              <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"} data-app="home">
+                <img src="/landing/portal-client.webp" alt="Client portal home for Northwind Technologies India Pvt Ltd: the home card with five numbers, the incorporation steps with who holds each one, what is needed from Northwind and the timeline." width="1655" height="948" />
+              </div>
+              <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"} data-app="lead-home">
+                <img src="/landing/portal-lead.webp" alt="Project lead Today screen for Bharath: the home card with five numbers, the action queue by company, the inbox and phase progress." width="1655" height="948" />
+              </div>
+              <div className="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"} data-app="mgr-home">
+                <img src="/landing/portal-manager.webp" alt="Manager Today screen for Pranay: the home card with five numbers, team tasks with filters, approvals, the task status donut and workload by project lead." width="1655" height="948" />
+              </div>
+              <div className="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"} data-app="admin-home">
+                <img src="/landing/portal-admin.webp" alt="Admin Today screen for Krishna: the home card, the practice areas, fourteen clients with their stage, manager and health, and the managers' load." width="1655" height="948" />
+              </div>
+              <div className="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"} data-app="super-home">
+                <img src="/landing/portal-super.webp" alt="Super admin overview for Mithilesh: the home card with the firm's numbers, the practice areas side by side, top risks and clients needing attention." width="1655" height="948" />
               </div>
             </div>
           </div>
@@ -488,6 +510,11 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
       <section className="section" id="ask">
         <div className="container">
           <div className="ask">
+            <div className="reveal">
+              <div className="panel" data-app="home-chat" aria-label="Book a demo to try Ask VCFO" role="button" aria-haspopup="dialog" tabIndex={0}>
+                <img src="/landing/ask-vcfo.webp" alt="Ask VCFO panel inside the client portal, answering from Northwind's project data, with suggested questions." width="779" height="1150" />
+              </div>
+            </div>
             <div className="reveal">
               <h2 className="h2">Ask VCFO answers from the project, not from a brochure.</h2>
               <p className="body" style={st("margin-top:16px")}>A client asks where the incorporation stands, which documents are missing or when a filing is due, and gets the answer from their own engagement data. Anything the assistant cannot answer is handed to the firm&apos;s team with the context attached.</p>
