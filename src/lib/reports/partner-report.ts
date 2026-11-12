@@ -1,3 +1,5 @@
+import { standardDownloadName } from '@/lib/files/download-name';
+
 /**
  * PARTNER REPORT — the one shape behind the Reports page, its PDF download and the scheduled
  * email (G-21).
@@ -187,6 +189,7 @@ export function buildPartnerReport(insights: SuperInsights, month: SuperMonth, n
   };
 }
 
-export function partnerReportFilename(monthLabel: string): string {
-  return `SBC-partner-report-${monthLabel.replace(/\s+/g, '-')}.pdf`;
+/** GL-08: `Partner-Report-October-2026_SBC_<DD-MM-YYYY>.pdf`; the firm stands in for the client. */
+export function partnerReportFilename(monthLabel: string, on: Date = new Date()): string {
+  return standardDownloadName(`Partner Report ${monthLabel}`, 'SBC', 'pdf', on);
 }

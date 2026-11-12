@@ -24,7 +24,6 @@ import type { IncorpDraftDocLink } from '@/lib/incorporation-docs/paths';
 import type { IncorpDocAudience } from '@/lib/incorporation-docs/shared';
 import { directorAudienceLabel, sortDirectorAudiences } from '@/lib/incorporation-docs/audiences';
 import type { IncorpDocKind } from '@/lib/incorporation-docs/types';
-import { fileNameFromStoragePath } from '@/lib/documents/milestone-document-storage';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import {
   INCORP_DOC_AUTOSAVE_DEBOUNCE_MS,
@@ -178,7 +177,6 @@ export function IncorporationDocInlinePreview({
 
   const previewUrl = buildIncorpDocDownloadUrl(engagementId, doc, director);
   const apiDownloadUrl = previewUrl;
-  const fileName = fileNameFromStoragePath(activeStoragePath);
   const previewRefreshKey = `${activeStoragePath}:${refreshNonce}`;
 
   const flushPendingAutosave = useCallback(async (): Promise<boolean> => {
@@ -315,7 +313,7 @@ export function IncorporationDocInlinePreview({
         <footer className="border-t border-line px-4 py-3">
           <a
             href={apiDownloadUrl}
-            download={fileName || undefined}
+            download=""
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[11px] font-medium text-brand-text underline-offset-2 hover:underline"
@@ -344,7 +342,7 @@ export function IncorporationDocInlinePreview({
           </AccentButton>
           <a
             href={apiDownloadUrl}
-            download={fileName || undefined}
+            download=""
             target="_blank"
             rel="noopener noreferrer"
             aria-disabled={!previewReady || saveStatus === 'saving'}

@@ -13,11 +13,11 @@ export async function GET() {
     const { clientOrgName, rows } = await partnerExportRows(guard.ctx);
     const today = todayIst();
     const bytes = await receivablesWorkbook(rows, today);
-    const name = receivablesWorkbookName(clientOrgName || 'Receivables', today);
+    const name = receivablesWorkbookName(clientOrgName, today);
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${name.replace(/[^\w .-]/g, '')}"`,
+        'Content-Disposition': `attachment; filename="${name}"`,
         'Cache-Control': 'no-store',
       },
     });

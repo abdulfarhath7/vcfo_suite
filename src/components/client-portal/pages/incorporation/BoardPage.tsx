@@ -215,7 +215,8 @@ export default function BoardPage() {
 
   const download = () => {
     if (!downloadHref) return;
-    triggerDownload(downloadHref, NOC_CLIENT_FILENAME);
+    // An empty name keeps the server's standard name (GL-08).
+    triggerDownload(downloadHref, '');
     toast('Download started · Board resolution (NOC)');
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, CalendarDays, ChevronDown, Download, FileStack, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -145,7 +146,7 @@ export function PayrollPage({ shellBase, company, cycle: cycleKey, tab, stateCod
             title={state.rows.length === 0 ? 'No salaries in this cycle yet' : 'Download the salary data for this cycle'}
             onClick={() =>
               downloadText(
-                `hr-data-${engagement.companyName.replace(/[^A-Za-z0-9]+/g, '-')}-${cycle.key}.csv`,
+                standardDownloadName(`HR Data ${cycle.key}`, engagement.companyName, 'csv'),
                 salariesToCsv(state.rows.length ? state.rows : [emptyRow(1, 30)]),
               )
             }

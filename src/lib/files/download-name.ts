@@ -44,3 +44,31 @@ export function standardDownloadName(
   const extension = ext.replace(/^\.+/, '').toLowerCase();
   return `${[doc, client, downloadDateStamp(on)].filter(Boolean).join('_')}.${extension}`;
 }
+
+const STANDARD_TAIL = /_\d{2}-\d{2}-\d{4}\.[a-z0-9]+$/;
+
+/**
+ * The standard name for a file that already has a name: an uploaded file inside a ZIP, or a list
+ * export the browser saves. Its own name without the extension becomes the document name, so
+ * `PAN card.pdf` of Ember is `PAN-card_Ember_11-11-2026.pdf`. A name that already follows the
+ * pattern is returned as it is, so a helper may pass every name through this safely.
+ */
+export function standardNameFromFile(fileName: string, clientName?: string | null, on: Date = new Date()): string {
+  const base = fileName.split(/[/\\]/).pop() ?? '';
+  if (STANDARD_TAIL.test(base)) return base;
+  const dot = base.lastIndexOf('.');
+  const stem = dot > 0 ? base.slice(0, dot) : base;
+  const ext = dot > 0 ? base.slice(dot + 1) : 'bin';
+  return standardDownloadName(stem || 'File', clientName, ext, on);
+}
+
+/** A `YYYY-MM-DD` day in India as a moment on that day, for callers that already hold the IST day. */
+export function istDay(iso: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00+05:30`) : new Date();
+}
+
+/** A `Content-Disposition` value: the ASCII name, plus the UTF-8 name for browsers that read it. */
+export function attachmentDisposition(fileName: string, kind: 'attachment' | 'inline' = 'attachment'): string {
+  const ascii = fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '');
+  return `${kind}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+}

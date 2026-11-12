@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
+import { fileNameFrom } from '@/lib/document-downloads/client';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
 import type { ViewerDoc } from './DocViewer';
 import { engagementParam, fileUrl } from './model';
@@ -118,7 +119,8 @@ export function useZipToast() {
         }
         const blob = reader ? new Blob(chunks as BlobPart[], { type: 'application/zip' }) : await res.blob();
         const url = URL.createObjectURL(blob);
-        triggerDownload(url, zipName);
+        // GL-08: save under the server's standard name.
+        triggerDownload(url, fileNameFrom(res.headers.get('content-disposition'), zipName));
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
         setToast({ name: zipName, total: files, n: files, done: true });
         autoHide();
@@ -226,7 +228,8 @@ export function toViewerDoc(n: DocNode, stepLabel?: string): ViewerDoc {
 
 export function downloadNode(n: DocNode) {
   if (!n.ref) return;
-  triggerDownload(fileUrl(n.ref, true), n.fileName);
+  // An empty name keeps the server's standard name (GL-08) for this same-origin download.
+  triggerDownload(fileUrl(n.ref, true), '');
 }
 
 /** Width < 700 → the phone boards (prototype router, proto.js:94). */

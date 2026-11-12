@@ -80,7 +80,7 @@ describe('send-summary route', () => {
     expect(sentCtx).toBe(ctx);
     expect(mail).toMatchObject({ to: ['yash@summit.in'], cc: ['rakesh@summit.in'], bcc: ['audit@sbcllp.in'], subject: 'RE: Receivables update - 3 November', html: '<p>Hi Team,</p>' });
     expect(mail.attachments).toHaveLength(1);
-    expect(mail.attachments[0].name).toMatch(/^Receivables Summit Consulting \d{4}-\d{2}-\d{2}\.xlsx$/);
+    expect(mail.attachments[0].name).toMatch(/^Receivables_Summit-Consulting_\d{2}-\d{2}-\d{4}\.xlsx$/);
     expect(mail.attachments[0].contentBase64.length).toBeGreaterThan(100);
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'sent' });
   });

@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 
 import { requireAuth } from '@/auth/guards';
 import { contentDisposition, openObjectStream } from '../../documents/_lib/object-response';
-import { countDownload, getBatch, getDocument } from '@/db/repositories/labour-registers';
+import { countDownload, getBatchWithClient, getDocument } from '@/db/repositories/labour-registers';
 import { formById } from '@/data/labour-registers/forms';
-import { documentFileName } from '@/lib/labour-registers/storage';
+import { registerDownloadName } from '@/lib/labour-registers/storage';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import { EXTENSION_TO_MIME } from '@/lib/upload-limits';
 
 /**
@@ -77,12 +78,13 @@ export async function GET(request: Request) {
      forwarded to an inspector, so it carries the period. The document row does not hold one;
      its batch does. */
   const form = formById(doc.formId);
-  const batch = await getBatch(guard.ctx, doc.batchId);
-  const fileName = wantSigned
-    ? doc.signedFileName || `${doc.formId} - signed.pdf`
-    : form && batch
-      ? documentFileName(form, { from: batch.periodFrom, to: batch.periodTo }, doc.format)
-      : `${doc.formId}.${doc.format}`;
+  const found = await getBatchWithClient(guard.ctx, doc.batchId);
+  const batch = found?.batch ?? null;
+  const client = found?.companyName ?? null;
+  const signedExt = (doc.signedFileName ?? '').split('.').pop()?.toLowerCase() || 'pdf';
+  const fileName = form && batch
+    ? registerDownloadName(form, { from: batch.periodFrom, to: batch.periodTo }, wantSigned ? `signed.${signedExt}` : doc.format, client)
+    : standardNameFromFile(wantSigned ? doc.signedFileName || `${doc.formId} signed.pdf` : `${doc.formId}.${doc.format}`, client);
 
   await countDownload(guard.ctx, doc.id);
 

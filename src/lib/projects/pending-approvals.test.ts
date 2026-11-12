@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listPendingApprovals, pendingApprovalKind } from '@/lib/projects/pending-approvals';
+import { listPendingApprovals, pendingApprovalKind, pendingApprovalKindKey } from '@/lib/projects/pending-approvals';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 
 const eng = { id: 'e1', companyName: 'Demo', slug: 'demo', stage: 'Pre-Incorporation' as const };
@@ -29,6 +29,7 @@ describe('listPendingApprovals', () => {
     expect(out).toHaveLength(1);
     expect(out[0]!.itemId).toBe('pre-2');
     expect(pendingApprovalKind(out[0]!)).toBe('Board resolution');
+    expect(pendingApprovalKindKey(out[0]!)).toBe('board');
   });
 
   it('keeps post-incorporation approvals', () => {

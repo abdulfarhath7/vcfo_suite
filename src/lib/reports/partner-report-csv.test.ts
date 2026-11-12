@@ -25,6 +25,6 @@ describe('partnerReportCsv', () => {
   });
 
   it('names the file after the month', () => {
-    expect(partnerReportCsvFilename('October 2026')).toBe('SBC-partner-report-October-2026.csv');
+    expect(partnerReportCsvFilename('October 2026', new Date('2026-11-11T06:00:00Z'))).toBe('Partner-Report-October-2026_SBC_11-11-2026.csv');
   });
 });

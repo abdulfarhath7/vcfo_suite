@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tag } from '@/components/ui/spectrum-chip';
 import { useApp } from '@/context/AppContext';
 import { useDocumentCatalog } from '@/hooks/use-document-downloads';
+import { useExportReadyToast } from '@/hooks/use-export-ready-toast';
 import type { PublicDownloadGroup } from '@/lib/document-downloads/catalog';
 import { catalogViewerDocs, downloadDocumentKeys, type DownloadLayout } from '@/lib/document-downloads/client';
 import {
@@ -169,6 +170,7 @@ export function DownloadDocumentsDialog({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [layout, setLayout] = useState<Layout>('folders');
   const [busy, setBusy] = useState<'project' | 'picked' | null>(null);
+  const watchExport = useExportReadyToast();
   const root = query.data?.root;
 
   useEffect(() => {
@@ -196,6 +198,7 @@ export function DownloadDocumentsDialog({
     try {
       const out = await downloadDocumentKeys(engagementId, keys, layout);
       if (out.queued) {
+        if (out.fileName) watchExport(out.fileName);
         toastSuccess('Making the ZIP', `${out.fileName ?? 'Your documents'} will be in your notifications when it is ready. You can keep working.`);
       }
       onOpenChange(false);

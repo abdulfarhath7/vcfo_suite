@@ -1,4 +1,5 @@
 import { monthLong, sheetDate } from '@/lib/receivables/dates';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import type { Partner, SheetInvoice } from '@/lib/receivables/model';
 import { statusText } from '../../format';
 
@@ -43,7 +44,7 @@ export function downloadCsv(name: string, csv: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = name;
+  a.download = standardNameFromFile(name);
   document.body.appendChild(a);
   a.click();
   a.remove();

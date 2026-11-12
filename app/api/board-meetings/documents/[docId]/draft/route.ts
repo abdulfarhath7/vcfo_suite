@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
 import { getMeeting, systemDocument } from '@/db/repositories/board-meetings';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { resolutionDocx } from '@/lib/board-meetings/resolution';
 import { meetingError, type DocContext } from '../../../_respond';
 
@@ -30,7 +31,7 @@ export async function GET(_request: Request, context: DocContext) {
     return new Response(new Uint8Array(buf), {
       headers: {
         'content-type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'content-disposition': `attachment; filename="Resolution_${row.title.replace(/[^\w-]+/g, '_').slice(0, 60)}.docx"`,
+        'content-disposition': `attachment; filename="${standardDownloadName(`Resolution ${row.title}`, meeting.company.name, 'docx')}"`,
         'cache-control': 'no-store',
       },
     });

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 
 import { requireAnyRole } from '@/auth/guards';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
 import { contentDisposition } from '../../../documents/_lib/object-response';
 import { bundleZipName, publicCatalog } from '@/lib/document-downloads/catalog';
 import {
@@ -11,7 +10,6 @@ import {
   loadDownloadCatalog,
   openDownloadFile,
   pickDownloadFiles,
-  shouldBuildInBackground,
   type DownloadLayout,
 } from '@/lib/document-downloads/bundle';
 import { exportInBackground } from '@/lib/exports/background-export';
@@ -39,8 +37,9 @@ export async function GET(_request: Request, context: RouteContext) {
 
 /**
  * POST /api/engagements/[id]/document-downloads with `{ keys, layout }`.
- * One file comes back as itself; a small set as a ZIP at once; a large set answers 202 and the
- * ZIP is made in the background, with a Download link in the bell when it is ready.
+ * One file comes back as itself. Two or more always answer 202: the ZIP is made in a background
+ * job, so the person keeps working, and the bell (with a toast while the page is open) gives the
+ * Download link when it is ready (PR-02).
  */
 export async function POST(request: Request, context: RouteContext) {
   const guard = await requireAnyRole(...STAFF);
@@ -60,7 +59,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const { engagement } = loaded.inputs;
-  const audit = (fileName: string, mode: 'file' | 'zip' | 'background') =>
+  const audit = (fileName: string, mode: 'file' | 'background') =>
     recordAuditEvent(guard.ctx, {
       engagementId: loaded.inputs.dbId,
       action: 'documents.download',
@@ -79,26 +78,17 @@ export async function POST(request: Request, context: RouteContext) {
     });
   }
 
-  if (shouldBuildInBackground(picked)) {
-    const fileName = bundleZipName(loaded.catalog, picked.map((p) => p.file.key));
-    await audit(fileName, 'background');
-    exportInBackground(guard.ctx, {
-      kind: 'document_bundle',
-      format: 'zip',
-      fileName,
-      label: 'the documents ZIP',
-      engagementId: engagement.id,
-      companyName: engagement.companyName,
-      maxCopyBytes: BUNDLE_MAX_BYTES,
-      build: () => collectZipStream(downloadZipStream(loaded, picked, layout).stream),
-    });
-    return NextResponse.json({ queued: true, fileName, count: picked.length }, { status: 202 });
-  }
-
-  const zip = downloadZipStream(loaded, picked, layout);
-  await audit(zip.fileName, 'zip');
-  return new Response(zip.stream, {
-    status: 200,
-    headers: { 'Content-Type': ZIP_CONTENT_TYPE, 'Content-Disposition': contentDisposition('attachment', zip.fileName), 'Cache-Control': NO_STORE },
+  const fileName = bundleZipName(loaded.catalog, picked.map((p) => p.file.key));
+  await audit(fileName, 'background');
+  exportInBackground(guard.ctx, {
+    kind: 'document_bundle',
+    format: 'zip',
+    fileName,
+    label: 'the documents ZIP',
+    engagementId: engagement.id,
+    companyName: engagement.companyName,
+    maxCopyBytes: BUNDLE_MAX_BYTES,
+    build: () => collectZipStream(downloadZipStream(loaded, picked, layout).stream),
   });
+  return NextResponse.json({ queued: true, fileName, count: picked.length }, { status: 202 });
 }
