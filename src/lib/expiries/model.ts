@@ -4,7 +4,7 @@
  * Pure: no database, no clock (every function takes `today` as an ISO date).
  */
 
-export const EXPIRY_KINDS = ['dsc', 'dir3_kyc', 'gst', 'pf', 'esi', 'pt', 'shops', 'fssai', 'trade_licence', 'iec', 'msme', 'lei', 'other'] as const;
+export const EXPIRY_KINDS = ['dsc', 'dir3_kyc', 'gst', 'pf', 'esi', 'pt', 'shops', 'fssai', 'trade_licence', 'iec', 'msme', 'lei', 'name_approval', 'other'] as const;
 export type ExpiryKind = (typeof EXPIRY_KINDS)[number];
 
 export const EXPIRY_SOURCES = ['checklist', 'registration', 'manual', 'ask'] as const;
@@ -25,8 +25,15 @@ export const EXPIRY_KIND_LABEL: Record<ExpiryKind, string> = {
   iec: 'IEC',
   msme: 'MSME (Udyam)',
   lei: 'LEI',
+  name_approval: 'Name approval',
   other: 'Other',
 };
+
+/**
+ * Kinds shown on the calendar only. The MCA name approval cannot be renewed: SPICe+ Part B must be
+ * filed before it lapses, which the calendar shows. It opens no renewal task, draft or email.
+ */
+export const CALENDAR_ONLY_KINDS: ReadonlySet<ExpiryKind> = new Set(['name_approval']);
 
 /** Kinds that belong to a person (a director); the rest belong to the company. */
 export function subjectKindOf(kind: ExpiryKind): SubjectKind {
@@ -92,6 +99,16 @@ export function expiryBand(days: number, renewed: boolean): ExpiryBand {
 }
 
 /** The words on the page and in alerts: "Expired 3 days ago", "Expires today", "12 days left". */
+/**
+ * The calendar status of an expiry, in the four words a filing uses: expired is overdue, within
+ * 30 days is due soon (the amber band), anything later is upcoming. A renewed item reads as filed.
+ */
+export function expiryCalendarStatus(days: number, renewed = false): 'filed' | 'overdue' | 'due-soon' | 'upcoming' {
+  if (renewed) return 'filed';
+  if (days < 0) return 'overdue';
+  return days <= 30 ? 'due-soon' : 'upcoming';
+}
+
 export function daysLeftLabel(days: number): string {
   if (days < 0) return days === -1 ? 'Expired yesterday' : `Expired ${-days} days ago`;
   if (days === 0) return 'Expires today';
@@ -174,6 +191,7 @@ export const RENEWAL_DOCUMENTS: Record<ExpiryKind, Array<{ kind: 'document' | 'a
   iec: [{ kind: 'confirmation', label: 'IEC details are unchanged (the annual update is due)' }],
   msme: [{ kind: 'confirmation', label: 'Turnover and investment details for the Udyam update' }],
   lei: [{ kind: 'confirmation', label: 'Entity details for the LEI renewal are unchanged' }],
+  name_approval: [],
   other: [{ kind: 'document', label: 'Documents needed for the renewal' }],
 };
 

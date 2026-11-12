@@ -34,13 +34,14 @@ import { AreaChip, Chip, I, Seg, usePageTips } from './bits';
 import { useComp } from './ctx';
 import { DetailModal } from './Detail';
 import { Empty, Island } from './spectrum';
-import { Rail, type useCalendarState } from './CalendarPage';
+import { CALENDAR_BEFORE } from './empty-copy';
+import { Rail, showExpiriesCard, type useCalendarState } from './CalendarPage';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { portalHref } from '../../routes';
 import { CategoryTabs, RowArea } from './task-marks';
-import { taskHref, useTaskRows } from './task-api';
-import { fyOfIso, isTaskRow, showStat, showTasks, taskHint } from './tasks';
+import { taskHref, useExpiryRows, useTaskRows } from './task-api';
+import { fyOfIso, isExpiryRow, isTaskRow, showStat, showTasks, taskHint } from './tasks';
 
 export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typeof useCalendarState>; onOpenFilings: (f: PortalFiling) => void }) {
   const { after, toast, go } = usePortal();
@@ -49,6 +50,8 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
   const statOn = showStat(cat);
   const tasksOn = showTasks(cat) && area === 'all';
   const allTasks = useTaskRows(after);
+  // Expiries show on their date like tasks; like tasks they have no area (desktop: CalendarPage).
+  const allExpiries = useExpiryRows();
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
   const [week0, setWeek0] = useState(() => weekOf(state.month === nowKey ? today : `${state.month}-01`)[0]!);
@@ -66,12 +69,14 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
     const m = new Map<string, PortalFiling>();
     if (statOn) for (const r of [...(qA.data?.rows ?? []), ...(fyB !== fyA ? qB.data?.rows ?? [] : []), ...(qT.data?.rows ?? [])]) m.set(r.id, r);
     if (tasksOn) for (const r of allTasks) m.set(r.id, r);
+    if (statOn && area === 'all') for (const r of allExpiries) m.set(r.id, r);
     return sortByDue([...m.values()]);
-  }, [after, statOn, tasksOn, allTasks, qA.data, qB.data, qT.data, fyA, fyB]);
+  }, [after, statOn, tasksOn, area, allTasks, allExpiries, qA.data, qB.data, qT.data, fyA, fyB]);
   const statFy = useMemo(() => (after ? qT.data?.rows ?? [] : []), [after, qT.data]);
   const taskFy = useMemo(() => allTasks.filter((r) => fyOfIso(r.dueDate) === todayFy), [allTasks, todayFy]);
   const fyRows = useMemo(() => [...(statOn ? statFy : []), ...(tasksOn ? taskFy : [])], [statOn, tasksOn, statFy, taskFy]);
-  const openRow = (r: PortalFiling) => (isTaskRow(r) ? go(taskHref(r.task.id, r.task.boardMeetingId)) : set({ filing: r.id }));
+  const openRow = (r: PortalFiling) =>
+    isExpiryRow(r) ? showExpiriesCard() : isTaskRow(r) ? go(taskHref(r.task.id, r.task.boardMeetingId)) : set({ filing: r.id });
   const loading = after && (qA.isLoading || qT.isLoading);
 
   const c = countByStatus(fyRows, today);
@@ -209,7 +214,7 @@ export function CalendarMobile({ state, onOpenFilings }: { state: ReturnType<typ
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!after ? (
             <Island>
-              <Empty className="m-0 md:mx-0">Starts after incorporation</Empty>
+              <Empty className="m-0 md:mx-0">{CALENDAR_BEFORE.join(' ')}</Empty>
             </Island>
           ) : loading ? (
             [1, 2, 3].map((i) => <div key={i} className="sk-row" style={{ height: 62, borderRadius: 10 }} />)

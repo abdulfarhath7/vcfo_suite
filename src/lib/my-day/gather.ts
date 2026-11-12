@@ -4,15 +4,13 @@ import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
 import { listDocumentRequests } from '@/db/repositories/document-requests';
 import { listExpiryItems } from '@/db/repositories/expiry-items';
-import { listNoticeCases } from '@/db/repositories/notice-cases';
 import { listRequestLists } from '@/db/repositories/request-lists';
 import { listTasks } from '@/db/repositories/tasks';
 import { loadStaffData } from '@/lib/ask/tools/staff-data';
 import { pendingApprovals, routeKey, type StaffData } from '@/lib/ask/tools/staff';
 import { askProjectPath, LEAD_BASE, type AskLinkBase } from '@/lib/ask/resolve-href';
-import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager } from '@/lib/auth';
 import { expiriesHref } from '@/lib/expiries/alerts';
-import { noticesHref } from '@/lib/notices/model';
 import { adminProjectStepPath, internEngagementStepPath, staffProjectBase, type StaffPathBase } from '@/lib/projects/project-step-path';
 import { bandForDate, daysBetween, istDay, rankMyDay, type MyDayItem, type RankedMyDayItem } from './rank';
 
@@ -78,7 +76,6 @@ export async function gatherMyDayItems(ctx: AuthContext, opts: GatherOptions = {
   const today = istDay(now);
   const base = myDayBase(ctx.role);
   const lead = ctx.role === 'intern';
-  const firmWide = isFirmWideAdmin(ctx.role);
   // A lead's project links use their own pages; this base serves the other roles.
   const staffBase: StaffPathBase = base === LEAD_BASE ? '/app/manager' : (base as StaffPathBase);
   const projectBase = staffProjectBase(staffBase);
@@ -92,11 +89,10 @@ export async function gatherMyDayItems(ctx: AuthContext, opts: GatherOptions = {
     }));
   const lookup = engagementLookup(data);
 
-  const [tasks, docRequests, expiries, notices, lists] = await Promise.all([
+  const [tasks, docRequests, expiries, lists] = await Promise.all([
     safe('tasks', () => listTasks(ctx)),
     safe('document requests', () => listDocumentRequests(ctx)),
     safe('expiries', () => listExpiryItems(ctx, { withinDays: NEAR_DAYS })),
-    safe('notices', () => listNoticeCases(ctx, { open: true })),
     safe('request lists', () => listRequestLists(ctx, { status: ['sent'] })),
   ]);
 
@@ -191,27 +187,8 @@ export async function gatherMyDayItems(ctx: AuthContext, opts: GatherOptions = {
       engagementId: e.key,
       companyName: e.company,
       dueOn: x.expiresOn,
-      href: expiriesHref(ctx.role),
+      href: expiriesHref(ctx.role, x.expiresOn),
       weight: kind === 'overdue' ? -x.daysLeft : NEAR_DAYS - x.daysLeft,
-    });
-  }
-
-  // Open notices with a reply due within a week. An admin sees the ones they own or nobody owns.
-  for (const n of notices) {
-    if (!n.open || n.daysLeft === null || n.daysLeft > NEAR_DAYS) continue;
-    if (firmWide && n.ownerId && n.ownerId !== ctx.userId) continue;
-    const e = lookup(n.engagementId, n.companyName);
-    const kind = n.daysLeft < 0 ? 'overdue' : n.daysLeft === 0 ? 'due_today' : 'notice';
-    items.push({
-      id: `notice:${n.id}`,
-      kind,
-      title: n.label,
-      detail: n.daysLeft < 0 ? `Reply ${-n.daysLeft} day${n.daysLeft === -1 ? '' : 's'} late` : `Reply due in ${n.daysLeft} day${n.daysLeft === 1 ? '' : 's'}`,
-      engagementId: e.key,
-      companyName: e.company,
-      ...(n.responseDueOn ? { dueOn: n.responseDueOn } : {}),
-      href: noticesHref(ctx.role),
-      weight: kind === 'overdue' ? -n.daysLeft : NEAR_DAYS - n.daysLeft,
     });
   }
 

@@ -5,10 +5,9 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Building2, CircleCheck, User, type LucideIcon } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
-import { DashDonut, DashSection } from '@/components/dash/DashSection';
+import { DashSection } from '@/components/dash/DashSection';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
-import { CHART_STATUS, ChartLegend } from '@/components/charts';
+import { EmptyState } from '@/components/ui/empty-state';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { ProgressList } from '@/components/dash/progress-list';
 import { useLeadHours } from '@/hooks/use-lead-hours';
@@ -22,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';
 import { checklist } from '@/data/checklist';
 import {
-  clientHealthCounts,
   stepsCompletedPerWeek,
   workloadByLead,
   type AnalyticsProject,
@@ -44,15 +42,6 @@ const AnalyticsStepsChart = dynamic(
 );
 
 const ITEM_IDS = checklist.map((item) => item.id);
-
-/* R-25: status colours only. Waiting is teal, overdue red, not started grey. */
-const HEALTH_ROWS = [
-  { key: 'progress', label: 'In progress', color: CHART_STATUS.active },
-  { key: 'waiting', label: 'Waiting', color: CHART_STATUS.waiting },
-  { key: 'overdue', label: 'Overdue', color: CHART_STATUS.overdue },
-  { key: 'notStarted', label: 'Not started', color: CHART_STATUS.locked },
-  { key: 'done', label: 'Done', color: CHART_STATUS.done },
-] as const;
 
 interface Kpi {
   label: string;
@@ -184,8 +173,6 @@ export default function Analytics() {
 
   const weeks = useMemo(() => stepsCompletedPerWeek(projects, ITEM_IDS, new Date()), [projects]);
   const weeksTotal = weeks.reduce((sum, w) => sum + w.steps, 0);
-  const health = useMemo(() => clientHealthCounts(projects, ITEM_IDS), [projects]);
-  const healthRows = HEALTH_ROWS.filter((h) => health[h.key] > 0);
 
   const leads = useMemo(() => {
     const seen = new Map<string, { id: string; name: string }>();
@@ -327,37 +314,13 @@ export default function Analytics() {
               columns={STEP_TIME_COLUMNS}
               rows={stepTime}
               rowKey={(s) => s.stepId}
-              empty="No step has been timed yet"
+              empty="No step has been timed yet. Each step's median and longest days appear here once a client starts a step."
               pageSize={8}
               minWidth={480}
             />
           </DashSection>
 
           <div className="grid min-w-0 grid-cols-1 gap-5">
-            <DashSection title="Client health" meta={`${projects.length} clients`}>
-              {healthRows.length === 0 ? (
-                engagementsLoading ? (
-                  <SkeletonRows rows={3} />
-                ) : (
-                  <EmptyState title="No clients yet" />
-                )
-              ) : (
-                <div className="flex flex-wrap items-center gap-6 py-2">
-                  <DashDonut
-                    size={96}
-                    segments={healthRows.map((h) => ({ n: health[h.key], color: h.color }))}
-                    centerLabel={projects.length}
-                    centerCaption=""
-                  />
-                  <ChartLegend
-                    layout="stack"
-                    className="flex-1"
-                    items={healthRows.map((h) => ({ label: h.label, color: h.color, count: health[h.key] }))}
-                  />
-                </div>
-              )}
-            </DashSection>
-
             {showWorkload ? (
               <DashSection title="Workload" meta="Hours planned this week" flush loading={leadHours.isPending}>
                 {/* Prototype ProgressList (F-163): the hours each lead put in their planner this

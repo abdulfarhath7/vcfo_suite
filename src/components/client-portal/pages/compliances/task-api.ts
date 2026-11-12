@@ -14,7 +14,9 @@ import { portalHref } from '../../routes';
 import { usePortalOptional } from '../../PortalProvider';
 import { COMP_KEY } from './api';
 import { useMemo } from 'react';
-import { normStage, taskAsRow, type CalRow, type ClientTask } from './tasks';
+import { expiryAsRow, normStage, taskAsRow, type CalRow, type ClientTask } from './tasks';
+import { useExpiries } from '@/hooks/use-expiries';
+import { openExpiries } from '@/components/compliances/ExpiriesCard';
 
 const TASK_KEY = [...COMP_KEY, 'tasks'] as const;
 
@@ -206,6 +208,12 @@ export function useClientTask(id: string, enabled = true) {
 }
 
 /** C-3: the tasks shared with the client as calendar rows, on their end date. */
+/** Open expiries (not renewed) as calendar rows, from the same register the Expiries card reads. */
+export function useExpiryRows(): CalRow[] {
+  const q = useExpiries();
+  return useMemo(() => openExpiries(q.data, Number.POSITIVE_INFINITY).map(expiryAsRow), [q.data]);
+}
+
 export function useTaskRows(enabled: boolean): CalRow[] {
   const tq = useClientTasks(enabled);
   return useMemo(() => (enabled ? (tq.data ?? []).map(taskAsRow) : []), [enabled, tq.data]);

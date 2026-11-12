@@ -71,7 +71,7 @@ function readBellBox(targetSelector: string, bellSelector: string, fallbackRight
 /**
  * The modal card that "genies" into its bell when dismissed. The caller supplies the header,
  * body and extra footer buttons; the card owns the backdrop, close button, keyboard shortcuts,
- * the "N more waiting / Skip all" row, the "Got it" button and the park animation.
+ * the "N more waiting / Skip all" row, the "Noted" button and the park animation.
  */
 export function GenieCard({
   kind,
@@ -240,7 +240,7 @@ export function GenieCard({
             <span className="mr-auto" />
             {actions}
             <Button type="button" onClick={park}>
-              Got it
+              Noted
             </Button>
           </div>
         </div>

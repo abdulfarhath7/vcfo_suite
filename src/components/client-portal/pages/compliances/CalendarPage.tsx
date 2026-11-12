@@ -17,6 +17,7 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { usePortal } from '../../PortalProvider';
+import { ExpiriesCard } from '@/components/compliances/ExpiriesCard';
 import { portalHref } from '../../routes';
 import {
   AREAS,
@@ -63,8 +64,9 @@ import { YearGrid } from '@/components/compliances/calendar-grids';
 import { financialYearMonths } from '@/lib/compliance/filings';
 import { CalendarMobile } from './CalendarMobile';
 import { CategoryTabs, RowArea } from './task-marks';
-import { taskHref, useTaskRows } from './task-api';
-import { dayWords, fyOfIso, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
+import { taskHref, useExpiryRows, useTaskRows } from './task-api';
+import { dayWords, fyOfIso, isExpiryRow, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
+import { CALENDAR_BEFORE } from './empty-copy';
 import '../../css/compliances-board.css';
 
 const VIEWS = ['month', 'year', 'timeline'] as const;
@@ -144,6 +146,10 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   const statOn = showStat(cat);
   const tasksOn = showTasks(cat) && area === 'all';
   const allTasks = useTaskRows(after);
+  // Expiries (DSC, DIR-3 KYC, licences) show on their date like tasks, before incorporation too;
+  // like tasks they have no area, and the Non-statutory filter hides them.
+  const allExpiries = useExpiryRows();
+  const expiriesOn = cat !== 'non-statutory' && area === 'all';
   const root = useRef<HTMLDivElement>(null);
   usePageTips(root);
 
@@ -167,7 +173,8 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   );
   const monthAll = useMemo(() => fyRows.filter((r) => r.dueDate.startsWith(month)), [fyRows, month]);
   const monthTasks = useMemo(() => fyTasks.filter((r) => r.dueDate.startsWith(month)), [fyTasks, month]);
-  const monthRows = useMemo(() => [...filterArea(monthAll, area), ...monthTasks], [monthAll, area, monthTasks]);
+  const monthExpiries = useMemo(() => (expiriesOn ? allExpiries.filter((r) => r.dueDate.startsWith(month)) : []), [expiriesOn, allExpiries, month]);
+  const monthRows = useMemo(() => [...filterArea(monthAll, area), ...monthTasks, ...monthExpiries], [monthAll, area, monthTasks, monthExpiries]);
   const countBase = view === 'month' ? monthAll : fyRows;
   // C-1 counts: the month on screen in Month view, the whole year in Year and Timeline.
   const scope = (list: PortalFiling[]) => (view === 'month' ? list.filter((r) => r.dueDate.startsWith(month)) : list).length;
@@ -181,7 +188,8 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
     return m;
   }, [statFy, railRows]);
   const detail = st.filing ? byId.get(st.filing) ?? null : null;
-  const openDetail = (f: PortalFiling) => (isTaskRow(f) ? go(taskHref(f.task.id, f.task.boardMeetingId)) : set({ filing: f.id }));
+  const openDetail = (f: PortalFiling) =>
+    isExpiryRow(f) ? showExpiriesCard() : isTaskRow(f) ? go(taskHref(f.task.id, f.task.boardMeetingId)) : set({ filing: f.id });
 
   /* day pop-over */
   const [sel, setSel] = useState<{ iso: string; style: React.CSSProperties; cls: string } | null>(null);
@@ -230,7 +238,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
 
   /* empty month copy (E-01) */
   const emptyOverlay = (() => {
-    if (!after) return { lines: ['Starts after incorporation'], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
+    if (!after) return { lines: [...CALENDAR_BEFORE], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
     if (loading || q.isError || view !== 'month' || monthRows.length) return null;
     const pool = sortByDue([...filterArea([...fyRows, ...railRows].filter((r) => !isTaskRow(r)), area), ...fyTasks]).filter((r) => r.dueDate > `${month}-31`);
     const next = pool[0];
@@ -350,7 +358,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
               <Island>
                 <YearGrid
                   months={financialYearMonths(fy)}
-                  marks={[...filterArea(fyRows, area), ...fyTasks].map((r) => ({ id: r.id, date: r.dueDate.slice(0, 10), label: r.name, status: FILING_OF[statusOf(r, today)] }))}
+                  marks={[...filterArea(fyRows, area), ...fyTasks, ...(expiriesOn ? allExpiries.filter((r) => fyOfIso(r.dueDate) === fy) : [])].map((r) => ({ id: r.id, date: r.dueDate.slice(0, 10), label: r.name, status: FILING_OF[statusOf(r, today)] }))}
                   todayIso={today}
                   onPick={(k) => set({ date: k, view: 'month' })}
                 />
@@ -470,7 +478,7 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
                   return (
                     <span key={r.id} className="ev task" data-s={rs} title={`${r.name} · ${taskHint(r.task)}`}>
                       <i />
-                      <span className="a">Task</span>
+                      <span className="a">{r.task.expiry ? 'Expiry' : 'Task'}</span>
                       <span className="t">{r.name}</span>
                     </span>
                   );
@@ -542,7 +550,7 @@ const DayPopover = forwardRef<
                 <span className="block truncate text-[12px] text-ink-muted">{isTaskRow(r) ? taskHint(r.task) : r.period}</span>
               </button>
               {isTaskRow(r) ? (
-                <SChip fixed>{taskWord(r.task, today)}</SChip>
+                <SChip fixed>{r.task.expiry ? r.task.expiry.word : taskWord(r.task, today)}</SChip>
               ) : (
                 <>
                   <PortalLink f={r} />
@@ -569,11 +577,21 @@ const DayPopover = forwardRef<
   );
 });
 
+/** An expiry on the grid opens nothing of its own: it brings the rail's Expiries card into view. */
+export function showExpiriesCard() {
+  const card = document.querySelector<HTMLElement>('.cp-compliances section[aria-label="Expiries"]');
+  card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 /* ------------------------------------------------------------- rail */
 
 const railCard = 'min-w-0 rounded-md border-1.5 border-line bg-surface-raised';
 
-/** The right rail (donut, Next deadline, Coming up); the phone page stacks it under the agenda. */
+/**
+ * The right rail (donut, Next deadline, Coming up, Expiries); the phone page stacks it under the
+ * agenda. The DSC made during incorporation can lapse before the company exists, so Expiries
+ * shows even when the rest of the rail waits for incorporation.
+ */
 export function Rail({
   after,
   loading,
@@ -594,9 +612,10 @@ export function Rail({
   openDrill: ReturnType<typeof useComp>['openDrill'];
 }) {
   const { today } = useComp();
-  // Before incorporation the calendar card already says "Starts after incorporation"; a second
+  const expiries = <ExpiriesCard showCompany={false} mayRenew={false} className={railCard} />;
+  // Before incorporation the calendar card already says compliances have not started; a second
   // copy in the rail repeated it (twice in a row on a phone).
-  if (!after) return null;
+  if (!after) return <Island className="cal-rail">{expiries}</Island>;
   if (loading)
     return (
       <Island className="cal-rail">
@@ -620,6 +639,7 @@ export function Rail({
         <NextDeadlineCard next={next} over={over} todayMonthRows={todayMonthRows} railRows={railRows} onOpen={onOpen} openDrill={openDrill} nowKey={nowKey} />
       )}
       <ComingUp rows={comingUp(railRows, today, 7)} onOpen={onOpen} />
+      {expiries}
     </Island>
   );
 }

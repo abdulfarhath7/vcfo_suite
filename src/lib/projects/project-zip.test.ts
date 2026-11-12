@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
 import { isRepeatField, type RepeatField } from '@/lib/checklist/checklist-repeat';
-import { answersTable, entriesTable, PROJECT_ZIP_FOLDERS } from './project-zip-tables';
+import { answersTable, entriesTable } from './project-zip-tables';
 
 describe('PR-02 project ZIP contents', () => {
-  it('has one folder for each kind of item', () => {
-    expect(Object.values(PROJECT_ZIP_FOLDERS)).toEqual([
-      '1 Answers', '2 Directors', '3 Subscribers', '4 Generated documents', '5 Uploaded documents', '6 Board resolution', '7 Audit log',
-    ]);
-  });
-
   it('lists every answered question with its step, section and readable answer', () => {
     const table = answersTable({
       'pre-13': { responses: { equityShares: 'yes', equityQuantity: '10000' } },

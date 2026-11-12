@@ -1,4 +1,4 @@
-import { emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import { emailParagraph, emailStatusWord, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 import { siteUrl } from '@/lib/site-url';
 import { countMyDay, MY_DAY_LABEL, type RankedMyDayItem } from './rank';
 
@@ -14,9 +14,18 @@ function firstName(name: string): string {
 }
 
 function lineText(item: RankedMyDayItem): string {
-  const parts = [`${MY_DAY_LABEL[item.kind]}: ${item.title}`, item.companyName];
+  return `${MY_DAY_LABEL[item.kind]}: ${lineRest(item)}`;
+}
+
+function lineRest(item: RankedMyDayItem): string {
+  const parts = [item.title, item.companyName];
   if (item.detail) parts.push(item.detail);
   return parts.join(' · ');
+}
+
+/** The same line with its kind as a status word where it is one (Overdue, Due today). */
+function lineHtml(item: RankedMyDayItem): string {
+  return `${emailStatusWord(MY_DAY_LABEL[item.kind])}: ${escapeHtml(lineRest(item))}`;
 }
 
 /** The Today page each role opens; the plan card sits at its top. */
@@ -47,7 +56,7 @@ export function buildMyDayEmail(input: { recipientName: string; role: string; it
       bodyHtml:
         emailParagraph(`Hi ${escapeHtml(firstName(input.recipientName))},`) +
         emailParagraph(escapeHtml(intro)) +
-        lines.map((l, i) => emailParagraph(`${i + 1}. ${escapeHtml(l)}`)).join('') +
+        top.map((item, i) => emailParagraph(`${i + 1}. ${lineHtml(item)}`)).join('') +
         (more ? emailParagraph(escapeHtml(more)) : ''),
       cta: { label: 'Open Today', href },
     }),

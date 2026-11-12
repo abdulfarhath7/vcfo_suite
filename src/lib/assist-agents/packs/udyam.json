@@ -1,0 +1,32 @@
+{
+  "id": "udyam",
+  "title": "Udyam registration",
+  "hosts": [
+    "udyamregistration.gov.in"
+  ],
+  "mockHosts": [
+    "localhost",
+    "127.0.0.1"
+  ],
+  "legalStatus": "mock-only",
+  "needsCsOpinionFirst": false,
+  "framework": "unknown",
+  "pages": [],
+  "selectors": {},
+  "waits": {
+    "readyMs": 30000,
+    "optionsMs": 8000,
+    "afterPincodeMs": 2000
+  },
+  "popups": [],
+  "gates": [
+    "LOGIN",
+    "CAPTCHA",
+    "OTP",
+    "SUBMIT"
+  ],
+  "source": "Placeholder: no capture yet. Pages and selectors come from a recorder capture made under docs/specs/vcfo-assist-agents/PORTAL-CAPTURE.md.",
+  "notes": [
+    "Udyam registration uses the applicant's Aadhaar OTP, which is always the person's. Each portal needs its own review (legal review, row 17)."
+  ]
+}

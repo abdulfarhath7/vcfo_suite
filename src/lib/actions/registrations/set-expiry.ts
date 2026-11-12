@@ -9,7 +9,7 @@ import { defineAction, type ActionContext, type ActionRecheck, type ActionResult
 
 /**
  * Adds or updates one item on the expiry tracker from the chat ("Ravi's DSC expires 12 March
- * 2027"). It is the same `upsertExpiryItem` the Expiries page calls, with the source `ask`, so the
+ * 2027"). It is the same `upsertExpiryItem` the expiries API calls, with the source `ask`, so the
  * daily backfill no longer overwrites the date. An item with the same client, kind and name is
  * updated; otherwise one is added. A changed date starts the T-60, T-30 and T-7 alerts again.
  */

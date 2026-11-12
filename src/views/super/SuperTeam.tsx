@@ -368,7 +368,7 @@ export default function SuperTeam() {
             <DashSection title="What admins did" href="/app/admin/audit-log" hrefLabel="Firm log" flush>
               {feed.length === 0 ? (
                 <div className="p-4">
-                  <EmptyState title="No admin activity yet" />
+                  <EmptyState title="No admin activity yet. What admins assign, approve and change this week appears here." />
                 </div>
               ) : (
                 <AdminFeedList rows={feed} />

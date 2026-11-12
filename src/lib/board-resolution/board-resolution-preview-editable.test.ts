@@ -67,6 +67,19 @@ describe('applyMergeFieldHighlights', () => {
     ).toBe(true);
   });
 
+  it('gives the highlight the font of its run, not the preview default for spans', () => {
+    // docx-preview styles every span with the document default (`.docx span`, a 12pt theme
+    // font), so the highlight must inherit from the run span around it to keep its font.
+    const root = renderPreviewHtml('<span style="font-family: Times New Roman; font-size: 11pt">Date: 6th August, 2026</span>');
+    applyMergeFieldHighlights(root, { ...sampleFields, CERTIFICATION_DATE: '6th August, 2026' });
+    const highlight = root.querySelector<HTMLElement>('[data-br-merge-field="CERTIFICATION_DATE"]')!;
+    expect(highlight.parentElement?.style.fontSize).toBe('11pt');
+    const style = highlight.getAttribute('style') ?? '';
+    for (const property of ['font-family', 'font-size', 'font-weight', 'line-height']) {
+      expect(style).toContain(`${property}: inherit`);
+    }
+  });
+
   it('does not nest highlights on re-apply', () => {
     const root = renderPreviewHtml('ABC Holdings LLC and ABC Holdings LLC again.');
     applyMergeFieldHighlights(root, sampleFields);

@@ -82,7 +82,7 @@ export function RowArea({ r, compact, className }: { r: CalRow; compact?: boolea
       )}
     >
       <TaskSquare className={compact ? 'h-1.5 w-1.5' : undefined} />
-      Task
+      {r.task.expiry ? 'Expiry' : 'Task'}
     </span>
   );
 }

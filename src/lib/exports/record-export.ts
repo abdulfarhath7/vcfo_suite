@@ -21,7 +21,9 @@ export type ExportKind =
   /** PR-02: the whole project as one ZIP, made in the background. */
   | 'project_zip'
   /** GL-06: a list exported to Excel, made in the background. */
-  | 'table_xlsx';
+  | 'table_xlsx'
+  /** "Download documents": the documents a staff member picked in the pop-up, as one ZIP. */
+  | 'document_bundle';
 
 /** The largest file kept in S3; a bigger one is logged without a copy. */
 const EXPORT_COPY_MAX_BYTES = 50 * 1024 * 1024;

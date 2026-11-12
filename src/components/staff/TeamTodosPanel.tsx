@@ -6,6 +6,7 @@ import { ROLE_UI_LABEL } from '@/lib/auth';
 import { groupOpenPersonalTodosByOwner } from '@/lib/intern/personal-todos';
 import { usePersonalTodos } from '@/hooks/use-personal-todos';
 import { PersonCell } from '@/components/staff/today/today-parts';
+import { EmptyState } from '@/components/ui/empty-state';
 
 /**
  * Team todos: every teammate's open personal to-dos, grouped by person. Full-width rows with a
@@ -40,7 +41,9 @@ export function TeamTodosPanel({
       {query.isError ? (
         <p className="px-4 py-3 text-[13px] text-ink-muted">Couldn’t load todos.</p>
       ) : groups.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-muted">No open todos.</p>
+        <div className="p-4">
+          <EmptyState title="No open to-dos. To-dos your team adds appear here, grouped by person." />
+        </div>
       ) : (
         <div className="max-h-[min(24rem,50vh)] overflow-y-auto">
           {groups.map((group) => (

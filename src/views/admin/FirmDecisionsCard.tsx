@@ -66,7 +66,7 @@ export function FirmDecisionsCard({ engagements }: { engagements: Engagement[] }
       bodyClassName="p-0"
     >
       {total === 0 ? (
-        <EmptyState title="Nothing waiting" className="m-4" />
+        <EmptyState title="Nothing needs your decision. A client without a manager, an open escalation or a step waiting on the firm appears here." className="m-4" />
       ) : (
         <ul>
           {unassigned.map((eng) => (

@@ -5,6 +5,7 @@ import { Draggable } from '@fullcalendar/interaction';
 import { Lock, UserRoundPlus, X } from 'lucide-react';
 import { DashSection } from '@/components/dash/DashSection';
 import { Chip } from '@/components/ui/spectrum-chip';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ClientDot } from '@/components/staff/today/today-parts';
 import { shortCompany } from '@/components/super/parts/super-text';
 import { RemindClientButton } from '@/components/reminders/RemindClientButton';
@@ -135,7 +136,11 @@ export function PlannerTodos({
         />
       </form>
       <div ref={listRef}>
-        <TodoGroup title="Assigned by manager" count={assigned.length}>
+        <TodoGroup
+          title="Assigned by manager"
+          count={assigned.length}
+          empty={assigned.length === 0 ? 'No task from a manager. Tasks a manager gives you appear here with their due date.' : null}
+        >
           {assigned.map((item) => (
             <li key={item.id} {...dragOf(planKeyOf?.(item), item.title)} className={ROW}>
               <ClientDot name={item.companyName} />
@@ -154,7 +159,11 @@ export function PlannerTodos({
             </li>
           ))}
         </TodoGroup>
-        <TodoGroup title="My to-dos" count={mine}>
+        <TodoGroup
+          title="My to-dos"
+          count={mine}
+          empty={focus.length === 0 ? 'No to-dos yet. Type one in the box above and it appears here.' : null}
+        >
           {focus.map((entry) => {
             const item = isCustomInternFocus(entry) ? undefined : byId.get(entry.id);
             const title = item?.title ?? entry.title ?? 'To-do';
@@ -201,7 +210,11 @@ export function PlannerTodos({
             );
           })}
         </TodoGroup>
-        <TodoGroup title="Waiting on client" count={waiting.length}>
+        <TodoGroup
+          title="Waiting on client"
+          count={waiting.length}
+          empty={waiting.length === 0 ? 'Nothing is waiting on a client. Items a client owes you appear here, each with Remind.' : null}
+        >
           {waiting.map((item) => {
             const key = remindableItemKey(item);
             return (
@@ -226,13 +239,19 @@ export function PlannerTodos({
 
 const ROW = 'flex items-center gap-2.5 border-t border-line-soft px-4 py-2.5 text-[13px] md:px-5';
 
-function TodoGroup({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+/** One group of the to-do card. `empty` says what will appear in the group while it has no rows. */
+function TodoGroup({ title, count, empty, children }: { title: string; count: number; empty?: string | null; children: React.ReactNode }) {
   return (
     <>
       <div className="flex h-8 items-center gap-2 border-t border-line-soft bg-surface-sunken px-4 text-[11.5px] font-medium uppercase tracking-[.07em] text-ink-muted md:px-5">
         {title}
         <span className="tracking-normal text-ink-faint tabular-nums">{count}</span>
       </div>
+      {empty ? (
+        <div className="border-t border-line-soft px-3 py-3">
+          <EmptyState title={empty} className="min-h-[64px] py-3 text-[13px]" />
+        </div>
+      ) : null}
       <ul>{children}</ul>
     </>
   );

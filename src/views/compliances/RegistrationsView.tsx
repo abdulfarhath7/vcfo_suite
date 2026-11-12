@@ -330,6 +330,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
             />
             <RailCard
               title="Renewals and expiry"
+              empty="No renewal in the next 60 days. A registration appears here 60 days before its expiry date."
               items={renewals.map(({ r, renewal }) => ({
                 key: r.key,
                 title: r.name,
@@ -342,6 +343,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
             />
             <RailCard
               title="Waiting on client"
+              empty="No registration is waiting on a client. One appears here while the client owes documents for it."
               items={waiting.map((r) => ({
                 key: r.key,
                 title: r.name,
@@ -353,6 +355,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
             />
             <RailCard
               title="Recently granted"
+              empty="Nothing granted yet. A registration appears here once it is marked granted."
               items={done.map((r) => ({
                 key: r.key,
                 title: r.name,
@@ -363,6 +366,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
             />
             <RailCard
               title="Next to start"
+              empty="Every registration has started. Registrations not yet begun appear here."
               items={nextToStart.map((r) => ({
                 key: r.key,
                 title: r.name,

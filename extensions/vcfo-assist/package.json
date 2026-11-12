@@ -12,13 +12,18 @@
     "test": "vitest run",
     "e2e": "node e2e/run.mjs",
     "mock": "node mock-portal/serve.mjs",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "offline": "node tools/offline/run-offline.mjs",
+    "mocks": "node mock-portal/build-mocks.mjs && node tools/offline/build-fixtures.mjs",
+    "recorder": "node tools/recorder/recorder.mjs"
   },
   "dependencies": {
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@fontsource/roboto": "5.3.0",
+    "@fontsource/roboto-mono": "5.3.0",
     "@types/chrome": "0.1.24",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

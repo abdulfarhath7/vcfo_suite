@@ -15,7 +15,6 @@ const TONE: Record<MyDayKind, ChipTone> = {
   approval: 'violet',
   client_reply: 'prog',
   expiry: 'warn',
-  notice: 'teal',
   request_list: 'idle',
   task: 'idle',
 };
@@ -40,7 +39,7 @@ export function MyDayCard({ limit = 8, className }: { limit?: number; className?
         </div>
       ) : items.length === 0 ? (
         <div className="p-4 md:px-5">
-          <EmptyState title="Nothing urgent today." />
+          <EmptyState title="Nothing urgent today. Overdue work, work due today, decisions and client replies appear here, most urgent first." />
         </div>
       ) : (
         <ol className="divide-y divide-line-soft">

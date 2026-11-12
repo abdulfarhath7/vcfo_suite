@@ -29,6 +29,8 @@ function minimalValidPre7Responses(): Record<string, string> {
     kycReviewStatus: 'approved',
     kycReviewNotes: 'All documents verified.',
     ...Object.fromEntries(PRE7_REQUIRED_FILE_IDS.map((id) => [id, `eng/pre-7/${id}/file.pdf`])),
+    nrDirectorDscExpiryDate: '2028-11-10',
+    residentDirectorDscExpiryDate: '2028-11-12',
   };
 }
 
@@ -72,5 +74,29 @@ describe('validatePre7Responses', () => {
     });
     expect(ok).toBe(true);
     expect(errors).toEqual({});
+  });
+
+  it('asks for the expiry date of every new DSC', () => {
+    const responses = minimalValidPre7Responses();
+    delete responses.nrDirectorDscExpiryDate;
+    responses.residentDirectorDscExpiryDate = '31/02/2028';
+    const { ok, errors } = validatePre7Responses(responses);
+    expect(ok).toBe(false);
+    expect(errors.nrDirectorDscExpiryDate).toBe('Enter the DSC expiry date.');
+    expect(errors.residentDirectorDscExpiryDate).toBe('Enter a valid date.');
+  });
+
+  it('asks only for the directors on file', () => {
+    const { errors } = validatePre7Responses({}, { directors: ['resident', 'resident-2'] });
+    expect(errors.residentDirector2DscExpiryDate).toBeDefined();
+    expect(errors.nrDirectorDscExpiryDate).toBeUndefined();
+  });
+
+  it('places a date field beside each DSC proof', () => {
+    const fields = CLIENT_RESPONSE_FIELDS['pre-7'] ?? [];
+    const ids = fields.map((f) => f.id);
+    expect(ids.indexOf('residentDirectorDscExpiryDate')).toBeGreaterThan(ids.indexOf('residentDirectorDscSuccessMessageUrl'));
+    expect(ids.indexOf('residentDirectorDscExpiryDate')).toBeLessThan(ids.indexOf('incorpDocsSigningDate'));
+    expect(fields.find((f) => f.id === 'residentDirector2DscExpiryDate')?.type).toBe('date');
   });
 });

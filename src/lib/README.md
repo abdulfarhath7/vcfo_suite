@@ -16,15 +16,14 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `board-meetings/` — board meetings after incorporation: dates (T-10, T-7, T+30, 120-day gap), meeting numbers, quorum, agenda rules, the notice text and Word file, `.ics` invites and signed director links.
 - `checklist/` — the 34-step SPICe+ checklist: per-step validation, gating, review, locks, responses and Part A sections.
 - `client/` — client overview, home (`/api/client/home`) and progress-board shapes, shared by the portal and the legacy client views.
-- `client-health/` — the computed client health score and band, the signals behind it, the SLA escalation ladder, the nightly run and the weekly digest section (automation wave 2, E). Gotchas: `docs/context/notes/automation.md`.
 - `client-portal/` — the v7 client portal's pure models (answers, compliances, credentials, documents, steps).
 - `compliance/` — the recurring compliance calendar: FY periods, obligation instances and the filings register.
-- `compliance-events/` — company events after incorporation (director, office, auditor, allotment, capital, MGT-14): spotting a change in a checklist save, and planning the form, due date and client request; the table is `company_events` (automation wave 2, D).
 - `compliance-tasks/` — the statutory and non-statutory model: stages and status words, reminders, repeats, progress steps, the reminder email.
+- `doc-style/` — VCFO Spectrum styling for generated documents: the palette generated from the design tokens, the Word helper and the PDF print palette. Statutory documents never use it; the list is in `docs/context/notes/incorporation-docs.md`.
 - `doc-pack/` — the incorporation document pack registry, inputs and what blocks each document.
 - `documents/` — vault and milestone document visibility rules and storage keys.
 - `email/` — outbound email (`send-email.ts`, the system of record), layout and engagement event mail.
-- `expiries/` — the expiry tracker for DSCs, DIR-3 KYC and registrations: kinds, alert stages (T-60, T-30, T-7, expired), the red, amber and green band, the backfill seed and one alert's task, draft request and emails (automation wave 2, B).
+- `expiries/` — expiries of DSCs, DIR-3 KYC and registrations, shown on every role's compliance calendar: kinds, alert stages (T-60, T-30, T-7, expired), the calendar status, the seed from the step answers (including the DSC expiry asked on KYC Review & DSC) and one alert's task, draft request and emails (automation wave 2, B).
 - `incorporation/` — incorporation answers outside the checklist itself: directors, DIR-2, pre-inc direct flow, NIC-2008, countries.
 - `incorporation-docs/` — generators for the MCA incorporation documents (MOA, AOA, INC-9, DIR-2, DIR-8 and letters).
 - `intern/` — the project lead's (intern role) dashboard, work queue, managers and personal todos.
@@ -33,7 +32,6 @@ Domain logic and helpers. Nothing here imports `db`; data access goes through
 - `my-day/` — the "My day" plan for staff: gathering due work through the person's own scoped repositories, the ranking shared by the Today card, Ask and the morning email, and that email (automation wave 2, F).
 - `mca-filing/` — the SPICe+ filing record: PDF signature reader, PDF text compare, filing states and clocks, attachment files. Never drives the MCA portal and never signs.
 - `noc/` — the parent company NOC (Pre-2 board resolution) templates and variants.
-- `notices/` — the tax and GST notice desk: authorities, stages, reading a notice into a case, the reply draft from the knowledge bank, and the T-7, T-2 and overdue escalations (automation wave 2, C).
 - `notifications/` — in-app bell, announcements, popup cadence and the dock animation.
 - `notes/` — the wire type of a staff note on a client record (G-19).
 - `notify/` — WhatsApp nudges (outbound only; never blocks email).

@@ -36,7 +36,7 @@ export function SuperCapacityCard({
     >
       {managers.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="No manager yet" />
+          <EmptyState title="No manager yet. Each manager's clients against capacity appear here once one is added." />
         </div>
       ) : (
         <>
@@ -106,7 +106,7 @@ export function SuperCapacityLines({
     <DashSection title="Capacity · can the team take more?" headIcon={{ icon: Gauge, tone: 'violet' }} flush>
       {managers.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="No manager yet" />
+          <EmptyState title="No manager yet. Each manager's clients against capacity appear here once one is added." />
         </div>
       ) : (
         <ul className="grid gap-2.5 px-4 py-3 md:px-5">

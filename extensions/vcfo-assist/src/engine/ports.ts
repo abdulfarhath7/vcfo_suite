@@ -20,7 +20,7 @@ import type {
   GuardRefusal,
 } from '../shared/types';
 import type { FillResult } from '../portal/filler';
-import type { ClickResult, PrepareResult } from '../portal/agent';
+import type { ClickResult, FillOptions, PrepareResult } from '../portal/agent';
 import type { BridgeNode } from '../portal/bridge';
 import type { ScanOptions } from '../portal/scanner';
 
@@ -95,7 +95,11 @@ export interface PortalPort {
   prepareFill(target: FieldTarget, label: string): Promise<PrepareResult>;
   /** MAIN world: guideBridge.resolveNode(som).value = value. */
   bridgeSet(som: string, value: string): Promise<{ ok: boolean; reason?: string }>;
-  fill(target: FieldTarget, value: string, label: string, bridgeTried: boolean): Promise<FillResult>;
+  fill(target: FieldTarget, value: string, label: string, bridgeTried: boolean, opts?: FillOptions): Promise<FillResult>;
+  /** True when an element matching `css` exists and is visible (the page or wizard section is ready). */
+  pageReady(css: string): Promise<boolean>;
+  /** Closes visible information pop-ups; every click is guarded. Returns how many were closed. */
+  closePopups(css: string[]): Promise<number>;
   click(target: { css?: string; text?: string }, label: string, resultCss?: string): Promise<ClickResult>;
   attach(css: string, name: string, base64: string): Promise<{ ok: boolean; sha256?: string; reason?: string }>;
   highlightHuman(gates: RecipeGate[]): Promise<number>;

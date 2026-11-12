@@ -275,7 +275,7 @@ function LeadPlanner({ items, now, profileId, leadKey }: { items: TeamWorkItem[]
         }
       >
         {tasks.length === 0 && ownTodos.length === 0 ? (
-          <EmptyState title="No to-dos" className="m-4" />
+          <EmptyState title="No to-dos for this lead. Tasks you assign and the lead's own to-dos appear here." className="m-4" />
         ) : (
           <ul>
             {tasks.map((t) => (

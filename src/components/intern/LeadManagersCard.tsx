@@ -43,7 +43,7 @@ export function LeadManagersCard({
       ) : directoryQuery.isError ? (
         <p className="px-4 py-3 text-[13px] text-ink-muted">Could not load.</p>
       ) : managers.length === 0 ? (
-        <EmptyState title="No manager yet" className="m-4" />
+        <EmptyState title="No manager yet. The manager you report to appears here once an admin sets one." className="m-4" />
       ) : (
         <ul className="max-h-[14rem] overflow-y-auto">
           {managers.map((manager) => (

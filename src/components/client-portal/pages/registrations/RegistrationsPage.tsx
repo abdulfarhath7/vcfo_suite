@@ -29,6 +29,7 @@ import { GROUP_ORDER, buildRegistrations, regDueWithin, regWaiting, type RegItem
 import { REG_FILL, REG_ORDER, RegChip, regWord, regDate, registrationHref, useClientRegistrationFacts, useRegCredentials } from './parts';
 import { renewalOf } from '@/lib/registrations/registration-facts';
 import { fmtDM } from '@/lib/client-portal/compliances';
+import { dueSoonEmpty, registrationsProgressNotStarted, waitingEmpty } from '../compliances/empty-copy';
 import '../../css/compliances-board.css';
 
 export function RegistrationsList() {
@@ -151,7 +152,7 @@ export function RegistrationsList() {
           <div className="grid min-w-0 gap-5">
             <SCard title="Due in the next 15 days" flush>
               {!after ? (
-                <Empty>After the certificate</Empty>
+                <Empty>{dueSoonEmpty(false)}</Empty>
               ) : due.length ? (
                 due.slice(0, 8).map((r) => {
                   const rel = relativeDue(today, r.due!);
@@ -174,7 +175,7 @@ export function RegistrationsList() {
                   );
                 })
               ) : (
-                <Empty />
+                <Empty>{dueSoonEmpty(true)}</Empty>
               )}
             </SCard>
             {renewals.length ? (
@@ -211,14 +212,19 @@ export function RegistrationsList() {
                   </ListRow>
                 ))
               ) : (
-                <Empty />
+                <Empty>{waitingEmpty(after)}</Empty>
               )}
             </SCard>
             <SCard title="Progress flow">
+              {/* While nothing has started, a legend of zeros (Overdue 0) only alarms; say what will show instead. */}
+              {active.length && count('Not started') === active.length ? (
+                <Empty className="m-0 md:mx-0">{registrationsProgressNotStarted(active.length, after)}</Empty>
+              ) : (
               <StackedBar
                 onPick={(k) => setStatus((cur) => (cur === k ? null : (k as RegStatus)))}
                 segments={REG_ORDER.map((s) => ({ key: s, label: regWord(s), value: count(s), fill: REG_FILL[s] }))}
               />
+              )}
             </SCard>
           </div>
         </Island>

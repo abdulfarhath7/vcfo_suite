@@ -1,5 +1,7 @@
 # STATE — verified build state
 
+Last updated: 2026-11-11 (owner request on `claude/modest-rubin-tk62mr`, PR pending): **client health, the notice desk and company events are removed** (pages, routes, jobs `client-health-nightly` and `notice-escalations`, the SLA ladder, the digest section, the Ask actions `statuses.setClientHealth`, `compliance.openNotice`, `compliance.draftNoticeReply`, `compliance.requestNoticeDocuments` and `filing.recordEvent`, the checklist event hook, the project-list chip and the Analytics "Client health" card). **The Expiries page is removed and expiries show on every role's compliance calendar** (grid marks, day pop-up, export, and an Expiries rail card with Mark renewed for staff; read only in the client portal). KYC Review & DSC (`pre-7`) now requires each new DSC's expiry date; PF and ICEGATE ask the registered signatory's DSC expiry; Shops & Establishment, Trade Licence, Trademark and Trademark Renewal ask theirs; the name approval expiry shows until Part B is filed; the client calendar draws expiries on their dates; a checklist save syncs the items at once. Checked in a browser on a local database for lead, admin and client (desktop and phone). **Migration `0056_remove_health_notices_events` drops `notice_cases`, `company_events`, `client_health_scores` and `sla_escalations`; apply it on RDS before deploy (after `0051` to `0054`).** Company events are to return as non-statutory compliances. Notes: `notes/automation.md`.
+
 Last updated: 2026-11-11 (GST and LUT registration trackers on branch `PRITHISH`, PR to `main`, not deployed: one date on the GST record, the day scheduled on the firm calendar (application and LUT filed that day; statutory deadline shown until scheduled), and four stages: application filed with ARN, Aadhaar tick box, SRN, outcome approved or resubmission. Brought in line with firm policy SBC-STD-AI-02: no portal password field, no portal retrieval, VCFO Assist hidden on GST. Milestones in `compliance_subject_fields`; daily reminder job `gst-registration-start` (staff only). No migration. See `notes/checklist-workflow.md`, "GST registration tracker".)
 
 Last updated: 2026-11-11 (statutory calendar import on `claude/loving-planck-uh9fc8`, see the row "Statutory calendar import"; **migration `0055_statutory_calendars` must be applied on RDS before deploy**).
@@ -243,6 +245,37 @@ applied on RDS before deploy**: it adds
 - G18: catalog kill switch (`ASSIST_EXTENSION_DISABLED`, `ASSIST_MIN_EXTENSION_VERSION`, plus
   `ASSIST_FIRM_CONTACTS`), placeholder `update_url` in `wxt.config.ts`, `DISTRIBUTION.md`. The
   enterprise policy, update host, signing key and CI release job are not set up yet.
+## VCFO Assist: old repo consolidated, portal packs and the task tree (11 Nov 2026, on `claude/laughing-albattani-03nyom`, not committed or deployed)
+
+Steps 1 and 2 of the plan in `docs/specs/vcfo-assist-agents/PLAN.md` ("one extension, a family of
+agents"). No migration. Nothing touches a live portal; every pack is `mock-only`.
+- **Ported from `abdulfarhath7/vcfo_assist` (main `5e58bcf`, read only):** captured MCA schemas
+  (compacted) and field maps in `extensions/vcfo-assist/portal-data/mca-v3/` (two real director
+  names and DINs in an AGILE-PRO-S option list were dropped); the recorder in
+  `extensions/vcfo-assist/tools/recorder/` (no stealth, no values, no headers or bodies, network log
+  opt-in, PII masked, output and profile outside the repo); the offline test in `tools/offline/`
+  (sanitized fixtures rebuilt from the schemas, jsdom and Chromium); the MCA fill knowledge (key
+  class → node id → label ladder, input/keyup/change/blur, dependent dropdown polling, Yes/No radios,
+  PIN code wait, `#okInfoModalBtn`, readiness, wizard sections as human steps, DD/MM/YYYY). Not
+  ported: the popup UI, the login user-id filler, the old Suite client and `.vcfoa` crypto.
+- **Recipes** rewritten with the real keys and URLs, `verifiedAgainst: "capture"`: `spice-a@2.0.0`
+  (no DSC step on Part A), `spice-b@2.0.0` (four wizard sections; blocks 6b/6c/7a/7b via `where`,
+  `slot` and `nth`), and new `agile-pro-s`, `emoa`, `eaoa` (`beta`). Mock pages are generated with
+  the real keys (`mock-portal/build-mocks.mjs`).
+- **Portal packs** (`src/lib/assist-agents/packs/*.json`, `pack.ts`): `mca-v3` from the captures and
+  placeholders for income tax, TRACES, Protean, GST (needs CS opinion first), EPFO, ESIC, Udyam,
+  DGFT. Suite applies the pack to a recipe before signing it.
+- **Per-pack live switch:** `ASSIST_LIVE_PACKS` plus the pack's `legalStatus: "cs-cleared"`;
+  `ASSIST_LIVE_PORTALS=true` is a deprecated alias for `mca-v3` only (and does nothing until that
+  pack is cleared).
+- **Catalog tree** of any depth (Compliance › Income tax & TDS › TDS › Challan 281, 24Q/26Q, Form
+  16; Income tax › Challan 280, ITR, all `later`); original ids unchanged; `GET /api/assist/catalog`
+  adds `tree`, `packs` and `liveHosts`. The side panel shows the tree with chips and a breadcrumb.
+- Open: the live Part B opens one Add/Edit sub-panel per person, so blocks after the first are left
+  to the person until a per-person sub-panel loop is built; Part B's order on the live form is Submit
+  → Download PDF → Upload, but the engine downloads before Submit; body-corporate subscribers (6a)
+  and individuals' addresses are not in the recipe; the real Auto check success text is unknown.
+
 ## Change request VCFO-CR-2026-11 (11 Nov 2026, on `claude/brave-shannon-c5e0wi`, not merged or deployed)
 
 Built and tested (unit tests, typecheck, and the flows below on a local build):
@@ -276,8 +309,10 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
   - The chain runs edit → confirm → email → receipt → Manager → Admin → final. The Admin cannot approve before the Manager, and a return needs a reason and goes to the Lead.
   - Each move sends one notice to every participant. `e2e/board-resolution-client-edit.spec.ts` runs the chain on a local app.
   - Owner decisions of 11 Nov (branch `cr/board-resolution`). BR-03: the client's chip names the Lead and the Manager by first name ("With Lead · Divya", "With Manager · Anita") and the Admin by role ("With Admin"); staff chips are unchanged. The names come from the engagement team the portal already loads (`leadName`/`managerName`, `useHome`); `workHolderLabel` takes them as an optional `team`.
+  - L5 (owner's 10 Nov list, part 3; branch `board-resolution-signature-block-alignment-eshwar`): the signature block is aligned in the Word file and the preview. One font (Times New Roman 11 pt), the Designation, Date and Place values in a borderless table so they start at one position, even spacing. `scripts/br-signature-block.mjs` rewrites the block in the two templates that have it; the preview's merge-field highlight inherits its run's font instead of docx-preview's 12 pt default for spans. Documents generated before this keep their old block until someone makes them again.
   - BR-05: a returned edit is shared. Holder `lead_client` reads "With Lead and Client" for staff and "With Lead · <first name> and you" for the client. Both may `correct` (each save audited with role and before/after text), and only the Lead may `resubmit` to the Manager.
-- **Projects:** PR-01 name field focus; PR-02 "Download project (ZIP)" for the Lead, Manager and Admin. The ZIP is made in the background, with one folder per item type.
+- **Projects:** PR-01 name field focus; PR-02 "Download project (ZIP)" for the Lead, Manager and Admin. Since the download pop-up below, it opens that pop-up with every ready document ticked; the old `/project-zip` route and `src/lib/projects/project-zip.ts` are gone.
+- **Download documents (staff only):** a "Download documents" button on the project header (Lead, Manager, Admin, Super admin) and on the document pack page opens one pop-up. It shows every document by SPICe+ Part A, Part B, After incorporation and Project records (the PR-02 Excel files: answers, directors, subscribers, audit log). Part B is split into constitution, one folder per director, declarations, and each step's uploads. It has quick picks (each part, each director, uploads only, everything), Word files only for now (records in Excel), and folders or one flat folder. One file downloads as itself. Up to 25 files with no more than 5 uploads stream back as a ZIP; anything larger is made in the background with a link in the bell. Names follow GL-08. The code is in `src/lib/document-downloads/` and `app/api/engagements/[id]/document-downloads`, and access runs through `getDocPackInputs`, so a Lead only reaches their own engagements. The old "Download ready as .zip" button on the pack page is replaced; its route stays.
 - **Landing:** LP-01 light theme by default with a dark toggle, set before paint, contrast tested; LP-02 no screenshots; LP-03 one hero scene per headline word.
 
 Notes:
@@ -286,3 +321,21 @@ Notes:
   - CD-05 field details.
   - The board resolution layout reference Word file (Part 3 of the 10 Nov list).
   - Confirmation of the open CR questions. Each was built to the CR's own proposal: DIN check is manual, the DR-03 email is sent manually by the lead, and after a return the Lead corrects the edited board resolution.
+
+## Staff empty states (11 Nov 2026, on `staff-dashboards-empty-states-eshwar`, not merged or deployed)
+
+- Every empty card, section and table on the Lead, Manager, Admin and Super admin pages now says what will appear there and when, through the shared `EmptyState`. The compliance `RailCard` takes a required `empty` message instead of defaulting to "None".
+- Lists tell "nothing here yet" apart from "the filter hides everything": Incorporation views, admin Clients, Super Clients, Team tasks, Work list, Manager items, Risks, Open registrations and Notifications.
+- The Lead and Manager home tiles carry a short note when the number is 0 ("Nothing is late", "Nothing due by Sunday").
+- No behaviour changed; only empty-state text and its layout.
+
+## Spectrum styling for generated documents (11 Nov 2026, not committed or deployed)
+
+- Every generated document is classified in `docs/context/notes/incorporation-docs.md`
+  ("Spectrum styling"). Statutory and filing documents (all incorporation drafts, board
+  resolutions, NOCs, board-meeting notices, labour registers) are unchanged, and every
+  `public/templates/*.docx` is byte-identical.
+- `scripts/design-tokens-docs.mjs --write` generates `src/lib/doc-style/spectrum-tokens.ts`. The
+  Word helper is `src/lib/doc-style/spectrum-docx.ts` and has no caller yet, because no generated
+  Word file is firm-branded. The four react-pdf documents (partner report, Ask brief, status
+  brief, budget pack) now use `spectrum-pdf.ts`. Excel exports are not restyled yet.

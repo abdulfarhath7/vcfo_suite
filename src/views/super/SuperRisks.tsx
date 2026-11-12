@@ -195,7 +195,19 @@ export default function SuperRisks() {
         }
         flush
       >
-        <EFilingGrid caption="Risks" columns={columns} rows={rows} rowKey={(r) => r.id} empty="No risk of this kind" minWidth={820} pageSize={10} />
+        <EFilingGrid
+          caption="Risks"
+          columns={columns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          empty={
+            risks.length === 0
+              ? 'No risk right now. Overdue steps and filings, stuck clients and missing owners appear here as they arise.'
+              : 'No risk of this kind'
+          }
+          minWidth={820}
+          pageSize={10}
+        />
       </DashSection>
       <AssignClientDialog
         open={assignFor !== null}

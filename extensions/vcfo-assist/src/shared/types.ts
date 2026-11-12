@@ -13,16 +13,31 @@ export type RecipeTransform = 'none' | 'upper' | 'date' | 'amount' | 'yesNo' | '
 export type FieldControl = 'text' | 'select' | 'textarea' | 'radio';
 
 export interface RecipeField {
-  /** Profile key path, for example `company.proposedNames.0`. */
+  /**
+   * The field's identity in the run: its profile key, plus `@slot` when the recipe reads the same
+   * key into two blocks (Part B's subscriber-director DIN in blocks 6b and 7a).
+   */
   key: string;
+  /** The profile key path the value is read from, when it differs from `key` (a slotted field). */
+  path?: string;
   /** The label the portal showed when the recipe was recorded. */
   label: string;
   /** AEM SOM expression, for example `guide[0].guide1[0].guideRootPanel[0].partA[0].proposedName1[0]`. */
   som?: string;
   /** CSS selector fallback for T0. */
   css?: string;
+  /** Which match of `css` on the page (0-based); see `nth` in Suite's recipe schema. */
+  nth?: number;
+  /** The captured AEM field node id (or control id): the second T0 tier. */
+  nodeId?: string;
   /** The input's `name` when the recipe was recorded. */
   name?: string;
+  /** With `each`: only entries whose values pass are expanded (`true` present, `false` absent, a string equal). */
+  where?: Record<string, boolean | string>;
+  /** A dependent dropdown: poll for the wanted option (up to the recipe's `optionsMs`). */
+  waitForOptions?: boolean;
+  /** The portal looks other fields up after this one (a PIN code): wait `afterPincodeMs` after it. */
+  lookup?: boolean;
   control?: FieldControl;
   transform?: RecipeTransform;
   required?: boolean;
@@ -61,7 +76,7 @@ export interface RecipeAction {
   resultCss?: string;
 }
 
-export type GateKind = 'LOGIN' | 'DSC' | 'SUBMIT' | 'PAY';
+export type GateKind = 'LOGIN' | 'CAPTCHA' | 'OTP' | 'DSC' | 'SUBMIT' | 'PAY' | 'EVC';
 
 export interface RecipeGate {
   kind: GateKind;
@@ -78,15 +93,29 @@ export interface RecipePage {
   urlPattern: string;
   /** The same glob for the local mock portal, used instead of `urlPattern` on a mock host. */
   mockUrlPattern?: string;
-  /** Selector that exists once the page is ready. */
+  /** Selector that exists and is visible once the page (or wizard section) is ready. */
   readyCss?: string;
+  /** A step only the person takes before this page can be filled (open a wizard section or sub-panel). */
+  step?: string;
+  /** Information pop-ups the agent may close first (guarded at the click). */
+  closePopups?: string[];
   fields: RecipeField[];
+}
+
+/** Waits from the portal pack, in milliseconds. */
+export interface RecipeWaits {
+  readyMs: number;
+  optionsMs: number;
+  afterPincodeMs: number;
 }
 
 export interface Recipe {
   id: string;
   version: string;
   title: string;
+  /** The portal pack the recipe runs on (informational; Suite already applied it). */
+  pack?: string;
+  waits?: RecipeWaits;
   pages: RecipePage[];
   actions: RecipeAction[];
   gates: RecipeGate[];
@@ -109,9 +138,20 @@ export interface SignedRecipe {
 
 // ---------- catalog ----------
 
+export type TaskKind = 'portal-fill' | 'file-builder' | 'challan-prepare';
+
 export interface CatalogSubAgent {
   id: string;
   name: string;
+  /** Ready, Beta or Later (Suite's `status`). */
+  status?: 'ready' | 'beta' | 'later';
+  /** The portal pack the task runs on, when it has one. */
+  pack?: string;
+  kind?: TaskKind;
+  gates?: string[];
+  note?: string;
+  /** Ids from the agent down to this task. */
+  path?: string[];
   /** The checklist step the run advances; "Fix in Suite" opens it when no missing entry names one. */
   stepId?: string;
   /** Absent while the sub-agent is not built yet ("Coming soon"). */
@@ -125,12 +165,30 @@ export interface CatalogAgent {
   subAgents: CatalogSubAgent[];
 }
 
+/** A node of the catalog tree: a group (agent or sub-agent) or a task. */
+export type CatalogNode =
+  | { type: 'group'; id: string; name: string; children: CatalogNode[] }
+  | ({ type: 'task' } & CatalogSubAgent);
+
+/** One portal pack as Suite reports it. */
+export interface CatalogPack {
+  id: string;
+  title: string;
+  legalStatus: 'mock-only' | 'cs-cleared';
+  live: boolean;
+  needsCsOpinionFirst?: boolean;
+}
+
 export interface Catalog {
   /** False until the CS opinion is recorded in Suite. The extension treats a missing value as false. */
   liveAllowed: boolean;
   /** Hosts a live run may use once `liveAllowed` is true. */
   liveHosts?: string[];
   agents: CatalogAgent[];
+  /** The agents as a tree of any depth (agent → sub-agent → … → task). Built from `agents` when Suite sends none. */
+  tree?: CatalogNode[];
+  /** Each portal pack's legal status and live switch. */
+  packs?: CatalogPack[];
   /** G18 kill switch: true stops every run at its start. */
   extensionDisabled?: boolean;
   /** G18: an extension below this version refuses to run. */
@@ -189,8 +247,13 @@ export interface ScanResult {
   url: string;
   host: string;
   fields: ScannedField[];
-  /** Recipe field key → uid of the control its SOM or CSS found (T0), or null. */
+  /** Recipe field key → uid of the control its SOM, CSS (nth match) or node id found (T0), or null. */
   probes: Record<string, string | null>;
+  /**
+   * Recipe field key → how many matches its CSS selector has on the page. A field whose selector
+   * matches but not at its `nth` is another person's block that is not open (an Add/Edit sub-panel).
+   */
+  probeCounts?: Record<string, number>;
   /** True while any login control (user id, password, captcha, OTP) is visible. */
   loginVisible: boolean;
   hasGuideBridge: boolean;
@@ -301,6 +364,8 @@ export type WaitInfo =
   | { kind: 'disabled'; message: string }
   | { kind: 'live_blocked'; host: string }
   | { kind: 'wrong_page'; page: string; path: string }
+  /** The page's ready element is not visible yet: a wizard section or sub-panel the person opens. */
+  | { kind: 'human_step'; page: string; text: string }
   | { kind: 'suite_error'; message: string };
 
 export interface LogEntry {

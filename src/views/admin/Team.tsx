@@ -115,7 +115,7 @@ export default function Team() {
           {internsLoading ? (
             <SkeletonRows className="p-4" />
           ) : roster.length === 0 ? (
-            <EmptyState title="No project leads yet" className="m-4" />
+            <EmptyState title="No project leads yet. Create one with the form on the left and they appear here with their load." className="m-4" />
           ) : (
             <div className="px-2 pb-2">
               <EFilingGrid

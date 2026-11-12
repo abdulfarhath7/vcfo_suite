@@ -1,4 +1,4 @@
-import { emailParagraph, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
+import { emailParagraph, emailQuote, escapeHtml, renderEmailDocument } from '@/lib/email/email-layout';
 
 /**
  * RECEIVABLES PARTNER EMAILS (Phase 8): the login invite, the password reset link, the access
@@ -75,7 +75,7 @@ export function sbcReplyEmail(input: { partnerName: string; invoiceLabel: string
     bodyHtml:
       emailParagraph(`Dear ${escapeHtml(firstName(input.partnerName))},`) +
       emailParagraph(`${escapeHtml(input.authorName)} replied on ${escapeHtml(input.invoiceLabel)}:`) +
-      `<blockquote style="margin:0 0 14px;padding:10px 14px;border-left:3px solid #CBD5E1;background:#F8FAFC;white-space:pre-wrap;">${escapeHtml(quote)}</blockquote>`,
+      emailQuote(escapeHtml(quote)),
     cta: { label: 'Open the invoice', href: input.url },
   });
   const text = [`Dear ${firstName(input.partnerName)},`, '', `${input.authorName} replied on ${input.invoiceLabel}:`, '', quote, '', `Open the invoice: ${input.url}`].join('\n');

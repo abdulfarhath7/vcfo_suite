@@ -20,7 +20,7 @@ import { InfoButton } from '@/components/ui/info-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
-import { SkeletonRows } from '@/components/ui/empty-state';
+import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { errorMessage, toastError } from '@/lib/toast-errors';
 import { toastSaved } from '@/components/ui/toast-saved';
@@ -285,7 +285,9 @@ export function StaffSbcFieldsCard({
       ) : q.isError ? (
         <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">Could not load the fields</p>
       ) : rows.length === 0 && facts.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-ink-faint md:px-5">None</p>
+        <div className="p-3">
+          <EmptyState title="No SBC fields for this item. Fields SBC fills in, such as an acknowledgement number, appear here when the filing has them." className="min-h-[72px] py-4 text-[13px]" />
+        </div>
       ) : (
         <dl className="m-0">
           {facts.map((f, i) => (

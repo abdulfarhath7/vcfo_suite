@@ -332,11 +332,8 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
   // Compliances is a nested group: `{base}/compliances/{calendar|filings}`.
   // The parent links to its landing child (the calendar), as Docs → Vault does.
   if (group === 'Compliances') {
-    // The super admin has only expiries, notices and events under its own segment; its
-    // calendar is the firm-wide one at /app/admin, as the sidebar (compliance-nav.ts) links it.
-    const calendarBase = base === '/app/super' ? '/app/admin' : base;
     return trail('calendar', [
-      { label: 'Compliances', href: `${calendarBase}/compliances/calendar` },
+      { label: 'Compliances', href: `${base}/compliances/calendar` },
       { label: pageLabel(nested ?? 'calendar'), href: `${base}/compliances/${nested ?? 'calendar'}` },
     ]);
   }

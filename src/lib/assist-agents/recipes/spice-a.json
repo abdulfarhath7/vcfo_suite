@@ -1,108 +1,106 @@
 {
   "id": "spice-a",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "title": "SPICe+ Part A (name reservation)",
   "subAgent": "spice-a",
-  "verifiedAgainst": "mock",
+  "verifiedAgainst": "capture",
+  "capturedFrom": "capture 2026-09-23, abdulfarhath7/vcfo_assist@5e58bcf (extensions/vcfo-assist/portal-data/mca-v3)",
+  "pack": "mca-v3",
   "pages": [
     {
       "id": "part-a",
-      "title": "SPICe+ Part A",
-      "urlPattern": "/content/mca/global/en/mca/e-filing/incorporation-change-services/spice-plus*",
-      "ready": {
-        "som": "guide[0].guide1[0].guideRootPanel[0]"
-      },
-      "mockUrlPattern": "/spice-a*.html"
+      "packPage": "spice-a"
     }
   ],
   "fields": [
     {
       "key": "company.type",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].companyType[0]",
-      "css": "[name=\"companyType\"]",
-      "label": "Type of company",
+      "css": ".guideFieldNode.type-of-company",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist__",
+      "label": "1(a) Type of company",
       "transform": "none",
-      "required": true
+      "required": true,
+      "page": "part-a"
     },
     {
       "key": "company.class",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].companyClass[0]",
-      "css": "[name=\"companyClass\"]",
-      "label": "Class of company",
+      "css": ".guideFieldNode.class-of-company",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co__",
+      "label": "Class of the company",
       "transform": "none",
-      "required": true
+      "required": true,
+      "waitForOptions": true,
+      "page": "part-a"
     },
     {
       "key": "company.category",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].companyCategory[0]",
-      "css": "[name=\"companyCategory\"]",
+      "css": ".guideFieldNode.category-of-company",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co_1813708729__",
       "label": "Category of the company",
       "transform": "none",
-      "required": true
+      "required": true,
+      "waitForOptions": true,
+      "page": "part-a"
     },
     {
       "key": "company.subCategory",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].companySubCategory[0]",
-      "css": "[name=\"companySubCategory\"]",
+      "css": ".guideFieldNode.subcategory-of-company",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-guidedropdownlist_co_175619313__",
       "label": "Sub-category of the company",
       "transform": "none",
       "required": true,
-      "note": "Derived from the project ownership; confirm the selection on the portal."
+      "waitForOptions": true,
+      "note": "Derived from the project ownership; confirm the selection on the portal.",
+      "page": "part-a"
     },
     {
       "key": "company.nicCode",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].mainDivision[0]",
-      "css": "[name=\"mainDivision\"]",
-      "label": "Main division of industrial activity of the company",
-      "transform": "nicDivision",
-      "required": true,
-      "note": "The NIC row itself is picked from the popup by the user."
+      "css": ".guideFieldNode.nic-text-box",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel-panel_1663114232_cop-panel_1119548299-panel-guidetextbox__",
+      "label": "NIC code search",
+      "transform": "none",
+      "required": false,
+      "note": "The agent types the NIC code into the search box; you pick the row from the popup table (Main NIC Code is read-only).",
+      "page": "part-a"
     },
     {
       "key": "company.proposedNames[0]",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].proposedName1[0]",
-      "css": "[name=\"proposedName1\"]",
-      "label": "Proposed name 1",
+      "css": ".guideFieldNode.proposedname1",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel_copy-panel-panel-guidetextbox_1884163__",
+      "label": "Proposed name I",
       "transform": "none",
-      "required": true
+      "required": true,
+      "page": "part-a"
     },
     {
       "key": "company.proposedNames[1]",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].proposedName2[0]",
-      "css": "[name=\"proposedName2\"]",
-      "label": "Proposed name 2",
+      "css": ".guideFieldNode.proposedname2",
+      "nodeId": "guideContainer-rootPanel-panel_2017717670_cop-panel_copy-panel-panel_2003762916-guidetextbox_4394968__",
+      "label": "Proposed name II",
       "transform": "none",
       "required": false,
-      "note": "Only before name approval; after approval one name is filed."
+      "note": "Only before name approval; after approval one name is filed.",
+      "page": "part-a"
     },
     {
       "key": "company.nameSignificance",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].significance[0]",
-      "css": "[name=\"significance\"]",
+      "css": ".guideFieldNode.significance",
       "label": "Significance of key/coined word(s) of the proposed name",
       "transform": "none",
       "required": true,
       "askUser": true,
-      "note": "Suite does not collect this yet; the user types it on the portal."
+      "note": "Unverified: this field was not in the 2026-09-23 capture, so its selector is a guess. Suite does not collect it yet; you type it on the portal.",
+      "page": "part-a"
     },
     {
       "key": "company.trademarkSimilar",
-      "page": "part-a",
-      "som": "guide[0].guide1[0].guideRootPanel[0].trademarkSimilar[0]",
-      "css": "[name=\"trademarkSimilar\"]",
+      "css": ".guideFieldNode.trademarkSimilar",
       "label": "Whether the proposed name is similar to a registered trademark",
       "transform": "yesNo",
       "required": true,
       "askUser": true,
-      "note": "Suite does not collect this yet; the user answers it on the portal."
+      "note": "Unverified: this field was not in the 2026-09-23 capture, so its selector is a guess. Suite does not collect it yet; you answer it on the portal.",
+      "page": "part-a"
     }
   ],
   "actions": [
@@ -115,27 +113,11 @@
       }
     },
     {
-      "id": "check-form",
-      "label": "Check form",
+      "id": "auto-check",
+      "label": "Auto check",
       "kind": "safe",
       "match": {
-        "text": "Check form"
-      }
-    },
-    {
-      "id": "download-pdf",
-      "label": "Download PDF",
-      "kind": "safe",
-      "match": {
-        "text": "Download PDF"
-      }
-    },
-    {
-      "id": "attach-pdf",
-      "label": "Attach PDF",
-      "kind": "safe",
-      "match": {
-        "css": "#signed-pdf"
+        "text": "Auto check"
       }
     },
     {
@@ -157,7 +139,8 @@
   ],
   "gates": [
     "LOGIN",
-    "DSC",
+    "CAPTCHA",
+    "OTP",
     "SUBMIT",
     "PAY"
   ],
@@ -170,17 +153,12 @@
     {
       "id": "saved",
       "kind": "text",
-      "pattern": "[Ss]aved successfully"
+      "pattern": "[Ss]aved successfully|[Dd]raft saved"
     },
     {
       "id": "checked",
       "kind": "text",
-      "pattern": "[Cc]heck passed"
-    },
-    {
-      "id": "pdf-ready",
-      "kind": "text",
-      "pattern": "PDF ready"
+      "pattern": "[Cc]heck passed|[Nn]o errors"
     }
   ]
 }

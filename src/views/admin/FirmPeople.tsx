@@ -154,7 +154,7 @@ export default function FirmPeople() {
         <PeopleCard title="Project leads" count={leads.length}>
           {leads.length === 0 ? (
             <EmptyState
-              title="No project leads yet"
+              title="No project leads yet. Each project lead appears here once they are created."
               className="m-4"
               action={
                 canCreate ? (

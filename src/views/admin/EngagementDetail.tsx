@@ -1,5 +1,6 @@
 "use client";
 
+import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import { roleAppSegment } from '@/lib/auth-routes';
 import { useEffect, useMemo, useState } from 'react';
 import { redirect, useParams, usePathname, useRouter } from 'next/navigation';
@@ -74,7 +75,6 @@ import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
   ProjectZipButton, RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { SpiceAttachmentsCard } from '@/components/incorporation/SpiceAttachmentsCard';
 import { McaFilingCard } from '@/components/incorporation/McaFilingCard';
 
@@ -345,13 +345,13 @@ export default function EngagementDetail() {
           badge={
             <span className="inline-flex items-center gap-2">
               <RecordStageChip engagement={eng} state={checklistState} />
-              <ClientHealthChip engagementId={eng.id} />
             </span>
           }
           meta={<RecordMetaLine engagement={eng} />}
           actions={
             <>
               <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
+              <DownloadDocumentsButton engagementId={eng.id} />
               <ProjectZipButton engagementId={eng.id} />
             </>
           }

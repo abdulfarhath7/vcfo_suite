@@ -351,7 +351,11 @@ export default function SuperPracticeRegistrations() {
                   rows={itemRows}
                   rowKey={(w) => w.id}
                   onRowClick={(w) => router.push(w.client.summary.href)}
-                  empty="No open registration matches these filters"
+                  empty={
+                    items.length === 0
+                      ? 'No open registration. Registrations a client still needs appear here once its project lists them.'
+                      : 'No open registration matches these filters'
+                  }
                   minWidth={760}
                   pageSize={15}
                   rowClassName={(w) => (w.cell === 'overdue' ? 'text-danger' : undefined)}
@@ -403,7 +407,7 @@ function StuckCard({
     <DashSection title="Stuck" meta={String(stuck.length)} flush>
       {stuck.length === 0 ? (
         <div className="p-4">
-          <EmptyState title="None" />
+          <EmptyState title="Nothing is stuck. A registration appears here when it is overdue or has not moved for a while." />
         </div>
       ) : (
         <ul>

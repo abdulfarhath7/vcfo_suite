@@ -40,7 +40,7 @@ export function DashboardApprovalsPanel() {
       bodyClassName="p-0"
     >
       {shown.length === 0 ? (
-        <EmptyState title="Nothing waiting" className="m-4" />
+        <EmptyState title="Nothing waiting for approval. A step appears here when a project lead submits it for your review." className="m-4" />
       ) : (
         <ul>
           {shown.map((row) => {

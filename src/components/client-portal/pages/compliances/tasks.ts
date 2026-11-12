@@ -6,6 +6,8 @@
  * calendar statuses (C-3) and the Filings rows of done tasks (F-2).
  */
 import { daysBetween, fmtDM, plural, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
+import type { ExpiryItem } from '@/hooks/use-expiries';
+import { daysLeftLabel } from '@/lib/expiries/model';
 
 export type Category = 'all' | 'statutory' | 'non-statutory';
 export const showStat = (c: Category) => c !== 'non-statutory';
@@ -35,6 +37,8 @@ export interface ClientTask {
   deliverable: { id: string; fileName: string } | null;
   /** Set when the task is a board meeting; the row opens the meeting page instead. */
   boardMeetingId?: string | null;
+  /** Set when the row is an expiry (a DSC, DIR-3 KYC, a licence) drawn like a task: its "days left". */
+  expiry?: { word: string } | null;
 }
 
 export type StatusWord = 'Not started' | 'In progress' | 'Waiting' | 'Due soon' | 'Overdue' | 'Done';
@@ -99,8 +103,9 @@ export function urgencyLabel(u: string | null | undefined): string {
   return s ? s[0]!.toUpperCase() + s.slice(1) : 'Low';
 }
 
-/** C-3 hover text: "Starts 12 Oct · High". */
-export const taskHint = (t: Pick<ClientTask, 'startDate' | 'urgency'>) => `Starts ${fmtDM(t.startDate)} · ${urgencyLabel(t.urgency)}`;
+/** C-3 hover text: "Starts 12 Oct · High"; an expiry says how many days are left. */
+export const taskHint = (t: Pick<ClientTask, 'startDate' | 'urgency' | 'expiry'>) =>
+  t.expiry ? t.expiry.word : `Starts ${fmtDM(t.startDate)} · ${urgencyLabel(t.urgency)}`;
 
 /** S-3: rows group by end-date week (weeks start on Monday): This week, Next week, Later, Done. */
 export type WeekGroup = 'This week' | 'Next week' | 'Later' | 'Done';
@@ -172,6 +177,32 @@ export function taskAsRow(t: ClientTask): TaskRow {
   };
 }
 
+const EXPIRY_ROW_PREFIX = 'expiry:';
+
+/** An expiry drawn on the calendar like a task, on its expiry date. It opens nothing; the Expiries card renews it. */
+export const isExpiryRow = (r: CalRow): r is TaskRow => isTaskRow(r) && Boolean(r.task.expiry);
+
+/** The calendar row of an expiry: "DSC expires · Ravi Kumar" on the expiry date. */
+export function expiryAsRow(x: ExpiryItem): TaskRow {
+  const word = daysLeftLabel(x.daysLeft);
+  const task: ClientTask = {
+    id: x.id,
+    name: `${x.kindLabel} expires · ${x.subjectName}`,
+    activityName: x.referenceLabel,
+    startDate: x.expiresOn,
+    endDate: x.expiresOn,
+    urgency: 'High',
+    visibility: 'client',
+    stage: 'not_started',
+    completedOn: null,
+    ownerName: null,
+    notifyDays: 30,
+    deliverable: null,
+    expiry: { word },
+  };
+  return { ...taskAsRow(task), id: `${EXPIRY_ROW_PREFIX}${x.id}`, engagementId: x.engagementId, companyName: x.companyName, authorityName: 'Expiry', freqLabel: 'Expiry', period: word };
+}
+
 /** F-2: only completed tasks are Filings rows. */
 export const doneTaskRows = (tasks: ClientTask[]) => tasks.filter((t) => t.stage === 'completed').map(taskAsRow);
 
@@ -181,9 +212,10 @@ export function fyOfIso(iso: string): number {
   return Number(iso.slice(5, 7)) >= 4 ? y : y - 1;
 }
 
-/** "2 filings · 1 task" for a calendar day. */
+/** "2 filings · 1 task · 1 expiry" for a calendar day. */
 export function dayWords(list: CalRow[]): string {
-  const t = list.filter(isTaskRow).length;
-  const f = list.length - t;
-  return [f ? plural(f, 'filing') : '', t ? plural(t, 'task') : ''].filter(Boolean).join(' · ') || plural(0, 'filing');
+  const x = list.filter(isExpiryRow).length;
+  const t = list.filter(isTaskRow).length - x;
+  const f = list.length - t - x;
+  return [f ? plural(f, 'filing') : '', t ? plural(t, 'task') : '', x ? (x === 1 ? '1 expiry' : `${x} expiries`) : ''].filter(Boolean).join(' · ') || plural(0, 'filing');
 }

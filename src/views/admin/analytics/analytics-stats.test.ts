@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  clientHealthCounts,
   plainDay,
-  projectHealth,
   stepsCompletedPerWeek,
   workloadByLead,
   type AnalyticsProject,
@@ -33,20 +31,6 @@ describe('analytics stats', () => {
       { w: '19 Oct', steps: 1 },
       { w: '26 Oct', steps: 1 },
     ]);
-  });
-
-  it('picks one health word per project', () => {
-    expect(projectHealth({ internId: '', state: { a: { status: 'overdue' }, b: { status: 'awaiting-client' } } }, ids)).toBe('overdue');
-    expect(projectHealth({ internId: '', state: { a: { status: 'awaiting-client' } } }, ids)).toBe('waiting');
-    expect(projectHealth({ internId: '', state: { a: { status: 'completed' } } }, ids)).toBe('progress');
-    expect(projectHealth({ internId: '', state: {} }, ids)).toBe('notStarted');
-    expect(
-      projectHealth(
-        { internId: '', state: { a: { status: 'completed' }, b: { status: 'completed' }, c: { status: 'not-applicable' } } },
-        ids,
-      ),
-    ).toBe('done');
-    expect(clientHealthCounts([{ internId: '', state: {} }], ids).notStarted).toBe(1);
   });
 
   it('splits open steps per lead and skips unknown people', () => {

@@ -17,6 +17,10 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/app/manager/compliances/calendar',
 }));
 vi.mock('@/components/SEO', () => ({ SEO: () => null }));
+vi.mock('@/hooks/use-expiries', () => ({
+  useExpiries: () => ({ data: [], isPending: false }),
+  useMarkRenewed: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+}));
 vi.mock('@/components/shell/PageTransition', () => ({ PageTransition: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock('@/components/ask/WhatsThisButton', () => ({ WhatsThisButton: () => null }));
 vi.mock('@/components/admin/StatutoryCalendar', () => ({ StatutoryCalendar: () => null }));

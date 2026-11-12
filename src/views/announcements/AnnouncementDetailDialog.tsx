@@ -15,7 +15,7 @@ import { announcementAuthorName, parseAnnouncementKind, type Announcement } from
  * then the kind chip, an "Important" tag and the date and time. The sender row shows the
  * author's initials, name and role, or the feed host for a feed item. The footer steps through
  * the list the page shows ("3 / 8", previous and next, arrow keys), opens the source and closes
- * with "Got it". Contact buttons are left out: announcements store no author email or phone.
+ * with "Noted". Contact buttons are left out: announcements store no author email or phone.
  */
 
 function whenLine(iso: string): string {
@@ -134,7 +134,7 @@ export function AnnouncementDetailDialog({
                   </Button>
                 ) : null}
                 <Button type="button" size="sm" onClick={onClose}>
-                  Got it
+                  Noted
                 </Button>
               </span>
             </DialogFooter>

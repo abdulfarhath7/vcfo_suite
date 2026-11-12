@@ -39,7 +39,6 @@ import { shortCompany } from '@/components/super/parts/super-text';
 import { cn } from '@/lib/utils';
 import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 import { deriveStuckReason, STUCK_LABEL, type StuckReason } from '@/lib/projects/project-stuck';
-import { ClientHealthChip } from '@/components/client-health/ClientHealthChip';
 import { adminProjectPath } from '@/lib/projects/project-step-path';
 import { EFilingGrid, type EFilingColumn } from '@/components/dash/EFilingGrid';
 import { internCompanyPhaseProgress } from '@/lib/intern/intern-work';
@@ -266,8 +265,6 @@ export function FirmProjectsPanel({
           <Chip fixed tone={HEALTH_TONE[r.facts.health]} title={STUCK_LABEL[r.reason]}>
             {r.facts.health}
           </Chip>
-          {/* The computed band (nightly score) beside the manual health word. */}
-          <ClientHealthChip engagementId={r.eng.id} />
         </span>
       ),
     },
@@ -293,6 +290,14 @@ export function FirmProjectsPanel({
   const current: ViewFilters = { phase: phase === 'all' ? '' : phase, stuck, manager, show, scope, health };
   const anyFilter = Object.values(current).some(Boolean);
   const clear = () => applyView({});
+  // The empty grid says why: no client at all, or the filters hide every one.
+  const noClients = engagements.length === 0;
+  const emptyTitle = noClients ? 'No clients yet. Each client appears here once its project is created.' : 'No clients match these filters';
+  const newProjectAction = (
+    <Button size="sm" onClick={() => router.push('/app/admin/projects/new')}>
+      New project
+    </Button>
+  );
   const tools = useClientTableTools({
     rows,
     engagementOf: (r) => r.eng,
@@ -423,7 +428,8 @@ export function FirmProjectsPanel({
       rows={rows}
       rowKey={(r) => r.eng.id}
       onRowClick={(r) => router.push(adminProjectPath(r.eng, '/app/admin'))}
-      empty="No clients match these filters"
+      empty={emptyTitle}
+      emptyAction={noClients ? newProjectAction : undefined}
       minWidth={1000}
       actionsColumn="step"
       pageSize={title ? Math.max(1, rows.length) : 10}
@@ -535,8 +541,10 @@ export function FirmProjectsPanel({
       {rows.length === 0 && !engagementsLoading ? (
         <div className="md:hidden">
           <EmptyState
-            title="No clients match these filters"
-            action={anyFilter ? <Button size="sm" variant="secondary" onClick={clear}>Clear filters</Button> : undefined}
+            title={emptyTitle}
+            action={
+              noClients ? newProjectAction : anyFilter ? <Button size="sm" variant="secondary" onClick={clear}>Clear filters</Button> : undefined
+            }
           />
         </div>
       ) : null}
