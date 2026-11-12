@@ -12,8 +12,9 @@ function announce(e: MouseEvent<HTMLButtonElement>) {
 }
 
 /* VCFO Spectrum tabs (rule R-11; prototype src/components/ui/Tabs.tsx). A segmented switch
-   (N5, the default) is for filters: a quiet track. Underline tabs (N4) are for views of one
-   record and sit on a rule. Both mark the open tab the same way (GL-03, `tab-classes.ts`). */
+   (N5, the default) is for filters and views: a quiet track, the picked option blurple with white
+   text. Underline tabs (N4) are for views of one record and sit on a rule; their open tab uses the
+   GL-03 look (`tab-classes.ts`). */
 
 export interface SpectrumTabItem {
   key: string;
@@ -44,6 +45,7 @@ export function SpectrumTabs({
       <div
         role="tablist"
         aria-label={label}
+        data-tabs="underline"
         className={cn('flex max-w-full items-end gap-1.5 overflow-x-auto border-b-1.5 border-line [scrollbar-width:none]', className)}
       >
         {items.map((t) => {
@@ -79,6 +81,7 @@ export function SpectrumTabs({
     <div
       role="tablist"
       aria-label={label}
+      data-tabs="segmented"
       className={cn(
         'inline-flex max-w-full flex-none items-center gap-0.5 overflow-x-auto rounded-md border-1.5 border-line bg-surface-sunken p-[3px] [scrollbar-width:none]',
         className,
@@ -97,14 +100,15 @@ export function SpectrumTabs({
               onChange(t.key);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 whitespace-nowrap px-3 text-[13px] transition-colors',
+              // R-11 (N5): a segmented switch marks the pick with the solid blurple fill and white
+              // text, like the Before / After switch. The GL-03 underline is for underline tabs only.
+              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-mark px-3 text-[13px] font-medium transition-colors',
               size === 'sm' ? 'h-[22px]' : 'h-7',
-              on ? 'rounded-t-mark' : 'rounded-mark',
-              tabStateClass(on),
+              on ? 'bg-brand text-on-brand shadow-shine' : 'text-ink-2 hover:text-ink',
             )}
           >
             {t.label}
-            {t.count !== undefined ? <span className={cn('text-[12px] font-medium', on ? 'text-brand-text' : 'text-ink-muted')}>{t.count}</span> : null}
+            {t.count !== undefined ? <span className={cn('text-[12px] font-medium', on ? 'text-on-brand/85' : 'text-ink-muted')}>{t.count}</span> : null}
           </button>
         );
       })}

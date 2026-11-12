@@ -166,13 +166,14 @@ html.vp-chat-on{overscroll-behavior:contain}
 .sx-tabs button[aria-selected=true]{color:oklch(var(--ink))}
 .sx-tabs button[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:oklch(var(--brand))}
 /* GL-03: one open-tab look in every portal tab bar, the same as the staff SpectrumTabs
-   (src/components/ui/tab-classes.ts): a 3px brand underline, bold brand-colour text and a light
+   (src/components/ui/tab-classes.ts), in underline tab bars only. Segmented switches (SpectrumTabs
+   segmented, .seg, .sx-seg, .cr-seg) keep the R-11 blurple fill, like Before / After. Underline: a 3px brand underline, bold brand-colour text and a light
    brand wash, so colour is not the only cue; the other tabs keep muted text and no line. The page
    boards (seg, sx-seg, cr-seg) load after this file with their own fills, so these win with
    !important. brand-text holds 4.5:1 on brand-soft in both themes. */
-[role=tablist] [role=tab][aria-selected=true]{background:oklch(var(--brand-soft))!important;color:oklch(var(--brand-text))!important;font-weight:600!important;box-shadow:inset 0 -3px 0 0 oklch(var(--brand))!important;border-bottom-left-radius:0!important;border-bottom-right-radius:0!important}
-[role=tablist] [role=tab][aria-selected=true] :is(.cnt,.cr-cnt,.c){color:oklch(var(--brand-text))!important}
-[role=tablist] [role=tab][aria-selected=false]{box-shadow:none!important}
+[role=tablist]:not([data-tabs=segmented]):not(.seg):not(.sx-seg):not(.cr-seg) [role=tab][aria-selected=true]{background:oklch(var(--brand-soft))!important;color:oklch(var(--brand-text))!important;font-weight:600!important;box-shadow:inset 0 -3px 0 0 oklch(var(--brand))!important;border-bottom-left-radius:0!important;border-bottom-right-radius:0!important}
+[role=tablist]:not([data-tabs=segmented]):not(.seg):not(.sx-seg):not(.cr-seg) [role=tab][aria-selected=true] :is(.cnt,.cr-cnt,.c){color:oklch(var(--brand-text))!important}
+[role=tablist]:not([data-tabs=segmented]):not(.seg):not(.sx-seg):not(.cr-seg) [role=tab][aria-selected=false]{box-shadow:none!important}
 .sx-tabs button[aria-selected=true]::after{display:none}
 /* empty state (R-48): a plain-edged area with the action; loading: grey shapes */
 .sx-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;margin:16px;padding:24px 16px;box-sizing:border-box;border-radius:6px;border:1.5px solid transparent;text-align:center;font-size:14px;color:oklch(var(--ink-muted))}
