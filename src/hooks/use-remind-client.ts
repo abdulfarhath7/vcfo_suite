@@ -26,10 +26,23 @@ function timeLabel(iso: string): string {
  * GL-07: one reminder through the "Send email" pop-up. The draft is read first, so a reminder
  * already sent today is reported as `limited` without opening the pop-up.
  */
-export async function remindWithEmail(input: { engagementId: string; itemKey: string; title: string; note?: string }, opts: { quiet?: boolean } = {}): Promise<RemindOutcome> {
+export interface RemindInput {
+  engagementId: string;
+  itemKey: string;
+  title: string;
+  note?: string;
+  /** DR-03: `step-opened` drafts the "step is open" email instead of the reminder. */
+  purpose?: 'reminder' | 'step-opened';
+}
+
+export async function remindWithEmail(input: RemindInput, opts: { quiet?: boolean } = {}): Promise<RemindOutcome> {
   try {
     const url = `/api/engagements/${encodeURIComponent(input.engagementId)}/remind`;
-    const payload = { itemKey: input.itemKey, ...(input.note ? { note: input.note } : {}) };
+    const payload = {
+      itemKey: input.itemKey,
+      ...(input.note ? { note: input.note } : {}),
+      ...(input.purpose && input.purpose !== 'reminder' ? { purpose: input.purpose } : {}),
+    };
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -37,14 +50,15 @@ export async function remindWithEmail(input: { engagementId: string; itemKey: st
     });
     const body = (await res.json().catch(() => ({}))) as { draft?: EmailDraftView; error?: string; retryAt?: string };
     if (res.ok && body.draft) {
-      const outcome = await requestEmailSend({ url, body: payload, draft: body.draft, title: `Remind the client · ${input.title}` });
+      const heading = input.purpose === 'step-opened' ? `Email the client · ${input.title}` : `Remind the client · ${input.title}`;
+      const outcome = await requestEmailSend({ url, body: payload, draft: body.draft, title: heading });
       return outcome.sent ? 'sent' : 'cancelled';
     }
     if (res.status === 429) {
       if (!opts.quiet) toastError('Already reminded today', body.retryAt ? `Next reminder from ${timeLabel(body.retryAt)}` : undefined);
       return 'limited';
     }
-    if (!opts.quiet) toastError('Could not send the reminder', body.error);
+    if (!opts.quiet) toastError(input.purpose === 'step-opened' ? 'Could not prepare the email' : 'Could not send the reminder', body.error);
     return 'failed';
   } catch {
     if (!opts.quiet) toastError('Could not send the reminder');
@@ -57,7 +71,7 @@ export function useRemindClient() {
   const [sent, setSent] = useState<Set<string>>(() => new Set());
 
   const remind = useCallback(
-    async (input: { engagementId: string; itemKey: string; title: string; note?: string }): Promise<RemindOutcome> => {
+    async (input: RemindInput): Promise<RemindOutcome> => {
       setPending(input.itemKey);
       try {
         const outcome = await remindWithEmail(input);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getActiveCatalogItems } from '@/data/checklist';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { shouldAnnounceStepOpened } from './step-opened';
+import { canSendStepOpenedEmail, shouldAnnounceStepOpened } from './step-opened';
 
 /** Every active step before `itemId` completed. */
 function doneBefore(itemId: string): Record<string, ChecklistItemStateSlice> {
@@ -33,5 +33,24 @@ describe('DR-03 announce Proposed directors once when it opens', () => {
     const state = { ...doneBefore('pre-15'), 'pre-15': { status: 'completed' } as ChecklistItemStateSlice };
     expect(shouldAnnounceStepOpened('pre-15', state)).toBe(false);
     expect(shouldAnnounceStepOpened('pre-16', doneBefore('pre-16'))).toBe(false);
+  });
+});
+
+describe('DR-03 the Lead\'s "Send email" on Proposed directors', () => {
+  it('shows for the Lead once the step is open', () => {
+    expect(canSendStepOpenedEmail('intern', 'pre-15', doneBefore('pre-15'))).toBe(true);
+  });
+
+  it('is for the Lead only', () => {
+    for (const role of ['manager', 'admin', 'super_admin', 'client', null]) {
+      expect(canSendStepOpenedEmail(role, 'pre-15', doneBefore('pre-15'))).toBe(false);
+    }
+  });
+
+  it('stays hidden on other steps and while the step is locked', () => {
+    expect(canSendStepOpenedEmail('intern', 'pre-14', doneBefore('pre-14'))).toBe(false);
+    const state = doneBefore('pre-15');
+    delete state['pre-14'];
+    expect(canSendStepOpenedEmail('intern', 'pre-15', state)).toBe(false);
   });
 });

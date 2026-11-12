@@ -73,6 +73,7 @@ import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
 import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { StepEmailsSent } from '@/components/email/StepEmailsSent';
 import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
 
 /* ---------------- answers ---------------- */
@@ -212,12 +213,13 @@ const PHASE_PART: Record<number, string> = { 1: 'SPICe+ Part A', 2: 'SPICe+ Part
 
 export default function StepPage({ stepParam }: { stepParam: string }) {
   const d = useIncData();
-  const { engagementsSettled } = useApp();
+  const { engagementsSettled, user } = useApp();
   const { go, openChat, toast } = usePortal();
   const goTo = useGo();
   const qc = useQueryClient();
   const viewer = useDocViewer();
-  const [panelOpen, togglePanel] = useSidePanelOpen(d.engagementId ? `client:${d.engagementId}` : null);
+  // GL-05: the open or closed panel is kept for each user, like on the staff step pages.
+  const [panelOpen, togglePanel] = useSidePanelOpen(user?.id);
   const item = useMemo(() => resolveChecklistItemFromStepParam(stepParam), [stepParam]);
   const s = item ? d.model.byId[item.id] : undefined;
   const phase = s ? d.model.phases[s.phaseNo - 1] : undefined;
@@ -873,6 +875,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                 />
               ) : null)}
               {stepForm ? null : showDocs ? docsCard : answersCard}
+              {/* GL-07: who emailed this client about the step, when, to whom and the subject. */}
+              {d.engagementId ? <StepEmailsSent engagementId={d.engagementId} itemId={s.id} title="Emails sent to you about this step" /> : null}
             </Col>
             <SidePanelHandle open={panelOpen} onToggle={togglePanel} />
             <Col className={panelOpen ? undefined : 'lg:hidden'}>{rail}</Col>
