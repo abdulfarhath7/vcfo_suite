@@ -16,7 +16,8 @@ import { subjectInputs, type InputField } from '@/data/compliance-inputs';
 import { requestClosedPatch } from '@/lib/metrics/trend-stamps';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { isStaff, scopeEngagement, subjectInEngagement } from '@/db/repositories/compliance-subject-scope';
-import { assertEngagementAccess } from '@/db/repositories/engagements';
+import { assertEngagementAccess, patchChecklistItem } from '@/db/repositories/engagements';
+import { canRecordRegistrationTracker, isRegistrationTracker, trackerChecklistMirror } from '@/lib/registrations/tracker-access';
 
 /**
  * COMPLIANCE INPUTS (migration 0029; C-415, C-416, C-417, C-491, C-492, C-493, S-774, S-811)
@@ -34,7 +35,9 @@ import { assertEngagementAccess } from '@/db/repositories/engagements';
  *   Reads: staff on engagements `assertEngagementAccess` allows; a client on its own
  *   engagement. Client writes: only its own client-side fields (submit details). Staff
  *   writes: SBC fields, confirming the client's details, asking for a document, and
- *   accepting or sending back an upload. A subject key of another engagement reads as not
+ *   accepting or sending back an upload. Exception: the SBC fields of the GST and LUT
+ *   registrations (`reg-4`, `reg-5`, the trackers) are written by the project lead and the
+ *   client only; the manager, the admin and the super admin read them (`tracker-access.ts`). A subject key of another engagement reads as not
  *   found and writes nothing; writes use the approved engagement id.
  */
 
@@ -221,8 +224,17 @@ export async function saveSubjectFields(
   ctx: AuthContext,
   input: { engagementId?: string | null; kind: InputsKind; key: string; side: 'client' | 'sbc'; values: Record<string, string | null> },
 ): Promise<boolean> {
-  if (ctx.role === 'client' && input.side !== 'client') throw new InputsForbiddenError('Clients fill only their own details');
-  if (ctx.role !== 'client' && !isStaff(ctx)) throw new InputsForbiddenError('Not allowed');
+  // The GST and LUT trackers (owner rule, 12 November 2026): the project lead and the client
+  // record them; the manager, the admin and the super admin only read.
+  const tracker = input.side === 'sbc' && isRegistrationTracker(input.kind, input.key);
+  if (tracker) {
+    if (!canRecordRegistrationTracker(ctx.role)) {
+      throw new InputsForbiddenError('The project lead or the client records the GST and LUT registration. Managers and admins can view it.');
+    }
+  } else {
+    if (ctx.role === 'client' && input.side !== 'client') throw new InputsForbiddenError('Clients fill only their own details');
+    if (ctx.role !== 'client' && !isStaff(ctx)) throw new InputsForbiddenError('Not allowed');
+  }
   const scope = await scopeEngagement(ctx, input.engagementId);
   if (!scope) return false;
   const defs = await definitions(scope.dbId, input.kind, input.key);
@@ -231,7 +243,8 @@ export async function saveSubjectFields(
   const entries = Object.entries(input.values).filter(([k]) => allowed.has(k));
   if (!entries.length) return false;
   const now = new Date();
-  const byClient = ctx.role === 'client';
+  // A client's save of its own details is a submit; a client's tracker entry is not.
+  const byClient = ctx.role === 'client' && input.side === 'client';
   for (const [fieldKey, raw] of entries) {
     // 2,000 characters: a portal rejection notice runs longer than a reference number.
     const value = typeof raw === 'string' && raw.trim() ? raw.trim().slice(0, 2000) : null;
@@ -248,6 +261,17 @@ export async function saveSubjectFields(
         target: [complianceSubjectFields.engagementId, complianceSubjectFields.subjectKind, complianceSubjectFields.subjectKey, complianceSubjectFields.fieldKey],
         set,
       });
+  }
+  // The tracker's GSTIN, date of registration, LUT filing date and LUT number also go on the
+  // checklist step, which the registration facts and the GST return calendar read. This runs
+  // on the server so a client's entry reaches the checklist as well as the lead's.
+  const mirror = tracker ? trackerChecklistMirror(input.key, Object.fromEntries(entries)) : null;
+  if (mirror) {
+    try {
+      await patchChecklistItem(ctx, appEngagementId(scope.dbId), input.key, { responses: mirror }, { serverCopy: true });
+    } catch (e) {
+      console.error('[compliance-inputs] tracker checklist copy failed', input.key, e);
+    }
   }
   return true;
 }

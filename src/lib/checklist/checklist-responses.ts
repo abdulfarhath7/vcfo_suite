@@ -767,8 +767,9 @@ export const CLIENT_RESPONSE_FIELDS: Record<string, ChecklistField[]> = {
       accept: '.pdf,image/*',
     },
     {
-      id: 'authorisationLetterSignedUrl',
-      label: 'Authorisation Letter',
+      // One letter per director resident outside India (owner, 11 November 2026).
+      id: 'nrDirectorAuthorisationLetterSignedUrl',
+      label: 'Authorisation Letter - Non-resident Director',
       type: 'file',
       section: 'Signed Documents',
       accept: '.pdf,image/*',

@@ -20,6 +20,7 @@ import { FilterStrip, FlowCard, RailCard, WordChip, type StripItem } from '@/vie
 import { useViewParams } from '@/views/compliances/view-params';
 import { useRegistrationFacts, type RegistrationFacts } from '@/hooks/use-registration-facts';
 import { renewalOf } from '@/lib/registrations/registration-facts';
+import { RegistrationBoxes } from '@/views/compliances/RegistrationBoxes';
 import { GroupedGrid, HeadCard, KeyHint, useListKeys, type GridColumn, type GridGroup } from '@/views/compliances/grouped-grid';
 import {
   REG_CATEGORIES,
@@ -101,7 +102,10 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
   );
   const sole = soleCompany(engagements);
   const companyId = sole ? sole.id : normaliseCompanyParam(params.get('company'), engagements);
-  const view = params.get('view') === 'grid' ? 'grid' : 'list';
+  // Boxes is the default view (owner, 12 November 2026); `?view=list` and `?view=grid` keep the others.
+  const viewParam = params.get('view');
+  const view: 'boxes' | 'list' | 'grid' = viewParam === 'grid' ? 'grid' : viewParam === 'list' ? 'list' : 'boxes';
+  const labourRegistersHref = shellBase === '/app/admin' || shellBase === '/app/lead' ? `${shellBase}/labour-registers` : null;
   const stateParam = params.get('state') ?? '';
   const filter: RegFilter = stateParam in FILTER_WORD || stateParam === 'renewals' ? (stateParam as RegFilter) : '';
 
@@ -251,11 +255,12 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
       <SpectrumTabs
         label="View"
         items={[
+          { key: 'boxes', label: 'Boxes' },
           { key: 'list', label: 'List' },
           { key: 'grid', label: 'Grid' },
         ]}
         value={view}
-        onChange={(v) => setParams({ view: v === 'grid' ? 'grid' : null })}
+        onChange={(v) => setParams({ view: v === 'grid' || v === 'list' ? v : null })}
       />
       {filter || (!sole && companyId !== ALL_COMPANIES) ? (
         <Button size="sm" variant="ghost" onClick={() => setParams({ state: null, company: null })}>
@@ -274,7 +279,17 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
 
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div ref={embedded ? undefined : listRef} className="min-w-0">
-            {view === 'grid' ? (
+            {view === 'boxes' ? (
+              <HeadCard title="Registrations" count={shown.length} right={head}>
+                <div className="p-4">
+                  <RegistrationBoxes
+                    rows={filter ? shown : [...shown, ...notNeeded]}
+                    hrefOf={hrefOf}
+                    labourRegistersHref={labourRegistersHref}
+                  />
+                </div>
+              </HeadCard>
+            ) : view === 'grid' ? (
               <HeadCard title="Registrations" count={inView.length} right={head}>
                 <EFilingGrid
                   caption="Registrations by client"

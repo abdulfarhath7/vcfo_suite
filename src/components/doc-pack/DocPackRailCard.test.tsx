@@ -13,7 +13,7 @@ describe('DocPackRailCard', () => {
     expect(screen.getByText(`${summary.counts.ready} ready`)).toBeInTheDocument();
     expect(screen.getByText(`${summary.counts['needs-inputs']} need inputs`)).toBeInTheDocument();
     expect(screen.getByText(`${summary.counts['waiting-release']} waiting`)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open document pack/ })).toHaveAttribute('href', '/pack');
+    expect(screen.getByRole('link', { name: /Open Incorporation Documents/ })).toHaveAttribute('href', '/pack');
   });
 
   it('keeps the link while readiness loads or fails', () => {
@@ -21,6 +21,6 @@ describe('DocPackRailCard', () => {
     expect(screen.getByText('Checking readiness…')).toBeInTheDocument();
     rerender(<DocPackRailCard summary={undefined} loading={false} error packHref="/pack" />);
     expect(screen.getByText('Readiness could not be loaded.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open document pack/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Open Incorporation Documents/ })).toBeInTheDocument();
   });
 });

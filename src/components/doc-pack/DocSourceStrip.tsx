@@ -40,7 +40,7 @@ export function DocSourceStrip({
       <span>{parts.join(', ')}</span>
       <span aria-hidden>·</span>
       <Link href={packHref} className="font-medium text-brand-text hover:underline">
-        Open in document pack
+        Open Incorporation Documents
       </Link>
     </p>
   );

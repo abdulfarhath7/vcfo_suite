@@ -135,10 +135,10 @@ export const INCORP_DOC_DEFINITIONS: Record<IncorpDocKind, IncorpDocDefinition> 
     kind: 'authorisation-letter',
     label: 'Authorisation Letter',
     templateRelative: 'public/templates/authorisation-letter.docx',
-    directors: 'company-only',
-    docSuffix: 'authorisationLetter',
-    companyDraftField: 'authorisationLetterDraftUrl',
-    downloadFilename: () => 'authorisation-letter.docx',
+    // The parent authorises each director resident outside India (owner, 11 November 2026).
+    directors: 'non-resident-only',
+    docSuffix: 'AuthorisationLetter',
+    downloadFilename: directorFilename('authorisation-letter'),
   },
   'acceptance-letter': {
     kind: 'acceptance-letter',

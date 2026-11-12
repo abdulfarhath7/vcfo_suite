@@ -52,7 +52,8 @@ describe('buildDir8MergeFields', () => {
     expect(fields.DIRECTOR_FULL_NAME).toBe('Justin Cheng Hsu');
     expect(fields.FATHERS_NAME).toBe('Robert Hsu');
     expect(fields.PRIOR_DIR_COMPANY).toBe('NA');
-    expect(fields.DOCUMENT_PLACE).toBe('Foreign');
+    // No place of signing given: the country read off the director's address.
+    expect(fields.DOCUMENT_PLACE).toBe('United States of America');
     expect(fields.DOCUMENT_DATE_DAY1).toBeTruthy();
   });
 });

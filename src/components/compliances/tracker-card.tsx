@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -31,9 +31,12 @@ export function TrackerCard({
   notice,
   tabs,
   initialTab,
+  readOnlyNote,
   loading,
   error,
 }: {
+  /** A line above the stage for a viewer who reads but does not record. */
+  readOnlyNote?: string;
   /** Accessible name of the card. */
   label: string;
   title: string;
@@ -110,6 +113,12 @@ export function TrackerCard({
                 onSelect={setTab}
               />
               <div role="tabpanel" aria-labelledby={`intern-section-tab-${tab}`} className="px-5 py-5">
+                {readOnlyNote ? (
+                  <p className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-surface-sunken px-2.5 py-1 text-[12.5px] text-ink-2">
+                    <Eye aria-hidden className="h-3.5 w-3.5" />
+                    {readOnlyNote}
+                  </p>
+                ) : null}
                 {tabs[tab]?.content}
               </div>
               <div className="flex items-center justify-end gap-2 border-t border-line-soft px-5 py-3">

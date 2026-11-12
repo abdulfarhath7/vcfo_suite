@@ -6,6 +6,8 @@ import type { RegistrationFacts, RegistrationFactsMap } from '@/lib/registration
 export type { RegistrationFacts, RegistrationFactsMap };
 
 const KEY = 'registration-facts';
+/** The query key prefix, for callers that change a registration and refresh its facts. */
+export const REGISTRATION_FACTS_KEY = KEY;
 
 /**
  * Registration numbers, dates, certificates and renewal dates (G-05, G-06) from

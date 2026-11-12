@@ -55,6 +55,13 @@ export type {
   IdentifierRevealOutcome,
 } from './identifier-reveal';
 export {
+  getRegistrationLogin,
+  saveRegistrationLogin,
+} from './registration-logins';
+export type {
+  RegistrationLogin,
+} from './registration-logins';
+export {
   listRegistrationFacts,
   setRegistrationDates,
   getRegistrationCertificateUrl,

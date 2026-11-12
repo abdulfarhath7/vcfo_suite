@@ -11,7 +11,7 @@ import { BOARD_RESOLUTION_DOCX_FILENAME } from '@/lib/board-resolution/board-res
 import { evaluateDocPack, docPackItemByKey } from '@/lib/doc-pack/evaluate';
 import type { DocPackItem, DocPackSummary } from '@/lib/doc-pack/types';
 import { renderIncorpDocxBuffer } from '@/lib/incorporation-docs/docx';
-import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
+import { sanitizeIncorpDocxBufferWithReport, stripDocxHighlights } from '@/lib/incorporation-docs/docx-sanitize';
 import { incorpDocStandardDownloadName } from '@/lib/incorporation-docs/paths';
 import { downloadIncorpDocx } from '@/lib/incorporation-docs/storage';
 import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
@@ -178,7 +178,8 @@ export function buildDocPackZip(
   const unique = createUniqueNamer();
   const entries: ZipEntrySource[] = ready.map((item) => ({
     name: unique(docPackItemFilename(inputs, item)),
-    open: async () => [(await renderDocPackItem(inputs, item)).buffer],
+    // A zip is a download: the clean copy, without the preview's yellow marking.
+    open: async () => [stripDocxHighlights((await renderDocPackItem(inputs, item)).buffer)],
   }));
   return { stream: createZipStream(entries), filename: docPackZipFilename(inputs.engagement), itemKeys: ready.map((item) => item.key) };
 }

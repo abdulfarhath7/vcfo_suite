@@ -253,7 +253,7 @@ describe('ObligationsView', () => {
 
 describe('RegistrationsView', () => {
   it('lists registration steps per client with the six words', () => {
-    search = new URLSearchParams('company=acme');
+    search = new URLSearchParams('company=acme&view=list');
     render(<RegistrationsView shellBase="/app/manager" scope={scope} />);
     const grid = screen.getByRole('region', { name: 'Registrations' });
     const gst = within(grid).getAllByRole('link').find((a) => a.textContent?.includes('GST Registration'));
@@ -263,12 +263,24 @@ describe('RegistrationsView', () => {
   });
 
   it('shows the stored number and the renewal from the slim facts read', () => {
-    search = new URLSearchParams('company=acme');
+    search = new URLSearchParams('company=acme&view=list');
     render(<RegistrationsView shellBase="/app/manager" scope={scope} />);
     const grid = screen.getByRole('region', { name: 'Registrations' });
     expect(within(grid).getByText('29ABCDE1234F1Z5')).toBeInTheDocument();
     const renewals = screen.getByRole('heading', { name: 'Renewals and expiry' }).closest('section')!;
     expect(within(renewals).getByText('GST Registration')).toBeInTheDocument();
+  });
+
+  it('opens in boxes: GST keeps its tracker, other registrations ask for the portal login', () => {
+    search = new URLSearchParams('company=acme');
+    render(<RegistrationsView shellBase="/app/manager" scope={scope} />);
+    expect(screen.getByRole('tab', { name: 'Boxes' })).toHaveAttribute('aria-selected', 'true');
+    act(() => screen.getByRole('button', { name: /GST Registration/ }).click());
+    const gstDialog = screen.getByRole('dialog');
+    expect(within(gstDialog).getByRole('link', { name: /Acme/ }).getAttribute('href')).toBe(
+      `/app/manager/registrations/${encodeURIComponent('acme~reg-4')}`,
+    );
+    expect(within(gstDialog).queryByLabelText('Password')).toBeNull();
   });
 
   it('keeps filter state in memory when embedded in the client record', () => {

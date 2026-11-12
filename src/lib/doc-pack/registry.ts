@@ -255,14 +255,19 @@ export const DOC_PACK_REGISTRY: DocDefinition[] = [
     label: 'Authorisation letter',
     sourceStepIds: ['pre-1', 'pre-5', DIRECTOR_STEP],
     appliesToEngagement: hasParentEntity,
-    requiredInputs: (ctx) => [
+    // One letter per director who is not resident in India (the "Whether resident
+    // in India" answer on the proposed directors step); resident directors get none.
+    // The parent signs it through the person who signs its board resolution (Part A).
+    expandsPer: 'director',
+    appliesTo: (director) => directorAudienceKind(director.audience) === 'non-resident',
+    requiredInputs: (_ctx, director) => [
       companyName,
       parentEntityName,
       parentEntityAddress,
       parentEntityCountry,
       signatoryName,
       signatoryDesignation,
-      ...nonResidentLetterInputs(ctx, ['fullName', 'address'], (nr) => [passportOrParentRegistration(nr)]),
+      ...(director ? [...directorInputs(director, ['fullName', 'address']), passportOrParentRegistration(director)] : []),
     ],
     releaseGate: 'directors-accepted',
     generate: { kind: 'incorp', doc: 'authorisation-letter' },

@@ -29,7 +29,7 @@ export function DocPackHeaderButton({
       )}
     >
       <FileText className="h-3.5 w-3.5" aria-hidden />
-      Document pack
+      Incorporation Documents
       {summary ? (
         <Mono
           className={cn(

@@ -14,6 +14,15 @@ import {
 
 export type DocxPreviewStatus = 'loading' | 'ready' | 'error';
 
+/** The same URL with `preview=1`, which the download routes read to keep the yellow marking. */
+function withPreviewParam(url: string): string {
+  const [path, hash = ''] = url.split('#');
+  const params = new URLSearchParams(path.includes('?') ? path.slice(path.indexOf('?') + 1) : '');
+  if (params.get('preview') === '1') return url;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}preview=1${hash ? `#${hash}` : ''}`;
+}
+
 /** The editing methods both Word previews expose through their imperative handles. */
 export type DocxPreviewBaseHandle = {
   getDocumentContent: () => string;
@@ -71,7 +80,8 @@ export function useDocxPreview<E>({
   const docQuery = useQuery({
     queryKey: [queryKeyPrefix, url, refreshKey],
     queryFn: async ({ signal }) => {
-      const res = await fetch(url, {
+      // `preview=1` keeps the yellow marking on merged values; downloads strip it.
+      const res = await fetch(withPreviewParam(url), {
         credentials: 'include',
         signal,
         cache: 'no-store',

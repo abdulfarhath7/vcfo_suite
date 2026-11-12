@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CalendarDays, Check, CircleAlert, Info, Loader2, ShieldCheck, Upload } from 'lucide-react';
+import { REGISTRATION_FACTS_KEY } from '@/hooks/use-registration-facts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,9 +37,11 @@ import {
  * its milestones in order: application filed (ARN), Aadhaar authentication, SRN, and the
  * outcome (approved, or resubmission with the reason and the revised date).
  *
- * Firm staff edit; the client reads. Milestones save to the registration's SBC fields. On
- * approval the GSTIN and the date of registration are also written to the checklist step,
- * which starts the GST return calendar. Rules and dates: `src/lib/registrations/gst-tracker.ts`.
+ * The project lead and the client record; the manager, the admin and the super admin read
+ * (`tracker-access.ts`, enforced in the repository). Milestones save to the registration's
+ * SBC fields. On approval the repository also writes the GSTIN and the date of registration
+ * to the checklist step, which starts the GST return calendar. Rules and dates:
+ * `src/lib/registrations/gst-tracker.ts`.
  *
  * Policy SBC-STD-AI-02: the authorised signatory files on the GST portal in their own
  * session. This page records the outcome a person reads there; it asks for no portal
@@ -62,44 +66,29 @@ export function GstRegistrationTracker({
   engagementId,
   schedule,
   canEdit,
+  audience,
   today,
   certificate,
 }: {
   /** The app engagement id; undefined for the client, whose own engagement the API resolves. */
   engagementId?: string;
   schedule: GstSchedule;
-  /** Firm staff edit; the client reads. */
+  /** The project lead and the client record; the manager and the admins read. */
   canEdit: boolean;
+  /** Who reads the notice: the firm gets its instructions, the client the facts. */
+  audience: 'firm' | 'client';
   /** ISO date, India time. */
   today: string;
   /** The certificate download, when one is on file. */
   certificate?: ReactNode;
 }) {
   const q = useSubjectInputs({ engagementId, kind: 'registration', key: GST_STEP_ID });
-  const act = useInputsAction();
+  const { save, saving } = useTrackerSave(engagementId, GST_STEP_ID);
   const values: Record<string, string | null> = Object.fromEntries((q.data?.sbc ?? []).map((f) => [f.key, f.value]));
   const stages = gstStages(values);
-  const done = stages.filter((s) => s.state === 'done').length;
-  const notice = gstNotice(schedule, values, today, canEdit ? 'firm' : 'client');
+  const notice = gstNotice(schedule, values, today, audience);
 
-  const save = (patch: Record<string, string | null>, message = 'Saved') =>
-    new Promise<boolean>((resolve) => {
-      act.mutate(
-        { action: 'save', engagementId: engagementId || undefined, kind: 'registration', key: GST_STEP_ID, side: 'sbc', values: patch },
-        {
-          onSuccess: () => {
-            toastSaved(message);
-            resolve(true);
-          },
-          onError: (e) => {
-            toastError('Could not save', errorMessage(e));
-            resolve(false);
-          },
-        },
-      );
-    });
-
-  const stageProps = { values, canEdit, saving: act.isPending, onSave: save };
+  const stageProps = { values, canEdit, saving, onSave: save };
   const content: Record<GstStageKey, ReactNode> = {
     filing: <FilingStage {...stageProps} />,
     aadhaar: <AadhaarStage {...stageProps} />,
@@ -126,6 +115,7 @@ export function GstRegistrationTracker({
       ]}
       notice={notice ? <NoticeBar tone={notice.tone} text={notice.text} /> : null}
       initialTab={stages.every((st) => st.state === 'done') ? 0 : current}
+      readOnlyNote={!canEdit && audience === 'firm' ? READ_ONLY_NOTE : undefined}
       loading={q.isLoading}
       error={q.isError ? 'The registration record could not be loaded. Refresh the page to try again.' : null}
       tabs={stages.map((st) => ({
@@ -190,6 +180,39 @@ type StageProps = {
 };
 
 export const val = (values: Record<string, string | null>, key: string) => (values[key] ?? '').trim();
+
+/** Shown to the manager and the admins, who see the tracker but do not record it. */
+export const READ_ONLY_NOTE = 'View only. The project lead or the client records each stage.';
+
+/**
+ * Save a tracker's SBC fields, then refresh what reads them: the record, the registration
+ * facts (number, date) and, for staff, the checklist (the repository copies the GSTIN, the
+ * date of registration and the LUT values onto the step).
+ */
+export function useTrackerSave(engagementId: string | undefined, key: string) {
+  const act = useInputsAction();
+  const qc = useQueryClient();
+  const { refreshEngagementChecklist } = useApp();
+  const save = (patch: Record<string, string | null>, message = 'Saved') =>
+    new Promise<boolean>((resolve) => {
+      act.mutate(
+        { action: 'save', engagementId: engagementId || undefined, kind: 'registration', key, side: 'sbc', values: patch },
+        {
+          onSuccess: () => {
+            toastSaved(message);
+            void qc.invalidateQueries({ queryKey: [REGISTRATION_FACTS_KEY] });
+            if (engagementId) void refreshEngagementChecklist(engagementId).catch(() => undefined);
+            resolve(true);
+          },
+          onError: (e) => {
+            toastError('Could not save', errorMessage(e));
+            resolve(false);
+          },
+        },
+      );
+    });
+  return { save, saving: act.isPending };
+}
 
 /** Local copy of some fields, reset when the saved values change. */
 export function useDraft(values: Record<string, string | null>, keys: readonly string[]) {
@@ -349,7 +372,7 @@ function OutcomeStage({
   useEffect(() => setChoice(outcome), [outcome]);
   const approved = useDraft(values, APPROVED_KEYS);
   const resubmit = useDraft(values, RESUBMIT_KEYS);
-  const { engagements, updateItem } = useApp();
+  const { engagements } = useApp();
   const engagement = engagementId ? engagements.find((e) => e.id === engagementId) : undefined;
 
   if (!canEdit) {
@@ -383,19 +406,11 @@ function OutcomeStage({
   const gstin = (approved.draft[GST_FIELD.gstin] ?? '').trim().toUpperCase();
   const gstinError = gstin && !GSTIN_RE.test(gstin) ? 'Enter a valid 15-character GSTIN.' : null;
 
+  // The repository copies the GSTIN and the date of registration onto the checklist step,
+  // which starts the GST return calendar. Both are sent so the copy is complete.
   const saveApproved = async () => {
     if (gstinError) return;
-    const ok = await onSave({ ...approved.patch(), [GST_FIELD.outcome]: 'approved' }, 'Approval recorded');
-    // The checklist step carries the GSTIN and the date the GST return calendar starts from.
-    if (ok && engagement) {
-      const p = approved.patch();
-      await updateItem(
-        checklistStateKeyForEngagement(engagement),
-        GST_STEP_ID,
-        { responses: { gstinNumber: p[GST_FIELD.gstin] ?? '', gstRegistrationDate: p[GST_FIELD.registeredOn] ?? '' } },
-        { clientResponsesOnly: true },
-      ).catch((e) => toastError('The GSTIN was saved, but the return calendar was not updated', errorMessage(e)));
-    }
+    await onSave({ ...approved.patch(), [GST_FIELD.gstin]: gstin || null, [GST_FIELD.registeredOn]: approved.draft[GST_FIELD.registeredOn] || null, [GST_FIELD.outcome]: 'approved' }, 'Approval recorded');
   };
 
   return (
@@ -446,7 +461,8 @@ function OutcomeStage({
             </Field>
           </Fields>
           <SaveRow dirty={approved.dirty || outcome !== 'approved'} saving={saving} onClick={() => void saveApproved()} label="Save approval" />
-          {engagement ? <CertificateUpload engagementId={engagement.id} scopeId={checklistStateKeyForEngagement(engagement)} certificate={certificate} /> : null}
+          {/* The lead uploads REG-06 to the checklist step; the client sees the download once it is on file. */}
+          {engagement ? <CertificateUpload engagementId={engagement.id} scopeId={checklistStateKeyForEngagement(engagement)} certificate={certificate} /> : certificate}
         </>
       ) : choice === 'resubmission' ? (
         <>

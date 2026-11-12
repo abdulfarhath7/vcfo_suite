@@ -199,19 +199,19 @@ describe('non-resident answers replace the old defaults', () => {
   it('DIR-2 prints the nationality, place, and confirmed proofs', () => {
     const fields = buildDir2MergeFields({ pre6, director: 'non-resident' });
     expect(fields.DIRECTOR_NATIONALITY).toBe('Singapore');
-    expect(fields.DOCUMENT_PLACE).toBe('Singapore, Singapore');
+    expect(fields.DOCUMENT_PLACE).toBe('Singapore');
     expect(fields.RESIDENCE_PROOF).toBe('Copy of Bank Statement');
     expect(fields.IDENTITY_PROOF).toBe('Copy of Passport');
   });
 
   it('every other director draft takes the same place of signing', () => {
-    expect(buildDir8MergeFields({ pre6, director: 'non-resident' }).DOCUMENT_PLACE).toBe('Singapore, Singapore');
-    expect(buildInc9MergeFields({ pre6, director: 'non-resident' }).DOCUMENT_PLACE).toBe('Singapore, Singapore');
+    expect(buildDir8MergeFields({ pre6, director: 'non-resident' }).DOCUMENT_PLACE).toBe('Singapore');
+    expect(buildInc9MergeFields({ pre6, director: 'non-resident' }).DOCUMENT_PLACE).toBe('Singapore');
     expect(buildDeclarationMergeFields({ pre6, director: 'non-resident' }).DOCUMENT_PLACE).toBe(
-      'Singapore, Singapore',
+      'Singapore',
     );
     const pan = buildPanUndertakingMergeFields({ pre6, director: 'non-resident' });
-    expect(pan.DOCUMENT_PLACE).toBe('Singapore, Singapore');
+    expect(pan.DOCUMENT_PLACE).toBe('Singapore');
     expect(pan.DIRECTOR_NATIONALITY).toBe('Singapore');
   });
 

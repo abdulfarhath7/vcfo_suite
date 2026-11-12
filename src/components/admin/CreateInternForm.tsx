@@ -17,6 +17,14 @@ const ERROR_LABELS: Record<string, string> = {
   email_not_configured: "Account created, but email is not configured on the server.",
 };
 
+/** Plain-language text for the schema's field error codes, shown under each field. */
+const FIELD_ERROR_LABELS: Record<string, string> = {
+  invalid_email: "Enter a valid work email, for example name@sbcllp.in.",
+  password_too_short: "Use at least 8 characters.",
+  name_required: "Enter the person's full name.",
+  invalid_phone: "Enter a phone number with 10 to 15 digits, for example +91 98765 43210.",
+};
+
 type FormState = {
   fullName: string;
   email: string;
@@ -88,7 +96,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
       const next: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
         const key = String(issue.path[0] ?? "form");
-        if (!next[key]) next[key] = issue.message;
+        if (!next[key]) next[key] = FIELD_ERROR_LABELS[issue.message] ?? issue.message;
       }
       dispatch({ type: "set_field_errors", value: next });
       return;
@@ -154,7 +162,7 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
             type="email"
             value={email}
             onChange={(e) => dispatch({ type: "set_field", field: "email", value: e.target.value })}
-            placeholder="name@vcfosuite.com"
+            placeholder="name@sbcllp.in"
             className="mt-1.5"
             autoComplete="off"
             required
@@ -170,13 +178,17 @@ export function CreateInternForm({ onCreated }: { onCreated?: () => void }) {
           </Label>
           <Input
             id="intern-phone"
+            aria-invalid={fieldErrors.phone ? true : undefined}
             type="tel"
             value={phone}
             onChange={(e) => dispatch({ type: "set_field", field: "phone", value: e.target.value })}
-            placeholder="+91 …"
+            placeholder="+91 98765 43210"
             className="mt-1.5"
             autoComplete="tel"
           />
+          {fieldErrors.phone ? (
+            <p className="mt-1 text-[12.5px] text-danger">{fieldErrors.phone}</p>
+          ) : null}
         </div>
 
         <div>

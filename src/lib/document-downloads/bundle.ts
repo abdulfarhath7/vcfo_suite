@@ -5,6 +5,7 @@ import { listAuditEvents } from '@/db/repositories/audit-events';
 import { getDocPackInputs, type DocPackInputs } from '@/db/repositories/doc-pack';
 import { DOCX_CONTENT_TYPE, docPackItemFilename, renderDocPackItem, ZIP_CONTENT_TYPE } from '@/lib/api/doc-pack';
 import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
+import { stripDocxHighlights } from '@/lib/incorporation-docs/docx-sanitize';
 import type { DocPackItem } from '@/lib/doc-pack/types';
 import { MILESTONE_DOCUMENTS_BUCKET } from '@/lib/documents/milestone-document-storage';
 import { tablesWorkbook } from '@/lib/exports/table-xlsx';
@@ -84,7 +85,8 @@ export async function openDownloadFile(loaded: LoadedCatalog, file: DownloadFile
     const item = loaded.packItems.get(source.itemKey);
     if (!item) return null;
     const rendered = await renderDocPackItem(loaded.inputs, item).catch(() => null);
-    return rendered ? new Uint8Array(rendered.buffer) : null;
+    // A download is the clean copy, without the preview's yellow marking.
+    return rendered ? new Uint8Array(stripDocxHighlights(rendered.buffer)) : null;
   }
   if (source.type === 'record') return recordWorkbook(loaded, source.record);
   if (source.type === 'br-signed') {

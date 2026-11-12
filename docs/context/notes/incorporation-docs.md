@@ -123,3 +123,42 @@ How it is wired:
   still say Public Sans and IBM Plex Mono; that is out of date. Word takes one `w:altName` per
   face, so the declared fallbacks are Arial and Consolas; Word picks Calibri itself when Arial
   is missing too.
+
+## Clean downloads, place, alignment, per-director letter (2026-11-11)
+
+- **Yellow marking.** The templates highlight every merged value. Stored drafts
+  keep it; every download strips it (`stripDocxHighlights` /
+  `docxForResponse` in `docx-sanitize.ts`): single downloads, the doc pack zip,
+  the drafts zip, the "Download documents" pop-up (`openDownloadFile` in `src/lib/document-downloads/bundle.ts`) and the board resolution. The in-app preview
+  adds `?preview=1` in `use-docx-preview.ts`, which the routes read
+  (`isDocxPreviewRequest`) to keep the marking. A new download route must call
+  `docxForResponse` too.
+- **Place outside India is a country** (`signingPlace` in `shared.ts`): the
+  country in the pre-15 place, else in the address (`countryFromAddress` reads
+  US / Canada / UK postal patterns), else nationality, else "Foreign".
+- **Alignment.** `renderDocx` left-aligns every table cell that holds a merge
+  tag (`leftAlignTableValueCells`) before rendering; label and header cells keep
+  their alignment. Stored drafts change only when regenerated.
+- **Authorisation letter** is `non-resident-only`: one per director whose pre-15
+  "Whether resident in India" is "no" (`nrDirector{n}AuthorisationLetterDraftUrl`,
+  pre-8 `nrDirector{n}AuthorisationLetterSignedUrl`). The old company-level
+  `authorisationLetterDraftUrl` / `authorisationLetterSignedUrl` are no longer
+  read, and an earlier client share of the letter must be redone. It is signed
+  by Part A's board resolution signatory and cites `pre1.boardResolutionDate`
+  (`{BOARD_RESOLUTION_DATE}`, added by `incorp-docx-build-sourced-fields.mjs`).
+- **Subscription sheet representative** is the director named on pre-16
+  (`authorisedPerson`, or `shareholderAuthorizedPerson` when the parent
+  subscribes alone), else the first non-resident director as before.
+
+## Incorporation Documents row and per-director page (2026-11-12)
+
+- The steps card (`RecordStepsCard`) shows INCORPORATION DOCUMENTS right after KYC Review &
+  DSC (`IncorporationDocumentsJourneyRow`). It is not a checklist step: it never gates SPICe+
+  Confirmation, has no answers, and does not renumber the steps. It links to the documents page.
+- The documents page (`DocPackView`, route `/documents`) is titled "Incorporation Documents".
+  Each part lists the documents under "Director n · name · Outside India / Resident in India"
+  as a tree, then "Company documents" (`groupByDirector`). The window bar no longer carries an
+  "Open in document pack" link.
+- An earlier attempt made this a real step `pre-17` (stashed as "other-session pre-17
+  incorporation documents"); it was not used because it locks SPICe+ Confirmation on live
+  projects until the new step is completed.

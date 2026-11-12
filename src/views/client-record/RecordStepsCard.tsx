@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
@@ -21,6 +21,10 @@ import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b
 import { recordStepPlace } from '@/views/client-record/RecordHeadParts';
 import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
 import { useLatestSentEmailByStep } from '@/components/email/StepEmailsSent';
+import { IncorporationDocumentsJourneyRow } from '@/components/doc-pack/IncorporationDocumentsJourneyRow';
+
+/** The step the Incorporation Documents row follows: KYC Review & DSC. */
+const INCORPORATION_DOCUMENTS_AFTER_STEP = 'pre-7';
 
 /** The record's names for the four phases (prototype `PHASE_LABEL`); the timeline card uses the same words. */
 const PHASE_LABEL: Record<string, string> = {
@@ -147,7 +151,27 @@ export function RecordStepsCard({
           }
           // SB-01: Part B is listed in MCA form order; the gates still follow the checklist order.
           const shown = orderByMcaSection(phase.items, (it) => it.id);
-          return <div className="flex flex-col">{shown.map((it, i) => row(it, i, shown.length, shown[i - 1]))}</div>;
+          // INCORPORATION DOCUMENTS sits right after KYC Review & DSC (owner, 12 November 2026).
+          return (
+            <div className="flex flex-col">
+              {shown.map((it, i) => {
+                const stepRow = row(it, i, shown.length, shown[i - 1]);
+                if (it.id !== INCORPORATION_DOCUMENTS_AFTER_STEP) return stepRow;
+                const kycDone = getStepGate(gates, it.id).kind === 'done';
+                return (
+                  <Fragment key={it.id}>
+                    {stepRow}
+                    <IncorporationDocumentsJourneyRow
+                      engagement={engagement}
+                      kycDone={kycDone}
+                      connectorAbove={kycDone ? 'done' : 'todo'}
+                      connector={i < shown.length - 1}
+                    />
+                  </Fragment>
+                );
+              })}
+            </div>
+          );
         }}
       </InternPhaseTabs>
       <StepAboutPanel

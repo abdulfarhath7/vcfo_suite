@@ -39,6 +39,50 @@ const PART_LABEL: Record<PartFilter, string> = {
   'part-b': 'SPICe+ Part B',
 };
 
+interface DocGroup {
+  key: string;
+  /** "Director 1", or "Company documents". */
+  title: string;
+  /** The director's name, shown after the title. */
+  name?: string;
+  /** "Outside India" / "Resident in India" for a director. */
+  note?: string;
+  items: DocPackItem[];
+}
+
+/**
+ * The documents of one part, under each director's name in director order (DIR-2, DIR-8, INC-9 …
+ * as a tree, owner's sketch of 12 November 2026), then the company's own documents.
+ */
+function groupByDirector(items: DocPackItem[]): DocGroup[] {
+  const directors = new Map<string, DocGroup & { order: number }>();
+  const company: DocPackItem[] = [];
+  for (const item of items) {
+    if (item.audience === 'company') {
+      company.push(item);
+      continue;
+    }
+    const key = item.audience;
+    let group = directors.get(key);
+    if (!group) {
+      group = {
+        key,
+        title: '',
+        name: item.directorName,
+        note: key.startsWith('non-resident') ? 'Outside India' : 'Resident in India',
+        items: [],
+        order: item.directorIndex ?? Number.MAX_SAFE_INTEGER,
+      };
+      directors.set(key, group);
+    }
+    group.items.push(item);
+  }
+  const ordered = [...directors.values()].sort((a, b) => a.order - b.order);
+  const groups: DocGroup[] = ordered.map((group, i) => ({ ...group, title: `Director ${i + 1}` }));
+  if (company.length > 0) groups.push({ key: 'company', title: 'Company documents', items: company });
+  return groups;
+}
+
 const STAT_LABEL: Record<DocStatus, string> = {
   ready: 'ready',
   'needs-inputs': 'need inputs',
@@ -114,8 +158,8 @@ export default function DocPackView() {
   return (
     <PageTransition>
       <SEO
-        title={`Document pack — ${eng.companyName}`}
-        description="Readiness, preview and download of the SPICe+ document pack."
+        title={`Incorporation Documents — ${eng.companyName}`}
+        description="Readiness, preview and download of the incorporation documents, director by director."
         path={pathname}
       />
 
@@ -123,7 +167,7 @@ export default function DocPackView() {
           the one main button on the right. No back link (R-09). */}
       <header className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="min-w-0 flex-[1_1_260px]">
-          <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Document pack</h1>
+          <h1 className="text-[28px] font-medium leading-9 tracking-[-0.01em] text-ink">Incorporation Documents</h1>
           <p className="flex flex-wrap items-center gap-1.5 pt-1 text-[13.5px] text-ink-muted">
             {summary
               ? (['ready', 'needs-inputs', 'waiting-release'] as const).map((status) => (
@@ -140,14 +184,14 @@ export default function DocPackView() {
 
       {pack.isError ? (
         <EmptyStateIllustrated
-          title="Could not load the document pack"
+          title="Could not load the incorporation documents"
           description={pack.error instanceof Error ? pack.error.message : 'The readiness check failed.'}
           actionLabel="Try again"
           onAction={() => void pack.refetch()}
           art="waiting"
         />
       ) : !summary ? (
-        <section className="surface min-w-0 overflow-hidden p-4" aria-busy="true" aria-live="polite" aria-label="Document pack">
+        <section className="surface min-w-0 overflow-hidden p-4" aria-busy="true" aria-live="polite" aria-label="Incorporation Documents">
           <SkeletonRows rows={6} />
         </section>
       ) : (
@@ -175,7 +219,7 @@ export default function DocPackView() {
           </div>
 
           <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <section className="surface min-w-0 overflow-hidden" aria-label="Document pack">
+            <section className="surface min-w-0 overflow-hidden" aria-label="Incorporation Documents">
               {parts.length === 0 ? (
                 <EmptyState title="No documents in this part" className="m-4" />
               ) : (
@@ -202,17 +246,33 @@ export default function DocPackView() {
                           {done} of {group.items.length}
                         </span>
                       </div>
-                      <ul className="list-none">
-                        {group.items.map((item) => (
-                          <DocPackRow
-                            key={item.key}
-                            item={item}
-                            picked={picked?.key === item.key}
-                            downloadUrl={docPackItemUrl(eng.id, item.key)}
-                            onPreview={(next) => setPickedKey(next.key)}
-                          />
-                        ))}
-                      </ul>
+                      {groupByDirector(group.items).map((sub) => (
+                        <div key={sub.key} className="border-t border-line-soft">
+                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 px-4 pb-1 pt-3 md:px-5">
+                            <span className="font-mono text-[12px] uppercase tracking-[.05em] text-ink-muted">{sub.title}</span>
+                            {sub.name ? <b className="text-[15px] font-semibold text-ink">{sub.name}</b> : null}
+                            {sub.note ? <span className="text-[12.5px] text-ink-muted">· {sub.note}</span> : null}
+                          </div>
+                          {/* A tree under the heading: one vertical line, a short branch to each document. */}
+                          <ul
+                            className={cn(
+                              'relative mb-2 ml-6 list-none border-l-[1.5px] border-line-strong md:ml-7',
+                              "[&>li]:relative [&>li]:border-t-0 [&>li]:before:absolute [&>li]:before:left-0 [&>li]:before:top-1/2 [&>li]:before:h-[1.5px] [&>li]:before:w-3 [&>li]:before:bg-line-strong [&>li]:before:content-['']",
+                            )}
+                          >
+                            {sub.items.map((item) => (
+                              <DocPackRow
+                                key={item.key}
+                                item={item}
+                                picked={picked?.key === item.key}
+                                downloadUrl={docPackItemUrl(eng.id, item.key)}
+                                onPreview={(next) => setPickedKey(next.key)}
+                                hideDirector={sub.key !== 'company'}
+                              />
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
                   );
                 })

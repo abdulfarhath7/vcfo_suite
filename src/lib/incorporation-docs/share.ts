@@ -115,7 +115,6 @@ export function isIncorpSlotSetFrozen(
 
 /** Pre-8 signed upload field for each company draft; director drafts derive theirs from the prefix. */
 const INCORP_DRAFT_TO_SIGNED_FIELD: Record<string, string> = {
-  'authorisation-letter:company': 'authorisationLetterSignedUrl',
   'acceptance-letter:company': 'acceptanceLetterSignedUrl',
   'moa-subscription-sheet:company': 'moaSubscriptionSheetSignedUrl',
   'aoa-subscription-sheet:company': 'aoaSubscriptionSheetSignedUrl',

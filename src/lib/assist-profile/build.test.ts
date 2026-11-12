@@ -318,7 +318,7 @@ describe('buildAssistProfile — subscribers (planSubscription)', () => {
     const result = build(assistFullState());
     expect(result.profile.subscribers).toHaveLength(1);
     const [parent] = result.profile.subscribers;
-    expect(parent).toMatchObject({ index: 1, kind: 'bodyCorporate', isDirector: false, place: 'Test City, Singapore' });
+    expect(parent).toMatchObject({ index: 1, kind: 'bodyCorporate', isDirector: false, place: 'Singapore' });
     expect(parent?.name).toBeTruthy();
     expect(parent?.shares?.equity?.number).toBe(10000);
     expect(parent?.representative).toMatchObject({ firstName: 'Alpha', surName: 'Director' });
@@ -339,7 +339,7 @@ describe('buildAssistProfile — subscribers (planSubscription)', () => {
     const { profile } = build(state, INDEPENDENT);
     expect(profile.subscribers.map((s) => [s.index, s.id, s.isDirector, s.shares?.equity?.number, s.place])).toEqual([
       [1, 'e2', true, 6000, 'Hyderabad'],
-      [2, 'e1', true, 4000, 'Test City, Singapore'],
+      [2, 'e1', true, 4000, 'Singapore'],
     ]);
     expect(profile.subscribers[0]).toMatchObject({ kind: 'individual', firstName: 'Beta', din: '01234567' });
     expect(profile.directors.map((d) => [d.index, d.id])).toEqual([[1, 'e3']]);

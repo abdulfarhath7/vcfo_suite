@@ -6,12 +6,13 @@ import {
 import { boardResolutionAuthErrorResponse } from '@/lib/api/board-resolution-errors';
 import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
 import { requireAnyRole } from '@/auth/guards';
+import { docxForResponse, isDocxPreviewRequest } from '@/lib/incorporation-docs/docx-sanitize';
 import { boardResolutionDownloadName } from '@/lib/board-resolution/board-resolution-storage';
 import { downloadBoardResolutionDocx } from '@/storage/board-resolution';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const auth = await requireAnyRole('admin', 'manager', 'intern', 'client');
   if (auth.ok === false) {
     return NextResponse.json(boardResolutionAuthErrorResponse(auth.error, auth.status), {
@@ -86,7 +87,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const cleaned = sanitizeBoardResolutionDocxBuffer(Buffer.from(bytes));
 
-  return new NextResponse(new Uint8Array(cleaned), {
+  return new NextResponse(new Uint8Array(docxForResponse(cleaned, isDocxPreviewRequest(request))), {
     status: 200,
     headers: {
       'Content-Type':

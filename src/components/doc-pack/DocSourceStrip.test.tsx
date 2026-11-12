@@ -15,7 +15,7 @@ describe('DocSourceStrip', () => {
     render(<DocSourceStrip summary={summary} stepId="pre-15" packHref="/pack" />);
     expect(screen.getByText(/documents use/)).toBeInTheDocument();
     expect(screen.getByText(/3 need inputs/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open in document pack' })).toHaveAttribute('href', '/pack');
+    expect(screen.getByRole('link', { name: 'Open Incorporation Documents' })).toHaveAttribute('href', '/pack');
   });
 
   it('renders nothing on a step no document reads', () => {

@@ -41,7 +41,8 @@ describe('pre-8 signed uploads follow the director list', () => {
     expect(errors.nrDirectorDir2SignedUrl).toBeUndefined();
     expect(errors.residentDirector2Dir2SignedUrl).toBeDefined();
     expect(errors.residentDirector2UtilityBillSignedUrl).toBeDefined();
-    expect(errors.authorisationLetterSignedUrl).toBeDefined();
+    // No director lives outside India, so no authorisation letter is asked for.
+    expect(errors.nrDirectorAuthorisationLetterSignedUrl).toBeUndefined();
   });
 
   it('accepted pre-8: a director added later is optional, not a silent re-lock', () => {

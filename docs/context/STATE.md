@@ -1,5 +1,7 @@
 # STATE — verified build state
 
+Last updated: 2026-11-12 (GST and LUT trackers on `PRITHISH`, not deployed: the project lead and the client record them, the manager, the admin and the super admin only view; enforced in `saveSubjectFields`, and the checklist copy of the GSTIN and LUT values moved to the server. No migration. See `notes/checklist-workflow.md`, "Who records the GST and LUT trackers".)
+
 Last updated: 2026-11-12 (admin calendar toolbar, idea A, see the row "Admin calendar toolbar (idea A)"; no migration).
 Last updated: 2026-11-12 (full statutory calendar for every role, see the row "Full statutory calendar for every role"; no migration).
 
@@ -369,3 +371,13 @@ Notes:
   Word helper is `src/lib/doc-style/spectrum-docx.ts` and has no caller yet, because no generated
   Word file is firm-branded. The four react-pdf documents (partner report, Ask brief, status
   brief, budget pack) now use `spectrum-pdf.ts`. Excel exports are not restyled yet.
+
+## QA fixes from the Claude in Chrome run (12 Nov 2026, on `PRITHISH`, not deployed)
+
+A view-only QA pass over the Lead, Admin, Manager and Client portals produced these fixes:
+
+- Team → Add project lead now rejects a phone number that is not 10 to 15 digits (letters such as "abc" were accepted). The rule lives in `createInternBodySchema`, so the API route enforces it too. Tests: `src/lib/api/create-intern-schema.test.ts`.
+- The same form now shows plain-language messages under each field. It used to show raw codes such as `invalid_email` and `password_too_short`, and it showed no message for the phone field.
+- The work-email placeholder reads `name@sbcllp.in` instead of `name@vcfosuite.com`.
+
+Still open from that run: there are no Terms or Privacy pages to link to (legal text needed from the firm), the Manager/Admin "Team tasks" count shows 8 overdue compliance tasks for an unincorporated client while the Lead portal shows 0, and new accounts are pre-filled with the shared default password `DEFAULT_CLIENT_TEMP_PASSWORD` in `src/lib/api/schemas.ts`.

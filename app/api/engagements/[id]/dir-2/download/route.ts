@@ -7,7 +7,11 @@ import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import type { Dir2DirectorKind } from '@/lib/incorporation/dir-2';
 import { dir2DownloadFilename } from '@/lib/incorporation/dir-2';
 import { downloadDir2Docx } from '@/lib/incorporation/dir-2-storage';
-import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
+import {
+  docxForResponse,
+  isDocxPreviewRequest,
+  sanitizeIncorpDocxBufferWithReport,
+} from '@/lib/incorporation-docs/docx-sanitize';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { repairIncorpDocxAtPath } from '@/lib/incorporation-docs/storage';
 import { checklistStateFromRow } from '@/db/repositories/engagements';
@@ -75,7 +79,7 @@ export async function GET(request: Request, context: RouteContext) {
     await repairIncorpDocxAtPath(storagePath, sanitized.buffer);
   }
 
-  return new NextResponse(new Uint8Array(sanitized.buffer), {
+  return new NextResponse(new Uint8Array(docxForResponse(sanitized.buffer, isDocxPreviewRequest(request))), {
     status: 200,
     headers: {
       'Content-Type':

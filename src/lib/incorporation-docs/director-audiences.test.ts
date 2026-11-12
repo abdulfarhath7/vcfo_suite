@@ -99,9 +99,11 @@ describe('per-director drafts', () => {
       'pan-undertaking-non-resident-director.docx',
     );
     expect(signedUploadFieldForIncorpDraft('dir-8', 'non-resident')).toBe('nrDirectorDir8SignedUrl');
-    expect(signedUploadFieldForIncorpDraft('authorisation-letter', 'company')).toBe(
-      'authorisationLetterSignedUrl',
+    expect(signedUploadFieldForIncorpDraft('authorisation-letter', 'non-resident')).toBe(
+      'nrDirectorAuthorisationLetterSignedUrl',
     );
+    expect(draftFieldIdFor('authorisation-letter', 'resident')).toBeNull();
+    expect(draftFieldIdFor('authorisation-letter', 'non-resident-2')).toBe('nrDirector2AuthorisationLetterDraftUrl');
   });
 
   it('later directors get their own ids, row keys and filenames', () => {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -25,8 +24,9 @@ function shortDate(iso: string): string {
 
 /**
  * The step's window bar (prototype `StepView`, S-489): a 1.5px bordered bar with the calendar
- * icon, "Window", "From 14 Oct → To 21 Oct", the "Open in document pack" link on the SPICe+
- * steps and, at the right, whatever the step adds (Copy for Assist).
+ * icon, "Window", "From 14 Oct → To 21 Oct" and, at the right, whatever the step adds (Copy for
+ * Assist). The documents are opened from INCORPORATION DOCUMENTS in the steps card instead of a
+ * link here (owner, 12 November 2026).
  *
  * The dates are the manager-set window (`windowForStep`). Only a manager, admin or super admin
  * sees "Edit" (`canEdit`, from `canSetScheduleWindows`); the save goes through the existing
@@ -39,7 +39,6 @@ export function StepWindowBar({
   editSub,
   scopeLabel,
   onSave,
-  docPackHref,
   trailing,
   className,
 }: {
@@ -51,7 +50,6 @@ export function StepWindowBar({
   scopeLabel?: string;
   /** `null` clears. Throw to keep the dialog open. */
   onSave: (window: { from: string; to: string } | null) => Promise<void>;
-  docPackHref?: string | null;
   trailing?: ReactNode;
   className?: string;
 }) {
@@ -112,11 +110,6 @@ export function StepWindowBar({
         >
           {value ? 'Edit' : 'Set window'}
         </Button>
-      ) : null}
-      {docPackHref ? (
-        <Link href={docPackHref} className="text-[13px] font-medium text-brand-text hover:underline">
-          Open in document pack →
-        </Link>
       ) : null}
       {trailing ? <span className="ml-auto flex items-center gap-2">{trailing}</span> : null}
 

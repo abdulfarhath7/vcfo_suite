@@ -45,9 +45,11 @@ vi.mock('@/storage/s3', () => ({ bucketKey: (b: string, p: string) => `${b}/${p}
 
 const assertEngagementAccess = vi.fn();
 const getMyEngagement = vi.fn();
+const patchChecklistItem = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...a: unknown[]) => assertEngagementAccess(...a),
   getMyEngagement: (...a: unknown[]) => getMyEngagement(...a),
+  patchChecklistItem: (...a: unknown[]) => patchChecklistItem(...a),
 }));
 
 const runs = await import('@/db/repositories/assist-runs');
@@ -139,14 +141,42 @@ describe('assist runs', () => {
 
 describe('compliance inputs', () => {
   it('refuses a client writing SBC fields before any query', async () => {
-    await expect(inputs.saveSubjectFields(ctx('client'), { kind: 'registration', key: 'reg-4', side: 'sbc', values: { number: 'X' } })).rejects.toThrow();
+    await expect(inputs.saveSubjectFields(ctx('client'), { kind: 'registration', key: 'reg-6', side: 'sbc', values: { number: 'X' } })).rejects.toThrow();
     expect(calls).toHaveLength(0);
+  });
+
+  it.each(['manager', 'admin', 'super_admin'] as const)('keeps %s to reading the GST and LUT trackers, before any query', async (role) => {
+    for (const key of ['reg-4', 'reg-5']) {
+      await expect(inputs.saveSubjectFields(ctx(role), { engagementId: OWN, kind: 'registration', key, side: 'sbc', values: { arn: 'X' } })).rejects.toThrow(inputs.InputsForbiddenError);
+    }
+    expect(calls).toHaveLength(0);
+    expect(assertEngagementAccess).not.toHaveBeenCalled();
+  });
+
+  it('lets a client record the GST tracker without a submit stamp, and copies the GSTIN to the checklist', async () => {
+    getMyEngagement.mockResolvedValue({ id: OWN });
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: row() });
+    const values = { number: '29AAKCA4821M1Z5', 'registered-on': '2026-11-25', outcome: 'approved' };
+    expect(await inputs.saveSubjectFields(ctx('client'), { kind: 'registration', key: 'reg-4', side: 'sbc', values })).toBe(true);
+    const inserts = calls.filter((c) => c.op === 'insert');
+    expect(inserts).toHaveLength(3);
+    expect(inserts[0]!.values).toMatchObject({ engagementId: OWN, side: 'sbc' });
+    expect(inserts[0]!.values).not.toHaveProperty('submittedAt');
+    expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), expect.any(String), 'reg-4', {
+      responses: { gstinNumber: '29AAKCA4821M1Z5', gstRegistrationDate: '2026-11-25' },
+    }, { serverCopy: true });
+  });
+
+  it('lets the project lead record the LUT tracker', async () => {
+    assertEngagementAccess.mockResolvedValue({ ok: true, dbId: OWN, row: row() });
+    expect(await inputs.saveSubjectFields(ctx('intern'), { engagementId: OWN, kind: 'registration', key: 'reg-5', side: 'sbc', values: { arn: 'AD2911260012345' } })).toBe(true);
+    expect(patchChecklistItem).toHaveBeenCalledWith(expect.anything(), expect.any(String), 'reg-5', { responses: { lutArn: 'AD2911260012345' } }, { serverCopy: true });
   });
 
   it.each(['manager', 'intern'] as const)('reads and writes nothing on a foreign engagement (%s)', async (role) => {
     assertEngagementAccess.mockResolvedValue({ ok: false, dbId: OTHER, forbidden: true });
     expect(await inputs.getSubjectInputs(ctx(role), { engagementId: OTHER, kind: 'registration', key: 'reg-4' })).toBeNull();
-    expect(await inputs.saveSubjectFields(ctx(role), { engagementId: OTHER, kind: 'registration', key: 'reg-4', side: 'sbc', values: { number: 'X' } })).toBe(false);
+    expect(await inputs.saveSubjectFields(ctx(role), { engagementId: OTHER, kind: 'registration', key: 'reg-6', side: 'sbc', values: { number: 'X' } })).toBe(false);
     expect(await inputs.askSubjectDocument(ctx(role), { engagementId: OTHER, kind: 'registration', key: 'reg-4', label: 'Rent agreement' })).toBeNull();
     expect(calls).toHaveLength(0);
   });
