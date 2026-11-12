@@ -74,6 +74,12 @@ import { sep } from '@/lib/date-format';
 import { useExpiries, type ExpiryItem } from '@/hooks/use-expiries';
 import { ExpiriesCard, expiryTone, openExpiries } from '@/components/compliances/ExpiriesCard';
 import { daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
+import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
+import { StatutoryCalendarImport } from '@/components/admin/StatutoryCalendarImport';
+import { fyKeyFromStartYear } from '@/lib/statutory-calendar/fy';
+import { deadlineTagLabel, statutoryArea } from '@/lib/statutory-calendar/acts';
+import { ACT_META, type StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
+import { statutoryStatus } from '@/components/admin/statutory-calendar-utils';
 
 type CalendarView = 'month' | 'year' | 'timeline' | 'statutory';
 const ALL_AREAS = 'all';
@@ -125,9 +131,8 @@ export function ComplianceCalendarView({
   const dateParam = parseIsoDate(params.get('date'));
   const [month, setMonth] = useState<Date>(() => firstOfMonth(dateParam ?? now));
   const [pickedDay, setPickedDay] = useState<string | null>(() => (dateParam ? dateParam.toISOString().slice(0, 10) : null));
-  // The full statutory calendar ("By act") opens first for every role (owner, 12 Nov 2026); a link
-  // to a date (?date=) still opens that month of the filings.
-  const [view, setView] = useState<CalendarView>(() => (dateParam ? 'month' : 'statutory'));
+  // Month opens first; it carries every deadline of the SBC statutory calendar (below) for every role.
+  const [view, setView] = useState<CalendarView>('month');
   const [area, setArea] = useState<string>(ALL_AREAS);
   // C-1: All, Statutory, Non-statutory. The filter applies to every view and the rail (C-4).
   const [cat, setCat] = useState<CatFilter>('all');
@@ -153,10 +158,31 @@ export function ComplianceCalendarView({
   const months = useMemo(() => financialYearMonths(fyStartYear), [fyStartYear]);
   const monthRows = useMemo(() => sortByDueDate(rowsInMonth(rows, monthKey)), [rows, monthKey]);
 
+  /**
+   * The SBC statutory calendar (the file the admin imports) for the year in view. Every role sees
+   * every deadline of it on the Month and Year views, whatever companies it holds, even none
+   * (owner, 12 Nov 2026). It counts as statutory, and the area tabs narrow it with the filings.
+   */
+  const statutoryQuery = useStatutoryCalendar(fyKeyFromStartYear(fyStartYear));
+  const sbcAll = useMemo(
+    () =>
+      showStat(cat)
+        ? (statutoryQuery.data?.calendar.deadlines ?? []).map((d) => ({ ...d, area: statutoryArea(d) }))
+        : [],
+    [statutoryQuery.data, cat],
+  );
+  const sbcMonth = useMemo(() => sbcAll.filter((d) => d.date.startsWith(monthKey)), [sbcAll, monthKey]);
+
   // Area chips count what the view shows: this month in month view, the year otherwise.
   const counted = view === 'month' ? monthRows : rows;
-  const areas = useMemo(() => [...new Set(counted.map((row) => row.compliance))].sort((a, b) => a.localeCompare(b)), [counted]);
+  const countedSbc = view === 'month' ? sbcMonth : sbcAll;
+  const areas = useMemo(
+    () => [...new Set([...counted.map((row) => row.compliance), ...countedSbc.map((d) => d.area)])].sort((a, b) => a.localeCompare(b)),
+    [counted, countedSbc],
+  );
   const areaOn = area !== ALL_AREAS && areas.includes(area) ? area : ALL_AREAS;
+  const sbcShown = useMemo(() => sbcAll.filter((d) => areaOn === ALL_AREAS || d.area === areaOn), [sbcAll, areaOn]);
+  const sbcMonthShown = useMemo(() => sbcShown.filter((d) => d.date.startsWith(monthKey)), [sbcShown, monthKey]);
   const inArea = (row: FilingRow) => areaOn === ALL_AREAS || row.compliance === areaOn;
   // Tasks have no regulator: they show under the All area only.
   const tasks = useMemo(() => (showTasks(cat) && areaOn === ALL_AREAS ? allTasks : []), [allTasks, cat, areaOn]);
@@ -172,7 +198,10 @@ export function ComplianceCalendarView({
     [expiryQuery.data, cat, areaOn],
   );
   const monthExpiries = useMemo(() => expiries.filter((x) => x.expiresOn.startsWith(monthKey)), [expiries, monthKey]);
-  const statCount = (view === 'month' ? sortByDueDate(rowsInMonth(allRows, monthKey)) : allRows).length;
+  const sbcCountAll = statutoryQuery.data?.calendar.deadlines ?? [];
+  const statCount =
+    (view === 'month' ? sortByDueDate(rowsInMonth(allRows, monthKey)) : allRows).length +
+    (view === 'month' ? sbcCountAll.filter((d) => d.date.startsWith(monthKey)) : sbcCountAll).length;
   const taskCount = (view === 'month' ? allTasks.filter((t) => t.dueDate.startsWith(monthKey)) : allTasks).length;
   const recordHref = (row: FilingRow) => hrefs?.record?.(row) ?? statHref(basePath, row.obligationId, row.id);
   const taskLink = (t: TaskRowDto) => hrefs?.task?.(t) ?? taskHref(basePath, t.id, t.boardMeetingId);
@@ -206,8 +235,16 @@ export function ComplianceCalendarView({
             hollow: true,
             hint: daysLeftLabel(x.daysLeft),
           })),
+        )
+        .concat(
+          sbcShown.map((d) => ({
+            id: `sbc-${d.id}`,
+            date: d.date,
+            label: `${sbcTag(d)} · ${d.title}`,
+            status: statutoryStatus(d.date, todayIso),
+          })),
         ),
-    [rows, tasks, expiries, areaOn, now],
+    [rows, tasks, expiries, sbcShown, areaOn, now, todayIso],
   );
 
   // The rail always reads this calendar month (the donut is "this month", R-25).
@@ -250,6 +287,7 @@ export function ComplianceCalendarView({
   const dayRows = (day: string) => listRows.filter((row) => row.dueDate.slice(0, 10) === day);
   const dayTasks = (day: string) => monthTasks.filter((t) => t.dueDate.slice(0, 10) === day);
   const dayExpiries = (day: string) => monthExpiries.filter((x) => x.expiresOn === day);
+  const daySbc = (day: string) => sbcMonthShown.filter((d) => d.date === day);
 
   /**
    * GL-06: what the calendar shows, by due date. The month view exports the month in view; the
@@ -260,7 +298,12 @@ export function ComplianceCalendarView({
     const filings = view === 'month' ? listRows : sortByDueDate(rows.filter(inArea));
     const taskList = view === 'month' ? monthTasks : tasks;
     const expiryList = view === 'month' ? monthExpiries : expiries.filter((x) => x.expiresOn >= range.from && x.expiresOn <= range.to);
+    const sbcList = view === 'month' ? sbcMonthShown : sbcShown;
     return [
+      ...sbcList.map((d) => ({
+        due: d.date,
+        cells: [d.date, d.title, 'SBC statutory calendar', d.note ?? null, sbcTag(d), FILING_WORD[statutoryStatus(d.date, todayIso)]] as ExcelCell[],
+      })),
       ...filings.map((row) => ({
         due: row.dueDate.slice(0, 10),
         cells: [row.dueDate.slice(0, 10), row.particular, row.companyName, row.periodLabel ?? null, areaLabel(row.compliance), filingWord(row, now)] as ExcelCell[],
@@ -335,8 +378,12 @@ export function ComplianceCalendarView({
               label="Filter by area"
               className="min-w-0"
               items={[
-                { key: ALL_AREAS, label: 'All', count: counted.length },
-                ...areas.map((a) => ({ key: a, label: regOf(a) ? REG_WORD[regOf(a)!] : areaLabel(a), count: counted.filter((row) => row.compliance === a).length })),
+                { key: ALL_AREAS, label: 'All', count: counted.length + countedSbc.length },
+                ...areas.map((a) => ({
+                  key: a,
+                  label: SBC_OWN_AREAS.has(a) ? a : regOf(a) ? REG_WORD[regOf(a)!] : areaLabel(a),
+                  count: counted.filter((row) => row.compliance === a).length + countedSbc.filter((d) => d.area === a).length,
+                })),
               ]}
               value={areaOn}
               onChange={setArea}
@@ -355,6 +402,18 @@ export function ComplianceCalendarView({
               value={view}
               onChange={(v) => setView(v as CalendarView)}
             />
+            {/* The admin's Download template and Import calendar sit here, on every view of the page. */}
+            {statutoryQuery.data?.canImport ? (
+              <StatutoryCalendarImport
+                data={statutoryQuery.data}
+                onPublished={(fyKey) => {
+                  // Open the imported year on its first month, with its deadlines on the grid.
+                  setMonth(new Date(`${fyKey.slice(0, 4)}-04-01T00:00:00Z`));
+                  setPickedDay(null);
+                  setView('month');
+                }}
+              />
+            ) : null}
             <Button size="sm" variant="secondary" className="h-8" asChild>
               <Link href={filingsHref()}>
                 <FileText aria-hidden />
@@ -446,7 +505,9 @@ export function ComplianceCalendarView({
                   marks={marks}
                   picked={pickedDay}
                   onPick={setPickedDay}
-                  dayTitle={(day) => <DayHead day={day} rows={dayRows(day)} tasks={dayTasks(day)} expiries={dayExpiries(day)} now={now} />}
+                  dayTitle={(day) => (
+                    <DayHead day={day} rows={dayRows(day)} tasks={dayTasks(day)} expiries={dayExpiries(day)} sbc={daySbc(day)} todayIso={todayIso} now={now} />
+                  )}
                   dayBody={(day) => (
                     <ul>
                       {dayRows(day).map((row) => (
@@ -457,6 +518,9 @@ export function ComplianceCalendarView({
                       ))}
                       {dayExpiries(day).map((x) => (
                         <ExpiryPopRow key={`expiry-${x.id}`} item={x} />
+                      ))}
+                      {daySbc(day).map((d) => (
+                        <SbcPopRow key={`sbc-${d.id}`} deadline={d} todayIso={todayIso} />
                       ))}
                     </ul>
                   )}
@@ -574,11 +638,33 @@ const DOT_MID: Partial<Record<ChipTone, string>> = {
 };
 
 /** The day popover head: a date tile, the long date and the count. */
-function DayHead({ day, rows, tasks = [], expiries = [], now }: { day: string; rows: FilingRow[]; tasks?: TaskRowDto[]; expiries?: ExpiryItem[]; now: Date }) {
+function DayHead({
+  day,
+  rows,
+  tasks = [],
+  expiries = [],
+  sbc = [],
+  todayIso,
+  now,
+}: {
+  day: string;
+  rows: FilingRow[];
+  tasks?: TaskRowDto[];
+  expiries?: ExpiryItem[];
+  /** SBC statutory calendar deadlines of the day. */
+  sbc?: StatutoryDeadline[];
+  todayIso?: string;
+  now: Date;
+}) {
   const d = parseIsoDate(day)!;
-  const all = [...rows.map((row) => filingStatus(row, now)), ...tasks.map((t) => taskStatus(t, now)), ...expiries.map((x) => expiryCalendarStatus(x.daysLeft))];
+  const all = [
+    ...rows.map((row) => filingStatus(row, now)),
+    ...tasks.map((t) => taskStatus(t, now)),
+    ...expiries.map((x) => expiryCalendarStatus(x.daysLeft)),
+    ...sbc.map((x) => statutoryStatus(x.date, todayIso ?? day)),
+  ];
   const status = all.length ? worstStatus(all) : 'upcoming';
-  const count = rows.length + tasks.length + expiries.length;
+  const count = rows.length + tasks.length + expiries.length + sbc.length;
   return (
     <span className="flex items-center gap-2.5">
       <CalDateTile iso={day} status={status} className="h-11 w-10" />
@@ -587,7 +673,7 @@ function DayHead({ day, rows, tasks = [], expiries = [], now }: { day: string; r
           {LONG_DOW[d.getUTCDay()]} {d.getUTCDate()} {LONG_MON[d.getUTCMonth()]}
         </b>
         <span className="block text-[12px] font-normal text-ink-muted">
-          {tasks.length === 0 && expiries.length === 0 ? (count === 1 ? '1 filing' : `${count} filings`) : count === 1 ? '1 item' : `${count} items`}
+          {tasks.length === 0 && expiries.length === 0 && sbc.length === 0 ? (count === 1 ? '1 filing' : `${count} filings`) : count === 1 ? '1 item' : `${count} items`}
         </span>
       </span>
     </span>
@@ -612,6 +698,30 @@ function PopRow({ row, now, href }: { row: FilingRow; now: Date; href: string })
         </span>
         <WordChip filing word={filingWord(row, now)} />
       </Link>
+    </li>
+  );
+}
+
+/** Areas only the SBC calendar has; they keep their own name, as the regulator words would merge them (STPI/SEZ read "FEMA"). */
+const SBC_OWN_AREAS = new Set(['STPI/SEZ', 'RERA', 'Transfer Pricing']);
+
+/** The short act tag of an SBC statutory calendar deadline: "GST", "IT", "APRERA". */
+function sbcTag(d: Pick<StatutoryDeadline, 'act' | 'actLabel'>): string {
+  return deadlineTagLabel(d, ACT_META[d.act].label);
+}
+
+/** One SBC statutory calendar deadline of a day popover: the act, the filing, its note, the status. */
+function SbcPopRow({ deadline, todayIso }: { deadline: StatutoryDeadline; todayIso: string }) {
+  return (
+    <li className="flex items-center gap-2 border-t border-line-soft px-4 py-2 first:border-t-0">
+      <span className="inline-flex h-5 flex-none items-center rounded-sm border-1.5 border-line bg-surface-raised px-1.5 text-[11px] font-medium text-ink-2">
+        {sbcTag(deadline)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13.5px] font-medium text-ink">{deadline.title}</span>
+        <span className="block text-[12px] text-ink-muted">{deadline.note ?? 'SBC statutory calendar'}</span>
+      </span>
+      <WordChip filing word={FILING_WORD[statutoryStatus(deadline.date, todayIso)]} />
     </li>
   );
 }

@@ -103,13 +103,21 @@ Gotchas already paid for once. Append when something costs more than a minute to
 
 ## Full statutory calendar for every role (2026-11-12)
 
-- The owner asked that every role sees every deadline of the file by default. So:
-  `StatutoryCalendar` no longer filters by company or role; the Compliances calendar opens on the
-  By act view for every staff role (a `?date=` link still opens Month); the lead's "No
-  incorporated clients yet" page no longer blocks the Calendar (the other Compliances pages keep
-  it); and the client portal calendar gained a By act view that opens first, on desktop and phone
-  (phone: a By act / Your filings switch above the list).
-- The act tabs over the list and the legend share one state, `mutedActs`: a tab shows one act,
-  All clears it, and picking several acts in the legend leaves no tab highlighted.
-- In the By act view the page hides the filings controls (company, category, month, FY chip,
-  area) and the filings rail, because the statutory calendar has its own year and act filters.
+- The owner asked that every role sees every deadline of the file by default. So the SBC
+  statutory calendar (`useStatutoryCalendar` for the year in view) is merged into the Month and
+  Year views of the staff page (`ComplianceCalendarView`, marks labelled "GST · GSTR-1", a
+  `SbcPopRow` in the day popover, rows in the Excel export) and of the client portal
+  (`CalendarPage`, as `SbcRow`s from `sbcAsRow` in `tasks.ts`, which open nothing).
+- Area tabs: on staff, `statutoryArea` maps an act to the register's area name (IT to "Income
+  Tax", MCA to "Companies Act, 2013" or "LLP Act", LABOUR to "Labour Laws", FEMA to "FEMA / RBI");
+  STPI/SEZ, RERA and Transfer Pricing keep their own names (`SBC_OWN_AREAS`), because the
+  regulator words would show STPI/SEZ as a second "FEMA". On the portal, STPI/SEZ counts under
+  FEMA, TP under Income tax, LABOUR under Payroll, and RERA under All only.
+- `StatutoryCalendar` (By act) no longer filters by company or role, and has act tabs over its
+  list that share `mutedActs` with the legend. A lead with no incorporated client gets the
+  Calendar page; the other Compliances pages keep "No incorporated clients yet".
+- The import buttons (`StatutoryCalendarImport`, which works out its own default year from the
+  GET response) are in the page's top bar, not inside By act, so the admin finds them on Month.
+- Timeline keeps filings only: the file's deadlines have no start dates to draw a window from.
+- The client's "Your compliances haven't started yet" note shows only on a month with nothing on
+  it, as the file's deadlines fill the month before incorporation.

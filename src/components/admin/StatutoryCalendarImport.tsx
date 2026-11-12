@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { FilterSelect } from '@/components/ui/native-select';
 import { useStatutoryCalendarImport } from '@/hooks/use-statutory-calendar';
 import { fyBounds } from '@/lib/statutory-calendar/fy';
-import type { StatutoryCalendarImportResponse } from '@/lib/statutory-calendar/types';
+import type { StatutoryCalendarImportResponse, StatutoryCalendarResponse } from '@/lib/statutory-calendar/types';
 import { toastSuccess } from '@/lib/toast-errors';
 
 const TEMPLATE_URL = '/api/statutory-calendar/template';
@@ -30,19 +30,22 @@ function plural(n: number, one: string, many = `${one}s`) {
  * Excel row; "Publish" is enabled only for a clean file and replaces that year's calendar.
  */
 export function StatutoryCalendarImport({
-  importableYears,
-  defaultYear,
-  sourceYear,
+  data,
   onPublished,
 }: {
-  /** The years the server accepts, oldest first. */
-  importableYears: readonly string[];
-  /** The year the dialog opens on. */
-  defaultYear: string;
-  /** A year with a calendar, offered as a filled template to start from. */
-  sourceYear: string | null;
+  /** GET /api/statutory-calendar: the years the server accepts, the years with a calendar, this year. */
+  data: Pick<StatutoryCalendarResponse, 'importableYears' | 'years' | 'currentFy'>;
   onPublished: (fy: string) => void;
 }) {
+  const importableYears = data.importableYears;
+  /** The dialog opens on the first coming year with no calendar, else on next year. */
+  const withCalendar = new Set(data.years.map((y) => y.fy));
+  const defaultYear =
+    importableYears.find((key) => key > data.currentFy && !withCalendar.has(key)) ??
+    importableYears.find((key) => key > data.currentFy) ??
+    data.currentFy;
+  /** The newest year with a calendar, offered as a filled template to start from. */
+  const sourceYear = data.years[0]?.fy ?? null;
   const [open, setOpen] = useState(false);
   const [fy, setFy] = useState(defaultYear);
   const [file, setFile] = useState<File | null>(null);
@@ -88,13 +91,13 @@ export function StatutoryCalendarImport({
 
   return (
     <>
-      <Button asChild variant="secondary" size="sm">
+      <Button asChild variant="secondary" size="sm" className="h-8">
         <a href={TEMPLATE_URL} download>
           <Download aria-hidden />
           Download template
         </a>
       </Button>
-      <Button variant="strong" size="sm" onClick={openDialog}>
+      <Button variant="strong" size="sm" className="h-8" onClick={openDialog}>
         <Upload aria-hidden />
         Import calendar
       </Button>

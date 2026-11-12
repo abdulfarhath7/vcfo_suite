@@ -82,8 +82,10 @@ test.describe('statutory calendar import', () => {
     await dialog.getByRole('button', { name: 'Publish FY 2027-28' }).click();
     await expect(dialog).toBeHidden();
 
-    await expect(page.getByLabel('Financial year')).toHaveValue(NEXT_FY);
-    await expect(page.getByText('April').first()).toBeVisible();
+    // The page opens the imported year on April, in the Month view, with its deadlines on the grid.
+    await expect(page.getByRole('tab', { name: 'Month' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('button', { name: 'Choose month' })).toContainText('April');
+    await expect(page.getByRole('button', { name: /^7 April, \d+ (filings?|items?)/ }).first()).toBeVisible();
     const api = await page.request.get(`/api/statutory-calendar?fy=${NEXT_FY}`);
     const body = (await api.json()) as { calendar: { source: string; deadlines: { date: string }[] } };
     expect(body.calendar.source).toBe('imported');
@@ -91,22 +93,25 @@ test.describe('statutory calendar import', () => {
     expect(body.calendar.deadlines.every((d) => d.date >= '2027-04-01' && d.date <= '2028-03-31')).toBe(true);
   });
 
-  test('a lead sees every deadline by default, whatever companies they hold, and can filter by act', async ({ page }) => {
+  test('a lead sees every deadline of the file on Month, whatever companies they hold, and can narrow it', async ({ page }) => {
     await login(page, 'lead');
     await page.goto('/app/lead/compliances/calendar');
-    // By act is the default view, so the full calendar shows without a click.
-    await expect(page.getByRole('heading', { name: 'Statutory calendar' })).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByRole('tab', { name: 'By act' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: 'Month' })).toHaveAttribute('aria-selected', 'true', { timeout: 60_000 });
     const api = await page.request.get('/api/statutory-calendar');
     const { calendar } = (await api.json()) as { calendar: { deadlines: { date: string; act: string }[] } };
     const month = new Date().toISOString().slice(0, 7);
     const inMonth = calendar.deadlines.filter((d) => d.date.startsWith(month));
-    await expect(page.getByRole('heading', { name: new RegExp(`· ${inMonth.length} deadlines?$`) })).toBeVisible();
-
-    await page.getByRole('tab', { name: /^GST/ }).click();
+    // This lead holds no company, so every deadline on the Month view comes from the file.
+    await expect(page.getByRole('tablist', { name: 'Filter by area' }).getByRole('tab', { name: new RegExp(`^All\\s*${inMonth.length}$`) })).toBeVisible();
     const gst = inMonth.filter((d) => d.act === 'GST').length;
-    await expect(page.getByRole('heading', { name: new RegExp(`· ${gst} deadlines?$`) })).toBeVisible();
-    await expect(page.locator('.stat-cal-tag').filter({ hasNotText: 'GST' })).toHaveCount(0);
+    await page.getByRole('tablist', { name: 'Filter by area' }).getByRole('tab', { name: /^GST/ }).click();
+    await expect(page.getByRole('tablist', { name: 'Filter by area' }).getByRole('tab', { name: new RegExp(`^GST\\s*${gst}$`) })).toHaveAttribute('aria-selected', 'true');
+
+    // By act is the same calendar as a list, with its own act tabs.
+    await page.getByRole('tab', { name: 'By act' }).click();
+    await expect(page.getByRole('heading', { name: new RegExp(`· ${inMonth.length} deadlines?$`) })).toBeVisible();
+    // A lead has no import buttons.
+    await expect(page.getByRole('button', { name: 'Import calendar' })).toHaveCount(0);
   });
 
   test('a super admin reads the calendar but cannot import', async ({ page }) => {

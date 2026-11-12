@@ -15,7 +15,6 @@ import {
   type StatutoryDeadline,
 } from '@/data/statutory-calendar-fy2627';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { StatutoryCalendarImport } from '@/components/admin/StatutoryCalendarImport';
 import { FilterSelect } from '@/components/ui/native-select';
 import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
 import { deadlineTagLabel } from '@/lib/statutory-calendar/acts';
@@ -503,15 +502,6 @@ export function StatutoryCalendar({
     keys.add(fy.key);
     return [...keys].sort((a, b) => b.localeCompare(a));
   }, [calendarData, fy.key]);
-  /** The import dialog opens on the first importable year with no calendar, else on next year. */
-  const importable = calendarData?.importableYears ?? [];
-  const withCalendar = new Set((calendarData?.years ?? []).map((y) => y.fy));
-  const currentFy = calendarData?.currentFy ?? fy.key;
-  const nextImportYear =
-    importable.find((key) => key > currentFy && !withCalendar.has(key)) ??
-    importable.find((key) => key > currentFy) ??
-    currentFy;
-  const importSourceYear = calendarData?.years[0]?.fy ?? null;
 
   const title = showBack ? (
     <PageBackCluster>
@@ -544,14 +534,6 @@ export function StatutoryCalendar({
           )}
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {calendarData?.canImport ? (
-            <StatutoryCalendarImport
-              importableYears={calendarData.importableYears}
-              defaultYear={nextImportYear}
-              sourceYear={importSourceYear}
-              onPublished={setFyKey}
-            />
-          ) : null}
           {trackerHref ? (
             <Link
               href={trackerHref}
@@ -619,7 +601,7 @@ export function StatutoryCalendar({
             ) : calendarData?.calendar.source === 'none' ? (
               <p className="stat-cal-empty">
                 There is no calendar for {fy.label} yet.
-                {calendarData.canImport ? ' Use Import calendar to add one from the Excel template.' : ' The admin adds it.'}
+                {calendarData.canImport ? ' Use Import calendar at the top of the page to add one from the Excel template.' : ' The admin adds it.'}
               </p>
             ) : calendarQuery.isPending ? (
               <p className="stat-cal-empty">Loading the {fy.label} calendar.</p>

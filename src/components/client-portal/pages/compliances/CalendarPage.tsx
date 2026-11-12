@@ -65,7 +65,9 @@ import { financialYearMonths } from '@/lib/compliance/filings';
 import { CalendarMobile } from './CalendarMobile';
 import { CategoryTabs, RowArea } from './task-marks';
 import { taskHref, useExpiryRows, useTaskRows } from './task-api';
-import { dayWords, fyOfIso, isExpiryRow, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
+import { dayWords, fyOfIso, isExpiryRow, isSbcRow, isTaskRow, sbcAsRow, sbcInArea, sbcTag, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
+import { useStatutoryCalendar } from '@/hooks/use-statutory-calendar';
+import { fyKeyFromStartYear } from '@/lib/statutory-calendar/fy';
 import { CALENDAR_BEFORE } from './empty-copy';
 import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
@@ -77,7 +79,7 @@ import '../../css/compliances-board.css';
  */
 const VIEWS = ['month', 'year', 'timeline', 'statutory'] as const;
 const VIEW_LABELS = ['Month', 'Year', 'Timeline', 'By act'] as const;
-const DEFAULT_VIEW = 'statutory';
+const DEFAULT_VIEW = 'month';
 type View = (typeof VIEWS)[number];
 const AREA_IDS = AREAS.map((a) => a.id);
 
@@ -101,7 +103,9 @@ export function useCalendarState() {
   const dateP = params.get('date');
   const month = dateP && /^\d{4}-(0[1-9]|1[0-2])$/.test(dateP.slice(0, 7)) ? dateP.slice(0, 7) : nowKey;
   const viewP = params.get('view');
-  const view: View = (VIEWS as readonly string[]).includes(viewP ?? '') ? (viewP as View) : dateP ? 'month' : DEFAULT_VIEW;
+  const view: View = (VIEWS as readonly string[]).includes(viewP ?? '') ? (viewP as View) : DEFAULT_VIEW;
+  /** True when the URL names a view; a phone with none opens on By act. */
+  const viewChosen = viewP !== null && (VIEWS as readonly string[]).includes(viewP);
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREA_IDS.includes(areaP as AreaFilter) ? (areaP as AreaFilter) : 'all';
   const filing = params.get('filing') ?? params.get('open');
@@ -120,7 +124,7 @@ export function useCalendarState() {
     },
     [params, router, pathname, nowKey],
   );
-  return { today, nowKey, month, view, area, filing, cat, set };
+  return { today, nowKey, month, view, viewChosen, area, filing, cat, set };
 }
 
 
@@ -148,11 +152,11 @@ export function CompliancesCalendar() {
                   { key: 'statutory', label: 'By act' },
                   { key: 'month', label: 'Your filings' },
                 ]}
-                value={st.view === 'statutory' ? 'statutory' : 'month'}
+                value={st.view === 'statutory' || !st.viewChosen ? 'statutory' : 'month'}
                 onChange={(key) => st.set({ view: key })}
               />
             </Island>
-            {st.view === 'statutory' ? (
+            {st.view === 'statutory' || !st.viewChosen ? (
               <Island>
                 <StatutoryCalendar engagements={[]} audience="client" />
               </Island>
@@ -205,12 +209,26 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   const monthAll = useMemo(() => fyRows.filter((r) => r.dueDate.startsWith(month)), [fyRows, month]);
   const monthTasks = useMemo(() => fyTasks.filter((r) => r.dueDate.startsWith(month)), [fyTasks, month]);
   const monthExpiries = useMemo(() => (expiriesOn ? allExpiries.filter((r) => r.dueDate.startsWith(month)) : []), [expiriesOn, allExpiries, month]);
-  const monthRows = useMemo(() => [...filterArea(monthAll, area), ...monthTasks, ...monthExpiries], [monthAll, area, monthTasks, monthExpiries]);
+  // The SBC statutory calendar for the year in view: every client sees every deadline of it on
+  // Month and Year, beside their own filings (owner, 12 Nov 2026). It counts as statutory.
+  const sbcQ = useStatutoryCalendar(fyKeyFromStartYear(fy));
+  const sbcAll = useMemo(() => (sbcQ.data?.calendar.deadlines ?? []).map(sbcAsRow), [sbcQ.data]);
+  const sbcFy = useMemo(() => (statOn ? sbcAll : []), [statOn, sbcAll]);
+  const sbcMonth = useMemo(() => sbcFy.filter((r) => r.dueDate.startsWith(month)), [sbcFy, month]);
+  const monthRows = useMemo(
+    () => [...filterArea(monthAll, area), ...sbcInArea(sbcMonth, area), ...monthTasks, ...monthExpiries],
+    [monthAll, sbcMonth, area, monthTasks, monthExpiries],
+  );
   const countBase = view === 'month' ? monthAll : fyRows;
+  const sbcBase = view === 'month' ? sbcMonth : sbcFy;
   // C-1 counts: the month on screen in Month view, the whole year in Year and Timeline.
   const scope = (list: PortalFiling[]) => (view === 'month' ? list.filter((r) => r.dueDate.startsWith(month)) : list).length;
-  const catCounts = { stat: scope(statFy), ns: scope(taskFy) };
-  const areaCounts = AREAS.map((a) => (a.id === 'all' ? countBase.length : countBase.filter((r) => r.area === a.id).length));
+  const catCounts = { stat: scope(statFy) + scope(sbcAll), ns: scope(taskFy) };
+  const areaCounts = AREAS.map((a) =>
+    a.id === 'all'
+      ? countBase.length + sbcBase.length
+      : countBase.filter((r) => r.area === a.id).length + sbcBase.filter((r) => r.sbcArea === a.id).length,
+  );
   const loading = after && (q.isLoading || qToday.isLoading);
 
   const byId = useMemo(() => {
@@ -220,7 +238,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
   }, [statFy, railRows]);
   const detail = st.filing ? byId.get(st.filing) ?? null : null;
   const openDetail = (f: PortalFiling) =>
-    isExpiryRow(f) ? showExpiriesCard() : isTaskRow(f) ? go(taskHref(f.task.id, f.task.boardMeetingId)) : set({ filing: f.id });
+    isSbcRow(f) ? undefined : isExpiryRow(f) ? showExpiriesCard() : isTaskRow(f) ? go(taskHref(f.task.id, f.task.boardMeetingId)) : set({ filing: f.id });
 
   /* day pop-over */
   const [sel, setSel] = useState<{ iso: string; style: React.CSSProperties; cls: string } | null>(null);
@@ -269,7 +287,9 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
 
   /* empty month copy (E-01) */
   const emptyOverlay = (() => {
-    if (!after) return { lines: [...CALENDAR_BEFORE], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
+    // Before incorporation the company has no filings of its own, but the SBC statutory calendar
+    // still fills the month; the "not started yet" note shows only on a month with nothing on it.
+    if (!after && !monthRows.length) return { lines: [...CALENDAR_BEFORE], showAll: false, q: 'Why is my compliance calendar empty before incorporation?' };
     if (loading || q.isError || view !== 'month' || monthRows.length) return null;
     const pool = sortByDue([...filterArea([...fyRows, ...railRows].filter((r) => !isTaskRow(r)), area), ...fyTasks]).filter((r) => r.dueDate > `${month}-31`);
     const next = pool[0];
@@ -409,7 +429,12 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
               <Island>
                 <YearGrid
                   months={financialYearMonths(fy)}
-                  marks={[...filterArea(fyRows, area), ...fyTasks, ...(expiriesOn ? allExpiries.filter((r) => fyOfIso(r.dueDate) === fy) : [])].map((r) => ({ id: r.id, date: r.dueDate.slice(0, 10), label: r.name, status: FILING_OF[statusOf(r, today)] }))}
+                  marks={[...filterArea(fyRows, area), ...sbcInArea(sbcFy, area), ...fyTasks, ...(expiriesOn ? allExpiries.filter((r) => fyOfIso(r.dueDate) === fy) : [])].map((r) => ({
+                    id: r.id,
+                    date: r.dueDate.slice(0, 10),
+                    label: isSbcRow(r) ? `${sbcTag(r.sbc)} · ${r.name}` : r.name,
+                    status: FILING_OF[statusOf(r, today)],
+                  }))}
                   todayIso={today}
                   onPick={(k) => set({ date: k, view: 'month' })}
                 />
@@ -536,7 +561,7 @@ function MonthGrid({ month, rows, today, selIso, onDay }: { month: string; rows:
                 return (
                   <span key={r.id} className="ev" data-s={rs}>
                     <i style={{ background: STROKE[rs] }} />
-                    <span className="a">{r.area}</span>
+                    <span className="a">{isSbcRow(r) ? sbcTag(r.sbc) : r.area}</span>
                     <span className="t">{r.name}</span>
                   </span>
                 );
@@ -602,6 +627,8 @@ const DayPopover = forwardRef<
               </button>
               {isTaskRow(r) ? (
                 <SChip fixed>{r.task.expiry ? r.task.expiry.word : taskWord(r.task, today)}</SChip>
+              ) : isSbcRow(r) ? (
+                <StatusChip s={statusOf(r, today)} />
               ) : (
                 <>
                   <PortalLink f={r} />

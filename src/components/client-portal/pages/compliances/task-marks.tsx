@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import type { PortalFiling } from '@/lib/client-portal/compliances';
 import { AreaTag, PortalLink } from './spectrum';
-import { URGENCY_BARS, isTaskRow, taskHint, urgencyLabel, type CalRow, type Category } from './tasks';
+import { URGENCY_BARS, isSbcRow, isTaskRow, sbcTag, taskHint, urgencyLabel, type CalRow, type Category } from './tasks';
 
 export function UrgencyPill({ urgency, className }: { urgency: string; className?: string }) {
   const word = urgencyLabel(urgency);
@@ -71,6 +71,19 @@ export function CategoryTabs({
  * (C-3: it has no regulator; the hover gives the start date and the urgency).
  */
 export function RowArea({ r, compact, className }: { r: CalRow; compact?: boolean; className?: string }) {
+  if (isSbcRow(r))
+    return (
+      <span
+        title="SBC statutory calendar"
+        className={cn(
+          'inline-flex flex-none items-center rounded-sm border-1.5 border-line bg-surface-raised font-medium text-ink-2',
+          compact ? 'h-5 px-1.5 text-[11px]' : 'h-6 px-2 text-[12.5px]',
+          className,
+        )}
+      >
+        {sbcTag(r.sbc)}
+      </span>
+    );
   if (!isTaskRow(r)) return <AreaTag a={r.area} compact={compact} className={className} />;
   return (
     <span
@@ -89,5 +102,5 @@ export function RowArea({ r, compact, className }: { r: CalRow; compact?: boolea
 
 /** The portal ↗ link of a filing; a task has none. */
 export function RowPortalLink({ r }: { r: PortalFiling }) {
-  return isTaskRow(r) ? null : <PortalLink f={r} />;
+  return isTaskRow(r) || isSbcRow(r) ? null : <PortalLink f={r} />;
 }
