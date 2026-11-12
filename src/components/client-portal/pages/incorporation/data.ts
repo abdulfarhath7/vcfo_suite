@@ -16,6 +16,7 @@ import { subStepsOf, type SubStep } from '@/lib/client-portal/step-progress';
 import { usePortalIncorporation, todayIST } from '../../hooks';
 import { usePortal, type DrillRow, type DrillTab, type WhatsThisAnswer } from '../../PortalProvider';
 import type { PortalStep, PortalPhase, PortalIncorporationModel } from '@/lib/client-portal/step-model';
+import { countLateSteps } from '@/lib/client-portal/step-late';
 import type { ChipTone } from '@/components/ui/spectrum-chip';
 import type { ClientIncorporationExtras, ClientFileRequestDto } from '@/lib/client-portal/incorporation-types';
 import { fmt, type OwnKey } from './ui';
@@ -324,10 +325,8 @@ export function withoutRegistration(model: PortalIncorporationModel): PortalInco
   const steps = phases.flatMap((p) => p.steps);
   const done = steps.filter((s) => s.kind === 'done').length;
   const counts = { done: 0, you: 0, prog: 0, with: 0, next: 0, up: 0, late: 0 } as PortalIncorporationModel['counts'];
-  for (const s of steps) {
-    counts[s.kind] += 1;
-    if (s.late) counts.late += 1;
-  }
+  for (const s of steps) counts[s.kind] += 1;
+  counts.late = countLateSteps(steps);
   const current = model.current && model.current.phaseNo !== 4 ? model.current : steps.find((s) => s.kind === 'you') ?? steps.find((s) => s.kind === 'prog' || s.kind === 'with');
   return {
     ...model,

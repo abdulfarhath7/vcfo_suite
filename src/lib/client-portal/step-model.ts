@@ -17,7 +17,8 @@
  *   next  · Next                     (landing table only) the first locked step
  *                                    right after the current one in the same phase
  *   up    · Upcoming                 locked
- *   late  (overlay)                  not done and past its window end / overdue
+ *   late  (overlay)                  open (not locked), not done, and past its window
+ *                                    end or overdue (src/lib/client-portal/step-late.ts)
  *
  * The real gate (src/lib/checklist/checklist-step-gate.ts, LIFTed) is not changed: it
  * opens one step at a time. QUESTIONS.md › Incorporation records this.
@@ -30,6 +31,7 @@ import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fil
 import { isReviewRejected } from '@/lib/checklist/checklist-item-review';
 import { isStepReleasedToClient } from '@/lib/checklist/checklist-visibility';
 import { windowForStep, type EngagementSchedule } from '@/lib/projects/schedule-windows';
+import { countLateSteps, isStepLate } from '@/lib/client-portal/step-late';
 
 type StepKind = 'done' | 'you' | 'prog' | 'with' | 'next' | 'up';
 type StepOwner = 'client' | 'sbc' | 'mca';
@@ -159,7 +161,7 @@ export function buildIncorporationModel(
 
       const due = ymd(win?.to);
       const doneOn = kind === 'done' ? doneDate(slice) : undefined;
-      const late = kind !== 'done' && (status === 'overdue' || (!!due && due < today));
+      const late = isStepLate({ kind, status, due }, today);
       const since = kind === 'with' ? ymd(slice?.clientSubmittedAt) ?? prevDone : undefined;
       const step: PortalStep = {
         n,
@@ -216,10 +218,8 @@ export function buildIncorporationModel(
   const sd = spiceSteps.filter((s) => s.kind === 'done').length;
   const ad = steps.filter((s) => s.kind === 'done').length;
   const counts = { done: 0, you: 0, prog: 0, with: 0, next: 0, up: 0, late: 0 } as Record<StepKind | 'late', number>;
-  for (const s of steps) {
-    counts[s.kind] += 1;
-    if (s.late) counts.late += 1;
-  }
+  for (const s of steps) counts[s.kind] += 1;
+  counts.late = countLateSteps(steps);
   return {
     phases,
     steps,

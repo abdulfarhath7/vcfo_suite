@@ -2,6 +2,7 @@ import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { ChipTone } from '@/components/ui/spectrum-chip';
 import { buildIncorporationModel, type PortalStep } from '@/lib/client-portal/step-model';
+import { countLateSteps } from '@/lib/client-portal/step-late';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { internCompanyPhaseProgress, type InternCompanyPhaseProgress } from '@/lib/intern/intern-work';
 import { deriveStuckReason, type StuckReason } from '@/lib/projects/project-stuck';
@@ -145,7 +146,7 @@ export function clientRowFacts(
   let health: ClientHealth;
   if (total > 0 && done >= total) health = 'Done';
   else if (progress.stuck || stuckReason === 'blocked') health = 'Stuck';
-  else if (e.health === 'overdue' || model.counts.late > 0) health = 'Overdue';
+  else if (e.health === 'overdue' || countLateSteps(model.steps) > 0) health = 'Overdue';
   else if (nextInWeek(next, todayIso, 'week')) health = 'Due this week';
   else if (stuckReason === 'waiting_client' || current?.holder === 'client') health = 'With client';
   else if (done === 0) health = 'Not started';
