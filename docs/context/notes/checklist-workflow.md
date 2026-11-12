@@ -270,6 +270,23 @@ Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
   date and number are mirrored to `lutFilingDate` / `lutArn` on the checklist step, which the
   registration facts and the credentials workbook already read.
 
+## Who records the GST and LUT trackers (2026-11-12)
+
+- Owner rule: the project lead and the client fill the trackers; the manager, the admin and the
+  super admin see what has happened and do not record it. The rule is
+  `canRecordRegistrationTracker` in `src/lib/registrations/tracker-access.ts` and the repository
+  enforces it: `saveSubjectFields` refuses SBC-side writes on `reg-4` and `reg-5` from any other
+  role before any query, and lets a client write them (without the submit stamp a client's own
+  details get).
+- The staff page shows the fields to a lead and a read-only record with the line "View only. The
+  project lead or the client records each stage." to the manager and the admins. The client portal
+  shows the fields; the notice keeps the client wording (`audience="client"`).
+- The checklist copy (GSTIN and date of registration to `gstinNumber` / `gstRegistrationDate`,
+  LUT filing date and number to `lutFilingDate` / `lutArn`) now runs in the repository after the
+  save (`trackerChecklistMirror` plus `patchChecklistItem`), so a client's entry reaches the return
+  calendar too. A failed copy is logged and does not fail the save. The REG-06 certificate upload
+  stays with the lead; the client sees the download once it is on file.
+
 ## Registration tracker card and soft corners (2026-11-11)
 
 - The GST and LUT records show their tracker as one compact card

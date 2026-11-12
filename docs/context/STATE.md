@@ -1,5 +1,7 @@
 # STATE — verified build state
 
+Last updated: 2026-11-12 (GST and LUT trackers on `PRITHISH`, not deployed: the project lead and the client record them, the manager, the admin and the super admin only view; enforced in `saveSubjectFields`, and the checklist copy of the GSTIN and LUT values moved to the server. No migration. See `notes/checklist-workflow.md`, "Who records the GST and LUT trackers".)
+
 Last updated: 2026-11-12 (admin calendar toolbar, idea A, see the row "Admin calendar toolbar (idea A)"; no migration).
 Last updated: 2026-11-12 (full statutory calendar for every role, see the row "Full statutory calendar for every role"; no migration).
 

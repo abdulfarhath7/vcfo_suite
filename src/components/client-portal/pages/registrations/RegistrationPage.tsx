@@ -153,14 +153,16 @@ function Record({ r, engagement, credsError, credsLoading }: { r: RegItem; engag
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid min-w-0 gap-5">
           {gstDates ? (
+            // The client records the GST and LUT stages alongside the project lead (owner, 12 November 2026).
             <GstRegistrationTracker
               schedule={gstDates}
-              canEdit={false}
+              canEdit
+              audience="client"
               today={today}
               certificate={<CertificateButton facts={r.facts} size="sm" />}
             />
           ) : null}
-          {lutDay ? <LutRegistrationTracker gstDay={lutDay} canEdit={false} today={today} /> : null}
+          {lutDay ? <LutRegistrationTracker gstDay={lutDay} canEdit audience="client" today={today} /> : null}
           {!r.notNeeded && !gstDates && !lutDay ? (
             <SCard title="Steps" meta={`${parts.filter((p) => p.s === 'done').length} of ${parts.length} done`} flush>
               <div className="px-4 md:px-5">

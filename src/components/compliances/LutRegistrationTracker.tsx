@@ -3,14 +3,20 @@
 import { CalendarDays } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { NoirDatePicker } from '@/components/noir/NoirDatePicker';
-import { toastSaved } from '@/components/ui/toast-saved';
-import { errorMessage, toastError } from '@/lib/toast-errors';
-import { useApp } from '@/context/AppContext';
-import { checklistStateKeyForEngagement } from '@/lib/checklist/checklist-state-key';
-import { useInputsAction, useSubjectInputs } from '@/components/compliances/use-compliance-records';
+import { useSubjectInputs } from '@/components/compliances/use-compliance-records';
 import { fmtLong, type GstSchedule } from '@/lib/registrations/gst-tracker';
 import { LUT_FIELD, LUT_STEP_ID, financialYearOf, lutNotice, lutStages, lutValidTill } from '@/lib/registrations/lut-tracker';
-import { Field, Fields, NoticeBar, RecordList, SaveRow, useDraft, val } from '@/components/compliances/GstRegistrationTracker';
+import {
+  Field,
+  Fields,
+  NoticeBar,
+  READ_ONLY_NOTE,
+  RecordList,
+  SaveRow,
+  useDraft,
+  useTrackerSave,
+  val,
+} from '@/components/compliances/GstRegistrationTracker';
 import { TrackerCard } from '@/components/compliances/tracker-card';
 
 /**
@@ -23,9 +29,11 @@ import { TrackerCard } from '@/components/compliances/tracker-card';
  * session. This page records what that person reads there. It asks for no GST login,
  * password, OTP or EVC, and nothing here signs in to or reads the portal.
  *
- * Values save to the registration's SBC fields. The filing date and the LUT number are also
- * written to the `reg-5` checklist answers (`lutFilingDate`, `lutArn`), which the
- * registration facts and the credentials workbook already read. Rules: `lut-tracker.ts`.
+ * The project lead and the client record; the manager, the admin and the super admin read
+ * (`tracker-access.ts`, enforced in the repository). Values save to the registration's SBC
+ * fields. The repository also writes the filing date and the LUT number to the `reg-5`
+ * checklist answers (`lutFilingDate`, `lutArn`), which the registration facts and the
+ * credentials workbook already read. Rules: `lut-tracker.ts`.
  */
 
 const STAGE_TITLE = { filing: 'Application filed', allotted: 'LUT allotted' } as const;
@@ -36,52 +44,27 @@ export function LutRegistrationTracker({
   engagementId,
   gstDay,
   canEdit,
+  audience,
   today,
 }: {
   /** The app engagement id; undefined for the client, whose own engagement the API resolves. */
   engagementId?: string;
   /** The GST registration day; the LUT is filed the same day. */
   gstDay: GstSchedule;
+  /** The project lead and the client record; the manager and the admins read. */
   canEdit: boolean;
+  /** Who reads the notice: the firm gets its instructions, the client the facts. */
+  audience: 'firm' | 'client';
   /** ISO date, India time. */
   today: string;
 }) {
   const q = useSubjectInputs({ engagementId, kind: 'registration', key: LUT_STEP_ID });
-  const act = useInputsAction();
-  const { engagements, updateItem } = useApp();
-  const engagement = engagementId ? engagements.find((e) => e.id === engagementId) : undefined;
+  const { save, saving } = useTrackerSave(engagementId, LUT_STEP_ID);
   const values: Record<string, string | null> = Object.fromEntries((q.data?.sbc ?? []).map((f) => [f.key, f.value]));
   const stages = lutStages(values);
-  const done = stages.filter((s) => s.state === 'done').length;
-  const notice = lutNotice(gstDay, values, today, canEdit ? 'firm' : 'client');
+  const notice = lutNotice(gstDay, values, today, audience);
   const fy = val(values, LUT_FIELD.fy) || financialYearOf(val(values, LUT_FIELD.allottedOn) || val(values, LUT_FIELD.filedOn));
   const till = lutValidTill(fy);
-
-  /** Save to the SBC fields, then mirror the filing date and number onto the checklist step. */
-  const save = (patch: Record<string, string | null>, message: string) =>
-    new Promise<void>((resolve) => {
-      act.mutate(
-        { action: 'save', engagementId: engagementId || undefined, kind: 'registration', key: LUT_STEP_ID, side: 'sbc', values: patch },
-        {
-          onSuccess: () => {
-            toastSaved(message);
-            const mirror: Record<string, string> = {};
-            if (LUT_FIELD.filedOn in patch) mirror.lutFilingDate = patch[LUT_FIELD.filedOn] ?? '';
-            if (LUT_FIELD.number in patch) mirror.lutArn = patch[LUT_FIELD.number] ?? '';
-            if (engagement && Object.keys(mirror).length) {
-              void updateItem(checklistStateKeyForEngagement(engagement), LUT_STEP_ID, { responses: mirror }, { clientResponsesOnly: true }).catch((e) =>
-                toastError('Saved, but the registration summary was not updated', errorMessage(e)),
-              );
-            }
-            resolve();
-          },
-          onError: (e) => {
-            toastError('Could not save', errorMessage(e));
-            resolve();
-          },
-        },
-      );
-    });
 
   const filing = useDraft(values, FILING_KEYS);
   const allotted = useDraft(values, ALLOTTED_KEYS);
@@ -104,7 +87,7 @@ export function LutRegistrationTracker({
                 </Fields>
                 <SaveRow
                   dirty={filing.dirty}
-                  saving={act.isPending}
+                  saving={saving}
                   onClick={() => {
                     const patch = filing.patch();
                     const year = financialYearOf(patch[LUT_FIELD.filedOn]);
@@ -141,7 +124,7 @@ export function LutRegistrationTracker({
                     <Input id="lut-valid-till" readOnly tabIndex={-1} value={till ? fmtLong(till) : ''} placeholder="End of the financial year" className="bg-surface-sunken/40" />
                   </Field>
                 </Fields>
-                <SaveRow dirty={allotted.dirty} saving={act.isPending} onClick={() => void save(allotted.patch(), 'LUT number saved')} />
+                <SaveRow dirty={allotted.dirty} saving={saving} onClick={() => void save(allotted.patch(), 'LUT number saved')} />
               </>
             ) : (
               <RecordList
@@ -166,6 +149,7 @@ export function LutRegistrationTracker({
       ]}
       notice={notice ? <NoticeBar tone={notice.tone} text={notice.text} /> : null}
       initialTab={stages[1]!.state === 'current' ? 1 : 0}
+      readOnlyNote={!canEdit && audience === 'firm' ? READ_ONLY_NOTE : undefined}
       loading={q.isLoading}
       error={q.isError ? 'The LUT record could not be loaded. Refresh the page to try again.' : null}
       tabs={[

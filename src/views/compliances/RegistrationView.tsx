@@ -24,6 +24,7 @@ import { registrationChecklist } from '@/data/before-filing';
 import { CertificateButton, RegistrationDatesDialog, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
 import { InfoButton } from '@/components/ui/info-button';
+import { canRecordRegistrationTracker } from '@/lib/registrations/tracker-access';
 import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
 import { GST_STEP_ID, gstSchedule } from '@/lib/registrations/gst-tracker';
 import { LUT_STEP_ID } from '@/lib/registrations/lut-tracker';
@@ -75,7 +76,9 @@ export function RegistrationView({
   recordKey: string;
 }) {
   const now = useMemo(() => new Date(), []);
-  const { getStateForEngagement, refreshEngagementChecklist, internOptions, teamMembers } = useApp();
+  const { getStateForEngagement, refreshEngagementChecklist, internOptions, teamMembers, role } = useApp();
+  // The GST and LUT trackers: the project lead records, the manager and the admins read.
+  const recordsTracker = canRecordRegistrationTracker(role);
   const parsed = parseRegistrationKey(recordKey);
   const engagement = parsed ? scope.engagements.find((e) => e.id === parsed.engagementId) : undefined;
   const item = parsed ? getRegistrationPhases().flatMap((p) => p.items).find((i) => i.id === parsed.itemId) : undefined;
@@ -200,12 +203,13 @@ export function RegistrationView({
               <GstRegistrationTracker
                 engagementId={engagement.id}
                 schedule={gstDates}
-                canEdit
+                canEdit={recordsTracker}
+                audience="firm"
                 today={todayIST()}
                 certificate={<CertificateButton facts={facts} engagementId={engagement.id} size="sm" />}
               />
             ) : lutDay ? (
-              <LutRegistrationTracker engagementId={engagement.id} gstDay={lutDay} canEdit today={todayIST()} />
+              <LutRegistrationTracker engagementId={engagement.id} gstDay={lutDay} canEdit={recordsTracker} audience="firm" today={todayIST()} />
             ) : (
             <DashSection title="Steps" right={<span className="text-[12.5px] text-ink-muted">{stagesDone} of {marks.length} done</span>}>
               <div className="grid grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 md:grid-cols-[minmax(0,1fr)_76px_minmax(0,1fr)]">
