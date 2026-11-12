@@ -77,6 +77,8 @@ const CODE_MESSAGES: Record<string, string> = {
   bad_signer: 'Pick a director to sign.',
   blank_fields: 'Fill the blanks in the notice first.',
   held_in_future: 'A meeting dated in the future cannot be recorded as held.',
+  not_incorporated: 'Board meetings and directors start after the Certificate of Incorporation.',
+  before_incorporation: 'The meeting date cannot be before the date of incorporation.',
   no_director_email: 'Add at least one director with an email address to the notice.',
   venue_required: 'Enter the venue.',
   note_required: 'Write a short note.',

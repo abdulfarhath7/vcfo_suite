@@ -57,6 +57,26 @@ export function isIncorporated(
 }
 
 /**
+ * The incorporation date of a company: the engagement's `incorporation_date`, else the date
+ * recorded on the Certificate of Incorporation step (`pre-12` › `dateOfIncorporation`). Null
+ * when neither holds a valid ISO date, for example a company that started at Registration.
+ * Callers ask `isIncorporated` first; this only reads the date.
+ */
+export function incorporationDateOf(
+  engagement: IncorporationEngagement | null | undefined,
+  checklistState?: IncorporationChecklistState | null,
+): string | null {
+  const iso = (v: unknown): string | null => {
+    const t = typeof v === 'string' ? v.trim().slice(0, 10) : '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null;
+  };
+  return (
+    iso(engagement?.incorporationDate) ??
+    iso(checklistState?.[CERTIFICATE_OF_INCORPORATION_STEP_ID]?.responses?.dateOfIncorporation)
+  );
+}
+
+/**
  * Lead-only gate: a project lead sees compliances only for incorporated
  * engagements, and the Compliances nav only while at least one exists.
  * Every other role keeps its full roster (with the pre-COI notice).

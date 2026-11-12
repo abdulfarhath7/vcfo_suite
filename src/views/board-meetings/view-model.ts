@@ -51,3 +51,21 @@ export function meetingsBase(role: string | null | undefined): string {
   if (role === 'intern') return '/app/lead/compliances';
   return '/app/admin/compliances';
 }
+
+/** A company the New meeting dialog can offer. */
+export interface MeetingCompany {
+  id: string;
+  name: string;
+  /** True before the Certificate of Incorporation: no meeting can be created yet. */
+  preIncorporation?: boolean;
+  /** The incorporation date, when known: the earliest date a meeting can take. */
+  incorporatedOn?: string | null;
+}
+
+/** The short reason shown where "New meeting" is offered before incorporation. */
+export const MEETINGS_AFTER_COI = 'Board meetings start after the Certificate of Incorporation.';
+
+/** The companies a meeting can be created for: incorporated ones only (stage gate). */
+export function meetingReadyCompanies(companies: readonly MeetingCompany[]): MeetingCompany[] {
+  return companies.filter((c) => !c.preIncorporation);
+}

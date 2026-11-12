@@ -9,7 +9,8 @@ import { shortDate } from '@/lib/board-meetings/dates';
 import { useMeetings } from '@/hooks/use-board-meetings';
 import { MeetingWord } from './MeetingWord';
 import { NewMeetingDialog } from './NewMeetingDialog';
-import { meetingsBase } from './view-model';
+import { incorporationDateOf, isIncorporated } from '@/lib/compliance/incorporation-state';
+import { MEETINGS_AFTER_COI, meetingsBase } from './view-model';
 
 /**
  * INCORPORATION › POST-1 (First board meeting): staff only. Shows the first meeting of the
@@ -17,10 +18,15 @@ import { meetingsBase } from './view-model';
  * post-incorporation). The meeting itself runs on its own page under Obligations.
  */
 export function FirstMeetingStepPanel({ engagementId, companyName }: { engagementId: string; companyName: string }) {
-  const { user } = useApp();
+  const { user, engagements, getStateForEngagement } = useApp();
   const q = useMeetings(engagementId);
   const [open, setOpen] = useState(false);
   const base = meetingsBase(user?.role);
+  // Stage gate: the first board meeting can only be created after the Certificate of Incorporation.
+  const engagement = engagements.find((e) => e.id === engagementId);
+  const state = engagement ? getStateForEngagement(engagement) : undefined;
+  const incorporated = engagement ? isIncorporated(engagement, state) : false;
+  const incorporatedOn = engagement ? incorporationDateOf(engagement, state) : null;
   const first = (q.data ?? []).find((m) => m.postInc && m.status !== 'cancelled') ?? (q.data ?? []).find((m) => m.meetingType === 'first' && m.status !== 'cancelled');
   if (q.isPending) return null;
   return (
@@ -44,12 +50,22 @@ export function FirstMeetingStepPanel({ engagementId, companyName }: { engagemen
         </>
       ) : (
         <>
-          <p className="m-0 text-[14px] text-ink-2">Hold the first board meeting within 30 days of incorporation. VCFO drafts the notice and tracks the MoM.</p>
-          <Button size="sm" onClick={() => setOpen(true)}>
+          <p className="m-0 text-[14px] text-ink-2">
+            {incorporated ? 'Hold the first board meeting within 30 days of incorporation. VCFO drafts the notice and tracks the MoM.' : MEETINGS_AFTER_COI}
+          </p>
+          <Button size="sm" onClick={() => setOpen(true)} disabled={!incorporated}>
             <CalendarPlus className="h-4 w-4" aria-hidden /> Create first board meeting
           </Button>
-          {open ? (
-            <NewMeetingDialog open={open} onOpenChange={setOpen} companies={[{ id: engagementId, name: companyName }]} defaultCompany={engagementId} basePath={base} postInc defaultType="first" />
+          {open && incorporated ? (
+            <NewMeetingDialog
+              open={open}
+              onOpenChange={setOpen}
+              companies={[{ id: engagementId, name: companyName, incorporatedOn }]}
+              defaultCompany={engagementId}
+              basePath={base}
+              postInc
+              defaultType="first"
+            />
           ) : null}
         </>
       )}

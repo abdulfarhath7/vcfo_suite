@@ -9,6 +9,8 @@ import { PAUSED, skipWhenPaused, withRunNow } from '@/jobs/dev-controls';
  *  1. A sent meeting whose date has passed becomes held (its task moves to "Upload MoM").
  *  2. T-10, T-8 and T-7: a notice still in draft → bell + email to the lead.
  *  3. MoM not locked: reminders at T+7, T+20 and T+28, then weekly once overdue (SS-1, 30 days).
+ * Meetings of a company that is not incorporated get no reminder: `systemDraftsToPrepare` and
+ * `systemMomOpen` drop them (stage gate).
  * Email is the system of record; the bell row rides along. Returns early while "Pause all jobs"
  * is on. Registered in app/api/inngest/route.ts.
  */

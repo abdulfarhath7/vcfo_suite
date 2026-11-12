@@ -48,8 +48,10 @@ import { buildNotice, type NoticeDoc } from '@/lib/board-meetings/notice';
 import { directorsOfEngagement, systemSeedDirectors, toDirectorDto, type DirectorDto, type DirectorRow } from './directors';
 import { systemLibraryMap } from './library';
 import {
+  assertMeetingAfterIncorporation,
   canApprove,
   companyInfoOf,
+  incorporationOf,
   conflict,
   firmAdmins,
   forbidden,
@@ -580,6 +582,8 @@ export async function createMeeting(ctx: AuthContext, input: CreateMeetingInput)
   const kind: MeetingKind = isMeetingKind(input.kind) ? input.kind : 'board';
   const alreadyHeld = Boolean(input.alreadyHeld);
   if (alreadyHeld && input.meetingDate > todayIst()) throw invalid('held_in_future');
+  // No meeting, task or reminder before the Certificate of Incorporation (stage gate).
+  assertMeetingAfterIncorporation(engagement, input.meetingDate);
   const mode: MeetingMode = isMeetingMode(input.mode) ? input.mode : 'vc';
 
   await systemSeedDirectors(engagement);
@@ -737,6 +741,7 @@ export async function updateMeeting(ctx: AuthContext, meetingId: string, input: 
   if (input.meetingDate !== undefined) {
     if (!isIsoDate(input.meetingDate)) throw invalid('bad_date');
     if (input.meetingDate !== meeting.meetingDate) {
+      assertMeetingAfterIncorporation(engagement, input.meetingDate);
       patch.meetingDate = input.meetingDate;
       changed.push('date');
     }
@@ -869,6 +874,7 @@ export async function rescheduleMeeting(ctx: AuthContext, meetingId: string, inp
   if (meeting.status !== 'approved' && meeting.status !== 'sent') throw conflict('not_sent');
   if (!isIsoDate(input.meetingDate)) throw invalid('bad_date');
   if (!isHhmm(input.meetingTime)) throw invalid('bad_time');
+  assertMeetingAfterIncorporation(engagement, input.meetingDate);
   const reason = input.reason?.trim().slice(0, 500) || 'Rescheduled';
   const [next] = await db
     .update(boardMeetings)
@@ -996,13 +1002,26 @@ function addDaysSafe(iso: string, n: number): string {
 /** Jobs: meetings whose notice is still a draft on or after T-10 (bell + email to the lead). */
 export async function systemDraftsToPrepare(today: string): Promise<MeetingRow[]> {
   const rows = await db.select().from(boardMeetings).where(eq(boardMeetings.status, 'draft'));
-  return rows.filter((m) => prepareDate(m.meetingDate) <= today && m.meetingDate >= today);
+  return onlyIncorporated(rows.filter((m) => prepareDate(m.meetingDate) <= today && m.meetingDate >= today));
+}
+
+/**
+ * Jobs: the meetings whose company is incorporated and not deleted. A meeting of a company
+ * before its Certificate of Incorporation (one created before the stage gate existed) gets no
+ * prepare or MoM reminder.
+ */
+async function onlyIncorporated(rows: MeetingRow[]): Promise<MeetingRow[]> {
+  if (rows.length === 0) return [];
+  const ids = [...new Set(rows.map((m) => m.engagementId))];
+  const engs = await db.select().from(engagements).where(inArray(engagements.id, ids));
+  const ok = new Set(engs.filter((e) => !e.deletedAt && incorporationOf(e).incorporated).map((e) => e.id));
+  return rows.filter((m) => ok.has(m.engagementId));
 }
 
 /** Jobs: held meetings whose MoM is not locked, with days since the meeting. */
 export async function systemMomOpen(today: string): Promise<Array<{ meeting: MeetingRow; daysAfter: number }>> {
   const rows = await db.select().from(boardMeetings).where(inArray(boardMeetings.status, ['sent', 'held']));
-  const past = rows.filter((m) => m.meetingDate < today);
+  const past = await onlyIncorporated(rows.filter((m) => m.meetingDate < today));
   if (past.length === 0) return [];
   const docs = await db
     .select({ meetingId: boardMeetingDocuments.meetingId, status: boardMeetingDocuments.status })

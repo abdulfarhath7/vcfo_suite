@@ -10,6 +10,7 @@ import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { companyFactsFromState, type CompanyFacts } from '@/lib/board-meetings/company-facts';
 import type { MeetingStatus } from '@/lib/board-meetings/model';
+import { incorporationDateOf, isIncorporated } from '@/lib/compliance/incorporation-state';
 
 /**
  * BOARD MEETINGS — shared parts: roles, errors, the one scope check, people and the bell.
@@ -33,7 +34,7 @@ export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 
 export class BoardMeetingError extends Error {
   constructor(
-    readonly status: 400 | 403 | 404 | 409,
+    readonly status: 400 | 403 | 404 | 409 | 422,
     readonly code: string,
   ) {
     super(code);
@@ -44,6 +45,33 @@ export const notFound = () => new BoardMeetingError(404, 'not_found');
 export const forbidden = () => new BoardMeetingError(403, 'forbidden');
 export const conflict = (code: string) => new BoardMeetingError(409, code);
 export const invalid = (code: string) => new BoardMeetingError(400, code);
+export const unprocessable = (code: string) => new BoardMeetingError(422, code);
+
+/**
+ * Stage gate: a company has no board meetings and no directors on record before its
+ * Certificate of Incorporation. `isIncorporated` is the one answer; the date is the
+ * engagement's incorporation date (else the COI step's), null when unknown.
+ */
+export function incorporationOf(row: EngagementDbRow): { incorporated: boolean; date: string | null } {
+  let state: ReturnType<typeof checklistStateFromRow> = {};
+  try {
+    state = checklistStateFromRow(row);
+  } catch {
+    // Old or partial checklist state: the engagement's own fields decide.
+  }
+  const incorporated = isIncorporated(row, state);
+  return { incorporated, date: incorporated ? incorporationDateOf(row, state) : null };
+}
+
+/**
+ * Refuses a meeting for a company that is not incorporated (409 `not_incorporated`) or dated
+ * before its incorporation date (422 `before_incorporation`).
+ */
+export function assertMeetingAfterIncorporation(row: EngagementDbRow, meetingDate: string): void {
+  const inc = incorporationOf(row);
+  if (!inc.incorporated) throw conflict('not_incorporated');
+  if (inc.date && meetingDate < inc.date) throw unprocessable('before_incorporation');
+}
 
 export function isStaff(role: string): boolean {
   return STAFF.has(role);
