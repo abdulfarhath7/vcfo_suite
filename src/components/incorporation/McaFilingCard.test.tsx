@@ -67,6 +67,11 @@ describe('McaFilingCard', () => {
     await waitFor(() => expect(container.textContent).toBe(''));
   });
 
+  it('stays away when the read answers that VCFO Assist is not set up', async () => {
+    const { container } = mount({ status: 200, body: { ok: true, setUp: false } });
+    await waitFor(() => expect(container.textContent).toBe(''));
+  });
+
   it('shows the notice, the state and the next action', async () => {
     mount({ status: 200, body: { ok: true, ...bundle() } });
     expect(await screen.findByText('Software filling on the live MCA portal needs written CS approval first.')).toBeTruthy();

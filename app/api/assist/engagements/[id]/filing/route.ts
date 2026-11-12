@@ -5,7 +5,9 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { filingBundle, recordFilingSrnOnStep } from '@/lib/mca-filing/filing-service';
 import { FILING_FORM_LABEL, FILING_STATES } from '@/lib/mca-filing/filing-state';
 import { REMARK_CAUSES } from '@/lib/mca-filing/readiness';
-import { NO_STORE, assistStaff, filingError, formSchema, notFound } from '@/lib/mca-filing/route-helpers';
+import { requireAnyRole } from '@/auth/guards';
+import { assistSetUp } from '@/lib/assist-runs/runs';
+import { ASSIST_STAFF_ROLES, NO_STORE, assistStaff, filingError, formSchema, notFound } from '@/lib/mca-filing/route-helpers';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -30,10 +32,17 @@ const patchSchema = z
  * GET   /api/assist/engagements/[id]/filing — both SPICe+ forms, their PDFs, the missing profile
  *       values and the signers Suite knows.
  * PATCH /api/assist/engagements/[id]/filing — state, SRN, remark and dates of one form.
- * Staff only; 503 while VCFO_ASSIST_ENABLED is not on. No MCA login, OTP, DSC PIN or token is
- * accepted: the strict schema refuses any other field.
+ * Staff only. While VCFO_ASSIST_ENABLED is not on, the write answers 503 and the read answers
+ * `{ ok: true, setUp: false }` (as GET /api/assist/runs does): the filing card asks on every
+ * engagement page, and a 503 there put an error in the browser console of a healthy page.
+ * No MCA login, OTP, DSC PIN or token is accepted: the strict schema refuses any other field.
  */
 export async function GET(_request: Request, context: RouteContext) {
+  if (!assistSetUp()) {
+    const guard = await requireAnyRole(...ASSIST_STAFF_ROLES);
+    if (guard.ok === false) return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
+    return NextResponse.json({ ok: true, setUp: false }, { headers: NO_STORE });
+  }
   const auth = await assistStaff();
   if (auth.ok === false) return auth.response;
   const { id } = await context.params;
