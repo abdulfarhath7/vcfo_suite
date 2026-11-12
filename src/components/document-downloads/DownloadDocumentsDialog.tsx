@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Download, Loader2 } from 'lucide-react';
+import { ChevronRight, Download, Eye, Loader2 } from 'lucide-react';
+
+import { useDocViewer } from '@/components/client-portal/pages/documents/DocViewer';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,7 +13,7 @@ import { Tag } from '@/components/ui/spectrum-chip';
 import { useApp } from '@/context/AppContext';
 import { useDocumentCatalog } from '@/hooks/use-document-downloads';
 import type { PublicDownloadGroup } from '@/lib/document-downloads/catalog';
-import { downloadDocumentKeys, type DownloadLayout } from '@/lib/document-downloads/client';
+import { catalogViewerDocs, downloadDocumentKeys, type DownloadLayout } from '@/lib/document-downloads/client';
 import {
   groupTickState,
   publicFilesIn,
@@ -150,6 +152,8 @@ function GroupRows({
  * the tree of every document by part, section and director, each section closed until opened, and
  * nothing ticked until the person picks. Word files only for now; folders or one flat folder. One
  * file downloads as itself; a large set is made in the background with a link in the bell.
+ * "Preview all" and "Preview" open the shared viewer (`DocViewer`) on the whole project or on the
+ * chosen files; the pop-up hides while the viewer is open and comes back with the same ticks.
  */
 export function DownloadDocumentsDialog({
   engagementId,
@@ -173,9 +177,17 @@ export function DownloadDocumentsDialog({
     setLayout(readLayout(user?.id));
   }, [open, user?.id]);
 
+  const viewer = useDocViewer();
   const picks = useMemo(() => (root ? quickPicks(root) : []), [root]);
   const projectKeys = useMemo(() => (root ? readyKeysIn(root) : []), [root]);
   const count = selected.size;
+
+  /** Open the viewer on these files, in the tree's order. */
+  function preview(keys: readonly string[]) {
+    if (!root || !keys.length) return;
+    const wanted = new Set(keys);
+    viewer.open(catalogViewerDocs(engagementId, publicFilesIn(root).filter((f) => wanted.has(f.key))), 0);
+  }
 
   async function download(keys: string[], which: 'project' | 'picked') {
     if (!keys.length || busy) return;
@@ -195,97 +207,114 @@ export function DownloadDocumentsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl" data-testid="download-documents-dialog">
-        <DialogHeader>
-          <DialogTitle>Download documents</DialogTitle>
-          <DialogDescription>{query.data?.companyName ?? 'Download the whole project or choose documents.'}</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open && !viewer.isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl" data-testid="download-documents-dialog">
+          <DialogHeader>
+            <DialogTitle>Download documents</DialogTitle>
+            <DialogDescription>{query.data?.companyName ?? 'Download the whole project or choose documents.'}</DialogDescription>
+          </DialogHeader>
 
-        {query.isLoading ? (
-          <div className="flex items-center gap-2 py-8 text-[14px] text-ink-muted">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the documents…
-          </div>
-        ) : query.isError ? (
-          <p className="py-6 text-[14px] text-danger">{errorMessage(query.error)}</p>
-        ) : root && root.groups.length ? (
-          <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-surface-sunken/40 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-medium text-ink">Whole project (ZIP)</p>
-                <p className="text-[12.5px] text-ink-muted">
-                  Every ready document, upload and project record · {projectKeys.length} {projectKeys.length === 1 ? 'file' : 'files'}
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={() => void download(projectKeys, 'project')}
-                disabled={!projectKeys.length || busy !== null}
-                data-testid="download-whole-project"
-              >
-                {busy === 'project' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
-                Download all
-              </Button>
+          {query.isLoading ? (
+            <div className="flex items-center gap-2 py-8 text-[14px] text-ink-muted">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the documents…
             </div>
-
-            <p className="text-[12px] font-medium uppercase tracking-[.07em] text-ink-muted">Or choose documents</p>
-            <div className="-mt-2 flex flex-wrap gap-2" role="group" aria-label="Quick picks">
-              {picks.map((pick) => (
-                <Button key={pick.id} type="button" size="sm" variant="outline" onClick={() => setSelected(new Set(pick.keys))}>
-                  {pick.label}
+          ) : query.isError ? (
+            <p className="py-6 text-[14px] text-danger">{errorMessage(query.error)}</p>
+          ) : root && root.groups.length ? (
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-3 rounded-md border border-line bg-surface-sunken/40 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium text-ink">Whole project (ZIP)</p>
+                  <p className="text-[12.5px] text-ink-muted">
+                    Every ready document, upload and project record · {projectKeys.length} {projectKeys.length === 1 ? 'file' : 'files'}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => preview(projectKeys)}
+                  disabled={!projectKeys.length}
+                  data-testid="preview-whole-project"
+                >
+                  <Eye className="mr-1 h-4 w-4" aria-hidden />
+                  Preview all
                 </Button>
-              ))}
-              <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-                Clear
+                <Button
+                  type="button"
+                  onClick={() => void download(projectKeys, 'project')}
+                  disabled={!projectKeys.length || busy !== null}
+                  data-testid="download-whole-project"
+                >
+                  {busy === 'project' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
+                  Download all
+                </Button>
+              </div>
+
+              <p className="text-[12px] font-medium uppercase tracking-[.07em] text-ink-muted">Or choose documents</p>
+              <div className="-mt-2 flex flex-wrap gap-2" role="group" aria-label="Quick picks">
+                {picks.map((pick) => (
+                  <Button key={pick.id} type="button" size="sm" variant="outline" onClick={() => setSelected(new Set(pick.keys))}>
+                    {pick.label}
+                  </Button>
+                ))}
+                <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                  Clear
+                </Button>
+              </div>
+
+              <ul className="max-h-[46vh] overflow-y-auto rounded-md border border-line px-3" aria-label="Documents">
+                {root.groups.map((g) => (
+                  <GroupRows key={g.id} group={g} depth={0} selected={selected} setSelected={setSelected} />
+                ))}
+              </ul>
+
+              <div className="grid gap-3 text-[13px] sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 font-medium text-ink">Format</p>
+                  <p className="text-ink-muted">Word (.docx); project records in Excel. Uploaded files come as they were sent.</p>
+                </div>
+                <div>
+                  <p className="mb-1 font-medium text-ink">Layout</p>
+                  <RadioGroup value={layout} onValueChange={(v) => setLayout(v === 'flat' ? 'flat' : 'folders')} className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="folders" id="dl-layout-folders" />
+                      <Label htmlFor="dl-layout-folders">Folders by section</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="flat" id="dl-layout-flat" />
+                      <Label htmlFor="dl-layout-flat">One flat folder</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="py-6 text-[14px] text-ink-muted">No document is ready to download yet.</p>
+          )}
+
+          <DialogFooter className="items-center gap-2 sm:justify-between">
+            <span className="text-[13px] text-ink-muted" aria-live="polite">
+              {count ? `${count} ${count === 1 ? 'file' : 'files'} chosen` : 'Nothing chosen yet'}
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="outline" onClick={() => preview([...selected])} disabled={!count} data-testid="preview-chosen">
+                <Eye className="mr-1 h-4 w-4" aria-hidden />
+                Preview
+              </Button>
+              <Button type="button" onClick={() => void download([...selected], 'picked')} disabled={!count || busy !== null} data-testid="download-documents-submit">
+                {busy === 'picked' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
+                {count === 1 ? 'Download file' : 'Download chosen'}
               </Button>
             </div>
-
-            <ul className="max-h-[46vh] overflow-y-auto rounded-md border border-line px-3" aria-label="Documents">
-              {root.groups.map((g) => (
-                <GroupRows key={g.id} group={g} depth={0} selected={selected} setSelected={setSelected} />
-              ))}
-            </ul>
-
-            <div className="grid gap-3 text-[13px] sm:grid-cols-2">
-              <div>
-                <p className="mb-1 font-medium text-ink">Format</p>
-                <p className="text-ink-muted">Word (.docx); project records in Excel. Uploaded files come as they were sent.</p>
-              </div>
-              <div>
-                <p className="mb-1 font-medium text-ink">Layout</p>
-                <RadioGroup value={layout} onValueChange={(v) => setLayout(v === 'flat' ? 'flat' : 'folders')} className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="folders" id="dl-layout-folders" />
-                    <Label htmlFor="dl-layout-folders">Folders by section</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="flat" id="dl-layout-flat" />
-                    <Label htmlFor="dl-layout-flat">One flat folder</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="py-6 text-[14px] text-ink-muted">No document is ready to download yet.</p>
-        )}
-
-        <DialogFooter className="items-center gap-2 sm:justify-between">
-          <span className="text-[13px] text-ink-muted" aria-live="polite">
-            {count ? `${count} ${count === 1 ? 'file' : 'files'} chosen` : 'Nothing chosen yet'}
-          </span>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={() => void download([...selected], 'picked')} disabled={!count || busy !== null} data-testid="download-documents-submit">
-              {busy === 'picked' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Download className="mr-1 h-4 w-4" aria-hidden />}
-              {count === 1 ? 'Download file' : 'Download chosen'}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {viewer.node}
+    </>
   );
 }
 
