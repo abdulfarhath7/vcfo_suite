@@ -122,6 +122,8 @@ export function ComposeOutgoingEmailHost() {
           html: edited ? undefined : draft?.html,
           engagementId: draft?.engagementId,
           itemId: draft?.itemId,
+          // GL-07: the route queues the client WhatsApp nudge only after this email is sent.
+          ...(draft?.whatsappEvent ? { whatsappEvent: draft.whatsappEvent } : {}),
           ...(attachments.length ? { attachments } : {}),
         }),
       });

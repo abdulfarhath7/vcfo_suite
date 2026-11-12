@@ -57,6 +57,12 @@ Files: `src/components/client-portal/pages/incorporation/StepBoardResolution.tsx
   approved in Meta.
 - **GL-07 emails:** the step card's Send email pop-up can add and remove files (5 files, 10 MB in
   all). Each staff step lists the emails sent from it: who, when, to whom and the subject.
+- **GL-07 WhatsApp after the email (12 Nov):** a step event no longer queues the client WhatsApp
+  nudge (`coi_issued` when the certificate step is accepted or submitted, `document_delivered` on
+  Deliver). The nudge rides on the client email draft (`whatsappEvent`), and `/api/outlook/send` or
+  `/api/email/send-draft` queues it once, after the email is sent and after the response, only to
+  the clients the email reached (`src/lib/email/step-whatsapp-after-send.ts`). Scheduled reminders,
+  digests and the manual Remind keep WhatsApp right after their automatic email.
 - **NV-01 / NV-02 sidebar:** the super admin's SPICe+ Part A, Part B, Board resolutions and
   Documents items now open the list in that view. `e2e/incorporation-sidebar.spec.ts` checks, for
   the Lead, Manager and Admin, that one click from a SPICe+ Part A step returns to the
