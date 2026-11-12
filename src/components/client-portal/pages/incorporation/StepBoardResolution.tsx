@@ -56,7 +56,7 @@ export function StepBoardResolution({ engagementId, stepId }: { engagementId: st
         <SkeletonRows rows={2} />
       ) : (
         <div className="grid gap-1">
-          <BoardResolutionDocCards engagement={engagement} doc={doc} step={draftStep ? 'draft' : 'signed'} viewerRole="client" />
+          <BoardResolutionDocCards engagement={engagement} doc={doc} step={draftStep ? 'draft' : 'signed'} viewerRole="client" onDocChange={(next) => next && setDoc(next)} />
           {draftStep && doc?.status === 'finalized' ? (
             <BoardResolutionClientEdit engagementId={engagementId} viewerRole="client" refreshKey={doc.updatedAt ?? undefined} />
           ) : null}

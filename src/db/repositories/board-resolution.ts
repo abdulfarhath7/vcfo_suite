@@ -2,7 +2,7 @@ import 'server-only';
 
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { engagementBoardResolutions } from '@/db/schema';
+import { engagementBoardResolutions, profiles } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import { parseBoardResolutionRpcPayload } from '@/lib/board-resolution/board-resolution';
@@ -90,7 +90,36 @@ export async function getBoardResolutionByEngagementId(
     .where(eq(engagementBoardResolutions.engagementId, engagement.id))
     .limit(1);
 
-  return row ? mapRow(row) : null;
+  if (!row) return null;
+  const doc = mapRow(row);
+  const uploaderId = row.signedUploadedBy?.trim();
+  if (!uploaderId || !/^[0-9a-f-]{36}$/i.test(uploaderId)) return doc;
+  // BR-02: who uploaded the signed copy. The engagement was read through `getEngagementById`
+  // above, so only a reader of this engagement learns the uploader, and only the name.
+  const [uploader] = await db
+    .select({ name: profiles.name, email: profiles.email, role: profiles.role })
+    .from(profiles)
+    .where(eq(profiles.id, uploaderId))
+    .limit(1);
+  const name = signedUploaderDisplayName(ctx.role, uploader ?? null);
+  return name ? { ...doc, signedUploadedByName: name } : doc;
+}
+
+/**
+ * The name shown beside the signed copy (BR-02). Staff read the full name. The client reads a
+ * client uploader's full name, the first name of a lead or manager, and an admin by role only,
+ * as the holder chip does (BR-03, owner decision of 11 Nov).
+ */
+export function signedUploaderDisplayName(
+  viewerRole: string | undefined,
+  uploader: { name: string | null; email: string; role: string } | null,
+): string | null {
+  if (!uploader) return null;
+  const full = uploader.name?.trim() || uploader.email.split('@')[0] || '';
+  if (viewerRole !== 'client' || uploader.role === 'client') return full || null;
+  if (isFirmWideAdmin(uploader.role)) return 'Admin';
+  const first = (uploader.name ?? '').trim().split(/\s+/)[0] ?? '';
+  return first && !first.includes('@') ? first : 'SBC';
 }
 
 export async function saveBoardResolutionDraft(
