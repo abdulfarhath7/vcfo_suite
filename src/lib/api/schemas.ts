@@ -97,11 +97,25 @@ export const progressCcPatchBodySchema = z.object({
 /** Body for `create-client-engagement` edge function (mirrored server-side in Deno). */
 const internPasswordSchema = clientPasswordSchema;
 
+/**
+ * A staff phone number: an optional leading "+", then digits with optional
+ * spaces or dashes, 10 to 15 digits in all ("+91 98765 43210", "9876543210").
+ */
+const staffPhoneSchema = z
+  .string()
+  .trim()
+  .max(32)
+  .refine((value) => {
+    if (!/^\+?[\d\s-]+$/.test(value)) return false;
+    const digits = value.replace(/\D/g, '').length;
+    return digits >= 10 && digits <= 15;
+  }, 'invalid_phone');
+
 export const createInternBodySchema = z.object({
   email: emailSchema,
   password: internPasswordSchema,
   fullName: z.string().trim().min(1, 'name_required').max(120).optional(),
-  phone: z.string().trim().max(32).optional(),
+  phone: staffPhoneSchema.optional(),
 });
 
 export const createProjectBodySchema = z
