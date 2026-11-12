@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Download, PencilLine } from 'lucide-react';
+import { Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { diffWords, type ClientEditAction } from '@/lib/board-resolution/client-
 import type { ClientEditView } from '@/lib/board-resolution/client-edit-flow';
 import { requestEmailSend, type EmailDraftView } from '@/lib/email/request-email-send';
 import { cn } from '@/lib/utils';
+import { BR_CLIENT_EDIT_SAVED_EVENT } from '@/components/incorporation/BoardResolutionDraftEditor';
 
 const ACTION_LABEL: Partial<Record<ClientEditAction, string>> = {
   confirm: 'Confirm edits',
@@ -62,8 +63,6 @@ export function BoardResolutionClientEdit({
   refreshKey?: string;
 }) {
   const [view, setView] = useState<ClientEditView | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [paragraphs, setParagraphs] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState<ClientEditAction | null>(null);
   const [note, setNote] = useState('');
@@ -81,6 +80,10 @@ export function BoardResolutionClientEdit({
 
   useEffect(() => {
     void load();
+    // The document is edited in place (BoardResolutionDraftEditor); reload after each save there.
+    const reload = () => void load();
+    window.addEventListener(BR_CLIENT_EDIT_SAVED_EVENT, reload);
+    return () => window.removeEventListener(BR_CLIENT_EDIT_SAVED_EVENT, reload);
   }, [load, refreshKey]);
 
   const call = async (method: 'PUT' | 'POST', body: unknown) => {
@@ -104,16 +107,6 @@ export function BoardResolutionClientEdit({
 
   const canEdit = view.actions.includes('save') || view.actions.includes('correct');
   const moves = view.actions.filter((a) => a !== 'save' && a !== 'correct');
-  const startEdit = () => {
-    setParagraphs(view.edited ?? view.original);
-    setEditing(true);
-  };
-  const save = async () => {
-    if (await call('PUT', { paragraphs })) {
-      setEditing(false);
-      toast.success('Edits saved. The firm’s original version is kept.');
-    }
-  };
   const act = async (action: ClientEditAction, text?: string) => {
     if (await call('POST', { action, note: text ?? null })) {
       setAsking(null);
@@ -164,7 +157,7 @@ export function BoardResolutionClientEdit({
       </header>
 
       {isClient && view.stage === null ? (
-        <p className="text-[13px] text-ink-muted">You can edit the draft here. The firm keeps its original version, and your edits go to your Lead, the Manager and the Admin for approval.</p>
+        <p className="text-[13px] text-ink-muted">Open the draft with “Preview” and click in the document to change the wording. The firm keeps its original version, and your changes go to your Lead, the Manager and the Admin for approval.</p>
       ) : null}
       {view.returnNote && view.stage === 'returned' ? (
         <div className="space-y-1 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-ink">
@@ -177,25 +170,10 @@ export function BoardResolutionClientEdit({
         </div>
       ) : null}
 
-      {editing ? (
-        <div className="space-y-2">
-          {paragraphs.map((text, i) =>
-            view.original[i]?.trim() || text.trim() ? (
-              <Textarea
-                key={i}
-                aria-label={`Paragraph ${i + 1}`}
-                className="min-h-[44px] text-[13.5px]"
-                value={text}
-                onChange={(e) => setParagraphs((prev) => prev.map((p, j) => (j === i ? e.target.value : p)))}
-              />
-            ) : null,
-          )}
-          <div className="flex gap-2">
-            <Button type="button" size="sm" disabled={busy} onClick={save}>Save edits</Button>
-            <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(false)}>Cancel</Button>
-          </div>
-        </div>
-      ) : view.changes.length ? (
+      {canEdit && view.stage !== null ? (
+        <p className="text-[13px] text-ink-muted">To change the wording again, open the draft with “Preview” and type in the document.</p>
+      ) : null}
+      {view.changes.length ? (
         <div className="space-y-2">
           <p className="text-[12px] font-medium text-ink-muted">
             {view.changes.length} changed {view.changes.length === 1 ? 'paragraph' : 'paragraphs'}: <ins className="text-positive no-underline">added</ins> and <del className="text-danger">removed</del> words are marked.
@@ -209,14 +187,8 @@ export function BoardResolutionClientEdit({
         </div>
       ) : null}
 
-      {!editing ? (
+      {moves.length ? (
         <div className="flex flex-wrap gap-2">
-          {canEdit ? (
-            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={startEdit}>
-              <PencilLine className="mr-1 h-3.5 w-3.5" aria-hidden />
-              {view.edited ? 'Edit again' : 'Edit draft'}
-            </Button>
-          ) : null}
           {moves.map((action) => (
             <Button
               key={action}

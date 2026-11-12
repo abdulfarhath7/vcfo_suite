@@ -27,6 +27,7 @@ import type { NocState } from '@/lib/noc/state';
 import { useRealtimeBoardResolution } from '@/hooks/use-realtime-board-resolution';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { BoardResolutionClientEdit } from '@/components/incorporation/BoardResolutionClientEdit';
+import { BoardResolutionDraftEditor } from '@/components/incorporation/BoardResolutionDraftEditor';
 import { FitToWidth } from '@/components/board-resolution/FitToWidth';
 import {
   DocFiles,
@@ -355,9 +356,16 @@ export default function BoardPage() {
       <div className="paper live" data-paper="" style={{ transform: `scale(${zoom})` }}>
         <div className="cp-tw">
           {d.engagementId ? (
-            <FitToWidth>
-              <BoardResolutionDocPreview engagementId={d.engagementId} downloadUrl={downloadHref} refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`} mergeFields={mergeFields} />
-            </FitToWidth>
+            // BR-04/05: when the client may change the wording, the draft itself is editable here.
+            <BoardResolutionDraftEditor
+              engagementId={d.engagementId}
+              refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`}
+              fallback={
+                <FitToWidth>
+                  <BoardResolutionDocPreview engagementId={d.engagementId} downloadUrl={downloadHref} refreshKey={`${doc?.storagePath ?? ''}:${doc?.updatedAt ?? ''}`} mergeFields={mergeFields} />
+                </FitToWidth>
+              }
+            />
           ) : null}
         </div>
       </div>

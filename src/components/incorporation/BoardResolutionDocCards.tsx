@@ -15,6 +15,7 @@ import {
 import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
 import { boardResolutionPathFor } from '@/lib/projects/project-step-path';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
+import { BoardResolutionDraftEditor } from '@/components/incorporation/BoardResolutionDraftEditor';
 import { useDocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { DropZone } from '@/components/client-portal/pages/incorporation/spectrum';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -178,11 +179,19 @@ export function BoardResolutionDocCards({
                 <DialogTitle>{draftLabel} · board resolution</DialogTitle>
                 <DialogDescription>{engagement.companyName}</DialogDescription>
               </DialogHeader>
-              <div className="min-h-0 flex-1 overflow-auto rounded-md border border-line-soft">
-                {previewOpen ? (
-                  <BoardResolutionDocPreview engagementId={engagement.id} refreshKey={doc?.updatedAt ?? undefined} previewLabel={draftLabel} />
-                ) : null}
-              </div>
+              {previewOpen ? (
+                // BR-04/05: when this person may change the wording, the document itself is editable.
+                <BoardResolutionDraftEditor
+                  engagementId={engagement.id}
+                  refreshKey={doc?.updatedAt ?? undefined}
+                  previewLabel={draftLabel}
+                  fallback={
+                    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-line-soft">
+                      <BoardResolutionDocPreview engagementId={engagement.id} refreshKey={doc?.updatedAt ?? undefined} previewLabel={draftLabel} />
+                    </div>
+                  }
+                />
+              ) : null}
             </DialogContent>
           </Dialog>
         </>
