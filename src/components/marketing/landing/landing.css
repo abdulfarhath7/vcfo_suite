@@ -399,7 +399,6 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .cal-ui .h3 { margin-bottom: 16px; }
 .lp .cal-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 .lp .cal-two figure { margin: 0; padding: 10px 10px 4px; }
-.lp .cal-two .frame { border-radius: var(--lp-r-lg); box-shadow: none; }
 .lp .cal-two figcaption { padding: 12px 6px 8px; font-size: 13.5px; line-height: 1.5; color: var(--lp-ink-muted); }
 .lp .cal-two figcaption b { color: var(--lp-ink); font-weight: 600; }
 .lp .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: center; }
@@ -463,12 +462,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .tab-desc ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
 .lp .tab-desc li { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--lp-ink); }
 .lp .tab-desc li .icon { width: 14px; height: 14px; color: var(--lp-positive); }
-.lp .tabpanel { display: grid; }
-.lp .tabpanel .frame { grid-area: 1 / 1; aspect-ratio: 2000 / 1146; }
-.lp .tabpanel .frame[hidden] { display: none; }
-.lp .tabpanel .frame img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
-.lp .ask { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 64px; align-items: center; }
-.lp .ask .panel { max-width: 380px; border-radius: var(--lp-r-xl); overflow: hidden; border: 1px solid var(--lp-line); box-shadow: var(--lp-shadow-float); background: var(--lp-raised); }
+.lp .ask { max-width: 760px; }
 .lp .qs { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px; }
 .lp .qs li { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: var(--lp-r-md); border: 1px solid var(--lp-line-strong); font-size: 13.5px; font-weight: 500; color: var(--lp-ink); }
 .lp .qs .icon { color: var(--lp-brand); width: 14px; height: 14px; }
@@ -544,7 +538,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .story-step p { color: var(--lp-ink-muted); }
   .lp .story-step .whos { opacity: 1; }
   .lp .sg { opacity: 1 !important; }
-  .lp .split, .lp .ask, .lp .comply-grid { grid-template-columns: 1fr; gap: 40px; }
+  .lp .split, .lp .comply-grid { grid-template-columns: 1fr; gap: 40px; }
   .lp .cal-two { grid-template-columns: 1fr; }
   .lp .trust { grid-template-columns: 1fr 1fr; }
   .lp .footer-grid { grid-template-columns: 1fr 1fr; }
