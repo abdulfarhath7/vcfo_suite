@@ -20,6 +20,12 @@ async function calendarPage(page: Page) {
   await expect(page.getByRole('heading', { name: 'Statutory calendar' })).toBeVisible({ timeout: 30_000 });
 }
 
+/** The admin's Import calendar sits in the Calendar file menu of the toolbar. */
+async function openImport(page: Page) {
+  await page.getByRole('button', { name: /Calendar file/ }).click();
+  await page.getByRole('menuitem', { name: /Import calendar/ }).click();
+}
+
 /** This year's calendar as the filled template, with every date moved one year on. */
 async function nextYearWorkbook(page: Page): Promise<Buffer> {
   const res = await page.request.get('/api/statutory-calendar/template?fy=2026-27');
@@ -57,7 +63,7 @@ test.describe('statutory calendar import', () => {
     sheet.addRow([new Date(Date.UTC(2026, 3, 11)), 'SEBI', '']);
     const bad = Buffer.from(await workbook.xlsx.writeBuffer());
 
-    await page.getByRole('button', { name: 'Import calendar' }).click();
+    await openImport(page);
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Financial year').selectOption(NEXT_FY);
     await dialog.getByLabel('Excel file (.xlsx)').setInputFiles({ name: 'bad.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: bad });
@@ -70,10 +76,12 @@ test.describe('statutory calendar import', () => {
   test('the admin publishes next year and the calendar shows it', async ({ page }) => {
     await login(page, 'admin');
     await calendarPage(page);
-    await expect(page.getByRole('link', { name: 'Download template' })).toBeVisible();
+    await page.getByRole('button', { name: /Calendar file/ }).click();
+    await expect(page.getByRole('menuitem', { name: /Download template/ })).toBeVisible();
+    await page.keyboard.press('Escape');
     const file = await nextYearWorkbook(page);
 
-    await page.getByRole('button', { name: 'Import calendar' }).click();
+    await openImport(page);
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Financial year').selectOption(NEXT_FY);
     await dialog.getByLabel('Excel file (.xlsx)').setInputFiles({ name: 'SBC Statutory Calendar FY 2027-28.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: file });
@@ -111,13 +119,13 @@ test.describe('statutory calendar import', () => {
     await page.getByRole('tab', { name: 'By act' }).click();
     await expect(page.getByRole('heading', { name: new RegExp(`· ${inMonth.length} deadlines?$`) })).toBeVisible();
     // A lead has no import buttons.
-    await expect(page.getByRole('button', { name: 'Import calendar' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Calendar file/ })).toHaveCount(0);
   });
 
   test('a super admin reads the calendar but cannot import', async ({ page }) => {
     await login(page, 'super');
     await calendarPage(page);
-    await expect(page.getByRole('button', { name: 'Import calendar' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Calendar file/ })).toHaveCount(0);
     const read = await page.request.get(`/api/statutory-calendar?fy=${NEXT_FY}`);
     expect(read.status()).toBe(200);
     expect(((await read.json()) as { canImport: boolean }).canImport).toBe(false);

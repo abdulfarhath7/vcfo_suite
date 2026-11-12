@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Upload } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { ChevronDown, Download, FileDown, Upload } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -32,10 +39,13 @@ function plural(n: number, one: string, many = `${one}s`) {
 export function StatutoryCalendarImport({
   data,
   onPublished,
+  extraItems,
 }: {
   /** GET /api/statutory-calendar: the years the server accepts, the years with a calendar, this year. */
   data: Pick<StatutoryCalendarResponse, 'importableYears' | 'years' | 'currentFy'>;
   onPublished: (fy: string) => void;
+  /** More menu items under a line, such as Export to Excel. */
+  extraItems?: ReactNode;
 }) {
   const importableYears = data.importableYears;
   /** The dialog opens on the first coming year with no calendar, else on next year. */
@@ -91,16 +101,51 @@ export function StatutoryCalendarImport({
 
   return (
     <>
-      <Button asChild variant="secondary" size="sm" className="h-8">
-        <a href={TEMPLATE_URL} download>
-          <Download aria-hidden />
-          Download template
-        </a>
-      </Button>
-      <Button variant="strong" size="sm" className="h-8" onClick={openDialog}>
-        <Upload aria-hidden />
-        Import calendar
-      </Button>
+      {/* One "Calendar file" menu instead of a row of buttons (owner, 12 Nov 2026: toolbar idea A). */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" size="sm" className="h-8">
+            Calendar file
+            <ChevronDown aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[250px]">
+          {/* The route answers as an attachment, so going to it downloads the file and the page stays. */}
+          <DropdownMenuItem onSelect={() => window.location.assign(TEMPLATE_URL)} className="flex items-start gap-2.5">
+            <Download className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+            <span>
+              Download template
+              <span className="block text-[12px] text-ink-muted">Blank, to fill in a new year</span>
+            </span>
+          </DropdownMenuItem>
+          {sourceYear ? (
+            <DropdownMenuItem
+              onSelect={() => window.location.assign(`${TEMPLATE_URL}?fy=${encodeURIComponent(sourceYear)}`)}
+              className="flex items-start gap-2.5"
+            >
+              <FileDown className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+              <span>
+                Download {fyBounds(sourceYear).label}
+                <span className="block text-[12px] text-ink-muted">The template filled in, to start from</span>
+              </span>
+            </DropdownMenuItem>
+          ) : null}
+          {/* The dialog opens after the menu has closed, so focus moves into it cleanly. */}
+          <DropdownMenuItem onSelect={() => setTimeout(openDialog, 0)} className="flex items-start gap-2.5">
+            <Upload className="mt-0.5 h-4 w-4 flex-none" aria-hidden />
+            <span>
+              Import calendar
+              <span className="block text-[12px] text-ink-muted">Replace a financial year</span>
+            </span>
+          </DropdownMenuItem>
+          {extraItems ? (
+            <>
+              <DropdownMenuSeparator />
+              {extraItems}
+            </>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Modal
         open={open}
