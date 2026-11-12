@@ -125,7 +125,9 @@ export function ComplianceCalendarView({
   const dateParam = parseIsoDate(params.get('date'));
   const [month, setMonth] = useState<Date>(() => firstOfMonth(dateParam ?? now));
   const [pickedDay, setPickedDay] = useState<string | null>(() => (dateParam ? dateParam.toISOString().slice(0, 10) : null));
-  const [view, setView] = useState<CalendarView>('month');
+  // The full statutory calendar ("By act") opens first for every role (owner, 12 Nov 2026); a link
+  // to a date (?date=) still opens that month of the filings.
+  const [view, setView] = useState<CalendarView>(() => (dateParam ? 'month' : 'statutory'));
   const [area, setArea] = useState<string>(ALL_AREAS);
   // C-1: All, Statutory, Non-statutory. The filter applies to every view and the rail (C-4).
   const [cat, setCat] = useState<CatFilter>('all');
@@ -288,6 +290,9 @@ export function ComplianceCalendarView({
         <h1 className="sr-only">Compliance calendar</h1>
 
         {/* Calendar bar: company, month, FY, area, view and the way to Filings. */}
+        {/* The By act view is the full statutory calendar with its own year and act filters, so the
+            register's company, category, month, year and area controls step aside there. */}
+        {view === 'statutory' ? null : (
         <div className="flex flex-wrap items-center gap-1.5">
           {sole ? null : (
             <Select value={companyId} onValueChange={setPickedId}>
@@ -306,7 +311,10 @@ export function ComplianceCalendarView({
           )}
           <CatFilterTabs value={cat} onChange={setCat} stat={statCount} ns={taskCount} className="flex-none" />
         </div>
+        )}
         <div className="flex flex-wrap items-center gap-1.5">
+          {view === 'statutory' ? null : (
+          <>
           <span className={cn(view !== 'month' && 'invisible')} aria-hidden={view !== 'month' || undefined}>
             <MonthNav
               value={monthKey}
@@ -320,7 +328,9 @@ export function ComplianceCalendarView({
           <span className="inline-flex h-8 flex-none items-center rounded-md bg-warning-soft px-2 text-[12px] font-medium text-warning">
             {financialYearLabel(fyStartYear)}
           </span>
-          {cat === 'non-statutory' ? null : (
+          </>
+          )}
+          {cat === 'non-statutory' || view === 'statutory' ? null : (
             <SpectrumTabs
               label="Filter by area"
               className="min-w-0"
@@ -370,13 +380,13 @@ export function ComplianceCalendarView({
           ) : null
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {/* The By act view takes the full width: its own list and month panel replace the filings rail. */}
+        <div className={cn('grid grid-cols-1 items-start gap-4', view !== 'statutory' && 'lg:grid-cols-[minmax(0,1fr)_340px]')}>
           <div className="grid min-w-0 gap-4">
             {view === 'statutory' ? (
               <StatutoryCalendar
                 engagements={engagements}
                 companyId={companyId}
-                onCompanyChange={setPickedId}
                 audience={scope.audience}
               />
             ) : query.isPending ? (
@@ -455,7 +465,7 @@ export function ComplianceCalendarView({
             )}
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-1">
+          <div className={cn('grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-1', view === 'statutory' && 'hidden')}>
             <StatusDonutCard counts={nowMonthCounts} caption={LONG_MON[now.getUTCMonth()]!.slice(0, 3)} label="This month by status" />
             {nextIsTask && nextTask ? (
               <NextTaskCard task={nextTask} now={now} showCompany={showCompany} href={taskLink(nextTask)} />

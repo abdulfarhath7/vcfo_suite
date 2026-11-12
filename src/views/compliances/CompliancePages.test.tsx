@@ -146,10 +146,16 @@ describe('CompliancePages', () => {
     expect(screen.getByTestId('redirect').dataset.href).toBe('/app/lead/today');
   });
 
-  it('R-51: shows a lead with no incorporated company an empty state on every Compliances page', () => {
+  it('opens the calendar for a lead with no incorporated company, for the full statutory calendar', () => {
+    app({ user: { id: 'u-lead', role: 'intern' }, engagements: [engagement({ id: 'kestrel' })] });
+    render(<ComplianceCalendarPage basePath="/app/lead/compliances" />);
+    expect(screen.getByTestId('calendar').dataset.base).toBe('/app/lead/compliances');
+    expect(screen.queryByText('No incorporated clients yet')).toBeNull();
+  });
+
+  it('R-51: shows a lead with no incorporated company an empty state on the other Compliances pages', () => {
     app({ user: { id: 'u-lead', role: 'intern' }, engagements: [engagement({ id: 'kestrel' })] });
     for (const page of [
-      <ComplianceCalendarPage key="c" basePath="/app/lead/compliances" />,
       <FilingsPage key="f" basePath="/app/lead/compliances" />,
       <ObligationsPage key="o" basePath="/app/lead/compliances" />,
       <ObligationPage key="r" basePath="/app/lead/compliances" obligationId="gst-3b" />,

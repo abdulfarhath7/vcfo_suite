@@ -57,9 +57,10 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - The filing tracker lives on `<base>/compliance/tracker` for intern, admin,
   and manager alike (header “Filing tracker” link on the calendar). The old
   admin/manager in-page tabs are gone.
-- Deadline scoping: admin/super see the full master calendar; managers and
-  leads only see deadlines that apply to a client in their role-scoped
-  portfolio (`deadlineAppliesTo` over `engagements`, which the API scopes).
+- Deadline scoping (changed 2026-11-12, owner): every role, clients included, sees every
+  deadline of the year on the statutory calendar, whatever companies they hold and even with
+  none. Nothing is filtered by `deadlineAppliesTo` any more; people narrow it themselves with the
+  act tabs (All, GST, IT, ...), the legend, and All / Overdue.
 - Layout is two panels: the month's deadlines grouped by date on the left
   (`.stat-cal-list`), a compact month navigator + legend on the right
   (`.stat-cal-nav`, sticky from `lg`). The old FY heat strip and the act chip
@@ -99,3 +100,16 @@ Gotchas already paid for once. Append when something costs more than a minute to
   The unit test round-trips all 241 built-in rows through the template.
 - `deadline.id` stays `sd-<date>-<position>`, so Watch's moved-deadline lines (`withMovedDeadlines`)
   still apply to imported years.
+
+## Full statutory calendar for every role (2026-11-12)
+
+- The owner asked that every role sees every deadline of the file by default. So:
+  `StatutoryCalendar` no longer filters by company or role; the Compliances calendar opens on the
+  By act view for every staff role (a `?date=` link still opens Month); the lead's "No
+  incorporated clients yet" page no longer blocks the Calendar (the other Compliances pages keep
+  it); and the client portal calendar gained a By act view that opens first, on desktop and phone
+  (phone: a By act / Your filings switch above the list).
+- The act tabs over the list and the legend share one state, `mutedActs`: a tab shows one act,
+  All clears it, and picking several acts in the legend leaves no tab highlighted.
+- In the By act view the page hides the filings controls (company, category, month, FY chip,
+  area) and the filings rail, because the statutory calendar has its own year and act filters.

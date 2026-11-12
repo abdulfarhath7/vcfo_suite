@@ -168,6 +168,14 @@ describe('ComplianceCalendarView bar', () => {
     expect(document.querySelector('a[href="/app/manager/compliances/obligations/gst-3b/a"]')).not.toBeNull();
   });
 
+  it('opens on the full statutory calendar (By act) when no date is asked for', () => {
+    search = new URLSearchParams('');
+    render(<ComplianceCalendarView basePath="/app/lead/compliances" scope={scope} />);
+    expect(screen.getByRole('tab', { name: 'By act' })).toHaveAttribute('aria-selected', 'true');
+    // The filings controls step aside in that view.
+    expect(screen.queryByRole('button', { name: 'Choose month' })).toBeNull();
+  });
+
   it('groups one filing for several clients in Coming up', () => {
     search = new URLSearchParams('date=2099-10-01');
     render(<ComplianceCalendarView basePath="/app/manager/compliances" scope={scope} />);

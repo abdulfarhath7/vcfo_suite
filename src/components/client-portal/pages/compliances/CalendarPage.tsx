@@ -67,9 +67,17 @@ import { CategoryTabs, RowArea } from './task-marks';
 import { taskHref, useExpiryRows, useTaskRows } from './task-api';
 import { dayWords, fyOfIso, isExpiryRow, isTaskRow, showStat, showTasks, taskHint, taskWord, type Category } from './tasks';
 import { CALENDAR_BEFORE } from './empty-copy';
+import { StatutoryCalendar } from '@/components/admin/StatutoryCalendar';
+import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import '../../css/compliances-board.css';
 
-const VIEWS = ['month', 'year', 'timeline'] as const;
+/**
+ * `statutory` is the full SBC statutory calendar (every deadline of the year, the same for every
+ * client); it opens first (owner, 12 Nov 2026). The other three show this client's own filings.
+ */
+const VIEWS = ['month', 'year', 'timeline', 'statutory'] as const;
+const VIEW_LABELS = ['Month', 'Year', 'Timeline', 'By act'] as const;
+const DEFAULT_VIEW = 'statutory';
 type View = (typeof VIEWS)[number];
 const AREA_IDS = AREAS.map((a) => a.id);
 
@@ -93,7 +101,7 @@ export function useCalendarState() {
   const dateP = params.get('date');
   const month = dateP && /^\d{4}-(0[1-9]|1[0-2])$/.test(dateP.slice(0, 7)) ? dateP.slice(0, 7) : nowKey;
   const viewP = params.get('view');
-  const view: View = (VIEWS as readonly string[]).includes(viewP ?? '') ? (viewP as View) : 'month';
+  const view: View = (VIEWS as readonly string[]).includes(viewP ?? '') ? (viewP as View) : dateP ? 'month' : DEFAULT_VIEW;
   const areaP = (params.get('area') ?? 'all').toUpperCase();
   const area: AreaFilter = areaP === 'ALL' ? 'all' : AREA_IDS.includes(areaP as AreaFilter) ? (areaP as AreaFilter) : 'all';
   const filing = params.get('filing') ?? params.get('open');
@@ -104,7 +112,7 @@ export function useCalendarState() {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
         if (k === 'filing') next.delete('open');
-        if (v == null || v === '' || (k === 'view' && v === 'month') || (k === 'area' && v === 'all') || (k === 'cat' && v === 'all') || (k === 'date' && v === nowKey)) next.delete(k);
+        if (v == null || v === '' || (k === 'area' && v === 'all') || (k === 'cat' && v === 'all') || (k === 'date' && v === nowKey)) next.delete(k);
         else next.set(k, k === 'area' ? v.toLowerCase() : v);
       }
       const q = next.toString();
@@ -131,7 +139,30 @@ export function CompliancesCalendar() {
         onDrillRow={openInFilings}
         drillLink={{ text: 'Open filings', onClick: () => go(`${portalHref('filings')}?fy=${fyStartOfMonth(st.month)}`) }}
       >
-        {narrow ? <CalendarMobile state={st} onOpenFilings={openInFilings} /> : <CalendarDesktop st={st} onOpenFilings={openInFilings} />}
+        {narrow ? (
+          <>
+            <Island className="mb-3">
+              <SpectrumTabs
+                label="Calendar view"
+                items={[
+                  { key: 'statutory', label: 'By act' },
+                  { key: 'month', label: 'Your filings' },
+                ]}
+                value={st.view === 'statutory' ? 'statutory' : 'month'}
+                onChange={(key) => st.set({ view: key })}
+              />
+            </Island>
+            {st.view === 'statutory' ? (
+              <Island>
+                <StatutoryCalendar engagements={[]} audience="client" />
+              </Island>
+            ) : (
+              <CalendarMobile state={st} onOpenFilings={openInFilings} />
+            )}
+          </>
+        ) : (
+          <CalendarDesktop st={st} onOpenFilings={openInFilings} />
+        )}
       </CompProvider>
     </div>
   );
@@ -247,6 +278,34 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
     return { lines: [head, tail], showAll: area !== 'all', q: `Why is nothing due in ${monthName}?` };
   })();
 
+  const viewSwitch = (
+    <span data-calview="" style={{ display: 'contents' }}>
+      <Seg
+        opts={[...VIEW_LABELS]}
+        on={viewIdx}
+        label="Calendar view"
+        onPick={(i) => set({ view: VIEWS[i]! })}
+        same={(i) => toast(`Already showing the ${VIEW_LABELS[i]!.toLowerCase()} view`)}
+      />
+    </span>
+  );
+
+  // By act: the full statutory calendar, the same for every client, at full width.
+  if (view === 'statutory') {
+    return (
+      <div className="cp-comp-root page" ref={root}>
+        <div className="row-wrap" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="end" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {viewSwitch}
+          </div>
+        </div>
+        <Island>
+          <StatutoryCalendar engagements={[]} audience="client" />
+        </Island>
+      </div>
+    );
+  }
+
   return (
     <div className="cp-comp-root page" ref={root}>
       {/* header (C-01) */}
@@ -284,15 +343,7 @@ function CalendarDesktop({ st, onOpenFilings }: { st: ReturnType<typeof useCalen
           )}
         </div>
         <div className="end" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span data-calview="" style={{ display: 'contents' }}>
-            <Seg
-              opts={['Month', 'Year', 'Timeline']}
-              on={viewIdx}
-              label="Calendar view"
-              onPick={(i) => set({ view: VIEWS[i]! })}
-              same={(i) => toast(`Already showing the ${['month', 'year', 'timeline'][i]} view`)}
-            />
-          </span>
+          {viewSwitch}
           <Island inline>
             <Button asChild variant="secondary" className="h-8 font-semibold text-ink">
               <a

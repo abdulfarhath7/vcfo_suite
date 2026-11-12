@@ -91,6 +91,24 @@ test.describe('statutory calendar import', () => {
     expect(body.calendar.deadlines.every((d) => d.date >= '2027-04-01' && d.date <= '2028-03-31')).toBe(true);
   });
 
+  test('a lead sees every deadline by default, whatever companies they hold, and can filter by act', async ({ page }) => {
+    await login(page, 'lead');
+    await page.goto('/app/lead/compliances/calendar');
+    // By act is the default view, so the full calendar shows without a click.
+    await expect(page.getByRole('heading', { name: 'Statutory calendar' })).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('tab', { name: 'By act' })).toHaveAttribute('aria-selected', 'true');
+    const api = await page.request.get('/api/statutory-calendar');
+    const { calendar } = (await api.json()) as { calendar: { deadlines: { date: string; act: string }[] } };
+    const month = new Date().toISOString().slice(0, 7);
+    const inMonth = calendar.deadlines.filter((d) => d.date.startsWith(month));
+    await expect(page.getByRole('heading', { name: new RegExp(`· ${inMonth.length} deadlines?$`) })).toBeVisible();
+
+    await page.getByRole('tab', { name: /^GST/ }).click();
+    const gst = inMonth.filter((d) => d.act === 'GST').length;
+    await expect(page.getByRole('heading', { name: new RegExp(`· ${gst} deadlines?$`) })).toBeVisible();
+    await expect(page.locator('.stat-cal-tag').filter({ hasNotText: 'GST' })).toHaveCount(0);
+  });
+
   test('a super admin reads the calendar but cannot import', async ({ page }) => {
     await login(page, 'super');
     await calendarPage(page);
