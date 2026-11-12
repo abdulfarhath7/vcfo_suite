@@ -73,3 +73,27 @@ export function templateAppliesTo(scope: StatutoryDeadline['scope']): string {
 export function deadlineTagLabel(deadline: Pick<StatutoryDeadline, 'act' | 'actLabel'>, categoryLabel: string): string {
   return deadline.act === 'RERA' && deadline.actLabel ? deadline.actLabel : categoryLabel;
 }
+
+/**
+ * The filing area a statutory deadline belongs to, in the words the filings register uses
+ * (`compliance_obligations.compliance_area`), so one area filter narrows the calendar's filings and
+ * the SBC calendar's deadlines together. Acts the register has no area for keep their own name.
+ */
+export function statutoryArea(deadline: Pick<StatutoryDeadline, 'act' | 'scope'>): string {
+  switch (deadline.act) {
+    case 'GST':
+      return 'GST';
+    case 'IT':
+      return 'Income Tax';
+    case 'MCA':
+      return deadline.scope === 'llp' ? 'LLP Act' : 'Companies Act, 2013';
+    case 'FEMA':
+      return 'FEMA / RBI';
+    case 'LABOUR':
+      return 'Labour Laws';
+    case 'TP':
+      return 'Transfer Pricing';
+    default:
+      return deadline.act;
+  }
+}

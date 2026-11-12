@@ -17,6 +17,12 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/app/manager/compliances/calendar',
 }));
 vi.mock('@/components/SEO', () => ({ SEO: () => null }));
+// The SBC statutory calendar of the year in view (the imported file): shown to every role on Month and Year.
+let sbcDeadlines: { id: string; date: string; act: string; title: string; note?: string }[] = [];
+vi.mock('@/hooks/use-statutory-calendar', () => ({
+  useStatutoryCalendar: () => ({ data: { calendar: { deadlines: sbcDeadlines }, canImport: false, importableYears: [], years: [] } }),
+  useStatutoryCalendarImport: () => ({ mutate: vi.fn(), isPending: false }),
+}));
 vi.mock('@/hooks/use-expiries', () => ({
   useExpiries: () => ({ data: [], isPending: false }),
   useMarkRenewed: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
@@ -137,6 +143,7 @@ const scope = {
 const { ComplianceCalendarView } = await import('@/views/compliances/ComplianceCalendarView');
 
 beforeEach(() => {
+  sbcDeadlines = [];
   setWindow.mockClear();
   toastUndo.mockClear();
   push.mockClear();
@@ -166,6 +173,21 @@ describe('ComplianceCalendarView bar', () => {
     expect(screen.getByRole('button', { name: /^20 October/, hidden: true })).toHaveAttribute('aria-pressed', 'true');
     expect(document.querySelector('a[href="/app/manager/compliances/obligations/gst-3b/b"]')).not.toBeNull();
     expect(document.querySelector('a[href="/app/manager/compliances/obligations/gst-3b/a"]')).not.toBeNull();
+  });
+
+  it('fills Month with every deadline of the SBC statutory calendar, beside the filings', () => {
+    sbcDeadlines = [
+      { id: 'sd-a', date: '2099-10-20', act: 'GST', title: 'GSTR-1 (SBC)', note: 'Turnover above INR 50 Mn' },
+      { id: 'sd-b', date: '2099-10-25', act: 'LABOUR', title: 'PF and ESI (SBC)' },
+    ];
+    search = new URLSearchParams('date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/lead/compliances" scope={scope} />);
+    expect(screen.getByRole('tab', { name: 'Month' })).toHaveAttribute('aria-selected', 'true');
+    // The day popover of the 20th lists the SBC deadline, its note, beside the filings of that day.
+    expect(screen.getByText('GSTR-1 (SBC)')).toBeInTheDocument();
+    expect(screen.getByText('Turnover above INR 50 Mn')).toBeInTheDocument();
+    // The area tabs count the SBC deadlines too: Labour laws exists only because of the file.
+    expect(screen.getByRole('tab', { name: /^Labour\s*1$/ })).toBeInTheDocument();
   });
 
   it('groups one filing for several clients in Coming up', () => {

@@ -57,9 +57,10 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - The filing tracker lives on `<base>/compliance/tracker` for intern, admin,
   and manager alike (header “Filing tracker” link on the calendar). The old
   admin/manager in-page tabs are gone.
-- Deadline scoping: admin/super see the full master calendar; managers and
-  leads only see deadlines that apply to a client in their role-scoped
-  portfolio (`deadlineAppliesTo` over `engagements`, which the API scopes).
+- Deadline scoping (changed 2026-11-12, owner): every role, clients included, sees every
+  deadline of the year on the statutory calendar, whatever companies they hold and even with
+  none. Nothing is filtered by `deadlineAppliesTo` any more; people narrow it themselves with the
+  act tabs (All, GST, IT, ...), the legend, and All / Overdue.
 - Layout is two panels: the month's deadlines grouped by date on the left
   (`.stat-cal-list`), a compact month navigator + legend on the right
   (`.stat-cal-nav`, sticky from `lg`). The old FY heat strip and the act chip
@@ -99,3 +100,24 @@ Gotchas already paid for once. Append when something costs more than a minute to
   The unit test round-trips all 241 built-in rows through the template.
 - `deadline.id` stays `sd-<date>-<position>`, so Watch's moved-deadline lines (`withMovedDeadlines`)
   still apply to imported years.
+
+## Full statutory calendar for every role (2026-11-12)
+
+- The owner asked that every role sees every deadline of the file by default. So the SBC
+  statutory calendar (`useStatutoryCalendar` for the year in view) is merged into the Month and
+  Year views of the staff page (`ComplianceCalendarView`, marks labelled "GST · GSTR-1", a
+  `SbcPopRow` in the day popover, rows in the Excel export) and of the client portal
+  (`CalendarPage`, as `SbcRow`s from `sbcAsRow` in `tasks.ts`, which open nothing).
+- Area tabs: on staff, `statutoryArea` maps an act to the register's area name (IT to "Income
+  Tax", MCA to "Companies Act, 2013" or "LLP Act", LABOUR to "Labour Laws", FEMA to "FEMA / RBI");
+  STPI/SEZ, RERA and Transfer Pricing keep their own names (`SBC_OWN_AREAS`), because the
+  regulator words would show STPI/SEZ as a second "FEMA". On the portal, STPI/SEZ counts under
+  FEMA, TP under Income tax, LABOUR under Payroll, and RERA under All only.
+- `StatutoryCalendar` (By act) no longer filters by company or role, and has act tabs over its
+  list that share `mutedActs` with the legend. A lead with no incorporated client gets the
+  Calendar page; the other Compliances pages keep "No incorporated clients yet".
+- The import buttons (`StatutoryCalendarImport`, which works out its own default year from the
+  GET response) are in the page's top bar, not inside By act, so the admin finds them on Month.
+- Timeline keeps filings only: the file's deadlines have no start dates to draw a window from.
+- The client's "Your compliances haven't started yet" note shows only on a month with nothing on
+  it, as the file's deadlines fill the month before incorporation.

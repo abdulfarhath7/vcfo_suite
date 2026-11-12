@@ -5,9 +5,11 @@
  * turns them into the six status words (R-13), the end-week groups of the list (S-3), the
  * calendar statuses (C-3) and the Filings rows of done tasks (F-2).
  */
-import { daysBetween, fmtDM, plural, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
+import { daysBetween, fmtDM, plural, type AreaCode, type AreaFilter, type CompStatus, type PortalFiling } from '@/lib/client-portal/compliances';
 import type { ExpiryItem } from '@/hooks/use-expiries';
 import { daysLeftLabel } from '@/lib/expiries/model';
+import { ACT_META, type StatutoryAct, type StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
+import { deadlineTagLabel } from '@/lib/statutory-calendar/acts';
 
 export type Category = 'all' | 'statutory' | 'non-statutory';
 export const showStat = (c: Category) => c !== 'non-statutory';
@@ -175,6 +177,73 @@ export function taskAsRow(t: ClientTask): TaskRow {
     reminderOn: null,
     task: t,
   };
+}
+
+/**
+ * A deadline of the SBC statutory calendar (the file the admin imports) drawn on the client's
+ * calendar beside their own filings: every client sees every deadline of the year (owner,
+ * 12 Nov 2026). It opens nothing. `sbcArea` is the portal area tab it belongs to; RERA has none,
+ * so it shows under All only.
+ */
+export type SbcRow = PortalFiling & { sbc: StatutoryDeadline; sbcArea: AreaCode | null };
+export const isSbcRow = (r: CalRow): r is SbcRow => 'sbc' in r && Boolean((r as SbcRow).sbc);
+
+const SBC_AREA: Record<StatutoryAct, AreaCode | null> = {
+  GST: 'GST',
+  IT: 'IT',
+  TP: 'IT',
+  MCA: 'MCA',
+  FEMA: 'FEMA',
+  'STPI/SEZ': 'FEMA',
+  LABOUR: 'PAY',
+  RERA: null,
+};
+
+/** The short act tag the calendar shows for an SBC deadline: "GST", "STPI/SEZ", "APRERA". */
+export function sbcTag(d: Pick<StatutoryDeadline, 'act' | 'actLabel'>): string {
+  return deadlineTagLabel(d, ACT_META[d.act].label);
+}
+
+export function sbcAsRow(d: StatutoryDeadline): SbcRow {
+  return {
+    id: `sbc:${d.id}`,
+    engagementId: '',
+    companyName: 'SBC statutory calendar',
+    particular: d.title,
+    name: d.title,
+    area: SBC_AREA[d.act] ?? 'MCA',
+    authority: d.act,
+    authorityName: sbcTag(d),
+    frequency: 'one-time',
+    freqLabel: 'Statutory',
+    dueDate: d.date,
+    filedOn: null,
+    period: d.note ?? 'SBC statutory calendar',
+    periodLong: null,
+    fyLabel: null,
+    rawStatus: 'upcoming',
+    windowFrom: null,
+    windowTo: null,
+    penaltyRisk: '',
+    ownerName: null,
+    acknowledgementNo: null,
+    amountPaid: null,
+    filedByName: null,
+    dataReceivedOn: null,
+    preparingSince: null,
+    draftDueOn: null,
+    approvalDueOn: null,
+    approvedOn: null,
+    proofCount: 0,
+    reminderOn: null,
+    sbc: d,
+    sbcArea: SBC_AREA[d.act],
+  };
+}
+
+/** SBC rows of one area tab: all of them under All, else those of that area. */
+export function sbcInArea(rows: SbcRow[], area: AreaFilter): SbcRow[] {
+  return area === 'all' ? rows : rows.filter((r) => r.sbcArea === area);
 }
 
 const EXPIRY_ROW_PREFIX = 'expiry:';

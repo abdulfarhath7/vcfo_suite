@@ -76,10 +76,13 @@ function Settling({ label }: { label: string }) {
   );
 }
 
+/**
+ * The calendar opens even for a lead with no incorporated client: its default By act view is the
+ * full statutory calendar, which every role sees whatever companies it holds (owner, 12 Nov 2026).
+ */
 export function ComplianceCalendarPage({ basePath }: { basePath: string }) {
-  const { settled, scope, leadHasNothing } = useComplianceScope();
+  const { settled, scope } = useComplianceScope();
   if (!settled) return <Settling label="Loading calendar" />;
-  if (leadHasNothing) return <NoIncorporatedClients />;
   return <ComplianceCalendarView basePath={basePath} scope={scope} />;
 }
 

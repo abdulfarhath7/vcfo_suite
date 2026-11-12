@@ -159,3 +159,13 @@ describe('summariseDeadlines', () => {
     });
   });
 });
+
+describe('statutoryArea', () => {
+  it('uses the filings register area names, and keeps the act for the rest', async () => {
+    const { statutoryArea } = await import('./acts');
+    expect(statutoryArea({ act: 'IT' })).toBe('Income Tax');
+    expect(statutoryArea({ act: 'MCA' })).toBe('Companies Act, 2013');
+    expect(statutoryArea({ act: 'MCA', scope: 'llp' })).toBe('LLP Act');
+    expect(statutoryArea({ act: 'STPI/SEZ' })).toBe('STPI/SEZ');
+  });
+});
