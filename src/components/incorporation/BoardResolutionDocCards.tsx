@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Download, Eye, EyeOff, FilePlus2, FileText, Maximize2 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
 import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
@@ -12,7 +13,7 @@ import {
   validateSignedBoardResolutionFile,
 } from '@/lib/board-resolution/board-resolution-storage';
 import { fetchBoardResolutionInDb } from '@/lib/projects/engagements-db';
-import { adminProjectPath, clientBoardResolutionPath, internBoardResolutionPath } from '@/lib/projects/project-step-path';
+import { boardResolutionPathFor } from '@/lib/projects/project-step-path';
 import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardResolutionDocPreview';
 import { useDocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { DropZone } from '@/components/client-portal/pages/incorporation/spectrum';
@@ -33,13 +34,6 @@ function signedContentType(path: string): string {
   if (/\.pdf$/i.test(path)) return 'application/pdf';
   if (/\.docx$/i.test(path)) return DOCX_TYPE;
   return '';
-}
-
-/** The page where the board resolution is generated, released and its signed copy uploaded. */
-function boardResolutionPage(role: string | undefined, engagement: Pick<Engagement, 'id' | 'slug'>): string {
-  if (role === 'client') return clientBoardResolutionPath();
-  if (role === 'intern') return internBoardResolutionPath(engagement);
-  return `${adminProjectPath(engagement, role === 'manager' ? 'manager' : 'admin')}/board-resolution`;
 }
 
 /**
@@ -70,6 +64,7 @@ export function BoardResolutionDocCards({
 }) {
   const isClient = role === 'client';
   const viewer = useDocViewer();
+  const pathname = usePathname();
   // The record after an upload on this card, until the parent passes a newer one.
   const [fresh, setFresh] = useState<BoardResolutionDoc | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -104,7 +99,7 @@ export function BoardResolutionDocCards({
   const hasDraft = Boolean(doc?.storagePath?.trim());
   const clientMaySee = !isClient || doc?.status === 'finalized';
   const signed = Boolean(doc?.signedStoragePath?.trim());
-  const page = boardResolutionPage(role, engagement);
+  const page = boardResolutionPathFor(role, engagement, pathname);
   const draftLabel = version ? `Draft v${version.n}` : 'Draft';
   const signedPath = doc?.signedStoragePath?.trim() ?? '';
   const versionKey = encodeURIComponent(doc?.signedUploadedAt ?? signedPath);

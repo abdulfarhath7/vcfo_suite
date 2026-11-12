@@ -95,6 +95,37 @@ export function internBoardResolutionPath(project: ProjectRouteTarget): string {
   return `${internEngagementPath(project)}/board-resolution`;
 }
 
+/** Board resolution editor in the admin or manager shell (S-556, S-557, P-112). */
+export function adminBoardResolutionPath(
+  project: ProjectRouteTarget,
+  baseOrRole?: StaffPathBase,
+): string {
+  return `${adminProjectPath(project, baseOrRole)}/board-resolution`;
+}
+
+/**
+ * The board resolution page the viewer may open. Shared components (the step row on a project
+ * page, the document cards on the two board resolution steps) build their link here, so a
+ * manager or an admin is never sent into the lead's area, which the shell guard refuses.
+ * `pathname` keeps the viewer in the shell they are in: a super admin stays in the admin,
+ * manager or lead shell they opened the project from.
+ */
+export function boardResolutionPathFor(
+  role: string | null | undefined,
+  project: ProjectRouteTarget,
+  pathname?: string | null,
+): string {
+  if (role === 'client') return clientBoardResolutionPath();
+  if (role === 'intern') return internBoardResolutionPath(project);
+  if (role === 'super_admin' && pathname && isInternEngagementPathname(pathname)) {
+    return internBoardResolutionPath(project);
+  }
+  return adminBoardResolutionPath(
+    project,
+    staffProjectBaseFromPathname(pathname, role === 'manager' ? 'manager' : 'admin'),
+  );
+}
+
 /** Client read-only board resolution */
 export function clientBoardResolutionPath(): string {
   return '/app/client/board-resolution';
