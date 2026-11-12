@@ -22,11 +22,14 @@ Gotchas already paid for once. Append when something costs more than a minute to
   company picked (P2 staff routes for the shared module are still unbuilt).
   Portfolio views keep real rows + a one-line pre-COI count off the engagement
   list already in hand.
-- Pre-existing caveat, NOT changed: the staff filing tracker uses
-  `computeAllFilings` (in-memory `generate-instances`), whose `fixed_annual`
-  obligations anchor on `'2000-01-01'` when there is no incorporation date, so
-  a pre-COI company can show a couple of "generated" rows there while the
-  DB-backed `/api/filings` register (what the client sees) has none. Owner call.
+- Fixed 2026-11-12 (owner report, Emburse): the caveat that stood here was the bug. The staff
+  screens use `computeAllFilings` (in-memory `generate-instances`), whose `fixed_annual`
+  obligations anchor on `'2000-01-01'` when there is no incorporation date, so a pre-COI
+  company showed advance tax, DIR-3 KYC, DPT-3 and MSME-1 back 12 months as overdue. Now
+  `generateComplianceInstances` takes `incorporated` (callers pass `isIncorporated`) and
+  returns nothing without it, and drops any period due, or ending, before the incorporation
+  day (`periodAfterIncorporation`). Every register reader adds `filingAfterIncorporation`
+  (`src/db/repositories/filing-incorporation.ts`). Stored bad rows: `npm run filings:pre-coi:prod`.
 
 ## Compliances nav (2026-09-07)
 

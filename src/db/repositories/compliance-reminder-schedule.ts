@@ -12,6 +12,7 @@ import {
   notificationPrefs,
   profiles,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import { confirmPending, systemActivityMap, systemEnsureActivitiesSeeded } from '@/db/repositories/compliance-activities';
@@ -280,6 +281,8 @@ export async function systemPlanComplianceReminders(today: string): Promise<Plan
         or(isNull(complianceInstances.status), ne(complianceInstances.status, 'filed')),
         gte(complianceInstances.dueDate, from),
         lte(complianceInstances.dueDate, to),
+        // No reminder for a filing of a company that is not incorporated yet.
+        filingAfterIncorporation,
       ),
     );
   const instOverrides = await loadOverridesFor('statutory', insts.map((r) => r.inst.id));

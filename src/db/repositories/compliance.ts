@@ -13,9 +13,11 @@ import {
   profiles,
   regCalendarProposals,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager } from '@/lib/auth';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
+import { isIncorporated, type IncorporationChecklistState } from '@/lib/compliance/incorporation-state';
 import { extractTriggersFromChecklist } from '@/lib/compliance/extract-triggers';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { COMPLIANCE_OBLIGATIONS } from '@/lib/compliance/obligations-seed';
@@ -283,6 +285,12 @@ export async function systemGenerateComplianceInstances(
         triggers,
         ownerId: ownerUuid ?? engagement.internId,
         asOfDate,
+        // No filing before incorporation: the generator returns none for a company that is not
+        // incorporated, and none dated before its incorporation day.
+        incorporated: isIncorporated(
+          { incorporationDate: triggers.incorporationDate, stage: engagement.stage },
+          (engagement.checklistState ?? null) as IncorporationChecklistState | null,
+        ),
       }),
       changes,
       existing,
@@ -459,7 +467,7 @@ export async function systemListComplianceNudges(today: Date): Promise<Complianc
         complianceObligations,
         eq(complianceObligations.id, complianceInstances.obligationId),
       )
-      .where(inArray(complianceInstances.dueDate, [dueYesterday, ...ahead.map(([d]) => d)]));
+      .where(and(inArray(complianceInstances.dueDate, [dueYesterday, ...ahead.map(([d]) => d)]), filingAfterIncorporation));
 
     const out: ComplianceNudgeRow[] = [];
     for (const row of rows) {

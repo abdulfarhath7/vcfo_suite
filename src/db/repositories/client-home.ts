@@ -13,6 +13,7 @@ import {
   documents,
   profiles,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import {
   assertEngagementAccess,
@@ -235,6 +236,7 @@ async function loadFilings(dbId: string, now: Date, needs: HomeNeedRequest[]): P
     .where(
       and(
         eq(complianceInstances.engagementId, dbId),
+        filingAfterIncorporation,
         gte(complianceInstances.dueDate, `${fy}-04-01`),
         lte(complianceInstances.dueDate, `${fy + 1}-03-31`),
       ),

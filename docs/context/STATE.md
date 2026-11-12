@@ -369,3 +369,16 @@ Notes:
   Word helper is `src/lib/doc-style/spectrum-docx.ts` and has no caller yet, because no generated
   Word file is firm-branded. The four react-pdf documents (partner report, Ask brief, status
   brief, budget pack) now use `spectrum-pdf.ts`. Excel exports are not restyled yet.
+
+## No filings before incorporation (12 Nov 2026, on `no-filings-before-incorporation-eshwar`, not merged or deployed)
+
+- A company has no statutory filings until it is incorporated. `generateComplianceInstances`
+  takes `incorporated` (from `isIncorporated`) and generates nothing without it, and never a
+  period due or ending before the incorporation day. Both callers (the Inngest job and the
+  browser's `computeAllFilings` behind Work, Today and the dashboards) pass it.
+- Readers of `compliance_instances` (register, portal filings, counts, metrics, reminders,
+  WhatsApp nudges, super overview, home trends, client home) add `filingAfterIncorporation`.
+- Stored bad rows: `npm run filings:pre-coi:prod` lists them (dry run);
+  `npm run filings:pre-coi:prod -- --yes` takes an RDS snapshot and deletes the ones nobody
+  worked on. Not run against any database yet. No migration.
+

@@ -8,6 +8,7 @@ import {
   assertEngagementAccess,
   listScopedEngagementIds,
 } from '@/db/repositories/engagements';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import {
   financialYearMonths,
@@ -69,7 +70,8 @@ export async function getFilings(
   const ids = await scopeIds(ctx, query.engagementId);
   if (ids.length === 0) return { rows: [], companies: [] };
 
-  const conditions = [inArray(complianceInstances.engagementId, ids)];
+  // No filing before the company is incorporated, on any role's register (calendars, lists, Work).
+  const conditions = [inArray(complianceInstances.engagementId, ids), filingAfterIncorporation];
   if (query.fyStartYear !== undefined) {
     const months = financialYearMonths(query.fyStartYear);
     const first = months[0]!.key;

@@ -13,6 +13,7 @@ import {
   notificationPrefs,
   profiles,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { assertEngagementAccess, listScopedEngagementIds } from '@/db/repositories/engagements';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -99,7 +100,8 @@ async function filingsScope(ctx: AuthContext, engagementId?: string): Promise<st
 export async function getPortalFilings(ctx: AuthContext, query: PortalFilingsQuery = {}): Promise<PortalFiling[]> {
   const scope = await filingsScope(ctx, query.engagementId);
   if (scope.length === 0) return [];
-  const conditions = [inArray(complianceInstances.engagementId, scope)];
+  // No filing before the company is incorporated (`filing-incorporation.ts`).
+  const conditions = [inArray(complianceInstances.engagementId, scope), filingAfterIncorporation];
   if (query.fyStartYear !== undefined) {
     const months = fyMonths(query.fyStartYear);
     conditions.push(gte(complianceInstances.dueDate, `${months[0]}-01`));
@@ -576,6 +578,8 @@ export async function systemListDueComplianceReminders(today: string) {
         eq(profiles.status, 'active'),
         isNull(complianceInstances.filedOn),
         gte(complianceInstances.dueDate, addDays(today, -1)),
+        // A company that is not incorporated has no filing to be reminded of.
+        filingAfterIncorporation,
       ),
     );
   return rows.filter((r) =>

@@ -9,6 +9,7 @@ import {
   engagementManagers,
   profiles,
 } from '@/db/schema';
+import { filingAfterIncorporation } from '@/db/repositories/filing-incorporation';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
 import { coerceStatusCode, getItem, getRegistrationPhases } from '@/data/checklist';
@@ -126,6 +127,7 @@ async function loadFilings(dbIds: string[], floor: string, now: Date): Promise<M
         and(
           inArray(complianceInstances.engagementId, dbIds),
           lte(complianceInstances.dueDate, horizon),
+          filingAfterIncorporation,
           or(
             gte(complianceInstances.dueDate, floor),
             gte(complianceInstances.filedOn, floor),

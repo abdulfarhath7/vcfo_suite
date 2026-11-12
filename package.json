@@ -50,6 +50,8 @@
     "demo:clean:prod": "node scripts/demo-prod.mjs --remove",
     "clients:reset": "node --conditions=react-server --import tsx scripts/reset-client-data.ts",
     "clients:reset:prod": "node scripts/demo-prod.mjs --reset-clients",
+    "filings:pre-coi": "node --conditions=react-server --import tsx scripts/cleanup-pre-incorporation-filings.ts",
+    "filings:pre-coi:prod": "node scripts/demo-prod.mjs --pre-coi-filings",
     "compliance:generate": "node --conditions=react-server --import tsx scripts/compliance-generate.ts",
     "totp:reencrypt": "node --conditions=react-server --import tsx scripts/reencrypt-totp.ts",
     "infra:up": "docker compose up -d",
