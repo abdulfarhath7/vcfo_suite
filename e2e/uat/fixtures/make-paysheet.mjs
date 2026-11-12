@@ -1,5 +1,5 @@
 // Builds the October 2026 paysheet for Kaveri Foods (12 employees) and, separately, the expected
-// totals worked out by hand-written rules, so the app's registers and payroll are checked against
+// totals worked out by hand-written rules, so the app's registers are checked against
 // numbers the app did not produce. Run: node e2e/uat/fixtures/make-paysheet.mjs
 import { createRequire } from 'node:module';
 import { writeFileSync } from 'node:fs';
@@ -57,27 +57,5 @@ for (const r of rows) {
 }
 await wb.xlsx.writeFile(join(here, 'files', 'paysheet-oct-2026.xlsx'));
 
-// The same people as a payroll salary-update CSV (Payroll › Import). Payroll takes monthly rates
-// and paid days on a calendar-day basis: October has 31 days; paid days = 31 − loss-of-pay days,
-// where absence beyond 2 days of leave is loss of pay. Expected payroll figures, by the same rules
-// written out by hand: earned = rate × paid ÷ 31; PF 12% of earned basic up to ₹15,000; ESI 0.75%
-// of earned gross when that gross is ₹21,000 or less (rounded up); PT ₹200 at ₹25,000 a month or more.
-const payroll = EMP.map(([id, name, , , desig, , salary, days]) => {
-  const absent = WORKING_DAYS - days;
-  const lop = Math.max(0, absent - 2);
-  const paid = 31 - lop;
-  const basic = Math.round(salary * 0.5), hra = Math.round(salary * 0.2), allow = salary - basic - hra;
-  const gross = Math.round(((basic + hra + allow) * paid) / 31);
-  const pf = Math.round(Math.min((basic * paid) / 31, 15000) * 0.12);
-  const esi = gross > 0 && gross <= 21000 ? Math.ceil(gross * 0.0075) : 0;
-  const pt = salary >= 25000 ? 200 : 0;
-  return { id, name, desig, paid, basic, hra, allow, pt, gross, pf, esi, net: gross - pf - esi - pt };
-});
-const psum = (k) => payroll.reduce((a, r) => a + r[k], 0);
-writeFileSync(join(here, 'expected-payroll-app.json'), JSON.stringify({ cycle: '2026-10', workers: payroll.length, gross: psum('gross'), pf: psum('pf'), esi: psum('esi'), pt: psum('pt'), net: psum('net'), rows: payroll }, null, 2));
-const csv = ['Employee ID,Name,Designation,State,Paid days,Basic,HRA,Allowances,Variable pay,PF applicable,Professional tax,TDS',
-  ...payroll.map((r) => [r.id, r.name, r.desig, 'Karnataka', r.paid, r.basic, r.hra, r.allow, 0, 'Yes', r.pt, 0].join(','))].join('\n');
-writeFileSync(join(here, 'files', 'payroll-oct-2026.csv'), csv + '\n');
-console.log('payroll', JSON.stringify({ gross: psum('gross'), pf: psum('pf'), esi: psum('esi'), pt: psum('pt'), net: psum('net') }));
 writeFileSync(join(here, 'expected-payroll.json'), JSON.stringify(expected, null, 2));
 console.log(JSON.stringify({ gross: expected.gross, pf: expected.pf, esi: expected.esi, pt: expected.pt, net: expected.net }));

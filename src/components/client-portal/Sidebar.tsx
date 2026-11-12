@@ -208,24 +208,17 @@ export function portalNav({
   const registrations: NavItem = { k: 'registrations', t: 'Registrations', i: 'badge-check' };
 
   /*
-   * Labour registers and Payroll are two rows, not one, and neither is a child of Compliances.
+   * Labour registers is its own row, not a child of Compliances.
    *
    * That is the shape `sidebar-items.ts` already states for staff — the registers are their
-   * own row after the practice block, with Payroll next — and its comment says every role
-   * doing practice work gets both, clients included. The client portal had the registers
-   * buried as a fourth label inside Compliances and no way to Payroll at all, although the
-   * route has been there all along.
-   *
-   * The registers do also open as a tab inside Payroll. They keep their own row anyway: a
-   * client who wants last month's muster roll is not thinking about a payroll run.
+   * own row after the practice block — and its comment says every role doing practice work
+   * gets it, clients included.
    */
   const labourRegisters: NavItem = { k: 'labour-registers', t: 'Labour registers', i: 'scroll-text' };
-  const payroll: NavItem = { k: 'payroll', t: 'Payroll', i: 'wallet' };
   return [
     { k: 'home', t: 'Home', i: 'layout-dashboard' },
     ...(after ? [compliances, registrations, incorporation] : [incorporation, compliances, registrations]),
     labourRegisters,
-    payroll,
     {
       g: 'updates',
       t: 'Updates',

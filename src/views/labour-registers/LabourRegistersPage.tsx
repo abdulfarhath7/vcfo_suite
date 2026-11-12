@@ -66,14 +66,6 @@ export interface LabourRegistersPageProps {
    * it among thirty-six. Left out, every configured state reads as reachable.
    */
   relevantStates?: string[];
-  /**
-   * Where the state links point. Defaults to the shell's own `…/labour-registers` route; the
-   * Payroll page passes its own URL (with `tab=labour-registers`) so a state pick stays inside
-   * the payroll tab instead of leaving it.
-   */
-  linkBase?: string;
-  /** True inside the Payroll page, which already has its own header, so the hero is left out. */
-  embedded?: boolean;
 }
 
 function parsePeriod(period: string | undefined): { year: number; month: number } {
@@ -117,8 +109,6 @@ export function LabourRegistersPage({
   relevantStates,
   engagements = [],
   recent = [],
-  linkBase,
-  embedded = false,
 }: LabourRegistersPageProps) {
   const router = useRouter();
   const [engagementId, setEngagementId] = useState(engagements[0]?.id ?? '');
@@ -136,9 +126,8 @@ export function LabourRegistersPage({
   const closed = periodRange.to < new Date().toISOString().slice(0, 10);
   const status = formStatus(closed);
 
-  const base = linkBase ?? `${shellBase}/labour-registers`;
   const href = (code: string) =>
-    `${base}${base.includes('?') ? '&' : '?'}state=${code}&period=${year}-${String(month).padStart(2, '0')}`;
+    `${shellBase}/labour-registers?state=${code}&period=${year}-${String(month).padStart(2, '0')}`;
 
   const configured = states.filter((s) => s.configured);
   /* The figures are counted from the same catalogue the list below reads, so nothing on this
@@ -199,7 +188,6 @@ export function LabourRegistersPage({
 
   return (
     <LabourRegistersTheme className="flex flex-col gap-3">
-      {embedded ? null : (
       <LrHero
         eyebrow={`Labour registers · ${periodLabel}`}
         title="Pick a state to open its registers"
@@ -220,7 +208,6 @@ export function LabourRegistersPage({
           ) : undefined
         }
       />
-      )}
 
       {summary.hybrid && selected.configured ? (
         <LrBanner icon={AlertTriangle} tone="warn">
