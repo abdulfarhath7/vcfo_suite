@@ -7,6 +7,7 @@ import { getBoardResolutionByEngagementId } from '@/db/repositories/board-resolu
 import { getDocPackInputs } from '@/db/repositories/doc-pack';
 import { renderDocPackItem } from '@/lib/api/doc-pack';
 import { sanitizeBoardResolutionDocxBuffer } from '@/lib/board-resolution/board-resolution-docx';
+import { stripDocxHighlights } from '@/lib/incorporation-docs/docx-sanitize';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
 import { expandRepeatFields } from '@/lib/checklist/checklist-repeat';
 import { evaluateDocPack } from '@/lib/doc-pack/evaluate';
@@ -93,7 +94,7 @@ export async function buildProjectZip(
     const rendered = renderDocPackItem(inputs, item);
     add(FOLDERS.generated, (await rendered.catch(() => null))?.filename ?? `${item.label}.docx`, async () => {
       const doc = await rendered.catch(() => null);
-      return doc ? [doc.buffer] : null;
+      return doc ? [stripDocxHighlights(doc.buffer)] : null;
     });
   }
 
@@ -108,7 +109,7 @@ export async function buildProjectZip(
   if (br?.storagePath?.trim()) {
     add(FOLDERS.boardResolution, standardDownloadName('Board Resolution Draft', company, 'docx'), async () => {
       const bytes = await downloadBoardResolutionDocx(br.storagePath!);
-      return bytes ? [sanitizeBoardResolutionDocxBuffer(Buffer.from(bytes))] : null;
+      return bytes ? [stripDocxHighlights(sanitizeBoardResolutionDocxBuffer(Buffer.from(bytes)))] : null;
     });
   }
   if (br?.signedStoragePath?.trim()) {

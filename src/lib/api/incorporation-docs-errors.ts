@@ -145,8 +145,6 @@ function collectCompanyDocMissing(
       return collectMoaMissingFields(base);
     case 'aoa':
       return collectAoaMissingFields(base);
-    case 'authorisation-letter':
-      return collectAuthorisationLetterMissingFields(base);
     case 'acceptance-letter':
       return collectAcceptanceLetterMissingFields(base);
     case 'moa-subscription-sheet':
@@ -218,6 +216,20 @@ export function collectIncorpDocsMissingFields(input: {
     );
 
     for (const director of docDirectors) {
+      // The parent's letter for this director: parent, signatory and the director's KYC.
+      if (doc === 'authorisation-letter') {
+        const letterMissing = collectAuthorisationLetterMissingFields({
+          engagement: engagement as IncorpMergeInput['engagement'],
+          pre1,
+          pre5,
+          pre6,
+          pre7,
+          director,
+        });
+        missing.push(...letterMissing.filter((label) => !missing.includes(label)));
+        continue;
+      }
+
       const label = directorErrorLabel(director);
       const nonResident = directorAudienceKind(director) === 'non-resident';
       // Every director draft prints the place of signing; a non-resident's is their own answer.

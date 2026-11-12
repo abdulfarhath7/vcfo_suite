@@ -7,6 +7,7 @@ import {
 } from '@/lib/checklist/checklist-pre6-validation';
 import { resolvePre6DisplayNameForPrefix } from '@/lib/person-name';
 import { otherInterestsFromPre6, type OtherCompanyInterest } from '@/lib/incorporation/other-company-interests';
+import { countryFromAddress } from '@/lib/incorporation/countries';
 import {
   DIRECTOR_IDENTITY_PROOF_OPTIONS,
   DIRECTOR_RESIDENCE_PROOF_OPTIONS,
@@ -56,16 +57,24 @@ export function signingDate(input: Pick<IncorpMergeInput, 'pre7'>): Date {
 }
 
 /**
- * Place of signing. A non-resident director's own `pre-15` answer
- * (`signingPlace`, "City, Country"), else "Foreign" as before (owner answer
- * Q3); resident directors take the lead's pre-7 place, else "India".
+ * Place of signing. A director outside India signs abroad, and the documents
+ * print only the country (owner, 11 November 2026): the country named in their
+ * `pre-15` place of signing, else in their address, else their nationality,
+ * else "Foreign". A street address is never printed as the place. Resident
+ * directors take the lead's pre-7 place, else "India".
  */
 export function signingPlace(
   input: Pick<IncorpMergeInput, 'pre6' | 'pre7'>,
   director: IncorpDirectorAudience,
 ): string {
   if (!isResidentAudience(director)) {
-    return pickString(directorField(input.pre6 ?? {}, director, 'SigningPlace'), documentPlaceForDirector(director));
+    const pre6 = input.pre6 ?? {};
+    return pickString(
+      countryFromAddress(directorField(pre6, director, 'SigningPlace')),
+      countryFromAddress(directorField(pre6, director, 'UtilityBillAddress')),
+      directorField(pre6, director, 'Nationality'),
+      documentPlaceForDirector(director),
+    );
   }
   return pickString(input.pre7?.[INCORP_SIGNING_PLACE_FIELD], documentPlaceForDirector(director));
 }

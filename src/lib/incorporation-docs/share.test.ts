@@ -55,7 +55,7 @@ describe('incorporation-docs share', () => {
       nrDirectorPanUndertakingDraftUrl: 'g',
       moaDraftUrl: 'h',
       aoaDraftUrl: 'i',
-      authorisationLetterDraftUrl: 'j',
+      nrDirectorAuthorisationLetterDraftUrl: 'j',
       acceptanceLetterDraftUrl: 'k',
       moaSubscriptionSheetDraftUrl: 'l',
       aoaSubscriptionSheetDraftUrl: 'm',

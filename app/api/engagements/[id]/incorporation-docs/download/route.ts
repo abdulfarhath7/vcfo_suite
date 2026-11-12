@@ -7,7 +7,11 @@ import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
 import { incorpDocStandardDownloadName } from '@/lib/incorporation-docs/paths';
 import { isIncorpDraftSharedWithClient } from '@/lib/incorporation-docs/share';
-import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
+import {
+  docxForResponse,
+  isDocxPreviewRequest,
+  sanitizeIncorpDocxBufferWithReport,
+} from '@/lib/incorporation-docs/docx-sanitize';
 import {
   downloadIncorpDocx,
   repairIncorpDocxAtPath,
@@ -129,7 +133,7 @@ export async function GET(request: Request, context: RouteContext) {
     await repairIncorpDocxAtPath(storagePath, sanitized.buffer);
   }
 
-  return new NextResponse(new Uint8Array(sanitized.buffer), {
+  return new NextResponse(new Uint8Array(docxForResponse(sanitized.buffer, isDocxPreviewRequest(request))), {
     status: 200,
     headers: {
       'Content-Type':

@@ -81,7 +81,7 @@ describe('collectIncorpDocsMissingFields', () => {
       pre5: { approvedCompanyName: 'ABC India Private Limited' },
       pre6: pre6Complete,
       docs: ['authorisation-letter'],
-      directors: ['company'],
+      directors: ['non-resident'],
     });
 
     expect(missing.some((m) => m.includes('Parent entity name'))).toBe(true);

@@ -65,6 +65,62 @@ export const COUNTRY_OPTIONS: readonly CountryOption[] = COUNTRY_NAMES.map((name
   label: name,
 }));
 
+/** Short forms people type for a country, mapped to the printed name. */
+const COUNTRY_ALIASES: Record<string, string> = {
+  usa: 'United States of America',
+  us: 'United States of America',
+  'u.s.': 'United States of America',
+  'u.s.a.': 'United States of America',
+  'united states': 'United States of America',
+  america: 'United States of America',
+  uk: 'United Kingdom',
+  'u.k.': 'United Kingdom',
+  'great britain': 'United Kingdom',
+  britain: 'United Kingdom',
+  england: 'United Kingdom',
+  scotland: 'United Kingdom',
+  wales: 'United Kingdom',
+  'northern ireland': 'United Kingdom',
+  uae: 'United Arab Emirates',
+  'u.a.e.': 'United Arab Emirates',
+};
+
+const COUNTRY_BY_LOWER = new Map<string, string>(COUNTRY_NAMES.map((name) => [name.toLowerCase(), name]));
+
+/** The 50 states and DC, for a United States address ("Yarmouth, ME 04096"). */
+const US_STATE_CODES = new Set(
+  ('AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM ' +
+    'NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY').split(' '),
+);
+const CANADA_PROVINCE_CODES = new Set('AB BC MB NB NL NS NT NU ON PE QC SK YT'.split(' '));
+
+function countryForToken(token: string): string {
+  const key = token.trim().replace(/\s+/g, ' ').toLowerCase();
+  return COUNTRY_BY_LOWER.get(key) ?? COUNTRY_ALIASES[key] ?? '';
+}
+
+/**
+ * The country an address or "City, Country" place names, or '' when it
+ * names none. Reads the comma-separated parts from the end, then the postal
+ * pattern of the United States ("ME 04096"), Canada ("ON M5V 2T6") and the
+ * United Kingdom ("SW1A 1AA").
+ */
+export function countryFromAddress(text: string | undefined): string {
+  const value = (text ?? '').trim();
+  if (!value) return '';
+  const parts = value.split(/[,\n]/).map((p) => p.trim()).filter(Boolean);
+  for (const part of [...parts].reverse()) {
+    const country = countryForToken(part) || countryForToken(part.replace(/[\d-]+$/, ''));
+    if (country) return country;
+  }
+  const us = /\b([A-Z]{2})\s+\d{5}(?:-\d{4})?\b/.exec(value);
+  if (us && US_STATE_CODES.has(us[1])) return 'United States of America';
+  const ca = /\b([A-Z]{2})\s+[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/.exec(value);
+  if (ca && CANADA_PROVINCE_CODES.has(ca[1])) return 'Canada';
+  if (/\b[A-Z]{1,2}\d[A-Z\d]?\s+\d[A-Z]{2}\b/.test(value)) return 'United Kingdom';
+  return '';
+}
+
 /** "the United Kingdom", "Singapore" — for "the laws of …". */
 export function countryWithArticle(country: string): string {
   const name = country.trim();

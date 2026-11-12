@@ -5,7 +5,10 @@ import { requireAnyRole } from '@/auth/guards';
 import { checklist } from '@/data/checklist';
 import { extractItemResponses } from '@/lib/checklist/checklist-responses';
 import { normalizeChecklistItemSlice } from '@/lib/checklist/checklist-state-key';
-import { sanitizeIncorpDocxBufferWithReport } from '@/lib/incorporation-docs/docx-sanitize';
+import {
+  sanitizeIncorpDocxBufferWithReport,
+  stripDocxHighlights,
+} from '@/lib/incorporation-docs/docx-sanitize';
 import { incorpDraftDocLinksFromResponses } from '@/lib/incorporation-docs/paths';
 import { filterClientVisibleIncorpDrafts } from '@/lib/incorporation-docs/share';
 import { downloadIncorpDocx } from '@/lib/incorporation-docs/storage';
@@ -71,7 +74,7 @@ export async function GET(_request: Request, context: RouteContext) {
     async (storagePath) => {
       const bytes = await downloadIncorpDocx(storagePath);
       // Read-only: a repaired copy goes in the zip, storage is left as is.
-      return bytes ? sanitizeIncorpDocxBufferWithReport(Buffer.from(bytes)).buffer : null;
+      return bytes ? stripDocxHighlights(sanitizeIncorpDocxBufferWithReport(Buffer.from(bytes)).buffer) : null;
     },
   );
 

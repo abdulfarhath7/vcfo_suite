@@ -206,7 +206,15 @@ export function planSubscription(input: IncorpMergeInput): SubscriptionPlan {
   const corporateEntry = entries.find((e) => (e.values.type ?? '').trim() === 'non-individual');
   if (corporateEntry || (entries.length === 0 && !independent)) {
     const v = corporateEntry?.values ?? {};
-    const byName = v.authorisedPerson?.trim() ? directorByName(pre6, v.authorisedPerson) : null;
+    // The representative the client named on `pre-16`: the body corporate's
+    // authorised person, or, when the parent subscribes alone, the INC-35
+    // authorised person. Their `pre-15` KYC fills the block; with no name (or
+    // no matching director) the first non-resident director signs, as before.
+    const authorised = pickString(
+      v.authorisedPerson,
+      corporateEntry ? '' : (pre16?.shareholderAuthorizedPerson ?? ''),
+    );
+    const byName = authorised ? directorByName(pre6, authorised) : null;
     return {
       variant: 'foreign',
       corporate: {

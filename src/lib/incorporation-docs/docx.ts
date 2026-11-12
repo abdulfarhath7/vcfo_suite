@@ -8,6 +8,7 @@ import PizZip from 'pizzip';
 
 import { patchDocumentBodyParagraphs } from '@/lib/board-resolution/board-resolution-docx-body';
 import {
+  leftAlignTableValueCells,
   sanitizeIncorpDocxBuffer,
   sanitizeIncorpDocumentXml,
 } from '@/lib/incorporation-docs/docx-sanitize';
@@ -122,6 +123,8 @@ function renderDocx(
   }
 
   const zip = new PizZip(fs.readFileSync(templatePath));
+  const templateXml = zip.file('word/document.xml')?.asText();
+  if (templateXml) zip.file('word/document.xml', leftAlignTableValueCells(templateXml));
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
     linebreaks: true,

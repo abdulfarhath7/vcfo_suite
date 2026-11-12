@@ -7,7 +7,9 @@
  *   so a parent from a country without states reads "the laws of the United
  *   Kingdom, and the governing documents …".
  * - authorisation-letter.docx: same for "the {STATE}, {COUNTRY}", with
- *   `{PARENT_ENTITY_JURISDICTION}` printed when there is no state.
+ *   `{PARENT_ENTITY_JURISDICTION}` printed when there is no state. "Board
+ *   Resolution dated …" prints `{BOARD_RESOLUTION_DATE}` (the Part A date),
+ *   not the letter's own date.
  * - moa-aoa-subscription-sheet-foreign.docx: fixes the page 2 tags (each sat
  *   one label late), prints the share total instead of the parent name in the
  *   TOTAL row, and adds the witness block.
@@ -137,6 +139,15 @@ editDocx('authorisation-letter.docx', (xml) => {
     'authorisation-letter.docx',
   );
   return next;
+});
+
+editDocx('authorisation-letter.docx', (xml) => {
+  if (xml.includes('{BOARD_RESOLUTION_DATE}')) return null;
+  const at = xml.indexOf('Board Resolution dated ');
+  if (at < 0) throw new Error('authorisation-letter.docx: "Board Resolution dated" not found');
+  const tag = xml.indexOf('{DOCUMENT_DATE}', at);
+  if (tag < 0) throw new Error('authorisation-letter.docx: date tag after "Board Resolution dated" not found');
+  return `${xml.slice(0, tag)}{BOARD_RESOLUTION_DATE}${xml.slice(tag + '{DOCUMENT_DATE}'.length)}`;
 });
 
 // ---------------------------------------------------------------------------

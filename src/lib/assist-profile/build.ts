@@ -18,6 +18,7 @@ import {
   subscriptionWitnessInputs,
 } from '@/lib/doc-pack/inputs';
 import { INCORP_SIGNING_PLACE_FIELD } from '@/lib/incorporation-docs/shared';
+import { countryFromAddress } from '@/lib/incorporation/countries';
 import {
   SUBSCRIBER_DETAILS_STEP_ID,
   SUBSCRIPTION_WITNESS_FIELDS,
@@ -569,6 +570,10 @@ function signingPlaceFor(
         ? { stepId: 'pre-7', tabId: DRAFT_DOCS_TAB }
         : { ...directorStep(director), directorIndex: director.index }),
     });
+  }
+  // Outside India the place is the country, never a street address (owner, 11 November 2026).
+  if (!resident && place) {
+    return countryFromAddress(place) || countryFromAddress(text(director.values.utilityBillAddress)) || place;
   }
   return place;
 }

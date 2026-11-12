@@ -17,9 +17,29 @@ import {
 } from '@/lib/incorporation-docs/parent-entity';
 import { resolveSignatoryDisplayName } from '@/lib/person-name';
 import { parentCountryAnswer } from '@/lib/incorporation/parent-jurisdiction';
+import { parsePre1BoardResolutionDate } from '@/lib/checklist/checklist-pre1-validation';
+import {
+  directorAudienceLabel,
+  isDirectorAudience,
+  type IncorpDirectorAudience,
+} from '@/lib/incorporation-docs/audiences';
+
+/**
+ * AUTHORISATION LETTER — the parent entity authorises one director who is not
+ * resident in India to subscribe and sign for it. One letter per such director
+ * (`directors: 'non-resident-only'`); the parent signs through the person who
+ * signs its board resolution (Part A, "Person Signing the Board Resolution").
+ */
+
+/** The director a letter is written for; a company-level caller gets the first non-resident. */
+function letterDirector(input: IncorpMergeInput): IncorpDirectorAudience {
+  return input.director !== 'company' && isDirectorAudience(input.director) ? input.director : 'non-resident';
+}
 
 export interface AuthorisationLetterMergeFields {
   DOCUMENT_DATE: string;
+  /** "…pursuant to the Board Resolution dated …" — the Part A board resolution date. */
+  BOARD_RESOLUTION_DATE: string;
   PARENT_ENTITY_NAME: string;
   /** "…under the laws of the {STATE}, {COUNTRY}"; blank drops both for {JURISDICTION}. */
   PARENT_ENTITY_STATE: string;
@@ -39,6 +59,7 @@ export interface AuthorisationLetterMergeFields {
 
 export const AUTHORISATION_LETTER_MERGE_FIELD_KEYS = [
   'DOCUMENT_DATE',
+  'BOARD_RESOLUTION_DATE',
   'PARENT_ENTITY_NAME',
   'PARENT_ENTITY_STATE',
   'PARENT_ENTITY_COUNTRY',
@@ -60,11 +81,14 @@ export function buildAuthorisationLetterMergeFields(
   const { engagement, pre1 = {}, pre5 = {}, pre6 = {}, overrides = {} } = input;
   const now = signingDate(input);
   const docDate = formatDocumentDate(now);
+  const director = letterDirector(input);
+  const resolutionDate = parsePre1BoardResolutionDate(pre1.boardResolutionDate) ?? now;
 
   const state = resolveParentEntityState(pre1, engagement);
 
   const fields: AuthorisationLetterMergeFields = {
     DOCUMENT_DATE: docDate,
+    BOARD_RESOLUTION_DATE: formatDocumentDate(resolutionDate),
     PARENT_ENTITY_NAME: resolveParentEntityName(pre1, engagement),
     // An answered state reads "the State of Delaware"; legacy output is unchanged.
     PARENT_ENTITY_STATE: state && parentCountryAnswer(pre1) ? `State of ${state}` : state,
@@ -72,15 +96,15 @@ export function buildAuthorisationLetterMergeFields(
     PARENT_ENTITY_JURISDICTION: resolveParentEntityJurisdiction(pre1),
     PARENT_ENTITY_ADDRESS: resolveParentEntityAddress(pre1, engagement),
     NR_DIRECTOR_FULL_NAME: pickString(
-      directorField(pre6, 'non-resident', 'FullName'),
+      directorField(pre6, director, 'FullName'),
       '[Non-resident director name]',
     ),
     NR_PASSPORT_OR_REGISTRATION: pickString(
-      directorField(pre6, 'non-resident', 'PassportNumber'),
+      directorField(pre6, director, 'PassportNumber'),
       resolveParentEntityRegistration(pre1, engagement),
     ),
     NR_DIRECTOR_ADDRESS: pickString(
-      directorField(pre6, 'non-resident', 'UtilityBillAddress'),
+      directorField(pre6, director, 'UtilityBillAddress'),
       '[Non-resident director address]',
     ),
     PROPOSED_COMPANY_NAME: resolveProposedCompanyName(pre5, pre1, engagement),
@@ -97,6 +121,8 @@ export function collectAuthorisationLetterMissingFields(input: IncorpMergeInput)
   const missing: string[] = [];
   const pre1 = input.pre1 ?? {};
   const pre6 = input.pre6 ?? {};
+  const director = letterDirector(input);
+  const who = directorAudienceLabel(director);
 
   if (!resolveParentEntityName(pre1, input.engagement).trim() || resolveParentEntityName(pre1, input.engagement).startsWith('[')) {
     missing.push('Parent entity name (Pre-1)');
@@ -107,14 +133,14 @@ export function collectAuthorisationLetterMissingFields(input: IncorpMergeInput)
   if (!parentCountryAnswer(pre1)) {
     missing.push('Parent entity country of incorporation (Pre-1)');
   }
-  if (!directorField(pre6, 'non-resident', 'FullName')) {
-    missing.push('Non-resident director — full name (Pre-6)');
+  if (!directorField(pre6, director, 'FullName')) {
+    missing.push(`${who} — full name (Pre-6)`);
   }
-  if (!directorField(pre6, 'non-resident', 'PassportNumber') && !pre1.parentEntityRegistrationNumber?.trim()) {
-    missing.push('Non-resident director passport (Pre-6) or parent registration number (Pre-1)');
+  if (!directorField(pre6, director, 'PassportNumber') && !pre1.parentEntityRegistrationNumber?.trim()) {
+    missing.push(`${who} passport (Pre-6) or parent registration number (Pre-1)`);
   }
-  if (!directorField(pre6, 'non-resident', 'UtilityBillAddress')) {
-    missing.push('Non-resident director — utility bill address (Pre-6)');
+  if (!directorField(pre6, director, 'UtilityBillAddress')) {
+    missing.push(`${who} — utility bill address (Pre-6)`);
   }
   const company = resolveProposedCompanyName(input.pre5 ?? {}, pre1, input.engagement);
   if (!company || company.startsWith('[')) {
