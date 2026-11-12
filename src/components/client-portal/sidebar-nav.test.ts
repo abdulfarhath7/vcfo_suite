@@ -13,16 +13,15 @@ describe('client portal sidebar (R-51)', () => {
 
   it('while incorporating: Home, the practice block, then the work rows, then Updates', () => {
     const items = nav(false);
-    /* The two work rows sit after the practice block and before Updates, which is where the
-       staff sidebar puts them. R-51 governs the three practice labels and their order, not
+    /* The Labour registers row sits after the practice block and before Updates, which is where
+       the staff sidebar puts it. R-51 governs the three practice labels and their order, not
        what follows them. */
-    expect(items.slice(0, 7).map((n) => n.t)).toEqual([
+    expect(items.slice(0, 6).map((n) => n.t)).toEqual([
       'Home',
       'Incorporation',
       'Compliances',
       'Registrations',
       'Labour registers',
-      'Payroll',
       'Updates',
     ]);
     expect(items.slice(1, 4).map((n) => n.i)).toEqual(['landmark', 'calendar-check', 'badge-check']);
@@ -31,12 +30,11 @@ describe('client portal sidebar (R-51)', () => {
     expect(items[2].kids?.map((k) => k.k)).toEqual(['obligations', 'compliances', 'filings', 'budgets']);
     expect(items[3].k).toBe('registrations');
 
-    /* Two rows, not a label inside Compliances, and neither folded into the other. The staff
-       sidebar has had this shape all along; the client portal had the registers buried and no
-       way to Payroll at all. */
+    /* Labour registers is its own row, not a label inside Compliances. The Payroll row was
+       removed with the Payroll module (owner, 12 Nov 2026). */
     expect(items[4].k).toBe('labour-registers');
-    expect(items[5].k).toBe('payroll');
-    expect([items[4].i, items[5].i]).toEqual(['scroll-text', 'wallet']);
+    expect(items[4].i).toBe('scroll-text');
+    expect(items.map((n) => n.k as string | undefined)).not.toContain('payroll');
   });
 
   it('once incorporated: the order it had before R-51 is kept', () => {

@@ -43,7 +43,7 @@ const GROUPS = [
   { key: 'post', name: 'Post-incorporation', color: 'g-post' },
   { key: 'reg', name: 'Registration', color: 'g-reg' },
   { key: 'comp', name: 'Compliance', color: 'g-comp' },
-  { key: 'ops', name: 'Labour registers · Payroll · Budgets', color: 'g-ops' },
+  { key: 'ops', name: 'Labour registers · Budgets', color: 'g-ops' },
   { key: 'ask', name: 'Chatbot', color: 'g-ask' },
   { key: 'msg', name: 'Emails and WhatsApp', color: 'g-msg' },
   { key: 'end', name: 'Close', color: 'g-end' },
@@ -244,19 +244,6 @@ const TESTS = [
     ],
     pass: ['Each register downloads and opens.', 'Totals agree with the uploaded sheet.', 'The client sees the registers after the close.'],
     msg: 'Client gets "registers ready" email',
-  },
-  {
-    id: 'T-16', group: 'ops', name: 'Payroll', days: [8], track: 'B', build: 'main',
-    roles: ['M', 'L', 'C'], before: 'T-15 is done (same employees).',
-    steps: [
-      'Lead adds two salary updates (one increase, one new employee).',
-      'Lead opens the payroll summary for the month.',
-      'Manager compares the totals with a manual calculation.',
-      'Compare the payroll totals with the wage register.',
-      'Client opens Payroll in the portal.',
-    ],
-    pass: ['Totals agree with the manual calculation.', 'Payroll and wage register agree.', 'The client sees only their own payroll.'],
-    msg: '—',
   },
   {
     id: 'T-17', group: 'ops', name: 'Budgets and variance', days: [9], track: 'B', build: 'fresh',

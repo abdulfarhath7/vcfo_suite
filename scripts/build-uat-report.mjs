@@ -33,7 +33,6 @@ const TESTS = [
   ['T-13', 'Compliance calendar and filings', 'The calendar fills from the incorporation and registration dates, the dates are right, and a filing goes through review to filed.'],
   ['T-14', 'Reminders and overdue items', 'The daily reminder job tells the lead, then the manager, then the admin, without repeating itself.'],
   ['T-15', 'Labour registers', 'A paysheet goes in; the registers come out once the inputs are complete.'],
-  ['T-16', 'Payroll', 'Salaries go in; the payroll totals must match the totals worked out by hand.'],
   ['T-17', 'Budgets and variance', 'A budget is filled, published, approved, and its monthly variance is reviewed; it exports to Excel and PDF.'],
   ['T-18', 'Ask VCFO (chatbot)', 'The assistant answers from the client’s own data and never from another client’s.'],
   ['T-19', 'Email', 'Every email the app sent in the run, to whom, and what it looked like.'],
