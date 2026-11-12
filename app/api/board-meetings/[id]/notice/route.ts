@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
 import { getMeeting } from '@/db/repositories/board-meetings';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { noticeDocx } from '@/lib/board-meetings/notice-docx';
 import { meetingError, type RouteContext } from '../../_respond';
 
@@ -11,7 +12,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
     const meeting = await getMeeting(guard.ctx, id);
-    const file = `Notice_and_Agenda_${meeting.meetingNo.replace(/[^\w-]+/g, '_')}.docx`;
+    const file = standardDownloadName(`Notice and Agenda ${meeting.meetingNo}`, meeting.company.name, 'docx');
     return new Response(new Uint8Array(noticeDocx(meeting.notice)), {
       headers: {
         'content-type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

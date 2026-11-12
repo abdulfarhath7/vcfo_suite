@@ -137,6 +137,7 @@ export function createEditableFieldRenderer(
               onCellChange: (key, value) => setField(key, value),
               isCellReadOnly: (key) => isCellReadOnly(key),
               errors: shownErrors,
+              engagementId,
             }}
             onAdd={() => {
               userEditedRef.current = true;
@@ -163,6 +164,7 @@ export function createEditableFieldRenderer(
             errors={shownErrors}
             isCellReadOnly={isCellReadOnly}
             onCellChange={(key, value) => setField(key, value)}
+            engagementId={engagementId}
             cards={
           <DirectorCards
             count={parseDirectorCount(draft)}

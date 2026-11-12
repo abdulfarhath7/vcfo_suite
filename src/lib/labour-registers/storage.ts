@@ -20,6 +20,7 @@
  * one would change what the existing upload route writes.
  */
 import type { FormSpec } from '@/data/labour-registers/types';
+import { standardDownloadName } from '@/lib/files/download-name';
 import type { Period } from './catalogue';
 
 const ROOT = 'labour-registers';
@@ -69,8 +70,35 @@ export function documentFileName(form: FormSpec, period: Period, format = 'xlsx'
   return `${safe(`Form ${form.formNumber} - ${form.title}`)} - ${periodStamp(period)}.${format}`;
 }
 
-/** The name of the act-wise archive of a whole batch. */
-export function batchZipName(stateName: string, period: Period): string {
-  const safe = stateName.replace(/[\\/:*?"<>|]+/g, '-').trim();
-  return `${safe} labour registers - ${periodStamp(period)}.zip`;
+/**
+ * The name a register downloads as, alone or inside the batch ZIP (GL-08):
+ * `Form-IV-Register-of-wages-...-Sep-2026_<Client>_<DD-MM-YYYY>.xlsx`. `format` may be
+ * `signed.pdf` for the signed scan. The stored row keeps `documentFileName`.
+ */
+export function registerDownloadName(
+  form: FormSpec,
+  period: Period,
+  format: string,
+  clientName: string | null | undefined,
+  on: Date = new Date(),
+): string {
+  const signed = format.startsWith('signed.');
+  const ext = format.split('.').pop() || 'xlsx';
+  return standardDownloadName(
+    `Form ${form.formNumber} ${form.title} ${periodStamp(period)}${signed ? ' Signed' : ''}`,
+    clientName,
+    ext,
+    on,
+  );
 }
+
+/** The batch ZIP's download name (GL-08): `Labour-Registers-<State>-<Period>_<Client>_<DD-MM-YYYY>.zip`. */
+export function batchZipDownloadName(
+  stateName: string,
+  period: Period,
+  clientName: string | null | undefined,
+  on: Date = new Date(),
+): string {
+  return standardDownloadName(`Labour Registers ${stateName} ${periodStamp(period)}`, clientName, 'zip', on);
+}
+

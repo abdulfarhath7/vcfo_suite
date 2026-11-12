@@ -13,6 +13,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOAST_ERROR_MS, TOAST_MS } from '@/components/ui/hot-toast';
 import { usePortalOptional } from '@/components/client-portal/PortalProvider';
+import { fileNameFrom } from '@/lib/document-downloads/client';
 import type { ClientDocumentsPayload, DocNode } from '@/lib/client-portal/documents';
 import type { ViewerDoc } from './DocViewer';
 import { engagementParam, fileUrl } from './model';
@@ -145,7 +146,8 @@ export function useZipToast() {
         }
         const blob = reader ? new Blob(chunks as BlobPart[], { type: 'application/zip' }) : await res.blob();
         const url = URL.createObjectURL(blob);
-        triggerDownload(url, zipName);
+        // GL-08: save under the server's standard name.
+        triggerDownload(url, fileNameFrom(res.headers.get('content-disposition'), zipName));
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
         show({ name: zipName, total: files, n: files, done: true });
       } catch (e) {
@@ -252,7 +254,8 @@ export function toViewerDoc(n: DocNode, stepLabel?: string): ViewerDoc {
 
 export function downloadNode(n: DocNode) {
   if (!n.ref) return;
-  triggerDownload(fileUrl(n.ref, true), n.fileName);
+  // An empty name keeps the server's standard name (GL-08) for this same-origin download.
+  triggerDownload(fileUrl(n.ref, true), '');
 }
 
 /** Width < 700 → the phone boards (prototype router, proto.js:94). */

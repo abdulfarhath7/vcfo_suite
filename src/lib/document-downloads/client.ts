@@ -19,7 +19,8 @@ export function documentFileUrl(engagementId: string, key: string, download = fa
   return `${documentDownloadsPath(engagementId)}/file?key=${encodeURIComponent(key)}${download ? '&download=1' : ''}`;
 }
 
-function fileNameFrom(disposition: string | null, fallback: string): string {
+/** The file name the server put in `Content-Disposition` (the GL-08 standard name), or the fallback. */
+export function fileNameFrom(disposition: string | null, fallback: string): string {
   const star = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
   if (star) return decodeURIComponent(star);
   return disposition?.match(/filename="([^"]+)"/i)?.[1] ?? fallback;
@@ -37,8 +38,8 @@ function saveBlob(blob: Blob, fileName: string) {
 }
 
 /**
- * Download the documents with these keys. One key comes back as the file itself, a small set as a
- * ZIP, a large set is made in the background (`{ queued: true }`, the bell gives the link).
+ * Download the documents with these keys. One key comes back as the file itself; two or more are
+ * made into a ZIP in the background (`{ queued: true }`, the bell gives the link, PR-02).
  * Throws with the server's message when nothing could be downloaded.
  */
 export async function downloadDocumentKeys(

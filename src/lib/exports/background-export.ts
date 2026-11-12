@@ -6,8 +6,9 @@ import { recordExport, type ExportKind } from '@/lib/exports/record-export';
 
 /**
  * GL-06 / PR-02: make a file after the response, so the screen stays usable, keep it under
- * `exports/` for 30 days, and tell the person in the bell (the live pop-up is the "ready" toast)
- * with a link that downloads it. App Runner has no Inngest keys, so `after` runs the job, as the
+ * `exports/` for 30 days, and tell the person in the bell with a link that downloads it. The
+ * notice body starts with the file name, so a page that started the export can also show a
+ * toast when it arrives (`useExportReadyToast`). App Runner has no Inngest keys, so `after` runs the job, as the
  * outbound email does (`src/lib/email/send-after-response.ts`).
  */
 export function exportInBackground(
@@ -36,7 +37,7 @@ export function exportInBackground(
     } catch (err) {
       console.error('[exports] background export failed', err);
       await createNotificationsForUsers([
-        { ...base, kind: 'docs.share', title: `${capitalise(input.label)} did not finish`, body: 'Try again in a few minutes. If it fails again, tell your admin.', href: '#' },
+        { ...base, kind: 'docs.share', title: `${capitalise(input.label)} did not finish`, body: `${input.fileName} did not finish. Try again in a few minutes. If it fails again, tell your admin.`, href: '#' },
       ]).catch(() => []);
     }
   });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { standardDownloadName } from './download-name';
+import { attachmentDisposition, istDay, standardDownloadName, standardNameFromFile } from './download-name';
 
 /** GL-08: one shared name for every download, checked with five client names. */
 describe('standardDownloadName', () => {
@@ -28,5 +28,18 @@ describe('standardDownloadName', () => {
 
   it('adds the director to a director document', () => {
     expect(standardDownloadName('DIR-2 Asha Rao', 'Ember', '.DOCX', on)).toBe('DIR-2-Asha-Rao_Ember_11-11-2026.docx');
+  });
+
+  it('names an uploaded file inside a ZIP after its own name, and leaves a standard name alone', () => {
+    expect(standardNameFromFile('PAN card.pdf', 'Ember Pvt Ltd', on)).toBe('PAN-card_Ember-Pvt-Ltd_11-11-2026.pdf');
+    expect(standardNameFromFile('folder/scan', null, on)).toBe('scan_11-11-2026.bin');
+    expect(standardNameFromFile('team-tasks.csv', null, on)).toBe('team-tasks_11-11-2026.csv');
+    expect(standardNameFromFile('MOA_Ember_01-11-2026.docx', 'Other', on)).toBe('MOA_Ember_01-11-2026.docx');
+  });
+
+  it('reads an IST day, and writes a header with an ASCII and a UTF-8 name', () => {
+    expect(standardDownloadName('Receivables', 'Ember', 'xlsx', istDay('2026-11-11'))).toBe('Receivables_Ember_11-11-2026.xlsx');
+    expect(attachmentDisposition('A_B_11-11-2026.pdf')).toBe(`attachment; filename="A_B_11-11-2026.pdf"; filename*=UTF-8''A_B_11-11-2026.pdf`);
+    expect(attachmentDisposition('x.pdf', 'inline').startsWith('inline;')).toBe(true);
   });
 });

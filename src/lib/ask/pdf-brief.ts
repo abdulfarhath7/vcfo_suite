@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createElement } from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { Brief } from './pdf-brief-document';
+import { standardDownloadName } from '@/lib/files/download-name';
 import type { BriefItem } from './pdf-brief-types';
 import { StatusBriefDocument } from './pdf-status-brief-document';
 import type { StatusBrief } from './status-brief';
@@ -56,11 +57,7 @@ export async function renderStatusBriefPdf(input: { brief: StatusBrief; firmName
   );
 }
 
-export function briefFilename(companyName: string, single?: string): string {
-  const slug = (single ?? companyName)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 60);
-  return `${slug || 'brief'}.pdf`;
+/** GL-08: `<Title or Brief>_<Client>_<DD-MM-YYYY>.pdf`. */
+export function briefFilename(companyName: string, single?: string, on: Date = new Date()): string {
+  return standardDownloadName(single?.trim() || 'Brief', companyName, 'pdf', on);
 }

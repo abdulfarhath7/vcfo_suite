@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import { remindWithEmail } from '@/hooks/use-remind-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
@@ -40,7 +41,9 @@ export function toCsv(header: string[], rows: Array<Array<string | number | null
 }
 
 /** Saves the picked rows as a CSV file in the browser. Nothing is sent anywhere. */
-export function exportRowsCsv(filename: string, header: string[], rows: Array<Array<string | number | null | undefined>>): void {
+export function exportRowsCsv(rawName: string, header: string[], rows: Array<Array<string | number | null | undefined>>): void {
+  // GL-08: `<List>_<DD-MM-YYYY>.csv` (or with the client, when the caller passes a standard name).
+  const filename = standardNameFromFile(rawName);
   const url = URL.createObjectURL(new Blob([toCsv(header, rows)], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;

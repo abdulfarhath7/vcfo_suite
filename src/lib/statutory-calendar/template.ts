@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { standardDownloadName } from '@/lib/files/download-name';
 
 import type { StatutoryDeadline } from '@/data/statutory-calendar-fy2627';
 import { ACT_OPTIONS, APPLIES_TO_OPTIONS, templateActLabel, templateAppliesTo } from './acts';
@@ -140,6 +141,7 @@ export async function buildStatutoryCalendarWorkbook(
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
-export function statutoryCalendarFileName(fyLabel?: string): string {
-  return fyLabel ? `SBC Statutory Calendar ${fyLabel}.xlsx` : 'SBC Statutory Calendar Template.xlsx';
+/** GL-08: `Statutory-Calendar-<FY or Template>_SBC_<DD-MM-YYYY>.xlsx`; the firm stands in for the client. */
+export function statutoryCalendarFileName(fyLabel?: string, on: Date = new Date()): string {
+  return standardDownloadName(`Statutory Calendar ${fyLabel || 'Template'}`, 'SBC', 'xlsx', on);
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { Check, Download, MoreHorizontal, Plus, RotateCcw, Trash2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
@@ -50,14 +51,13 @@ export function SalaryUpdatesTab({
   const fileInput = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<{ tone: 'ok' | 'bad'; lines: string[] } | null>(null);
   const [menu, setMenu] = useState(false);
-  const fileBase = `${companyName.replace(/[^A-Za-z0-9]+/g, '-')}-${cycle.key}`;
 
   const update = (i: number, patch: Partial<SalaryRow>) => setRows(state.rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
   const exportCsv = () => {
     /* An empty table exports the header row plus one sample line, as an import template. */
     const rows = state.rows.length ? state.rows : [{ ...emptyRow(1, days), name: 'Sample worker' }];
-    downloadText(`salaries-${fileBase}.csv`, salariesToCsv(rows));
+    downloadText(standardDownloadName(`Salaries ${cycle.key}`, companyName, 'csv'), salariesToCsv(rows));
   };
 
   const importCsv = async (file: File) => {

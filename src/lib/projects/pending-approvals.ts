@@ -62,6 +62,15 @@ export function listPendingApprovals(
   return out;
 }
 
+/** The inbox's kind filter: a client submit, a lead request, a send-to-client, or the board resolution. */
+export type PendingApprovalKindKey = 'client' | 'lead' | 'send' | 'board';
+
+export function pendingApprovalKindKey(row: PendingApprovalRow): PendingApprovalKindKey {
+  if (row.clientFill) return 'send';
+  if (row.itemId === MANAGER_APPROVAL_STEP_ID) return 'board';
+  return row.reviewSource === 'lead_manager_request' ? 'lead' : 'client';
+}
+
 export function pendingApprovalKind(row: PendingApprovalRow): string {
   if (row.clientFill) {
     return `Send to client${row.clientFill.requestedByName ? ` · ${row.clientFill.requestedByName}` : ''}`;

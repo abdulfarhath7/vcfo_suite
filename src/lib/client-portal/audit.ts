@@ -45,6 +45,8 @@ export interface ClientAuditPage {
   /** Pass as `before` for the next page (`<iso>|<id>`); null = no older events. */
   nextBefore: string | null;
   summary?: ClientAuditSummary;
+  /** The client company, for the standard download name (GL-08). */
+  companyName?: string;
 }
 
 /** IST yyyy-mm-dd and HH:MM for an instant. */

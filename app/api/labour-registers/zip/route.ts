@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 
 import { requireAuth } from '@/auth/guards';
 import { contentDisposition, openObjectStream } from '../../documents/_lib/object-response';
-import { getBatch, listDocuments } from '@/db/repositories/labour-registers';
+import { getBatchWithClient, listDocuments } from '@/db/repositories/labour-registers';
 import { formById } from '@/data/labour-registers/forms';
 import { stateByCode } from '@/data/labour-registers/states';
-import { batchZipName, documentFileName } from '@/lib/labour-registers/storage';
+import { batchZipDownloadName, registerDownloadName } from '@/lib/labour-registers/storage';
 import { recordStreamExport } from '@/lib/exports/record-export';
 import { createUniqueNamer, zipEntryPath } from '@/lib/zip/entry-names';
 import { createZipStream, type ZipEntrySource } from '@/lib/zip/zip-writer';
@@ -38,7 +38,9 @@ export async function GET(request: Request) {
   const batchId = new URL(request.url).searchParams.get('batch');
   if (!batchId) return NextResponse.json({ error: 'batch_required' }, { status: 400 });
 
-  const batch = await getBatch(guard.ctx, batchId);
+  const found = await getBatchWithClient(guard.ctx, batchId);
+  const batch = found?.batch ?? null;
+  const client = found?.companyName ?? null;
   if (!batch) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
   const documents = await listDocuments(guard.ctx, batch.id);
@@ -89,7 +91,7 @@ export async function GET(request: Request) {
     const act = form?.act ?? 'Other';
     add(
       doc.objectKey,
-      form ? documentFileName(form, period, doc.format) : `${doc.formId}.${doc.format}`,
+      form ? registerDownloadName(form, period, doc.format, client) : `${doc.formId}.${doc.format}`,
       act,
       doc.generatedAt,
     );
@@ -102,7 +104,7 @@ export async function GET(request: Request) {
       add(
         doc.signedObjectKey,
         form
-          ? documentFileName(form, period, `signed.${ext}`)
+          ? registerDownloadName(form, period, `signed.${ext}`, client)
           : `${doc.formId} - signed.${ext}`,
         act,
         doc.attestedAt,
@@ -111,7 +113,7 @@ export async function GET(request: Request) {
   }
 
   const state = stateByCode(batch.stateCode);
-  const archiveName = batchZipName(state?.name ?? batch.stateCode, period);
+  const archiveName = batchZipDownloadName(state?.name ?? batch.stateCode, period, client);
 
   const stream = createZipStream(entries, { onSkip: (name) => skipped.push(name) });
   const logged = await recordStreamExport(

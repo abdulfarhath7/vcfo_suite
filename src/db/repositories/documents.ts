@@ -361,6 +361,8 @@ export interface ResolvedVaultFile {
   sizeBytes: number | null;
   createdAt: string | null;
   folder?: string;
+  /** The client company of the engagement, for the standard file name (GL-08). */
+  companyName?: string;
 }
 
 /**
@@ -494,6 +496,11 @@ async function resolveOne(
     out = await resolveRequestFile(ctx, ref.requestFileId, access);
   }
   if (out && ref.folder) out.folder = ref.folder;
+  if (out) {
+    // Asked once per engagement (the cache), so a batch adds one lookup per client.
+    const granted = await access(out.engagementId);
+    if (granted.ok) out.companyName = granted.row.companyName ?? undefined;
+  }
   return out;
 }
 

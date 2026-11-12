@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { standardNameFromFile } from '@/lib/files/download-name';
 import type { AuditEventRow } from '@/lib/audit/audit-log';
 import { formatActorDisplay, formatAuditActionLabel } from '@/lib/audit/audit-log';
 import { mapDbRoleToAppRole, ROLE_UI_LABEL } from '@/lib/auth';
@@ -42,7 +43,7 @@ export function downloadCsv(text: string, filename: string) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = standardNameFromFile(filename);
   a.click();
   URL.revokeObjectURL(url);
 }
