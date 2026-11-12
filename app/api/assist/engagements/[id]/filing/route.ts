@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { updateFiling } from '@/db/repositories/assist-filings';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { filingBundle } from '@/lib/mca-filing/filing-service';
+import { filingBundle, recordFilingSrnOnStep } from '@/lib/mca-filing/filing-service';
 import { FILING_FORM_LABEL, FILING_STATES } from '@/lib/mca-filing/filing-state';
 import { REMARK_CAUSES } from '@/lib/mca-filing/readiness';
 import { NO_STORE, assistStaff, filingError, formSchema, notFound } from '@/lib/mca-filing/route-helpers';
@@ -62,6 +62,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const out = await updateFiling(auth.ctx, id, form, patch);
     if (!out) return notFound();
+    // SA-01: the step's acknowledgement number is the SRN everyone reads.
+    if (patch.srn) await recordFilingSrnOnStep(auth.ctx, out.dbId, form, out.filing.srn);
     if (out.changed.length > 0) {
       await recordAuditEvent(auth.ctx, {
         engagementId: out.dbId,

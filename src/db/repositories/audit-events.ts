@@ -194,7 +194,15 @@ function fileNameFromMilestonePath(path: string): string {
 }
 
 /**
- * Log deliver / milestone-document-remove side effects after a checklist patch.
+ * SA-02: answers whose every change is logged with the old value, the new value, the user and the
+ * time (the user and the time are the event's own columns).
+ */
+const VALUE_AUDITED_FIELDS: Readonly<Record<string, { fieldId: string; action: RecordAuditEventInput['action']; label: string }[]>> = {
+  'pre-5': [{ fieldId: 'nameApprovalExpiryDate', action: 'checklist.name_expiry_change', label: 'name approval expiry date' }],
+};
+
+/**
+ * Log deliver / milestone-document-remove / audited-value side effects after a checklist patch.
  * Fire-and-forget, exactly as before — callers do not await this.
  */
 export function auditChecklistItemPatch(
@@ -219,6 +227,18 @@ export function auditChecklistItemPatch(
   if (!patch.responses || !previous) return;
 
   const prevResponses = previous[itemId]?.responses ?? {};
+  for (const audited of VALUE_AUDITED_FIELDS[itemId] ?? []) {
+    if (!(audited.fieldId in patch.responses)) continue;
+    const oldValue = (prevResponses[audited.fieldId] ?? '').trim();
+    const newValue = (patch.responses[audited.fieldId] ?? '').trim();
+    if (oldValue === newValue) continue;
+    void recordAuditEvent(ctx, {
+      engagementId: appEngagementId,
+      action: audited.action,
+      summary: `Changed the ${audited.label} from ${oldValue || 'empty'} to ${newValue || 'empty'}`,
+      metadata: { itemId, fieldId: audited.fieldId, oldValue: oldValue || null, newValue: newValue || null },
+    });
+  }
   for (const [fieldId, newVal] of Object.entries(patch.responses)) {
     const oldVal = (prevResponses[fieldId] ?? '').trim();
     const nextVal = (newVal ?? '').trim();

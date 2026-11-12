@@ -67,8 +67,50 @@ export const PRE1_DIRECTOR_INDIA_RESIDENT_IDS = [
   'director4IndiaResident',
 ] as const;
 
-/** A private company needs at least two directors (CD-01: checked when the section is submitted). */
-export const PRE1_MIN_DIRECTORS = 2;
+/**
+ * CD-01: the minimum number of directors (designated partners for an LLP) depends on the kind of
+ * company, and is checked when the section is submitted.
+ */
+export type Pre1CompanyKind = 'private_limited' | 'public_limited' | 'opc' | 'llp';
+export const PRE1_MIN_DIRECTORS_BY_KIND: Readonly<Record<Pre1CompanyKind, number>> = {
+  private_limited: 2,
+  public_limited: 3,
+  opc: 1,
+  llp: 2,
+};
+const COMPANY_KIND_PHRASE: Readonly<Record<Pre1CompanyKind, { company: string; one: string; many: string }>> = {
+  private_limited: { company: 'A private limited company', one: 'director', many: 'directors' },
+  public_limited: { company: 'A public limited company', one: 'director', many: 'directors' },
+  opc: { company: 'A one person company', one: 'director', many: 'directors' },
+  llp: { company: 'An LLP', one: 'designated partner', many: 'designated partners' },
+};
+/** A one person company's name carries "(OPC)" before "Private Limited" (Companies Act, s. 12(3)). */
+const OPC_NAME_SUFFIX = /\(\s*OPC\s*\)\s*private\s+limited\s*$/i;
+
+/**
+ * The kind of company Part A incorporates. Part A has no company type question: every proposed
+ * name must end with "Private Limited", so the answer is a private limited company, or a one
+ * person company when the first proposed name carries "(OPC)". A public limited company or an LLP
+ * cannot pass the name rule here; their minimums are in the table for when the app asks for them.
+ */
+export function pre1CompanyKind(responses: ChecklistItemResponses): Pre1CompanyKind {
+  return OPC_NAME_SUFFIX.test((responses.proposedName1 ?? '').trim()) ? 'opc' : 'private_limited';
+}
+
+/** The fewest directors the company in these answers may have. */
+export function pre1MinDirectors(responses: ChecklistItemResponses): number {
+  return PRE1_MIN_DIRECTORS_BY_KIND[pre1CompanyKind(responses)];
+}
+
+/** The submit-time error for too few directors, naming the minimum. */
+export function pre1TooFewDirectorsMessage(kind: Pre1CompanyKind): string {
+  const min = PRE1_MIN_DIRECTORS_BY_KIND[kind];
+  const phrase = COMPANY_KIND_PHRASE[kind];
+  return `${phrase.company} needs at least ${min} ${min === 1 ? phrase.one : phrase.many}. Add another ${phrase.one}.`;
+}
+
+/** Older answers with no count keep the two director slots they always showed. */
+const PRE1_MIN_DIRECTORS = PRE1_MIN_DIRECTORS_BY_KIND.private_limited;
 /** CD-02: a new section opens with one director card. */
 const PRE1_FIRST_DIRECTOR_COUNT = 1;
 const PRE1_MAX_DIRECTORS = 4;
@@ -257,8 +299,9 @@ export function validatePre1Responses(
 function validatePre1Directors(responses: ChecklistItemResponses): Record<string, string> {
   const errors: Record<string, string> = {};
   const count = parseDirectorCount(responses);
-  if (count < PRE1_MIN_DIRECTORS) {
-    errors.directorCount = `A private company needs at least ${PRE1_MIN_DIRECTORS} directors. Add another director.`;
+  const kind = pre1CompanyKind(responses);
+  if (count < PRE1_MIN_DIRECTORS_BY_KIND[kind]) {
+    errors.directorCount = pre1TooFewDirectorsMessage(kind);
   }
   let hasResident = false;
   for (let i = 0; i < count; i += 1) {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   FILING_STATES,
+  filingFormForStep,
+  linkedSrn,
   FilingRefusal,
   deadlines,
   deadlinesToAlert,
@@ -156,5 +158,18 @@ describe('deadlines', () => {
 
   it('reads the India date of an instant', () => {
     expect(istDate('2026-11-05T19:00:00Z')).toBe('2026-11-06');
+  });
+});
+
+describe('SA-01 SRN link to the checklist step', () => {
+  it('maps each form to the step that holds its acknowledgement number', () => {
+    expect(filingFormForStep('pre-4')).toBe('spice-part-a');
+    expect(filingFormForStep('pre-10')).toBe('spice-part-b');
+    expect(filingFormForStep('post-2')).toBeNull();
+  });
+  it('shows the step number first and falls back to the filing record', () => {
+    expect(linkedSrn('AB1234567', 'ZZ0000000')).toBe('AB1234567');
+    expect(linkedSrn('  ', 'ZZ0000000')).toBe('ZZ0000000');
+    expect(linkedSrn(undefined, null)).toBeNull();
   });
 });
