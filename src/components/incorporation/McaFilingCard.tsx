@@ -22,6 +22,7 @@ import {
 } from '@/lib/mca-filing/filing-state';
 import { REMARK_CAUSES, REMARK_CAUSE_INFO, isRemarkCause, type PacketPart, type SignerReadiness } from '@/lib/mca-filing/readiness';
 import type { KnownSigner, SignedPdfCheck, SignerMatch } from '@/lib/mca-filing/signers';
+import { SRN_LABEL } from '@/lib/checklist/checklist-responses';
 import type { AssistAttachmentItem, FilingBundle, FilingDocumentDto, FilingDto, PortalPdfCheck } from '@/lib/mca-filing/types';
 
 const STATE_TONE: Partial<Record<FilingState, ChipTone>> = {
@@ -582,7 +583,7 @@ function References({ engagementId, filing }: { engagementId: string; filing: Fi
     <Block title="Portal references" meta={filing.srn ? `SRN ${filing.srn}, ${fmt(filing.srnAt)}` : undefined}>
       <div className="flex flex-wrap items-end gap-2">
         <div className="grid gap-1 text-[12.5px] text-ink-muted">
-          <label htmlFor={`${id}-srn`}>SRN</label>
+          <label htmlFor={`${id}-srn`}>{SRN_LABEL}</label>
           <Input id={`${id}-srn`} value={srn} onChange={(e) => setSrn(e.target.value)} className="h-control-sm w-40 font-mono text-[13px]" maxLength={20} />
         </div>
         <div className="grid gap-1 text-[12.5px] text-ink-muted">
@@ -604,6 +605,8 @@ function References({ engagementId, filing }: { engagementId: string; filing: Fi
           </>
         ) : null}
       </div>
+      {/* SA-01: one number, saved on the filing record and on the matching checklist step. */}
+      <p className="mt-2 text-[12.5px] text-ink-muted">The same number is saved on the checklist step of this filing.</p>
       {filing.paidAt ? <p className="mt-2 text-[13px] text-ink-muted">Fee paid on {fmt(filing.paidAt)}.</p> : null}
       {filing.signedUploadedAt ? <p className="mt-1 text-[13px] text-ink-muted">Signed form uploaded on {fmt(filing.signedUploadedAt)}.</p> : null}
     </Block>

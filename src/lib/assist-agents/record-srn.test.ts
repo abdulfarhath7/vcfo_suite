@@ -39,8 +39,14 @@ beforeEach(() => {
 
 describe('SRN write-back by engagement slug', () => {
   it('recordRunSrn reads and saves the checklist by the uuid', async () => {
-    expect(await recordRunSrn(CTX, UUID, 'spice-a', 'AA1234567', new Date('2026-11-09T10:00:00Z'))).toEqual({ recorded: true, stepId: 'pre-4', field: 'nameApplicationFilingNotes' });
-    expect(applyChecklistPatch).toHaveBeenCalledWith(CTX, UUID, 'pre-4', { responses: { nameApplicationFilingNotes: 'SRN AA1234567 (VCFO Assist, 2026-11-09)' } });
+    expect(await recordRunSrn(CTX, UUID, 'spice-a', 'AA1234567')).toEqual({ recorded: true, stepId: 'pre-4', field: 'acknowledgementNumber' });
+    expect(applyChecklistPatch).toHaveBeenCalledWith(CTX, UUID, 'pre-4', { responses: { acknowledgementNumber: 'AA1234567' } });
+  });
+
+  it('recordRunSrn keeps a different number the lead typed', async () => {
+    getEngagementById.mockResolvedValueOnce({ id: UUID, state: { 'pre-4': { responses: { acknowledgementNumber: 'BB7654321' } } } });
+    expect(await recordRunSrn(CTX, UUID, 'spice-a', 'AA1234567')).toEqual({ recorded: false, reason: 'srn_differs' });
+    expect(applyChecklistPatch).not.toHaveBeenCalled();
   });
 
   it('PATCH under a slug URL records the SRN through the resolved uuid', async () => {
@@ -53,7 +59,7 @@ describe('SRN write-back by engagement slug', () => {
     const res = await PATCH(request, { params: Promise.resolve({ id: 'acme-labs', runId: RUN }) });
     const body = await res.json();
     expect(updateAgentRun).toHaveBeenCalledWith(CTX, 'acme-labs', RUN, expect.objectContaining({ status: 'done' }), expect.objectContaining({ ip: 'unknown' }));
-    expect(body.srnWriteBack).toEqual({ recorded: true, stepId: 'pre-4', field: 'nameApplicationFilingNotes' });
+    expect(body.srnWriteBack).toEqual({ recorded: true, stepId: 'pre-4', field: 'acknowledgementNumber' });
     expect(getEngagementById).toHaveBeenCalledWith(CTX, UUID);
     expect(applyChecklistPatch.mock.calls[0]![1]).toBe(UUID);
   });

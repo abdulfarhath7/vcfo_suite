@@ -3,6 +3,7 @@ import { getPreIncPhases } from '@/data/checklist';
 import { normalizeChecklistItemSlice, type ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import {
   canRoleEditField,
+  clientOnlyFieldsChangedBy,
   DIRECT_FLOW_STEP_IDS,
   directFlowRoleLabel,
   directReopenPatch,
@@ -256,5 +257,31 @@ describe('directFlowRoleLabel', () => {
   it('never says intern', () => {
     expect(directFlowRoleLabel('intern')).toBe('Project Lead');
     expect(directFlowRoleLabel('client')).toBe('Client');
+  });
+});
+
+describe('clientOnlyFieldsChangedBy (DR-02)', () => {
+  const stored = { responses: { 'directors.e1.name': 'Asha' } };
+
+  it('names the client-only fields a lead, manager or admin would change', () => {
+    for (const role of ['intern', 'manager', 'admin', 'super_admin']) {
+      expect(clientOnlyFieldsChangedBy(role, 'pre-15', { 'directors.e1.name': 'Ravi' }, stored)).toEqual(['directors.e1.name']);
+    }
+  });
+
+  it('ignores the client, unchanged values, the DIN check and the shared remarks', () => {
+    expect(clientOnlyFieldsChangedBy('client', 'pre-15', { 'directors.e1.name': 'Ravi' }, stored)).toEqual([]);
+    expect(clientOnlyFieldsChangedBy('intern', 'pre-15', { 'directors.e1.name': 'Asha' }, stored)).toEqual([]);
+    expect(
+      clientOnlyFieldsChangedBy('intern', 'pre-15', { 'directors.e1.dinStatus': 'verified', stepRemarks: 'ok' }, stored),
+    ).toEqual([]);
+  });
+
+  it('lets the lead change the section once it is assigned to the lead, but not a manager', () => {
+    const assigned = { ...stored, fillAssignedTo: 'lead' };
+    expect(clientOnlyFieldsChangedBy('intern', 'pre-15', { 'directors.e1.name': 'Ravi' }, assigned)).toEqual([]);
+    expect(clientOnlyFieldsChangedBy('manager', 'pre-15', { 'directors.e1.name': 'Ravi' }, assigned)).toEqual([
+      'directors.e1.name',
+    ]);
   });
 });

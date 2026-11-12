@@ -1,3 +1,4 @@
+import { SRN_FIELD_ID } from '@/lib/checklist/checklist-responses';
 import { listPacks } from './registry';
 import { packHasHost, packLive } from './pack';
 
@@ -18,8 +19,9 @@ import { packHasHost, packLive } from './pack';
  *
  * `stepId` is the checklist step (`src/data/checklist.ts`) a finished run advances; compliance
  * filings have no checklist step and name their compliance activity (`activityId`,
- * `src/data/compliance-activities.ts`) instead, or nothing yet. `srnField` is the existing staff
- * response field on that step the SRN is appended to; a task without one keeps its SRN on the run.
+ * `src/data/compliance-activities.ts`) instead, or nothing yet. `srnField` is the step's
+ * "Acknowledgement number (SRN)" field (SA-01) the SRN is written to; a task without one keeps its
+ * SRN on the run.
  *
  * `status`: `beta` has a recipe checked against a capture or the mock portal; `later` has none
  * yet. No task is `ready` until a supervised live run has verified its recipe (PLAN phase 4).
@@ -86,8 +88,8 @@ const mca = (t: Omit<TaskInput, 'portal' | 'portalHost' | 'pack'>): TreeInput =>
 /** The tree as authored. Each top-level group is an agent (a robot in the panel). */
 const TREE: readonly TreeInput[] = [
   group('incorporation', 'Incorporation', [
-    mca({ id: 'spice-a', title: 'Name reservation', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', stepId: 'pre-4', srnField: 'nameApplicationFilingNotes', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY'] }),
-    mca({ id: 'spice-b', title: 'Incorporation form', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', stepId: 'pre-10', srnField: 'spicePartBAndAgileFiledNotes' }),
+    mca({ id: 'spice-a', title: 'Name reservation', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', stepId: 'pre-4', srnField: SRN_FIELD_ID, gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY'] }),
+    mca({ id: 'spice-b', title: 'Incorporation form', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', stepId: 'pre-10', srnField: SRN_FIELD_ID }),
     // The linked forms are filed with Part B under its SRN, so only Part B writes the SRN back.
     mca({ id: 'agile-pro-s', title: 'GST, EPFO, ESIC and bank', form: 'AGILE-PRO-S', status: 'beta', recipeId: 'agile-pro-s', stepId: 'pre-10', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT'] }),
     mca({ id: 'emoa', title: 'Memorandum of association', form: 'e-MoA (INC-33)', status: 'beta', recipeId: 'emoa', stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
@@ -95,9 +97,8 @@ const TREE: readonly TreeInput[] = [
     mca({ id: 'inc-9', title: 'Subscriber and director declaration', form: 'INC-9', status: 'later', recipeId: null, stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
   ]),
   group('post-incorporation', 'Post-incorporation', [
-    mca({ id: 'inc-20a', title: 'Commencement of business', form: 'INC-20A', status: 'later', recipeId: null, stepId: 'post-6', srnField: 'inc20aNotes' }),
-    // post-2 has no filing note field, so the ADT-1 SRN stays on the run.
-    mca({ id: 'adt-1', title: 'Auditor appointment', form: 'ADT-1', status: 'later', recipeId: null, stepId: 'post-2' }),
+    mca({ id: 'inc-20a', title: 'Commencement of business', form: 'INC-20A', status: 'later', recipeId: null, stepId: 'post-6', srnField: SRN_FIELD_ID }),
+    mca({ id: 'adt-1', title: 'Auditor appointment', form: 'ADT-1', status: 'later', recipeId: null, stepId: 'post-2', srnField: SRN_FIELD_ID }),
   ]),
   group('registration', 'Registration', [
     // GST, Udyam and IEC return an ARN or a certificate number, not an MCA SRN; it stays on the run.

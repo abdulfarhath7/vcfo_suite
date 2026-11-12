@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getItem } from '@/data/checklist';
 import { ACTIVITY_SEED } from '@/data/compliance-activities';
-import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
+import { CLIENT_RESPONSE_FIELDS, SRN_FIELD_ID, SRN_STEP_IDS } from '@/lib/checklist/checklist-responses';
 import { ASSIST_AGENTS, ASSIST_CATALOG_TREE, allSubAgents, assistHostAllowed, assistLiveHosts, assistLivePortalsEnabled, assistPackStatus, findSubAgent, tasksUnder, treeDepth, type AssistCatalogNode } from './catalog';
 import { getPack, getRecipe } from './registry';
 
@@ -71,12 +71,15 @@ describe('assist agent catalog', () => {
     }
   });
 
-  it('writes the SRN only into an existing staff field on that step', () => {
-    for (const sub of allSubAgents().filter((s) => s.srnField)) {
+  it('SA-01: writes the SRN into the step\'s acknowledgement number field', () => {
+    const writers = allSubAgents().filter((s) => s.srnField);
+    expect(writers.map((s) => s.id).sort()).toEqual(['adt-1', 'inc-20a', 'spice-a', 'spice-b']);
+    for (const sub of writers) {
       const fields = CLIENT_RESPONSE_FIELDS[sub.stepId!] ?? [];
       const field = fields.find((f) => f.id === sub.srnField);
       expect(field, `${sub.id} ${sub.srnField}`).toBeDefined();
-      expect(field!.type).toBe('textarea');
+      expect(sub.srnField).toBe(SRN_FIELD_ID);
+      expect(SRN_STEP_IDS.has(sub.stepId!)).toBe(true);
     }
   });
 

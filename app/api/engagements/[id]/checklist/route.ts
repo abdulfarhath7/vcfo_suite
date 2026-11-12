@@ -66,7 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
     });
   } catch (err) {
     if (err instanceof ChecklistPatchRefused) {
-      return NextResponse.json({ error: err.message }, { status: 409 });
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
     const message = publicErrorMessage(err, 'save_failed');
     const status = message.includes('not found') || message.includes('not permitted') ? 404 : 400;
