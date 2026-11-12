@@ -1,5 +1,6 @@
 import { getActiveCatalogItems, type ChecklistField } from '@/data/checklist';
 import { CLIENT_RESPONSE_FIELDS } from '@/lib/checklist/checklist-responses';
+import { orderByMcaSection } from '@/lib/checklist/part-b-sections';
 import {
   expandRepeatFields,
   isRepeatField,
@@ -22,10 +23,14 @@ function displayValue(field: ChecklistField, raw: string | undefined): string {
   return option?.label ?? value;
 }
 
-/** Every step's answers: one sheet, one row per question (a repeat entry's questions numbered). */
+/**
+ * Every step's answers: one sheet, one row per question (a repeat entry's questions numbered).
+ * SB-01: the SPICe+ Part B steps follow the MCA form order, so a Lead can copy them into the MCA
+ * portal one section after another.
+ */
 export function answersTable(state: Record<string, { responses?: Responses } | undefined>): ExportTable {
   const rows: TableCell[][] = [];
-  for (const item of getActiveCatalogItems()) {
+  for (const item of orderByMcaSection(getActiveCatalogItems(), (i) => i.id)) {
     const responses = state[item.id]?.responses ?? {};
     const fields = CLIENT_RESPONSE_FIELDS[item.id] ?? [];
     if (!fields.length) continue;

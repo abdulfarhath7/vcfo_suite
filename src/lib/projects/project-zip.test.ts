@@ -15,6 +15,17 @@ describe('PR-02 project ZIP contents', () => {
     expect(table.rows).toContainEqual(expect.arrayContaining(['123-photo.jpg']));
   });
 
+  it('SB-01: lists the Part B answers in MCA form order (subscribers 5–6 before directors 7)', () => {
+    const table = answersTable({
+      'pre-13': { responses: { equityShares: 'yes' } },
+      'pre-15': { responses: { directors: 'e1', 'directors.e1.firstName': 'Asha' } },
+      'pre-16': { responses: { subscribers: 'a', 'subscribers.a.name': 'Parent Inc' } },
+      'pre-7': { responses: {} },
+    });
+    const steps = [...new Set(table.rows.map((row) => row[0]))];
+    expect(steps).toEqual(['Capital Structure', 'Subscriber Details', 'Proposed Directors']);
+  });
+
   it('puts one row per director or subscriber', () => {
     const group = CLIENT_RESPONSE_FIELDS['pre-16'].find(isRepeatField) as RepeatField;
     const table = entriesTable('Subscribers', group, { subscribers: 'a,b', 'subscribers.a.name': 'Parent Inc', 'subscribers.b.name': 'Asha Rao', 'subscribers.b.type': 'individual' });

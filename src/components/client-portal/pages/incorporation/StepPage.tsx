@@ -40,6 +40,7 @@ import { itemKey } from '@/lib/work/item-key';
 import { useApp } from '@/context/AppContext';
 import { MilestoneResponseForm } from '@/views/incorporation/MilestoneResponseForm';
 import { cn } from '@/lib/utils';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chip, OwnerChip } from '@/components/ui/spectrum-chip';
@@ -520,7 +521,8 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
   const docsDone = requests.filter((r) => r.fulfilledAt).length + otherFiles.length;
   const chip = stepChip(s);
   const late = s.late && k !== 'done';
-  const inPhase = phase.steps;
+  // SB-01: the side list runs Part B in MCA form order. Previous and next still follow the checklist.
+  const inPhase = orderByMcaSection(phase.steps, (y) => y.id);
   const portalLink = s.n !== 2 ? portalFor(s.item) : null;
   const forms = (s.item.forms ?? []).slice(0, 3).map(formLabel);
   const showDocs = view === 'docs' && docsCount > 0;
@@ -795,7 +797,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                   <StepMark state={markState(y)} tone={markTone(y)} label={ch.label} />
                 </span>
                 <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                  <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {y.n}</span>
+                  <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">{partBStepDisplayLabel(y.id, `Step ${y.n}`)}</span>
                   <span className={cn('truncate text-[14px] text-ink', cur ? 'font-medium' : 'font-normal')}>{y.title}</span>
                 </span>
                 <span className={cn('hidden flex-none text-[12px] font-medium sm:inline', ownerTone[y.owner])}>{o === 'You' ? d.short : o}</span>
@@ -820,7 +822,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
                 <span className="font-mono text-[12.5px] text-ink-2">Step {s.n}</span>
                 <Dot />
                 <span>
-                  Phase {s.phaseNo} · {phase.name} · step {inPhase.indexOf(s) + 1} of {inPhase.length}
+                  Phase {s.phaseNo} · {phase.name} · step {phase.steps.indexOf(s) + 1} of {phase.steps.length}
                 </span>
                 {s.doneOn || s.due ? (
                   <>

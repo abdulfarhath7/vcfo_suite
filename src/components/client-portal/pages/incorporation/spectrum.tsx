@@ -21,6 +21,7 @@ import { usePortal } from '@/components/client-portal/PortalProvider';
 import { stepHref } from '@/components/client-portal/routes';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
 import { exactDate } from '@/lib/relative-due';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 
 /* ------------------------------------------------------------------ island */
 
@@ -437,7 +438,7 @@ export function StepRow({
         <StepMark state={markState(s)} tone={markTone(s)} className="relative z-[1]" label={chip.label} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex min-w-0 items-baseline gap-2">
-            <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">Step {s.n}</span>
+            <span className="flex-none font-mono text-[12px] font-normal text-ink-muted">{partBStepDisplayLabel(s.id, `Step ${s.n}`)}</span>
             <span className={cn('truncate text-[14px] text-ink', live ? 'font-medium' : 'font-normal')}>{s.title}</span>
           </span>
           <span className={cn('truncate text-[12.5px] font-normal', sub.cls)}>{sub.text}</span>
@@ -491,7 +492,8 @@ export function St5Card({
   const done = steps.filter((s) => s.kind === 'done').length;
   const current = currentPhaseNo(model);
   const phase = model.phases.find((p) => p.no === current);
-  const list = phase?.steps ?? [];
+  // SB-01: Part B is listed in MCA form order; `current` and the marks still follow the gates.
+  const list = orderByMcaSection(phase?.steps ?? [], (s) => s.id);
   const lastDone = [...list].reverse().find((s) => s.kind === 'done');
   const upcoming = list.filter(isUp);
   const keep = (s: PortalStep) => isLive(s) || s === lastDone || (upcoming.indexOf(s) > -1 && upcoming.indexOf(s) < 2);

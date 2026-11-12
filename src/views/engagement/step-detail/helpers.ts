@@ -9,6 +9,7 @@ import { gateDisplayStatus, getStepGate, type ChecklistStepGate } from '@/lib/ch
 import type { BoardResolutionProgressSnapshot } from '@/lib/client/client-progress-board';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { recordStepPlace } from '@/views/client-record/RecordHeadParts';
 
 /** "Last edited by Kiran Rao (Client), 12 Oct 2026, 4:05 pm" — IST, like every other time in the app. */
@@ -35,13 +36,17 @@ export function journeyRailItems(
   schedule: EngagementSchedule | undefined,
   viewerIsClient: boolean,
 ): JourneyRailItem[] {
-  return steps.map((step, index) => {
+  // SB-01: the rail lists Part B in MCA form order. The step number stays the
+  // checklist position and the staff code turns into the MCA section, so no
+  // number reads out of sequence. Opening and gating are unchanged.
+  const numbered = steps.map((step, index) => ({ step, index }));
+  return orderByMcaSection(numbered, (row) => row.step.id).map(({ step, index }) => {
     const gate = getStepGate(gates, step.id);
     const slice = checklistState[step.id];
     const window = windowForStep(schedule, step.id);
     return {
       ...(window && viewerIsClient ? { windowLabel: formatWindow(window) } : {}),
-      ...(!viewerIsClient ? { stepCode: recordStepPlace(step.id)?.code } : {}),
+      ...(!viewerIsClient ? { stepCode: partBStepDisplayLabel(step.id, recordStepPlace(step.id)?.code) } : {}),
       item: step,
       gate,
       status: gateDisplayStatus(
