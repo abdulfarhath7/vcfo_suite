@@ -149,3 +149,16 @@ How it is wired:
 - **Subscription sheet representative** is the director named on pre-16
   (`authorisedPerson`, or `shareholderAuthorizedPerson` when the parent
   subscribes alone), else the first non-resident director as before.
+
+## Incorporation Documents row and per-director page (2026-11-12)
+
+- The steps card (`RecordStepsCard`) shows INCORPORATION DOCUMENTS right after KYC Review &
+  DSC (`IncorporationDocumentsJourneyRow`). It is not a checklist step: it never gates SPICe+
+  Confirmation, has no answers, and does not renumber the steps. It links to the documents page.
+- The documents page (`DocPackView`, route `/documents`) is titled "Incorporation Documents".
+  Each part lists the documents under "Director n · name · Outside India / Resident in India"
+  as a tree, then "Company documents" (`groupByDirector`). The window bar no longer carries an
+  "Open in document pack" link.
+- An earlier attempt made this a real step `pre-17` (stashed as "other-session pre-17
+  incorporation documents"); it was not used because it locks SPICe+ Confirmation on live
+  projects until the new step is completed.

@@ -21,7 +21,7 @@ export type DocPackRailCardProps = {
  */
 export function DocPackRailCard({ summary, loading, error, packHref, className }: DocPackRailCardProps) {
   return (
-    <DashSection title="Pre-incorporation documents" className={className} bodyClassName="px-4 py-3 md:px-4">
+    <DashSection title="Incorporation Documents" className={className} bodyClassName="px-4 py-3 md:px-4">
       {error ? (
         <p className="text-[12.5px] text-ink-muted">Readiness could not be loaded.</p>
       ) : !summary ? (
@@ -36,7 +36,7 @@ export function DocPackRailCard({ summary, loading, error, packHref, className }
         </div>
       )}
       <Link href={packHref} className="mt-3 inline-block text-[13px] font-medium text-brand-text hover:underline">
-        Open document pack →
+        Open Incorporation Documents →
       </Link>
     </DashSection>
   );

@@ -258,7 +258,6 @@ export default function EngagementStepDetail() {
       canEdit={canSetScheduleWindows(user?.role)}
       editSub={`${headCode ? `${headCode} · ` : ''}${eng.companyName}`}
       scopeLabel={stepWindowTarget.kind === 'incorporation' ? 'SPICe+ Part A and Part B' : undefined}
-      docPackHref={docPackHref}
       trailing={
         ASSIST_PROFILE_STEP_IDS.has(item.id) ? (
           <CopyForAssist

@@ -72,7 +72,7 @@ describe('shellBreadcrumb', () => {
   });
 
   it('names the pages that have no sidebar row', () => {
-    expect(labels('/app/lead/engagements/pexpo-inc/documents')).toEqual(['Clients', 'Pexpo inc', 'Documents']);
+    expect(labels('/app/lead/engagements/pexpo-inc/documents')).toEqual(['Clients', 'Pexpo inc', 'Incorporation Documents']);
     expect(labels('/app/manager/projects/pexpo-inc/board-resolution')).toEqual(['Projects', 'Pexpo inc', 'Board resolution']);
     expect(labels('/app/client/board-resolution')).toEqual(['Incorporation', 'Board resolution']);
     expect(labels('/app/admin/projects/new')).toEqual(['Projects', 'New project']);
@@ -107,7 +107,7 @@ describe('pageTitleRepeatsTrail', () => {
 
 describe('resolveShellCrumbCurrent', () => {
   it('reads the leaf of the trail', () => {
-    expect(resolveShellCrumbCurrent(shellBreadcrumb('/app/lead/engagements/acme-holdings/documents'), [])).toBe('Documents');
+    expect(resolveShellCrumbCurrent(shellBreadcrumb('/app/lead/engagements/acme-holdings/documents'), [])).toBe('Incorporation Documents');
     expect(resolveShellCrumbCurrent(shellBreadcrumb('/app/lead/clients'), [])).toBe('Clients');
   });
 });

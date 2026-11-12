@@ -272,7 +272,7 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     // NV-03: every segment but the last is a link: the list, the client, the SPICe+ part, the page.
     const projectHref = `${base}/${page}/${nested}`;
     segs.push({ label: titleCase(nested.replace(/-/g, ' ')), href: projectHref, engagementKey: nested });
-    if (after === 'documents') segs.push({ label: 'Documents', href: null });
+    if (after === 'documents') segs.push({ label: 'Incorporation Documents', href: null });
     else if (after === 'board-resolution') segs.push({ label: 'Board resolution', href: null });
     else if (after === 'step' && parts[5]) {
       const item = resolveChecklistItemFromStepParam(parts[5]);

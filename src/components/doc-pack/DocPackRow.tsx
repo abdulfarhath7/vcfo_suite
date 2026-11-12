@@ -19,6 +19,8 @@ export type DocPackRowProps = {
   onPreview: (item: DocPackItem) => void;
   /** The row shown in the preview panel gets a soft blurple fill. */
   picked?: boolean;
+  /** Listed under the director's own heading: the name is not repeated on the row. */
+  hideDirector?: boolean;
 };
 
 function stepTitle(stepId: string): string {
@@ -69,9 +71,9 @@ function subLine(item: DocPackItem): string {
  * the provenance, the status chip, and two icon buttons. What a document waits for is in the
  * preview card, whose "Open step" goes to the first missing input.
  */
-export function DocPackRow({ item, downloadUrl, onPreview, picked = false }: DocPackRowProps) {
+export function DocPackRow({ item, downloadUrl, onPreview, picked = false, hideDirector = false }: DocPackRowProps) {
   const ready = item.status === 'ready';
-  const name = docPackRowName(item);
+  const name = hideDirector ? item.label : docPackRowName(item);
   const provenance = docPackProvenance(item);
 
   return (
