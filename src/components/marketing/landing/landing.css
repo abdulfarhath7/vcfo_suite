@@ -173,12 +173,11 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .fact .what { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--lp-ink-muted); }
 .lp .journey { position: relative; margin-top: 8px; }
 .lp .journey svg { width: 100%; height: auto; display: block; overflow: visible; }
-.lp .journey .line { fill: none; stroke: var(--lp-line-strong); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1400; stroke-dashoffset: 1400; }
-.lp .journey.in .line { stroke-dashoffset: 0; transition: stroke-dashoffset 2.2s var(--lp-ease); }
-.lp .journey .line-glow { fill: none; stroke: var(--lp-brand); stroke-width: 6; stroke-linecap: round; opacity: 0.18; stroke-dasharray: 1400; stroke-dashoffset: 1400; filter: blur(3px); }
-.lp .journey.in .line-glow { stroke-dashoffset: 0; transition: stroke-dashoffset 2.2s var(--lp-ease); }
-.lp .journey .node { opacity: 0; transform: translateY(10px); transition: opacity 600ms var(--lp-ease), transform 600ms var(--lp-ease); transition-delay: calc(var(--i) * 220ms + 500ms); }
-.lp .journey.in .node { opacity: 1; transform: none; }
+.lp .journey .line { fill: none; stroke: var(--lp-line-strong); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1400; }
+.lp .journey.in .line { transition: stroke-dashoffset 1.4s var(--lp-ease); }
+.lp .journey .line-glow { fill: none; stroke: var(--lp-brand); stroke-width: 6; stroke-linecap: round; opacity: 0.18; stroke-dasharray: 1400; filter: blur(3px); }
+.lp .journey.in .line-glow { transition: stroke-dashoffset 1.4s var(--lp-ease); }
+.lp .journey .node { transition: opacity 500ms var(--lp-ease), transform 500ms var(--lp-ease); transition-delay: calc(var(--i) * 120ms + 150ms); }
 .lp .journey .node circle.c { fill: var(--lp-raised); stroke: var(--lp-brand); stroke-width: 2; }
 .lp .journey .node circle.halo { fill: var(--lp-brand); opacity: 0.12; }
 .lp .journey .node.coi path.d { fill: var(--lp-raised); stroke: var(--lp-highlight); stroke-width: 2; }
@@ -233,14 +232,13 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 .lp .tl { position: relative; margin-top: 24px; --axis-y: 190px; height: 540px; }
 .lp .tl .axis { position: absolute; left: 0; right: 0; top: var(--axis-y); height: 2px; background: var(--lp-line); border-radius: 2px; }
-.lp .tl .axis-fill { position: absolute; inset: 0; width: 0; background: linear-gradient(90deg, var(--lp-brand), var(--lp-positive)); border-radius: 2px; }
-.lp .tl.in .axis-fill { width: 100%; transition: width 2.4s var(--lp-ease); }
+.lp .tl .axis-fill { position: absolute; inset: 0; width: 100%; background: linear-gradient(90deg, var(--lp-brand), var(--lp-positive)); border-radius: 2px; }
+.lp .tl.in .axis-fill { transition: width 1.4s var(--lp-ease); }
 .lp .tl .tick { position: absolute; top: 10px; transform: translateX(-50%); font-family: var(--lp-font-mono); font-size: 11px; color: var(--lp-ink-faint); letter-spacing: 0.04em; white-space: nowrap; }
 .lp .tl .tick::before { content: ""; position: absolute; left: 50%; top: -14px; width: 1px; height: 8px; background: var(--lp-line-strong); }
-.lp .pin { position: absolute; width: 212px; transform: translateX(-50%); opacity: 0; transition: opacity 600ms var(--lp-ease), transform 600ms var(--lp-ease); transition-delay: calc(var(--i) * 160ms + 300ms); }
+.lp .pin { position: absolute; width: 212px; transform: translateX(-50%); transition: opacity 500ms var(--lp-ease), transform 500ms var(--lp-ease); transition-delay: calc(var(--i) * 80ms + 100ms); }
 .lp .pin.up { bottom: calc(100% - var(--axis-y) + 26px); }
 .lp .pin.down { top: calc(var(--axis-y) + 26px); }
-.lp .tl.in .pin { opacity: 1; }
 .lp .pin .stem { position: absolute; left: 50%; width: 1px; height: 24px; background: var(--lp-line-strong); }
 .lp .pin.first { transform: translateX(-16%); }
 .lp .pin.first .stem, .lp .pin.first .dot { left: 16%; }
@@ -263,8 +261,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .tl-list { display: none; }
 .lp .hub { position: relative; aspect-ratio: 2 / 1; margin-top: 16px; }
 .lp .hub svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.lp .hub .wire { fill: none; stroke: var(--lp-line-strong); stroke-width: 1.5; stroke-dasharray: 600; stroke-dashoffset: 600; opacity: 0.8; }
-.lp .hub.in .wire { stroke-dashoffset: 0; transition: stroke-dashoffset 1.6s var(--lp-ease); transition-delay: calc(var(--i) * 120ms); }
+.lp .hub .wire { fill: none; stroke: var(--lp-line-strong); stroke-width: 1.5; stroke-dasharray: 600; opacity: 0.8; }
+.lp .hub.in .wire { transition: stroke-dashoffset 1s var(--lp-ease); transition-delay: calc(var(--i) * 60ms); }
 .lp .hub .centre { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 220px; text-align: center; padding: 20px 18px; z-index: 2; }
 .lp .hub .centre .ring1, .lp .hub .centre .ring2 { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; border-radius: var(--lp-r-xl); border: 1px solid var(--lp-brand); transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
@@ -274,8 +272,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 }
 .lp .hub .centre b { display: block; font-size: 16px; }
 .lp .hub .centre .mono { display: block; margin-top: 6px; }
-.lp .cluster { position: absolute; width: 230px; transform: translate(-50%, -50%); padding: 14px; opacity: 0; transition: opacity 600ms var(--lp-ease); transition-delay: calc(var(--i) * 140ms + 400ms); }
-.lp .hub.in .cluster { opacity: 1; }
+.lp .cluster { position: absolute; width: 230px; transform: translate(-50%, -50%); padding: 14px; transition: opacity 500ms var(--lp-ease); transition-delay: calc(var(--i) * 80ms + 100ms); }
 .lp .cluster header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .lp .cluster header .tile { width: 26px; height: 26px; border-radius: var(--lp-r-sm); display: inline-flex; align-items: center; justify-content: center; }
 .lp .cluster header .tile .icon { width: 14px; height: 14px; }
@@ -298,8 +295,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .ring-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
 .lp .ring-wrap .month { fill: var(--lp-ink-faint); font-family: var(--lp-font-mono); font-size: 11px; letter-spacing: 0.06em; text-anchor: middle; }
 .lp .ring-wrap .track { fill: none; stroke: var(--lp-line); stroke-width: 1; }
-.lp .ring-wrap .dot { opacity: 0; transition: opacity 500ms ease; transition-delay: calc(var(--i) * 12ms + 300ms); }
-.lp .ring-wrap.in .dot { opacity: 1; }
+.lp .ring-wrap .dot { transition: opacity 400ms ease; transition-delay: calc(var(--i) * 6ms + 100ms); }
 .lp .ring-wrap .dot:hover { stroke: var(--lp-ink); stroke-width: 2; }
 .lp .ring-wrap .hand { stroke: var(--lp-ink); stroke-width: 1.5; stroke-linecap: round; opacity: 0.8; transform-origin: 260px 260px; }
 .lp .ring-wrap .hand-cap { fill: var(--lp-ink); }
@@ -491,8 +487,7 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
 .lp .cta { text-align: center; padding: 96px 0; overflow: hidden; }
 .lp .cta .glow-a { width: 900px; height: 600px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .lp .cta .big { position: relative; font-size: clamp(2.1rem, 4.6vw, 3.6rem); line-height: 1.12; letter-spacing: -0.025em; font-weight: 600; }
-.lp .cta .big span { display: block; opacity: 0; transform: translateY(14px); transition: opacity 700ms var(--lp-ease), transform 700ms var(--lp-ease); transition-delay: calc(var(--i) * 140ms); }
-.lp .cta .in .big span { opacity: 1; transform: none; }
+.lp .cta .big span { display: block; transition: opacity 600ms var(--lp-ease), transform 600ms var(--lp-ease); transition-delay: calc(var(--i) * 100ms); }
 .lp .cta .big .last { color: var(--lp-ink-muted); font-weight: 500; }
 .lp .cta .cta-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 44px; position: relative; }
 .lp .footer { border-top: 1px solid var(--lp-line); padding: 56px 0 32px; }
@@ -511,10 +506,8 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .enter.d3 { animation-delay: 300ms; }
   .lp .enter.d4 { animation-delay: 480ms; }
   @keyframes lp-enter { to { opacity: 1; transform: none; } }
-  .lp .reveal { opacity: 0; transform: translateY(22px); transition: opacity 800ms var(--lp-ease), transform 800ms var(--lp-ease); }
-  .lp .reveal.in { opacity: 1; transform: none; }
-  .lp .reveal [data-stagger] { opacity: 0; transform: translateY(14px); transition: opacity 700ms var(--lp-ease), transform 700ms var(--lp-ease); transition-delay: calc(var(--i) * 90ms + 120ms); }
-  .lp .reveal.in [data-stagger] { opacity: 1; transform: none; }
+  .lp .reveal { transition: opacity 600ms var(--lp-ease), transform 600ms var(--lp-ease); }
+  .lp .reveal [data-stagger] { transition: opacity 500ms var(--lp-ease), transform 500ms var(--lp-ease); transition-delay: calc(var(--i) * 60ms + 60ms); }
   .lp .hero .glow-a { animation: lp-drift 16s ease-in-out infinite alternate; }
   .lp .hero .glow-b { animation: lp-drift 22s ease-in-out infinite alternate-reverse; }
   @keyframes lp-drift { from { translate: -40px 0; scale: 1; } to { translate: 40px 20px; scale: 1.08; } }
@@ -524,6 +517,20 @@ html:has(.lp) { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflo
   .lp .card-hover { transition: translate 200ms var(--lp-ease), border-color 200ms ease; }
   .lp .card-hover:hover { translate: 0 -2px; border-color: var(--lp-line-strong); }
 }
+/* The frame before a block is revealed. It applies only once the motion script runs (data-motion on the
+   landing root, set by landing-motion.ts), so a slow or failed script, print and reduced motion show
+   everything. Nothing starts fully invisible: blocks and their parts start at 35% and brighten, so a
+   screen is never left blank while it waits. Lines and wires are drawn in as before. */
+.lp[data-motion] .reveal:not(.in) { opacity: 0.35; transform: translateY(22px); }
+.lp[data-motion] .reveal:not(.in) [data-stagger] { opacity: 0.35; transform: translateY(14px); }
+.lp[data-motion] .journey:not(.in) .line, .lp[data-motion] .journey:not(.in) .line-glow { stroke-dashoffset: 1400; }
+.lp[data-motion] .journey:not(.in) .node { opacity: 0.35; transform: translateY(10px); }
+.lp[data-motion] .tl:not(.in) .axis-fill { width: 0; }
+.lp[data-motion] .tl:not(.in) .pin { opacity: 0.35; }
+.lp[data-motion] .hub:not(.in) .wire { stroke-dashoffset: 600; }
+.lp[data-motion] .hub:not(.in) .cluster { opacity: 0.35; }
+.lp[data-motion] .ring-wrap:not(.in) .dot { opacity: 0.35; }
+.lp[data-motion] .cta .reveal:not(.in) .big span { opacity: 0.35; transform: translateY(14px); }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .lp .section .glow { animation: lp-glowdrift linear both; animation-timeline: view(); }
