@@ -265,3 +265,64 @@ export function sequentialLockMessage(
   const gate = gateChecklistSteps({ items: catalog, state, viewer: 'staff' })[itemId];
   return gate?.kind === 'locked' ? gate.message : null;
 }
+
+/**
+ * A save refused because the step is still behind the sequential lock. Routes answer it
+ * with 409 and the lock message.
+ */
+export class ChecklistStepLockedError extends Error {
+  readonly status = 409;
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChecklistStepLockedError';
+  }
+}
+
+type StepPatchLike = Pick<
+  ChecklistItemStateSlice,
+  'status' | 'reviewStatus' | 'deliveredToClientAt' | 'completedOn'
+>;
+
+/**
+ * Server-side, for staff saves: the lock message when this patch would move a locked step
+ * forward, else null.
+ *
+ * A locked step is not late, not in progress and not done for anyone. Staff may still save
+ * answers, notes, assignments and drafts on it ahead of time (a lead prepares a later step),
+ * so only these moves are refused:
+ *   - a status change to in progress, awaiting client, overdue or completed;
+ *   - a request for approval or an accept (`reviewStatus` reviewing or accepted, when it
+ *     was not already so);
+ *   - a new delivery or completion stamp.
+ * These stay allowed: moving the status back to not started, marking the step not
+ * applicable (a manager settles a parent-entity step by hand), a reject, and a reopen of a
+ * step that already reads complete (its status goes back to in progress).
+ */
+export function staffStatusLockMessage(
+  itemId: string,
+  patch: Partial<StepPatchLike>,
+  state: Record<string, ChecklistItemStateSlice | undefined> | undefined,
+): string | null {
+  const lock = sequentialLockMessage(itemId, state);
+  if (!lock) return null;
+  const slice = state?.[itemId];
+  const prevStatus = coerceStatusCode(slice?.status);
+
+  const next = patch.status;
+  const reopen =
+    next === 'in-progress' && isChecklistStepSequentiallyComplete(prevStatus, slice, itemId);
+  const statusMoves =
+    next !== undefined &&
+    next !== prevStatus &&
+    next !== 'not-started' &&
+    next !== 'not-applicable' &&
+    !reopen;
+  const review = patch.reviewStatus;
+  const reviewMoves =
+    (review === 'reviewing' || review === 'accepted') && review !== slice?.reviewStatus;
+  const stamped =
+    (Boolean(patch.deliveredToClientAt?.trim()) && !slice?.deliveredToClientAt?.trim()) ||
+    (Boolean(patch.completedOn?.trim()) && !slice?.completedOn?.trim());
+
+  return statusMoves || reviewMoves || stamped ? lock : null;
+}

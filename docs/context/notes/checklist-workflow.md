@@ -13,6 +13,16 @@ Gotchas already paid for once. Append when something costs more than a minute to
 - Helper: `src/lib/checklist/checklist-step-gate.ts`. Server save path: `patchChecklistItem`.
 - Copy: “This opens after {title} is complete.” / “Waiting on the client…” — never “access denied”.
 - Overdue badges only on the current (active/waiting) step, never on locked future steps.
+- Staff saves on a locked step (2026-11-12): `patchChecklistItem` refuses a staff patch that
+  moves the step forward (`staffStatusLockMessage`: status to in progress / awaiting client /
+  overdue / completed, a new `reviewing` or `accepted`, a delivery or completion stamp) with
+  `ChecklistStepLockedError`; routes answer 409 with the lock message. Answers, notes and
+  assignments still save, so a lead can prepare ahead. Allowed: back to not started, not
+  applicable, reject, and reopening a step that already reads complete. The UI mirror is
+  `useStepLockMessage` (Request manager approval, Accept, the lead's Submit).
+- A client reminder about a locked step is refused (`resolveReminderTarget` → `step_locked`,
+  409 from the remind route). Work lists never offer Remind there: `classifyStepKind` drops
+  locked steps.
 - Client **Progress** nav (`/app/client/progress`) was removed; the gated catalog
   now lives as a Create-project-style flowchart on Incorporation. Old `/progress`
   URLs redirect there. Staff progress CC is unrelated to intern overview.

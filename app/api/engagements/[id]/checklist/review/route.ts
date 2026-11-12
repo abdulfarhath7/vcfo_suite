@@ -9,6 +9,7 @@ import { notifyEngagementEvent } from '@/lib/email/notify-engagement-event';
 import { approveBoardResolution } from '@/db/repositories/board-resolution';
 import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import { publicErrorMessage } from '@/lib/api-error';
+import { ChecklistStepLockedError } from '@/lib/checklist/checklist-step-gate';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -77,6 +78,7 @@ export async function POST(request: Request, context: RouteContext) {
       clientApprovalEmail,
     });
   } catch (err) {
+    if (err instanceof ChecklistStepLockedError) return NextResponse.json({ error: err.message }, { status: 409 });
     const message = publicErrorMessage(err, 'review_failed');
     if (message === 'step_has_no_approval') {
       return NextResponse.json(
@@ -124,6 +126,7 @@ async function reviewBoardResolution(
     });
     return NextResponse.json({ checklistState: checklistStateForViewer(ctx, checklistState), email });
   } catch (err) {
+    if (err instanceof ChecklistStepLockedError) return NextResponse.json({ error: err.message }, { status: 409 });
     const message = publicErrorMessage(err, 'review_failed');
     if (message === 'board_resolution_not_pending') {
       return NextResponse.json(

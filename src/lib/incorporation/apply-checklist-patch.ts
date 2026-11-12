@@ -9,6 +9,7 @@ import {
   type EngagementChecklistState,
 } from '@/db/repositories/engagements';
 import { leadWritablePatch } from '@/lib/checklist/checklist-item-review';
+import { ChecklistStepLockedError } from '@/lib/checklist/checklist-step-gate';
 import { stampDinChecks } from '@/lib/checklist/din-verification';
 import { CLIENT_RESPONSE_FIELDS, SRN_FIELD_ID } from '@/lib/checklist/checklist-responses';
 import { updateFiling } from '@/db/repositories/assist-filings';
@@ -167,7 +168,11 @@ export async function applyChecklistPatch(
   const { resendManagerEmail, ...patchFields } = rawPatch;
   const patch = checklistPatchForRole(ctx, itemId, patchFields, prevSlice, new Date().toISOString());
 
-  const checklistState = await patchChecklistItem(ctx, appOrDbEngagementId, itemId, patch);
+  const checklistState = await patchChecklistItem(ctx, appOrDbEngagementId, itemId, patch).catch((error: unknown) => {
+    // A locked step: the sequential lock refuses the status move (409), answers alone still save.
+    if (error instanceof ChecklistStepLockedError) throw new ChecklistPatchRefused(error.message, 409);
+    throw error;
+  });
 
   // A DSC or licence expiry typed on this step goes on the compliance calendar at once. Additive:
   // a failure is logged and the save stands; the nightly expiry job catches up.

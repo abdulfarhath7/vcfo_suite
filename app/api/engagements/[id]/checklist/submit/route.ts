@@ -17,6 +17,7 @@ import {
 } from '@/db/repositories/board-resolution';
 import { BoardResolutionError, boardResolutionErrorJson } from '@/lib/api/board-resolution-errors';
 import { publicErrorMessage } from '@/lib/api-error';
+import { ChecklistStepLockedError } from '@/lib/checklist/checklist-step-gate';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -126,6 +127,7 @@ export async function POST(request: Request, context: RouteContext) {
       email,
     });
   } catch (err) {
+    if (err instanceof ChecklistStepLockedError) return NextResponse.json({ error: err.message }, { status: 409 });
     const message = publicErrorMessage(err, 'submit_failed');
     return NextResponse.json({ error: FRIENDLY[message] ?? message }, { status: errorStatus(message) });
   }

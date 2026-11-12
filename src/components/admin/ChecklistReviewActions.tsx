@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AccentButton } from '@/components/noir';
 import { useApp } from '@/context/AppContext';
+import { useStepLockMessage } from '@/hooks/use-step-lock';
 import {
   getInternReviewLabel,
   isAwaitingReview,
@@ -48,6 +49,9 @@ export function ChecklistReviewActions({
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
+  // Accept completes the step, so a step behind the sequential lock cannot be accepted yet.
+  // Reject stays available: it only sends the step back.
+  const lockMessage = useStepLockMessage(engagementId, itemId);
 
   const canApprove = isAdminOrManager(user?.role);
   const isLight = theme === 'light';
@@ -131,7 +135,8 @@ export function ChecklistReviewActions({
                 type="button"
                 size="sm"
                 variant="success"
-                disabled={busy !== null}
+                disabled={busy !== null || Boolean(lockMessage)}
+                title={lockMessage ?? undefined}
                 onClick={() => void runReview('accept')}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" aria-hidden />
@@ -151,7 +156,8 @@ export function ChecklistReviewActions({
               </AccentButton>
               <AccentButton
                 size="sm"
-                disabled={busy !== null}
+                disabled={busy !== null || Boolean(lockMessage)}
+                title={lockMessage ?? undefined}
                 onClick={() => void runReview('accept')}
                 className="bg-positive text-on-brand hover:bg-positive/90 hover:brightness-100 active:brightness-95"
               >
@@ -161,6 +167,9 @@ export function ChecklistReviewActions({
           )}
         </div>
       )}
+      {awaiting && canApprove && lockMessage ? (
+        <p className="text-[11px] text-ink-muted">{lockMessage}</p>
+      ) : null}
 
       <AlertDialog open={rejectOpen} onOpenChange={setRejectOpen}>
         <AlertDialogContent>

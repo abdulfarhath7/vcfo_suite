@@ -17,6 +17,7 @@ import {
 import { isFirmWideAdmin } from '@/lib/auth';
 import { internLeadManagerRequestPatch, isLeadRequestPending } from '@/lib/checklist/checklist-item-review';
 import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { ChecklistStepLockedError, staffStatusLockMessage } from '@/lib/checklist/checklist-step-gate';
 import { directorResponsesFromState } from '@/lib/incorporation/proposed-directors';
 import { validateBoardResolutionGeneration } from '@/lib/api/board-resolution-errors';
 
@@ -243,6 +244,9 @@ export async function approveBoardResolution(
   if (!isLeadRequestPending(pre2)) {
     throw new Error('board_resolution_not_pending');
   }
+  // Checked before the draft is finalized, so a locked step is not left half approved.
+  const lockMessage = staffStatusLockMessage(MANAGER_APPROVAL_STEP_ID, { status: 'completed' }, state);
+  if (lockMessage) throw new ChecklistStepLockedError(lockMessage);
 
   const before = await getBoardResolutionByEngagementId(ctx, engagement.id);
   const boardResolution = await finalizeBoardResolution(ctx, engagement.id);

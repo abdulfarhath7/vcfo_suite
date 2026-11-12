@@ -34,10 +34,13 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
     staffSaveStatus,
     staffSaveStatusText,
     submissionLocked,
+    stepLockMessage,
     submitting,
     unlockedFields,
     uploading,
   } = p;
+  // Staff Submit moves the step forward; the server refuses it on a locked step, so it is off here.
+  const submitLocked = !isClient && Boolean(stepLockMessage);
 
   // The sectioned layout's footer exists to save / submit / advance the form.
   // A client writes only on a pre-incorporation direct-flow step, where they
@@ -189,6 +192,9 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                     </span>
                   ) : null}
                   {p.extraFooterActions}
+                  {internFooterAction === 'submit' && submitLocked ? (
+                    <span className="text-[12px] text-ink-muted">{stepLockMessage}</span>
+                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {showStaffSaveFooter && (
@@ -221,9 +227,10 @@ export function MilestoneResponseFormViewFooters(p: MilestoneResponseFormViewMod
                     }
                     disabled={
                       internFooterAction === 'submit'
-                        ? submitting || saving || uploading || autoSaveStatus === 'saving'
+                        ? submitLocked || submitting || saving || uploading || autoSaveStatus === 'saving'
                         : submitting
                     }
+                    title={internFooterAction === 'submit' && submitLocked ? stepLockMessage ?? undefined : undefined}
                     className="cursor-pointer"
                   >
                     {internFooterAction === 'submit' && submitting

@@ -113,3 +113,38 @@ describe('checklist saves run one after the other', () => {
     expect(next['pre-2']).toEqual({ status: 'completed' });
   });
 });
+
+describe('staff saves on a step behind the sequential lock', () => {
+  const manager: AuthContext = { userId: 'u-mgr', email: 'm@x.test', name: 'Meera', role: 'manager' };
+  const lead: AuthContext = { userId: 'u-lead', email: 'l@x.test', name: 'Lead', role: 'intern' };
+
+  beforeEach(() => {
+    // Nothing is done yet, so every step after the first is locked.
+    staleRow = { id: ENG, checklistState: {} };
+    stored = {};
+  });
+
+  it('refuses a manager marking a locked step completed, with the lock message', async () => {
+    const { ChecklistStepLockedError } = await import('@/lib/checklist/checklist-step-gate');
+    const save = patchChecklistItem(manager, ENG, 'post-1', { status: 'completed' });
+    await expect(save).rejects.toBeInstanceOf(ChecklistStepLockedError);
+    await expect(patchChecklistItem(manager, ENG, 'post-1', { status: 'completed' })).rejects.toThrow(/This opens after .+ is complete/);
+    expect(written).toHaveLength(0);
+  });
+
+  it('refuses a lead setting a locked step in progress or overdue', async () => {
+    await expect(patchChecklistItem(lead, ENG, 'post-1', { status: 'in-progress' })).rejects.toThrow(/This opens after/);
+    await expect(patchChecklistItem(lead, ENG, 'post-1', { status: 'overdue' })).rejects.toThrow(/This opens after/);
+    expect(written).toHaveLength(0);
+  });
+
+  it('still saves a lead\'s answers on a locked step (preparing ahead)', async () => {
+    await patchChecklistItem(lead, ENG, 'post-1', { responses: { note: 'drafted early' } });
+    expect((written.at(-1) as Record<string, { responses?: Record<string, string> }>)['post-1']?.responses).toEqual({ note: 'drafted early' });
+  });
+
+  it('lets staff move an open step as before', async () => {
+    await patchChecklistItem(manager, ENG, 'pre-1', { status: 'in-progress' });
+    expect((written.at(-1) as Record<string, { status: string }>)['pre-1']?.status).toBe('in-progress');
+  });
+});

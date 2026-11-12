@@ -8,6 +8,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { approveBoardResolution } from '@/db/repositories/board-resolution';
 import { checklistStateForViewer, toAppEngagement } from '@/db/repositories/engagements';
 import { publicErrorMessage } from '@/lib/api-error';
+import { ChecklistStepLockedError } from '@/lib/checklist/checklist-step-gate';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -64,6 +65,7 @@ export async function POST(_request: Request, context: RouteContext) {
       email,
     });
   } catch (err) {
+    if (err instanceof ChecklistStepLockedError) return NextResponse.json({ ok: false, error: err.message }, { status: 409 });
     const message = publicErrorMessage(err, 'finalize_failed');
     if (message === 'board_resolution_not_pending') {
       return NextResponse.json(
