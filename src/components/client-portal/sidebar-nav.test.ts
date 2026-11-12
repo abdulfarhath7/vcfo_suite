@@ -47,13 +47,12 @@ describe('client portal sidebar (R-51)', () => {
 describe('Incorporation opens into its phases (owner, 10 Nov)', () => {
   const inc = portalNav({ after: false, unread: 0, inc: '6/25', docs: 0 })[1]!;
 
-  it('lists the overview and the four phases', () => {
+  it('lists the overview and phases 1 to 3; Registrations has its own item', () => {
     expect(inc.kids?.map((k) => k.t)).toEqual([
       'Overview',
       '1 · Name application',
       '2 · Incorporation',
       '3 · Post-incorporation',
-      '4 · Registration',
     ]);
   });
 

@@ -196,7 +196,7 @@ export function portalNav({
       { k: 'incorporation', t: '1 · Name application', href: phaseHref(1) },
       { k: 'incorporation', t: '2 · Incorporation', href: phaseHref(2) },
       { k: 'incorporation', t: '3 · Post-incorporation', href: phaseHref(3) },
-      { k: 'incorporation', t: '4 · Registration', href: phaseHref(4) },
+      // Phase 4 (Registration) is not listed: Registrations has its own sidebar item (owner, 12 Nov).
     ],
   };
   const compliances: NavItem = {
