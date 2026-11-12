@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertCopy, daysUntil, dir3KycDueOn, dueAlertStage, isExpiryBacklog, expiryBand, filingsAfterDscExpiry, leiNextExpiry, nextExpiryAfterRenewal, stageForDays } from './model';
+import { alertCopy, daysUntil, dir3KycDueOn, dir3KycDueOnForDin, dir3KycFirstDueOn, dueAlertStage, isExpiryBacklog, expiryBand, filingsAfterDscExpiry, leiNextExpiry, nextExpiryAfterRenewal, stageForDays } from './model';
 
 describe('stages', () => {
   it('maps days left to the T-60, T-30, T-7 and expired stages', () => {
@@ -73,5 +73,23 @@ describe('DSC and filings', () => {
     expect(copy.title).toBe("Renew within 11 days: Ravi Kumar's DSC");
     expect(copy.body).toContain('It lapses before AOC-4 due 29 Nov 2026 and 1 more');
     expect(copy.taskTitle).toBe("Renew Ravi Kumar's DSC (Acme)");
+  });
+});
+
+describe('DIR-3 KYC after a DIN allotment', () => {
+  it('is first due on 30 September of the financial year after the allotment', () => {
+    expect(dir3KycFirstDueOn('2026-04-01')).toBe('2027-09-30');
+    expect(dir3KycFirstDueOn('2026-06-10')).toBe('2027-09-30');
+    expect(dir3KycFirstDueOn('2027-03-31')).toBe('2027-09-30');
+    expect(dir3KycFirstDueOn('2026-03-31')).toBe('2026-09-30');
+  });
+
+  it('never dates a DIN allotted this financial year in the year of allotment', () => {
+    expect(dir3KycDueOnForDin('2026-08-01', '2026-06-10')).toBe('2027-09-30');
+    // Allotted last financial year: due this 30 September, then yearly.
+    expect(dir3KycDueOnForDin('2026-08-01', '2026-02-10')).toBe('2026-09-30');
+    expect(dir3KycDueOnForDin('2027-11-01', '2026-06-10')).toBe('2028-09-30');
+    // No allotment date: the yearly rule.
+    expect(dir3KycDueOnForDin('2026-08-01', null)).toBe(dir3KycDueOn('2026-08-01'));
   });
 });

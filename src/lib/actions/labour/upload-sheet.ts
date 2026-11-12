@@ -23,6 +23,8 @@ import { CLOSED_PERIOD_MESSAGE, ingestRegisterUpload, readRegisterSheet, Registe
 import { matchColumns, matchSummary } from '@/lib/labour-registers/match';
 import { normaliseHeader } from '@/lib/labour-registers/normalise';
 import { guessSlot, UPLOAD_SLOTS, type UploadSlot } from '@/lib/labour-registers/parse';
+import { LabourBatchRefused, labourBatchRefusal } from '@/lib/labour-registers/stage-gate';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { periodLabel } from '@/lib/labour-registers/storage';
 import { deleteObject } from '@/storage/s3';
 import { copyAskAttachment, dayInput, jsonTarget, loadEngagement, oneRow, recheckOf, STAFF_ROLES, unavailable } from '../shared';
@@ -132,6 +134,8 @@ async function check(actx: ActionContext, i: Input): Promise<ActionRecheck> {
   const state = stateByCode(i.stateCode);
   checks.push(state ? { rule: 'state', ok: true } : { rule: 'state', ok: false, message: 'Held: choose the state for this register.' });
   checks.push(i.periodFrom <= i.periodTo ? { rule: 'period', ok: true } : { rule: 'period', ok: false, message: 'Held: the period ends before it starts.' });
+  const refusal = labourBatchRefusal({ incorporated: isIncorporated(loaded.row, loaded.state), incorporationDate: loaded.row.incorporationDate }, i.periodFrom);
+  checks.push(refusal ? { rule: 'stage', ok: false, message: `Held: ${refusal.message}` } : { rule: 'stage', ok: true });
 
   const batch = await findBatch(actx, i);
   checks.push(batch?.markedReadyAt ? { rule: 'lock', ok: false, message: `Held: ${CLOSED_PERIOD_MESSAGE}` } : { rule: 'lock', ok: true });
@@ -169,7 +173,14 @@ async function check(actx: ActionContext, i: Input): Promise<ActionRecheck> {
 }
 
 async function execute(actx: ActionContext, i: Input): Promise<ActionResult> {
-  const batch = await openBatch(actx.auth, { engagementId: i.engagementId, stateCode: i.stateCode, periodFrom: i.periodFrom, periodTo: i.periodTo });
+  let batch: BatchRow | null;
+  try {
+    batch = await openBatch(actx.auth, { engagementId: i.engagementId, stateCode: i.stateCode, periodFrom: i.periodFrom, periodTo: i.periodTo });
+  } catch (error) {
+    // Before the COI, or a month before incorporation: the repository's words reach the card.
+    if (error instanceof LabourBatchRefused) return { ok: false, error: error.message };
+    throw error;
+  }
   if (!batch) return { ok: false, error: 'This project is not available.' };
   if (batch.markedReadyAt) return { ok: false, error: CLOSED_PERIOD_MESSAGE };
   const previousRow = (await listUploads(actx.auth, batch.id)).find((u) => u.slot === i.slot);

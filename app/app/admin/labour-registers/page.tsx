@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireAuth } from '@/auth/guards';
 import { listEngagements } from '@/db/repositories/engagements';
 import { listBatches } from '@/db/repositories/labour-registers';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { BatchPage } from '@/views/labour-registers/BatchPage';
 import { LabourRegistersPage } from '@/views/labour-registers/LabourRegistersPage';
 import { loadBatchView } from '@/views/labour-registers/load-batch';
@@ -68,7 +69,8 @@ export default async function Page({
      clients this preparer can reach are listed here and chosen on the page. */
   const guard = await requireAuth();
   const all = guard.ok ? await listEngagements(guard.ctx) : [];
-  const engagements = all.map((e) => ({ id: e.id, name: e.companyName }));
+  /* The page disables Open, with the reason, for a company that is not incorporated yet. */
+  const engagements = all.map((e) => ({ id: e.id, name: e.companyName, incorporated: isIncorporated(e), incorporationDate: e.incorporationDate ?? null }));
 
   /* Batches already opened, so last month is reachable without opening it again. */
   const byId = new Map(all.map((e) => [e.id, e.companyName]));

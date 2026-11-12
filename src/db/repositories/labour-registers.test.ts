@@ -52,6 +52,7 @@ const scopedIds = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({
   assertEngagementAccess: (...args: unknown[]) => access(...args),
   listScopedEngagementIds: (...args: unknown[]) => scopedIds(...args),
+  checklistStateFromRow: (row: { checklistState?: unknown }) => (row.checklistState ?? {}) as Record<string, unknown>,
 }));
 
 const repo = await import('@/db/repositories/labour-registers');
@@ -68,8 +69,9 @@ function ctx(role: AuthContext['role']): AuthContext {
 const OURS = 'eng-ours';
 const THEIRS = 'eng-theirs';
 
-function allow(dbId = OURS) {
-  access.mockResolvedValue({ ok: true, dbId, row: { id: dbId } });
+/** An incorporated engagement (15 January 2025), which may keep labour registers. */
+function allow(dbId = OURS, row: Record<string, unknown> = { incorporationDate: '2025-01-15', stage: 'Pre-Incorporation' }) {
+  access.mockResolvedValue({ ok: true, dbId, row: { id: dbId, ...row } });
 }
 function deny() {
   access.mockResolvedValue({ ok: false, dbId: THEIRS, forbidden: true });
@@ -161,8 +163,45 @@ describe('writes are staff-only', () => {
     expect(row).toEqual({ id: 'b-existing' });
     expect(calls.filter((c) => c.op === 'insert')).toHaveLength(0);
   });
+});
 
+describe('no labour registers before the COI', () => {
+  const SEPT = { engagementId: OURS, stateCode: 'TG', periodFrom: '2026-09-01', periodTo: '2026-09-30' };
 
+  it('refuses a company not yet incorporated with 409, before any query', async () => {
+    allow(OURS, { incorporationDate: null, stage: 'Pre-Incorporation', checklistState: {} });
+    await expect(repo.openBatch(ctx('manager'), SEPT)).rejects.toMatchObject({ status: 409, code: 'not_incorporated' });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('refuses a period before the month of incorporation with 422', async () => {
+    allow(OURS, { incorporationDate: '2026-09-10', stage: 'Pre-Incorporation' });
+    await expect(repo.openBatch(ctx('manager'), { ...SEPT, periodFrom: '2026-08-01', periodTo: '2026-08-31' })).rejects.toMatchObject({
+      status: 422,
+      code: 'before_incorporation',
+    });
+    expect(calls).toHaveLength(0);
+  });
+
+  it('opens the month of incorporation and later months as before', async () => {
+    allow(OURS, { incorporationDate: '2026-09-10', stage: 'Pre-Incorporation' });
+    results = [[], [{ id: 'b-new' }]];
+    expect(await repo.openBatch(ctx('manager'), SEPT)).toEqual({ id: 'b-new' });
+  });
+
+  it('leaves batches of a company not yet incorporated out of the pending list', async () => {
+    results = [
+      [
+        { id: 'b1', engagementId: 'eng-done' },
+        { id: 'b2', engagementId: 'eng-pre' },
+      ],
+      [
+        { id: 'eng-done', incorporationDate: '2025-01-15', stage: 'Pre-Incorporation', checklistState: {} },
+        { id: 'eng-pre', incorporationDate: null, stage: 'Pre-Incorporation', checklistState: {} },
+      ],
+    ];
+    expect((await repo.listBatches(ctx('super_admin'), { incorporatedOnly: true })).map((b) => b.id)).toEqual(['b1']);
+  });
 });
 
 

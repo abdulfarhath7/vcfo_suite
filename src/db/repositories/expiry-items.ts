@@ -408,7 +408,16 @@ async function upsertSeedRows(engagementId: string, rows: SeedRow[]): Promise<nu
             setWhere: sql`${expiryItems.source} = excluded.source AND (${expiryItems.expiresOn} <> excluded.expires_on OR ${expiryItems.subjectName} <> excluded.subject_name OR ${expiryItems.referenceLabel} IS DISTINCT FROM excluded.reference_label)`,
           })
           .returning({ id: expiryItems.id })
-      : await q.onConflictDoNothing({ target: [expiryItems.engagementId, expiryItems.sourceKey] }).returning({ id: expiryItems.id });
+      : r.raiseOnly
+        ? await q
+            .onConflictDoUpdate({
+              target: [expiryItems.engagementId, expiryItems.sourceKey],
+              set: { expiresOn: sql`excluded.expires_on`, lastAlertStage: null, requestListId: null, updatedAt: new Date() },
+              // Only an untouched seeded item (never renewed or edited by staff), only later.
+              setWhere: sql`${expiryItems.source} = excluded.source AND ${expiryItems.renewedAt} IS NULL AND ${expiryItems.updatedBy} IS NULL AND ${expiryItems.expiresOn} < excluded.expires_on`,
+            })
+            .returning({ id: expiryItems.id })
+        : await q.onConflictDoNothing({ target: [expiryItems.engagementId, expiryItems.sourceKey] }).returning({ id: expiryItems.id });
     touched += done.length;
   }
   return touched;
@@ -450,15 +459,34 @@ async function seedEngagements(engs: SeedEngagement[], today: string): Promise<n
     const stored: Record<string, Record<string, string>> = {};
     for (const r of regRows) if (r.engagementId === e.id) stored[r.rowKey] = (r.fields ?? {}) as Record<string, string>;
     const { facts } = buildRegistrationFacts({ state, stored, documents: [] });
+    const incorporated = isIncorporated(e, state);
     const rows = seedRowsFor({
       companyName: e.companyName,
       state,
       registrationFacts: facts,
       directors: dirRows.filter((d) => d.engagementId === e.id).map((d) => ({ name: d.name, din: d.din ?? null, ceasedOn: d.ceasedOn ?? null })),
       today,
-      incorporated: isIncorporated(e, state),
+      incorporated,
+      incorporationDate: e.incorporationDate,
     });
     touched += await upsertSeedRows(e.id, rows);
+    // A company has no director KYC due dates before its COI. Items seeded before that rule are
+    // removed, but only untouched seeded ones: never one someone renewed, edited or added.
+    if (!incorporated) {
+      const gone = await db
+        .delete(expiryItems)
+        .where(
+          and(
+            eq(expiryItems.engagementId, e.id),
+            eq(expiryItems.kind, 'dir3_kyc'),
+            eq(expiryItems.source, 'checklist'),
+            isNull(expiryItems.renewedAt),
+            isNull(expiryItems.updatedBy),
+          ),
+        )
+        .returning({ id: expiryItems.id });
+      touched += gone.length;
+    }
     // The name approval stops mattering once Part B is filed or the company is incorporated, and
     // the seed then stops sending it: remove the seeded item so the calendar drops it.
     if (!rows.some((r) => r.sourceKey === NAME_APPROVAL_SOURCE_KEY)) {

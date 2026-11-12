@@ -25,7 +25,7 @@ function facts(stepId: string, f: Partial<RegistrationFacts>): RegistrationFacts
 
 describe('seedRowsFor', () => {
   it('adds a DSC for each director with a DSC expiry, and DIR-3 KYC for each DIN holder', () => {
-    const rows = seedRowsFor({ companyName: 'Acme Private Limited', state: STATE, registrationFacts: {}, directors: [], today: '2026-11-09' });
+    const rows = seedRowsFor({ companyName: 'Acme Private Limited', state: STATE, registrationFacts: {}, directors: [], today: '2026-11-09', incorporated: true });
     expect(rows).toEqual([
       expect.objectContaining({ kind: 'dsc', subjectName: 'Ravi Kumar', expiresOn: '2027-03-12', sourceKey: 'dsc:ravi-kumar', referenceLabel: 'DIN 01234567', sync: true }),
       expect.objectContaining({ kind: 'dir3_kyc', subjectName: 'Ravi Kumar', expiresOn: '2027-09-30', sourceKey: 'dir3:01234567', sync: false }),
@@ -59,12 +59,50 @@ describe('seedRowsFor', () => {
         { name: 'New Director', din: '08888888', ceasedOn: null },
       ],
       today: '2026-08-01',
+      incorporated: true,
     });
     const kyc = rows.filter((r) => r.kind === 'dir3_kyc');
     expect(kyc.map((r) => [r.subjectName, r.expiresOn])).toEqual([
       ['Ravi K', '2026-09-30'],
       ['New Director', '2026-09-30'],
     ]);
+  });
+
+  it('adds no DIR-3 KYC before the company is incorporated, and the DSCs as before', () => {
+    const rows = seedRowsFor({
+      companyName: 'Acme',
+      state: STATE,
+      registrationFacts: {},
+      directors: [{ name: 'New Director', din: '08888888', ceasedOn: null }],
+      today: '2026-08-01',
+      incorporated: false,
+    });
+    expect(rows.filter((r) => r.kind === 'dir3_kyc')).toEqual([]);
+    expect(rows.map((r) => r.kind)).toEqual(['dsc']);
+  });
+
+  it('dates a DIN allotted at incorporation from 30 September of the next financial year', () => {
+    const state = {
+      'pre-15': slice({
+        ...STATE['pre-15'].responses,
+        'directors.e1.hasDin': 'yes',
+        'directors.e2.hasDin': 'no',
+      }),
+    };
+    // Asha Rao had no DIN, so SPICe+ allotted one on the incorporation date (10 June 2026, FY 2026-27).
+    const directors = [
+      { name: 'Ravi Kumar', din: '01234567', ceasedOn: null },
+      { name: 'Asha Rao', din: '09999999', ceasedOn: null },
+    ];
+    const rows = seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors, today: '2026-08-01', incorporated: true, incorporationDate: '2026-06-10' });
+    expect(rows.filter((r) => r.kind === 'dir3_kyc').map((r) => [r.subjectName, r.expiresOn, Boolean(r.raiseOnly)])).toEqual([
+      // A director who already had a DIN keeps the yearly 30 September.
+      ['Ravi Kumar', '2026-09-30', false],
+      ['Asha Rao', '2027-09-30', true],
+    ]);
+    // Incorporated in February 2026 (FY 2025-26): first due on 30 September 2026.
+    const feb = seedRowsFor({ companyName: 'Acme', state, registrationFacts: {}, directors, today: '2026-08-01', incorporated: true, incorporationDate: '2026-02-10' });
+    expect(feb.find((r) => r.subjectName === 'Asha Rao' && r.kind === 'dir3_kyc')?.expiresOn).toBe('2026-09-30');
   });
 
   it('adds registrations that carry an expiry, and LEI a year on from its registration date', () => {

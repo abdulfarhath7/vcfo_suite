@@ -13,8 +13,11 @@ import {
 } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
-import { assertEngagementAccess, listScopedEngagementIds } from '@/db/repositories/engagements';
+import { assertEngagementAccess, checklistStateFromRow, listScopedEngagementIds } from '@/db/repositories/engagements';
+import { normalizeEngagementChecklistState } from '@/lib/checklist/checklist-state-key';
+import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import type { UploadSlot } from '@/lib/labour-registers/parse';
+import { labourBatchRefusal } from '@/lib/labour-registers/stage-gate';
 
 /**
  * LABOUR REGISTERS — the seam.
@@ -62,10 +65,19 @@ async function engagement(ctx: AuthContext, engagementId: string) {
 
 /* ── Batches ──────────────────────────────────────────────────────────────── */
 
-/** Every batch the caller may see, newest period first. */
-export async function listBatches(ctx: AuthContext, opts: { engagementId?: string } = {}): Promise<BatchRow[]> {
-  if (opts.engagementId) {
-    const access = await engagement(ctx, opts.engagementId);
+/**
+ * Every batch the caller may see, newest period first. With `incorporatedOnly`, only batches of
+ * incorporated engagements (`isIncorporated`): a company keeps no labour registers before its
+ * Certificate of Incorporation, so a batch opened for one earlier is not counted as pending.
+ */
+export async function listBatches(ctx: AuthContext, opts: { engagementId?: string; incorporatedOnly?: boolean } = {}): Promise<BatchRow[]> {
+  const rows = await scopedBatches(ctx, opts.engagementId);
+  return opts.incorporatedOnly ? onlyIncorporated(rows) : rows;
+}
+
+async function scopedBatches(ctx: AuthContext, engagementId?: string): Promise<BatchRow[]> {
+  if (engagementId) {
+    const access = await engagement(ctx, engagementId);
     if (!access) return [];
     return db
       .select()
@@ -85,6 +97,25 @@ export async function listBatches(ctx: AuthContext, opts: { engagementId?: strin
     .from(labourRegisterBatches)
     .where(inArray(labourRegisterBatches.engagementId, ids))
     .orderBy(desc(labourRegisterBatches.periodFrom));
+}
+
+/** The batches whose engagement is incorporated; the rows are already scoped by the caller. */
+async function onlyIncorporated(rows: BatchRow[]): Promise<BatchRow[]> {
+  const ids = [...new Set(rows.map((r) => r.engagementId))];
+  if (ids.length === 0) return rows;
+  const engs = await db
+    .select({
+      id: base.engagements.id,
+      incorporationDate: base.engagements.incorporationDate,
+      stage: base.engagements.stage,
+      checklistState: base.engagements.checklistState,
+    })
+    .from(base.engagements)
+    .where(inArray(base.engagements.id, ids));
+  const stateOf = (raw: unknown) =>
+    raw && typeof raw === 'object' && !Array.isArray(raw) ? normalizeEngagementChecklistState(raw as Record<string, unknown>) : {};
+  const incorporated = new Set(engs.filter((e) => isIncorporated(e, stateOf(e.checklistState))).map((e) => e.id));
+  return rows.filter((r) => incorporated.has(r.engagementId));
 }
 
 /** One batch, or null when the caller may not see it. */
@@ -107,6 +138,11 @@ export async function getBatchWithClient(
  * Open a batch for a client, a state and a period, or return the one that already exists. The
  * unique index on (engagement, state, period) is what makes a second preparer opening the same
  * month join the first rather than fork it.
+ *
+ * Refused with `LabourBatchRefused` (409) before the Certificate of Incorporation, and (422) for
+ * a period that starts before the month the company was incorporated (`labourBatchRefusal`).
+ * The refusal comes before the lookup, so nothing new is added to a batch opened before this
+ * rule; such a batch stays readable through its own link.
  */
 export async function openBatch(
   ctx: AuthContext,
@@ -115,6 +151,11 @@ export async function openBatch(
   assertStaff(ctx);
   const access = await engagement(ctx, input.engagementId);
   if (!access) return null;
+  const refusal = labourBatchRefusal(
+    { incorporated: isIncorporated(access.row, checklistStateFromRow(access.row)), incorporationDate: access.row.incorporationDate },
+    input.periodFrom,
+  );
+  if (refusal) throw refusal;
 
   const existing = await db
     .select()

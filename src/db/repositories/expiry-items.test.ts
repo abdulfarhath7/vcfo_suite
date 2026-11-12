@@ -211,3 +211,29 @@ describe('systemListDueExpiryAlerts', () => {
     expect(calls.find((c) => c.op === 'update')?.set).toMatchObject({ lastAlertStage: 0 });
   });
 });
+
+describe('systemSeedExpiryItems and DIR-3 KYC before the COI', () => {
+  const PRE15 = {
+    'pre-15': {
+      status: 'in-progress',
+      responses: { directors: 'e1', 'directors.e1.firstName': 'Ravi', 'directors.e1.lastName': 'Kumar', 'directors.e1.din': '01234567' },
+    },
+  };
+  const eng = (over: Record<string, unknown>) => ({ id: ENG_A, companyName: 'Acme', checklistState: PRE15, incorporationDate: null, stage: 'Pre-Incorporation', ...over });
+
+  it('inserts no DIR-3 KYC and removes untouched seeded ones for a company not yet incorporated', async () => {
+    results = [[eng({})], [], []];
+    await repo.systemSeedExpiryItems(TODAY);
+    expect(calls.filter((c) => c.op === 'insert')).toEqual([]);
+    // One delete for the name approval, one for the seeded DIR-3 KYC items.
+    expect(calls.filter((c) => c.op === 'delete')).toHaveLength(2);
+  });
+
+  it('inserts the DIR-3 KYC once incorporated and removes nothing but the name approval', async () => {
+    results = [[eng({ incorporationDate: '2025-05-01', stage: 'Compliance' })], [], []];
+    await repo.systemSeedExpiryItems(TODAY);
+    const inserts = calls.filter((c) => c.op === 'insert').map((c) => c.values as { kind: string; expiresOn: string });
+    expect(inserts).toEqual([expect.objectContaining({ kind: 'dir3_kyc', expiresOn: '2027-09-30' })]);
+    expect(calls.filter((c) => c.op === 'delete')).toHaveLength(1);
+  });
+});

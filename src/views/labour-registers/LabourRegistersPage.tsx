@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowRight, CheckCheck, FileSpreadsheet, History, MapPin, Printer, Scale, ShieldQuestion, TriangleAlert } from 'lucide-react';
 
 import { regimeNote, stateByCode, statesForPicker } from '@/data/labour-registers/states';
+import { labourBatchRefusal } from '@/lib/labour-registers/stage-gate';
 import {
   formsByAct,
   formsFor,
@@ -52,7 +53,13 @@ export interface LabourRegistersPageProps {
    * The clients this preparer can open a batch for. Opening one needs a client as well as a
    * state, and this screen is state-first, so the client is chosen here.
    */
-  engagements?: Array<{ id: string; name: string }>;
+  engagements?: Array<{
+    id: string;
+    name: string;
+    /** `isIncorporated`; Open is disabled with the reason when false (no registers before the COI). */
+    incorporated?: boolean;
+    incorporationDate?: string | null;
+  }>;
   /**
    * Batches already opened, newest period first.
    *
@@ -129,6 +136,12 @@ export function LabourRegistersPage({
   const { year, month } = parsePeriod(period);
   const periodRange = monthPeriod(year, month);
   const periodLabel = `${MONTH_NAMES[month - 1]} ${year}`;
+  // The same rule the repository refuses with, so the button never offers what the server refuses.
+  const chosen = engagements.find((e) => e.id === engagementId);
+  const openBlocked =
+    chosen && chosen.incorporated !== undefined
+      ? labourBatchRefusal({ incorporated: chosen.incorporated, incorporationDate: chosen.incorporationDate }, periodRange.from)?.message ?? ''
+      : '';
 
   const forms = selected.configured ? formsFor(selected.code, periodRange) : [];
   const byAct = formsByAct(forms);
@@ -163,7 +176,7 @@ export function LabourRegistersPage({
    * do nothing at all.
    */
   async function open() {
-    if (!engagementId || opening) return;
+    if (!engagementId || opening || openBlocked) return;
     setOpening(true);
     setOpenError('');
     try {
@@ -178,7 +191,8 @@ export function LabourRegistersPage({
         }),
       });
       if (!res.ok) {
-        setOpenError(res.status === 404 ? 'That client is not yours to open.' : 'Could not open the batch.');
+        const refused = res.status === 409 || res.status === 422 ? ((await res.json().catch(() => null)) as { message?: string } | null)?.message : undefined;
+        setOpenError(refused ?? (res.status === 404 ? 'That client is not yours to open.' : 'Could not open the batch.'));
         return;
       }
       const { batchId } = (await res.json()) as { batchId: string };
@@ -305,10 +319,21 @@ export function LabourRegistersPage({
                       </option>
                     ))}
                   </select>
-                  <button type="button" onClick={open} disabled={!engagementId || opening} className={lr.primary}>
+                  <button
+                    type="button"
+                    onClick={open}
+                    disabled={!engagementId || opening || Boolean(openBlocked)}
+                    aria-describedby={openBlocked ? 'lr-open-blocked' : undefined}
+                    className={lr.primary}
+                  >
                     {opening ? 'Opening…' : `Open ${selected.name} · ${periodLabel}`}
                     <ArrowRight className="size-4" strokeWidth={2} aria-hidden="true" />
                   </button>
+                  {openBlocked ? (
+                    <p id="lr-open-blocked" className="m-0 text-[13px] text-[var(--lr-muted)]">
+                      {openBlocked}
+                    </p>
+                  ) : null}
                   {openError ? (
                     <p className="m-0 text-[13px] text-[var(--lr-bad)]" role="alert">
                       {openError}

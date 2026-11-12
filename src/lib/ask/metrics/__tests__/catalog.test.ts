@@ -176,7 +176,7 @@ describe('a client only ever sees their own company', () => {
     await getMetric('board_meetings.upcoming')!.run(clientEnv, {});
     expect(listMeetings.mock.calls[0]![1]).toEqual({ engagementId: 'own' });
     await getMetric('labour_registers.pending')!.run(clientEnv, {});
-    expect(listBatches.mock.calls[0]![1]).toEqual({ engagementId: 'own' });
+    expect(listBatches.mock.calls[0]![1]).toEqual({ engagementId: 'own', incorporatedOnly: true });
   });
 
   it('states the company fact, whatever period was asked', async () => {

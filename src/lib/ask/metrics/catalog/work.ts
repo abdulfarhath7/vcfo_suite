@@ -162,7 +162,7 @@ export const WORK_METRICS: MetricDefinition[] = [
     roles: EVERYONE,
     filters: ['client'],
     async run(env, filters) {
-      const rows = (await listBatches(env.ctx, { engagementId: oneEngagement(env, filters) })).filter((b) => ['open', 'mapping', 'ready'].includes(b.status));
+      const rows = (await listBatches(env.ctx, { engagementId: oneEngagement(env, filters), incorporatedOnly: true })).filter((b) => ['open', 'mapping', 'ready'].includes(b.status));
       return counted(rows.map((b) => ({ label: `${b.stateCode} register`, value: `${formatFilingDate(b.periodFrom)} to ${formatFilingDate(b.periodTo)}` })));
     },
     say: (n, { where }) => `${tally(n, 'labour register batch is', 'labour register batches are')} still pending ${where}.`,

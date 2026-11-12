@@ -3,7 +3,7 @@ import { isChecklistStepSequentiallyComplete } from '@/lib/checklist/checklist-s
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { directorEntriesFromDirectors, displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { isoOfText, type RegistrationFactsMap } from '@/lib/registrations/registration-facts';
-import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpirySource, type SubjectKind } from './model';
+import { dir3KycDueOnForDin, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpirySource, type SubjectKind } from './model';
 
 /**
  * EXPIRY SEED — the expiry items one engagement's own records imply, for the daily backfill.
@@ -18,10 +18,15 @@ import { dir3KycDueOn, leiNextExpiry, subjectSlug, type ExpiryKind, type ExpiryS
  *    and expiry typed on that step, keyed by the holder's name like a director's DSC.
  *  - Name approval: the MCA name approval expiry on `pre-5`, only until SPICe+ Part B (`pre-10`)
  *    is filed or the company is incorporated. The calendar shows it; it raises no renewal alert.
- *  - DIR-3 KYC: every DIN holder among the proposed directors and the current company
- *    directors, deduplicated by DIN, due by `dir3KycDueOn`. Keyed by the DIN. The seed only
- *    inserts these (`sync: false`): the next year's date comes from marking the item renewed, so
- *    a missed 30 September stays red instead of quietly moving on.
+ *  - DIR-3 KYC: only once the company is incorporated (a company has no director KYC due dates
+ *    before its COI). Every DIN holder among the proposed directors and the current company
+ *    directors, deduplicated by DIN, due by `dir3KycDueOnForDin`. A DIN allotted at
+ *    incorporation (the director answered "no DIN" on Proposed directors, so SPICe+ allotted it)
+ *    counts as allotted on the incorporation date, so it is first due on 30 September of the
+ *    next financial year. The app stores no other allotment date, so a director who already had
+ *    a DIN keeps the yearly 30 September. Keyed by the DIN. The seed only inserts these
+ *    (`sync: false`): the next year's date comes from marking the item renewed, so a missed
+ *    30 September stays red instead of quietly moving on. The one exception is `raiseOnly`.
  *  - Registrations: every registration step whose facts carry an expiry (the step's answer, or
  *    the issue date and renewal period typed on the credentials workbook). LEI with only a
  *    registration date renews yearly from it (`leiNextExpiry`). A Trademark Renewal date
@@ -39,6 +44,12 @@ export interface SeedRow {
   sourceKey: string;
   /** True: a changed date in the source updates the item. False: insert once, never update. */
   sync: boolean;
+  /**
+   * With `sync: false`: an untouched seeded item (never renewed or edited) with an earlier date
+   * moves to this one. Set on a DIR-3 KYC whose first due date comes from the DIN's allotment,
+   * so an item seeded before that rule existed is corrected, and never moved earlier.
+   */
+  raiseOnly?: boolean;
 }
 
 export interface SeedInput {
@@ -47,8 +58,13 @@ export interface SeedInput {
   registrationFacts: RegistrationFactsMap;
   directors: Array<{ name: string; din: string | null; ceasedOn: string | null }>;
   today: string;
-  /** `isIncorporated` for the engagement; a name approval no longer matters once it is. */
+  /**
+   * `isIncorporated` for the engagement; a name approval no longer matters once it is, and
+   * DIR-3 KYC items exist only once it is.
+   */
   incorporated?: boolean;
+  /** The engagement's incorporation date, the allotment date of DINs allotted through SPICe+. */
+  incorporationDate?: string | null;
 }
 
 /** Registration steps and the expiry kind each one tracks; the rest are "other". */
@@ -94,6 +110,45 @@ const SIGNATORY_DSC_STEPS = ['reg-1', 'reg-16'] as const;
 
 /** The name approval source key; the repository removes the item once the seed stops sending it. */
 export const NAME_APPROVAL_SOURCE_KEY = 'name:pre-5';
+
+const nameKey = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/** DIR-3 KYC rows of an incorporated engagement; see the module comment. */
+function dir3KycRows(input: SeedInput, directors: ReturnType<typeof readProposedDirectors>): SeedRow[] {
+  const incorporatedOn = isoOfText(input.incorporationDate);
+  // Proposed directors who had no DIN got one through SPICe+, on the incorporation date.
+  const allottedAtIncorporation = new Set(
+    directors.filter((d) => (d.values.hasDin ?? '').trim() === 'no').map((d) => nameKey(displayName(d.values))).filter(Boolean),
+  );
+  const allottedOn = (name: string) => (incorporatedOn && allottedAtIncorporation.has(nameKey(name)) ? incorporatedOn : null);
+
+  const dinHolders = new Map<string, string>();
+  for (const d of input.directors) {
+    const din = cleanDin(d.din);
+    if (din && !d.ceasedOn && d.name.trim()) dinHolders.set(din, d.name.trim());
+  }
+  for (const d of directors) {
+    const din = cleanDin(d.values.din);
+    const name = displayName(d.values);
+    if (din && name && !dinHolders.has(din)) dinHolders.set(din, name);
+  }
+  const rows: SeedRow[] = [];
+  for (const [din, name] of dinHolders) {
+    const allotted = allottedOn(name);
+    rows.push({
+      subjectKind: 'person',
+      subjectName: name,
+      kind: 'dir3_kyc',
+      referenceLabel: `DIN ${din}`,
+      expiresOn: dir3KycDueOnForDin(input.today, allotted),
+      source: 'checklist',
+      sourceKey: `dir3:${din}`,
+      sync: false,
+      ...(allotted ? { raiseOnly: true } : {}),
+    });
+  }
+  return rows;
+}
 
 export function seedRowsFor(input: SeedInput): SeedRow[] {
   const rows: SeedRow[] = [];
@@ -145,29 +200,7 @@ export function seedRowsFor(input: SeedInput): SeedRow[] {
     });
   }
 
-  const dinHolders = new Map<string, string>();
-  for (const d of input.directors) {
-    const din = cleanDin(d.din);
-    if (din && !d.ceasedOn && d.name.trim()) dinHolders.set(din, d.name.trim());
-  }
-  for (const d of directors) {
-    const din = cleanDin(d.values.din);
-    const name = displayName(d.values);
-    if (din && name && !dinHolders.has(din)) dinHolders.set(din, name);
-  }
-  const kycDue = dir3KycDueOn(input.today);
-  for (const [din, name] of dinHolders) {
-    rows.push({
-      subjectKind: 'person',
-      subjectName: name,
-      kind: 'dir3_kyc',
-      referenceLabel: `DIN ${din}`,
-      expiresOn: kycDue,
-      source: 'checklist',
-      sourceKey: `dir3:${din}`,
-      sync: false,
-    });
-  }
+  if (input.incorporated) rows.push(...dir3KycRows(input, directors));
 
   for (const [stepId, facts] of Object.entries(input.registrationFacts)) {
     if (stepId === 'reg-12' && input.registrationFacts['reg-17']?.expiresOn) continue;

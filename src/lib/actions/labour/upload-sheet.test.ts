@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthContext } from '@/auth/guards';
 import type { ActionContext } from '../types';
+import { LabourBatchRefused, NOT_INCORPORATED_MESSAGE } from '@/lib/labour-registers/stage-gate';
 
 const getEngagementById = vi.fn();
 const getOwnAskAttachments = vi.fn();
@@ -39,7 +40,7 @@ const { uploadSheet } = await import('./upload-sheet');
 
 const lead: AuthContext = { userId: 'u-lead', email: 'lead@x.test', name: 'Lead', role: 'intern' };
 const actx: ActionContext = { auth: lead, engagementId: 'e1', conversationId: 'c1', runId: null, now: new Date('2026-11-09T10:00:00Z'), via: 'ask' };
-const ACME = { id: '11111111-1111-4111-8111-111111111111', companyName: 'Acme Private Limited' };
+const ACME = { id: '11111111-1111-4111-8111-111111111111', companyName: 'Acme Private Limited', incorporationDate: '2025-04-01', stage: 'Compliance' };
 const ATTACHMENT = '22222222-2222-4222-8222-222222222222';
 const BATCH = { id: 'b1', engagementId: ACME.id, stateCode: 'KA', periodFrom: '2026-08-01', periodTo: '2026-08-31', markedReadyAt: null };
 const OLD = { id: 'up-old', slot: 'paysheet', fileName: 'july-fix.xlsx', objectKey: 'labour-registers/x/b1/paysheet-old', sha256: 'old', rowCount: 40 };
@@ -133,6 +134,18 @@ describe('labour.uploadSheet', () => {
     if (!result.ok) return;
     expect(result.href).toBe('/app/lead/labour-registers?batch=b1');
     expect(result.undo).toMatchObject({ batchId: 'b1', slot: 'paysheet', uploadId: 'up-new', previous: { id: 'up-old', fileName: 'july-fix.xlsx' } });
+  });
+
+  it('holds the row, and refuses to execute, for a company not yet incorporated', async () => {
+    getEngagementById.mockResolvedValue({ ...ACME, incorporationDate: null, stage: 'Pre-Incorporation' });
+    const check = await uploadSheet.recheck!(actx, input, {});
+    expect(check.canApply).toBe(false);
+    expect(check.heldReason).toMatch(/Certificate of Incorporation/);
+
+    repo.openBatch.mockRejectedValue(new LabourBatchRefused(NOT_INCORPORATED_MESSAGE, 409, 'not_incorporated'));
+    const result = await uploadSheet.execute(actx, input);
+    expect(result).toEqual({ ok: false, error: NOT_INCORPORATED_MESSAGE });
+    expect(repo.recordUpload).not.toHaveBeenCalled();
   });
 
   it('refuses to execute into a closed batch', async () => {
