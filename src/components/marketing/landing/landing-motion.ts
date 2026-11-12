@@ -59,10 +59,29 @@ export function useLandingMotion(root: React.RefObject<HTMLElement | null>, setS
               io.unobserve(e.target);
             }
           }),
-        { threshold: 0.12, rootMargin: "0px 0px -60px 0px" },
+        // A block starts to fade in while it is still 15% of a screen below the fold, so it is
+        // drawn by the time it is read and a screen is never left blank waiting for it.
+        { threshold: 0, rootMargin: "0px 0px 15% 0px" },
       );
       revealed.forEach((r) => io.observe(r));
-      cleanups.push(() => io.disconnect());
+      // The "before" state in landing.css applies only under data-motion, so with a slow or
+      // failed script nothing is ever hidden. A data attribute, because React rewrites className.
+      el.dataset.motion = "ready";
+      const showAll = () => revealed.forEach(show);
+      // Print shows every block.
+      window.addEventListener("beforeprint", showAll);
+      // Safety net: anything already scrolled to that is still waiting is shown.
+      const safety = window.setTimeout(() => {
+        revealed.forEach((r) => {
+          if (!r.classList.contains("in") && r.getBoundingClientRect().top < window.innerHeight) show(r);
+        });
+      }, 2500);
+      cleanups.push(() => {
+        io.disconnect();
+        window.removeEventListener("beforeprint", showAll);
+        window.clearTimeout(safety);
+        delete el.dataset.motion;
+      });
     }
 
     el.querySelectorAll("[data-story]").forEach((story) => {

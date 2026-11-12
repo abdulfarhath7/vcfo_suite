@@ -101,3 +101,46 @@ describe('LandingScreen', () => {
     expect(screen.queryByRole('dialog', { name: 'Ask VCFO' })).toBeNull();
   });
 });
+
+describe('LandingScreen scroll reveal', () => {
+  it('with reduced motion nothing waits: every block is shown and the root is not marked', () => {
+    const { container } = render(<LandingScreen />);
+    const root = container.querySelector<HTMLElement>('.lp')!;
+    expect(root.dataset.motion).toBeUndefined();
+    const blocks = [...container.querySelectorAll('.reveal')];
+    expect(blocks.length).toBeGreaterThan(10);
+    expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+  });
+
+  describe('with motion on', () => {
+    beforeEach(() => {
+      window.matchMedia = ((query: string) => ({ ...realMatchMedia(query), matches: false })) as typeof window.matchMedia;
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('marks the root only while the script runs, and shows every block before printing', () => {
+      const { container, unmount } = render(<LandingScreen />);
+      const root = container.querySelector<HTMLElement>('.lp')!;
+      // The "before" frame in landing.css applies only under data-motion.
+      expect(root.dataset.motion).toBe('ready');
+      const blocks = [...container.querySelectorAll('.reveal')];
+      expect(blocks.some((b) => !b.classList.contains('in'))).toBe(true);
+      window.dispatchEvent(new Event('beforeprint'));
+      expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+      unmount();
+      expect(root.dataset.motion).toBeUndefined();
+    });
+
+    it('shows a block already on screen that is still waiting, after the safety delay', () => {
+      vi.useFakeTimers();
+      const { container } = render(<LandingScreen />);
+      const blocks = [...container.querySelectorAll('.reveal')];
+      expect(blocks.some((b) => !b.classList.contains('in'))).toBe(true);
+      // jsdom has no layout: every block reports a top of 0, so each counts as on screen.
+      vi.advanceTimersByTime(2600);
+      expect(blocks.every((b) => b.classList.contains('in'))).toBe(true);
+    });
+  });
+});

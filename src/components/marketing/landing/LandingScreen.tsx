@@ -508,7 +508,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             </div>
             <div className="tabpanel">
               <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"} data-app="home">
-                <img src="/landing/portal-client.webp" alt={"Client portal home: the current stage, the next step with its due date, the journey as a line of steps, and what is needed from the client."} width="2000" height="1146" />
+                <img src="/landing/portal-client.webp" alt={"Client portal home: the current stage, the next step with its due date, and the journey as a tree of every step with its progress."} width="2600" height="1490" />
               </div>
               <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"} data-app="lead-home">
                 <img src="/landing/portal-lead.webp" alt={"Project lead Today screen: the home card with five numbers, the day's work by company and the inbox."} width="2000" height="1146" />
