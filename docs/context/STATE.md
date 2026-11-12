@@ -327,12 +327,30 @@ Built and tested (unit tests, typecheck, and the flows below on a local build):
 
 - **P1 fixes (11 Nov, follow-up):** GL-09 name casing in every generator (with a per-template test), GL-01 step links for every notification plus the overview fallback and the `#not-permitted` reason, GL-07 attachments in the step email pop-up and "Emails sent from this step" (`GET /api/engagements/:id/emails-sent`), NV-01 super admin views, NV-02 e2e (`e2e/incorporation-sidebar.spec.ts`) and a deeper NV-04 link audit. The two e2e specs have not been run yet. Status per item: `docs/context/CR-2026-11-STATUS.md`.
 
+- **Gap fixes after the acceptance check (12 Nov, branch `cr-2026-11-gap-fixes-eshwar`, not merged or deployed, no migration):** each item was checked against the acceptance points in the change request, and the gaps were closed.
+  - GL-02: one toast for the whole app (the client portal uses the shared toaster through `client-portal/portal-toast.ts`), and the newest toast is on top.
+  - GL-03: one active-tab style in `src/components/ui/tab-classes.ts`, used by every tab bar.
+  - GL-05: the step list collapses on every role's step page, and the choice is kept per user in the browser.
+  - GL-06: every list builds its Excel file on the server from the screen's filters (`src/lib/exports/sources/`). The Directors grid is the one list that still sends rows, because its cells can hold unsaved answers. The audit log CSV comes from `GET /api/exports/audit-log`.
+  - GL-07: a step event no longer queues WhatsApp. The nudge goes out once, after the drafted client email is sent (`src/lib/email/step-whatsapp-after-send.ts`). Each step card and the client's step page show who sent the newest email (`src/db/repositories/sent-emails.ts`). Emails to staff stay automatic.
+  - GL-08: every download and every file inside a ZIP uses `standardDownloadName` or `standardNameFromFile`.
+  - NV-03: no breadcrumb links to a page that does not exist (a test reads every route under `app/app`), and the client portal's crumbs are links (`portalTrail` in `client-portal/routes.ts`).
+  - PR-02: two or more files are always zipped in the background; one file downloads directly.
+  - CD-01: the minimum number of directors follows the company kind (OPC 1, private 2, public 3, LLP 2). Part A has no company type field, so the kind is read from the first proposed name.
+  - DR-02: the server refuses (403) a Lead, Manager or Admin change to a client-only answer on pre-1 or pre-15, unless the step is assigned to the Lead.
+  - DR-03: the Lead has a "Send email" button on Proposed directors. It uses the remind route with `purpose: "step-opened"` and shares the reminder's limit of one email per item per 24 hours (owner decision: no exemption).
+  - SA-01: the filing card, the step and the agents share the step's `acknowledgementNumber` (pre-4 for Part A, pre-10 for Part B).
+  - SA-02: a change to the name-approval expiry date writes `checklist.name_expiry_change` (old value, new value, user, time), and the server refuses a client change.
+  - SB-01 (owner decision, option A): lists and exports show Part B in MCA section order through `orderByMcaSection` in `part-b-sections.ts`. The checklist order, the gates and previous/next are unchanged, so Proposed directors still opens before Subscriber details.
+  - BR-02 and BR-05: the signed step's panels have Open, the version, the uploader and the upload area, and a returned client edit is an item in the Lead's work list (`buildInternWorkItems`).
+  - Role links: `boardResolutionPathFor` sends each role to its own board resolution page (a manager or admin was sent to the Lead's page), a super admin's step links stay in the super admin shell, and `GET /api/assist/.../filing` answers 200 with `setUp: false` when VCFO Assist is off.
+
 Notes:
 - **Background exports (GL-06, PR-02)** run in `after()` (`src/lib/exports/background-export.ts`). The notice body starts with the file name, and `useExportReadyToast` shows a toast with Download when it arrives on the page that started it. Every list sends its filters, never its rows: `/api/exports/xlsx` parses them with `ListSourceSchema` (`src/lib/exports/list-source-schema.ts`) and reads the rows itself through the repositories with the caller's `AuthContext` (`src/lib/exports/list-sources.ts` and `sources/`): the audit log, approvals, admin and manager Projects, the lead's and the super admin's Clients, Incorporation, Obligations, the compliance calendar and Request lists. The rows, filters and columns come from the same pure functions the pages use (`src/lib/projects/client-row-facts.ts`, `firm-project-rows.ts`, `project-list-rows.ts`, `src/lib/intern/lead-client-rows.ts`, `src/lib/super/super-clients-list.ts`, `src/lib/practice/practice-incorporation-list.ts`, `src/lib/compliance/obligations-list.ts`, `calendar-selection.ts`). Only the Directors grid still sends rows (its cells may hold unsaved answers); the route refuses rows for any other list, and drops any row whose "Client" column names a client outside the caller's scope. The audit log CSV is built by `GET /api/exports/audit-log` from the same server source, so it covers every matching event; `/api/exports/log` and the browser CSV logger are gone. The file is kept in `export_files` and S3 `exports/` for 30 days, and only its maker can download it, through `/api/exports/[id]`. No migration was needed.
 - **Waiting on the owner:**
-  - CD-05 field details.
-  - The board resolution layout reference Word file (Part 3 of the 10 Nov list).
-  - Confirmation of the open CR questions. Each was built to the CR's own proposal: DIN check is manual, the DR-03 email is sent manually by the lead, and after a return the Lead corrects the edited board resolution.
+  - CD-05 is dropped (owner, 11 Nov). The other open CR questions are answered and built.
+  - LP-01 and LP-02: the landing page PRs #57 to #63 made the page open dark again and put the app screenshots back. The owner must say whether to return to light by default and to remove the screenshots.
+  - CD-04: the board resolution and NOC Word templates still print "the initial Paid-Up Capital". The owner must say whether to change that legal wording.
 
 ## Staff empty states (11 Nov 2026, on `staff-dashboards-empty-states-eshwar`, not merged or deployed)
 
