@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, Eye } from 'lucide-react';
+import { useDocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
+import { DocumentIconButton } from '@/components/document-downloads/DocumentIconButton';
 import { EmptyState, SkeletonRows } from '@/components/ui/empty-state';
 import { FileBadge, fileType } from '@/components/ui/file-badge';
 import type { Engagement } from '@/data/engagements';
@@ -17,7 +19,9 @@ import { cn } from '@/lib/utils';
  * card of the client's indexed files, newest first, with "Vault ›" in the head. Each row has the
  * file badge, the name, the source (Client in amber, SBC), the date and the size, and a download
  * button. The list is `GET /api/documents?engagementId=…`, which scopes by role through
- * `listDocuments`; download signs the file through `/api/documents/:id/signed-url`.
+ * `listDocuments`; download signs the file through `/api/documents/:id/signed-url`. The eye opens
+ * the shared viewer (`DocViewer`) on the whole list at that file, read from our own origin through
+ * `/api/documents/:id/preview` (same roles and scope).
  */
 export function useRecordDocuments(engagementId: string) {
   return useQuery({
@@ -50,9 +54,24 @@ async function download(doc: DocumentDto) {
   }
 }
 
+/** A vault file for the shared viewer. `?download=1` serves any type, so Word renders too. */
+function viewerDoc(doc: DocumentDto): ViewerDoc {
+  const url = `/api/documents/${encodeURIComponent(doc.id)}/preview?download=1`;
+  return {
+    id: doc.id,
+    name: doc.fileName,
+    contentType: doc.contentType,
+    sizeBytes: doc.sizeBytes,
+    uploadedAt: doc.createdAt,
+    url: async () => url,
+    downloadUrl: async () => url,
+  };
+}
+
 export function RecordDocumentsPanel({ engagement, vaultHref }: { engagement: Engagement; vaultHref: string }) {
   const docs = useRecordDocuments(engagement.id);
   const list = docs.data ?? [];
+  const viewer = useDocViewer();
 
   return (
     <section className="surface min-w-0 overflow-hidden" aria-label="Documents">
@@ -98,20 +117,22 @@ export function RecordDocumentsPanel({ engagement, vaultHref }: { engagement: En
                     {size ? ` · ${size}` : ''}
                   </p>
                 </div>
-                <button
-                  type="button"
+                <DocumentIconButton
+                  label={`Preview ${doc.fileName}`}
+                  icon={<Eye size={15} strokeWidth={1.6} aria-hidden />}
+                  onClick={() => viewer.open(list.map(viewerDoc), list.indexOf(doc))}
+                />
+                <DocumentIconButton
+                  label={`Download ${doc.fileName}`}
+                  icon={<Download size={15} strokeWidth={1.6} aria-hidden />}
                   onClick={() => void download(doc)}
-                  className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md border-1.5 border-line text-ink-2 hover:bg-surface-sunken hover:text-ink"
-                  aria-label={`Download ${doc.fileName}`}
-                  title="Download"
-                >
-                  <Download size={15} strokeWidth={1.6} aria-hidden />
-                </button>
+                />
               </div>
             );
           })}
         </div>
       )}
+      {viewer.node}
     </section>
   );
 }

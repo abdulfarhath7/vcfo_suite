@@ -22,6 +22,7 @@ import { createPortal } from 'react-dom';
 import { InfoPopover } from '@/components/client-portal/shared';
 import { LinkButton } from '@/components/client-portal/LinkButton';
 import { fileTag, longDate, previewMode, sizeLabel, TAG_STYLE, triggerDownload } from './file-types';
+import '../../css/23-portal.css';
 import '../../css/documents-viewer.css';
 
 export interface ViewerDoc {
@@ -84,8 +85,24 @@ function sameOrigin(url: string): boolean {
   }
 }
 
+const STAFF_HOST_ATTR = 'data-docviewer-host';
+
+/**
+ * The client portal root, or on a staff page a `.cp` host of our own: the viewer's styles are
+ * scoped under `.cp`, and `display: contents` keeps the host itself out of the page layout.
+ */
 function portalRoot(): Element {
-  return document.querySelector('.cp') ?? document.body;
+  const portal = document.querySelector(`.cp:not([${STAFF_HOST_ATTR}])`);
+  if (portal) return portal;
+  let host = document.querySelector(`[${STAFF_HOST_ATTR}]`);
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'cp';
+    host.setAttribute(STAFF_HOST_ATTR, '');
+    (host as HTMLElement).style.display = 'contents';
+    document.body.appendChild(host);
+  }
+  return host;
 }
 
 const ICON_DL = (
@@ -502,6 +519,10 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
     </div>
   );
 
+  const host = portalRoot();
+  // In the client portal the scrim leaves its sidebar visible; on a staff page the viewer covers
+  // the whole window.
+  const scrimLeft = host.hasAttribute(STAFF_HOST_ATTR) ? 0 : 'var(--vp-side-w,248px)';
   return createPortal(
     <div className="cp-docviewer" style={{ fontFamily: 'var(--font-sans),system-ui,sans-serif', color: 'oklch(var(--ink))', fontSize: 14 }}>
       <div
@@ -510,12 +531,12 @@ export function DocViewer({ docs, index, onClose, onIndexChange }: DocViewerProp
         onMouseDown={(e) => {
           if (e.target === e.currentTarget) close();
         }}
-        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 'var(--vp-side-w,248px)', background: 'var(--scrim)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
+        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: scrimLeft, background: 'var(--scrim)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147482700 }}
       >
         {body}
       </div>
     </div>,
-    portalRoot(),
+    host,
   );
 }
 
