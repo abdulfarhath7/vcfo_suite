@@ -9,6 +9,7 @@ import { getActiveCatalogItems, getChecklistStepTimelineLabel } from '@/data/che
 import { PHASE_NAMES, phaseCodes, superPhaseTrack } from '@/components/super/overview/super-overview-format';
 import { shortCompany } from '@/components/super/parts/super-text';
 import type { SuperEngagementDetail, SuperJourneyStep } from '@/lib/super/super-overview';
+import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { StepAboutPanel } from '@/views/client-record/StepAboutPanel';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +51,7 @@ export function SuperProjectJourney({ detail }: { detail: SuperEngagementDetail 
         openId={live?.phaseId}
         onAbout={(n) => {
           const step = detail.journey[n - 1];
-          if (step) setAbout({ id: step.id, label: `Step ${n}` });
+          if (step) setAbout({ id: step.id, label: partBStepDisplayLabel(step.id, `Step ${n}`) });
         }}
       />
       <StepAboutPanel
@@ -129,12 +130,15 @@ function phaseRows(detail: SuperEngagementDetail): Phase[] {
       total,
       status,
       tone: status === 'Done' ? 'ok' : status === 'In progress' ? 'prog' : 'idle',
-      steps: group.steps.map(({ step, n }): PhaseStep => {
+      // SB-01: Part B runs in MCA form order and shows its MCA section; `n` stays the journey position.
+      steps: orderByMcaSection(group.steps, ({ step }) => step.id).map(({ step, n }): PhaseStep => {
         const chip = statusOf(step);
         const item = items.get(step.id);
         const owner = step.awaitingReview ? 'manager' : step.owner === 'client' ? 'client' : 'sbc';
+        const code = partBStepDisplayLabel(step.id);
         return {
           n,
+          ...(code ? { code } : {}),
           title: step.title,
           owner,
           ownerLabel: owner === 'client' ? shortName : undefined,

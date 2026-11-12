@@ -168,6 +168,7 @@ export function Pre1DirectorsView({
   isCellReadOnly,
   onCellChange,
   cards,
+  engagementId,
 }: {
   fields: ChecklistField[];
   values: Record<string, string>;
@@ -175,6 +176,7 @@ export function Pre1DirectorsView({
   isCellReadOnly: (cellKey: string) => boolean;
   onCellChange: (cellKey: string, value: string) => void;
   cards: ReactNode;
+  engagementId?: string;
 }) {
   const [view, setView] = useDirectorView();
   const count = parseDirectorCount(values);
@@ -204,7 +206,7 @@ export function Pre1DirectorsView({
     <div className="grid gap-3">
       <DirectorViewToggle view={view} onChange={setView} />
       {view === 'grid' ? (
-        <DirectorGrid rows={rows} columns={columns} values={values} readOnly={isCellReadOnly} errors={errors} onChange={onCellChange} />
+        <DirectorGrid rows={rows} columns={columns} values={values} readOnly={isCellReadOnly} errors={errors} onChange={onCellChange} engagementId={engagementId} />
       ) : (
         cards
       )}

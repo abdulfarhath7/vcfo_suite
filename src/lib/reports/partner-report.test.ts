@@ -106,7 +106,7 @@ describe('buildPartnerReport', () => {
     expect(data.numbers[4]?.v).toBe('67%');
     expect(data.managers[0]).toEqual({ name: 'Pranay', clients: 3, onTime: '75%', overdue: 3, daysToCoi: '21 days' });
     expect(data.clientLine).toBe('0 clients in the book: 0 in incorporation and 0 incorporated.');
-    expect(partnerReportFilename(data.monthLabel)).toBe('SBC-partner-report-October-2026.pdf');
+    expect(partnerReportFilename(data.monthLabel, new Date('2026-11-11T06:00:00Z'))).toBe('Partner-Report-October-2026_SBC_11-11-2026.pdf');
   });
 });
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { ClientDocumentsForbiddenError, readClientDocumentFile } from '@/db/repositories/client-documents';
 import { fileErrorResponse } from '@/lib/api/file-error';
+import { attachmentDisposition, standardNameFromFile } from '@/lib/files/download-name';
 
 /**
  * GET /api/client/documents/file?ref=&dl=1 — the bytes of one client
@@ -18,14 +19,14 @@ export async function GET(request: Request) {
   try {
     const file = await readClientDocumentFile(guard.ctx, ref, url.searchParams.get('engagement') ?? undefined);
     if (!file) return fileErrorResponse(request, 'not_found', 404);
-    const safe = file.fileName.replace(/["\\\r\n]/g, '_');
     const disposition = url.searchParams.get('dl') === '1' ? 'attachment' : 'inline';
     return new NextResponse(new Uint8Array(file.bytes), {
       status: 200,
       headers: {
         'Content-Type': file.contentType,
         'Content-Length': String(file.bytes.length),
-        'Content-Disposition': `${disposition}; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+        // GL-08: the file is saved as `<Document>_<Client>_<DD-MM-YYYY>.<ext>`.
+        'Content-Disposition': attachmentDisposition(standardNameFromFile(file.fileName, file.companyName), disposition),
         'Cache-Control': 'private, no-store, max-age=0',
         'X-Content-Type-Options': 'nosniff',
       },

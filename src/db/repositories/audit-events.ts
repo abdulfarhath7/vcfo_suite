@@ -24,7 +24,8 @@ import type { AuditEventRow, RecordAuditEventInput } from '@/lib/audit/audit-log
  * Insert: any authenticated user; actor_user_id forced to session user.
  */
 
-function toRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
+/** A database row as the shared `AuditEventRow` (also read by `sent-emails.ts`). */
+export function toAuditEventRow(r: typeof auditEvents.$inferSelect): AuditEventRow {
   return {
     id: r.id,
     created_at: r.createdAt.toISOString(),
@@ -81,6 +82,8 @@ export interface ListAuditEventsOptions {
    */
   beforeId?: string;
   limit?: number;
+  /** Only rows with this action, e.g. `email.sent` (GL-07: who emailed from a step, and when). */
+  action?: string;
 }
 
 /**
@@ -133,6 +136,8 @@ export async function listAuditEvents(
   const clientAudit = ctx.role === 'client' ? await import('@/db/repositories/client-audit') : null;
   if (clientAudit) conds.push(clientAudit.clientVisibleAuditPredicate());
 
+  if (options.action) conds.push(eq(auditEvents.action, options.action));
+
   if (options.before && !Number.isNaN(options.before.getTime())) {
     if (options.beforeId) {
       // Sargable bound first, then the exact (millisecond, id) keyset.
@@ -160,13 +165,13 @@ export async function listAuditEvents(
   if (clientAudit) {
     // Client-safe projection: no staff e-mail addresses, ids or metadata.
     return rows.map((r) => ({
-      ...toRow(r),
+      ...toAuditEventRow(r),
       actor_email: null,
       summary: clientAudit.scrubForClient(r.summary),
       metadata: {},
     }));
   }
-  return rows.map(toRow);
+  return rows.map(toAuditEventRow);
 }
 
 function isMilestoneDocStoragePath(value: string): boolean {
@@ -189,7 +194,15 @@ function fileNameFromMilestonePath(path: string): string {
 }
 
 /**
- * Log deliver / milestone-document-remove side effects after a checklist patch.
+ * SA-02: answers whose every change is logged with the old value, the new value, the user and the
+ * time (the user and the time are the event's own columns).
+ */
+const VALUE_AUDITED_FIELDS: Readonly<Record<string, { fieldId: string; action: RecordAuditEventInput['action']; label: string }[]>> = {
+  'pre-5': [{ fieldId: 'nameApprovalExpiryDate', action: 'checklist.name_expiry_change', label: 'name approval expiry date' }],
+};
+
+/**
+ * Log deliver / milestone-document-remove / audited-value side effects after a checklist patch.
  * Fire-and-forget, exactly as before — callers do not await this.
  */
 export function auditChecklistItemPatch(
@@ -214,6 +227,18 @@ export function auditChecklistItemPatch(
   if (!patch.responses || !previous) return;
 
   const prevResponses = previous[itemId]?.responses ?? {};
+  for (const audited of VALUE_AUDITED_FIELDS[itemId] ?? []) {
+    if (!(audited.fieldId in patch.responses)) continue;
+    const oldValue = (prevResponses[audited.fieldId] ?? '').trim();
+    const newValue = (patch.responses[audited.fieldId] ?? '').trim();
+    if (oldValue === newValue) continue;
+    void recordAuditEvent(ctx, {
+      engagementId: appEngagementId,
+      action: audited.action,
+      summary: `Changed the ${audited.label} from ${oldValue || 'empty'} to ${newValue || 'empty'}`,
+      metadata: { itemId, fieldId: audited.fieldId, oldValue: oldValue || null, newValue: newValue || null },
+    });
+  }
   for (const [fieldId, newVal] of Object.entries(patch.responses)) {
     const oldVal = (prevResponses[fieldId] ?? '').trim();
     const nextVal = (newVal ?? '').trim();

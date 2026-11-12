@@ -21,6 +21,7 @@ type AuditAction =
   | 'checklist.review'
   | 'checklist.unlock'
   | 'checklist.deliver'
+  | 'checklist.name_expiry_change'
   | 'board_resolution.generate'
   | 'board_resolution.finalize'
   | 'board_resolution.signed_upload'
@@ -96,6 +97,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
   'checklist.review': 'Milestone reviewed',
   'checklist.unlock': 'Milestone unlocked',
   'checklist.deliver': 'Milestone delivered to client',
+  'checklist.name_expiry_change': 'Name approval expiry date changed',
   'board_resolution.generate': 'Board resolution generated',
   'board_resolution.finalize': 'Board resolution finalized',
   'board_resolution.signed_upload': 'Signed board resolution uploaded',

@@ -34,7 +34,9 @@ describe('PDF brief (F3)', () => {
     expect(BRIEF_DISCLAIMER).toBe('Informational only. Your firm confirms decisions for your company.');
   }, 30_000);
 
-  it('names the file after the company', () => {
-    expect(briefFilename('Acme India Private Limited')).toBe('acme-india-private-limited.pdf');
+  it('gives the file the standard name (GL-08)', () => {
+    const on = new Date('2026-11-11T06:00:00Z');
+    expect(briefFilename('Acme India Private Limited', undefined, on)).toBe('Brief_Acme-India-Private-Limited_11-11-2026.pdf');
+    expect(briefFilename('Acme India Private Limited', 'Status October 2026', on)).toBe('Status-October-2026_Acme-India-Private-Limited_11-11-2026.pdf');
   });
 });

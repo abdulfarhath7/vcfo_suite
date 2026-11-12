@@ -12,11 +12,13 @@ const remindSchema = z
   .object({
     itemKey: itemKeySchema,
     note: z.string().trim().max(1000, 'Note is too long').nullish(),
+    /** DR-03: `step-opened` drafts the "Proposed directors is open" email instead of the reminder. */
+    purpose: z.enum(['reminder', 'step-opened']).optional(),
   })
   .merge(EmailStepSchema);
 
 /**
- * POST /api/engagements/:id/remind { itemKey, note?, preview? | email } — staff remind the client about one
+ * POST /api/engagements/:id/remind { itemKey, note?, purpose?, preview? | email } — staff remind the client about one
  * item they still owe. Email first, WhatsApp only for clients who opted in, an audit event,
  * and at most one reminder per item per 24 hours (429 with `retryAt` after that).
  * Returns `{ sent: true, channels }`.

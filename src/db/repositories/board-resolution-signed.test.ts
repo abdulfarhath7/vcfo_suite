@@ -47,7 +47,7 @@ vi.mock('@/db/repositories/engagements', () => ({
   toAppEngagement: (r: unknown) => r,
 }));
 
-const { setSignedBoardResolution } = await import('@/db/repositories/board-resolution');
+const { getBoardResolutionByEngagementId, setSignedBoardResolution, signedUploaderDisplayName } = await import('@/db/repositories/board-resolution');
 const dialect = new PgDialect();
 
 function ctx(role: string): AuthContext {
@@ -96,5 +96,43 @@ describe('setSignedBoardResolution', () => {
     results = [[{ ...finalizedRow, status: 'draft' }]];
     await expect(setSignedBoardResolution(ctx('intern'), OWN, 'br/signed.pdf')).rejects.toThrow(/not finalized/);
     expect(calls.filter((c) => c.op === 'update')).toHaveLength(0);
+  });
+});
+
+describe('who uploaded the signed copy (BR-02)', () => {
+  const UPLOADER = '33333333-3333-4333-8333-333333333303';
+  const signedRow = { ...finalizedRow, signedStoragePath: 'br/signed.pdf', signedUploadedAt: new Date('2026-10-30T09:00:00Z'), signedUploadedBy: UPLOADER };
+
+  it('the repository resolves the uploader through the engagement it may read', async () => {
+    results = [[signedRow], [{ name: 'Divya Rao', email: 'divya@sbc.test', role: 'intern' }]];
+    const doc = await getBoardResolutionByEngagementId(ctx('manager'), OWN);
+    expect(doc?.signedUploadedByName).toBe('Divya Rao');
+    expect(calls.filter((c) => c.op === 'select')).toHaveLength(2);
+  });
+
+  it('a foreign engagement reads nothing, not even the name', async () => {
+    const doc = await getBoardResolutionByEngagementId(ctx('client'), OTHER);
+    expect(doc).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+
+  it('no uploader means no profile lookup', async () => {
+    results = [[finalizedRow]];
+    const doc = await getBoardResolutionByEngagementId(ctx('intern'), OWN);
+    expect(doc?.signedUploadedByName).toBeUndefined();
+    expect(calls.filter((c) => c.op === 'select')).toHaveLength(1);
+  });
+
+  it('staff read the full name; the client reads first names and the admin by role', () => {
+    const lead = { name: 'Divya Rao', email: 'divya@sbc.test', role: 'intern' };
+    const admin = { name: 'Ravi Kumar', email: 'ravi@sbc.test', role: 'super_admin' };
+    const client = { name: 'Anil Mehta', email: 'anil@acme.test', role: 'client' };
+    expect(signedUploaderDisplayName('manager', lead)).toBe('Divya Rao');
+    expect(signedUploaderDisplayName('admin', admin)).toBe('Ravi Kumar');
+    expect(signedUploaderDisplayName('client', lead)).toBe('Divya');
+    expect(signedUploaderDisplayName('client', admin)).toBe('Admin');
+    expect(signedUploaderDisplayName('client', client)).toBe('Anil Mehta');
+    expect(signedUploaderDisplayName('intern', { name: null, email: 'x@acme.test', role: 'client' })).toBe('x');
+    expect(signedUploaderDisplayName('client', null)).toBeNull();
   });
 });

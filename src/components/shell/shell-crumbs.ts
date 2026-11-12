@@ -309,6 +309,16 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     ]);
   }
 
+  if (parts[1] === 'client' && page === 'incorporation' && parts[3] === 'phase') {
+    // NV-03: `/incorporation/phase` has no page of its own, so the trail is Incorporation › the
+    // SPICe+ part, never a "Phase" crumb that links nowhere.
+    const phase = internOverviewPhases()[Number(parts[4]) - 1];
+    return trail('briefcase', [
+      { label: 'Incorporation', href: '/app/client/incorporation' },
+      { label: phase?.title ?? 'Phase', href: null },
+    ]);
+  }
+
   if (parts[1] === 'client' && page === 'board-resolution') {
     return trail('briefcase', [
       { label: 'Incorporation', href: '/app/client/incorporation' },

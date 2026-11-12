@@ -7,7 +7,7 @@ import { buildDataset, type SlotInput } from './dataset';
 import { parseWorkbook, type WorkbookInput } from './parse';
 import { matchColumns } from './match';
 import { projectForm, projectForms } from './project';
-import { documentFileName, batchZipName, periodLabel } from './storage';
+import { batchZipDownloadName, documentFileName, periodLabel, registerDownloadName } from './storage';
 import { isBuilt } from './xlsx/layouts';
 import { renderForForm } from './xlsx/renderers';
 import { createUniqueNamer, zipEntryPath } from '@/lib/zip/entry-names';
@@ -232,8 +232,20 @@ describe('the act-wise archive', () => {
     }
   });
 
-  it('names the archive for the state and the period', () => {
-    expect(batchZipName('Telangana', period)).toBe('Telangana labour registers - Sep-2026.zip');
+  it('names the archive for the state, the period and the client (GL-08)', () => {
+    const on = new Date('2026-11-11T06:00:00Z');
+    expect(batchZipDownloadName('Telangana', period, 'ember technologies private limited', on)).toBe(
+      'Labour-Registers-Telangana-Sep-2026_Ember-Technologies-Private-Limited_11-11-2026.zip',
+    );
+  });
+
+  it('gives a downloaded register and its signed scan the standard name (GL-08)', () => {
+    const on = new Date('2026-11-11T06:00:00Z');
+    const form = formById('in-wages-iv')!;
+    expect(registerDownloadName(form, period, 'xlsx', 'Ember Pvt Ltd', on)).toBe(
+      'Form-IV-Register-of-wages-overtime-fines-deductions-and-advances-Sep-2026_Ember-Pvt-Ltd_11-11-2026.xlsx',
+    );
+    expect(registerDownloadName(form, period, 'signed.pdf', 'Ember Pvt Ltd', on)).toMatch(/-Sep-2026-Signed_Ember-Pvt-Ltd_11-11-2026\.pdf$/);
   });
 
   it('names a register the way somebody forwarding it would need', () => {

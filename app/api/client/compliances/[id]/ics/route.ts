@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { getPortalFilings } from '@/db/repositories/client-compliances';
 import { filingsIcs } from '@/lib/client-portal/compliances';
+import { standardDownloadName } from '@/lib/files/download-name';
 
 /** GET /api/client/compliances/:id/ics — "Add to my calendar" for one filing. */
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -12,11 +13,11 @@ export async function GET(_request: Request, ctx: { params: Promise<{ id: string
   const rows = await getPortalFilings(guard.ctx, { ids: [id] });
   const row = rows[0];
   if (!row) return NextResponse.json({ error: 'Filing not found' }, { status: 404 });
-  const file = `${row.name}-${row.period}`.replace(/[^\w-]+/g, '-').replace(/-+/g, '-');
+  const file = standardDownloadName(`${row.name} ${row.period}`, row.companyName, 'ics');
   return new Response(filingsIcs([row]), {
     headers: {
       'content-type': 'text/calendar; charset=utf-8',
-      'content-disposition': `attachment; filename="${file}.ics"`,
+      'content-disposition': `attachment; filename="${file}"`,
       'cache-control': 'no-store',
     },
   });

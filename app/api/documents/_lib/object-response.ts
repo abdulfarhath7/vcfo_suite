@@ -1,6 +1,7 @@
 import 'server-only';
 import type { ResolvedVaultFile } from '@/db/repositories/documents';
 import { signedDownloadUrl } from '@/storage/s3';
+import { standardNameFromFile } from '@/lib/files/download-name';
 
 /*
  * Shared by the vault routes (G-26): read an S3 object as a stream and hand it back from our own
@@ -78,7 +79,10 @@ export async function previewResponse(
   if (!object) return Response.json({ ok: false, error: 'not_found' }, { status: 404 });
   const headers = new Headers({
     'Content-Type': type,
-    'Content-Disposition': contentDisposition(options.download ? 'attachment' : 'inline', file.fileName),
+    // GL-08: a download is saved as `<Document>_<Client>_<DD-MM-YYYY>.<ext>`; the preview keeps the stored name.
+    'Content-Disposition': options.download
+      ? contentDisposition('attachment', standardNameFromFile(file.fileName, file.companyName))
+      : contentDisposition('inline', file.fileName),
     'Cache-Control': 'private, max-age=300',
     'X-Content-Type-Options': 'nosniff',
     'Cross-Origin-Resource-Policy': 'same-origin',

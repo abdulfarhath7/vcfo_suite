@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { readPacket } from '@/db/repositories/assist-filings';
 import { NO_STORE, assistStaff, filingError, notFound } from '@/lib/mca-filing/route-helpers';
 
@@ -18,7 +19,7 @@ export async function GET(_request: Request, context: RouteContext) {
   try {
     const out = await readPacket(auth.ctx, id, n);
     if (!out) return notFound();
-    const name = `${out.companyName.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').slice(0, 60) || 'company'}-filing-packet-${n}.json`;
+    const name = standardDownloadName(`Filing Packet ${n}`, out.companyName, 'json');
     return new NextResponse(JSON.stringify({ ...out.summary, companyName: out.companyName, content: out.content }, null, 2), {
       headers: { ...NO_STORE, 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"` },
     });

@@ -27,22 +27,25 @@ export function auditEventCells(ev: AuditEventRow, engagementsByDbId: Map<string
   ];
 }
 
-/** The rows in view as CSV text (prototype Audit export). One line per event, newest first. */
-export function auditEventsCsv(events: AuditEventRow[], engagementsByDbId: Map<string, string>): string {
-  const lines = events.map((ev) =>
-    auditEventCells(ev, engagementsByDbId)
-      .map((v) => quote(String(v)))
-      .join(','),
-  );
+/**
+ * Export rows as CSV text under `AUDIT_EXPORT_HEAD` (prototype Audit export). The server builds
+ * the rows with the caller's scope (`auditLogExportRows`), so the CSV holds every event the
+ * filters keep, not only the pages loaded, newest first.
+ */
+export function auditRowsCsv(rows: ReadonlyArray<ReadonlyArray<string | number | null>>): string {
+  const lines = rows.map((cells) => cells.map((v) => quote(String(v ?? ''))).join(','));
   return [AUDIT_EXPORT_HEAD.join(','), ...lines].join('\n');
 }
 
-/** Save the CSV text through a temporary link. Browser only. */
-export function downloadCsv(text: string, filename: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+/** The CSV download of the audit log (`/api/exports/audit-log`) for the filters on screen. */
+export function auditCsvHref(input: {
+  engagementId?: string | null;
+  filters: { search: string; role: string; category: string };
+  name: string;
+  client?: string | null;
+}): string {
+  const q = new URLSearchParams({ search: input.filters.search, role: input.filters.role, category: input.filters.category, name: input.name });
+  if (input.engagementId) q.set('engagementId', input.engagementId);
+  if (input.client) q.set('client', input.client);
+  return `/api/exports/audit-log?${q.toString()}`;
 }

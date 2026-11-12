@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { useExpiries, useMarkRenewed, type ExpiryItem } from '@/hooks/use-expiries';
 import { STATUS_TILE, tileParts } from '@/lib/compliance/spectrum-status';
-import { CALENDAR_ONLY_KINDS, daysLeftLabel, expiryCalendarStatus } from '@/lib/expiries/model';
+import { CALENDAR_ONLY_KINDS, daysLeftLabel, expiryCalendarStatus, openExpiryItems } from '@/lib/expiries/model';
 import { cn } from '@/lib/utils';
 
 /** Expired items stay listed until renewed; later ones show this many days ahead. */
@@ -27,7 +27,7 @@ export function expiryTone(daysLeft: number): ChipTone {
 
 /** The items a calendar shows: not renewed, expired or expiring within `days`, soonest first. */
 export function openExpiries(items: readonly ExpiryItem[] | undefined, days = EXPIRY_CARD_DAYS): ExpiryItem[] {
-  return (items ?? []).filter((x) => !x.renewedAt && x.daysLeft <= days).sort((a, b) => a.expiresOn.localeCompare(b.expiresOn));
+  return openExpiryItems(items, days);
 }
 
 /**

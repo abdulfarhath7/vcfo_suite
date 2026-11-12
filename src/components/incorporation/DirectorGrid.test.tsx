@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ChecklistField } from '@/data/checklist';
-import { DirectorGrid, DirectorViewToggle } from './DirectorGrid';
+import { DirectorGrid, DirectorViewToggle, directorGridExportRows } from './DirectorGrid';
 
 const text = (id: string, label: string): ChecklistField => ({ id, label, type: 'text' }) as ChecklistField;
 const columns = [
@@ -38,6 +38,22 @@ describe('CD-03 / SB-02 director grid', () => {
     expect(screen.getByLabelText('First Name · Director 2')).toBeDisabled();
     // The name column stays in view while the grid scrolls sideways.
     expect(screen.getByRole('rowheader', { name: /Director 1/ }).className).toContain('sticky');
+  });
+
+  it('GL-06: offers Export to Excel with the grid\'s rows and columns', () => {
+    render(<DirectorGrid rows={rows} columns={columns} values={{}} readOnly={() => false} onChange={vi.fn()} />);
+    expect(screen.getByTestId('export-to-excel')).toHaveTextContent('Export to Excel');
+    const gender = { id: 'gender', label: 'Gender', field: { id: 'gender', label: 'Gender', type: 'select', options: [{ value: 'f', label: 'Female' }] } as ChecklistField };
+    const out = directorGridExportRows(rows, [...columns, gender], {
+      'directors.e1.firstName': 'Asha',
+      'directors.e1.gender': 'f',
+      'directors.e2.passportNumber': 'P123',
+    });
+    // The director, then each answer as the grid shows it; a question not asked is empty.
+    expect(out).toEqual([
+      ['Director 1', 'Asha', null, 'Female'],
+      ['Director 2', null, 'P123', null],
+    ]);
   });
 
   it('switches between Cards and Grid', () => {

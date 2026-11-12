@@ -16,7 +16,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${receivablesWorkbookName(src.sheet.clientOrgName, today).replace(/[^\w .-]/g, '')}"`,
+        'Content-Disposition': `attachment; filename="${receivablesWorkbookName(src.sheet.clientOrgName, today)}"`,
         'Cache-Control': 'no-store',
       },
     });

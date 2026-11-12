@@ -16,6 +16,7 @@ import {
   internEngagementStepPath,
   isClientIncorporationStepPathname,
   isInternEngagementPathname,
+  staffProjectBaseFromPathname,
 } from '@/lib/projects/project-step-path';
 import {
   engagementRouteParamFromParams,
@@ -64,13 +65,16 @@ export function useEngagementStepDetail() {
   const readOnlyView = isClientRoute || !isIntern;
   const engagementParam = engagementRouteParamFromParams(params);
   const stepParam = params.stepId as string;
-  const staffRole = user?.role === 'admin' || user?.role === 'manager' ? user.role : 'manager';
+  // The shell the page is open in, so every link stays there: a manager stays under
+  // /app/manager, an admin under /app/admin, and the super admin in whichever of the two they
+  // opened the project from (the role alone sent the super admin to the manager's area).
+  const staffBase = staffProjectBaseFromPathname(pathname, user?.role);
 
   const projectPath = isClientRoute
     ? () => clientIncorporationPath()
     : isInternRoute
       ? internEngagementPath
-      : (p: Parameters<typeof adminProjectPath>[0]) => adminProjectPath(p, staffRole);
+      : (p: Parameters<typeof adminProjectPath>[0]) => adminProjectPath(p, staffBase);
   const stepPath = isClientRoute
     ? (_p: unknown, step: string | ChecklistItem) => clientIncorporationStepPath(step)
     : isInternRoute
@@ -78,14 +82,12 @@ export function useEngagementStepDetail() {
       : (
           p: Parameters<typeof adminProjectStepPath>[0],
           step: Parameters<typeof adminProjectStepPath>[1],
-        ) => adminProjectStepPath(p, step, staffRole);
+        ) => adminProjectStepPath(p, step, staffBase);
   const listRedirect = isClientRoute
     ? clientIncorporationPath()
     : isInternRoute
       ? '/app/lead/clients'
-      : staffRole === 'admin'
-        ? '/app/admin/projects'
-        : '/app/manager/projects';
+      : `${staffBase}/projects`;
 
   // The client route carries no `{id}`: a client has exactly one engagement, and
   // resolving it from the session is also what keeps the surface scoped.
@@ -122,7 +124,7 @@ export function useEngagementStepDetail() {
     !isClientRoute &&
     (internPhase?.id === 'pre-inc-phase-1' || internPhase?.id === 'pre-inc-phase-2');
   const docPack = useDocPack(docPackVisible ? eng?.id : null);
-  const docPackShell: DocPackShell = isInternRoute ? 'intern' : staffRole;
+  const docPackShell: DocPackShell = isInternRoute ? 'intern' : staffBase;
   const bucketSteps = useMemo(() => {
     if (!item) return [];
     const fromCatalog = catalog.filter((c) => c.bucket === item.bucket);

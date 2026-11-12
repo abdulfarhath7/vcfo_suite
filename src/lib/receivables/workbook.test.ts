@@ -4,7 +4,7 @@ import { amountsOf, parseReceivablesWorkbook, type WorkbookInput } from './impor
 import { isPublicKeyShape, partnerSlug, publicPageUrl } from './links';
 import { newPublicKey } from './public-key';
 import type { SnapshotRow } from './model';
-import { receivablesWorkbook } from './xlsx';
+import { receivablesWorkbook, receivablesWorkbookName } from './xlsx';
 
 /** A workbook shaped like "Receivables Summary Week 1 November.xlsx" (columns E to I). */
 async function financeSheet(): Promise<WorkbookInput> {
@@ -102,5 +102,12 @@ describe('links', () => {
   it('makes free partner slugs', () => {
     expect(partnerSlug('Sandeep Sharma', [])).toBe('sandeep');
     expect(partnerSlug('Sandeep Rao', ['sandeep'])).toBe('sandeep-2');
+  });
+});
+
+describe('receivablesWorkbookName (GL-08)', () => {
+  it('follows the standard name, with the IST day it was made', () => {
+    expect(receivablesWorkbookName('duravant india private limited', '2026-11-11')).toBe('Receivables_Duravant-India-Private-Limited_11-11-2026.xlsx');
+    expect(receivablesWorkbookName('Duravant', '2026-11-11', 'Overdue view')).toBe('Receivables-Overdue-view_Duravant_11-11-2026.xlsx');
   });
 });

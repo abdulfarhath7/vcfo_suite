@@ -120,3 +120,39 @@ export function crumbsFor(pathname: string): { mid?: string; crumb: string; icon
   if (/\/library\/[^/]+/.test(p) || p.includes('/learn/')) return { mid: 'Library', crumb: 'Reading', icon: 'knowledge-bank' };
   return { crumb: PORTAL_TITLES[key], icon: key };
 }
+
+/** A crumb as a page gives it: a label alone, or a label with the page it opens. */
+export type PortalCrumbInput = string | { label: string; href?: string | null };
+
+/** A resolved crumb: `href` is null for the current page and for a label that names no page. */
+export type PortalCrumb = { label: string; href: string | null };
+
+/** Group labels that have no sidebar row of their own open their first child, as in the staff shell. */
+const GROUP_HREFS: Record<string, string> = {
+  Incorporation: PORTAL_PATHS.incorporation,
+  Compliances: PORTAL_PATHS.compliances,
+  Updates: PORTAL_PATHS.announcements,
+};
+
+/** The page a crumb label opens, read from the sidebar titles and the groups above. */
+export function portalCrumbHref(label: string): string | null {
+  if (GROUP_HREFS[label]) return GROUP_HREFS[label];
+  const key = (Object.keys(PORTAL_TITLES) as PortalRouteKey[]).find((k) => !PORTAL_ALIAS_KEYS.has(k) && PORTAL_TITLES[k] === label);
+  return key ? PORTAL_PATHS[key] : null;
+}
+
+/**
+ * NV-03: the top bar trail as links. A page's own trail wins over the route's default one.
+ * Every crumb but the last opens the page it names (a page may give that page itself, for
+ * example the SPICe+ part of a step), and the last crumb is the current page with no link.
+ */
+export function portalTrail(pathname: string, pageCrumbs?: readonly PortalCrumbInput[] | null): PortalCrumb[] {
+  const { mid, crumb } = crumbsFor(pathname);
+  const inputs: readonly PortalCrumbInput[] = pageCrumbs && pageCrumbs.length ? pageCrumbs : [...(mid ? [mid] : []), crumb];
+  return inputs.map((c, i) => {
+    const label = typeof c === 'string' ? c : c.label;
+    if (i === inputs.length - 1) return { label, href: null };
+    const href = typeof c === 'string' || c.href === undefined ? portalCrumbHref(label) : c.href;
+    return { label, href };
+  });
+}

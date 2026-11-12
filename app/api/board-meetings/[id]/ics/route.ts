@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
 import { getMeeting } from '@/db/repositories/board-meetings';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { meetingIcs } from '@/lib/board-meetings/calendar';
 import { meetingError, type RouteContext } from '../../_respond';
 
@@ -27,7 +28,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return new Response(ics, {
       headers: {
         'content-type': 'text/calendar; charset=utf-8',
-        'content-disposition': `attachment; filename="${m.meetingNo.replace(/[^\w-]+/g, '_')}.ics"`,
+        'content-disposition': `attachment; filename="${standardDownloadName(m.meetingNo, m.company.name, 'ics')}"`,
         'cache-control': 'no-store',
       },
     });

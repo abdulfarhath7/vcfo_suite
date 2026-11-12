@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { istDay, standardDownloadName } from '@/lib/files/download-name';
 import { foreignAmountHeader } from './currencies';
 import { daysLeft, monthBlockTitle, monthShort } from './dates';
 import type { SnapshotRow } from './model';
@@ -119,6 +120,7 @@ export async function receivablesWorkbook(rows: SnapshotRow[], today: string): P
   return new Uint8Array(buf as ArrayBuffer);
 }
 
-export function receivablesWorkbookName(clientOrgName: string, today: string): string {
-  return `Receivables ${clientOrgName} ${today}.xlsx`;
+/** The standard download name (GL-08): `Receivables[-<view>]_<Client>_<DD-MM-YYYY>.xlsx`. */
+export function receivablesWorkbookName(clientOrgName: string, today: string, view = ''): string {
+  return standardDownloadName(view ? `Receivables ${view}` : 'Receivables', clientOrgName, 'xlsx', istDay(today));
 }

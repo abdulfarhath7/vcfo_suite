@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${briefFilename(brief.companyName, `${brief.companyName} status ${brief.monthLabel}`)}"`,
+        'Content-Disposition': `attachment; filename="${briefFilename(brief.companyName, `Status ${brief.monthLabel}`)}"`,
         'Cache-Control': 'no-store',
       },
     });

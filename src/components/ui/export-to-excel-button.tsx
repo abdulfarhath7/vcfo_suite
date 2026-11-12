@@ -7,9 +7,10 @@ import { useExcelExport, type ExcelExportInput } from '@/hooks/use-excel-export'
 export type { ExcelCell } from '@/hooks/use-excel-export';
 
 /**
- * GL-06: "Export to Excel", at the top right of a list. Pass every row that matches the list's
- * filters, in its sort order, not only the rows on screen. The file is made in the background;
- * the bell says when it is ready, with a Download link, and the GL-08 name.
+ * GL-06: "Export to Excel", at the top right of a list. Pass the list's `source` with the filters
+ * and sort on screen; the server reads every matching row the viewer may see, not only the rows on
+ * screen. The file is made in the background; the bell says when it is ready, with a Download
+ * link, and the GL-08 name.
  */
 export function ExportToExcelButton({ className, ...input }: ExcelExportInput & { className?: string }) {
   const { start, busy } = useExcelExport(input);

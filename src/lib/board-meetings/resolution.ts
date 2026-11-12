@@ -1,3 +1,4 @@
+import { properNameCase } from '@/lib/names/name-casing';
 import { longDate } from './dates';
 import { simpleDocx, type P } from './notice-docx';
 import { resolvedText } from './rules';
@@ -25,7 +26,13 @@ export interface ResolutionDocInput {
 }
 
 
-function resolutionParagraphs(input: ResolutionDocInput): P[] {
+function resolutionParagraphs(raw: ResolutionDocInput): P[] {
+  // GL-09: the company and the signing directors print with capital letters.
+  const input: ResolutionDocInput = {
+    ...raw,
+    companyName: properNameCase(raw.companyName),
+    signers: raw.signers.map((s) => ({ ...s, name: properNameCase(s.name) })),
+  };
   const out: P[] = [
     { text: input.companyName.toUpperCase(), bold: true, center: true, after: 0 },
     ...(input.cin ? [{ text: `CIN: ${input.cin}`, center: true, size: 18, after: 0 }] : []),

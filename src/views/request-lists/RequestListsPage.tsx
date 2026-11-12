@@ -11,7 +11,7 @@ import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { isItemDone } from '@/lib/request-lists/model';
+import { isItemDone, REQUEST_LIST_STATUS_WORD, requestListsInTab, type RequestListTab } from '@/lib/request-lists/model';
 import {
   addItem,
   answerItem,
@@ -39,10 +39,10 @@ import {
  */
 
 const STATUS_WORD: Record<string, { word: string; tone: ChipTone }> = {
-  draft: { word: 'Draft', tone: 'idle' },
-  sent: { word: 'Waiting on client', tone: 'prog' },
-  complete: { word: 'Complete', tone: 'ok' },
-  cancelled: { word: 'Cancelled', tone: 'idle' },
+  draft: { word: REQUEST_LIST_STATUS_WORD.draft, tone: 'idle' },
+  sent: { word: REQUEST_LIST_STATUS_WORD.sent, tone: 'prog' },
+  complete: { word: REQUEST_LIST_STATUS_WORD.complete, tone: 'ok' },
+  cancelled: { word: REQUEST_LIST_STATUS_WORD.cancelled, tone: 'idle' },
 };
 
 const ITEM_WORD: Record<string, { word: string; tone: ChipTone }> = {
@@ -54,7 +54,7 @@ const ITEM_WORD: Record<string, { word: string; tone: ChipTone }> = {
 
 const KIND_WORD: Record<string, string> = { document: 'Document', answer: 'Answer', confirmation: 'Confirmation' };
 
-type Tab = 'open' | 'drafts' | 'closed';
+type Tab = RequestListTab;
 
 export function RequestListsPage() {
   const { user, engagements } = useApp();
@@ -66,9 +66,8 @@ export function RequestListsPage() {
   const q = useQuery({ queryKey: REQUEST_LISTS_KEY, queryFn: fetchLists });
 
   const lists = useMemo(() => q.data?.lists ?? [], [q.data]);
-  const shown = lists.filter((l) =>
-    isClient ? true : tab === 'open' ? l.status === 'sent' : tab === 'drafts' ? l.status === 'draft' : l.status === 'complete' || l.status === 'cancelled',
-  );
+  // The tabs are shared with the server's Excel export (GL-06).
+  const shown = isClient ? lists : requestListsInTab(lists, tab);
 
   useEffect(() => {
     if (!selected && isClient && lists[0]) setSelected(lists.find((l) => l.status === 'sent')?.id ?? lists[0].id);
@@ -94,21 +93,8 @@ export function RequestListsPage() {
               <Button size="sm" onClick={() => setCreating((v) => !v)}>
                 New list
               </Button>
-              {/* GL-06: every list in the tab in view, in the list's order. */}
-              <ExportToExcelButton
-                title="Request lists"
-                columns={['List', 'Client', 'Due', 'Reminders sent', 'Items in', 'Status']}
-                rows={() =>
-                  shown.map((l) => [
-                    l.title,
-                    l.companyName,
-                    l.dueOn,
-                    l.reminderCount,
-                    `${l.progress.done} of ${l.progress.total}`,
-                    (STATUS_WORD[l.status] ?? STATUS_WORD.draft!).word,
-                  ])
-                }
-              />
+              {/* GL-06: the server reads every list in the tab in view, in the list's order. */}
+              <ExportToExcelButton title="Request lists" source={{ source: 'request-lists', tab }} />
             </div>
           )
         }

@@ -21,6 +21,7 @@ import {
   type SpiceAttachmentStatus,
 } from '@/lib/spice-attachments/derive';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
+import { useExportReadyToast } from '@/hooks/use-export-ready-toast';
 
 const TONE: Record<SpiceAttachmentStatus, ChipTone> = {
   done: 'ok',
@@ -59,6 +60,7 @@ export function SpiceAttachmentsCard({
   const catalog = useDocumentCatalog(engagementId);
   const viewer = useDocViewer();
   const [downloading, setDownloading] = useState<string | null>(null);
+  const watchExport = useExportReadyToast();
 
   const rowFiles = (row: SpiceAttachment) => filesForSpiceAttachment(row.key, catalog.data?.root).filter((f) => f.ready);
   const unavailable = (row: SpiceAttachment): string | null => {
@@ -71,6 +73,7 @@ export function SpiceAttachmentsCard({
     setDownloading(row.key);
     try {
       const out = await downloadDocumentKeys(engagementId, rowFiles(row).map((f) => f.key));
+      if (out.queued && out.fileName) watchExport(out.fileName);
       if (out.queued) toastSuccess('Making the ZIP', `${out.fileName ?? row.label} will be in your notifications when it is ready.`);
     } catch (err) {
       toastError('The download did not start', errorMessage(err));

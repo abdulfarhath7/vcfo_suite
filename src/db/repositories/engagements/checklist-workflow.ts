@@ -19,6 +19,7 @@ import {
   canRoleEditField,
   directReopenPatch,
   directSubmitPatch,
+  clientOnlyFieldsChangedBy,
   isDirectFlowStep,
   isDirectFlowStepComplete,
   isWaitingOnLead,
@@ -28,6 +29,7 @@ import {
   waitingOnLeadPatch,
 } from '@/lib/incorporation/pre-inc-direct-flow';
 import { validateStepAgainstState } from '@/lib/checklist/checklist-step-validation';
+import { clientChangesNameExpiry } from '@/lib/checklist/name-approval-expiry';
 import { LEGACY_ENGAGEMENT_IDS, engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { auditChecklistItemPatch } from '@/db/repositories/audit-events';
 import { isFirmWideAdmin } from '@/lib/auth';
@@ -168,6 +170,12 @@ export async function submitDirectFlowStep(
   if (ctx.role === 'client') {
     if (isDirectFlowStepComplete(itemId, slice)) throw new Error('step_already_submitted');
     if (isWaitingOnLead(itemId, slice)) throw new Error('step_waiting_on_lead');
+    // SA-02: the client reads the name approval expiry date; staff change it.
+    if (clientChangesNameExpiry(itemId, responses, slice?.responses)) throw new Error('name_expiry_staff_only');
+  }
+  // DR-02: a lead's submit that would change the client's own answers is refused, not trimmed.
+  if (clientOnlyFieldsChangedBy(ctx.role, itemId, responses, slice).length > 0) {
+    throw new Error('client_only_fields');
   }
 
   const sent =

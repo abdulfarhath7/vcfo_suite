@@ -23,6 +23,9 @@ import {
 } from '@/lib/board-resolution/client-edit';
 import { workHolderLabel, type WorkHolderTeam } from '@/lib/checklist/work-holder';
 import { companyFromAddress, sendEmail } from '@/lib/email/send-email';
+import { draftView, messageHtml, withEdits, type ComposedEmail, type EmailDraftView, type EmailEdits } from '@/lib/email/email-edits';
+import { renderEmailDocument } from '@/lib/email/email-layout';
+import { recordEmailSent } from '@/lib/email/record-email-sent';
 import { MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { stepPathForRole } from '@/lib/projects/project-step-path';
@@ -161,11 +164,16 @@ export async function actOnClientEdit(
   engagementId: string,
   action: Exclude<ClientEditAction, 'save' | 'correct'>,
   note?: string | null,
+  email?: EmailEdits | null,
 ): Promise<ClientEditView | null> {
   const { engagement, edit } = await load(ctx, engagementId);
   if (!edit) throw new Error('no_client_edit');
   const next = nextClientEditStage(edit.stage, action, ctx.role, note);
   if ('error' in next) throw new Error(next.error);
+  // GL-07: "Send to the firm" goes out only from the Send email pop-up. With no Lead email on
+  // record there is no draft, and the move goes ahead with the in-app notice alone.
+  const composed = action === 'send' ? await composeFirmEmail(ctx, engagement.id) : null;
+  if (composed && !email) throw new Error('email_needed');
 
   const now = new Date().toISOString();
   await patchChecklistItem(ctx, engagement.id, STEP, {
@@ -182,7 +190,7 @@ export async function actOnClientEdit(
     summary: `${ctx.name || 'Someone'} (${roleWord(ctx.role)}) ${CLIENT_EDIT_ACTION_TEXT[action]}${action === 'return' ? `: ${note!.trim()}` : ''}`,
     metadata: action === 'return' ? { reason: note!.trim() } : {},
   });
-  if (action === 'send') await emailFirm(ctx, engagement.id, note);
+  if (composed && email) await emailFirm(ctx, engagement.id, composed, email);
   await notifyParticipants(ctx, engagement.id, action, next.stage, action === 'return' ? note : null);
   return getClientEditView(ctx, engagementId);
 }
@@ -244,28 +252,49 @@ async function notifyParticipants(ctx: AuthContext, engagementDbIdValue: string,
   }
 }
 
-/** BR-05 step 3: the client's "Send to the firm", sent when the client presses Send in the pop-up. */
-async function emailFirm(ctx: AuthContext, engagementDbIdValue: string, message?: string | null) {
+/** BR-05 step 3: the email behind the client's "Send to the firm", addressed to the Lead. */
+async function composeFirmEmail(ctx: AuthContext, engagementDbIdValue: string): Promise<(ComposedEmail & { from: string }) | null> {
+  const recipients = await resolveEngagementRecipients(engagementDbIdValue);
+  const leads = recipients ? uniq([...recipients.leads, recipients.lead]) : [];
+  const to = leads.map((l) => l.email).filter((e): e is string => Boolean(e?.trim()));
+  if (!recipients || !to.length) return null;
+  const link = `${siteUrl()}${stepPathForRole('intern', { id: recipients.appId, slug: recipients.slug }, STEP, { boardResolution: true })}`;
+  const message = `${ctx.name || 'Your client'} confirmed their edits to the board resolution of ${recipients.companyName} and sent it to you. The changed paragraphs are marked on the step.`;
+  return {
+    to,
+    cc: [],
+    subject: `Edited board resolution: ${recipients.companyName}`,
+    message,
+    html: (text) =>
+      renderEmailDocument({ title: 'Edited board resolution', bodyHtml: messageHtml(text), cta: { label: 'Open the board resolution', href: link } }),
+    text: (text) => `${text}\n\nOpen it: ${link}`,
+    attachments: [],
+    replyTo: ctx.email ? [ctx.email] : undefined,
+    purpose: 'board_resolution.client_edit.send',
+    fixed: 'a button that opens the board resolution',
+    from: companyFromAddress({ slug: recipients.slug, companyName: recipients.companyName }),
+  };
+}
+
+/** The draft the "Send email" pop-up shows before the client's "Send to the firm". */
+export async function previewClientEditSend(ctx: AuthContext, engagementId: string): Promise<EmailDraftView | null> {
+  const { engagement, edit } = await load(ctx, engagementId);
+  if (!edit) throw new Error('no_client_edit');
+  const next = nextClientEditStage(edit.stage, 'send', ctx.role);
+  if ('error' in next) throw new Error(next.error);
+  const composed = await composeFirmEmail(ctx, engagement.id);
+  return composed ? draftView(composed) : null;
+}
+
+/** Sends the client's edited email and records it (who, when, to whom). A failure never undoes the move. */
+async function emailFirm(ctx: AuthContext, engagementDbIdValue: string, composed: ComposedEmail & { from: string }, edits: EmailEdits) {
   try {
-    const recipients = await resolveEngagementRecipients(engagementDbIdValue);
-    const leads = recipients ? uniq([...recipients.leads, recipients.lead]) : [];
-    const to = leads.map((l) => l.email).filter((e): e is string => Boolean(e?.trim()));
-    if (!recipients || !to.length) return;
-    const link = `${siteUrl()}${stepPathForRole('intern', { id: recipients.appId, slug: recipients.slug }, STEP, { boardResolution: true })}`;
-    const text = [
-      `${ctx.name || 'Your client'} confirmed their edits to the board resolution of ${recipients.companyName} and sent it to you.`,
-      message?.trim() ? `\nMessage: ${message.trim()}` : '',
-      `\nOpen it: ${link}`,
-    ].join('\n');
-    await sendEmail({
-      to,
-      from: companyFromAddress({ slug: recipients.slug, companyName: recipients.companyName }),
-      replyTo: ctx.email ? [ctx.email] : undefined,
-      subject: `Edited board resolution: ${recipients.companyName}`,
-      text,
-      html: text.split('\n').map((line) => `<p>${line.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]!)}</p>`).join(''),
-      purpose: 'board_resolution.client_edit.send',
-    });
+    const input = { ...withEdits(composed, edits), from: composed.from };
+    const result = await sendEmail(input);
+    if (result.ok) {
+      const to = Array.isArray(input.to) ? input.to : [input.to];
+      await recordEmailSent(ctx, { to, cc: input.cc ?? [], subject: input.subject, engagementId: engagementDbIdValue, itemId: STEP, via: 'firm' });
+    }
   } catch (err) {
     console.error('[board-resolution] client edit email failed', err);
   }

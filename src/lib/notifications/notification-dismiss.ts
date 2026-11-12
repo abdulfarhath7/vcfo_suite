@@ -1,3 +1,4 @@
+import { projectPathForRole } from '@/lib/projects/project-step-path';
 import { sep } from '@/lib/date-format';
 import {
   isNotificationKind,
@@ -208,6 +209,19 @@ export function scopedDismissIds(
 
 export function notificationHrefIsNavigable(href: string): boolean {
   return Boolean(href && href !== '#');
+}
+
+/**
+ * GL-01: where "Open" goes. The notification's own link when it has one; for an old
+ * notification without a link, the overview of its project; otherwise nowhere (no Open button).
+ */
+export function notificationOpenHref(
+  item: { href: string; engagementId?: string | null },
+  role: string | null | undefined,
+): string | null {
+  if (notificationHrefIsNavigable(item.href)) return item.href;
+  if (!item.engagementId?.trim() || !role || role === 'developer') return null;
+  return projectPathForRole(role, { id: item.engagementId, slug: item.engagementId });
 }
 
 export function formatNotificationWhen(iso: string, now = new Date()): string {

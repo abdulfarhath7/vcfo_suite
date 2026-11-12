@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { standardDownloadName } from '@/lib/files/download-name';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, CalendarDays, ChevronDown, Download, FileStack, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { DashHeroCompanyTile } from '@/components/dash/DashHero';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
+import { tabStateClass } from '@/components/ui/tab-classes';
 import {
   checkDates,
   cutoffLocalLabel,
@@ -145,7 +147,7 @@ export function PayrollPage({ shellBase, company, cycle: cycleKey, tab, stateCod
             title={state.rows.length === 0 ? 'No salaries in this cycle yet' : 'Download the salary data for this cycle'}
             onClick={() =>
               downloadText(
-                `hr-data-${engagement.companyName.replace(/[^A-Za-z0-9]+/g, '-')}-${cycle.key}.csv`,
+                standardDownloadName(`HR Data ${cycle.key}`, engagement.companyName, 'csv'),
                 salariesToCsv(state.rows.length ? state.rows : [emptyRow(1, 30)]),
               )
             }
@@ -272,8 +274,10 @@ export function PayrollPage({ shellBase, company, cycle: cycleKey, tab, stateCod
               aria-selected={on}
               onClick={() => go({ tab: t.key })}
               className={cn(
-                'border-b-[3px] px-2 pb-3 pt-2 text-[16px] transition-colors sm:text-[18px]',
-                on ? 'border-brand text-brand-text' : 'border-line text-ink hover:text-brand-text',
+                // GL-03: the shared open-tab look (3px underline, bold brand text, light wash);
+                // the bar's own rule sits under every tab.
+                'rounded-t-md border-b border-line px-2 pb-3 pt-2 text-[16px] transition-colors sm:text-[18px]',
+                tabStateClass(on),
               )}
             >
               {t.label}

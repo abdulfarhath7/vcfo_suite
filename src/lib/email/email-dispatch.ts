@@ -4,6 +4,19 @@ import type { NotificationKind } from '@/lib/checklist/checklist-notifications';
  * API routes include this on responses so the UI can toast.
  */
 
+/** The client WhatsApp nudge a drafted step email may carry (GL-07: sent only after the email). */
+export type StepWhatsAppEvent = 'coi_issued' | 'document_delivered';
+
+/** The certificate of incorporation step, the only step whose draft may carry `coi_issued`. */
+export const COI_ITEM_ID = 'pre-12';
+
+/** True when the event may ride on a draft for this step (the send routes trust nothing else). */
+export function isStepWhatsAppEvent(event: string | undefined, itemId: string | undefined): event is StepWhatsAppEvent {
+  if (event === 'document_delivered') return Boolean(itemId?.trim());
+  if (event === 'coi_issued') return itemId?.trim() === COI_ITEM_ID;
+  return false;
+}
+
 /** Lead → client compose payload (sent via Graph Mail.Send after in-app edit). */
 export type OutgoingEmailDraft = {
   to: string[];
@@ -14,6 +27,8 @@ export type OutgoingEmailDraft = {
   engagementId?: string;
   companyName?: string;
   itemId?: string;
+  /** Set when the event also nudges the client on WhatsApp; the send route queues it after the email. */
+  whatsappEvent?: StepWhatsAppEvent;
 };
 
 export type EmailDispatchToastMeta = {

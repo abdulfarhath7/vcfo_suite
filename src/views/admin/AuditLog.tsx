@@ -306,6 +306,7 @@ export default function AuditLog() {
               }
               showTarget={false}
               exportName="audit-log-project.csv"
+              engagementId={selectedEngagementId || sortedEngagements[0]?.id || null}
               onLoadOlder={projectNext ? () => void loadOlder('project') : undefined}
               loadingOlder={loadingOlder}
               recordHref={recordHref}

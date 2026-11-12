@@ -25,11 +25,11 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   if (out.status !== 'ok' || !out.view.link.allowDownload) return NOT_FOUND();
   const { view } = out;
   const bytes = await receivablesWorkbook(view.rows, view.today);
-  const name = receivablesWorkbookName(`${view.clientOrgName} ${view.link.name}`.trim() || 'Receivables', view.today);
+  const name = receivablesWorkbookName(view.clientOrgName, view.today, view.link.name);
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${name.replace(/[^\w .-]/g, '')}"`,
+      'Content-Disposition': `attachment; filename="${name}"`,
       'Cache-Control': 'no-store',
       'Referrer-Policy': 'no-referrer',
       'X-Robots-Tag': 'noindex, nofollow',

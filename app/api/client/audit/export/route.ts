@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
 import { ClientAuditError, listClientAuditEvents } from '@/db/repositories/client-audit';
 import { recordExport } from '@/lib/exports/record-export';
+import { standardDownloadName } from '@/lib/files/download-name';
 
 /**
  * GET /api/client/audit/export?cat=Documents&who=sbc|client&q=text — CSV of the
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
   const who = url.searchParams.get('who') ?? '';
   const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
   try {
-    const { events } = await listClientAuditEvents(guard.ctx, { limit: 2000 });
+    const { events, companyName } = await listClientAuditEvents(guard.ctx, { limit: 2000 });
     const rows = events.filter(
       (e) =>
         (!cat || e.cat === cat) &&
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       ),
     ];
     const csv = `\uFEFF${lines.join('\n')}\n`;
-    const fileName = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+    const fileName = standardDownloadName('Audit Log', companyName, 'csv');
     await recordExport(guard.ctx, { kind: 'client_audit', format: 'csv', fileName, body: csv });
     return new NextResponse(csv, {
       headers: {
