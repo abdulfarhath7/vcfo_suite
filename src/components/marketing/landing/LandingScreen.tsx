@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- the landing shows fixed screenshots at their own sizes, as the old v6 landing did */
-/* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role -- the journey and 180-day list rows are click-through items (role="button", tabIndex 0, Enter and Space handled on the root), kept as list items so the lists still read as lists */
+/* eslint-disable jsx-a11y/no-noninteractive-element-to-interactive-role -- the journey and 45-day list rows are click-through items (role="button", tabIndex 0, Enter and Space handled on the root), kept as list items so the lists still read as lists */
 import "./landing.css";
 import * as React from "react";
 import Link from "next/link";
@@ -11,8 +11,6 @@ import { playIntro } from "./intro";
 import { AskGuide } from "./AskGuide";
 import { BookDemoDialog } from "../BookDemoDialog";
 
-type Tab = "client" | "lead" | "manager" | "admin" | "super";
-const TABS: Tab[] = ["client", "lead", "manager", "admin", "super"];
 type Intro = "pre" | "logo" | "done";
 
 /**
@@ -28,9 +26,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
   const [menu, setMenu] = React.useState(false);
   const [scrolled, setScrolled] = React.useState(false);
   const [demo, setDemo] = React.useState(false);
-  const [tab, setTab] = React.useState<Tab>("client");
   const [intro, setIntro] = React.useState<Intro>("pre");
-  const tabsRef = React.useRef<HTMLDivElement>(null);
   useLandingMotion(root, setScrolled);
   const openDemo = () => setDemo(true);
   const closeMenu = () => setMenu(false);
@@ -73,15 +69,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
     return playIntro({ root: el, hero, navImg, release: () => setIntro("logo"), finish });
   }, []);
 
-  const tabKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    const i = TABS.indexOf(tab);
-    const next = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
-    if (next === null) return;
-    e.preventDefault();
-    const t = TABS[(next + TABS.length) % TABS.length];
-    setTab(t);
-    tabsRef.current?.querySelector<HTMLButtonElement>(`#tab-${t}`)?.focus();
-  };
 
   // Cards, chips and screenshots carry `data-app`: a click, or Enter on a focused item, opens Book a demo.
   const open = (target: EventTarget | null, e: React.SyntheticEvent) => {
@@ -110,7 +97,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <a href="#journey">How it works</a>
             <a href="#incorporate">Incorporation</a>
             <a href="#comply">Compliance</a>
-            <a href="#portals">Portals</a>
             <a href="#faq">FAQ</a>
           </nav>
           <div className="nav-actions">
@@ -130,7 +116,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <a onClick={closeMenu} href="#journey">How it works</a>
           <a onClick={closeMenu} href="#incorporate">Incorporation</a>
           <a onClick={closeMenu} href="#comply">Compliance</a>
-          <a onClick={closeMenu} href="#portals">Portals</a>
           <a onClick={closeMenu} href="#faq">FAQ</a>
           <Link onClick={closeMenu} href={SIGN_IN_HREF}>Sign in</Link>
         </div>
@@ -169,7 +154,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container">
           <div className="facts-grid reveal">
             <div className="fact" data-stagger style={st("--i:0")} data-app="incorporation" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="25">0</div><p className="what">steps in every incorporation, from the name application to the post-incorporation filings. Registrations have their own page.</p></div>
-            <div className="fact" data-stagger style={st("--i:1")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="23">0</div><p className="what">registrations and RBI reportings after the certificate, from PAN and GST to FC-GPR.</p></div>
+            <div className="fact" data-stagger style={st("--i:1")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="24">0</div><p className="what">registrations and RBI reportings after the certificate, from PAN and GST to FC-GPR.</p></div>
             <div className="fact" data-stagger style={st("--i:2")} data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="6">0</div><p className="what">regulators on one statutory calendar: MCA, GST, Income tax, Payroll, FEMA and Labour.</p></div>
             <div className="fact" data-stagger style={st("--i:3")} data-app="audit" role="button" aria-haspopup="dialog" tabIndex={0}><div className="num" data-count="1">0</div><p className="what">record that the client, the parent entity and the firm all read, with the same status words.</p></div>
           </div>
@@ -185,7 +170,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <p className="body">Four stages happen once. The calendar repeats every year. The firm runs every step; the client sees every step, with who holds it and when it is due.</p>
           </div>
           <div className="journey reveal" data-reveal="journey">
-            <svg viewBox="-30 0 1180 230" role="img" aria-label="The journey: name and papers, incorporation, certificate of incorporation, the first 180 days, registrations, then compliance every year.">
+            <svg viewBox="-30 0 1180 230" role="img" aria-label="The journey: name and papers, incorporation, certificate of incorporation, the first 45 days, registrations, then compliance every year.">
               <path className="line-glow" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80" />
               <path className="line" d="M 60 130 C 162 130 162 80 264 80 S 366 130 468 130 S 570 80 672 80 S 774 130 876 130 S 978 80 1080 80" />
               <g className="node" style={st("--i:0")} data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}>
@@ -203,11 +188,11 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               </g>
               <g className="node" style={st("--i:3")} data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="672" cy="80" r="30" /><circle className="c" cx="672" cy="80" r="18" /><text className="n" x="672" y="85">3</text>
-                <text className="t" x="672" y="30">The first 180 days</text><text className="s" x="672" y="48">11 steps with statutory clocks</text><text className="w" x="672" y="14">FIRM</text>
+                <text className="t" x="672" y="30">The first 45 days</text><text className="s" x="672" y="48">11 steps with statutory clocks</text><text className="w" x="672" y="14">FIRM</text>
               </g>
               <g className="node" style={st("--i:4")} data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="876" cy="130" r="30" /><circle className="c" cx="876" cy="130" r="18" /><text className="n" x="876" y="135">4</text>
-                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">23 items, only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
+                <text className="t" x="876" y="178">Registrations</text><text className="s" x="876" y="196">24 items, only the ones that apply</text><text className="w" x="876" y="214">FIRM</text>
               </g>
               <g className="node loop" style={st("--i:5")} data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}>
                 <circle className="halo" cx="1080" cy="80" r="30" /><circle className="c" cx="1080" cy="80" r="18" />
@@ -219,8 +204,8 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               <li data-n="1" data-app="inc-phase-a" role="button" aria-haspopup="dialog" tabIndex={0}><b>Name and papers</b><span>5 steps, about 2 weeks. Client and firm.</span></li>
               <li data-n="2" data-app="inc-phase" role="button" aria-haspopup="dialog" tabIndex={0}><b>Incorporation</b><span>11 steps, SPICe+ with MCA. Firm and MCA.</span></li>
               <li className="coi" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><b>Certificate of Incorporation</b><span>Day 0. CIN, PAN and TAN arrive.</span></li>
-              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 180 days</b><span>11 steps with statutory clocks. The firm.</span></li>
-              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>23 items, only the ones that apply. The firm.</span></li>
+              <li data-n="3" data-app="inc-phase-3" role="button" aria-haspopup="dialog" tabIndex={0}><b>The first 45 days</b><span>11 steps the law gives up to 180 days for. The firm.</span></li>
+              <li data-n="4" data-app="inc-phase-4" role="button" aria-haspopup="dialog" tabIndex={0}><b>Registrations</b><span>24 items, only the ones that apply. The firm.</span></li>
               <li className="loop" data-app="compliances" role="button" aria-haspopup="dialog" tabIndex={0}><b>Compliance, every year</b><span>Monthly, quarterly and annual filings. Firm and client.</span></li>
             </ol>
           </div>
@@ -338,29 +323,28 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container">
           <div className="section-head reveal">
             <span className="stage"><b>3</b>Stage 3</span>
-            <h2 className="h2">The first 180 days after the certificate.</h2>
-            <p className="body">Eleven steps, most with a statutory clock. They start the day the certificate arrives; the portal counts the days and sends a reminder before each one runs out.</p>
+            <h2 className="h2">The first 45 days after the certificate.</h2>
+            <p className="body">The law gives up to 180 days for some of these steps. The firm closes all eleven in about 45, and the portal still counts every statutory deadline and sends a reminder before each one runs out.</p>
+            <div className="tl-stats"><span className="pill pill-brand">11 steps</span><span className="pill pill-positive">Done in about 45 days</span><span className="pill pill-neutral">The law allows up to 180</span></div>
           </div>
-          <div className="tl reveal" data-reveal="tl" aria-label="Timeline of the first 180 days after incorporation">
+          <div className="tl reveal" data-reveal="tl" aria-label="Timeline of the first 45 days after incorporation">
             <div className="axis"><div className="axis-fill"></div>
-              <span className="tick" style={st("left:0%")}>DAY 0</span><span className="tick" style={st("left:16.7%")}>30</span><span className="tick" style={st("left:33.3%")}>60</span><span className="tick" style={st("left:50%")}>90</span><span className="tick" style={st("left:66.7%")}>120</span><span className="tick" style={st("left:83.3%")}>150</span><span className="tick" style={st("left:100%")}>180</span>
+              <span className="tick" style={st("left:0%")}>DAY 0</span><span className="tick" style={st("left:15.6%")}>7</span><span className="tick" style={st("left:33.3%")}>15</span><span className="tick" style={st("left:66.7%")}>30</span><span className="tick" style={st("left:100%")}>DAY 45</span>
             </div>
-            <div className="pin coi up first" style={st("left:0%;--i:0")}><div className="card pc" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>The company exists. Every clock below starts today.</span></div><span className="stem"></span><span className="dot"></span></div>
-            <div className="pin down" style={st("left:16.7%;--i:1")}><div className="card pc" data-app="inc-step-15" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 30 days</span><b>Five things at once</b><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>First board meeting</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Auditor appointed (ADT-1)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Registered office confirmed (INC-22)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Letterhead and name board</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Nominee shareholder forms</li></ul></div><span className="stem"></span><span className="dot"></span></div>
-            <div className="pin up" style={st("left:33.3%;--i:2")}><div className="card pc" data-app="inc-step-19" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 60 days</span><b>Share certificates (SH-1)</b><span>Issued to every subscriber once the capital is in.</span></div><span className="stem"></span><span className="dot"></span></div>
-            <div className="pin down" style={st("left:56%;--i:3")}><div className="card pc" data-app="inc-step-17" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">No statutory clock</span><b>Bank account, then capital</b><span>The account opens when the bank clears KYC. The subscription money comes in from the parent.</span></div><span className="stem"></span><span className="dot"></span></div>
-            <div className="pin up" style={st("left:78%;--i:4")}><div className="card pc" data-app="inc-step-22" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">30 days after shares are allotted</span><b>FC-GPR to the RBI</b><span>For foreign capital. Reported through the FIRMS portal.</span></div><span className="stem"></span><span className="dot"></span></div>
-            <div className="pin down last" style={st("left:100%;--i:5")}><div className="card pc" data-app="inc-step-20" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 180 days</span><b>Capital in, commencement filed (INC-20A)</b><span>The company may start business. Stage 4 begins.</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin coi up first" style={st("left:0%;--i:0")}><div className="card pc" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>CIN, PAN and TAN arrive. Every clock starts today.</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin down" style={st("left:15.6%;--i:1")}><div className="card pc" data-app="inc-step-17" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 7</span><b>Bank account, letterhead and name board</b><span>The account opens as soon as the bank clears KYC.</span><span className="law">Law: 30 days · bank: no clock</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin up" style={st("left:33.3%;--i:2")}><div className="card pc" data-app="inc-step-15" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 15</span><b>First board meeting, and what it decides</b><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Auditor appointed (ADT-1)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Registered office confirmed (INC-22)</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Nominee shareholder forms (MGT-4, 5, 6)</li></ul><span className="law">Law: 30 days</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin down" style={st("left:66.7%;--i:3")}><div className="card pc" data-app="inc-step-19" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono target">By day 30</span><b>Capital in, share certificates (SH-1)</b><span>The parent sends the subscription money, the shares are allotted and the certificates issued.</span><span className="law">Law: SH-1 within 60 days</span></div><span className="stem"></span><span className="dot"></span></div>
+            <div className="pin up last" style={st("left:100%;--i:4")}><div className="card pc" data-app="inc-step-20" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono done">By day 45</span><b>FC-GPR and commencement (INC-20A)</b><span>FC-GPR goes to the RBI and INC-20A is filed. The company may start business, and Stage 4 begins.</span><span className="law">Law: FC-GPR 30 days after allotment</span><span className="law">Law: INC-20A 180 days</span></div><span className="stem"></span><span className="dot"></span></div>
           </div>
           <ol className="tl-list reveal">
-            <li className="card" data-app="inc-step-14" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>Every clock starts today.</span></li>
-            <li className="card" data-app="inc-step-15" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 30 days</span><b>First board meeting, auditor (ADT-1), registered office (INC-22), letterhead and name board, nominee shareholder forms</b></li>
-            <li className="card" data-app="inc-step-19" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 60 days</span><b>Share certificates (SH-1)</b><span>Issued once the capital is in.</span></li>
-            <li className="card" data-app="inc-step-17" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">No statutory clock</span><b>Bank account, then capital</b><span>Opens when the bank clears KYC.</span></li>
-            <li className="card" data-app="inc-step-22" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">30 days after allotment</span><b>FC-GPR to the RBI</b><span>For foreign capital.</span></li>
-            <li className="card" data-app="inc-step-20" role="button" aria-haspopup="dialog" tabIndex={0}><span className="mono">Within 180 days</span><b>Commencement filed (INC-20A)</b><span>The company may start business.</span></li>
+            <li className="card"><span className="mono">Day 0</span><b>Certificate of Incorporation</b><span>CIN, PAN and TAN arrive. Every clock starts today.</span></li>
+            <li className="card"><span className="mono">By day 7</span><b>Bank account, letterhead and name board</b><span>Law: 30 days; the bank account has no clock.</span></li>
+            <li className="card"><span className="mono">By day 15</span><b>First board meeting, auditor (ADT-1), registered office (INC-22), nominee shareholder forms</b><span>Law: 30 days.</span></li>
+            <li className="card"><span className="mono">By day 30</span><b>Capital in, share certificates (SH-1)</b><span>Law: SH-1 within 60 days.</span></li>
+            <li className="card"><span className="mono">By day 45</span><b>FC-GPR and commencement (INC-20A)</b><span>Law: FC-GPR 30 days after allotment; INC-20A 180 days.</span></li>
           </ol>
-          <p className="caption reveal"><span className="icon"><Ic><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></Ic></span>Each pin is a step in the portal with a due date computed from the certificate date. The client sees the same countdown the project lead sees.</p>
+          <p className="caption reveal"><span className="icon"><Ic><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></Ic></span>Day targets assume the bank clears KYC and the parent sends the capital on time. The portal still counts each statutory deadline, and the client sees the same countdown the project lead sees.</p>
         </div>
       </section>
 
@@ -369,25 +353,27 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
         <div className="container">
           <div className="section-head reveal">
             <span className="stage"><b>4</b>Stage 4</span>
-            <h2 className="h2">Every registration the company needs, and none it does not.</h2>
-            <p className="body">Twenty-three registrations and reportings sit behind five regulators. The firm switches on the ones that apply to the company, and each becomes a step with an owner and a date.</p>
+            <h2 className="h2">Every registration and filing the company needs, and none it does not.</h2>
+            <p className="body">Thirty-two registrations, reportings and MCA filings across six areas. The firm switches on the ones that apply to the company, and each becomes a step with an owner and a date.</p>
           </div>
           <div className="hub reveal" data-reveal="hub">
-            <svg className="wires" viewBox="0 0 1120 560" preserveAspectRatio="none" aria-hidden="true">
-              <path className="wire" style={st("--i:0")} d="M 560 280 C 460 280 300 123 157 123" />
-              <path className="wire" style={st("--i:1")} d="M 560 280 C 660 280 820 123 963 123" />
-              <path className="wire" style={st("--i:2")} d="M 560 280 C 460 280 300 437 157 437" />
-              <path className="wire" style={st("--i:3")} d="M 560 280 C 660 280 820 437 963 437" />
-              <path className="wire" style={st("--i:4")} d="M 560 280 L 560 515" />
+            <svg className="wires" viewBox="0 0 1120 640" preserveAspectRatio="none" aria-hidden="true">
+              <path className="wire" style={st("--i:0")} d="M 560 300 C 460 300 300 150 150 150" />
+              <path className="wire" style={st("--i:1")} d="M 560 300 C 660 300 820 150 970 150" />
+              <path className="wire" style={st("--i:2")} d="M 560 300 C 460 300 300 450 150 450" />
+              <path className="wire" style={st("--i:3")} d="M 560 300 C 660 300 820 450 970 450" />
+              <path className="wire" style={st("--i:4")} d="M 560 300 L 560 560" />
+              <path className="wire" style={st("--i:5")} d="M 560 300 L 560 79" />
             </svg>
             <div className="card centre"><span className="ring1"></span><span className="ring2"></span><b>Your company</b><span className="mono">CIN · PAN · TAN</span></div>
+            <div className="card cluster c-mca card-hover" data-app="compliances" style={st("--i:5")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M10 18v-7" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M12 2 20 7H4z" /></Ic></span></span><b>Company law (MCA)</b><span>8</span></header><div className="chips"><span className="chip">ADT-1</span><span className="chip">INC-20A</span><span className="chip">INC-22</span><span className="chip">DIR-3 KYC</span><span className="chip">DPT-3</span><span className="chip">MSME-1</span><span className="chip">AOC-4</span><span className="chip">MGT-7</span></div></div>
             <div className="card cluster c-tax card-hover" data-app="inc-phase-4" style={st("--i:0")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z" /><path d="M8 11h8" /><path d="M8 7h8" /><path d="M9 7a4 4 0 0 1 0 8H8l3 2" /></Ic></span></span><b>Tax</b><span>4</span></header><div className="chips"><span className="chip">PAN and TAN</span><span className="chip" data-app="inc-step-26" role="button" aria-haspopup="dialog" tabIndex={0}>GST</span><span className="chip" data-app="inc-step-34" role="button" aria-haspopup="dialog" tabIndex={0}>LUT for exports</span><span className="chip" data-app="inc-step-29" role="button" aria-haspopup="dialog" tabIndex={0}>Professional tax</span></div></div>
             <div className="card cluster c-lab card-hover" data-app="inc-phase-4" style={st("--i:1")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" /></Ic></span></span><b>Labour</b><span>5</span></header><div className="chips"><span className="chip" data-app="inc-step-27" role="button" aria-haspopup="dialog" tabIndex={0}>PF</span><span className="chip" data-app="inc-step-28" role="button" aria-haspopup="dialog" tabIndex={0}>ESI</span><span className="chip" data-app="inc-step-36" role="button" aria-haspopup="dialog" tabIndex={0}>Shops and Establishment</span><span className="chip" data-app="inc-step-37" role="button" aria-haspopup="dialog" tabIndex={0}>CLRA</span><span className="chip" data-app="inc-step-38" role="button" aria-haspopup="dialog" tabIndex={0}>POSH committee</span></div></div>
-            <div className="card cluster c-trade card-hover" data-app="inc-phase-4" style={st("--i:2")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M12 16h.01" /><path d="M16 16h.01" /><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M8 16h.01" /></Ic></span></span><b>Trade</b><span>6</span></header><div className="chips"><span className="chip" data-app="inc-step-33" role="button" aria-haspopup="dialog" tabIndex={0}>IEC</span><span className="chip" data-app="inc-step-32" role="button" aria-haspopup="dialog" tabIndex={0}>ICEGATE</span><span className="chip" data-app="inc-step-39" role="button" aria-haspopup="dialog" tabIndex={0}>Trade licence</span><span className="chip" data-app="inc-step-31" role="button" aria-haspopup="dialog" tabIndex={0}>MSME</span><span className="chip" data-app="inc-step-30" role="button" aria-haspopup="dialog" tabIndex={0}>LEI</span><span className="chip" data-app="inc-step-35" role="button" aria-haspopup="dialog" tabIndex={0}>STPI</span></div></div>
+            <div className="card cluster c-trade card-hover" data-app="inc-phase-4" style={st("--i:2")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M12 16h.01" /><path d="M16 16h.01" /><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M8 16h.01" /></Ic></span></span><b>Trade</b><span>7</span></header><div className="chips"><span className="chip" data-app="inc-step-33" role="button" aria-haspopup="dialog" tabIndex={0}>IEC</span><span className="chip" data-app="inc-step-32" role="button" aria-haspopup="dialog" tabIndex={0}>ICEGATE</span><span className="chip" data-app="inc-step-39" role="button" aria-haspopup="dialog" tabIndex={0}>Trade licence</span><span className="chip" data-app="inc-step-31" role="button" aria-haspopup="dialog" tabIndex={0}>MSME</span><span className="chip" data-app="inc-step-30" role="button" aria-haspopup="dialog" tabIndex={0}>LEI</span><span className="chip" data-app="inc-step-35" role="button" aria-haspopup="dialog" tabIndex={0}>STPI</span><span className="chip">Sector regulator licence</span></div></div>
             <div className="card cluster c-rbi card-hover" data-app="inc-phase-4" style={st("--i:3")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></Ic></span></span><b>RBI and FEMA</b><span>5</span></header><div className="chips"><span className="chip" data-app="inc-step-44" role="button" aria-haspopup="dialog" tabIndex={0}>FC-GPR</span><span className="chip" data-app="inc-step-45" role="button" aria-haspopup="dialog" tabIndex={0}>FDI reporting</span><span className="chip" data-app="inc-step-46" role="button" aria-haspopup="dialog" tabIndex={0}>ODI reporting</span><span className="chip" data-app="inc-step-47" role="button" aria-haspopup="dialog" tabIndex={0}>FLA return</span><span className="chip" data-app="inc-step-48" role="button" aria-haspopup="dialog" tabIndex={0}>FC-TRS</span></div></div>
             <div className="card cluster c-ip card-hover" data-app="inc-phase-4" style={st("--i:4")} role="button" aria-haspopup="dialog" tabIndex={0}><header><span className="tile"><span className="icon"><Ic><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13" /><path d="M20 15.5a2.5 2.5 0 0 0-2.5-2.5h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1z" /><path d="M5 22h14" /></Ic></span></span><b>Intellectual property</b><span>3</span></header><div className="chips"><span className="chip" data-app="inc-step-40" role="button" aria-haspopup="dialog" tabIndex={0}>Trademark</span><span className="chip" data-app="inc-step-41" role="button" aria-haspopup="dialog" tabIndex={0}>Trademark renewal</span><span className="chip" data-app="inc-step-42" role="button" aria-haspopup="dialog" tabIndex={0}>Patent</span></div></div>
           </div>
-          <p className="caption reveal"><span className="icon"><Ic><path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" /></Ic></span>A software subsidiary with no exports never sees IEC or ICEGATE. A company with no foreign capital never sees FC-GPR. The checklist is cut to the company.</p>
+          <p className="caption reveal"><span className="icon"><Ic><path d="M13 5h8" /><path d="M13 12h8" /><path d="M13 19h8" /><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" /></Ic></span>A software subsidiary with no exports never sees IEC or ICEGATE. A company with no foreign capital never sees FC-GPR. The MCA filings run on their own clocks from the certificate date and the financial year.</p>
         </div>
       </section>
 
@@ -430,15 +416,9 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
               </div>
               <p className="caption"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
             </div>
-            <div className="cal-two reveal">
-              <figure className="card" data-stagger style={st("--i:0")}>
-                <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt={"Client filings view: filings by month for the financial year, progress by area, and each filing with its status and acknowledgement."} width="2000" height="1622" /></div>
-                <figcaption><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</figcaption>
-              </figure>
-              <figure className="card" data-stagger style={st("--i:1")}>
-                <div className="frame" data-app="lead-compliances" aria-label="Book a demo to see the project lead calendar" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/calendar-lead.webp" alt={"Project lead's compliance calendar month view: the statutory filings of every company on their due dates."} width="1556" height="1262" /></div>
-                <figcaption><b>The firm&apos;s side.</b> The project lead sees every statutory date across every company, grouped by day, with a reminder button on each.</figcaption>
-              </figure>
+            <div className="reveal">
+              <div className="frame" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/filings-client.webp" alt={"Client filings view: filings by month for the financial year, progress by area, and each filing with its status and acknowledgement."} width="2000" height="1622" /></div>
+              <p className="caption"><span className="icon"><Ic><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></Ic></span><span><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</span></p>
             </div>
           </div>
         </div>
@@ -480,52 +460,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
 
       {/* The VCFO way vs. the old way (board C2) */}
       <CompareSection onDemo={openDemo} />
-
-      {/* Portals */}
-      <section className="section" id="portals">
-        <div className="glow glow-info" style={st("width:800px;height:500px;right:-250px;top:30%")}></div>
-        <div className="container">
-          <div className="section-head reveal">
-            <h2 className="h2">Three portals. One engagement.</h2>
-            <p className="body">The whole firm for the partner, oversight for the admin, overview for the manager, focus for the project lead, clarity for the client. Nobody forwards a spreadsheet.</p>
-          </div>
-          <div className="reveal">
-            <div className="tab-head">
-              <div className="tabs" role="tablist" aria-label="Portals" ref={tabsRef}>
-                <button className="tab" type="button" role="tab" id="tab-client" aria-selected={tab === "client"} aria-controls="panel-client" tabIndex={tab === "client" ? 0 : -1} onClick={() => setTab("client")} onKeyDown={tabKey}>Client</button>
-                <button className="tab" type="button" role="tab" id="tab-lead" aria-selected={tab === "lead"} aria-controls="panel-lead" tabIndex={tab === "lead" ? 0 : -1} onClick={() => setTab("lead")} onKeyDown={tabKey}>Project lead</button>
-                <button className="tab" type="button" role="tab" id="tab-manager" aria-selected={tab === "manager"} aria-controls="panel-manager" tabIndex={tab === "manager" ? 0 : -1} onClick={() => setTab("manager")} onKeyDown={tabKey}>Manager</button>
-                <button className="tab" type="button" role="tab" id="tab-admin" aria-selected={tab === "admin"} aria-controls="panel-admin" tabIndex={tab === "admin" ? 0 : -1} onClick={() => setTab("admin")} onKeyDown={tabKey}>Admin</button>
-                <button className="tab" type="button" role="tab" id="tab-super" aria-selected={tab === "super"} aria-controls="panel-super" tabIndex={tab === "super" ? 0 : -1} onClick={() => setTab("super")} onKeyDown={tabKey}>Super admin</button>
-              </div>
-              <div className="tab-desc">
-                <div hidden={tab !== "client"}><p>What is waiting on the client, what the firm holds, and when the certificate is expected.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Upload and approve in place</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Timeline with the expected date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Ask VCFO for the next step</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the client portal</button></div>
-                <div hidden={tab !== "lead"}><p>Today&apos;s action queue across every company the lead runs.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>This week&apos;s statutory filings</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Compliance health ring per company</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Who each step is waiting on</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the project lead portal</button></div>
-                <div hidden={tab !== "manager"}><p>Every task your team owns, by project lead, company and status, and each lead&apos;s workload side by side.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Team tasks with a live status breakdown</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each project lead&apos;s work, by area and by status</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a to-do to a project lead in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the manager portal</button></div>
-                <div hidden={tab !== "admin"}><p>Every client, every manager, and where things are stuck, on one screen.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Each client&apos;s stage, owner and next date</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Managers&apos; load and on-time rate</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Assign a client to a manager</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the admin portal</button></div>
-                <div hidden={tab !== "super"}><p>The whole firm at one place: clients, admins, managers, work and risk.</p><ul><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Incorporations, registrations and filings side by side</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>Risks, team load and growth on one screen</li><li><span className="icon"><Ic><path d="M20 6 9 17l-5-5" /></Ic></span>A monthly partner report in one click</li></ul><button className="btn btn-secondary btn-sm" type="button" style={st("margin-top:14px")} onClick={openDemo}>See the super admin portal</button></div>
-              </div>
-            </div>
-            <div className="tabpanel">
-              <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"} data-app="home">
-                <img src="/landing/portal-client.webp" alt={"Client portal home: the current stage, the next step with its due date, and the journey as a tree of every step with its progress."} width="2600" height="1490" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"} data-app="lead-home">
-                <img src="/landing/portal-lead.webp" alt={"Project lead Today screen: the home card with five numbers, the day's work by company and the inbox."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"} data-app="mgr-home">
-                <img src="/landing/portal-manager.webp" alt={"Manager Today screen: the home card with five numbers and the team's day, overdue work first."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"} data-app="admin-home">
-                <img src="/landing/portal-admin.webp" alt={"Admin Today screen: clients, incorporating, in compliance, overdue and not on track, and the day's work across the firm."} width="2000" height="1146" />
-              </div>
-              <div className="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"} data-app="super-home">
-                <img src="/landing/portal-super.webp" alt={"Super admin overview: the firm's numbers, incorporation progress, registrations and this month's compliances."} width="2000" height="1146" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Ask VCFO */}
       <section className="section" id="ask">
@@ -610,7 +544,6 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
                 <li><a href="#journey">How it works</a></li>
                 <li><a href="#incorporate">Incorporation</a></li>
                 <li><a href="#comply">Compliance calendar</a></li>
-                <li><a href="#portals">Portals</a></li>
                 <li><a href="#ask">Ask VCFO</a></li>
               </ul>
             </div>

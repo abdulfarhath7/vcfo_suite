@@ -50,10 +50,14 @@ describe('LandingScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
   });
 
-  it('opens Book a demo from each "See the portal" button, not a demo portal', () => {
-    render(<LandingScreen />);
-    fireEvent.click(screen.getByRole('button', { name: 'See the client portal' }));
-    expect(screen.getByRole('dialog', { name: 'Book a demo' })).toBeInTheDocument();
+  it('has no portals section, one calendar screenshot and the filings screenshot', () => {
+    const { container } = render(<LandingScreen />);
+    expect(container.querySelector('#portals')).toBeNull();
+    expect(container.querySelector('a[href="#portals"]')).toBeNull();
+    const images = [...container.querySelectorAll('img')].map((img) => img.getAttribute('src') ?? '');
+    expect(images.filter((src) => src.includes('calendar-'))).toEqual(['/landing/calendar-client.webp']);
+    expect(images.some((src) => src.includes('portal-'))).toBe(false);
+    expect(images).toContain('/landing/filings-client.webp');
   });
 
   it('LP-01: the theme toggle switches between dark and light, and remembers the choice', () => {
@@ -64,6 +68,28 @@ describe('LandingScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Use the light theme' }));
     expect(document.documentElement.dataset.lpTheme).toBeUndefined();
     expect(localStorage.getItem('vcfo.lp-theme')).toBe('light');
+  });
+
+  it('shows the first 45 days with each legal deadline beside its target', () => {
+    const { container } = render(<LandingScreen />);
+    expect(screen.getByRole('heading', { name: 'The first 45 days after the certificate.' })).toBeInTheDocument();
+    const pins = [...container.querySelectorAll('.tl .pin')];
+    expect(pins.map((p) => p.querySelector('.mono')?.textContent)).toEqual(['Day 0', 'By day 7', 'By day 15', 'By day 30', 'By day 45']);
+    // Every target after day 0 still states the law's own deadline.
+    expect(pins.slice(1).every((p) => p.querySelector('.law')?.textContent?.startsWith('Law:'))).toBe(true);
+    expect(container.querySelector('.tl')?.textContent).toContain('DAY 45');
+  });
+
+  it('shows six areas on the registrations hub, Company law (MCA) among them', () => {
+    const { container } = render(<LandingScreen />);
+    expect(container.querySelectorAll('.hub .cluster')).toHaveLength(6);
+    const mca = container.querySelector('.hub .c-mca')!;
+    expect(mca.querySelector('header b')?.textContent).toBe('Company law (MCA)');
+    expect(mca.querySelectorAll('.chip')).toHaveLength(8);
+    const trade = [...container.querySelectorAll('.hub .c-trade .chip')].map((c) => c.textContent);
+    expect(trade).toContain('Sector regulator licence');
+    const total = [...container.querySelectorAll('.hub .cluster .chip')].length;
+    expect(total).toBe(32);
   });
 
   it('shows the comparison with six rows and three product columns', () => {
@@ -79,14 +105,6 @@ describe('LandingScreen', () => {
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[1] })).toBeInTheDocument();
     expect(within(table).getByRole('columnheader', { name: COMPARE_COLS[2] })).toBeInTheDocument();
     COMPARE.forEach((r) => expect(within(table).getByRole('rowheader', { name: r.label })).toBeInTheDocument());
-  });
-
-  it('switches the portal screenshot with the tabs', () => {
-    render(<LandingScreen />);
-    const lead = screen.getByRole('tab', { name: 'Project lead' });
-    fireEvent.click(lead);
-    expect(lead).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'panel-lead');
   });
 
   it('answers a fixed Ask VCFO question without a link to a demo portal', () => {
