@@ -3,91 +3,23 @@
 /**
  * PHASE PAGE — `/app/client/incorporation/phase/[n]` (VCFO Spectrum, prototype
  * src/screens/client/PhaseScreen.tsx): a plain page head with the previous and next phase,
- * the Progress card (one bar, key dates), the Steps table (T1), the ST5 journey of the phase
- * with the focus step's sub-steps, and "Who is doing it" as one stacked bar.
+ * the Progress card (one bar, key dates), the Steps table (T1) and "Who is doing it" as one
+ * stacked bar. The journey card beside the table was removed (owner, 12 Nov): it repeated the
+ * Steps table.
  */
-import { CircleHelp, ListChecks } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import type { PortalPhase, PortalStep } from '@/lib/client-portal/step-model';
+import { CircleHelp } from 'lucide-react';
+import { useMemo } from 'react';
+import type { PortalStep } from '@/lib/client-portal/step-model';
 import { cn } from '@/lib/utils';
-import { orderByMcaSection } from '@/lib/checklist/part-b-sections';
 import { Button } from '@/components/ui/button';
-import { StepMark } from '@/components/ui/step-track';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { phaseHref } from '../../routes';
 import { usePortal, usePortalCrumbs } from '../../PortalProvider';
 import { useDocViewer, type ViewerDoc } from '../documents/DocViewer';
 import { IncFrame, days, fmt, fmtY } from './ui';
-import { PH, kd, idx, ownKey, phDoneEnd, phPlan, phaseAnswer, stRow, stepHrefOf, subList, tabsFor, useIncData, type IncData, type SubStep } from './data';
+import { PH, kd, idx, ownKey, phDoneEnd, phPlan, phaseAnswer, stRow, stepHrefOf, tabsFor, useIncData } from './data';
 import { StepTable } from './StepTable';
-import { Col, Cols, Dot, Empty, Island, PageHead, SCard, StackedBar, StepRow, useGo, type BarTone, type PageHeadLink } from './spectrum';
-
-/** Sub-steps of the focus step: small ST5 marks with labels under them (was the navy rail hero). Also on the step page (G-10). */
-function SubSteps({ subs }: { subs: SubStep[] }) {
-  const labels = subs.length <= 6;
-  const st = (s: string) => (s === 'done' ? 'done' : s === 'now' ? 'in progress' : 'to do');
-  return (
-    <span className="mt-2 block">
-      <span className="grid gap-1" style={{ gridTemplateColumns: `repeat(${subs.length}, minmax(0, 1fr))` }} role="list" aria-label="Sub-steps">
-        {subs.map((x, i) => (
-          <span key={`${x.l}-${i}`} role="listitem" className="grid min-w-0 justify-items-start gap-1" data-tt={`${x.l} · ${st(x.s)}`}>
-            <StepMark state={x.s === 'todo' ? 'next' : x.s} size={18} label={`${x.l} · ${st(x.s)}`} />
-            {labels ? <span className={cn('block w-full truncate text-[11.5px]', x.s === 'now' ? 'font-medium text-ink' : 'font-normal text-ink-muted')}>{x.l}</span> : null}
-          </span>
-        ))}
-      </span>
-      {labels ? null : (
-        <span className="mt-1 block text-[11.5px] font-normal text-ink-muted">
-          {subs.filter((x) => x.s === 'done').length} of {subs.length} sub-steps done
-        </span>
-      )}
-    </span>
-  );
-}
-
-/** The ST5 list of one phase (prototype JourneyCard). Long phases show nine steps around the focus until expanded. */
-function JourneyCard({ p, focus, d }: { p: PortalPhase; focus: string; d: IncData }) {
-  const [all, setAll] = useState(false);
-  // SB-01: Part B is listed in MCA form order; the focus step still comes from the gates.
-  const l = orderByMcaSection(p.steps, (x) => x.id);
-  let list = l;
-  if (l.length > 11 && !all) {
-    const i = l.findIndex((x) => x.id === focus);
-    const s = Math.max(0, Math.min(l.length - 9, i - 4));
-    list = l.slice(s, s + 9);
-  }
-  const prevOf = (x: PortalStep) => d.model.steps[d.model.steps.indexOf(x) - 1];
-  return (
-    <SCard title={`${PH[p.no - 1]} · journey`} meta={`${p.done} / ${l.length}`} headIcon={{ icon: ListChecks, tone: 'blue' }}>
-      <ol className="flex flex-col">
-        {list.map((x, i) => {
-          const isFocus = x.id === focus;
-          const subs = isFocus ? subList(x) : null;
-          return (
-            <StepRow
-              key={x.id}
-              s={x}
-              prev={prevOf(x)}
-              company={d.short}
-              lead={d.leadName}
-              manager={d.managerName}
-              lastRow={i === list.length - 1}
-              above={list[i - 1]}
-              focus={isFocus}
-              compact
-              below={subs && subs.length > 1 ? <SubSteps subs={subs} /> : undefined}
-            />
-          );
-        })}
-      </ol>
-      {l.length > 11 ? (
-        <button type="button" className="mt-2 text-[13px] font-medium text-brand-text hover:underline" aria-expanded={all} onClick={() => setAll((v) => !v)}>
-          {all ? 'Show fewer steps' : `Show all ${l.length} steps`}
-        </button>
-      ) : null}
-    </SCard>
-  );
-}
+import { Col, Cols, Dot, Empty, Island, PageHead, SCard, StackedBar, useGo, type BarTone, type PageHeadLink } from './spectrum';
 
 export default function PhasePage({ phaseNo }: { phaseNo: number }) {
   const d = useIncData();
@@ -258,7 +190,6 @@ export default function PhasePage({ phaseNo }: { phaseNo: number }) {
                   </SCard>
                 </Col>
                 <Col>
-                  {focusStep ? <JourneyCard p={p} focus={focusStep.id} d={d} /> : null}
                   <SCard title="Who is doing it">
                     <StackedBar
                       segments={owners.map((o) => ({ label: o[0], value: o[1].length, tone: o[2] }))}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Download, Eye, EyeOff, FilePlus2, FileText, Maximize2 } from 'lucide-react';
+import { Download, Eye, FilePlus2, FileText, Maximize2 } from 'lucide-react';
 import type { Engagement } from '@/data/engagements';
 import type { BoardResolutionDoc } from '@/lib/board-resolution/board-resolution';
 import {
@@ -18,6 +18,7 @@ import { BoardResolutionDocPreview } from '@/components/board-resolution/BoardRe
 import { useDocViewer, type ViewerDoc } from '@/components/client-portal/pages/documents/DocViewer';
 import { DropZone } from '@/components/client-portal/pages/incorporation/spectrum';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 function day(iso: string | null | undefined): string | null {
@@ -76,7 +77,8 @@ export function BoardResolutionDocCards({
   }
   const doc = fresh ?? docProp;
   const [version, setVersion] = useState<{ n: number; at: string | null } | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(step === 'draft');
+  // The preview opens in a pop-up: inside the card it was too narrow to read (owner, 12 Nov).
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // The version count is the firm's history; the client reads the date only.
   useEffect(() => {
@@ -157,9 +159,9 @@ export function BoardResolutionDocCards({
             </span>
           </div>
           <div className="mt-2.5 flex flex-wrap gap-2">
-            <button type="button" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => setPreviewOpen((v) => !v)} aria-expanded={previewOpen}>
-              {previewOpen ? <EyeOff className="mr-1 h-3.5 w-3.5" aria-hidden /> : <Eye className="mr-1 h-3.5 w-3.5" aria-hidden />}
-              {previewOpen ? 'Hide preview' : 'Preview'}
+            <button type="button" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => setPreviewOpen(true)} aria-haspopup="dialog">
+              <Eye className="mr-1 h-3.5 w-3.5" aria-hidden />
+              Preview
             </button>
             <button type="button" className={buttonVariants({ variant: 'outline', size: 'sm' })} onClick={() => viewer.open(viewerDocs, 0)}>
               <Maximize2 className="mr-1 h-3.5 w-3.5" aria-hidden />
@@ -170,11 +172,19 @@ export function BoardResolutionDocCards({
               Download
             </a>
           </div>
-          {previewOpen ? (
-            <div className="mt-3 max-h-[520px] overflow-auto rounded-md border border-line-soft">
-              <BoardResolutionDocPreview engagementId={engagement.id} refreshKey={doc?.updatedAt ?? undefined} previewLabel={draftLabel} />
-            </div>
-          ) : null}
+          <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DialogContent className="flex max-h-[92vh] w-[min(96vw,1000px)] max-w-none flex-col gap-3 sm:max-w-none">
+              <DialogHeader>
+                <DialogTitle>{draftLabel} · board resolution</DialogTitle>
+                <DialogDescription>{engagement.companyName}</DialogDescription>
+              </DialogHeader>
+              <div className="min-h-0 flex-1 overflow-auto rounded-md border border-line-soft">
+                {previewOpen ? (
+                  <BoardResolutionDocPreview engagementId={engagement.id} refreshKey={doc?.updatedAt ?? undefined} previewLabel={draftLabel} />
+                ) : null}
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
       ) : (
         <div className="grid gap-2 py-2 text-[13px] text-ink-muted">

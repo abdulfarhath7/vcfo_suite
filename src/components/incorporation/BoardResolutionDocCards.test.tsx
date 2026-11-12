@@ -12,7 +12,7 @@ const viewerOpen = vi.fn();
 vi.mock('@/components/client-portal/pages/documents/DocViewer', () => ({
   useDocViewer: () => ({ open: viewerOpen, close: vi.fn(), node: null, isOpen: false }),
 }));
-vi.mock('@/components/board-resolution/BoardResolutionDocPreview', () => ({ BoardResolutionDocPreview: () => null }));
+vi.mock('@/components/board-resolution/BoardResolutionDocPreview', () => ({ BoardResolutionDocPreview: () => <div data-testid="br-preview" /> }));
 vi.mock('@/components/client-portal/PortalProvider', () => ({ usePortal: () => ({}) }));
 
 const upload = vi.fn();
@@ -107,5 +107,16 @@ describe('BoardResolutionDocCards (draft step)', () => {
   it('shows Generate draft to the lead when there is no draft', () => {
     render(<BoardResolutionDocCards engagement={engagement} doc={null} step="draft" viewerRole="intern" />);
     expect(screen.getByRole('link', { name: /Generate draft/ })).toBeTruthy();
+  });
+});
+
+describe('BoardResolutionDocCards (draft preview)', () => {
+  it('shows no preview in the card and opens it in a pop-up', async () => {
+    render(<BoardResolutionDocCards engagement={engagement} doc={finalized} step="signed" viewerRole="client" />);
+    expect(screen.queryByTestId('br-preview')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toContain('Acme Pvt Ltd');
+    expect(screen.getByTestId('br-preview')).toBeTruthy();
   });
 });
