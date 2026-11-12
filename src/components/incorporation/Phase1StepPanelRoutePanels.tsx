@@ -144,7 +144,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
           <PanelShell title="Signed Board Resolution">
             {props.engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
-                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} onDocChange={props.onBrDocChange} />
               </div>
             ) : null}
             {brStatus === 'signed' ? (
@@ -158,13 +158,14 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
                 Signed copy not uploaded yet.
               </p>
             )}
-            {(brStatus === 'finalized' || brStatus === 'signed') && (
+            {/* The upload area is in the card above; the board resolution page replaces a signed copy. */}
+            {brStatus === 'signed' && (
               <Link
                 href={clientBoardResolutionPath()}
                 className="inline-flex items-center gap-1.5 text-brand-text hover:underline font-medium"
               >
                 <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {brStatus === 'signed' ? 'View or replace signed copy' : 'Upload signed copy'}
+                View or replace signed copy
               </Link>
             )}
             {brStatus === 'none' || brStatus === 'draft' ? (
@@ -182,7 +183,7 @@ export function Phase1Pre3Panel(props: Phase1StepPanelRoutesProps) {
         <PanelShell title="Signed Board Resolution">
             {props.engagement && brStatus !== 'loading' ? (
               <div className="mb-3">
-                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} />
+                <BoardResolutionDocCards engagement={props.engagement} doc={props.brDoc ?? null} step="signed" viewerRole={isClient ? 'client' : props.role} onDocChange={props.onBrDocChange} />
               </div>
             ) : null}
           {brStatus === 'loading' && <p className="text-ink-faint">Checking status…</p>}

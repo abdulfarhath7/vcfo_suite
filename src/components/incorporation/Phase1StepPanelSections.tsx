@@ -29,6 +29,8 @@ export type Phase1StepPanelRoutesProps = {
   brStatus: 'loading' | 'none' | 'draft' | 'finalized' | 'signed';
   /** BR-01, BR-02: the board resolution record, for its document cards. */
   brDoc?: BoardResolutionDoc | null;
+  /** Takes the reloaded record after the signed copy is uploaded on the step (BR-02). */
+  onBrDocChange?: (doc: BoardResolutionDoc | null) => void;
   /** The signed-in role, for who may generate or upload. */
   role?: string;
   deliveredToClient: boolean;

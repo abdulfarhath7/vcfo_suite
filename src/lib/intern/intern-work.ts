@@ -29,7 +29,7 @@ import { internEngagementPath, internEngagementStepPath } from '@/lib/projects/p
 import { deriveStuckReason } from '@/lib/projects/project-stuck';
 import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
-import { isDirectFlowStep, isDirectFlowStepComplete } from '@/lib/incorporation/pre-inc-direct-flow';
+import { isDirectFlowStep, isDirectFlowStepComplete, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
 import { titleWithPeriod } from '@/lib/compliance/period-title';
 
 export type InternChipTone =
@@ -387,12 +387,21 @@ function isCriticalOverdue(opts: {
   return daysLate(opts.dueAt, opts.now) >= 7;
 }
 
+/** True when the board resolution step holds a client edit that was returned to the lead (BR-05). */
+export function isReturnedClientEdit(itemId: string, slice: ChecklistItemStateSlice | undefined): boolean {
+  return itemId === MANAGER_APPROVAL_STEP_ID && slice?.brClientEdit?.stage === 'returned';
+}
+
 function classifyStepKind(
   queueItem: InternQueueItem,
   slice: ChecklistItemStateSlice | undefined,
   item: ChecklistItem,
 ): InternWorkKind | null {
   if (queueItem.status === 'not-applicable') return null;
+  // BR-05: a client edit of the board resolution that the manager or admin returned is the lead's
+  // to correct and send again, even though the step itself was finalized long ago. It leaves the
+  // list when the lead resubmits it (the stage moves on to `manager`).
+  if (isReturnedClientEdit(item.id, slice)) return 'rejected';
   if (queueItem.isLocked && queueItem.status !== 'completed') return null;
   // Direct flow: Submit completes the step; old review states read as done.
   if (isDirectFlowStep(item.id)) {
@@ -647,7 +656,7 @@ export function buildInternWorkItems(opts: {
         startedAt,
         completedAt,
         ageLabel: kind === 'done' ? undefined : age,
-        why: whyForKind(kind, age),
+        why: isReturnedClientEdit(def.id, slice) ? 'Returned — correct the client edit' : whyForKind(kind, age),
         isOverdue: overdue && kind !== 'done',
         isCritical: isCriticalOverdue({
           isOverdue: overdue && kind !== 'done',
