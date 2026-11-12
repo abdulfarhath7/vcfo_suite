@@ -158,7 +158,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <div className="float float-a" data-app="filings" aria-label="Book a demo to see the filings screen" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-positive">Filed</span><span className="t"><span>GSTR-3B, September</span><span className="mono">Acknowledgement attached</span></span></div>
             <div className="float float-b" data-app="inc-step-7" aria-label="Book a demo to see step 7, registered office address" role="button" aria-haspopup="dialog" tabIndex={0}><span className="pill pill-highlight">Needs you</span><span className="t"><span>Utility bill for the office</span><span className="mono">Due 9 Oct</span></span></div>
             <div className="frame" data-app="incorporation" aria-label="Book a demo to see the incorporation screen" role="button" aria-haspopup="dialog" tabIndex={0}>
-              <img src="/landing/hero-incorporation.webp" alt="VCFO Suite client portal, incorporation view for Northwind Technologies India Pvt Ltd: 22 days to the Certificate of Incorporation, 6 of 25 steps done, the current steps with who holds each one, this week's tasks and the incorporation status." width="1986" height="1138" fetchPriority="high" />
+              <img src="/landing/hero-incorporation.webp" alt={"VCFO Suite client portal, incorporation view: days to the Certificate of Incorporation, steps done, the current steps with who holds each one, this week's tasks and the incorporation status."} width="1986" height="1138" fetchPriority="high" />
             </div>
           </div>
         </div>
@@ -426,7 +426,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             <div className="reveal">
               <h3 className="h3">The same year, inside the portal</h3>
               <div className="frame" data-app="compliances" aria-label="Book a demo to see the compliance calendar" role="button" aria-haspopup="dialog" tabIndex={0}>
-                <img src="/landing/calendar-client.webp" alt="Client compliance calendar for Northwind Technologies: October grid with TDS, GST, PF and ESI dates, the next deadline GSTR-1 in 3 days, and the coming-up list with status words." width="1655" height="948" />
+                <img src="/landing/calendar-client.webp" alt={"Compliance calendar month view: a grid of the month with each statutory filing on its due date."} width="1100" height="769" />
               </div>
               <p className="caption"><span className="icon"><Ic><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></Ic></span>What the client sees: one month at a time, filtered by regulator, with the next deadline counting down and every filing after it in a list.</p>
             </div>
@@ -436,7 +436,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
                 <figcaption><b>Filings, with proof.</b> Each row carries its due date, frequency, status word and the acknowledgement once filed. Overdue is a word in red, never a surprise.</figcaption>
               </figure>
               <figure className="card" data-stagger style={st("--i:1")}>
-                <div className="frame" data-app="lead-compliances" aria-label="Book a demo to see the project lead calendar" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/calendar-lead.webp" alt="Project lead's statutory calendar: October deadlines listed by day across GST, income tax and labour, with a month picker and a legend by regulator." width="1324" height="759" /></div>
+                <div className="frame" data-app="lead-compliances" aria-label="Book a demo to see the project lead calendar" role="button" aria-haspopup="dialog" tabIndex={0}><img src="/landing/calendar-lead.webp" alt={"Project lead's compliance calendar month view: the statutory filings of every company on their due dates."} width="886" height="618" /></div>
                 <figcaption><b>The firm&apos;s side.</b> The project lead sees every statutory date across every company, grouped by day, with a reminder button on each.</figcaption>
               </figure>
             </div>
@@ -508,19 +508,19 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
             </div>
             <div className="tabpanel">
               <div className="frame" role="tabpanel" id="panel-client" aria-labelledby="tab-client" hidden={tab !== "client"} data-app="home">
-                <img src="/landing/portal-client.webp" alt="Client portal home for Northwind Technologies India Pvt Ltd: the home card with five numbers, the incorporation steps with who holds each one, what is needed from Northwind and the timeline." width="1655" height="948" />
+                <img src="/landing/portal-client.webp" alt={"Client portal home: the home card with five numbers, the incorporation steps with who holds each one, and what is needed from the client."} width="1655" height="948" />
               </div>
               <div className="frame" role="tabpanel" id="panel-lead" aria-labelledby="tab-lead" hidden={tab !== "lead"} data-app="lead-home">
-                <img src="/landing/portal-lead.webp" alt="Project lead Today screen for Bharath: the home card with five numbers, the action queue by company, the inbox and phase progress." width="1655" height="948" />
+                <img src="/landing/portal-lead.webp" alt={"Project lead Today screen: the home card with five numbers, the action queue by company and the inbox."} width="1655" height="948" />
               </div>
               <div className="frame" role="tabpanel" id="panel-manager" aria-labelledby="tab-manager" hidden={tab !== "manager"} data-app="mgr-home">
-                <img src="/landing/portal-manager.webp" alt="Manager Today screen for Pranay: the home card with five numbers, team tasks with filters, approvals, the task status donut and workload by project lead." width="1655" height="948" />
+                <img src="/landing/portal-manager.webp" alt={"Manager Today screen: the home card with five numbers, team tasks with filters, approvals and workload by project lead."} width="1655" height="948" />
               </div>
               <div className="frame" role="tabpanel" id="panel-admin" aria-labelledby="tab-admin" hidden={tab !== "admin"} data-app="admin-home">
-                <img src="/landing/portal-admin.webp" alt="Admin Today screen for Krishna: the home card, the practice areas, fourteen clients with their stage, manager and health, and the managers' load." width="1655" height="948" />
+                <img src="/landing/portal-admin.webp" alt={"Admin Today screen: the home card, the practice areas, clients with their stage, manager and health, and the managers' load."} width="1655" height="948" />
               </div>
               <div className="frame" role="tabpanel" id="panel-super" aria-labelledby="tab-super" hidden={tab !== "super"} data-app="super-home">
-                <img src="/landing/portal-super.webp" alt="Super admin overview for Mithilesh: the home card with the firm's numbers, the practice areas side by side, top risks and clients needing attention." width="1655" height="948" />
+                <img src="/landing/portal-super.webp" alt={"Super admin overview: the home card with the firm's numbers, the practice areas side by side, top risks and clients needing attention."} width="1655" height="948" />
               </div>
             </div>
           </div>
@@ -533,7 +533,7 @@ export function LandingScreen({ fontClass = "" }: { fontClass?: string }) {
           <div className="ask">
             <div className="reveal">
               <div className="panel" data-app="home-chat" aria-label="Book a demo to try Ask VCFO" role="button" aria-haspopup="dialog" tabIndex={0}>
-                <img src="/landing/ask-vcfo.webp" alt="Ask VCFO panel inside the client portal, answering from Northwind's project data, with suggested questions." width="779" height="1150" />
+                <img src="/landing/ask-vcfo.webp" alt={"Ask VCFO panel inside the client portal, answering from the client's own project data, with suggested questions."} width="779" height="1150" />
               </div>
             </div>
             <div className="reveal">
