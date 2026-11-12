@@ -138,6 +138,31 @@ export function dir3KycDueOn(today: string): string {
 }
 
 /**
+ * The first DIR-3 KYC due date of a DIN allotted on `allottedOn`. A DIN allotted in a financial
+ * year (1 April to 31 March) files its first DIR-3 KYC by 30 September of the next financial
+ * year, so a DIN allotted on 10 May 2026 (FY 2026-27) is first due on 30 September 2027 and one
+ * allotted on 10 February 2026 (FY 2025-26) on 30 September 2026.
+ */
+export function dir3KycFirstDueOn(allottedOn: string): string {
+  const year = Number(allottedOn.slice(0, 4));
+  const month = Number(allottedOn.slice(5, 7));
+  const fyStart = month >= 4 ? year : year - 1;
+  return `${fyStart + 1}-09-30`;
+}
+
+/**
+ * The next DIR-3 KYC due date for a DIN, from today and, when known, the date it was allotted.
+ * Never earlier than the first due date of the allotment year (`dir3KycFirstDueOn`); without an
+ * allotment date it is `dir3KycDueOn(today)`.
+ */
+export function dir3KycDueOnForDin(today: string, allottedOn: string | null | undefined): string {
+  const next = dir3KycDueOn(today);
+  if (!allottedOn || !/^\d{4}-\d{2}-\d{2}/.test(allottedOn)) return next;
+  const first = dir3KycFirstDueOn(allottedOn);
+  return first > next ? first : next;
+}
+
+/**
  * LEI renews yearly from its issue (or last renewal) date. With only the registration date on
  * file, the next anniversary on or after today is used, on the assumption that earlier renewals
  * were done; staff set the exact expiry on the registration when they know it.

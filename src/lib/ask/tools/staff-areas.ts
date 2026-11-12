@@ -231,7 +231,8 @@ export const STAFF_AREA_TOOLS: Record<string, AskTool<StaffAreaContext>> = {
     run: async ({ ctx, data }, input) => {
       const scope = forCompany(data, input.company);
       if (scope.missing) return { error: 'no_match' };
-      const read = await guarded(() => listBatches(ctx));
+      // A company keeps no labour registers before its COI, so only incorporated ones count as pending.
+      const read = await guarded(() => listBatches(ctx, { incorporatedOnly: true }));
       if ('error' in read) return read;
       const rows = read
         .filter((b) => b.status !== 'attested' && b.status !== 'superseded' && scope.keep(b.engagementId))

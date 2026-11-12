@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { openBatch } from '@/db/repositories/labour-registers';
+import { LabourBatchRefused } from '@/lib/labour-registers/stage-gate';
 
 /**
  * Open the register batch for one client, one state and one period.
@@ -17,6 +18,9 @@ import { openBatch } from '@/db/repositories/labour-registers';
  * Staff only. The repository checks the engagement scope and returns null for a client the
  * caller cannot see, which is answered as a 404 rather than a 403 — whether a client exists is
  * itself something a stranger should not learn.
+ *
+ * A company not yet incorporated is refused with 409, and a period that starts before the month
+ * of incorporation with 422; the body carries the reason in `message`.
  *
  * POST /api/labour-registers/open  { engagementId, stateCode, periodFrom, periodTo }
  *   → { batchId }
@@ -35,7 +39,13 @@ export async function POST(request: Request) {
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
 
-  const batch = await openBatch(guard.ctx, body.data);
+  let batch: Awaited<ReturnType<typeof openBatch>>;
+  try {
+    batch = await openBatch(guard.ctx, body.data);
+  } catch (error) {
+    if (error instanceof LabourBatchRefused) return NextResponse.json({ error: error.code, message: error.message }, { status: error.status });
+    throw error;
+  }
   if (!batch) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   return NextResponse.json({ batchId: batch.id });
 }
