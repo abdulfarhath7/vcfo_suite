@@ -3,22 +3,22 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useExportReadyToast } from '@/hooks/use-export-ready-toast';
+import type { ListSourceInput } from '@/lib/exports/list-source-schema';
 
 export type ExcelCell = string | number | null | undefined;
 
-/** A list the server reads itself, with the viewer's scope (GL-06). */
-export type ExcelExportSource =
-  | { source: 'audit-log'; engagementId?: string | null; filters: { search: string; role: string; category: string } }
-  | { source: 'approvals'; scope: 'firm' | 'manager'; kind: 'all' | 'client' | 'lead' | 'send' | 'board' };
+/** A list the server reads itself, with the viewer's scope: its name and the filters on screen (GL-06). */
+export type ExcelExportSource = ListSourceInput;
 
 /**
  * GL-06: the Excel export behind "Export to Excel" (`ExportToExcelButton`) and any menu item that
  * exports the same way. The file is made in the background; the bell says when it is ready, and
  * a toast says so too while this page is still open.
  *
- * Pass `source` for a list the server can read itself (every matching row, read with the
- * viewer's scope). Otherwise pass `columns` and `rows`; the server drops any row whose "Client"
- * column names a client the viewer cannot see.
+ * Pass `source`: the list and the filters and sort on screen. The server reads every matching
+ * row itself, with the viewer's scope. Only the Directors grid passes `columns` and `rows`, since
+ * its cells may hold answers not yet saved; the server refuses rows from any other list and drops
+ * any row whose "Client" column names a client the viewer cannot see.
  */
 export type ExcelExportInput = {
   title: string;

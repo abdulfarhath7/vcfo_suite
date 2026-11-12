@@ -29,9 +29,8 @@ import {
   type AuditResultWord,
   auditEventTitle,
 } from '@/views/admin/audit-log/audit-filters';
-import { auditEventsCsv, downloadCsv } from '@/views/admin/audit-log/audit-csv';
+import { auditCsvHref } from '@/views/admin/audit-log/audit-csv';
 import { ExportToExcelButton } from '@/components/ui/export-to-excel-button';
-import { logBrowserExport } from '@/lib/exports/log-export-client';
 
 /** Plain date and time, for example "14 Oct 10:42" (R-05); the year shows only when it is not this year. */
 function plainWhen(iso: string): string {
@@ -446,11 +445,11 @@ export function AuditTable({
             filters={filters}
             onChange={onFiltersChange}
             events={events}
-            onExport={() => {
-              const csv = auditEventsCsv(filtered, engagementsByDbId);
-              downloadCsv(csv, exportName);
-              logBrowserExport('audit_log', exportName, csv);
-            }}
+            onExport={() =>
+              // The server builds the CSV from every event the filters keep, not only the pages
+              // loaded here, and logs it (the same source as the Excel export).
+              window.location.assign(auditCsvHref({ engagementId, filters, name: exportName, client: engagementId ? title : null }))
+            }
           />
           {/* GL-06: beside the CSV export, the same columns over every event the filters keep. The
               server reads every page with the viewer's scope, not only the pages loaded here. */}
