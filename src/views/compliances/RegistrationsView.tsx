@@ -87,10 +87,23 @@ function cellOf(word: RegWord): keyof typeof CELL {
  * `embedded` renders the list as a tab of the client record (G-19): the state
  * stays in memory and the page head is left to the record.
  */
-export function RegistrationsView({ shellBase, scope, embedded = false }: { shellBase: string; scope: ComplianceScope; embedded?: boolean }) {
+export function RegistrationsView({
+  shellBase,
+  scope,
+  embedded = false,
+  pagePath,
+}: {
+  shellBase: string;
+  scope: ComplianceScope;
+  embedded?: boolean;
+  /** The page this list lives on when it is not `${shellBase}/registrations` (super admin practice page). */
+  pagePath?: string;
+}) {
   const now = useMemo(() => new Date(), []);
   const { getStateForEngagement } = useApp();
-  const basePath = `${shellBase}/registrations`;
+  const basePath = pagePath ?? `${shellBase}/registrations`;
+  // Super admin has no record pages of its own; it opens the admin ones, as its journey links do.
+  const recordBase = `${shellBase === '/app/super' ? '/app/admin' : shellBase}/registrations`;
   const params = useViewParams(basePath, embedded);
   const factsQ = useRegistrationFacts({ engagementId: embedded ? scope.engagements[0]?.id : null });
   const factOf = (r: RegistrationRow): RegistrationFacts | undefined => factsQ.data?.[r.engagement.id]?.[r.item.id];
@@ -105,7 +118,12 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
   // Boxes is the default view (owner, 12 November 2026); `?view=list` and `?view=grid` keep the others.
   const viewParam = params.get('view');
   const view: 'boxes' | 'list' | 'grid' = viewParam === 'grid' ? 'grid' : viewParam === 'list' ? 'list' : 'boxes';
-  const labourRegistersHref = shellBase === '/app/admin' || shellBase === '/app/lead' ? `${shellBase}/labour-registers` : null;
+  const labourRegistersHref =
+    shellBase === '/app/admin' || shellBase === '/app/lead'
+      ? `${shellBase}/labour-registers`
+      : shellBase === '/app/super'
+        ? '/app/admin/labour-registers'
+        : null;
   const stateParam = params.get('state') ?? '';
   const filter: RegFilter = stateParam in FILTER_WORD || stateParam === 'renewals' ? (stateParam as RegFilter) : '';
 
@@ -114,6 +132,13 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
     [engagements, companyId],
   );
   const items = useMemo(() => registrationRows(inView, getStateForEngagement, now), [inView, getStateForEngagement, now]);
+  // On a client's own record the boxes show even while the company is incorporating, so its
+  // portal logins can be kept from day one; the firm-wide page still leaves those companies out.
+  const boxEngagements = embedded ? scope.engagements : null;
+  const boxItems = useMemo(
+    () => (boxEngagements ? registrationRows(boxEngagements, getStateForEngagement, now) : null),
+    [boxEngagements, getStateForEngagement, now],
+  );
   const live = items.filter((r) => r.word !== 'Not needed');
   const notNeeded = items.filter((r) => r.word === 'Not needed');
   // A renewal is a granted registration whose stored expiry falls within 60 days or has passed.
@@ -126,7 +151,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
   const count = (f: Exclude<RegFilter, ''>) => live.filter((r) => match(r, f)).length;
 
   const setParams = params.set;
-  const hrefOf = (r: RegistrationRow) => `${basePath}/${encodeURIComponent(r.key)}`;
+  const hrefOf = (r: RegistrationRow) => `${recordBase}/${encodeURIComponent(r.key)}`;
 
   // Prototype strip: Granted, In progress, Waiting, Not started, Renewals in 60 days.
   const strip: StripItem[] = [
@@ -283,7 +308,7 @@ export function RegistrationsView({ shellBase, scope, embedded = false }: { shel
               <HeadCard title="Registrations" count={shown.length} right={head}>
                 <div className="p-4">
                   <RegistrationBoxes
-                    rows={filter ? shown : [...shown, ...notNeeded]}
+                    rows={boxItems ?? (filter ? shown : [...shown, ...notNeeded])}
                     hrefOf={hrefOf}
                     labourRegistersHref={labourRegistersHref}
                   />
