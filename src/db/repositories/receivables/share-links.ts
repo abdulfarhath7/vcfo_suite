@@ -4,7 +4,6 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles, receivablePartners, receivableSheets, receivableShareLinks, receivableShareViews, receivableVersions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { isFirmWideAdmin } from '@/lib/auth';
 import { todayIst } from '@/lib/receivables/dates';
 import type { SnapshotRow } from '@/lib/receivables/model';
 import { applyShareFilters, describeShareFilters, normaliseShareFilters, type ShareFilters } from '@/lib/receivables/share-filters';
@@ -17,7 +16,7 @@ import {
   type SharedViewDto,
   type ShareVisibility,
 } from '@/lib/receivables/share-wire';
-import { UUID, assertEditorRole, conflict, invalid, mayEditSheet, notFound, scopedSheet } from './shared';
+import { UUID, assertEditorRole, canEditSheet, conflict, invalid, notFound, scopedSheet } from './shared';
 
 /**
  * RECEIVABLES SHARED VIEWS (Phase 10, docs/specs/receivables/PLAN.md): a named link,
@@ -249,7 +248,7 @@ export async function systemOpenShareLink(
     .limit(1);
   if (!sheet) return { status: 'not_found' };
 
-  const staffViewer = Boolean(viewer && (isFirmWideAdmin(viewer.role) || (viewer.role === 'manager' && mayEditSheet(viewer, sheet))));
+  const staffViewer = Boolean(viewer && (await canEditSheet(viewer, sheet)));
   const visibility = link.visibility as ShareVisibility;
   if (visibility !== 'public' && !staffViewer) {
     if (!viewer) return { status: 'needs_login' };

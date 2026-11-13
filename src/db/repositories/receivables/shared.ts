@@ -1,18 +1,20 @@
 import 'server-only';
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { receivableChanges, receivableInvoices, receivableSheets } from '@/db/schema';
+import { receivableChanges, receivableInvoices, receivableSheetEditors, receivableSheets } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
 import type { PaidVia, SheetInvoice } from '@/lib/receivables/model';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 
 /**
  * RECEIVABLES — shared parts: who may act, errors, row mapping and the change log.
  *
  * >>> ACCESS CONTROL (docs/specs/receivables/PLAN.md) <<<
- *   A sheet belongs to one manager (`receivable_sheets.manager_user_id`). That manager and the
- *   firm-wide admins (super admin, admin) read and write it; any other manager reads it as not
- *   found. Interns, clients and developers are refused before the first query. A signed-in client
+ *   A sheet belongs to one manager (`receivable_sheets.manager_user_id`). That manager, the
+ *   firm-wide admins (super admin, admin) and the staff named in `receivable_sheet_editors` read
+ *   and write it; any other manager or project lead reads it as not found. Clients, partners and
+ *   developers are refused before the first query. A signed-in client
  *   partner reads only their own rows of the latest published snapshot, through
  *   partner-portal.ts (the public key link was retired in Phase 8).
  */
@@ -20,7 +22,6 @@ import type { PaidVia, SheetInvoice } from '@/lib/receivables/model';
 export type SheetRow = typeof receivableSheets.$inferSelect;
 export type InvoiceRow = typeof receivableInvoices.$inferSelect;
 
-const EDITORS = new Set(['super_admin', 'admin', 'manager']);
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -39,11 +40,28 @@ export const conflict = (code: string) => new ReceivablesError(409, code);
 
 /** Throws before any query for a role that can never edit a sheet. */
 export function assertEditorRole(ctx: AuthContext): void {
-  if (!EDITORS.has(ctx.role)) throw notFound();
+  if (!isReceivablesStaffRole(ctx.role)) throw notFound();
 }
 
+/** The part of the rule that needs no query: a firm-wide admin or the sheet's own manager. */
 export function mayEditSheet(ctx: AuthContext, sheet: Pick<SheetRow, 'managerUserId'>): boolean {
   return isFirmWideAdmin(ctx.role) || (sheet.managerUserId !== null && sheet.managerUserId === ctx.userId);
+}
+
+/** True when the person is named as an extra editor of the sheet. */
+export async function isSheetEditor(userId: string, sheetId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ userId: receivableSheetEditors.userId })
+    .from(receivableSheetEditors)
+    .where(and(eq(receivableSheetEditors.sheetId, sheetId), eq(receivableSheetEditors.userId, userId)))
+    .limit(1);
+  return Boolean(row);
+}
+
+/** The full rule: a firm-wide admin, the sheet's manager, or one of its extra editors. */
+export async function canEditSheet(ctx: AuthContext, sheet: Pick<SheetRow, 'id' | 'managerUserId'>): Promise<boolean> {
+  if (!isReceivablesStaffRole(ctx.role)) return false;
+  return mayEditSheet(ctx, sheet) || (await isSheetEditor(ctx.userId, sheet.id));
 }
 
 /** The sheet, if and only if the caller may edit it; anything else reads as not found. */
@@ -51,7 +69,7 @@ export async function scopedSheet(ctx: AuthContext, sheetId: string): Promise<Sh
   assertEditorRole(ctx);
   if (!UUID.test(sheetId ?? '')) throw notFound();
   const [sheet] = await db.select().from(receivableSheets).where(eq(receivableSheets.id, sheetId)).limit(1);
-  if (!sheet || !mayEditSheet(ctx, sheet)) throw notFound();
+  if (!sheet || !(await canEditSheet(ctx, sheet))) throw notFound();
   return sheet;
 }
 

@@ -2,8 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { requireAuth, requirePartner, type AuthContext } from '@/auth/guards';
 import { roleHomePath } from '@/lib/auth-routes';
-
-const STAFF = new Set(['super_admin', 'admin', 'manager']);
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 
 /**
  * The page guard of the client partner pages (/receivables, /receivables/account). Signed out
@@ -16,5 +15,5 @@ export async function partnerPageGuard(next: string): Promise<AuthContext> {
   if (guard.status === 401) redirect(`/receivables/login?next=${encodeURIComponent(next)}`);
   const other = await requireAuth();
   if (other.ok === false) redirect(`/receivables/login?next=${encodeURIComponent(next)}`);
-  redirect(STAFF.has(other.ctx.role) ? '/receivables/manager' : roleHomePath(other.ctx.role));
+  redirect(isReceivablesStaffRole(other.ctx.role) ? '/receivables/manager' : roleHomePath(other.ctx.role));
 }

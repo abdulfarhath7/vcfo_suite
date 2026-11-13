@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { requireAuth } from '@/auth/guards';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 import { roleHomePath } from '@/lib/auth-routes';
 import { listMySheets } from '@/db/repositories/receivables';
 import { ReceivablesManager } from '@/views/receivables/manager/ReceivablesManager';
@@ -11,7 +12,6 @@ export const dynamic = 'force-dynamic';
 
 type Props = { searchParams: Promise<{ sheet?: string }> };
 
-const EDITORS = new Set(['super_admin', 'admin', 'manager']);
 
 /**
  * /receivables/manager — the only signed-in part of receivables (docs/specs/receivables/PLAN.md).
@@ -24,10 +24,10 @@ export default async function ReceivablesManagerPage({ searchParams }: Props) {
   const { ctx } = guard;
   const home = roleHomePath(ctx.role);
 
-  if (!EDITORS.has(ctx.role)) return <Notice title="Receivables is for SBC's receivables manager" body="Your account does not have access to this page." home={home} />;
+  if (!isReceivablesStaffRole(ctx.role)) return <Notice title="Receivables is for SBC's receivables team" body="Your account does not have access to this page." home={home} />;
 
   const sheets = await listMySheets(ctx);
-  if (!sheets.length) return <Notice title="No receivables sheet is assigned to you" body="Ask the developer to import the client's workbook with you as its manager." home={home} />;
+  if (!sheets.length) return <Notice title="No receivables sheet is assigned to you" body="Ask the developer to add you to the client's receivables sheet." home={home} />;
 
   const q = await searchParams;
   const sheetId = sheets.find((s) => s.id === q.sheet)?.id ?? sheets[0].id;

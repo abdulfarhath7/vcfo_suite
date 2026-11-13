@@ -308,7 +308,7 @@ describe('partnerStatement (Phase 10)', () => {
 });
 
 describe('sheetStatement (Phase 10)', () => {
-  for (const role of ['intern', 'client', 'developer', 'partner'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       await expect(repo.sheetStatement(ctx(role), SHEET, { client: null, from: '2026-09-01', to: '2026-11-03' })).rejects.toMatchObject({ status: 404 });
       expect(calls).toHaveLength(0);
@@ -316,7 +316,14 @@ describe('sheetStatement (Phase 10)', () => {
   }
 
   it("reads another manager's sheet as not found", async () => {
-    results = [[{ id: SHEET, managerUserId: 'someone-else', clientOrgName: 'Summit Consulting' }]];
+    results = [[{ id: SHEET, managerUserId: 'someone-else', clientOrgName: 'Summit Consulting' }], []];
     await expect(repo.sheetStatement(ctx('manager'), SHEET, { client: null, from: '2026-09-01', to: '2026-11-03' })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('refuses a project lead who is not an editor of the sheet: not found, no writes', async () => {
+    results = [[{ id: SHEET, managerUserId: 'someone-else', clientOrgName: 'Summit Consulting' }], []];
+    await expect(repo.sheetStatement(ctx('intern'), SHEET, { client: null, from: '2026-09-01', to: '2026-11-03' })).rejects.toMatchObject({ status: 404 });
+    // The sheet read and the editor lookup, and nothing else.
+    expect(calls.map((c) => c.op)).toEqual(['select', 'select']);
   });
 });

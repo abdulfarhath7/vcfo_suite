@@ -232,7 +232,8 @@ function payrollItem(base: string): NavItem {
 
 /**
  * Receivables (docs/specs/receivables/PLAN.md) lives outside /app at /receivables/manager, with its
- * own header; this row only opens it. Managers only: the one receivables manager is a manager.
+ * own header; this row only opens it. Managers and project leads see it: a sheet has one manager,
+ * and a lead can be added to a sheet as an extra editor (`receivable_sheet_editors`).
  */
 /** Client request lists (docs/specs/automation/IDEAS-PLAN.md, feature A): what each client still owes. */
 function requestsItem(base: string): NavItem {
@@ -361,6 +362,7 @@ const internItems: NavEntry[] = [
   labourRegistersItem('/app/lead'),
   payrollItem('/app/lead'),
   budgetsItem('/app/lead'),
+  receivablesItem(),
   updatesGroup('/app/lead'),
   { to: '/app/lead/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/lead', Archive),

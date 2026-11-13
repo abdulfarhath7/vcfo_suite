@@ -1,7 +1,7 @@
 import 'server-only';
-import { and, asc, count, desc, eq, gt, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, inArray, isNull, or } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { profiles, receivableChanges, receivableInvoiceNotes, receivableInvoices, receivablePartners, receivableSheets, receivableVersions } from '@/db/schema';
+import { profiles, receivableChanges, receivableInvoiceNotes, receivableInvoices, receivablePartners, receivableSheetEditors, receivableSheets, receivableVersions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { newPublicKey } from '@/lib/receivables/public-key';
@@ -23,7 +23,7 @@ export type ManagerSheet = {
   latestVersion: { id: string; seq: number; publishedAt: Date; publishedByName: string } | null;
 };
 
-/** The sheets the caller may edit: all for firm-wide admins, their own for a manager. */
+/** The sheets the caller may edit: all for firm-wide admins; otherwise the ones they manage or are an editor of. */
 export async function listMySheets(ctx: AuthContext): Promise<SheetSummary[]> {
   assertEditorRole(ctx);
   const cols = {
@@ -35,7 +35,12 @@ export async function listMySheets(ctx: AuthContext): Promise<SheetSummary[]> {
     publishedVersionId: receivableSheets.publishedVersionId,
   };
   if (isFirmWideAdmin(ctx.role)) return db.select(cols).from(receivableSheets).orderBy(asc(receivableSheets.name));
-  return db.select(cols).from(receivableSheets).where(eq(receivableSheets.managerUserId, ctx.userId)).orderBy(asc(receivableSheets.name));
+  const editorOf = db.select({ id: receivableSheetEditors.sheetId }).from(receivableSheetEditors).where(eq(receivableSheetEditors.userId, ctx.userId));
+  return db
+    .select(cols)
+    .from(receivableSheets)
+    .where(or(eq(receivableSheets.managerUserId, ctx.userId), inArray(receivableSheets.id, editorOf)))
+    .orderBy(asc(receivableSheets.name));
 }
 
 export function toPartner(row: typeof receivablePartners.$inferSelect): Partner {
@@ -105,6 +110,17 @@ export async function updateSheetSettings(ctx: AuthContext, sheetId: string, pat
   if (patch.reminderRules) set.reminderRules = validRules(patch.reminderRules);
   const [row] = await db.update(receivableSheets).set(set).where(eq(receivableSheets.id, sheet.id)).returning();
   return row;
+}
+
+/**
+ * SYSTEM (no AuthContext): names a staff member as an extra editor of a sheet, for the import
+ * scripts. Safe to repeat. Not reachable from any route.
+ */
+export async function systemAddSheetEditor(input: { sheetId: string; userId: string; addedBy?: string | null }): Promise<void> {
+  await db
+    .insert(receivableSheetEditors)
+    .values({ sheetId: input.sheetId, userId: input.userId, addedBy: input.addedBy ?? null })
+    .onConflictDoNothing();
 }
 
 /**

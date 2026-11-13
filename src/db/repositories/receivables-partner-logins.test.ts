@@ -4,7 +4,7 @@ import type { AuthContext } from '@/auth/guards';
 /**
  * Phase 8, the manager side (docs/specs/receivables/PLAN.md): partner login invites and invoice
  * notes are for the sheet's own manager and the firm-wide admins only; another manager reads the
- * partner or invoice as not found and writes nothing; interns, clients and partners are refused
+ * partner or invoice as not found and writes nothing; clients and partners are refused
  * before any query. The set-password link works once and only until it expires.
  */
 
@@ -82,7 +82,7 @@ beforeEach(() => {
 });
 
 describe('partner login actions: who may act', () => {
-  for (const role of ['intern', 'client', 'partner', 'developer'] as const) {
+  for (const role of ['client', 'partner', 'developer'] as const) {
     it(`refuses ${role} before any query`, async () => {
       await expect(repo.partnerLoginAction(ctx(role), PARTNER, 'invite')).rejects.toMatchObject({ status: 404 });
       await expect(repo.listNotes(ctx(role), INVOICE)).rejects.toMatchObject({ status: 404 });
@@ -91,10 +91,14 @@ describe('partner login actions: who may act', () => {
     });
   }
 
-  it('reads another sheet’s partner as not found and writes nothing', async () => {
+  // A project lead passes the role gate, so the refusal costs the sheet read and one editor lookup.
+  it.each([
+    ['another sheet’s manager', other],
+    ['a project lead who is not an editor of the sheet', ctx('intern')],
+  ] as const)('%s reads the partner as not found and writes nothing', async (_who, who) => {
     for (const action of ['invite', 'resend', 'reset', 'disable', 'enable'] as const) {
-      results = [[partnerRow({ profileId: PROFILE })], [sheetRow()]];
-      await expect(repo.partnerLoginAction(other, PARTNER, action)).rejects.toMatchObject({ status: 404 });
+      results = [[partnerRow({ profileId: PROFILE })], [sheetRow()], []];
+      await expect(repo.partnerLoginAction(who, PARTNER, action)).rejects.toMatchObject({ status: 404 });
     }
     expect(writes()).toHaveLength(0);
   });

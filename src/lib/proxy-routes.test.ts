@@ -57,10 +57,10 @@ describe('proxyRedirect, staff and clients', () => {
     expect(proxyRedirect('/receivables', '', 'manager')).toBe('/receivables/manager');
     expect(proxyRedirect('/receivables/login', '', 'admin')).toBe('/receivables/manager');
     expect(proxyRedirect('/receivables/account', '', 'super_admin')).toBe('/receivables/manager');
+    expect(proxyRedirect('/receivables', '', 'intern')).toBe('/receivables/manager');
   });
 
   it('sends other roles from the partner pages to their home', () => {
-    expect(proxyRedirect('/receivables', '', 'intern')).toBe('/app/lead/today');
     expect(proxyRedirect('/receivables', '', 'client')).toBe('/app/client/overview');
     expect(proxyRedirect('/receivables', '', 'developer')).toBe('/app/dev/overview');
   });

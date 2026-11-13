@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { optionalViewer } from '@/auth/guards';
 import { systemOpenShareLink } from '@/db/repositories/receivables';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 import { roleHomePath } from '@/lib/auth-routes';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { sharePath } from '@/lib/receivables/share-wire';
@@ -18,7 +19,6 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ token: string }> };
 
-const EDITORS = new Set(['super_admin', 'admin', 'manager']);
 
 /**
  * /receivables/s/<token> — a shared receivables view (Phase 10 of docs/specs/receivables/PLAN.md).
@@ -36,7 +36,7 @@ export default async function SharedReceivablesPage({ params }: Props) {
   if (out.status === 'forbidden') return <SharedLinkForbidden email={viewer?.email ?? ''} token={token} />;
   const home = !viewer
     ? null
-    : EDITORS.has(viewer.role)
+    : isReceivablesStaffRole(viewer.role)
       ? { href: '/receivables/manager?tab=links', label: 'Back to the manager' }
       : viewer.role === 'partner'
         ? { href: '/receivables', label: 'My invoices' }
