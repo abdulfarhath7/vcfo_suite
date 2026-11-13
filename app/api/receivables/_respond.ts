@@ -3,14 +3,15 @@ import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
 import { ReceivablesError } from '@/db/repositories/receivables';
 import { INVOICE_CURRENCY_CODES } from '@/lib/receivables/currencies';
+import { RECEIVABLES_STAFF_ROLES } from '@/lib/receivables/roles';
 
 /**
  * Shared parts of the /api/receivables routes (docs/specs/receivables/PLAN.md): the staff guard,
  * the error mapping and field schemas. Who may touch which sheet is decided in the repository
- * (its own manager and the firm-wide admins); the guard only keeps other roles out early.
+ * (its own manager, its extra editors and the firm-wide admins); the guard only keeps other roles out early.
  */
 export function guardReceivables() {
-  return requireAnyRole('super_admin', 'admin', 'manager');
+  return requireAnyRole(...RECEIVABLES_STAFF_ROLES);
 }
 
 export function denied(guard: { status: number; error: string }) {

@@ -5,8 +5,9 @@ import { addDaysIso, todayIst } from '@/lib/receivables/dates';
 /**
  * Access rules and writes of the Phase 10 forex desk repository (FX tab, forward contracts, rate
  * alerts, and a receipt delivered against a forward): only the sheet's own manager and the
- * firm-wide admins reach a sheet; another manager reads it as not found and writes nothing;
- * interns, clients, developers and client partners are refused before any query.
+ * firm-wide admins reach a sheet, and so does a member of staff named as an editor of it. Another
+ * manager, or a project lead who is not an editor, reads it as not found and writes nothing after
+ * one editor lookup. Clients, developers and client partners are refused before any query.
  */
 
 type Call = { op: string; values?: unknown; set?: unknown };
@@ -107,7 +108,7 @@ beforeEach(() => {
 });
 
 describe('roles that never touch a sheet', () => {
-  for (const role of ['intern', 'client', 'developer', 'partner'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       const c = ctx(role);
       await expect(repo.fxDesk(c, SHEET)).rejects.toMatchObject({ status: 404 });
@@ -126,25 +127,31 @@ describe('roles that never touch a sheet', () => {
   }
 });
 
-describe('another sheet’s manager', () => {
-  it('reads not found and writes nothing', async () => {
-    results = [[sheetRow()]];
+const outsiders = [
+  ['another sheet’s manager', other],
+  ['a project lead who is not an editor of the sheet', ctx('intern')],
+] as const;
+
+describe('someone who may not edit the sheet', () => {
+  // A project lead passes the role gate, so the refusal costs the sheet read and one editor lookup.
+  it.each(outsiders)('%s reads not found and writes nothing', async (_who, other) => {
+    results = [[sheetRow()], []];
     await expect(repo.fxDesk(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.listForwards(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.createForward(other, SHEET, forwardInput)).rejects.toMatchObject({ status: 404 });
-    results = [[forwardRow()], [sheetRow()]];
+    results = [[forwardRow()], [sheetRow()], []];
     await expect(repo.updateForward(other, FORWARD, { bank: 'X' })).rejects.toMatchObject({ status: 404 });
-    results = [[forwardRow()], [sheetRow()]];
+    results = [[forwardRow()], [sheetRow()], []];
     await expect(repo.cancelForward(other, FORWARD)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.createAlert(other, SHEET, { currency: 'USD', direction: 'above', threshold: 85 })).rejects.toMatchObject({ status: 404 });
-    results = [[alertRow()], [sheetRow()]];
+    results = [[alertRow()], [sheetRow()], []];
     await expect(repo.updateAlert(other, ALERT, { active: false })).rejects.toMatchObject({ status: 404 });
-    results = [[alertRow()], [sheetRow()]];
+    results = [[alertRow()], [sheetRow()], []];
     await expect(repo.deleteAlert(other, ALERT)).rejects.toMatchObject({ status: 404 });
-    results = [[invoiceRow()], [sheetRow()]];
+    results = [[invoiceRow()], [sheetRow()], []];
     await expect(repo.markReceived(other, INVOICE, { paidOn: TODAY, amount: 84000, receivedFc: 1000, forwardId: FORWARD })).rejects.toMatchObject({ status: 404 });
     expect(writes()).toHaveLength(0);
   });

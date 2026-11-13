@@ -112,7 +112,7 @@ beforeEach(() => {
 });
 
 describe('managing links', () => {
-  for (const role of ['intern', 'client', 'developer', 'partner'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       await expect(repo.listShareLinks(ctx(role), SHEET)).rejects.toMatchObject({ status: 404 });
       await expect(repo.createShareLink(ctx(role), SHEET, { name: 'x', filters: {}, visibility: 'public' })).rejects.toMatchObject({ status: 404 });
@@ -122,15 +122,18 @@ describe('managing links', () => {
     });
   }
 
-  it('refuses a manager of another sheet and writes nothing', async () => {
-    const other = ctx('manager', '99999999-9999-9999-9999-999999999909');
-    results = [[sheetRow()]];
+  // A project lead passes the role gate, so the refusal costs the sheet read and one editor lookup.
+  it.each([
+    ['a manager of another sheet', ctx('manager', '99999999-9999-9999-9999-999999999909')],
+    ['a project lead who is not an editor of the sheet', ctx('intern')],
+  ] as const)('refuses %s and writes nothing', async (_who, other) => {
+    results = [[sheetRow()], []];
     await expect(repo.listShareLinks(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.createShareLink(other, SHEET, { name: 'x', filters: {}, visibility: 'public' })).rejects.toMatchObject({ status: 404 });
-    results = [[linkRow()], [sheetRow()]];
+    results = [[linkRow()], [sheetRow()], []];
     await expect(repo.updateShareLink(other, LINK, { name: 'y' })).rejects.toMatchObject({ status: 404 });
-    results = [[linkRow()], [sheetRow()]];
+    results = [[linkRow()], [sheetRow()], []];
     await expect(repo.revokeShareLink(other, LINK)).rejects.toMatchObject({ status: 404 });
     expect(writes()).toHaveLength(0);
   });

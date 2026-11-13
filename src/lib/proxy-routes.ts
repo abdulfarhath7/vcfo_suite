@@ -1,5 +1,6 @@
 import { isValidDbRole, type Role } from '@/lib/auth';
 import { postLoginPath, roleHomePath } from '@/lib/auth-routes';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 
 /**
  * The request-path decisions of `proxy.ts`, kept free of Next.js and Auth.js so they can be unit
@@ -28,9 +29,6 @@ const ROLE_SEGMENT: Partial<Record<Role, string>> = {
 };
 
 const ALL_SEGMENTS = new Set(['super', 'admin', 'manager', 'lead', 'client', 'dev']);
-
-/** The roles that may open the receivables manager area. */
-const RECEIVABLES_EDITORS = new Set<string>(['super_admin', 'admin', 'manager']);
 
 /** The partner pages a signed-out visitor may open: the login page and the invite's set-password page. */
 export function isPublicReceivablesPath(path: string): boolean {
@@ -111,7 +109,7 @@ export function proxyRedirect(path: string, search: string, role: string | null 
   }
 
   if (isPartnerPage || isPartnerLogin) {
-    return RECEIVABLES_EDITORS.has(role) ? '/receivables/manager' : homeFor(role);
+    return isReceivablesStaffRole(role) ? '/receivables/manager' : homeFor(role);
   }
 
   if (isApp) {

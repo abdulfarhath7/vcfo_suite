@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthContext } from '@/auth/guards';
 
 /**
- * Phase 10 change trail (history.ts): only the sheet's own manager and the firm-wide admins read
- * the pending changes or an invoice's history; another manager reads them as not found, and the
- * roles that never edit a sheet are refused before any query.
+ * Phase 10 change trail (history.ts): the sheet's own manager, the firm-wide admins and the staff
+ * named as editors of the sheet read the pending changes or an invoice's history. Another manager,
+ * or a project lead who is not an editor, reads them as not found after one editor lookup. Clients,
+ * developers and partners are refused before any query.
  */
 
 const calls: string[] = [];
@@ -39,7 +40,7 @@ beforeEach(() => {
 });
 
 describe('roles that never edit a sheet', () => {
-  for (const role of ['intern', 'client', 'developer'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       await expect(repo.listPendingChanges(ctx(role), SHEET)).rejects.toMatchObject({ status: 404 });
       await expect(repo.invoiceHistory(ctx(role), INVOICE)).rejects.toMatchObject({ status: 404 });
@@ -51,14 +52,28 @@ describe('roles that never edit a sheet', () => {
 describe('another manager', () => {
   const other = ctx('manager', '99999999-9999-9999-9999-999999999909');
   it('reads the pending changes as not found', async () => {
-    results = [[sheetRow]];
+    // The sheet read, then the editor lookup, which finds no row.
+    results = [[sheetRow], []];
     await expect(repo.listPendingChanges(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
   it('reads an invoice history as not found', async () => {
-    results = [[invoiceRow], [sheetRow]];
+    results = [[invoiceRow], [sheetRow], []];
     await expect(repo.invoiceHistory(other, INVOICE)).rejects.toMatchObject({ status: 404 });
+    expect(calls).toHaveLength(3);
+  });
+});
+
+describe('a project lead', () => {
+  const lead = ctx('intern', '77777777-7777-7777-7777-777777777707');
+  it('who is not an editor of the sheet is refused: not found, nothing read past the editor lookup', async () => {
+    results = [[sheetRow], []];
+    await expect(repo.listPendingChanges(lead, SHEET)).rejects.toMatchObject({ status: 404 });
     expect(calls).toHaveLength(2);
+    calls.length = 0;
+    results = [[invoiceRow], [sheetRow], []];
+    await expect(repo.invoiceHistory(lead, INVOICE)).rejects.toMatchObject({ status: 404 });
+    expect(calls).toHaveLength(3);
   });
 });
 

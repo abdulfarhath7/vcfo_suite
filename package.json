@@ -44,6 +44,7 @@
     "db:purge-demo": "node --conditions=react-server --import tsx scripts/purge-demo-data.ts",
     "receivables:seed-demo": "node --conditions=react-server --import tsx scripts/seed-receivables-demo.ts",
     "receivables:import": "node --conditions=react-server --import tsx scripts/import-receivables.ts",
+    "receivables:provision-summit": "node --conditions=react-server --import tsx scripts/provision-summit-receivables.ts",
     "demo:seed": "node --conditions=react-server --import tsx scripts/seed-demo-clients.ts",
     "demo:clean": "node --conditions=react-server --import tsx scripts/seed-demo-clients.ts --remove",
     "demo:seed:prod": "node scripts/demo-prod.mjs",

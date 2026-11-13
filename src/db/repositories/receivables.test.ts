@@ -4,10 +4,13 @@ import type { SQL } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 
 /**
- * Access rules for the receivables repositories (docs/specs/receivables/PLAN.md): a sheet is
- * edited only by its own manager and the firm-wide admins; another manager reads it as not found
- * and writes nothing; interns, clients and developers are refused before any query. The client
- * partner's access is tested in receivables/partner-portal.test.ts.
+ * Access rules for the receivables repositories (docs/specs/receivables/PLAN.md). A sheet is read
+ * and edited by its own manager, by the firm-wide admins and by the staff named as its editors in
+ * `receivable_sheet_editors`; a project lead (`intern`) reaches a sheet only as an editor. Another
+ * manager, or a project lead who is not an editor, reads the sheet as not found and writes nothing,
+ * at the cost of one editor lookup after the sheet read. Clients, developers and partners are
+ * refused before any query. The client partner's own access is tested in
+ * receivables/partner-portal.test.ts.
  */
 
 type Call = { op: string; values?: unknown; set?: unknown; where?: SQL };
@@ -48,6 +51,7 @@ const repo = await import('@/db/repositories/receivables');
 const SHEET = '11111111-1111-1111-1111-111111111101';
 const INVOICE = '22222222-2222-2222-2222-222222222202';
 const MANAGER = '33333333-3333-3333-3333-333333333303';
+const LEAD_ID = '77777777-7777-7777-7777-777777777707';
 const ctx = (role: AuthContext['role'], userId = `user-${role}`): AuthContext => ({ userId, email: `${role}@vcfo.local`, name: role, role });
 const writes = () => calls.filter((c) => c.op !== 'select');
 const dialect = new PgDialect();
@@ -90,7 +94,7 @@ beforeEach(() => {
 });
 
 describe('roles that never edit a sheet', () => {
-  for (const role of ['intern', 'client', 'developer'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       await expect(repo.listMySheets(ctx(role))).rejects.toMatchObject({ status: 404 });
       await expect(repo.getManagerSheet(ctx(role), SHEET)).rejects.toMatchObject({ status: 404 });
@@ -101,29 +105,73 @@ describe('roles that never edit a sheet', () => {
   }
 });
 
+describe('a project lead', () => {
+  const lead = ctx('intern', LEAD_ID);
+
+  it('refuses a project lead who is not an editor of the sheet: not found, no writes', async () => {
+    // Each call reads the sheet and then looks the lead up among its editors, finding no row.
+    results = [[sheetRow()], []];
+    await expect(repo.getManagerSheet(lead, SHEET)).rejects.toMatchObject({ status: 404 });
+    results = [[sheetRow()], []];
+    await expect(repo.addInvoice(lead, SHEET, { invoiceMonth: '2026-09-01', clientName: 'X', dueDate: '2026-11-30', amountInr: 10 })).rejects.toMatchObject({ status: 404 });
+    results = [[invoiceRow()], [sheetRow()], []];
+    await expect(repo.markReceived(lead, INVOICE, { paidOn: '2026-11-03', amount: 6456984 })).rejects.toMatchObject({ status: 404 });
+    results = [[sheetRow()], []];
+    await expect(repo.publishSheet(lead, SHEET)).rejects.toMatchObject({ status: 404 });
+    expect(calls.filter((c) => c.op === 'select')).toHaveLength(9);
+    expect(writes()).toHaveLength(0);
+  });
+
+  it('who is an editor of the sheet adds an invoice and logs the change', async () => {
+    results = [[sheetRow()], [{ userId: LEAD_ID }], [invoiceRow({ amountInr: '10.00' })], []];
+    const inv = await repo.addInvoice(lead, SHEET, { invoiceMonth: '2026-09-14', clientName: ' Duravant ', invoiceNo: 'SC/09/03', dueDate: '2026-10-16', amountInr: 10 });
+    expect(inv.amountInr).toBe(10);
+    const [insert, change] = writes();
+    expect(insert.op).toBe('insert');
+    expect(insert.values).toMatchObject({ sheetId: SHEET, clientName: 'Duravant', invoiceMonth: '2026-09-01', amountInr: '10.00', createdBy: LEAD_ID });
+    expect(change.values).toMatchObject({ sheetId: SHEET, actorId: LEAD_ID, summary: 'Duravant SC/09/03 added', affectsPage: true });
+  });
+
+  it('lists the sheets it manages or edits, and no others', async () => {
+    results = [[]];
+    await expect(repo.listMySheets(lead)).resolves.toEqual([]);
+    expect(writes()).toHaveLength(0);
+    // The editor subquery and the list itself are both built through the mocked db.
+    const where = calls.map(whereSql).join(' | ');
+    expect(where).toContain('manager_user_id');
+    expect(where).toContain('receivable_sheet_editors');
+  });
+});
+
 describe('another manager', () => {
   it('reads the sheet as not found and writes nothing', async () => {
     const other = ctx('manager', '99999999-9999-9999-9999-999999999909');
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.getManagerSheet(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.addInvoice(other, SHEET, { invoiceMonth: '2026-09-01', clientName: 'X', dueDate: '2026-11-30', amountInr: 10 })).rejects.toMatchObject({ status: 404 });
-    results = [[invoiceRow()], [sheetRow()]];
+    results = [[invoiceRow()], [sheetRow()], []];
     await expect(repo.markReceived(other, INVOICE, { paidOn: '2026-11-03', amount: 6456984 })).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.publishSheet(other, SHEET)).rejects.toMatchObject({ status: 404 });
+    // Four sheet reads, one invoice read and four editor lookups.
+    expect(calls.filter((c) => c.op === 'select')).toHaveLength(9);
     expect(writes()).toHaveLength(0);
   });
 
   it('cannot reach a sheet with no manager either', async () => {
-    results = [[sheetRow({ managerUserId: null })]];
+    results = [[sheetRow({ managerUserId: null })], []];
     await expect(repo.getManagerSheet(ctx('manager', MANAGER), SHEET)).rejects.toMatchObject({ status: 404 });
   });
 
-  it('lists only its own sheets', async () => {
+  it('lists only the sheets it manages or edits', async () => {
     results = [[]];
     await repo.listMySheets(ctx('manager', MANAGER));
-    expect(calls).toHaveLength(1);
+    // One awaited list, plus the editor subquery it is filtered by; nothing is written.
+    expect(calls.map((c) => c.op)).toEqual(['select', 'select']);
+    const where = calls.map(whereSql).join(' | ');
+    expect(where).toContain('manager_user_id');
+    expect(where).toContain('receivable_sheet_editors');
   });
 });
 
@@ -252,9 +300,15 @@ describe('firm-wide admins', () => {
 });
 
 describe('reminders', () => {
-  it('refuses the desk to an intern before any query', async () => {
-    await expect(repo.getReminderDesk(ctx('intern'), SHEET, '2026-11-03', '2026-10-20')).rejects.toMatchObject({ status: 404 });
+  it('refuses the desk to a client before any query', async () => {
+    await expect(repo.getReminderDesk(ctx('client'), SHEET, '2026-11-03', '2026-10-20')).rejects.toMatchObject({ status: 404 });
     expect(calls).toHaveLength(0);
+  });
+
+  it('refuses the desk to a project lead who is not an editor of the sheet: not found, no writes', async () => {
+    results = [[sheetRow()], []];
+    await expect(repo.getReminderDesk(ctx('intern', LEAD_ID), SHEET, '2026-11-03', '2026-10-20')).rejects.toMatchObject({ status: 404 });
+    expect(calls.map((c) => c.op)).toEqual(['select', 'select']);
   });
 
   it('will not skip or edit a reminder that already went', async () => {
@@ -288,9 +342,15 @@ describe('reminders', () => {
 describe('bank credits', () => {
   const credit = { source: 'manual' as const, externalRef: 'HSBC-1', valueDate: '2026-11-03', payer: 'DURAVANT INC', currency: 'INR', fcAmount: null, inrAmount: 6456984 };
 
-  it('refuses a statement import from an intern before any query', async () => {
-    await expect(repo.importCredits(ctx('intern'), SHEET, [credit])).rejects.toMatchObject({ status: 404 });
+  it('refuses a statement import from a client before any query', async () => {
+    await expect(repo.importCredits(ctx('client'), SHEET, [credit])).rejects.toMatchObject({ status: 404 });
     expect(calls).toHaveLength(0);
+  });
+
+  it('refuses a statement import from a project lead who is not an editor of the sheet: not found, no writes', async () => {
+    results = [[sheetRow()], []];
+    await expect(repo.importCredits(ctx('intern', LEAD_ID), SHEET, [credit])).rejects.toMatchObject({ status: 404 });
+    expect(calls.map((c) => c.op)).toEqual(['select', 'select']);
   });
 
   it('skips a credit already stored under any source', async () => {

@@ -9,6 +9,7 @@
  * Tables:
  *  - receivable_sheets        — one client organisation's sheet: its manager, the public link key,
  *                               the published version and the reminder rules.
+ *  - receivable_sheet_editors — extra staff (a project lead, a second manager) who may edit a sheet.
  *  - receivable_partners      — the client partners (filter on the public page, reminder recipients).
  *  - receivable_invoices      — the live draft: one row per invoice.
  *  - receivable_versions      — what Update published; the public page reads only these snapshots.
@@ -17,7 +18,7 @@
  *  - bank_credits             — credits from the bank feed and what they were matched to.
  *  - receivable_email_sends   — each summary email the manager sent.
  */
-import { boolean, date, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import * as base from './schema';
 import type { ReminderRules, SnapshotRow, EmailRecipient } from '@/lib/receivables/model';
 import type { ShareFilters } from '@/lib/receivables/share-filters';
@@ -43,6 +44,28 @@ export const receivableSheets = pgTable(
   (t) => ({
     keyIdx: uniqueIndex('receivable_sheets_public_key_idx').on(t.publicKey),
     managerIdx: index('receivable_sheets_manager_idx').on(t.managerUserId),
+  }),
+);
+
+/**
+ * Extra staff who may read and edit one sheet, besides its manager and the firm-wide admins.
+ * The manager stays the one person reminders and the Monday digest are sent as and to.
+ */
+export const receivableSheetEditors = pgTable(
+  'receivable_sheet_editors',
+  {
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => base.profiles.id, { onDelete: 'cascade' }),
+    addedBy: uuid('added_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.sheetId, t.userId] }),
+    userIdx: index('receivable_sheet_editors_user_idx').on(t.userId),
   }),
 );
 

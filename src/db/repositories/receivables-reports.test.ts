@@ -4,7 +4,7 @@ import type { AuthContext } from '@/auth/guards';
 /**
  * Access rules and writes of the Phase 9 receivables repositories (FX rates, reports, credit
  * notes, disputes, TDS and FIRAs): only the sheet's own manager and the firm-wide admins reach a
- * sheet; another manager reads it as not found and writes nothing; interns, clients, developers
+ * sheet; another manager reads it as not found and writes nothing; clients, developers
  * and client partners are refused before any query.
  */
 
@@ -112,7 +112,7 @@ beforeEach(() => {
 });
 
 describe('roles that never touch a sheet', () => {
-  for (const role of ['intern', 'client', 'developer', 'partner'] as const) {
+  for (const role of ['client', 'developer', 'partner'] as const) {
     it(`refuses ${role} before any query`, async () => {
       const c = ctx(role);
       await expect(repo.reportData(c, SHEET)).rejects.toMatchObject({ status: 404 });
@@ -135,21 +135,27 @@ describe('roles that never touch a sheet', () => {
   });
 });
 
-describe('another sheet’s manager', () => {
-  it('reads not found and writes nothing', async () => {
-    results = [[sheetRow()]];
+const outsiders = [
+  ['another sheet’s manager', other],
+  ['a project lead who is not an editor of the sheet', ctx('intern')],
+] as const;
+
+describe('someone who may not edit the sheet', () => {
+  // A project lead passes the role gate, so the refusal costs the sheet read and one editor lookup.
+  it.each(outsiders)('%s reads not found and writes nothing', async (_who, other) => {
+    results = [[sheetRow()], []];
     await expect(repo.reportData(other, SHEET)).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.setManualRate(other, SHEET, { currency: 'USD', rateDate: '2026-11-02', rate: 84 })).rejects.toMatchObject({ status: 404 });
-    results = [[invoiceRow()], [sheetRow()]];
+    results = [[invoiceRow()], [sheetRow()], []];
     await expect(repo.addCreditNote(other, INVOICE, { issuedOn: '2026-11-02', amountInr: 10 })).rejects.toMatchObject({ status: 404 });
-    results = [[invoiceRow()], [sheetRow()]];
+    results = [[invoiceRow()], [sheetRow()], []];
     await expect(repo.raiseDispute(other, INVOICE, { reason: 'Scope' })).rejects.toMatchObject({ status: 404 });
-    results = [[invoiceRow()], [sheetRow()]];
+    results = [[invoiceRow()], [sheetRow()], []];
     await expect(repo.setTds(other, INVOICE, { tdsInr: 10 })).rejects.toMatchObject({ status: 404 });
-    results = [[firaRow()], [sheetRow()]];
+    results = [[firaRow()], [sheetRow()], []];
     await expect(repo.updateFira(other, FIRA, { status: 'received', firaNo: 'F1', issuedOn: '2026-11-02' })).rejects.toMatchObject({ status: 404 });
-    results = [[sheetRow()]];
+    results = [[sheetRow()], []];
     await expect(repo.listFiras(other, SHEET)).rejects.toMatchObject({ status: 404 });
     expect(writes()).toHaveLength(0);
   });

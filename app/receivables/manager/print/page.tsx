@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { requireAuth } from '@/auth/guards';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 import { roleHomePath } from '@/lib/auth-routes';
 import { todayIst } from '@/lib/receivables/dates';
 import { getVersion, listMySheets } from '@/db/repositories/receivables';
@@ -12,7 +13,6 @@ export const dynamic = 'force-dynamic';
 
 type Props = { searchParams: Promise<{ sheet?: string }> };
 
-const EDITORS = new Set(['super_admin', 'admin', 'manager']);
 
 /**
  * /receivables/manager/print?sheet=<id> — the published version of one sheet in a print layout
@@ -25,7 +25,7 @@ export default async function ReceivablesPrintPage({ searchParams }: Props) {
   const guard = await requireAuth();
   if (guard.ok === false) redirect(`/login?next=${encodeURIComponent(next)}`);
   const { ctx } = guard;
-  if (!EDITORS.has(ctx.role)) redirect(roleHomePath(ctx.role));
+  if (!isReceivablesStaffRole(ctx.role)) redirect(roleHomePath(ctx.role));
 
   const sheets = await listMySheets(ctx);
   const sheet = sheets.find((s) => s.id === q.sheet) ?? (q.sheet ? null : sheets[0]);

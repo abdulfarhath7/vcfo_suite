@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/auth/guards';
 import { listMySheets, sheetStatement } from '@/db/repositories/receivables';
+import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 import { roleHomePath } from '@/lib/auth-routes';
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { todayIst } from '@/lib/receivables/dates';
@@ -13,7 +14,6 @@ export const dynamic = 'force-dynamic';
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-const EDITORS = new Set(['super_admin', 'admin', 'manager']);
 
 /**
  * /receivables/manager/statement?sheet=&client=&from=&to= — a statement of account (Phase 10)
@@ -26,7 +26,7 @@ export default async function ManagerStatementPage({ searchParams }: Props) {
   const guard = await requireAuth();
   if (guard.ok === false) redirect(`/login?next=${encodeURIComponent('/receivables/manager/statement')}`);
   const { ctx } = guard;
-  if (!EDITORS.has(ctx.role)) redirect(roleHomePath(ctx.role));
+  if (!isReceivablesStaffRole(ctx.role)) redirect(roleHomePath(ctx.role));
 
   const sheets = await listMySheets(ctx);
   const sheet = sheets.find((s) => s.id === str('sheet')) ?? (str('sheet') ? null : sheets[0]);

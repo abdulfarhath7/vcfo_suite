@@ -139,6 +139,9 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Receivables sheet editors (`docs/specs/receivables/SUMMIT-GO-LIVE.md`) need migration
+  `0057_receivables_sheet_editors` on RDS before deploy; then `npm run receivables:provision-summit`
+  creates the Summit sheet, its two staff logins and the October and November 2026 invoices.
 - The statutory calendar import (`docs/context/STATE.md`, "Statutory calendar import") needs
   migration `0055_statutory_calendars` on RDS before deploy.
 - Board meetings (`docs/specs/board-meetings/PLAN.md`) need migration `0034_board_meetings` on RDS
