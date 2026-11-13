@@ -36,6 +36,8 @@ import { FocusTrack } from './bits';
 import { useComp } from './ctx';
 import { CpModal, CpSidePanel, KeyValue, PanelSection } from './overlay';
 import { AreaTag, PortalLink, StatusChip } from './spectrum';
+import { LateFeeAmount } from '@/components/compliances/LateFee';
+import { computeLateFee } from '@/lib/compliance/late-fees';
 
 /** "Sep 2026" → "September 2026"; other period shapes unchanged. */
 export function longPeriod(p: string): string {
@@ -137,6 +139,8 @@ function FilingBody({ f, upload }: { f: PortalFiling; upload?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [failed, setFailed] = useState<{ name: string; error: string }[]>([]);
   const s = statusOf(f, today);
+  // The portal's own "today" (yyyy-mm-dd, India) as a Date, so the late fee counts to the same day.
+  const now = new Date(`${today}T06:30:00Z`);
   const lateBy = f.filedOn ? daysBetween(f.dueDate, f.filedOn) : 0;
   const onFiles = (list: FileList | null) => {
     const files = Array.from(list ?? []);
@@ -169,6 +173,8 @@ function FilingBody({ f, upload }: { f: PortalFiling; upload?: boolean }) {
     { k: 'Reference', v: f.acknowledgementNo ?? '-', mono: Boolean(f.acknowledgementNo) },
     { k: 'Filed by', v: f.filedOn ? (f.filedByName ? `${f.filedByName} · SBC` : 'SBC') : '-' },
     { k: 'Penalty risk', v: f.penaltyRisk ? <RiskChip r={f.penaltyRisk} /> : '-' },
+    // A1.5: the late fee so far, only once the filing is late and its obligation has a fee rule.
+    ...(computeLateFee(f, now) ? [{ k: 'Late fee so far', v: <LateFeeAmount filing={f} now={now} /> }] : []),
     ...(f.amountPaid ? [{ k: 'Tax paid', v: inr(f.amountPaid) }] : []),
   ];
   return (

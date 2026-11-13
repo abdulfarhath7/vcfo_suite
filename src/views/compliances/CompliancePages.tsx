@@ -137,11 +137,11 @@ export function SuperFilingsPage() {
  * `/app/admin`), so the list lives at `{shellBase}/registrations` and a step
  * opens in that shell's own project routes.
  */
-export function RegistrationsPage({ shellBase }: { shellBase: string }) {
+export function RegistrationsPage({ shellBase, pagePath }: { shellBase: string; pagePath?: string }) {
   const { settled, scope, leadHasNothing } = useComplianceScope();
   if (!settled) return <Settling label="Loading registrations" />;
   if (leadHasNothing) return <RedirectTo href={LEAD_HOME} />;
-  return <RegistrationsView shellBase={shellBase} scope={scope} />;
+  return <RegistrationsView shellBase={shellBase} scope={scope} pagePath={pagePath} />;
 }
 
 export function RegistrationPage({ shellBase, recordKey }: { shellBase: string; recordKey: string }) {
