@@ -19,12 +19,12 @@
 | ADR-02 | E2: GST returns via GSP        | PROPOSED  | GSTZen contract or ⚖️ L4-L5 no   |
 |        | (GSTZen); REG-01, LUT manual;  |           |                                 |
 |        | no extension on GST            |           |                                 |
-| ADR-03 | E3: no stored portal passwords;| PROPOSED  | never (G8)                      |
-|        | export then purge              |           |                                 |
+| ADR-03 | E3: KEEP credentials vault;    | DECIDED   | ⚖️ L12b answer                   |
+|        | harden it (plan v7 §12a)       | 11-14     |                                 |
 | ADR-04 | E4: no AI live fill; T0-T4     | PROPOSED  | CS changes Q16 answer           |
 |        | heal; AI returns index only    |           |                                 |
-| ADR-05 | E5: new Pvt Ltd sells; SBC =   | PROPOSED  | ⚖️ L1-L3 answers                 |
-|        | tenant #1                      |           |                                 |
+| ADR-05 | E5: SBC CA firm sells          | DECIDED   | ⚖️ L1-L3 answers                 |
+|        | (ICAI permission first)        | 11-14     |                                 |
 | ADR-06 | Keep Inngest (not Temporal)    | PROPOSED  | job durability gap found        |
 | ADR-07 | Keep access control in         | PROPOSED  | if pooled (ADR-01 revisit)      |
 |        | repositories (no RLS)          |           |                                 |
@@ -48,9 +48,6 @@
 | R1 | 13 remote branches with 0 unique commits | already squash-merged [F]     |
 | R2 | 11 "-farhath" twins of "-eshwar" branches| byte-identical [F]            |
 | R3 | chatbot, feat/ask-feeds-whatsapp         | stale; salvage gazette feeds  |
-| R4 | engagement_credentials secret columns,   | ADR-03                        |
-|    | credential_otps, credential_access_grants|                               |
-| R5 | CREDENTIALS_ENCRYPTION_KEY secret        | ADR-03, after 30 days         |
 | R6 | v5 §6 "AI mode" + token injector text    | ADR-04                        |
 | R7 | v5 §6 "Temporal", §9 "Postgres RLS",     | ADR-06, ADR-07, D5.2          |
 |    | §12 "RPO ≈ 0, RTO < 1 h"                 |                               |

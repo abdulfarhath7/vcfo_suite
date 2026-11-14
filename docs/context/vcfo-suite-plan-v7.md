@@ -5,7 +5,7 @@
  REPLACES context v5 (it did not know the tool) and the v6 rounds
  BUILT ON docs/context/v6-round1.md … v6-round11.md (evidence, citations)
  LEGEND   [F] read in code/git · [W] web, not primary · [A] assumption · ⚖️ waits for CA
- STATUS   decisions E1-E5 = PROPOSED (owner has not signed) · not legal advice
+ STATUS   E3, E5 decided by owner 2026-11-14 · E1, E2, E4 PROPOSED · not legal advice
 ```
 
 ---
@@ -69,12 +69,13 @@
 | E2 | GST returns via GSP       | Policy already allows GSP          | [ ]     |
 |    | (GSTZen); REG-01 + LUT    | (checklist-workflow.md:237);       |         |
 |    | stay manual; no extension | extension banned on GST            |         |
-| E3 | No stored portal          | Guard G8; GST brief row 7; ICAI    | [ ]     |
-|    | passwords: export → purge |                                    |         |
+| E3 | OWNER: KEEP credentials   | Client sends OTP; firm requests    | [x]     |
+|    | feature; harden it (§12a) | passwords. Conflicts with G8 text  | 11-14   |
+|    |                           | → owner rewords SAFETY.md ⚖️ L12b   |         |
 | E4 | No AI live fill; T0-T4    | Guards G9, G10, G13                | [ ]     |
 |    | heal, AI returns an index |                                    |         |
-| E5 | New Pvt Ltd sells;        | ICAI Reg 190A ⚖️ L1-L3              | [ ]     |
-|    | SBC = tenant #1           |                                    |         |
+| E5 | OWNER: SBC CA firm sells  | Needs ICAI specific permission     | [x]     |
+|    | VCFO Suite                | first (Reg 190A) ⚖️ L1-L3; P6 waits | 11-14   |
 +----+---------------------------+------------------------------------+---------+
  Also proposed: keep Inngest · keep access control in repositories · Bedrock India
  only · KMS field encryption · every task keeps a manual path (ADR-06 … ADR-10).
@@ -155,7 +156,7 @@
  │          └─ route 4 VCFO Assist        user's own tab, G1-G18                  │
  │ OPS      alarms → SNS → on-call · WAF · logs 180 d · backup copy → Hyderabad   │
  └────────────────────────────────────────────────────────────────────────────────┘
- Vendor co. (E5): code, signed releases, extension policy URL, recipe signing key
+ SBC as vendor (E5): code, signed releases, extension policy URL, recipe signing key
 ```
 
 ---
@@ -293,7 +294,7 @@
 +----+--------------------------------------+---------------------------+-------+
 | 1  | Public extension, live MCA host      | private, mock hosts       | P0    |
 | 2  | Demo passwords on RDS                | purge                     | P0    |
-| 3  | Stored client portal passwords       | export → purge (E3)       | P2    |
+| 3  | Stored client portal passwords       | harden vault (§12a, E3)   | P2    |
 | 4  | PAN/Aadhaar plain in jsonb           | pii_vault                 | P2    |
 | 5  | Audit rows deleted with profile      | SET NULL + hash chain     | P2    |
 | 6  | No WAF, 1 alarm                      | WAF + alarms + SNS        | P2    |
@@ -303,6 +304,43 @@
 | 10 | Prompt injection                     | index-only AI, approvals  | done  |
 +----+--------------------------------------+---------------------------+-------+
  Full STRIDE (20 threats): v6-round5.md.
+```
+
+---
+
+## 12a · Credentials vault: keep and harden (E3, owner 2026-11-14)
+
+```
+ FEATURE [F]  engagement_credentials (AES-256-GCM) · credential_otps · access grants
+              (manager-approved OTP, 10 min) · src/lib/client-portal/credentials.ts
++----+-------------------------------------------------+--------+--------+
+| #  | Hardening                                       | Days   | Phase  |
++----+-------------------------------------------------+--------+--------+
+| V1 | Set CREDENTIALS_ENCRYPTION_KEY in production    | 0.5    | P0     |
+|    | (missing → feature throws today [F CLAUDE.md])  |        |        |
+| V2 | Key from KMS / Secrets Manager, rotation plan   | 1      | P2     |
+| V3 | Alert manager + client on every reveal          | 1      | P2     |
+| V4 | Reveal log: who, when, which row (no value)     | 0.5    | P2     |
+|    | (identifier_reveal_attempts exists [F])         |        |        |
+| V5 | Extension and AI never read the vault (test)    | 0.5    | P2     |
+| V6 | Client consent + notice text on the page        | 0.5    | P2     |
+| V7 | Rate limit + lock after failed OTPs             | 0.5    | P2     |
++----+-------------------------------------------------+--------+--------+
+ OWNER   reword SAFETY.md G8 ("no credentials in the extension or used by
+         automation") — Claude may not edit guards.
+ ⚖️ L12b  May staff log in to a portal with a client's own login? (s.66C,
+         GST Rule 83, ICAI). Answer decides whether the vault is for
+         client self-service only or for staff use too.
+```
+
+## 15a · Selling as a CA firm (E5, owner 2026-11-14)
+
+```
+ ⚖️ L1   ICAI Reg 190A: SBC must get specific permission before it sells software.
+ ⚖️ L2   Does this limit SBC's attest (audit) work?
+ Commercial   Other CA firms may not trust a competing CA firm with their client
+              data → one separate stack per firm (E1) answers this.
+ Contracts    SBC = fiduciary for its own clients, processor for buyer firms (DPDP).
 ```
 
 ---
@@ -364,14 +402,14 @@
 |    | RDS migs, demo pw, ext.   |                  |       | ext. private + mock hosts    |
 |    | private, CS letter        |                  |       |                              |
 | P1 | Legal (external)          | letter sent      | 0     | written answers filed        |
-| P2 | Safety: pii_vault, audit, | P0, E3           | 21    | tests in v6-round11 pass;    |
-|    | secrets purge, DR, WAF,   |                  |       | restore drill done           |
+| P2 | Safety: pii_vault, audit, | P0               | 21    | tests in v6-round11 pass;    |
+|    | vault hardening, DR, WAF, |                  |       | restore drill done           |
 |    | alarms, field history     |                  |       |                              |
 | P3 | Inbound mailboxes         | P0, P2           | 22    | 1 mailbox → approved data    |
 | P4 | Agent front door + ext.   | P1 (CS), P2      | 28    | N supervised live Part A,    |
 |    | hardening + first live    |                  |       | 0 guard breaks               |
 | P5 | GST via GSP               | L4-L5, contract  | 18    | GSTR-1/3B prepared by API    |
-| P6 | Tenant #2                 | P0, E5 company   | 10    | tenant:new < 1 day           |
+| P6 | Tenant #2                 | P0, ICAI permit  | 10    | tenant:new < 1 day           |
 | P7 | More recipes              | P4               | 5 ea. | mock run, 0 AI calls         |
 +----+---------------------------+------------------+-------+------------------------------+
  TOTAL ≈ 108 dev days + recipes
@@ -431,7 +469,8 @@
 ## 19 · Owner actions (this week)
 
 ```
- [ ] Sign E1-E5                       [ ] Send CS letter (+ Part E)
+ [ ] Sign E1, E2, E4 (E3, E5 done)    [ ] Send CS letter (+ Part E)
+ [ ] Reword SAFETY.md G8 for E3       [ ] Apply to ICAI for permission (E5)
  [ ] Make vcfo_assist private          [ ] Decide payroll keep/remove
  [ ] Name security contact + on-call   [ ] Give Q11 load + Q35 team numbers
  [ ] Say "build P0" to start merges    [ ] Ask GSTZen for a quote + contract
@@ -443,7 +482,7 @@
 
 ```
  0-unique branches (13) · "-farhath" twins (11) · chatbot, feat/ask-feeds-whatsapp (salvage) ·
- portal secret columns + OTP relay (E3) · v5 text: AI mode, Temporal, RLS, RPO≈0,
+ v5 text: AI mode, Temporal, RLS, RPO≈0,
  "VCFO Companion" · CLAUDE.md "RDS on 0026" · one of assist_runs / assist_agent_runs
 ```
 
