@@ -5,7 +5,7 @@
  REPLACES context v5 (it did not know the tool) and the v6 rounds
  BUILT ON docs/context/v6-round1.md … v6-round11.md (evidence, citations)
  LEGEND   [F] read in code/git · [W] web, not primary · [A] assumption · ⚖️ waits for CA
- STATUS   E3, E5 decided by owner 2026-11-14 · E1, E2, E4 PROPOSED · not legal advice
+ STATUS   E1-E5 all decided by owner 2026-11-14 · not legal advice
 ```
 
 ---
@@ -64,18 +64,18 @@
 +----+---------------------------+------------------------------------+---------+
 | E  | Pick (PROPOSED)           | Why                                | Sign    |
 +----+---------------------------+------------------------------------+---------+
-| E1 | One stack per tenant now; | 0 seam change; strongest isolation;| [ ]     |
+| E1 | One stack per tenant now; | 0 seam change; strongest isolation;| [x] 11-14|
 |    | pooled tenant_id later    | reversible                         |         |
 | E2 | GST returns via GSP       | Policy already allows GSP          | [ ]     |
-|    | (GSTZen); REG-01 + LUT    | (checklist-workflow.md:237);       |         |
+|    | (GSTZen); REG-01 + LUT    | (checklist-workflow.md:237);       | [x] 11-14|
 |    | stay manual; no extension | extension banned on GST            |         |
 | E3 | OWNER: KEEP credentials   | Client sends OTP; firm requests    | [x]     |
 |    | feature; harden it (§12a) | passwords. Conflicts with G8 text  | 11-14   |
 |    |                           | → owner rewords SAFETY.md ⚖️ L12b   |         |
-| E4 | No AI live fill; T0-T4    | Guards G9, G10, G13                | [ ]     |
+| E4 | No AI live fill; T0-T4    | Guards G9, G10, G13                | [x] 11-14|
 |    | heal, AI returns an index |                                    |         |
-| E5 | OWNER: SBC CA firm sells  | Needs ICAI specific permission     | [x]     |
-|    | VCFO Suite                | first (Reg 190A) ⚖️ L1-L3; P6 waits | 11-14   |
+| E5 | OWNER: SBC sells VCFO     | Owner: SBC is not a CA firm, so no | [x]     |
+|    | Suite                     | ICAI permission needed (§15a)      | 11-14   |
 +----+---------------------------+------------------------------------+---------+
  Also proposed: keep Inngest · keep access control in repositories · Bedrock India
  only · KMS field encryption · every task keeps a manual path (ADR-06 … ADR-10).
@@ -333,14 +333,17 @@
          client self-service only or for staff use too.
 ```
 
-## 15a · Selling as a CA firm (E5, owner 2026-11-14)
+## 15a · Selling (E5, owner 2026-11-14)
 
 ```
- ⚖️ L1   ICAI Reg 190A: SBC must get specific permission before it sells software.
- ⚖️ L2   Does this limit SBC's attest (audit) work?
- Commercial   Other CA firms may not trust a competing CA firm with their client
-              data → one separate stack per firm (E1) answers this.
- Contracts    SBC = fiduciary for its own clients, processor for buyer firms (DPDP).
+ Owner      SBC is not a CA firm → ICAI Reg 190A does not apply to SBC.
+            L1-L3 dropped from the legal pack.
+ Check      If any SBC partner or director holds a CA certificate of practice,
+            the rule binds THAT person → confirm with your CA (1 question).
+ Still true A CA or CS who certifies a form (e.g. INC-32) answers to ICAI / ICSI
+            for that form. The tool does not change this (G17).
+ Commercial Other firms trust a separate stack per firm (E1).
+ Contracts  SBC = fiduciary for its own clients, processor for buyer firms (DPDP).
 ```
 
 ---
@@ -409,7 +412,7 @@
 | P4 | Agent front door + ext.   | P1 (CS), P2      | 28    | N supervised live Part A,    |
 |    | hardening + first live    |                  |       | 0 guard breaks               |
 | P5 | GST via GSP               | L4-L5, contract  | 18    | GSTR-1/3B prepared by API    |
-| P6 | Tenant #2                 | P0, ICAI permit  | 10    | tenant:new < 1 day           |
+| P6 | Tenant #2                 | P0               | 10    | tenant:new < 1 day           |
 | P7 | More recipes              | P4               | 5 ea. | mock run, 0 AI calls         |
 +----+---------------------------+------------------+-------+------------------------------+
  TOTAL ≈ 108 dev days + recipes
@@ -469,8 +472,8 @@
 ## 19 · Owner actions (this week)
 
 ```
- [ ] Sign E1, E2, E4 (E3, E5 done)    [ ] Send CS letter (+ Part E)
- [ ] Reword SAFETY.md G8 for E3       [ ] Apply to ICAI for permission (E5)
+ [x] E1-E5 decided                    [ ] Send CS letter (+ Part E)
+ [ ] Reword SAFETY.md G8 for E3       [ ] Confirm no partner holds a CA COP (§15a)
  [ ] Make vcfo_assist private          [ ] Decide payroll keep/remove
  [ ] Name security contact + on-call   [ ] Give Q11 load + Q35 team numbers
  [ ] Say "build P0" to start merges    [ ] Ask GSTZen for a quote + contract

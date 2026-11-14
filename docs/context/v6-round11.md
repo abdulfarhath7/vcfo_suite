@@ -14,17 +14,17 @@
 +--------+--------------------------------+-----------+---------------------------------+
 | ADR    | Decision                       | Status    | Revisit when                    |
 +--------+--------------------------------+-----------+---------------------------------+
-| ADR-01 | E1: one stack per tenant       | PROPOSED  | > 10 tenants or base cost hurts |
+| ADR-01 | E1: one stack per tenant       | DECIDED   | > 10 tenants or base cost hurts |
 |        | (silo); pooled later           |           |                                 |
-| ADR-02 | E2: GST returns via GSP        | PROPOSED  | GSTZen contract or ⚖️ L4-L5 no   |
+| ADR-02 | E2: GST returns via GSP        | DECIDED   | GSTZen contract or ⚖️ L4-L5 no   |
 |        | (GSTZen); REG-01, LUT manual;  |           |                                 |
 |        | no extension on GST            |           |                                 |
 | ADR-03 | E3: KEEP credentials vault;    | DECIDED   | ⚖️ L12b answer                   |
 |        | harden it (plan v7 §12a)       | 11-14     |                                 |
-| ADR-04 | E4: no AI live fill; T0-T4     | PROPOSED  | CS changes Q16 answer           |
+| ADR-04 | E4: no AI live fill; T0-T4     | DECIDED   | CS changes Q16 answer           |
 |        | heal; AI returns index only    |           |                                 |
-| ADR-05 | E5: SBC CA firm sells          | DECIDED   | ⚖️ L1-L3 answers                 |
-|        | (ICAI permission first)        | 11-14     |                                 |
+| ADR-05 | E5: SBC sells (not a CA firm,  | DECIDED   | a partner holds a CA COP        |
+|        | no ICAI permission)            | 11-14     |                                 |
 | ADR-06 | Keep Inngest (not Temporal)    | PROPOSED  | job durability gap found        |
 | ADR-07 | Keep access control in         | PROPOSED  | if pooled (ADR-01 revisit)      |
 |        | repositories (no RLS)          |           |                                 |
