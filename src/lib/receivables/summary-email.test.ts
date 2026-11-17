@@ -70,7 +70,8 @@ describe('summaryEmailHtml', () => {
     expect(html).toContain("Sep'26- Receivables");
     expect(html).toContain('99,00,894'); // Sep open: Duravant + Vena
     expect(html).toContain('1,19,11,394'); // total open
-    expect(html).toContain('app.sbctrack.in/receivables/k/abc');
+    // Receivables v2: no link to the tool in any receivables email.
+    expect(html).not.toContain('app.sbctrack.in/receivables/k/abc');
   });
 
   it('can be cut to one partner', () => {

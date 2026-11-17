@@ -7,7 +7,9 @@ import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/native-select';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { Chip } from '@/components/ui/spectrum-chip';
+import { ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { usePeople } from '@/hooks/use-receivables-v2';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { todayIst } from '@/lib/receivables/dates';
 import type { SheetListItem } from '@/lib/receivables/wire';
@@ -62,6 +64,15 @@ export function ReceivablesManager({
   const { data, isLoading, error } = useManagerSheet(sheetId);
   const actions = useReceivablesActions(sheetId);
   const outlook = useOutlookStatus();
+  // The WhatsApp (DoubleTick) dot: set up on the server, and this person's own number saved.
+  const people = usePeople(sheetId);
+  const w = people.data?.whatsapp;
+  const wa = w
+    ? {
+        ok: w.configured && Boolean(w.myPhone),
+        title: !w.configured ? 'WhatsApp is not set up on the server yet' : w.myPhone ? `WhatsApp messages about your emails go to ${w.myPhone}` : 'Add your WhatsApp number in Account settings',
+      }
+    : null;
   const today = todayIst();
 
   // Back from the Outlook connect flow (?outlook=connected or ?outlook=error&reason=…).
@@ -86,40 +97,56 @@ export function ReceivablesManager({
 
   return (
     <div className="min-h-screen bg-surface text-ink">
-      <div className="mx-auto max-w-[1320px] px-4 pb-12">
-        <header className="flex flex-wrap items-center justify-between gap-3 py-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href={homeHref} className="text-[13px] font-bold tracking-[.06em] text-ink">
-              VCFO SUITE
-            </Link>
-            <span className="text-[13px] text-ink-muted">/ Receivables</span>
-            {sheets.length > 1 ? (
-              <FilterSelect aria-label="Sheet" value={sheetId} onChange={(e) => go({ sheet: e.target.value })} options={sheets.map((s) => ({ value: s.id, label: s.clientOrgName }))} />
-            ) : (
-              <span className="text-[13px] font-medium text-ink-2">· {data?.sheet.clientOrgName ?? sheets[0]?.clientOrgName}</span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-[13px]">
+      <div className="mx-auto max-w-[1440px] px-3 pb-10">
+        {/* One slim bar (compact layout, 17 Nov 2026): the sheet, the tabs, Outlook and WhatsApp, the person. */}
+        <header className="sticky top-0 z-20 -mx-3 mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-surface/95 px-3 py-1 backdrop-blur">
+          <Link href={homeHref} className="text-[12px] font-bold tracking-[.06em] text-ink">
+            VCFO
+          </Link>
+          <span className="text-[12px] text-ink-muted">Receivables</span>
+          {sheets.length > 1 ? (
+            <FilterSelect aria-label="Sheet" value={sheetId} onChange={(e) => go({ sheet: e.target.value })} options={sheets.map((s) => ({ value: s.id, label: s.clientOrgName }))} />
+          ) : (
+            <span className="text-[12.5px] font-semibold text-ink">{data?.sheet.clientOrgName ?? sheets[0]?.clientOrgName}</span>
+          )}
+          <SpectrumTabs variant="underline" label="Receivables" className="min-w-0 flex-1 [&_[role=tab]]:h-9" items={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => go({ tab: k })} />
+          <span className="flex items-center gap-3 text-[12px]">
             {outlook.data?.connected ? (
-              <Chip raw tone="ok" title="Receivables emails you approve or send go from this mailbox">
-                {`Outlook: ${outlook.data.msEmail}`}
-              </Chip>
+              <span className="inline-flex items-center gap-1.5" title={`Receivables emails you approve or send go from ${outlook.data.msEmail}`}>
+                <span aria-hidden className="size-2 rounded-full bg-positive" />
+                Outlook
+              </span>
             ) : outlook.data?.configured ? (
-              <Button size="sm" variant="strong" asChild>
-                <a href={OUTLOOK_CONNECT_HREF}>Connect Outlook</a>
-              </Button>
+              <a href={OUTLOOK_CONNECT_HREF} className="inline-flex items-center gap-1.5 font-medium text-brand-text hover:underline">
+                <span aria-hidden className="size-2 rounded-full bg-danger" />
+                Connect Outlook
+              </a>
             ) : null}
-            <span className="font-medium text-ink-2">{userName}</span>
-            <Button size="sm" variant="quiet" asChild>
-              <Link href={homeHref}>Back to VCFO Suite</Link>
-            </Button>
-            <Button size="sm" variant="quiet" onClick={() => void signOut({ callbackUrl: '/login' })}>
-              Log out
-            </Button>
-          </div>
+            {wa ? (
+              <span className="inline-flex items-center gap-1.5" title={wa.title}>
+                <span aria-hidden className={`size-2 rounded-full ${wa.ok ? 'bg-positive' : 'bg-warning'}`} />
+                WhatsApp
+              </span>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="quiet" className="h-7 px-2 text-[12px]">
+                  {userName}
+                  <ChevronDown aria-hidden className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={homeHref}>Back to VCFO Suite</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={settingsHref}>Account settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void signOut({ callbackUrl: '/login' })}>Log out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </span>
         </header>
-
-        <SpectrumTabs variant="underline" label="Receivables" className="mb-4" items={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => go({ tab: k })} />
 
         {isLoading ? <p className="py-10 text-center text-ink-muted">Loading the sheet…</p> : null}
         {error ? <p className="py-10 text-center text-danger">{error.message}</p> : null}

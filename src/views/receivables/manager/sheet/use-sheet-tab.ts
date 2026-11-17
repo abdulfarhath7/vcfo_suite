@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { standardDownloadName } from '@/lib/files/download-name';
+import type { Density } from '@/lib/ui/table-prefs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { sheetDate } from '@/lib/receivables/dates';
@@ -32,6 +33,8 @@ export type SheetDialog =
   | null;
 
 export type RowGroup = { key: string; title: string; rows: ManagerInvoiceDto[]; totalLabel?: string };
+
+const DENSITY_KEY = 'vcfo.receivables.sheet-density';
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Try again.');
 
@@ -104,6 +107,33 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
   const currencies = useMemo(() => [...new Set(data.invoices.map((i) => (i.currency ?? 'INR').toUpperCase()))].sort(), [data.invoices]);
   const hasForeign = rows.some((i) => isForeign(fxInput(i))) || receivedWeek.some((i) => isForeign(fxInput(i)));
   const partnerNames = useMemo(() => Object.fromEntries(data.partners.map((p) => [p.slug, p.name])), [data.partners]);
+
+  /* Compact layout: row density (kept in the browser) and folded month blocks (this visit only). */
+  // Compact unless this person chose Comfortable on this sheet before.
+  const [density, setDensityState] = useState<Density>('compact');
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(DENSITY_KEY) === 'comfortable') setDensityState('comfortable');
+    } catch {
+      /* No storage: compact for this visit. */
+    }
+  }, []);
+  const setDensity = (d: Density) => {
+    setDensityState(d);
+    try {
+      window.localStorage.setItem(DENSITY_KEY, d);
+    } catch {
+      /* No storage: the choice lasts for this visit. */
+    }
+  };
+  const [folded, setFolded] = useState<Set<string>>(() => new Set());
+  const toggleFold = (key: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   /* Selection: only rows on screen stay picked. */
   const [picked, setPicked] = useState<Set<string>>(() => new Set());
@@ -191,6 +221,10 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
     fixInTally,
     setFixInTally,
     clearFilters,
+    density,
+    setDensity,
+    folded,
+    toggleFold,
     tallyMismatches,
     search,
     setSearch,

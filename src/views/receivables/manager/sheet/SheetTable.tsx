@@ -11,7 +11,8 @@ import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire'
 import { cn } from '@/lib/utils';
 import { fcText, inr } from '../../format';
 import { NotesButton } from '../InvoiceNotes';
-import { FxCell, InvoiceDateCell, RevisionBadge, StatusStack, TextCell } from './cells';
+import { ChevronDown } from 'lucide-react';
+import { FxCell, InvoiceDateCell, RevisionBadge, StatusDot, TextCell } from './cells';
 import { CELL, fxInput, invoiceName } from './cell-utils';
 import { DatePick } from './DatePick';
 import { createRowMenu } from './row-menu';
@@ -23,8 +24,10 @@ import type { RowGroup, SheetTabState } from './use-sheet-tab';
  * and the client column held at the left. Phones get the cards instead (SheetCards.tsx).
  */
 
-const TH = 'sticky top-0 z-[2] whitespace-nowrap border-b border-line bg-surface-sunken px-2 py-2 text-left text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted';
-const TD = 'border-t border-line-soft px-2 py-1.5 align-middle';
+const TH = 'sticky top-0 z-[2] whitespace-nowrap border-b border-line bg-surface-sunken px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted';
+/* Compact rows (the default) are about 28 px; Comfortable keeps the earlier 40 px. */
+const TD_BASE = 'border-t border-line-soft px-2 align-middle';
+const tdFor = (density: 'compact' | 'comfortable') => `${TD_BASE} ${density === 'compact' ? 'py-0' : 'py-1.5'}`;
 /* The pick box and the client column stay put while a narrow screen scrolls sideways. */
 const STICK_PICK = 'max-xl:sticky max-xl:left-0 max-xl:z-[1] max-xl:bg-surface-raised';
 const STICK_CLIENT = 'max-xl:sticky max-xl:left-9 max-xl:z-[1] max-xl:bg-surface-raised max-xl:shadow-[1px_0_0_var(--line)]';
@@ -66,10 +69,11 @@ export function SheetTable({
   const allPicked = all.length > 0 && all.every((r) => s.picked.has(r.id));
   const somePicked = !allPicked && all.some((r) => s.picked.has(r.id));
   const partners = data.partners;
+  const TD = tdFor(s.density);
 
   return (
     <div className="overflow-x-auto rounded-md border border-line bg-surface-raised xl:overflow-visible">
-      <table className={cn('w-full table-fixed border-separate border-spacing-0 text-[13px]', fx ? 'min-w-[1150px]' : 'min-w-[980px]')} aria-label={label}>
+      <table className={cn('w-full table-fixed border-separate border-spacing-0', s.density === 'compact' ? 'text-[12.5px]' : 'text-[13px]', fx ? 'min-w-[1150px]' : 'min-w-[980px]')} aria-label={label}>
         <colgroup>
           <col className="w-9" />
           <col />
@@ -106,30 +110,35 @@ export function SheetTable({
             </th>
           </tr>
         </thead>
-        {groups.map((g) => (
-          <tbody key={g.key}>
-            <tr>
-              <td colSpan={cols} className="border-t border-line bg-surface-raised px-2 pb-1.5 pt-3 text-[12px] font-semibold uppercase tracking-[.04em] text-ink">
-                <span className="max-xl:sticky max-xl:left-2">{monthTitle(g)}</span>
-              </td>
-            </tr>
-            {g.rows.map((inv) => (
-              <Row key={inv.id} inv={inv} s={s} data={data} partners={partners} today={today} todayRate={todayRate} fx={fx} readOnly={readOnly || inv.status !== 'open'} />
-            ))}
-            {g.totalLabel ? (
-              <tr className="font-medium">
-                <td className={cn(TD, 'bg-surface-sunken', STICK_PICK, 'max-xl:bg-surface-sunken')} />
-                <td colSpan={4} className={cn(TD, 'bg-surface-sunken')}>
-                  <span className="max-xl:sticky max-xl:left-11">{g.totalLabel}</span>
+        {groups.map((g) => {
+          const isFolded = s.folded.has(`${label}:${g.key}`);
+          const subtotal = g.rows.reduce((a, r) => a + (r.status === 'received' ? (r.paidAmount ?? r.amountInr) : r.amountInr), 0);
+          return (
+            <tbody key={g.key}>
+              <tr>
+                <td colSpan={cols} className="border-t border-line bg-surface-sunken/60 p-0">
+                  {/* The month header folds its rows; its subtotal replaces the old total row. */}
+                  <button
+                    type="button"
+                    aria-expanded={!isFolded}
+                    onClick={() => s.toggleFold(`${label}:${g.key}`)}
+                    className="flex w-full items-center gap-2 px-2 py-1 text-left text-[12px] hover:bg-hover max-xl:sticky max-xl:left-0"
+                  >
+                    <ChevronDown className={cn('size-3.5 text-ink-muted transition-transform', isFolded && '-rotate-90')} aria-hidden />
+                    <span className="font-semibold uppercase tracking-[.04em] text-ink">{monthTitle(g)}</span>
+                    <span className="text-ink-muted">{`· ${g.rows.length} invoice${g.rows.length === 1 ? '' : 's'}`}</span>
+                    <span className="ml-auto font-mono text-[12px] font-medium text-ink">{`₹${inr(subtotal)}`}</span>
+                  </button>
                 </td>
-                <td className={cn(TD, 'bg-surface-sunken text-right font-mono text-[12px]')}>
-                  {inr(g.rows.reduce((a, r) => a + (r.status === 'received' ? (r.paidAmount ?? r.amountInr) : r.amountInr), 0))}
-                </td>
-                <td colSpan={cols - 6} className={cn(TD, 'bg-surface-sunken')} />
               </tr>
-            ) : null}
-          </tbody>
-        ))}
+              {isFolded
+                ? null
+                : g.rows.map((inv) => (
+                    <Row key={inv.id} inv={inv} s={s} data={data} partners={partners} today={today} todayRate={todayRate} fx={fx} readOnly={readOnly || inv.status !== 'open'} TD={TD} />
+                  ))}
+            </tbody>
+          );
+        })}
       </table>
     </div>
   );
@@ -144,6 +153,7 @@ function Row({
   todayRate,
   fx,
   readOnly,
+  TD,
 }: {
   inv: ManagerInvoiceDto;
   s: SheetTabState;
@@ -153,8 +163,12 @@ function Row({
   todayRate: number | null;
   fx: boolean;
   readOnly: boolean;
+  TD: string;
 }) {
   const foreign = isForeign(fxInput(inv));
+  // A received invoice still takes a new client name, invoice number and partner (owner,
+  // 17 Nov 2026); its amounts and dates stay as received.
+  const editLabels = inv.status !== 'open' || !readOnly;
   const name = invoiceName(inv);
   const picked = s.picked.has(inv.id);
   const partnerName = (inv.partnerId && partners.find((p) => p.id === inv.partnerId)?.name) || '';
@@ -166,7 +180,7 @@ function Row({
         <Checkbox className="mx-auto" aria-label={`Pick ${name}`} checked={picked} onCheckedChange={() => s.toggle(inv.id)} />
       </td>
       <td className={cn(TD, STICK_CLIENT, picked && 'max-xl:bg-brand-soft')}>
-        {readOnly ? (
+        {!editLabels ? (
           <span className="block truncate px-1.5" title={inv.clientName}>
             {inv.clientName}
           </span>
@@ -176,7 +190,7 @@ function Row({
       </td>
       <td className={TD}>
         <span className="flex min-w-0 items-center gap-1">
-          {readOnly ? (
+          {!editLabels ? (
             <span className="block min-w-0 truncate px-1.5 font-mono text-[12px]">{inv.invoiceNo ?? '—'}</span>
           ) : (
             <TextCell value={inv.invoiceNo ?? ''} label={`Invoice number of ${inv.clientName}`} mono placeholder="optional" onCommit={(v) => s.edit(inv, { invoiceNo: v || null })} />
@@ -185,7 +199,7 @@ function Row({
         </span>
       </td>
       <td className={TD}>
-        {readOnly ? (
+        {!editLabels ? (
           <span className="block truncate px-1.5">{partnerName || '—'}</span>
         ) : (
           <select className={cn(CELL, 'cursor-pointer truncate pr-1')} aria-label={`Client partner of ${name}`} value={inv.partnerId ?? ''} onChange={(e) => s.edit(inv, { partnerId: e.target.value || null })}>
@@ -227,7 +241,7 @@ function Row({
         </td>
       ) : null}
       <td className={TD}>
-        <StatusStack invoice={inv} today={today} />
+        <StatusDot invoice={inv} today={today} />
       </td>
       <td className={cn(TD, 'whitespace-nowrap text-[13px]')}>
         {inv.status === 'received' ? <span className="text-ink-muted">{payTiming(inv) || '—'}</span> : <InvoiceDateCell invoice={inv} />}

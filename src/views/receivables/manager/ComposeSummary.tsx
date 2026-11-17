@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
@@ -118,6 +118,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const [people, setPeople] = useState<EmailRecipient[]>([]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
+  const [listOpen, setListOpen] = useState(true);
   const s = summary.data;
   const isLeader = (email: string) => Boolean(s?.leaders.some((l) => l.email.toLowerCase() === email.toLowerCase()));
 
@@ -190,6 +191,28 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const activePartners = (s?.partnerDrafts ?? []).filter((p) => p.invoiceCount > 0).map((p) => ({ name: p.name, email: p.email }));
   const lastTo = s?.lists.find((l) => l.key === 'last')?.to ?? [];
 
+  /** Removes one person and their card; the card in view moves to the first one left. */
+  const removePerson = (key: string) => {
+    if (current && current.key !== key) keepBody();
+    setPeople((prev) => prev.filter((r) => r.email.toLowerCase() !== key));
+    if (active === key) setActive(null);
+  };
+  const pick = (key: string) => {
+    if (current?.key === key) return;
+    keepBody();
+    setActive(key);
+  };
+  /** Up and down arrows move between the people in the list, as in any tab list. */
+  const onListKey = (e: KeyboardEvent, key: string) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const i = keys.indexOf(key);
+    const next = keys[(i + (e.key === 'ArrowDown' ? 1 : keys.length - 1)) % keys.length];
+    if (!next) return;
+    pick(next);
+    document.getElementById(`rcv-tab-${next}`)?.focus();
+  };
+
   return (
     <Modal
       open
@@ -197,6 +220,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
       title="Send email"
       sub={s ? `Version ${s.versionSeq} of ${stamp(s.publishedAt)}${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
+      flush
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -209,119 +233,153 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
       }
     >
       {notPublished ? (
-        <p className="text-[14px] text-ink-muted">Click Update once first. The email is built from the published version, so it always matches the sheet.</p>
+        <p className="p-3 text-[13px] text-ink-muted">Click Update once first. The email is built from the published version, so it always matches the sheet.</p>
       ) : summary.isLoading ? (
-        <p className="text-ink-muted">Preparing the email…</p>
+        <p className="p-3 text-[13px] text-ink-muted">Preparing the email…</p>
       ) : summary.error ? (
-        <p className="text-danger">{summary.error.message}</p>
+        <p className="p-3 text-[13px] text-danger">{summary.error.message}</p>
       ) : s ? (
-        <div className="grid gap-2">
+        <div className="text-[13px]">
           {data.unpublishedChanges ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">
-              <span>
+            <div className="flex flex-wrap items-center gap-2 border-b border-line-soft bg-warning-soft px-3 py-1 text-[12.5px] text-warning">
+              <span className="min-w-0 flex-1">
                 {data.unpublishedChanges} unpublished change{data.unpublishedChanges === 1 ? '' : 's'}. The email uses the published version.
               </span>
-              <Button
-                size="sm"
-                variant="secondary"
+              <button
+                type="button"
+                className="font-medium underline underline-offset-2 hover:no-underline disabled:opacity-50"
                 disabled={actions.publish.isPending}
                 onClick={() => actions.publish.mutate(undefined, { onSuccess: () => void summary.refetch(), onError: (e) => toastError('Update failed', e instanceof Error ? e.message : undefined) })}
               >
-                Update first
-              </Button>
+                {actions.publish.isPending ? 'Updating…' : 'Update first'}
+              </button>
             </div>
           ) : null}
           {outlook.data && !connected ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-info-soft px-3 py-2 text-[13px] text-info">
-              <span>The email sends from your own Outlook. Connect it once.</span>
-              <Button size="sm" variant="strong" asChild>
-                <a href={OUTLOOK_CONNECT_HREF}>Connect Outlook</a>
-              </Button>
+            <div className="flex flex-wrap items-center gap-2 border-b border-line-soft bg-info-soft px-3 py-1 text-[12.5px] text-info">
+              <span className="min-w-0 flex-1">The email sends from your own Outlook. Connect it once.</span>
+              <a href={OUTLOOK_CONNECT_HREF} className="font-medium underline underline-offset-2 hover:no-underline">
+                Connect Outlook
+              </a>
             </div>
           ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-ink-muted">
-            <span>
+
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-line-soft px-3 py-1.5 text-[12.5px] text-ink-muted">
+            <span className="mr-auto min-w-0 truncate">
               From <b className="font-medium text-ink">{connected ? outlook.data?.msEmail : 'your Outlook'}</b>
             </span>
-            <span className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[12px]">Add</span>
-              <Button size="sm" variant="secondary" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
-                All partners
+            <span className="text-[12px]">Add</span>
+            <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
+              All partners
+            </Button>
+            <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!s.leaders.length} onClick={() => addPeople(s.leaders)}>
+              All leaders
+            </Button>
+            {lastTo.length ? (
+              <Button size="sm" variant="quiet" className="h-7 px-2 text-[12.5px]" onClick={() => addPeople(lastTo)}>
+                Same as last time
               </Button>
-              <Button size="sm" variant="secondary" disabled={!s.leaders.length} onClick={() => addPeople(s.leaders)}>
-                All leaders
-              </Button>
-              {lastTo.length ? (
-                <Button size="sm" variant="quiet" onClick={() => addPeople(lastTo)}>
-                  Same as last time
-                </Button>
-              ) : null}
-            </span>
+            ) : null}
           </div>
-          <RecipientRow field="to" label="To" people={people} contacts={contacts} onChange={setPeople} />
 
-          {keys.length ? (
-            <>
-              <div className="text-[12px] text-ink-muted">One email per person. A client partner gets only the invoices of their own clients; a leader gets the whole sheet.</div>
-              <div role="tablist" aria-label="Emails" className="flex flex-wrap gap-1.5">
-                {keys.map((k) => {
-                  const d = drafts[k];
-                  const on = current?.key === k;
-                  const empty = d.kind === 'partner' && !d.invoiceCount;
-                  const label = d.kind === 'partner' ? `partner · ${d.invoiceCount} open` : isLeader(d.to.email) ? 'leader · whole sheet' : 'whole sheet';
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      role="tab"
-                      aria-selected={on}
-                      onClick={() => {
-                        keepBody();
-                        setActive(k);
-                      }}
-                      className={cn('rounded-md border px-2.5 py-1.5 text-left text-[12.5px]', on ? 'border-brand bg-brand-soft' : 'border-line bg-surface-raised hover:bg-hover', empty && 'opacity-60')}
-                    >
-                      <span className="block font-medium text-ink">{d.to.name || d.to.email}</span>
-                      <span className="block text-[11.5px] text-ink-muted">{empty ? 'partner · no open invoices, not sent' : label}</span>
-                    </button>
-                  );
-                })}
+          <div className="grid md:grid-cols-[240px_minmax(0,1fr)]">
+            {/* The left pane: everyone picked, one email each. On a phone it sits on top and folds away. */}
+            <div className="flex min-w-0 flex-col border-b border-line-soft md:border-b-0 md:border-r">
+              <button
+                type="button"
+                className="flex items-center justify-between px-3 py-1.5 text-[12.5px] font-medium text-ink-2 md:hidden"
+                aria-expanded={listOpen}
+                aria-controls="rcv-people"
+                onClick={() => setListOpen((o) => !o)}
+              >
+                <span>
+                  {keys.length} {keys.length === 1 ? 'person' : 'people'}
+                </span>
+                <ChevronDown className={cn('h-4 w-4 transition-transform', listOpen && 'rotate-180')} aria-hidden />
+              </button>
+              <div id="rcv-people" className={cn('flex min-h-0 flex-col', !listOpen && 'max-md:hidden')}>
+                {keys.length ? (
+                  <div role="tablist" aria-label="Emails" aria-orientation="vertical" className="max-h-[30vh] overflow-y-auto p-1.5 md:max-h-[52vh]">
+                    {keys.map((k) => {
+                      const d = drafts[k];
+                      const on = current?.key === k;
+                      const empty = d.kind === 'partner' && !d.invoiceCount;
+                      const label = empty ? 'no open invoices, not sent' : d.kind === 'partner' ? `partner · ${d.invoiceCount} open` : isLeader(d.to.email) ? 'leader · whole sheet' : 'whole sheet';
+                      const who = d.to.name || d.to.email;
+                      return (
+                        <div key={k} className={cn('group flex items-center rounded-md', on ? 'bg-brand-soft' : 'hover:bg-hover', empty && 'opacity-60')}>
+                          <button
+                            id={`rcv-tab-${k}`}
+                            type="button"
+                            role="tab"
+                            aria-selected={on}
+                            aria-controls="rcv-card"
+                            tabIndex={on ? 0 : -1}
+                            title={d.to.email}
+                            onClick={() => pick(k)}
+                            onKeyDown={(e) => onListKey(e, k)}
+                            className={cn('flex min-w-0 flex-1 items-baseline gap-2 rounded-md border-l-2 px-2 py-1 text-left', on ? 'border-brand' : 'border-transparent')}
+                          >
+                            <span className={cn('truncate text-[13px] text-ink', on && 'font-medium')}>{who}</span>
+                            <span className="ml-auto flex-none text-[11.5px] text-ink-muted">{label}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="mr-1 grid h-5 w-5 flex-none place-items-center rounded text-ink-muted hover:bg-line hover:text-ink"
+                            aria-label={`Remove ${who}`}
+                            onClick={() => removePerson(k)}
+                          >
+                            <X className="h-3 w-3" aria-hidden />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="px-3 py-2 text-[12.5px] text-ink-muted">Add a client partner, a leader or any address. Each person gets an email of their own.</p>
+                )}
+                <div className="border-t border-line-soft px-2 [&>div]:border-b-0">
+                  <RecipientRow field="to" label="Add" people={[]} contacts={contacts} onChange={addPeople} />
+                </div>
               </div>
-            </>
-          ) : (
-            <p className="text-[13px] text-ink-muted">Add a client partner, a leader or any address. Each person gets an email of their own.</p>
-          )}
-
-          {current ? (
-            <div key={current.key} className="grid gap-2 rounded-md border border-line p-2.5">
-              <div className="text-[12px] text-ink-muted">
-                To <b className="font-medium text-ink">{current.to.name ? `${current.to.name} <${current.to.email}>` : current.to.email}</b>
-                {current.kind === 'partner' ? ' · only this partner’s clients' : ' · the whole sheet'}
-              </div>
-              <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc })} />
-              {current.cc.some((c) => partnerEmails.has(c.email.toLowerCase())) ? (
-                <p role="alert" className="text-[12.5px] text-danger">
-                  A client partner cannot be in Cc: they would see invoices that are not theirs. Remove them.
-                </p>
-              ) : null}
-              <label className="grid gap-1 text-[12px] font-medium text-ink-2" htmlFor="rcv-subject">
-                Subject
-                <Input id="rcv-subject" value={current.subject} maxLength={200} onChange={(e) => patch(current.key, { subject: e.target.value })} />
-              </label>
-              <div className="text-[12px] font-medium text-ink-2">Message</div>
-              <div
-                ref={body}
-                role="textbox"
-                aria-multiline="true"
-                aria-label={`Email to ${current.to.name || current.to.email}`}
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={keepBody}
-                className="max-h-[42vh] min-h-[240px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3.5 text-[13px] text-black outline-none [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
-                dangerouslySetInnerHTML={{ __html: current.html }}
-              />
             </div>
-          ) : null}
+
+            {/* The right pane: the card in view, with its own Cc, subject and editable body. */}
+            {current ? (
+              <div key={current.key} id="rcv-card" role="tabpanel" aria-labelledby={`rcv-tab-${current.key}`} className="grid min-w-0 content-start gap-1.5 p-3">
+                <div className="truncate text-[12.5px] text-ink-muted" title={current.to.email}>
+                  <span className="inline-block w-9">To</span>
+                  <b className="font-medium text-ink">{current.to.name ? `${current.to.name} <${current.to.email}>` : current.to.email}</b>
+                  {current.kind === 'partner' ? ' · only this partner’s clients' : ' · the whole sheet'}
+                </div>
+                <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc })} />
+                {current.cc.some((c) => partnerEmails.has(c.email.toLowerCase())) ? (
+                  <p role="alert" className="text-[12.5px] text-danger">
+                    A client partner cannot be in Cc: they would see invoices that are not theirs. Remove them.
+                  </p>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="rcv-subject" className="flex-none text-[12px] text-ink-muted">
+                    Subject
+                  </label>
+                  <Input id="rcv-subject" className="h-8 px-2 py-1 text-[13px]" value={current.subject} maxLength={200} onChange={(e) => patch(current.key, { subject: e.target.value })} />
+                </div>
+                <div
+                  ref={body}
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label={`Email to ${current.to.name || current.to.email}`}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={keepBody}
+                  className="max-h-[56vh] min-h-[340px] overflow-auto rounded-md border border-line-strong bg-white p-3 text-[13px] text-black outline-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
+                  dangerouslySetInnerHTML={{ __html: current.html }}
+                />
+              </div>
+            ) : (
+              <p className="p-3 text-[12.5px] text-ink-muted">One email per person. A client partner gets only the invoices of their own clients; a leader gets the whole sheet.</p>
+            )}
+          </div>
         </div>
       ) : null}
     </Modal>

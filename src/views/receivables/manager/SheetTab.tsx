@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef } from 'react';
-import { FileSpreadsheet, Plus } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { FileSpreadsheet, Flag, Plus } from 'lucide-react';
+import { SidePanel } from '@/components/ui/side-panel';
 import { Button } from '@/components/ui/button';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -37,7 +38,9 @@ import { useSheetTab, type RowGroup } from './sheet/use-sheet-tab';
  * the FX column; its INR amount is the booked INR and changes through Currency and rate.
  *
  * Receivables v2: "Import from Tally" uploads a Sales Register; the rows wait in the Awaiting
- * approval panel above the sheet, with staff amount changes ("Change amount" in the row menu).
+ * approval queue (a side panel opened from the toolbar's "N waiting for approval" button), with staff
+ * amount changes ("Change amount" in the row menu). Compact layout (17 Nov 2026): one summary strip,
+ * one toolbar, the filter bar, then foldable month blocks.
  */
 
 type Actions = ReturnType<typeof useReceivablesActions>;
@@ -50,13 +53,16 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
   const pending = usePendingImports(data.sheet.id);
   const imports = useImportActions(data.sheet.id);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const waiting = pending.data?.rows.filter((r) => r.kind !== 'same').length ?? 0;
   const upload = (file: File) =>
     imports.upload.mutate(file, {
       onSuccess: (res) => {
         const b = res.batch;
+        setReviewOpen(true);
         toastSuccess(
           `${b?.rowCount ?? res.rows.length} rows from ${b?.fileName ?? file.name}`,
-          b ? `${b.newCount} new, ${b.changedCount} changed, ${b.matchedCount} matched by client and amount, ${b.noPartnerCount} with no partner, ${b.sameCount - b.matchedCount} same. Approve them above the sheet.` : undefined,
+          b ? `${b.newCount} new, ${b.changedCount} changed, ${b.matchedCount} matched by client and amount, ${b.noPartnerCount} with no partner, ${b.sameCount - b.matchedCount} same. Review and approve them.` : undefined,
         );
       },
       onError: (e) => toastError('Not imported', s.errorText(e)),
@@ -79,32 +85,50 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      <SheetSummary title={data.sheet.clientOrgName} kpis={s.kpis} onStatus={(status) => s.setFilters({ status })}>
-        <Button onClick={() => s.setDialog({ kind: 'add' })}>
-          <Plus aria-hidden />
-          Add invoice
-        </Button>
-        <Button variant="secondary" disabled={imports.upload.isPending} onClick={() => fileRef.current?.click()}>
-          <FileSpreadsheet aria-hidden />
-          {imports.upload.isPending ? 'Reading…' : 'Import from Tally'}
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          className="hidden"
-          accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = '';
-            if (file) upload(file);
-          }}
-        />
-      </SheetSummary>
+    <div className="flex flex-col gap-2">
+      <SheetSummary kpis={s.kpis} onStatus={(status) => s.setFilters({ status })} />
 
-      {pending.data?.rows.length ? <ApprovalPanel sheetId={data.sheet.id} pending={{ ...pending.data, warnings: imports.upload.data?.warnings }} partners={data.partners} /> : null}
+      <PublishBar
+        data={data}
+        actions={actions}
+        external={external}
+        leading={
+          <>
+            <Button size="sm" onClick={() => s.setDialog({ kind: 'add' })}>
+              <Plus aria-hidden />
+              Invoice
+            </Button>
+            <Button size="sm" variant="secondary" disabled={imports.upload.isPending} onClick={() => fileRef.current?.click()}>
+              <FileSpreadsheet aria-hidden />
+              {imports.upload.isPending ? 'Reading…' : 'Import Tally'}
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) upload(file);
+              }}
+            />
+          </>
+        }
+        trailing={
+          waiting ? (
+            <Button size="sm" variant="strong" onClick={() => setReviewOpen(true)}>
+              <Flag aria-hidden />
+              {`${waiting} waiting for approval · Review`}
+            </Button>
+          ) : null
+        }
+      />
 
-      <PublishBar data={data} actions={actions} />
+      {/* The approval queue opens beside the sheet, so the sheet stays in view. */}
+      <SidePanel open={reviewOpen && waiting > 0} onOpenChange={setReviewOpen} title="Awaiting approval" width={1040}>
+        {pending.data?.rows.length ? <ApprovalPanel sheetId={data.sheet.id} pending={{ ...pending.data, warnings: imports.upload.data?.warnings }} partners={data.partners} /> : null}
+      </SidePanel>
 
       <SheetFilterBar s={s} partners={data.partners} canShare={external} />
 
@@ -164,7 +188,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           onSave={(input) =>
             imports.changeAmount.mutate(
               { invoiceId: d.invoice.id, ...input },
-              { onSuccess: () => (s.close(), toastSuccess('Sent for approval', 'The change is in Awaiting approval at the top of the sheet.')), onError: fail },
+              { onSuccess: () => (s.close(), toastSuccess('Sent for approval', 'Open "waiting for approval" in the toolbar to approve it.')), onError: fail },
             )
           }
         />

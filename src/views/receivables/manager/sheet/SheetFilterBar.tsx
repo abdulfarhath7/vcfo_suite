@@ -1,6 +1,9 @@
 'use client';
 
-import { CheckCircle2, Download, FilterX, Flag, Link2, Search, UserRoundPlus } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Download, FilterX, Flag, Link2, Search, SlidersHorizontal, UserRoundPlus, X } from 'lucide-react';
+import { DensityMenu } from '@/components/ui/density-menu';
+import { PopoverCard } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { BulkBar } from '@/components/ui/bulk-bar';
 import { FilterSelect } from '@/components/ui/native-select';
@@ -24,77 +27,122 @@ function listOptions(list: string[] | undefined, all: string, noun: string, choi
 }
 
 /**
- * The sheet's filter bar (Phase 10): search, partner, client, status, month and currency, all in
- * the URL; v2's "Fix in Tally" toggle (shown while any invoice carries the flag); Clear filters; Share this view; and under it the count and total of the rows shown,
- * or the bulk bar while rows are picked.
+ * The sheet's filter bar (compact layout, 17 Nov 2026): the search box, one Filters button that
+ * opens partner, client, status, month and currency (all kept in the URL), the filters in use as
+ * small chips with a ×, v2's "Fix in Tally" toggle, Clear, Share this view (only with
+ * RECEIVABLES_EXTERNAL) and the row density switch. Under it, the count and total of the rows
+ * shown, or the bulk bar while rows are picked.
  */
 export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; partners: Partner[]; canShare: boolean }) {
   const f = s.filters;
   const pick = (v: string) => (v === 'all' ? undefined : v === MULTI ? undefined : [v]);
   const active = partners.filter((p) => p.active);
+  const [open, setOpen] = useState(false);
+  // The filters in use, each a small chip with a × that removes it.
+  const chips: Array<{ key: string; label: string; clear: () => void }> = [
+    ...(f.partnerSlugs ?? []).map((slug) => ({
+      key: `p-${slug}`,
+      label: `Partner: ${partners.find((p) => p.slug === slug)?.name ?? slug}`,
+      clear: () => s.patchFilters({ partnerSlugs: (f.partnerSlugs ?? []).filter((x) => x !== slug) }),
+    })),
+    ...(f.clients ?? []).map((c) => ({ key: `c-${c}`, label: `Client: ${c}`, clear: () => s.patchFilters({ clients: (f.clients ?? []).filter((x) => x !== c) }) })),
+    ...(s.status !== 'open' ? [{ key: 'status', label: `Status: ${STATUS_CHOICES.find((c) => c.value === s.status)?.label ?? s.status}`, clear: () => s.patchFilters({ status: 'open' as ShareStatus }) }] : []),
+    ...(f.months ?? []).map((m) => ({ key: `m-${m}`, label: `Month: ${monthLong(m)}`, clear: () => s.patchFilters({ months: (f.months ?? []).filter((x) => x !== m) }) })),
+    ...(f.currency ? [{ key: 'cur', label: `Currency: ${f.currency}`, clear: () => s.patchFilters({ currency: null }) }] : []),
+  ];
+  const selectClass = 'w-full';
   return (
-    <div className="flex flex-col gap-2">
-      <div role="search" aria-label="Filter invoices" className="flex flex-wrap items-center gap-2">
-        <label className="relative flex min-w-[180px] flex-[1_1_220px] items-center sm:max-w-[280px]">
-          <Search className="pointer-events-none absolute left-2.5 size-4 text-ink-muted" strokeWidth={1.6} aria-hidden />
+    <div className="flex flex-col gap-1">
+      <div role="search" aria-label="Filter invoices" className="flex flex-wrap items-center gap-1.5">
+        <label className="relative flex min-w-[180px] flex-[1_1_220px] items-center sm:max-w-[260px]">
+          <Search className="pointer-events-none absolute left-2 size-3.5 text-ink-muted" strokeWidth={1.6} aria-hidden />
           <span className="sr-only">Search client, invoice number or partner</span>
           <input
             type="search"
             value={s.search}
             onChange={(e) => s.setSearch(e.target.value)}
-            placeholder="Client, invoice no. or partner"
-            className="h-control-sm w-full rounded-md border-1.5 border-line-strong bg-surface-raised pl-8 pr-2.5 text-[13px] text-ink shadow-control outline-none placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-4 focus-visible:ring-focus-ring/25"
+            placeholder="Search client, invoice, partner"
+            className="h-control-sm w-full rounded-md border border-line-strong bg-surface-raised pl-7 pr-2 text-[12.5px] text-ink outline-none placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-4 focus-visible:ring-focus-ring/25"
           />
         </label>
-        <FilterSelect
-          aria-label="Client partner"
-          value={listValue(f.partnerSlugs)}
-          onChange={(e) => e.target.value !== MULTI && s.patchFilters({ partnerSlugs: pick(e.target.value) })}
-          options={listOptions(f.partnerSlugs, 'All partners', 'partners', partners.map((p) => ({ value: p.slug, label: p.name })))}
-        />
-        <FilterSelect
-          aria-label="Client"
-          value={listValue(f.clients)}
-          onChange={(e) => e.target.value !== MULTI && s.patchFilters({ clients: pick(e.target.value) })}
-          options={listOptions(f.clients, 'All clients', 'clients', s.clients.map((c) => ({ value: c, label: c })))}
-        />
-        <FilterSelect aria-label="Status" value={s.status} onChange={(e) => s.patchFilters({ status: e.target.value as ShareStatus })} options={STATUS_CHOICES} />
-        <FilterSelect
-          aria-label="Invoice month"
-          value={listValue(f.months)}
-          onChange={(e) => e.target.value !== MULTI && s.patchFilters({ months: pick(e.target.value) })}
-          options={listOptions(f.months, 'All months', 'months', [...s.months].reverse().map((m) => ({ value: m, label: monthLong(m) })))}
-        />
-        {s.currencies.length > 1 || f.currency ? (
-          <FilterSelect
-            aria-label="Currency"
-            value={f.currency ?? 'all'}
-            onChange={(e) => s.patchFilters({ currency: e.target.value === 'all' ? null : e.target.value })}
-            options={[{ value: 'all', label: 'All currencies' }, ...s.currencies.map((c) => ({ value: c, label: c }))]}
-          />
-        ) : null}
+        <PopoverCard
+          open={open}
+          onOpenChange={setOpen}
+          width={300}
+          label="Filters"
+          title="Filters"
+          trigger={
+            <Button size="sm" variant="secondary" aria-label={`Filters${chips.length ? ` (${chips.length} in use)` : ''}`}>
+              <SlidersHorizontal aria-hidden />
+              {chips.length ? `Filters · ${chips.length}` : 'Filters'}
+            </Button>
+          }
+        >
+          <div className="grid gap-2 p-3 text-[12.5px]">
+            <FilterSelect
+              className={selectClass}
+              aria-label="Client partner"
+              value={listValue(f.partnerSlugs)}
+              onChange={(e) => e.target.value !== MULTI && s.patchFilters({ partnerSlugs: pick(e.target.value) })}
+              options={listOptions(f.partnerSlugs, 'All partners', 'partners', partners.map((p) => ({ value: p.slug, label: p.name })))}
+            />
+            <FilterSelect
+              className={selectClass}
+              aria-label="Client"
+              value={listValue(f.clients)}
+              onChange={(e) => e.target.value !== MULTI && s.patchFilters({ clients: pick(e.target.value) })}
+              options={listOptions(f.clients, 'All clients', 'clients', s.clients.map((c) => ({ value: c, label: c })))}
+            />
+            <FilterSelect className={selectClass} aria-label="Status" value={s.status} onChange={(e) => s.patchFilters({ status: e.target.value as ShareStatus })} options={STATUS_CHOICES} />
+            <FilterSelect
+              className={selectClass}
+              aria-label="Invoice month"
+              value={listValue(f.months)}
+              onChange={(e) => e.target.value !== MULTI && s.patchFilters({ months: pick(e.target.value) })}
+              options={listOptions(f.months, 'All months', 'months', [...s.months].reverse().map((m) => ({ value: m, label: monthLong(m) })))}
+            />
+            {s.currencies.length > 1 || f.currency ? (
+              <FilterSelect
+                className={selectClass}
+                aria-label="Currency"
+                value={f.currency ?? 'all'}
+                onChange={(e) => s.patchFilters({ currency: e.target.value === 'all' ? null : e.target.value })}
+                options={[{ value: 'all', label: 'All currencies' }, ...s.currencies.map((c) => ({ value: c, label: c }))]}
+              />
+            ) : null}
+          </div>
+        </PopoverCard>
         {s.tallyMismatches || s.fixInTally ? (
-          <Button size="sm" variant={s.fixInTally ? 'strong' : 'secondary'} aria-pressed={s.fixInTally} onClick={() => s.setFixInTally(!s.fixInTally)} title="Invoices whose approved amount change is not in Tally yet">
+          <Button size="sm" variant={s.fixInTally ? 'strong' : 'quiet'} aria-pressed={s.fixInTally} onClick={() => s.setFixInTally(!s.fixInTally)} title="Invoices whose approved amount change is not in Tally yet">
             <Flag aria-hidden />
             {`Fix in Tally${s.tallyMismatches ? ` · ${s.tallyMismatches}` : ''}`}
           </Button>
         ) : null}
+        {chips.map((c) => (
+          <span key={c.key} className="inline-flex items-center gap-1 rounded-full border border-line bg-surface-sunken py-0.5 pl-2 pr-0.5 text-[12px]">
+            {c.label}
+            <button type="button" aria-label={`Remove filter ${c.label}`} onClick={c.clear} className="grid size-4 place-items-center rounded-full text-ink-muted hover:bg-line hover:text-ink">
+              <X className="size-3" aria-hidden />
+            </button>
+          </span>
+        ))}
         {s.filtered ? (
           <Button size="sm" variant="quiet" onClick={s.clearFilters}>
             <FilterX aria-hidden />
-            Clear filters
+            Clear
           </Button>
         ) : null}
         <span className="flex-1" />
         {canShare ? (
-          <Button size="sm" variant="secondary" onClick={() => s.setDialog({ kind: 'share-view' })}>
+          <Button size="sm" variant="quiet" onClick={() => s.setDialog({ kind: 'share-view' })}>
             <Link2 aria-hidden />
             Share this view
           </Button>
         ) : null}
+        <DensityMenu value={s.density} onChange={s.setDensity} />
       </div>
 
-      <div className="flex min-h-[34px] items-center gap-3 rounded-md px-1 text-[13px]">
+      <div className="flex min-h-[28px] items-center gap-3 rounded-md px-1 text-[12.5px]">
         {s.picked.size ? (
           <BulkBar
             count={s.picked.size}

@@ -2,12 +2,12 @@
 
 import { Chip } from '@/components/ui/spectrum-chip';
 import { toastError } from '@/lib/toast-errors';
-import { sheetDate } from '@/lib/receivables/dates';
+import { daysLeft, sheetDate } from '@/lib/receivables/dates';
 import { fxChange } from '@/lib/receivables/fx';
 import type { SheetInvoice } from '@/lib/receivables/model';
-import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
+import type { ManagerInvoiceDto } from '@/lib/receivables/wire';
 import { cn } from '@/lib/utils';
-import { fcText, inr, parseInr, rateText, signedInr } from '../../format';
+import { fcText, inr, parseInr, rateText, signedInr, statusText } from '../../format';
 import { StatusChip } from '../../StatusChip';
 import { PromiseChip } from '../InvoiceNotes';
 import { CELL, fxInput, invoiceName } from './cell-utils';
@@ -106,6 +106,37 @@ export function RevisionBadge({ revision }: { revision: number }) {
   return (
     <span className="shrink-0 rounded-sm bg-warning-soft px-1 font-mono text-[10.5px] font-semibold text-warning-text" title={`Amount revised ${revision} time${revision === 1 ? '' : 's'}`}>
       {`r${revision}`}
+    </span>
+  );
+}
+
+/**
+ * The status in one line (compact layout, 17 Nov 2026): a coloured dot and short text ("12d late",
+ * "Due 5d", "Received"), then small marks for what else applies: ⚑ Fix in Tally, a promise date,
+ * a dispute, a part payment. The full words are in the tooltip.
+ */
+export function StatusDot({ invoice, today }: { invoice: ManagerInvoiceDto; today: string }) {
+  const s = statusText(invoice, today);
+  const dl = daysLeft(invoice.dueDate, today);
+  const short = invoice.status === 'received' ? 'Received' : dl < 0 ? `${-dl}d late` : dl === 0 ? 'Due today' : `Due ${dl}d`;
+  const dot = s.tone === 'ok' ? 'bg-positive' : s.tone === 'bad' ? 'bg-danger' : s.tone === 'warn' ? 'bg-warning' : 'bg-ink-faint';
+  const notes = [
+    s.text,
+    invoice.status === 'received' && invoice.paidOn ? `Paid ${sheetDate(invoice.paidOn)}` : '',
+    invoice.tallyMismatch ? 'Fix in Tally: an approved amount change is not in Tally yet' : '',
+    invoice.status === 'open' && invoice.disputed ? 'Disputed' : '',
+    invoice.status === 'open' && invoice.promisedOn ? `Promised ${sheetDate(invoice.promisedOn)}` : '',
+    invoice.status === 'open' && invoice.partPaid > 0 ? `₹${inr(invoice.partPaid)} part-paid` : '',
+  ].filter(Boolean);
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap" title={notes.join(' · ')}>
+      <span aria-hidden className={cn('size-2 shrink-0 rounded-full', dot)} />
+      <span className={cn('truncate', s.tone === 'bad' ? 'text-danger' : 'text-ink-2')}>{short}</span>
+      {invoice.tallyMismatch ? <span className="text-warning-text">⚑</span> : null}
+      {invoice.status === 'open' && invoice.disputed ? <span className="text-[11px] font-semibold text-danger">D</span> : null}
+      {invoice.status === 'open' && invoice.promisedOn ? <span className="text-[11px] text-ink-muted">{`P ${sheetDate(invoice.promisedOn).slice(0, 6)}`}</span> : null}
+      {invoice.status === 'open' && invoice.partPaid > 0 ? <span className="text-[11px] text-ink-muted">part</span> : null}
+      <span className="sr-only">{notes.join('. ')}</span>
     </span>
   );
 }

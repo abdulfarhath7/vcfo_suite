@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Check, Copy, ListChecks, Mail, Share2 } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Copy, ListChecks, Mail, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { Input } from '@/components/ui/input';
@@ -19,12 +19,26 @@ type Actions = ReturnType<typeof useReceivablesActions>;
 const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Try again.');
 
 /**
- * The publish bar (Phase 10): whether the draft differs from the client page, a "What changes"
- * list of exactly what the next Update publishes, an optional Update note, the Update button
- * (main button while there is something to publish, a plain "Up to date" mark otherwise) and the
- * last published stamp. Send email, Share and Copy link stay at the right.
+ * The sheet's one toolbar (compact layout, 17 Nov 2026; it began as the Phase 10 publish bar).
+ * Left: the sheet's own buttons passed as `leading` (Add invoice, Import from Tally), then Send
+ * email. Middle: the draft state with a "What changes" list of exactly what the next Update
+ * publishes, an optional Update note and the Update button (a plain "Up to date" mark otherwise),
+ * and the last published stamp. Share and Copy link show only with `external` (the
+ * RECEIVABLES_EXTERNAL flag). `trailing` (the approval queue button) sits at the right end.
  */
-export function PublishBar({ data, actions }: { data: ManagerSheetDto; actions: Actions }) {
+export function PublishBar({
+  data,
+  actions,
+  leading,
+  trailing,
+  external = false,
+}: {
+  data: ManagerSheetDto;
+  actions: Actions;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+  external?: boolean;
+}) {
   const [open, setOpen] = useState<'email' | 'share' | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [note, setNote] = useState('');
@@ -52,21 +66,26 @@ export function PublishBar({ data, actions }: { data: ManagerSheetDto; actions: 
     });
 
   return (
-    <section aria-label="Publish" className="flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-md border border-line bg-surface-raised px-4 py-3">
-      <div className="flex min-w-0 flex-[1_1_360px] flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[13px]">
-        {dirty ? <Chip raw tone="warn">{`Draft · ${dirty} change${dirty === 1 ? '' : 's'}`}</Chip> : <Chip raw tone="ok">Published</Chip>}
-        {dirty ? (
+    <section aria-label="Sheet actions" className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+      {leading}
+      <Button size="sm" variant="secondary" onClick={() => setOpen('email')}>
+        <Mail aria-hidden />
+        Send email
+      </Button>
+      <span aria-hidden className="mx-0.5 h-5 w-px bg-line" />
+      {dirty ? (
+        <>
           <PopoverCard
             open={listOpen}
             onOpenChange={setListOpen}
             width={440}
             label="What the next Update changes"
             title={`What Update changes · ${dirty}`}
-            footer={<span className="mr-auto text-[12px] text-ink-muted">Pauses and notes never show on the client page, so they are not listed.</span>}
+            footer={<span className="mr-auto text-[12px] text-ink-muted">Pauses and notes are not listed.</span>}
             trigger={
-              <Button size="sm" variant="quiet">
+              <Button size="sm" variant="quiet" title="What the next Update changes">
                 <ListChecks aria-hidden />
-                What changes
+                {`Draft · ${dirty}`}
               </Button>
             }
           >
@@ -91,55 +110,41 @@ export function PublishBar({ data, actions }: { data: ManagerSheetDto; actions: 
               </ol>
             ) : null}
           </PopoverCard>
-        ) : null}
-        <span className="min-w-0 text-ink-muted">
-          {v ? (
-            <>
-              {`Last published ${stamp(v.publishedAt)}`}
-              {v.publishedByName ? ` by ${v.publishedByName}` : ''}
-              <span className="font-mono text-[12px]">{` · v${v.seq}`}</span>
-            </>
-          ) : (
-            'Nothing published yet. The client page is empty until the first Update.'
-          )}
-        </span>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {dirty ? (
-          <>
-            <Input
-              aria-label="Update note"
-              value={note}
-              maxLength={500}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !actions.publish.isPending && publish()}
-              placeholder="Update note (optional)"
-              className="h-control-md w-[200px] text-[13px]"
-            />
-            <Button onClick={publish} disabled={actions.publish.isPending}>
-              {actions.publish.isPending ? 'Publishing…' : `Update · ${dirty}`}
-            </Button>
-          </>
-        ) : (
-          <Button variant="secondary" disabled className="text-ink-muted disabled:opacity-100" title="The client page already shows the draft">
-            <Check className="text-positive" aria-hidden />
-            Up to date
+          <Input
+            aria-label="Update note"
+            value={note}
+            maxLength={500}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !actions.publish.isPending && publish()}
+            placeholder="Note (optional)"
+            className="h-control-sm w-[150px] text-[12.5px]"
+          />
+          <Button size="sm" onClick={publish} disabled={actions.publish.isPending}>
+            {actions.publish.isPending ? 'Updating…' : `Update · ${dirty}`}
           </Button>
-        )}
-        <Button variant="secondary" onClick={() => setOpen('email')}>
-          <Mail aria-hidden />
-          Send email
-        </Button>
-        <Button variant="secondary" onClick={() => setOpen('share')}>
-          <Share2 aria-hidden />
-          Share
-        </Button>
-        <Button variant="quiet" onClick={copy}>
-          <Copy aria-hidden />
-          Copy link
-        </Button>
-      </div>
+        </>
+      ) : (
+        <Chip raw tone="ok" title="The latest version holds every change">
+          Up to date
+        </Chip>
+      )}
+      <span className="min-w-0 truncate text-[12px] text-ink-muted">
+        {v ? `v${v.seq} · ${stamp(v.publishedAt)}${v.publishedByName ? ` · ${v.publishedByName}` : ''}` : 'Not published yet'}
+      </span>
+      {external ? (
+        <>
+          <Button size="sm" variant="quiet" onClick={() => setOpen('share')}>
+            <Share2 aria-hidden />
+            Share
+          </Button>
+          <Button size="sm" variant="quiet" onClick={copy}>
+            <Copy aria-hidden />
+            Copy link
+          </Button>
+        </>
+      ) : null}
+      <span className="flex-1" />
+      {trailing}
       {open === 'email' ? <ComposeSummary data={data} actions={actions} onClose={() => setOpen(null)} /> : null}
       {open === 'share' ? <ShareDialog data={data} onClose={() => setOpen(null)} onEmail={() => setOpen('email')} /> : null}
     </section>
