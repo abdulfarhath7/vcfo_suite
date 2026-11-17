@@ -113,6 +113,7 @@ export function ManageClientsDialog({
 export function ClientDialog({ client, partners, busy, onClose, onSave }: { client: ClientDto | null; partners: PartnerDto[]; busy: boolean; onClose: () => void; onSave: (input: ClientWrite) => void }) {
   const [name, setName] = useState(client?.name ?? '');
   const [partnerId, setPartnerId] = useState(client?.partnerId ?? '');
+  const [co, setCo] = useState<Set<string>>(new Set(client?.coPartnerIds ?? []));
   const [creditDays, setCreditDays] = useState(String(client?.creditDays ?? 7));
   const [billingEmail, setBillingEmail] = useState(client?.billingEmail ?? '');
   const [cc, setCc] = useState((client?.billingCc ?? []).join(', '));
@@ -136,6 +137,7 @@ export function ClientDialog({ client, partners, busy, onClose, onSave }: { clie
               onSave({
                 name: name.trim(),
                 partnerId: partnerId || null,
+                coPartnerIds: [...co].filter((id) => id !== partnerId),
                 creditDays: days,
                 billingEmail: billingEmail.trim() || null,
                 billingCc: cc
@@ -155,7 +157,7 @@ export function ClientDialog({ client, partners, busy, onClose, onSave }: { clie
         <Field label="Client name" htmlFor="rcv-client-name" hint="As Tally names the buyer. Punctuation and case do not matter for matching.">
           <Input id="rcv-client-name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Client partner" htmlFor="rcv-client-partner">
+        <Field label="Lead partner" htmlFor="rcv-client-partner">
           <select id="rcv-client-partner" className="h-control w-full rounded-md border-1.5 border-line-strong bg-surface-raised px-2 text-[14px]" value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
             <option value="">No partner</option>
             {partners
@@ -167,6 +169,35 @@ export function ClientDialog({ client, partners, busy, onClose, onSave }: { clie
               ))}
           </select>
         </Field>
+        {partnerId ? (
+          <fieldset className="grid gap-1">
+            <legend className="text-[13px] font-medium text-ink-2">Second partners</legend>
+            <p className="text-[12px] text-ink-muted">They share the whole client: its invoice emails, roll-ups and their own summary email. The lead stays on the sheet.</p>
+            <ul className="max-h-40 overflow-auto rounded-md border border-line">
+              {partners
+                .filter((p) => p.id !== partnerId && (p.active || co.has(p.id)))
+                .map((p) => (
+                  <li key={p.id} className="flex items-center gap-2 border-t border-line-soft px-2.5 py-1.5 text-[13px] first:border-t-0">
+                    <Checkbox
+                      id={`rcv-co-${p.id}`}
+                      checked={co.has(p.id)}
+                      onCheckedChange={(v) =>
+                        setCo((prev) => {
+                          const next = new Set(prev);
+                          if (v === true) next.add(p.id);
+                          else next.delete(p.id);
+                          return next;
+                        })
+                      }
+                    />
+                    <label htmlFor={`rcv-co-${p.id}`} className="flex-1 cursor-pointer">
+                      {p.name}
+                    </label>
+                  </li>
+                ))}
+            </ul>
+          </fieldset>
+        ) : null}
         <Field label="Credit days" htmlFor="rcv-client-days" hint="Due date = invoice date + credit days.">
           <Input id="rcv-client-days" type="number" min={0} max={365} value={creditDays} onChange={(e) => setCreditDays(e.target.value)} />
         </Field>

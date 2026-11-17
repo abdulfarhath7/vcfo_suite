@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { receivableClients, receivableInvoices, receivablePartners } from '@/db/schema';
+import { receivableClientPartners, receivableClients, receivableInvoices, receivablePartners } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { clientByPrefix, clientKey } from '@/lib/receivables/client-key';
 import type { ClientDto } from '@/lib/receivables/v2-wire';
@@ -10,8 +10,9 @@ import { UUID, conflict, invalid, logChange, notFound, num, scopedSheet } from '
 /**
  * RECEIVABLES v2 — the sheet's clients (docs/specs/receivables/V2.md). Every function goes through
  * `scopedSheet`, so only the sheet's manager, its extra editors and the firm-wide admins reach them.
- * A client has at most one client partner; changing it also moves the client's live invoices to
- * the new partner, so the emails and the sheet agree.
+ * A client has one lead client partner; changing it also moves the client's live invoices to the
+ * new partner, so the emails and the sheet agree. Second partners (`receivable_client_partners`)
+ * share the whole client and change nothing on the invoices.
  */
 
 export type ClientRow = typeof receivableClients.$inferSelect;
@@ -65,7 +66,31 @@ export async function sheetPartnerId(sheetId: string, partnerId: unknown, tx: Db
   return p.id;
 }
 
-function toClientDto(row: ClientRow, open: { amount: number; count: number } | undefined): ClientDto {
+/** Every second-partner link of a sheet. System read: the callers have scoped the sheet or run as a job. */
+export async function systemCoPartnerLinks(sheetId: string, tx: DbLike = db): Promise<Array<{ clientId: string; partnerId: string }>> {
+  return tx
+    .select({ clientId: receivableClientPartners.clientId, partnerId: receivableClientPartners.partnerId })
+    .from(receivableClientPartners)
+    .where(eq(receivableClientPartners.sheetId, sheetId));
+}
+
+const coOf = (links: Array<{ clientId: string; partnerId: string }>, clientId: string) => links.filter((l) => l.clientId === clientId).map((l) => l.partnerId);
+
+/** Replaces a client's second partners with `ids` (same sheet only, the lead left out). Returns the new set. */
+async function replaceCoPartners(tx: DbLike, sheetId: string, clientId: string, leadId: string | null, ids: string[]): Promise<string[]> {
+  const wanted = [...new Set(ids)].filter((id) => id !== leadId);
+  if (wanted.length > 10) throw invalid('partner');
+  const valid: string[] = [];
+  for (const id of wanted) {
+    const ok = await sheetPartnerId(sheetId, id, tx);
+    if (ok) valid.push(ok);
+  }
+  await tx.delete(receivableClientPartners).where(eq(receivableClientPartners.clientId, clientId));
+  if (valid.length) await tx.insert(receivableClientPartners).values(valid.map((partnerId) => ({ sheetId, clientId, partnerId })));
+  return valid;
+}
+
+function toClientDto(row: ClientRow, open: { amount: number; count: number } | undefined, coPartnerIds: string[] = []): ClientDto {
   return {
     id: row.id,
     name: row.name,
@@ -74,6 +99,7 @@ function toClientDto(row: ClientRow, open: { amount: number; count: number } | u
     billingEmail: row.billingEmail,
     billingCc: row.billingCc ?? [],
     partnerId: row.partnerId,
+    coPartnerIds: coPartnerIds.filter((id) => id !== row.partnerId),
     active: row.active,
     openAmount: open?.amount ?? 0,
     openCount: open?.count ?? 0,
@@ -83,16 +109,17 @@ function toClientDto(row: ClientRow, open: { amount: number; count: number } | u
 /** The sheet's clients with their open balance. */
 export async function listClients(ctx: AuthContext, sheetId: string): Promise<ClientDto[]> {
   const sheet = await scopedSheet(ctx, sheetId);
-  const [rows, open] = await Promise.all([
+  const [rows, open, links] = await Promise.all([
     db.select().from(receivableClients).where(eq(receivableClients.sheetId, sheet.id)).orderBy(asc(receivableClients.name)),
     db
       .select({ clientId: receivableInvoices.clientId, amount: sql<string>`coalesce(sum(${receivableInvoices.amountInr}), 0)`, count: sql<number>`count(*)::int` })
       .from(receivableInvoices)
       .where(and(eq(receivableInvoices.sheetId, sheet.id), eq(receivableInvoices.status, 'open'), isNull(receivableInvoices.deletedAt)))
       .groupBy(receivableInvoices.clientId),
+    systemCoPartnerLinks(sheet.id),
   ]);
   const byClient = new Map(open.filter((o) => o.clientId).map((o) => [o.clientId as string, { amount: num(o.amount) ?? 0, count: Number(o.count) }]));
-  return rows.map((r) => toClientDto(r, byClient.get(r.id)));
+  return rows.map((r) => toClientDto(r, byClient.get(r.id), coOf(links, r.id)));
 }
 
 /** The client of a sheet by id, if and only if the caller may edit the sheet. */
@@ -111,6 +138,8 @@ export type ClientInput = {
   billingEmail?: string | null;
   billingCc?: string[];
   partnerId?: string | null;
+  /** The second partners; the lead is left out. Replaces the client's whole set. */
+  coPartnerIds?: string[];
 };
 
 export async function addClient(ctx: AuthContext, sheetId: string, input: ClientInput): Promise<ClientDto> {
@@ -136,8 +165,9 @@ export async function addClient(ctx: AuthContext, sheetId: string, input: Client
       partnerId: await sheetPartnerId(sheet.id, input.partnerId),
     })
     .returning();
+  const co = input.coPartnerIds ? await replaceCoPartners(db, sheet.id, row.id, row.partnerId, input.coPartnerIds) : [];
   await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `Client ${row.name} added`, affectsPage: false });
-  return toClientDto(row, undefined);
+  return toClientDto(row, undefined, co);
 }
 
 /** Moves a client's live invoices to its partner, so the sheet and the emails agree. */
@@ -178,6 +208,9 @@ export async function updateClient(ctx: AuthContext, clientId: string, patch: Cl
   const row = await db.transaction(async (tx) => {
     const [updated] = await tx.update(receivableClients).set(set).where(eq(receivableClients.id, client.id)).returning();
     if (partnerChanged) await movePartnerInvoices(tx, sheetId, [client.id], updated.partnerId);
+    // The lead is never also a second partner; a new set replaces the old one.
+    if (patch.coPartnerIds !== undefined) await replaceCoPartners(tx, sheetId, client.id, updated.partnerId, patch.coPartnerIds);
+    else if (partnerChanged && updated.partnerId) await tx.delete(receivableClientPartners).where(and(eq(receivableClientPartners.clientId, client.id), eq(receivableClientPartners.partnerId, updated.partnerId)));
     // A renamed client renames its live invoices too, so the sheet and the emails show one name.
     if (set.name && set.name !== client.name) {
       await tx
@@ -186,7 +219,13 @@ export async function updateClient(ctx: AuthContext, clientId: string, patch: Cl
         .where(and(eq(receivableInvoices.sheetId, sheetId), eq(receivableInvoices.clientId, client.id), isNull(receivableInvoices.deletedAt)));
     }
     await logChange(
-      { sheetId, invoiceId: null, actorId: ctx.userId, summary: partnerChanged ? `Client ${updated.name} moved to another client partner` : `Client ${updated.name} updated`, affectsPage: partnerChanged },
+      {
+        sheetId,
+        invoiceId: null,
+        actorId: ctx.userId,
+        summary: partnerChanged ? `Client ${updated.name} moved to another client partner` : patch.coPartnerIds !== undefined ? `Client ${updated.name}: second partners changed` : `Client ${updated.name} updated`,
+        affectsPage: partnerChanged,
+      },
       tx,
     );
     return updated;
@@ -195,7 +234,8 @@ export async function updateClient(ctx: AuthContext, clientId: string, patch: Cl
     .select({ amount: sql<string>`coalesce(sum(${receivableInvoices.amountInr}), 0)`, count: sql<number>`count(*)::int` })
     .from(receivableInvoices)
     .where(and(eq(receivableInvoices.clientId, row.id), eq(receivableInvoices.status, 'open'), isNull(receivableInvoices.deletedAt)));
-  return toClientDto(row, { amount: num(open?.amount) ?? 0, count: Number(open?.count ?? 0) });
+  const links = await systemCoPartnerLinks(sheetId);
+  return toClientDto(row, { amount: num(open?.amount) ?? 0, count: Number(open?.count ?? 0) }, coOf(links, row.id));
 }
 
 /**
@@ -220,6 +260,8 @@ export async function setPartnerClients(ctx: AuthContext, partnerId: string, cli
     if (add.length) {
       await tx.update(receivableClients).set({ partnerId: p.id, updatedAt: now }).where(inArray(receivableClients.id, add));
       await movePartnerInvoices(tx, sheet.id, add, p.id);
+      // Now the lead of these clients, so no longer a second partner on them.
+      await tx.delete(receivableClientPartners).where(and(eq(receivableClientPartners.partnerId, p.id), inArray(receivableClientPartners.clientId, add)));
     }
     if (remove.length) {
       await tx.update(receivableClients).set({ partnerId: null, updatedAt: now }).where(inArray(receivableClients.id, remove));

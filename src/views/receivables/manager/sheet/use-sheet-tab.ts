@@ -14,6 +14,7 @@ import { monthsOf, receivedThisWeek, sumInr } from '@/lib/receivables/summary';
 import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
 import { useBulkInvoiceActions, type BulkResult, type useReceivablesActions } from '@/hooks/use-receivables';
 import { useReportsActions } from '@/hooks/use-receivables-reports';
+import { usePeople } from '@/hooks/use-receivables-v2';
 import { fxInput, invoiceName } from './cell-utils';
 import { downloadCsv, invoicesCsv } from './export-csv';
 import type { RowAction } from './row-menu';
@@ -44,6 +45,12 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
   const sheetId = data.sheet.id;
   const report = useReportsActions(sheetId);
   const bulk = useBulkInvoiceActions(sheetId);
+  // Second partners per client (owner, 18 Nov 2026): the Partner column shows them as "+1".
+  const people = usePeople(sheetId);
+  const coPartnerNames = useMemo(() => {
+    const names = new Map(data.partners.map((p) => [p.id, p.name]));
+    return new Map((people.data?.clients ?? []).filter((c) => c.coPartnerIds.length).map((c) => [c.id, c.coPartnerIds.map((id) => names.get(id) ?? '?')]));
+  }, [people.data, data.partners]);
 
   /* Filters, kept in the query string. */
   const paramText = params.toString();
@@ -224,6 +231,7 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
   };
 
   return {
+    coPartnerNames,
     sheetId,
     filters,
     setFilters,

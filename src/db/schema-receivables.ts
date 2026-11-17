@@ -522,8 +522,8 @@ export const receivableFxAlerts = pgTable(
 );
 
 /**
- * Receivables v2: the sheet's clients. A client has at most one client partner; a partner has many
- * clients. `client_key` is the name in lower case with punctuation and spaces collapsed
+ * Receivables v2: the sheet's clients. A client has one lead client partner (`partner_id`) and may
+ * have second partners (`receivable_client_partners`); a partner has many clients. `client_key` is the name in lower case with punctuation and spaces collapsed
  * (src/lib/receivables/client-key.ts), so "Machinify, Inc" and "Machinify Inc" are one client.
  */
 export const receivableClients = pgTable(
@@ -548,6 +548,31 @@ export const receivableClients = pgTable(
   (t) => ({
     keyIdx: uniqueIndex('receivable_clients_sheet_key_idx').on(t.sheetId, t.clientKey),
     partnerIdx: index('receivable_clients_partner_idx').on(t.partnerId),
+  }),
+);
+
+/**
+ * Receivables v2: a client's second partners (owner, 18 Nov 2026). The lead partner stays on
+ * `receivable_clients.partner_id` and on each invoice; a second partner shares the whole client:
+ * they get its invoice emails and roll-ups and see it in their own summary email.
+ */
+export const receivableClientPartners = pgTable(
+  'receivable_client_partners',
+  {
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    clientId: uuid('client_id')
+      .notNull()
+      .references(() => receivableClients.id, { onDelete: 'cascade' }),
+    partnerId: uuid('partner_id')
+      .notNull()
+      .references(() => receivablePartners.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.clientId, t.partnerId] }),
+    sheetIdx: index('receivable_client_partners_sheet_idx').on(t.sheetId),
   }),
 );
 

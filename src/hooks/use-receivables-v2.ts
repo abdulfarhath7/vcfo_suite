@@ -49,7 +49,7 @@ export function usePeople(sheetId: string) {
   return useQuery({ queryKey: peopleKey(sheetId), queryFn: () => call<PeopleDto>(`/api/receivables/sheets/${sheetId}/people`) });
 }
 
-export type ClientWrite = { name?: string; partnerId?: string | null; creditDays?: number; billingEmail?: string | null; billingCc?: string[]; gstin?: string | null; active?: boolean };
+export type ClientWrite = { name?: string; partnerId?: string | null; coPartnerIds?: string[]; creditDays?: number; billingEmail?: string | null; billingCc?: string[]; gstin?: string | null; active?: boolean };
 
 export function usePeopleActions(sheetId: string) {
   const qc = useQueryClient();

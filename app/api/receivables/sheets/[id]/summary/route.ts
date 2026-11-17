@@ -3,7 +3,7 @@ import { siteUrl } from '@/lib/site-url';
 import { todayIst } from '@/lib/receivables/dates';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
-import { summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
+import { partnerRows, summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
 import { getSummarySource, listDigestRecipients } from '@/db/repositories/receivables';
 import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
@@ -23,15 +23,16 @@ export async function GET(_request: Request, context: RouteContext) {
     const today = todayIst();
     const liveUrl = publicPageUrl(siteUrl(), src.sheet);
     const leaders = (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active).map((r) => ({ name: r.name, email: r.email }));
-    // One ready email per active client partner, with only the invoices of that partner's clients.
+    // One ready email per active client partner, with only the invoices of that partner's clients
+    // (the ones they lead and the ones they are a second partner on).
     const partnerDrafts: PartnerDraftDto[] = src.partners
       .filter((p) => p.active)
       .map((p) => ({
         partnerId: p.id,
         name: p.name,
         email: p.email,
-        invoiceCount: src.version.snapshot.filter((r) => r.partnerSlug === p.slug && r.status === 'open').length,
-        html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name, partnerSlug: p.slug }),
+        invoiceCount: partnerRows(src.version.snapshot, p.slug, src.coClientKeys[p.id]).filter((r) => r.status === 'open').length,
+        html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id] }),
       }));
     return NextResponse.json({
       versionSeq: src.version.seq,

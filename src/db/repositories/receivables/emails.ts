@@ -1,7 +1,8 @@
 import 'server-only';
 import { and, desc, eq } from 'drizzle-orm';
+import { clientKey } from '@/lib/receivables/client-key';
 import { db } from '@/db/client';
-import { receivableEmailSends, receivablePartners, receivableVersions } from '@/db/schema';
+import { receivableClientPartners, receivableClients, receivableEmailSends, receivablePartners, receivableVersions } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import type { EmailRecipient, Partner, SnapshotRow } from '@/lib/receivables/model';
 import { conflict, ReceivablesError, scopedSheet, type SheetRow } from './shared';
@@ -16,6 +17,8 @@ export type SummarySource = {
   sheet: SheetRow;
   version: { id: string; seq: number; publishedAt: Date; snapshot: SnapshotRow[] };
   partners: Partner[];
+  /** Per partner id, the client keys they are a second partner on (their summary includes those clients). */
+  coClientKeys: Record<string, string[]>;
   /** The recipients of the previous summary, the default for the next one. */
   lastSend: { to: EmailRecipient[]; cc: EmailRecipient[]; bcc: EmailRecipient[]; subject: string; sentAt: Date; status: SummarySendStatus; error: string | null } | null;
 };
@@ -23,7 +26,7 @@ export type SummarySource = {
 export async function getSummarySource(ctx: AuthContext, sheetId: string): Promise<SummarySource> {
   const sheet = await scopedSheet(ctx, sheetId);
   if (!sheet.publishedVersionId) throw conflict('not_published');
-  const [[v], partners, [last]] = await Promise.all([
+  const [[v], partners, [last], links] = await Promise.all([
     db
       .select({ id: receivableVersions.id, seq: receivableVersions.seq, publishedAt: receivableVersions.publishedAt, snapshot: receivableVersions.snapshot })
       .from(receivableVersions)
@@ -31,12 +34,20 @@ export async function getSummarySource(ctx: AuthContext, sheetId: string): Promi
       .limit(1),
     db.select().from(receivablePartners).where(eq(receivablePartners.sheetId, sheet.id)),
     db.select().from(receivableEmailSends).where(eq(receivableEmailSends.sheetId, sheet.id)).orderBy(desc(receivableEmailSends.sentAt)).limit(1),
+    db
+      .select({ partnerId: receivableClientPartners.partnerId, name: receivableClients.name })
+      .from(receivableClientPartners)
+      .innerJoin(receivableClients, eq(receivableClients.id, receivableClientPartners.clientId))
+      .where(eq(receivableClientPartners.sheetId, sheet.id)),
   ]);
+  const coClientKeys: Record<string, string[]> = {};
+  for (const l of links) (coClientKeys[l.partnerId] ??= []).push(clientKey(l.name));
   if (!v) throw conflict('not_published');
   return {
     sheet,
     version: v,
     partners: partners.map(toPartner),
+    coClientKeys,
     lastSend: last ? { to: last.toList, cc: last.ccList, bcc: last.bccList, subject: last.subject, sentAt: last.sentAt, status: last.status as SummarySendStatus, error: last.error } : null,
   };
 }

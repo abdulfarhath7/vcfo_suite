@@ -2,6 +2,7 @@ import 'server-only';
 import { and, asc, desc, eq, inArray, isNull, max } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles, receivableClients, receivableDigestRecipients, receivableEmailLog, receivableInvoices, receivablePartners, receivableSheets } from '@/db/schema';
+import { systemCoPartnerLinks } from './clients';
 import type { AuthContext } from '@/auth/guards';
 import type { EmailInvoice } from '@/lib/receivables/email-v2';
 import { UUID, invalid, notFound, num, scopedSheet, type SheetRow } from './shared';
@@ -162,6 +163,8 @@ export async function receivedEmailSource(
   invoices: Array<EmailInvoiceRow & { paidOn: string; receivedInr: number }>;
   partners: Array<{ id: string; name: string; email: string }>;
   clientContacts: Array<{ name: string; email: string }>;
+  /** Second-partner links: a second partner owns the client's invoices as the lead does. */
+  links: Array<{ clientId: string; partnerId: string }>;
 }> {
   const sheet = await scopedSheet(ctx, sheetId);
   const clean = ids.filter((id) => UUID.test(id)).slice(0, 200);
@@ -171,9 +174,10 @@ export async function receivedEmailSource(
         .from(receivableInvoices)
         .where(and(eq(receivableInvoices.sheetId, sheet.id), inArray(receivableInvoices.id, clean), eq(receivableInvoices.status, 'received'), isNull(receivableInvoices.deletedAt)))
     : [];
-  const [partners, clients] = await Promise.all([
+  const [partners, clients, links] = await Promise.all([
     db.select({ id: receivablePartners.id, name: receivablePartners.name, email: receivablePartners.email }).from(receivablePartners).where(eq(receivablePartners.sheetId, sheet.id)),
     db.select().from(receivableClients).where(eq(receivableClients.sheetId, sheet.id)),
+    systemCoPartnerLinks(sheet.id),
   ]);
   const clientIds = new Set(rows.map((r) => r.clientId));
   const clientContacts = clients
@@ -184,5 +188,6 @@ export async function receivedEmailSource(
     invoices: rows.map((r) => ({ ...toEmailInvoice(r), paidOn: String(r.paidOn ?? ''), receivedInr: (num(r.paidAmount) ?? num(r.amountInr) ?? 0) + (num(r.partPaid) ?? 0) })),
     partners,
     clientContacts,
+    links,
   };
 }

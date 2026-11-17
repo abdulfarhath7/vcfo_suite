@@ -14,11 +14,13 @@ import {
   systemStaffName,
   systemStartEmailLog,
   type EmailInvoiceRow,
+  systemCoPartnerLinks,
   type SheetEmailSettings,
 } from '@/db/repositories/receivables';
 import { sendMailViaOutlookWithLink, systemSendMailAsResult } from '@/db/repositories/outlook-connections';
 import { isValidE164 } from '@/lib/notify/phone';
 import { readDoubleTickConfig, isDoubleTickConfigured, sendDoubleTickMessage } from '@/lib/notify/send-whatsapp-doubletick';
+import { invoicePartnerIds, partnerOwns } from './co-partners';
 import { todayIst } from './dates';
 import { leadershipDigestEmail, newInvoiceEmail, revisedInvoiceEmail, rollupEmail, senderPingText } from './email-v2';
 import { outlookErrorCode } from './summary-send';
@@ -174,14 +176,15 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
   const out = { sent: 0, failed: 0, skipped: 0 };
   const sheet = await systemSheetEmailSettings(input.sheetId);
   if (!sheet) return out;
-  const partners = await systemSheetPartners(sheet.id);
+  const [partners, links] = await Promise.all([systemSheetPartners(sheet.id), systemCoPartnerLinks(sheet.id)]);
   const senderName = await systemStaffName(input.approverId);
   const today = todayIst();
 
   if (sheet.emailNewInvoiceEnabled && input.newInvoiceIds.length) {
     const invoices = await systemInvoicesById(sheet.id, input.newInvoiceIds);
     const byPartner = new Map<string, EmailInvoiceRow[]>();
-    for (const inv of invoices) if (inv.partnerId) byPartner.set(inv.partnerId, [...(byPartner.get(inv.partnerId) ?? []), inv]);
+    // The lead and every second partner of the client each get the invoice.
+    for (const inv of invoices) for (const pid of invoicePartnerIds(inv, links)) byPartner.set(pid, [...(byPartner.get(pid) ?? []), inv]);
     for (const [partnerId, list] of byPartner) {
       const p = partnerOf(partners, partnerId);
       if (!p || !p.active || !p.notifyNewInvoice || !p.email) {
@@ -215,27 +218,35 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
     );
     for (const r of input.revised) {
       const inv = invoices.find((i) => i.id === r.invoiceId);
-      const p = inv ? partnerOf(partners, inv.partnerId) : undefined;
-      if (!inv || !p || !p.active || !p.notifyNewInvoice || !p.email) {
+      const owners = inv ? invoicePartnerIds(inv, links) : [];
+      if (!inv || !owners.length) {
         out.skipped += 1;
         continue;
       }
-      const mail = revisedInvoiceEmail({ partnerName: p.name, senderName, invoice: { ...inv, amountInr: r.newAmountInr, oldAmountInr: r.oldAmountInr, reason: r.reason }, today });
-      const log = await systemStartEmailLog({
-        sheetId: sheet.id,
-        kind: 'revised',
-        partnerId: p.id,
-        dedupeKey: `revised:${inv.id}:r${inv.revision}`,
-        recipientName: p.name,
-        to: [p.email],
-        ...mail,
-        senderUserId: input.approverId,
-        invoiceIds: [inv.id],
-        about: `${inv.invoiceNo ?? 'the invoice'} / ${inv.clientName}`,
-      });
-      if (!log) continue;
-      if ((await deliverLoggedEmail(log.id, { userId: input.approverId })) === 'sent') out.sent += 1;
-      else out.failed += 1;
+      for (const pid of owners) {
+        const p = partnerOf(partners, pid);
+        if (!p || !p.active || !p.notifyNewInvoice || !p.email) {
+          out.skipped += 1;
+          continue;
+        }
+        const mail = revisedInvoiceEmail({ partnerName: p.name, senderName, invoice: { ...inv, amountInr: r.newAmountInr, oldAmountInr: r.oldAmountInr, reason: r.reason }, today });
+        const log = await systemStartEmailLog({
+          sheetId: sheet.id,
+          kind: 'revised',
+          partnerId: p.id,
+          // The lead keeps the key it had before second partners existed.
+          dedupeKey: p.id === inv.partnerId ? `revised:${inv.id}:r${inv.revision}` : `revised:${inv.id}:r${inv.revision}:${p.id}`,
+          recipientName: p.name,
+          to: [p.email],
+          ...mail,
+          senderUserId: input.approverId,
+          invoiceIds: [inv.id],
+          about: `${inv.invoiceNo ?? 'the invoice'} / ${inv.clientName}`,
+        });
+        if (!log) continue;
+        if ((await deliverLoggedEmail(log.id, { userId: input.approverId })) === 'sent') out.sent += 1;
+        else out.failed += 1;
+      }
     }
   }
   return out;
@@ -249,10 +260,16 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
   const last = await systemLastRollupDate(sheet.id);
   if (!rollupDue(sheet, last, now)) return out;
   const today = todayIst(now);
-  const [partners, open, senderName] = await Promise.all([systemSheetPartners(sheet.id), systemOpenInvoices(sheet.id), systemStaffName(sheet.managerUserId)]);
+  const [partners, open, senderName, links] = await Promise.all([
+    systemSheetPartners(sheet.id),
+    systemOpenInvoices(sheet.id),
+    systemStaffName(sheet.managerUserId),
+    systemCoPartnerLinks(sheet.id),
+  ]);
   for (const p of partners) {
     if (!p.active || !p.notifyRollup || !p.email) continue;
-    const list = open.filter((i) => i.partnerId === p.id);
+    // The clients the partner leads and the ones they are a second partner on.
+    const list = open.filter((i) => partnerOwns(p.id, i, links));
     if (!list.length) {
       out.skipped += 1;
       continue;

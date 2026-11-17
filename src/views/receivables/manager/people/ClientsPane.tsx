@@ -69,6 +69,11 @@ export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; peop
                           </option>
                         ))}
                     </select>
+                    {c.coPartnerIds.length ? (
+                      <button type="button" className="mt-0.5 block max-w-[220px] truncate text-left text-[11.5px] text-ink-muted hover:text-ink" title="Second partners. Click to change." onClick={() => setEditing(c)}>
+                        {`+ ${c.coPartnerIds.map((id) => data.partners.find((p) => p.id === id)?.name ?? '?').join(', ')}`}
+                      </button>
+                    ) : null}
                   </td>
                   <td className={cn(TD, 'text-right')}>
                     <input

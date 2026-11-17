@@ -11,6 +11,8 @@ export type ClientDto = {
   billingEmail: string | null;
   billingCc: string[];
   partnerId: string | null;
+  /** Second partners (owner, 18 Nov 2026): they share every invoice of the client. The lead is not in it. */
+  coPartnerIds: string[];
   active: boolean;
   /** The open balance of the client's live invoices, in INR. */
   openAmount: number;

@@ -6,7 +6,7 @@ export { emailSettingsOf, getEmailSettings, getManagerSheet, listMySheets, syste
 export { addInvoice, deleteInvoice, markReceived, reopenInvoice, setReminderPause, updateInvoice, type InvoiceInput, type InvoicePatch } from './invoices';
 export { getVersion, listVersions, publishSheet, type VersionMeta } from './versions';
 export { addPartner, deletePartner, updatePartner } from './partners';
-export { addClient, deleteClient, listClients, setPartnerClients, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
+export { addClient, deleteClient, listClients, setPartnerClients, systemCoPartnerLinks, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
 export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
 export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
 export {

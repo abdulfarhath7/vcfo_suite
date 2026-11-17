@@ -37,7 +37,8 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
   const [managing, setManaging] = useState<PartnerDto | null>(null);
   const [deleting, setDeleting] = useState<PartnerDto | null>(null);
 
-  const stats = new Map(data.partners.map((p) => [p.id, statOf(people.clients.filter((c) => c.partnerId === p.id))]));
+  // A partner's clients: the ones they lead and the ones they are a second partner on.
+  const stats = new Map(data.partners.map((p) => [p.id, statOf(people.clients.filter((c) => c.partnerId === p.id || c.coPartnerIds.includes(p.id)))]));
   const known = new Set(data.partners.map((p) => p.id));
   const orphans = statOf(people.clients.filter((c) => !c.partnerId || !known.has(c.partnerId)));
   // The pick falls back to the first partner, or to "No partner" when there are none.
@@ -88,7 +89,7 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
             </>
           ) : null}
         </div>
-        <ClientTable clients={shown.clients} act={act} empty={partner ? `${partner.name} has no clients yet. Use Manage clients to pick some.` : 'Every client has a partner.'} />
+        <ClientTable clients={shown.clients} act={act} secondOf={partner?.id} empty={partner ? `${partner.name} has no clients yet. Use Manage clients to pick some.` : 'Every client has a partner.'} />
         <div className="flex flex-wrap items-center gap-3 border-t border-line-soft px-3 py-1.5">
           {partner ? (
             <Button size="sm" variant="secondary" className={ROW_BTN} onClick={() => setManaging(partner)}>
@@ -201,7 +202,7 @@ function AddPartnerForm({ actions, onDone }: { actions: Actions; onDone: () => v
   );
 }
 
-function ClientTable({ clients, act, empty }: { clients: ClientDto[]; act: PeopleActions; empty: string }) {
+function ClientTable({ clients, act, empty, secondOf }: { clients: ClientDto[]; act: PeopleActions; empty: string; secondOf?: string }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[560px] border-separate border-spacing-0" aria-label="Clients of the picked partner">
@@ -223,6 +224,7 @@ function ClientTable({ clients, act, empty }: { clients: ClientDto[]; act: Peopl
               <tr key={c.id}>
                 <td className={cn(TD, 'max-w-[240px] truncate font-medium')} title={c.name}>
                   {c.name}
+                  {secondOf && c.partnerId !== secondOf ? <span className="ml-1.5 rounded-sm bg-surface-sunken px-1 text-[11px] font-normal text-ink-muted">second</span> : null}
                 </td>
                 <td className={cn(TD, 'text-right tabular-nums')}>{`${c.creditDays}d`}</td>
                 <td className={cn(TD, 'max-w-[220px] truncate')} title={c.billingEmail ?? undefined}>

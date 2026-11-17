@@ -1,3 +1,4 @@
+import { clientKey } from './client-key';
 import { emailColor, escapeHtml } from '@/lib/email/email-layout';
 import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 import { foreignAmountHeader } from './currencies';
@@ -48,6 +49,8 @@ export type SummaryEmailInput = {
   signerName: string;
   /** Optional: only this partner's rows (a per-partner email). */
   partnerSlug?: string | null;
+  /** With `partnerSlug`: the client keys the partner is a second partner on; their rows are included too. */
+  alsoClientKeys?: string[];
 };
 
 export function summaryEmailSubject(today: string): string {
@@ -55,8 +58,14 @@ export function summaryEmailSubject(today: string): string {
   return `Receivables update - ${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })}`;
 }
 
+/** A partner's rows: the clients they lead and the clients they are a second partner on. */
+export function partnerRows(rows: SnapshotRow[], partnerSlug: string, alsoClientKeys: string[] = []): SnapshotRow[] {
+  const also = new Set(alsoClientKeys);
+  return rows.filter((r) => r.partnerSlug === partnerSlug || also.has(clientKey(r.clientName)));
+}
+
 export function summaryEmailHtml(input: SummaryEmailInput): string {
-  const rows = input.partnerSlug ? input.rows.filter((r) => r.partnerSlug === input.partnerSlug) : input.rows;
+  const rows = input.partnerSlug ? partnerRows(input.rows, input.partnerSlug, input.alsoClientKeys) : input.rows;
   const received = rows.filter((r) => receivedThisWeek(r, input.today));
   const paidItems = [...new Set(received.map((r) => `${r.clientName} - ${monthLong(r.invoiceMonth)}`))];
   const paidBlock = paidItems.length

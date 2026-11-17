@@ -7,4 +7,5 @@ export const clientFields = {
   billingEmail: z.union([z.string().email('email').max(200, 'email'), z.literal(''), z.null()]).optional(),
   billingCc: z.array(z.string().email('email').max(200, 'email')).max(10, 'email').optional(),
   partnerId: z.string().uuid('partner').nullable().optional(),
+  coPartnerIds: z.array(z.string().uuid('partner')).max(10, 'partner').optional(),
 };

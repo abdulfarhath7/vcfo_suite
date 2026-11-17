@@ -174,6 +174,12 @@ function Row({
   const picked = s.picked.has(inv.id);
   const partnerName = (inv.partnerId && partners.find((p) => p.id === inv.partnerId)?.name) || '';
   const choices = partners.filter((p) => p.active || p.id === inv.partnerId);
+  const co = (inv.clientId && s.coPartnerNames.get(inv.clientId)) || [];
+  const coChip = co.length ? (
+    <span className="shrink-0 rounded-sm bg-surface-sunken px-1 text-[11px] text-ink-muted" title={`Second partner${co.length > 1 ? 's' : ''}: ${co.join(', ')}`}>
+      {`+${co.length}`}
+    </span>
+  ) : null;
   const bg = picked ? 'bg-brand-soft/50' : inv.status === 'received' ? 'bg-positive-soft/30' : 'bg-surface-raised';
   return (
     <tr className={cn('group', bg)} data-invoice={inv.id}>
@@ -210,18 +216,21 @@ function Row({
         </span>
       </td>
       <td className={TD}>
-        {!editLabels ? (
-          <span className="block truncate px-1.5">{partnerName || '—'}</span>
-        ) : (
-          <select className={cn(CELL, 'cursor-pointer truncate pr-1')} aria-label={`Client partner of ${name}`} value={inv.partnerId ?? ''} onChange={(e) => s.edit(inv, { partnerId: e.target.value || null })}>
-            <option value="">No partner</option>
-            {choices.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <span className="flex min-w-0 items-center gap-1">
+          {!editLabels ? (
+            <span className="block min-w-0 truncate px-1.5">{partnerName || '—'}</span>
+          ) : (
+            <select className={cn(CELL, 'min-w-0 cursor-pointer truncate pr-1')} aria-label={`Client partner of ${name}`} value={inv.partnerId ?? ''} onChange={(e) => s.edit(inv, { partnerId: e.target.value || null })}>
+              <option value="">No partner</option>
+              {choices.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {coChip}
+        </span>
       </td>
       <td className={TD}>
         {readOnly ? (

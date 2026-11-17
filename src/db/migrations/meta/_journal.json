@@ -428,6 +428,13 @@
       "when": 1794940031349,
       "tag": "0060_receivables_rollup_weekdays",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1794941229332,
+      "tag": "0061_receivables_client_partners",
+      "breakpoints": true
     }
   ]
 }

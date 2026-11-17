@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { receivedEmailSource, startEmailLog } from '@/db/repositories/receivables';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
+import { partnerOwns } from '@/lib/receivables/co-partners';
 import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { outlookErrorCode } from '@/lib/receivables/summary-send';
@@ -29,11 +30,10 @@ export async function GET(request: Request, context: RouteContext) {
   try {
     const src = await receivedEmailSource(guard.ctx, id, ids);
     if (!src.invoices.length) return NextResponse.json({ error: 'nothing_received' }, { status: 404 });
-    const owners = [...new Set(src.invoices.map((i) => i.partnerId).filter(Boolean))];
-    // The default To is the invoices' partner, and only when they all belong to one partner.
-    const owner = owners.length === 1 && src.invoices.every((i) => i.partnerId === owners[0]) ? src.partners.find((p) => p.id === owners[0]) : undefined;
-    const to = owner ? [{ name: owner.name, email: owner.email }] : [];
-    const mail = paymentReceivedEmail({ recipientName: owner?.name ?? 'Team', senderName: guard.ctx.name || 'SBC', invoices: src.invoices });
+    // The default To is every partner (lead or second) who owns all of these invoices.
+    const owners = src.partners.filter((p) => src.invoices.every((i) => partnerOwns(p.id, i, src.links)));
+    const to = owners.map((p) => ({ name: p.name, email: p.email }));
+    const mail = paymentReceivedEmail({ recipientName: owners.length === 1 ? owners[0].name : 'Team', senderName: guard.ctx.name || 'SBC', invoices: src.invoices });
     const contacts = [...src.partners.map((p) => ({ name: p.name, email: p.email })), ...src.clientContacts];
     const body: ReceivedEmailDraftDto = { invoiceIds: src.invoices.map((i) => i.id), subject: mail.subject, html: mail.html, to, contacts };
     return NextResponse.json(body);
@@ -67,7 +67,7 @@ export async function POST(request: Request, context: RouteContext) {
     // A client partner never sees another partner's invoice.
     for (const r of [...people.to, ...people.cc]) {
       const p = src.partners.find((x) => x.email.trim().toLowerCase() === r.email.trim().toLowerCase());
-      if (p && src.invoices.some((i) => i.partnerId !== p.id)) return NextResponse.json({ error: 'partner_elsewhere' }, { status: 400 });
+      if (p && src.invoices.some((i) => !partnerOwns(p.id, i, src.links))) return NextResponse.json({ error: 'partner_elsewhere' }, { status: 400 });
     }
     await assertOutlookReady(guard.ctx);
     const first = people.to[0];
