@@ -12,7 +12,7 @@ import { OUTLOOK_CONNECT_HREF } from '../ComposeSummary';
 import { HOURS, shortHour, stamp, type SaveSettings } from './shared';
 
 /**
- * The right half of the People tab's top row: the sheet-wide email switches (new invoice, revised,
+ * The People tab's strip of sheet-wide email switches (new invoice, revised,
  * and the roll-up interval and hour) with the next roll-up time, then the Outlook and WhatsApp
  * status as two small dots. Each dot opens a pop-over with the details and its action.
  */
@@ -20,17 +20,17 @@ import { HOURS, shortHour, stamp, type SaveSettings } from './shared';
 export function EmailSwitches({ people, saveSettings }: { people: PeopleDto; saveSettings: SaveSettings }) {
   const s = people.settings;
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px]" role="group" aria-label="Sheet email switches">
-      <span className="text-ink-muted">Emails:</span>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-line bg-surface-raised px-4 py-2.5 text-[13px]" role="group" aria-label="Sheet email switches">
+      <span className="font-medium text-ink">Automatic emails</span>
       <SwitchItem id="rcv-sw-new" label="New" title="New invoice emails" checked={s.emailNewInvoiceEnabled} onChange={(v) => saveSettings({ emailNewInvoiceEnabled: v })} />
       <SwitchItem id="rcv-sw-revised" label="Revised" title="Revised invoice emails" checked={s.emailRevisedEnabled} onChange={(v) => saveSettings({ emailRevisedEnabled: v })} />
       <span className="inline-flex items-center gap-1.5">
         <SwitchItem id="rcv-sw-rollup" label="Roll-up every" title="Roll-up emails to partners" checked={s.emailRollupEnabled} onChange={(v) => saveSettings({ emailRollupEnabled: v })} />
-        <FilterSelect aria-label="Roll-up interval" value={String(s.rollupEveryDays)} onChange={(e) => saveSettings({ rollupEveryDays: Number(e.target.value) })} options={[1, 2, 3, 5, 7, 14].map((d) => ({ value: String(d), label: `${d}d` }))} />
+        <FilterSelect className="!h-7 !text-[12.5px]" aria-label="Roll-up interval" value={String(s.rollupEveryDays)} onChange={(e) => saveSettings({ rollupEveryDays: Number(e.target.value) })} options={[1, 2, 3, 5, 7, 14].map((d) => ({ value: String(d), label: `${d}d` }))} />
         <span className="text-ink-muted">at</span>
-        <FilterSelect aria-label="Roll-up hour (IST)" value={String(s.sendHourIst)} onChange={(e) => saveSettings({ sendHourIst: Number(e.target.value) })} options={HOURS.map((h) => ({ value: String(h), label: shortHour(h) }))} />
+        <FilterSelect className="!h-7 !text-[12.5px]" aria-label="Roll-up hour (IST)" value={String(s.sendHourIst)} onChange={(e) => saveSettings({ sendHourIst: Number(e.target.value) })} options={HOURS.map((h) => ({ value: String(h), label: shortHour(h) }))} />
       </span>
-      <span className="whitespace-nowrap text-[11.5px] text-ink-muted" title="The next roll-up and leadership digest, India time">
+      <span className="ml-auto whitespace-nowrap text-[12px] text-ink-muted" title="The next roll-up and leadership digest, India time">
         {`Next roll-up ${people.nextRollupAt ? stamp(people.nextRollupAt) : 'off'} · digest ${people.nextDigestAt ? stamp(people.nextDigestAt) : 'off'}`}
       </span>
     </div>
@@ -43,7 +43,7 @@ function SwitchItem({ id, label, title, checked, onChange }: { id: string; label
       <label htmlFor={id} className="cursor-pointer">
         {label}
       </label>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      <Switch size="sm" id={id} checked={checked} onCheckedChange={onChange} />
     </span>
   );
 }

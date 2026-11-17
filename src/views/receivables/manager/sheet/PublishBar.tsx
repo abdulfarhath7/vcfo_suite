@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { Copy, ListChecks, Mail, Share2 } from 'lucide-react';
+import { Copy, ListChecks, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { Input } from '@/components/ui/input';
@@ -10,21 +10,22 @@ import { toastError, toastSuccess } from '@/lib/toast-errors';
 import type { ManagerSheetDto } from '@/lib/receivables/wire';
 import { usePendingChanges, type useReceivablesActions } from '@/hooks/use-receivables';
 import { stamp } from '../../format';
-import { ComposeSummary } from '../ComposeSummary';
 import { ShareDialog } from '../ShareDialog';
 import { changeDiff } from './change-text';
 
 type Actions = ReturnType<typeof useReceivablesActions>;
 
+/** A toolbar button as tall as the 12.5px text beside it (the base size is taller, so `!`). */
+export const TOOL_BTN = '!h-7 !px-2.5 !text-[12.5px] [&_svg]:!size-3.5';
+
 const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong. Try again.');
 
 /**
- * The sheet's one toolbar (compact layout, 17 Nov 2026; it began as the Phase 10 publish bar).
- * Left: the sheet's own buttons passed as `leading` (Add invoice, Import from Tally), then Send
- * email. Middle: the draft state with a "What changes" list of exactly what the next Update
- * publishes, an optional Update note and the Update button (a plain "Up to date" mark otherwise),
+ * The publish state at the right end of the sheet's one toolbar row (17 Nov 2026; it began as the
+ * Phase 10 publish bar): the draft count with a "What changes" list of exactly what the next
+ * Update publishes, an optional Update note and the Update button (an "Up to date" mark otherwise),
  * and the last published stamp. Share and Copy link show only with `external` (the
- * RECEIVABLES_EXTERNAL flag). `trailing` (the approval queue button) sits at the right end.
+ * RECEIVABLES_EXTERNAL flag). `leading` and `trailing` sit before and after it.
  */
 export function PublishBar({
   data,
@@ -32,14 +33,17 @@ export function PublishBar({
   leading,
   trailing,
   external = false,
+  onEmail,
 }: {
   data: ManagerSheetDto;
   actions: Actions;
   leading?: ReactNode;
   trailing?: ReactNode;
   external?: boolean;
+  /** Opens Send email (the Share dialog offers it too). */
+  onEmail: () => void;
 }) {
-  const [open, setOpen] = useState<'email' | 'share' | null>(null);
+  const [open, setOpen] = useState<'share' | null>(null);
   const [listOpen, setListOpen] = useState(false);
   const [note, setNote] = useState('');
   const dirty = data.unpublishedChanges;
@@ -66,13 +70,8 @@ export function PublishBar({
     });
 
   return (
-    <section aria-label="Sheet actions" className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+    <span role="group" aria-label="Publish" className="inline-flex flex-wrap items-center gap-1.5 text-[12.5px]">
       {leading}
-      <Button size="sm" variant="secondary" onClick={() => setOpen('email')}>
-        <Mail aria-hidden />
-        Send email
-      </Button>
-      <span aria-hidden className="mx-0.5 h-5 w-px bg-line" />
       {dirty ? (
         <>
           <PopoverCard
@@ -83,7 +82,7 @@ export function PublishBar({
             title={`What Update changes · ${dirty}`}
             footer={<span className="mr-auto text-[12px] text-ink-muted">Pauses and notes are not listed.</span>}
             trigger={
-              <Button size="sm" variant="quiet" title="What the next Update changes">
+              <Button size="sm" variant="quiet" className={TOOL_BTN} title="What the next Update changes">
                 <ListChecks aria-hidden />
                 {`Draft · ${dirty}`}
               </Button>
@@ -117,9 +116,9 @@ export function PublishBar({
             onChange={(e) => setNote(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !actions.publish.isPending && publish()}
             placeholder="Note (optional)"
-            className="h-control-sm w-[150px] text-[12.5px]"
+            className="!h-7 w-[140px] text-[12.5px]"
           />
-          <Button size="sm" onClick={publish} disabled={actions.publish.isPending}>
+          <Button size="sm" className={TOOL_BTN} onClick={publish} disabled={actions.publish.isPending}>
             {actions.publish.isPending ? 'Updating…' : `Update · ${dirty}`}
           </Button>
         </>
@@ -133,20 +132,18 @@ export function PublishBar({
       </span>
       {external ? (
         <>
-          <Button size="sm" variant="quiet" onClick={() => setOpen('share')}>
+          <Button size="sm" variant="quiet" className={TOOL_BTN} onClick={() => setOpen('share')}>
             <Share2 aria-hidden />
             Share
           </Button>
-          <Button size="sm" variant="quiet" onClick={copy}>
+          <Button size="sm" variant="quiet" className={TOOL_BTN} onClick={copy}>
             <Copy aria-hidden />
             Copy link
           </Button>
         </>
       ) : null}
-      <span className="flex-1" />
       {trailing}
-      {open === 'email' ? <ComposeSummary data={data} actions={actions} onClose={() => setOpen(null)} /> : null}
-      {open === 'share' ? <ShareDialog data={data} onClose={() => setOpen(null)} onEmail={() => setOpen('email')} /> : null}
-    </section>
+      {open === 'share' ? <ShareDialog data={data} onClose={() => setOpen(null)} onEmail={onEmail} /> : null}
+    </span>
   );
 }

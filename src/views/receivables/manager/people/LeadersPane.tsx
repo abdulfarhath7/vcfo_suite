@@ -21,9 +21,9 @@ export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; 
   const [email, setEmail] = useState('');
   return (
     <div className="overflow-hidden rounded-md border border-line bg-surface-raised">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-surface-sunken px-3 py-1.5 text-[12.5px]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface-sunken px-4 py-2.5 text-[13px]">
         <span className="inline-flex items-center gap-1.5">
-          <Switch id="rcv-sw-digest" checked={s.digestEnabled} onCheckedChange={(v) => saveSettings({ digestEnabled: v })} />
+          <Switch size="sm" id="rcv-sw-digest" checked={s.digestEnabled} onCheckedChange={(v) => saveSettings({ digestEnabled: v })} />
           <label htmlFor="rcv-sw-digest" className="cursor-pointer font-medium">
             Weekly digest
           </label>
@@ -38,20 +38,21 @@ export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; 
       </div>
       <ul aria-label="Digest recipients">
         {people.digestRecipients.map((r) => (
-          <li key={r.id} className="flex h-7 items-center gap-2.5 border-b border-line-soft px-3 text-[12.5px]">
+          <li key={r.id} className="flex h-10 items-center gap-3 border-b border-line-soft px-4 text-[13px]">
             <Switch
+              size="sm"
               checked={r.active}
               onCheckedChange={(v) => act.updateRecipient.mutate({ id: r.id, active: v }, { onError: (e) => toastError('Not saved', errorText(e)) })}
               aria-label={`Send the digest to ${r.name}`}
             />
             <span className={cn('font-medium', !r.active && 'text-ink-faint')}>{r.name}</span>
             <span className="min-w-0 flex-1 truncate text-ink-muted">{r.email}</span>
-            <Button size="iconSm" variant="quiet" className="!h-6 !w-6" aria-label={`Remove ${r.name}`} onClick={() => act.removeRecipient.mutate(r.id, { onError: (e) => toastError('Not removed', errorText(e)) })}>
+            <Button size="iconSm" variant="quiet" className="!h-7 !w-7" aria-label={`Remove ${r.name}`} onClick={() => act.removeRecipient.mutate(r.id, { onError: (e) => toastError('Not removed', errorText(e)) })}>
               <Trash2 aria-hidden />
             </Button>
           </li>
         ))}
-        {!people.digestRecipients.length ? <li className="border-b border-line-soft px-3 py-1.5 text-[12.5px] text-ink-muted">No recipients yet.</li> : null}
+        {!people.digestRecipients.length ? <li className="border-b border-line-soft px-4 py-3 text-[13px] text-ink-muted">No recipients yet.</li> : null}
       </ul>
       <form
         className="flex flex-wrap items-center gap-2 px-3 py-1.5"
@@ -61,8 +62,8 @@ export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; 
           act.addRecipient.mutate({ name: name.trim(), email: email.trim() }, { onSuccess: () => (setName(''), setEmail('')), onError: (err) => toastError('Not added', errorText(err)) });
         }}
       >
-        <Input className="h-7 min-w-[160px] flex-1 text-[12.5px]" aria-label="Recipient name" placeholder="Name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
-        <Input className="h-7 min-w-[200px] flex-1 text-[12.5px]" aria-label="Recipient email" placeholder="Email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} />
+        <Input className="h-8 min-w-[160px] flex-1 text-[13px]" aria-label="Recipient name" placeholder="Name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+        <Input className="h-8 min-w-[200px] flex-1 text-[13px]" aria-label="Recipient email" placeholder="Email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} />
         <Button type="submit" size="sm" variant="secondary" className={ROW_BTN} disabled={!name.trim() || !email.trim() || act.addRecipient.isPending}>
           <Plus aria-hidden />
           Add recipient

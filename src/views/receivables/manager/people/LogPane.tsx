@@ -28,7 +28,7 @@ const WA: Record<string, { text: string; tone: string }> = {
 export function LogPane({ people, act }: { people: PeopleDto; act: PeopleActions }) {
   return (
     <div className="overflow-hidden rounded-md border border-line bg-surface-raised">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line bg-surface-sunken px-3 py-1 text-[12px]">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line bg-surface-sunken px-4 py-2 text-[12.5px]">
         <span className="font-semibold uppercase tracking-[.04em] text-ink-muted">Last 50 emails</span>
         <span className="text-ink-muted">
           {'Next roll-up '}
@@ -43,7 +43,7 @@ export function LogPane({ people, act }: { people: PeopleDto; act: PeopleActions
         {people.emailLog.map((l) => (
           <LogRow key={l.id} log={l} retrying={act.retryEmail.isPending} onRetry={() => act.retryEmail.mutate(l.id, { onSuccess: () => toastSuccess('Sending again', 'From your Outlook.'), onError: (e) => toastError('Not retried', errorText(e)) })} />
         ))}
-        {!people.emailLog.length ? <li className="px-3 py-1.5 text-center text-[12.5px] text-ink-muted">No emails yet.</li> : null}
+        {!people.emailLog.length ? <li className="px-4 py-3 text-center text-[13px] text-ink-muted">No emails yet.</li> : null}
       </ul>
     </div>
   );
@@ -54,7 +54,7 @@ function LogRow({ log, onRetry, retrying }: { log: EmailLogDto; onRetry: () => v
   const wa = log.whatsappStatus ? WA[log.whatsappStatus] : null;
   const error = log.error ? (ERROR_LABEL[log.error] ?? log.error) : null;
   return (
-    <li className="flex h-7 min-w-[720px] items-center gap-2.5 border-b border-line-soft px-3 text-[12.5px] last:border-b-0">
+    <li className="flex h-10 min-w-[720px] items-center gap-3 border-b border-line-soft px-4 text-[13px] last:border-b-0">
       <span className={cn('w-3 text-center font-semibold', st.tone)} title={st.text}>
         <span aria-hidden>{st.mark}</span>
         <span className="sr-only">{st.text}</span>

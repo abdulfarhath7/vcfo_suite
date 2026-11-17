@@ -25,7 +25,7 @@ export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; peop
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Input type="search" className="h-7 max-w-[260px] text-[12.5px]" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" />
+        <Input type="search" className="h-8 max-w-[280px] text-[13px]" placeholder="Search clients" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search clients" />
         <span className="text-[12px] text-ink-muted">{`${shown.length} of ${people.clients.length}`}</span>
         <span className="flex-1" />
         <Button size="sm" variant="secondary" className={ROW_BTN} onClick={() => setEditing('new')}>
@@ -103,7 +103,7 @@ export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; peop
                         <Send aria-hidden />
                         Send statement
                       </Button>
-                      <Button size="iconSm" variant="quiet" className="!h-6 !w-6" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
+                      <Button size="iconSm" variant="quiet" className="!h-7 !w-7" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
                         <Pencil aria-hidden />
                       </Button>
                     </span>

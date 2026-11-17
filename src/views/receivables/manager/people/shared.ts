@@ -33,13 +33,13 @@ export const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Some
 export const stamp = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: 'numeric', minute: '2-digit' }) : '—';
 
-/* Dense tables: a 28px row, 12.5px text and an 11px uppercase head. */
-export const TH = 'whitespace-nowrap border-b border-line bg-surface-sunken px-2 py-1 text-left text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted';
-export const TD = 'h-7 border-t border-line-soft px-2 py-0.5 align-middle text-[12.5px]';
-/** A button that fits a 28px row. The base button sets its height with a custom token, so the override needs `!`. */
-export const ROW_BTN = '!h-6 !px-2 !text-[12px]';
-/** A small native select or number input inside a dense row. */
-export const ROW_INPUT = 'h-6 rounded-md border border-line bg-surface-raised px-1.5 text-[12.5px]';
+/* Tables: a 40px row, 13px text and an 11.5px uppercase head; roomy enough to read, no wasted space. */
+export const TH = 'whitespace-nowrap border-b border-line bg-surface-sunken px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-[.04em] text-ink-muted';
+export const TD = 'h-10 border-t border-line-soft px-3 py-1 align-middle text-[13px]';
+/** A button the same size as its row's text. The base button sets its height with a custom token, so the override needs `!`. */
+export const ROW_BTN = '!h-7 !px-2.5 !text-[12.5px] [&_svg]:!size-3.5';
+/** A small native select or number input inside a row. */
+export const ROW_INPUT = 'h-7 rounded-md border border-line bg-surface-raised px-2 text-[13px]';
 
 /** Emails a client its open invoices from the user's Outlook ("Send statement"). */
 export function sendStatement(act: PeopleActions, c: ClientDto) {

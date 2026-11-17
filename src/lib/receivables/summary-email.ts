@@ -22,20 +22,21 @@ const fcFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maxi
 
 /*
  * The SBC table theme (owner, 17 Nov 2026), the same as the v2 emails in email-v2.ts: the month
- * title and column heads filled with the SBC orange (`highlight`, white bold text), rows banded
- * white and a very light orange, a 1 px orange outer edge with light grey lines inside, totals bold
- * under an orange rule, amounts right-aligned in Roboto Mono, overdue days in red.
+ * title and column heads filled with SBC orange (#e35f2a, white bold text), rows banded white and a
+ * light peach, thin grey lines inside and around, totals bold under an orange rule, amounts
+ * right-aligned in Roboto Mono, overdue days in red.
  */
-const ORANGE = emailColor('highlight');
-const ORANGE_EDGE = emailColor('highlight-bright');
-const BAND = '#fff7ee';
-const GRID = '#e6e7ea';
+// The owner's SBC table theme (17 Nov 2026), the same values as email-v2.ts.
+const ORANGE = '#e35f2a';
+const ORANGE_EDGE = '#e35f2a';
+const BAND = '#fdeee8';
+const GRID = '#d6d6d6';
 const RED = emailColor('danger');
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
 const MONO = SPECTRUM_EMAIL_FONTS.mono;
-const CELL = `border:1px solid ${GRID};padding:5px 9px;font-size:12.5px;font-family:${SANS};color:#2f3237;`;
-const HEAD = `border:1px solid ${ORANGE};padding:6px 9px;font-size:12.5px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:center;`;
-const TABLE = `border-collapse:collapse;margin:10px 0;min-width:560px;border:1px solid ${ORANGE_EDGE};`;
+const CELL = `border:1px solid ${GRID};padding:8px 11px;font-size:14px;font-family:${SANS};color:#1a1a1a;`;
+const HEAD = `border:1px solid ${GRID};padding:9px 11px;font-size:14px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:left;`;
+const TABLE = `border-collapse:collapse;margin:10px 0;min-width:560px;border:1px solid ${GRID};`;
 const NUM = `font-family:${MONO};text-align:right;`;
 const TOTAL = `font-weight:bold;border-top:2px solid ${ORANGE_EDGE};`;
 const PAID_BG = 'background:#e8f5e3;';

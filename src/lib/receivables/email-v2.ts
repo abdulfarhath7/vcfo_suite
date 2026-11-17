@@ -5,27 +5,31 @@ import { daysLeft, sheetDate } from './dates';
 /**
  * RECEIVABLES v2 EMAILS — pure HTML and text builders (docs/specs/receivables/V2.md).
  *
- * The body is plain white with dark grey text: no coloured band, no header, no button. Only the
- * tables carry the SBC theme: an orange header row with white bold text, rows alternating white
- * and a very light orange, a 1 px orange outer edge with light grey lines inside, a bold total row
- * under an orange rule, amounts right-aligned in Roboto Mono and overdue amounts in red. The
+ * The body is plain white with dark text: no coloured band, no header, no button. Only the tables
+ * carry the SBC theme: an SBC orange header row with white bold text, rows alternating white and a
+ * light peach, thin grey lines inside and around, a bold total row under an orange rule, amounts
+ * right-aligned in Roboto Mono and overdue amounts in red. The
  * content is at most 560 px wide and each table scrolls inside itself on a phone. Every table shows
  * Invoice no., Invoice date, Due date and Amount ₹. There is never a link to the tool. Each email
  * closes with "Regards, <sender name> · SBC".
  *
- * Colours come from the Spectrum email tokens. The design token `brand` is the app's purple, so
- * the SBC orange here is `highlight` (text-safe, the header fill with white text) and
- * `highlight-bright` (the edge and the total rule).
+ * Colours: the owner's own SBC table theme (see the constants below), not the app's purple `brand`.
  */
 
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
 const MONO = SPECTRUM_EMAIL_FONTS.mono;
-const INK = '#2f3237';
+/*
+ * The SBC table theme the owner picked on 17 Nov 2026 (the firm's "MY DAY" email): an SBC orange
+ * header row (#e35f2a) with white bold text, rows banded white and a light peach (#fdeee8), and
+ * thin grey grid lines (#d6d6d6) inside and around. These three are the owner's own values and win
+ * over the design tokens for email tables; red stays the `danger` token.
+ */
+const INK = '#1a1a1a';
 const MUTED = '#6b7079';
-const ORANGE = emailColor('highlight');
-const ORANGE_EDGE = emailColor('highlight-bright');
-const ORANGE_ROW = '#fff7ee';
-const GRID = '#e6e7ea';
+const ORANGE = '#e35f2a';
+const ORANGE_EDGE = '#e35f2a';
+const ORANGE_ROW = '#fdeee8';
+const GRID = '#d6d6d6';
 const RED = emailColor('danger');
 
 export type EmailInvoice = {
@@ -80,8 +84,8 @@ ${bodyHtml}
 </html>`;
 }
 
-const TH = `padding:8px 10px;background:${ORANGE};color:#ffffff;font-family:${SANS};font-size:12.5px;line-height:16px;font-weight:700;text-align:left;white-space:nowrap;`;
-const TD = `padding:7px 10px;border-top:1px solid ${GRID};font-family:${SANS};font-size:13px;line-height:18px;color:${INK};white-space:nowrap;`;
+const TH = `padding:9px 11px;background:${ORANGE};border:1px solid ${GRID};color:#ffffff;font-family:${SANS};font-size:14px;line-height:18px;font-weight:700;text-align:left;white-space:nowrap;`;
+const TD = `padding:8px 11px;border:1px solid ${GRID};font-family:${SANS};font-size:14px;line-height:19px;color:${INK};white-space:nowrap;`;
 const NUM = `font-family:${MONO};text-align:right;`;
 
 type Column = { label: string; num?: boolean };
@@ -102,7 +106,7 @@ function table(columns: Column[], rows: string[][], total?: string[]): string {
     ? `<tr>${total.map((c, j) => `<td style="${TD}${columns[j]?.num ? NUM : ''}font-weight:700;border-top:2px solid ${ORANGE_EDGE};background:#ffffff;">${c}</td>`).join('')}</tr>`
     : '';
   return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 0 14px;max-width:100%;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:480px;border-collapse:collapse;border:1px solid ${ORANGE_EDGE};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:480px;border-collapse:collapse;border:1px solid ${GRID};">
 <tr>${head}</tr>${body}${foot}
 </table></div>`;
 }

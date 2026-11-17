@@ -47,11 +47,11 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
     actions.updatePartner.mutate({ id, ...patch }, { onError: (e) => toastError('Not saved', errorText(e)) });
 
   return (
-    <div className="grid overflow-hidden rounded-md border border-line bg-surface-raised md:grid-cols-[230px_minmax(0,1fr)]">
+    <div className="grid overflow-hidden rounded-md border border-line bg-surface-raised md:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="flex flex-col border-b border-line md:border-b-0 md:border-r" aria-label="Client partners">
-        <div className="flex h-8 items-center justify-between border-b border-line bg-surface-sunken pl-3 pr-1">
+        <div className="flex h-10 items-center justify-between border-b border-line bg-surface-sunken pl-4 pr-2">
           <span className="text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted">{`Partners · ${data.partners.filter((p) => p.active).length} active`}</span>
-          <Button size="iconSm" variant="quiet" className="!h-6 !w-6" aria-label={adding ? 'Close the add partner form' : 'Add a client partner'} aria-expanded={adding} onClick={() => setAdding((v) => !v)}>
+          <Button size="iconSm" variant="quiet" className="!h-7 !w-7" aria-label={adding ? 'Close the add partner form' : 'Add a client partner'} aria-expanded={adding} onClick={() => setAdding((v) => !v)}>
             {adding ? <X aria-hidden /> : <Plus aria-hidden />}
           </Button>
         </div>
@@ -65,9 +65,9 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
       </aside>
 
       <section className="flex min-w-0 flex-col" aria-label={partner ? `Partner ${partner.name}` : 'Clients with no partner'}>
-        <div className="flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-line px-3 py-1.5 text-[12.5px]">
+        <div className="flex min-h-12 flex-wrap items-center gap-x-5 gap-y-2 border-b border-line px-4 py-2 text-[13px]">
           <span className="min-w-0 flex-1 truncate">
-            <b className={cn('text-[13px] font-semibold', partner && !partner.active && 'text-ink-faint')}>{partner?.name ?? 'No partner'}</b>
+            <b className={cn('text-[14px] font-semibold', partner && !partner.active && 'text-ink-faint')}>{partner?.name ?? 'No partner'}</b>
             <span className="text-ink-muted">{partner ? ` · ${partner.email}` : ' · these clients get no partner emails'}</span>
           </span>
           {partner ? (
@@ -131,13 +131,13 @@ function PartnerItem({ label, stat, on, faint, onPick }: { label: string; stat: 
         onClick={onPick}
         title={stat?.clients.map((c) => c.name).join(', ') || undefined}
         className={cn(
-          'flex h-7 w-full items-center gap-2 border-l-[3px] px-2.5 text-left text-[12.5px] transition-colors hover:bg-surface-sunken',
+          'flex w-full flex-col items-start gap-0.5 border-l-[3px] px-4 py-2 text-left text-[13px] transition-colors hover:bg-surface-sunken',
           on ? 'border-brand bg-surface-sunken font-semibold text-ink' : 'border-transparent',
           !on && faint && 'text-ink-faint',
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{label}</span>
-        <span className="whitespace-nowrap font-mono text-[11.5px] font-normal tabular-nums text-ink-muted">{stat?.openCount ? `${stat.openCount} · ${compactInr(stat.openAmount)}` : '—'}</span>
+        <span className="w-full min-w-0 truncate">{label}</span>
+        <span className="whitespace-nowrap text-[12px] font-normal tabular-nums text-ink-muted">{stat?.openCount ? `${stat.openCount} open · ${compactInr(stat.openAmount)}` : 'nothing open'}</span>
       </button>
     </li>
   );
@@ -149,7 +149,7 @@ function SwitchItem({ id, label, checked, onChange }: { id: string; label: strin
       <label htmlFor={id} className="cursor-pointer text-ink-2">
         {label}
       </label>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+      <Switch size="sm" id={id} checked={checked} onCheckedChange={onChange} />
     </span>
   );
 }
@@ -169,8 +169,8 @@ function AddPartnerForm({ actions, onDone }: { actions: Actions; onDone: () => v
         );
       }}
     >
-      <Input className="h-7 text-[12.5px]" aria-label="Partner name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-      <Input className="h-7 text-[12.5px]" aria-label="Partner email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} placeholder="name@sbcllp.in" />
+      <Input className="h-8 text-[13px]" aria-label="Partner name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+      <Input className="h-8 text-[13px]" aria-label="Partner email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} placeholder="name@sbcllp.in" />
       <Button type="submit" size="sm" className={ROW_BTN} disabled={!name.trim() || !email.trim() || actions.addPartner.isPending}>
         <Plus aria-hidden />
         Add partner

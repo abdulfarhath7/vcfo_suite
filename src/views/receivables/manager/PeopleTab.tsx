@@ -15,9 +15,9 @@ import { errorText, type Actions } from './people/shared';
 
 /**
  * The People tab (receivables v2, docs/specs/receivables/V2.md), which replaced the Partners tab.
- * One compact top row holds four sub-tabs on the left and, on the right, the sheet-wide email
- * switches (new invoice, revised, roll-up interval and hour, with the next sends) and the Outlook
- * and WhatsApp (DoubleTick) status dots, which open their details and actions.
+ * The top row holds four sub-tabs on the left and the Outlook and WhatsApp (DoubleTick) status
+ * dots on the right, which open their details and actions. Under it, one strip holds the
+ * sheet-wide email switches (new invoice, revised, roll-up interval and hour, the next sends).
  *  - Partners: a master–detail split. The partner list with open counts and short totals on the
  *    left; the picked partner's switches, Edit, their clients and "Manage clients" on the right.
  *  - Clients: every client with partner and credit days edited in place, and "Send statement".
@@ -45,11 +45,10 @@ export function PeopleTab({ data, actions, outlook, settingsHref }: { data: Mana
     { key: 'log', label: 'Log', count: failed ? `${failed} failed` : undefined },
   ];
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <SpectrumTabs label="People" items={items} value={sub} onChange={(k) => setSub(k as Sub)} />
         <span className="flex-1" />
-        <EmailSwitches people={p} saveSettings={saveSettings} />
         <Integrations
           outlook={outlook}
           whatsapp={p.whatsapp}
@@ -58,6 +57,8 @@ export function PeopleTab({ data, actions, outlook, settingsHref }: { data: Mana
           onTest={() => act.testWhatsApp.mutate(undefined, { onSuccess: (r) => toastSuccess('Test sent', `To ${r.to}. Check WhatsApp on that phone.`), onError: (e) => toastError('Not sent', errorText(e)) })}
         />
       </div>
+      {/* The sheet-wide automatic emails, in a strip of their own under the tabs. */}
+      <EmailSwitches people={p} saveSettings={saveSettings} />
       {sub === 'partners' ? <PartnersPane data={data} people={p} actions={actions} act={act} /> : null}
       {sub === 'clients' ? <ClientsPane data={data} people={p} act={act} /> : null}
       {sub === 'leaders' ? <LeadersPane people={p} act={act} saveSettings={saveSettings} /> : null}

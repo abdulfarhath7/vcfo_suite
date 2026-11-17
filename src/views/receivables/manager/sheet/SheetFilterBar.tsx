@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { CheckCircle2, Download, FilterX, Flag, Link2, Search, SlidersHorizontal, UserRoundPlus, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { DensityMenu } from '@/components/ui/density-menu';
+import { TOOL_BTN } from './PublishBar';
 import { PopoverCard } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { BulkBar } from '@/components/ui/bulk-bar';
@@ -27,13 +29,15 @@ function listOptions(list: string[] | undefined, all: string, noun: string, choi
 }
 
 /**
- * The sheet's filter bar (compact layout, 17 Nov 2026): the search box, one Filters button that
+ * The sheet's one toolbar row (17 Nov 2026): `before` (Invoice, Import Tally, Send email), the
+ * search box, one Filters button that
  * opens partner, client, status, month and currency (all kept in the URL), the filters in use as
  * small chips with a ×, v2's "Fix in Tally" toggle, Clear, Share this view (only with
- * RECEIVABLES_EXTERNAL) and the row density switch. Under it, the count and total of the rows
+ * RECEIVABLES_EXTERNAL), `after` (the publish state and the approval queue) and the row density
+ * switch. Under it, the count and total of the rows
  * shown, or the bulk bar while rows are picked.
  */
-export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; partners: Partner[]; canShare: boolean }) {
+export function SheetFilterBar({ s, partners, canShare, before, after }: { s: SheetTabState; partners: Partner[]; canShare: boolean; before?: ReactNode; after?: ReactNode }) {
   const f = s.filters;
   const pick = (v: string) => (v === 'all' ? undefined : v === MULTI ? undefined : [v]);
   const active = partners.filter((p) => p.active);
@@ -53,7 +57,10 @@ export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; pa
   const selectClass = 'w-full';
   return (
     <div className="flex flex-col gap-1">
-      <div role="search" aria-label="Filter invoices" className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {before}
+        {before ? <span aria-hidden className="mx-0.5 h-5 w-px bg-line" /> : null}
+        <div role="search" aria-label="Filter invoices" className="contents">
         <label className="relative flex min-w-[180px] flex-[1_1_220px] items-center sm:max-w-[260px]">
           <Search className="pointer-events-none absolute left-2 size-3.5 text-ink-muted" strokeWidth={1.6} aria-hidden />
           <span className="sr-only">Search client, invoice number or partner</span>
@@ -62,7 +69,7 @@ export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; pa
             value={s.search}
             onChange={(e) => s.setSearch(e.target.value)}
             placeholder="Search client, invoice, partner"
-            className="h-control-sm w-full rounded-md border border-line-strong bg-surface-raised pl-7 pr-2 text-[12.5px] text-ink outline-none placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-4 focus-visible:ring-focus-ring/25"
+            className="h-7 w-full rounded-md border border-line-strong bg-surface-raised pl-7 pr-2 text-[12.5px] text-ink outline-none placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-4 focus-visible:ring-focus-ring/25"
           />
         </label>
         <PopoverCard
@@ -72,7 +79,7 @@ export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; pa
           label="Filters"
           title="Filters"
           trigger={
-            <Button size="sm" variant="secondary" aria-label={`Filters${chips.length ? ` (${chips.length} in use)` : ''}`}>
+            <Button size="sm" variant="secondary" className={TOOL_BTN} aria-label={`Filters${chips.length ? ` (${chips.length} in use)` : ''}`}>
               <SlidersHorizontal aria-hidden />
               {chips.length ? `Filters · ${chips.length}` : 'Filters'}
             </Button>
@@ -113,7 +120,7 @@ export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; pa
           </div>
         </PopoverCard>
         {s.tallyMismatches || s.fixInTally ? (
-          <Button size="sm" variant={s.fixInTally ? 'strong' : 'quiet'} aria-pressed={s.fixInTally} onClick={() => s.setFixInTally(!s.fixInTally)} title="Invoices whose approved amount change is not in Tally yet">
+          <Button size="sm" variant={s.fixInTally ? 'strong' : 'quiet'} className={TOOL_BTN} aria-pressed={s.fixInTally} onClick={() => s.setFixInTally(!s.fixInTally)} title="Invoices whose approved amount change is not in Tally yet">
             <Flag aria-hidden />
             {`Fix in Tally${s.tallyMismatches ? ` · ${s.tallyMismatches}` : ''}`}
           </Button>
@@ -127,14 +134,16 @@ export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; pa
           </span>
         ))}
         {s.filtered ? (
-          <Button size="sm" variant="quiet" onClick={s.clearFilters}>
+          <Button size="sm" variant="quiet" className={TOOL_BTN} onClick={s.clearFilters}>
             <FilterX aria-hidden />
             Clear
           </Button>
         ) : null}
+        </div>
         <span className="flex-1" />
+        {after}
         {canShare ? (
-          <Button size="sm" variant="quiet" onClick={() => s.setDialog({ kind: 'share-view' })}>
+          <Button size="sm" variant="quiet" className={TOOL_BTN} onClick={() => s.setDialog({ kind: 'share-view' })}>
             <Link2 aria-hidden />
             Share this view
           </Button>

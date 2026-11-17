@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { FileSpreadsheet, Flag, Plus } from 'lucide-react';
+import { FileSpreadsheet, Flag, Mail, Plus } from 'lucide-react';
 import { SidePanel } from '@/components/ui/side-panel';
 import { Button } from '@/components/ui/button';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
@@ -19,7 +19,8 @@ import { ShareViewDialog } from './ShareViewDialog';
 import { ApprovalPanel } from './sheet/ApprovalPanel';
 import { ChangeAmountDialog } from './sheet/ChangeAmountDialog';
 import { HistoryDrawer } from './sheet/HistoryDrawer';
-import { PublishBar } from './sheet/PublishBar';
+import { PublishBar, TOOL_BTN } from './sheet/PublishBar';
+import { ComposeSummary } from './ComposeSummary';
 import { SheetCards } from './sheet/SheetCards';
 import { BulkReceivedDialog, CreditNoteDialog, DisputeDialog } from './sheet/SheetDialogs';
 import { SheetFilterBar } from './sheet/SheetFilterBar';
@@ -54,6 +55,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
   const imports = useImportActions(data.sheet.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
   const waiting = pending.data?.rows.filter((r) => r.kind !== 'same').length ?? 0;
   const upload = (file: File) =>
     imports.upload.mutate(file, {
@@ -88,17 +90,22 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
     <div className="flex flex-col gap-2">
       <SheetSummary kpis={s.kpis} onStatus={(status) => s.setFilters({ status })} />
 
-      <PublishBar
-        data={data}
-        actions={actions}
-        external={external}
-        leading={
+      {/* The approval queue opens beside the sheet, so the sheet stays in view. */}
+      <SidePanel open={reviewOpen && waiting > 0} onOpenChange={setReviewOpen} title="Awaiting approval" width={1040}>
+        {pending.data?.rows.length ? <ApprovalPanel sheetId={data.sheet.id} pending={{ ...pending.data, warnings: imports.upload.data?.warnings }} partners={data.partners} /> : null}
+      </SidePanel>
+
+      <SheetFilterBar
+        s={s}
+        partners={data.partners}
+        canShare={external}
+        before={
           <>
-            <Button size="sm" onClick={() => s.setDialog({ kind: 'add' })}>
+            <Button size="sm" className={TOOL_BTN} onClick={() => s.setDialog({ kind: 'add' })}>
               <Plus aria-hidden />
               Invoice
             </Button>
-            <Button size="sm" variant="secondary" disabled={imports.upload.isPending} onClick={() => fileRef.current?.click()}>
+            <Button size="sm" variant="secondary" className={TOOL_BTN} disabled={imports.upload.isPending} onClick={() => fileRef.current?.click()}>
               <FileSpreadsheet aria-hidden />
               {imports.upload.isPending ? 'Reading…' : 'Import Tally'}
             </Button>
@@ -113,24 +120,30 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
                 if (file) upload(file);
               }}
             />
+            <Button size="sm" variant="secondary" className={TOOL_BTN} onClick={() => setComposing(true)}>
+              <Mail aria-hidden />
+              Send email
+            </Button>
           </>
         }
-        trailing={
-          waiting ? (
-            <Button size="sm" variant="strong" onClick={() => setReviewOpen(true)}>
-              <Flag aria-hidden />
-              {`${waiting} waiting for approval · Review`}
-            </Button>
-          ) : null
+        after={
+          <PublishBar
+            data={data}
+            actions={actions}
+            external={external}
+            onEmail={() => setComposing(true)}
+            trailing={
+              waiting ? (
+                <Button size="sm" variant="strong" className={TOOL_BTN} onClick={() => setReviewOpen(true)}>
+                  <Flag aria-hidden />
+                  {`${waiting} to approve`}
+                </Button>
+              ) : null
+            }
+          />
         }
       />
-
-      {/* The approval queue opens beside the sheet, so the sheet stays in view. */}
-      <SidePanel open={reviewOpen && waiting > 0} onOpenChange={setReviewOpen} title="Awaiting approval" width={1040}>
-        {pending.data?.rows.length ? <ApprovalPanel sheetId={data.sheet.id} pending={{ ...pending.data, warnings: imports.upload.data?.warnings }} partners={data.partners} /> : null}
-      </SidePanel>
-
-      <SheetFilterBar s={s} partners={data.partners} canShare={external} />
+      {composing ? <ComposeSummary data={data} actions={actions} onClose={() => setComposing(false)} /> : null}
 
       {monthGroups.length ? (
         views(monthGroups, monthTitle, 'Invoices')
@@ -188,7 +201,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           onSave={(input) =>
             imports.changeAmount.mutate(
               { invoiceId: d.invoice.id, ...input },
-              { onSuccess: () => (s.close(), toastSuccess('Sent for approval', 'Open "waiting for approval" in the toolbar to approve it.')), onError: fail },
+              { onSuccess: () => (s.close(), toastSuccess('Sent for approval', 'Open "to approve" in the toolbar to approve it.')), onError: fail },
             )
           }
         />
