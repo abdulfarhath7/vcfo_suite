@@ -69,6 +69,15 @@ export type SummaryDto = {
   lastSentAt: string | null;
   /** sending | sent | failed: a failed last send shows in the dialog so the manager can retry. */
   lastSendStatus: 'sending' | 'sent' | 'failed' | null;
+  /** One ready email per active client partner: only the invoices of that partner's clients. */
+  partnerDrafts: PartnerDraftDto[];
+  /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */
+  leaders: EmailRecipient[];
 };
+
+export type PartnerDraftDto = { partnerId: string; name: string; email: string; invoiceCount: number; html: string };
+
+/** One email of a Send email batch, as the dialog sends it. */
+export type SummaryEmailDto = { kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string };
 
 export type OutlookStatusDto = { configured: boolean; connected: boolean; msEmail?: string };

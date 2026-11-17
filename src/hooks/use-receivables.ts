@@ -6,9 +6,9 @@
  * sheet, so the unpublished count and totals stay right.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { EmailRecipient, InvoiceInput, InvoicePatch, ReceiptInput } from '@/lib/receivables/model';
+import type { InvoiceInput, InvoicePatch, ReceiptInput } from '@/lib/receivables/model';
 import type { InvoiceHistoryDto, PendingChangesDto } from '@/lib/receivables/history-wire';
-import type { InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, SummaryDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
+import type { InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, SummaryDto, SummaryEmailDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
 
 const ERROR_TEXT: Record<string, string> = {
   client: 'Enter the client name.',
@@ -29,6 +29,9 @@ const ERROR_TEXT: Record<string, string> = {
   outlook_reconnect: 'Outlook needs to be connected again.',
   send_failed: 'Outlook did not send the email. Try again.',
   bad_email: 'One of the addresses is not a valid email.',
+  partner_to: 'A client partner\'s email must go to that partner alone.',
+  partner_elsewhere: 'A client partner can only get their own email. Remove them from Cc and from the other emails.',
+  partner_unknown: 'That client partner is not on this sheet.',
   to_required: 'Add at least one recipient in To.',
   subject_required: 'Write a subject.',
   already_sent: 'This reminder has already gone.',
@@ -148,10 +151,11 @@ export function useOutlookStatus() {
   return useQuery({ queryKey: ['outlook', 'status'], queryFn: () => call<OutlookStatusDto>('/api/outlook') });
 }
 
-export type SummarySendInput = { to: EmailRecipient[]; cc: EmailRecipient[]; bcc: EmailRecipient[]; subject: string; html: string };
+/** Send email: one email per person (a partner's own invoices, or the whole sheet). */
+export type SummarySendInput = { emails: SummaryEmailDto[] };
 
 /** The 202 of Send: the send is logged as `sending` and finishes after the response. */
-export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; to: number; cc: number; bcc: number };
+export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; emails: number; to: number; cc: number; bcc: number };
 
 export function useSendSummary(sheetId: string) {
   return useMutation({

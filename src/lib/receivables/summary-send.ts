@@ -2,8 +2,7 @@ import 'server-only';
 import type { AuthContext } from '@/auth/guards';
 import { finishSummarySend } from '@/db/repositories/receivables';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
-import type { EmailRecipient, Partner, SnapshotRow } from './model';
-import { summaryEmailHtml } from './summary-email';
+import type { EmailRecipient, Partner } from './model';
 
 /**
  * The summary email's slow part (docs/specs/receivables/PLAN.md, Phase 4). The send-summary route
@@ -23,52 +22,35 @@ export function outlookErrorCode(e: unknown): 'outlook_not_connected' | 'outlook
 export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string };
 
 /**
- * Splits one summary send so a client partner never sees another partner's invoices (owner,
- * 17 Nov 2026). Every address in To, Cc or Bcc that belongs to a client partner of the sheet is
- * taken out of the shared email and gets an email of its own, built from the published version
- * with only that partner's invoices (a partner with none gets nothing). Everyone else (SBC staff,
- * leadership) gets the shared email with the edited body, which may show every invoice.
+ * Checks one Send email batch so a client partner never sees another partner's invoices (owner,
+ * 17 Nov 2026). The dialog makes one email per person: a partner email (only that partner's
+ * clients) or a full email (the whole sheet, for leaders and anyone else). Rules:
+ *  - a partner email goes To exactly that partner, alone;
+ *  - no client partner's address may appear anywhere else: not in Cc of any email, and not on a
+ *    full email.
+ * Returns the mails to send, or the first rule broken as an error code the dialog shows.
  */
-export function splitSummaryForPartners(input: {
-  people: { to: EmailRecipient[]; cc: EmailRecipient[]; bcc: EmailRecipient[] };
-  partners: Partner[];
-  snapshot: SnapshotRow[];
-  today: string;
-  signerName: string;
-  subject: string;
-  html: string;
-}): SummaryMail[] {
-  const byEmail = new Map(input.partners.map((p) => [p.email.trim().toLowerCase(), p]));
-  const partnerOf = (r: EmailRecipient) => byEmail.get(r.email.trim().toLowerCase());
-  const keep = (list: EmailRecipient[]) => list.filter((r) => !partnerOf(r)).map((r) => r.email);
+export function checkSummaryEmails(
+  emails: Array<{ kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string }>,
+  partners: Partner[],
+): { ok: true; mails: SummaryMail[] } | { ok: false; error: 'partner_unknown' | 'partner_to' | 'partner_elsewhere' | 'to_required' } {
+  const byEmail = new Map(partners.map((p) => [p.email.trim().toLowerCase(), p]));
   const mails: SummaryMail[] = [];
-  const shared = { to: keep(input.people.to), cc: keep(input.people.cc), bcc: keep(input.people.bcc) };
-  if (shared.to.length || shared.cc.length || shared.bcc.length) {
-    // A shared email with only Cc or Bcc left still needs a To: the first Cc moves up.
-    const to = shared.to.length ? shared.to : shared.cc.length ? shared.cc.slice(0, 1) : shared.bcc.slice(0, 1);
-    mails.push({
-      to,
-      cc: shared.cc.filter((e) => !to.includes(e)),
-      bcc: shared.bcc.filter((e) => !to.includes(e)),
-      subject: input.subject,
-      html: input.html,
-    });
+  for (const e of emails) {
+    const to = e.to.map((r) => r.email.trim());
+    const cc = e.cc.map((r) => r.email.trim()).filter((x) => !to.some((t) => t.toLowerCase() === x.toLowerCase()));
+    if (!to.length) return { ok: false, error: 'to_required' };
+    if (e.kind === 'partner') {
+      const p = partners.find((x) => x.id === e.partnerId);
+      if (!p) return { ok: false, error: 'partner_unknown' };
+      if (to.length !== 1 || to[0].toLowerCase() !== p.email.trim().toLowerCase()) return { ok: false, error: 'partner_to' };
+      if (cc.some((x) => byEmail.has(x.toLowerCase()))) return { ok: false, error: 'partner_elsewhere' };
+    } else if ([...to, ...cc].some((x) => byEmail.has(x.toLowerCase()))) {
+      return { ok: false, error: 'partner_elsewhere' };
+    }
+    mails.push({ to, cc, bcc: [], subject: e.subject.trim(), html: e.html });
   }
-  const seen = new Set<string>();
-  for (const r of [...input.people.to, ...input.people.cc, ...input.people.bcc]) {
-    const p = partnerOf(r);
-    if (!p || seen.has(p.id)) continue;
-    seen.add(p.id);
-    if (!input.snapshot.some((row) => row.partnerSlug === p.slug)) continue;
-    mails.push({
-      to: [p.email],
-      cc: [],
-      bcc: [],
-      subject: input.subject,
-      html: summaryEmailHtml({ rows: input.snapshot, today: input.today, liveUrl: '', signerName: input.signerName, partnerSlug: p.slug }),
-    });
-  }
-  return mails;
+  return { ok: true, mails };
 }
 
 /** The slow part, after the response: one Graph call per email, then the outcome on the log row. */

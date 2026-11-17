@@ -46,6 +46,8 @@ const SOURCE = {
   lastSend: null,
 };
 const SEND_ID = '11111111-1111-1111-1111-111111111111';
+/** One whole-sheet email, the smallest batch. */
+const one = (e: { to: Array<{ name: string; email: string }>; cc?: Array<{ name: string; email: string }> }) => ({ emails: [{ kind: 'full', to: e.to, cc: e.cc ?? [], subject: 's', html: '<p>x</p>' }] });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -59,40 +61,53 @@ beforeEach(() => {
 });
 
 describe('send-summary route', () => {
-  it('answers 202 before the send runs, then sends To, Cc and Bcc with no attachment', async () => {
+  it('answers 202 before the send runs, then sends each email of the batch with no attachment', async () => {
     const res = await call({
-      to: [{ name: 'Yash', email: 'yash@summit.in' }],
-      cc: [{ name: 'Rakesh', email: 'rakesh@summit.in' }, { name: 'Yash', email: 'YASH@summit.in' }],
-      bcc: [{ name: '', email: 'audit@sbcllp.in' }],
-      subject: ' RE: Receivables update - 3 November ',
-      html: '<p onclick="x()">Hi Team,</p><script>bad()</script>',
+      emails: [
+        {
+          kind: 'full',
+          to: [{ name: 'Yash', email: 'yash@summit.in' }],
+          cc: [{ name: 'Rakesh', email: 'rakesh@summit.in' }, { name: 'Yash', email: 'YASH@summit.in' }],
+          subject: ' RE: Receivables update - 3 November ',
+          html: '<p onclick="x()">Hi Team,</p><script>bad()</script>',
+        },
+        { kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [], subject: 'Receivables', html: '<p>All</p>' },
+      ],
     });
     expect(res.status).toBe(202);
-    expect(await res.json()).toEqual({ ok: true, queued: true, sendId: SEND_ID, from: 'krishna@sbcllp.in', to: 1, cc: 1, bcc: 1 });
-    expect(recordSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', expect.objectContaining({ versionId: 'v3', channel: 'outlook', status: 'sending', bcc: [{ name: '', email: 'audit@sbcllp.in' }] }));
+    expect(await res.json()).toEqual({ ok: true, queued: true, sendId: SEND_ID, from: 'krishna@sbcllp.in', emails: 2, to: 2, cc: 1, bcc: 0 });
+    expect(recordSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', expect.objectContaining({ versionId: 'v3', channel: 'outlook', status: 'sending' }));
     expect(sendMailViaOutlook).not.toHaveBeenCalled();
     expect(afterQueue).toHaveLength(1);
 
     await runAfter();
-    expect(sendMailViaOutlook).toHaveBeenCalledTimes(1);
+    expect(sendMailViaOutlook).toHaveBeenCalledTimes(2);
     const [sentCtx, mail] = sendMailViaOutlook.mock.calls[0];
     expect(sentCtx).toBe(ctx);
-    expect(mail).toMatchObject({ to: ['yash@summit.in'], cc: ['rakesh@summit.in'], bcc: ['audit@sbcllp.in'], subject: 'RE: Receivables update - 3 November', html: '<p>Hi Team,</p>' });
+    expect(mail).toMatchObject({ to: ['yash@summit.in'], cc: ['rakesh@summit.in'], bcc: [], subject: 'RE: Receivables update - 3 November', html: '<p>Hi Team,</p>' });
     // The firm never sends an Excel file attached to an email.
     expect(mail.attachments).toBeUndefined();
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'sent' });
   });
 
+  it('refuses a batch where a client partner would see another email', async () => {
+    getSummarySource.mockResolvedValue({ ...SOURCE, partners: [{ id: '22222222-2222-4222-8222-222222222222', slug: 'p', name: 'Pranay', email: 'pranay@sbcllp.in', active: true }] });
+    const res = await call(one({ to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'pranay@sbcllp.in' }] }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'partner_elsewhere' });
+    expect(afterQueue).toHaveLength(0);
+  });
+
   it('records a failed send with its reason when Graph fails after the response', async () => {
     sendMailViaOutlook.mockRejectedValue(new Error('Graph sendMail 413'));
-    const res = await call({ to: [{ name: '', email: 'a@b.in' }], subject: 's', html: '<p>x</p>' });
+    const res = await call(one({ to: [{ name: '', email: 'a@b.in' }] }));
     expect(res.status).toBe(202);
     await runAfter();
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'failed', error: 'send_failed' });
   });
 
   it('refuses a bad address before sending', async () => {
-    const res = await call({ to: [{ name: '', email: 'not-an-email' }], subject: 's', html: '<p>x</p>' });
+    const res = await call(one({ to: [{ name: '', email: 'not-an-email' }] }));
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: 'bad_email', invalid: ['not-an-email'] });
     expect(afterQueue).toHaveLength(0);
@@ -100,7 +115,7 @@ describe('send-summary route', () => {
 
   it('says at once when Outlook is not connected and logs nothing', async () => {
     assertOutlookReady.mockRejectedValue(new Error('outlook_not_connected'));
-    const res = await call({ to: [{ name: '', email: 'a@b.in' }], subject: 's', html: '<p>x</p>' });
+    const res = await call(one({ to: [{ name: '', email: 'a@b.in' }] }));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: 'outlook_not_connected' });
     expect(recordSummarySend).not.toHaveBeenCalled();
@@ -109,7 +124,7 @@ describe('send-summary route', () => {
 
   it('says at once when Outlook must be connected again', async () => {
     assertOutlookReady.mockRejectedValue(new Error('Token refresh failed: invalid_grant'));
-    const res = await call({ to: [{ name: '', email: 'a@b.in' }], subject: 's', html: '<p>x</p>' });
+    const res = await call(one({ to: [{ name: '', email: 'a@b.in' }] }));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: 'outlook_reconnect' });
     expect(afterQueue).toHaveLength(0);
@@ -117,7 +132,7 @@ describe('send-summary route', () => {
 
   it('keeps other roles out', async () => {
     guard.mockResolvedValue({ ok: false, status: 403, error: 'Forbidden' });
-    const res = await call({ to: [{ name: '', email: 'a@b.in' }], subject: 's', html: '<p>x</p>' });
+    const res = await call(one({ to: [{ name: '', email: 'a@b.in' }] }));
     expect(res.status).toBe(403);
     expect(getSummarySource).not.toHaveBeenCalled();
   });

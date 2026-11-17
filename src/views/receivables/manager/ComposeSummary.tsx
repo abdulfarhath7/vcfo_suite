@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FilterSelect } from '@/components/ui/native-select';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { toastError, toastInfo, toastLoading, toastSuccess } from '@/lib/toast-errors';
@@ -11,16 +10,19 @@ import { isEmailAddress, splitTypedRecipients } from '@/lib/email/recipient-inpu
 import type { EmailRecipient } from '@/lib/receivables/model';
 import type { ManagerSheetDto } from '@/lib/receivables/wire';
 import { summarySendOutcome, useOutlookStatus, useSendSummary, useSummary, type useReceivablesActions } from '@/hooks/use-receivables';
+import { cn } from '@/lib/utils';
 import { stamp } from '../format';
 
 /**
- * Send email (Phase 4): the summary in the finance team's format, built from the published
- * version, sent from the manager's own Outlook. To, Cc and Bcc take any address; the ready-made
- * lists fill them; the body is editable; no Excel file is ever attached.
+ * Send email: the summary in the finance team's format, built from the published version, sent
+ * from the sender's own Outlook (owner, 17 Nov 2026). Each person picked gets an email of their
+ * own, shown as a card: a client partner's holds only the invoices of their own clients; a leader's
+ * (a leadership digest recipient) or anyone else's holds the whole sheet. Each card has its own Cc,
+ * subject and editable body. A client partner is never allowed in Cc or on another card. No Excel
+ * file is ever attached.
  */
 
 type Field = 'to' | 'cc' | 'bcc';
-type People = Record<Field, EmailRecipient[]>;
 
 export const OUTLOOK_CONNECT_HREF = '/api/outlook/connect?return=/receivables/manager';
 
@@ -101,49 +103,81 @@ function RecipientRow({ field, label, people, contacts, onChange }: { field: Fie
   );
 }
 
+/** One email of the batch: a client partner's own invoices, or the whole sheet for anyone else. */
+type Draft = { key: string; kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient; cc: EmailRecipient[]; subject: string; html: string; invoiceCount: number | null };
+
+const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'there').trim().split(/\s+/)[0];
+/** The format's greeting is "Hi Team,"; each email greets its own person. */
+const greet = (html: string, r: EmailRecipient) => html.replace('<p>Hi Team,</p>', `<p>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
+
 export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetDto; actions: ReturnType<typeof useReceivablesActions>; onClose: () => void }) {
   const summary = useSummary(data.sheet.id, true);
   const outlook = useOutlookStatus();
   const send = useSendSummary(data.sheet.id);
   const body = useRef<HTMLDivElement>(null);
-  const [people, setPeople] = useState<People>({ to: [], cc: [], bcc: [] });
-  const [listKey, setListKey] = useState('');
-  const [subject, setSubject] = useState('');
+  const [people, setPeople] = useState<EmailRecipient[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [active, setActive] = useState<string | null>(null);
+  const s = summary.data;
+  const isLeader = (email: string) => Boolean(s?.leaders.some((l) => l.email.toLowerCase() === email.toLowerCase()));
 
-  // Fill the form once the draft arrives: the first list (last time, or all partners).
+  // Each person picked gets their own draft: a partner's own invoices, or the whole sheet.
   useEffect(() => {
-    const s = summary.data;
     if (!s) return;
-    setSubject(s.subject);
-    const first = s.lists[0];
-    setListKey(first.key);
-    setPeople({ to: first.to, cc: first.cc, bcc: first.bcc });
-  }, [summary.data]);
+    setDrafts((prev) => {
+      const next: Record<string, Draft> = {};
+      for (const r of people) {
+        const key = r.email.toLowerCase();
+        if (prev[key]) {
+          next[key] = prev[key];
+          continue;
+        }
+        const p = s.partnerDrafts.find((x) => x.email.toLowerCase() === key);
+        next[key] = p
+          ? { key, kind: 'partner', partnerId: p.partnerId, to: { name: p.name, email: p.email }, cc: [], subject: s.subject, html: greet(p.html, { name: p.name, email: p.email }), invoiceCount: p.invoiceCount }
+          : { key, kind: 'full', to: r, cc: [], subject: s.subject, html: greet(s.html, r), invoiceCount: null };
+      }
+      return next;
+    });
+  }, [people, s]);
+  const keys = people.map((r) => r.email.toLowerCase()).filter((k) => drafts[k]);
+  const current = active && drafts[active] ? drafts[active] : keys.length ? drafts[keys[0]] : null;
 
-  const applyList = (key: string) => {
-    const l = summary.data?.lists.find((x) => x.key === key);
-    if (!l) return;
-    setListKey(key);
-    setPeople({ to: l.to, cc: l.cc, bcc: l.bcc });
+  /** The body being edited lives in the editor; it is kept on its draft before switching or sending. */
+  const keepBody = () => {
+    const el = body.current;
+    if (!el || !current) return;
+    const html = el.innerHTML;
+    setDrafts((d) => (d[current.key] ? { ...d, [current.key]: { ...d[current.key], html } } : d));
   };
-  const contacts = summary.data?.contacts ?? [];
+  const patch = (key: string, p: Partial<Draft>) => setDrafts((d) => (d[key] ? { ...d, [key]: { ...d[key], ...p } } : d));
+  const addPeople = (list: EmailRecipient[]) =>
+    setPeople((prev) => {
+      const seen = new Set(prev.map((r) => r.email.toLowerCase()));
+      return [...prev, ...list.filter((r) => !seen.has(r.email.toLowerCase()) && (seen.add(r.email.toLowerCase()), true))];
+    });
+
+  const contacts = s?.contacts ?? [];
   const connected = outlook.data?.connected;
   const notPublished = summary.error && 'code' in summary.error && summary.error.code === 'not_published';
+  // A partner with no open invoices gets nothing; every other card is sent.
+  const sendable = keys.map((k) => drafts[k]).filter((d) => d.kind === 'full' || (d.invoiceCount ?? 0) > 0);
+  const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => p.email.toLowerCase()));
+  const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
   const submit = () => {
-    const html = body.current?.innerHTML ?? '';
+    const html = body.current?.innerHTML;
+    const final = sendable.map((d) => (current && d.key === current.key && html !== undefined ? { ...d, html } : d));
     send.mutate(
-      { ...people, subject, html },
+      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: [d.to], cc: d.cc, subject: d.subject, html: d.html })) },
       {
         onSuccess: (r) => {
-          // The server answered 202 and sends after the response; the toast follows the send.
-          const extra = [r.cc ? `${r.cc} in Cc` : '', r.bcc ? `${r.bcc} in Bcc` : ''].filter(Boolean).join(', ');
-          const who = `From ${r.from} to ${r.to} ${r.to === 1 ? 'person' : 'people'}${extra ? ` (${extra})` : ''}.`;
+          const who = `${r.emails} email${r.emails === 1 ? '' : 's'} from ${r.from}.`;
           const toastId = `rcv-send-${r.sendId}`;
           toastLoading('Sending…', who, { id: toastId });
           onClose();
           void summarySendOutcome(data.sheet.id, r.sendId).then((o) => {
-            if (o.status === 'sent') toastSuccess('Email sent', who, { id: toastId });
+            if (o.status === 'sent') toastSuccess('Emails sent', who, { id: toastId });
             else if (o.status === 'failed') toastError('Not sent', o.error ?? undefined, { id: toastId });
             else toastInfo('Still sending', 'Check Sent Items in Outlook in a minute.', { id: toastId });
           });
@@ -153,31 +187,34 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
     );
   };
 
+  const activePartners = (s?.partnerDrafts ?? []).filter((p) => p.invoiceCount > 0).map((p) => ({ name: p.name, email: p.email }));
+  const lastTo = s?.lists.find((l) => l.key === 'last')?.to ?? [];
+
   return (
     <Modal
       open
       onOpenChange={(o) => !o && onClose()}
       title="Send email"
-      sub={summary.data ? `Version ${summary.data.versionSeq} of ${stamp(summary.data.publishedAt)}${summary.data.lastSentAt ? ` · ${summary.data.lastSendStatus === 'failed' ? 'last send failed' : summary.data.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(summary.data.lastSentAt)}` : ''}` : undefined}
+      sub={s ? `Version ${s.versionSeq} of ${stamp(s.publishedAt)}${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!summary.data || !connected || !people.to.length || !subject.trim() || send.isPending}>
-            {send.isPending ? 'Sending…' : 'Send'}
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+            {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
       }
     >
       {notPublished ? (
-        <p className="text-[14px] text-ink-muted">Click Update once first. The email is built from the published version, so it always matches the client page.</p>
+        <p className="text-[14px] text-ink-muted">Click Update once first. The email is built from the published version, so it always matches the sheet.</p>
       ) : summary.isLoading ? (
         <p className="text-ink-muted">Preparing the email…</p>
       ) : summary.error ? (
         <p className="text-danger">{summary.error.message}</p>
-      ) : summary.data ? (
+      ) : s ? (
         <div className="grid gap-2">
           {data.unpublishedChanges ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-warning-soft px-3 py-2 text-[13px] text-warning">
@@ -206,32 +243,85 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
             <span>
               From <b className="font-medium text-ink">{connected ? outlook.data?.msEmail : 'your Outlook'}</b>
             </span>
-            <span className="flex items-center gap-2">
-              <span className="text-[12px]">Recipients</span>
-              <FilterSelect aria-label="Recipient list" value={listKey} onChange={(e) => applyList(e.target.value)} options={summary.data.lists.map((l) => ({ value: l.key, label: l.label }))} />
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px]">Add</span>
+              <Button size="sm" variant="secondary" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
+                All partners
+              </Button>
+              <Button size="sm" variant="secondary" disabled={!s.leaders.length} onClick={() => addPeople(s.leaders)}>
+                All leaders
+              </Button>
+              {lastTo.length ? (
+                <Button size="sm" variant="quiet" onClick={() => addPeople(lastTo)}>
+                  Same as last time
+                </Button>
+              ) : null}
             </span>
           </div>
-          <div>
-            {(['to', 'cc', 'bcc'] as const).map((f) => (
-              <RecipientRow key={f} field={f} label={f === 'to' ? 'To' : f === 'cc' ? 'Cc' : 'Bcc'} people={people[f]} contacts={contacts} onChange={(next) => setPeople((p) => ({ ...p, [f]: next }))} />
-            ))}
-          </div>
-          <label className="mt-1 grid gap-1 text-[12px] font-medium text-ink-2" htmlFor="rcv-subject">
-            Subject
-            <Input id="rcv-subject" value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value)} />
-          </label>
-          <div className="text-[12px] font-medium text-ink-2">Message</div>
-          <div
-            ref={body}
-            role="textbox"
-            aria-multiline="true"
-            aria-label="Email message"
-            contentEditable
-            suppressContentEditableWarning
-            className="max-h-[46vh] min-h-[260px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3.5 text-[13px] text-black outline-none [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
-            dangerouslySetInnerHTML={{ __html: summary.data.html }}
-          />
-          <p className="text-[12px] text-ink-muted">Client partners never get this shared message. Each partner in To, Cc or Bcc gets a separate email with only their own invoices.</p>
+          <RecipientRow field="to" label="To" people={people} contacts={contacts} onChange={setPeople} />
+
+          {keys.length ? (
+            <>
+              <div className="text-[12px] text-ink-muted">One email per person. A client partner gets only the invoices of their own clients; a leader gets the whole sheet.</div>
+              <div role="tablist" aria-label="Emails" className="flex flex-wrap gap-1.5">
+                {keys.map((k) => {
+                  const d = drafts[k];
+                  const on = current?.key === k;
+                  const empty = d.kind === 'partner' && !d.invoiceCount;
+                  const label = d.kind === 'partner' ? `partner · ${d.invoiceCount} open` : isLeader(d.to.email) ? 'leader · whole sheet' : 'whole sheet';
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => {
+                        keepBody();
+                        setActive(k);
+                      }}
+                      className={cn('rounded-md border px-2.5 py-1.5 text-left text-[12.5px]', on ? 'border-brand bg-brand-soft' : 'border-line bg-surface-raised hover:bg-hover', empty && 'opacity-60')}
+                    >
+                      <span className="block font-medium text-ink">{d.to.name || d.to.email}</span>
+                      <span className="block text-[11.5px] text-ink-muted">{empty ? 'partner · no open invoices, not sent' : label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-[13px] text-ink-muted">Add a client partner, a leader or any address. Each person gets an email of their own.</p>
+          )}
+
+          {current ? (
+            <div key={current.key} className="grid gap-2 rounded-md border border-line p-2.5">
+              <div className="text-[12px] text-ink-muted">
+                To <b className="font-medium text-ink">{current.to.name ? `${current.to.name} <${current.to.email}>` : current.to.email}</b>
+                {current.kind === 'partner' ? ' · only this partner’s clients' : ' · the whole sheet'}
+              </div>
+              <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc })} />
+              {current.cc.some((c) => partnerEmails.has(c.email.toLowerCase())) ? (
+                <p role="alert" className="text-[12.5px] text-danger">
+                  A client partner cannot be in Cc: they would see invoices that are not theirs. Remove them.
+                </p>
+              ) : null}
+              <label className="grid gap-1 text-[12px] font-medium text-ink-2" htmlFor="rcv-subject">
+                Subject
+                <Input id="rcv-subject" value={current.subject} maxLength={200} onChange={(e) => patch(current.key, { subject: e.target.value })} />
+              </label>
+              <div className="text-[12px] font-medium text-ink-2">Message</div>
+              <div
+                ref={body}
+                role="textbox"
+                aria-multiline="true"
+                aria-label={`Email to ${current.to.name || current.to.email}`}
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={keepBody}
+                className="max-h-[42vh] min-h-[240px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3.5 text-[13px] text-black outline-none [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
+                dangerouslySetInnerHTML={{ __html: current.html }}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </Modal>

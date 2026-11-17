@@ -2,34 +2,35 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
-import { deliverSummary, outlookErrorCode, splitSummaryForPartners } from '@/lib/receivables/summary-send';
-import { todayIst } from '@/lib/receivables/dates';
+import { checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
 import { getSummarySendStatus, getSummarySource, recordSummarySend } from '@/db/repositories/receivables';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
 /**
- * POST /api/receivables/sheets/:id/send-summary — sends the (edited) summary from the manager's
- * own Outlook to any To, Cc and Bcc. No Excel file is ever attached (owner, 17 Nov 2026). A client
- * partner among the recipients never gets the shared email: each gets a separate email with only
- * their own invoices (`splitSummaryForPartners`).
+ * POST /api/receivables/sheets/:id/send-summary — Send email, from the sender's own Outlook. The
+ * dialog sends one email per person (owner, 17 Nov 2026): a client partner's email holds only the
+ * invoices of that partner's clients; a leader's (or anyone else's) holds the whole sheet. Each is
+ * edited in the dialog. `checkSummaryEmails` refuses any batch where a partner would see another
+ * partner's invoices (400 `partner_to` or `partner_elsewhere`). No Excel file is ever attached.
  *
  * Everything that can fail fast is checked before the answer: the input, the addresses, the
  * published version and the Outlook link (409 outlook_not_connected or outlook_reconnect). The
- * send is then logged as `sending` and the route answers 202 { ok, queued, sendId }. The Graph call
- * runs after the response (`after` from next/server, because Inngest
- * cloud keys are not set on App Runner); the log row ends as `sent` or `failed` with the reason.
+ * batch is then logged as one `sending` row and the route answers 202 { ok, queued, sendId }. The
+ * Graph calls run after the response (`after` from next/server); the row ends `sent` or `failed`.
  *
  * GET ?send=<sendId> — the state of that send, which the dialog polls to show the outcome.
  */
 const person = z.object({ name: z.string().max(120).default(''), email: z.string().max(200) });
-const schema = z.object({
-  to: z.array(person).min(1, 'to_required').max(100),
-  cc: z.array(person).max(100).default([]),
-  bcc: z.array(person).max(100).default([]),
-  subject: z.string().min(1, 'subject_required').max(200),
+const email = z.object({
+  kind: z.enum(['partner', 'full']),
+  partnerId: z.string().uuid().optional(),
+  to: z.array(person).min(1, 'to_required').max(50),
+  cc: z.array(person).max(50).default([]),
+  subject: z.string().trim().min(1, 'subject_required').max(200),
   html: z.string().min(1, 'body_required').max(300_000),
 });
+const schema = z.object({ emails: z.array(email).min(1, 'to_required').max(60) });
 
 export async function POST(request: Request, context: RouteContext) {
   const guard = await guardReceivables();
@@ -38,27 +39,24 @@ export async function POST(request: Request, context: RouteContext) {
   const body = await parseJsonBody(request, schema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   const input = body.data as z.infer<typeof schema>;
-  const people = cleanRecipients({ to: input.to, cc: input.cc, bcc: input.bcc });
-  if (people.invalid.length) return NextResponse.json({ error: 'bad_email', invalid: people.invalid }, { status: 400 });
-  if (!people.to.length) return NextResponse.json({ error: 'to_required' }, { status: 400 });
-  const subject = input.subject.trim();
+  // Each email's addresses: valid, each once.
+  const emails = [];
+  for (const e of input.emails) {
+    const people = cleanRecipients({ to: e.to, cc: e.cc, bcc: [] });
+    if (people.invalid.length) return NextResponse.json({ error: 'bad_email', invalid: people.invalid }, { status: 400 });
+    emails.push({ ...e, to: people.to, cc: people.cc, html: tidyEmailHtml(e.html) });
+  }
   try {
     const src = await getSummarySource(guard.ctx, id);
+    const checked = checkSummaryEmails(emails, src.partners);
+    if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
     const { msEmail } = await assertOutlookReady(guard.ctx);
-    const { id: sendId } = await recordSummarySend(guard.ctx, id, { versionId: src.version.id, to: people.to, cc: people.cc, bcc: people.bcc, subject, channel: 'outlook', status: 'sending' });
+    const to = emails.flatMap((e) => e.to);
+    const cc = emails.flatMap((e) => e.cc);
+    const { id: sendId } = await recordSummarySend(guard.ctx, id, { versionId: src.version.id, to, cc, bcc: [], subject: emails[0].subject, channel: 'outlook', status: 'sending' });
     const ctx = guard.ctx;
-    // A client partner gets only their own invoices, in an email of their own.
-    const mails = splitSummaryForPartners({
-      people,
-      partners: src.partners,
-      snapshot: src.version.snapshot,
-      today: todayIst(),
-      signerName: ctx.name || 'SBC',
-      subject,
-      html: tidyEmailHtml(input.html),
-    });
-    after(() => deliverSummary(ctx, id, sendId, { mails }));
-    return NextResponse.json({ ok: true, queued: true, sendId, from: msEmail, to: people.to.length, cc: people.cc.length, bcc: people.bcc.length }, { status: 202 });
+    after(() => deliverSummary(ctx, id, sendId, { mails: checked.mails }));
+    return NextResponse.json({ ok: true, queued: true, sendId, from: msEmail, emails: checked.mails.length, to: to.length, cc: cc.length, bcc: 0 }, { status: 202 });
   } catch (e) {
     const code = outlookErrorCode(e);
     if (code) return NextResponse.json({ error: code }, { status: 409 });

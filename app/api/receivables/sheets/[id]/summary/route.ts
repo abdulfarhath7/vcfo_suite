@@ -4,13 +4,15 @@ import { todayIst } from '@/lib/receivables/dates';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
 import { summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
-import { getSummarySource } from '@/db/repositories/receivables';
+import { getSummarySource, listDigestRecipients } from '@/db/repositories/receivables';
+import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
 /**
  * GET /api/receivables/sheets/:id/summary — the summary email ready to edit: subject, body in the
  * finance team's format built from the published version, the ready-made recipient lists and the
- * contacts to suggest. 409 not_published before the first Update.
+ * contacts to suggest; one ready email per client partner (only their own clients) and the
+ * leadership recipients, who get the whole sheet. 409 not_published before the first Update.
  */
 export async function GET(_request: Request, context: RouteContext) {
   const guard = await guardReceivables();
@@ -20,13 +22,26 @@ export async function GET(_request: Request, context: RouteContext) {
     const src = await getSummarySource(guard.ctx, id);
     const today = todayIst();
     const liveUrl = publicPageUrl(siteUrl(), src.sheet);
+    const leaders = (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active).map((r) => ({ name: r.name, email: r.email }));
+    // One ready email per active client partner, with only the invoices of that partner's clients.
+    const partnerDrafts: PartnerDraftDto[] = src.partners
+      .filter((p) => p.active)
+      .map((p) => ({
+        partnerId: p.id,
+        name: p.name,
+        email: p.email,
+        invoiceCount: src.version.snapshot.filter((r) => r.partnerSlug === p.slug && r.status === 'open').length,
+        html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name, partnerSlug: p.slug }),
+      }));
     return NextResponse.json({
       versionSeq: src.version.seq,
       publishedAt: src.version.publishedAt,
       subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today)}` : summaryEmailSubject(today),
       html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name }),
       lists: recipientLists({ partners: src.partners, rows: src.version.snapshot, today, lastSend: src.lastSend }),
-      contacts: contactSuggestions(src.partners, src.lastSend),
+      contacts: [...contactSuggestions(src.partners, src.lastSend), ...leaders.filter((l) => !src.partners.some((p) => p.email.toLowerCase() === l.email.toLowerCase()))],
+      partnerDrafts,
+      leaders,
       lastSentAt: src.lastSend?.sentAt ?? null,
       lastSendStatus: src.lastSend?.status ?? null,
     });
