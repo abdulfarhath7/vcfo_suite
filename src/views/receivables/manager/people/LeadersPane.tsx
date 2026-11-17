@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FilterSelect } from '@/components/ui/native-select';
@@ -12,13 +12,15 @@ import { cn } from '@/lib/utils';
 import { HOURS, ROW_BTN, WEEKDAYS, errorText, hourLabel, stamp, type PeopleActions, type SaveSettings } from './shared';
 
 /**
- * The Leaders sub-tab: the weekly leadership digest switch, weekday and hour on one line, the
- * typed-in recipients as dense rows, and a one-line add form.
+ * The Leaders sub-tab: the weekly leadership digest switch, weekday and hour on one line, then a
+ * "Leaders" header with a + that opens the add form (as on the Partners list), and the typed-in
+ * leaders as rows.
  */
 export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; act: PeopleActions; saveSettings: SaveSettings }) {
   const s = people.settings;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [adding, setAdding] = useState(false);
   return (
     <div className="overflow-hidden rounded-md border border-line bg-surface-raised">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-surface-sunken px-4 py-2.5 text-[13px]">
@@ -36,6 +38,33 @@ export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; 
         </span>
         <span className="text-[11.5px] text-ink-muted">Partner ▸ client ▸ open invoices, with totals. Sent from the sheet manager&apos;s Outlook.</span>
       </div>
+      {/* The same header and + as the Partners list (owner, 17 Nov 2026): + opens the add form. */}
+      <div className="flex h-10 items-center justify-between border-b border-line bg-surface-sunken pl-4 pr-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted">{`Leaders · ${people.digestRecipients.filter((r) => r.active).length} active`}</span>
+        <Button size="iconSm" variant="quiet" className="!h-7 !w-7" aria-label={adding ? 'Close the add leader form' : 'Add a leader'} aria-expanded={adding} onClick={() => setAdding((v) => !v)}>
+          {adding ? <X aria-hidden /> : <Plus aria-hidden />}
+        </Button>
+      </div>
+      {adding ? (
+        <form
+          className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-sunken px-4 py-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim() || !email.trim()) return;
+            act.addRecipient.mutate(
+              { name: name.trim(), email: email.trim() },
+              { onSuccess: () => (setName(''), setEmail(''), setAdding(false)), onError: (err) => toastError('Not added', errorText(err)) },
+            );
+          }}
+        >
+          <Input className="h-8 min-w-[160px] flex-1 text-[13px]" aria-label="Leader name" placeholder="Name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+          <Input className="h-8 min-w-[200px] flex-1 text-[13px]" aria-label="Leader email" placeholder="Email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} />
+          <Button type="submit" size="sm" className={ROW_BTN} disabled={!name.trim() || !email.trim() || act.addRecipient.isPending}>
+            <Plus aria-hidden />
+            Add leader
+          </Button>
+        </form>
+      ) : null}
       <ul aria-label="Digest recipients">
         {people.digestRecipients.map((r) => (
           <li key={r.id} className="flex h-10 items-center gap-3 border-b border-line-soft px-4 text-[13px]">
@@ -52,23 +81,8 @@ export function LeadersPane({ people, act, saveSettings }: { people: PeopleDto; 
             </Button>
           </li>
         ))}
-        {!people.digestRecipients.length ? <li className="border-b border-line-soft px-4 py-3 text-[13px] text-ink-muted">No recipients yet.</li> : null}
+        {!people.digestRecipients.length ? <li className="px-4 py-3 text-[13px] text-ink-muted">No leaders yet. Click + to add one.</li> : null}
       </ul>
-      <form
-        className="flex flex-wrap items-center gap-2 px-3 py-1.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim() || !email.trim()) return;
-          act.addRecipient.mutate({ name: name.trim(), email: email.trim() }, { onSuccess: () => (setName(''), setEmail('')), onError: (err) => toastError('Not added', errorText(err)) });
-        }}
-      >
-        <Input className="h-8 min-w-[160px] flex-1 text-[13px]" aria-label="Recipient name" placeholder="Name" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
-        <Input className="h-8 min-w-[200px] flex-1 text-[13px]" aria-label="Recipient email" placeholder="Email" type="email" value={email} maxLength={200} onChange={(e) => setEmail(e.target.value)} />
-        <Button type="submit" size="sm" variant="secondary" className={ROW_BTN} disabled={!name.trim() || !email.trim() || act.addRecipient.isPending}>
-          <Plus aria-hidden />
-          Add recipient
-        </Button>
-      </form>
     </div>
   );
 }
