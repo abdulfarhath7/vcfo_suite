@@ -116,6 +116,13 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const send = useSendSummary(data.sheet.id);
   const body = useRef<HTMLDivElement>(null);
   const [people, setPeople] = useState<EmailRecipient[]>([]);
+  // The dialog opens with every client partner who has open invoices already picked (owner, 17 Nov 2026).
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !summary.data) return;
+    prefilled.current = true;
+    setPeople(summary.data.partnerDrafts.filter((p) => p.invoiceCount > 0).map((p) => ({ name: p.name, email: p.email })));
+  }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
