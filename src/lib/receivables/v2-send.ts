@@ -282,9 +282,11 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
 export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new Date()): Promise<'sent' | 'failed' | 'skipped' | 'not_due'> {
   if (!digestDue(sheet, now)) return 'not_due';
   const today = todayIst(now);
-  const recipients = await systemDigestRecipients(sheet.id);
+  const [all, open, partners, senderName] = await Promise.all([systemDigestRecipients(sheet.id), systemOpenInvoices(sheet.id), systemSheetPartners(sheet.id), systemStaffName(sheet.managerUserId)]);
+  // A client partner never gets the whole sheet, even when also typed in as a digest recipient.
+  const partnerEmails = new Set(partners.map((p) => p.email.trim().toLowerCase()));
+  const recipients = all.filter((r) => !partnerEmails.has(r.email.trim().toLowerCase()));
   if (!recipients.length) return 'skipped';
-  const [open, partners, senderName] = await Promise.all([systemOpenInvoices(sheet.id), systemSheetPartners(sheet.id), systemStaffName(sheet.managerUserId)]);
   const mail = leadershipDigestEmail({
     senderName,
     invoices: open.map((i) => ({ ...i, partnerName: partnerOf(partners, i.partnerId)?.name ?? null })),

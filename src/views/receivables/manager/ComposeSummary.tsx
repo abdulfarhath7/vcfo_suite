@@ -231,6 +231,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
             className="max-h-[46vh] min-h-[260px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3.5 text-[13px] text-black outline-none [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
             dangerouslySetInnerHTML={{ __html: summary.data.html }}
           />
+          <p className="text-[12px] text-ink-muted">Client partners never get this shared message. Each partner in To, Cc or Bcc gets a separate email with only their own invoices.</p>
         </div>
       ) : null}
     </Modal>

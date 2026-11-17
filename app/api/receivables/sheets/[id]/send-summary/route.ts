@@ -2,14 +2,17 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
-import { deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
+import { deliverSummary, outlookErrorCode, splitSummaryForPartners } from '@/lib/receivables/summary-send';
+import { todayIst } from '@/lib/receivables/dates';
 import { getSummarySendStatus, getSummarySource, recordSummarySend } from '@/db/repositories/receivables';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
 /**
  * POST /api/receivables/sheets/:id/send-summary — sends the (edited) summary from the manager's
- * own Outlook to any To, Cc and Bcc. No Excel file is ever attached (owner, 17 Nov 2026).
+ * own Outlook to any To, Cc and Bcc. No Excel file is ever attached (owner, 17 Nov 2026). A client
+ * partner among the recipients never gets the shared email: each gets a separate email with only
+ * their own invoices (`splitSummaryForPartners`).
  *
  * Everything that can fail fast is checked before the answer: the input, the addresses, the
  * published version and the Outlook link (409 outlook_not_connected or outlook_reconnect). The
@@ -44,17 +47,17 @@ export async function POST(request: Request, context: RouteContext) {
     const { msEmail } = await assertOutlookReady(guard.ctx);
     const { id: sendId } = await recordSummarySend(guard.ctx, id, { versionId: src.version.id, to: people.to, cc: people.cc, bcc: people.bcc, subject, channel: 'outlook', status: 'sending' });
     const ctx = guard.ctx;
-    after(() =>
-      deliverSummary(ctx, id, sendId, {
-        mail: {
-          to: people.to.map((r) => r.email),
-          cc: people.cc.map((r) => r.email),
-          bcc: people.bcc.map((r) => r.email),
-          subject,
-          html: tidyEmailHtml(input.html),
-        },
-      }),
-    );
+    // A client partner gets only their own invoices, in an email of their own.
+    const mails = splitSummaryForPartners({
+      people,
+      partners: src.partners,
+      snapshot: src.version.snapshot,
+      today: todayIst(),
+      signerName: ctx.name || 'SBC',
+      subject,
+      html: tidyEmailHtml(input.html),
+    });
+    after(() => deliverSummary(ctx, id, sendId, { mails }));
     return NextResponse.json({ ok: true, queued: true, sendId, from: msEmail, to: people.to.length, cc: people.cc.length, bcc: people.bcc.length }, { status: 202 });
   } catch (e) {
     const code = outlookErrorCode(e);
