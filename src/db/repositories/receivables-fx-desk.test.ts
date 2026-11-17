@@ -174,7 +174,7 @@ describe('the FX desk for the sheet’s manager', () => {
       [invoiceRow(), received, eur, invoiceRow({ id: '22222222-2222-2222-2222-222222222277', currency: 'INR', fcAmount: null, fxRate: null })],
       [forwardRow()],
       [alertRow()],
-      [{ source: 'hsbc_api', matchInvoiceIds: [received.id] }],
+      // Receivables v2 removed the bank feed: no bank credits query any more.
       [rate('USD', addDaysIso(TODAY, -2), '84.400000'), rate('USD', TODAY, '84.000000'), rate('USD', TODAY, '85.500000', 'manual'), rate('EUR', TODAY, '97.000000')],
     ];
     const d = await repo.fxDesk(me, SHEET);
@@ -187,7 +187,7 @@ describe('the FX desk for the sheet’s manager', () => {
       expect.objectContaining({ currency: 'EUR', openFc: 500, inrToday: 48500 }),
     ]);
     expect(d.hedges.find((h) => h.currency === 'USD')).toMatchObject({ hedgedFc: 1500, coverPct: 150 });
-    expect(d.spreads).toEqual([expect.objectContaining({ bank: 'HSBC', effectiveRate: 84, referenceRate: 84.4, costInr: 400 })]);
+    expect(d.spreads).toEqual([expect.objectContaining({ bank: 'Entered by hand', effectiveRate: 84, referenceRate: 84.4, costInr: 400 })]);
     expect(d.alerts).toEqual([expect.objectContaining({ id: ALERT, crossedNow: true })]);
     expect(d.whatIf).toHaveLength(2);
     expect(writes()).toHaveLength(0);

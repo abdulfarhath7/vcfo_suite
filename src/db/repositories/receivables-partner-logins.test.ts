@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthContext } from '@/auth/guards';
 
 /**
@@ -287,6 +287,9 @@ describe('invoice notes', () => {
 });
 
 describe('publish alerts', () => {
+  // Receivables v2: publish alerts are partner-facing, so they go only with RECEIVABLES_EXTERNAL=on.
+  beforeEach(() => vi.stubEnv('RECEIVABLES_EXTERNAL', 'on'));
+  afterEach(() => vi.unstubAllEnvs());
   const snap = (over: Record<string, unknown> = {}) => ({
     id: INVOICE,
     invoiceMonth: '2026-09-01',
