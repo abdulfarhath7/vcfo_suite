@@ -3,7 +3,7 @@
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toastError } from '@/lib/toast-errors';
-import { sheetDate } from '@/lib/receivables/dates';
+import { monthShort, sheetDate } from '@/lib/receivables/dates';
 import { isForeign } from '@/lib/receivables/fx';
 import type { Partner } from '@/lib/receivables/model';
 import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
@@ -77,6 +77,7 @@ export function SheetTable({
           <col className="w-9" />
           <col />
           <col className="w-[104px]" />
+          <col className="w-[112px]" />
           <col className="w-[148px]" />
           <col className="w-[104px]" />
           <col className="w-[118px]" />
@@ -100,6 +101,7 @@ export function SheetTable({
             </th>
             <th className={cn(TH, STICK_CLIENT, 'max-xl:z-[3]')}>Client</th>
             <th className={TH}>Invoice no.</th>
+            <th className={TH}>Invoice date</th>
             <th className={TH}>Partner</th>
             <th className={TH}>Due date</th>
             <th className={cn(TH, 'text-right')}>Amount ₹</th>
@@ -107,7 +109,6 @@ export function SheetTable({
             <th className={cn(TH, 'text-right')}>Received ₹</th>
             {fx ? <th className={TH}>{fxHeader(data)}</th> : null}
             <th className={TH}>Status</th>
-            <th className={TH}>Invoice date</th>
             <th className={cn(TH, 'rounded-tr-[4px]')}>
               <span className="sr-only">Actions</span>
             </th>
@@ -202,6 +203,14 @@ function Row({
         </span>
       </td>
       <td className={TD}>
+        {/* The invoice date; rows loaded from the weekly workbook have none, so their month shows until it is filled in. */}
+        {foreign ? (
+          <InvoiceDateCell invoice={inv} />
+        ) : (
+          <DatePick variant="cell" label={`Invoice date of ${name}`} value={inv.invoiceDate ?? ''} placeholder={monthShort(inv.invoiceMonth)} onChange={(v) => v && v !== inv.invoiceDate && s.edit(inv, { invoiceDate: v })} />
+        )}
+      </td>
+      <td className={TD}>
         {!editLabels ? (
           <span className="block truncate px-1.5">{partnerName || '—'}</span>
         ) : (
@@ -259,9 +268,6 @@ function Row({
       ) : null}
       <td className={TD}>
         <StatusDot invoice={inv} today={today} />
-      </td>
-      <td className={cn(TD, 'whitespace-nowrap text-[13px]')}>
-        <InvoiceDateCell invoice={inv} />
       </td>
       <td className={cn(TD, 'whitespace-nowrap pr-1.5 text-right')}>
         <span className="inline-flex items-center justify-end gap-0.5">

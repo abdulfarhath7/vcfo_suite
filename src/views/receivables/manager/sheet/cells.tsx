@@ -2,7 +2,7 @@
 
 import { Chip } from '@/components/ui/spectrum-chip';
 import { toastError } from '@/lib/toast-errors';
-import { daysLeft, sheetDate } from '@/lib/receivables/dates';
+import { daysLeft, monthShort, sheetDate } from '@/lib/receivables/dates';
 import { fxChange } from '@/lib/receivables/fx';
 import type { SheetInvoice } from '@/lib/receivables/model';
 import type { ManagerInvoiceDto } from '@/lib/receivables/wire';
@@ -169,5 +169,11 @@ export function StatusStack({ invoice, today }: { invoice: ManagerInvoiceDto; to
 
 /** v2 (the reminders were removed): the invoice date, or a dash on rows made before invoice dates were kept. */
 export function InvoiceDateCell({ invoice }: { invoice: SheetInvoice }) {
-  return <span className="tabular-nums text-ink-muted">{invoice.invoiceDate ? sheetDate(invoice.invoiceDate) : '—'}</span>;
+  return invoice.invoiceDate ? (
+    <span className="px-1.5 tabular-nums text-ink-2">{sheetDate(invoice.invoiceDate)}</span>
+  ) : (
+    <span className="px-1.5 tabular-nums text-ink-faint" title="No invoice date yet; the invoice month is shown">
+      {monthShort(invoice.invoiceMonth)}
+    </span>
+  );
 }
