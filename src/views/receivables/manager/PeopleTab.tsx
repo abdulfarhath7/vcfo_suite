@@ -75,7 +75,7 @@ export function PeopleTab({ data, actions, outlook, settingsHref }: { data: Mana
   const saveSettings = (patch: Partial<EmailSettingsDto>) => act.saveSettings.mutate(patch, { onError: (e) => toastError('Not saved', errorText(e)) });
   return (
     <div className="flex flex-col gap-4">
-      <Integrations outlook={outlook} whatsapp={p.whatsapp} settingsHref={settingsHref} onTest={() => act.testWhatsApp.mutate(undefined, { onSuccess: (r) => toastSuccess('Test sent', `To ${r.to}. Plain text arrives only within 24 hours of your last message to the firm's number.`), onError: (e) => toastError('Not sent', errorText(e)) })} testing={act.testWhatsApp.isPending} />
+      <Integrations outlook={outlook} whatsapp={p.whatsapp} settingsHref={settingsHref} onTest={() => act.testWhatsApp.mutate(undefined, { onSuccess: (r) => toastSuccess('Test sent', `To ${r.to}. Check WhatsApp on that phone.`), onError: (e) => toastError('Not sent', errorText(e)) })} testing={act.testWhatsApp.isPending} />
       <Partners data={data} people={p} actions={actions} act={act} saveSettings={saveSettings} />
       <Digest people={p} act={act} saveSettings={saveSettings} />
       <Clients data={data} people={p} act={act} />

@@ -90,8 +90,12 @@ class ReceivablesApiError extends Error {
 /** Fetch JSON from a receivables route; an error code becomes the plain message in ERROR_TEXT. */
 export async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
-  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new ReceivablesApiError((body.error && ERROR_TEXT[body.error]) || body.error || 'Something went wrong. Try again.', res.status, body.error);
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string; detail?: string };
+  if (!res.ok) {
+    const text = (body.error && ERROR_TEXT[body.error]) || body.error || 'Something went wrong. Try again.';
+    // A provider's own reason (DoubleTick) rides in `detail`, so the person sees why.
+    throw new ReceivablesApiError(body.detail ? `${text} ${body.detail}` : text, res.status, body.error);
+  }
   return body;
 }
 
