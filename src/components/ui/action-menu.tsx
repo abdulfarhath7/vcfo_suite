@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as M from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronRight, MoreHorizontal, type LucideIcon } from 'lucide-react';
+import { Check, ChevronRight, MoreVertical, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Kbd } from '@/components/ui/kbd';
 import { UserFace } from '@/components/common/UserFace';
@@ -77,7 +77,7 @@ export function ActionMenu({
               className,
             )}
           >
-            <MoreHorizontal size={16} strokeWidth={1.6} aria-hidden />
+            <MoreVertical size={16} strokeWidth={1.6} aria-hidden />
           </button>
         )}
       </M.Trigger>

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { standardDownloadName } from '@/lib/files/download-name';
-import { Check, Download, MoreHorizontal, Plus, RotateCcw, Trash2, Upload, X } from 'lucide-react';
+import { Check, Download, MoreVertical, Plus, RotateCcw, Trash2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/spectrum-chip';
 import { cn } from '@/lib/utils';
@@ -156,7 +156,7 @@ export function SalaryUpdatesTab({
               onClick={() => setMenu((m) => !m)}
               className="rounded p-1 text-brand-text hover:bg-hover"
             >
-              <MoreHorizontal className="size-5" aria-hidden />
+              <MoreVertical className="size-5" aria-hidden />
             </button>
             {menu ? (
               <div className="absolute right-0 top-9 z-10 w-52 rounded-md border-1.5 border-line bg-surface-raised p-1 shadow-lg">

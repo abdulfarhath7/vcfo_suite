@@ -4,7 +4,7 @@ import { DownloadDocumentsButton } from '@/components/document-downloads/Downloa
 import Link from 'next/link';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ExternalLink, FileSignature, ListPlus, Mail, MoreHorizontal, Repeat, TriangleAlert } from 'lucide-react';
+import { ExternalLink, FileSignature, ListPlus, Mail, MoreVertical, Repeat, TriangleAlert } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -237,7 +237,7 @@ export default function SuperProjectDetail() {
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" aria-label="More actions">
-                    <MoreHorizontal aria-hidden />
+                    <MoreVertical aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[180px]">

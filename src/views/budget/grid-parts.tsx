@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, MoreHorizontal, Paperclip, Plus } from 'lucide-react';
+import { MessageSquare, MoreVertical, Paperclip, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { sumSeries } from '@/lib/budget/engine';
@@ -55,7 +55,7 @@ export function MoreCell({ ready, row }: { ready: Ready; row: BudgetRow }) {
             <Paperclip size={12} /> {files}
           </span>
         ) : null}
-        <MoreHorizontal size={14} />
+        <MoreVertical size={14} />
       </button>
     </td>
   );

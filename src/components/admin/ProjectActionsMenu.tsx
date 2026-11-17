@@ -36,7 +36,7 @@ import { toastError, toastSuccess, toastEmailDispatch, errorMessage } from '@/li
 import type { EmailDispatchResult } from '@/lib/email/email-dispatch';
 import {
   Loader2,
-  MoreHorizontal,
+  MoreVertical,
   Pencil,
   Trash2,
   UserMinus,
@@ -301,7 +301,7 @@ export function ProjectActionsMenu({
               'rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink data-[state=open]:bg-surface-sunken data-[state=open]:text-ink'
             }
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreVertical className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52" onClick={(ev) => ev.stopPropagation()}>

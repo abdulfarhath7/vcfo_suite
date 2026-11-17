@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Briefcase, FolderPlus, KeyRound, Loader2, Mail, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Briefcase, FolderPlus, KeyRound, Loader2, Mail, MoreVertical, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -134,7 +134,7 @@ export function createPersonRow(ctx: FirmPeopleState) {
                     {deletingId === person.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                     )}
                   </Button>
                 </DropdownMenuTrigger>

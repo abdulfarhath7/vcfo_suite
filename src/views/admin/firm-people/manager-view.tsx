@@ -7,7 +7,7 @@ import { PeopleCard, PeopleProjectsGrid } from './parts';
 import { PersonMetricStats } from '@/components/metrics/people-cells';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { FolderPlus, Loader2, Mail, MoreHorizontal, Trash2, Users } from 'lucide-react';
+import { FolderPlus, Loader2, Mail, MoreVertical, Trash2, Users } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,7 +72,7 @@ export function renderManagerView(
                   {deletingId === selectedManager.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <MoreHorizontal className="h-3.5 w-3.5" />
+                    <MoreVertical className="h-3.5 w-3.5" />
                   )}
                   Actions
                 </Button>

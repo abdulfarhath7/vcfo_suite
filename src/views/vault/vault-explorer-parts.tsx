@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Check, ChevronRight, Download, ExternalLink, Eye, Folder, Loader2, MoreHorizontal, TrendingUp, User } from 'lucide-react';
+import { Check, ChevronRight, Download, ExternalLink, Eye, Folder, Loader2, MoreVertical, TrendingUp, User } from 'lucide-react';
 import { MilestoneDocumentLink } from '@/components/common/MilestoneDocumentLink';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -69,7 +69,7 @@ function RowMenu({ label, items }: { label: string; items: VaultMenuItem[] }) {
             aria-label={label}
             className="grid h-7 w-7 place-items-center rounded-sm text-ink-muted hover:bg-surface-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+            <MoreVertical className="h-4 w-4" strokeWidth={1.6} aria-hidden />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

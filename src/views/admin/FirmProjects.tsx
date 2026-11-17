@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { ActionMenu } from '@/components/ui/action-menu';
@@ -96,7 +96,7 @@ function FirmProjectsInner() {
               label="More actions"
               trigger={
                 <Button size="icon" variant="secondary" aria-label="More actions" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} />
+                  <MoreVertical className="h-4 w-4" strokeWidth={1.6} />
                 </Button>
               }
               items={[

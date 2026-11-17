@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BellRing, CheckCheck, CheckCircle2, Download, MoreHorizontal, Plus, Sparkles } from 'lucide-react';
+import { BellRing, CheckCheck, CheckCircle2, Download, MoreVertical, Plus, Sparkles } from 'lucide-react';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { DashSection } from '@/components/dash/DashSection';
 import { PlanTimeline } from '@/components/work/PlanTimeline';
@@ -594,7 +594,7 @@ export function WorkScreen({
             label="More actions"
             trigger={
               <Button size="icon" variant="secondary" aria-label="More actions">
-                <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} />
+                <MoreVertical className="h-4 w-4" strokeWidth={1.6} />
               </Button>
             }
             items={[{ label: 'Export', Icon: Download, onSelect: exportShown }]}

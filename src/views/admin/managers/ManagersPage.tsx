@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
@@ -242,7 +242,7 @@ export default function ManagersPage() {
                   label="More actions"
                   trigger={
                     <Button size="icon" variant="secondary" aria-label="More actions">
-                      <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} />
+                      <MoreVertical className="h-4 w-4" strokeWidth={1.6} />
                     </Button>
                   }
                   items={[

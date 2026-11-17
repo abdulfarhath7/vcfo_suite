@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useRef } from 'react';
-import { AlertCircle, AlertTriangle, CalendarClock, Check, CircleCheck, CircleDashed, Clock, MoreHorizontal, User } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CalendarClock, Check, CircleCheck, CircleDashed, Clock, MoreVertical, User } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { FilterSelect } from '@/components/ui/native-select';
@@ -54,7 +54,7 @@ const CAT_DOT: Record<string, string> = {
 /** Grid cell look per word: done green tick, working blue dots, waiting teal mark, not started grey, not needed hatched. */
 const CELL: Record<'done' | 'run' | 'wait' | 'late' | 'none' | 'na', { cls: string; Icon?: typeof Check; label: string }> = {
   done: { cls: 'bg-positive-soft text-positive', Icon: Check, label: 'Done' },
-  run: { cls: 'bg-brand-soft text-brand-text', Icon: MoreHorizontal, label: 'In progress' },
+  run: { cls: 'bg-brand-soft text-brand-text', Icon: MoreVertical, label: 'In progress' },
   wait: { cls: 'bg-waiting-soft text-waiting', Icon: AlertCircle, label: 'Waiting' },
   late: { cls: 'bg-danger-soft text-danger', Icon: AlertTriangle, label: 'Overdue' },
   none: { cls: 'bg-surface-sunken text-ink-faint', label: 'Not started' },

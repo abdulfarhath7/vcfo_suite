@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { PlannerCalendar, type PlannerItem } from '@/components/work/PlannerCalendar';
 import { addDaysYmd, istYmdOf, weekOf } from '@/lib/work/planner';
-import { CheckCircle2, MoreHorizontal, Plus, Sparkles, UserMinus } from 'lucide-react';
+import { CheckCircle2, MoreVertical, Plus, Sparkles, UserMinus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
@@ -111,7 +111,7 @@ function LeadPageInner({ leadKey }: { leadKey: string }) {
           label="More actions"
           trigger={
             <Button size="icon" variant="secondary" aria-label="More actions">
-              <MoreHorizontal className="h-4 w-4" strokeWidth={1.6} />
+              <MoreVertical className="h-4 w-4" strokeWidth={1.6} />
             </Button>
           }
           items={[

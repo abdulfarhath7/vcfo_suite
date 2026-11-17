@@ -1,7 +1,7 @@
 'use client';
 
 import type { KeyboardEvent, ReactNode } from 'react';
-import { ArrowUpRight, BellRing, Check, Copy, MoreHorizontal, Pencil, UserRoundPlus, Users, type LucideIcon } from 'lucide-react';
+import { ArrowUpRight, BellRing, Check, Copy, MoreVertical, Pencil, UserRoundPlus, Users, type LucideIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -149,7 +149,7 @@ export function RowMoreMenu({ onEdit, reassign, link }: { onEdit?: () => void; r
           onClick={(e) => e.stopPropagation()}
           className="grid h-7 w-7 place-items-center rounded-md text-ink-muted hover:bg-ink/[.06] hover:text-ink data-[state=open]:bg-ink/[.06] data-[state=open]:text-ink"
         >
-          <MoreHorizontal className="h-[15px] w-[15px]" strokeWidth={1.6} aria-hidden />
+          <MoreVertical className="h-[15px] w-[15px]" strokeWidth={1.6} aria-hidden />
         </button>
       </DropdownMenuTrigger>
       {/* Clicks and keys inside the portal still bubble through React to the row; stop them here. */}
