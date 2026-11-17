@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Plus, Send, X } from 'lucide-react';
+import { Pencil, Plus, Send, Trash2, X } from 'lucide-react';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -34,6 +35,7 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<PartnerDto | null>(null);
   const [managing, setManaging] = useState<PartnerDto | null>(null);
+  const [deleting, setDeleting] = useState<PartnerDto | null>(null);
 
   const stats = new Map(data.partners.map((p) => [p.id, statOf(people.clients.filter((c) => c.partnerId === p.id))]));
   const known = new Set(data.partners.map((p) => p.id));
@@ -79,6 +81,10 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
                 <Pencil aria-hidden />
                 Edit
               </Button>
+              <Button size="sm" variant="secondary" className={cn(ROW_BTN, 'text-danger')} onClick={() => setDeleting(partner)} aria-label={`Delete ${partner.name}`}>
+                <Trash2 aria-hidden />
+                Delete
+              </Button>
             </>
           ) : null}
         </div>
@@ -95,6 +101,22 @@ export function PartnersPane({ data, people, actions, act }: { data: ManagerShee
         </div>
       </section>
 
+      {deleting ? (
+        <DangerConfirm
+          open
+          onOpenChange={(o) => !o && setDeleting(null)}
+          title={`Delete ${deleting.name}?`}
+          body={`${deleting.name}'s clients and invoices stay, with no partner, until you give them another. This cannot be undone.`}
+          word="DELETE"
+          confirm="Delete partner"
+          onConfirm={() =>
+            act.deletePartner
+              .mutateAsync(deleting.id)
+              .then(() => (setDeleting(null), setPicked(null), toastSuccess(`${deleting.name} deleted`)))
+              .catch((e) => toastError('Not deleted', errorText(e)))
+          }
+        />
+      ) : null}
       {editing ? (
         <EditPartnerDialog
           partner={editing}

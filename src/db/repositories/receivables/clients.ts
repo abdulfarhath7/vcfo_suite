@@ -5,7 +5,7 @@ import { receivableClients, receivableInvoices, receivablePartners } from '@/db/
 import type { AuthContext } from '@/auth/guards';
 import { clientByPrefix, clientKey } from '@/lib/receivables/client-key';
 import type { ClientDto } from '@/lib/receivables/v2-wire';
-import { UUID, invalid, logChange, notFound, num, scopedSheet } from './shared';
+import { UUID, conflict, invalid, logChange, notFound, num, scopedSheet } from './shared';
 
 /**
  * RECEIVABLES v2 — the sheet's clients (docs/specs/receivables/V2.md). Every function goes through
@@ -263,4 +263,21 @@ export async function findOrCreateClient(tx: DbLike, sheetId: string, name: stri
     .where(and(eq(receivableClients.sheetId, sheetId), eq(receivableClients.clientKey, key)))
     .limit(1);
   return again;
+}
+
+/**
+ * Deletes a client (owner, 17 Nov 2026), only when it has no live invoices, so no invoice is left
+ * without its client (409 `client_has_invoices`). Imported rows and logged emails keep their copy
+ * of the name.
+ */
+export async function deleteClient(ctx: AuthContext, clientId: string): Promise<void> {
+  const { client, sheetId } = await scopedClient(ctx, clientId);
+  const [inv] = await db
+    .select({ id: receivableInvoices.id })
+    .from(receivableInvoices)
+    .where(and(eq(receivableInvoices.clientId, client.id), isNull(receivableInvoices.deletedAt)))
+    .limit(1);
+  if (inv) throw conflict('client_has_invoices');
+  await db.delete(receivableClients).where(and(eq(receivableClients.id, client.id), eq(receivableClients.sheetId, sheetId)));
+  await logChange({ sheetId, invoiceId: null, actorId: ctx.userId, summary: `Client ${client.name} deleted`, affectsPage: false });
 }

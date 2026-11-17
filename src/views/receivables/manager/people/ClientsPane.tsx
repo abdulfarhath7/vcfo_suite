@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Plus, Send } from 'lucide-react';
+import { Pencil, Plus, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { Input } from '@/components/ui/input';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import type { ClientDto, PeopleDto } from '@/lib/receivables/v2-wire';
@@ -19,6 +20,7 @@ import { ROW_BTN, ROW_INPUT, TD, TH, errorText, sendStatement, statementBlock, t
  */
 export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; people: PeopleDto; act: PeopleActions }) {
   const [editing, setEditing] = useState<ClientDto | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<ClientDto | null>(null);
   const [q, setQ] = useState('');
   const shown = people.clients.filter((c) => !q.trim() || c.name.toLowerCase().includes(q.trim().toLowerCase()));
   const save = (patch: ClientWrite & { id: string }) => act.updateClient.mutate(patch, { onError: (e) => toastError('Not saved', errorText(e)) });
@@ -106,6 +108,16 @@ export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; peop
                       <Button size="iconSm" variant="quiet" className="!h-7 !w-7" aria-label={`Edit ${c.name}`} onClick={() => setEditing(c)}>
                         <Pencil aria-hidden />
                       </Button>
+                      <Button
+                        size="iconSm"
+                        variant="quiet"
+                        className="!h-7 !w-7 text-danger"
+                        aria-label={`Delete ${c.name}`}
+                        title={c.openCount ? 'Delete or move its invoices first' : 'Delete this client'}
+                        onClick={() => setDeleting(c)}
+                      >
+                        <Trash2 aria-hidden />
+                      </Button>
                     </span>
                   </td>
                 </tr>
@@ -121,6 +133,22 @@ export function ClientsPane({ data, people, act }: { data: ManagerSheetDto; peop
           </tbody>
         </table>
       </div>
+      {deleting ? (
+        <DangerConfirm
+          open
+          onOpenChange={(o) => !o && setDeleting(null)}
+          title={`Delete ${deleting.name}?`}
+          body="Only a client with no invoices can be deleted. This cannot be undone."
+          word="DELETE"
+          confirm="Delete client"
+          onConfirm={() =>
+            act.deleteClient
+              .mutateAsync(deleting.id)
+              .then(() => (setDeleting(null), toastSuccess(`${deleting.name} deleted`)))
+              .catch((e) => toastError('Not deleted', errorText(e)))
+          }
+        />
+      ) : null}
       {editing ? (
         <ClientDialog
           client={editing === 'new' ? null : editing}

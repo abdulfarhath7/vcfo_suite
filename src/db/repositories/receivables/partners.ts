@@ -66,3 +66,16 @@ export async function updatePartner(
   await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `Client partner ${row.name} updated`, affectsPage: patch.name !== undefined && patch.name !== p.name });
   return toPartner(row);
 }
+
+/**
+ * Deletes a client partner (owner, 17 Nov 2026). Their clients and invoices keep everything else
+ * and show "No partner" (the foreign keys set it to null); the log keeps the partner's name.
+ */
+export async function deletePartner(ctx: AuthContext, partnerId: string): Promise<void> {
+  if (!UUID.test(partnerId ?? '')) throw notFound();
+  const [p] = await db.select().from(receivablePartners).where(eq(receivablePartners.id, partnerId)).limit(1);
+  if (!p) throw notFound();
+  const sheet = await scopedSheet(ctx, p.sheetId);
+  await db.delete(receivablePartners).where(and(eq(receivablePartners.id, p.id), eq(receivablePartners.sheetId, sheet.id)));
+  await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `Client partner ${p.name} (${p.email}) deleted; their clients and invoices now have no partner` });
+}

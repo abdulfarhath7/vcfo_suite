@@ -69,6 +69,8 @@ export function usePeopleActions(sheetId: string) {
       onSettled,
     }),
     removeRecipient: useMutation({ mutationFn: (id: string) => call(`/api/receivables/digest-recipients/${id}`, json('DELETE')), onSettled }),
+    deletePartner: useMutation({ mutationFn: (id: string) => call(`/api/receivables/partners/${id}`, json('DELETE')), onSettled }),
+    deleteClient: useMutation({ mutationFn: (id: string) => call(`/api/receivables/clients/${id}`, json('DELETE')), onSettled }),
     sendStatement: useMutation({ mutationFn: (clientId: string) => call<{ ok: true; queued: true; logId: string }>(`/api/receivables/clients/${clientId}/statement`, json('POST')), onSettled }),
     retryEmail: useMutation({ mutationFn: (logId: string) => call<{ ok: true; queued: true }>(`/api/receivables/email-log/${logId}/retry`, json('POST')), onSettled }),
     testWhatsApp: useMutation({ mutationFn: () => call<{ ok: true; to: string }>(`${sheetUrl}/whatsapp-test`, json('POST')) }),

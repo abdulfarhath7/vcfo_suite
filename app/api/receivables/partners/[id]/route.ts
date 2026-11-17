@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { updatePartner } from '@/db/repositories/receivables';
+import { deletePartner, updatePartner } from '@/db/repositories/receivables';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../_respond';
 
 /**
@@ -25,6 +25,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   try {
     return NextResponse.json({ partner: await updatePartner(guard.ctx, id, body.data) });
+  } catch (e) {
+    return receivablesError(e);
+  }
+}
+
+/** DELETE /api/receivables/partners/:id — deletes a client partner; their clients and invoices show "No partner". */
+export async function DELETE(_request: Request, context: RouteContext) {
+  const guard = await guardReceivables();
+  if (guard.ok === false) return denied(guard);
+  const { id } = await context.params;
+  try {
+    await deletePartner(guard.ctx, id);
+    return NextResponse.json({ ok: true });
   } catch (e) {
     return receivablesError(e);
   }

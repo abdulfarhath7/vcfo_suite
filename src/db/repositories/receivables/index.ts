@@ -5,8 +5,8 @@ export { ReceivablesError, type InvoiceRow, type SheetRow } from './shared';
 export { emailSettingsOf, getEmailSettings, getManagerSheet, listMySheets, systemAddSheetEditor, systemCreateSheet, updateEmailSettings, updateSheetSettings, type ManagerSheet, type SheetSummary } from './sheets';
 export { addInvoice, deleteInvoice, markReceived, reopenInvoice, setReminderPause, updateInvoice, type InvoiceInput, type InvoicePatch } from './invoices';
 export { getVersion, listVersions, publishSheet, type VersionMeta } from './versions';
-export { addPartner, updatePartner } from './partners';
-export { addClient, listClients, setPartnerClients, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
+export { addPartner, deletePartner, updatePartner } from './partners';
+export { addClient, deleteClient, listClients, setPartnerClients, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
 export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
 export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
 export {
