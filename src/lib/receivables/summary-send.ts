@@ -2,14 +2,11 @@ import 'server-only';
 import type { AuthContext } from '@/auth/guards';
 import { finishSummarySend } from '@/db/repositories/receivables';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
-import { todayIst } from './dates';
-import type { SnapshotRow } from './model';
-import { receivablesWorkbook, receivablesWorkbookName } from './xlsx';
 
 /**
  * The summary email's slow part (docs/specs/receivables/PLAN.md, Phase 4). The send-summary route
  * checks everything that can fail fast, logs the send as `sending`, answers 202 and hands this to
- * `after`. It builds the workbook once, sends through Graph and marks the log row `sent` or
+ * `after`. It sends through Graph (never with an Excel attachment) and marks the log row `sent` or
  * `failed` with a reason code the dialog can show.
  */
 
@@ -26,20 +23,11 @@ export async function deliverSummary(
   ctx: AuthContext,
   sheetId: string,
   sendId: string,
-  job: { clientOrgName: string; snapshot: SnapshotRow[]; attachExcel: boolean; mail: { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string } },
+  job: { mail: { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string } },
 ): Promise<void> {
   try {
-    const today = todayIst();
-    const attachments = job.attachExcel
-      ? [
-          {
-            name: receivablesWorkbookName(job.clientOrgName, today),
-            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            contentBase64: Buffer.from(await receivablesWorkbook(job.snapshot, today)).toString('base64'),
-          },
-        ]
-      : [];
-    await sendMailViaOutlook(ctx, { ...job.mail, attachments });
+    // The firm never sends an Excel file attached to an email (owner, 17 Nov 2026).
+    await sendMailViaOutlook(ctx, job.mail);
     await finishSummarySend(ctx, sheetId, sendId, { status: 'sent' });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

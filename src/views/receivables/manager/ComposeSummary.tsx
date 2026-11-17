@@ -16,7 +16,7 @@ import { stamp } from '../format';
 /**
  * Send email (Phase 4): the summary in the finance team's format, built from the published
  * version, sent from the manager's own Outlook. To, Cc and Bcc take any address; the ready-made
- * lists fill them; the body is editable; the Excel file is attached by default.
+ * lists fill them; the body is editable; no Excel file is ever attached.
  */
 
 type Field = 'to' | 'cc' | 'bcc';
@@ -109,7 +109,6 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const [people, setPeople] = useState<People>({ to: [], cc: [], bcc: [] });
   const [listKey, setListKey] = useState('');
   const [subject, setSubject] = useState('');
-  const [attachExcel, setAttachExcel] = useState(true);
 
   // Fill the form once the draft arrives: the first list (last time, or all partners).
   useEffect(() => {
@@ -134,7 +133,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const submit = () => {
     const html = body.current?.innerHTML ?? '';
     send.mutate(
-      { ...people, subject, html, attachExcel },
+      { ...people, subject, html },
       {
         onSuccess: (r) => {
           // The server answered 202 and sends after the response; the toast follows the send.
@@ -232,9 +231,6 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
             className="max-h-[46vh] min-h-[260px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3.5 text-[13px] text-black outline-none [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
             dangerouslySetInnerHTML={{ __html: summary.data.html }}
           />
-          <label className="flex items-center gap-2 text-[13px]">
-            <input type="checkbox" checked={attachExcel} onChange={(e) => setAttachExcel(e.target.checked)} /> Attach the Excel file
-          </label>
         </div>
       ) : null}
     </Modal>

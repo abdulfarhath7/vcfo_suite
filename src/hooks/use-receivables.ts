@@ -144,7 +144,7 @@ export function useOutlookStatus() {
   return useQuery({ queryKey: ['outlook', 'status'], queryFn: () => call<OutlookStatusDto>('/api/outlook') });
 }
 
-export type SummarySendInput = { to: EmailRecipient[]; cc: EmailRecipient[]; bcc: EmailRecipient[]; subject: string; html: string; attachExcel: boolean };
+export type SummarySendInput = { to: EmailRecipient[]; cc: EmailRecipient[]; bcc: EmailRecipient[]; subject: string; html: string };
 
 /** The 202 of Send: the send is logged as `sending` and finishes after the response. */
 export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; to: number; cc: number; bcc: number };

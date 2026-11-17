@@ -9,12 +9,12 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
 
 /**
  * POST /api/receivables/sheets/:id/send-summary — sends the (edited) summary from the manager's
- * own Outlook to any To, Cc and Bcc, with the published version as an Excel file when asked.
+ * own Outlook to any To, Cc and Bcc. No Excel file is ever attached (owner, 17 Nov 2026).
  *
  * Everything that can fail fast is checked before the answer: the input, the addresses, the
  * published version and the Outlook link (409 outlook_not_connected or outlook_reconnect). The
- * send is then logged as `sending` and the route answers 202 { ok, queued, sendId }. Building the
- * workbook and the Graph call run after the response (`after` from next/server, because Inngest
+ * send is then logged as `sending` and the route answers 202 { ok, queued, sendId }. The Graph call
+ * runs after the response (`after` from next/server, because Inngest
  * cloud keys are not set on App Runner); the log row ends as `sent` or `failed` with the reason.
  *
  * GET ?send=<sendId> — the state of that send, which the dialog polls to show the outcome.
@@ -26,7 +26,6 @@ const schema = z.object({
   bcc: z.array(person).max(100).default([]),
   subject: z.string().min(1, 'subject_required').max(200),
   html: z.string().min(1, 'body_required').max(300_000),
-  attachExcel: z.boolean().default(true),
 });
 
 export async function POST(request: Request, context: RouteContext) {
@@ -47,9 +46,6 @@ export async function POST(request: Request, context: RouteContext) {
     const ctx = guard.ctx;
     after(() =>
       deliverSummary(ctx, id, sendId, {
-        clientOrgName: src.sheet.clientOrgName,
-        snapshot: src.version.snapshot,
-        attachExcel: input.attachExcel,
         mail: {
           to: people.to.map((r) => r.email),
           cc: people.cc.map((r) => r.email),

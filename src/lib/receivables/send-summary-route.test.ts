@@ -59,14 +59,13 @@ beforeEach(() => {
 });
 
 describe('send-summary route', () => {
-  it('answers 202 before the workbook or the send runs, then sends To, Cc and Bcc with the Excel file', async () => {
+  it('answers 202 before the send runs, then sends To, Cc and Bcc with no attachment', async () => {
     const res = await call({
       to: [{ name: 'Yash', email: 'yash@summit.in' }],
       cc: [{ name: 'Rakesh', email: 'rakesh@summit.in' }, { name: 'Yash', email: 'YASH@summit.in' }],
       bcc: [{ name: '', email: 'audit@sbcllp.in' }],
       subject: ' RE: Receivables update - 3 November ',
       html: '<p onclick="x()">Hi Team,</p><script>bad()</script>',
-      attachExcel: true,
     });
     expect(res.status).toBe(202);
     expect(await res.json()).toEqual({ ok: true, queued: true, sendId: SEND_ID, from: 'krishna@sbcllp.in', to: 1, cc: 1, bcc: 1 });
@@ -79,16 +78,9 @@ describe('send-summary route', () => {
     const [sentCtx, mail] = sendMailViaOutlook.mock.calls[0];
     expect(sentCtx).toBe(ctx);
     expect(mail).toMatchObject({ to: ['yash@summit.in'], cc: ['rakesh@summit.in'], bcc: ['audit@sbcllp.in'], subject: 'RE: Receivables update - 3 November', html: '<p>Hi Team,</p>' });
-    expect(mail.attachments).toHaveLength(1);
-    expect(mail.attachments[0].name).toMatch(/^Receivables_Summit-Consulting_\d{2}-\d{2}-\d{4}\.xlsx$/);
-    expect(mail.attachments[0].contentBase64.length).toBeGreaterThan(100);
+    // The firm never sends an Excel file attached to an email.
+    expect(mail.attachments).toBeUndefined();
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'sent' });
-  });
-
-  it('can leave the Excel file out', async () => {
-    await call({ to: [{ name: '', email: 'a@b.in' }], subject: 's', html: '<p>x</p>', attachExcel: false });
-    await runAfter();
-    expect(sendMailViaOutlook.mock.calls[0][1].attachments).toEqual([]);
   });
 
   it('records a failed send with its reason when Graph fails after the response', async () => {
