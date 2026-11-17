@@ -20,18 +20,20 @@ import { DatePick } from './DatePick';
  * The "Awaiting approval" panel at the top of the Sheet tab (docs/specs/receivables/V2.md). It
  * shows every pending row, from a Tally upload or a staff amount change, grouped Partner ▸ Client.
  *
- * Ticks: NEW and CHANGED rows start ticked; SAME rows are greyed and cannot be ticked; NO PARTNER
+ * Ticks: NEW, CHANGED and MATCHED rows start ticked (MATCHED: an invoice with no number that Tally
+ * matched by client and amount; approving fills in the number); SAME rows are greyed and cannot be ticked; NO PARTNER
  * rows stay unticked until a partner is picked for their client. Credit days are the client's
  * (one box per client, which also moves the due dates of its new rows); the due date is per row.
  * "Approve N → Invoices" sends the ticked rows with their edits; rows the server refuses (a
  * received invoice, a client with no partner) stay in the panel and are named in a toast.
  */
 
-const KIND: Record<ImportRowKind, { label: string; tone: 'ok' | 'warn' | 'idle' | 'bad' }> = {
+const KIND: Record<ImportRowKind, { label: string; tone: 'ok' | 'warn' | 'idle' | 'bad' | 'prog' }> = {
   new: { label: 'NEW', tone: 'ok' },
   changed: { label: 'CHANGED', tone: 'warn' },
   same: { label: 'SAME', tone: 'idle' },
   no_partner: { label: 'NO PARTNER', tone: 'bad' },
+  matched: { label: 'MATCHED', tone: 'prog' },
 };
 
 const REFUSED: Record<string, string> = {
@@ -72,7 +74,7 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       for (const r of rows) {
         if (touched.has(r.id)) {
           if (prev.has(r.id)) next.add(r.id);
-        } else if (r.kind === 'new' || r.kind === 'changed') next.add(r.id);
+        } else if (r.kind === 'new' || r.kind === 'changed' || r.kind === 'matched') next.add(r.id);
       }
       return next;
     });
@@ -168,10 +170,11 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       onError: (e) => toastError('Not discarded', e instanceof Error ? e.message : undefined),
     });
 
-  const counts = rows.reduce<Record<ImportRowKind, number>>((acc, r) => ((acc[r.kind] += 1), acc), { new: 0, changed: 0, same: 0, no_partner: 0 });
+  const counts = rows.reduce<Record<ImportRowKind, number>>((acc, r) => ((acc[r.kind] += 1), acc), { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0 });
   const meta = [
     counts.new ? `${counts.new} new` : '',
     counts.changed ? `${counts.changed} changed` : '',
+    counts.matched ? `${counts.matched} matched by client and amount` : '',
     counts.no_partner ? `${counts.no_partner} with no partner` : '',
     counts.same ? `${counts.same} same` : '',
   ]
@@ -317,7 +320,14 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
                               )}
                             </td>
                             <td className={cn(TD, 'text-[12.5px] text-ink-2')}>
-                              {r.reason ?? (r.kind === 'changed' ? 'Tally shows a different amount' : r.kind === 'same' ? 'Already on the sheet' : '')}
+                              {r.reason ??
+                                (r.kind === 'changed'
+                                  ? 'Tally shows a different amount'
+                                  : r.kind === 'same'
+                                    ? 'Already on the sheet'
+                                    : r.kind === 'matched'
+                                      ? 'Same client and amount as an invoice with no number; approve to fill in the Tally number'
+                                      : '')}
                               {r.requestedByName && r.source === 'staff' ? <span className="block text-[11.5px] text-ink-muted">{`by ${r.requestedByName}`}</span> : null}
                             </td>
                           </tr>

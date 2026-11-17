@@ -19,7 +19,11 @@ export type ClientDto = {
 
 export type DigestRecipientDto = { id: string; name: string; email: string; active: boolean };
 
-export type ImportRowKind = 'new' | 'changed' | 'same' | 'no_partner';
+/**
+ * `matched`: an invoice with no number (loaded from the weekly workbook) that a Tally row matched by
+ * client and amount; approving it fills in the Tally invoice number and date.
+ */
+export type ImportRowKind = 'new' | 'changed' | 'same' | 'no_partner' | 'matched';
 export type ImportRowStatus = 'pending' | 'approved' | 'rejected' | 'skipped';
 
 export type ImportRowDto = {
@@ -56,6 +60,8 @@ export type ImportBatchDto = {
   changedCount: number;
   sameCount: number;
   noPartnerCount: number;
+  /** Rows matched by client and amount (counted from the rows, not stored). */
+  matchedCount: number;
 };
 
 /** Everything the approval panel shows: the pending batch (if any) and every pending row. */

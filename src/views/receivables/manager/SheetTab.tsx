@@ -56,7 +56,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
         const b = res.batch;
         toastSuccess(
           `${b?.rowCount ?? res.rows.length} rows from ${b?.fileName ?? file.name}`,
-          b ? `${b.newCount} new, ${b.changedCount} changed, ${b.noPartnerCount} with no partner, ${b.sameCount} same. Approve them above the sheet.` : undefined,
+          b ? `${b.newCount} new, ${b.changedCount} changed, ${b.matchedCount} matched by client and amount, ${b.noPartnerCount} with no partner, ${b.sameCount - b.matchedCount} same. Approve them above the sheet.` : undefined,
         );
       },
       onError: (e) => toastError('Not imported', s.errorText(e)),

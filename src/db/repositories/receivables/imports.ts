@@ -4,6 +4,7 @@ import { db } from '@/db/client';
 import { profiles, receivableClients, receivableImportBatches, receivableImportRows, receivableInvoices } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { addDaysIso, monthStart } from '@/lib/receivables/dates';
+import { clientKey } from '@/lib/receivables/client-key';
 import { voucherKey, type TallySalesRegister } from '@/lib/receivables/tally-sales-register';
 import type { ApproveEdit, ImportBatchDto, ImportRowDto, ImportRowKind, PendingImportsDto } from '@/lib/receivables/v2-wire';
 import { cleanCreditDays, findOrCreateClient, sheetPartnerId, type ClientRow } from './clients';
@@ -18,8 +19,14 @@ import { ISO_DATE, UUID, conflict, invalid, invoiceLabel, logChange, money, notF
  *
  * Matching: invoices have no unique key on `invoice_no`, so a row matches a live invoice of the
  * sheet by `voucherKey` (leading zeros dropped in each number), the same way
- * scripts/provision-summit-receivables.ts dedupes by invoice number.
+ * scripts/provision-summit-receivables.ts dedupes by invoice number. A row with no such match then
+ * tries the invoices that have no number yet (loaded from the weekly workbook): the same client
+ * (`client_key`) and the same amount within one rupee, the earliest due date first. That row is
+ * MATCHED, and approving it fills in the invoice number, date and GSTIN from Tally.
  */
+
+/** Amounts within this many rupees count as the same invoice when matching by client and amount. */
+const AMOUNT_MATCH_TOLERANCE = 1;
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type ImportRow = typeof receivableImportRows.$inferSelect;
@@ -49,6 +56,31 @@ async function invoicesByKey(tx: Tx | typeof db, sheetId: string): Promise<Map<s
   const map = new Map<string, InvoiceRow>();
   for (const r of rows) if (r.invoiceNo) map.set(voucherKey(r.invoiceNo), r);
   return map;
+}
+
+/** The sheet's live invoices with no invoice number yet, for matching by client and amount. */
+async function unnumberedInvoices(tx: Tx | typeof db, sheetId: string): Promise<InvoiceRow[]> {
+  const rows = await tx
+    .select()
+    .from(receivableInvoices)
+    .where(and(eq(receivableInvoices.sheetId, sheetId), isNull(receivableInvoices.deletedAt), isNull(receivableInvoices.invoiceNo)));
+  return rows.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
+}
+
+/**
+ * The first unnumbered invoice of this client whose amount is within a rupee of `amount`, not yet
+ * claimed by another row of the same upload. The client is the same when the invoice's client
+ * record is, or when the two names have the same `clientKey`.
+ */
+function claimByAmount(pool: InvoiceRow[], claimed: Set<string>, key: string, clientId: string, amount: number): InvoiceRow | undefined {
+  const hit = pool.find(
+    (inv) =>
+      !claimed.has(inv.id) &&
+      (inv.clientId === clientId || clientKey(inv.clientName) === key) &&
+      Math.abs((num(inv.amountInr) ?? 0) + (num(inv.partPaid) ?? 0) - amount) <= AMOUNT_MATCH_TOLERANCE,
+  );
+  if (hit) claimed.add(hit.id);
+  return hit;
 }
 
 /** Closes a batch once nothing but SAME rows waits in it: the SAME rows are skipped then. */
@@ -105,8 +137,10 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
       .returning();
 
     const byKey = await invoicesByKey(tx, sheet.id);
+    const unnumbered = await unnumberedInvoices(tx, sheet.id);
+    const claimed = new Set<string>();
     const clients = new Map<string, ClientRow>();
-    const counts: Record<ImportRowKind, number> = { new: 0, changed: 0, same: 0, no_partner: 0 };
+    const counts: Record<ImportRowKind, number> = { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0 };
     const values: Array<typeof receivableImportRows.$inferInsert> = [];
     for (const r of parsed.rows) {
       const cacheKey = r.clientName.toLowerCase();
@@ -115,9 +149,14 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
         client = await findOrCreateClient(tx, sheet.id, r.clientName, r.gstin);
         clients.set(cacheKey, client);
       }
-      const match = byKey.get(r.invoiceKey);
+      let match = byKey.get(r.invoiceKey);
       let kind: ImportRowKind;
-      if (match) {
+      // No invoice with this number: try an unnumbered invoice of the same client and amount.
+      const byAmount = match ? undefined : claimByAmount(unnumbered, claimed, clientKey(r.clientName), client.id, r.amountInr);
+      if (byAmount) {
+        match = byAmount;
+        kind = 'matched';
+      } else if (match) {
         const same = sameMoney(num(match.amountInr), r.amountInr);
         kind = same ? 'same' : 'changed';
         // A SAME row is the Tally books agreeing with the sheet: the "Fix in Tally" flag goes, and an
@@ -151,7 +190,8 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
     for (let i = 0; i < values.length; i += 200) await tx.insert(receivableImportRows).values(values.slice(i, i + 200));
     await tx
       .update(receivableImportBatches)
-      .set({ rowCount: values.length, newCount: counts.new, changedCount: counts.changed, sameCount: counts.same, noPartnerCount: counts.no_partner, updatedAt: now })
+      // MATCHED rows have no column of their own; they are counted with SAME here and shown apart from the rows.
+      .set({ rowCount: values.length, newCount: counts.new, changedCount: counts.changed, sameCount: counts.same + counts.matched, noPartnerCount: counts.no_partner, updatedAt: now })
       .where(eq(receivableImportBatches.id, batch.id));
     await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `Tally Sales Register ${name} uploaded: ${values.length} rows waiting for approval`, affectsPage: false }, tx);
   });
@@ -190,6 +230,7 @@ export async function getPendingImports(ctx: AuthContext, sheetId: string): Prom
         changedCount: b.batch.changedCount,
         sameCount: b.batch.sameCount,
         noPartnerCount: b.batch.noPartnerCount,
+        matchedCount: rows.filter((r) => r.row.kind === 'matched' && r.row.batchId === b.batch.id).length,
       }
     : null;
   return {
@@ -286,6 +327,46 @@ export async function approveImportRows(ctx: AuthContext, sheetId: string, rowId
       const client = r.clientId ? clients.get(r.clientId) : undefined;
       if (r.kind === 'same') {
         skipped.push(r.id);
+        continue;
+      }
+      if (r.kind === 'matched') {
+        // Fill in what Tally knows about an invoice the workbook loaded without a number.
+        const [inv] = r.invoiceId
+          ? await tx
+              .select()
+              .from(receivableInvoices)
+              .where(and(eq(receivableInvoices.id, r.invoiceId), eq(receivableInvoices.sheetId, sheet.id), isNull(receivableInvoices.deletedAt)))
+              .limit(1)
+          : [];
+        if (!inv) {
+          outcome.refused.push({ rowId: r.id, code: 'not_found' });
+          continue;
+        }
+        if (inv.invoiceNo && r.invoiceKey && voucherKey(inv.invoiceNo) !== r.invoiceKey) {
+          outcome.refused.push({ rowId: r.id, code: 'already_exists' });
+          continue;
+        }
+        const dueDate = e?.dueDate && ISO_DATE.test(e.dueDate) ? e.dueDate : null;
+        const [row] = await tx
+          .update(receivableInvoices)
+          .set({
+            invoiceNo: r.invoiceNo,
+            invoiceDate: inv.invoiceDate ?? (r.invoiceDate ? String(r.invoiceDate) : null),
+            gstin: inv.gstin ?? r.gstin,
+            clientId: inv.clientId ?? r.clientId,
+            tallyMismatch: false,
+            ...(dueDate ? { dueDate } : {}),
+            updatedAt: now,
+          })
+          .where(eq(receivableInvoices.id, inv.id))
+          .returning();
+        await logChange(
+          { sheetId: sheet.id, invoiceId: inv.id, actorId: ctx.userId, summary: `${invoiceLabel(row)} matched to Tally by client and amount`, field: 'invoiceNo', before: inv.invoiceNo, after: r.invoiceNo },
+          tx,
+        );
+        if (r.invoiceKey) byKey.set(r.invoiceKey, row);
+        outcome.invoiceIds.push(inv.id);
+        decided.push(r.id);
         continue;
       }
       if (r.kind === 'new' || r.kind === 'no_partner') {

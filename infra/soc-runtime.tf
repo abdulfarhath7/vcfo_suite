@@ -69,6 +69,7 @@ locals {
   m7_secret_arns = concat(
     aws_secretsmanager_secret.auth_secret_previous[*].arn,
     aws_secretsmanager_secret.credentials_encryption_key[*].arn,
+    aws_secretsmanager_secret.doubletick_api_key[*].arn,
   )
 }
 

@@ -242,6 +242,8 @@ locals {
       } : {},
       { for id in var.ask_vcfo_features : "ASK_VCFO_FEATURE_${id}" => "true" },
     ) : {},
+    # Receivables v2: the DoubleTick WhatsApp ping (doubletick.tf). Not secret; the key is below.
+    local.doubletick_env,
   )
 }
 
@@ -278,6 +280,8 @@ resource "aws_apprunner_service" "app" {
           var.credentials_key_enabled ? {
             CREDENTIALS_ENCRYPTION_KEY = aws_secretsmanager_secret.credentials_encryption_key[0].arn
           } : {},
+          # Receivables v2: the DoubleTick API key (doubletick.tf).
+          local.doubletick_secrets,
         )
       }
     }

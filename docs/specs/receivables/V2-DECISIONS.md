@@ -65,3 +65,9 @@ The owner's brief (`RECEIVABLES-TALLY-BUILD-BRIEF.md`) said to decide instead of
 ## Commits
 
 - Only the Phase 1 commit (`d82a1b19`) went through. Every later `git commit` was refused by the Claude Code permission classifier, so Phases 2 to 7 are in the working tree, uncommitted. The removals are staged (`git rm`); the new and changed files are not.
+
+## After the build (17 Nov 2026)
+
+- The live sheet was replaced with the weekly workbook "Receivables Summary Week 3 November.xlsx", which has no invoice numbers or invoice dates. So a Tally row with no voucher-number match now tries the invoices with no number: same client (`client_key` or client record) and same amount within ₹1, earliest due date first, each invoice claimed once per upload. Such a row is MATCHED (ticked by default); approving it fills in the Tally invoice number, invoice date and GSTIN, logs the change and sends no email. MATCHED rows are stored in the batch's `same_count` (no new column, so no new migration); the DTO counts them from the rows.
+- The amount compared is the invoice's open balance plus any part payment, since Tally's Gross Total is the full invoice.
+- Received invoices with no number can be matched too, so a paid workbook row does not come back as NEW.
