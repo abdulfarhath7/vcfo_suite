@@ -16,6 +16,7 @@ import { FxCell, InvoiceDateCell, RevisionBadge, StatusDot, TextCell } from './c
 import { CELL, fxInput, invoiceName } from './cell-utils';
 import { DatePick } from './DatePick';
 import { createRowMenu } from './row-menu';
+import { TOOL_BTN } from './PublishBar';
 import type { RowGroup, SheetTabState } from './use-sheet-tab';
 
 /**
@@ -84,7 +85,7 @@ export function SheetTable({
           <col className="w-[176px]" />
           {fx ? <col className="w-[184px]" /> : null}
           <col className="w-[104px]" />
-          <col className="w-[148px]" />
+          <col className="w-[172px]" />
         </colgroup>
         <thead>
           <tr>
@@ -271,9 +272,11 @@ function Row({
         <span className="inline-flex items-center justify-end gap-0.5">
           {inv.status === 'open' ? (
             // One click to Mark received, at the row's right end: the dialog asks for the date and amount.
-            <Button size="sm" variant="secondary" className="!h-6 !px-2 !text-[12px] [&_svg]:!size-3.5" aria-label={`Mark ${name} received`} onClick={() => s.runRow('mark', inv)}>
-              <CheckCircle2 aria-hidden />
-              Received
+            // The design system's secondary button at the toolbar's height (R-12, one height per row of
+            // buttons), with a two-word label and the positive check.
+            <Button size="sm" variant="secondary" className={TOOL_BTN} aria-label={`Mark ${name} received`} onClick={() => s.runRow('mark', inv)}>
+              <CheckCircle2 aria-hidden className="text-positive" />
+              Mark received
             </Button>
           ) : null}
           {inv.noteCount ? <NotesButton invoice={inv} onOpen={() => s.runRow('notes', inv)} /> : null}
