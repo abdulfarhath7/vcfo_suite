@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { receivableClients, receivableInvoices, receivablePartners } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import { clientKey } from '@/lib/receivables/client-key';
+import { clientByPrefix, clientKey } from '@/lib/receivables/client-key';
 import type { ClientDto } from '@/lib/receivables/v2-wire';
 import { UUID, invalid, logChange, notFound, num, scopedSheet } from './shared';
 
@@ -224,8 +224,8 @@ export async function setPartnerClients(ctx: AuthContext, partnerId: string, cli
 }
 
 /**
- * The client with this name on the sheet, created (no partner, the given credit days) when there is
- * none. Used inside the Tally staging transaction; the caller has already scoped the sheet.
+ * The client with this name on the sheet (same key, or a short name the Tally name starts with, see
+ * `clientByPrefix`), created (no partner, 7 credit days) when there is none. Used inside the Tally staging transaction; the caller has already scoped the sheet.
  */
 export async function findOrCreateClient(tx: DbLike, sheetId: string, name: string, gstin: string | null): Promise<ClientRow> {
   const key = clientKey(name);
@@ -234,12 +234,14 @@ export async function findOrCreateClient(tx: DbLike, sheetId: string, name: stri
     .from(receivableClients)
     .where(and(eq(receivableClients.sheetId, sheetId), eq(receivableClients.clientKey, key)))
     .limit(1);
-  if (found) {
-    if (!found.gstin && gstin) {
-      const [row] = await tx.update(receivableClients).set({ gstin, updatedAt: new Date() }).where(eq(receivableClients.id, found.id)).returning();
+  // Tally's full legal name often starts with the short name already on the sheet.
+  const existing = found ?? clientByPrefix(await tx.select().from(receivableClients).where(eq(receivableClients.sheetId, sheetId)), key);
+  if (existing) {
+    if (!existing.gstin && gstin) {
+      const [row] = await tx.update(receivableClients).set({ gstin, updatedAt: new Date() }).where(eq(receivableClients.id, existing.id)).returning();
       return row;
     }
-    return found;
+    return existing;
   }
   const [row] = await tx
     .insert(receivableClients)
