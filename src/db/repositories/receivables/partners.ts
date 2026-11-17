@@ -38,8 +38,15 @@ export async function addPartner(ctx: AuthContext, sheetId: string, input: { nam
   return toPartner(row);
 }
 
-/** Edits a partner. `notifyOnPublish` is the manager's switch for the partner's publish alert emails. */
-export async function updatePartner(ctx: AuthContext, partnerId: string, patch: { name?: string; email?: string; active?: boolean; notifyOnPublish?: boolean }): Promise<Partner> {
+/**
+ * Edits a partner. `notifyOnPublish` is the switch for the partner's publish alert emails (only sent
+ * with RECEIVABLES_EXTERNAL on); `notifyNewInvoice` and `notifyRollup` are the v2 email switches.
+ */
+export async function updatePartner(
+  ctx: AuthContext,
+  partnerId: string,
+  patch: { name?: string; email?: string; active?: boolean; notifyOnPublish?: boolean; notifyNewInvoice?: boolean; notifyRollup?: boolean },
+): Promise<Partner> {
   if (!UUID.test(partnerId ?? '')) throw notFound();
   const [p] = await db.select().from(receivablePartners).where(eq(receivablePartners.id, partnerId)).limit(1);
   if (!p) throw notFound();
@@ -47,6 +54,9 @@ export async function updatePartner(ctx: AuthContext, partnerId: string, patch: 
   const set: Partial<typeof receivablePartners.$inferInsert> = cleanPartner(patch, false);
   if (typeof patch.active === 'boolean') set.active = patch.active;
   if (typeof patch.notifyOnPublish === 'boolean') set.notifyOnPublish = patch.notifyOnPublish;
+  // v2: the per-partner switches of the new/revised invoice email and the roll-up.
+  if (typeof patch.notifyNewInvoice === 'boolean') set.notifyNewInvoice = patch.notifyNewInvoice;
+  if (typeof patch.notifyRollup === 'boolean') set.notifyRollup = patch.notifyRollup;
   const [row] = await db
     .update(receivablePartners)
     .set(set)

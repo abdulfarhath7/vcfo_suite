@@ -2,10 +2,24 @@
  * Receivables repositories (docs/specs/receivables/PLAN.md). Access rules are in shared.ts.
  */
 export { ReceivablesError, type InvoiceRow, type SheetRow } from './shared';
-export { getManagerSheet, listMySheets, systemAddSheetEditor, systemCreateSheet, updateSheetSettings, type ManagerSheet, type SheetSummary } from './sheets';
+export { emailSettingsOf, getManagerSheet, listMySheets, systemAddSheetEditor, systemCreateSheet, updateEmailSettings, updateSheetSettings, type ManagerSheet, type SheetSummary } from './sheets';
 export { addInvoice, deleteInvoice, markReceived, reopenInvoice, setReminderPause, updateInvoice, type InvoiceInput, type InvoicePatch } from './invoices';
 export { getVersion, listVersions, publishSheet, type VersionMeta } from './versions';
 export { addPartner, updatePartner } from './partners';
+export { addClient, listClients, setPartnerClients, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
+export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
+export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
+export {
+  listEmailLog,
+  retryEmailLog,
+  startEmailLog,
+  systemFinishEmailLog,
+  systemGetEmailLog,
+  systemSetEmailWhatsApp,
+  systemStartEmailLog,
+  type EmailLogRow,
+  type NewEmailLog,
+} from './email-log';
 export { editReminder, getReminderDesk, setReminderSkipped, systemDueReminders, systemQueueReminders, systemRecordReminder, type DueReminder, type ReminderRow } from './reminders';
 export { confirmCredit, ignoreCredit, importCredits, listCredits, systemIngestCredits, type CreditRow, type IncomingCredit, type IngestResult } from './credits';
 export { finishSummarySend, getSummarySendStatus, getSummarySource, listSummarySends, recordSummarySend, type SummarySendStatus, type SummarySource } from './emails';

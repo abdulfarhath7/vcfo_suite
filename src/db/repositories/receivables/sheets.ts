@@ -7,6 +7,7 @@ import { isFirmWideAdmin } from '@/lib/auth';
 import { newPublicKey } from '@/lib/receivables/public-key';
 import { DEFAULT_REMINDER_RULES, type Partner, type ReminderRules } from '@/lib/receivables/model';
 import type { ManagerInvoiceDto, PartnerDto } from '@/lib/receivables/wire';
+import type { EmailSettingsDto } from '@/lib/receivables/v2-wire';
 import { toPartnerDto } from './partner-logins';
 import { assertEditorRole, invalid, scopedSheet, toInvoice, type SheetRow } from './shared';
 
@@ -110,6 +111,42 @@ export async function updateSheetSettings(ctx: AuthContext, sheetId: string, pat
   if (patch.reminderRules) set.reminderRules = validRules(patch.reminderRules);
   const [row] = await db.update(receivableSheets).set(set).where(eq(receivableSheets.id, sheet.id)).returning();
   return row;
+}
+
+/** v2: the sheet's email switches and schedule, as the People tab edits them. */
+export function emailSettingsOf(s: SheetRow): EmailSettingsDto {
+  return {
+    digestEnabled: s.digestEnabled,
+    digestWeekday: s.digestWeekday,
+    digestHourIst: s.digestHourIst,
+    rollupEveryDays: s.rollupEveryDays,
+    sendHourIst: s.sendHourIst,
+    emailNewInvoiceEnabled: s.emailNewInvoiceEnabled,
+    emailRollupEnabled: s.emailRollupEnabled,
+    emailRevisedEnabled: s.emailRevisedEnabled,
+  };
+}
+
+function intIn(v: unknown, min: number, max: number, code: string): number {
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < min || n > max) throw invalid(code);
+  return n;
+}
+
+/** v2: switches the automatic emails on or off and sets their schedule. */
+export async function updateEmailSettings(ctx: AuthContext, sheetId: string, patch: Partial<EmailSettingsDto>): Promise<EmailSettingsDto> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const set: Partial<typeof receivableSheets.$inferInsert> = { updatedAt: new Date() };
+  if (typeof patch.digestEnabled === 'boolean') set.digestEnabled = patch.digestEnabled;
+  if (typeof patch.emailNewInvoiceEnabled === 'boolean') set.emailNewInvoiceEnabled = patch.emailNewInvoiceEnabled;
+  if (typeof patch.emailRollupEnabled === 'boolean') set.emailRollupEnabled = patch.emailRollupEnabled;
+  if (typeof patch.emailRevisedEnabled === 'boolean') set.emailRevisedEnabled = patch.emailRevisedEnabled;
+  if (patch.digestWeekday !== undefined) set.digestWeekday = intIn(patch.digestWeekday, 0, 6, 'weekday');
+  if (patch.digestHourIst !== undefined) set.digestHourIst = intIn(patch.digestHourIst, 6, 20, 'send_hour');
+  if (patch.sendHourIst !== undefined) set.sendHourIst = intIn(patch.sendHourIst, 6, 20, 'send_hour');
+  if (patch.rollupEveryDays !== undefined) set.rollupEveryDays = intIn(patch.rollupEveryDays, 1, 30, 'rollup_days');
+  const [row] = await db.update(receivableSheets).set(set).where(eq(receivableSheets.id, sheet.id)).returning();
+  return emailSettingsOf(row);
 }
 
 /**

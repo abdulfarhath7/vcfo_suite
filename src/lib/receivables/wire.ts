@@ -37,6 +37,10 @@ export type PartnerDto = Partner & {
   invitedAt: string | null;
   acceptedAt: string | null;
   notifyOnPublish: boolean;
+  /** v2: the new and revised invoice emails to this partner. */
+  notifyNewInvoice: boolean;
+  /** v2: the roll-up of this partner's open invoices. */
+  notifyRollup: boolean;
 };
 
 /** A draft invoice on the manager sheet, with the partner's promise date and the note count (Phase 8). */

@@ -76,6 +76,17 @@ export type SheetInvoice = {
   tdsInr?: number;
   /** True while a dispute is open. Never shown to the client partner. */
   disputed?: boolean;
+  /*
+   * Receivables v2, all optional: snapshots published before v2 do not carry them.
+   */
+  /** The client record (receivable_clients) the invoice belongs to. */
+  clientId?: string | null;
+  /** How many approved amount changes the invoice has had; shown as r1, r2 … when above zero. */
+  revision?: number;
+  /** A staff amount change the Tally books do not show yet ("Fix in Tally"). */
+  tallyMismatch?: boolean;
+  /** manual | tally. */
+  source?: 'manual' | 'tally';
 };
 
 /** One row of a published version: the invoice plus its partner, frozen at publish time. */
