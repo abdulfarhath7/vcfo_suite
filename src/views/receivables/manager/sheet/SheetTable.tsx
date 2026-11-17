@@ -6,7 +6,6 @@ import { toastError } from '@/lib/toast-errors';
 import { sheetDate } from '@/lib/receivables/dates';
 import { isForeign } from '@/lib/receivables/fx';
 import type { Partner } from '@/lib/receivables/model';
-import { payTiming } from '@/lib/receivables/summary';
 import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
 import { cn } from '@/lib/utils';
 import { fcText, inr } from '../../format';
@@ -64,7 +63,7 @@ export function SheetTable({
   label: string;
 }) {
   const fx = s.hasForeign;
-  const cols = fx ? 10 : 9;
+  const cols = fx ? 12 : 11;
   const all = groups.flatMap((g) => g.rows);
   const allPicked = all.length > 0 && all.every((r) => s.picked.has(r.id));
   const somePicked = !allPicked && all.some((r) => s.picked.has(r.id));
@@ -73,7 +72,7 @@ export function SheetTable({
 
   return (
     <div className="overflow-x-auto rounded-md border border-line bg-surface-raised xl:overflow-visible">
-      <table className={cn('w-full table-fixed border-separate border-spacing-0', s.density === 'compact' ? 'text-[12.5px]' : 'text-[13px]', fx ? 'min-w-[1150px]' : 'min-w-[980px]')} aria-label={label}>
+      <table className={cn('w-full table-fixed border-separate border-spacing-0', s.density === 'compact' ? 'text-[12.5px]' : 'text-[13px]', fx ? 'min-w-[1360px]' : 'min-w-[1180px]')} aria-label={label}>
         <colgroup>
           <col className="w-9" />
           <col />
@@ -81,10 +80,12 @@ export function SheetTable({
           <col className="w-[148px]" />
           <col className="w-[104px]" />
           <col className="w-[118px]" />
-          {fx ? <col className="w-[184px]" /> : null}
-          <col className="w-[150px]" />
           <col className="w-[104px]" />
-          <col className="w-[96px]" />
+          <col className="w-[118px]" />
+          {fx ? <col className="w-[184px]" /> : null}
+          <col className="w-[132px]" />
+          <col className="w-[104px]" />
+          <col className="w-[80px]" />
         </colgroup>
         <thead>
           <tr>
@@ -101,10 +102,12 @@ export function SheetTable({
             <th className={TH}>Invoice no.</th>
             <th className={TH}>Partner</th>
             <th className={TH}>Due date</th>
-            <th className={cn(TH, 'text-right')}>{readOnly ? 'Paid INR' : 'Amount INR'}</th>
+            <th className={cn(TH, 'text-right')}>Amount ₹</th>
+            <th className={TH}>Received on</th>
+            <th className={cn(TH, 'text-right')}>Received ₹</th>
             {fx ? <th className={TH}>{fxHeader(data)}</th> : null}
             <th className={TH}>Status</th>
-            <th className={TH}>{readOnly ? 'Paid' : 'Invoice date'}</th>
+            <th className={TH}>Invoice date</th>
             <th className={cn(TH, 'rounded-tr-[4px]')}>
               <span className="sr-only">Actions</span>
             </th>
@@ -221,12 +224,26 @@ function Row({
       </td>
       <td className={TD}>
         {inv.status === 'received' ? (
-          <div className="px-1.5 text-right font-mono text-[12px]">{inr(inv.paidAmount ?? inv.amountInr)}</div>
+          // The invoiced amount: the open balance at receipt plus earlier part payments.
+          <div className="px-1.5 text-right font-mono text-[12px]">{inr(inv.amountInr + inv.partPaid)}</div>
         ) : (
           // v2: an INR amount changes only through "Change amount" and the approval panel.
           <div className="px-1.5 text-right font-mono text-[12px]" title={foreign ? 'Booked INR; change it with the FX cell' : readOnly ? undefined : 'Change it with Change amount in the row menu'}>
             {inr(inv.amountInr)}
           </div>
+        )}
+      </td>
+      {/* What was received and when, as entered at Mark received (part payments count while open). */}
+      <td className={cn(TD, 'whitespace-nowrap tabular-nums')}>
+        {inv.paidOn ? <span className="px-1.5">{sheetDate(inv.paidOn)}</span> : <span className="px-1.5 text-ink-faint">—</span>}
+      </td>
+      <td className={TD}>
+        {inv.status === 'received' ? (
+          <div className="px-1.5 text-right font-mono text-[12px] text-positive">{inr((inv.paidAmount ?? inv.amountInr) + inv.partPaid)}</div>
+        ) : inv.partPaid > 0 ? (
+          <div className="px-1.5 text-right font-mono text-[12px] text-ink-2" title="Part payments so far">{inr(inv.partPaid)}</div>
+        ) : (
+          <div className="px-1.5 text-right text-ink-faint">—</div>
         )}
       </td>
       {fx ? (
@@ -244,7 +261,7 @@ function Row({
         <StatusDot invoice={inv} today={today} />
       </td>
       <td className={cn(TD, 'whitespace-nowrap text-[13px]')}>
-        {inv.status === 'received' ? <span className="text-ink-muted">{payTiming(inv) || '—'}</span> : <InvoiceDateCell invoice={inv} />}
+        <InvoiceDateCell invoice={inv} />
       </td>
       <td className={cn(TD, 'whitespace-nowrap pr-1.5 text-right')}>
         <span className="inline-flex items-center justify-end gap-0.5">

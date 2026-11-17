@@ -107,7 +107,7 @@ function Card({ inv, s, data, today, todayRate }: { inv: ManagerInvoiceDto; s: S
               ) : (
                 <>
                   <div className="pr-1.5">{`Due ${sheetDate(inv.dueDate)}`}</div>
-                  <div className="pr-1.5">{payTiming(inv)}</div>
+                  <div className="pr-1.5">{inv.paidOn ? `Received ${sheetDate(inv.paidOn)} · ₹${inr((inv.paidAmount ?? inv.amountInr) + inv.partPaid)}` : payTiming(inv)}</div>
                 </>
               )}
             </div>
