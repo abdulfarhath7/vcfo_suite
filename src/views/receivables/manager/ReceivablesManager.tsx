@@ -156,7 +156,7 @@ export function ReceivablesManager({
           tab === 'sheet' ? (
             <SheetTab data={data} actions={actions} today={today} external={external} />
           ) : tab === 'collections' ? (
-            <CollectionsTab data={data} today={today} />
+            <CollectionsTab data={data} today={today} actions={actions} />
           ) : tab === 'people' ? (
             <PeopleTab data={data} actions={actions} outlook={outlook.data} settingsHref={settingsHref} />
           ) : tab === 'reports' ? (

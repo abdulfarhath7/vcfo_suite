@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
-import { Roboto, Roboto_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Providers } from "./providers";
 import "./globals.css";
 
 /** One face for the interface (VCFO Spectrum, R-28): Roboto 400, 500 and 700. --font-serif,
  *  the legacy display hook, aliases --font-sans in globals.css until the .serif call sites move. */
-const fontSans = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+/* The font files live in public/fonts (latin subset), so a build never downloads from Google
+   Fonts; two Docker builds failed on that download (17 Nov 2026). */
+const fontSans = localFont({
+  src: [
+    { path: "../public/fonts/roboto-400-latin.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/roboto-500-latin.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/roboto-700-latin.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans",
   display: "swap",
 });
 
 /** Identifiers only: CIN, PAN, DIN, GSTIN, SRN, step and form codes. */
-const fontMono = Roboto_Mono({
-  subsets: ["latin"],
-  weight: ["500"],
+const fontMono = localFont({
+  src: [{ path: "../public/fonts/roboto-mono-500-latin.woff2", weight: "500", style: "normal" }],
   variable: "--font-mono",
   display: "swap",
 });

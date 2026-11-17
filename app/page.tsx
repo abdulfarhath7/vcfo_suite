@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Mono, Poppins } from 'next/font/google';
 import localFont from 'next/font/local';
 import { LandingPage } from '@/components/marketing/LandingPage';
 
@@ -12,8 +11,23 @@ const sans = localFont({
   variable: '--lp-sans',
   display: 'swap',
 });
-const mono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--lp-mono', display: 'swap' });
-const poppins = Poppins({ subsets: ['latin'], weight: ['400', '700'], variable: '--lp-poppins', display: 'swap' });
+// Kept in public/fonts so a build never downloads from Google Fonts.
+const mono = localFont({
+  src: [
+    { path: '../public/fonts/ibm-plex-mono-400-latin.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/ibm-plex-mono-500-latin.woff2', weight: '500', style: 'normal' },
+  ],
+  variable: '--lp-mono',
+  display: 'swap',
+});
+const poppins = localFont({
+  src: [
+    { path: '../public/fonts/poppins-400-latin.woff2', weight: '400', style: 'normal' },
+    { path: '../public/fonts/poppins-700-latin.woff2', weight: '700', style: 'normal' },
+  ],
+  variable: '--lp-poppins',
+  display: 'swap',
+});
 
 const TITLE = 'VCFO Suite: your complete compliance companion';
 const DESCRIPTION =

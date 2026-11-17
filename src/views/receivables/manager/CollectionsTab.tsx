@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { FilterSelect } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import { collectionsReport, type CollectionRow, type CollectionsPeriod, type Tally } from '@/lib/receivables/collections';
@@ -8,7 +10,10 @@ import { monthLong, sheetDate } from '@/lib/receivables/dates';
 import { compactInr } from '@/lib/receivables/kpis';
 import type { ManagerSheetDto } from '@/lib/receivables/wire';
 import { cn } from '@/lib/utils';
+import type { useReceivablesActions } from '@/hooks/use-receivables';
 import { inr } from '../format';
+import { ComposeSummary } from './ComposeSummary';
+import { TOOL_BTN } from './sheet/PublishBar';
 
 /**
  * The Collections tab (owner, 17 Nov 2026): invoices received on time against received late, from
@@ -17,7 +22,8 @@ import { inr } from '../format';
  * whether open late invoices count in the on-time share), a bar per month received, a table by
  * client partner and by client, and the list of received invoices with how early or late each was.
  * Everything is worked out in the browser from the sheet already loaded
- * (src/lib/receivables/collections.ts).
+ * (src/lib/receivables/collections.ts). Send email opens the same one-email-per-person dialog as the
+ * Sheet tab.
  */
 
 const PERIODS: Array<{ value: CollectionsPeriod; label: string }> = [
@@ -31,7 +37,8 @@ const TH = 'whitespace-nowrap border-b border-line bg-surface-sunken px-3 py-2 t
 const TD = 'h-10 border-t border-line-soft px-3 py-1 align-middle text-[13px]';
 const pct = (t: Tally) => (t.onTime + t.late ? `${Math.round((t.onTime / (t.onTime + t.late)) * 100)}%` : '—');
 
-export function CollectionsTab({ data, today }: { data: ManagerSheetDto; today: string }) {
+export function CollectionsTab({ data, today, actions }: { data: ManagerSheetDto; today: string; actions: ReturnType<typeof useReceivablesActions> }) {
+  const [composing, setComposing] = useState(false);
   const [period, setPeriod] = useState<CollectionsPeriod>('fy');
   const [partnerId, setPartnerId] = useState<string>('all');
   const [client, setClient] = useState<string>('all');
@@ -94,7 +101,12 @@ export function CollectionsTab({ data, today }: { data: ManagerSheetDto; today: 
           </label>
         </span>
         <span className="ml-auto text-ink-muted">{`On time: ${t.onTimePct === null ? '—' : `${t.onTimePct}%`}`}</span>
+        <Button size="sm" variant="secondary" className={TOOL_BTN} onClick={() => setComposing(true)}>
+          <Mail aria-hidden />
+          Send email
+        </Button>
       </div>
+      {composing ? <ComposeSummary data={data} actions={actions} onClose={() => setComposing(false)} /> : null}
 
       <section aria-label="By month received" className="rounded-md border border-line bg-surface-raised p-3">
         <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[.04em] text-ink-muted">On time vs late, by month received</h3>
