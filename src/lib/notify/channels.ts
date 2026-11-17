@@ -45,6 +45,13 @@ type EumConfig = {
 export type WhatsAppConfig = {
   enabled: boolean;
   eum: EumConfig;
+  /**
+   * Receivables v2: which transport sends (`WHATSAPP_PROVIDER=aws|doubletick`, default `aws`).
+   * Optional so configs built by hand (tests) keep meaning AWS.
+   */
+  provider?: 'aws' | 'doubletick';
+  /** True when DoubleTick's key and number are set (src/lib/notify/send-whatsapp-doubletick.ts). */
+  doubletickReady?: boolean;
 };
 
 /** The approved Meta template name for this event, or '' when none resolves. */
@@ -68,6 +75,7 @@ export type ChannelDecision =
  * is the registered origination phone number id.
  */
 export function isWhatsAppConfigured(config: WhatsAppConfig): boolean {
+  if (config.provider === 'doubletick') return config.enabled && Boolean(config.doubletickReady);
   return config.enabled && config.eum.phoneNumberId.trim() !== '';
 }
 
@@ -142,5 +150,7 @@ export function readWhatsAppConfig(
       metaApiVersion: env.META_API_VERSION?.trim() || 'v21.0',
       templateNames: readTemplateNames(env),
     },
+    provider: (env.WHATSAPP_PROVIDER ?? '').trim().toLowerCase() === 'doubletick' ? 'doubletick' : 'aws',
+    doubletickReady: Boolean(env.DOUBLETICK_API_KEY?.trim()) && /\d{8,}/.test((env.DOUBLETICK_FROM_NUMBER ?? '').replace(/\D/g, '')),
   };
 }

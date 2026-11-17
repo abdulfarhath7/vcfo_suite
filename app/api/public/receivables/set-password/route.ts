@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { systemPeekPartnerToken, systemSetPartnerPassword } from '@/db/repositories/receivables';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * The set-password link of a client partner login (Phase 8). Public on purpose: the partner has
@@ -11,6 +12,9 @@ import { systemPeekPartnerToken, systemSetPartnerPassword } from '@/db/repositor
  * POST /api/public/receivables/set-password { token, password } → { ok: true, email } or 400.
  */
 export async function GET(request: Request) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const token = new URL(request.url).searchParams.get('token') ?? '';
   const out = await systemPeekPartnerToken(token);
   if (!out) return NextResponse.json({ error: 'This link is invalid or has expired' }, { status: 404 });
@@ -20,6 +24,9 @@ export async function GET(request: Request) {
 const bodySchema = z.object({ token: z.string().min(32).max(128), password: z.string().min(8, 'Use at least 8 characters').max(128) });
 
 export async function POST(request: Request) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   const out = await systemSetPartnerPassword(body.data.token, body.data.password);

@@ -3,6 +3,7 @@ import { optionalViewer } from '@/auth/guards';
 import { systemOpenShareLink } from '@/db/repositories/receivables';
 import { clientIp, createRateLimiter } from '@/lib/growth/demo-request';
 import { receivablesWorkbook, receivablesWorkbookName } from '@/lib/receivables/xlsx';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * GET /api/public/receivables/share/:token/export — the rows of a shared view as Excel (Phase 10).
@@ -16,6 +17,9 @@ const limiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000 });
 const NOT_FOUND = () => NextResponse.json({ error: 'not_found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
 export async function GET(request: Request, context: { params: Promise<{ token: string }> }) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   if (!limiter.take(clientIp(request.headers))) {
     return NextResponse.json({ error: 'Too many downloads. Try again in a few minutes.' }, { status: 429 });
   }

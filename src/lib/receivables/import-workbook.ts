@@ -33,7 +33,8 @@ export type WorkbookInput = Parameters<ExcelJS.Workbook['xlsx']['load']>[0];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const TITLE = /^\s*([a-z]+)\s*[-' ]\s*(\d{2})\s*-?\s*receivables\s*$/i;
 
-function text(v: ExcelJS.CellValue): string {
+/** A cell as plain text (rich text joined, a formula read through its result). Also used by tally-sales-register.ts. */
+export function text(v: ExcelJS.CellValue): string {
   if (v == null) return '';
   if (v instanceof Date) return v.toISOString();
   if (typeof v === 'object') {
@@ -48,7 +49,8 @@ function excelSerialToIso(n: number): string {
   return new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86_400_000).toISOString().slice(0, 10);
 }
 
-function dateOf(v: ExcelJS.CellValue): string | null {
+/** A cell as an ISO date: a Date, an Excel serial, or text like "1-Apr-26". Also used by tally-sales-register.ts. */
+export function dateOf(v: ExcelJS.CellValue): string | null {
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   if (typeof v === 'number') return excelSerialToIso(v);
   if (v && typeof v === 'object' && 'result' in v) return dateOf(v.result as ExcelJS.CellValue);

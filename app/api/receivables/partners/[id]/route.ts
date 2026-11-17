@@ -6,13 +6,15 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
 
 /**
  * PATCH /api/receivables/partners/:id — rename, change the email, deactivate a client partner, or
- * turn their publish alert emails on or off (`notifyOnPublish`).
+ * turn their emails on or off (`notifyOnPublish`, and the v2 `notifyNewInvoice` and `notifyRollup`).
  */
 const schema = z.object({
   name: z.string().min(1, 'name').max(120, 'name').optional(),
   email: z.string().email('email').max(200, 'email').optional(),
   active: z.boolean().optional(),
   notifyOnPublish: z.boolean().optional(),
+  notifyNewInvoice: z.boolean().optional(),
+  notifyRollup: z.boolean().optional(),
 });
 
 export async function PATCH(request: Request, context: RouteContext) {

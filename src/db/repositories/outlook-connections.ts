@@ -9,6 +9,7 @@ import {
   graphCreateTeamsEvent,
   graphGetPhoto,
   graphSendMail,
+  graphSendMailWithLink,
   graphUpdateTeamsEvent,
   refreshAccessToken,
   type GraphFileAttachment,
@@ -172,6 +173,13 @@ export async function assertOutlookReady(ctx: AuthContext): Promise<{ msEmail: s
   return { msEmail };
 }
 
+/** Receivables v2: the signed-in person's send that also returns the email's Outlook on the web link. */
+export async function sendMailViaOutlookWithLink(ctx: AuthContext, input: { to: string[]; cc?: string[]; subject: string; html: string }): Promise<{ msEmail: string; webLink: string | null }> {
+  const { access, msEmail } = await validAccessToken(ctx);
+  const { webLink } = await graphSendMailWithLink(access, input);
+  return { msEmail, webLink };
+}
+
 export async function sendMailViaOutlook(
   ctx: AuthContext,
   input: {
@@ -229,16 +237,33 @@ export async function systemSendMailAs(
   userId: string,
   input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
 ): Promise<{ msEmail: string } | null> {
+  const res = await systemSendMailAsResult(userId, input);
+  return res.ok ? { msEmail: res.msEmail } : null;
+}
+
+/**
+ * SYSTEM (receivables v2 emails): the same send as `systemSendMailAs`, with the reason when it did
+ * not go, so the email log can say "connect Outlook" rather than only "failed". It never throws.
+ */
+export async function systemSendMailAsResult(
+  userId: string,
+  input: { to: string[]; cc?: string[]; subject: string; html: string; text?: string },
+  opts: { withLink?: boolean } = {},
+): Promise<{ ok: true; msEmail: string; webLink: string | null } | { ok: false; code: 'outlook_not_connected' | 'outlook_reconnect' | 'send_failed' }> {
   const [row] = await db.select({ msEmail: outlookConnections.msEmail }).from(outlookConnections).where(eq(outlookConnections.userId, userId)).limit(1);
-  if (!row) return null;
+  if (!row) return { ok: false, code: 'outlook_not_connected' };
   const access = await systemAccessToken(userId);
-  if (!access) return null;
+  if (!access) return { ok: false, code: 'outlook_reconnect' };
   try {
+    if (opts.withLink) {
+      const { webLink } = await graphSendMailWithLink(access, input);
+      return { ok: true, msEmail: row.msEmail, webLink };
+    }
     await graphSendMail(access, input);
-    return { msEmail: row.msEmail };
+    return { ok: true, msEmail: row.msEmail, webLink: null };
   } catch (err) {
     console.error('[outlook] system send failed', err instanceof Error ? err.message.slice(0, 200) : err);
-    return null;
+    return { ok: false, code: 'send_failed' };
   }
 }
 

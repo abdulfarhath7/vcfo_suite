@@ -47,9 +47,9 @@ export function rateAlertEmail(input: RateAlertEmailInput): { subject: string; h
     eyebrow: input.clientOrgName,
     title: `${input.currency} crossed ₹${level}`,
     bodyHtml: emailParagraph(`Hi ${escapeHtml(first)},`) + lines.map((l) => emailParagraph(escapeHtml(l))).join(''),
-    cta: { label: 'Open the FX tab', href: input.url },
     footerNote: 'You get this email once a day while the rate stays beyond the level. Turn the alert off on the FX tab.',
   });
-  const text = [`Hi ${first},`, '', ...lines, '', `Open the FX tab: ${input.url}`].join('\n');
+  // Receivables v2: no link to the tool in any receivables email; `url` is kept for the callers but not shown.
+  const text = [`Hi ${first},`, '', ...lines].join('\n');
   return { subject, html, text };
 }

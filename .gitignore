@@ -43,3 +43,6 @@ src/components/client-portal/css/
 e2e/uat/.auth/
 e2e/uat/results/
 docs/specs/uat/report/
+
+# Receivables v2: Tally Sales Register samples are client data and never committed.
+docs/specs/receivables/samples/

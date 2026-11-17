@@ -6,6 +6,7 @@ import { siteUrl } from '@/lib/site-url';
 import { partnerLoginEmail, partnerLoginUrl, partnerSetPasswordUrl } from '@/lib/receivables/partner-emails';
 import { partnerLoginAction } from '@/db/repositories/receivables';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * POST /api/receivables/partners/:id/login — the client partner's login (Phase 8).
@@ -26,6 +27,9 @@ const schema = z.object({
 });
 
 export async function POST(request: Request, context: RouteContext) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await guardReceivables();
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;

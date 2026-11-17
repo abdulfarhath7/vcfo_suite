@@ -116,7 +116,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - `docs/context/HOW-TO-BUILD.md` — recipes (page, route, repository, migration, job, UI) and a "Where is X?" table.
 - `docs/context/notes/*.md` — gotchas per area (aws, checklist-workflow, compliance,
   data-access, demo-data, design-system, email, incorporation-docs, lead-ui, notifications,
-  shell-ui, tooling). Append when something costs more than a minute.
+  receivables, shell-ui, tooling). Append when something costs more than a minute.
 - `docs/context/AWS-DEPLOY.md` and `infra/README.md` — the deploy runbook.
 - `docs/specs/` — specs still in progress; finished specs are in git history. `QUESTIONS.md`
   at the root lists the client portal v7 decisions the owner may still want to change.
@@ -139,6 +139,10 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Receivables v2 (`docs/specs/receivables/V2.md`, branch `feature/receivables-v2`) needs migrations
+  `0058_receivables_v2` (additive, with a client backfill) and `0059_drop_bank_credits` (drops
+  `bank_credits`; it cannot be undone, so snapshot first) on RDS before deploy. Set `DOUBLETICK_*`,
+  and leave `RECEIVABLES_EXTERNAL` unset. Build report: `docs/specs/receivables/V2-BUILD-REPORT.md`.
 - Receivables sheet editors (`docs/specs/receivables/SUMMIT-GO-LIVE.md`) need migration
   `0057_receivables_sheet_editors` on RDS before deploy; then `npm run receivables:provision-summit`
   creates the Summit sheet, its two staff logins and the October and November 2026 invoices.

@@ -4,6 +4,7 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { sendEmail } from '@/lib/email/send-email';
 import { siteUrl } from '@/lib/site-url';
 import { partnerInvoiceUrl, sbcReplyEmail } from '@/lib/receivables/partner-emails';
+import { receivablesExternal } from '@/lib/receivables/external';
 import { addSbcNote, listNotes } from '@/db/repositories/receivables';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -38,7 +39,8 @@ export async function POST(request: Request, context: RouteContext) {
   } catch (e) {
     return receivablesError(e);
   }
-  if (result.notify) {
+  // Receivables v2: the reply email links to the partner portal, so it goes only with RECEIVABLES_EXTERNAL=on.
+  if (result.notify && receivablesExternal()) {
     const to = result.notify;
     const mail = sbcReplyEmail({
       partnerName: to.name,

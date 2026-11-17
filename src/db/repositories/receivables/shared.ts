@@ -122,6 +122,10 @@ export function toInvoice(row: InvoiceRow): SheetInvoice {
     receivedFc: num(row.receivedFc),
     tdsInr: num(row.tdsInr) ?? 0,
     disputed: Boolean(row.disputedAt) && !row.disputeResolvedAt,
+    clientId: row.clientId,
+    revision: row.revision,
+    tallyMismatch: row.tallyMismatch,
+    source: row.source === 'tally' ? 'tally' : 'manual',
   };
 }
 

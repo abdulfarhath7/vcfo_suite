@@ -5,6 +5,7 @@ import { createShareLink, listShareLinks } from '@/db/repositories/receivables';
 import { normaliseShareFilters } from '@/lib/receivables/share-filters';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 import { shareFields, shareLinkDto } from '../../../share-links/_dto';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * GET  /api/receivables/sheets/:id/share-links — the sheet's shared views with their recent viewers.
@@ -12,6 +13,9 @@ import { shareFields, shareLinkDto } from '../../../share-links/_dto';
  *      (Phase 10). Only the sheet's manager and the firm-wide admins get past the repository.
  */
 export async function GET(_request: Request, context: RouteContext) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await guardReceivables();
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;
@@ -33,6 +37,9 @@ const postSchema = z.object({
 });
 
 export async function POST(request: Request, context: RouteContext) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await guardReceivables();
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;

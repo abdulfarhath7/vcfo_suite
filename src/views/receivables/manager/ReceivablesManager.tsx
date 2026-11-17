@@ -13,37 +13,51 @@ import { todayIst } from '@/lib/receivables/dates';
 import type { SheetListItem } from '@/lib/receivables/wire';
 import { useManagerSheet, useOutlookStatus, useReceivablesActions } from '@/hooks/use-receivables';
 import { OUTLOOK_CONNECT_HREF } from './ComposeSummary';
-import { BankTab } from './BankTab';
 import { FxTab } from './FxTab';
 import { LinksTab } from './LinksTab';
-import { PartnersTab } from './PartnersTab';
-import { RemindersTab } from './RemindersTab';
+import { PeopleTab } from './PeopleTab';
 import { ReportsTab } from './ReportsTab';
 import { SheetTab } from './SheetTab';
 import { paramsWithFilters } from './sheet/sheet-filters';
 import { VersionsTab } from './VersionsTab';
 
 /**
- * /receivables/manager (docs/specs/receivables/PLAN.md): the one manager's workspace, outside
- * the staff shell. A light header with the Outlook link, and six tabs: Sheet, From bank,
- * Reminders, Partners, Versions, Reports.
+ * /receivables/manager (docs/specs/receivables/PLAN.md and V2.md): the staff workspace, outside
+ * the staff shell. A light header with the Outlook link, and the tabs Sheet, People, Versions,
+ * Reports and FX. Receivables v2 removed the From bank and Reminders tabs, replaced Partners with
+ * People, and shows Links only when the server sets RECEIVABLES_EXTERNAL=on (`external`).
  */
 
-const TABS = [
+const ALL_TABS = [
   { key: 'sheet', label: 'Sheet' },
-  { key: 'bank', label: 'From bank' },
-  { key: 'reminders', label: 'Reminders' },
-  { key: 'partners', label: 'Partners' },
+  { key: 'people', label: 'People' },
   { key: 'versions', label: 'Versions' },
   { key: 'links', label: 'Links' },
   { key: 'reports', label: 'Reports' },
   { key: 'fx', label: 'FX' },
 ] as const;
-type Tab = (typeof TABS)[number]['key'];
+type Tab = (typeof ALL_TABS)[number]['key'];
 
-export function ReceivablesManager({ sheets, sheetId, userName, homeHref }: { sheets: SheetListItem[]; sheetId: string; userName: string; homeHref: string }) {
+export function ReceivablesManager({
+  sheets,
+  sheetId,
+  userName,
+  homeHref,
+  settingsHref,
+  external,
+}: {
+  sheets: SheetListItem[];
+  sheetId: string;
+  userName: string;
+  homeHref: string;
+  /** The person's own Account settings, where their WhatsApp number is set. */
+  settingsHref: string;
+  /** RECEIVABLES_EXTERNAL=on: the partner-facing features (Links, Share this view) show. */
+  external: boolean;
+}) {
   const router = useRouter();
   const params = useSearchParams();
+  const TABS = ALL_TABS.filter((t) => external || t.key !== 'links');
   const tab = (TABS.some((t) => t.key === params.get('tab')) ? params.get('tab') : 'sheet') as Tab;
   const { data, isLoading, error } = useManagerSheet(sheetId);
   const actions = useReceivablesActions(sheetId);
@@ -87,7 +101,7 @@ export function ReceivablesManager({ sheets, sheetId, userName, homeHref }: { sh
           </div>
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
             {outlook.data?.connected ? (
-              <Chip raw tone="ok" title="Summary emails send from this mailbox">
+              <Chip raw tone="ok" title="Receivables emails you approve or send go from this mailbox">
                 {`Outlook: ${outlook.data.msEmail}`}
               </Chip>
             ) : outlook.data?.configured ? (
@@ -111,13 +125,9 @@ export function ReceivablesManager({ sheets, sheetId, userName, homeHref }: { sh
         {error ? <p className="py-10 text-center text-danger">{error.message}</p> : null}
         {data ? (
           tab === 'sheet' ? (
-            <SheetTab data={data} actions={actions} today={today} />
-          ) : tab === 'bank' ? (
-            <BankTab data={data} />
-          ) : tab === 'reminders' ? (
-            <RemindersTab data={data} actions={actions} />
-          ) : tab === 'partners' ? (
-            <PartnersTab data={data} actions={actions} />
+            <SheetTab data={data} actions={actions} today={today} external={external} />
+          ) : tab === 'people' ? (
+            <PeopleTab data={data} actions={actions} outlook={outlook.data} settingsHref={settingsHref} />
           ) : tab === 'reports' ? (
             <ReportsTab sheetId={sheetId} />
           ) : tab === 'fx' ? (

@@ -17,10 +17,11 @@ import { complianceTaskReminders } from '@/jobs/compliance-task-reminders';
 import { complianceTaskRepeatOnComplete, complianceTaskRepeatSweep } from '@/jobs/compliance-task-repeat';
 import { boardMeetingReminders } from '@/jobs/board-meeting-reminders';
 import { gstRegistrationStart } from '@/jobs/gst-registration-start';
-import { receivablesReminders } from '@/jobs/receivables-reminders';
-import { receivablesBankFeed } from '@/jobs/receivables-bank-feed';
 import { receivablesFxRates } from '@/jobs/receivables-fx-rates';
-import { receivablesDigest } from '@/jobs/receivables-digest';
+import { receivablesRollup } from '@/jobs/receivables-rollup';
+import { receivablesLeadershipDigest } from '@/jobs/receivables-leadership-digest';
+import { receivablesApprovalEmails } from '@/jobs/receivables-approval-emails';
+import { receivablesEmailPing } from '@/jobs/receivables-email-ping';
 import { devCleanup } from '@/jobs/dev-cleanup';
 import { watchCheck } from '@/jobs/watch-check';
 import { watchProcess } from '@/jobs/watch-process';
@@ -34,5 +35,5 @@ import { statutoryCalendarAskSync } from '@/jobs/statutory-calendar-ask';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesReminders, receivablesBankFeed, receivablesFxRates, receivablesDigest, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart],
+  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart],
 });

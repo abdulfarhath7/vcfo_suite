@@ -90,7 +90,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     '<p>Please find the receivable summary as of today:</p>',
     tables,
     `<table style="${TABLE}margin-top:0"><tr><td style="${CELL}font-weight:bold;text-align:center;width:40%">Total Receivables</td><td style="${CELL}font-weight:bold;text-align:right">${money(total)}</td></tr></table>`,
-    `<p>Live view, always current: <a href="${escapeHtml(input.liveUrl)}">${escapeHtml(input.liveUrl.replace(/^https?:\/\//, ''))}</a></p>`,
+    // Receivables v2: no link to the tool in any receivables email; `liveUrl` is no longer shown.
     `<p>Regards,<br>${escapeHtml(input.signerName)}<br>SBC</p>`,
   ].join('');
 }

@@ -1,22 +1,26 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { useRef } from 'react';
+import { FileSpreadsheet, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DangerConfirm } from '@/components/ui/danger-confirm';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
-import { monthBlockTitle, monthShort, sheetDate } from '@/lib/receivables/dates';
+import { monthBlockTitle, monthShort } from '@/lib/receivables/dates';
 import { sumInr } from '@/lib/receivables/summary';
 import type { ManagerSheetDto } from '@/lib/receivables/wire';
 import type { useReceivablesActions } from '@/hooks/use-receivables';
-import { AddInvoiceDialog, MarkReceivedDialog, PauseDialog } from './InvoiceDialogs';
+import { useImportActions, usePendingImports } from '@/hooks/use-receivables-v2';
+import { AddInvoiceDialog, MarkReceivedDialog } from './InvoiceDialogs';
 import { FxEditDialog } from './FxFields';
 import { NotesDialog } from './InvoiceNotes';
 import { ShareViewDialog } from './ShareViewDialog';
+import { ApprovalPanel } from './sheet/ApprovalPanel';
+import { ChangeAmountDialog } from './sheet/ChangeAmountDialog';
 import { HistoryDrawer } from './sheet/HistoryDrawer';
 import { PublishBar } from './sheet/PublishBar';
 import { SheetCards } from './sheet/SheetCards';
-import { BulkPauseDialog, BulkReceivedDialog, CreditNoteDialog, DisputeDialog } from './sheet/SheetDialogs';
+import { BulkReceivedDialog, CreditNoteDialog, DisputeDialog } from './sheet/SheetDialogs';
 import { SheetFilterBar } from './sheet/SheetFilterBar';
 import { SheetSummary } from './sheet/SheetSummary';
 import { SheetTable } from './sheet/SheetTable';
@@ -31,6 +35,9 @@ import { useSheetTab, type RowGroup } from './sheet/use-sheet-tab';
  *
  * Phase 9: a foreign invoice shows its foreign amount, booked rate and the INR at today's rate in
  * the FX column; its INR amount is the booked INR and changes through Currency and rate.
+ *
+ * Receivables v2: "Import from Tally" uploads a Sales Register; the rows wait in the Awaiting
+ * approval panel above the sheet, with staff amount changes ("Change amount" in the row menu).
  */
 
 type Actions = ReturnType<typeof useReceivablesActions>;
@@ -38,8 +45,22 @@ type Actions = ReturnType<typeof useReceivablesActions>;
 const monthTitle = (g: RowGroup) => monthBlockTitle(g.key);
 const sectionTitle = (g: RowGroup) => g.title;
 
-export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; actions: Actions; today: string }) {
+export function SheetTab({ data, actions, today, external }: { data: ManagerSheetDto; actions: Actions; today: string; external: boolean }) {
   const s = useSheetTab(data, actions, today);
+  const pending = usePendingImports(data.sheet.id);
+  const imports = useImportActions(data.sheet.id);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const upload = (file: File) =>
+    imports.upload.mutate(file, {
+      onSuccess: (res) => {
+        const b = res.batch;
+        toastSuccess(
+          `${b?.rowCount ?? res.rows.length} rows from ${b?.fileName ?? file.name}`,
+          b ? `${b.newCount} new, ${b.changedCount} changed, ${b.noPartnerCount} with no partner, ${b.sameCount} same. Approve them above the sheet.` : undefined,
+        );
+      },
+      onError: (e) => toastError('Not imported', s.errorText(e)),
+    });
   const todayRate = data.usdRate?.rate ?? null;
   const d = s.dialog;
   const state = (busy: boolean) => ({ busy, error: s.dialogError });
@@ -64,11 +85,28 @@ export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; acti
           <Plus aria-hidden />
           Add invoice
         </Button>
+        <Button variant="secondary" disabled={imports.upload.isPending} onClick={() => fileRef.current?.click()}>
+          <FileSpreadsheet aria-hidden />
+          {imports.upload.isPending ? 'Reading…' : 'Import from Tally'}
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          className="hidden"
+          accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (file) upload(file);
+          }}
+        />
       </SheetSummary>
+
+      {pending.data?.rows.length ? <ApprovalPanel sheetId={data.sheet.id} pending={{ ...pending.data, warnings: imports.upload.data?.warnings }} partners={data.partners} /> : null}
 
       <PublishBar data={data} actions={actions} />
 
-      <SheetFilterBar s={s} partners={data.partners} />
+      <SheetFilterBar s={s} partners={data.partners} canShare={external} />
 
       {monthGroups.length ? (
         views(monthGroups, monthTitle, 'Invoices')
@@ -77,7 +115,7 @@ export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; acti
           title={s.filtered ? 'No invoices match these filters.' : 'No open invoices.'}
           action={
             s.filtered ? (
-              <Button size="sm" variant="secondary" onClick={() => s.setFilters({})}>
+              <Button size="sm" variant="secondary" onClick={s.clearFilters}>
                 Clear filters
               </Button>
             ) : (
@@ -108,20 +146,6 @@ export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; acti
           onSave={(input) => actions.markReceived.mutate({ id: d.invoice.id, ...input }, { onSuccess: s.savedToDraft, onError: fail })}
         />
       ) : null}
-      {d?.kind === 'pause' ? (
-        <PauseDialog
-          invoice={d.invoice}
-          today={today}
-          state={state(actions.pause.isPending)}
-          onClose={s.close}
-          onSave={(input) =>
-            actions.pause.mutate(
-              { id: d.invoice.id, ...input },
-              { onSuccess: () => (s.close(), toastSuccess(input.until ? `Reminders paused until ${sheetDate(input.until)}` : 'Reminders resumed')), onError: fail },
-            )
-          }
-        />
-      ) : null}
       {d?.kind === 'fx' ? (
         <FxEditDialog
           sheetId={s.sheetId}
@@ -130,6 +154,19 @@ export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; acti
           state={state(actions.updateInvoice.isPending)}
           onClose={s.close}
           onSave={(patch) => actions.updateInvoice.mutate({ id: d.invoice.id, patch }, { onSuccess: s.savedToDraft, onError: fail })}
+        />
+      ) : null}
+      {d?.kind === 'change-amount' ? (
+        <ChangeAmountDialog
+          invoice={d.invoice}
+          state={state(imports.changeAmount.isPending)}
+          onClose={s.close}
+          onSave={(input) =>
+            imports.changeAmount.mutate(
+              { invoiceId: d.invoice.id, ...input },
+              { onSuccess: () => (s.close(), toastSuccess('Sent for approval', 'The change is in Awaiting approval at the top of the sheet.')), onError: fail },
+            )
+          }
         />
       ) : null}
       {d?.kind === 'notes' ? <NotesDialog sheetId={s.sheetId} invoice={d.invoice} onClose={s.close} /> : null}
@@ -192,10 +229,7 @@ export function SheetTab({ data, actions, today }: { data: ManagerSheetDto; acti
           onSave={s.bulkReceive}
         />
       ) : null}
-      {d?.kind === 'bulk-pause' ? (
-        <BulkPauseDialog count={s.pickedRows.filter((r) => r.status === 'open').length} today={today} state={state(s.bulk.pause.isPending)} onClose={s.close} onSave={s.bulkPause} />
-      ) : null}
-      <ShareViewDialog sheetId={s.sheetId} filters={s.filters} partnerNames={s.partnerNames} open={d?.kind === 'share-view'} onOpenChange={(o) => !o && s.close()} />
+      {external ? <ShareViewDialog sheetId={s.sheetId} filters={s.filters} partnerNames={s.partnerNames} open={d?.kind === 'share-view'} onOpenChange={(o) => !o && s.close()} /> : null}
     </div>
   );
 }

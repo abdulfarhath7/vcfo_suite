@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, CirclePause, Download, FilterX, Link2, Search, UserRoundPlus } from 'lucide-react';
+import { CheckCircle2, Download, FilterX, Flag, Link2, Search, UserRoundPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BulkBar } from '@/components/ui/bulk-bar';
 import { FilterSelect } from '@/components/ui/native-select';
@@ -25,14 +25,13 @@ function listOptions(list: string[] | undefined, all: string, noun: string, choi
 
 /**
  * The sheet's filter bar (Phase 10): search, partner, client, status, month and currency, all in
- * the URL; Clear filters; Share this view; and under it the count and total of the rows shown,
+ * the URL; v2's "Fix in Tally" toggle (shown while any invoice carries the flag); Clear filters; Share this view; and under it the count and total of the rows shown,
  * or the bulk bar while rows are picked.
  */
-export function SheetFilterBar({ s, partners }: { s: SheetTabState; partners: Partner[] }) {
+export function SheetFilterBar({ s, partners, canShare }: { s: SheetTabState; partners: Partner[]; canShare: boolean }) {
   const f = s.filters;
   const pick = (v: string) => (v === 'all' ? undefined : v === MULTI ? undefined : [v]);
   const active = partners.filter((p) => p.active);
-  const openPicked = s.pickedRows.filter((r) => r.status === 'open').length;
   return (
     <div className="flex flex-col gap-2">
       <div role="search" aria-label="Filter invoices" className="flex flex-wrap items-center gap-2">
@@ -74,17 +73,25 @@ export function SheetFilterBar({ s, partners }: { s: SheetTabState; partners: Pa
             options={[{ value: 'all', label: 'All currencies' }, ...s.currencies.map((c) => ({ value: c, label: c }))]}
           />
         ) : null}
+        {s.tallyMismatches || s.fixInTally ? (
+          <Button size="sm" variant={s.fixInTally ? 'strong' : 'secondary'} aria-pressed={s.fixInTally} onClick={() => s.setFixInTally(!s.fixInTally)} title="Invoices whose approved amount change is not in Tally yet">
+            <Flag aria-hidden />
+            {`Fix in Tally${s.tallyMismatches ? ` · ${s.tallyMismatches}` : ''}`}
+          </Button>
+        ) : null}
         {s.filtered ? (
-          <Button size="sm" variant="quiet" onClick={() => s.setFilters({})}>
+          <Button size="sm" variant="quiet" onClick={s.clearFilters}>
             <FilterX aria-hidden />
             Clear filters
           </Button>
         ) : null}
         <span className="flex-1" />
-        <Button size="sm" variant="secondary" onClick={() => s.setDialog({ kind: 'share-view' })}>
-          <Link2 aria-hidden />
-          Share this view
-        </Button>
+        {canShare ? (
+          <Button size="sm" variant="secondary" onClick={() => s.setDialog({ kind: 'share-view' })}>
+            <Link2 aria-hidden />
+            Share this view
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex min-h-[34px] items-center gap-3 rounded-md px-1 text-[13px]">
@@ -105,7 +112,6 @@ export function SheetFilterBar({ s, partners }: { s: SheetTabState; partners: Pa
                   onPick: (name) => s.bulkAssign(active.find((p) => p.name === name)?.id ?? null, name),
                 },
               },
-              { key: 'pause', label: 'Pause reminders', icon: CirclePause, disabled: !openPicked, onClick: () => s.setDialog({ kind: 'bulk-pause' }) },
               { key: 'export', label: 'Export', icon: Download, onClick: s.exportPicked },
             ]}
           />

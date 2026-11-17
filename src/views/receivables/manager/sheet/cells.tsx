@@ -5,7 +5,6 @@ import { toastError } from '@/lib/toast-errors';
 import { sheetDate } from '@/lib/receivables/dates';
 import { fxChange } from '@/lib/receivables/fx';
 import type { SheetInvoice } from '@/lib/receivables/model';
-import { nextReminderDate } from '@/lib/receivables/reminder-rule';
 import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
 import { cn } from '@/lib/utils';
 import { fcText, inr, parseInr, rateText, signedInr } from '../../format';
@@ -102,10 +101,24 @@ export function FxCell({ invoice, todayRate: usdRate, rates, onEdit }: { invoice
 }
 
 /** The status chip, plus Disputed, the promise and a part payment when there are any. */
+/** v2: how many approved amount changes an invoice has had, as `r2`. */
+export function RevisionBadge({ revision }: { revision: number }) {
+  return (
+    <span className="shrink-0 rounded-sm bg-warning-soft px-1 font-mono text-[10.5px] font-semibold text-warning-text" title={`Amount revised ${revision} time${revision === 1 ? '' : 's'}`}>
+      {`r${revision}`}
+    </span>
+  );
+}
+
 export function StatusStack({ invoice, today }: { invoice: ManagerInvoiceDto; today: string }) {
   return (
     <div className="flex min-w-0 flex-col items-start gap-1">
       <StatusChip invoice={invoice} today={today} />
+      {invoice.tallyMismatch ? (
+        <Chip raw tone="warn" title="An approved amount change is not in Tally yet. Fix it in Tally; the next upload with the same amount clears this.">
+          ⚑ Fix in Tally
+        </Chip>
+      ) : null}
       {invoice.status === 'open' && invoice.disputed ? (
         <Chip raw tone="bad" title="Disputed: no reminders until it is resolved">
           Disputed
@@ -123,17 +136,7 @@ export function StatusStack({ invoice, today }: { invoice: ManagerInvoiceDto; to
   );
 }
 
-/** The next reminder: "Today", a date, "Paused" with its end date, or a dash. */
-export function NextReminder({ invoice, today, rules }: { invoice: SheetInvoice; today: string; rules: ManagerSheetDto['sheet']['reminderRules'] }) {
-  if (invoice.status !== 'open') return <span className="text-ink-faint">—</span>;
-  if (invoice.remindersPausedUntil && invoice.remindersPausedUntil >= today) {
-    return (
-      <span className="block leading-[1.35]" title={invoice.pauseReason ?? undefined}>
-        <span className="block text-ink-2">Paused</span>
-        <span className="block text-[11.5px] text-ink-muted">{`to ${sheetDate(invoice.remindersPausedUntil)}`}</span>
-      </span>
-    );
-  }
-  const next = nextReminderDate(invoice, today, rules);
-  return <span className="text-ink-muted">{next ? (next === today ? 'Today' : sheetDate(next)) : '—'}</span>;
+/** v2 (the reminders were removed): the invoice date, or a dash on rows made before invoice dates were kept. */
+export function InvoiceDateCell({ invoice }: { invoice: SheetInvoice }) {
+  return <span className="tabular-nums text-ink-muted">{invoice.invoiceDate ? sheetDate(invoice.invoiceDate) : '—'}</span>;
 }

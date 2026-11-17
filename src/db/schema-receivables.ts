@@ -15,10 +15,17 @@
  *  - receivable_versions      — what Update published; the public page reads only these snapshots.
  *  - receivable_changes       — one row per edit, the audit trail and the "unpublished" count.
  *  - receivable_reminders     — one row per invoice per day; the unique key stops double sends.
- *  - bank_credits             — credits from the bank feed and what they were matched to.
+ *  - (bank_credits, the HSBC bank feed, was dropped in receivables v2.)
  *  - receivable_email_sends   — each summary email the manager sent.
+ *
+ * Receivables v2 (docs/specs/receivables/V2.md):
+ *  - receivable_clients             — the sheet's clients, each with at most one client partner.
+ *  - receivable_digest_recipients   — typed-in leadership addresses for the weekly digest.
+ *  - receivable_import_batches      — one Tally Sales Register upload.
+ *  - receivable_import_rows         — rows waiting for approval (from Tally or a staff amount change).
+ *  - receivable_email_log           — every automatic or manual v2 email and its WhatsApp ping.
  */
-import { boolean, date, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import * as base from './schema';
 import type { ReminderRules, SnapshotRow, EmailRecipient } from '@/lib/receivables/model';
 import type { ShareFilters } from '@/lib/receivables/share-filters';
@@ -38,6 +45,23 @@ export const receivableSheets = pgTable(
     /** The version the public page shows. No foreign key, to keep the two tables acyclic. */
     publishedVersionId: uuid('published_version_id'),
     reminderRules: jsonb('reminder_rules').$type<ReminderRules>().notNull(),
+    /*
+     * Receivables v2 (docs/specs/receivables/V2.md): the automatic emails. Every switch is off on
+     * a new sheet, so nothing is sent until someone on the People tab turns it on.
+     */
+    /** The weekly leadership digest's master switch. */
+    digestEnabled: boolean('digest_enabled').notNull().default(false),
+    /** 0 = Sunday … 6 = Saturday, the day the leadership digest goes out. */
+    digestWeekday: integer('digest_weekday').notNull().default(1),
+    /** The IST hour the leadership digest goes out. */
+    digestHourIst: integer('digest_hour_ist').notNull().default(9),
+    /** The client partner roll-up goes out every this many days. */
+    rollupEveryDays: integer('rollup_every_days').notNull().default(3),
+    /** The IST hour the roll-up goes out. */
+    sendHourIst: integer('send_hour_ist').notNull().default(9),
+    emailNewInvoiceEnabled: boolean('email_new_invoice_enabled').notNull().default(false),
+    emailRollupEnabled: boolean('email_rollup_enabled').notNull().default(false),
+    emailRevisedEnabled: boolean('email_revised_enabled').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -88,6 +112,10 @@ export const receivablePartners = pgTable(
     profileId: uuid('profile_id').references(() => base.profiles.id, { onDelete: 'set null' }),
     /** Email the partner when the manager publishes an Update that changes their invoices. */
     notifyOnPublish: boolean('notify_on_publish').notNull().default(true),
+    /** v2: the new and revised invoice emails to this partner (the sheet switch must be on too). */
+    notifyNewInvoice: boolean('notify_new_invoice').notNull().default(true),
+    /** v2: the roll-up of this partner's open invoices (the sheet switch must be on too). */
+    notifyRollup: boolean('notify_rollup').notNull().default(true),
     /** The stored hash of the set-password link token (the raw token only travels in the email). */
     setPasswordTokenHash: text('set_password_token_hash'),
     setPasswordExpiresAt: timestamp('set_password_expires_at', { withTimezone: true }),
@@ -147,12 +175,22 @@ export const receivableInvoices = pgTable(
     disputedAt: timestamp('disputed_at', { withTimezone: true }),
     disputeReason: text('dispute_reason'),
     disputeResolvedAt: timestamp('dispute_resolved_at', { withTimezone: true }),
+    /** v2: the client record this invoice belongs to. Null on rows made before v2 until backfilled. */
+    clientId: uuid('client_id').references((): AnyPgColumn => receivableClients.id, { onDelete: 'set null' }),
+    gstin: text('gstin'),
+    /** v2: how many approved amount changes this invoice has had (shown as r1, r2 …). */
+    revision: integer('revision').notNull().default(0),
+    /** v2: a staff amount change the Tally books do not show yet; a matching Tally upload clears it. */
+    tallyMismatch: boolean('tally_mismatch').notNull().default(false),
+    /** v2: manual | tally. */
+    source: text('source').notNull().default('manual'),
     createdBy: uuid('created_by').references(() => base.profiles.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => ({
+    clientIdx: index('receivable_invoices_client_idx').on(t.clientId),
     sheetStatusIdx: index('receivable_invoices_sheet_status_idx').on(t.sheetId, t.status),
     sheetDueIdx: index('receivable_invoices_sheet_due_idx').on(t.sheetId, t.dueDate),
     partnerIdx: index('receivable_invoices_partner_idx').on(t.partnerId),
@@ -216,7 +254,7 @@ export const receivableReminders = pgTable(
     partnerId: uuid('partner_id').references(() => receivablePartners.id, { onDelete: 'set null' }),
     /** The IST day the reminder is for. */
     forDate: date('for_date').notNull(),
-    /** before | due | overdue (see src/lib/receivables/reminder-rule.ts). */
+    /** before | due | overdue. Receivables v2 removed the reminders; the table is kept, unused, and can be dropped later. */
     kind: text('kind').notNull(),
     /** Days before the due date (positive) or after it (negative), on for_date. */
     daysLeft: integer('days_left').notNull(),
@@ -237,37 +275,9 @@ export const receivableReminders = pgTable(
   }),
 );
 
-export const bankCredits = pgTable(
-  'bank_credits',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    sheetId: uuid('sheet_id')
-      .notNull()
-      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
-    /** hsbc_api | alert_email | manual. */
-    source: text('source').notNull(),
-    /** The bank's own transaction reference; the de-duplication key within a sheet, whatever the source. */
-    externalRef: text('external_ref').notNull(),
-    valueDate: date('value_date').notNull(),
-    payer: text('payer').notNull(),
-    currency: text('currency').notNull().default('INR'),
-    fcAmount: numeric('fc_amount', { precision: 14, scale: 2 }),
-    inrAmount: numeric('inr_amount', { precision: 14, scale: 2 }).notNull(),
-    narration: text('narration').notNull().default(''),
-    /** The matched invoices (one credit may settle several invoices of one client). */
-    matchInvoiceIds: jsonb('match_invoice_ids').$type<string[]>().notNull().default([]),
-    /** auto | to_confirm | unmatched | confirmed | ignored. */
-    status: text('status').notNull(),
-    matchNote: text('match_note').notNull().default(''),
-    decidedBy: uuid('decided_by').references(() => base.profiles.id, { onDelete: 'set null' }),
-    decidedAt: timestamp('decided_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    refIdx: uniqueIndex('bank_credits_sheet_ref_idx').on(t.sheetId, t.externalRef),
-    statusIdx: index('bank_credits_sheet_status_idx').on(t.sheetId, t.status),
-  }),
-);
+/*
+ * bank_credits (the HSBC feed) was dropped in receivables v2 by migration 0059_drop_bank_credits.
+ */
 
 export const receivableEmailSends = pgTable(
   'receivable_email_sends',
@@ -380,7 +390,8 @@ export const receivableFiras = pgTable(
       .notNull()
       .references(() => receivableSheets.id, { onDelete: 'cascade' }),
     invoiceId: uuid('invoice_id').references(() => receivableInvoices.id, { onDelete: 'set null' }),
-    bankCreditId: uuid('bank_credit_id').references(() => bankCredits.id, { onDelete: 'set null' }),
+    /** The bank credit it came from, while the HSBC feed existed; plain history since v2 dropped bank_credits. */
+    bankCreditId: uuid('bank_credit_id'),
     /** awaited | received. */
     status: text('status').notNull().default('awaited'),
     firaNo: text('fira_no'),
@@ -504,5 +515,173 @@ export const receivableFxAlerts = pgTable(
   },
   (t) => ({
     sheetIdx: index('receivable_fx_alerts_sheet_idx').on(t.sheetId, t.active),
+  }),
+);
+
+/**
+ * Receivables v2: the sheet's clients. A client has at most one client partner; a partner has many
+ * clients. `client_key` is the name in lower case with punctuation and spaces collapsed
+ * (src/lib/receivables/client-key.ts), so "Machinify, Inc" and "Machinify Inc" are one client.
+ */
+export const receivableClients = pgTable(
+  'receivable_clients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    clientKey: text('client_key').notNull(),
+    gstin: text('gstin'),
+    /** Due date = invoice date + credit days. */
+    creditDays: integer('credit_days').notNull().default(7),
+    billingEmail: text('billing_email'),
+    billingCc: text('billing_cc').array().notNull().default([]),
+    partnerId: uuid('partner_id').references(() => receivablePartners.id, { onDelete: 'set null' }),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyIdx: uniqueIndex('receivable_clients_sheet_key_idx').on(t.sheetId, t.clientKey),
+    partnerIdx: index('receivable_clients_partner_idx').on(t.partnerId),
+  }),
+);
+
+/** Receivables v2: the leadership digest's recipients. Typed-in names and addresses, not tool accounts. */
+export const receivableDigestRecipients = pgTable(
+  'receivable_digest_recipients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sheetIdx: index('receivable_digest_recipients_sheet_idx').on(t.sheetId),
+  }),
+);
+
+/** Receivables v2: one Tally Sales Register upload. A sheet has at most one pending batch. */
+export const receivableImportBatches = pgTable(
+  'receivable_import_batches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    fileName: text('file_name').notNull(),
+    /** The company name and the period from the register's header block. */
+    company: text('company').notNull().default(''),
+    period: text('period').notNull().default(''),
+    uploadedBy: uuid('uploaded_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** pending | approved | discarded. */
+    status: text('status').notNull().default('pending'),
+    rowCount: integer('row_count').notNull().default(0),
+    newCount: integer('new_count').notNull().default(0),
+    changedCount: integer('changed_count').notNull().default(0),
+    sameCount: integer('same_count').notNull().default(0),
+    noPartnerCount: integer('no_partner_count').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sheetIdx: index('receivable_import_batches_sheet_idx').on(t.sheetId, t.status),
+  }),
+);
+
+/**
+ * Receivables v2: one row waiting for approval. Tally rows belong to a batch; a staff amount change
+ * has no batch. Approving a `new` row makes an invoice; approving a `changed` row sets the amount.
+ */
+export const receivableImportRows = pgTable(
+  'receivable_import_rows',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    batchId: uuid('batch_id').references(() => receivableImportBatches.id, { onDelete: 'cascade' }),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    /** new | changed | same | no_partner. */
+    kind: text('kind').notNull(),
+    /** The invoice a `changed` or `same` row matched. */
+    invoiceId: uuid('invoice_id').references(() => receivableInvoices.id, { onDelete: 'cascade' }),
+    /** Exactly as Tally wrote it. */
+    invoiceNo: text('invoice_no'),
+    /** The normalised voucher key (leading zeros dropped in each number). */
+    invoiceKey: text('invoice_key'),
+    invoiceDate: date('invoice_date'),
+    clientName: text('client_name').notNull(),
+    clientId: uuid('client_id').references(() => receivableClients.id, { onDelete: 'set null' }),
+    partnerId: uuid('partner_id').references(() => receivablePartners.id, { onDelete: 'set null' }),
+    gstin: text('gstin'),
+    amountInr: numeric('amount_inr', { precision: 14, scale: 2 }).notNull(),
+    oldAmountInr: numeric('old_amount_inr', { precision: 14, scale: 2 }),
+    dueDate: date('due_date'),
+    /** Why the amount changed (required on a staff change). */
+    reason: text('reason'),
+    /** tally | staff. */
+    source: text('source').notNull(),
+    requestedBy: uuid('requested_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** pending | approved | rejected | skipped. */
+    status: text('status').notNull().default('pending'),
+    decidedBy: uuid('decided_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sheetIdx: index('receivable_import_rows_sheet_idx').on(t.sheetId, t.status),
+    batchIdx: index('receivable_import_rows_batch_idx').on(t.batchId),
+  }),
+);
+
+/**
+ * Receivables v2: one row per v2 email (new invoice, revised, roll-up, digest, client statement),
+ * written as `sending` before the send and finished as `sent`, `failed` or `skipped`. The HTML is
+ * kept so Retry sends the same message. `dedupe_key` keeps each automatic send to once per period
+ * (for example `rollup:<partner id>:<date>`); manual sends leave it null.
+ */
+export const receivableEmailLog = pgTable(
+  'receivable_email_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    /** new_invoice | revised | rollup | digest | client_statement. */
+    kind: text('kind').notNull(),
+    partnerId: uuid('partner_id').references(() => receivablePartners.id, { onDelete: 'set null' }),
+    clientId: uuid('client_id').references(() => receivableClients.id, { onDelete: 'set null' }),
+    /** The period the automatic send covers (a date or an ISO week); null for manual sends. */
+    periodKey: text('period_key'),
+    dedupeKey: text('dedupe_key'),
+    recipientName: text('recipient_name').notNull().default(''),
+    to: text('to').array().notNull().default([]),
+    cc: text('cc').array().notNull().default([]),
+    subject: text('subject').notNull(),
+    html: text('html').notNull().default(''),
+    text: text('text').notNull().default(''),
+    /** Whose Outlook it went from. */
+    senderUserId: uuid('sender_user_id').references(() => base.profiles.id, { onDelete: 'set null' }),
+    invoiceIds: jsonb('invoice_ids').$type<string[]>().notNull().default([]),
+    /** What the WhatsApp ping says the email was about ("SCSPL/26-27/164", "Machinify Inc"). */
+    about: text('about').notNull().default(''),
+    /** sending | sent | failed | skipped. */
+    status: text('status').notNull().default('sending'),
+    error: text('error'),
+    /** The sent email's Outlook on the web link (opens only in the sender's mailbox), for the WhatsApp ping. */
+    webLink: text('web_link'),
+    /** The WhatsApp ping to the sender: sent | failed | no_phone | disabled; null until tried. */
+    whatsappStatus: text('whatsapp_status'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sheetIdx: index('receivable_email_log_sheet_idx').on(t.sheetId, t.createdAt),
+    dedupeIdx: uniqueIndex('receivable_email_log_dedupe_idx').on(t.dedupeKey),
   }),
 );

@@ -59,6 +59,8 @@ export function toPartnerDto(row: PartnerRow, profile: LoginProfile): PartnerDto
     invitedAt: iso(row.invitedAt),
     acceptedAt: iso(row.acceptedAt),
     notifyOnPublish: row.notifyOnPublish,
+    notifyNewInvoice: row.notifyNewInvoice,
+    notifyRollup: row.notifyRollup,
   };
 }
 

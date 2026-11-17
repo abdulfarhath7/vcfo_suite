@@ -202,7 +202,8 @@ describe('rate alerts', () => {
     expect(mail.text).toContain('Hi Meera,');
     expect(mail.text).toContain('EUR 10,000.00, worth ₹9,74,321 at this rate (+₹14,321 against the booked rates)');
     expect(mail.text).toContain('(ECB)');
-    expect(mail.html).toContain('Open the FX tab');
+    // Receivables v2: no link to the tool in any receivables email.
+    expect(mail.html).not.toContain('Open the FX tab');
     const none = rateAlertEmail({ managerName: 'M', clientOrgName: 'S', currency: 'GBP', direction: 'below', threshold: 100, rate: 99, rateDate: TODAY, source: 'manual', exposureFc: 0, exposureBookedInr: 0, url: 'u' });
     expect(none.text).toContain('no open GBP invoices');
   });

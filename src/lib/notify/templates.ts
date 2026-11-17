@@ -53,7 +53,7 @@ export function readTemplateNames(
  *   compliance_overdue       1 company name, 2 obligation name
  *   client_reminder          1 company name, 2 item title (step, filing or request)
  */
-function orderedVariables(
+export function orderedVariables(
   event: NotifyEvent,
   vars: NotifyVariables,
 ): string[] {

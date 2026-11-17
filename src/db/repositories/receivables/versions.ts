@@ -6,6 +6,7 @@ import { profiles, receivableChanges, receivableInvoices, receivablePartners, re
 import type { AuthContext } from '@/auth/guards';
 import type { SnapshotRow } from '@/lib/receivables/model';
 import { diffPublishForPartners, publishAlertEmail } from '@/lib/receivables/publish-alerts';
+import { receivablesExternal } from '@/lib/receivables/external';
 import { partnerHomeUrl } from '@/lib/receivables/partner-emails';
 import { siteUrl } from '@/lib/site-url';
 import { UUID, notFound, scopedSheet, toInvoice } from './shared';
@@ -61,9 +62,14 @@ export async function publishSheet(ctx: AuthContext, sheetId: string, note?: str
   });
   // Phase 8: the partner alerts go after the response (`after` from next/server), so the platform
   // keeps them alive past the answer. A failure is logged and never blocks or fails the publish.
-  after(() => sendPublishAlerts({ sheetId: sheet.id, clientOrgName: sheet.clientOrgName, previous: last?.snapshot ?? [], next: snapshot }).catch((e) =>
-    console.error('[receivables] publish alerts failed', e instanceof Error ? e.message : e),
-  ));
+  // Receivables v2: partner-facing, so only with RECEIVABLES_EXTERNAL=on. Update stays an internal snapshot.
+  if (receivablesExternal()) {
+    after(() =>
+      sendPublishAlerts({ sheetId: sheet.id, clientOrgName: sheet.clientOrgName, previous: last?.snapshot ?? [], next: snapshot }).catch((e) =>
+        console.error('[receivables] publish alerts failed', e instanceof Error ? e.message : e),
+      ),
+    );
+  }
   return meta;
 }
 

@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { publicReceivablesMetadata } from '@/views/receivables/client/public-metadata';
 import { PartnerPage } from '@/views/receivables/partner/PartnerPage';
 import { partnerPageGuard } from './_partner-guard';
+import { receivablesExternal } from '@/lib/receivables/external';
+import { notFound } from 'next/navigation';
 
 export const metadata = publicReceivablesMetadata;
 export const dynamic = 'force-dynamic';
@@ -14,6 +16,8 @@ type Props = { searchParams: Promise<{ invoice?: string | string[] }> };
  * reminder emails link there, so a signed-out partner returns to the same invoice after login.
  */
 export default async function ReceivablesPartnerPage({ searchParams }: Props) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  if (!receivablesExternal()) notFound();
   const q = await searchParams;
   const invoice = typeof q.invoice === 'string' && /^[0-9a-f-]{36}$/i.test(q.invoice) ? q.invoice : null;
   await partnerPageGuard(invoice ? `/receivables?invoice=${invoice}` : '/receivables');

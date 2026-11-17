@@ -8,6 +8,8 @@ import { pageMetadata } from '@/lib/shell/page-metadata';
 import { sharePath } from '@/lib/receivables/share-wire';
 import { SharedLinkForbidden, SharedLinkGone } from '@/views/receivables/shared/SharedNotice';
 import { SharedView } from '@/views/receivables/shared/SharedView';
+import { receivablesExternal } from '@/lib/receivables/external';
+import { notFound } from 'next/navigation';
 
 /** A shared view is never indexed and never sends its address (the token) on in a Referer header. */
 export const metadata: Metadata = {
@@ -28,6 +30,8 @@ type Props = { params: Promise<{ token: string }> };
  * unknown, revoked or expired link gets one "does not work" page.
  */
 export default async function SharedReceivablesPage({ params }: Props) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  if (!receivablesExternal()) notFound();
   const { token } = await params;
   const viewer = await optionalViewer();
   const out = await systemOpenShareLink(token, viewer);
