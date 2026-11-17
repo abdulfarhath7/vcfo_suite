@@ -41,6 +41,7 @@ export type SheetEmailSettings = Pick<
   | 'digestWeekday'
   | 'digestHourIst'
   | 'rollupEveryDays'
+  | 'rollupWeekdays'
   | 'sendHourIst'
   | 'emailNewInvoiceEnabled'
   | 'emailRollupEnabled'

@@ -25,6 +25,7 @@
  *  - receivable_import_rows         — rows waiting for approval (from Tally or a staff amount change).
  *  - receivable_email_log           — every automatic or manual v2 email and its WhatsApp ping.
  */
+import { sql } from 'drizzle-orm';
 import { boolean, date, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import * as base from './schema';
 import type { ReminderRules, SnapshotRow, EmailRecipient } from '@/lib/receivables/model';
@@ -55,8 +56,10 @@ export const receivableSheets = pgTable(
     digestWeekday: integer('digest_weekday').notNull().default(1),
     /** The IST hour the leadership digest goes out. */
     digestHourIst: integer('digest_hour_ist').notNull().default(9),
-    /** The client partner roll-up goes out every this many days. */
+    /** The client partner roll-up goes out every this many days. Unused since 17 Nov 2026 (rollup_weekdays). */
     rollupEveryDays: integer('rollup_every_days').notNull().default(3),
+    /** The weekdays the roll-up goes out on (0 = Sunday … 6 = Saturday), picked on the People tab. */
+    rollupWeekdays: integer('rollup_weekdays').array().notNull().default(sql`'{1,4}'::integer[]`),
     /** The IST hour the roll-up goes out. */
     sendHourIst: integer('send_hour_ist').notNull().default(9),
     emailNewInvoiceEnabled: boolean('email_new_invoice_enabled').notNull().default(false),

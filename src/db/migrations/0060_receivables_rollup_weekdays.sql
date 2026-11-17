@@ -1,0 +1,1 @@
+ALTER TABLE "receivable_sheets" ADD COLUMN "rollup_weekdays" integer[] DEFAULT '{1,4}'::integer[] NOT NULL;

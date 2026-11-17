@@ -72,7 +72,7 @@ const ERROR_TEXT: Record<string, string> = {
   client_exists: 'A client with this name is already on the sheet.',
   gstin: 'The GSTIN is too long.',
   weekday: 'Pick a weekday.',
-  rollup_days: 'Enter a roll-up interval between 1 and 30 days.',
+  rollup_days: 'Pick at least one day for the roll-up.',
   not_failed: 'Only a failed email can be retried.',
   no_billing_email: 'Add the client\'s billing email first.',
   nothing_open: 'This client has no open invoices.',

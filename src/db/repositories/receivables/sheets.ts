@@ -120,6 +120,7 @@ export function emailSettingsOf(s: SheetRow): EmailSettingsDto {
     digestWeekday: s.digestWeekday,
     digestHourIst: s.digestHourIst,
     rollupEveryDays: s.rollupEveryDays,
+    rollupWeekdays: s.rollupWeekdays ?? [1, 4],
     sendHourIst: s.sendHourIst,
     emailNewInvoiceEnabled: s.emailNewInvoiceEnabled,
     emailRollupEnabled: s.emailRollupEnabled,
@@ -150,6 +151,11 @@ export async function updateEmailSettings(ctx: AuthContext, sheetId: string, pat
   if (patch.digestHourIst !== undefined) set.digestHourIst = intIn(patch.digestHourIst, 6, 20, 'send_hour');
   if (patch.sendHourIst !== undefined) set.sendHourIst = intIn(patch.sendHourIst, 6, 20, 'send_hour');
   if (patch.rollupEveryDays !== undefined) set.rollupEveryDays = intIn(patch.rollupEveryDays, 1, 30, 'rollup_days');
+  if (patch.rollupWeekdays !== undefined) {
+    const days = Array.isArray(patch.rollupWeekdays) ? [...new Set(patch.rollupWeekdays.map((d) => intIn(d, 0, 6, 'rollup_days')))].sort() : [];
+    if (!days.length) throw invalid('rollup_days');
+    set.rollupWeekdays = days;
+  }
   const [row] = await db.update(receivableSheets).set(set).where(eq(receivableSheets.id, sheet.id)).returning();
   return emailSettingsOf(row);
 }

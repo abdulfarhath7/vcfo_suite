@@ -10,6 +10,7 @@ const schema = z.object({
   digestWeekday: z.number().int().min(0, 'weekday').max(6, 'weekday').optional(),
   digestHourIst: z.number().int().min(6, 'send_hour').max(20, 'send_hour').optional(),
   rollupEveryDays: z.number().int().min(1, 'rollup_days').max(30, 'rollup_days').optional(),
+  rollupWeekdays: z.array(z.number().int().min(0, 'rollup_days').max(6, 'rollup_days')).min(1, 'rollup_days').max(7, 'rollup_days').optional(),
   sendHourIst: z.number().int().min(6, 'send_hour').max(20, 'send_hour').optional(),
   emailNewInvoiceEnabled: z.boolean().optional(),
   emailRollupEnabled: z.boolean().optional(),

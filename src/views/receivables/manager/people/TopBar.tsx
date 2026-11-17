@@ -13,20 +13,46 @@ import { HOURS, shortHour, stamp, type SaveSettings } from './shared';
 
 /**
  * The People tab's strip of sheet-wide email switches (new invoice, revised,
- * and the roll-up interval and hour) with the next roll-up time, then the Outlook and WhatsApp
+ * and the roll-up days and hour) with the next roll-up time, then the Outlook and WhatsApp
  * status as two small dots. Each dot opens a pop-over with the details and its action.
  */
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+/** Monday first, as the firm's week runs. */
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
 export function EmailSwitches({ people, saveSettings }: { people: PeopleDto; saveSettings: SaveSettings }) {
   const s = people.settings;
+  const days = s.rollupWeekdays?.length ? s.rollupWeekdays : [1, 4];
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-line bg-surface-raised px-4 py-2.5 text-[13px]" role="group" aria-label="Sheet email switches">
       <span className="font-medium text-ink">Automatic emails</span>
       <SwitchItem id="rcv-sw-new" label="New" title="New invoice emails" checked={s.emailNewInvoiceEnabled} onChange={(v) => saveSettings({ emailNewInvoiceEnabled: v })} />
       <SwitchItem id="rcv-sw-revised" label="Revised" title="Revised invoice emails" checked={s.emailRevisedEnabled} onChange={(v) => saveSettings({ emailRevisedEnabled: v })} />
       <span className="inline-flex items-center gap-1.5">
-        <SwitchItem id="rcv-sw-rollup" label="Roll-up every" title="Roll-up emails to partners" checked={s.emailRollupEnabled} onChange={(v) => saveSettings({ emailRollupEnabled: v })} />
-        <FilterSelect className="!h-7 !text-[12.5px]" aria-label="Roll-up interval" value={String(s.rollupEveryDays)} onChange={(e) => saveSettings({ rollupEveryDays: Number(e.target.value) })} options={[1, 2, 3, 5, 7, 14].map((d) => ({ value: String(d), label: `${d}d` }))} />
+        <SwitchItem id="rcv-sw-rollup" label="Roll-up on" title="Roll-up emails to partners" checked={s.emailRollupEnabled} onChange={(v) => saveSettings({ emailRollupEnabled: v })} />
+        {/* The weekdays the roll-up goes out on (owner, 17 Nov 2026); at least one stays picked. */}
+        <span role="group" aria-label="Roll-up days" className="inline-flex overflow-hidden rounded-md border border-line">
+          {DAY_ORDER.map((d) => {
+            const on = days.includes(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={on}
+                aria-label={DAY_NAMES[d]}
+                title={DAY_NAMES[d]}
+                onClick={() => {
+                  const next = on ? days.filter((x) => x !== d) : [...days, d];
+                  if (next.length) saveSettings({ rollupWeekdays: next.sort() });
+                }}
+                className={cn('h-7 w-8 border-l border-line text-[12px] font-medium first:border-l-0', on ? 'bg-brand text-on-brand' : 'bg-surface-raised text-ink-2 hover:bg-hover')}
+              >
+                {DAY_NAMES[d].slice(0, 2)}
+              </button>
+            );
+          })}
+        </span>
         <span className="text-ink-muted">at</span>
         <FilterSelect className="!h-7 !text-[12.5px]" aria-label="Roll-up hour (IST)" value={String(s.sendHourIst)} onChange={(e) => saveSettings({ sendHourIst: Number(e.target.value) })} options={HOURS.map((h) => ({ value: String(h), label: shortHour(h) }))} />
       </span>

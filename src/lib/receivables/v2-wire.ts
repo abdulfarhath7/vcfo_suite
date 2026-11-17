@@ -100,6 +100,8 @@ export type EmailSettingsDto = {
   digestWeekday: number;
   digestHourIst: number;
   rollupEveryDays: number;
+  /** The weekdays the roll-up goes out on (0 = Sunday … 6 = Saturday). */
+  rollupWeekdays: number[];
   sendHourIst: number;
   emailNewInvoiceEnabled: boolean;
   emailRollupEnabled: boolean;
