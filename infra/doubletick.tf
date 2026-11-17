@@ -7,13 +7,11 @@
 #   aws secretsmanager put-secret-value --secret-id vcfo-suite/DOUBLETICK_API_KEY --secret-string "$DT_KEY"
 #   terraform apply
 #
-# Production (17 Nov 2026): the secret vcfo-suite/DOUBLETICK_API_KEY, its lockdown policy, the
-# inline role policy vcfo-suite-app-doubletick and the App Runner env vars were set by hand with
-# the AWS CLI, because a full apply would also have moved Ask VCFO from the Anthropic API to
-# Bedrock (live drift). Before the next apply, import the secret and its policy:
-#   terraform import 'aws_secretsmanager_secret.doubletick_api_key[0]' <secret ARN>
-#   terraform import 'aws_secretsmanager_secret_policy.doubletick_api_key[0]' <secret ARN>
-# and delete the hand-made inline policy vcfo-suite-app-doubletick (soc-runtime.tf grants it).
+# Production (17 Nov 2026): the secret vcfo-suite/DOUBLETICK_API_KEY and its lockdown policy were
+# made by hand, then imported into Terraform state the same evening; terraform.tfvars was aligned
+# with production (Ask VCFO on the Anthropic API) so a plan shows no drift. soc-runtime.tf now
+# grants the app role the key; the hand-made inline policy vcfo-suite-app-doubletick was deleted
+# after the apply.
 
 variable "doubletick_enabled" {
   description = "Inject vcfo-suite/DOUBLETICK_API_KEY and the DoubleTick settings into App Runner."
