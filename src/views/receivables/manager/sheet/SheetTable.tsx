@@ -64,7 +64,7 @@ export function SheetTable({
   label: string;
 }) {
   const fx = s.hasForeign;
-  const cols = fx ? 12 : 11;
+  const cols = fx ? 10 : 9;
   const all = groups.flatMap((g) => g.rows);
   const allPicked = all.length > 0 && all.every((r) => s.picked.has(r.id));
   const somePicked = !allPicked && all.some((r) => s.picked.has(r.id));
@@ -73,21 +73,18 @@ export function SheetTable({
 
   return (
     <div className="overflow-x-auto rounded-md border border-line bg-surface-raised xl:overflow-visible">
-      <table className={cn('w-full table-fixed border-separate border-spacing-0', s.density === 'compact' ? 'text-[12.5px]' : 'text-[13px]', fx ? 'min-w-[1360px]' : 'min-w-[1180px]')} aria-label={label}>
+      <table className={cn('w-full table-fixed border-separate border-spacing-0', s.density === 'compact' ? 'text-[12.5px]' : 'text-[13px]', fx ? 'min-w-[1180px]' : 'min-w-[1000px]')} aria-label={label}>
         <colgroup>
           <col className="w-9" />
           <col />
-          <col className="w-[104px]" />
+          <col className="w-[200px]" />
+          <col className="w-[120px]" />
+          <col className="w-[100px]" />
           <col className="w-[112px]" />
-          <col className="w-[148px]" />
-          <col className="w-[104px]" />
-          <col className="w-[118px]" />
-          <col className="w-[104px]" />
-          <col className="w-[118px]" />
+          <col className="w-[176px]" />
           {fx ? <col className="w-[184px]" /> : null}
-          <col className="w-[132px]" />
           <col className="w-[104px]" />
-          <col className="w-[80px]" />
+          <col className="w-[148px]" />
         </colgroup>
         <thead>
           <tr>
@@ -101,13 +98,11 @@ export function SheetTable({
               />
             </th>
             <th className={cn(TH, STICK_CLIENT, 'max-xl:z-[3]')}>Client</th>
-            <th className={TH}>Invoice no.</th>
-            <th className={TH}>Invoice date</th>
+            <th className={TH}>Invoice · date</th>
             <th className={TH}>Partner</th>
-            <th className={TH}>Due date</th>
+            <th className={TH}>Due</th>
             <th className={cn(TH, 'text-right')}>Amount ₹</th>
-            <th className={TH}>Received on</th>
-            <th className={cn(TH, 'text-right')}>Received ₹</th>
+            <th className={TH}>Received</th>
             {fx ? <th className={TH}>{fxHeader(data)}</th> : null}
             <th className={TH}>Status</th>
             <th className={cn(TH, 'rounded-tr-[4px]')}>
@@ -194,22 +189,24 @@ function Row({
         )}
       </td>
       <td className={TD}>
-        <span className="flex min-w-0 items-center gap-1">
+        {/* The invoice number and its date in one cell; each part is edited in place. Rows loaded
+            from the weekly workbook have no date, so their month shows until one is picked. */}
+        <span className="flex min-w-0 items-center">
           {!editLabels ? (
             <span className="block min-w-0 truncate px-1.5 font-mono text-[12px]">{inv.invoiceNo ?? '—'}</span>
           ) : (
-            <TextCell value={inv.invoiceNo ?? ''} label={`Invoice number of ${inv.clientName}`} mono placeholder="optional" onCommit={(v) => s.edit(inv, { invoiceNo: v || null })} />
+            <TextCell value={inv.invoiceNo ?? ''} label={`Invoice number of ${inv.clientName}`} mono placeholder="no." onCommit={(v) => s.edit(inv, { invoiceNo: v || null })} />
           )}
           {inv.revision ? <RevisionBadge revision={inv.revision} /> : null}
+          <span aria-hidden className="text-ink-faint">·</span>
+          <span className="w-[86px] shrink-0">
+            {foreign ? (
+              <InvoiceDateCell invoice={inv} />
+            ) : (
+              <DatePick variant="cell" label={`Invoice date of ${name}`} value={inv.invoiceDate ?? ''} placeholder={monthShort(inv.invoiceMonth)} onChange={(v) => v && v !== inv.invoiceDate && s.edit(inv, { invoiceDate: v })} />
+            )}
+          </span>
         </span>
-      </td>
-      <td className={TD}>
-        {/* The invoice date; rows loaded from the weekly workbook have none, so their month shows until it is filled in. */}
-        {foreign ? (
-          <InvoiceDateCell invoice={inv} />
-        ) : (
-          <DatePick variant="cell" label={`Invoice date of ${name}`} value={inv.invoiceDate ?? ''} placeholder={monthShort(inv.invoiceMonth)} onChange={(v) => v && v !== inv.invoiceDate && s.edit(inv, { invoiceDate: v })} />
-        )}
       </td>
       <td className={TD}>
         {!editLabels ? (
@@ -243,27 +240,17 @@ function Row({
           </div>
         )}
       </td>
-      {/* What was received and when, as entered at Mark received (part payments count while open). */}
-      <td className={cn(TD, 'whitespace-nowrap tabular-nums')}>
-        {inv.paidOn ? (
-          <span className="px-1.5">{sheetDate(inv.paidOn)}</span>
-        ) : inv.status === 'open' ? (
-          // One click to Mark received: the dialog asks for the date received and the amount.
-          <Button size="sm" variant="secondary" className="!h-6 !px-2 !text-[12px] [&_svg]:!size-3.5" aria-label={`Mark ${name} received`} onClick={() => s.runRow('mark', inv)}>
-            <CheckCircle2 aria-hidden />
-            Received
-          </Button>
+      {/* What arrived and when, as entered at Mark received. Open invoices show nothing here. */}
+      <td className={cn(TD, 'whitespace-nowrap')}>
+        {inv.status === 'received' ? (
+          <span className="flex items-center gap-1.5 px-1.5 text-positive" title="Received date and amount">
+            <CheckCircle2 aria-hidden className="size-3.5 shrink-0" />
+            <span className="tabular-nums">{inv.paidOn ? sheetDate(inv.paidOn).slice(0, 6) : '—'}</span>
+            <span className="text-ink-faint">·</span>
+            <span className="font-mono text-[12px]">{inr((inv.paidAmount ?? inv.amountInr) + inv.partPaid)}</span>
+          </span>
         ) : (
           <span className="px-1.5 text-ink-faint">—</span>
-        )}
-      </td>
-      <td className={TD}>
-        {inv.status === 'received' ? (
-          <div className="px-1.5 text-right font-mono text-[12px] text-positive">{inr((inv.paidAmount ?? inv.amountInr) + inv.partPaid)}</div>
-        ) : inv.partPaid > 0 ? (
-          <div className="px-1.5 text-right font-mono text-[12px] text-ink-2" title="Part payments so far">{inr(inv.partPaid)}</div>
-        ) : (
-          <div className="px-1.5 text-right text-ink-faint">—</div>
         )}
       </td>
       {fx ? (
@@ -282,6 +269,13 @@ function Row({
       </td>
       <td className={cn(TD, 'whitespace-nowrap pr-1.5 text-right')}>
         <span className="inline-flex items-center justify-end gap-0.5">
+          {inv.status === 'open' ? (
+            // One click to Mark received, at the row's right end: the dialog asks for the date and amount.
+            <Button size="sm" variant="secondary" className="!h-6 !px-2 !text-[12px] [&_svg]:!size-3.5" aria-label={`Mark ${name} received`} onClick={() => s.runRow('mark', inv)}>
+              <CheckCircle2 aria-hidden />
+              Received
+            </Button>
+          ) : null}
           {inv.noteCount ? <NotesButton invoice={inv} onOpen={() => s.runRow('notes', inv)} /> : null}
           <ActionMenu label={`More actions for ${name}`} items={createRowMenu(inv, today, s.runRow)} />
         </span>

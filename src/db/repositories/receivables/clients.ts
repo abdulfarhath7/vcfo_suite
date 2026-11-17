@@ -178,6 +178,13 @@ export async function updateClient(ctx: AuthContext, clientId: string, patch: Cl
   const row = await db.transaction(async (tx) => {
     const [updated] = await tx.update(receivableClients).set(set).where(eq(receivableClients.id, client.id)).returning();
     if (partnerChanged) await movePartnerInvoices(tx, sheetId, [client.id], updated.partnerId);
+    // A renamed client renames its live invoices too, so the sheet and the emails show one name.
+    if (set.name && set.name !== client.name) {
+      await tx
+        .update(receivableInvoices)
+        .set({ clientName: set.name, updatedAt: new Date() })
+        .where(and(eq(receivableInvoices.sheetId, sheetId), eq(receivableInvoices.clientId, client.id), isNull(receivableInvoices.deletedAt)));
+    }
     await logChange(
       { sheetId, invoiceId: null, actorId: ctx.userId, summary: partnerChanged ? `Client ${updated.name} moved to another client partner` : `Client ${updated.name} updated`, affectsPage: partnerChanged },
       tx,
