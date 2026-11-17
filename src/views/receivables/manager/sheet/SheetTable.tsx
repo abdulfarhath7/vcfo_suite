@@ -10,7 +10,8 @@ import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire'
 import { cn } from '@/lib/utils';
 import { fcText, inr } from '../../format';
 import { NotesButton } from '../InvoiceNotes';
-import { ChevronDown } from 'lucide-react';
+import { CheckCircle2, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { FxCell, InvoiceDateCell, RevisionBadge, StatusDot, TextCell } from './cells';
 import { CELL, fxInput, invoiceName } from './cell-utils';
 import { DatePick } from './DatePick';
@@ -244,7 +245,17 @@ function Row({
       </td>
       {/* What was received and when, as entered at Mark received (part payments count while open). */}
       <td className={cn(TD, 'whitespace-nowrap tabular-nums')}>
-        {inv.paidOn ? <span className="px-1.5">{sheetDate(inv.paidOn)}</span> : <span className="px-1.5 text-ink-faint">—</span>}
+        {inv.paidOn ? (
+          <span className="px-1.5">{sheetDate(inv.paidOn)}</span>
+        ) : inv.status === 'open' ? (
+          // One click to Mark received: the dialog asks for the date received and the amount.
+          <Button size="sm" variant="secondary" className="!h-6 !px-2 !text-[12px] [&_svg]:!size-3.5" aria-label={`Mark ${name} received`} onClick={() => s.runRow('mark', inv)}>
+            <CheckCircle2 aria-hidden />
+            Received
+          </Button>
+        ) : (
+          <span className="px-1.5 text-ink-faint">—</span>
+        )}
       </td>
       <td className={TD}>
         {inv.status === 'received' ? (
