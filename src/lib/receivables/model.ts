@@ -10,6 +10,10 @@ export type PaidVia = 'manual' | 'bank';
 /** before: a set number of days before due · due: the due date · overdue: every day after. */
 export type ReminderKind = 'before' | 'due' | 'overdue';
 
+/**
+ * The due-date reminder rules. Receivables v2 removed the reminders; the column stays on
+ * receivable_sheets (and in old snapshots) and nothing reads it for sending any more.
+ */
 export type ReminderRules = {
   /**
    * The sheet's on/off switch. Off on a new sheet, so nothing goes to client partners until the
@@ -25,8 +29,8 @@ export type ReminderRules = {
   /** Hour of the IST day the queue sends (the queue itself is built an hour earlier). */
   sendHourIst: number;
   /**
-   * Phase 10: the Monday digest email to the sheet's manager (src/jobs/receivables-digest.ts).
-   * Missing (older rows) reads as on.
+   * Phase 10: the Monday digest email to the sheet's manager. Unused since receivables v2 replaced
+   * that digest with the leadership digest (receivable_sheets.digest_enabled).
    */
   digestEnabled?: boolean;
 };

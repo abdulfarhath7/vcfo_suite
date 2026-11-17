@@ -6,6 +6,8 @@ import { publicReceivablesMetadata } from '@/views/receivables/client/public-met
 import { StatementView } from '@/views/receivables/StatementView';
 import { PartnerHeader } from '@/views/receivables/partner/PartnerHeader';
 import { partnerPageGuard } from '../_partner-guard';
+import { receivablesExternal } from '@/lib/receivables/external';
+import { notFound } from 'next/navigation';
 
 export const metadata = { ...publicReceivablesMetadata, ...pageMetadata('Statement of account', 'Your receivables statement') };
 export const dynamic = 'force-dynamic';
@@ -18,6 +20,8 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
  * default period rather than an error page.
  */
 export default async function PartnerStatementPage({ searchParams }: Props) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  if (!receivablesExternal()) notFound();
   const ctx = await partnerPageGuard('/receivables/statement');
   const raw = await searchParams;
   const q = new URLSearchParams();

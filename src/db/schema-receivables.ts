@@ -15,7 +15,7 @@
  *  - receivable_versions      — what Update published; the public page reads only these snapshots.
  *  - receivable_changes       — one row per edit, the audit trail and the "unpublished" count.
  *  - receivable_reminders     — one row per invoice per day; the unique key stops double sends.
- *  - bank_credits             — credits from the bank feed and what they were matched to.
+ *  - (bank_credits, the HSBC bank feed, was dropped in receivables v2.)
  *  - receivable_email_sends   — each summary email the manager sent.
  *
  * Receivables v2 (docs/specs/receivables/V2.md):
@@ -254,7 +254,7 @@ export const receivableReminders = pgTable(
     partnerId: uuid('partner_id').references(() => receivablePartners.id, { onDelete: 'set null' }),
     /** The IST day the reminder is for. */
     forDate: date('for_date').notNull(),
-    /** before | due | overdue (see src/lib/receivables/reminder-rule.ts). */
+    /** before | due | overdue. Receivables v2 removed the reminders; the table is kept, unused, and can be dropped later. */
     kind: text('kind').notNull(),
     /** Days before the due date (positive) or after it (negative), on for_date. */
     daysLeft: integer('days_left').notNull(),
@@ -275,37 +275,9 @@ export const receivableReminders = pgTable(
   }),
 );
 
-export const bankCredits = pgTable(
-  'bank_credits',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    sheetId: uuid('sheet_id')
-      .notNull()
-      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
-    /** hsbc_api | alert_email | manual. */
-    source: text('source').notNull(),
-    /** The bank's own transaction reference; the de-duplication key within a sheet, whatever the source. */
-    externalRef: text('external_ref').notNull(),
-    valueDate: date('value_date').notNull(),
-    payer: text('payer').notNull(),
-    currency: text('currency').notNull().default('INR'),
-    fcAmount: numeric('fc_amount', { precision: 14, scale: 2 }),
-    inrAmount: numeric('inr_amount', { precision: 14, scale: 2 }).notNull(),
-    narration: text('narration').notNull().default(''),
-    /** The matched invoices (one credit may settle several invoices of one client). */
-    matchInvoiceIds: jsonb('match_invoice_ids').$type<string[]>().notNull().default([]),
-    /** auto | to_confirm | unmatched | confirmed | ignored. */
-    status: text('status').notNull(),
-    matchNote: text('match_note').notNull().default(''),
-    decidedBy: uuid('decided_by').references(() => base.profiles.id, { onDelete: 'set null' }),
-    decidedAt: timestamp('decided_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    refIdx: uniqueIndex('bank_credits_sheet_ref_idx').on(t.sheetId, t.externalRef),
-    statusIdx: index('bank_credits_sheet_status_idx').on(t.sheetId, t.status),
-  }),
-);
+/*
+ * bank_credits (the HSBC feed) was dropped in receivables v2 by migration 0059_drop_bank_credits.
+ */
 
 export const receivableEmailSends = pgTable(
   'receivable_email_sends',
@@ -418,7 +390,8 @@ export const receivableFiras = pgTable(
       .notNull()
       .references(() => receivableSheets.id, { onDelete: 'cascade' }),
     invoiceId: uuid('invoice_id').references(() => receivableInvoices.id, { onDelete: 'set null' }),
-    bankCreditId: uuid('bank_credit_id').references(() => bankCredits.id, { onDelete: 'set null' }),
+    /** The bank credit it came from, while the HSBC feed existed; plain history since v2 dropped bank_credits. */
+    bankCreditId: uuid('bank_credit_id'),
     /** awaited | received. */
     status: text('status').notNull().default('awaited'),
     firaNo: text('fira_no'),
@@ -700,6 +673,8 @@ export const receivableEmailLog = pgTable(
     /** sending | sent | failed | skipped. */
     status: text('status').notNull().default('sending'),
     error: text('error'),
+    /** The sent email's Outlook on the web link (opens only in the sender's mailbox), for the WhatsApp ping. */
+    webLink: text('web_link'),
     /** The WhatsApp ping to the sender: sent | failed | no_phone | disabled; null until tried. */
     whatsappStatus: text('whatsapp_status'),
     sentAt: timestamp('sent_at', { withTimezone: true }),

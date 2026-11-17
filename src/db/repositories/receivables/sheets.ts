@@ -133,6 +133,11 @@ function intIn(v: unknown, min: number, max: number, code: string): number {
   return n;
 }
 
+/** v2: the sheet's email settings, for the People tab. */
+export async function getEmailSettings(ctx: AuthContext, sheetId: string): Promise<EmailSettingsDto> {
+  return emailSettingsOf(await scopedSheet(ctx, sheetId));
+}
+
 /** v2: switches the automatic emails on or off and sets their schedule. */
 export async function updateEmailSettings(ctx: AuthContext, sheetId: string, patch: Partial<EmailSettingsDto>): Promise<EmailSettingsDto> {
   const sheet = await scopedSheet(ctx, sheetId);

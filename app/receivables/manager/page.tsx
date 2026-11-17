@@ -6,6 +6,7 @@ import { isReceivablesStaffRole } from '@/lib/receivables/roles';
 import { roleHomePath } from '@/lib/auth-routes';
 import { listMySheets } from '@/db/repositories/receivables';
 import { ReceivablesManager } from '@/views/receivables/manager/ReceivablesManager';
+import { receivablesExternal } from '@/lib/receivables/external';
 
 export const metadata = pageMetadata('Receivables', 'Keep the client receivables sheet current');
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,14 @@ export default async function ReceivablesManagerPage({ searchParams }: Props) {
   const sheetId = sheets.find((s) => s.id === q.sheet)?.id ?? sheets[0].id;
   return (
     <Suspense>
-      <ReceivablesManager sheets={sheets.map((s) => ({ id: s.id, name: s.name, clientOrgName: s.clientOrgName }))} sheetId={sheetId} userName={ctx.name} homeHref={home} />
+      <ReceivablesManager
+        sheets={sheets.map((s) => ({ id: s.id, name: s.name, clientOrgName: s.clientOrgName }))}
+        sheetId={sheetId}
+        userName={ctx.name}
+        homeHref={home}
+        settingsHref={`${home.split('/').slice(0, 3).join('/')}/settings`}
+        external={receivablesExternal()}
+      />
     </Suspense>
   );
 }

@@ -6,9 +6,9 @@
  * sheet, so the unpublished count and totals stay right.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { EmailRecipient, InvoiceInput, InvoicePatch, ReceiptInput, ReminderRules } from '@/lib/receivables/model';
+import type { EmailRecipient, InvoiceInput, InvoicePatch, ReceiptInput } from '@/lib/receivables/model';
 import type { InvoiceHistoryDto, PendingChangesDto } from '@/lib/receivables/history-wire';
-import type { CreditsDto, ImportResultDto, InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, ReminderDeskDto, SummaryDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
+import type { InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, SummaryDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
 
 const ERROR_TEXT: Record<string, string> = {
   client: 'Enter the client name.',
@@ -54,6 +54,27 @@ const ERROR_TEXT: Record<string, string> = {
   invoice_date: 'Enter the invoice date of the foreign invoice.',
   forward: 'Pick an open forward contract of this currency with an amount left.',
   tds: 'Enter the TDS in rupees, zero or more.',
+  /* Receivables v2: the Tally import, approval, amount changes and the People tab. */
+  not_xlsx: 'Export from Tally as Excel (.xlsx).',
+  not_sales_register: 'This file is not a Tally Sales Register (no "Voucher No." column was found).',
+  no_rows: 'The file has no Sales vouchers to import.',
+  rows: 'Tick at least one row.',
+  paid_locked: 'This invoice is received or part-paid. Reopen the payment first.',
+  no_partner: 'Pick a client partner for this client first.',
+  already_exists: 'An invoice with this voucher number is already on the sheet.',
+  reason: 'Write the reason for the change (up to 300 characters).',
+  same_amount: 'The new amount is the same as the current one.',
+  credit_days: 'Enter credit days between 0 and 365.',
+  client_exists: 'A client with this name is already on the sheet.',
+  gstin: 'The GSTIN is too long.',
+  weekday: 'Pick a weekday.',
+  rollup_days: 'Enter a roll-up interval between 1 and 30 days.',
+  not_failed: 'Only a failed email can be retried.',
+  no_billing_email: 'Add the client\'s billing email first.',
+  nothing_open: 'This client has no open invoices.',
+  doubletick_not_configured: 'DoubleTick is not set up on the server yet.',
+  no_phone: 'Add your WhatsApp number in Account settings first.',
+  whatsapp_failed: 'DoubleTick did not send the message.',
 };
 
 class ReceivablesApiError extends Error {
@@ -66,14 +87,15 @@ class ReceivablesApiError extends Error {
   }
 }
 
-async function call<T>(url: string, init?: RequestInit): Promise<T> {
+/** Fetch JSON from a receivables route; an error code becomes the plain message in ERROR_TEXT. */
+export async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new ReceivablesApiError((body.error && ERROR_TEXT[body.error]) || body.error || 'Something went wrong. Try again.', res.status, body.error);
   return body;
 }
 
-const json = (method: string, body?: unknown): RequestInit => ({
+export const json = (method: string, body?: unknown): RequestInit => ({
   method,
   headers: { 'Content-Type': 'application/json' },
   body: body === undefined ? undefined : JSON.stringify(body),
@@ -117,57 +139,6 @@ export function useSummary(sheetId: string, open: boolean) {
   });
 }
 
-const remindersKey = (sheetId: string) => ['receivables', 'reminders', sheetId] as const;
-
-/** The Reminders tab: today's queue and 14 days of history. */
-export function useReminderDesk(sheetId: string) {
-  return useQuery({ queryKey: remindersKey(sheetId), queryFn: () => call<ReminderDeskDto>(`/api/receivables/sheets/${sheetId}/reminders`) });
-}
-
-export function useReminderActions(sheetId: string) {
-  const qc = useQueryClient();
-  const onSettled = () => qc.invalidateQueries({ queryKey: remindersKey(sheetId) });
-  return {
-    update: useMutation({
-      mutationFn: ({ id, ...patch }: { id: string; skipped?: boolean; subject?: string | null; body?: string | null }) => call(`/api/receivables/reminders/${id}`, json('PATCH', patch)),
-      onSettled,
-    }),
-    sendNow: useMutation({
-      mutationFn: () => call<{ ok: true; queued: true; pending: number }>(`/api/receivables/sheets/${sheetId}/reminders/send-now`, json('POST')),
-    }),
-    saveRules: useMutation({
-      mutationFn: (reminderRules: ReminderRules) => call(`/api/receivables/sheets/${sheetId}`, json('PATCH', { reminderRules })),
-      onSettled: () => Promise.all([onSettled(), qc.invalidateQueries({ queryKey: sheetKey(sheetId) })]),
-    }),
-  };
-}
-
-const creditsKey = (sheetId: string) => ['receivables', 'credits', sheetId] as const;
-
-/** The From bank tab: credits from the feed and imported statements. */
-export function useCredits(sheetId: string) {
-  return useQuery({ queryKey: creditsKey(sheetId), queryFn: () => call<CreditsDto>(`/api/receivables/sheets/${sheetId}/credits`) });
-}
-
-export function useCreditActions(sheetId: string) {
-  const qc = useQueryClient();
-  const onSettled = () => Promise.all([qc.invalidateQueries({ queryKey: creditsKey(sheetId) }), qc.invalidateQueries({ queryKey: sheetKey(sheetId) })]);
-  return {
-    importFile: useMutation({
-      mutationFn: (file: File) => {
-        const form = new FormData();
-        form.set('file', file);
-        return call<ImportResultDto>(`/api/receivables/sheets/${sheetId}/credits/import`, { method: 'POST', body: form });
-      },
-      onSettled,
-    }),
-    decide: useMutation({
-      mutationFn: ({ id, ...body }: { id: string; action: 'confirm'; invoiceIds: string[] } | { id: string; action: 'ignore' }) => call(`/api/receivables/credits/${id}`, json('POST', body)),
-      onSettled,
-    }),
-  };
-}
-
 /** The signed-in person's Outlook link (the same status the settings page shows). */
 export function useOutlookStatus() {
   return useQuery({ queryKey: ['outlook', 'status'], queryFn: () => call<OutlookStatusDto>('/api/outlook') });
@@ -199,26 +170,6 @@ export async function summarySendOutcome(sheetId: string, sendId: string): Promi
   return { status: 'sending', error: null };
 }
 
-/**
- * After Send now's 202: refetches the Reminders tab until none of the given reminders is still
- * queued (about three minutes at most), then counts how they ended.
- */
-export async function remindersSendOutcome(sheetId: string, ids: string[]): Promise<{ sent: number; failed: number; queued: number }> {
-  let rows: ReminderDeskDto['queue'] = [];
-  for (let i = 0; i < 90; i++) {
-    await pause(2000);
-    const desk = await call<ReminderDeskDto>(`/api/receivables/sheets/${sheetId}/reminders`).catch(() => null);
-    if (!desk) continue;
-    rows = desk.queue.filter((r) => ids.includes(r.id));
-    if (!rows.some((r) => r.status === 'queued')) break;
-  }
-  return {
-    sent: rows.filter((r) => r.status === 'sent').length,
-    failed: rows.filter((r) => r.status === 'failed').length,
-    queued: rows.filter((r) => r.status === 'queued').length,
-  };
-}
-
 /** All the writes of the manager area, each refetching the sheet (and versions after Update). */
 export function useReceivablesActions(sheetId: string) {
   const qc = useQueryClient();
@@ -243,7 +194,8 @@ export function useReceivablesActions(sheetId: string) {
     }),
     addPartner: useMutation({ mutationFn: (input: { name: string; email: string }) => call(`${sheetUrl}/partners`, json('POST', input)), onSettled }),
     updatePartner: useMutation({
-      mutationFn: ({ id, ...patch }: { id: string; name?: string; email?: string; active?: boolean; notifyOnPublish?: boolean }) => call(`/api/receivables/partners/${id}`, json('PATCH', patch)),
+      mutationFn: ({ id, ...patch }: { id: string; name?: string; email?: string; active?: boolean; notifyOnPublish?: boolean; notifyNewInvoice?: boolean; notifyRollup?: boolean }) =>
+        call(`/api/receivables/partners/${id}`, json('PATCH', patch)),
       onSettled,
     }),
   };

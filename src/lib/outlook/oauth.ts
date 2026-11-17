@@ -237,6 +237,55 @@ export async function graphSendMail(
   }
 }
 
+/**
+ * Receivables v2: sends one message and returns its Outlook on the web link, for the WhatsApp
+ * ping to the sender. `/me/sendMail` gives back no id, so the message is made as a draft
+ * (`POST /me/messages`) and then sent (`POST /me/messages/{id}/send`). Both calls ask for
+ * immutable ids (`Prefer: IdType="ImmutableId"`), so the id, and the link built on it, stay the same
+ * when Outlook moves the message from Drafts to Sent Items. The link opens only in the sender's own
+ * mailbox. `webLink` is null when Outlook gives none; the send itself has then still happened.
+ */
+export async function graphSendMailWithLink(
+  accessToken: string,
+  input: { to: string[]; cc?: string[]; subject: string; html: string },
+): Promise<{ webLink: string | null }> {
+  const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'IdType="ImmutableId"' };
+  const cc = [...new Set((input.cc ?? []).map((a) => a.trim()).filter(Boolean))];
+  const draft = await fetch('https://graph.microsoft.com/v1.0/me/messages', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      subject: input.subject,
+      body: { contentType: 'HTML', content: input.html },
+      toRecipients: input.to.map((address) => ({ emailAddress: { address } })),
+      ...(cc.length > 0 ? { ccRecipients: cc.map((address) => ({ emailAddress: { address } })) } : {}),
+    }),
+  });
+  if (!draft.ok) {
+    const body = await draft.text();
+    throw new Error(body.slice(0, 280) || `graph_draft_${draft.status}`);
+  }
+  const made = (await draft.json()) as { id?: string; webLink?: string };
+  if (!made.id) throw new Error('graph_draft_no_id');
+  const sent = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(made.id)}/send`, { method: 'POST', headers });
+  if (!sent.ok) {
+    const body = await sent.text();
+    throw new Error(body.slice(0, 280) || `graph_send_${sent.status}`);
+  }
+  // The sent copy's own link, when Outlook has filed it already; otherwise the draft's, which the
+  // immutable id keeps pointing at the same message.
+  try {
+    const after = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(made.id)}?$select=webLink`, { headers });
+    if (after.ok) {
+      const v = (await after.json()) as { webLink?: string };
+      if (v.webLink) return { webLink: v.webLink };
+    }
+  } catch {
+    // The email has gone; a missing link only shortens the WhatsApp ping.
+  }
+  return { webLink: made.webLink ?? null };
+}
+
 export interface GraphTeamsEventInput {
   subject: string;
   /** Local wall time in India, `YYYY-MM-DDTHH:MM:00`. */

@@ -41,6 +41,7 @@ CREATE TABLE "receivable_email_log" (
 	"about" text DEFAULT '' NOT NULL,
 	"status" text DEFAULT 'sending' NOT NULL,
 	"error" text,
+	"web_link" text,
 	"whatsapp_status" text,
 	"sent_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL

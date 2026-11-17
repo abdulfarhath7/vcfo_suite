@@ -16449,6 +16449,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "web_link": {
+          "name": "web_link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "whatsapp_status": {
           "name": "whatsapp_status",
           "type": "text",

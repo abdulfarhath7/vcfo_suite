@@ -1,5 +1,9 @@
 # Receivables — build plan and owner decisions
 
+> **Superseded in part by receivables v2 (17 Nov 2026, `V2.md`).** The HSBC bank feed (`RECEIVABLES_BANK_*`,
+> Phase 6), the due-date reminders (Phase 5) and the Monday digest were removed; partner logins, share links
+> and publish alerts are hidden behind `RECEIVABLES_EXTERNAL`. The rest of this file describes v1.
+
 Owner: Farhath. Approved prototype: `docs/specs/receivables/receivables-prototype.html` (3 Nov 2026).
 This file is the spec the code follows. Status on 3 Nov 2026: Phases 1 to 6 built (not committed, migration 0037 local only; 4b, reply in the same thread, deferred; in 6 the HSBC request waits for Summit's onboarding pack, and statement import works today); Phase 7 not started.
 

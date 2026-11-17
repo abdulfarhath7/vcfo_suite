@@ -18,10 +18,11 @@ import { complianceTaskReminders } from '@/jobs/compliance-task-reminders';
 import { complianceTaskRepeatOnComplete, complianceTaskRepeatSweep } from '@/jobs/compliance-task-repeat';
 import { boardMeetingReminders } from '@/jobs/board-meeting-reminders';
 import { askIndexRefresh, askIndexSweep } from '@/jobs/ask-index-refresh';
-import { receivablesReminders } from '@/jobs/receivables-reminders';
-import { receivablesBankFeed } from '@/jobs/receivables-bank-feed';
 import { receivablesFxRates } from '@/jobs/receivables-fx-rates';
-import { receivablesDigest } from '@/jobs/receivables-digest';
+import { receivablesRollup } from '@/jobs/receivables-rollup';
+import { receivablesLeadershipDigest } from '@/jobs/receivables-leadership-digest';
+import { receivablesApprovalEmails } from '@/jobs/receivables-approval-emails';
+import { receivablesEmailPing } from '@/jobs/receivables-email-ping';
 import { devCleanup } from '@/jobs/dev-cleanup';
 import { budgetAlerts } from '@/jobs/budget-alerts';
 import { requestListReminders } from '@/jobs/request-list-reminders';
@@ -57,10 +58,11 @@ export function registeredJobs(): JobFunction[] {
     complianceTaskRepeatOnComplete,
     complianceTaskRepeatSweep,
     boardMeetingReminders,
-    receivablesReminders,
-    receivablesBankFeed,
     receivablesFxRates,
-    receivablesDigest,
+    receivablesRollup,
+    receivablesLeadershipDigest,
+    receivablesApprovalEmails,
+    receivablesEmailPing,
     budgetAlerts,
     watchCheck,
     watchProcess,

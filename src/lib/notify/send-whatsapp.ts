@@ -6,10 +6,14 @@ import type {
   WhatsAppSendResult,
 } from '@/lib/notify/send-whatsapp-shared';
 import { sendViaEum } from '@/lib/notify/send-whatsapp-eum';
+import { sendDoubleTickMessage } from '@/lib/notify/send-whatsapp-doubletick';
+import { orderedVariables } from '@/lib/notify/templates';
 import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify/types';
 
 /**
- * WhatsApp dispatcher — one transport, AWS End User Messaging (Social).
+ * WhatsApp dispatcher — AWS End User Messaging (Social) by default, or DoubleTick when
+ * `WHATSAPP_PROVIDER=doubletick` (receivables v2). With DoubleTick the same approved template name
+ * is sent with the event's variables as positional placeholders.
  *
  * Same shape as the email dispatcher (`send-email.ts`): the guards run here,
  * once, and the transport only ever receives a resolved phone number and an
@@ -60,6 +64,12 @@ export async function sendWhatsAppTemplate(input: {
     templateRef: decision.templateRef,
     deps: input.deps,
   };
+
+  if (config.provider === 'doubletick') {
+    const res = await sendDoubleTickMessage({ to: decision.toPhone, templateName: decision.templateRef, variables: orderedVariables(input.event, input.variables) });
+    if (res.ok === false) return { ok: false, status: 'failed', error: res.error, errorCode: res.permanent ? 'permanent' : 'transient', templateRef: decision.templateRef, toPhone: decision.toPhone };
+    return { ok: true, status: 'queued', providerMessageId: res.messageId ?? '', templateRef: decision.templateRef, toPhone: decision.toPhone };
+  }
 
   return sendViaEum(shared);
 }

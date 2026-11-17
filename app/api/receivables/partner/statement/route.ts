@@ -5,6 +5,7 @@ import { todayIst } from '@/lib/receivables/dates';
 import { parseStatementQuery, statementFileName } from '@/lib/receivables/statement';
 import { statementWorkbook } from '@/lib/receivables/statement-xlsx';
 import { denied, receivablesError } from '../../_respond';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * GET /api/receivables/partner/statement?client=&from=&to=[&format=xlsx] — the signed-in client
@@ -12,6 +13,9 @@ import { denied, receivablesError } from '../../_respond';
  * version only. JSON by default, Excel with `format=xlsx`.
  */
 export async function GET(request: Request) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await requirePartner();
   if (guard.ok === false) return denied(guard);
   const url = new URL(request.url);

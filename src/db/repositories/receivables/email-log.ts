@@ -83,10 +83,10 @@ export async function startEmailLog(ctx: AuthContext, input: Omit<NewEmailLog, '
 }
 
 /** SYSTEM: the outcome of a send. */
-export async function systemFinishEmailLog(id: string, outcome: { status: EmailStatus; error?: string | null }): Promise<void> {
+export async function systemFinishEmailLog(id: string, outcome: { status: EmailStatus; error?: string | null; webLink?: string | null }): Promise<void> {
   await db
     .update(receivableEmailLog)
-    .set({ status: outcome.status, error: outcome.error ?? null, ...(outcome.status === 'sent' ? { sentAt: new Date() } : {}) })
+    .set({ status: outcome.status, error: outcome.error ?? null, ...(outcome.status === 'sent' ? { sentAt: new Date(), webLink: outcome.webLink ?? null } : {}) })
     .where(eq(receivableEmailLog.id, id));
 }
 

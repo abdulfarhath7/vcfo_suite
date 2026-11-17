@@ -27,7 +27,7 @@ import { filterInvoices, filtersFromParams, isFiltered, paramsWithFilters } from
 type Actions = ReturnType<typeof useReceivablesActions>;
 
 export type SheetDialog =
-  | { kind: 'mark' | 'pause' | 'fx' | 'notes' | 'history' | 'dispute' | 'credit' | 'delete'; invoice: ManagerInvoiceDto }
+  | { kind: 'mark' | 'pause' | 'fx' | 'notes' | 'history' | 'dispute' | 'credit' | 'delete' | 'change-amount'; invoice: ManagerInvoiceDto }
   | { kind: 'add' | 'bulk-received' | 'bulk-pause' | 'share-view' }
   | null;
 
@@ -63,8 +63,30 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
     return () => clearTimeout(t);
   }, [search, filters, setFilters]);
 
+  /*
+   * v2: "Fix in Tally" (`fix=1` in the URL) keeps only invoices whose approved staff amount change
+   * is not in the Tally books yet. It is the sheet's own filter, not part of a shared view.
+   */
+  const fixInTally = params.get('fix') === '1';
+  const setFixInTally = (on: boolean) => {
+    const q = new URLSearchParams(window.location.search.replace(/^\?/, ''));
+    if (on) q.set('fix', '1');
+    else q.delete('fix');
+    router.replace(`/receivables/manager${q.toString() ? `?${q}` : ''}`, { scroll: false });
+  };
+  const tallyMismatches = data.invoices.filter((i) => i.tallyMismatch).length;
+  /** Clear filters: the shared ones and "Fix in Tally". */
+  const clearFilters = () => {
+    const q = new URLSearchParams(paramsWithFilters(window.location.search.replace(/^\?/, ''), {}));
+    q.delete('fix');
+    router.replace(`/receivables/manager${q.toString() ? `?${q}` : ''}`, { scroll: false });
+  };
+
   /* Rows. */
-  const rows = useMemo(() => filterInvoices(data.invoices, data.partners, filters, today), [data.invoices, data.partners, filters, today]);
+  const rows = useMemo(() => {
+    const kept = filterInvoices(data.invoices, data.partners, filters, today);
+    return fixInTally ? kept.filter((i) => i.tallyMismatch) : kept;
+  }, [data.invoices, data.partners, filters, today, fixInTally]);
   const status = filters.status ?? 'open';
   const months = monthsOf(data.invoices);
   const groups: RowGroup[] = useMemo(() => {
@@ -165,7 +187,11 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
     filters,
     setFilters,
     patchFilters,
-    filtered: isFiltered(filters),
+    filtered: isFiltered(filters) || fixInTally,
+    fixInTally,
+    setFixInTally,
+    clearFilters,
+    tallyMismatches,
     search,
     setSearch,
     status,

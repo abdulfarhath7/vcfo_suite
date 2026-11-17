@@ -414,6 +414,13 @@
       "when": 1794919038479,
       "tag": "0058_receivables_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794920478796,
+      "tag": "0059_drop_bank_credits",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,7 @@
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { SetPasswordPage } from '@/components/client-portal/pages/team/SetPasswordPage';
+import { receivablesExternal } from '@/lib/receivables/external';
+import { notFound } from 'next/navigation';
 
 export const metadata = pageMetadata('Set your password', 'Choose a password for your receivables login');
 
@@ -9,6 +11,8 @@ export const metadata = pageMetadata('Set your password', 'Choose a password for
  * `/receivables/login`. The page is public; the token is the authority.
  */
 export default async function ReceivablesSetPassword({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  if (!receivablesExternal()) notFound();
   const raw = (await searchParams).token;
   const token = typeof raw === 'string' ? raw : '';
   return (

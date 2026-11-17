@@ -1,5 +1,7 @@
 import { pageMetadata } from '@/lib/shell/page-metadata';
 import { SignInScreen } from '@/components/auth/SignInScreen';
+import { receivablesExternal } from '@/lib/receivables/external';
+import { notFound } from 'next/navigation';
 
 export const metadata = pageMetadata('Client partner sign in', 'Sign in to your SBC receivables');
 
@@ -10,5 +12,7 @@ export const metadata = pageMetadata('Client partner sign in', 'Sign in to your 
  * After sign-in a partner goes to `next` when it is a partner page, and to /receivables otherwise.
  */
 export default function ReceivablesLoginPage() {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  if (!receivablesExternal()) notFound();
   return <SignInScreen variant="partner" />;
 }

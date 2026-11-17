@@ -4,6 +4,7 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { revokeShareLink, updateShareLink } from '@/db/repositories/receivables';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../_respond';
 import { shareFields, shareLinkDto } from '../_dto';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /**
  * PATCH  /api/receivables/share-links/:id — rename a shared view or change who may open it, its
@@ -19,6 +20,9 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: Request, context: RouteContext) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await guardReceivables();
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;
@@ -33,6 +37,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await guardReceivables();
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;

@@ -4,9 +4,13 @@ import { partnerExportRows } from '@/db/repositories/receivables';
 import { todayIst } from '@/lib/receivables/dates';
 import { receivablesWorkbook, receivablesWorkbookName } from '@/lib/receivables/xlsx';
 import { denied, receivablesError } from '../../_respond';
+import { externalOffResponse } from '@/lib/receivables/external';
 
 /** GET /api/receivables/partner/export — the partner's own invoices of the latest published version, as Excel. */
 export async function GET() {
+  // Receivables v2: partner-facing, off unless RECEIVABLES_EXTERNAL=on.
+  const off = externalOffResponse();
+  if (off) return off;
   const guard = await requirePartner();
   if (guard.ok === false) return denied(guard);
   try {

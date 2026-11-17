@@ -11,7 +11,7 @@ import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire'
 import { cn } from '@/lib/utils';
 import { fcText, inr } from '../../format';
 import { NotesButton } from '../InvoiceNotes';
-import { AmountCell, FxCell, NextReminder, StatusStack, TextCell } from './cells';
+import { FxCell, InvoiceDateCell, RevisionBadge, StatusStack, TextCell } from './cells';
 import { CELL, fxInput, invoiceName } from './cell-utils';
 import { DatePick } from './DatePick';
 import { createRowMenu } from './row-menu';
@@ -95,12 +95,12 @@ export function SheetTable({
             </th>
             <th className={cn(TH, STICK_CLIENT, 'max-xl:z-[3]')}>Client</th>
             <th className={TH}>Invoice no.</th>
-            <th className={TH}>Client partner</th>
+            <th className={TH}>Partner</th>
             <th className={TH}>Due date</th>
             <th className={cn(TH, 'text-right')}>{readOnly ? 'Paid INR' : 'Amount INR'}</th>
             {fx ? <th className={TH}>{fxHeader(data)}</th> : null}
             <th className={TH}>Status</th>
-            <th className={TH}>{readOnly ? 'Paid' : 'Next reminder'}</th>
+            <th className={TH}>{readOnly ? 'Paid' : 'Invoice date'}</th>
             <th className={cn(TH, 'rounded-tr-[4px]')}>
               <span className="sr-only">Actions</span>
             </th>
@@ -175,11 +175,14 @@ function Row({
         )}
       </td>
       <td className={TD}>
-        {readOnly ? (
-          <span className="block truncate px-1.5 font-mono text-[12px]">{inv.invoiceNo ?? '—'}</span>
-        ) : (
-          <TextCell value={inv.invoiceNo ?? ''} label={`Invoice number of ${inv.clientName}`} mono placeholder="optional" onCommit={(v) => s.edit(inv, { invoiceNo: v || null })} />
-        )}
+        <span className="flex min-w-0 items-center gap-1">
+          {readOnly ? (
+            <span className="block min-w-0 truncate px-1.5 font-mono text-[12px]">{inv.invoiceNo ?? '—'}</span>
+          ) : (
+            <TextCell value={inv.invoiceNo ?? ''} label={`Invoice number of ${inv.clientName}`} mono placeholder="optional" onCommit={(v) => s.edit(inv, { invoiceNo: v || null })} />
+          )}
+          {inv.revision ? <RevisionBadge revision={inv.revision} /> : null}
+        </span>
       </td>
       <td className={TD}>
         {readOnly ? (
@@ -205,12 +208,11 @@ function Row({
       <td className={TD}>
         {inv.status === 'received' ? (
           <div className="px-1.5 text-right font-mono text-[12px]">{inr(inv.paidAmount ?? inv.amountInr)}</div>
-        ) : foreign || readOnly ? (
-          <div className="px-1.5 text-right font-mono text-[12px]" title={foreign ? 'Booked INR; change it with the FX cell' : undefined}>
+        ) : (
+          // v2: an INR amount changes only through "Change amount" and the approval panel.
+          <div className="px-1.5 text-right font-mono text-[12px]" title={foreign ? 'Booked INR; change it with the FX cell' : readOnly ? undefined : 'Change it with Change amount in the row menu'}>
             {inr(inv.amountInr)}
           </div>
-        ) : (
-          <AmountCell value={inv.amountInr} label={`Amount INR of ${name}`} onCommit={(v) => s.edit(inv, { amountInr: v })} />
         )}
       </td>
       {fx ? (
@@ -228,7 +230,7 @@ function Row({
         <StatusStack invoice={inv} today={today} />
       </td>
       <td className={cn(TD, 'whitespace-nowrap text-[13px]')}>
-        {inv.status === 'received' ? <span className="text-ink-muted">{payTiming(inv) || '—'}</span> : <NextReminder invoice={inv} today={today} rules={data.sheet.reminderRules} />}
+        {inv.status === 'received' ? <span className="text-ink-muted">{payTiming(inv) || '—'}</span> : <InvoiceDateCell invoice={inv} />}
       </td>
       <td className={cn(TD, 'whitespace-nowrap pr-1.5 text-right')}>
         <span className="inline-flex items-center justify-end gap-0.5">

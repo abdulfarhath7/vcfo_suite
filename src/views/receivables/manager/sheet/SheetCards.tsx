@@ -10,7 +10,7 @@ import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire'
 import { cn } from '@/lib/utils';
 import { fcText, inr } from '../../format';
 import { NotesButton } from '../InvoiceNotes';
-import { FxCell, NextReminder, StatusStack } from './cells';
+import { FxCell, InvoiceDateCell, StatusStack } from './cells';
 import { fxInput, invoiceName } from './cell-utils';
 import { DatePick } from './DatePick';
 import { createRowMenu } from './row-menu';
@@ -100,8 +100,8 @@ function Card({ inv, s, data, today, todayRate }: { inv: ManagerInvoiceDto; s: S
                     <DatePick variant="cell" className="w-auto" label={`Due date of ${name}`} value={inv.dueDate} onChange={(v) => v !== inv.dueDate && s.edit(inv, { dueDate: v })} />
                   </div>
                   <div className="flex items-center justify-end gap-1 pr-1.5">
-                    <span>Reminder</span>
-                    <NextReminder invoice={inv} today={today} rules={data.sheet.reminderRules} />
+                    <span>Invoiced</span>
+                    <InvoiceDateCell invoice={inv} />
                   </div>
                 </>
               ) : (

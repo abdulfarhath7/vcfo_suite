@@ -6,9 +6,19 @@ import type { AuthContext } from '@/auth/guards';
 import { addDaysIso, sheetDate, todayIst } from '@/lib/receivables/dates';
 import type { SnapshotRow } from '@/lib/receivables/model';
 import type { PartnerHomeDto, PartnerInvoiceDetailDto, PartnerNoteDto, PartnerReminderDto, PartnerRowDto } from '@/lib/receivables/partner-wire';
-import { hitFromRow } from '@/lib/receivables/reminder-rule';
 import { buildStatement, type Statement, type StatementQuery } from '@/lib/receivables/statement';
 import { ISO_DATE, ReceivablesError, UUID, invalid, invoiceLabel, logChange, notFound } from './shared';
+
+/**
+ * The label of a stored reminder row (its kind and days left on its day). Kept here when the
+ * reminder rules were removed in receivables v2, because the hidden partner portal still lists
+ * the reminders sent before then.
+ */
+function hitFromRow(row: { kind: string; daysLeft: number }): { label: string } {
+  if (row.kind === 'due') return { label: 'Due today' };
+  if (row.kind === 'overdue') return { label: `${-row.daysLeft} day${row.daysLeft === -1 ? '' : 's'} overdue` };
+  return { label: `${row.daysLeft} days before due` };
+}
 
 /**
  * RECEIVABLES PARTNER PORTAL (Phase 8, docs/specs/receivables/PLAN.md): what a signed-in client

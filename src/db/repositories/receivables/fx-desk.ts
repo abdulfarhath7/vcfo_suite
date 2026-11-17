@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, desc, eq, gte, inArray, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { bankCredits, fxRates, profiles, receivableFxAlerts, receivableFxForwards, receivableInvoices, receivableSheets } from '@/db/schema';
+import { fxRates, profiles, receivableFxAlerts, receivableFxForwards, receivableInvoices, receivableSheets } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { isSupportedForeign, sortCurrencies } from '@/lib/receivables/currencies';
 import { addDaysIso, todayIst } from '@/lib/receivables/dates';
@@ -47,7 +47,6 @@ const MAX_LOOKBACK_DAYS = 400;
 const TODAY_LOOKBACK_DAYS = 10;
 
 /** Where a matched bank credit came from, as the spread table names the bank. */
-const CREDIT_BANK: Record<string, string> = { hsbc_api: 'HSBC', alert_email: 'Bank alert email', manual: 'Bank statement' };
 const NO_BANK = 'Entered by hand';
 
 const iso = (d: Date | string) => (d instanceof Date ? d : new Date(d)).toISOString();
@@ -150,7 +149,7 @@ function deskInvoice(r: typeof receivableInvoices.$inferSelect, bank: string | n
 
 /**
  * Everything the FX tab shows. The queries run in this order: the sheet, its invoices, its
- * forwards, its alerts, its matched bank credits, then the stored rates of the currencies in use.
+ * forwards, its alerts, then the stored rates of the currencies in use.
  */
 export async function fxDesk(ctx: AuthContext, sheetId: string): Promise<FxDeskDto> {
   const sheet = await scopedSheet(ctx, sheetId);
@@ -161,15 +160,9 @@ export async function fxDesk(ctx: AuthContext, sheetId: string): Promise<FxDeskD
     .where(and(eq(receivableInvoices.sheetId, sheet.id), isNull(receivableInvoices.deletedAt)));
   const forwardRows: ForwardRow[] = await db.select().from(receivableFxForwards).where(eq(receivableFxForwards.sheetId, sheet.id)).orderBy(desc(receivableFxForwards.maturityOn));
   const alertRows: AlertRow[] = await db.select().from(receivableFxAlerts).where(eq(receivableFxAlerts.sheetId, sheet.id)).orderBy(receivableFxAlerts.currency, receivableFxAlerts.threshold);
-  const credits = await db
-    .select({ source: bankCredits.source, matchInvoiceIds: bankCredits.matchInvoiceIds })
-    .from(bankCredits)
-    .where(and(eq(bankCredits.sheetId, sheet.id), inArray(bankCredits.status, ['auto', 'confirmed'])));
-
-  const bankOf = new Map<string, string>();
-  for (const c of credits) for (const id of c.matchInvoiceIds ?? []) bankOf.set(id, CREDIT_BANK[c.source] ?? c.source);
+  // Receivables v2 dropped the bank feed: every receipt is marked received by hand.
   const foreignRows = invoiceRows.filter((r) => isForeign({ currency: r.currency }));
-  const invoices = foreignRows.map((r) => deskInvoice(r, r.status === 'received' ? (bankOf.get(r.id) ?? NO_BANK) : null));
+  const invoices = foreignRows.map((r) => deskInvoice(r, r.status === 'received' ? NO_BANK : null));
   const forwards = forwardRows.map(toForwardDto);
 
   // The currencies in use: open invoices, receipts the spreads cover, open forwards, alerts, and USD always.
