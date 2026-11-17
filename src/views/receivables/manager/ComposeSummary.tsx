@@ -26,7 +26,7 @@ type Field = 'to' | 'cc' | 'bcc';
 
 export const OUTLOOK_CONNECT_HREF = '/api/outlook/connect?return=/receivables/manager';
 
-function RecipientRow({ field, label, people, contacts, onChange }: { field: Field; label: string; people: EmailRecipient[]; contacts: EmailRecipient[]; onChange: (next: EmailRecipient[]) => void }) {
+export function RecipientRow({ field, label, people, contacts, onChange }: { field: Field; label: string; people: EmailRecipient[]; contacts: EmailRecipient[]; onChange: (next: EmailRecipient[]) => void }) {
   const [text, setText] = useState('');
   const add = (raw: string) => {
     // A whole known name ("Yash Babbar") first, before the text is split at spaces and commas.

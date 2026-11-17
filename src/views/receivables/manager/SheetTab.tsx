@@ -18,6 +18,7 @@ import { NotesDialog } from './InvoiceNotes';
 import { ShareViewDialog } from './ShareViewDialog';
 import { ApprovalPanel } from './sheet/ApprovalPanel';
 import { ChangeAmountDialog } from './sheet/ChangeAmountDialog';
+import { ReceivedEmailDialog } from './sheet/ReceivedEmailDialog';
 import { HistoryDrawer } from './sheet/HistoryDrawer';
 import { PublishBar, TOOL_BTN } from './sheet/PublishBar';
 import { ComposeSummary } from './ComposeSummary';
@@ -180,7 +181,19 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           today={today}
           state={state(actions.markReceived.isPending)}
           onClose={s.close}
-          onSave={(input) => actions.markReceived.mutate({ id: d.invoice.id, ...input }, { onSuccess: s.savedToDraft, onError: fail })}
+          onSave={(input) =>
+            actions.markReceived.mutate(
+              { id: d.invoice.id, ...input },
+              {
+                onSuccess: (res) => {
+                  s.savedToDraft();
+                  // A part payment leaves the invoice open: the payment email is offered only once it is received.
+                  if ((res as { invoice?: { status?: string } })?.invoice?.status === 'received') s.setReceivedPopup([d.invoice.id]);
+                },
+                onError: fail,
+              },
+            )
+          }
         />
       ) : null}
       {d?.kind === 'fx' ? (
@@ -193,6 +206,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           onSave={(patch) => actions.updateInvoice.mutate({ id: d.invoice.id, patch }, { onSuccess: s.savedToDraft, onError: fail })}
         />
       ) : null}
+      {s.receivedPopup?.length ? <ReceivedEmailDialog sheetId={s.sheetId} invoiceIds={s.receivedPopup} onClose={() => s.setReceivedPopup(null)} /> : null}
       {d?.kind === 'change-amount' ? (
         <ChangeAmountDialog
           invoice={d.invoice}

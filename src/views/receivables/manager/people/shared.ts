@@ -21,6 +21,7 @@ export const KIND_LABEL: Record<EmailKind, string> = {
   rollup: 'Roll-up',
   digest: 'Digest',
   client_statement: 'Statement',
+  payment_received: 'Payment received',
 };
 export const ERROR_LABEL: Record<string, string> = {
   outlook_not_connected: 'Outlook not connected',

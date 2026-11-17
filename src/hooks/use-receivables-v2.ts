@@ -7,7 +7,7 @@
  * and the approval panel stay in step.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto } from '@/lib/receivables/v2-wire';
+import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto, ReceivedEmailDraftDto } from '@/lib/receivables/v2-wire';
 import { call, json, sheetKey } from './use-receivables';
 
 export const pendingKey = (sheetId: string) => ['receivables', 'imports', sheetId] as const;
@@ -73,4 +73,20 @@ export function usePeopleActions(sheetId: string) {
     retryEmail: useMutation({ mutationFn: (logId: string) => call<{ ok: true; queued: true }>(`/api/receivables/email-log/${logId}/retry`, json('POST')), onSettled }),
     testWhatsApp: useMutation({ mutationFn: () => call<{ ok: true; to: string }>(`${sheetUrl}/whatsapp-test`, json('POST')) }),
   };
+}
+
+/** The "Payment received" pop-up after Mark received: its draft, and the send (only on the person's click). */
+export function useReceivedEmail(sheetId: string, invoiceIds: string[]) {
+  const qc = useQueryClient();
+  const draft = useQuery({
+    queryKey: ['receivables', 'received-email', sheetId, invoiceIds.join(',')],
+    queryFn: () => call<ReceivedEmailDraftDto>(`/api/receivables/sheets/${sheetId}/received-email?ids=${invoiceIds.join(',')}`),
+    enabled: invoiceIds.length > 0,
+  });
+  const send = useMutation({
+    mutationFn: (input: { invoiceIds: string[]; to: Array<{ name: string; email: string }>; cc: Array<{ name: string; email: string }>; subject: string; html: string }) =>
+      call<{ ok: true; queued: true; logId: string }>(`/api/receivables/sheets/${sheetId}/received-email`, json('POST', input)),
+    onSettled: () => qc.invalidateQueries({ queryKey: peopleKey(sheetId) }),
+  });
+  return { draft, send };
 }

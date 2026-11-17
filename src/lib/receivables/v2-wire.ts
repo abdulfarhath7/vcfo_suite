@@ -72,7 +72,10 @@ export type ApproveEdit = { rowId: string; dueDate?: string; creditDays?: number
 
 export type ApproveResultDto = { approved: number; invoiceIds: string[]; refused: Array<{ rowId: string; code: string }> };
 
-export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement';
+export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received';
+
+/** The "Payment received" email offered after Mark received (never sent on its own). */
+export type ReceivedEmailDraftDto = { invoiceIds: string[]; subject: string; html: string; to: Array<{ name: string; email: string }>; contacts: Array<{ name: string; email: string }> };
 export type EmailStatus = 'sending' | 'sent' | 'failed' | 'skipped';
 export type WhatsAppPingStatus = 'sent' | 'failed' | 'no_phone' | 'disabled';
 

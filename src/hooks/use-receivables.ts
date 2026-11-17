@@ -32,6 +32,7 @@ const ERROR_TEXT: Record<string, string> = {
   partner_to: 'A client partner\'s email must go to that partner alone.',
   partner_elsewhere: 'A client partner can only get their own email. Remove them from Cc and from the other emails.',
   partner_unknown: 'That client partner is not on this sheet.',
+  nothing_received: 'These invoices are not marked received.',
   to_required: 'Add at least one recipient in To.',
   subject_required: 'Write a subject.',
   already_sent: 'This reminder has already gone.',

@@ -23,6 +23,7 @@ export {
 export {
   clientStatementSource,
   lastAutoSends,
+  receivedEmailSource,
   systemDigestRecipients,
   systemInvoicesById,
   systemLastRollupDate,

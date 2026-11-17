@@ -194,11 +194,22 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
 
   /** Bulk Mark received settles INR invoices in full; a foreign invoice needs its INR credited, so it is skipped. */
   const bulkReceivable = pickedRows.filter((r) => r.status === 'open' && !isForeign(fxInput(r)));
+  /** Invoices just saved as received: the "Payment received — send an email?" pop-up offers them. */
+  const [receivedPopup, setReceivedPopup] = useState<string[] | null>(null);
   const bulkReceive = (paidOn: string) => {
     const skipped = pickedRows.length - bulkReceivable.length;
+    const ids = bulkReceivable.map((r) => r.id);
     bulk.markReceived.mutate(
       { items: bulkReceivable.map((r) => ({ id: r.id, amount: r.amountInr })), paidOn },
-      { onSuccess: (r) => bulkDone(`Marked received on ${sheetDate(paidOn)}`, r, skipped), onError: (e) => setDialogError(errorText(e)) },
+      {
+        onSuccess: (r) => {
+          bulkDone(`Marked received on ${sheetDate(paidOn)}`, r, skipped);
+          const failed = new Set(r.failed.map((f) => f.id));
+          const done = ids.filter((id) => !failed.has(id));
+          if (done.length) setReceivedPopup(done);
+        },
+        onError: (e) => setDialogError(errorText(e)),
+      },
     );
   };
   const bulkPause = (until: string | null, reason: string | null) => {
@@ -256,6 +267,8 @@ export function useSheetTab(data: ManagerSheetDto, actions: Actions, today: stri
     bulk,
     bulkReceivable,
     bulkReceive,
+    receivedPopup,
+    setReceivedPopup,
     bulkPause,
     bulkAssign,
     exportPicked,

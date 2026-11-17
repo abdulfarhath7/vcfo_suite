@@ -242,6 +242,39 @@ export function clientStatementEmail(input: { clientName: string; senderName: st
   return { subject, html, text };
 }
 
+export type ReceivedInvoice = EmailInvoice & { paidOn: string; receivedInr: number };
+
+/**
+ * The "Payment received" email, offered after Mark received and sent only when the person clicks
+ * Send (owner, 17 Nov 2026): the received invoices in one table with the received date and amount.
+ */
+export function paymentReceivedEmail(input: { recipientName: string; senderName: string; invoices: ReceivedInvoice[] }): BuiltEmail {
+  const rows = [...input.invoices].sort((a, b) => a.clientName.localeCompare(b.clientName) || a.paidOn.localeCompare(b.paidOn));
+  const clients = [...new Set(rows.map((r) => r.clientName))];
+  const total = Math.round(rows.reduce((a, r) => a + r.receivedInr, 0) * 100) / 100;
+  const subject =
+    rows.length === 1 ? `Payment received · ${rows[0]!.clientName} · ₹${inrText(rows[0]!.receivedInr)}` : `Payments received · ${rows.length} invoices · ₹${inrText(total)}`;
+  const many = clients.length > 1;
+  const cols: Column[] = [...(many ? [{ label: 'Client' }] : []), { label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Received on' }, { label: 'Amount ₹', num: true }];
+  const lead = many ? 'We have received the following payments:' : `We have received the payment for <b>${esc(clients[0])}</b>:`;
+  const html = page(
+    subject,
+    p(`Hi ${esc(firstName(input.recipientName))},`) +
+      p(lead) +
+      table(
+        cols,
+        rows.map((r) => [...(many ? [esc(r.clientName)] : []), esc(r.invoiceNo ?? '—'), r.invoiceDate ? sheetDate(r.invoiceDate) : '—', sheetDate(r.dueDate), sheetDate(r.paidOn), inrText(r.receivedInr)]),
+        rows.length > 1 ? ['Total', ...Array(cols.length - 2).fill(''), inrText(total)] : undefined,
+      ) +
+      p('Thank you.'),
+    input.senderName,
+  );
+  const text = `Hi ${firstName(input.recipientName)},\n\n${many ? 'We have received the following payments:' : `We have received the payment for ${clients[0]}:`}\n\n${rows
+    .map((r) => `${many ? `${r.clientName} · ` : ''}${r.invoiceNo ?? '—'} · due ${sheetDate(r.dueDate)} · received ${sheetDate(r.paidOn)} · ₹${inrText(r.receivedInr)}`)
+    .join('\n')}${rows.length > 1 ? `\nTotal ₹${inrText(total)}` : ''}\n\nThank you.${textClose(input.senderName)}`;
+  return { subject, html, text };
+}
+
 /**
  * The WhatsApp ping to the sender, after the email went out: the words of the approved DoubleTick
  * template `vcfo_receivables_email_sent`, used as plain text when no template is set.

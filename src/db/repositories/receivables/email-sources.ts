@@ -145,3 +145,43 @@ export async function clientStatementSource(
   if (!rows.length) throw invalid('nothing_open');
   return { sheetId: sheet.id, client: { id: client.id, name: client.name, billingEmail: client.billingEmail, billingCc: client.billingCc ?? [] }, invoices: rows.map(toEmailInvoice) };
 }
+
+/**
+ * The "Payment received" email's source, for a person who may edit the sheet: the given invoices
+ * that are received, their client partners (the default recipients), every partner's address (so
+ * the route can keep a partner from seeing another partner's invoices) and the clients' billing
+ * addresses (offered as recipients).
+ */
+export async function receivedEmailSource(
+  ctx: AuthContext,
+  sheetId: string,
+  ids: string[],
+): Promise<{
+  sheetId: string;
+  invoices: Array<EmailInvoiceRow & { paidOn: string; receivedInr: number }>;
+  partners: Array<{ id: string; name: string; email: string }>;
+  clientContacts: Array<{ name: string; email: string }>;
+}> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const clean = ids.filter((id) => UUID.test(id)).slice(0, 200);
+  const rows = clean.length
+    ? await db
+        .select()
+        .from(receivableInvoices)
+        .where(and(eq(receivableInvoices.sheetId, sheet.id), inArray(receivableInvoices.id, clean), eq(receivableInvoices.status, 'received'), isNull(receivableInvoices.deletedAt)))
+    : [];
+  const [partners, clients] = await Promise.all([
+    db.select({ id: receivablePartners.id, name: receivablePartners.name, email: receivablePartners.email }).from(receivablePartners).where(eq(receivablePartners.sheetId, sheet.id)),
+    db.select().from(receivableClients).where(eq(receivableClients.sheetId, sheet.id)),
+  ]);
+  const clientIds = new Set(rows.map((r) => r.clientId));
+  const clientContacts = clients
+    .filter((c) => clientIds.has(c.id))
+    .flatMap((c) => [...(c.billingEmail ? [{ name: c.name, email: c.billingEmail }] : []), ...(c.billingCc ?? []).map((e) => ({ name: c.name, email: e }))]);
+  return {
+    sheetId: sheet.id,
+    invoices: rows.map((r) => ({ ...toEmailInvoice(r), paidOn: String(r.paidOn ?? ''), receivedInr: (num(r.paidAmount) ?? num(r.amountInr) ?? 0) + (num(r.partPaid) ?? 0) })),
+    partners,
+    clientContacts,
+  };
+}
