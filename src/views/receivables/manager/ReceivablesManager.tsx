@@ -17,6 +17,7 @@ import { useManagerSheet, useOutlookStatus, useReceivablesActions } from '@/hook
 import { OUTLOOK_CONNECT_HREF } from './ComposeSummary';
 import { FxTab } from './FxTab';
 import { LinksTab } from './LinksTab';
+import { CollectionsTab } from './CollectionsTab';
 import { PeopleTab } from './PeopleTab';
 import { ReportsTab } from './ReportsTab';
 import { SheetTab } from './SheetTab';
@@ -25,14 +26,15 @@ import { VersionsTab } from './VersionsTab';
 
 /**
  * /receivables/manager (docs/specs/receivables/PLAN.md and V2.md): the staff workspace, outside
- * the staff shell. A light header with the Outlook link, and the tabs Sheet, People, Versions,
- * Reports and FX. Receivables v2 removed the From bank and Reminders tabs, replaced Partners with
+ * the staff shell. A light header with the Outlook link, and the tabs Sheet, People, Collections
+ * (received on time against late), Versions, Reports and FX. Receivables v2 removed the From bank and Reminders tabs, replaced Partners with
  * People, and shows Links only when the server sets RECEIVABLES_EXTERNAL=on (`external`).
  */
 
 const ALL_TABS = [
   { key: 'sheet', label: 'Sheet' },
   { key: 'people', label: 'People' },
+  { key: 'collections', label: 'Collections' },
   { key: 'versions', label: 'Versions' },
   { key: 'links', label: 'Links' },
   { key: 'reports', label: 'Reports' },
@@ -153,6 +155,8 @@ export function ReceivablesManager({
         {data ? (
           tab === 'sheet' ? (
             <SheetTab data={data} actions={actions} today={today} external={external} />
+          ) : tab === 'collections' ? (
+            <CollectionsTab data={data} today={today} />
           ) : tab === 'people' ? (
             <PeopleTab data={data} actions={actions} outlook={outlook.data} settingsHref={settingsHref} />
           ) : tab === 'reports' ? (
