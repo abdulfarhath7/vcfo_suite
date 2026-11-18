@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, recordSummarySend } from '@/db/repositories/receivables';
+import { getSummarySendStatus, getSummarySource, recordSummarySend, sentReceiptsFor } from '@/db/repositories/receivables';
+import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -29,6 +30,8 @@ const email = z.object({
   cc: z.array(person).max(50).default([]),
   subject: z.string().trim().min(1, 'subject_required').max(200),
   html: z.string().min(1, 'body_required').max(300_000),
+  /** The invoices in the body; received ones already sent to these people stop the send. */
+  invoiceIds: z.array(z.string().uuid()).max(1000).optional(),
 });
 const schema = z.object({ emails: z.array(email).min(1, 'to_required').max(60) });
 
@@ -50,6 +53,10 @@ export async function POST(request: Request, context: RouteContext) {
     const src = await getSummarySource(guard.ctx, id);
     const checked = checkSummaryEmails(emails, src.partners);
     if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
+    // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
+    const sent = await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));
+    const hits = emails.flatMap((e) => alreadySentHits(sent, e.invoiceIds ?? [], [...e.to, ...e.cc].map((r) => r.email)));
+    if (hits.length) return NextResponse.json({ error: 'receipt_already_sent', hits }, { status: 409 });
     const { msEmail } = await assertOutlookReady(guard.ctx);
     const to = emails.flatMap((e) => e.to);
     const cc = emails.flatMap((e) => e.cc);

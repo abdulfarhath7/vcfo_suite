@@ -11,12 +11,12 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 /** The marked span around a signer's name. */
 export function signNameSpan(name: string): string {
-  return `<span ${ATTR}>${esc(name.trim() || 'SBC')}</span>`;
+  return `<span ${ATTR}>${esc(name.trim() || 'Accounts Team')}</span>`;
 }
 
 /** The body with every signer name replaced by `name`. */
 export function withSignName(html: string, name: string): string {
-  return html.replace(SPAN, (_m, open: string, _old: string, close: string) => `${open}${esc(name.trim() || 'SBC')}${close}`);
+  return html.replace(SPAN, (_m, open: string, _old: string, close: string) => `${open}${esc(name.trim() || 'Accounts Team')}${close}`);
 }
 
 /** A clean sign name: one line, at most 80 characters; empty means "use the profile name". */

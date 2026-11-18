@@ -576,6 +576,33 @@ export const receivableClientPartners = pgTable(
   }),
 );
 
+/**
+ * Receivables v2: received invoices already emailed to a person (owner, 18 Nov 2026). Written when a
+ * Send email or a Payment received email that holds a received invoice goes out; the next email to
+ * that address flags the invoice as "already sent" and cannot go until the person removes it.
+ * Open invoices are never recorded.
+ */
+export const receivableSentReceipts = pgTable(
+  'receivable_sent_receipts',
+  {
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    invoiceId: uuid('invoice_id')
+      .notNull()
+      .references(() => receivableInvoices.id, { onDelete: 'cascade' }),
+    /** The recipient address, in lower case. */
+    email: text('email').notNull(),
+    /** summary | payment_received */
+    kind: text('kind').notNull(),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.invoiceId, t.email] }),
+    sheetIdx: index('receivable_sent_receipts_sheet_idx').on(t.sheetId),
+  }),
+);
+
 /** Receivables v2: the leadership digest's recipients. Typed-in names and addresses, not tool accounts. */
 export const receivableDigestRecipients = pgTable(
   'receivable_digest_recipients',

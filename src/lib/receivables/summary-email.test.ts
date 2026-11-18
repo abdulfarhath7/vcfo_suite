@@ -75,14 +75,17 @@ describe('summaryEmailHtml', () => {
   });
 
   it('keeps the sheet layout and totals', () => {
-    expect(html).toContain('August-26 -Receivables');
-    expect(html).toContain('September-26 -Receivables');
+    expect(html).toContain('>August-26<');
+    expect(html).toContain('>September-26<');
     expect(html).toContain('>Invoice no.<');
     expect(html).toContain('>Invoice date<');
     expect(html).toContain('>Partner<');
-    expect(html).toContain('>18d late<'); // Duravant
+    expect(html).toContain('>Received date<');
+    expect(html).toContain('>Received amount (₹)<');
+    expect(html).not.toContain('SBC');
+    expect(html).toContain('>Overdue · 18 days<'); // Duravant
     expect(html).toContain('Received');
-    expect(html).toContain("Sep'26 - open");
+    expect(html).toContain("Still open in Sep'26");
     expect(html).toContain('99,00,894'); // Sep open: Duravant + Vena
     expect(html).toContain('1,19,11,394'); // total open
     // Receivables v2: no link to the tool in any receivables email.
@@ -103,7 +106,7 @@ describe('summaryEmailHtml', () => {
   it('keeps the INR-only layout with no currency columns', () => {
     expect(html).not.toContain('Currency');
     expect(html).not.toContain('USD Amount');
-    expect(html).toContain('colspan="8"');
+    expect(html).toContain('colspan="9"');
   });
 
   it('adds Currency and USD Amount columns when a row is foreign', () => {
@@ -115,7 +118,7 @@ describe('summaryEmailHtml', () => {
     });
     expect(mixed).toContain('>Currency<');
     expect(mixed).toContain('>USD Amount<');
-    expect(mixed).toContain('colspan="10"');
+    expect(mixed).toContain('colspan="11"');
     expect(mixed).toContain('>12,000.00<');
     expect(mixed).toContain('>INR<');
     expect(mixed).toContain('1,29,10,394'); // total open now includes the booked INR of the USD row

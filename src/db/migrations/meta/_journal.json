@@ -442,6 +442,13 @@
       "when": 1794984773054,
       "tag": "0062_profiles_email_sign_name",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794992734676,
+      "tag": "0063_receivables_sent_receipts",
+      "breakpoints": true
     }
   ]
 }

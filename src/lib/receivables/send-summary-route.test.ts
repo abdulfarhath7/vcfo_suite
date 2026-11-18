@@ -25,6 +25,8 @@ vi.mock('@/db/repositories/receivables', async () => {
     recordSummarySend: (...a: unknown[]) => recordSummarySend(...a),
     finishSummarySend: (...a: unknown[]) => finishSummarySend(...a),
     getSummarySendStatus: (...a: unknown[]) => getSummarySendStatus(...a),
+    sentReceiptsFor: async () => ({}),
+    systemRecordSentReceipts: async () => undefined,
   };
 });
 vi.mock('@/db/repositories/outlook-connections', () => ({

@@ -10,6 +10,9 @@ import type { EmailRecipient } from '@/lib/receivables/model';
 import { useOutlookStatus } from '@/hooks/use-receivables';
 import { useKeepSignName, useReceivedEmail, useSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from '../SignNameField';
+import { InvoicesInEmail } from '../compose/InvoicesInEmail';
+import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
+import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { OUTLOOK_CONNECT_HREF, RecipientRow } from '../ComposeSummary';
 
 /**
@@ -49,11 +52,23 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
   }, [draft.data]);
   const d = draft.data;
   const connected = outlook.data?.connected;
+  // ✕ takes an invoice out of this email only; the body is rebuilt without it (owner, 18 Nov 2026).
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [html, setHtml] = useState<string | null>(null);
+  const keptIds = d ? d.invoices.filter((i) => !removed.includes(i.id)).map((i) => i.id) : [];
+  const hits = d ? alreadySentHits(d.alreadySent, keptIds, [...to, ...cc].map((r) => r.email)) : [];
+  const toggle = (id: string) => {
+    if (!d) return;
+    const next = removed.includes(id) ? removed.filter((x) => x !== id) : [...removed, id];
+    setRemoved(next);
+    const kept = d.invoices.filter((i) => !next.includes(i.id));
+    if (kept.length) setHtml(paymentReceivedEmail({ recipientName: d.recipientName, senderName: sign.trim() || 'Accounts Team', invoices: kept }).html);
+  };
   const submit = () => {
     if (!d) return;
     keepSign(sign);
     send.mutate(
-      { invoiceIds: d.invoiceIds, to, cc, subject: subject.trim(), html: body.current?.innerHTML ?? d.html },
+      { invoiceIds: keptIds, to, cc, subject: subject.trim(), html: body.current?.innerHTML ?? html ?? d.html },
       {
         onSuccess: () => {
           toastSuccess('Payment email sending', `To ${to.map((r) => r.name || r.email).join(', ')}, from your Outlook.`);
@@ -75,7 +90,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
           <Button variant="secondary" onClick={onClose}>
             Skip
           </Button>
-          <Button disabled={!d || !connected || !to.length || !subject.trim() || send.isPending} onClick={submit}>
+          <Button disabled={!d || !connected || !to.length || !subject.trim() || !keptIds.length || hits.length > 0 || send.isPending} onClick={submit}>
             <Send aria-hidden />
             {send.isPending ? 'Sending…' : 'Send from my Outlook'}
           </Button>
@@ -103,6 +118,17 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
             Subject
             <Input id="rcv-paid-subject" className="h-8 text-[13px]" value={subject} maxLength={200} onChange={(e) => setSubject(e.target.value)} />
           </label>
+          <InvoicesInEmail
+            rows={d.invoices.map((i) => ({ id: i.id, clientName: i.clientName, invoiceNo: i.invoiceNo, amountInr: i.receivedInr, status: 'received' as const, paidOn: i.paidOn }))}
+            removed={removed}
+            hits={hits}
+            onToggle={toggle}
+          />
+          {hits.length ? (
+            <p role="alert" className="text-[12.5px] text-warning">
+              {`${hits.length} invoice${hits.length === 1 ? ' was' : 's were'} already sent to ${[...new Set(hits.map((h) => h.email))].join(', ')}. Remove ${hits.length === 1 ? 'it' : 'them'}, or change the recipients, to send.`}
+            </p>
+          ) : null}
           <div
             ref={body}
             role="textbox"
@@ -111,7 +137,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
             contentEditable
             suppressContentEditableWarning
             className="max-h-[48vh] min-h-[220px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3 text-[13px] text-black outline-none focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
-            dangerouslySetInnerHTML={{ __html: d.html }}
+            dangerouslySetInnerHTML={{ __html: html ?? d.html }}
           />
           <p className="text-[12px] text-ink-muted">A client partner may get this only when every invoice in it is theirs.</p>
         </div>

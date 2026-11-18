@@ -33,6 +33,7 @@ const ERROR_TEXT: Record<string, string> = {
   partner_elsewhere: 'A client partner can only get their own email. Remove them from Cc and from the other emails.',
   partner_unknown: 'That client partner is not on this sheet.',
   nothing_received: 'These invoices are not marked received.',
+  receipt_already_sent: 'A received invoice in this email was already sent to that person. Remove it and send again.',
   client_has_invoices: 'This client still has invoices. Delete or move them first.',
   to_required: 'Add at least one recipient in To.',
   subject_required: 'Write a subject.',

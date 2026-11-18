@@ -12,7 +12,7 @@ import { signNameSpan } from './sign-name';
  * right-aligned in Roboto Mono and overdue amounts in red. The
  * content is at most 560 px wide and each table scrolls inside itself on a phone. Every table shows
  * Invoice no., Invoice date, Due date and Amount ₹. There is never a link to the tool. Each email
- * closes with "Regards, <sender name> · SBC".
+ * closes with "Regards, <sender name>" (no firm name, owner 18 Nov 2026).
  *
  * Colours: the owner's own SBC table theme (see the constants below), not the app's purple `brand`.
  */
@@ -29,8 +29,8 @@ const INK = '#1a1a1a';
 const MUTED = '#6b7079';
 const ORANGE = '#e35f2a';
 const ORANGE_EDGE = '#e35f2a';
-const ORANGE_ROW = '#fdeee8';
-const GRID = '#d6d6d6';
+const ORANGE_ROW = '#fdf4f0';
+const GRID = '#e4e4e4';
 const RED = emailColor('danger');
 
 export type EmailInvoice = {
@@ -76,7 +76,7 @@ function page(title: string, bodyHtml: string, senderName: string): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;border-collapse:collapse;">
 <tr><td style="font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">
 ${bodyHtml}
-<p style="margin:24px 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">Regards,<br />${signNameSpan(senderName)} · SBC</p>
+<p style="margin:24px 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">Regards,<br />${signNameSpan(senderName)}</p>
 </td></tr>
 </table>
 </td></tr>
@@ -85,8 +85,8 @@ ${bodyHtml}
 </html>`;
 }
 
-const TH = `padding:9px 11px;background:${ORANGE};border:1px solid ${GRID};color:#ffffff;font-family:${SANS};font-size:14px;line-height:18px;font-weight:700;text-align:left;white-space:nowrap;`;
-const TD = `padding:8px 11px;border:1px solid ${GRID};font-family:${SANS};font-size:14px;line-height:19px;color:${INK};white-space:nowrap;`;
+const TH = `padding:8px 12px;background:${ORANGE};color:#ffffff;font-family:${SANS};font-size:12.5px;line-height:18px;font-weight:700;text-align:left;white-space:nowrap;`;
+const TD = `padding:9px 12px;border-bottom:1px solid ${GRID};font-family:${SANS};font-size:13.5px;line-height:19px;color:${INK};white-space:nowrap;`;
 const NUM = `font-family:${MONO};text-align:right;`;
 
 type Column = { label: string; num?: boolean };
@@ -118,7 +118,7 @@ function amountCell(inv: EmailInvoice, today: string): string {
   return overdue ? `<span style="color:${RED};">${inrText(inv.amountInr)}</span>` : inrText(inv.amountInr);
 }
 
-const INVOICE_COLS: Column[] = [{ label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Amount ₹', num: true }];
+const INVOICE_COLS: Column[] = [{ label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Amount (₹)', num: true }];
 
 function invoiceCells(inv: EmailInvoice, today: string): string[] {
   return [esc(inv.invoiceNo ?? '—'), inv.invoiceDate ? sheetDate(inv.invoiceDate) : '—', sheetDate(inv.dueDate), amountCell(inv, today)];
@@ -133,7 +133,7 @@ function textTable(rows: EmailInvoice[], withClient: boolean): string {
 }
 
 function textClose(senderName: string): string {
-  return `\n\nRegards,\n${senderName} · SBC`;
+  return `\n\nRegards,\n${senderName}`;
 }
 
 /** Groups by client name, clients in name order, invoices by due date. */
@@ -172,7 +172,7 @@ export type RevisedInvoice = EmailInvoice & { oldAmountInr: number; reason: stri
 export function revisedInvoiceEmail(input: { partnerName: string; senderName: string; invoice: RevisedInvoice; today: string }): BuiltEmail {
   const inv = input.invoice;
   const subject = `Invoice revised ${inv.invoiceNo ?? ''} · ${inv.clientName}`.replace(/\s+·/, ' ·');
-  const cols: Column[] = [{ label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Old amount ₹', num: true }, { label: 'Amount ₹', num: true }];
+  const cols: Column[] = [{ label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Old amount (₹)', num: true }, { label: 'New amount (₹)', num: true }];
   const html = page(
     subject,
     p(`Hi ${esc(firstName(input.partnerName))},`) +
@@ -256,7 +256,7 @@ export function paymentReceivedEmail(input: { recipientName: string; senderName:
   const subject =
     rows.length === 1 ? `Payment received · ${rows[0]!.clientName} · ₹${inrText(rows[0]!.receivedInr)}` : `Payments received · ${rows.length} invoices · ₹${inrText(total)}`;
   const many = clients.length > 1;
-  const cols: Column[] = [...(many ? [{ label: 'Client' }] : []), { label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Received on' }, { label: 'Amount ₹', num: true }];
+  const cols: Column[] = [...(many ? [{ label: 'Client' }] : []), { label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Received date' }, { label: 'Received amount (₹)', num: true }];
   const lead = many ? 'We have received the following payments:' : `We have received the payment for <b>${esc(clients[0])}</b>:`;
   const html = page(
     subject,

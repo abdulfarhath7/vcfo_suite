@@ -101,11 +101,11 @@ export async function systemDigestRecipients(sheetId: string): Promise<Array<{ n
   return rows;
 }
 
-/** SYSTEM: a staff member's name (the "Regards, <name> · SBC" line): their saved sign name, else their profile name. */
+/** SYSTEM: a staff member's name (the "Regards, <name>" line): their saved sign name, else their profile name. */
 export async function systemStaffName(userId: string | null): Promise<string> {
-  if (!userId || !UUID.test(userId)) return 'SBC';
+  if (!userId || !UUID.test(userId)) return 'Accounts Team';
   const [row] = await db.select({ sign: profiles.emailSignName, name: profiles.name }).from(profiles).where(eq(profiles.id, userId)).limit(1);
-  return row?.sign?.trim() || row?.name?.trim() || 'SBC';
+  return row?.sign?.trim() || row?.name?.trim() || 'Accounts Team';
 }
 
 /** SYSTEM: the IST date (`period_key`) of the sheet's last roll-up that went out or is going. */

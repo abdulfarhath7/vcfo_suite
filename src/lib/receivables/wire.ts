@@ -1,3 +1,4 @@
+import type { SentMap } from './sent-receipts';
 /**
  * RECEIVABLES WIRE — the JSON the /api/receivables routes send to the manager area. Dates in
  * timestamps arrive as ISO strings.
@@ -73,13 +74,20 @@ export type SummaryDto = {
   partnerDrafts: PartnerDraftDto[];
   /** The caller's saved email sign name, already in every body ("Regards, <name>"). */
   signName?: string;
+  /** The rows the bodies are built from (owner, 18 Nov 2026): the pop-up rebuilds a body when invoices are removed. */
+  rows: SnapshotRow[];
+  today: string;
+  /** True when the rows are invoices picked on the sheet. */
+  picked: boolean;
+  /** Received invoices already emailed, per invoice id: who and when. */
+  alreadySent: SentMap;
   /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */
   leaders: EmailRecipient[];
 };
 
-export type PartnerDraftDto = { partnerId: string; name: string; email: string; invoiceCount: number; html: string };
+export type PartnerDraftDto = { partnerId: string; name: string; email: string; invoiceCount: number; html: string; slug: string; alsoClientKeys: string[] };
 
 /** One email of a Send email batch, as the dialog sends it. */
-export type SummaryEmailDto = { kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string };
+export type SummaryEmailDto = { kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string; invoiceIds?: string[] };
 
 export type OutlookStatusDto = { configured: boolean; connected: boolean; msEmail?: string };

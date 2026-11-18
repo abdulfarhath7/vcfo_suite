@@ -1,7 +1,8 @@
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { getSignName, receivedEmailSource, startEmailLog } from '@/db/repositories/receivables';
+import { getSignName, receivedEmailSource, sentReceiptsFor, startEmailLog, systemRecordSentReceipts } from '@/db/repositories/receivables';
+import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { partnerOwns } from '@/lib/receivables/co-partners';
 import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
@@ -33,9 +34,23 @@ export async function GET(request: Request, context: RouteContext) {
     // The default To is every partner (lead or second) who owns all of these invoices.
     const owners = src.partners.filter((p) => src.invoices.every((i) => partnerOwns(p.id, i, src.links)));
     const to = owners.map((p) => ({ name: p.name, email: p.email }));
-    const mail = paymentReceivedEmail({ recipientName: owners.length === 1 ? owners[0].name : 'Team', senderName: await getSignName(guard.ctx), invoices: src.invoices });
+    const recipientName = owners.length === 1 ? owners[0].name : 'Team';
+    const mail = paymentReceivedEmail({ recipientName, senderName: await getSignName(guard.ctx), invoices: src.invoices });
     const contacts = [...src.partners.map((p) => ({ name: p.name, email: p.email })), ...src.clientContacts];
-    const body: ReceivedEmailDraftDto = { invoiceIds: src.invoices.map((i) => i.id), subject: mail.subject, html: mail.html, to, contacts };
+    const body: ReceivedEmailDraftDto = {
+      invoiceIds: src.invoices.map((i) => i.id),
+      subject: mail.subject,
+      html: mail.html,
+      to,
+      contacts,
+      invoices: src.invoices.map((i) => ({ id: i.id, clientName: i.clientName, invoiceNo: i.invoiceNo, invoiceDate: i.invoiceDate, dueDate: i.dueDate, amountInr: i.amountInr, paidOn: i.paidOn, receivedInr: i.receivedInr })),
+      recipientName,
+      alreadySent: await sentReceiptsFor(
+        guard.ctx,
+        id,
+        src.invoices.map((i) => i.id),
+      ),
+    };
     return NextResponse.json(body);
   } catch (e) {
     return receivablesError(e);
@@ -69,6 +84,19 @@ export async function POST(request: Request, context: RouteContext) {
       const p = src.partners.find((x) => x.email.trim().toLowerCase() === r.email.trim().toLowerCase());
       if (p && src.invoices.some((i) => !partnerOwns(p.id, i, src.links))) return NextResponse.json({ error: 'partner_elsewhere' }, { status: 400 });
     }
+    // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
+    const sent = await sentReceiptsFor(
+      guard.ctx,
+      id,
+      src.invoices.map((i) => i.id),
+    );
+    const recipients = [...people.to, ...people.cc].map((r) => r.email);
+    const hits = alreadySentHits(
+      sent,
+      src.invoices.map((i) => i.id),
+      recipients,
+    );
+    if (hits.length) return NextResponse.json({ error: 'receipt_already_sent', hits }, { status: 409 });
     await assertOutlookReady(guard.ctx);
     const first = people.to[0];
     const log = await startEmailLog(guard.ctx, {
@@ -86,7 +114,13 @@ export async function POST(request: Request, context: RouteContext) {
       about: src.invoices.length === 1 ? `${src.invoices[0].invoiceNo ?? 'the payment'} / ${src.invoices[0].clientName}` : `${src.invoices.length} payments received`,
     });
     const ctx = guard.ctx;
-    after(() => deliverLoggedEmail(log.id, { ctx }).then(() => undefined));
+    const sheetId = src.sheetId;
+    const ids = src.invoices.map((i) => i.id);
+    after(() =>
+      deliverLoggedEmail(log.id, { ctx }).then(async (r) => {
+        if (r === 'sent') await systemRecordSentReceipts(sheetId, ids, recipients, 'payment_received');
+      }),
+    );
     return NextResponse.json({ ok: true, queued: true, logId: log.id }, { status: 202 });
   } catch (e) {
     const code = outlookErrorCode(e);

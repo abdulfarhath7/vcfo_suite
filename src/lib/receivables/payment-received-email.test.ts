@@ -4,14 +4,16 @@ import { paymentReceivedEmail } from './email-v2';
 const inv = (clientName: string, receivedInr: number) => ({ clientName, invoiceNo: 'SCSPL/26-27/164', invoiceDate: '2026-10-09', dueDate: '2026-10-16', amountInr: receivedInr, paidOn: '2026-11-17', receivedInr });
 
 describe('paymentReceivedEmail', () => {
-  it('lists one received invoice with its date and amount, in the SBC table, with no link', () => {
+  it('lists one received invoice with its date and amount, in the orange table, with no link or firm name', () => {
     const m = paymentReceivedEmail({ recipientName: 'Pranay Kumar', senderName: 'Phani', invoices: [inv('Emburse India Private Limited', 2404540.6)] });
     expect(m.subject).toBe('Payment received · Emburse India Private Limited · ₹24,04,540.60');
     expect(m.html).toContain('Hi Pranay,');
     expect(m.html).toContain('17-Nov-26');
     expect(m.html).toContain('#e35f2a');
     expect(m.html).not.toContain('href=');
-    expect(m.text).toContain('Regards,\nPhani · SBC');
+    expect(m.text).toContain('Regards,\nPhani');
+    expect(m.html).toContain('>Received date<');
+    expect(m.text + m.html).not.toContain('SBC');
   });
 
   it('adds a client column and a total for several clients', () => {

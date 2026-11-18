@@ -1,3 +1,5 @@
+import type { ReceivedInvoice } from './email-v2';
+import type { SentMap } from './sent-receipts';
 /**
  * RECEIVABLES v2 WIRE — the JSON of the Tally import, the approval panel and the People tab
  * (docs/specs/receivables/V2.md). Timestamps arrive as ISO strings.
@@ -77,7 +79,18 @@ export type ApproveResultDto = { approved: number; invoiceIds: string[]; refused
 export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received';
 
 /** The "Payment received" email offered after Mark received (never sent on its own). */
-export type ReceivedEmailDraftDto = { invoiceIds: string[]; subject: string; html: string; to: Array<{ name: string; email: string }>; contacts: Array<{ name: string; email: string }> };
+export type ReceivedEmailDraftDto = {
+  invoiceIds: string[];
+  subject: string;
+  html: string;
+  to: Array<{ name: string; email: string }>;
+  contacts: Array<{ name: string; email: string }>;
+  /** The invoices, so the pop-up can rebuild the body when one is removed (owner, 18 Nov 2026). */
+  invoices: Array<ReceivedInvoice & { id: string }>;
+  recipientName: string;
+  /** Who each invoice was already sent to, and when. */
+  alreadySent: SentMap;
+};
 export type EmailStatus = 'sending' | 'sent' | 'failed' | 'skipped';
 export type WhatsAppPingStatus = 'sent' | 'failed' | 'no_phone' | 'disabled';
 

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { withSignName } from '@/lib/receivables/sign-name';
+import { alreadySentHits } from '@/lib/receivables/sent-receipts';
+import { emailRows, summaryEmailHtml } from '@/lib/receivables/summary-email';
+import { InvoicesInEmail } from './compose/InvoicesInEmail';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
@@ -107,7 +110,20 @@ export function RecipientRow({ field, label, people, contacts, onChange }: { fie
 }
 
 /** One email of the batch: a client partner's own invoices, or the whole sheet for anyone else. */
-type Draft = { key: string; kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient; cc: EmailRecipient[]; subject: string; html: string; invoiceCount: number | null };
+type Draft = {
+  key: string;
+  kind: 'partner' | 'full';
+  partnerId?: string;
+  to: EmailRecipient;
+  cc: EmailRecipient[];
+  subject: string;
+  html: string;
+  invoiceCount: number | null;
+  /** Invoices taken out of this email only (owner, 18 Nov 2026). */
+  removed: string[];
+  slug?: string;
+  alsoClientKeys?: string[];
+};
 
 const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'there').trim().split(/\s+/)[0];
 /** The format's greeting is "Hi Team,"; each email greets its own person. */
@@ -172,8 +188,20 @@ export function ComposeSummary({
         }
         const p = s.partnerDrafts.find((x) => x.email.toLowerCase() === key);
         next[key] = p
-          ? { key, kind: 'partner', partnerId: p.partnerId, to: { name: p.name, email: p.email }, cc: [], subject: s.subject, html: signed(greet(p.html, { name: p.name, email: p.email })), invoiceCount: p.invoiceCount }
-          : { key, kind: 'full', to: r, cc: [], subject: s.subject, html: signed(greet(s.html, r)), invoiceCount: null };
+          ? {
+              key,
+              kind: 'partner',
+              partnerId: p.partnerId,
+              to: { name: p.name, email: p.email },
+              cc: [],
+              subject: s.subject,
+              html: signed(greet(p.html, { name: p.name, email: p.email })),
+              invoiceCount: p.invoiceCount,
+              removed: [],
+              slug: p.slug,
+              alsoClientKeys: p.alsoClientKeys,
+            }
+          : { key, kind: 'full', to: r, cc: [], subject: s.subject, html: signed(greet(s.html, r)), invoiceCount: null, removed: [] };
       }
       return next;
     });
@@ -181,6 +209,25 @@ export function ComposeSummary({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, s]);
   const keys = people.map((r) => r.email.toLowerCase()).filter((k) => drafts[k]);
+  /** The invoices an email holds (removed ones included), the ones it still holds, and its already-sent ones. */
+  const draftRows = (d: Draft) => (s ? emailRows({ rows: s.rows, today: s.today, partnerSlug: d.slug, alsoClientKeys: d.alsoClientKeys, picked: s.picked }) : []);
+  const keptIds = (d: Draft) => draftRows(d).filter((r) => !d.removed.includes(r.id)).map((r) => r.id);
+  const hitsOf = (d: Draft) => (s ? alreadySentHits(s.alreadySent, keptIds(d), [d.to.email, ...d.cc.map((c) => c.email)]) : []);
+  /** ✕ or put back: the body is rebuilt without the removed invoices, totals included. */
+  const toggleInvoice = (d: Draft, id: string) => {
+    if (!s) return;
+    const removed = d.removed.includes(id) ? d.removed.filter((x) => x !== id) : [...d.removed, id];
+    const html = summaryEmailHtml({
+      rows: s.rows.filter((r) => !removed.includes(r.id)),
+      today: s.today,
+      liveUrl: '',
+      signerName: sign.trim() || s.signName || '',
+      partnerSlug: d.slug,
+      alsoClientKeys: d.alsoClientKeys,
+      picked: s.picked,
+    });
+    patch(d.key, { removed, html: signed(greet(html, d.to)) });
+  };
   const current = active && drafts[active] ? drafts[active] : keys.length ? drafts[keys[0]] : null;
 
   /** The body being edited lives in the editor; it is kept on its draft before switching or sending. */
@@ -201,7 +248,8 @@ export function ComposeSummary({
   const connected = outlook.data?.connected;
   const notPublished = summary.error && 'code' in summary.error && summary.error.code === 'not_published';
   // A partner with no open invoices gets nothing; every other card is sent.
-  const sendable = keys.map((k) => drafts[k]).filter((d) => d.kind === 'full' || (d.invoiceCount ?? 0) > 0);
+  const sendable = keys.map((k) => drafts[k]).filter((d) => keptIds(d).length > 0 || (d.kind === 'full' && !d.removed.length && !s?.picked));
+  const blocked = sendable.flatMap(hitsOf);
   const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => p.email.toLowerCase()));
   const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
@@ -210,7 +258,7 @@ export function ComposeSummary({
     const html = body.current?.innerHTML;
     const final = sendable.map((d) => (current && d.key === current.key && html !== undefined ? { ...d, html } : d));
     send.mutate(
-      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: [d.to], cc: d.cc, subject: d.subject, html: d.html })) },
+      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: [d.to], cc: d.cc, subject: d.subject, html: d.html, invoiceIds: keptIds(d) })) },
       {
         onSuccess: (r) => {
           const who = `${r.emails} email${r.emails === 1 ? '' : 's'} from ${r.from}.`;
@@ -266,7 +314,7 @@ export function ComposeSummary({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || sendable.some((d) => !d.subject.trim()) || send.isPending}>
             {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
@@ -331,8 +379,16 @@ export function ComposeSummary({
                     {keys.map((k) => {
                       const d = drafts[k];
                       const on = current?.key === k;
-                      const empty = d.kind === 'partner' && !d.invoiceCount;
-                      const label = empty ? 'no open invoices, not sent' : d.kind === 'partner' ? `partner · ${d.invoiceCount} open` : isLeader(d.to.email) ? 'leader · whole sheet' : 'whole sheet';
+                      const n = keptIds(d).length;
+                      const warn = hitsOf(d).length;
+                      const empty = !sendable.includes(d);
+                      const label = warn
+                        ? `⚠ ${warn} already sent`
+                        : empty
+                          ? 'nothing to send'
+                          : d.kind === 'partner'
+                            ? `partner · ${n} invoice${n === 1 ? '' : 's'}`
+                            : `${isLeader(d.to.email) ? 'leader' : 'everyone'} · ${n} invoice${n === 1 ? '' : 's'}`;
                       const who = d.to.name || d.to.email;
                       return (
                         <div key={k} className={cn('group flex items-center rounded-md', on ? 'bg-brand-soft' : 'hover:bg-hover', empty && 'opacity-60')}>
@@ -392,6 +448,12 @@ export function ComposeSummary({
                   </label>
                   <Input id="rcv-subject" className="h-8 px-2 py-1 text-[13px]" value={current.subject} maxLength={200} onChange={(e) => patch(current.key, { subject: e.target.value })} />
                 </div>
+                <InvoicesInEmail rows={draftRows(current)} removed={current.removed} hits={hitsOf(current)} onToggle={(id) => toggleInvoice(current, id)} />
+                {hitsOf(current).length ? (
+                  <p role="alert" className="text-[12.5px] text-warning">
+                    {`${hitsOf(current).length} received invoice${hitsOf(current).length === 1 ? ' was' : 's were'} already sent to this person. Remove ${hitsOf(current).length === 1 ? 'it' : 'them'} to send.`}
+                  </p>
+                ) : null}
                 <div
                   ref={body}
                   role="textbox"

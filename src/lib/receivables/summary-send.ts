@@ -1,6 +1,6 @@
 import 'server-only';
 import type { AuthContext } from '@/auth/guards';
-import { finishSummarySend } from '@/db/repositories/receivables';
+import { finishSummarySend, systemRecordSentReceipts } from '@/db/repositories/receivables';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
 import type { EmailRecipient, Partner } from './model';
 
@@ -19,7 +19,8 @@ export function outlookErrorCode(e: unknown): 'outlook_not_connected' | 'outlook
   return null;
 }
 
-export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string };
+/** `invoiceIds`: the invoices in the body; the received ones are remembered as sent to these people. */
+export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string; invoiceIds?: string[] };
 
 /**
  * Checks one Send email batch so a client partner never sees another partner's invoices (owner,
@@ -31,7 +32,7 @@ export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: 
  * Returns the mails to send, or the first rule broken as an error code the dialog shows.
  */
 export function checkSummaryEmails(
-  emails: Array<{ kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string }>,
+  emails: Array<{ kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string; invoiceIds?: string[] }>,
   partners: Partner[],
 ): { ok: true; mails: SummaryMail[] } | { ok: false; error: 'partner_unknown' | 'partner_to' | 'partner_elsewhere' | 'to_required' } {
   const byEmail = new Map(partners.map((p) => [p.email.trim().toLowerCase(), p]));
@@ -48,7 +49,7 @@ export function checkSummaryEmails(
     } else if ([...to, ...cc].some((x) => byEmail.has(x.toLowerCase()))) {
       return { ok: false, error: 'partner_elsewhere' };
     }
-    mails.push({ to, cc, bcc: [], subject: e.subject.trim(), html: e.html });
+    mails.push({ to, cc, bcc: [], subject: e.subject.trim(), html: e.html, invoiceIds: e.invoiceIds });
   }
   return { ok: true, mails };
 }
@@ -57,7 +58,14 @@ export function checkSummaryEmails(
 export async function deliverSummary(ctx: AuthContext, sheetId: string, sendId: string, job: { mails: SummaryMail[] }): Promise<void> {
   try {
     // The firm never sends an Excel file attached to an email (owner, 17 Nov 2026).
-    for (const mail of job.mails) await sendMailViaOutlook(ctx, mail);
+    for (const mail of job.mails) {
+      await sendMailViaOutlook(ctx, mail);
+      // The received invoices in it are never sent to these people again (owner, 18 Nov 2026).
+      if (mail.invoiceIds?.length)
+        await systemRecordSentReceipts(sheetId, mail.invoiceIds, [...mail.to, ...mail.cc], 'summary').catch((e) =>
+          console.error('[receivables] could not remember the sent invoices', e instanceof Error ? e.message : e),
+        );
+    }
     await finishSummarySend(ctx, sheetId, sendId, { status: 'sent' });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

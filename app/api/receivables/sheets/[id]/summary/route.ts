@@ -4,7 +4,7 @@ import { todayIst } from '@/lib/receivables/dates';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
 import { partnerRows, summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
-import { getSignName, getSummarySource, listDigestRecipients } from '@/db/repositories/receivables';
+import { getSignName, getSummarySource, listDigestRecipients, sentReceiptsFor } from '@/db/repositories/receivables';
 import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -38,6 +38,8 @@ export async function GET(request: Request, context: RouteContext) {
         email: p.email,
         invoiceCount: partnerRows(rows, p.slug, src.coClientKeys[p.id]).filter((r) => picked || r.status === 'open').length,
         html: summaryEmailHtml({ rows, today, liveUrl, signerName, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id], picked }),
+        slug: p.slug,
+        alsoClientKeys: src.coClientKeys[p.id] ?? [],
       }));
     return NextResponse.json({
       versionSeq: src.version.seq,
@@ -45,6 +47,14 @@ export async function GET(request: Request, context: RouteContext) {
       subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today)}` : summaryEmailSubject(today),
       html: summaryEmailHtml({ rows, today, liveUrl, signerName, picked }),
       signName: signerName,
+      rows,
+      today,
+      picked,
+      alreadySent: await sentReceiptsFor(
+        guard.ctx,
+        id,
+        rows.filter((r) => r.status === 'received').map((r) => r.id),
+      ),
       lists: recipientLists({ partners: src.partners, rows, today, lastSend: src.lastSend }),
       contacts: [...contactSuggestions(src.partners, src.lastSend), ...leaders.filter((l) => !src.partners.some((p) => p.email.toLowerCase() === l.email.toLowerCase()))],
       partnerDrafts,

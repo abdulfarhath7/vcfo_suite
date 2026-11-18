@@ -12,7 +12,7 @@ import { cleanSignName } from '@/lib/receivables/sign-name';
  */
 export async function getSignName(ctx: AuthContext): Promise<string> {
   const [row] = await db.select({ sign: profiles.emailSignName, name: profiles.name }).from(profiles).where(eq(profiles.id, ctx.userId)).limit(1);
-  return row?.sign?.trim() || row?.name?.trim() || ctx.name || 'SBC';
+  return row?.sign?.trim() || row?.name?.trim() || ctx.name || 'Accounts Team';
 }
 
 export async function setSignName(ctx: AuthContext, value: unknown): Promise<string> {
