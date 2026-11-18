@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, Download, FilterX, Flag, Link2, Search, SlidersHorizontal, UserRoundPlus, X } from 'lucide-react';
+import { CheckCircle2, Download, FilterX, Flag, Link2, Mail, Search, SlidersHorizontal, UserRoundPlus, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DensityMenu } from '@/components/ui/density-menu';
 import { TOOL_BTN } from './PublishBar';
@@ -37,7 +37,22 @@ function listOptions(list: string[] | undefined, all: string, noun: string, choi
  * switch. Under it, the count and total of the rows
  * shown, or the bulk bar while rows are picked.
  */
-export function SheetFilterBar({ s, partners, canShare, before, after }: { s: SheetTabState; partners: Partner[]; canShare: boolean; before?: ReactNode; after?: ReactNode }) {
+export function SheetFilterBar({
+  s,
+  partners,
+  canShare,
+  before,
+  after,
+  onEmailPicked,
+}: {
+  s: SheetTabState;
+  partners: Partner[];
+  canShare: boolean;
+  before?: ReactNode;
+  after?: ReactNode;
+  /** "Send email" for the picked invoices only. */
+  onEmailPicked?: () => void;
+}) {
   const f = s.filters;
   const pick = (v: string) => (v === 'all' ? undefined : v === MULTI ? undefined : [v]);
   const active = partners.filter((p) => p.active);
@@ -158,6 +173,7 @@ export function SheetFilterBar({ s, partners, canShare, before, after }: { s: Sh
             onClear={s.clearPicked}
             noun={['invoice', 'invoices']}
             actions={[
+              ...(onEmailPicked ? [{ key: 'email', label: 'Send email', icon: Mail, onClick: onEmailPicked }] : []),
               { key: 'received', label: 'Mark received', icon: CheckCircle2, disabled: !s.bulkReceivable.length, onClick: () => s.setDialog({ kind: 'bulk-received' }) },
               {
                 key: 'assign',

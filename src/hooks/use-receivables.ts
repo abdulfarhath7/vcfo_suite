@@ -137,10 +137,12 @@ export function useVersion(versionId: string | null) {
 }
 
 /** The summary email, built from the published version. Fetched fresh each time the dialog opens. */
-export function useSummary(sheetId: string, open: boolean) {
+/** The summary email drafts; with `invoiceIds`, only those invoices (picked on the sheet). */
+export function useSummary(sheetId: string, open: boolean, invoiceIds?: string[]) {
+  const ids = invoiceIds?.length ? invoiceIds.join(',') : '';
   return useQuery({
-    queryKey: ['receivables', 'summary', sheetId],
-    queryFn: () => call<SummaryDto>(`/api/receivables/sheets/${sheetId}/summary`),
+    queryKey: ['receivables', 'summary', sheetId, ids],
+    queryFn: () => call<SummaryDto>(`/api/receivables/sheets/${sheetId}/summary${ids ? `?ids=${ids}` : ''}`),
     enabled: open,
     staleTime: 0,
     gcTime: 0,

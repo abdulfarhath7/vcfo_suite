@@ -53,6 +53,8 @@ export type SummaryEmailInput = {
   partnerSlug?: string | null;
   /** With `partnerSlug`: the client keys the partner is a second partner on; their rows are included too. */
   alsoClientKeys?: string[];
+  /** The rows are invoices the person picked on the sheet (owner, 18 Nov 2026): show every one, received or not. */
+  picked?: boolean;
 };
 
 export function summaryEmailSubject(today: string): string {
@@ -101,7 +103,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
   const tables = monthsOf(rows)
     .map((m) => {
       const list = rows
-        .filter((r) => r.invoiceMonth === m && (isOpen(r) || receivedThisWeek(r, input.today)))
+        .filter((r) => r.invoiceMonth === m && (input.picked || isOpen(r) || receivedThisWeek(r, input.today)))
         .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
       if (!list.length) return '';
       const body = list

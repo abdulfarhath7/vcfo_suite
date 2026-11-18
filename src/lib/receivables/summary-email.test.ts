@@ -53,6 +53,12 @@ describe('sheetTotals', () => {
 });
 
 describe('summaryEmailHtml', () => {
+  it('shows every picked invoice, even one received long ago', () => {
+    const old = row({ clientName: 'Paid Long Ago', status: 'received', paidOn: '2026-01-05', paidAmount: 10 });
+    expect(summaryEmailHtml({ rows: [old], today: TODAY, liveUrl: 'u', signerName: 's' })).not.toContain('Paid Long Ago');
+    expect(summaryEmailHtml({ rows: [old], today: TODAY, liveUrl: 'u', signerName: 's', picked: true })).toContain('Paid Long Ago');
+  });
+
   it('marks the signer name so the name box can change it', async () => {
     const { withSignName } = await import('./sign-name');
     const html = summaryEmailHtml({ rows: [row({ amountInr: 1 })], today: TODAY, liveUrl: 'u', signerName: 'Phani' });

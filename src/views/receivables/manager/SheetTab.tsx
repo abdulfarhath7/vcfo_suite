@@ -56,7 +56,8 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
   const imports = useImportActions(data.sheet.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [composing, setComposing] = useState(false);
+  /** The Send email pop-up: the whole sheet (true) or only the picked invoices (their ids). */
+  const [composing, setComposing] = useState<boolean | string[]>(false);
   const waiting = pending.data?.rows.filter((r) => r.kind !== 'same').length ?? 0;
   const upload = (file: File) =>
     imports.upload.mutate(file, {
@@ -100,6 +101,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
         s={s}
         partners={data.partners}
         canShare={external}
+        onEmailPicked={() => setComposing([...s.picked])}
         before={
           <>
             <Button size="sm" className={TOOL_BTN} onClick={() => s.setDialog({ kind: 'add' })}>
@@ -144,7 +146,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           />
         }
       />
-      {composing ? <ComposeSummary data={data} actions={actions} onClose={() => setComposing(false)} /> : null}
+      {composing ? <ComposeSummary data={data} actions={actions} invoiceIds={Array.isArray(composing) ? composing : undefined} onClose={() => setComposing(false)} /> : null}
 
       {monthGroups.length ? (
         views(monthGroups, monthTitle, 'Invoices')

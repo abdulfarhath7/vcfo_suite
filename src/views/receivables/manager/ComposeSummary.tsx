@@ -113,8 +113,19 @@ const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'th
 /** The format's greeting is "Hi Team,"; each email greets its own person. */
 const greet = (html: string, r: EmailRecipient) => html.replace('<p>Hi Team,</p>', `<p>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
 
-export function ComposeSummary({ data, actions: _actions, onClose }: { data: ManagerSheetDto; actions: ReturnType<typeof useReceivablesActions>; onClose: () => void }) {
-  const summary = useSummary(data.sheet.id, true);
+export function ComposeSummary({
+  data,
+  actions: _actions,
+  invoiceIds,
+  onClose,
+}: {
+  data: ManagerSheetDto;
+  actions: ReturnType<typeof useReceivablesActions>;
+  /** Only these invoices (picked on the sheet); every partner gets only the picked ones they own. */
+  invoiceIds?: string[];
+  onClose: () => void;
+}) {
+  const summary = useSummary(data.sheet.id, true, invoiceIds);
   const outlook = useOutlookStatus();
   const send = useSendSummary(data.sheet.id);
   const body = useRef<HTMLDivElement>(null);
@@ -246,7 +257,7 @@ export function ComposeSummary({ data, actions: _actions, onClose }: { data: Man
     <Modal
       open
       onOpenChange={(o) => !o && onClose()}
-      title="Send email"
+      title={invoiceIds?.length ? `Send email · ${invoiceIds.length} picked invoice${invoiceIds.length === 1 ? '' : 's'}` : 'Send email'}
       sub={s ? `The sheet as it is now${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
       flush
