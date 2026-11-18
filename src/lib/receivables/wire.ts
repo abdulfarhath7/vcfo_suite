@@ -71,6 +71,8 @@ export type SummaryDto = {
   lastSendStatus: 'sending' | 'sent' | 'failed' | null;
   /** One ready email per active client partner: only the invoices of that partner's clients. */
   partnerDrafts: PartnerDraftDto[];
+  /** The caller's saved email sign name, already in every body ("Regards, <name>"). */
+  signName?: string;
   /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */
   leaders: EmailRecipient[];
 };

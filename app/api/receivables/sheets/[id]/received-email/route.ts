@@ -1,7 +1,7 @@
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { receivedEmailSource, startEmailLog } from '@/db/repositories/receivables';
+import { getSignName, receivedEmailSource, startEmailLog } from '@/db/repositories/receivables';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { partnerOwns } from '@/lib/receivables/co-partners';
 import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
@@ -33,7 +33,7 @@ export async function GET(request: Request, context: RouteContext) {
     // The default To is every partner (lead or second) who owns all of these invoices.
     const owners = src.partners.filter((p) => src.invoices.every((i) => partnerOwns(p.id, i, src.links)));
     const to = owners.map((p) => ({ name: p.name, email: p.email }));
-    const mail = paymentReceivedEmail({ recipientName: owners.length === 1 ? owners[0].name : 'Team', senderName: guard.ctx.name || 'SBC', invoices: src.invoices });
+    const mail = paymentReceivedEmail({ recipientName: owners.length === 1 ? owners[0].name : 'Team', senderName: await getSignName(guard.ctx), invoices: src.invoices });
     const contacts = [...src.partners.map((p) => ({ name: p.name, email: p.email })), ...src.clientContacts];
     const body: ReceivedEmailDraftDto = { invoiceIds: src.invoices.map((i) => i.id), subject: mail.subject, html: mail.html, to, contacts };
     return NextResponse.json(body);

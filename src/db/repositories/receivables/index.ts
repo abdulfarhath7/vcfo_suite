@@ -94,3 +94,4 @@ export {
   updateForward,
   type DueAlertCheck,
 } from './fx-desk';
+export { getSignName, setSignName } from './sign-name';

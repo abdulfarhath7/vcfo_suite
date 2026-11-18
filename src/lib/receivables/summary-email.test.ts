@@ -53,6 +53,13 @@ describe('sheetTotals', () => {
 });
 
 describe('summaryEmailHtml', () => {
+  it('marks the signer name so the name box can change it', async () => {
+    const { withSignName } = await import('./sign-name');
+    const html = summaryEmailHtml({ rows: [row({ amountInr: 1 })], today: TODAY, liveUrl: 'u', signerName: 'Phani' });
+    expect(html).toContain('<span data-sign-name="1">Phani</span>');
+    expect(withSignName(html, 'Phani Kumar <SBC>')).toContain('<span data-sign-name="1">Phani Kumar &lt;SBC&gt;</span>');
+  });
+
   const html = summaryEmailHtml({ rows: ROWS, today: TODAY, liveUrl: 'https://app.sbctrack.in/receivables/k/abc', signerName: 'Krishna Tungam' });
 
   it('opens with the payments received this week', () => {
@@ -64,10 +71,12 @@ describe('summaryEmailHtml', () => {
   it('keeps the sheet layout and totals', () => {
     expect(html).toContain('August-26 -Receivables');
     expect(html).toContain('September-26 -Receivables');
-    expect(html).toContain('No of Days Over Due');
-    expect(html).toContain('>18<'); // Duravant
+    expect(html).toContain('>Invoice no.<');
+    expect(html).toContain('>Invoice date<');
+    expect(html).toContain('>Partner<');
+    expect(html).toContain('>18d late<'); // Duravant
     expect(html).toContain('Received');
-    expect(html).toContain("Sep'26- Receivables");
+    expect(html).toContain("Sep'26 - open");
     expect(html).toContain('99,00,894'); // Sep open: Duravant + Vena
     expect(html).toContain('1,19,11,394'); // total open
     // Receivables v2: no link to the tool in any receivables email.
@@ -88,7 +97,7 @@ describe('summaryEmailHtml', () => {
   it('keeps the INR-only layout with no currency columns', () => {
     expect(html).not.toContain('Currency');
     expect(html).not.toContain('USD Amount');
-    expect(html).toContain('colspan="5"');
+    expect(html).toContain('colspan="8"');
   });
 
   it('adds Currency and USD Amount columns when a row is foreign', () => {
@@ -100,7 +109,7 @@ describe('summaryEmailHtml', () => {
     });
     expect(mixed).toContain('>Currency<');
     expect(mixed).toContain('>USD Amount<');
-    expect(mixed).toContain('colspan="7"');
+    expect(mixed).toContain('colspan="10"');
     expect(mixed).toContain('>12,000.00<');
     expect(mixed).toContain('>INR<');
     expect(mixed).toContain('1,29,10,394'); // total open now includes the booked INR of the USD row

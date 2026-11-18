@@ -8,7 +8,8 @@ import { Modal } from '@/components/ui/modal';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import type { EmailRecipient } from '@/lib/receivables/model';
 import { useOutlookStatus } from '@/hooks/use-receivables';
-import { useReceivedEmail } from '@/hooks/use-receivables-v2';
+import { useKeepSignName, useReceivedEmail, useSignName } from '@/hooks/use-receivables-v2';
+import { SignNameField } from '../SignNameField';
 import { OUTLOOK_CONNECT_HREF, RecipientRow } from '../ComposeSummary';
 
 /**
@@ -26,6 +27,20 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
   const [cc, setCc] = useState<EmailRecipient[]>([]);
   const [subject, setSubject] = useState('');
   const filled = useRef(false);
+  const signQuery = useSignName().query;
+  const keepSign = useKeepSignName();
+  const [sign, setSign] = useState('');
+  useEffect(() => {
+    if (signQuery.data?.name && !sign) setSign(signQuery.data.name);
+    // Only the first load fills the box; after that it is the person's.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signQuery.data?.name]);
+  /** Typing the name changes "Regards, <name>" in the body at once. */
+  const changeSign = (name: string) => {
+    setSign(name);
+    if (!name.trim()) return;
+    body.current?.querySelectorAll('[data-sign-name="1"]').forEach((el) => (el.textContent = name.trim()));
+  };
   useEffect(() => {
     if (filled.current || !draft.data) return;
     filled.current = true;
@@ -34,8 +49,9 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
   }, [draft.data]);
   const d = draft.data;
   const connected = outlook.data?.connected;
-  const submit = () =>
-    d &&
+  const submit = () => {
+    if (!d) return;
+    keepSign(sign);
     send.mutate(
       { invoiceIds: d.invoiceIds, to, cc, subject: subject.trim(), html: body.current?.innerHTML ?? d.html },
       {
@@ -46,6 +62,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
         onError: (e) => toastError('Not sent', e instanceof Error ? e.message : undefined),
       },
     );
+  };
   return (
     <Modal
       open
@@ -79,6 +96,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
               </a>
             </p>
           ) : null}
+          <SignNameField id="rcv-paid-sign" value={sign} onChange={changeSign} />
           <RecipientRow field="to" label="To" people={to} contacts={d.contacts} onChange={setTo} />
           <RecipientRow field="cc" label="Cc" people={cc} contacts={d.contacts} onChange={setCc} />
           <label className="grid gap-1 text-[12px] font-medium text-ink-2" htmlFor="rcv-paid-subject">

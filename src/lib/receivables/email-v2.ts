@@ -1,6 +1,7 @@
 import { emailColor, escapeHtml } from '@/lib/email/email-layout';
 import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 import { daysLeft, sheetDate } from './dates';
+import { signNameSpan } from './sign-name';
 
 /**
  * RECEIVABLES v2 EMAILS — pure HTML and text builders (docs/specs/receivables/V2.md).
@@ -75,7 +76,7 @@ function page(title: string, bodyHtml: string, senderName: string): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;border-collapse:collapse;">
 <tr><td style="font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">
 ${bodyHtml}
-<p style="margin:24px 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">Regards,<br />${esc(senderName)} · SBC</p>
+<p style="margin:24px 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">Regards,<br />${signNameSpan(senderName)} · SBC</p>
 </td></tr>
 </table>
 </td></tr>

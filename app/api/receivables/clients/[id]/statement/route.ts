@@ -1,5 +1,5 @@
 import { after, NextResponse } from 'next/server';
-import { clientStatementSource, startEmailLog } from '@/db/repositories/receivables';
+import { clientStatementSource, startEmailLog, getSignName } from '@/db/repositories/receivables';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { todayIst } from '@/lib/receivables/dates';
 import { clientStatementEmail } from '@/lib/receivables/email-v2';
@@ -21,7 +21,7 @@ export async function POST(_request: Request, context: RouteContext) {
   try {
     const src = await clientStatementSource(guard.ctx, id);
     await assertOutlookReady(guard.ctx);
-    const mail = clientStatementEmail({ clientName: src.client.name, senderName: guard.ctx.name || 'SBC', invoices: src.invoices, today: todayIst() });
+    const mail = clientStatementEmail({ clientName: src.client.name, senderName: await getSignName(guard.ctx), invoices: src.invoices, today: todayIst() });
     const log = await startEmailLog(guard.ctx, {
       sheetId: src.sheetId,
       kind: 'client_statement',

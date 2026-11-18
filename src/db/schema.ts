@@ -84,6 +84,8 @@ export const profiles = pgTable('profiles', {
   // Auth.js Credentials provider: bcrypt hash lives here.
   passwordHash: text('password_hash'),
   name: text('name'),
+  /** The name that signs this person's receivables emails ("Regards, <name>"); null = `name`. */
+  emailSignName: text('email_sign_name'),
   role: roleEnum('role').notNull().default('client'),
   /** @deprecated Free-form display number. Not read by WhatsApp — see phoneE164. */
   phone: text('phone'),

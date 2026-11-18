@@ -13,8 +13,8 @@ import { UUID, notFound, scopedSheet, toInvoice } from './shared';
 
 export type VersionMeta = { id: string; seq: number; note: string; publishedAt: Date; publishedByName: string };
 
-/** The live invoices with their partners, frozen as a version snapshot. */
-async function snapshotOf(sheetId: string): Promise<SnapshotRow[]> {
+/** The live invoices with their partners, frozen as a version snapshot (also the summary email's rows). */
+export async function snapshotOf(sheetId: string): Promise<SnapshotRow[]> {
   const rows = await db
     .select({ invoice: receivableInvoices, partnerSlug: receivablePartners.slug, partnerName: receivablePartners.name })
     .from(receivableInvoices)

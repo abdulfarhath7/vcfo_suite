@@ -92,3 +92,23 @@ export function useReceivedEmail(sheetId: string, invoiceIds: string[]) {
   });
   return { draft, send };
 }
+
+/** The caller's saved email sign name ("Regards, <name>"), kept until they change it. */
+export function useSignName() {
+  const qc = useQueryClient();
+  const query = useQuery({ queryKey: ['receivables', 'sign-name'], queryFn: () => call<{ name: string }>('/api/receivables/sign-name'), staleTime: 60_000 });
+  const save = useMutation({
+    mutationFn: (name: string) => call<{ name: string }>('/api/receivables/sign-name', json('PUT', { name })),
+    onSuccess: (r) => qc.setQueryData(['receivables', 'sign-name'], r),
+  });
+  return { query, save };
+}
+
+/** Saves the sign name if it changed; called just before an email is sent. */
+export function useKeepSignName() {
+  const { query, save } = useSignName();
+  return (name: string) => {
+    const n = name.trim();
+    if (n && n !== query.data?.name) save.mutate(n);
+  };
+}

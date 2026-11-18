@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { withSignName } from '@/lib/receivables/sign-name';
+import { useKeepSignName } from '@/hooks/use-receivables-v2';
+import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,7 +113,7 @@ const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'th
 /** The format's greeting is "Hi Team,"; each email greets its own person. */
 const greet = (html: string, r: EmailRecipient) => html.replace('<p>Hi Team,</p>', `<p>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
 
-export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetDto; actions: ReturnType<typeof useReceivablesActions>; onClose: () => void }) {
+export function ComposeSummary({ data, actions: _actions, onClose }: { data: ManagerSheetDto; actions: ReturnType<typeof useReceivablesActions>; onClose: () => void }) {
   const summary = useSummary(data.sheet.id, true);
   const outlook = useOutlookStatus();
   const send = useSendSummary(data.sheet.id);
@@ -127,8 +130,24 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const [active, setActive] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
   const s = summary.data;
+  // "Your name" (owner, 18 Nov 2026): fills "Regards, <name>" in every draft; saved on the profile.
+  const [sign, setSign] = useState('');
+  const keepSign = useKeepSignName();
+  useEffect(() => {
+    if (s?.signName && !sign) setSign(s.signName);
+    // Only the first load fills the box; after that it is the person's.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s?.signName]);
+  const changeSign = (name: string) => {
+    setSign(name);
+    if (!name.trim()) return;
+    const el = body.current;
+    const live = el && current ? el.innerHTML : null;
+    setDrafts((d) => Object.fromEntries(Object.entries(d).map(([k, v]) => [k, { ...v, html: withSignName(current && k === current.key && live !== null ? live : v.html, name) }])));
+  };
   const isLeader = (email: string) => Boolean(s?.leaders.some((l) => l.email.toLowerCase() === email.toLowerCase()));
 
+  const signed = (html: string) => (sign.trim() ? withSignName(html, sign) : html);
   // Each person picked gets their own draft: a partner's own invoices, or the whole sheet.
   useEffect(() => {
     if (!s) return;
@@ -142,11 +161,13 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
         }
         const p = s.partnerDrafts.find((x) => x.email.toLowerCase() === key);
         next[key] = p
-          ? { key, kind: 'partner', partnerId: p.partnerId, to: { name: p.name, email: p.email }, cc: [], subject: s.subject, html: greet(p.html, { name: p.name, email: p.email }), invoiceCount: p.invoiceCount }
-          : { key, kind: 'full', to: r, cc: [], subject: s.subject, html: greet(s.html, r), invoiceCount: null };
+          ? { key, kind: 'partner', partnerId: p.partnerId, to: { name: p.name, email: p.email }, cc: [], subject: s.subject, html: signed(greet(p.html, { name: p.name, email: p.email })), invoiceCount: p.invoiceCount }
+          : { key, kind: 'full', to: r, cc: [], subject: s.subject, html: signed(greet(s.html, r)), invoiceCount: null };
       }
       return next;
     });
+    // `sign` is read when a draft is made; later changes go through changeSign.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, s]);
   const keys = people.map((r) => r.email.toLowerCase()).filter((k) => drafts[k]);
   const current = active && drafts[active] ? drafts[active] : keys.length ? drafts[keys[0]] : null;
@@ -174,6 +195,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
   const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
   const submit = () => {
+    keepSign(sign);
     const html = body.current?.innerHTML;
     const final = sendable.map((d) => (current && d.key === current.key && html !== undefined ? { ...d, html } : d));
     send.mutate(
@@ -225,7 +247,7 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
       open
       onOpenChange={(o) => !o && onClose()}
       title="Send email"
-      sub={s ? `Version ${s.versionSeq} of ${stamp(s.publishedAt)}${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
+      sub={s ? `The sheet as it is now${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
       flush
       footer={
@@ -240,28 +262,13 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
       }
     >
       {notPublished ? (
-        <p className="p-3 text-[13px] text-ink-muted">Click Update once first. The email is built from the published version, so it always matches the sheet.</p>
+        <p className="p-3 text-[13px] text-ink-muted">Click Update once first to set the sheet up for email.</p>
       ) : summary.isLoading ? (
         <p className="p-3 text-[13px] text-ink-muted">Preparing the email…</p>
       ) : summary.error ? (
         <p className="p-3 text-[13px] text-danger">{summary.error.message}</p>
       ) : s ? (
         <div className="text-[13px]">
-          {data.unpublishedChanges ? (
-            <div className="flex flex-wrap items-center gap-2 border-b border-line-soft bg-warning-soft px-3 py-1 text-[12.5px] text-warning">
-              <span className="min-w-0 flex-1">
-                {data.unpublishedChanges} unpublished change{data.unpublishedChanges === 1 ? '' : 's'}. The email uses the published version.
-              </span>
-              <button
-                type="button"
-                className="font-medium underline underline-offset-2 hover:no-underline disabled:opacity-50"
-                disabled={actions.publish.isPending}
-                onClick={() => actions.publish.mutate(undefined, { onSuccess: () => void summary.refetch(), onError: (e) => toastError('Update failed', e instanceof Error ? e.message : undefined) })}
-              >
-                {actions.publish.isPending ? 'Updating…' : 'Update first'}
-              </button>
-            </div>
-          ) : null}
           {outlook.data && !connected ? (
             <div className="flex flex-wrap items-center gap-2 border-b border-line-soft bg-info-soft px-3 py-1 text-[12.5px] text-info">
               <span className="min-w-0 flex-1">The email sends from your own Outlook. Connect it once.</span>
@@ -272,8 +279,11 @@ export function ComposeSummary({ data, actions, onClose }: { data: ManagerSheetD
           ) : null}
 
           <div className="flex flex-wrap items-center gap-1.5 border-b border-line-soft px-3 py-1.5 text-[12.5px] text-ink-muted">
-            <span className="mr-auto min-w-0 truncate">
+            <span className="min-w-0 truncate">
               From <b className="font-medium text-ink">{connected ? outlook.data?.msEmail : 'your Outlook'}</b>
+            </span>
+            <span className="mr-auto">
+              <SignNameField id="rcv-sign-name" value={sign} onChange={changeSign} />
             </span>
             <span className="text-[12px]">Add</span>
             <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>

@@ -4,7 +4,7 @@ import { todayIst } from '@/lib/receivables/dates';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
 import { partnerRows, summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
-import { getSummarySource, listDigestRecipients } from '@/db/repositories/receivables';
+import { getSignName, getSummarySource, listDigestRecipients } from '@/db/repositories/receivables';
 import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -19,7 +19,9 @@ export async function GET(_request: Request, context: RouteContext) {
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;
   try {
-    const src = await getSummarySource(guard.ctx, id);
+    const [src, signerName] = await Promise.all([getSummarySource(guard.ctx, id), getSignName(guard.ctx)]);
+    // The live sheet, not the last published version: the email shows what the table shows now.
+    const rows = src.live;
     const today = todayIst();
     const liveUrl = publicPageUrl(siteUrl(), src.sheet);
     const leaders = (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active).map((r) => ({ name: r.name, email: r.email }));
@@ -31,15 +33,16 @@ export async function GET(_request: Request, context: RouteContext) {
         partnerId: p.id,
         name: p.name,
         email: p.email,
-        invoiceCount: partnerRows(src.version.snapshot, p.slug, src.coClientKeys[p.id]).filter((r) => r.status === 'open').length,
-        html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id] }),
+        invoiceCount: partnerRows(rows, p.slug, src.coClientKeys[p.id]).filter((r) => r.status === 'open').length,
+        html: summaryEmailHtml({ rows, today, liveUrl, signerName, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id] }),
       }));
     return NextResponse.json({
       versionSeq: src.version.seq,
       publishedAt: src.version.publishedAt,
       subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today)}` : summaryEmailSubject(today),
-      html: summaryEmailHtml({ rows: src.version.snapshot, today, liveUrl, signerName: guard.ctx.name }),
-      lists: recipientLists({ partners: src.partners, rows: src.version.snapshot, today, lastSend: src.lastSend }),
+      html: summaryEmailHtml({ rows, today, liveUrl, signerName }),
+      signName: signerName,
+      lists: recipientLists({ partners: src.partners, rows, today, lastSend: src.lastSend }),
       contacts: [...contactSuggestions(src.partners, src.lastSend), ...leaders.filter((l) => !src.partners.some((p) => p.email.toLowerCase() === l.email.toLowerCase()))],
       partnerDrafts,
       leaders,

@@ -7,6 +7,7 @@ import type { AuthContext } from '@/auth/guards';
 import type { EmailRecipient, Partner, SnapshotRow } from '@/lib/receivables/model';
 import { conflict, ReceivablesError, scopedSheet, type SheetRow } from './shared';
 import { toPartner } from './sheets';
+import { snapshotOf } from './versions';
 
 /**
  * The summary email (Phase 4): it is always built from the published version, so the email and
@@ -16,6 +17,8 @@ import { toPartner } from './sheets';
 export type SummarySource = {
   sheet: SheetRow;
   version: { id: string; seq: number; publishedAt: Date; snapshot: SnapshotRow[] };
+  /** The live sheet as rows (owner, 18 Nov 2026): the summary email shows what the table shows now. */
+  live: SnapshotRow[];
   partners: Partner[];
   /** Per partner id, the client keys they are a second partner on (their summary includes those clients). */
   coClientKeys: Record<string, string[]>;
@@ -26,7 +29,7 @@ export type SummarySource = {
 export async function getSummarySource(ctx: AuthContext, sheetId: string): Promise<SummarySource> {
   const sheet = await scopedSheet(ctx, sheetId);
   if (!sheet.publishedVersionId) throw conflict('not_published');
-  const [[v], partners, [last], links] = await Promise.all([
+  const [[v], partners, [last], links, live] = await Promise.all([
     db
       .select({ id: receivableVersions.id, seq: receivableVersions.seq, publishedAt: receivableVersions.publishedAt, snapshot: receivableVersions.snapshot })
       .from(receivableVersions)
@@ -39,6 +42,7 @@ export async function getSummarySource(ctx: AuthContext, sheetId: string): Promi
       .from(receivableClientPartners)
       .innerJoin(receivableClients, eq(receivableClients.id, receivableClientPartners.clientId))
       .where(eq(receivableClientPartners.sheetId, sheet.id)),
+    snapshotOf(sheet.id),
   ]);
   const coClientKeys: Record<string, string[]> = {};
   for (const l of links) (coClientKeys[l.partnerId] ??= []).push(clientKey(l.name));
@@ -46,6 +50,7 @@ export async function getSummarySource(ctx: AuthContext, sheetId: string): Promi
   return {
     sheet,
     version: v,
+    live,
     partners: partners.map(toPartner),
     coClientKeys,
     lastSend: last ? { to: last.toList, cc: last.ccList, bcc: last.bccList, subject: last.subject, sentAt: last.sentAt, status: last.status as SummarySendStatus, error: last.error } : null,
