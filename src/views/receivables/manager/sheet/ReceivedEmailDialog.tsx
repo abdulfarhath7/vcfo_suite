@@ -10,7 +10,7 @@ import type { EmailRecipient } from '@/lib/receivables/model';
 import { useOutlookStatus } from '@/hooks/use-receivables';
 import { useKeepSignName, useReceivedEmail, useSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from '../SignNameField';
-import { InvoicesInEmail } from '../compose/InvoicesInEmail';
+import { InvoicesInEmail, RemovableRows } from '../compose/InvoicesInEmail';
 import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { OUTLOOK_CONNECT_HREF, RecipientRow } from '../ComposeSummary';
@@ -62,7 +62,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
     const next = removed.includes(id) ? removed.filter((x) => x !== id) : [...removed, id];
     setRemoved(next);
     const kept = d.invoices.filter((i) => !next.includes(i.id));
-    if (kept.length) setHtml(paymentReceivedEmail({ recipientName: d.recipientName, senderName: sign.trim() || 'Accounts Team', invoices: kept, today: d.today, tpl: d.template }).html);
+    if (kept.length) setHtml(paymentReceivedEmail({ recipientName: d.recipientName, senderName: sign.trim() || 'Accounts Team', invoices: kept, today: d.today, tpl: d.template, marks: true }).html);
   };
   const submit = () => {
     if (!d) return;
@@ -129,16 +129,25 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
               {`${hits.length} invoice${hits.length === 1 ? ' was' : 's were'} already sent to ${[...new Set(hits.map((h) => h.email))].join(', ')}. Remove ${hits.length === 1 ? 'it' : 'them'}, or change the recipients, to send.`}
             </p>
           ) : null}
-          <div
-            ref={body}
-            role="textbox"
-            aria-multiline="true"
-            aria-label="Email message"
-            contentEditable
-            suppressContentEditableWarning
-            className="max-h-[48vh] min-h-[220px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3 text-[13px] text-black outline-none focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
-            dangerouslySetInnerHTML={{ __html: html ?? d.html }}
-          />
+          <RemovableRows
+            onRemove={toggle}
+            hitIds={hits.map((h) => h.invoiceId)}
+            labelOf={(id) => {
+              const i = d.invoices.find((x) => x.id === id);
+              return i ? `${i.clientName} ${i.invoiceNo ?? ''}`.trim() : 'the invoice';
+            }}
+          >
+            <div
+              ref={body}
+              role="textbox"
+              aria-multiline="true"
+              aria-label="Email message"
+              contentEditable
+              suppressContentEditableWarning
+              className="max-h-[48vh] min-h-[220px] overflow-auto rounded-md border-1.5 border-line-strong bg-white p-3 pr-10 text-[13px] text-black outline-none focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
+              dangerouslySetInnerHTML={{ __html: html ?? d.html }}
+            />
+          </RemovableRows>
           <p className="text-[12px] text-ink-muted">A client partner may get this only when every invoice in it is theirs.</p>
         </div>
       ) : null}

@@ -59,5 +59,7 @@ export function tidyEmailHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript:/gi, '');
+    .replace(/javascript:/gi, '')
+    // The pop-ups mark each invoice row so ✕ can remove it (owner, 19 Nov 2026); the mark never goes out.
+    .replace(/\sdata-inv="[^"]*"/gi, '');
 }

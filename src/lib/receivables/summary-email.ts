@@ -54,7 +54,7 @@ const DASH = `<span style="font-family:${SANS};color:${MUTED};">—</span>`;
 const NUM = `font-family:${SANS};font-variant-numeric:tabular-nums;text-align:right;`;
 // A long client or partner name wraps onto a second line instead of pushing the other columns
 // out of place; the other cells stay on one line (owner, 19 Nov 2026).
-const WRAP = 'white-space:normal;word-break:break-word;';
+const WRAP = 'white-space:normal;';
 const TOTAL = `font-weight:bold;border-top:2px solid ${ORANGE};background:#ffffff;`;
 
 export type SummaryEmailInput = {
@@ -74,6 +74,8 @@ export type SummaryEmailInput = {
   greetName?: string;
   /** The client organisation, for the {sheet} placeholder. */
   sheetName?: string;
+  /** Marks each invoice row with `data-inv`, for ✕ in the Send email pop-up; removed before sending. */
+  marks?: boolean;
 };
 
 const longDay = (today: string) => {
@@ -166,7 +168,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
           const fx = foreign
             ? `<td ${td(bg, 'text-align:center;')}>${isForeignRow(r) ? escapeHtml((r.currency ?? '').toUpperCase()) : 'INR'}</td><td ${td(bg, NUM)}>${fc === null ? DASH : fcFormat.format(fc)}</td>`
             : '';
-          return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.clientName)}</td><td ${td(bg, 'font-size:12.5px;')}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg, WRAP)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
+          return `<tr${input.marks ? ` data-inv="${escapeHtml(r.id)}"` : ''}><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.clientName)}</td><td ${td(bg, 'font-size:12.5px;')}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg, WRAP)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
         })
         .join('');
       const title = monthBlockTitle(m).replace(' Receivables', '');

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { withSignName } from '@/lib/receivables/sign-name';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { emailRows, summaryEmailHtml } from '@/lib/receivables/summary-email';
-import { InvoicesInEmail } from './compose/InvoicesInEmail';
+import { InvoicesInEmail, RemovableRows } from './compose/InvoicesInEmail';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
@@ -197,6 +197,8 @@ export function ComposeSummary({
       sheetName: data.sheet.clientOrgName,
       // The leaders' email greets the team; every other email greets its own person.
       greetName: d.key === LEADERS || !d.to[0] ? 'Team' : firstName(d.to[0]).replace(/[<>&"]/g, ''),
+      // Each row carries its invoice id for ✕ in the email; the route removes it before sending.
+      marks: true,
     });
     return signed(html);
   };
@@ -491,17 +493,26 @@ export function ComposeSummary({
                     {`${hitsOf(current).length} received invoice${hitsOf(current).length === 1 ? ' was' : 's were'} already sent to this person. Remove ${hitsOf(current).length === 1 ? 'it' : 'them'} to send.`}
                   </p>
                 ) : null}
-                <div
-                  ref={body}
-                  role="textbox"
-                  aria-multiline="true"
-                  aria-label={`Email to ${current.to.map((r) => r.name || r.email).join(', ')}`}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onBlur={keepBody}
-                  className="max-h-[56vh] min-h-[340px] overflow-auto rounded-md border border-line-strong bg-white p-3 text-[13px] text-black outline-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
-                  dangerouslySetInnerHTML={{ __html: current.html }}
-                />
+                <RemovableRows
+                  onRemove={toggleInvoice}
+                  hitIds={hitsOf(current).map((h) => h.invoiceId)}
+                  labelOf={(id) => {
+                    const r = draftRows(current).find((x) => x.id === id);
+                    return r ? `${r.clientName} ${r.invoiceNo ?? ''}`.trim() : 'the invoice';
+                  }}
+                >
+                  <div
+                    ref={body}
+                    role="textbox"
+                    aria-multiline="true"
+                    aria-label={`Email to ${current.to.map((r) => r.name || r.email).join(', ')}`}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={keepBody}
+                    className="max-h-[56vh] min-h-[340px] overflow-auto rounded-md border border-line-strong bg-white p-3 pr-10 text-[13px] text-black outline-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
+                    dangerouslySetInnerHTML={{ __html: current.html }}
+                  />
+                </RemovableRows>
               </div>
             ) : (
               <p className="p-3 text-[12.5px] text-ink-muted">A client partner gets their own email with only their clients’ invoices. The leaders share one email with the whole sheet.</p>

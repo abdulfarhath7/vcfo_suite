@@ -127,12 +127,14 @@ type Column = { label: string; num?: boolean };
  * One orange table. `rows` are already-escaped cell HTML; `total` is the bold total row's cells.
  * The wrapper div scrolls sideways inside itself on a narrow screen.
  */
-function table(columns: Column[], rows: string[][], total?: string[]): string {
+/** `ids`: an invoice id per row, written as `data-inv` for ✕ in the pop-ups (removed before sending). */
+function table(columns: Column[], rows: string[][], total?: string[], ids?: Array<string | undefined>): string {
   const head = columns.map((c) => `<th style="${TH}${c.num ? 'text-align:right;' : ''}">${esc(c.label)}</th>`).join('');
   const body = rows
     .map((cells, i) => {
       const bg = i % 2 === 1 ? ORANGE_ROW : '#ffffff';
-      return `<tr style="background:${bg};">${cells.map((c, j) => `<td style="${TD}${columns[j]?.num ? NUM : ''}background:${bg};">${c}</td>`).join('')}</tr>`;
+      const mark = ids?.[i] ? ` data-inv="${esc(ids[i]!)}"` : '';
+      return `<tr${mark} style="background:${bg};">${cells.map((c, j) => `<td style="${TD}${columns[j]?.num ? NUM : ''}background:${bg};">${c}</td>`).join('')}</tr>`;
     })
     .join('');
   const foot = total
@@ -327,7 +329,7 @@ export type ReceivedInvoice = EmailInvoice & { paidOn: string; receivedInr: numb
  * The "Payment received" email, offered after Mark received and sent only when the person clicks
  * Send (owner, 17 Nov 2026): the received invoices in one table with the received date and amount.
  */
-export function paymentReceivedEmail(input: { recipientName: string; senderName: string; invoices: ReceivedInvoice[]; today?: string; tpl?: TemplateOverride }): BuiltEmail {
+export function paymentReceivedEmail(input: { recipientName: string; senderName: string; invoices: Array<ReceivedInvoice & { id?: string }>; today?: string; tpl?: TemplateOverride; marks?: boolean }): BuiltEmail {
   const rows = [...input.invoices].sort((a, b) => a.clientName.localeCompare(b.clientName) || a.paidOn.localeCompare(b.paidOn));
   const clients = [...new Set(rows.map((r) => r.clientName))];
   const total = Math.round(rows.reduce((a, r) => a + r.receivedInr, 0) * 100) / 100;
@@ -354,6 +356,7 @@ export function paymentReceivedEmail(input: { recipientName: string; senderName:
         cols,
         rows.map((r) => [...(many ? [esc(r.clientName)] : []), esc(r.invoiceNo ?? '—'), r.invoiceDate ? sheetDate(r.invoiceDate) : '—', sheetDate(r.dueDate), sheetDate(r.paidOn), inrText(r.receivedInr)]),
         rows.length > 1 ? ['Total', ...Array(cols.length - 2).fill(''), inrText(total)] : undefined,
+        input.marks ? rows.map((r) => r.id) : undefined,
       ) +
       t.closingHtml,
     input.senderName,

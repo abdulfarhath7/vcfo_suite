@@ -85,3 +85,21 @@ export function previewOf(kind: TemplateKind, tpl: TemplateOverride, ctx: { toda
     }
   }
 }
+
+/** The parts typed into the email in place; the subject sits above the body. */
+export const BODY_PARTS = ['greeting', 'intro', 'closing'] as const;
+export type BodyPart = (typeof BODY_PARTS)[number];
+
+/**
+ * The email for the in-place editor (owner, 19 Nov 2026): built by the real builder with a marker
+ * in each part the person can type, then each marker's paragraph becomes an empty
+ * `<div data-slot="part">` with the same style, where the editor puts a text box. Everything else
+ * (the tables, the total, Regards and the name) stays as built and cannot be changed. The markers
+ * never depend on the typed words, so the HTML stays the same while the person types.
+ */
+export function editorHtml(kind: TemplateKind, ctx: { today: string; signName: string; sheetName: string }): string {
+  const marks: TemplateOverride = { greeting: '@@TPL_greeting@@', intro: '@@TPL_intro@@', closing: '@@TPL_closing@@' };
+  const { html } = previewOf(kind, marks, ctx);
+  const body = /<body[^>]*>([\s\S]*)<\/body>/i.exec(html)?.[1] ?? html;
+  return body.replace(/<p\b([^>]*)>@@TPL_(greeting|intro|closing)@@<\/p>/g, (_m, attrs: string, part: string) => `<div data-slot="${part}"${attrs}></div>`);
+}

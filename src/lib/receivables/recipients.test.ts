@@ -47,6 +47,9 @@ describe('contactSuggestions', () => {
 });
 
 describe('tidyEmailHtml', () => {
+  it('removes the row marks the pop-ups add for ✕', () => {
+    expect(tidyEmailHtml('<tr data-inv="abc" style="x"><td>1</td></tr>')).toBe('<tr style="x"><td>1</td></tr>');
+  });
   it('removes scripts and inline handlers but keeps the tables', () => {
     expect(tidyEmailHtml('<p onclick="x()">Hi</p><script>alert(1)</script><a href="javascript:x">l</a><table><tr><td>1</td></tr></table>')).toBe('<p>Hi</p><a href="x">l</a><table><tr><td>1</td></tr></table>');
   });
