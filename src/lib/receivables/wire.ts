@@ -82,6 +82,8 @@ export type SummaryDto = {
   picked: boolean;
   /** The sheet's saved words for this email (the Templates tab); empty keeps the standard words. */
   template?: TemplateOverride;
+  /** The saved words of the Collections report email (Send email on the Collections tab). */
+  collectionsTemplate?: TemplateOverride;
   /** Received invoices already emailed, per invoice id: who and when. */
   alreadySent: SentMap;
   /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */

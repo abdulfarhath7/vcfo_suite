@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { withSignName } from '@/lib/receivables/sign-name';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { emailRows, summaryEmailHtml } from '@/lib/receivables/summary-email';
+import { collectionsReport, type CollectionsPeriod } from '@/lib/receivables/collections';
+import { collectionsEmailHtml, collectionsEmailSubject } from '@/lib/receivables/collections-email';
 import { InvoicesInEmail, RemovableRows } from './compose/InvoicesInEmail';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
@@ -125,6 +127,9 @@ type Draft = {
   alsoClientKeys?: string[];
 };
 
+/** Send email on the Collections tab (owner, 19 Nov 2026): the tab's filters, for the Collections report. */
+export type CollectionsSend = { today: string; period: CollectionsPeriod; periodLabel: string; partnerId: string | null; client: string | null; countOpenLate: boolean };
+
 const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'there').trim().split(/\s+/)[0];
 /** The key of the one email all the leaders share. */
 const LEADERS = 'leaders';
@@ -134,12 +139,15 @@ export function ComposeSummary({
   data,
   actions: _actions,
   invoiceIds,
+  collections,
   onClose,
 }: {
   data: ManagerSheetDto;
   actions: ReturnType<typeof useReceivablesActions>;
   /** Only these invoices (picked on the sheet); every partner gets only the picked ones they own. */
   invoiceIds?: string[];
+  /** Set on the Collections tab: each email is the Collections report, not the receivables update. */
+  collections?: CollectionsSend;
   onClose: () => void;
 }) {
   const summary = useSummary(data.sheet.id, true, invoiceIds);
@@ -152,12 +160,27 @@ export function ComposeSummary({
   useEffect(() => {
     if (prefilled.current || !summary.data) return;
     prefilled.current = true;
-    setPeople(summary.data.partnerDrafts.filter((p) => p.invoiceCount > 0).map((p) => ({ name: p.name, email: p.email })));
+    setPeople(summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })));
   }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
   const s = summary.data;
+  /**
+   * The Collections report one email holds: a client partner's email only that partner's invoices
+   * (and nothing when the tab is filtered to another partner); any other email the tab's filters.
+   */
+  const reportFor = (partnerId?: string) => {
+    if (!collections) return null;
+    const none = partnerId && collections.partnerId !== null && collections.partnerId !== partnerId;
+    return collectionsReport(data.invoices, { ...collections, partnerId: none ? '__none__' : (partnerId ?? collections.partnerId) });
+  };
+  const collectionsPartners = new Set(collections ? (reportFor()?.rows ?? []).map((r) => r.partnerId).filter(Boolean) : []);
+  /** A partner with something to send: open invoices (the update) or invoices in the report. */
+  const partnerHasMail = (p: { partnerId: string; invoiceCount: number }) => (collections ? collectionsPartners.has(p.partnerId) : p.invoiceCount > 0);
+  const partnerNameOf = (id: string | null) => (id ? (data.partners.find((p) => p.id === id)?.name ?? 'A removed partner') : 'No partner');
+  const subjectFor = (partnerId?: string, greetName?: string) =>
+    collections && s ? collectionsEmailSubject({ report: reportFor(partnerId)!, today: collections.today, periodLabel: collections.periodLabel, greetName, sheetName: data.sheet.clientOrgName, template: s.collectionsTemplate }) : (s?.subject ?? '');
   // "Your name" (owner, 18 Nov 2026): fills "Regards, <name>" in every draft; saved on the profile.
   const [sign, setSign] = useState('');
   const keepSign = useKeepSignName();
@@ -183,8 +206,23 @@ export function ComposeSummary({
 
   const signed = (html: string) => (sign.trim() ? withSignName(html, sign) : html);
   /** The body of one email, rebuilt from the live rows without the removed invoices. */
-  const bodyFor = (d: Pick<Draft, 'key' | 'to' | 'slug' | 'alsoClientKeys'>, out: string[]) => {
+  const bodyFor = (d: Pick<Draft, 'key' | 'to' | 'slug' | 'alsoClientKeys' | 'partnerId'>, out: string[]) => {
     if (!s) return '';
+    const greetName = d.key === LEADERS || !d.to[0] ? 'Team' : firstName(d.to[0]).replace(/[<>&"]/g, '');
+    if (collections)
+      return signed(
+        collectionsEmailHtml({
+          report: reportFor(d.partnerId)!,
+          today: collections.today,
+          periodLabel: collections.periodLabel,
+          signerName: sign.trim() || s.signName || '',
+          greetName,
+          sheetName: data.sheet.clientOrgName,
+          partnerName: partnerNameOf,
+          showPartners: !d.partnerId,
+          template: s.collectionsTemplate,
+        }),
+      );
     const html = summaryEmailHtml({
       rows: s.rows.filter((r) => !out.includes(r.id)),
       today: s.today,
@@ -210,7 +248,7 @@ export function ComposeSummary({
       const group = people.filter((r) => inGroup(r.email));
       if (group.length) {
         const base = { key: LEADERS, to: group };
-        next[LEADERS] = prev[LEADERS] ? { ...prev[LEADERS], to: group } : { ...base, kind: 'full', cc: [], subject: s.subject, html: bodyFor(base, removed), invoiceCount: null };
+        next[LEADERS] = prev[LEADERS] ? { ...prev[LEADERS], to: group } : { ...base, kind: 'full', cc: [], subject: subjectFor(undefined, 'Team'), html: bodyFor(base, removed), invoiceCount: null };
       }
       for (const r of people) {
         const key = lower(r.email);
@@ -221,10 +259,11 @@ export function ComposeSummary({
         }
         const p = s.partnerDrafts.find((x) => lower(x.email) === key);
         const to = [p ? { name: p.name, email: p.email } : r];
-        const shape = { key, to, slug: p?.slug, alsoClientKeys: p?.alsoClientKeys };
+        const shape = { key, to, slug: p?.slug, alsoClientKeys: p?.alsoClientKeys, partnerId: p?.partnerId };
+        const subject = subjectFor(p?.partnerId, firstName(to[0]!));
         next[key] = p
-          ? { ...shape, kind: 'partner', partnerId: p.partnerId, cc: [], subject: s.subject, html: bodyFor(shape, removed), invoiceCount: p.invoiceCount }
-          : { ...shape, kind: 'full', cc: [], subject: s.subject, html: bodyFor(shape, removed), invoiceCount: null };
+          ? { ...shape, kind: 'partner', partnerId: p.partnerId, cc: [], subject, html: bodyFor(shape, removed), invoiceCount: p.invoiceCount }
+          : { ...shape, kind: 'full', cc: [], subject, html: bodyFor(shape, removed), invoiceCount: null };
       }
       return next;
     });
@@ -233,7 +272,7 @@ export function ComposeSummary({
   }, [people, s, joined]);
   const keys = [LEADERS, ...people.filter((r) => !inGroup(r.email)).map((r) => lower(r.email))].filter((k) => drafts[k]);
   /** The invoices an email holds (removed ones included), the ones it still holds, and its already-sent ones. */
-  const draftRows = (d: Draft) => (s ? emailRows({ rows: s.rows, today: s.today, partnerSlug: d.slug, alsoClientKeys: d.alsoClientKeys, picked: s.picked }) : []);
+  const draftRows = (d: Draft) => (s && !collections ? emailRows({ rows: s.rows, today: s.today, partnerSlug: d.slug, alsoClientKeys: d.alsoClientKeys, picked: s.picked }) : []);
   const keptIds = (d: Draft) => draftRows(d).filter((r) => !removed.includes(r.id)).map((r) => r.id);
   const hitsOf = (d: Draft) => (s ? alreadySentHits(s.alreadySent, keptIds(d), [...d.to, ...d.cc].map((c) => c.email)) : []);
   /** ✕ or put back: the invoice leaves (or rejoins) every email that holds it; those bodies are rebuilt. */
@@ -277,7 +316,9 @@ export function ComposeSummary({
   const connected = outlook.data?.connected;
   const notPublished = summary.error && 'code' in summary.error && summary.error.code === 'not_published';
   // A partner with no open invoices gets nothing; every other card is sent.
-  const sendable = keys.map((k) => drafts[k]).filter((d) => keptIds(d).length > 0 || (d.kind === 'full' && !removed.length && !s?.picked));
+  const sendable = keys
+    .map((k) => drafts[k])
+    .filter((d) => (collections ? d.kind === 'full' || (reportFor(d.partnerId)?.rows.length ?? 0) > 0 : keptIds(d).length > 0 || (d.kind === 'full' && !removed.length && !s?.picked)));
   const blocked = sendable.flatMap(hitsOf);
   const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
@@ -286,7 +327,7 @@ export function ComposeSummary({
     const html = body.current?.innerHTML;
     const final = sendable.map((d) => (current && d.key === current.key && html !== undefined ? { ...d, html } : d));
     send.mutate(
-      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: d.to, cc: d.cc, subject: d.subject, html: d.html, invoiceIds: keptIds(d) })) },
+      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: d.to, cc: d.cc, subject: d.subject, html: d.html, invoiceIds: collections ? undefined : keptIds(d) })), report: collections ? 'collections' : 'summary' },
       {
         onSuccess: (r) => {
           const who = `${r.emails} email${r.emails === 1 ? '' : 's'} from ${r.from}.`;
@@ -304,7 +345,7 @@ export function ComposeSummary({
     );
   };
 
-  const activePartners = (s?.partnerDrafts ?? []).filter((p) => p.invoiceCount > 0).map((p) => ({ name: p.name, email: p.email }));
+  const activePartners = (s?.partnerDrafts ?? []).filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email }));
   const lastTo = s?.lists.find((l) => l.key === 'last')?.to ?? [];
 
   /** Removes one person and their card; the card in view moves to the first one left. */
@@ -335,7 +376,7 @@ export function ComposeSummary({
     <Modal
       open
       onOpenChange={(o) => !o && onClose()}
-      title={invoiceIds?.length ? `Send email · ${invoiceIds.length} picked invoice${invoiceIds.length === 1 ? '' : 's'}` : 'Send email'}
+      title={collections ? `Send the collections report · ${collections.periodLabel}` : invoiceIds?.length ? `Send email · ${invoiceIds.length} picked invoice${invoiceIds.length === 1 ? '' : 's'}` : 'Send email'}
       sub={s ? `The sheet as it is now${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
       // Nearly the full screen (owner, 19 Nov 2026), so the email preview shows its whole table.
@@ -411,7 +452,7 @@ export function ComposeSummary({
                     {keys.map((k) => {
                       const d = drafts[k];
                       const on = current?.key === k;
-                      const n = keptIds(d).length;
+                      const n = collections ? (reportFor(d.partnerId)?.rows.length ?? 0) : keptIds(d).length;
                       const warn = hitsOf(d).length;
                       const empty = !sendable.includes(d);
                       const label = warn
@@ -487,7 +528,15 @@ export function ComposeSummary({
                   </label>
                   <Input id="rcv-subject" className="h-8 px-2 py-1 text-[13px]" value={current.subject} maxLength={200} onChange={(e) => patch(current.key, { subject: e.target.value })} />
                 </div>
-                <InvoicesInEmail everyEmail rows={draftRows(current)} removed={removed} hits={hitsOf(current)} onToggle={toggleInvoice} />
+                {collections ? (
+                  <p className="text-[12.5px] text-ink-muted">
+                    {current.kind === 'partner'
+                      ? 'The collections report with only this partner’s invoices, for the filters on the Collections tab.'
+                      : 'The collections report for the filters on the Collections tab.'}
+                  </p>
+                ) : (
+                  <InvoicesInEmail everyEmail rows={draftRows(current)} removed={removed} hits={hitsOf(current)} onToggle={toggleInvoice} />
+                )}
                 {hitsOf(current).length ? (
                   <p role="alert" className="text-[12.5px] text-warning">
                     {`${hitsOf(current).length} received invoice${hitsOf(current).length === 1 ? ' was' : 's were'} already sent to this person. Remove ${hitsOf(current).length === 1 ? 'it' : 'them'} to send.`}

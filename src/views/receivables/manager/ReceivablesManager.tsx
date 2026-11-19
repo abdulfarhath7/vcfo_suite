@@ -121,7 +121,9 @@ export function ReceivablesManager({
             {outlook.data?.connected ? (
               <span className="inline-flex items-center gap-1.5" title={`Receivables emails you approve or send go from ${outlook.data.msEmail}`}>
                 <span aria-hidden className="size-2 rounded-full bg-positive" />
-                Outlook
+                {/* The connected Outlook account, by its address (owner, 19 Nov 2026). */}
+                <span className="text-ink-muted">Outlook</span>
+                <b className="max-w-[220px] truncate font-medium text-ink">{outlook.data.msEmail}</b>
               </span>
             ) : outlook.data?.configured ? (
               <a href={OUTLOOK_CONNECT_HREF} className="inline-flex items-center gap-1.5 font-medium text-brand-text hover:underline">
@@ -132,7 +134,8 @@ export function ReceivablesManager({
             {wa ? (
               <span className="inline-flex items-center gap-1.5" title={wa.title}>
                 <span aria-hidden className={`size-2 rounded-full ${wa.ok ? 'bg-positive' : 'bg-warning'}`} />
-                WhatsApp
+                <span className="text-ink-muted">WhatsApp</span>
+                {w?.myPhone ? <b className="font-mono text-[11.5px] font-medium text-ink">{w.myPhone}</b> : null}
               </span>
             ) : null}
             <DropdownMenu>

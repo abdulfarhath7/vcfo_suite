@@ -157,7 +157,7 @@ export function useOutlookStatus() {
 }
 
 /** Send email: one email per person (a partner's own invoices, or the whole sheet). */
-export type SummarySendInput = { emails: SummaryEmailDto[] };
+export type SummarySendInput = { emails: SummaryEmailDto[]; report?: 'summary' | 'collections' };
 
 /** The 202 of Send: the send is logged as `sending` and finishes after the response. */
 export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; emails: number; to: number; cc: number; bcc: number };

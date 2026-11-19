@@ -78,14 +78,14 @@ export type ApproveEdit = { rowId: string; dueDate?: string; creditDays?: number
 export type ApproveResultDto = { approved: number; invoiceIds: string[]; refused: Array<{ rowId: string; code: string }> };
 
 /** `summary` is the Send email on the Sheet tab, logged here from 19 Nov 2026. */
-export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received' | 'summary';
+export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received' | 'summary' | 'collections';
 
 /**
  * Automatic emails go out without anyone clicking Send: after an approval (new invoice, revised)
  * or on a schedule (roll-up, digest). Every other kind is a person's own send.
  */
 export const AUTO_EMAIL_KINDS: readonly EmailKind[] = ['new_invoice', 'revised', 'rollup', 'digest'];
-export const MANUAL_EMAIL_KINDS: readonly EmailKind[] = ['summary', 'payment_received', 'client_statement'];
+export const MANUAL_EMAIL_KINDS: readonly EmailKind[] = ['summary', 'collections', 'payment_received', 'client_statement'];
 export const isAutoEmail = (k: EmailKind) => AUTO_EMAIL_KINDS.includes(k);
 
 /** The "Payment received" email offered after Mark received (never sent on its own). */
@@ -122,6 +122,9 @@ export type EmailLogDto = {
   sentAt: string | null;
   /** How many invoices the email holds. */
   invoiceCount?: number;
+  /** The Outlook account it went from (the sender's connected address) and the WhatsApp number its ping went to. */
+  senderEmail?: string | null;
+  senderPhone?: string | null;
 };
 
 /** The Email log tab's filters. */

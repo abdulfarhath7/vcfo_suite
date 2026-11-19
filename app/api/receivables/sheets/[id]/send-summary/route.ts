@@ -33,7 +33,8 @@ const email = z.object({
   /** The invoices in the body; received ones already sent to these people stop the send. */
   invoiceIds: z.array(z.string().uuid()).max(1000).optional(),
 });
-const schema = z.object({ emails: z.array(email).min(1, 'to_required').max(60) });
+/** `report`: the receivables update (the Sheet tab) or the Collections report (the Collections tab). */
+const schema = z.object({ emails: z.array(email).min(1, 'to_required').max(60), report: z.enum(['summary', 'collections']).default('summary') });
 
 export async function POST(request: Request, context: RouteContext) {
   const guard = await guardReceivables();
@@ -49,12 +50,16 @@ export async function POST(request: Request, context: RouteContext) {
     if (people.invalid.length) return NextResponse.json({ error: 'bad_email', invalid: people.invalid }, { status: 400 });
     emails.push({ ...e, to: people.to, cc: people.cc, html: tidyEmailHtml(e.html) });
   }
+  // The Collections report lists received invoices as a record, not to tell anyone again, so it
+  // neither checks nor writes the "already sent" receipts.
+  const collections = input.report === 'collections';
+  if (collections) for (const e of emails) e.invoiceIds = undefined;
   try {
     const src = await getSummarySource(guard.ctx, id);
     const checked = checkSummaryEmails(emails, src.partners);
     if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
     // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
-    const sent = await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));
+    const sent = collections ? {} : await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));
     const hits = emails.flatMap((e) => alreadySentHits(sent, e.invoiceIds ?? [], [...e.to, ...e.cc].map((r) => r.email)));
     if (hits.length) return NextResponse.json({ error: 'receipt_already_sent', hits }, { status: 409 });
     const { msEmail } = await assertOutlookReady(guard.ctx);
@@ -67,7 +72,7 @@ export async function POST(request: Request, context: RouteContext) {
       const e = emails[i]!;
       const log = await startEmailLog(guard.ctx, {
         sheetId: id,
-        kind: 'summary',
+        kind: collections ? 'collections' : 'summary',
         partnerId: e.kind === 'partner' ? (e.partnerId ?? null) : null,
         recipientName: e.to.map((r) => r.name || r.email).join(', ').slice(0, 200),
         to: mail.to,
@@ -76,7 +81,7 @@ export async function POST(request: Request, context: RouteContext) {
         html: mail.html,
         text: mail.subject,
         invoiceIds: mail.invoiceIds ?? [],
-        about: 'Receivables update',
+        about: collections ? 'Collections report' : 'Receivables update',
         status: 'sending',
       });
       mails.push({ ...mail, logId: log.id });

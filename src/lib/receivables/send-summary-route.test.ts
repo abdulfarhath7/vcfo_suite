@@ -104,6 +104,15 @@ describe('send-summary route', () => {
     expect(systemFinishEmailLog).toHaveBeenCalledWith('log-2', { status: 'sent' });
   });
 
+  it('logs a Collections report as such and never writes "already sent" receipts for it', async () => {
+    const res = await call({ ...one({ to: [{ name: 'CEO', email: 'ceo@sbcllp.in' }] }), report: 'collections' });
+    expect(res.status).toBe(202);
+    expect(startEmailLog).toHaveBeenCalledWith(ctx, expect.objectContaining({ kind: 'collections', invoiceIds: [] }));
+    await runAfter();
+    expect(sendMailViaOutlook).toHaveBeenCalledTimes(1);
+    expect(sendMailViaOutlook.mock.calls[0][1].invoiceIds).toBeUndefined();
+  });
+
   it('refuses a batch where a client partner would see another email', async () => {
     getSummarySource.mockResolvedValue({ ...SOURCE, partners: [{ id: '22222222-2222-4222-8222-222222222222', slug: 'p', name: 'Pranay', email: 'pranay@sbcllp.in', active: true }] });
     const res = await call(one({ to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'pranay@sbcllp.in' }] }));

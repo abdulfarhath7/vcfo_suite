@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, desc, eq, ilike, inArray, lt, or, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { profiles, receivableEmailLog } from '@/db/schema';
+import { outlookConnections, profiles, receivableEmailLog } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { AUTO_EMAIL_KINDS, MANUAL_EMAIL_KINDS, type EmailKind, type EmailLogDto, type EmailLogEntryDto, type EmailLogFilter, type EmailLogPageDto, type EmailStatus, type WhatsAppPingStatus } from '@/lib/receivables/v2-wire';
 import { UUID, conflict, notFound, scopedSheet } from './shared';
@@ -107,8 +107,9 @@ export async function systemGetEmailLog(id: string): Promise<(EmailLogRow & { se
   return row ? { ...row.log, senderName: row.senderName ?? null, senderPhone: row.senderPhone ?? null } : null;
 }
 
-function toDto(row: EmailLogRow, senderName: string | null): EmailLogDto {
+function toDto(row: EmailLogRow, senderName: string | null, who?: { email: string | null; phone: string | null }): EmailLogDto {
   return {
+    ...(who ? { senderEmail: who.email, senderPhone: who.phone } : {}),
     id: row.id,
     kind: row.kind as EmailKind,
     recipientName: row.recipientName,
@@ -155,13 +156,14 @@ export async function listEmailLogPage(ctx: AuthContext, sheetId: string, filter
   const before = filter.before ? new Date(filter.before) : null;
   if (before && !Number.isNaN(before.getTime())) where.push(lt(receivableEmailLog.createdAt, before));
   const rows = await db
-    .select({ log: receivableEmailLog, senderName: profiles.name })
+    .select({ log: receivableEmailLog, senderName: profiles.name, senderEmail: outlookConnections.msEmail, senderPhone: profiles.phoneE164 })
     .from(receivableEmailLog)
     .leftJoin(profiles, eq(profiles.id, receivableEmailLog.senderUserId))
+    .leftJoin(outlookConnections, eq(outlookConnections.userId, receivableEmailLog.senderUserId))
     .where(and(...where))
     .orderBy(desc(receivableEmailLog.createdAt))
     .limit(limit + 1);
-  const page = rows.slice(0, limit).map((r) => toDto(r.log, r.senderName ?? null));
+  const page = rows.slice(0, limit).map((r) => toDto(r.log, r.senderName ?? null, { email: r.senderEmail ?? null, phone: r.senderPhone ?? null }));
   return { rows: page, nextBefore: rows.length > limit ? page[page.length - 1]!.createdAt : null };
 }
 
@@ -169,14 +171,15 @@ export async function listEmailLogPage(ctx: AuthContext, sheetId: string, filter
 export async function getEmailLogEntry(ctx: AuthContext, id: string): Promise<EmailLogEntryDto> {
   if (!UUID.test(id ?? '')) throw notFound();
   const [row] = await db
-    .select({ log: receivableEmailLog, senderName: profiles.name })
+    .select({ log: receivableEmailLog, senderName: profiles.name, senderEmail: outlookConnections.msEmail, senderPhone: profiles.phoneE164 })
     .from(receivableEmailLog)
     .leftJoin(profiles, eq(profiles.id, receivableEmailLog.senderUserId))
+    .leftJoin(outlookConnections, eq(outlookConnections.userId, receivableEmailLog.senderUserId))
     .where(eq(receivableEmailLog.id, id))
     .limit(1);
   if (!row) throw notFound();
   await scopedSheet(ctx, row.log.sheetId);
-  return { ...toDto(row.log, row.senderName ?? null), html: row.log.html, about: row.log.about, webLink: row.log.webLink };
+  return { ...toDto(row.log, row.senderName ?? null, { email: row.senderEmail ?? null, phone: row.senderPhone ?? null }), html: row.log.html, about: row.log.about, webLink: row.log.webLink };
 }
 
 /** The last `limit` emails of the sheet, newest first (the People tab's log). */

@@ -6,11 +6,12 @@
  * the standard words. Pure, so the server builders and the pop-ups' previews share it.
  *
  * Placeholders, filled when the email is built: {name} (the recipient's first name), {client},
+ * {period} and {ontime} (the Collections report's period and its share received on time),
  * {count}, {total} (₹ open or received), {overdue} (₹ past due), {date} (today) and {sheet} (the
  * client organisation). A placeholder an email type does not have is left as typed.
  */
 
-export const TEMPLATE_KINDS = ['summary', 'new_invoice', 'revised', 'rollup', 'digest', 'statement', 'payment_received'] as const;
+export const TEMPLATE_KINDS = ['summary', 'collections', 'new_invoice', 'revised', 'rollup', 'digest', 'statement', 'payment_received'] as const;
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number];
 
 export type TemplateText = { subject: string; greeting: string; intro: string; closing: string };
@@ -34,6 +35,17 @@ export const TEMPLATE_META: Record<TemplateKind, TemplateMeta> = {
     when: 'Send email on the Sheet tab, to partners and leaders',
     placeholders: ['{name}', '{date}', '{total}', '{sheet}'],
     standard: { subject: 'Receivables update - {date}', greeting: 'Hi {name},', intro: 'Please find the receivables summary as of today:', closing: '' },
+  },
+  collections: {
+    label: 'Collections report',
+    when: 'Send email on the Collections tab, to partners and leaders',
+    placeholders: ['{name}', '{period}', '{ontime}', '{date}', '{sheet}'],
+    standard: {
+      subject: 'Collections · {period} · {ontime} on time',
+      greeting: 'Hi {name},',
+      intro: 'Please find the collections for {period}: the invoices received on time against those received late.',
+      closing: '',
+    },
   },
   new_invoice: {
     label: 'New invoice',

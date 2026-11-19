@@ -19,7 +19,12 @@ export async function GET(request: Request, context: RouteContext) {
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;
   try {
-    const [src, signerName, template] = await Promise.all([getSummarySource(guard.ctx, id), getSignName(guard.ctx), templateFor(guard.ctx, id, 'summary')]);
+    const [src, signerName, template, collectionsTemplate] = await Promise.all([
+      getSummarySource(guard.ctx, id),
+      getSignName(guard.ctx),
+      templateFor(guard.ctx, id, 'summary'),
+      templateFor(guard.ctx, id, 'collections'),
+    ]);
     const sheetName = src.sheet.clientOrgName;
     // The live sheet, not the last published version: the email shows what the table shows now.
     // `?ids=a,b` (owner, 18 Nov 2026): only the invoices picked on the sheet.
@@ -48,6 +53,7 @@ export async function GET(request: Request, context: RouteContext) {
       subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today, template, sheetName)}` : summaryEmailSubject(today, template, sheetName),
       html: summaryEmailHtml({ rows, today, liveUrl, signerName, picked, template, sheetName }),
       template: template ?? {},
+      collectionsTemplate: collectionsTemplate ?? {},
       signName: signerName,
       rows,
       today,

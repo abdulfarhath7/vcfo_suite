@@ -23,7 +23,8 @@ import { TOOL_BTN } from './sheet/PublishBar';
  * client partner and by client, and the list of received invoices with how early or late each was.
  * Everything is worked out in the browser from the sheet already loaded
  * (src/lib/receivables/collections.ts). Send email opens the same one-email-per-person dialog as the
- * Sheet tab.
+ * Sheet tab, but each email is the Collections report for these filters (owner, 19 Nov 2026):
+ * `src/lib/receivables/collections-email.ts`. A client partner's email holds only their invoices.
  */
 
 const PERIODS: Array<{ value: CollectionsPeriod; label: string }> = [
@@ -106,7 +107,22 @@ export function CollectionsTab({ data, today, actions }: { data: ManagerSheetDto
           Send email
         </Button>
       </div>
-      {composing ? <ComposeSummary data={data} actions={actions} onClose={() => setComposing(false)} /> : null}
+      {composing ? (
+        <ComposeSummary
+          data={data}
+          actions={actions}
+          // The email is the Collections report for the filters set here (owner, 19 Nov 2026).
+          collections={{
+            today,
+            period,
+            periodLabel: PERIODS.find((p) => p.value === period)?.label ?? 'This financial year',
+            partnerId: partnerId === 'all' ? null : partnerId === 'none' ? '' : partnerId,
+            client: client === 'all' ? null : client,
+            countOpenLate,
+          }}
+          onClose={() => setComposing(false)}
+        />
+      ) : null}
 
       <section aria-label="By month received" className="rounded-md border border-line bg-surface-raised p-3">
         <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-[.04em] text-ink-muted">On time vs late, by month received</h3>

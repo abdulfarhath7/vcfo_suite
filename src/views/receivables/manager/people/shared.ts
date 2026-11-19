@@ -23,6 +23,7 @@ export const KIND_LABEL: Record<EmailKind, string> = {
   client_statement: 'Statement',
   payment_received: 'Payment received',
   summary: 'Receivables update',
+  collections: 'Collections report',
 };
 export const ERROR_LABEL: Record<string, string> = {
   outlook_not_connected: 'Outlook not connected',

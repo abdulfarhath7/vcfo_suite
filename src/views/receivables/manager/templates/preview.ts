@@ -1,6 +1,8 @@
 import { clientStatementEmail, leadershipDigestEmail, newInvoiceEmail, paymentReceivedEmail, revisedInvoiceEmail, rollupEmail, type EmailInvoice } from '@/lib/receivables/email-v2';
 import type { SnapshotRow } from '@/lib/receivables/model';
 import { summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
+import { collectionsEmailHtml, collectionsEmailSubject } from '@/lib/receivables/collections-email';
+import type { CollectionsReport } from '@/lib/receivables/collections';
 import type { TemplateKind, TemplateOverride } from '@/lib/receivables/templates';
 
 /**
@@ -46,6 +48,27 @@ function sampleRows(today: string): SnapshotRow[] {
   })) as SnapshotRow[];
 }
 
+/** A sample Collections report: one invoice on time, one late. */
+function sampleReport(today: string): CollectionsReport {
+  const month = `${today.slice(0, 7)}-01`;
+  const a = { onTime: 1, late: 0, onTimeInr: 118000, lateInr: 0, avgDaysLate: null };
+  const b = { onTime: 0, late: 1, onTimeInr: 0, lateInr: 245000, avgDaysLate: 6 };
+  const both = { onTime: 1, late: 1, onTimeInr: 118000, lateInr: 245000, avgDaysLate: 6 };
+  return {
+    rows: [
+      { id: 's1', clientName: 'Acme Labs', invoiceNo: 'INV/26-27/114', partnerId: null, dueDate: addDays(today, -2), paidOn: addDays(today, -4), daysLate: -2, invoicedInr: 118000, receivedInr: 118000, tdsInr: 0, result: 'on_time', shortPaid: false },
+      { id: 's2', clientName: 'Blue River Ltd', invoiceNo: 'INV/26-27/101', partnerId: null, dueDate: addDays(today, -9), paidOn: addDays(today, -3), daysLate: 6, invoicedInr: 245000, receivedInr: 245000, tdsInr: 0, result: 'late', shortPaid: false },
+    ],
+    totals: { ...both, openLate: 1, openLateInr: 590000, shortPaid: 0, shortPaidInr: 0, onTimePct: 50 },
+    byMonth: [{ month, ...both }],
+    byPartner: [{ partnerId: null, ...both }],
+    byClient: [
+      { clientName: 'Acme Labs', ...a },
+      { clientName: 'Blue River Ltd', ...b },
+    ],
+  };
+}
+
 /** A whole HTML page for the preview frame (the summary body is a fragment, so it is wrapped). */
 const wrap = (html: string) =>
   html.startsWith('<!DOCTYPE') ? html : `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:16px;background:#fff;">${html}</body></html>`;
@@ -59,6 +82,10 @@ export function previewOf(kind: TemplateKind, tpl: TemplateOverride, ctx: { toda
         subject: summaryEmailSubject(today, tpl, sheetName),
         html: wrap(summaryEmailHtml({ rows: sampleRows(today), today, liveUrl: '', signerName: senderName, template: tpl, sheetName, greetName: 'Ravi', picked: true })),
       };
+    case 'collections': {
+      const input = { report: sampleReport(today), today, periodLabel: 'This financial year', greetName: 'Ravi', sheetName, template: tpl };
+      return { subject: collectionsEmailSubject(input), html: wrap(collectionsEmailHtml({ ...input, signerName: senderName, partnerName: () => 'Ravi Kumar', showPartners: false })) };
+    }
     case 'new_invoice': {
       const m = newInvoiceEmail({ partnerName: 'Ravi Kumar', senderName, invoices: [inv[0]!], today, tpl });
       return { subject: m.subject, html: m.html };

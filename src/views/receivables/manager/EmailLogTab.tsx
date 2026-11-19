@@ -89,7 +89,7 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
               <th className={cn(TH, 'w-[170px]')}>Email</th>
               <th className={cn(TH, 'w-[220px]')}>To</th>
               <th className={TH}>Subject</th>
-              <th className={cn(TH, 'w-[130px]')}>From</th>
+              <th className={cn(TH, 'w-[200px]')}>From (Outlook)</th>
               <th className={cn(TH, 'w-[170px]')}>Status</th>
               <th className={cn(TH, 'w-[80px]')}>
                 <span className="sr-only">Actions</span>
@@ -123,7 +123,10 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
                     </button>
                     {l.invoiceCount ? <div className="text-[11.5px] text-ink-muted">{`${l.invoiceCount} invoice${l.invoiceCount === 1 ? '' : 's'}`}</div> : null}
                   </td>
-                  <td className={cn(TD, 'truncate text-ink-2')}>{l.senderName ?? '—'}</td>
+                  {/* From: the Outlook address it went from, not the name (owner, 19 Nov 2026). */}
+                  <td className={cn(TD, 'max-w-[200px] truncate text-ink-2')} title={l.senderName ?? undefined}>
+                    {l.senderEmail ?? l.senderName ?? '—'}
+                  </td>
                   <td className={TD}>
                     <div className={cn('font-medium', st.tone)}>
                       <span aria-hidden>{`${st.mark} `}</span>
@@ -134,7 +137,7 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
                         {err}
                       </div>
                     ) : l.whatsappStatus ? (
-                      <div className="text-[11.5px] text-ink-muted">{WA[l.whatsappStatus] ?? l.whatsappStatus}</div>
+                      <div className="text-[11.5px] text-ink-muted">{`${WA[l.whatsappStatus] ?? l.whatsappStatus}${l.whatsappStatus === 'sent' && l.senderPhone ? ` · ${l.senderPhone}` : ''}`}</div>
                     ) : null}
                   </td>
                   <td className={cn(TD, 'text-right')} onClick={(e) => e.stopPropagation()}>
@@ -186,7 +189,8 @@ function EmailViewer({ id, row, onClose, onRetry, retrying }: { id: string; row?
         ['Email', `${KIND_LABEL[l.kind] ?? l.kind} · ${isAutoEmail(l.kind) ? 'Automatic' : 'Manual'}`],
         ['To', l.to.join(', ') || '—'],
         ...(l.cc.length ? ([['Cc', l.cc.join(', ')]] as Array<[string, string]>) : []),
-        ['From', l.senderName ? `${l.senderName}'s Outlook` : '—'],
+        ['From', l.senderEmail ? `${l.senderEmail}${l.senderName ? ` (${l.senderName}'s Outlook)` : ''}` : l.senderName ? `${l.senderName}'s Outlook` : '—'],
+        ...(l.whatsappStatus ? ([['WhatsApp', `${WA[l.whatsappStatus] ?? l.whatsappStatus}${l.senderPhone ? ` · ${l.senderPhone}` : ''}`]] as Array<[string, string]>) : []),
         ['Time', `${stamp(l.createdAt)}${l.sentAt ? ` · sent ${stamp(l.sentAt)}` : ''}`],
         ...(l.invoiceCount ? ([['Invoices', String(l.invoiceCount)]] as Array<[string, string]>) : []),
       ]
