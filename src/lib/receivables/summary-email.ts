@@ -46,7 +46,8 @@ const P = `margin:0 0 12px;font-family:${SANS};font-size:14px;line-height:21px;c
 const CELL = `border-bottom:1px solid ${GRID};padding:5px 10px;font-size:13px;line-height:17px;font-family:${SANS};color:${INK};white-space:nowrap;`;
 const TITLE = `padding:6px 10px;font-size:13.5px;line-height:18px;font-family:${SANS};background:#fbe4da;color:${INK};font-weight:bold;border-bottom:1px solid ${GRID};`;
 const HEAD = `padding:6px 10px;font-size:12.5px;line-height:16px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:left;white-space:nowrap;`;
-const TABLE = `border-collapse:collapse;margin:10px 0 14px;min-width:560px;border:1px solid ${GRID};`;
+// Every table is the full width of the email (owner, 19 Nov 2026), so the month table and the total line up.
+const TABLE = `width:100%;border-collapse:collapse;margin:10px 0 14px;min-width:560px;border:1px solid ${GRID};`;
 /** An empty cell: the same dash in the same font everywhere. */
 const DASH = `<span style="font-family:${SANS};color:${MUTED};">—</span>`;
 const NUM = `font-family:${MONO};text-align:right;`;
@@ -150,7 +151,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     })
     .join('');
   const tables = monthBlocks
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
         .map((h) => `<td style="${HEAD}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
         .join('')}</tr>${monthBlocks}</table>`
     : '';
@@ -161,7 +162,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     paidBlock,
     `<p style="${P}">Please find the receivables summary as of today:</p>`,
     tables,
-    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:12px 16px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${MONO};font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:560px;border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:10px 14px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${MONO};font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
     // Receivables v2: no link to the tool in any receivables email; `liveUrl` is no longer shown.
     // No firm name under the signature (owner, 18 Nov 2026).
     `<p style="${P}">Regards,<br>${signNameSpan(input.signerName)}</p>`,

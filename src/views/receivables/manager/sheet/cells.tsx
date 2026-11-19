@@ -122,7 +122,7 @@ export function StatusDot({ invoice, today }: { invoice: ManagerInvoiceDto; toda
   const dot = s.tone === 'ok' ? 'bg-positive' : s.tone === 'bad' ? 'bg-danger' : s.tone === 'warn' ? 'bg-warning' : 'bg-ink-faint';
   const notes = [
     s.text,
-    invoice.status === 'received' && invoice.paidOn ? `Paid ${sheetDate(invoice.paidOn)}` : '',
+    invoice.status === 'received' && invoice.paidOn ? `Received ${sheetDate(invoice.paidOn)}` : '',
     invoice.tallyMismatch ? 'Fix in Tally: an approved amount change is not in Tally yet' : '',
     invoice.status === 'open' && invoice.disputed ? 'Disputed' : '',
     invoice.status === 'open' && invoice.promisedOn ? `Promised ${sheetDate(invoice.promisedOn)}` : '',
@@ -159,7 +159,7 @@ export function StatusStack({ invoice, today }: { invoice: ManagerInvoiceDto; to
       {invoice.status === 'open' && invoice.partPaid > 0 ? <span className="text-[11.5px] text-ink-muted">{`₹${inr(invoice.partPaid)} part-paid`}</span> : null}
       {invoice.status === 'received' && invoice.paidOn ? (
         <span className="text-[11.5px] text-ink-muted">
-          {`Paid ${sheetDate(invoice.paidOn)}`}
+          {`Received ${sheetDate(invoice.paidOn)}`}
           {invoice.paidVia === 'bank' ? ' · bank' : ''}
         </span>
       ) : null}

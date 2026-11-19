@@ -103,7 +103,7 @@ export function SheetTable({
             <th className={TH}>Partner</th>
             <th className={TH}>Due</th>
             <th className={cn(TH, 'text-right')}>Amount ₹</th>
-            <th className={TH}>Received</th>
+            <th className={TH}>Received date · ₹</th>
             {fx ? <th className={TH}>{fxHeader(data)}</th> : null}
             <th className={TH}>Status</th>
             <th className={cn(TH, 'rounded-tr-[4px]')}>

@@ -10,12 +10,13 @@ const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 
 /**
  * The invoices in one email of the Send email pop-up (owner, 18 Nov 2026). ✕ takes an invoice out of
- * this email only; nothing on the sheet changes. A received invoice already sent to this person is
+ * the email; with `everyEmail` it leaves every email of the send (owner, 19 Nov 2026). Nothing on the
+ * sheet changes. A received invoice already sent to this person is
  * flagged, and the email cannot go until the person removes it: it is never removed for them.
  */
 type Row = Pick<SnapshotRow, 'id' | 'clientName' | 'invoiceNo' | 'amountInr' | 'status' | 'paidOn'>;
 
-export function InvoicesInEmail({ rows, removed, hits, onToggle }: { rows: Row[]; removed: string[]; hits: SentHit[]; onToggle: (id: string) => void }) {
+export function InvoicesInEmail({ rows, removed, hits, onToggle, everyEmail = false }: { rows: Row[]; removed: string[]; hits: SentHit[]; onToggle: (id: string) => void; everyEmail?: boolean }) {
   const kept = rows.filter((r) => !removed.includes(r.id));
   const out = rows.filter((r) => removed.includes(r.id));
   const hitOf = (id: string) => hits.find((h) => h.invoiceId === id);
@@ -23,7 +24,7 @@ export function InvoicesInEmail({ rows, removed, hits, onToggle }: { rows: Row[]
     <section aria-label="Invoices in this email" className="rounded-md border border-line">
       <div className="flex items-center justify-between border-b border-line-soft bg-surface-sunken px-2.5 py-1 text-[12px]">
         <b className="font-medium text-ink-2">{`Invoices in this email (${kept.length})`}</b>
-        <span className="text-ink-muted">✕ removes it from this email only. The text below is rebuilt.</span>
+        <span className="text-ink-muted">{everyEmail ? '✕ removes it from every email in this send. The sheet does not change.' : '✕ removes it from this email only. The text below is rebuilt.'}</span>
       </div>
       <ul className="max-h-[22vh] overflow-y-auto">
         {kept.map((r) => {
@@ -52,7 +53,7 @@ export function InvoicesInEmail({ rows, removed, hits, onToggle }: { rows: Row[]
         <div className="flex flex-wrap items-center gap-1.5 border-t border-line-soft px-2.5 py-1 text-[12px] text-ink-muted">
           Removed:
           {out.map((r) => (
-            <button key={r.id} type="button" className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 hover:bg-hover hover:text-ink" title="Put it back in this email" onClick={() => onToggle(r.id)}>
+            <button key={r.id} type="button" className="inline-flex items-center gap-1 rounded border border-line px-1.5 py-0.5 hover:bg-hover hover:text-ink" title={everyEmail ? 'Put it back in every email' : 'Put it back in this email'} onClick={() => onToggle(r.id)}>
               {`${r.clientName} ${r.invoiceNo ?? ''}`}
               <RotateCcw className="size-3" aria-hidden />
             </button>
