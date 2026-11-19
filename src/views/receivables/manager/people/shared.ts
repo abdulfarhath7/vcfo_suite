@@ -22,6 +22,7 @@ export const KIND_LABEL: Record<EmailKind, string> = {
   digest: 'Digest',
   client_statement: 'Statement',
   payment_received: 'Payment received',
+  summary: 'Receivables update',
 };
 export const ERROR_LABEL: Record<string, string> = {
   outlook_not_connected: 'Outlook not connected',
@@ -45,7 +46,7 @@ export const ROW_INPUT = 'h-7 rounded-md border border-line bg-surface-raised px
 /** Emails a client its open invoices from the user's Outlook ("Send statement"). */
 export function sendStatement(act: PeopleActions, c: ClientDto) {
   act.sendStatement.mutate(c.id, {
-    onSuccess: () => toastSuccess(`Statement to ${c.billingEmail}`, 'Sending from your Outlook. The Log tab shows when it has gone.'),
+    onSuccess: () => toastSuccess(`Statement to ${c.billingEmail}`, 'Sending from your Outlook. The Email log tab shows when it has gone.'),
     onError: (e) => toastError('Not sent', errorText(e)),
   });
 }

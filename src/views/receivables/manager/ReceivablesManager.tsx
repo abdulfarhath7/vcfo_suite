@@ -22,13 +22,15 @@ import { PeopleTab } from './PeopleTab';
 import { ReportsTab } from './ReportsTab';
 import { SheetTab } from './SheetTab';
 import { TemplatesTab } from './TemplatesTab';
+import { EmailLogTab } from './EmailLogTab';
 import { paramsWithFilters } from './sheet/sheet-filters';
 import { VersionsTab } from './VersionsTab';
 
 /**
  * /receivables/manager (docs/specs/receivables/PLAN.md and V2.md): the staff workspace, outside
  * the staff shell. A light header with the Outlook link, and the tabs Sheet, People, Collections
- * (received on time against late), Templates (every email's words, owner 19 Nov 2026), Versions, Reports and FX. Receivables v2 removed the From bank and Reminders tabs, replaced Partners with
+ * (received on time against late), Templates (every email's words, owner 19 Nov 2026), Email log
+ * (every email sent, automatic and manual, owner 19 Nov 2026), Versions, Reports and FX. Receivables v2 removed the From bank and Reminders tabs, replaced Partners with
  * People, and shows Links only when the server sets RECEIVABLES_EXTERNAL=on (`external`).
  */
 
@@ -37,6 +39,7 @@ const ALL_TABS = [
   { key: 'people', label: 'People' },
   { key: 'collections', label: 'Collections' },
   { key: 'templates', label: 'Templates' },
+  { key: 'emails', label: 'Email log' },
   { key: 'versions', label: 'Versions' },
   { key: 'links', label: 'Links' },
   { key: 'reports', label: 'Reports' },
@@ -167,6 +170,8 @@ export function ReceivablesManager({
             <FxTab sheetId={sheetId} />
           ) : tab === 'templates' ? (
             <TemplatesTab sheetId={sheetId} sheetName={data.sheet.clientOrgName} today={today} />
+          ) : tab === 'emails' ? (
+            <EmailLogTab sheetId={sheetId} />
           ) : tab === 'links' ? (
             <LinksTab data={data} />
           ) : (

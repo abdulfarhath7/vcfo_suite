@@ -6,8 +6,8 @@
  * the routes scopes by the caller's AuthContext. Writes refetch the sheet, so the invoice rows
  * and the approval panel stay in step.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto, ReceivedEmailDraftDto } from '@/lib/receivables/v2-wire';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailLogEntryDto, EmailLogFilter, EmailLogPageDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto, ReceivedEmailDraftDto } from '@/lib/receivables/v2-wire';
 import { call, json, sheetKey } from './use-receivables';
 import type { TemplateKind, TemplateOverride, TemplateSet } from '@/lib/receivables/templates';
 
@@ -127,4 +127,35 @@ export function useTemplates(sheetId: string) {
   const save = useMutation({ mutationFn: (input: { kind: TemplateKind } & TemplateOverride) => call<{ kind: TemplateKind; template: TemplateOverride }>(base, json('PUT', input)), onSettled });
   const reset = useMutation({ mutationFn: (kind: TemplateKind) => call<{ ok: true }>(`${base}?kind=${kind}`, { method: 'DELETE' }), onSettled });
   return { query, save, reset };
+}
+
+/**
+ * The Email log tab (owner, 19 Nov 2026): every email of the sheet, 50 a page, with the filters.
+ * It refreshes every 15 seconds while an email is still sending.
+ */
+export function useEmailLog(sheetId: string, filter: EmailLogFilter) {
+  const qc = useQueryClient();
+  const params = (before: string | null) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(filter)) if (v) p.set(k, String(v));
+    if (before) p.set('before', before);
+    return p.toString();
+  };
+  const query = useInfiniteQuery({
+    queryKey: ['receivables', 'email-log', sheetId, filter],
+    queryFn: ({ pageParam }) => call<EmailLogPageDto>(`/api/receivables/sheets/${sheetId}/email-log?${params(pageParam)}`),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextBefore,
+    refetchInterval: (q) => (q.state.data?.pages.some((p) => p.rows.some((r) => r.status === 'sending')) ? 15_000 : false),
+  });
+  const retry = useMutation({
+    mutationFn: (logId: string) => call<{ ok: true; queued: true }>(`/api/receivables/email-log/${logId}/retry`, json('POST')),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['receivables', 'email-log', sheetId] }),
+  });
+  return { query, retry };
+}
+
+/** One email in full, for the Email log's viewer. */
+export function useEmailLogEntry(id: string | null) {
+  return useQuery({ queryKey: ['receivables', 'email-log-entry', id], queryFn: () => call<EmailLogEntryDto>(`/api/receivables/email-log/${id}`), enabled: Boolean(id) });
 }

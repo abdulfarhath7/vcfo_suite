@@ -77,7 +77,16 @@ export type ApproveEdit = { rowId: string; dueDate?: string; creditDays?: number
 
 export type ApproveResultDto = { approved: number; invoiceIds: string[]; refused: Array<{ rowId: string; code: string }> };
 
-export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received';
+/** `summary` is the Send email on the Sheet tab, logged here from 19 Nov 2026. */
+export type EmailKind = 'new_invoice' | 'revised' | 'rollup' | 'digest' | 'client_statement' | 'payment_received' | 'summary';
+
+/**
+ * Automatic emails go out without anyone clicking Send: after an approval (new invoice, revised)
+ * or on a schedule (roll-up, digest). Every other kind is a person's own send.
+ */
+export const AUTO_EMAIL_KINDS: readonly EmailKind[] = ['new_invoice', 'revised', 'rollup', 'digest'];
+export const MANUAL_EMAIL_KINDS: readonly EmailKind[] = ['summary', 'payment_received', 'client_statement'];
+export const isAutoEmail = (k: EmailKind) => AUTO_EMAIL_KINDS.includes(k);
 
 /** The "Payment received" email offered after Mark received (never sent on its own). */
 export type ReceivedEmailDraftDto = {
@@ -111,7 +120,16 @@ export type EmailLogDto = {
   whatsappStatus: WhatsAppPingStatus | null;
   createdAt: string;
   sentAt: string | null;
+  /** How many invoices the email holds. */
+  invoiceCount?: number;
 };
+
+/** The Email log tab's filters. */
+export type EmailLogFilter = { origin?: 'auto' | 'manual'; kind?: EmailKind; status?: EmailStatus; q?: string };
+/** One page of the Email log, newest first; `nextBefore` loads the older page. */
+export type EmailLogPageDto = { rows: EmailLogDto[]; nextBefore: string | null };
+/** One email in full, for the viewer. */
+export type EmailLogEntryDto = EmailLogDto & { html: string; about: string; webLink: string | null };
 
 /** The sheet's v2 email settings, edited on the People tab. */
 export type EmailSettingsDto = {

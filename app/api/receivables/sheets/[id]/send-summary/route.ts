@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, recordSummarySend, sentReceiptsFor } from '@/db/repositories/receivables';
+import { getSummarySendStatus, getSummarySource, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
@@ -61,8 +61,28 @@ export async function POST(request: Request, context: RouteContext) {
     const to = emails.flatMap((e) => e.to);
     const cc = emails.flatMap((e) => e.cc);
     const { id: sendId } = await recordSummarySend(guard.ctx, id, { versionId: src.version.id, to, cc, bcc: [], subject: emails[0].subject, channel: 'outlook', status: 'sending' });
+    // Each email also goes into the Email log (owner, 19 Nov 2026), with its HTML, as `sending`.
+    const mails = [];
+    for (const [i, mail] of checked.mails.entries()) {
+      const e = emails[i]!;
+      const log = await startEmailLog(guard.ctx, {
+        sheetId: id,
+        kind: 'summary',
+        partnerId: e.kind === 'partner' ? (e.partnerId ?? null) : null,
+        recipientName: e.to.map((r) => r.name || r.email).join(', ').slice(0, 200),
+        to: mail.to,
+        cc: mail.cc,
+        subject: mail.subject,
+        html: mail.html,
+        text: mail.subject,
+        invoiceIds: mail.invoiceIds ?? [],
+        about: 'Receivables update',
+        status: 'sending',
+      });
+      mails.push({ ...mail, logId: log.id });
+    }
     const ctx = guard.ctx;
-    after(() => deliverSummary(ctx, id, sendId, { mails: checked.mails }));
+    after(() => deliverSummary(ctx, id, sendId, { mails }));
     return NextResponse.json({ ok: true, queued: true, sendId, from: msEmail, emails: checked.mails.length, to: to.length, cc: cc.length, bcc: 0 }, { status: 202 });
   } catch (e) {
     const code = outlookErrorCode(e);

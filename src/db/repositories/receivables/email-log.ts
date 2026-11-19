@@ -1,9 +1,9 @@
 import 'server-only';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, lt, or, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles, receivableEmailLog } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
-import type { EmailKind, EmailLogDto, EmailStatus, WhatsAppPingStatus } from '@/lib/receivables/v2-wire';
+import { AUTO_EMAIL_KINDS, MANUAL_EMAIL_KINDS, type EmailKind, type EmailLogDto, type EmailLogEntryDto, type EmailLogFilter, type EmailLogPageDto, type EmailStatus, type WhatsAppPingStatus } from '@/lib/receivables/v2-wire';
 import { UUID, conflict, notFound, scopedSheet } from './shared';
 
 /**
@@ -121,7 +121,62 @@ function toDto(row: EmailLogRow, senderName: string | null): EmailLogDto {
     whatsappStatus: (row.whatsappStatus as WhatsAppPingStatus | null) ?? null,
     createdAt: row.createdAt.toISOString(),
     sentAt: row.sentAt ? row.sentAt.toISOString() : null,
+    invoiceCount: row.invoiceIds?.length ?? 0,
   };
+}
+
+const KINDS = new Set<string>([...AUTO_EMAIL_KINDS, ...MANUAL_EMAIL_KINDS]);
+const STATUSES = new Set<string>(['sending', 'sent', 'failed', 'skipped']);
+
+/**
+ * The Email log tab (owner, 19 Nov 2026): every email of the sheet, automatic and manual, newest
+ * first, 50 a page. `before` is the `createdAt` of the last row already shown. The search matches
+ * the subject, the recipient's name and every To or Cc address.
+ */
+export async function listEmailLogPage(ctx: AuthContext, sheetId: string, filter: EmailLogFilter & { before?: string | null; limit?: number }): Promise<EmailLogPageDto> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const limit = Math.min(Math.max(filter.limit ?? 50, 1), 200);
+  const where: SQL[] = [eq(receivableEmailLog.sheetId, sheet.id)];
+  if (filter.origin === 'auto') where.push(inArray(receivableEmailLog.kind, [...AUTO_EMAIL_KINDS]));
+  if (filter.origin === 'manual') where.push(inArray(receivableEmailLog.kind, [...MANUAL_EMAIL_KINDS]));
+  if (filter.kind && KINDS.has(filter.kind)) where.push(eq(receivableEmailLog.kind, filter.kind));
+  if (filter.status && STATUSES.has(filter.status)) where.push(eq(receivableEmailLog.status, filter.status));
+  const q = filter.q?.trim().slice(0, 100);
+  if (q) {
+    const like = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    where.push(
+      or(
+        ilike(receivableEmailLog.subject, like),
+        ilike(receivableEmailLog.recipientName, like),
+        sql`array_to_string(${receivableEmailLog.to} || ${receivableEmailLog.cc}, ' ') ilike ${like}`,
+      )!,
+    );
+  }
+  const before = filter.before ? new Date(filter.before) : null;
+  if (before && !Number.isNaN(before.getTime())) where.push(lt(receivableEmailLog.createdAt, before));
+  const rows = await db
+    .select({ log: receivableEmailLog, senderName: profiles.name })
+    .from(receivableEmailLog)
+    .leftJoin(profiles, eq(profiles.id, receivableEmailLog.senderUserId))
+    .where(and(...where))
+    .orderBy(desc(receivableEmailLog.createdAt))
+    .limit(limit + 1);
+  const page = rows.slice(0, limit).map((r) => toDto(r.log, r.senderName ?? null));
+  return { rows: page, nextBefore: rows.length > limit ? page[page.length - 1]!.createdAt : null };
+}
+
+/** One email in full (its HTML), for the Email log's viewer. */
+export async function getEmailLogEntry(ctx: AuthContext, id: string): Promise<EmailLogEntryDto> {
+  if (!UUID.test(id ?? '')) throw notFound();
+  const [row] = await db
+    .select({ log: receivableEmailLog, senderName: profiles.name })
+    .from(receivableEmailLog)
+    .leftJoin(profiles, eq(profiles.id, receivableEmailLog.senderUserId))
+    .where(eq(receivableEmailLog.id, id))
+    .limit(1);
+  if (!row) throw notFound();
+  await scopedSheet(ctx, row.log.sheetId);
+  return { ...toDto(row.log, row.senderName ?? null), html: row.log.html, about: row.log.about, webLink: row.log.webLink };
 }
 
 /** The last `limit` emails of the sheet, newest first (the People tab's log). */
@@ -147,6 +202,8 @@ export async function retryEmailLog(ctx: AuthContext, id: string): Promise<Email
   if (!row) throw notFound();
   const sheet = await scopedSheet(ctx, row.sheetId);
   if (row.status !== 'failed' && row.status !== 'skipped') throw conflict('not_failed');
+  // A Send email goes again from the Sheet tab, which checks the received invoices first.
+  if (row.kind === 'summary') throw conflict('resend_from_sheet');
   const [updated] = await db
     .update(receivableEmailLog)
     .set({ status: 'sending', error: null, whatsappStatus: null, senderUserId: ctx.userId })

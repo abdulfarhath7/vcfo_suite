@@ -1,6 +1,6 @@
 import 'server-only';
 import type { AuthContext } from '@/auth/guards';
-import { finishSummarySend, systemRecordSentReceipts } from '@/db/repositories/receivables';
+import { finishSummarySend, systemFinishEmailLog, systemRecordSentReceipts } from '@/db/repositories/receivables';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
 import type { EmailRecipient, Partner } from './model';
 
@@ -20,7 +20,8 @@ export function outlookErrorCode(e: unknown): 'outlook_not_connected' | 'outlook
 }
 
 /** `invoiceIds`: the invoices in the body; the received ones are remembered as sent to these people. */
-export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string; invoiceIds?: string[] };
+/** `logId`: the email's row in the Email log, marked sent or failed as it goes. */
+export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: string; html: string; invoiceIds?: string[]; logId?: string };
 
 /**
  * Checks one Send email batch so a client partner never sees another partner's invoices (owner,
@@ -56,10 +57,13 @@ export function checkSummaryEmails(
 
 /** The slow part, after the response: one Graph call per email, then the outcome on the log row. */
 export async function deliverSummary(ctx: AuthContext, sheetId: string, sendId: string, job: { mails: SummaryMail[] }): Promise<void> {
+  let done = 0;
   try {
     // The firm never sends an Excel file attached to an email (owner, 17 Nov 2026).
     for (const mail of job.mails) {
       await sendMailViaOutlook(ctx, mail);
+      done += 1;
+      if (mail.logId) await systemFinishEmailLog(mail.logId, { status: 'sent' }).catch(() => undefined);
       // The received invoices in it are never sent to these people again (owner, 18 Nov 2026).
       if (mail.invoiceIds?.length)
         await systemRecordSentReceipts(sheetId, mail.invoiceIds, [...mail.to, ...mail.cc], 'summary').catch((e) =>
@@ -70,6 +74,9 @@ export async function deliverSummary(ctx: AuthContext, sheetId: string, sendId: 
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error('[receivables] summary send failed', message.slice(0, 200));
+    // The email that failed and the ones after it, which were never tried, show as failed in the log.
+    const code = outlookErrorCode(e) ?? 'send_failed';
+    for (const mail of job.mails.slice(done)) if (mail.logId) await systemFinishEmailLog(mail.logId, { status: 'failed', error: code }).catch(() => undefined);
     await finishSummarySend(ctx, sheetId, sendId, { status: 'failed', error: outlookErrorCode(e) ?? 'send_failed' }).catch((err) =>
       console.error('[receivables] could not record the failed send', err instanceof Error ? err.message : err),
     );

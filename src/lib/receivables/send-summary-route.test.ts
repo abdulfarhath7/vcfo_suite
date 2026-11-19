@@ -14,6 +14,8 @@ const finishSummarySend = vi.fn();
 const getSummarySendStatus = vi.fn();
 const sendMailViaOutlook = vi.fn();
 const assertOutlookReady = vi.fn();
+const startEmailLog = vi.fn();
+const systemFinishEmailLog = vi.fn();
 const afterQueue: Array<() => Promise<unknown>> = [];
 vi.mock('next/server', async () => ({ ...(await vi.importActual<typeof import('next/server')>('next/server')), after: (fn: () => Promise<unknown>) => afterQueue.push(fn) }));
 vi.mock('@/auth/guards', () => ({ requireAnyRole: () => guard() }));
@@ -27,6 +29,8 @@ vi.mock('@/db/repositories/receivables', async () => {
     getSummarySendStatus: (...a: unknown[]) => getSummarySendStatus(...a),
     sentReceiptsFor: async () => ({}),
     systemRecordSentReceipts: async () => undefined,
+    startEmailLog: (...a: unknown[]) => startEmailLog(...a),
+    systemFinishEmailLog: (...a: unknown[]) => systemFinishEmailLog(...a),
   };
 });
 vi.mock('@/db/repositories/outlook-connections', () => ({
@@ -60,6 +64,9 @@ beforeEach(() => {
   recordSummarySend.mockResolvedValue({ id: SEND_ID });
   finishSummarySend.mockResolvedValue(undefined);
   sendMailViaOutlook.mockResolvedValue({ msEmail: 'krishna@sbcllp.in' });
+  let n = 0;
+  startEmailLog.mockImplementation(async () => ({ id: `log-${++n}` }));
+  systemFinishEmailLog.mockResolvedValue(undefined);
 });
 
 describe('send-summary route', () => {
@@ -90,6 +97,11 @@ describe('send-summary route', () => {
     // The firm never sends an Excel file attached to an email.
     expect(mail.attachments).toBeUndefined();
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'sent' });
+    // Each email is in the Email log with its HTML, and ends sent.
+    expect(startEmailLog).toHaveBeenCalledTimes(2);
+    expect(startEmailLog).toHaveBeenCalledWith(ctx, expect.objectContaining({ sheetId: 'sheet-1', kind: 'summary', recipientName: 'Yash', to: ['yash@summit.in'], cc: ['rakesh@summit.in'], html: '<p>Hi Team,</p>', status: 'sending' }));
+    expect(systemFinishEmailLog).toHaveBeenCalledWith('log-1', { status: 'sent' });
+    expect(systemFinishEmailLog).toHaveBeenCalledWith('log-2', { status: 'sent' });
   });
 
   it('refuses a batch where a client partner would see another email', async () => {
@@ -106,6 +118,7 @@ describe('send-summary route', () => {
     expect(res.status).toBe(202);
     await runAfter();
     expect(finishSummarySend).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID, { status: 'failed', error: 'send_failed' });
+    expect(systemFinishEmailLog).toHaveBeenCalledWith('log-1', { status: 'failed', error: 'send_failed' });
   });
 
   it('refuses a bad address before sending', async () => {
