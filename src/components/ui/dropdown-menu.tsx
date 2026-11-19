@@ -97,12 +97,20 @@ function DropdownMenuItem({ ref, className, inset, shortcut, children, ...props 
     )}
     {...props}
   >
-    {children}
-    {key ? (
-      <span className="ml-auto flex-none pl-3">
-        <Kbd>{key.toUpperCase()}</Kbd>
-      </span>
-    ) : null}
+    {/* With asChild, Radix slots onto exactly one child (a Link): a second child, even null, crashes
+        the page with "failed to slot onto its children" (the receivables name menu, 19 Nov 2026). */}
+    {props.asChild ? (
+      children
+    ) : (
+      <>
+        {children}
+        {key ? (
+          <span className="ml-auto flex-none pl-3">
+            <Kbd>{key.toUpperCase()}</Kbd>
+          </span>
+        ) : null}
+      </>
+    )}
   </DropdownMenuPrimitive.Item>
   );
 }
