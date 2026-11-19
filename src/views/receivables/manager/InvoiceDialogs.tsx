@@ -19,16 +19,78 @@ import { DatePick } from './sheet/DatePick';
  * dialog is in FxFields.tsx). Mark received on a foreign invoice asks for the foreign amount
  * received and the INR credited, previews the realised gain or loss and the bank charges, and may
  * deliver the receipt against an open forward contract of that currency (Phase 10); on an INR
- * invoice it takes an optional TDS.
+ * invoice it takes the dollars received, if the client paid in dollars (owner, 19 Nov 2026).
  */
 
 type Busy = { busy: boolean; error: string | null };
 
+const SYMBOL: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
+const parseFc = (t: string) => Number(t.replace(/[^0-9.]/g, ''));
+/** How far the worked-out rate may be from the reference rate before the amber check shows. */
+const RATE_CHECK = 0.03;
+
+/**
+ * An amount box with its currency at the left, inside the box, the way a phone number box shows
+ * its country code (owner, 19 Nov 2026). The currency is fixed; it opens nothing. Commas are put
+ * in when the box is left. `estimated` shows a worked-out value in grey italics until it is typed over.
+ */
+function AmountBox({
+  id,
+  currency,
+  value,
+  onChange,
+  invalid,
+  estimated,
+  label,
+}: {
+  id: string;
+  currency: string;
+  value: string;
+  onChange: (v: string) => void;
+  invalid?: boolean;
+  estimated?: boolean;
+  label: string;
+}) {
+  const inrBox = currency === 'INR';
+  const tidy = () => {
+    const n = inrBox ? parseInr(value) : parseFc(value);
+    if (value.trim() && Number.isFinite(n) && n > 0) onChange(inrBox ? inr(n) : fc(n));
+  };
+  return (
+    <div
+      className={`flex h-9 items-stretch overflow-hidden rounded-md border-1.5 bg-surface-raised focus-within:border-brand focus-within:ring-4 focus-within:ring-focus-ring/25 ${invalid ? 'border-danger' : 'border-line-strong'}`}
+    >
+      <span aria-hidden className="grid w-10 flex-none place-items-center border-r border-line bg-surface-sunken text-[14px] font-medium text-ink-2">
+        {SYMBOL[currency] ?? currency}
+      </span>
+      <input
+        id={id}
+        aria-label={`${label}, in ${currency}`}
+        aria-invalid={invalid}
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={tidy}
+        className={`min-w-0 flex-1 bg-transparent px-2.5 text-[13.5px] tabular-nums outline-none ${estimated ? 'italic text-ink-muted' : 'text-ink'}`}
+      />
+      {estimated ? <span className="flex-none self-center pr-2.5 text-[11.5px] text-ink-muted">estimated</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Mark received (owner, 19 Nov 2026): two fixed boxes, INR credited by the bank and the dollars
+ * received. On an INR invoice the USD box is optional; on a foreign invoice its own currency comes
+ * first and is needed. With both filled the rate is INR ÷ USD; with only the foreign amount the INR
+ * is estimated from the reference rate until it is typed over. A rate far from the reference shows
+ * an amber check but never stops Save. No TDS box.
+ */
 export function MarkReceivedDialog({
   sheetId,
   invoice,
   partnerName,
   today,
+  refRate,
   onClose,
   onSave,
   state,
@@ -38,27 +100,63 @@ export function MarkReceivedDialog({
   invoice: SheetInvoice;
   partnerName: string;
   today: string;
+  /** The reference rate in force: of the invoice's currency, or of USD on an INR invoice. */
+  refRate?: { rate: number; rateDate: string } | null;
   onClose: () => void;
   onSave: (input: ReceiptInput) => void;
   state: Busy;
 }) {
   const foreign = isForeign({ currency: invoice.currency ?? 'INR' });
+  const cur = foreign ? (invoice.currency ?? 'USD').toUpperCase() : 'USD';
   const [paidOn, setPaidOn] = useState(today);
-  const [amount, setAmount] = useState(foreign ? '' : inr(invoice.amountInr));
-  const [receivedFc, setReceivedFc] = useState(foreign && invoice.fcAmount ? String(invoice.fcAmount) : '');
-  const [tds, setTds] = useState('');
+  const [inrText, setInrText] = useState(foreign ? '' : inr(invoice.amountInr));
+  const [inrTyped, setInrTyped] = useState(false);
+  const [fcTextIn, setFcTextIn] = useState(foreign && invoice.fcAmount ? fc(invoice.fcAmount) : '');
   const [part, setPart] = useState(false);
   const [forwardId, setForwardId] = useState('');
-  const value = parseInr(amount);
-  const fcValue = Number(receivedFc.replace(/[$,\s]/g, ''));
-  const tdsValue = tds.trim() ? parseInr(tds) : 0;
-  const badAmount = !(value > 0);
-  const badFc = foreign && !(fcValue > 0);
-  const badTds = !foreign && !(tdsValue >= 0);
-  const bad = badAmount || badFc || badTds;
-  const realised = foreign ? realisedFx({ fcAmount: invoice.fcAmount ?? null, invoiceRate: invoice.fxRate ?? null, receivedFc: fcValue || null, receivedInr: value || null }) : null;
+
+  const fcValue = fcTextIn.trim() ? parseFc(fcTextIn) : 0;
+  const ref = refRate?.rate && refRate.rate > 0 ? refRate.rate : null;
+  // Only the foreign amount typed: the INR is worked out from the reference rate until it is typed.
+  const estimate = fcValue > 0 && !inrTyped && ref ? Math.round(fcValue * ref) : null;
+  const inrValue = estimate ?? parseInr(inrText);
+  const shownInr = estimate !== null ? inr(estimate) : inrText;
+  const rate = fcValue > 0 && inrValue > 0 ? inrValue / fcValue : null;
+  const off = rate && ref ? (rate - ref) / ref : null;
+
+  const badAmount = !(inrValue > 0);
+  const badFc = foreign ? !(fcValue > 0) : Boolean(fcTextIn.trim()) && !(fcValue > 0);
+  const bad = badAmount || badFc;
+  const realised = foreign ? realisedFx({ fcAmount: invoice.fcAmount ?? null, invoiceRate: invoice.fxRate ?? null, receivedFc: fcValue || null, receivedInr: inrValue || null }) : null;
   const fcDue = fcText(invoice);
-  const save = () => onSave(foreign ? { paidOn, amount: value, part, receivedFc: fcValue, ...(forwardId ? { forwardId } : {}) } : { paidOn, amount: value, part, ...(tdsValue > 0 ? { tdsInr: tdsValue } : {}) });
+  const save = () =>
+    onSave(
+      foreign
+        ? { paidOn, amount: inrValue, part, receivedFc: fcValue, receivedCurrency: cur, ...(forwardId ? { forwardId } : {}) }
+        : { paidOn, amount: inrValue, part, ...(fcValue > 0 ? { receivedFc: fcValue, receivedCurrency: 'USD' } : {}) },
+    );
+  const changeInr = (v: string) => {
+    setInrText(v);
+    setInrTyped(true);
+  };
+
+  const inrBox = (
+    <Field label="INR credited by bank" htmlFor="rcv-amount" error={badAmount && (inrText || !foreign) ? 'Enter an amount above zero.' : undefined}>
+      <AmountBox id="rcv-amount" label="INR credited by bank" currency="INR" value={shownInr} onChange={changeInr} invalid={badAmount && Boolean(inrText || !foreign)} estimated={estimate !== null} />
+      {estimate !== null ? <p className="mt-1 text-[12px] text-ink-muted">{`ⓘ From the reference rate ₹${rateText(ref)}. Change it to the bank advice.`}</p> : null}
+    </Field>
+  );
+  const fcBox = (
+    <Field
+      label={foreign ? `Received in ${cur}` : 'Received in USD · optional'}
+      htmlFor="rcv-fc"
+      error={badFc && fcTextIn ? 'Enter an amount above zero.' : undefined}
+      hint={foreign ? undefined : 'Fill in only when the client paid in dollars.'}
+    >
+      <AmountBox id="rcv-fc" label={`Received in ${cur}`} currency={cur} value={fcTextIn} onChange={setFcTextIn} invalid={badFc && Boolean(fcTextIn)} />
+    </Field>
+  );
+
   return (
     <Modal
       open
@@ -81,39 +179,45 @@ export function MarkReceivedDialog({
         <Field label="Paid on" htmlFor="rcv-paid-on">
           <DatePick id="rcv-paid-on" label="Paid on" value={paidOn} max={today} onChange={setPaidOn} quick={[0]} />
         </Field>
+        {/* The invoice's own currency first: INR on an INR invoice, the foreign amount on a foreign one. */}
         {foreign ? (
-          <Field label={`Amount received (${invoice.currency})`} htmlFor="rcv-fc" error={badFc && receivedFc ? 'Enter an amount above zero.' : undefined}>
-            <Input id="rcv-fc" inputMode="decimal" value={receivedFc} aria-invalid={badFc} onChange={(e) => setReceivedFc(e.target.value)} className="font-mono" />
-          </Field>
+          <>
+            {fcBox}
+            {inrBox}
+          </>
+        ) : (
+          <>
+            {inrBox}
+            {fcBox}
+          </>
+        )}
+        {rate !== null ? (
+          off !== null && Math.abs(off) > RATE_CHECK ? (
+            <p role="status" className="rounded-md bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
+              {`⚠ Rate ₹${rateText(rate)} per ${SYMBOL[cur] ?? cur} is ${Math.round(Math.abs(off) * 100)}% ${off < 0 ? 'below' : 'above'} the reference ₹${rateText(ref)}. Check the two amounts.`}
+            </p>
+          ) : (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-surface-sunken px-3 py-2 text-[12.5px]">
+              <dt className="text-ink-muted">Rate</dt>
+              <dd className="text-right tabular-nums">
+                {`₹${rateText(rate)} per ${SYMBOL[cur] ?? cur}`}
+                {ref ? <span className="text-ink-muted">{` · reference ₹${rateText(ref)}${off !== null ? ` · ${off >= 0 ? '+' : '−'}${Math.abs(off * 100).toFixed(2)}%` : ''}`}</span> : null}
+              </dd>
+              {realised ? (
+                <>
+                  <dt className="text-ink-muted">Booked rate</dt>
+                  <dd className="text-right tabular-nums">{`₹${rateText(invoice.fxRate)}`}</dd>
+                  <dt className="text-ink-muted">Realised {realised.realisedInr < 0 ? 'loss' : 'gain'}</dt>
+                  <dd className={`text-right tabular-nums ${realised.realisedInr < 0 ? 'text-danger' : 'text-positive'}`}>{signedInr(realised.realisedInr)}</dd>
+                  <dt className="text-ink-muted">Bank charges</dt>
+                  <dd className="text-right tabular-nums">{realised.bankChargesFc > 0 ? `${cur} ${fc(realised.bankChargesFc)} (₹${inr(realised.bankChargesInr)})` : 'None'}</dd>
+                </>
+              ) : null}
+            </dl>
+          )
         ) : null}
-        <Field
-          label={foreign ? 'INR credited by the bank' : 'Amount received (INR)'}
-          htmlFor="rcv-amount"
-          error={badAmount && (amount || !foreign) ? 'Enter an amount above zero.' : undefined}
-          hint={foreign ? 'The rupees on the bank credit advice.' : undefined}
-        >
-          <Input id="rcv-amount" inputMode="numeric" value={amount} aria-invalid={badAmount} onChange={(e) => setAmount(e.target.value)} className="font-mono" />
-        </Field>
-        {!foreign ? (
-          <Field label="TDS deducted (INR)" htmlFor="rcv-tds" hint="Optional. It settles the invoice along with the amount received." error={badTds ? 'Enter the TDS in rupees.' : undefined}>
-            <Input id="rcv-tds" inputMode="numeric" value={tds} aria-invalid={badTds} onChange={(e) => setTds(e.target.value)} className="font-mono" />
-          </Field>
-        ) : null}
-        {foreign && sheetId ? <ForwardPicker sheetId={sheetId} currency={invoice.currency} value={forwardId} onChange={setForwardId} receivedFc={fcValue > 0 ? fcValue : null} /> : null}
-        {realised ? (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md bg-surface-sunken px-3 py-2 text-[12.5px]">
-            <dt className="text-ink-muted">Effective rate</dt>
-            <dd className="text-right font-mono">{rateText(realised.effectiveRate)} (booked {rateText(invoice.fxRate)})</dd>
-            <dt className="text-ink-muted">Booked INR for this {invoice.currency}</dt>
-            <dd className="text-right font-mono">₹{inr(realised.bookedInrForReceived)}</dd>
-            <dt className="text-ink-muted">Realised {realised.realisedInr < 0 ? 'loss' : 'gain'}</dt>
-            <dd className={`text-right font-mono ${realised.realisedInr < 0 ? 'text-danger' : 'text-positive'}`}>{signedInr(realised.realisedInr)}</dd>
-            <dt className="text-ink-muted">Bank charges</dt>
-            <dd className="text-right font-mono">{realised.bankChargesFc > 0 ? `${invoice.currency} ${fc(realised.bankChargesFc)} (₹${inr(realised.bankChargesInr)})` : 'None'}</dd>
-          </dl>
-        ) : foreign && !invoice.fxRate ? (
-          <p className="text-[12.5px] text-ink-muted">No booked rate on this invoice, so the gain or loss cannot be worked out.</p>
-        ) : null}
+        {foreign && !invoice.fxRate ? <p className="text-[12.5px] text-ink-muted">No booked rate on this invoice, so the gain or loss cannot be worked out.</p> : null}
+        {foreign && sheetId ? <ForwardPicker sheetId={sheetId} currency={cur} value={forwardId} onChange={setForwardId} receivedFc={fcValue > 0 ? fcValue : null} /> : null}
         <fieldset className="grid gap-2 text-[13px]">
           <legend className="sr-only">Payment kind</legend>
           <label className="flex items-center gap-2">
@@ -125,8 +229,8 @@ export function MarkReceivedDialog({
         </fieldset>
         <p className="text-[12.5px] text-ink-muted">
           {foreign
-            ? 'Bank charges or a rate difference still count as full payment. An awaited FIRA is added on the Reports tab.'
-            : 'A small difference from TDS or bank charges still counts as full payment.'}
+            ? 'A small difference (bank charges, rate) still counts as full payment. An awaited FIRA is added on the Reports tab.'
+            : 'A small difference (bank charges, rate) still counts as full payment.'}
         </p>
         {state.error ? (
           <p role="alert" className="text-[12.5px] text-danger">

@@ -253,6 +253,16 @@ describe('the sheet’s manager', () => {
     expect(inv).toMatchObject({ receivedFc: 11950, paidAmount: 995000 });
   });
 
+  it('keeps the dollars of an INR invoice paid in USD, settled by the INR credited', async () => {
+    results = [[invoiceRow({ amountInr: '245000.00' })], [sheetRow()], [invoiceRow({ status: 'received', paidAmount: '244500.00', receivedFc: '2900.00', receivedCurrency: 'USD' })], []];
+    const inv = await repo.markReceived(me, INVOICE, { paidOn: '2026-11-03', amount: 244500, receivedFc: 2900, receivedCurrency: 'USD' });
+    expect(writes()[0].set).toMatchObject({ status: 'received', paidAmount: '244500.00', receivedFc: '2900.00', receivedCurrency: 'USD' });
+    expect(inv).toMatchObject({ receivedFc: 2900, receivedCurrency: 'USD' });
+    // An INR invoice takes only dollars; a USD invoice only its own currency.
+    results = [[invoiceRow()], [sheetRow()]];
+    await expect(repo.markReceived(me, INVOICE, { paidOn: '2026-11-03', amount: 5, receivedFc: 5, receivedCurrency: 'EUR' })).rejects.toMatchObject({ code: 'currency' });
+  });
+
   it('lowers a USD balance by the booked INR of a part receipt', async () => {
     const usd = { currency: 'USD', fcAmount: '12000.00', fxRate: '83.250000', amountInr: '999000.00' };
     results = [[invoiceRow(usd)], [sheetRow()], [invoiceRow({ ...usd, fcAmount: '7000.00', amountInr: '582750.00' })], []];

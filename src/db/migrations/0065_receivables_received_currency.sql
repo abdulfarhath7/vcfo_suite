@@ -1,0 +1,1 @@
+ALTER TABLE "receivable_invoices" ADD COLUMN "received_currency" text;

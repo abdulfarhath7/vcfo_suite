@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { isForeign } from '@/lib/receivables/fx';
 import { FileSpreadsheet, Flag, Mail, Plus } from 'lucide-react';
 import { SidePanel } from '@/components/ui/side-panel';
 import { Button } from '@/components/ui/button';
@@ -181,6 +182,8 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           invoice={d.invoice}
           partnerName={(d.invoice.partnerId && data.partners.find((p) => p.id === d.invoice.partnerId)?.name) || 'No partner'}
           today={today}
+          // The reference rate for the rate check: of the invoice's currency, or of USD on an INR invoice.
+          refRate={(isForeign({ currency: d.invoice.currency ?? 'INR' }) ? data.fxRates?.[(d.invoice.currency ?? '').toUpperCase()] : data.usdRate) ?? null}
           state={state(actions.markReceived.isPending)}
           onClose={s.close}
           onSave={(input) =>

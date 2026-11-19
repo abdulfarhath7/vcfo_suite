@@ -8,7 +8,7 @@ import { isForeign } from '@/lib/receivables/fx';
 import type { Partner } from '@/lib/receivables/model';
 import type { ManagerInvoiceDto, ManagerSheetDto } from '@/lib/receivables/wire';
 import { cn } from '@/lib/utils';
-import { fcText, inr } from '../../format';
+import { fc, fcText, inr, rateText } from '../../format';
 import { NotesButton } from '../InvoiceNotes';
 import { CheckCircle2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -259,7 +259,12 @@ function Row({
             <span className="text-ink-faint">·</span>
             <span className="font-mono text-[12px]">{inr((inv.paidAmount ?? inv.amountInr) + inv.partPaid)}</span>
           </span>
-        ) : (
+        ) : null}
+        {/* An INR invoice paid in dollars: the dollars and the rate under the INR (owner, 19 Nov 2026). */}
+        {inv.status === 'received' && inv.currency === 'INR' && inv.receivedCurrency === 'USD' && inv.receivedFc ? (
+          <span className="block px-1.5 pl-[26px] text-[11.5px] tabular-nums text-ink-muted">{`$${fc(inv.receivedFc)} · ₹${rateText((inv.paidAmount ?? 0) / inv.receivedFc)}`}</span>
+        ) : null}
+        {inv.status === 'received' ? null : (
           <span className="px-1.5 text-ink-faint">—</span>
         )}
       </td>

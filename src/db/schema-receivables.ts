@@ -171,6 +171,11 @@ export const receivableInvoices = pgTable(
     invoiceDate: date('invoice_date'),
     /** Phase 9: the foreign amount that actually arrived (paid_amount holds the INR credited). */
     receivedFc: numeric('received_fc', { precision: 14, scale: 2 }),
+    /**
+     * The currency of `received_fc` (owner, 19 Nov 2026). A foreign invoice's is its own currency; an
+     * INR invoice paid in dollars has USD here. Null on older rows: read it as the invoice's currency.
+     */
+    receivedCurrency: text('received_currency'),
     /** Phase 9: TDS the client deducted, in INR. The certificate (Form 16A) is tracked by tds_certificate_on. */
     tdsInr: numeric('tds_inr', { precision: 14, scale: 2 }).notNull().default('0'),
     tdsCertificateOn: date('tds_certificate_on'),

@@ -205,7 +205,13 @@ export async function markReceived(ctx: AuthContext, invoiceId: string, input: R
   const amount = cleanAmount(input.amount);
   const open = num(invoice.amountInr) ?? 0;
   const foreign = isForeign({ currency: invoice.currency });
-  const receivedFc = foreign && input.receivedFc !== null && input.receivedFc !== undefined ? cleanFc(input.receivedFc) : null;
+  // A foreign invoice's amount arrives in its own currency. An INR invoice may be paid in dollars
+  // (owner, 19 Nov 2026): the USD is kept beside the INR credited, which is what settles it.
+  const given = input.receivedFc !== null && input.receivedFc !== undefined;
+  const picked = (input.receivedCurrency ?? '').trim().toUpperCase() || (foreign ? invoice.currency.toUpperCase() : 'USD');
+  if (given && (foreign ? picked !== invoice.currency.toUpperCase() : picked !== 'USD')) throw invalid('currency');
+  const receivedFc = foreign && given ? cleanFc(input.receivedFc!) : null;
+  const receivedUsd = !foreign && given ? cleanFc(input.receivedFc!) : null;
   let tds = 0;
   if (!foreign && input.tdsInr !== null && input.tdsInr !== undefined) {
     tds = Math.round(Number(input.tdsInr) * 100) / 100;
@@ -232,7 +238,7 @@ export async function markReceived(ctx: AuthContext, invoiceId: string, input: R
       })
       .where(eq(receivableInvoices.id, invoice.id))
       .returning();
-    const what = receivedFc !== null ? `${invoice.currency} ${money(receivedFc)} (₹${money(amount)})` : `₹${amount}`;
+    const what = receivedFc !== null ? `${invoice.currency} ${money(receivedFc)} (₹${money(amount)})` : receivedUsd !== null ? `USD ${money(receivedUsd)} (₹${money(amount)})` : `₹${amount}`;
     await logChange({ sheetId: sheet.id, invoiceId: invoice.id, actorId: ctx.userId, summary: `${invoiceLabel(row)} part payment ${what} on ${paidOn}`, field: 'partPaid', before: money(open), after: money(open - settled) });
     await deliver();
     return toInvoice(row);
@@ -244,7 +250,9 @@ export async function markReceived(ctx: AuthContext, invoiceId: string, input: R
       paidOn,
       paidAmount: money(amount),
       paidVia: 'manual',
-      ...(foreign ? { receivedFc: receivedFc === null ? null : money(receivedFc) } : {}),
+      ...(foreign
+        ? { receivedFc: receivedFc === null ? null : money(receivedFc), receivedCurrency: receivedFc === null ? null : invoice.currency.toUpperCase() }
+        : { receivedFc: receivedUsd === null ? null : money(receivedUsd), receivedCurrency: receivedUsd === null ? null : 'USD' }),
       ...tdsSet,
       remindersPausedUntil: null,
       pauseReason: null,
@@ -263,7 +271,7 @@ export async function reopenInvoice(ctx: AuthContext, invoiceId: string): Promis
   if (invoice.status !== 'received') throw invalid('not_received');
   const [row] = await db
     .update(receivableInvoices)
-    .set({ status: 'open', paidOn: null, paidAmount: null, paidVia: null, ...(isForeign({ currency: invoice.currency }) ? { receivedFc: null } : {}), updatedAt: new Date() })
+    .set({ status: 'open', paidOn: null, paidAmount: null, paidVia: null, receivedFc: null, receivedCurrency: null, updatedAt: new Date() })
     .where(eq(receivableInvoices.id, invoice.id))
     .returning();
   await logChange({ sheetId: sheet.id, invoiceId: invoice.id, actorId: ctx.userId, summary: `${invoiceLabel(row)} set back to open`, field: 'status', before: 'received', after: 'open' });

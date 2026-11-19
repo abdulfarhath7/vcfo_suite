@@ -456,6 +456,13 @@
       "when": 1795059108511,
       "tag": "0064_receivables_email_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1795094101266,
+      "tag": "0065_receivables_received_currency",
+      "breakpoints": true
     }
   ]
 }

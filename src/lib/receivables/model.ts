@@ -76,6 +76,8 @@ export type SheetInvoice = {
   invoiceDate?: string | null;
   /** The foreign amount that actually arrived; `paidAmount` holds the INR credited. */
   receivedFc?: number | null;
+  /** The currency of `receivedFc`: the invoice's own, or USD on an INR invoice paid in dollars. */
+  receivedCurrency?: string | null;
   /** TDS the client deducted, in INR. */
   tdsInr?: number;
   /** True while a dispute is open. Never shown to the client partner. */
@@ -134,6 +136,8 @@ export type ReceiptInput = {
   amount: number;
   part?: boolean;
   receivedFc?: number | null;
+  /** The currency of `receivedFc`: the invoice's own, or USD on an INR invoice paid in dollars. */
+  receivedCurrency?: string | null;
   /** TDS the client deducted from an INR invoice; it settles the balance along with `amount`. */
   tdsInr?: number | null;
   /** Phase 10: an open forward contract of the invoice's currency the receipt is delivered against. */

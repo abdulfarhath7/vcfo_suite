@@ -120,6 +120,7 @@ export function toInvoice(row: InvoiceRow): SheetInvoice {
     fxRate: num(row.fxRate),
     invoiceDate: row.invoiceDate ? String(row.invoiceDate) : null,
     receivedFc: num(row.receivedFc),
+    receivedCurrency: row.receivedCurrency ?? (num(row.receivedFc) !== null ? (row.currency ?? 'INR').trim().toUpperCase() : null),
     tdsInr: num(row.tdsInr) ?? 0,
     disputed: Boolean(row.disputedAt) && !row.disputeResolvedAt,
     clientId: row.clientId,

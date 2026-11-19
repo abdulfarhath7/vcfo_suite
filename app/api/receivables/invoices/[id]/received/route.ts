@@ -7,8 +7,8 @@ import { amount, denied, guardReceivables, isoDate, receivablesError, type Route
 
 /**
  * POST   /api/receivables/invoices/:id/received — record a full or part payment. `amount` is the
- *        INR credited; a foreign invoice also sends `receivedFc` (the foreign amount that arrived)
- *        and an INR invoice may send `tdsInr`. A foreign invoice marked received gets its awaited
+ *        INR credited; a foreign invoice also sends `receivedFc` (the foreign amount that arrived),
+ *        and an INR invoice paid in dollars sends `receivedFc` with `receivedCurrency: 'USD'`. A foreign invoice marked received gets its awaited
  *        FIRA row at once. A foreign receipt may name `forwardId`, an open forward contract of the
  *        same currency it is delivered against (Phase 10).
  * DELETE /api/receivables/invoices/:id/received — undo: the invoice is open again.
@@ -18,6 +18,8 @@ const schema = z.object({
   amount,
   part: z.boolean().optional(),
   receivedFc: z.number().positive('fc_amount').max(1e12, 'fc_amount').nullable().optional(),
+  /** The currency of `receivedFc`; on an INR invoice only USD (owner, 19 Nov 2026). */
+  receivedCurrency: z.string().regex(/^[A-Za-z]{3}$/, 'currency').nullable().optional(),
   tdsInr: z.number().min(0, 'tds').max(1e12, 'tds').nullable().optional(),
   forwardId: z.string().uuid('forward').nullable().optional(),
 });
