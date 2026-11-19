@@ -62,7 +62,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
     const next = removed.includes(id) ? removed.filter((x) => x !== id) : [...removed, id];
     setRemoved(next);
     const kept = d.invoices.filter((i) => !next.includes(i.id));
-    if (kept.length) setHtml(paymentReceivedEmail({ recipientName: d.recipientName, senderName: sign.trim() || 'Accounts Team', invoices: kept }).html);
+    if (kept.length) setHtml(paymentReceivedEmail({ recipientName: d.recipientName, senderName: sign.trim() || 'Accounts Team', invoices: kept, today: d.today, tpl: d.template }).html);
   };
   const submit = () => {
     if (!d) return;

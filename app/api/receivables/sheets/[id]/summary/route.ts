@@ -4,7 +4,7 @@ import { todayIst } from '@/lib/receivables/dates';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
 import { partnerRows, summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
-import { getSignName, getSummarySource, listDigestRecipients, sentReceiptsFor } from '@/db/repositories/receivables';
+import { getSignName, getSummarySource, listDigestRecipients, sentReceiptsFor, templateFor } from '@/db/repositories/receivables';
 import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -19,7 +19,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (guard.ok === false) return denied(guard);
   const { id } = await context.params;
   try {
-    const [src, signerName] = await Promise.all([getSummarySource(guard.ctx, id), getSignName(guard.ctx)]);
+    const [src, signerName, template] = await Promise.all([getSummarySource(guard.ctx, id), getSignName(guard.ctx), templateFor(guard.ctx, id, 'summary')]);
+    const sheetName = src.sheet.clientOrgName;
     // The live sheet, not the last published version: the email shows what the table shows now.
     // `?ids=a,b` (owner, 18 Nov 2026): only the invoices picked on the sheet.
     const ids = new Set((new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean));
@@ -37,15 +38,16 @@ export async function GET(request: Request, context: RouteContext) {
         name: p.name,
         email: p.email,
         invoiceCount: partnerRows(rows, p.slug, src.coClientKeys[p.id]).filter((r) => picked || r.status === 'open').length,
-        html: summaryEmailHtml({ rows, today, liveUrl, signerName, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id], picked }),
+        html: summaryEmailHtml({ rows, today, liveUrl, signerName, partnerSlug: p.slug, alsoClientKeys: src.coClientKeys[p.id], picked, template, sheetName, greetName: p.name.trim().split(/\s+/)[0] }),
         slug: p.slug,
         alsoClientKeys: src.coClientKeys[p.id] ?? [],
       }));
     return NextResponse.json({
       versionSeq: src.version.seq,
       publishedAt: src.version.publishedAt,
-      subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today)}` : summaryEmailSubject(today),
-      html: summaryEmailHtml({ rows, today, liveUrl, signerName, picked }),
+      subject: src.lastSend?.subject.startsWith('RE:') ? `RE: ${summaryEmailSubject(today, template, sheetName)}` : summaryEmailSubject(today, template, sheetName),
+      html: summaryEmailHtml({ rows, today, liveUrl, signerName, picked, template, sheetName }),
+      template: template ?? {},
       signName: signerName,
       rows,
       today,

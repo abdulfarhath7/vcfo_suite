@@ -1,7 +1,8 @@
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { getSignName, receivedEmailSource, sentReceiptsFor, startEmailLog, systemRecordSentReceipts } from '@/db/repositories/receivables';
+import { getSignName, receivedEmailSource, sentReceiptsFor, startEmailLog, systemRecordSentReceipts, templateFor } from '@/db/repositories/receivables';
+import { todayIst } from '@/lib/receivables/dates';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { partnerOwns } from '@/lib/receivables/co-partners';
@@ -35,7 +36,8 @@ export async function GET(request: Request, context: RouteContext) {
     const owners = src.partners.filter((p) => src.invoices.every((i) => partnerOwns(p.id, i, src.links)));
     const to = owners.map((p) => ({ name: p.name, email: p.email }));
     const recipientName = owners.length === 1 ? owners[0].name : 'Team';
-    const mail = paymentReceivedEmail({ recipientName, senderName: await getSignName(guard.ctx), invoices: src.invoices });
+    const tpl = await templateFor(guard.ctx, id, 'payment_received');
+    const mail = paymentReceivedEmail({ recipientName, senderName: await getSignName(guard.ctx), invoices: src.invoices, today: todayIst(), tpl });
     const contacts = [...src.partners.map((p) => ({ name: p.name, email: p.email })), ...src.clientContacts];
     const body: ReceivedEmailDraftDto = {
       invoiceIds: src.invoices.map((i) => i.id),
@@ -45,6 +47,8 @@ export async function GET(request: Request, context: RouteContext) {
       contacts,
       invoices: src.invoices.map((i) => ({ id: i.id, clientName: i.clientName, invoiceNo: i.invoiceNo, invoiceDate: i.invoiceDate, dueDate: i.dueDate, amountInr: i.amountInr, paidOn: i.paidOn, receivedInr: i.receivedInr })),
       recipientName,
+      template: tpl ?? {},
+      today: todayIst(),
       alreadySent: await sentReceiptsFor(
         guard.ctx,
         id,

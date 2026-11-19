@@ -12,6 +12,7 @@ import {
   systemSheetEmailSettings,
   systemSheetPartners,
   systemStaffName,
+  systemTemplatesFor,
   systemStartEmailLog,
   type EmailInvoiceRow,
   systemCoPartnerLinks,
@@ -25,6 +26,7 @@ import { todayIst } from './dates';
 import { leadershipDigestEmail, newInvoiceEmail, revisedInvoiceEmail, rollupEmail, senderPingText } from './email-v2';
 import { outlookErrorCode } from './summary-send';
 import { digestDue, rollupDue } from './v2-schedule';
+import type { TemplateSet } from './templates';
 import type { WhatsAppPingStatus } from './v2-wire';
 
 /**
@@ -179,6 +181,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
   const [partners, links] = await Promise.all([systemSheetPartners(sheet.id), systemCoPartnerLinks(sheet.id)]);
   const senderName = await systemStaffName(input.approverId);
   const today = todayIst();
+  const tpls = await templatesOf(sheet.id);
 
   if (sheet.emailNewInvoiceEnabled && input.newInvoiceIds.length) {
     const invoices = await systemInvoicesById(sheet.id, input.newInvoiceIds);
@@ -191,7 +194,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
         out.skipped += 1;
         continue;
       }
-      const mail = newInvoiceEmail({ partnerName: p.name, senderName, invoices: list, today });
+      const mail = newInvoiceEmail({ partnerName: p.name, senderName, invoices: list, today, tpl: tpls.new_invoice });
       const ids = list.map((i) => i.id).sort();
       const log = await systemStartEmailLog({
         sheetId: sheet.id,
@@ -229,7 +232,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
           out.skipped += 1;
           continue;
         }
-        const mail = revisedInvoiceEmail({ partnerName: p.name, senderName, invoice: { ...inv, amountInr: r.newAmountInr, oldAmountInr: r.oldAmountInr, reason: r.reason }, today });
+        const mail = revisedInvoiceEmail({ partnerName: p.name, senderName, invoice: { ...inv, amountInr: r.newAmountInr, oldAmountInr: r.oldAmountInr, reason: r.reason }, today, tpl: tpls.revised });
         const log = await systemStartEmailLog({
           sheetId: sheet.id,
           kind: 'revised',
@@ -260,11 +263,12 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
   const last = await systemLastRollupDate(sheet.id);
   if (!rollupDue(sheet, last, now)) return out;
   const today = todayIst(now);
-  const [partners, open, senderName, links] = await Promise.all([
+  const [partners, open, senderName, links, tpls] = await Promise.all([
     systemSheetPartners(sheet.id),
     systemOpenInvoices(sheet.id),
     systemStaffName(sheet.managerUserId),
     systemCoPartnerLinks(sheet.id),
+    templatesOf(sheet.id),
   ]);
   for (const p of partners) {
     if (!p.active || !p.notifyRollup || !p.email) continue;
@@ -274,7 +278,7 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
       out.skipped += 1;
       continue;
     }
-    const mail = rollupEmail({ partnerName: p.name, senderName, invoices: list, today, clientOrgName: sheet.clientOrgName });
+    const mail = rollupEmail({ partnerName: p.name, senderName, invoices: list, today, clientOrgName: sheet.clientOrgName, tpl: tpls.rollup });
     const log = await systemStartEmailLog({
       sheetId: sheet.id,
       kind: 'rollup',
@@ -295,11 +299,20 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
   return out;
 }
 
+/** The sheet's saved email words; a read that fails keeps the standard words, so a send never stops on it. */
+async function templatesOf(sheetId: string): Promise<TemplateSet> {
+  try {
+    return (await systemTemplatesFor(sheetId)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
 /** C: the leadership digest of one sheet, if due now. One email to every active recipient. */
 export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new Date()): Promise<'sent' | 'failed' | 'skipped' | 'not_due'> {
   if (!digestDue(sheet, now)) return 'not_due';
   const today = todayIst(now);
-  const [all, open, partners, senderName] = await Promise.all([systemDigestRecipients(sheet.id), systemOpenInvoices(sheet.id), systemSheetPartners(sheet.id), systemStaffName(sheet.managerUserId)]);
+  const [all, open, partners, senderName, tpls] = await Promise.all([systemDigestRecipients(sheet.id), systemOpenInvoices(sheet.id), systemSheetPartners(sheet.id), systemStaffName(sheet.managerUserId), templatesOf(sheet.id)]);
   // A client partner never gets the whole sheet, even when also typed in as a digest recipient.
   const partnerEmails = new Set(partners.map((p) => p.email.trim().toLowerCase()));
   const recipients = all.filter((r) => !partnerEmails.has(r.email.trim().toLowerCase()));
@@ -309,6 +322,7 @@ export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new
     invoices: open.map((i) => ({ ...i, partnerName: partnerOf(partners, i.partnerId)?.name ?? null })),
     today,
     clientOrgName: sheet.clientOrgName,
+    tpl: tpls.digest,
   });
   const log = await systemStartEmailLog({
     sheetId: sheet.id,

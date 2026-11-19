@@ -139,6 +139,8 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Receivables on `main` (18–19 Nov 2026): migrations `0060` to `0063` are applied on RDS. `0064_receivables_email_templates`
+  (additive, the Templates tab) must be applied on RDS before the build that holds it is deployed.
 - Receivables v2 (`docs/specs/receivables/V2.md`, branch `feature/receivables-v2`) needs migrations
   `0058_receivables_v2` (additive, with a client backfill) and `0059_drop_bank_credits` (drops
   `bank_credits`; it cannot be undone, so snapshot first) on RDS before deploy. Set `DOUBLETICK_*`,

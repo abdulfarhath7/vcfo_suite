@@ -449,6 +449,13 @@
       "when": 1794992734676,
       "tag": "0063_receivables_sent_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1795059108511,
+      "tag": "0064_receivables_email_templates",
+      "breakpoints": true
     }
   ]
 }

@@ -3,6 +3,7 @@ import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 import { clientKey } from './client-key';
 import { foreignAmountHeader } from './currencies';
 import { signNameSpan } from './sign-name';
+import { partOf, type TemplateOverride } from './templates';
 import { daysLeft, monthBlockTitle, monthLong, monthShort, sheetDate } from './dates';
 import type { SnapshotRow } from './model';
 import { foreignAmountOf, isForeignRow, isOpen, monthsOf, receivedThisWeek, sumInr } from './summary';
@@ -64,12 +65,32 @@ export type SummaryEmailInput = {
   alsoClientKeys?: string[];
   /** The rows are invoices the person picked on the sheet (owner, 18 Nov 2026): show every one, received or not. */
   picked?: boolean;
+  /** The sheet's saved words for this email (the Templates tab, owner 19 Nov 2026). */
+  template?: TemplateOverride;
+  /** Who the greeting names: a first name, or "Team" (the default) for the leaders' email. */
+  greetName?: string;
+  /** The client organisation, for the {sheet} placeholder. */
+  sheetName?: string;
 };
 
-export function summaryEmailSubject(today: string): string {
+const longDay = (today: string) => {
   const d = new Date(`${today}T00:00:00Z`);
-  return `Receivables update - ${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })}`;
+  return `${d.getUTCDate()} ${d.toLocaleString('en-GB', { month: 'long', timeZone: 'UTC' })}`;
+};
+
+/** "Receivables update - 3 November", or the sheet's saved subject with {date} and {sheet} filled. */
+export function summaryEmailSubject(today: string, template?: TemplateOverride, sheetName = ''): string {
+  return partOf(template, 'subject', { date: longDay(today), sheet: sheetName }) ?? `Receivables update - ${longDay(today)}`;
 }
+
+/** Saved template text as paragraphs: escaped, a blank line starts a new paragraph. */
+const paras = (text: string) =>
+  text
+    .split(/\n{2,}/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => `<p style="${P}">${escapeHtml(t).replace(/\n/g, '<br>')}</p>`)
+    .join('');
 
 /** A partner's rows: the clients they lead and the clients they are a second partner on. */
 export function partnerRows(rows: SnapshotRow[], partnerSlug: string, alsoClientKeys: string[] = []): SnapshotRow[] {
@@ -157,14 +178,19 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     : '';
 
   const total = sumInr(shown.filter(isOpen));
+  const vars = { name: input.greetName || 'Team', date: longDay(input.today), total: money(total), sheet: input.sheetName ?? '' };
+  const greeting = partOf(input.template, 'greeting', vars) ?? `Hi ${vars.name},`;
+  const intro = partOf(input.template, 'intro', vars);
+  const closing = partOf(input.template, 'closing', vars);
   return [
-    `<p style="${P}">Hi Team,</p>`,
+    `<p style="${P}">${escapeHtml(greeting)}</p>`,
     paidBlock,
-    `<p style="${P}">Please find the receivables summary as of today:</p>`,
+    intro !== null ? paras(intro) : `<p style="${P}">Please find the receivables summary as of today:</p>`,
     tables,
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:560px;border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:10px 14px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${MONO};font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
     // Receivables v2: no link to the tool in any receivables email; `liveUrl` is no longer shown.
     // No firm name under the signature (owner, 18 Nov 2026).
+    closing !== null ? paras(closing) : '',
     `<p style="${P}">Regards,<br>${signNameSpan(input.signerName)}</p>`,
   ].join('');
 }

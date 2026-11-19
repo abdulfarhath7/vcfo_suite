@@ -2,6 +2,7 @@ import { emailColor, escapeHtml } from '@/lib/email/email-layout';
 import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 import { daysLeft, sheetDate } from './dates';
 import { signNameSpan } from './sign-name';
+import { partOf, type TemplateOverride } from './templates';
 
 /**
  * RECEIVABLES v2 EMAILS — pure HTML and text builders (docs/specs/receivables/V2.md).
@@ -13,6 +14,10 @@ import { signNameSpan } from './sign-name';
  * content is at most 560 px wide and each table scrolls inside itself on a phone. Every table shows
  * Invoice no., Invoice date, Due date and Amount ₹. There is never a link to the tool. Each email
  * closes with "Regards, <sender name>" (no firm name, owner 18 Nov 2026).
+ *
+ * Templates (owner, 19 Nov 2026): every builder takes the sheet's saved words for its email type
+ * (`tpl`, from the Templates tab). A saved subject, greeting, opening or closing replaces the
+ * standard one; an empty part keeps it. Typed text is escaped; a blank line starts a new paragraph.
  *
  * Colours: the owner's own SBC table theme (see the constants below), not the app's purple `brand`.
  */
@@ -53,6 +58,33 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || 'there';
 
 function p(html: string): string {
   return `<p style="margin:0 0 14px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};">${html}</p>`;
+}
+
+/** Typed template text as paragraphs: escaped, a blank line between paragraphs, a line break kept. */
+function paras(text: string): string {
+  return text
+    .split(/\n{2,}/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .map((t) => p(esc(t).replace(/\n/g, '<br />')))
+    .join('');
+}
+
+/** The four parts of one email: the saved words, filled, or the standard ones given here. */
+function parts(tpl: TemplateOverride | undefined, vars: Record<string, string>, std: { subject: string; greeting: string; introHtml: string; introText: string; closingHtml?: string; closingText?: string }) {
+  const subject = partOf(tpl, 'subject', vars) ?? std.subject;
+  const greeting = partOf(tpl, 'greeting', vars);
+  const intro = partOf(tpl, 'intro', vars);
+  const closing = partOf(tpl, 'closing', vars);
+  return {
+    subject,
+    greetingHtml: greeting !== null ? p(esc(greeting)) : p(esc(std.greeting)),
+    greetingText: greeting ?? std.greeting,
+    introHtml: intro !== null ? paras(intro) : std.introHtml,
+    introText: intro ?? std.introText,
+    closingHtml: closing !== null ? paras(closing) : (std.closingHtml ?? ''),
+    closingText: closing !== null ? `\n\n${closing}` : (std.closingText ?? ''),
+  };
 }
 
 function h(text: string, level: 2 | 3): string {
@@ -146,63 +178,95 @@ function byClient<T extends EmailInvoice>(rows: T[]): Array<{ client: string; ro
 }
 
 /** A — new invoices for one client partner, from one approval. */
-export function newInvoiceEmail(input: { partnerName: string; senderName: string; invoices: EmailInvoice[]; today: string }): BuiltEmail {
+export function newInvoiceEmail(input: { partnerName: string; senderName: string; invoices: EmailInvoice[]; today: string; tpl?: TemplateOverride }): BuiltEmail {
   const n = input.invoices.length;
-  const subject = n === 1 ? `New invoice ${input.invoices[0]!.invoiceNo ?? ''} · ${input.invoices[0]!.clientName}`.replace(/\s+·/, ' ·') : `${n} new invoices for your clients`;
   const rows = [...input.invoices].sort((a, b) => a.clientName.localeCompare(b.clientName) || a.dueDate.localeCompare(b.dueDate));
+  const lead = n === 1 ? 'A new invoice has been raised for your client:' : `${n} new invoices have been raised for your clients:`;
+  const t = parts(
+    input.tpl,
+    { name: firstName(input.partnerName), client: [...new Set(rows.map((r) => r.clientName))].join(', '), count: String(n), total: inrText(sum(rows)), date: sheetDate(input.today) },
+    {
+      subject: n === 1 ? `New invoice ${input.invoices[0]!.invoiceNo ?? ''} · ${input.invoices[0]!.clientName}`.replace(/\s+·/, ' ·') : `${n} new invoices for your clients`,
+      greeting: `Hi ${firstName(input.partnerName)},`,
+      introHtml: p(lead),
+      introText: lead,
+    },
+  );
   const cols: Column[] = [{ label: 'Client' }, ...INVOICE_COLS];
   const html = page(
-    subject,
-    p(`Hi ${esc(firstName(input.partnerName))},`) +
-      p(n === 1 ? 'A new invoice has been raised for your client:' : `${n} new invoices have been raised for your clients:`) +
+    t.subject,
+    t.greetingHtml +
+      t.introHtml +
       table(
         cols,
         rows.map((r) => [esc(r.clientName), ...invoiceCells(r, input.today)]),
         n > 1 ? ['Total', '', '', '', inrText(sum(rows))] : undefined,
-      ),
+      ) +
+      t.closingHtml,
     input.senderName,
   );
-  const text = `Hi ${firstName(input.partnerName)},\n\n${n === 1 ? 'A new invoice has been raised for your client:' : `${n} new invoices have been raised for your clients:`}\n\n${textTable(rows, true)}${n > 1 ? `\nTotal ₹${inrText(sum(rows))}` : ''}${textClose(input.senderName)}`;
-  return { subject, html, text };
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${textTable(rows, true)}${n > 1 ? `\nTotal ₹${inrText(sum(rows))}` : ''}${t.closingText}${textClose(input.senderName)}`;
+  return { subject: t.subject, html, text };
 }
 
 export type RevisedInvoice = EmailInvoice & { oldAmountInr: number; reason: string | null };
 
 /** A′ — one invoice's amount was revised. */
-export function revisedInvoiceEmail(input: { partnerName: string; senderName: string; invoice: RevisedInvoice; today: string }): BuiltEmail {
+export function revisedInvoiceEmail(input: { partnerName: string; senderName: string; invoice: RevisedInvoice; today: string; tpl?: TemplateOverride }): BuiltEmail {
   const inv = input.invoice;
-  const subject = `Invoice revised ${inv.invoiceNo ?? ''} · ${inv.clientName}`.replace(/\s+·/, ' ·');
+  const t = parts(
+    input.tpl,
+    { name: firstName(input.partnerName), client: inv.clientName, total: inrText(inv.amountInr), date: sheetDate(input.today) },
+    {
+      subject: `Invoice revised ${inv.invoiceNo ?? ''} · ${inv.clientName}`.replace(/\s+·/, ' ·'),
+      greeting: `Hi ${firstName(input.partnerName)},`,
+      introHtml: p(`The amount of an invoice for <b>${esc(inv.clientName)}</b> has been revised.`),
+      introText: `The amount of an invoice for ${inv.clientName} has been revised.`,
+    },
+  );
+  const subject = t.subject;
   const cols: Column[] = [{ label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Old amount (₹)', num: true }, { label: 'New amount (₹)', num: true }];
   const html = page(
     subject,
-    p(`Hi ${esc(firstName(input.partnerName))},`) +
-      p(`The amount of an invoice for <b>${esc(inv.clientName)}</b> has been revised.`) +
+    t.greetingHtml +
+      t.introHtml +
       table(cols, [[esc(inv.invoiceNo ?? '—'), inv.invoiceDate ? sheetDate(inv.invoiceDate) : '—', sheetDate(inv.dueDate), `<span style="color:${MUTED};text-decoration:line-through;">${inrText(inv.oldAmountInr)}</span>`, amountCell(inv, input.today)]]) +
-      (inv.reason ? p(`Reason: ${esc(inv.reason)}`) : ''),
+      (inv.reason ? p(`Reason: ${esc(inv.reason)}`) : '') +
+      t.closingHtml,
     input.senderName,
   );
-  const text = `Hi ${firstName(input.partnerName)},\n\nThe amount of an invoice for ${inv.clientName} has been revised.\n\n${inv.invoiceNo ?? '—'} · invoiced ${inv.invoiceDate ? sheetDate(inv.invoiceDate) : '—'} · due ${sheetDate(inv.dueDate)} · ₹${inrText(inv.oldAmountInr)} → ₹${inrText(inv.amountInr)}${inv.reason ? `\nReason: ${inv.reason}` : ''}${textClose(input.senderName)}`;
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${inv.invoiceNo ?? '—'} · invoiced ${inv.invoiceDate ? sheetDate(inv.invoiceDate) : '—'} · due ${sheetDate(inv.dueDate)} · ₹${inrText(inv.oldAmountInr)} → ₹${inrText(inv.amountInr)}${inv.reason ? `\nReason: ${inv.reason}` : ''}${t.closingText}${textClose(input.senderName)}`;
   return { subject, html, text };
 }
 
 /** B — the roll-up: one client partner's clients, each with a table of open invoices and a total. */
-export function rollupEmail(input: { partnerName: string; senderName: string; invoices: EmailInvoice[]; today: string; clientOrgName: string }): BuiltEmail {
+export function rollupEmail(input: { partnerName: string; senderName: string; invoices: EmailInvoice[]; today: string; clientOrgName: string; tpl?: TemplateOverride }): BuiltEmail {
   const groups = byClient(input.invoices);
   const total = sum(input.invoices);
   const overdue = sum(input.invoices.filter((r) => daysLeft(r.dueDate, input.today) < 0));
-  const subject = `Open invoices for your clients · ₹${inrText(total)} · ${sheetDate(input.today)}`;
+  const t = parts(
+    input.tpl,
+    { name: firstName(input.partnerName), count: String(input.invoices.length), total: inrText(total), overdue: inrText(overdue), date: sheetDate(input.today), sheet: input.clientOrgName },
+    {
+      subject: `Open invoices for your clients · ₹${inrText(total)} · ${sheetDate(input.today)}`,
+      greeting: `Hi ${firstName(input.partnerName)},`,
+      introHtml: p(`Here are the open invoices for your clients as of ${sheetDate(input.today)}: ₹${inrText(total)} in all${overdue ? `, of which <span style="color:${RED};">₹${inrText(overdue)}</span> is past due` : ''}.`),
+      introText: `Open invoices for your clients as of ${sheetDate(input.today)}: ₹${inrText(total)}.`,
+    },
+  );
   const body =
-    p(`Hi ${esc(firstName(input.partnerName))},`) +
-    p(`Here are the open invoices for your clients as of ${sheetDate(input.today)}: ₹${inrText(total)} in all${overdue ? `, of which <span style="color:${RED};">₹${inrText(overdue)}</span> is past due` : ''}.`) +
-    groups.map((g) => h(g.client, 3) + table(INVOICE_COLS, g.rows.map((r) => invoiceCells(r, input.today)), ['Total', '', '', inrText(sum(g.rows))])).join('');
-  const text = `Hi ${firstName(input.partnerName)},\n\nOpen invoices for your clients as of ${sheetDate(input.today)}: ₹${inrText(total)}.\n\n${groups.map((g) => `${g.client}\n${textTable(g.rows, false)}\nTotal ₹${inrText(sum(g.rows))}`).join('\n\n')}${textClose(input.senderName)}`;
-  return { subject, html: page(subject, body, input.senderName), text };
+    t.greetingHtml +
+    t.introHtml +
+    groups.map((g) => h(g.client, 3) + table(INVOICE_COLS, g.rows.map((r) => invoiceCells(r, input.today)), ['Total', '', '', inrText(sum(g.rows))])).join('') +
+    t.closingHtml;
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${groups.map((g) => `${g.client}\n${textTable(g.rows, false)}\nTotal ₹${inrText(sum(g.rows))}`).join('\n\n')}${t.closingText}${textClose(input.senderName)}`;
+  return { subject: t.subject, html: page(t.subject, body, input.senderName), text };
 }
 
 export type DigestInvoice = EmailInvoice & { partnerName: string | null };
 
 /** C — the leadership digest: partner ▸ client ▸ table, totals per partner and overall. */
-export function leadershipDigestEmail(input: { senderName: string; invoices: DigestInvoice[]; today: string; clientOrgName: string }): BuiltEmail {
+export function leadershipDigestEmail(input: { senderName: string; invoices: DigestInvoice[]; today: string; clientOrgName: string; tpl?: TemplateOverride }): BuiltEmail {
   const byPartner = new Map<string, DigestInvoice[]>();
   for (const r of input.invoices) {
     const key = r.partnerName ?? 'No client partner';
@@ -211,7 +275,18 @@ export function leadershipDigestEmail(input: { senderName: string; invoices: Dig
   const partners = [...byPartner.entries()].sort(([a], [b]) => (a === 'No client partner' ? 1 : b === 'No client partner' ? -1 : a.localeCompare(b)));
   const total = sum(input.invoices);
   const overdue = sum(input.invoices.filter((r) => daysLeft(r.dueDate, input.today) < 0));
-  const subject = `${input.clientOrgName} receivables · ₹${inrText(total)} open · ${sheetDate(input.today)}`;
+  const n = input.invoices.length;
+  const t = parts(
+    input.tpl,
+    { count: String(n), total: inrText(total), overdue: inrText(overdue), date: sheetDate(input.today), sheet: input.clientOrgName },
+    {
+      subject: `${input.clientOrgName} receivables · ₹${inrText(total)} open · ${sheetDate(input.today)}`,
+      greeting: 'Hello,',
+      introHtml: p(`The ${esc(input.clientOrgName)} receivables as of ${sheetDate(input.today)}: ₹${inrText(total)} open across ${n} invoice${n === 1 ? '' : 's'}.`),
+      introText: `The ${input.clientOrgName} receivables as of ${sheetDate(input.today)}: ₹${inrText(total)} open.`,
+    },
+  );
+  const subject = t.subject;
   const summary = table(
     [{ label: 'Client partner' }, { label: 'Invoices' }, { label: 'Past due ₹', num: true }, { label: 'Open ₹', num: true }],
     partners.map(([name, rows]) => [esc(name), String(rows.length), inrText(sum(rows.filter((r) => daysLeft(r.dueDate, input.today) < 0))), inrText(sum(rows))]),
@@ -220,27 +295,30 @@ export function leadershipDigestEmail(input: { senderName: string; invoices: Dig
   const detail = partners
     .map(([name, rows]) => h(`${name} · ₹${inrText(sum(rows))}`, 2) + byClient(rows).map((g) => h(g.client, 3) + table(INVOICE_COLS, g.rows.map((r) => invoiceCells(r, input.today)), ['Total', '', '', inrText(sum(g.rows))])).join(''))
     .join('');
-  const body = p('Hello,') + p(`The ${esc(input.clientOrgName)} receivables as of ${sheetDate(input.today)}: ₹${inrText(total)} open across ${input.invoices.length} invoice${input.invoices.length === 1 ? '' : 's'}.`) + summary + detail;
-  const text = `Hello,\n\nThe ${input.clientOrgName} receivables as of ${sheetDate(input.today)}: ₹${inrText(total)} open.\n\n${partners
+  const body = t.greetingHtml + t.introHtml + summary + detail + t.closingHtml;
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${partners
     .map(([name, rows]) => `${name} · ₹${inrText(sum(rows))}\n${byClient(rows).map((g) => `${g.client}\n${textTable(g.rows, false)}`).join('\n')}`)
-    .join('\n\n')}\n\nOverall total ₹${inrText(total)}${textClose(input.senderName)}`;
+    .join('\n\n')}\n\nOverall total ₹${inrText(total)}${t.closingText}${textClose(input.senderName)}`;
   return { subject, html: page(subject, body, input.senderName), text };
 }
 
 /** D — a client's statement: that client's open invoices in one table. */
-export function clientStatementEmail(input: { clientName: string; senderName: string; invoices: EmailInvoice[]; today: string }): BuiltEmail {
+export function clientStatementEmail(input: { clientName: string; senderName: string; invoices: EmailInvoice[]; today: string; tpl?: TemplateOverride }): BuiltEmail {
   const rows = [...input.invoices].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   const total = sum(rows);
-  const subject = `Statement of open invoices · ${input.clientName} · ${sheetDate(input.today)}`;
-  const html = page(
-    subject,
-    p('Dear Sir or Madam,') +
-      p(`Please find below the open invoices of <b>${esc(input.clientName)}</b> as of ${sheetDate(input.today)}, ₹${inrText(total)} in all. We would be grateful for payment of the amounts due.`) +
-      table(INVOICE_COLS, rows.map((r) => invoiceCells(r, input.today)), ['Total', '', '', inrText(total)]),
-    input.senderName,
+  const t = parts(
+    input.tpl,
+    { client: input.clientName, count: String(rows.length), total: inrText(total), date: sheetDate(input.today) },
+    {
+      subject: `Statement of open invoices · ${input.clientName} · ${sheetDate(input.today)}`,
+      greeting: 'Dear Sir or Madam,',
+      introHtml: p(`Please find below the open invoices of <b>${esc(input.clientName)}</b> as of ${sheetDate(input.today)}, ₹${inrText(total)} in all. We would be grateful for payment of the amounts due.`),
+      introText: `The open invoices of ${input.clientName} as of ${sheetDate(input.today)}, ₹${inrText(total)} in all:`,
+    },
   );
-  const text = `Dear Sir or Madam,\n\nThe open invoices of ${input.clientName} as of ${sheetDate(input.today)}, ₹${inrText(total)} in all:\n\n${textTable(rows, false)}\nTotal ₹${inrText(total)}${textClose(input.senderName)}`;
-  return { subject, html, text };
+  const html = page(t.subject, t.greetingHtml + t.introHtml + table(INVOICE_COLS, rows.map((r) => invoiceCells(r, input.today)), ['Total', '', '', inrText(total)]) + t.closingHtml, input.senderName);
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${textTable(rows, false)}\nTotal ₹${inrText(total)}${t.closingText}${textClose(input.senderName)}`;
+  return { subject: t.subject, html, text };
 }
 
 export type ReceivedInvoice = EmailInvoice & { paidOn: string; receivedInr: number };
@@ -249,30 +327,40 @@ export type ReceivedInvoice = EmailInvoice & { paidOn: string; receivedInr: numb
  * The "Payment received" email, offered after Mark received and sent only when the person clicks
  * Send (owner, 17 Nov 2026): the received invoices in one table with the received date and amount.
  */
-export function paymentReceivedEmail(input: { recipientName: string; senderName: string; invoices: ReceivedInvoice[] }): BuiltEmail {
+export function paymentReceivedEmail(input: { recipientName: string; senderName: string; invoices: ReceivedInvoice[]; today?: string; tpl?: TemplateOverride }): BuiltEmail {
   const rows = [...input.invoices].sort((a, b) => a.clientName.localeCompare(b.clientName) || a.paidOn.localeCompare(b.paidOn));
   const clients = [...new Set(rows.map((r) => r.clientName))];
   const total = Math.round(rows.reduce((a, r) => a + r.receivedInr, 0) * 100) / 100;
-  const subject =
-    rows.length === 1 ? `Payment received · ${rows[0]!.clientName} · ₹${inrText(rows[0]!.receivedInr)}` : `Payments received · ${rows.length} invoices · ₹${inrText(total)}`;
   const many = clients.length > 1;
+  const t = parts(
+    input.tpl,
+    { name: firstName(input.recipientName), client: clients.join(', '), count: String(rows.length), total: inrText(total), date: input.today ? sheetDate(input.today) : '' },
+    {
+      subject: rows.length === 1 ? `Payment received · ${rows[0]!.clientName} · ₹${inrText(rows[0]!.receivedInr)}` : `Payments received · ${rows.length} invoices · ₹${inrText(total)}`,
+      greeting: `Hi ${firstName(input.recipientName)},`,
+      introHtml: p(many ? 'We have received the following payments:' : `We have received the payment for <b>${esc(clients[0])}</b>:`),
+      introText: many ? 'We have received the following payments:' : `We have received the payment for ${clients[0]}:`,
+      closingHtml: p('Thank you.'),
+      closingText: '\n\nThank you.',
+    },
+  );
+  const subject = t.subject;
   const cols: Column[] = [...(many ? [{ label: 'Client' }] : []), { label: 'Invoice no.' }, { label: 'Invoice date' }, { label: 'Due date' }, { label: 'Received date' }, { label: 'Received amount (₹)', num: true }];
-  const lead = many ? 'We have received the following payments:' : `We have received the payment for <b>${esc(clients[0])}</b>:`;
   const html = page(
     subject,
-    p(`Hi ${esc(firstName(input.recipientName))},`) +
-      p(lead) +
+    t.greetingHtml +
+      t.introHtml +
       table(
         cols,
         rows.map((r) => [...(many ? [esc(r.clientName)] : []), esc(r.invoiceNo ?? '—'), r.invoiceDate ? sheetDate(r.invoiceDate) : '—', sheetDate(r.dueDate), sheetDate(r.paidOn), inrText(r.receivedInr)]),
         rows.length > 1 ? ['Total', ...Array(cols.length - 2).fill(''), inrText(total)] : undefined,
       ) +
-      p('Thank you.'),
+      t.closingHtml,
     input.senderName,
   );
-  const text = `Hi ${firstName(input.recipientName)},\n\n${many ? 'We have received the following payments:' : `We have received the payment for ${clients[0]}:`}\n\n${rows
+  const text = `${t.greetingText}\n\n${t.introText}\n\n${rows
     .map((r) => `${many ? `${r.clientName} · ` : ''}${r.invoiceNo ?? '—'} · due ${sheetDate(r.dueDate)} · received ${sheetDate(r.paidOn)} · ₹${inrText(r.receivedInr)}`)
-    .join('\n')}${rows.length > 1 ? `\nTotal ₹${inrText(total)}` : ''}\n\nThank you.${textClose(input.senderName)}`;
+    .join('\n')}${rows.length > 1 ? `\nTotal ₹${inrText(total)}` : ''}${t.closingText}${textClose(input.senderName)}`;
   return { subject, html, text };
 }
 

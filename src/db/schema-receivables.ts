@@ -603,6 +603,31 @@ export const receivableSentReceipts = pgTable(
   }),
 );
 
+/**
+ * The words of a sheet's receivables emails (the Templates tab, owner 19 Nov 2026): one row per
+ * email type that someone changed. A null part keeps the standard words. The tables are always
+ * built from the sheet and are not stored here.
+ */
+export const receivableEmailTemplates = pgTable(
+  'receivable_email_templates',
+  {
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    /** summary | new_invoice | revised | rollup | digest | statement | payment_received */
+    kind: text('kind').notNull(),
+    subject: text('subject'),
+    greeting: text('greeting'),
+    intro: text('intro'),
+    closing: text('closing'),
+    updatedBy: uuid('updated_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.sheetId, t.kind] }),
+  }),
+);
+
 /** Receivables v2: the leadership digest's recipients. Typed-in names and addresses, not tool accounts. */
 export const receivableDigestRecipients = pgTable(
   'receivable_digest_recipients',

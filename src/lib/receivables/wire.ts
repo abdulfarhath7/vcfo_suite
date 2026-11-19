@@ -1,3 +1,4 @@
+import type { TemplateOverride } from './templates';
 import type { SentMap } from './sent-receipts';
 /**
  * RECEIVABLES WIRE — the JSON the /api/receivables routes send to the manager area. Dates in
@@ -79,6 +80,8 @@ export type SummaryDto = {
   today: string;
   /** True when the rows are invoices picked on the sheet. */
   picked: boolean;
+  /** The sheet's saved words for this email (the Templates tab); empty keeps the standard words. */
+  template?: TemplateOverride;
   /** Received invoices already emailed, per invoice id: who and when. */
   alreadySent: SentMap;
   /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */

@@ -1,3 +1,4 @@
+import type { TemplateOverride } from './templates';
 import type { ReceivedInvoice } from './email-v2';
 import type { SentMap } from './sent-receipts';
 /**
@@ -88,6 +89,9 @@ export type ReceivedEmailDraftDto = {
   /** The invoices, so the pop-up can rebuild the body when one is removed (owner, 18 Nov 2026). */
   invoices: Array<ReceivedInvoice & { id: string }>;
   recipientName: string;
+  /** The sheet's saved words for this email (the Templates tab), used when the body is rebuilt. */
+  template?: TemplateOverride;
+  today?: string;
   /** Who each invoice was already sent to, and when. */
   alreadySent: SentMap;
 };

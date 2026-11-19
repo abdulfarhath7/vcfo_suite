@@ -96,3 +96,4 @@ export {
 } from './fx-desk';
 export { getSignName, setSignName } from './sign-name';
 export { sentReceiptsFor, systemRecordSentReceipts } from './sent-receipts';
+export { listTemplates, templateFor, saveTemplate, resetTemplate, systemTemplatesFor } from './templates';

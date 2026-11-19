@@ -9,6 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto, ReceivedEmailDraftDto } from '@/lib/receivables/v2-wire';
 import { call, json, sheetKey } from './use-receivables';
+import type { TemplateKind, TemplateOverride, TemplateSet } from '@/lib/receivables/templates';
 
 export const pendingKey = (sheetId: string) => ['receivables', 'imports', sheetId] as const;
 export const peopleKey = (sheetId: string) => ['receivables', 'people', sheetId] as const;
@@ -111,4 +112,19 @@ export function useKeepSignName() {
     const n = name.trim();
     if (n && n !== query.data?.name) save.mutate(n);
   };
+}
+
+/** The sheet's email templates (the Templates tab, owner 19 Nov 2026). */
+export type TemplatesDto = { templates: TemplateSet; stamps: Partial<Record<TemplateKind, { updatedAt: string; updatedBy: string | null }>> };
+export const templatesKey = (sheetId: string) => ['receivables', 'templates', sheetId] as const;
+
+export function useTemplates(sheetId: string) {
+  const qc = useQueryClient();
+  const base = `/api/receivables/sheets/${sheetId}/templates`;
+  const query = useQuery({ queryKey: templatesKey(sheetId), queryFn: () => call<TemplatesDto>(base) });
+  // A saved template changes the Send email and Payment received drafts too.
+  const onSettled = () => qc.invalidateQueries({ queryKey: ['receivables'] });
+  const save = useMutation({ mutationFn: (input: { kind: TemplateKind } & TemplateOverride) => call<{ kind: TemplateKind; template: TemplateOverride }>(base, json('PUT', input)), onSettled });
+  const reset = useMutation({ mutationFn: (kind: TemplateKind) => call<{ ok: true }>(`${base}?kind=${kind}`, { method: 'DELETE' }), onSettled });
+  return { query, save, reset };
 }

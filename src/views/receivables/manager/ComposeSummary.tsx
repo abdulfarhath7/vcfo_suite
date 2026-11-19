@@ -126,11 +126,9 @@ type Draft = {
 };
 
 const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'there').trim().split(/\s+/)[0];
-/** The format's greeting is "Hi Team,"; each email greets its own person. */
 /** The key of the one email all the leaders share. */
 const LEADERS = 'leaders';
 const lower = (e: string) => e.toLowerCase();
-const greet = (html: string, r: EmailRecipient) => html.replace(/<p( style="[^"]*")?>Hi Team,<\/p>/, (_m, style = '') => `<p${style}>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
 
 export function ComposeSummary({
   data,
@@ -195,9 +193,12 @@ export function ComposeSummary({
       partnerSlug: d.slug,
       alsoClientKeys: d.alsoClientKeys,
       picked: s.picked,
+      template: s.template,
+      sheetName: data.sheet.clientOrgName,
+      // The leaders' email greets the team; every other email greets its own person.
+      greetName: d.key === LEADERS || !d.to[0] ? 'Team' : firstName(d.to[0]).replace(/[<>&"]/g, ''),
     });
-    // The leaders' email keeps "Hi Team,"; every other email greets its own person.
-    return signed(d.key === LEADERS || !d.to[0] ? html : greet(html, d.to[0]));
+    return signed(html);
   };
   // A card per partner and per other person, and one card for every leader together.
   useEffect(() => {
