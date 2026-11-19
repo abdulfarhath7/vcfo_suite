@@ -127,7 +127,7 @@ type Draft = {
 
 const firstName = (r: EmailRecipient) => (r.name || r.email.split('@')[0] || 'there').trim().split(/\s+/)[0];
 /** The format's greeting is "Hi Team,"; each email greets its own person. */
-const greet = (html: string, r: EmailRecipient) => html.replace('<p>Hi Team,</p>', `<p>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
+const greet = (html: string, r: EmailRecipient) => html.replace(/<p( style="[^"]*")?>Hi Team,<\/p>/, (_m, style = '') => `<p${style}>Hi ${firstName(r).replace(/[<>&"]/g, '')},</p>`);
 
 export function ComposeSummary({
   data,

@@ -85,8 +85,8 @@ ${bodyHtml}
 </html>`;
 }
 
-const TH = `padding:8px 12px;background:${ORANGE};color:#ffffff;font-family:${SANS};font-size:12.5px;line-height:18px;font-weight:700;text-align:left;white-space:nowrap;`;
-const TD = `padding:9px 12px;border-bottom:1px solid ${GRID};font-family:${SANS};font-size:13.5px;line-height:19px;color:${INK};white-space:nowrap;`;
+const TH = `padding:6px 10px;background:${ORANGE};color:#ffffff;font-family:${SANS};font-size:12.5px;line-height:16px;font-weight:700;text-align:left;white-space:nowrap;`;
+const TD = `padding:5px 10px;border-bottom:1px solid ${GRID};font-family:${SANS};font-size:13px;line-height:17px;color:${INK};white-space:nowrap;`;
 const NUM = `font-family:${MONO};text-align:right;`;
 
 type Column = { label: string; num?: boolean };

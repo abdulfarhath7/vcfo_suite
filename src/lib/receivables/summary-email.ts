@@ -9,7 +9,7 @@ import { foreignAmountOf, isForeignRow, isOpen, monthsOf, receivedThisWeek, sumI
 
 /**
  * RECEIVABLES SUMMARY EMAIL — the body of "RE: Receivables update", in the format SBC's finance
- * team already sends: the payments received, then one SBC-orange table per invoice month with the
+ * team already sends: the payments received, then one SBC-orange table, a band per invoice month, with the
  * sheet's own columns (owner, 18 Nov 2026): Client, Invoice no., Invoice date, Partner, Due date,
  * Amount ₹, Received (date and amount) and Status; received rows shaded green, a month total of what
  * is still open, and the total receivables. Built from the live sheet, so the email shows what the
@@ -43,10 +43,12 @@ const RED = emailColor('danger');
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
 const MONO = SPECTRUM_EMAIL_FONTS.mono;
 const P = `margin:0 0 12px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};`;
-const CELL = `border-bottom:1px solid ${GRID};padding:9px 12px;font-size:13.5px;line-height:19px;font-family:${SANS};color:${INK};white-space:nowrap;`;
-const TITLE = `padding:10px 12px;font-size:14.5px;font-family:${SANS};background:#fbe4da;color:${INK};font-weight:bold;border-bottom:1px solid ${GRID};`;
-const HEAD = `padding:8px 12px;font-size:12.5px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:left;white-space:nowrap;`;
-const TABLE = `border-collapse:collapse;margin:12px 0 16px;min-width:560px;border:1px solid ${GRID};`;
+const CELL = `border-bottom:1px solid ${GRID};padding:5px 10px;font-size:13px;line-height:17px;font-family:${SANS};color:${INK};white-space:nowrap;`;
+const TITLE = `padding:6px 10px;font-size:13.5px;line-height:18px;font-family:${SANS};background:#fbe4da;color:${INK};font-weight:bold;border-bottom:1px solid ${GRID};`;
+const HEAD = `padding:6px 10px;font-size:12.5px;line-height:16px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:left;white-space:nowrap;`;
+const TABLE = `border-collapse:collapse;margin:10px 0 14px;min-width:560px;border:1px solid ${GRID};`;
+/** An empty cell: the same dash in the same font everywhere. */
+const DASH = `<span style="font-family:${SANS};color:${MUTED};">—</span>`;
 const NUM = `font-family:${MONO};text-align:right;`;
 const TOTAL = `font-weight:bold;border-top:2px solid ${ORANGE};background:#ffffff;`;
 
@@ -124,7 +126,9 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
   ];
   const cols = heads.length;
   const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
-  const tables = monthsOf(shown)
+  // One table for every month (owner, 19 Nov 2026): the column heads once at the top, then a peach
+  // band per month, its rows and its open total, so the columns line up and no gap sits between months.
+  const monthBlocks = monthsOf(shown)
     .map((m) => {
       const list = shown.filter((r) => r.invoiceMonth === m);
       if (!list.length) return '';
@@ -135,22 +139,25 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
           const st = statusOf(r, input.today);
           const fc = foreignAmountOf(r);
           const fx = foreign
-            ? `<td ${td(bg, 'text-align:center;')}>${isForeignRow(r) ? escapeHtml((r.currency ?? '').toUpperCase()) : 'INR'}</td><td ${td(bg, NUM)}>${fc === null ? '' : fcFormat.format(fc)}</td>`
+            ? `<td ${td(bg, 'text-align:center;')}>${isForeignRow(r) ? escapeHtml((r.currency ?? '').toUpperCase()) : 'INR'}</td><td ${td(bg, NUM)}>${fc === null ? DASH : fcFormat.format(fc)}</td>`
             : '';
-          return `<tr><td ${td(bg, 'font-weight:600;')}>${escapeHtml(r.clientName)}</td><td ${td(bg, `font-family:${MONO};font-size:12.5px;`)}>${escapeHtml(r.invoiceNo ?? '—')}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : '—'}</td><td ${td(bg)}>${escapeHtml(r.partnerName ?? '—')}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : '—'}</td><td ${td(bg, NUM)}>${open ? '—' : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
+          return `<tr><td ${td(bg, 'font-weight:600;')}>${escapeHtml(r.clientName)}</td><td ${td(bg, `font-family:${MONO};font-size:12.5px;`)}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
         })
         .join('');
       const title = monthBlockTitle(m).replace(' Receivables', '');
       const open = sumInr(list.filter(isOpen));
-      return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr><td colspan="${cols}" style="${TITLE}">${escapeHtml(title)}</td></tr><tr>${heads
-        .map((h) => `<td style="${HEAD}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
-        .join('')}</tr>${body}<tr><td colspan="${cols - 4}" style="${CELL}${TOTAL}">Still open in ${escapeHtml(monthShort(m))}</td><td style="${CELL}${TOTAL}${NUM}">${money(open)}</td><td colspan="3" style="${CELL}${TOTAL}"></td></tr></table>`;
+      return `<tr><td colspan="${cols}" style="${TITLE}">${escapeHtml(title)}</td></tr>${body}<tr><td colspan="${cols - 4}" style="${CELL}${TOTAL}">Still open in ${escapeHtml(monthShort(m))}</td><td style="${CELL}${TOTAL}${NUM}">${money(open)}</td><td colspan="3" style="${CELL}${TOTAL}"></td></tr>`;
     })
     .join('');
+  const tables = monthBlocks
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
+        .map((h) => `<td style="${HEAD}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
+        .join('')}</tr>${monthBlocks}</table>`
+    : '';
 
   const total = sumInr(shown.filter(isOpen));
   return [
-    '<p>Hi Team,</p>',
+    `<p style="${P}">Hi Team,</p>`,
     paidBlock,
     `<p style="${P}">Please find the receivables summary as of today:</p>`,
     tables,
