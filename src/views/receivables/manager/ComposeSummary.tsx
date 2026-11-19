@@ -6,7 +6,7 @@ import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { emailRows, summaryEmailHtml } from '@/lib/receivables/summary-email';
 import { collectionsReport, type CollectionsPeriod } from '@/lib/receivables/collections';
 import { collectionsEmailHtml, collectionsEmailSubject } from '@/lib/receivables/collections-email';
-import { InvoicesInEmail, RemovableRows } from './compose/InvoicesInEmail';
+import { InvoicesInEmail, RemovableRows, type RemovedItem } from './compose/InvoicesInEmail';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
@@ -27,7 +27,8 @@ import { stamp } from '../format';
  * holding only the invoices of their own clients; the leaders share one email with all of them in To,
  * so each leader sees who else got it (owner, 19 Nov 2026); anyone else gets the whole sheet on their
  * own card. Each card has its own Cc, subject and editable body. An invoice removed with ✕ leaves
- * every email of the send. A client partner is never allowed in Cc or in the leaders' To. No Excel
+ * every email of the send; the Removed panel puts it back in every email or in one email only
+ * (owner, 19 Nov 2026). A client partner is never allowed in Cc or in the leaders' To. No Excel
  * file is ever attached.
  */
 
@@ -200,6 +201,10 @@ export function ComposeSummary({
   const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => lower(p.email)));
   // Invoices taken out of every email of this send (owner, 19 Nov 2026); the sheet does not change.
   const [removed, setRemoved] = useState<string[]>([]);
+  // Removed invoices put back in one email only, by the email's key (owner, 19 Nov 2026).
+  const [backIn, setBackIn] = useState<Record<string, string[]>>({});
+  /** What one email leaves out: every removed invoice except the ones put back in it. */
+  const outOf = (key: string, rm = removed, back = backIn) => rm.filter((id) => !(back[key] ?? []).includes(id));
   // People added to the leaders' email by hand; a client partner never joins it.
   const [joined, setJoined] = useState<string[]>([]);
   const inGroup = (email: string) => !partnerEmails.has(lower(email)) && (isLeader(email) || joined.includes(lower(email)));
@@ -248,7 +253,7 @@ export function ComposeSummary({
       const group = people.filter((r) => inGroup(r.email));
       if (group.length) {
         const base = { key: LEADERS, to: group };
-        next[LEADERS] = prev[LEADERS] ? { ...prev[LEADERS], to: group } : { ...base, kind: 'full', cc: [], subject: subjectFor(undefined, 'Team'), html: bodyFor(base, removed), invoiceCount: null };
+        next[LEADERS] = prev[LEADERS] ? { ...prev[LEADERS], to: group } : { ...base, kind: 'full', cc: [], subject: subjectFor(undefined, 'Team'), html: bodyFor(base, outOf(LEADERS)), invoiceCount: null };
       }
       for (const r of people) {
         const key = lower(r.email);
@@ -262,26 +267,56 @@ export function ComposeSummary({
         const shape = { key, to, slug: p?.slug, alsoClientKeys: p?.alsoClientKeys, partnerId: p?.partnerId };
         const subject = subjectFor(p?.partnerId, firstName(to[0]!));
         next[key] = p
-          ? { ...shape, kind: 'partner', partnerId: p.partnerId, cc: [], subject, html: bodyFor(shape, removed), invoiceCount: p.invoiceCount }
-          : { ...shape, kind: 'full', cc: [], subject, html: bodyFor(shape, removed), invoiceCount: null };
+          ? { ...shape, kind: 'partner', partnerId: p.partnerId, cc: [], subject, html: bodyFor(shape, outOf(key)), invoiceCount: p.invoiceCount }
+          : { ...shape, kind: 'full', cc: [], subject, html: bodyFor(shape, outOf(key)), invoiceCount: null };
       }
       return next;
     });
-    // `sign` and `removed` are read when a card is made; later changes go through changeSign and toggleInvoice.
+    // `sign`, `removed` and `backIn` are read when a card is made; later changes go through changeSign and the ✕ and ↺ handlers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [people, s, joined]);
   const keys = [LEADERS, ...people.filter((r) => !inGroup(r.email)).map((r) => lower(r.email))].filter((k) => drafts[k]);
   /** The invoices an email holds (removed ones included), the ones it still holds, and its already-sent ones. */
   const draftRows = (d: Draft) => (s && !collections ? emailRows({ rows: s.rows, today: s.today, partnerSlug: d.slug, alsoClientKeys: d.alsoClientKeys, picked: s.picked }) : []);
-  const keptIds = (d: Draft) => draftRows(d).filter((r) => !removed.includes(r.id)).map((r) => r.id);
+  const keptIds = (d: Draft) => draftRows(d).filter((r) => !outOf(d.key).includes(r.id)).map((r) => r.id);
   const hitsOf = (d: Draft) => (s ? alreadySentHits(s.alreadySent, keptIds(d), [...d.to, ...d.cc].map((c) => c.email)) : []);
-  /** ✕ or put back: the invoice leaves (or rejoins) every email that holds it; those bodies are rebuilt. */
-  const toggleInvoice = (id: string) => {
-    if (!s) return;
-    const out = removed.includes(id) ? removed.filter((x) => x !== id) : [...removed, id];
-    setRemoved(out);
-    setDrafts((all) => Object.fromEntries(Object.entries(all).map(([k, v]) => [k, draftRows(v).some((r) => r.id === id) ? { ...v, html: bodyFor(v, out) } : v])));
+  /** Rebuilds the bodies of the emails that hold the invoice, from the new removed and put-back lists. */
+  const applyOut = (id: string, rm: string[], back: Record<string, string[]>, only?: string) => {
+    setRemoved(rm);
+    setBackIn(back);
+    setDrafts((all) => Object.fromEntries(Object.entries(all).map(([k, v]) => [k, (!only || k === only) && draftRows(v).some((r) => r.id === id) ? { ...v, html: bodyFor(v, outOf(k, rm, back)) } : v])));
   };
+  const without = (back: Record<string, string[]>, id: string, key?: string) =>
+    Object.fromEntries(Object.entries(back).map(([k, ids]) => [k, !key || k === key ? ids.filter((x) => x !== id) : ids]));
+  /**
+   * ✕ on a row of the email in view. An invoice put back in this email only leaves this email again;
+   * any other invoice leaves every email that holds it.
+   */
+  const removeInvoice = (id: string) => {
+    if (!s || !current) return;
+    if (removed.includes(id)) applyOut(id, removed, without(backIn, id, current.key), current.key);
+    else applyOut(id, [...removed, id], without(backIn, id));
+  };
+  /** ↺ All emails: the invoice is back in every email that holds it. */
+  const putBackAll = (id: string) => s && applyOut(id, removed.filter((x) => x !== id), without(backIn, id));
+  /** ↺ This email: back in the email in view only; the other emails still leave it out. */
+  const putBackHere = (id: string) => s && current && applyOut(id, removed, { ...backIn, [current.key]: [...(backIn[current.key] ?? []), id] }, current.key);
+  const nameOfKey = (k: string) => (k === LEADERS ? 'Leaders' : drafts[k]?.to[0] ? firstName(drafts[k].to[0]) : k);
+  /** The Removed panel of the email in view: every removed invoice and the emails it is out of. */
+  const removedItems = (d: Draft): RemovedItem[] =>
+    removed.map((id) => {
+      const r = s?.rows.find((x) => x.id === id);
+      const holders = keys.filter((k) => drafts[k] && draftRows(drafts[k]).some((x) => x.id === id));
+      return {
+        id,
+        label: r ? `${r.clientName} ${r.invoiceNo ?? ''}`.trim() : 'An invoice',
+        amountInr: r?.amountInr ?? 0,
+        outOf: holders.filter((k) => outOf(k).includes(id)).map(nameOfKey),
+        holders: holders.length,
+        inThis: draftRows(d).some((x) => x.id === id),
+        backHere: (backIn[d.key] ?? []).includes(id),
+      };
+    });
   /** The leaders' To: a person taken out leaves the send; a person added joins this email. */
   const changeGroup = (next: EmailRecipient[]) => {
     const partners = next.filter((r) => partnerEmails.has(lower(r.email)));
@@ -318,7 +353,7 @@ export function ComposeSummary({
   // A partner with no open invoices gets nothing; every other card is sent.
   const sendable = keys
     .map((k) => drafts[k])
-    .filter((d) => (collections ? d.kind === 'full' || (reportFor(d.partnerId)?.rows.length ?? 0) > 0 : keptIds(d).length > 0 || (d.kind === 'full' && !removed.length && !s?.picked)));
+    .filter((d) => (collections ? d.kind === 'full' || (reportFor(d.partnerId)?.rows.length ?? 0) > 0 : keptIds(d).length > 0 || (d.kind === 'full' && !outOf(d.key).length && !s?.picked)));
   const blocked = sendable.flatMap(hitsOf);
   const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
@@ -453,6 +488,8 @@ export function ComposeSummary({
                       const d = drafts[k];
                       const on = current?.key === k;
                       const n = collections ? (reportFor(d.partnerId)?.rows.length ?? 0) : keptIds(d).length;
+                      const out = collections ? 0 : draftRows(d).length - n;
+                      const outNote = out ? ` · ${out} out` : '';
                       const warn = hitsOf(d).length;
                       const empty = !sendable.includes(d);
                       const label = warn
@@ -460,8 +497,8 @@ export function ComposeSummary({
                         : empty
                           ? 'nothing to send'
                           : d.kind === 'partner'
-                            ? `partner · ${n} invoice${n === 1 ? '' : 's'}`
-                            : `${k === LEADERS ? `${d.to.length} in To` : 'everyone'} · ${n} invoice${n === 1 ? '' : 's'}`;
+                            ? `partner · ${n} invoice${n === 1 ? '' : 's'}${outNote}`
+                            : `${k === LEADERS ? `${d.to.length} in To` : 'everyone'} · ${n} invoice${n === 1 ? '' : 's'}${outNote}`;
                       const who = k === LEADERS ? `Leaders: ${d.to.map((r) => firstName(r)).join(', ')}` : d.to[0].name || d.to[0].email;
                       return (
                         <div key={k} className={cn('group flex items-center rounded-md', on ? 'bg-brand-soft' : 'hover:bg-hover', empty && 'opacity-60')}>
@@ -535,7 +572,14 @@ export function ComposeSummary({
                       : 'The collections report for the filters on the Collections tab.'}
                   </p>
                 ) : (
-                  <InvoicesInEmail everyEmail rows={draftRows(current)} removed={removed} hits={hitsOf(current)} onToggle={toggleInvoice} />
+                  <InvoicesInEmail
+                    everyEmail
+                    rows={draftRows(current)}
+                    removed={outOf(current.key)}
+                    hits={hitsOf(current)}
+                    onToggle={putBackAll}
+                    panel={{ items: removedItems(current), onAll: putBackAll, onHere: putBackHere }}
+                  />
                 )}
                 {hitsOf(current).length ? (
                   <p role="alert" className="text-[12.5px] text-warning">
@@ -543,7 +587,7 @@ export function ComposeSummary({
                   </p>
                 ) : null}
                 <RemovableRows
-                  onRemove={toggleInvoice}
+                  onRemove={removeInvoice}
                   hitIds={hitsOf(current).map((h) => h.invoiceId)}
                   labelOf={(id) => {
                     const r = draftRows(current).find((x) => x.id === id);
