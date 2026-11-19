@@ -23,7 +23,6 @@ import { partOf, type TemplateOverride } from './templates';
  */
 
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
-const MONO = SPECTRUM_EMAIL_FONTS.mono;
 /*
  * The SBC table theme the owner picked on 17 Nov 2026 (the firm's "MY DAY" email): an SBC orange
  * header row (#e35f2a) with white bold text, rows banded white and a light peach (#fdeee8), and
@@ -119,7 +118,8 @@ ${bodyHtml}
 
 const TH = `padding:6px 10px;background:${ORANGE};color:#ffffff;font-family:${SANS};font-size:12.5px;line-height:16px;font-weight:700;text-align:left;white-space:nowrap;`;
 const TD = `padding:5px 10px;border-bottom:1px solid ${GRID};font-family:${SANS};font-size:13px;line-height:17px;color:${INK};white-space:nowrap;`;
-const NUM = `font-family:${MONO};text-align:right;`;
+// Amounts in Roboto with even-width digits (owner, 19 Nov 2026: no typewriter font).
+const NUM = `font-family:${SANS};font-variant-numeric:tabular-nums;text-align:right;`;
 
 type Column = { label: string; num?: boolean };
 

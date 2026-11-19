@@ -336,6 +336,8 @@ export function ComposeSummary({
       title={invoiceIds?.length ? `Send email · ${invoiceIds.length} picked invoice${invoiceIds.length === 1 ? '' : 's'}` : 'Send email'}
       sub={s ? `The sheet as it is now${s.lastSentAt ? ` · ${s.lastSendStatus === 'failed' ? 'last send failed' : s.lastSendStatus === 'sending' ? 'sending since' : 'last sent'} ${stamp(s.lastSentAt)}` : ''}` : undefined}
       size="xl"
+      // Nearly the full screen (owner, 19 Nov 2026), so the email preview shows its whole table.
+      className="max-w-[min(1560px,96vw)]"
       flush
       footer={
         <>

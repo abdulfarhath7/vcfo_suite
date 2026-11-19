@@ -28,7 +28,7 @@ const fcFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maxi
  * The table theme (owner, 17 Nov 2026; refined 18 Nov 2026): a light peach month title, column
  * heads in orange (#e35f2a, white bold text), rows banded white and a lighter peach with thin grey
  * rules between them, received rows pale green, the month's open total bold under an orange rule,
- * amounts right-aligned in Roboto Mono and the status in colour (overdue red, due today amber,
+ * amounts right-aligned in Roboto with even-width digits (owner, 19 Nov 2026: no typewriter font) and the status in colour (overdue red, due today amber,
  * received green). No firm name in the signature.
  */
 // The owner's SBC table theme (17 Nov 2026), the same values as email-v2.ts.
@@ -42,7 +42,6 @@ const AMBER = '#b26a00';
 const GREEN = '#2e7d32';
 const RED = emailColor('danger');
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
-const MONO = SPECTRUM_EMAIL_FONTS.mono;
 const P = `margin:0 0 12px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};`;
 const CELL = `border-bottom:1px solid ${GRID};padding:5px 10px;font-size:13px;line-height:17px;font-family:${SANS};color:${INK};white-space:nowrap;`;
 const TITLE = `padding:6px 10px;font-size:13.5px;line-height:18px;font-family:${SANS};background:#fbe4da;color:${INK};font-weight:bold;border-bottom:1px solid ${GRID};`;
@@ -51,7 +50,11 @@ const HEAD = `padding:6px 10px;font-size:12.5px;line-height:16px;font-family:${S
 const TABLE = `width:100%;border-collapse:collapse;margin:10px 0 14px;min-width:560px;border:1px solid ${GRID};`;
 /** An empty cell: the same dash in the same font everywhere. */
 const DASH = `<span style="font-family:${SANS};color:${MUTED};">—</span>`;
-const NUM = `font-family:${MONO};text-align:right;`;
+// Amounts in Roboto with even-width digits, so the digits still line up (owner, 19 Nov 2026).
+const NUM = `font-family:${SANS};font-variant-numeric:tabular-nums;text-align:right;`;
+// A long client or partner name wraps onto a second line instead of pushing the other columns
+// out of place; the other cells stay on one line (owner, 19 Nov 2026).
+const WRAP = 'white-space:normal;word-break:break-word;';
 const TOTAL = `font-weight:bold;border-top:2px solid ${ORANGE};background:#ffffff;`;
 
 export type SummaryEmailInput = {
@@ -134,11 +137,11 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
 
   const foreign = shown.some(isForeignRow);
   // The sheet's own columns (owner, 18 Nov 2026), with the received date and amount apart.
-  const heads: Array<{ label: string; num?: boolean; center?: boolean }> = [
-    { label: 'Client' },
+  const heads: Array<{ label: string; num?: boolean; center?: boolean; width?: string }> = [
+    { label: 'Client', width: '22%' },
     { label: 'Invoice no.' },
     { label: 'Invoice date', center: true },
-    { label: 'Partner' },
+    { label: 'Partner', width: '13%' },
     { label: 'Due date', center: true },
     ...(foreign ? [{ label: 'Currency', center: true }, { label: foreignAmountHeader(shown.filter(isForeignRow).map((r) => r.currency)), num: true }] : []),
     { label: 'Amount (₹)', num: true },
@@ -163,7 +166,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
           const fx = foreign
             ? `<td ${td(bg, 'text-align:center;')}>${isForeignRow(r) ? escapeHtml((r.currency ?? '').toUpperCase()) : 'INR'}</td><td ${td(bg, NUM)}>${fc === null ? DASH : fcFormat.format(fc)}</td>`
             : '';
-          return `<tr><td ${td(bg, 'font-weight:600;')}>${escapeHtml(r.clientName)}</td><td ${td(bg, `font-family:${MONO};font-size:12.5px;`)}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
+          return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.clientName)}</td><td ${td(bg, 'font-size:12.5px;')}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg, WRAP)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
         })
         .join('');
       const title = monthBlockTitle(m).replace(' Receivables', '');
@@ -173,7 +176,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     .join('');
   const tables = monthBlocks
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
-        .map((h) => `<td style="${HEAD}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
+        .map((h) => `<td${h.width ? ` width="${h.width}"` : ''} style="${HEAD}${h.width ? `width:${h.width};` : ''}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
         .join('')}</tr>${monthBlocks}</table>`
     : '';
 
@@ -187,7 +190,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     paidBlock,
     intro !== null ? paras(intro) : `<p style="${P}">Please find the receivables summary as of today:</p>`,
     tables,
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:560px;border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:10px 14px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${MONO};font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:560px;border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:10px 14px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${SANS};font-variant-numeric:tabular-nums;font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
     // Receivables v2: no link to the tool in any receivables email; `liveUrl` is no longer shown.
     // No firm name under the signature (owner, 18 Nov 2026).
     closing !== null ? paras(closing) : '',
