@@ -307,3 +307,9 @@ export async function deleteInvoice(ctx: AuthContext, invoiceId: string): Promis
   await db.update(receivableInvoices).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(receivableInvoices.id, invoice.id));
   await logChange({ sheetId: sheet.id, invoiceId: invoice.id, actorId: ctx.userId, summary: `${invoiceLabel(invoice)} removed` });
 }
+
+/** The sheet an invoice belongs to, for the caller's own follow-up work (scoped like every invoice read). */
+export async function sheetIdOfInvoice(ctx: AuthContext, invoiceId: string): Promise<string> {
+  const { sheet } = await scopedInvoice(ctx, invoiceId);
+  return sheet.id;
+}

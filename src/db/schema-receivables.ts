@@ -89,9 +89,19 @@ export const receivableSheetEditors = pgTable(
       .references(() => base.profiles.id, { onDelete: 'cascade' }),
     addedBy: uuid('added_by').references(() => base.profiles.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** The Team section (owner, 20 Nov 2026): the person's role on this sheet, in their words ("Accounts"). */
+    role: text('role'),
+    /** Gets the WhatsApp updates of this sheet: emails waiting for approval, sent, skipped, failed, payments. */
+    whatsappUpdates: boolean('whatsapp_updates').notNull().default(true),
+    /** May approve and send the emails waiting for approval. */
+    canApprove: boolean('can_approve').notNull().default(true),
+    /** The set-password link of a login made for the team member (one use, seven days). */
+    setPasswordTokenHash: text('set_password_token_hash'),
+    setPasswordExpiresAt: timestamp('set_password_expires_at', { withTimezone: true }),
   },
   (t) => ({
     pk: primaryKey({ columns: [t.sheetId, t.userId] }),
+    tokenIdx: index('receivable_sheet_editors_token_idx').on(t.setPasswordTokenHash),
     userIdx: index('receivable_sheet_editors_user_idx').on(t.userId),
   }),
 );

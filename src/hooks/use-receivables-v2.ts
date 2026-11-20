@@ -177,3 +177,30 @@ export function useAwaitingEmails(sheetId: string) {
 export function useEmailLogEntry(id: string | null) {
   return useQuery({ queryKey: ['receivables', 'email-log-entry', id], queryFn: () => call<EmailLogEntryDto>(`/api/receivables/email-log/${id}`), enabled: Boolean(id) });
 }
+
+/** The People tab's Team section (owner, 20 Nov 2026): the sheet's manager and members. */
+export type TeamMember = {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  phone: string | null;
+  whatsappUpdates: boolean;
+  canApprove: boolean;
+  isManager: boolean;
+  invitePending: boolean;
+};
+export type TeamWrite = { name?: string; role?: string; email?: string; phone?: string | null; whatsappUpdates?: boolean; canApprove?: boolean };
+
+export function useTeam(sheetId: string) {
+  const qc = useQueryClient();
+  const base = `/api/receivables/sheets/${sheetId}/team`;
+  const key = ['receivables', 'team', sheetId] as const;
+  const onSettled = () => qc.invalidateQueries({ queryKey: key });
+  return {
+    query: useQuery({ queryKey: key, queryFn: () => call<{ team: TeamMember[] }>(base) }),
+    add: useMutation({ mutationFn: (input: TeamWrite & { email: string }) => call<{ member: TeamMember; emailed: boolean }>(base, json('POST', input)), onSettled }),
+    update: useMutation({ mutationFn: (input: TeamWrite & { userId: string }) => call<{ member: TeamMember }>(base, json('PATCH', input)), onSettled }),
+    remove: useMutation({ mutationFn: (userId: string) => call<{ ok: true }>(`${base}?userId=${userId}`, { method: 'DELETE' }), onSettled }),
+  };
+}

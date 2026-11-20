@@ -24,6 +24,7 @@ describe('proxyRedirect, signed out', () => {
     expect(proxyRedirect('/receivables/login', '?next=%2Freceivables', null)).toBeNull();
     expect(proxyRedirect('/receivables/set-password', '?token=x', null)).toBeNull();
     expect(proxyRedirect('/receivables/set-password/abc', '', null)).toBeNull();
+    expect(proxyRedirect('/receivables/team-password', '?token=x', null)).toBeNull();
   });
 });
 

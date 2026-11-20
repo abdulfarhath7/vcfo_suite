@@ -463,6 +463,13 @@
       "when": 1795094101266,
       "tag": "0065_receivables_received_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1795185679545,
+      "tag": "0066_receivables_team",
+      "breakpoints": true
     }
   ]
 }

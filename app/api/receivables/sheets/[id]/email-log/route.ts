@@ -1,7 +1,8 @@
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { approveEmailLogs, lastAutoSends, listEmailLogPage, skipEmailLogs } from '@/db/repositories/receivables';
+import { approveEmailLogs, getSignName, lastAutoSends, listEmailLogPage, mayApprove, skipEmailLogs } from '@/db/repositories/receivables';
+import { emails, notifyTeam } from '@/lib/receivables/team-notify';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { outlookErrorCode } from '@/lib/receivables/summary-send';
 import { tidyEmailHtml } from '@/lib/receivables/recipients';
@@ -58,14 +59,25 @@ export async function POST(request: Request, context: RouteContext) {
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   const input = body.data as z.infer<typeof schema>;
   try {
-    if (input.action === 'skip') return NextResponse.json({ ok: true, count: await skipEmailLogs(guard.ctx, id, input.ids) });
+    // Team members whose "can approve" switch is off may look but not approve or skip.
+    if (!(await mayApprove(guard.ctx, id))) return NextResponse.json({ error: 'not_approver' }, { status: 403 });
+    const who = (await getSignName(guard.ctx).catch(() => null)) || 'Someone';
+    if (input.action === 'skip') {
+      const count = await skipEmailLogs(guard.ctx, id, input.ids);
+      if (count) after(() => notifyTeam(id, `${who} skipped ${emails(count)}; they will not be sent`).then(() => undefined));
+      return NextResponse.json({ ok: true, count });
+    }
     // The approver's own Outlook sends them, so it must be connected first.
     await assertOutlookReady(guard.ctx);
     const html = Object.fromEntries(Object.entries(input.html ?? {}).map(([k, v]) => [k, tidyEmailHtml(v)]));
     const ids = await approveEmailLogs(guard.ctx, id, input.ids, html);
     const ctx = guard.ctx;
     after(async () => {
-      for (const logId of ids) await deliverLoggedEmail(logId, { ctx });
+      let sent = 0;
+      for (const logId of ids) if ((await deliverLoggedEmail(logId, { ctx })) === 'sent') sent += 1;
+      // One WhatsApp to the team for the whole approval, with what failed.
+      const failed = ids.length - sent;
+      await notifyTeam(id, `${who} approved ${emails(ids.length)}: ${sent} sent${failed ? `, ${failed} failed (see the Email log)` : ''}`);
     });
     return NextResponse.json({ ok: true, count: ids.length }, { status: 202 });
   } catch (e) {

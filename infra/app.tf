@@ -282,6 +282,8 @@ resource "aws_apprunner_service" "app" {
           } : {},
           # Receivables v2: the DoubleTick API key (doubletick.tf).
           local.doubletick_secrets,
+          # Receivables approval: the hourly clock's secret (cron.tf).
+          local.cron_secrets,
         )
       }
     }

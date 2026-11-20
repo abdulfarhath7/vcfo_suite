@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
-import { createAwaitedFira, markReceived, reopenInvoice } from '@/db/repositories/receivables';
+import { createAwaitedFira, getSignName, markReceived, reopenInvoice, sheetIdOfInvoice } from '@/db/repositories/receivables';
+import { notifyTeam } from '@/lib/receivables/team-notify';
 import { isForeign } from '@/lib/receivables/fx';
 import { amount, denied, guardReceivables, isoDate, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -37,6 +38,16 @@ export async function POST(request: Request, context: RouteContext) {
       // and the FIRA list creates any missing row when it is next read.
       await createAwaitedFira(guard.ctx, id).catch((e) => console.error('[receivables] awaited FIRA not created', e instanceof Error ? e.message : e));
     }
+    // The team hears about each payment (owner, 20 Nov 2026).
+    const ctx = guard.ctx;
+    const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(body.data.amount);
+    const what = `${invoice.clientName} ${invoice.invoiceNo ?? ''}`.trim();
+    after(async () => {
+      const who = (await getSignName(ctx).catch(() => null)) || 'Someone';
+      const sheetId = await sheetIdOfInvoice(ctx, id).catch(() => null);
+      if (!sheetId) return;
+      await notifyTeam(sheetId, `${who} marked ${what} ${invoice.status === 'received' ? 'received' : 'part paid'}: ₹${inr}`, { tab: 'sheet', exceptUserId: ctx.userId });
+    });
     return NextResponse.json({ invoice });
   } catch (e) {
     return receivablesError(e);

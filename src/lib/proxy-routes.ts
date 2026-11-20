@@ -35,7 +35,9 @@ export function isPublicReceivablesPath(path: string): boolean {
   return (
     path === '/receivables/login' ||
     path === '/receivables/set-password' ||
-    path.startsWith('/receivables/set-password/')
+    path.startsWith('/receivables/set-password/') ||
+    // A receivables team member's new login (owner, 20 Nov 2026).
+    path === '/receivables/team-password'
   );
 }
 

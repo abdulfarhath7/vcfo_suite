@@ -9,23 +9,25 @@ import { usePeople, usePeopleActions } from '@/hooks/use-receivables-v2';
 import { ClientsPane } from './people/ClientsPane';
 import { LeadersPane } from './people/LeadersPane';
 import { PartnersPane } from './people/PartnersPane';
+import { TeamPane } from './people/TeamPane';
 import { EmailSwitches, Integrations } from './people/TopBar';
 import { errorText, type Actions } from './people/shared';
 
 /**
  * The People tab (receivables v2, docs/specs/receivables/V2.md), which replaced the Partners tab.
- * The top row holds three sub-tabs on the left and the Outlook and WhatsApp (DoubleTick) status
+ * The top row holds four sub-tabs on the left and the Outlook and WhatsApp (DoubleTick) status
  * dots on the right, which open their details and actions. Under it, one strip holds the
  * sheet-wide email switches (new invoice, revised, roll-up interval and hour, the next sends).
  *  - Partners: a master–detail split. The partner list with open counts and short totals on the
  *    left; the picked partner's switches, Edit, their clients and "Manage clients" on the right.
  *  - Clients: every client with partner and credit days edited in place, and "Send statement".
  *  - Leaders: the leadership digest switch, weekday and hour, and its typed-in recipients.
+ *  - Team: the people who run the sheet, their WhatsApp updates and who may approve (owner, 20 Nov 2026).
  * Every email sent now shows in the Email log tab (owner, 19 Nov 2026), which replaced the Log sub-tab.
  * The sub-tabs live in `./people/`.
  */
 
-type Sub = 'partners' | 'clients' | 'leaders';
+type Sub = 'partners' | 'clients' | 'leaders' | 'team';
 
 export function PeopleTab({ data, actions, outlook, settingsHref }: { data: ManagerSheetDto; actions: Actions; outlook: OutlookStatusDto | undefined; settingsHref: string }) {
   const sheetId = data.sheet.id;
@@ -40,6 +42,7 @@ export function PeopleTab({ data, actions, outlook, settingsHref }: { data: Mana
     { key: 'partners', label: 'Partners', count: data.partners.length },
     { key: 'clients', label: 'Clients', count: p.clients.length },
     { key: 'leaders', label: 'Leaders', count: p.digestRecipients.filter((r) => r.active).length },
+    { key: 'team', label: 'Team' },
   ];
   return (
     <div className="flex flex-col gap-3">
@@ -59,6 +62,7 @@ export function PeopleTab({ data, actions, outlook, settingsHref }: { data: Mana
       {sub === 'partners' ? <PartnersPane data={data} people={p} actions={actions} act={act} /> : null}
       {sub === 'clients' ? <ClientsPane data={data} people={p} act={act} /> : null}
       {sub === 'leaders' ? <LeadersPane people={p} act={act} saveSettings={saveSettings} /> : null}
+      {sub === 'team' ? <TeamPane sheetId={sheetId} /> : null}
     </div>
   );
 }

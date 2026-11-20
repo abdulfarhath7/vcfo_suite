@@ -102,3 +102,5 @@ export {
 export { getSignName, setSignName } from './sign-name';
 export { sentReceiptsFor, systemRecordSentReceipts } from './sent-receipts';
 export { listTemplates, templateFor, saveTemplate, resetTemplate, systemTemplatesFor } from './templates';
+export { addTeamMember, listTeam, mayApprove, removeTeamMember, systemPeekTeamToken, systemSetTeamPassword, systemTeamWhatsApp, updateTeamMember, type TeamInput, type TeamMemberDto } from './team';
+export { sheetIdOfInvoice } from './invoices';

@@ -27,6 +27,7 @@ import { todayIst } from './dates';
 import { leadershipDigestEmail, newInvoiceEmail, revisedInvoiceEmail, rollupEmail, senderPingText } from './email-v2';
 import { outlookErrorCode } from './summary-send';
 import { digestDue, rollupDue } from './v2-schedule';
+import { emails, notifyTeam } from './team-notify';
 import type { TemplateSet } from './templates';
 import type { WhatsAppPingStatus } from './v2-wire';
 
@@ -253,6 +254,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
       }
     }
   }
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (new or revised invoice) wait for approval`, { sheetName: sheet.clientOrgName });
   return out;
 }
 
@@ -302,6 +304,7 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
     await systemReplaceAwaiting(sheet.id, 'rollup', p.id, log.id);
     out.sent += 1;
   }
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (roll-up to the partners) wait for approval`, { sheetName: sheet.clientOrgName });
   return out;
 }
 
@@ -345,6 +348,7 @@ export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new
   });
   if (!log) return 'skipped';
   await systemReplaceAwaiting(sheet.id, 'digest', null, log.id);
+  await notifyTeam(sheet.id, 'The leadership digest waits for approval', { sheetName: sheet.clientOrgName });
   return 'sent';
 }
 

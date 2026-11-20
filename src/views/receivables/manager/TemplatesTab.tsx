@@ -22,9 +22,9 @@ import { BODY_PARTS, editorHtml, previewOf, type BodyPart } from './templates/pr
  */
 
 const EMPTY: TemplateText = { subject: '', greeting: '', intro: '', closing: '' };
-/** An editable part: a dashed outline on hover, a solid one while typing, the email's own font. */
+/** An editable part: a faint tint, an outline on hover and a brand outline while typing, the email's own font. */
 const SLOT =
-  'rounded-sm border border-dashed border-transparent bg-transparent px-1 -mx-1 font-[inherit] text-[length:inherit] leading-[inherit] text-[inherit] outline-none placeholder:text-[#9aa0a6] hover:border-[#c9ccd1] focus:border-solid focus:border-brand focus:bg-[#f6f8ff]';
+  'rounded-sm border border-transparent bg-[#fafbff] px-1 -mx-1 font-[inherit] text-[length:inherit] leading-[inherit] text-[inherit] outline-none placeholder:text-[#9aa0a6] hover:border-[#c9ccd1] focus:border-brand focus:bg-[#f6f8ff]';
 const PART_LABEL: Record<BodyPart, string> = { greeting: 'Greeting', intro: 'Opening text', closing: 'Closing text' };
 const PART_EMPTY: Record<BodyPart, string> = { greeting: 'Add a greeting', intro: 'Add an opening line', closing: '+ Add a closing line (optional)' };
 
