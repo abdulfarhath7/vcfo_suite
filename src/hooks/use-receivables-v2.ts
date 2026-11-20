@@ -146,13 +146,31 @@ export function useEmailLog(sheetId: string, filter: EmailLogFilter) {
     queryFn: ({ pageParam }) => call<EmailLogPageDto>(`/api/receivables/sheets/${sheetId}/email-log?${params(pageParam)}`),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextBefore,
-    refetchInterval: (q) => (q.state.data?.pages.some((p) => p.rows.some((r) => r.status === 'sending')) ? 15_000 : false),
+    refetchInterval: (q) => (q.state.data?.pages.some((p) => p.rows.some((r) => r.status === 'sending')) ? 5_000 : false),
   });
+  const onSettled = () => qc.invalidateQueries({ queryKey: ['receivables', 'email-log', sheetId] });
   const retry = useMutation({
     mutationFn: (logId: string) => call<{ ok: true; queued: true }>(`/api/receivables/email-log/${logId}/retry`, json('POST')),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['receivables', 'email-log', sheetId] }),
+    onSettled,
   });
-  return { query, retry };
+  /** Approve (sends from the caller's Outlook, with any changed words by id) or Skip the waiting emails. */
+  const decide = useMutation({
+    mutationFn: (input: { action: 'approve' | 'skip'; ids: string[]; html?: Record<string, string> }) => call<{ ok: true; count: number }>(`/api/receivables/sheets/${sheetId}/email-log`, json('POST', input)),
+    onSettled,
+  });
+  return { query, retry, decide };
+}
+
+/**
+ * The emails waiting for approval (owner, 20 Nov 2026), for the Email log tab's badge and its
+ * Awaiting approval list. Loading it also prepares the roll-up and digest that are due.
+ */
+export function useAwaitingEmails(sheetId: string) {
+  return useQuery({
+    queryKey: ['receivables', 'email-log', sheetId, 'awaiting'],
+    queryFn: () => call<EmailLogPageDto>(`/api/receivables/sheets/${sheetId}/email-log?status=awaiting`),
+    refetchInterval: 120_000,
+  });
 }
 
 /** One email in full, for the Email log's viewer. */

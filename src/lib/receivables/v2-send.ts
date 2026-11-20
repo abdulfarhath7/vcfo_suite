@@ -13,6 +13,7 @@ import {
   systemSheetPartners,
   systemStaffName,
   systemTemplatesFor,
+  systemReplaceAwaiting,
   systemStartEmailLog,
   type EmailInvoiceRow,
   systemCoPartnerLinks,
@@ -173,6 +174,8 @@ const partnerOf = (partners: Awaited<ReturnType<typeof systemSheetPartners>>, id
  * A: one email per client partner listing that partner's new invoices; A′: one email per revised
  * invoice. Each only when the sheet's switch and the partner's switch are both on. Sent from the
  * approver's Outlook. A key per partner and invoice keeps a retried job from sending twice.
+ * Since 20 Nov 2026 each is saved as `awaiting` and goes only when someone approves it in the
+ * Email log; `sent` in the counts means prepared.
  */
 export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ sent: number; failed: number; skipped: number }> {
   const out = { sent: 0, failed: 0, skipped: 0 };
@@ -207,10 +210,9 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
         senderUserId: input.approverId,
         invoiceIds: ids,
         about: list.length === 1 ? `${list[0]!.invoiceNo ?? 'the invoice'} / ${list[0]!.clientName}` : `${list.length} new invoices`,
+        status: 'awaiting',
       });
-      if (!log) continue;
-      if ((await deliverLoggedEmail(log.id, { userId: input.approverId })) === 'sent') out.sent += 1;
-      else out.failed += 1;
+      if (log) out.sent += 1;
     }
   }
 
@@ -245,10 +247,9 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
           senderUserId: input.approverId,
           invoiceIds: [inv.id],
           about: `${inv.invoiceNo ?? 'the invoice'} / ${inv.clientName}`,
+          status: 'awaiting',
         });
-        if (!log) continue;
-        if ((await deliverLoggedEmail(log.id, { userId: input.approverId })) === 'sent') out.sent += 1;
-        else out.failed += 1;
+        if (log) out.sent += 1;
       }
     }
   }
@@ -257,7 +258,11 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
 
 /* ---- B and C: the scheduled emails ------------------------------------------------------- */
 
-/** B: the roll-up of one sheet, if due now. One email per partner with open invoices. */
+/**
+ * B: the roll-up of one sheet, if due now. One email per partner with open invoices. Since 20 Nov
+ * 2026 nothing goes without approval: each email is saved as `awaiting` (the counts say how many
+ * were prepared) and a newer roll-up replaces an older one still waiting for the same partner.
+ */
 export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = new Date()): Promise<{ sent: number; failed: number; skipped: number }> {
   const out = { sent: 0, failed: 0, skipped: 0 };
   const last = await systemLastRollupDate(sheet.id);
@@ -291,10 +296,11 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
       senderUserId: sheet.managerUserId,
       invoiceIds: list.map((i) => i.id),
       about: `${new Set(list.map((i) => i.clientName)).size} client(s), ${list.length} open invoice(s)`,
+      status: 'awaiting',
     });
     if (!log) continue;
-    if ((await deliverLoggedEmail(log.id, { userId: sheet.managerUserId })) === 'sent') out.sent += 1;
-    else out.failed += 1;
+    await systemReplaceAwaiting(sheet.id, 'rollup', p.id, log.id);
+    out.sent += 1;
   }
   return out;
 }
@@ -308,7 +314,7 @@ async function templatesOf(sheetId: string): Promise<TemplateSet> {
   }
 }
 
-/** C: the leadership digest of one sheet, if due now. One email to every active recipient. */
+/** C: the leadership digest of one sheet, if due now: one email to every recipient, saved as `awaiting`. */
 export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new Date()): Promise<'sent' | 'failed' | 'skipped' | 'not_due'> {
   if (!digestDue(sheet, now)) return 'not_due';
   const today = todayIst(now);
@@ -335,7 +341,25 @@ export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new
     senderUserId: sheet.managerUserId,
     invoiceIds: open.map((i) => i.id),
     about: `the ${sheet.clientOrgName} receivables digest`,
+    status: 'awaiting',
   });
   if (!log) return 'skipped';
-  return deliverLoggedEmail(log.id, { userId: sheet.managerUserId });
+  await systemReplaceAwaiting(sheet.id, 'digest', null, log.id);
+  return 'sent';
+}
+
+/**
+ * Prepares the roll-up and digest that are due for one sheet (owner, 20 Nov 2026): no clock, it
+ * runs when someone opens Receivables. Each email waits for approval; the dedupe keys keep it to
+ * once per day. Never throws, so opening the page never fails on it.
+ */
+export async function prepareDueEmails(sheetId: string, now: Date = new Date()): Promise<void> {
+  try {
+    const sheet = await systemSheetEmailSettings(sheetId);
+    if (!sheet) return;
+    await sendSheetRollups(sheet, now);
+    await sendSheetDigest(sheet, now);
+  } catch (e) {
+    console.error('[receivables] due emails not prepared', e instanceof Error ? e.message.slice(0, 200) : e);
+  }
 }

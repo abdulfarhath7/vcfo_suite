@@ -9,7 +9,7 @@ import { FilterSelect } from '@/components/ui/native-select';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { usePeople } from '@/hooks/use-receivables-v2';
+import { useAwaitingEmails, usePeople } from '@/hooks/use-receivables-v2';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { todayIst } from '@/lib/receivables/dates';
 import type { SheetListItem } from '@/lib/receivables/wire';
@@ -73,6 +73,9 @@ export function ReceivablesManager({
   const outlook = useOutlookStatus();
   // The WhatsApp (DoubleTick) dot: set up on the server, and this person's own number saved.
   const people = usePeople(sheetId);
+  // Emails waiting for approval (owner, 20 Nov 2026): the count on the Email log tab. Loading it also
+  // prepares the roll-up and digest that are due, so opening any Receivables page makes them.
+  const awaiting = useAwaitingEmails(sheetId).data?.rows.length ?? 0;
   const w = people.data?.whatsapp;
   const wa = w
     ? {
@@ -116,7 +119,7 @@ export function ReceivablesManager({
           ) : (
             <span className="text-[12.5px] font-semibold text-ink">{data?.sheet.clientOrgName ?? sheets[0]?.clientOrgName}</span>
           )}
-          <SpectrumTabs variant="underline" label="Receivables" className="min-w-0 flex-1 [&_[role=tab]]:h-9" items={TABS.map((t) => ({ key: t.key, label: t.label }))} value={tab} onChange={(k) => go({ tab: k })} />
+          <SpectrumTabs variant="underline" label="Receivables" className="min-w-0 flex-1 [&_[role=tab]]:h-9" items={TABS.map((t) => ({ key: t.key, label: t.key === 'emails' && awaiting ? `${t.label} ⏳` : t.label, count: t.key === 'emails' && awaiting ? awaiting : undefined }))} value={tab} onChange={(k) => go({ tab: k })} />
           <span className="flex items-center gap-3 text-[12px]">
             {outlook.data?.connected ? (
               <span className="inline-flex items-center gap-1.5" title={`Receivables emails you approve or send go from ${outlook.data.msEmail}`}>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { RotateCw, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, RotateCw, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { FilterSelect } from '@/components/ui/native-select';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
-import { useEmailLog, useEmailLogEntry } from '@/hooks/use-receivables-v2';
+import { useAwaitingEmails, useEmailLog, useEmailLogEntry } from '@/hooks/use-receivables-v2';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { AUTO_EMAIL_KINDS, MANUAL_EMAIL_KINDS, isAutoEmail, type EmailKind, type EmailLogDto, type EmailLogFilter, type EmailStatus } from '@/lib/receivables/v2-wire';
 import { cn } from '@/lib/utils';
@@ -22,9 +22,15 @@ import { ERROR_LABEL, KIND_LABEL, ROW_BTN, TD, TH, errorText } from './people/sh
  * manual), the email type, the status and a search on the subject, name or address. A click on a
  * row opens the email as it was sent. A failed automatic email or statement can be sent again
  * with Retry; a failed Send email goes again from the Sheet tab, which checks the invoices first.
+ *
+ * Approval (owner, 20 Nov 2026): no automatic email goes on its own. New invoice, revised, roll-up
+ * and digest emails wait in "Awaiting approval" at the top; anyone who can open the sheet may view,
+ * change the words, approve (sent from their own Outlook) or skip them. The roll-up and digest are
+ * prepared when someone opens Receivables on their day, after their hour.
  */
 
 const STATUS: Record<EmailStatus, { mark: string; text: string; tone: string }> = {
+  awaiting: { mark: '⏳', text: 'Awaiting approval', tone: 'text-warning' },
   sent: { mark: '✓', text: 'Sent', tone: 'text-positive' },
   failed: { mark: '✗', text: 'Failed', tone: 'text-danger' },
   sending: { mark: '…', text: 'Sending', tone: 'text-info' },
@@ -33,10 +39,12 @@ const STATUS: Record<EmailStatus, { mark: string; text: string; tone: string }> 
 const WA: Record<string, string> = { sent: 'WhatsApp sent', failed: 'WhatsApp failed', no_phone: 'No WhatsApp number', disabled: 'WhatsApp off' };
 
 const KIND_OPTIONS = [{ value: '', label: 'All types' }, ...[...MANUAL_EMAIL_KINDS, ...AUTO_EMAIL_KINDS].map((k) => ({ value: k, label: KIND_LABEL[k] }))];
-const STATUS_OPTIONS = [{ value: '', label: 'Any status' }, ...(['sent', 'failed', 'sending', 'skipped'] as const).map((s) => ({ value: s, label: STATUS[s].text }))];
+const STATUS_OPTIONS = [{ value: '', label: 'Any status' }, ...(['awaiting', 'sent', 'failed', 'sending', 'skipped'] as const).map((s) => ({ value: s, label: STATUS[s].text }))];
 
-const canRetry = (l: EmailLogDto) => (l.status === 'failed' || l.status === 'skipped') && l.kind !== 'summary';
-const errorOf = (l: EmailLogDto) => (l.error ? (ERROR_LABEL[l.error] ?? l.error) : null);
+/** Retry is for a send that failed or could not start, not for one a person skipped or a newer one replaced. */
+const canRetry = (l: EmailLogDto) => (l.status === 'failed' || (l.status === 'skipped' && l.error !== 'skipped' && l.error !== 'replaced')) && l.kind !== 'summary';
+const errorOf = (l: EmailLogDto) =>
+  l.error === 'skipped' ? `Skipped by ${l.senderName ?? 'someone'}` : l.error === 'replaced' ? 'Replaced by a newer one' : l.error ? (ERROR_LABEL[l.error] ?? l.error) : null;
 
 export function EmailLogTab({ sheetId }: { sheetId: string }) {
   const [origin, setOrigin] = useState<'all' | 'auto' | 'manual'>('all');
@@ -51,7 +59,18 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
     return () => clearTimeout(t);
   }, [typed]);
   const filter: EmailLogFilter = { origin: origin === 'all' ? undefined : origin, kind: kind || undefined, status: status || undefined, q: q || undefined };
-  const { query, retry } = useEmailLog(sheetId, filter);
+  const { query, retry, decide } = useEmailLog(sheetId, filter);
+  const decideOn = (action: 'approve' | 'skip', ids: string[], html?: Record<string, string>, done?: () => void) =>
+    decide.mutate(
+      { action, ids, html },
+      {
+        onSuccess: (r) => {
+          toastSuccess(action === 'approve' ? `Sending ${r.count} email${r.count === 1 ? '' : 's'}` : `${r.count} skipped`, action === 'approve' ? 'From your Outlook.' : 'They will not be sent.');
+          done?.();
+        },
+        onError: (e) => toastError(action === 'approve' ? 'Not sent' : 'Not skipped', errorText(e)),
+      },
+    );
   const rows = query.data?.pages.flatMap((p) => p.rows) ?? [];
   const kinds = KIND_OPTIONS.filter((o) => !o.value || origin === 'all' || isAutoEmail(o.value as EmailKind) === (origin === 'auto'));
   const onRetry = (l: EmailLogDto) =>
@@ -80,6 +99,8 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
           <Input aria-label="Search the emails" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Search subject, name or email" className="h-8 pl-8 text-[13px]" />
         </div>
       </div>
+
+      <AwaitingPanel sheetId={sheetId} busy={decide.isPending} onView={setOpen} onDecide={decideOn} />
 
       <div className="overflow-x-auto rounded-md border border-line bg-surface-raised">
         <table className="w-full min-w-[1080px] border-collapse">
@@ -129,7 +150,7 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
                   </td>
                   {/* From: the Outlook address it went from, not the name (owner, 19 Nov 2026). */}
                   <td className={cn(TD, 'max-w-[200px] truncate text-ink-2')} title={l.senderName ?? undefined}>
-                    {l.senderEmail ?? l.senderName ?? '—'}
+                    {l.status === 'awaiting' ? <span className="text-ink-muted">The approver’s Outlook</span> : (l.senderEmail ?? l.senderName ?? '—')}
                   </td>
                   <td className={TD}>
                     <div className={cn('font-medium', st.tone)}>
@@ -173,8 +194,60 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
         ) : null}
       </div>
 
-      {open ? <EmailViewer id={open} row={rows.find((r) => r.id === open)} onClose={() => setOpen(null)} onRetry={onRetry} retrying={retry.isPending} /> : null}
+      {open ? (
+        <EmailViewer id={open} row={rows.find((r) => r.id === open)} onClose={() => setOpen(null)} onRetry={onRetry} retrying={retry.isPending} busy={decide.isPending} onDecide={decideOn} />
+      ) : null}
     </div>
+  );
+}
+
+type Decide = (action: 'approve' | 'skip', ids: string[], html?: Record<string, string>, done?: () => void) => void;
+
+/** The emails waiting for approval, at the top of the tab: tick, view, skip, approve selected or all. */
+function AwaitingPanel({ sheetId, busy, onView, onDecide }: { sheetId: string; busy: boolean; onView: (id: string) => void; onDecide: Decide }) {
+  const awaiting = useAwaitingEmails(sheetId);
+  const rows = awaiting.data?.rows ?? [];
+  const [picked, setPicked] = useState<string[]>([]);
+  const live = picked.filter((id) => rows.some((r) => r.id === id));
+  if (!rows.length) return null;
+  const toggle = (id: string) => setPicked(live.includes(id) ? live.filter((x) => x !== id) : [...live, id]);
+  return (
+    <section aria-label="Awaiting approval" className="overflow-hidden rounded-md border border-warning/40 bg-warning-soft/40">
+      <div className="flex flex-wrap items-center gap-2 border-b border-warning/30 px-3 py-2">
+        <h2 className="text-[13px] font-semibold text-ink">{`⏳ Awaiting approval (${rows.length})`}</h2>
+        <span className="text-[12px] text-ink-muted">Nothing is sent until someone approves it. Approved emails go from your Outlook.</span>
+        <span className="ml-auto flex gap-2">
+          <Button size="sm" variant="secondary" disabled={!live.length || busy} onClick={() => onDecide('approve', live, undefined, () => setPicked([]))}>
+            <Check aria-hidden className="size-3.5" />
+            {`Approve selected${live.length ? ` (${live.length})` : ''}`}
+          </Button>
+          <Button size="sm" disabled={busy} onClick={() => onDecide('approve', rows.map((r) => r.id), undefined, () => setPicked([]))}>
+            <Check aria-hidden className="size-3.5" />
+            {`Approve all (${rows.length})`}
+          </Button>
+        </span>
+      </div>
+      <ul>
+        {rows.map((l) => (
+          <li key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-warning/20 bg-surface-raised px-3 py-1.5 text-[13px] first:border-t-0">
+            <input type="checkbox" aria-label={`Pick the ${KIND_LABEL[l.kind]} email to ${l.recipientName}`} checked={live.includes(l.id)} onChange={() => toggle(l.id)} className="size-4" />
+            <span className="w-[120px] shrink-0 font-medium text-ink">{KIND_LABEL[l.kind] ?? l.kind}</span>
+            <span className="w-[180px] shrink-0 truncate text-ink" title={l.to.join(', ')}>{`→ ${l.recipientName || l.to.join(', ')}`}</span>
+            <span className="min-w-0 flex-1 truncate text-ink-2" title={l.subject}>
+              {l.subject}
+            </span>
+            <span className="shrink-0 text-[11.5px] tabular-nums text-ink-muted">{stamp(l.createdAt)}</span>
+            <Button size="sm" variant="secondary" className={ROW_BTN} onClick={() => onView(l.id)}>
+              View
+            </Button>
+            <Button size="sm" variant="quiet" className={ROW_BTN} disabled={busy} onClick={() => onDecide('skip', [l.id])} aria-label={`Skip the ${KIND_LABEL[l.kind]} email to ${l.recipientName}`}>
+              <X aria-hidden />
+              Skip
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -182,8 +255,25 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
 const page = (html: string) =>
   /^\s*<!DOCTYPE/i.test(html) ? html : `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:16px;background:#fff;">${html}</body></html>`;
 
-function EmailViewer({ id, row, onClose, onRetry, retrying }: { id: string; row?: EmailLogDto; onClose: () => void; onRetry: (l: EmailLogDto) => void; retrying: boolean }) {
+function EmailViewer({
+  id,
+  row,
+  onClose,
+  onRetry,
+  retrying,
+  busy,
+  onDecide,
+}: {
+  id: string;
+  row?: EmailLogDto;
+  onClose: () => void;
+  onRetry: (l: EmailLogDto) => void;
+  retrying: boolean;
+  busy: boolean;
+  onDecide: Decide;
+}) {
   const entry = useEmailLogEntry(id);
+  const body = useRef<HTMLDivElement>(null);
   const e = entry.data;
   const l = e ?? row;
   const st = l ? (STATUS[l.status] ?? STATUS.skipped) : null;
@@ -208,6 +298,18 @@ function EmailViewer({ id, row, onClose, onRetry, retrying }: { id: string; row?
       className="max-w-[min(1200px,96vw)]"
       footer={
         <>
+          {l?.status === 'awaiting' ? (
+            <>
+              <Button variant="secondary" disabled={busy} onClick={() => onDecide('skip', [l.id], undefined, onClose)}>
+                <X aria-hidden className="size-3.5" />
+                Skip
+              </Button>
+              <Button disabled={busy || !e} onClick={() => onDecide('approve', [l.id], body.current ? { [l.id]: body.current.innerHTML } : undefined, onClose)}>
+                <Check aria-hidden className="size-3.5" />
+                Approve and send
+              </Button>
+            </>
+          ) : null}
           {l && canRetry(l) ? (
             <Button variant="secondary" disabled={retrying} onClick={() => onRetry(l)}>
               <RotateCw aria-hidden className="size-3.5" />
@@ -238,7 +340,22 @@ function EmailViewer({ id, row, onClose, onRetry, retrying }: { id: string; row?
         {entry.isLoading ? <p className="py-10 text-center text-[13px] text-ink-muted">Loading the email…</p> : null}
         {entry.error ? <p className="py-10 text-center text-[13px] text-danger">{entry.error.message}</p> : null}
         {e ? (
-          e.html ? (
+          e.html && e.status === 'awaiting' ? (
+            <>
+              <p className="text-[12.5px] text-ink-2">You can change the words below before you approve. Approve sends it from your Outlook.</p>
+              {/* Our own built email; editable so the approver can change the words. */}
+              <div
+                ref={body}
+                role="textbox"
+                aria-multiline="true"
+                aria-label={`The email to ${e.recipientName}`}
+                contentEditable
+                suppressContentEditableWarning
+                className="max-h-[60vh] overflow-auto rounded border border-line-strong bg-white p-3 text-[13px] text-black outline-none focus:border-brand focus:ring-4 focus:ring-focus-ring/25"
+                dangerouslySetInnerHTML={{ __html: (/<body[^>]*>([\s\S]*)<\/body>/i.exec(e.html)?.[1] ?? e.html) }}
+              />
+            </>
+          ) : e.html ? (
             <iframe title={`The email: ${e.subject}`} sandbox="" srcDoc={page(e.html)} className="h-[60vh] w-full rounded border border-line-soft bg-white" />
           ) : (
             <p className="py-6 text-center text-[13px] text-ink-muted">This email was logged without its body.</p>

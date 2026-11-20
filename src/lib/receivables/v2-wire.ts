@@ -104,7 +104,8 @@ export type ReceivedEmailDraftDto = {
   /** Who each invoice was already sent to, and when. */
   alreadySent: SentMap;
 };
-export type EmailStatus = 'sending' | 'sent' | 'failed' | 'skipped';
+/** `awaiting`: an automatic email waiting for someone to approve it (owner, 20 Nov 2026); nothing is sent until then. */
+export type EmailStatus = 'awaiting' | 'sending' | 'sent' | 'failed' | 'skipped';
 export type WhatsAppPingStatus = 'sent' | 'failed' | 'no_phone' | 'disabled';
 
 export type EmailLogDto = {

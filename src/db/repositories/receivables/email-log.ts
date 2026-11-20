@@ -127,7 +127,7 @@ function toDto(row: EmailLogRow, senderName: string | null, who?: { email: strin
 }
 
 const KINDS = new Set<string>([...AUTO_EMAIL_KINDS, ...MANUAL_EMAIL_KINDS]);
-const STATUSES = new Set<string>(['sending', 'sent', 'failed', 'skipped']);
+const STATUSES = new Set<string>(['awaiting', 'sending', 'sent', 'failed', 'skipped']);
 
 /**
  * The Email log tab (owner, 19 Nov 2026): every email of the sheet, automatic and manual, newest
@@ -213,4 +213,53 @@ export async function retryEmailLog(ctx: AuthContext, id: string): Promise<Email
     .where(and(eq(receivableEmailLog.id, row.id), eq(receivableEmailLog.sheetId, sheet.id)))
     .returning();
   return updated;
+}
+
+/* ---- Approval before any automatic email (owner, 20 Nov 2026) ---------------------------- */
+
+/**
+ * SYSTEM: a newer roll-up or digest replaces the older one still waiting for the same person, so a
+ * partner never gets two. The older row ends `skipped` with the reason `replaced`.
+ */
+export async function systemReplaceAwaiting(sheetId: string, kind: EmailKind, partnerId: string | null, keepId: string): Promise<void> {
+  const rows = await db
+    .select({ id: receivableEmailLog.id, partnerId: receivableEmailLog.partnerId })
+    .from(receivableEmailLog)
+    .where(and(eq(receivableEmailLog.sheetId, sheetId), eq(receivableEmailLog.kind, kind), eq(receivableEmailLog.status, 'awaiting')));
+  const old = rows.filter((r) => r.id !== keepId && (r.partnerId ?? null) === partnerId).map((r) => r.id);
+  if (old.length) await db.update(receivableEmailLog).set({ status: 'skipped', error: 'replaced' }).where(inArray(receivableEmailLog.id, old));
+}
+
+/**
+ * Approve: the waiting emails go to `sending` from the approver's Outlook, with the words the
+ * approver may have changed (`html` by id). Only rows of this sheet that still wait are taken, so a
+ * second click sends nothing twice. Returns the ids to send.
+ */
+export async function approveEmailLogs(ctx: AuthContext, sheetId: string, ids: string[], html: Record<string, string> = {}): Promise<string[]> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const valid = ids.filter((id) => UUID.test(id ?? ''));
+  if (!valid.length) return [];
+  const taken: string[] = [];
+  for (const id of valid) {
+    const [row] = await db
+      .update(receivableEmailLog)
+      .set({ status: 'sending', error: null, senderUserId: ctx.userId, ...(html[id] ? { html: html[id] } : {}) })
+      .where(and(eq(receivableEmailLog.id, id), eq(receivableEmailLog.sheetId, sheet.id), eq(receivableEmailLog.status, 'awaiting')))
+      .returning({ id: receivableEmailLog.id });
+    if (row) taken.push(row.id);
+  }
+  return taken;
+}
+
+/** Skip: the waiting emails are never sent; the row keeps who skipped it. */
+export async function skipEmailLogs(ctx: AuthContext, sheetId: string, ids: string[]): Promise<number> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const valid = ids.filter((id) => UUID.test(id ?? ''));
+  if (!valid.length) return 0;
+  const rows = await db
+    .update(receivableEmailLog)
+    .set({ status: 'skipped', error: 'skipped', senderUserId: ctx.userId })
+    .where(and(inArray(receivableEmailLog.id, valid), eq(receivableEmailLog.sheetId, sheet.id), eq(receivableEmailLog.status, 'awaiting')))
+    .returning({ id: receivableEmailLog.id });
+  return rows.length;
 }

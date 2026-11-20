@@ -10,13 +10,16 @@ export { addClient, deleteClient, listClients, setPartnerClients, systemCoPartne
 export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
 export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
 export {
+  approveEmailLogs,
   getEmailLogEntry,
   listEmailLog,
   listEmailLogPage,
   retryEmailLog,
+  skipEmailLogs,
   startEmailLog,
   systemFinishEmailLog,
   systemGetEmailLog,
+  systemReplaceAwaiting,
   systemSetEmailWhatsApp,
   systemStartEmailLog,
   type EmailLogRow,
