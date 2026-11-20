@@ -111,3 +111,21 @@ only (`WHATSAPP_TEMPLATE_LANG`).
 - Embeddings use Titan Text Embeddings V2 through Bedrock. Until `ASK_EMBEDDINGS_PROVIDER=bedrock`
   and `ASK_EMBEDDINGS_REGION` are set, and the App Runner role may call `bedrock:InvokeModel` on it,
   vectors stay empty and search runs on full-text alone.
+
+## Receivables hourly clock (20 Nov 2026)
+
+App Runner has no clock and the Inngest crons never ran in production (no `INNGEST_*` keys on the
+service). The receivables roll-up and digest are prepared by `POST /api/cron/receivables`, which an
+EventBridge rule calls every hour at :05 IST. The route only prepares emails; they wait for
+approval in the Email log, and the team gets a WhatsApp.
+
+- Secret `vcfo-suite/CRON_SECRET` (Terraform `infra/cron.tf`; the value was put by hand with
+  `openssl rand -hex 32`, so it is not in Terraform state). App Runner reads it as `CRON_SECRET`.
+- Made with the AWS CLI because they hold the same value: connection `vcfo-receivables-cron`
+  (API key header `x-cron-secret`), API destination `vcfo-receivables-cron`
+  (POST https://app.sbctrack.in/api/cron/receivables, 1 call a second at most), IAM role
+  `vcfo-receivables-cron` (only `events:InvokeApiDestination` on that destination), rule
+  `vcfo-receivables-cron` with `cron(35 * * * ? *)` (UTC, so :05 IST).
+- To rotate the secret: put a new value in `vcfo-suite/CRON_SECRET`, redeploy App Runner, then
+  `aws events update-connection --name vcfo-receivables-cron --auth-parameters` with the same value.
+- To stop the clock: `aws events disable-rule --name vcfo-receivables-cron`.
