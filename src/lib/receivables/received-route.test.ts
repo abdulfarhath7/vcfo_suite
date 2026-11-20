@@ -12,7 +12,7 @@ const createAwaitedFira = vi.fn();
 vi.mock('@/auth/guards', () => ({ requireAnyRole: () => guard() }));
 // The team WhatsApp after a receipt runs after the response; here it is dropped.
 vi.mock('next/server', async () => ({ ...(await vi.importActual<typeof import('next/server')>('next/server')), after: () => undefined }));
-vi.mock('@/lib/receivables/team-notify', () => ({ notifyTeam: async () => 0, emails: (n: number) => `${n} emails` }));
+vi.mock('@/lib/receivables/team-notify', () => ({ notifyTeam: async () => 0, fromEmailOf: async () => 'm@x.in', emails: (n: number) => `${n} emails` }));
 vi.mock('@/db/repositories/receivables', async () => {
   const shared = await vi.importActual<typeof import('@/db/repositories/receivables/shared')>('@/db/repositories/receivables/shared');
   return {

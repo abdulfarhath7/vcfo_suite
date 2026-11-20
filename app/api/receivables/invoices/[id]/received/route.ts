@@ -2,7 +2,7 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createAwaitedFira, getSignName, markReceived, reopenInvoice, sheetIdOfInvoice } from '@/db/repositories/receivables';
-import { notifyTeam } from '@/lib/receivables/team-notify';
+import { fromEmailOf, notifyTeam } from '@/lib/receivables/team-notify';
 import { isForeign } from '@/lib/receivables/fx';
 import { amount, denied, guardReceivables, isoDate, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -46,7 +46,7 @@ export async function POST(request: Request, context: RouteContext) {
       const who = (await getSignName(ctx).catch(() => null)) || 'Someone';
       const sheetId = await sheetIdOfInvoice(ctx, id).catch(() => null);
       if (!sheetId) return;
-      await notifyTeam(sheetId, `${who} marked ${what} ${invoice.status === 'received' ? 'received' : 'part paid'}: ₹${inr}`, { tab: 'sheet', exceptUserId: ctx.userId });
+      await notifyTeam(sheetId, `${who} marked ${what} ${invoice.status === 'received' ? 'received' : 'part paid'}: ₹${inr}`, { tab: 'sheet', from: await fromEmailOf(ctx), exceptUserId: ctx.userId });
     });
     return NextResponse.json({ invoice });
   } catch (e) {

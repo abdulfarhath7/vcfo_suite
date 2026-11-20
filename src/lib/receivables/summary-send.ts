@@ -1,7 +1,7 @@
 import 'server-only';
 import type { AuthContext } from '@/auth/guards';
 import { finishSummarySend, getSignName, systemFinishEmailLog, systemRecordSentReceipts } from '@/db/repositories/receivables';
-import { emails, notifyTeam } from './team-notify';
+import { emails, fromEmailOf, notifyTeam } from './team-notify';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
 import type { EmailRecipient, Partner } from './model';
 
@@ -73,7 +73,11 @@ export async function deliverSummary(ctx: AuthContext, sheetId: string, sendId: 
     }
     await finishSummarySend(ctx, sheetId, sendId, { status: 'sent' });
     const who = (await getSignName(ctx).catch(() => null)) || 'Someone';
-    await notifyTeam(sheetId, `${who} sent the receivables email: ${emails(job.mails.length)}`, { exceptUserId: ctx.userId });
+    await notifyTeam(sheetId, `${who} sent the receivables email: ${emails(job.mails.length)}`, {
+      from: await fromEmailOf(ctx),
+      to: job.mails.flatMap((m) => [...m.to, ...m.cc]),
+      exceptUserId: ctx.userId,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error('[receivables] summary send failed', message.slice(0, 200));

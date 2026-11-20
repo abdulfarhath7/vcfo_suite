@@ -235,31 +235,31 @@ export async function systemReplaceAwaiting(sheetId: string, kind: EmailKind, pa
  * approver may have changed (`html` by id). Only rows of this sheet that still wait are taken, so a
  * second click sends nothing twice. Returns the ids to send.
  */
-export async function approveEmailLogs(ctx: AuthContext, sheetId: string, ids: string[], html: Record<string, string> = {}): Promise<string[]> {
+export async function approveEmailLogs(ctx: AuthContext, sheetId: string, ids: string[], html: Record<string, string> = {}): Promise<Array<{ id: string; to: string[] }>> {
   const sheet = await scopedSheet(ctx, sheetId);
   const valid = ids.filter((id) => UUID.test(id ?? ''));
   if (!valid.length) return [];
-  const taken: string[] = [];
+  const taken: Array<{ id: string; to: string[] }> = [];
   for (const id of valid) {
     const [row] = await db
       .update(receivableEmailLog)
       .set({ status: 'sending', error: null, senderUserId: ctx.userId, ...(html[id] ? { html: html[id] } : {}) })
       .where(and(eq(receivableEmailLog.id, id), eq(receivableEmailLog.sheetId, sheet.id), eq(receivableEmailLog.status, 'awaiting')))
-      .returning({ id: receivableEmailLog.id });
-    if (row) taken.push(row.id);
+      .returning({ id: receivableEmailLog.id, to: receivableEmailLog.to, cc: receivableEmailLog.cc });
+    if (row) taken.push({ id: row.id, to: [...(row.to ?? []), ...(row.cc ?? [])] });
   }
   return taken;
 }
 
 /** Skip: the waiting emails are never sent; the row keeps who skipped it. */
-export async function skipEmailLogs(ctx: AuthContext, sheetId: string, ids: string[]): Promise<number> {
+export async function skipEmailLogs(ctx: AuthContext, sheetId: string, ids: string[]): Promise<string[][]> {
   const sheet = await scopedSheet(ctx, sheetId);
   const valid = ids.filter((id) => UUID.test(id ?? ''));
-  if (!valid.length) return 0;
+  if (!valid.length) return [];
   const rows = await db
     .update(receivableEmailLog)
     .set({ status: 'skipped', error: 'skipped', senderUserId: ctx.userId })
     .where(and(inArray(receivableEmailLog.id, valid), eq(receivableEmailLog.sheetId, sheet.id), eq(receivableEmailLog.status, 'awaiting')))
-    .returning({ id: receivableEmailLog.id });
-  return rows.length;
+    .returning({ to: receivableEmailLog.to });
+  return rows.map((r) => r.to ?? []);
 }

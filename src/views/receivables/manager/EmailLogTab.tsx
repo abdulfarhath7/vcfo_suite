@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import { FilterSelect } from '@/components/ui/native-select';
 import { SpectrumTabs } from '@/components/ui/spectrum-tabs';
 import { useAwaitingEmails, useEmailLog, useEmailLogEntry } from '@/hooks/use-receivables-v2';
+import { useOutlookStatus } from '@/hooks/use-receivables';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 import { AUTO_EMAIL_KINDS, MANUAL_EMAIL_KINDS, isAutoEmail, type EmailKind, type EmailLogDto, type EmailLogFilter, type EmailStatus } from '@/lib/receivables/v2-wire';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,9 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
   }, [typed]);
   const filter: EmailLogFilter = { origin: origin === 'all' ? undefined : origin, kind: kind || undefined, status: status || undefined, q: q || undefined };
   const { query, retry, decide } = useEmailLog(sheetId, filter);
+  // A waiting email goes from the approver's own Outlook: show that address, not a name (owner, 20 Nov 2026).
+  const myOutlook = useOutlookStatus().data;
+  const mine = myOutlook?.connected && myOutlook.msEmail ? myOutlook.msEmail : null;
   const decideOn = (action: 'approve' | 'skip', ids: string[], html?: Record<string, string>, done?: () => void) =>
     decide.mutate(
       { action, ids, html },
@@ -150,7 +154,7 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
                   </td>
                   {/* From: the Outlook address it went from, not the name (owner, 19 Nov 2026). */}
                   <td className={cn(TD, 'max-w-[200px] truncate text-ink-2')} title={l.senderName ?? undefined}>
-                    {l.status === 'awaiting' ? <span className="text-ink-muted">The approver’s Outlook</span> : (l.senderEmail ?? l.senderName ?? '—')}
+                    {l.status === 'awaiting' ? (mine ?? <span className="text-warning">Connect your Outlook to approve</span>) : (l.senderEmail ?? '—')}
                   </td>
                   <td className={TD}>
                     <div className={cn('font-medium', st.tone)}>
@@ -274,6 +278,8 @@ function EmailViewer({
 }) {
   const entry = useEmailLogEntry(id);
   const body = useRef<HTMLDivElement>(null);
+  const myOutlook = useOutlookStatus().data;
+  const mine = myOutlook?.connected && myOutlook.msEmail ? myOutlook.msEmail : null;
   const e = entry.data;
   const l = e ?? row;
   const st = l ? (STATUS[l.status] ?? STATUS.skipped) : null;
@@ -283,7 +289,7 @@ function EmailViewer({
         ['Email', `${KIND_LABEL[l.kind] ?? l.kind} · ${isAutoEmail(l.kind) ? 'Automatic' : 'Manual'}`],
         ['To', l.to.join(', ') || '—'],
         ...(l.cc.length ? ([['Cc', l.cc.join(', ')]] as Array<[string, string]>) : []),
-        ['From', l.senderEmail ? `${l.senderEmail}${l.senderName ? ` (${l.senderName}'s Outlook)` : ''}` : l.senderName ? `${l.senderName}'s Outlook` : '—'],
+        ['From', l.status === 'awaiting' ? (mine ?? 'Your Outlook, once connected') : (l.senderEmail ?? '—')],
         ...(l.whatsappStatus ? ([['WhatsApp', `${WA[l.whatsappStatus] ?? l.whatsappStatus}${l.senderPhone ? ` · ${l.senderPhone}` : ''}`]] as Array<[string, string]>) : []),
         ['Time', `${stamp(l.createdAt)}${l.sentAt ? ` · sent ${stamp(l.sentAt)}` : ''}`],
         ...(l.invoiceCount ? ([['Invoices', String(l.invoiceCount)]] as Array<[string, string]>) : []),

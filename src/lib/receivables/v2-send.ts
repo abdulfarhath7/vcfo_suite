@@ -28,6 +28,9 @@ import { leadershipDigestEmail, newInvoiceEmail, revisedInvoiceEmail, rollupEmai
 import { outlookErrorCode } from './summary-send';
 import { digestDue, rollupDue } from './v2-schedule';
 import { emails, notifyTeam } from './team-notify';
+
+/** A waiting email goes from the Outlook of whoever approves it. */
+const WHOEVER = 'the Outlook of whoever approves';
 import type { TemplateSet } from './templates';
 import type { WhatsAppPingStatus } from './v2-wire';
 
@@ -129,7 +132,8 @@ export async function pingSender(logId: string): Promise<WhatsAppPingStatus> {
     else {
       const email = log.to[0] ?? '';
       // The approved template's order: subject, name, address, link (docs/specs/receivables/V2.md).
-      const vars = { subject: log.subject, name: log.recipientName || email, email, link: log.webLink || 'Sent Items' };
+      // Emails, not names (owner, 20 Nov 2026): To lists every address the email went to.
+      const vars = { subject: log.subject, name: [...log.to, ...log.cc].join(', ') || email, email, link: log.webLink || 'Sent Items' };
       const res = await sendDoubleTickMessage({
         to: log.senderPhone,
         templateName: config.receivablesTemplate || null,
@@ -180,6 +184,7 @@ const partnerOf = (partners: Awaited<ReturnType<typeof systemSheetPartners>>, id
  */
 export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ sent: number; failed: number; skipped: number }> {
   const out = { sent: 0, failed: 0, skipped: 0 };
+  const waiting: string[] = [];
   const sheet = await systemSheetEmailSettings(input.sheetId);
   if (!sheet) return out;
   const [partners, links] = await Promise.all([systemSheetPartners(sheet.id), systemCoPartnerLinks(sheet.id)]);
@@ -213,7 +218,10 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
         about: list.length === 1 ? `${list[0]!.invoiceNo ?? 'the invoice'} / ${list[0]!.clientName}` : `${list.length} new invoices`,
         status: 'awaiting',
       });
-      if (log) out.sent += 1;
+      if (log) {
+        out.sent += 1;
+        waiting.push(p.email);
+      }
     }
   }
 
@@ -250,11 +258,14 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
           about: `${inv.invoiceNo ?? 'the invoice'} / ${inv.clientName}`,
           status: 'awaiting',
         });
-        if (log) out.sent += 1;
+        if (log) {
+        out.sent += 1;
+        waiting.push(p.email);
+      }
       }
     }
   }
-  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (new or revised invoice) wait for approval`, { sheetName: sheet.clientOrgName });
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (new or revised invoice) wait for approval`, { from: WHOEVER, to: waiting });
   return out;
 }
 
@@ -267,6 +278,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
  */
 export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = new Date()): Promise<{ sent: number; failed: number; skipped: number }> {
   const out = { sent: 0, failed: 0, skipped: 0 };
+  const waiting: string[] = [];
   const last = await systemLastRollupDate(sheet.id);
   if (!rollupDue(sheet, last, now)) return out;
   const today = todayIst(now);
@@ -303,8 +315,9 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
     if (!log) continue;
     await systemReplaceAwaiting(sheet.id, 'rollup', p.id, log.id);
     out.sent += 1;
+    waiting.push(p.email);
   }
-  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (roll-up to the partners) wait for approval`, { sheetName: sheet.clientOrgName });
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (roll-up to the partners) wait for approval`, { from: WHOEVER, to: waiting });
   return out;
 }
 
@@ -348,7 +361,7 @@ export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new
   });
   if (!log) return 'skipped';
   await systemReplaceAwaiting(sheet.id, 'digest', null, log.id);
-  await notifyTeam(sheet.id, 'The leadership digest waits for approval', { sheetName: sheet.clientOrgName });
+  await notifyTeam(sheet.id, 'The leadership digest waits for approval', { from: WHOEVER, to: recipients.map((r) => r.email) });
   return 'sent';
 }
 
