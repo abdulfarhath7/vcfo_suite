@@ -82,11 +82,12 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
       </div>
 
       <div className="overflow-x-auto rounded-md border border-line bg-surface-raised">
-        <table className="w-full min-w-[980px] border-collapse">
+        <table className="w-full min-w-[1080px] border-collapse">
           <thead>
             <tr>
               <th className={cn(TH, 'w-[150px]')}>Time</th>
-              <th className={cn(TH, 'w-[170px]')}>Email</th>
+              <th className={cn(TH, 'w-[160px]')}>Email</th>
+              <th className={cn(TH, 'w-[110px]')}>Sent by</th>
               <th className={cn(TH, 'w-[220px]')}>To</th>
               <th className={TH}>Subject</th>
               <th className={cn(TH, 'w-[200px]')}>From (Outlook)</th>
@@ -104,9 +105,12 @@ export function EmailLogTab({ sheetId }: { sheetId: string }) {
               return (
                 <tr key={l.id} className="cursor-pointer hover:bg-hover" onClick={() => setOpen(l.id)}>
                   <td className={cn(TD, 'whitespace-nowrap tabular-nums text-ink-2')}>{stamp(l.sentAt ?? l.createdAt)}</td>
+                  <td className={cn(TD, 'font-medium text-ink')}>{KIND_LABEL[l.kind] ?? l.kind}</td>
+                  {/* Automatic or manual in a column of its own (owner, 20 Nov 2026). */}
                   <td className={TD}>
-                    <div className="font-medium text-ink">{KIND_LABEL[l.kind] ?? l.kind}</div>
-                    <div className="text-[11.5px] text-ink-muted">{isAutoEmail(l.kind) ? 'Automatic' : 'Manual'}</div>
+                    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11.5px] font-medium', isAutoEmail(l.kind) ? 'bg-info-soft text-info' : 'bg-surface-sunken text-ink-2')}>
+                      {isAutoEmail(l.kind) ? 'Automatic' : 'Manual'}
+                    </span>
                   </td>
                   <td className={cn(TD, 'max-w-[220px]')}>
                     <div className="truncate text-ink" title={to}>
