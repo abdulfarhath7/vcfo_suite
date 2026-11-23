@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { depositsSectionHtml, withDepositsSection } from '@/lib/receivables/summary-email';
-import { checkDeposits, checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
+import { checkDeposits, checkSummaryEmails, deliverSummary, mayCarryDeposits, outlookErrorCode } from '@/lib/receivables/summary-send';
 import { getSummarySendStatus, getSummarySource, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
@@ -11,8 +11,7 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
 
 /**
  * POST /api/receivables/sheets/:id/send-summary — Send email, from the sender's own Outlook. The
- * receivables update goes to the sheet's leaders only (owner, 23 Nov 2026; 400 `leaders_only`); the
- * rest of this paragraph is the Collections report. The
+ * The
  * dialog sends one email per person (owner, 17 Nov 2026): a client partner's email holds only the
  * invoices of that partner's clients; a leader's (or anyone else's) holds the whole sheet. Each is
  * edited in the dialog. `checkSummaryEmails` refuses any batch where a partner would see another
@@ -25,9 +24,11 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
  *
  * `deposits` (owner, 23 Nov 2026): the security deposits section of the receivables update, typed or
  * pasted in the pop-up and not saved anywhere. It is checked here (400 `deposits_*`), refused on the
- * Collections report (400 `deposits_summary_only`), and drawn again from the checked rows into each
- * whole-sheet email, replacing whatever deposits block the body holds. An email without it loses
- * any such block. The leaders-only check covers the email exactly as before.
+ * Collections report (400 `deposits_summary_only`), and drawn again from the checked rows, replacing
+ * whatever deposits block the body holds. It is for the leaders only: it goes into a whole-sheet
+ * email whose every To and Cc address is an active leader of the sheet (People, Leaders). Any
+ * other email that holds the block is refused (400 `deposits_leaders_only`); an email without
+ * deposits loses any such block.
  *
  * GET ?send=<sendId> — the state of that send, which the dialog polls to show the outcome.
  */
@@ -60,27 +61,30 @@ export async function POST(request: Request, context: RouteContext) {
   // The Collections report lists received invoices as a record, not to tell anyone again, so it
   // neither checks nor writes the "already sent" receipts.
   const collections = input.report === 'collections';
-  // The security deposits belong to the receivables update only, which goes to leaders only.
+  // The security deposits belong to the receivables update only, and there to the leaders only.
   if (collections && input.deposits !== undefined && input.deposits !== null) return NextResponse.json({ error: 'deposits_summary_only' }, { status: 400 });
   const deposits = checkDeposits(input.deposits);
   if (deposits.ok === false) return NextResponse.json({ error: deposits.error }, { status: 400 });
   const section = depositsSectionHtml(deposits.deposits);
-  // Each email's addresses: valid, each once. A partner's email never gets the deposits; it is
-  // refused below anyway, since the receivables update goes to leaders only.
+  // Each email's addresses: valid, each once.
   const emails = [];
   for (const e of input.emails) {
     const people = cleanRecipients({ to: e.to, cc: e.cc, bcc: [] });
     if (people.invalid.length) return NextResponse.json({ error: 'bad_email', invalid: people.invalid }, { status: 400 });
-    const html = collections ? e.html : withDepositsSection(e.html, e.kind === 'full' ? section : '');
-    emails.push({ ...e, to: people.to, cc: people.cc, html: tidyEmailHtml(html) });
+    emails.push({ ...e, to: people.to, cc: people.cc });
   }
   if (collections) for (const e of emails) e.invoiceIds = undefined;
   try {
     const src = await getSummarySource(guard.ctx, id);
-    // The receivables update goes to the sheet's leaders only (owner, 23 Nov 2026); the Collections
-    // report still goes to partners and leaders.
-    const leaders = collections ? undefined : (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active);
-    const checked = checkSummaryEmails(emails, src.partners, leaders);
+    // The deposits go to the leaders only (owner, 23 Nov 2026): into the whole-sheet email whose
+    // every address is an active leader. A partner's or anyone else's email never gets them.
+    const leaders = section ? (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active) : [];
+    for (const e of emails) {
+      const carries = Boolean(section) && mayCarryDeposits(e, leaders);
+      if (section && !carries && e.html.includes('<!--deposits-->')) return NextResponse.json({ error: 'deposits_leaders_only' }, { status: 400 });
+      e.html = tidyEmailHtml(collections ? e.html : withDepositsSection(e.html, carries ? section : ''));
+    }
+    const checked = checkSummaryEmails(emails, src.partners);
     if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
     // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
     const sent = collections ? {} : await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));

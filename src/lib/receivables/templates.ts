@@ -32,7 +32,7 @@ export type TemplateMeta = {
 export const TEMPLATE_META: Record<TemplateKind, TemplateMeta> = {
   summary: {
     label: 'Receivables update',
-    when: 'Send email on the Sheet tab, to leaders only',
+    when: 'Send email on the Sheet tab, to partners and leaders',
     placeholders: ['{name}', '{date}', '{total}', '{sheet}'],
     standard: { subject: 'Receivables update - {date}', greeting: 'Hi {name},', intro: 'Please find the receivables summary as of today:', closing: '' },
   },

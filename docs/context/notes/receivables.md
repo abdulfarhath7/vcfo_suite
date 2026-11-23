@@ -41,8 +41,10 @@ Spec: `docs/specs/receivables/PLAN.md` (v1) and `docs/specs/receivables/V2.md` (
   (the "Security deposits (separate section)" block at the bottom), never stored in the database.
   "Add this section to the leaders' email" is off each time the pop-up opens; any edit turns it on.
 - **Remembered per browser.** The last rows of a sheet sit in `localStorage` under
-  `vcfo:rcv-deposits:<sheet id>`, so next week the person edits them. "Clear the rows" forgets them.
+  `vcfo:rcv-deposits-v2:<sheet id>`, so next week the person edits them. "Clear the rows" forgets them.
   Another browser or a private window starts empty.
+- **Columns.** Client, Amount (₹) and Remarks, with a total row (the leadership's own wording,
+  23 Nov 2026). The first build of the day had five columns.
 - **Paste.** `parseDepositsPaste` reads tab-separated rows (Excel, Outlook), chat tables with `|`,
   and cells split by two or more spaces. A header row (first cell "Client"), a total row (empty first
   cell, or "Total" / "(total)") and rule rows are left out. `parseAmountInr` takes "₹ 3,00,00,000",
@@ -53,5 +55,10 @@ Spec: `docs/specs/receivables/PLAN.md` (v1) and `docs/specs/receivables/V2.md` (
   `<!--deposits-->` and `<!--/deposits-->`. The send route throws that block away and draws the
   section again from the `deposits` it checked, so a body without `deposits` in the request never
   carries the section. `summaryEmailHtml` never draws it when `partnerSlug` is set, and the
-  Collections report refuses `deposits`.
+  Collections report refuses `deposits`. Partners and other people still get the receivables update,
+  without the section: the route puts it only in a whole-sheet email whose every To and Cc address
+  is an active leader of the sheet (`mayCarryDeposits`), and answers 400 `deposits_leaders_only`
+  when any other email holds the block. The pop-up stops the send while someone who is not a leader
+  is on the leaders' email. "Only to leaders" in the leadership's message of 23 Nov 2026 was about
+  this section, not about the receivables update.
 

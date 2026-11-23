@@ -30,38 +30,33 @@ describe('parseAmountInr', () => {
 
 describe('parseDepositsPaste', () => {
   it('reads a tab-separated table from Excel or Outlook and leaves out the header and total rows', () => {
-    const text = [
-      'Client\tStatus\tETA for closure\tTotal SD in INR\tSD due now/post signing',
-      'Alpha Corp\tLOI final stage\tweek of 2nd\t₹ 30,000,000\t100%, client asking for 25%',
-      'Beta Ltd\tAgreement review\tweek of 9th\t2,00,00,000\t100% due',
-      '\t\t\t₹ 50,000,000\t5cr',
-    ].join('\r\n');
+    const text = ['Client\tAmount\tRemarks', 'Alpha Corp\t₹ 30,000,000\t100%, client asking for 25%', 'Beta Ltd\t2,00,00,000\t100% due', '\t₹ 50,000,000\t5cr'].join('\r\n');
     const { rows, dropped } = parseDepositsPaste(text);
     expect(dropped).toBe(0);
     expect(rows).toEqual([
-      { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', amount: '₹ 30,000,000', due: '100%, client asking for 25%' },
-      { client: 'Beta Ltd', status: 'Agreement review', eta: 'week of 9th', amount: '2,00,00,000', due: '100% due' },
+      { client: 'Alpha Corp', amount: '₹ 30,000,000', remarks: '100%, client asking for 25%' },
+      { client: 'Beta Ltd', amount: '2,00,00,000', remarks: '100% due' },
     ]);
   });
 
   it('reads cells separated by two or more spaces, and a total row starting with "Total"', () => {
-    const text = 'Client   Status   ETA   Total SD   Due\nGamma LLP  LOI final stage  week of 2nd  ₹ 10,000,000  100% due\nTotal      ₹ 10,000,000  1cr\n      ₹ 10,000,000   1cr';
-    expect(parseDepositsPaste(text).rows).toEqual([{ client: 'Gamma LLP', status: 'LOI final stage', eta: 'week of 2nd', amount: '₹ 10,000,000', due: '100% due' }]);
+    const text = 'Client   Amount   Remarks\nGamma LLP  ₹ 10,000,000  100% due\nTotal      ₹ 10,000,000  1cr\n      ₹ 10,000,000   1cr';
+    expect(parseDepositsPaste(text).rows).toEqual([{ client: 'Gamma LLP', amount: '₹ 10,000,000', remarks: '100% due' }]);
   });
 
   it('reads a chat table with pipes, a "(total)" row and a rule row', () => {
-    const text = '| Client | Status | ETA | Total SD | Due |\n|---|---|---|---|---|\n| Alpha Corp | LOI final stage | week of 2nd | ₹ 30,000,000 | 100% due |\n(total) | | | ₹ 30,000,000 | 3cr';
-    expect(parseDepositsPaste(text).rows).toEqual([{ client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', amount: '₹ 30,000,000', due: '100% due' }]);
+    const text = '| Client | Amount | Remarks |\n|---|---|---|\n| Alpha Corp | ₹ 30,000,000 | 100% due |\n(total) | ₹ 30,000,000 | 3cr';
+    expect(parseDepositsPaste(text).rows).toEqual([{ client: 'Alpha Corp', amount: '₹ 30,000,000', remarks: '100% due' }]);
   });
 
-  it('keeps a bad amount as text so the pop-up can mark it, and adds extra cells to the last column', () => {
-    const { rows } = parseDepositsPaste('Delta Inc\tLOI\tsoon\t7.7cr\t100%\tsee note');
-    expect(rows[0]).toEqual({ client: 'Delta Inc', status: 'LOI', eta: 'soon', amount: '7.7cr', due: '100% see note' });
+  it('keeps a bad amount as text so the pop-up can mark it, and adds extra cells to the remarks', () => {
+    const { rows } = parseDepositsPaste('Delta Inc\t7.7cr\t100%\tsee note');
+    expect(rows[0]).toEqual({ client: 'Delta Inc', amount: '7.7cr', remarks: '100% see note' });
     expect(amountProblem(rows[0]!.amount)).toBe(true);
   });
 
   it('keeps at most 50 rows and says how many were left out', () => {
-    const text = Array.from({ length: 53 }, (_, i) => `Client ${i}\tS\tE\t100\tD`).join('\n');
+    const text = Array.from({ length: 53 }, (_, i) => `Client ${i}\t100\tR`).join('\n');
     const { rows, dropped } = parseDepositsPaste(text);
     expect(rows).toHaveLength(50);
     expect(dropped).toBe(3);
@@ -77,10 +72,10 @@ describe('totals and payload', () => {
   });
 
   it('builds the send payload: trimmed, empty rows out, amounts read, null when nothing is left', () => {
-    expect(depositsPayload('Security deposits', [{ client: '', status: ' ', eta: '', amount: '', due: '' }])).toBeNull();
-    expect(depositsPayload('  ', [{ client: ' Alpha Corp ', status: 'LOI', eta: '', amount: '₹ 1,00,000', due: '100%' }, { client: '', status: '', eta: '', amount: '', due: '' }])).toEqual({
+    expect(depositsPayload('Security deposits', [{ client: '', amount: '', remarks: ' ' }])).toBeNull();
+    expect(depositsPayload('  ', [{ client: ' Alpha Corp ', amount: '₹ 1,00,000', remarks: '100%' }, { client: '', amount: '', remarks: '' }])).toEqual({
       title: 'Security deposits',
-      rows: [{ client: 'Alpha Corp', status: 'LOI', eta: '', totalInr: 100000, due: '100%' }],
+      rows: [{ client: 'Alpha Corp', totalInr: 100000, remarks: '100%' }],
     });
   });
 });

@@ -26,17 +26,16 @@ import { stamp } from '../format';
 
 /**
  * Send email: the summary in the finance team's format, built from the live sheet, sent from the
- * sender's own Outlook (owner, 17 Nov 2026). The receivables update (the Sheet tab) goes to the
- * sheet's leaders only, as one email with a Client, Amount and Remarks table; the sender types the
- * remarks in the table (owner, 23 Nov 2026). The rest of this note is the Collections report, which
- * still goes to partners too. Each card is one email: a client partner gets their own,
+ * sender's own Outlook (owner, 17 Nov 2026). Each card is one email: a client partner gets their own,
  * holding only the invoices of their own clients; the leaders share one email with all of them in To,
  * so each leader sees who else got it (owner, 19 Nov 2026); anyone else gets the whole sheet on their
  * own card. Each card has its own Cc, subject and editable body. An invoice removed with ✕ leaves
  * every email of the send; the Removed panel puts it back in every email or in one email only
  * (owner, 19 Nov 2026). A client partner is never allowed in Cc or in the leaders' To. No Excel
  * file is ever attached. The receivables update can carry a separate security deposits section
- * (owner, 23 Nov 2026), typed or pasted below the email and shown in it as the leaders get it.
+ * (owner, 23 Nov 2026), typed or pasted below the email and shown in it as the leaders get it; it
+ * goes on the leaders' email only, and only while everyone on that email is a leader. A received
+ * invoice a person already got is left out of their email when the pop-up opens.
  */
 
 type Field = 'to' | 'cc' | 'bcc';
@@ -168,17 +167,25 @@ export function ComposeSummary({
   useEffect(() => {
     if (prefilled.current || !summary.data) return;
     prefilled.current = true;
-    // The receivables update opens with every leader, and nobody else (owner, 23 Nov 2026).
-    setPeople(collections ? summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })) : summary.data.leaders);
-    if (collections) return;
-    // A received invoice goes to a person once. The ones the leaders already got are left out of
-    // the email when the pop-up opens (owner, 23 Nov 2026), so the person does not remove them one
-    // by one; the Removed panel lists them and can put one back.
     const d = summary.data;
-    const inEmail = emailRows({ rows: d.rows, today: d.today, picked: d.picked }).map((r) => r.id);
-    const told = [...new Set(alreadySentHits(d.alreadySent, inEmail, d.leaders.map((l) => l.email)).map((h) => h.invoiceId))];
-    setRemoved(told);
-    setLeftOut(told.length);
+    setPeople(d.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })));
+    if (collections) return;
+    // A received invoice goes to a person once. The ones a partner or the leaders already got are
+    // left out of that email when the pop-up opens (owner, 23 Nov 2026), so nobody removes them one
+    // by one; the Removed panel lists them and can put one back.
+    const cards = [
+      { key: LEADERS, slug: undefined as string | undefined, also: undefined as string[] | undefined, to: d.leaders.map((l) => l.email) },
+      ...d.partnerDrafts.map((p) => ({ key: lower(p.email), slug: p.slug as string | undefined, also: p.alsoClientKeys as string[] | undefined, to: [p.email] })),
+    ];
+    const told = cards.map((c) => {
+      const ids = emailRows({ rows: d.rows, today: d.today, partnerSlug: c.slug, alsoClientKeys: c.also, picked: d.picked }).map((r) => r.id);
+      return { key: c.key, ids: [...new Set(alreadySentHits(d.alreadySent, ids, c.to).map((h) => h.invoiceId))] };
+    });
+    const all = [...new Set(told.flatMap((t) => t.ids))];
+    setRemoved(all);
+    // An invoice one card already got stays in the cards that did not.
+    setBackIn(Object.fromEntries(told.map((t) => [t.key, all.filter((id) => !t.ids.includes(id))])));
+    setLeftOut(Object.fromEntries(told.map((t) => [t.key, t.ids.length])));
   }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
@@ -218,8 +225,8 @@ export function ComposeSummary({
   const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => lower(p.email)));
   // Invoices taken out of every email of this send (owner, 19 Nov 2026); the sheet does not change.
   const [removed, setRemoved] = useState<string[]>([]);
-  // How many received invoices were left out when the pop-up opened, because the leaders already got them.
-  const [leftOut, setLeftOut] = useState(0);
+  // How many received invoices each email left out when the pop-up opened, because its people already got them.
+  const [leftOut, setLeftOut] = useState<Record<string, number>>({});
   // Removed invoices put back in one email only, by the email's key (owner, 19 Nov 2026).
   const [backIn, setBackIn] = useState<Record<string, string[]>>({});
   /** What one email leaves out: every removed invoice except the ones put back in it. */
@@ -228,25 +235,13 @@ export function ComposeSummary({
   const [joined, setJoined] = useState<string[]>([]);
   const inGroup = (email: string) => !partnerEmails.has(lower(email)) && (isLeader(email) || joined.includes(lower(email)));
 
-  /** The receivables update goes to leaders only (owner, 23 Nov 2026); the Collections report to anyone. */
-  const leadersOnly = !collections;
-  const allowed = (list: EmailRecipient[]) => {
-    if (!leadersOnly) return list;
-    const ok = list.filter((r) => isLeader(r.email));
-    if (ok.length < list.length) toastError('Only leaders get this email', 'Add the person in People, Leaders first.');
-    return ok;
-  };
-  // Remarks typed in the table of the email, by invoice id; kept when the body is rebuilt.
-  const remarks = useRef<Record<string, string>>({});
   // The security deposits section (owner, 23 Nov 2026): on the leaders' email of the update only.
   const deposits = useDepositsDraft(data.sheet.id);
-  const depositsNow: DepositsPayload | null = collections ? null : deposits.payload;
-  const keepRemarks = () => {
-    body.current?.querySelectorAll('tr[data-inv] td[data-remark]').forEach((cell) => {
-      const id = (cell.parentElement as HTMLElement).dataset.inv;
-      if (id) remarks.current[id] = (cell.textContent ?? '').trim();
-    });
-  };
+  // Leaders only: the section is in the email only while everyone on the leaders' email is a leader.
+  const leadersCard = drafts[LEADERS];
+  const depositsOutsiders = leadersCard ? [...leadersCard.to, ...leadersCard.cc].filter((r) => !isLeader(r.email)) : [];
+  const depositsBlocked = !collections && deposits.payload !== null && depositsOutsiders.length > 0;
+  const depositsNow: DepositsPayload | null = collections || depositsBlocked ? null : deposits.payload;
 
   const signed = (html: string) => (sign.trim() ? withSignName(html, sign) : html);
   /** The body of one email, rebuilt from the live rows without the removed invoices. */
@@ -281,7 +276,6 @@ export function ComposeSummary({
       greetName: d.key === LEADERS || !d.to[0] ? 'Team' : firstName(d.to[0]).replace(/[<>&"]/g, ''),
       // Each row carries its invoice id for ✕ in the email; the route removes it before sending.
       marks: true,
-      remarks: remarks.current,
       deposits: d.key === LEADERS ? depositsNow : null,
     });
     return signed(html);
@@ -325,7 +319,6 @@ export function ComposeSummary({
   const hitInvoices = (d: Draft) => new Set(hitsOf(d).map((h) => h.invoiceId)).size;
   /** Rebuilds the bodies of the emails that hold the invoice, from the new removed and put-back lists. */
   const applyOut = (id: string, rm: string[], back: Record<string, string[]>, only?: string) => {
-    keepRemarks();
     setRemoved(rm);
     setBackIn(back);
     setDrafts((all) => Object.fromEntries(Object.entries(all).map(([k, v]) => [k, (!only || k === only) && draftRows(v).some((r) => r.id === id) ? { ...v, html: bodyFor(v, outOf(k, rm, back)) } : v])));
@@ -362,8 +355,7 @@ export function ComposeSummary({
       };
     });
   /** The leaders' To: a person taken out leaves the send; a person added joins this email. */
-  const changeGroup = (typed: EmailRecipient[]) => {
-    const next = allowed(typed);
+  const changeGroup = (next: EmailRecipient[]) => {
     const partners = next.filter((r) => partnerEmails.has(lower(r.email)));
     if (partners.length) toastError('A client partner cannot be on the leaders’ email', 'They would see invoices that are not theirs. They get their own email.');
     const list = next.filter((r) => !partnerEmails.has(lower(r.email)));
@@ -383,7 +375,6 @@ export function ComposeSummary({
   useEffect(() => {
     if (collections) return;
     const live = current?.key === LEADERS && body.current ? body.current.innerHTML : null;
-    if (live !== null) keepRemarks();
     const section = depositsSectionHtml(depositsNow, true);
     setDrafts((d) => (d[LEADERS] ? { ...d, [LEADERS]: { ...d[LEADERS], html: withDepositsSection(live ?? d[LEADERS].html, section) } } : d));
     // Only a change of the rows rebuilds the section; the other values are read as they are now.
@@ -394,20 +385,17 @@ export function ComposeSummary({
   const keepBody = () => {
     const el = body.current;
     if (!el || !current) return;
-    keepRemarks();
     const html = el.innerHTML;
     setDrafts((d) => (d[current.key] ? { ...d, [current.key]: { ...d[current.key], html } } : d));
   };
   const patch = (key: string, p: Partial<Draft>) => setDrafts((d) => (d[key] ? { ...d, [key]: { ...d[key], ...p } } : d));
-  const addPeople = (typed: EmailRecipient[]) => {
-    const list = allowed(typed);
+  const addPeople = (list: EmailRecipient[]) =>
     setPeople((prev) => {
       const seen = new Set(prev.map((r) => r.email.toLowerCase()));
       return [...prev, ...list.filter((r) => !seen.has(r.email.toLowerCase()) && (seen.add(r.email.toLowerCase()), true))];
     });
-  };
 
-  const contacts = leadersOnly ? (s?.leaders ?? []) : (s?.contacts ?? []);
+  const contacts = s?.contacts ?? [];
   const connected = outlook.data?.connected;
   const notPublished = summary.error && 'code' in summary.error && summary.error.code === 'not_published';
   // A partner with no open invoices gets nothing; every other card is sent.
@@ -486,7 +474,7 @@ export function ComposeSummary({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || deposits.problems.length > 0 || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || deposits.problems.length > 0 || depositsBlocked || sendable.some((d) => !d.subject.trim()) || send.isPending}>
             {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
@@ -517,15 +505,13 @@ export function ComposeSummary({
               <SignNameField id="rcv-sign-name" value={sign} onChange={changeSign} />
             </span>
             <span className="text-[12px]">Add</span>
-            {leadersOnly ? null : (
-              <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
-                All partners
-              </Button>
-            )}
+            <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
+              All partners
+            </Button>
             <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!s.leaders.length} onClick={() => addPeople(s.leaders)}>
               All leaders
             </Button>
-            {lastTo.length && !leadersOnly ? (
+            {lastTo.length ? (
               <Button size="sm" variant="quiet" className="h-7 px-2 text-[12.5px]" onClick={() => addPeople(lastTo)}>
                 Same as last time
               </Button>
@@ -596,13 +582,7 @@ export function ComposeSummary({
                     })}
                   </div>
                 ) : (
-                  <p className="px-3 py-2 text-[12.5px] text-ink-muted">
-                    {leadersOnly
-                      ? s.leaders.length
-                        ? 'This email goes to leaders only. Click All leaders.'
-                        : 'This email goes to leaders only. Add them in People, Leaders first.'
-                      : 'Add a client partner, a leader or any address. Partners get their own email; the leaders share one.'}
-                  </p>
+                  <p className="px-3 py-2 text-[12.5px] text-ink-muted">Add a client partner, a leader or any address. Partners get their own email; the leaders share one.</p>
                 )}
                 <div className="border-t border-line-soft px-2 [&>div]:border-b-0">
                   <RecipientRow field="to" label="Add" people={[]} contacts={contacts} onChange={addPeople} />
@@ -616,7 +596,7 @@ export function ComposeSummary({
                 {current.key === LEADERS ? (
                   <>
                     <RecipientRow field="to" label="To" people={current.to} contacts={contacts.filter((c) => !partnerEmails.has(lower(c.email)))} onChange={changeGroup} />
-                    <p className="text-[12px] text-ink-muted">{leadersOnly ? 'One email to every leader · client, amount and remarks. Type the remarks in the table below.' : 'One email to every leader · the whole sheet. Each leader sees who else got it.'}</p>
+                    <p className="text-[12px] text-ink-muted">One email to every leader · the whole sheet. Each leader sees who else got it.</p>
                   </>
                 ) : (
                   <div className="truncate text-[12.5px] text-ink-muted" title={current.to[0].email}>
@@ -625,7 +605,7 @@ export function ComposeSummary({
                     {current.kind === 'partner' ? ' · only this partner’s clients' : ' · the whole sheet'}
                   </div>
                 )}
-                <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc: allowed(cc) })} />
+                <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc })} />
                 {current.cc.some((c) => partnerEmails.has(c.email.toLowerCase())) ? (
                   <p role="alert" className="text-[12.5px] text-danger">
                     A client partner cannot be in Cc: they would see invoices that are not theirs. Remove them.
@@ -653,9 +633,9 @@ export function ComposeSummary({
                     panel={{ items: removedItems(current), onAll: putBackAll, onHere: putBackHere }}
                   />
                 )}
-                {leadersOnly && leftOut ? (
+                {!collections && leftOut[current.key] ? (
                   <p className="text-[12.5px] text-ink-muted">
-                    {`${leftOut} received invoice${leftOut === 1 ? ' was' : 's were'} left out: the leaders already got ${leftOut === 1 ? 'it' : 'them'} in an earlier email. ${leftOut === 1 ? 'It is' : 'They are'} listed under “Removed from this send”.`}
+                    {`${leftOut[current.key]} received invoice${leftOut[current.key] === 1 ? ' was' : 's were'} left out: ${current.key === LEADERS ? 'the leaders' : 'this person'} already got ${leftOut[current.key] === 1 ? 'it' : 'them'} in an earlier email. See “Removed from this send” to put one back.`}
                   </p>
                 ) : null}
                 {hitsOf(current).length ? (
@@ -685,11 +665,17 @@ export function ComposeSummary({
                 </RemovableRows>
               </div>
             ) : (
-              <p className="p-3 text-[12.5px] text-ink-muted">
-                {leadersOnly ? 'The leaders share one email: client, amount and remarks.' : 'A client partner gets their own email with only their clients’ invoices. The leaders share one email with the whole sheet.'}
-              </p>
+              <p className="p-3 text-[12.5px] text-ink-muted">A client partner gets their own email with only their clients’ invoices. The leaders share one email with the whole sheet.</p>
             )}
           </div>
+          {depositsBlocked ? (
+            <p role="alert" className="border-t border-line-soft px-3 py-2 text-[12.5px] text-danger">
+              {`The security deposits go to leaders only. Take ${depositsOutsiders.map((r) => r.name || r.email).join(', ')} out of the leaders’ email, or untick the section below.`}
+            </p>
+          ) : null}
+          {collections ? null : !leadersCard && deposits.payload ? (
+            <p className="border-t border-line-soft px-3 py-2 text-[12.5px] text-warning">The security deposits go on the leaders’ email only, and no leader is in this send. Click All leaders to send them.</p>
+          ) : null}
           {collections ? null : <DepositsSection draft={deposits} />}
         </div>
       ) : null}

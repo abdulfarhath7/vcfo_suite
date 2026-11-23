@@ -10,7 +10,8 @@ import { DEFAULT_DEPOSITS_TITLE, DEPOSIT_LIMITS, amountProblem, depositsPayload,
  * the person sends, and then only `payload`.
  */
 type Stored = { title: string; rows: DepositDraftRow[] };
-const storageKey = (sheetId: string) => `vcfo:rcv-deposits:${sheetId}`;
+// `v2`: the rows are Client, Amount, Remarks (the first rows of 23 Nov 2026 had five columns).
+const storageKey = (sheetId: string) => `vcfo:rcv-deposits-v2:${sheetId}`;
 
 function readStored(sheetId: string): Stored | null {
   try {
@@ -19,7 +20,7 @@ function readStored(sheetId: string): Stored | null {
     const v = JSON.parse(raw) as Partial<Stored>;
     if (!Array.isArray(v.rows)) return null;
     const text = (x: unknown) => (typeof x === 'string' ? x : '');
-    const rows = v.rows.slice(0, DEPOSIT_LIMITS.rows).map((r: Partial<DepositDraftRow>) => ({ client: text(r?.client), status: text(r?.status), eta: text(r?.eta), amount: text(r?.amount), due: text(r?.due) }));
+    const rows = v.rows.slice(0, DEPOSIT_LIMITS.rows).map((r: Partial<DepositDraftRow>) => ({ client: text(r?.client), amount: text(r?.amount), remarks: text(r?.remarks) }));
     return { title: text(v.title) || DEFAULT_DEPOSITS_TITLE, rows };
   } catch {
     return null;

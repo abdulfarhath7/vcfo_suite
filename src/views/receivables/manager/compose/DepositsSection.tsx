@@ -19,11 +19,9 @@ import { cn } from '@/lib/utils';
  */
 
 const COLUMNS: Array<{ key: keyof DepositDraftRow; label: string; max: number; className: string }> = [
-  { key: 'client', label: 'Client', max: DEPOSIT_LIMITS.cell, className: 'min-w-[140px]' },
-  { key: 'status', label: 'Status', max: DEPOSIT_LIMITS.cell, className: 'min-w-[130px]' },
-  { key: 'eta', label: 'ETA for closure', max: DEPOSIT_LIMITS.cell, className: 'min-w-[110px]' },
-  { key: 'amount', label: 'Total SD (₹)', max: 40, className: 'min-w-[120px] text-right' },
-  { key: 'due', label: 'SD due now / post signing', max: DEPOSIT_LIMITS.due, className: 'min-w-[200px]' },
+  { key: 'client', label: 'Client', max: DEPOSIT_LIMITS.cell, className: 'min-w-[180px]' },
+  { key: 'amount', label: 'Amount (₹)', max: 40, className: 'min-w-[140px] text-right' },
+  { key: 'remarks', label: 'Remarks', max: DEPOSIT_LIMITS.remarks, className: 'min-w-[260px]' },
 ];
 
 export function DepositsSection({ draft }: { draft: DepositsDraft }) {
@@ -38,7 +36,7 @@ export function DepositsSection({ draft }: { draft: DepositsDraft }) {
   const fill = (text: string) => {
     const { rows: parsed, dropped } = parseDepositsPaste(text);
     if (!parsed.length) {
-      setNote('No rows found in the pasted text. Copy the table rows, one row per line, with the cells in the five columns.');
+      setNote('No rows found in the pasted text. Copy the table rows, one row per line, with the cells in the three columns: Client, Amount, Remarks.');
       return;
     }
     setRows(parsed);
@@ -98,7 +96,7 @@ export function DepositsSection({ draft }: { draft: DepositsDraft }) {
               Paste a table copied from Excel, Outlook or a chat. The rows below are replaced; a header row and a total row are left out.
             </label>
             <div className="flex items-start gap-2">
-              <Textarea id={`${id}-paste`} className="min-h-[56px] px-2 py-1 font-mono text-[12px]" value={paste} onChange={(e) => setPaste(e.target.value)} onPaste={onPaste} placeholder={'Client\tStatus\tETA for closure\tTotal SD\tSD due now / post signing'} />
+              <Textarea id={`${id}-paste`} className="min-h-[56px] px-2 py-1 font-mono text-[12px]" value={paste} onChange={(e) => setPaste(e.target.value)} onPaste={onPaste} placeholder={'Client\tAmount\tRemarks'} />
               <Button size="sm" variant="secondary" className="h-8 flex-none px-2 text-[12.5px]" disabled={!paste.trim()} onClick={() => fill(paste)}>
                 Fill rows
               </Button>
@@ -160,7 +158,7 @@ export function DepositsSection({ draft }: { draft: DepositsDraft }) {
           </div>
           {problems.length ? (
             <p id={`${id}-problems`} role="alert" className="text-[12.5px] text-danger">
-              {problems.map((p) => `Row ${p.row}: “${p.text}” is not an amount.`).join(' ')} Write the total deposit in rupees, for example 31,00,000 or 3100000, or leave it empty. The email cannot go until this is fixed.
+              {problems.map((p) => `Row ${p.row}: “${p.text}” is not an amount.`).join(' ')} Write the amount in rupees, for example 31,00,000 or 3100000, or leave it empty. The email cannot go until this is fixed.
             </p>
           ) : null}
           <div className="flex flex-wrap items-center gap-2">
@@ -172,7 +170,7 @@ export function DepositsSection({ draft }: { draft: DepositsDraft }) {
               Clear the rows
             </Button>
             <p className="ml-auto text-[13px] text-ink" aria-live="polite">
-              Total SD <b className="font-semibold tabular-nums">{depositsTotalLabel(total)}</b>
+              Total <b className="font-semibold tabular-nums">{depositsTotalLabel(total)}</b>
             </p>
           </div>
         </div>

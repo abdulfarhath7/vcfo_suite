@@ -33,20 +33,13 @@ export type SummaryMail = { to: string[]; cc: string[]; bcc: string[]; subject: 
  *  - a partner email goes To exactly that partner, alone;
  *  - no client partner's address may appear anywhere else: not in Cc of any email, and not on a
  *    full email.
- * With `leaders` (the receivables update, owner 23 Nov 2026) the batch may go to the sheet's
- * leaders only: no partner email, and every To and Cc address is an active leader, or `leaders_only`.
  * Returns the mails to send, or the first rule broken as an error code the dialog shows.
  */
 export function checkSummaryEmails(
   emails: Array<{ kind: 'partner' | 'full'; partnerId?: string; to: EmailRecipient[]; cc: EmailRecipient[]; subject: string; html: string; invoiceIds?: string[] }>,
   partners: Partner[],
-  leaders?: EmailRecipient[],
-): { ok: true; mails: SummaryMail[] } | { ok: false; error: 'partner_unknown' | 'partner_to' | 'partner_elsewhere' | 'to_required' | 'leaders_only' } {
+): { ok: true; mails: SummaryMail[] } | { ok: false; error: 'partner_unknown' | 'partner_to' | 'partner_elsewhere' | 'to_required' } {
   const byEmail = new Map(partners.map((p) => [p.email.trim().toLowerCase(), p]));
-  if (leaders) {
-    const allowed = new Set(leaders.map((l) => l.email.trim().toLowerCase()));
-    if (emails.some((e) => e.kind === 'partner' || [...e.to, ...e.cc].some((r) => !allowed.has(r.email.trim().toLowerCase())))) return { ok: false, error: 'leaders_only' };
-  }
   const mails: SummaryMail[] = [];
   for (const e of emails) {
     const to = e.to.map((r) => r.email.trim());
@@ -68,15 +61,13 @@ export function checkSummaryEmails(
 /*
  * The security deposits section of the receivables update (owner, 23 Nov 2026), as the send
  * request carries it: title up to 80 characters, up to 50 rows, each text cell trimmed and up to
- * 200 characters (the due column 300), the amount a number from 0 to 1e13 or null. Nothing else.
+ * 200 characters (the remarks 300), the amount a number from 0 to 1e13 or null. Nothing else.
  */
 const cell = (max: number) => z.string().trim().max(max, 'deposits_cell_too_long');
 const depositRow = z.strictObject({
   client: cell(DEPOSIT_LIMITS.cell),
-  status: cell(DEPOSIT_LIMITS.cell),
-  eta: cell(DEPOSIT_LIMITS.cell),
   totalInr: z.number().nonnegative('deposits_bad_amount').max(DEPOSIT_LIMITS.amount, 'deposits_bad_amount').nullable(),
-  due: cell(DEPOSIT_LIMITS.due),
+  remarks: cell(DEPOSIT_LIMITS.remarks),
 });
 const depositsSchema = z.strictObject({
   title: z.string().trim().max(DEPOSIT_LIMITS.title, 'deposits_title_too_long'),
@@ -95,9 +86,18 @@ export function checkDeposits(raw: unknown): { ok: true; deposits: DepositsSecti
     return { ok: false, error: message.startsWith('deposits_') ? message : 'deposits_invalid' };
   }
   const rows = parsed.data.rows
-    .map((r) => ({ client: r.client, status: r.status, eta: r.eta, totalInr: r.totalInr ?? null, due: r.due }))
-    .filter((r) => r.client || r.status || r.eta || r.due || r.totalInr !== null);
+    .map((r) => ({ client: r.client, totalInr: r.totalInr ?? null, remarks: r.remarks }))
+    .filter((r) => r.client || r.remarks || r.totalInr !== null);
   return { ok: true, deposits: rows.length ? { title: parsed.data.title || DEFAULT_DEPOSITS_TITLE, rows } : null };
+}
+
+/**
+ * The security deposits are for the leaders only (owner, 23 Nov 2026): true when this email may
+ * carry the section, which is a whole-sheet email whose every To and Cc address is an active leader.
+ */
+export function mayCarryDeposits(e: { kind: 'partner' | 'full'; to: EmailRecipient[]; cc: EmailRecipient[] }, leaders: EmailRecipient[]): boolean {
+  const allowed = new Set(leaders.map((l) => l.email.trim().toLowerCase()));
+  return e.kind === 'full' && e.to.length > 0 && [...e.to, ...e.cc].every((r) => allowed.has(r.email.trim().toLowerCase()));
 }
 
 /** The slow part, after the response: one Graph call per email, then the outcome on the log row. */

@@ -1,26 +1,29 @@
-import { escapeHtml } from '@/lib/email/email-layout';
+import { emailColor, escapeHtml } from '@/lib/email/email-layout';
 import { SPECTRUM_EMAIL_FONTS } from '@/lib/email/spectrum-email-tokens';
 import { clientKey } from './client-key';
+import { foreignAmountHeader } from './currencies';
 import { signNameSpan } from './sign-name';
 import { partOf, type TemplateOverride } from './templates';
-import { monthBlockTitle, monthLong, monthShort } from './dates';
+import { daysLeft, monthBlockTitle, monthLong, monthShort, sheetDate } from './dates';
 import type { SnapshotRow } from './model';
-import { isOpen, monthsOf, receivedThisWeek, sumInr } from './summary';
+import { foreignAmountOf, isForeignRow, isOpen, monthsOf, receivedThisWeek, sumInr } from './summary';
 import { croreLabel, depositsTotal, type DepositsSection } from './deposits';
 
 /**
  * RECEIVABLES SUMMARY EMAIL — the body of "RE: Receivables update", in the format SBC's finance
- * team already sends: the payments received, then one SBC-orange table, a band per invoice month, with
- * three columns only (owner, 23 Nov 2026): Client, Amount ₹ and Remarks; received rows shaded green,
- * a month total of what is still open, and the total receivables. Built from the live sheet. Inline
- * styles, for Outlook.
+ * team already sends: the payments received, then one SBC-orange table, a band per invoice month, with the
+ * sheet's own columns (owner, 18 Nov 2026): Client, Invoice no., Invoice date, Partner, Due date,
+ * Amount ₹, Received (date and amount) and Status; received rows shaded green, a month total of what
+ * is still open, and the total receivables. Built from the live sheet, so the email shows what the
+ * table shows. Inline styles, for Outlook.
  *
- * Remarks are typed in the Send email pop-up, in the table itself; a received row starts with
- * "Received". They are not saved on the sheet. A foreign invoice shows its INR amount only.
+ * Phase 9: when any row is in a foreign currency, each table gains Currency and foreign amount
+ * columns ("USD Amount", or "Foreign Amount" when currencies are mixed) before the INR. With every row in INR the email is exactly the format above.
  */
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
 const money = (n: number) => inr.format(Math.round(n));
+const fcFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /*
  * The table theme (owner, 17 Nov 2026; refined 18 Nov 2026): a light peach month title, column
@@ -35,6 +38,10 @@ const BAND = '#fdf4f0';
 const PAID = '#eef8ea';
 const GRID = '#e4e4e4';
 const INK = '#1f2328';
+const MUTED = '#6b7079';
+const AMBER = '#b26a00';
+const GREEN = '#2e7d32';
+const RED = emailColor('danger');
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
 const P = `margin:0 0 12px;font-family:${SANS};font-size:14px;line-height:21px;color:${INK};`;
 const CELL = `border-bottom:1px solid ${GRID};padding:5px 10px;font-size:13px;line-height:17px;font-family:${SANS};color:${INK};white-space:nowrap;`;
@@ -42,6 +49,8 @@ const TITLE = `padding:6px 10px;font-size:13.5px;line-height:18px;font-family:${
 const HEAD = `padding:6px 10px;font-size:12.5px;line-height:16px;font-family:${SANS};background:${ORANGE};color:#ffffff;font-weight:bold;text-align:left;white-space:nowrap;`;
 // Every table is the full width of the email (owner, 19 Nov 2026), so the month table and the total line up.
 const TABLE = `width:100%;border-collapse:collapse;margin:10px 0 14px;min-width:560px;border:1px solid ${GRID};`;
+/** An empty cell: the same dash in the same font everywhere. */
+const DASH = `<span style="font-family:${SANS};color:${MUTED};">—</span>`;
 // Amounts in Roboto with even-width digits, so the digits still line up (owner, 19 Nov 2026).
 const NUM = `font-family:${SANS};font-variant-numeric:tabular-nums;text-align:right;`;
 // A long client or partner name wraps onto a second line instead of pushing the other columns
@@ -68,8 +77,6 @@ export type SummaryEmailInput = {
   sheetName?: string;
   /** Marks each invoice row with `data-inv`, for ✕ in the Send email pop-up; removed before sending. */
   marks?: boolean;
-  /** Remarks typed in the Send email pop-up, by invoice id. A received row without one says "Received". */
-  remarks?: Record<string, string>;
   /**
    * The security deposits section (owner, 23 Nov 2026): typed or pasted in the Send email pop-up,
    * for the leaders' email only. It is never drawn on a partner's email (`partnerSlug`).
@@ -114,6 +121,15 @@ export function emailRows(input: Pick<SummaryEmailInput, 'rows' | 'today' | 'par
   );
 }
 
+/** "Overdue · 18 days", "Due in 3 days", "Due today" or "Received", with its colour. */
+function statusOf(r: SnapshotRow, today: string): { text: string; color: string } {
+  if (!isOpen(r)) return { text: 'Received', color: GREEN };
+  const dl = daysLeft(r.dueDate, today);
+  if (dl < 0) return { text: `Overdue · ${-dl} day${dl === -1 ? '' : 's'}`, color: RED };
+  if (dl === 0) return { text: 'Due today', color: AMBER };
+  return { text: `Due in ${dl} day${dl === 1 ? '' : 's'}`, color: MUTED };
+}
+
 export function summaryEmailHtml(input: SummaryEmailInput): string {
   const shown = emailRows(input);
   const received = shown.filter((r) => receivedThisWeek(r, input.today));
@@ -127,11 +143,19 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
         .join('')}</ul>`
     : `<p style="${P}">No new payments have been received since the last update.</p>`;
 
-  // Client, amount and remarks only (owner, 23 Nov 2026).
-  const heads: Array<{ label: string; num?: boolean; width: string }> = [
-    { label: 'Client', width: '42%' },
-    { label: 'Amount (₹)', num: true, width: '20%' },
-    { label: 'Remarks', width: '38%' },
+  const foreign = shown.some(isForeignRow);
+  // The sheet's own columns (owner, 18 Nov 2026), with the received date and amount apart.
+  const heads: Array<{ label: string; num?: boolean; center?: boolean; width?: string }> = [
+    { label: 'Client', width: '22%' },
+    { label: 'Invoice no.' },
+    { label: 'Invoice date', center: true },
+    { label: 'Partner', width: '13%' },
+    { label: 'Due date', center: true },
+    ...(foreign ? [{ label: 'Currency', center: true }, { label: foreignAmountHeader(shown.filter(isForeignRow).map((r) => r.currency)), num: true }] : []),
+    { label: 'Amount (₹)', num: true },
+    { label: 'Received date', center: true },
+    { label: 'Received amount (₹)', num: true },
+    { label: 'Status' },
   ];
   const cols = heads.length;
   const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
@@ -145,18 +169,22 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
         .map((r, i) => {
           const open = isOpen(r);
           const bg = !open ? PAID : i % 2 === 1 ? BAND : '#ffffff';
-          const remark = input.remarks?.[r.id] ?? (open ? '' : 'Received');
-          return `<tr${input.marks ? ` data-inv="${escapeHtml(r.id)}"` : ''}><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.clientName)}</td><td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td${input.marks ? ' data-remark=""' : ''} ${td(bg, WRAP)}>${escapeHtml(remark)}</td></tr>`;
+          const st = statusOf(r, input.today);
+          const fc = foreignAmountOf(r);
+          const fx = foreign
+            ? `<td ${td(bg, 'text-align:center;')}>${isForeignRow(r) ? escapeHtml((r.currency ?? '').toUpperCase()) : 'INR'}</td><td ${td(bg, NUM)}>${fc === null ? DASH : fcFormat.format(fc)}</td>`
+            : '';
+          return `<tr${input.marks ? ` data-inv="${escapeHtml(r.id)}"` : ''}><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.clientName)}</td><td ${td(bg, 'font-size:12.5px;')}>${r.invoiceNo ? escapeHtml(r.invoiceNo) : DASH}</td><td ${td(bg, 'text-align:center;')}>${r.invoiceDate ? sheetDate(r.invoiceDate) : DASH}</td><td ${td(bg, WRAP)}>${r.partnerName ? escapeHtml(r.partnerName) : DASH}</td><td ${td(bg, 'text-align:center;')}>${sheetDate(r.dueDate)}</td>${fx}<td ${td(bg, NUM)}>${money(open ? r.amountInr : (r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, 'text-align:center;')}>${!open && r.paidOn ? sheetDate(r.paidOn) : DASH}</td><td ${td(bg, NUM)}>${open ? DASH : money((r.paidAmount ?? r.amountInr) + (r.partPaid ?? 0))}</td><td ${td(bg, `color:${st.color};font-weight:600;`)}>${st.text}</td></tr>`;
         })
         .join('');
       const title = monthBlockTitle(m).replace(' Receivables', '');
       const open = sumInr(list.filter(isOpen));
-      return `<tr><td colspan="${cols}" style="${TITLE}">${escapeHtml(title)}</td></tr>${body}<tr><td style="${CELL}${TOTAL}">Still open in ${escapeHtml(monthShort(m))}</td><td style="${CELL}${TOTAL}${NUM}">${money(open)}</td><td style="${CELL}${TOTAL}"></td></tr>`;
+      return `<tr><td colspan="${cols}" style="${TITLE}">${escapeHtml(title)}</td></tr>${body}<tr><td colspan="${cols - 4}" style="${CELL}${TOTAL}">Still open in ${escapeHtml(monthShort(m))}</td><td style="${CELL}${TOTAL}${NUM}">${money(open)}</td><td colspan="3" style="${CELL}${TOTAL}"></td></tr>`;
     })
     .join('');
   const tables = monthBlocks
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
-        .map((h) => `<td width="${h.width}" style="${HEAD}width:${h.width};${h.num ? 'text-align:right;' : ''}">${h.label}</td>`)
+        .map((h) => `<td${h.width ? ` width="${h.width}"` : ''} style="${HEAD}${h.width ? `width:${h.width};` : ''}${h.num ? 'text-align:right;' : h.center ? 'text-align:center;' : ''}">${h.label}</td>`)
         .join('')}</tr>${monthBlocks}</table>`
     : '';
 
@@ -182,7 +210,7 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
 
 /*
  * The security deposits section (owner, 23 Nov 2026). It sits after the receivables table and its
- * total box, under its own heading, in its own table with the same orange column heads, so it reads
+ * total box, under its own heading, in its own table (Client, Amount and Remarks) with the same orange column heads, so it reads
  * as part of the same email but clearly as a different list. Its total row carries the sum and the
  * crore figure. In the pop-up (`marks`) it is wrapped in comment markers and a block the person
  * cannot edit in place: the rows are edited in the pop-up's own form, and `withDepositsSection`
@@ -194,23 +222,22 @@ const DEPOSITS_HEADING = `margin:28px 0 4px;font-family:${SANS};font-size:15px;l
 
 export function depositsSectionHtml(deposits: DepositsSection | null | undefined, marks = false): string {
   if (!deposits?.rows.length) return '';
+  // Client, amount and remarks only (owner, 23 Nov 2026).
   const heads: Array<{ label: string; num?: boolean; width: string }> = [
-    { label: 'Client', width: '22%' },
-    { label: 'Status', width: '18%' },
-    { label: 'ETA for closure', width: '16%' },
-    { label: 'Total SD (₹)', num: true, width: '16%' },
-    { label: 'SD due now / post signing', width: '28%' },
+    { label: 'Client', width: '40%' },
+    { label: 'Amount (₹)', num: true, width: '20%' },
+    { label: 'Remarks', width: '40%' },
   ];
   const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
   const body = deposits.rows
     .map((r, i) => {
       const bg = i % 2 === 1 ? BAND : '#ffffff';
       const amount = r.totalInr === null ? '' : money(r.totalInr);
-      return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.status)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.eta)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.due)}</td></tr>`;
+      return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.remarks)}</td></tr>`;
     })
     .join('');
   const total = depositsTotal(deposits.rows);
-  const totalRow = `<tr><td style="${CELL}${TOTAL}">Total</td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}${NUM}">${money(total)}</td><td style="${CELL}${TOTAL}">${croreLabel(total)}</td></tr>`;
+  const totalRow = `<tr><td style="${CELL}${TOTAL}">Total</td><td style="${CELL}${TOTAL}${NUM}">${money(total)}</td><td style="${CELL}${TOTAL}">${croreLabel(total)}</td></tr>`;
   const html = `<p style="${DEPOSITS_HEADING}">${escapeHtml(deposits.title)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
     .map((h) => `<td width="${h.width}" style="${HEAD}width:${h.width};${h.num ? 'text-align:right;' : ''}">${h.label}</td>`)
     .join('')}</tr>${body}${totalRow}</table>`;
