@@ -8,7 +8,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InvoiceInput, InvoicePatch, ReceiptInput } from '@/lib/receivables/model';
 import type { InvoiceHistoryDto, PendingChangesDto } from '@/lib/receivables/history-wire';
-import type { DepositsSection } from '@/lib/receivables/deposits';
 import type { InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, SummaryDto, SummaryEmailDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
 
 const ERROR_TEXT: Record<string, string> = {
@@ -31,10 +30,9 @@ const ERROR_TEXT: Record<string, string> = {
   send_failed: 'Outlook did not send the email. Try again.',
   bad_email: 'One of the addresses is not a valid email.',
   partner_to: 'A client partner\'s email must go to that partner alone.',
-  deposits_leaders_only: 'The security deposits go to leaders only. Take everyone who is not a leader out of To and Cc of the leaders’ email.',
-  deposits_title_too_long: 'The security deposits title is over 80 characters.',
+  deposits_leaders_only: 'The security deposits go to leaders only. Take everyone who is not a leader out of To and Cc of the leaders’ email, or untick the deposits there.',
   deposits_too_many_rows: 'The security deposits section holds up to 50 rows.',
-  deposits_cell_too_long: 'A security deposits cell is too long (200 characters, 300 for the remarks).',
+  deposits_cell_too_long: 'A security deposits cell is too long (200 characters, 300 for the last column).',
   deposits_bad_amount: 'A security deposit amount is not a number from 0 upwards.',
   deposits_invalid: 'The security deposits section could not be read. Check the rows and try again.',
   deposits_summary_only: 'The security deposits section goes on the receivables update only.',
@@ -165,8 +163,8 @@ export function useOutlookStatus() {
 }
 
 /** Send email: one email per person (a partner's own invoices, or the whole sheet). */
-/** `deposits`: the security deposits section, on the receivables update only (owner, 23 Nov 2026). */
-export type SummarySendInput = { emails: SummaryEmailDto[]; report?: 'summary' | 'collections'; deposits?: DepositsSection | null };
+/** `withDeposits`: the leaders' email carries the sheet's security deposits table (owner, 23 Nov 2026). */
+export type SummarySendInput = { emails: SummaryEmailDto[]; report?: 'summary' | 'collections'; withDeposits?: boolean };
 
 /** The 202 of Send: the send is logged as `sending` and finishes after the response. */
 export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; emails: number; to: number; cc: number; bcc: number };

@@ -10,6 +10,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import type { ApproveEdit, ClientDto, DigestRecipientDto, EmailLogEntryDto, EmailLogFilter, EmailLogPageDto, EmailSettingsDto, ImportRowDto, PeopleDto, PendingImportsDto, ReceivedEmailDraftDto } from '@/lib/receivables/v2-wire';
 import { call, json, sheetKey } from './use-receivables';
 import type { TemplateKind, TemplateOverride, TemplateSet } from '@/lib/receivables/templates';
+import type { DepositRow } from '@/lib/receivables/deposits';
 
 export const pendingKey = (sheetId: string) => ['receivables', 'imports', sheetId] as const;
 export const peopleKey = (sheetId: string) => ['receivables', 'people', sheetId] as const;
@@ -203,4 +204,20 @@ export function useTeam(sheetId: string) {
     update: useMutation({ mutationFn: (input: TeamWrite & { userId: string }) => call<{ member: TeamMember }>(base, json('PATCH', input)), onSettled }),
     remove: useMutation({ mutationFn: (userId: string) => call<{ ok: true }>(`${base}?userId=${userId}`, { method: 'DELETE' }), onSettled }),
   };
+}
+
+/** The sheet's security deposits table (owner, 23 Nov 2026), in the leadership's five columns. */
+export const depositsKey = (sheetId: string) => ['receivables', 'deposits', sheetId] as const;
+
+export function useDeposits(sheetId: string) {
+  return useQuery({ queryKey: depositsKey(sheetId), queryFn: () => call<{ rows: DepositRow[] }>(`/api/receivables/sheets/${sheetId}/deposits`) });
+}
+
+/** Save replaces the whole table with the rows on screen. */
+export function useSaveDeposits(sheetId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: DepositRow[]) => call<{ rows: DepositRow[] }>(`/api/receivables/sheets/${sheetId}/deposits`, json('PUT', { rows })),
+    onSuccess: (data) => qc.setQueryData(depositsKey(sheetId), data),
+  });
 }

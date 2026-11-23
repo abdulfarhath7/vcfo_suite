@@ -8,6 +8,7 @@ export { getVersion, listVersions, publishSheet, type VersionMeta } from './vers
 export { addPartner, deletePartner, updatePartner } from './partners';
 export { addClient, deleteClient, listClients, setPartnerClients, systemCoPartnerLinks, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
 export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
+export { listDeposits, saveDeposits } from './deposits';
 export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
 export {
   approveEmailLogs,

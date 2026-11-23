@@ -18,6 +18,7 @@ import { FxEditDialog } from './FxFields';
 import { NotesDialog } from './InvoiceNotes';
 import { ShareViewDialog } from './ShareViewDialog';
 import { ApprovalPanel } from './sheet/ApprovalPanel';
+import { DepositsTable } from './sheet/DepositsTable';
 import { ChangeAmountDialog } from './sheet/ChangeAmountDialog';
 import { ReceivedEmailDialog } from './sheet/ReceivedEmailDialog';
 import { HistoryDrawer } from './sheet/HistoryDrawer';
@@ -285,6 +286,8 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
           onSave={s.bulkReceive}
         />
       ) : null}
+      {/* The security deposits, a table of their own under the invoices (owner, 23 Nov 2026). */}
+      <DepositsTable sheetId={data.sheet.id} />
       {external ? <ShareViewDialog sheetId={s.sheetId} filters={s.filters} partnerNames={s.partnerNames} open={d?.kind === 'share-view'} onOpenChange={(o) => !o && s.close()} /> : null}
     </div>
   );

@@ -780,3 +780,33 @@ export const receivableEmailLog = pgTable(
     dedupeIdx: uniqueIndex('receivable_email_log_dedupe_idx').on(t.dedupeKey),
   }),
 );
+
+/**
+ * The sheet's security deposits (owner, 23 Nov 2026): a small table of its own on the Sheet tab,
+ * Client, Status, ETA for closure, Total SD in INR and SD due now/post signing (the leadership's own
+ * table), in the order the person keeps them. It is for the leaders only: it
+ * goes out as a section of the leaders' receivables update and nowhere else. `amount_inr` is null
+ * when the amount is left empty.
+ */
+export const receivableDeposits = pgTable(
+  'receivable_deposits',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    client: text('client').notNull().default(''),
+    status: text('status').notNull().default(''),
+    /** "ETA for closure", as the person writes it ("week of 23rd"). */
+    eta: text('eta').notNull().default(''),
+    amountInr: numeric('amount_inr', { precision: 14, scale: 2 }),
+    /** "SD due now/post signing", free text. */
+    due: text('due').notNull().default(''),
+    updatedBy: uuid('updated_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    sheetIdx: index('receivable_deposits_sheet_idx').on(t.sheetId, t.position),
+  }),
+);

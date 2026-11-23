@@ -78,7 +78,7 @@ export type SummaryEmailInput = {
   /** Marks each invoice row with `data-inv`, for ✕ in the Send email pop-up; removed before sending. */
   marks?: boolean;
   /**
-   * The security deposits section (owner, 23 Nov 2026): typed or pasted in the Send email pop-up,
+   * The security deposits section (owner, 23 Nov 2026): the sheet's saved deposits table,
    * for the leaders' email only. It is never drawn on a partner's email (`partnerSlug`).
    */
   deposits?: DepositsSection | null;
@@ -211,9 +211,8 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
 
 /*
  * The security deposits section (owner, 23 Nov 2026). It sits after the receivables table and its
- * total box, under its own heading, in its own table (Client, Amount and Remarks) with the same orange column heads, so it reads
- * as part of the same email but clearly as a different list. Its total row carries the sum and the
- * crore figure. In the pop-up (`marks`) it is wrapped in comment markers and a block the person
+ * total box, under its own heading, in its own table (the leadership's five columns) with the same orange column heads, so it reads
+ * as part of the same email but clearly as a different list. Its total row carries the sum and the crore figure. In the pop-up (`marks`) it is wrapped in comment markers and a block the person
  * cannot edit in place: the rows are edited in the pop-up's own form, and `withDepositsSection`
  * swaps the block when they change. The send route always draws it again from the rows it checked.
  */
@@ -223,22 +222,25 @@ const DEPOSITS_HEADING = `margin:28px 0 4px;font-family:${SANS};font-size:15px;l
 
 export function depositsSectionHtml(deposits: DepositsSection | null | undefined, marks = false): string {
   if (!deposits?.rows.length) return '';
-  // Client, amount and remarks only (owner, 23 Nov 2026).
+  // The leadership's own table (owner, 23 Nov 2026).
   const heads: Array<{ label: string; num?: boolean; width: string }> = [
-    { label: 'Client', width: '40%' },
-    { label: 'Amount (₹)', num: true, width: '20%' },
-    { label: 'Remarks', width: '40%' },
+    { label: 'Client', width: '18%' },
+    { label: 'Status', width: '18%' },
+    { label: 'ETA for closure', width: '16%' },
+    { label: 'Total SD in INR', num: true, width: '16%' },
+    { label: 'SD due now/post signing', width: '32%' },
   ];
   const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
   const body = deposits.rows
     .map((r) => {
       const bg = '#ffffff';
-      const amount = r.totalInr === null ? '' : money(r.totalInr);
-      return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.remarks)}</td></tr>`;
+      const amount = r.totalInr === null ? '' : `₹ ${money(r.totalInr)}`;
+      return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.status)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.eta)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.due)}</td></tr>`;
     })
     .join('');
   const total = depositsTotal(deposits.rows);
-  const totalRow = `<tr><td style="${CELL}${TOTAL}">Total</td><td style="${CELL}${TOTAL}${NUM}">${money(total)}</td><td style="${CELL}${TOTAL}">${croreLabel(total)}</td></tr>`;
+  // The total row: the sum, then the crore figure ("7.70 cr"); never "0.00 cr" (owner, 23 Nov 2026).
+  const totalRow = `<tr><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}${NUM}">₹ ${money(total)}</td><td style="${CELL}${TOTAL}">${croreLabel(total)}</td></tr>`;
   const html = `<p style="${DEPOSITS_HEADING}">${escapeHtml(deposits.title)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
     .map((h) => `<td width="${h.width}" style="${HEAD}width:${h.width};${h.num ? 'text-align:right;' : ''}">${h.label}</td>`)
     .join('')}</tr>${body}${totalRow}</table>`;

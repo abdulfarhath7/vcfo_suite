@@ -88,6 +88,8 @@ export type SummaryDto = {
   alreadySent: SentMap;
   /** The leadership digest recipients, offered as "leaders"; each gets the whole-sheet email. */
   leaders: EmailRecipient[];
+  /** The sheet's security deposits table (the Sheet tab), or null when it is empty. Leaders only. */
+  deposits: import('./deposits').DepositsSection | null;
 };
 
 export type PartnerDraftDto = { partnerId: string; name: string; email: string; invoiceCount: number; html: string; slug: string; alsoClientKeys: string[] };

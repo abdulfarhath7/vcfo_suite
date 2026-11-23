@@ -3,9 +3,10 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { depositsSectionHtml, withDepositsSection } from '@/lib/receivables/summary-email';
-import { checkDeposits, checkSummaryEmails, deliverSummary, mayCarryDeposits, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
+import { checkSummaryEmails, deliverSummary, mayCarryDeposits, outlookErrorCode } from '@/lib/receivables/summary-send';
+import { getSummarySendStatus, getSummarySource, listDeposits, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
+import { DEFAULT_DEPOSITS_TITLE } from '@/lib/receivables/deposits';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -22,13 +23,11 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
  * batch is then logged as one `sending` row and the route answers 202 { ok, queued, sendId }. The
  * Graph calls run after the response (`after` from next/server); the row ends `sent` or `failed`.
  *
- * `deposits` (owner, 23 Nov 2026): the security deposits section of the receivables update, typed or
- * pasted in the pop-up and not saved anywhere. It is checked here (400 `deposits_*`), refused on the
- * Collections report (400 `deposits_summary_only`), and drawn again from the checked rows, replacing
- * whatever deposits block the body holds. It is for the leaders only: it goes into a whole-sheet
- * email whose every To and Cc address is an active leader of the sheet (People, Leaders). Any
- * other email that holds the block is refused (400 `deposits_leaders_only`); an email without
- * deposits loses any such block.
+ * `withDeposits` (owner, 23 Nov 2026): the leaders' email carries the sheet's security deposits
+ * table (kept on the Sheet tab). The section is drawn here from the saved rows, replacing whatever
+ * deposits block the body holds, and only into a whole-sheet email whose every To and Cc address
+ * is an active leader of the sheet. Any other email that holds the block is refused
+ * (400 `deposits_leaders_only`); the Collections report refuses it (400 `deposits_summary_only`).
  *
  * GET ?send=<sendId> — the state of that send, which the dialog polls to show the outcome.
  */
@@ -47,8 +46,8 @@ const email = z.object({
 const schema = z.object({
   emails: z.array(email).min(1, 'to_required').max(60),
   report: z.enum(['summary', 'collections']).default('summary'),
-  /** Checked on its own by `checkDeposits`, so a broken rule answers with its own code. */
-  deposits: z.unknown().optional(),
+  /** True when the leaders' email carries the sheet's security deposits table. */
+  withDeposits: z.boolean().default(false),
 });
 
 export async function POST(request: Request, context: RouteContext) {
@@ -62,10 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
   // neither checks nor writes the "already sent" receipts.
   const collections = input.report === 'collections';
   // The security deposits belong to the receivables update only, and there to the leaders only.
-  if (collections && input.deposits !== undefined && input.deposits !== null) return NextResponse.json({ error: 'deposits_summary_only' }, { status: 400 });
-  const deposits = checkDeposits(input.deposits);
-  if (deposits.ok === false) return NextResponse.json({ error: deposits.error }, { status: 400 });
-  const section = depositsSectionHtml(deposits.deposits);
+  if (collections && input.withDeposits) return NextResponse.json({ error: 'deposits_summary_only' }, { status: 400 });
   // Each email's addresses: valid, each once.
   const emails = [];
   for (const e of input.emails) {
@@ -76,6 +72,9 @@ export async function POST(request: Request, context: RouteContext) {
   if (collections) for (const e of emails) e.invoiceIds = undefined;
   try {
     const src = await getSummarySource(guard.ctx, id);
+    // The section is drawn from the sheet's saved deposits table, never from the request.
+    const saved = input.withDeposits ? await listDeposits(guard.ctx, id) : [];
+    const section = depositsSectionHtml(saved.length ? { title: DEFAULT_DEPOSITS_TITLE, rows: saved } : null);
     // The deposits go to the leaders only (owner, 23 Nov 2026): into the whole-sheet email whose
     // every address is an active leader. A partner's or anyone else's email never gets them.
     const leaders = section ? (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active) : [];

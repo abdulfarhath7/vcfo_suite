@@ -16,6 +16,7 @@ const sendMailViaOutlook = vi.fn();
 const assertOutlookReady = vi.fn();
 const startEmailLog = vi.fn();
 const systemFinishEmailLog = vi.fn();
+const listDeposits = vi.fn();
 const afterQueue: Array<() => Promise<unknown>> = [];
 vi.mock('next/server', async () => ({ ...(await vi.importActual<typeof import('next/server')>('next/server')), after: (fn: () => Promise<unknown>) => afterQueue.push(fn) }));
 vi.mock('@/auth/guards', () => ({ requireAnyRole: () => guard() }));
@@ -28,6 +29,7 @@ vi.mock('@/db/repositories/receivables', async () => {
     finishSummarySend: (...a: unknown[]) => finishSummarySend(...a),
     getSummarySendStatus: (...a: unknown[]) => getSummarySendStatus(...a),
     sentReceiptsFor: async () => ({}),
+    listDeposits: (...a: unknown[]) => listDeposits(...a),
     // The sheet's leaders (People, Leaders): only an email to them may carry the security deposits.
     listDigestRecipients: async () => ['ceo@sbcllp.in', 'cfo@sbcllp.in'].map((email) => ({ id: email, name: '', email, active: true })),
     systemRecordSentReceipts: async () => undefined,
@@ -171,44 +173,52 @@ describe('send-summary route', () => {
   });
 });
 
-/** The security deposits section (owner, 23 Nov 2026): on the receivables update only, on the leaders’ email only. Invented names. */
+/** The security deposits section (owner, 23 Nov 2026): the sheet's saved table, on the leaders’ email only. Invented names. */
 describe('send-summary route: the security deposits section', () => {
-  const ROW = { client: 'Alpha Corp', totalInr: 30000000, remarks: '100% due' };
-  const DEPOSITS = { title: 'Security deposits', rows: [ROW] };
+  const ROW = { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', totalInr: 30000000, due: '100% due' };
   const leaderMail = (html = '<p>Hi Team,</p><p style="x">Regards,<br>K</p>') => ({ emails: [{ kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [], subject: 's', html }] });
   const sentHtml = async () => {
     await runAfter();
     return sendMailViaOutlook.mock.calls[0][1].html as string;
   };
+  beforeEach(() => listDeposits.mockResolvedValue([ROW]));
 
-  it('draws the section from the checked rows into the leaders’ email, before Regards', async () => {
-    const res = await call({ ...leaderMail(), deposits: DEPOSITS });
+  it('draws the saved table into the leaders’ email, before Regards, with its total', async () => {
+    const res = await call({ ...leaderMail(), withDeposits: true });
     expect(res.status).toBe(202);
     const html = await sentHtml();
     expect(html).toContain('>Security deposits</p>');
     expect(html).toContain('>Alpha Corp<');
-    expect(html).toContain('>3,00,00,000<');
+    expect(html).toContain('>₹ 3,00,00,000<');
     expect(html).toContain('>3.00 cr<');
     expect(html.indexOf('Alpha Corp')).toBeLessThan(html.indexOf('Regards,'));
     expect(startEmailLog).toHaveBeenCalledWith(ctx, expect.objectContaining({ html }));
   });
 
-  it('replaces whatever deposits block the body holds with the checked rows, and drops one sent without rows', async () => {
+  it('replaces whatever deposits block the body holds with the saved rows, and drops it when the tick is off', async () => {
     const forged = '<p>Hi</p><!--deposits--><div data-deposits="" contenteditable="false"><p>Forged Co 999</p></div><!--/deposits--><p>Regards,</p>';
-    await call({ ...leaderMail(forged), deposits: DEPOSITS });
+    await call({ ...leaderMail(forged), withDeposits: true });
     const html = await sentHtml();
     expect(html).not.toContain('Forged Co');
     expect(html).not.toContain('data-deposits');
     expect(html).toContain('Alpha Corp');
     sendMailViaOutlook.mockClear();
+    listDeposits.mockClear();
     await call(leaderMail(forged));
-    const without = await sentHtml();
-    expect(without).toBe('<p>Hi</p><p>Regards,</p>');
+    expect(await sentHtml()).toBe('<p>Hi</p><p>Regards,</p>');
+    expect(listDeposits).not.toHaveBeenCalled();
+  });
+
+  it('never takes rows from the request', async () => {
+    await call({ ...leaderMail(), withDeposits: true, deposits: { title: 'x', rows: [{ client: 'Forged Co', status: '', eta: '', totalInr: 1, due: '' }] } });
+    const html = await sentHtml();
+    expect(html).not.toContain('Forged Co');
+    expect(html).toContain('Alpha Corp');
   });
 
   it('refuses a leaders’ email that shows the section but has someone who is not a leader', async () => {
     const shown = '<p>Hi</p><!--deposits--><div data-deposits="" contenteditable="false"><p>x</p></div><!--/deposits--><p>Regards,</p>';
-    const res = await call({ emails: [{ kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'outsider@example.com' }], subject: 's', html: shown }], deposits: DEPOSITS });
+    const res = await call({ emails: [{ kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'outsider@example.com' }], subject: 's', html: shown }], withDeposits: true });
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'deposits_leaders_only' });
     expect(recordSummarySend).not.toHaveBeenCalled();
@@ -225,7 +235,7 @@ describe('send-summary route: the security deposits section', () => {
         { kind: 'partner', partnerId: pranay.id, to: [{ name: '', email: 'pranay@sbcllp.in' }], cc: [], subject: 's', html: body },
         { kind: 'full', to: [{ name: '', email: 'someone@example.com' }], cc: [], subject: 's', html: body },
       ],
-      deposits: DEPOSITS,
+      withDeposits: true,
     });
     expect(res.status).toBe(202);
     await runAfter();
@@ -237,42 +247,47 @@ describe('send-summary route: the security deposits section', () => {
   });
 
   it('refuses deposits on the Collections report', async () => {
-    const res = await call({ ...leaderMail(), report: 'collections', deposits: DEPOSITS });
+    const res = await call({ ...leaderMail(), report: 'collections', withDeposits: true });
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'deposits_summary_only' });
     expect(recordSummarySend).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['a long title', { title: 'x'.repeat(81), rows: [ROW] }, 'deposits_title_too_long'],
-    ['too many rows', { title: 'SD', rows: Array.from({ length: 51 }, () => ROW) }, 'deposits_too_many_rows'],
-    ['a long cell', { title: 'SD', rows: [{ ...ROW, client: 'x'.repeat(201) }] }, 'deposits_cell_too_long'],
-    ['long remarks', { title: 'SD', rows: [{ ...ROW, remarks: 'x'.repeat(301) }] }, 'deposits_cell_too_long'],
-    ['a negative amount', { title: 'SD', rows: [{ ...ROW, totalInr: -1 }] }, 'deposits_bad_amount'],
-    ['a huge amount', { title: 'SD', rows: [{ ...ROW, totalInr: 1e14 }] }, 'deposits_bad_amount'],
-    ['an amount as text', { title: 'SD', rows: [{ ...ROW, totalInr: '30,000' }] }, 'deposits_invalid'],
-    ['a missing amount', { title: 'SD', rows: [{ client: 'A', remarks: '' }] }, 'deposits_invalid'],
-    ['an unknown key', { title: 'SD', rows: [{ ...ROW, html: '<b>x</b>' }] }, 'deposits_invalid'],
-    ['rows that are not a list', { title: 'SD', rows: 'Alpha' }, 'deposits_invalid'],
-  ])('refuses %s with a clear code', async (_label, deposits, error) => {
-    const res = await call({ ...leaderMail(), deposits });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error });
-    expect(recordSummarySend).not.toHaveBeenCalled();
-  });
-
-  it('accepts 50 rows, 300-character remarks, an empty amount, and trims the cells', async () => {
-    const rows = [{ ...ROW, client: '  Beta Ltd  ', remarks: 'y'.repeat(300), totalInr: null }, ...Array.from({ length: 49 }, () => ROW)];
-    const res = await call({ ...leaderMail(), deposits: { title: ' ', rows } });
-    expect(res.status).toBe(202);
-    const html = await sentHtml();
-    expect(html).toContain('>Beta Ltd<');
-    expect(html).toContain('>Security deposits</p>');
-  });
-
-  it('sends no section when every row is empty', async () => {
-    const res = await call({ ...leaderMail(), deposits: { title: 'SD', rows: [{ client: ' ', totalInr: null, remarks: '' }] } });
+  it('sends no section when the table is empty', async () => {
+    listDeposits.mockResolvedValue([]);
+    const res = await call({ ...leaderMail(), withDeposits: true });
     expect(res.status).toBe(202);
     expect(await sentHtml()).toBe('<p>Hi Team,</p><p style="x">Regards,<br>K</p>');
+  });
+});
+
+/** The rows the Sheet tab saves (PUT …/deposits) pass the same check. */
+describe('checkDeposits', async () => {
+  const { checkDeposits } = await import('./summary-send');
+  const ROW = { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', totalInr: 30000000, due: '100% due' };
+
+  it.each([
+    ['too many rows', { title: '', rows: Array.from({ length: 51 }, () => ROW) }, 'deposits_too_many_rows'],
+    ['a long cell', { title: '', rows: [{ ...ROW, client: 'x'.repeat(201) }] }, 'deposits_cell_too_long'],
+    ['a long due cell', { title: '', rows: [{ ...ROW, due: 'x'.repeat(301) }] }, 'deposits_cell_too_long'],
+    ['a negative amount', { title: '', rows: [{ ...ROW, totalInr: -1 }] }, 'deposits_bad_amount'],
+    ['a huge amount', { title: '', rows: [{ ...ROW, totalInr: 1e14 }] }, 'deposits_bad_amount'],
+    ['an amount as text', { title: '', rows: [{ ...ROW, totalInr: '30,000' }] }, 'deposits_invalid'],
+    ['a missing amount', { title: '', rows: [{ client: 'A', status: '', eta: '', due: '' }] }, 'deposits_invalid'],
+    ['an unknown key', { title: '', rows: [{ ...ROW, html: '<b>x</b>' }] }, 'deposits_invalid'],
+    ['rows that are not a list', { title: '', rows: 'Alpha' }, 'deposits_invalid'],
+  ])('refuses %s with a clear code', (_label, deposits, error) => {
+    expect(checkDeposits(deposits)).toEqual({ ok: false, error });
+  });
+
+  it('accepts 50 rows, a 300-character due cell and an empty amount, trims the cells and drops empty rows', () => {
+    const rows = [{ ...ROW, client: '  Beta Ltd  ', due: 'y'.repeat(300), totalInr: null }, { client: ' ', status: '', eta: '', totalInr: null, due: '' }, ...Array.from({ length: 48 }, () => ROW)];
+    const out = checkDeposits({ title: '', rows });
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.deposits!.rows).toHaveLength(49);
+      expect(out.deposits!.rows[0]!.client).toBe('Beta Ltd');
+    }
+    expect(checkDeposits({ title: '', rows: [{ client: ' ', status: '', eta: '', totalInr: null, due: '' }] })).toEqual({ ok: true, deposits: null });
   });
 });

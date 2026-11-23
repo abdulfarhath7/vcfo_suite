@@ -5,11 +5,10 @@ import { withSignName } from '@/lib/receivables/sign-name';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { depositsSectionHtml, emailRows, summaryEmailHtml, withDepositsSection } from '@/lib/receivables/summary-email';
 import type { DepositsSection as DepositsPayload } from '@/lib/receivables/deposits';
+import { Checkbox } from '@/components/ui/checkbox';
 import { collectionsReport, type CollectionsPeriod } from '@/lib/receivables/collections';
 import { collectionsEmailHtml, collectionsEmailSubject } from '@/lib/receivables/collections-email';
 import { InvoicesInEmail, RemovableRows, type RemovedItem } from './compose/InvoicesInEmail';
-import { DepositsSection } from './compose/DepositsSection';
-import { useDepositsDraft } from './compose/use-deposits-draft';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
@@ -33,7 +32,8 @@ import { stamp } from '../format';
  * every email of the send; the Removed panel puts it back in every email or in one email only
  * (owner, 19 Nov 2026). A client partner is never allowed in Cc or in the leaders' To. No Excel
  * file is ever attached. The receivables update can carry a separate security deposits section
- * (owner, 23 Nov 2026), typed or pasted below the email and shown in it as the leaders get it; it
+ * (owner, 23 Nov 2026), the sheet's saved deposits table (kept on the Sheet tab), shown in the
+ * email as the leaders get it and left out with one tick box; it
  * goes on the leaders' email only, and only while everyone on that email is a leader. A received
  * invoice a person already got is left out of their email when the pop-up opens.
  */
@@ -236,12 +236,13 @@ export function ComposeSummary({
   const inGroup = (email: string) => !partnerEmails.has(lower(email)) && (isLeader(email) || joined.includes(lower(email)));
 
   // The security deposits section (owner, 23 Nov 2026): on the leaders' email of the update only.
-  const deposits = useDepositsDraft(data.sheet.id);
+  const [withDeposits, setWithDeposits] = useState(true);
+  const savedDeposits: DepositsPayload | null = (withDeposits && summary.data?.deposits) || null;
   // Leaders only: the section is in the email only while everyone on the leaders' email is a leader.
   const leadersCard = drafts[LEADERS];
   const depositsOutsiders = leadersCard ? [...leadersCard.to, ...leadersCard.cc].filter((r) => !isLeader(r.email)) : [];
-  const depositsBlocked = !collections && deposits.payload !== null && depositsOutsiders.length > 0;
-  const depositsNow: DepositsPayload | null = collections || depositsBlocked ? null : deposits.payload;
+  const depositsBlocked = !collections && savedDeposits !== null && depositsOutsiders.length > 0;
+  const depositsNow: DepositsPayload | null = collections || depositsBlocked ? null : savedDeposits;
 
   const signed = (html: string) => (sign.trim() ? withSignName(html, sign) : html);
   /** The body of one email, rebuilt from the live rows without the removed invoices. */
@@ -413,7 +414,7 @@ export function ComposeSummary({
       {
         emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: d.to, cc: d.cc, subject: d.subject, html: d.html, invoiceIds: collections ? undefined : keptIds(d) })),
         report: collections ? 'collections' : 'summary',
-        ...(collections ? {} : { deposits: depositsNow }),
+        ...(collections ? {} : { withDeposits: depositsNow !== null }),
       },
       {
         onSuccess: (r) => {
@@ -474,7 +475,7 @@ export function ComposeSummary({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || deposits.problems.length > 0 || depositsBlocked || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || depositsBlocked || sendable.some((d) => !d.subject.trim()) || send.isPending}>
             {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
@@ -597,6 +598,14 @@ export function ComposeSummary({
                   <>
                     <RecipientRow field="to" label="To" people={current.to} contacts={contacts.filter((c) => !partnerEmails.has(lower(c.email)))} onChange={changeGroup} />
                     <p className="text-[12px] text-ink-muted">One email to every leader · the whole sheet. Each leader sees who else got it.</p>
+                    {!collections && s.deposits ? (
+                      <div className="flex items-center gap-2">
+                        <Checkbox id="rcv-with-deposits" checked={withDeposits} onCheckedChange={(v) => setWithDeposits(v === true)} />
+                        <label htmlFor="rcv-with-deposits" className="text-[12.5px] text-ink">
+                          {`Security deposits in this email · ${s.deposits.rows.length} row${s.deposits.rows.length === 1 ? '' : 's'} from the Sheet tab, leaders only`}
+                        </label>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="truncate text-[12.5px] text-ink-muted" title={current.to[0].email}>
@@ -670,13 +679,12 @@ export function ComposeSummary({
           </div>
           {depositsBlocked ? (
             <p role="alert" className="border-t border-line-soft px-3 py-2 text-[12.5px] text-danger">
-              {`The security deposits go to leaders only. Take ${depositsOutsiders.map((r) => r.name || r.email).join(', ')} out of the leaders’ email, or untick the section below.`}
+              {`The security deposits go to leaders only. Take ${depositsOutsiders.map((r) => r.name || r.email).join(', ')} out of the leaders’ email, or untick “Security deposits” on that email.`}
             </p>
           ) : null}
-          {collections ? null : !leadersCard && deposits.payload ? (
+          {collections ? null : !leadersCard && savedDeposits ? (
             <p className="border-t border-line-soft px-3 py-2 text-[12.5px] text-warning">The security deposits go on the leaders’ email only, and no leader is in this send. Click All leaders to send them.</p>
           ) : null}
-          {collections ? null : <DepositsSection draft={deposits} />}
         </div>
       ) : null}
     </Modal>

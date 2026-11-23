@@ -37,19 +37,22 @@ Spec: `docs/specs/receivables/PLAN.md` (v1) and `docs/specs/receivables/V2.md` (
 ## Security deposits section (receivables update, 23 Nov 2026)
 
 - **Where it comes from.** The leaders want the weekly list of client security deposits in the
-  receivables update, as a separate section. It is typed or pasted in the Send email pop-up
-  (the "Security deposits (separate section)" block at the bottom), never stored in the database.
-  "Add this section to the leaders' email" is off each time the pop-up opens; any edit turns it on.
-- **Remembered per browser.** The last rows of a sheet sit in `localStorage` under
-  `vcfo:rcv-deposits-v2:<sheet id>`, so next week the person edits them. "Clear the rows" forgets them.
-  Another browser or a private window starts empty.
-- **Columns.** Client, Amount (₹) and Remarks, with a total row (the leadership's own wording,
-  23 Nov 2026). The first build of the day had five columns.
+  receivables update, as a separate section. The rows are a saved table of their own on the Sheet
+  tab, under the invoices (`receivable_deposits`, migration 0067; Save replaces the whole table).
+  The first two builds of the day kept them in the Send email pop-up and in the browser; that form
+  is gone. The pop-up only has a tick box on the leaders' email to leave the section out.
+- **The request never carries rows.** Send email sends `withDeposits: true|false`; the route reads
+  the saved rows itself. The summary GET returns them as `deposits` for the preview.
+- **Total row.** The sum and the crore figure ("7.70 cr"); a total under one lakh shows no crore
+  figure, so it never reads "0.00 cr" (owner, 23 Nov 2026).
+- **Columns.** Client, Status, ETA for closure, Total SD in INR and SD due now/post signing, as in
+  the table the leadership pasted on 23 Nov 2026. "Client name, amount, remarks" in their WhatsApp
+  message was shorthand; a three-column build that evening was wrong and never reached RDS.
 - **Paste.** `parseDepositsPaste` reads tab-separated rows (Excel, Outlook), chat tables with `|`,
   and cells split by two or more spaces. A header row (first cell "Client"), a total row (empty first
   cell, or "Total" / "(total)") and rule rows are left out. `parseAmountInr` takes "₹ 3,00,00,000",
   "30,000,000", "Rs. 30000000" or "INR 5,00,000"; "7.7cr" is not an amount, so the row is marked and
-  Send waits until it is fixed or emptied.
+  Save waits until it is fixed or emptied.
 - **Leaders only.** The section exists only on the leaders' email of the receivables update. The
   pop-up shows it in the email as a block that cannot be edited in place, between comment markers
   `<!--deposits-->` and `<!--/deposits-->`. The send route throws that block away and draws the

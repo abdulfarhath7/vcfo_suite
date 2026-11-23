@@ -61,13 +61,15 @@ export function checkSummaryEmails(
 /*
  * The security deposits section of the receivables update (owner, 23 Nov 2026), as the send
  * request carries it: title up to 80 characters, up to 50 rows, each text cell trimmed and up to
- * 200 characters (the remarks 300), the amount a number from 0 to 1e13 or null. Nothing else.
+ * 200 characters (the due column 300), the amount a number from 0 to 1e13 or null. Nothing else.
  */
 const cell = (max: number) => z.string().trim().max(max, 'deposits_cell_too_long');
 const depositRow = z.strictObject({
   client: cell(DEPOSIT_LIMITS.cell),
+  status: cell(DEPOSIT_LIMITS.cell),
+  eta: cell(DEPOSIT_LIMITS.cell),
   totalInr: z.number().nonnegative('deposits_bad_amount').max(DEPOSIT_LIMITS.amount, 'deposits_bad_amount').nullable(),
-  remarks: cell(DEPOSIT_LIMITS.remarks),
+  due: cell(DEPOSIT_LIMITS.due),
 });
 const depositsSchema = z.strictObject({
   title: z.string().trim().max(DEPOSIT_LIMITS.title, 'deposits_title_too_long'),
@@ -86,8 +88,8 @@ export function checkDeposits(raw: unknown): { ok: true; deposits: DepositsSecti
     return { ok: false, error: message.startsWith('deposits_') ? message : 'deposits_invalid' };
   }
   const rows = parsed.data.rows
-    .map((r) => ({ client: r.client, totalInr: r.totalInr ?? null, remarks: r.remarks }))
-    .filter((r) => r.client || r.remarks || r.totalInr !== null);
+    .map((r) => ({ client: r.client, status: r.status, eta: r.eta, totalInr: r.totalInr ?? null, due: r.due }))
+    .filter((r) => r.client || r.status || r.eta || r.due || r.totalInr !== null);
   return { ok: true, deposits: rows.length ? { title: parsed.data.title || DEFAULT_DEPOSITS_TITLE, rows } : null };
 }
 

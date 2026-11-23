@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { siteUrl } from '@/lib/site-url';
 import { todayIst } from '@/lib/receivables/dates';
+import { DEFAULT_DEPOSITS_TITLE } from '@/lib/receivables/deposits';
 import { publicPageUrl } from '@/lib/receivables/links';
 import { contactSuggestions, recipientLists } from '@/lib/receivables/recipients';
 import { partnerRows, summaryEmailHtml, summaryEmailSubject } from '@/lib/receivables/summary-email';
-import { getSignName, getSummarySource, listDigestRecipients, sentReceiptsFor, templateFor } from '@/db/repositories/receivables';
+import { getSignName, getSummarySource, listDeposits, listDigestRecipients, sentReceiptsFor, templateFor } from '@/db/repositories/receivables';
 import type { PartnerDraftDto } from '@/lib/receivables/wire';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
@@ -33,6 +34,7 @@ export async function GET(request: Request, context: RouteContext) {
     const rows = picked ? src.live.filter((r) => ids.has(r.id)) : src.live;
     const today = todayIst();
     const liveUrl = publicPageUrl(siteUrl(), src.sheet);
+    const deposits = await listDeposits(guard.ctx, id);
     const leaders = (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active).map((r) => ({ name: r.name, email: r.email }));
     // One ready email per active client partner, with only the invoices of that partner's clients
     // (the ones they lead and the ones they are a second partner on).
@@ -67,6 +69,8 @@ export async function GET(request: Request, context: RouteContext) {
       contacts: [...contactSuggestions(src.partners, src.lastSend), ...leaders.filter((l) => !src.partners.some((p) => p.email.toLowerCase() === l.email.toLowerCase()))],
       partnerDrafts,
       leaders,
+      // The sheet's security deposits table, for the leaders' email only.
+      deposits: deposits.length ? { title: DEFAULT_DEPOSITS_TITLE, rows: deposits } : null,
       lastSentAt: src.lastSend?.sentAt ?? null,
       lastSendStatus: src.lastSend?.status ?? null,
     });

@@ -133,8 +133,8 @@ describe('the security deposits section', () => {
   const DEPOSITS = {
     title: 'Security deposits',
     rows: [
-      { client: 'Alpha Corp', totalInr: 30000000, remarks: '100% due' },
-      { client: 'Beta <script>alert(1)</script> Ltd', totalInr: 20000000, remarks: 'Half now & half <b>later</b>' },
+      { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', totalInr: 30000000, due: '100% due' },
+      { client: 'Beta <script>alert(1)</script> Ltd', status: 'Agreement review', eta: 'week of 9th', totalInr: 20000000, due: 'Half now & half <b>later</b>' },
     ],
   };
   const base = { rows: ROWS, today: TODAY, liveUrl: 'u', signerName: 'Krishna' };
@@ -147,15 +147,14 @@ describe('the security deposits section', () => {
     expect(plain).not.toContain('deposits');
   });
 
-  it('adds its own heading, three columns, escaped rows and its own total after the receivables total', () => {
+  it('adds its own heading, five columns, escaped rows and its own total after the receivables total', () => {
     const html = summaryEmailHtml({ ...base, deposits: DEPOSITS });
     const table = depositsSectionHtml(DEPOSITS);
-    for (const head of ['>Client<', '>Amount (₹)<', '>Remarks<']) expect(table).toContain(head);
-    for (const gone of ['Status', 'ETA', 'SD due']) expect(table).not.toContain(gone);
+    for (const head of ['>Client<', '>Status<', '>ETA for closure<', '>Total SD in INR<', '>SD due now/post signing<']) expect(table).toContain(head);
     expect(html).toContain('>Security deposits</p>');
-    expect(html).toContain('>3,00,00,000<');
-    expect(html).toContain('>2,00,00,000<');
-    expect(html).toContain('>5,00,00,000<');
+    expect(html).toContain('>₹ 3,00,00,000<');
+    expect(html).toContain('>₹ 2,00,00,000<');
+    expect(html).toContain('>₹ 5,00,00,000<');
     expect(html).toContain('>5.00 cr<');
     expect(html).toContain('Beta &lt;script&gt;alert(1)&lt;/script&gt; Ltd');
     expect(html).toContain('Half now &amp; half &lt;b&gt;later&lt;/b&gt;');
@@ -177,9 +176,10 @@ describe('the security deposits section', () => {
   });
 
   it('draws an empty amount as an empty cell', () => {
-    const one = depositsSectionHtml({ title: 'SD', rows: [{ client: 'Gamma LLP', totalInr: null, remarks: '' }] });
+    const one = depositsSectionHtml({ title: 'SD', rows: [{ client: 'Gamma LLP', status: '', eta: '', totalInr: null, due: '' }] });
     expect(one).toMatch(/text-align:right;"><\/td>/);
-    expect(one).toContain('>0.00 cr<');
+    // A small total never reads "0.00 cr" (owner, 23 Nov 2026).
+    expect(one).not.toContain(' cr<');
   });
 
   it('swaps the marked block in place, and removes it when the rows are gone', () => {
