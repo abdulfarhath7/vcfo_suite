@@ -30,6 +30,7 @@ const ERROR_TEXT: Record<string, string> = {
   send_failed: 'Outlook did not send the email. Try again.',
   bad_email: 'One of the addresses is not a valid email.',
   partner_to: 'A client partner\'s email must go to that partner alone.',
+  leaders_only: 'The receivables update goes to leaders only. Add the person in People, Leaders first.',
   partner_elsewhere: 'A client partner can only get their own email. Remove them from Cc and from the other emails.',
   partner_unknown: 'That client partner is not on this sheet.',
   nothing_received: 'These invoices are not marked received.',

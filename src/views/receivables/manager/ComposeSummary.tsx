@@ -23,7 +23,10 @@ import { stamp } from '../format';
 
 /**
  * Send email: the summary in the finance team's format, built from the live sheet, sent from the
- * sender's own Outlook (owner, 17 Nov 2026). Each card is one email: a client partner gets their own,
+ * sender's own Outlook (owner, 17 Nov 2026). The receivables update (the Sheet tab) goes to the
+ * sheet's leaders only, as one email with a Client, Amount and Remarks table; the sender types the
+ * remarks in the table (owner, 23 Nov 2026). The rest of this note is the Collections report, which
+ * still goes to partners too. Each card is one email: a client partner gets their own,
  * holding only the invoices of their own clients; the leaders share one email with all of them in To,
  * so each leader sees who else got it (owner, 19 Nov 2026); anyone else gets the whole sheet on their
  * own card. Each card has its own Cc, subject and editable body. An invoice removed with ✕ leaves
@@ -161,7 +164,8 @@ export function ComposeSummary({
   useEffect(() => {
     if (prefilled.current || !summary.data) return;
     prefilled.current = true;
-    setPeople(summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })));
+    // The receivables update opens with every leader, and nobody else (owner, 23 Nov 2026).
+    setPeople(collections ? summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })) : summary.data.leaders);
   }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
@@ -209,6 +213,23 @@ export function ComposeSummary({
   const [joined, setJoined] = useState<string[]>([]);
   const inGroup = (email: string) => !partnerEmails.has(lower(email)) && (isLeader(email) || joined.includes(lower(email)));
 
+  /** The receivables update goes to leaders only (owner, 23 Nov 2026); the Collections report to anyone. */
+  const leadersOnly = !collections;
+  const allowed = (list: EmailRecipient[]) => {
+    if (!leadersOnly) return list;
+    const ok = list.filter((r) => isLeader(r.email));
+    if (ok.length < list.length) toastError('Only leaders get this email', 'Add the person in People, Leaders first.');
+    return ok;
+  };
+  // Remarks typed in the table of the email, by invoice id; kept when the body is rebuilt.
+  const remarks = useRef<Record<string, string>>({});
+  const keepRemarks = () => {
+    body.current?.querySelectorAll('tr[data-inv] td[data-remark]').forEach((cell) => {
+      const id = (cell.parentElement as HTMLElement).dataset.inv;
+      if (id) remarks.current[id] = (cell.textContent ?? '').trim();
+    });
+  };
+
   const signed = (html: string) => (sign.trim() ? withSignName(html, sign) : html);
   /** The body of one email, rebuilt from the live rows without the removed invoices. */
   const bodyFor = (d: Pick<Draft, 'key' | 'to' | 'slug' | 'alsoClientKeys' | 'partnerId'>, out: string[]) => {
@@ -242,6 +263,7 @@ export function ComposeSummary({
       greetName: d.key === LEADERS || !d.to[0] ? 'Team' : firstName(d.to[0]).replace(/[<>&"]/g, ''),
       // Each row carries its invoice id for ✕ in the email; the route removes it before sending.
       marks: true,
+      remarks: remarks.current,
     });
     return signed(html);
   };
@@ -282,6 +304,7 @@ export function ComposeSummary({
   const hitsOf = (d: Draft) => (s ? alreadySentHits(s.alreadySent, keptIds(d), [...d.to, ...d.cc].map((c) => c.email)) : []);
   /** Rebuilds the bodies of the emails that hold the invoice, from the new removed and put-back lists. */
   const applyOut = (id: string, rm: string[], back: Record<string, string[]>, only?: string) => {
+    keepRemarks();
     setRemoved(rm);
     setBackIn(back);
     setDrafts((all) => Object.fromEntries(Object.entries(all).map(([k, v]) => [k, (!only || k === only) && draftRows(v).some((r) => r.id === id) ? { ...v, html: bodyFor(v, outOf(k, rm, back)) } : v])));
@@ -318,7 +341,8 @@ export function ComposeSummary({
       };
     });
   /** The leaders' To: a person taken out leaves the send; a person added joins this email. */
-  const changeGroup = (next: EmailRecipient[]) => {
+  const changeGroup = (typed: EmailRecipient[]) => {
+    const next = allowed(typed);
     const partners = next.filter((r) => partnerEmails.has(lower(r.email)));
     if (partners.length) toastError('A client partner cannot be on the leaders’ email', 'They would see invoices that are not theirs. They get their own email.');
     const list = next.filter((r) => !partnerEmails.has(lower(r.email)));
@@ -337,17 +361,20 @@ export function ComposeSummary({
   const keepBody = () => {
     const el = body.current;
     if (!el || !current) return;
+    keepRemarks();
     const html = el.innerHTML;
     setDrafts((d) => (d[current.key] ? { ...d, [current.key]: { ...d[current.key], html } } : d));
   };
   const patch = (key: string, p: Partial<Draft>) => setDrafts((d) => (d[key] ? { ...d, [key]: { ...d[key], ...p } } : d));
-  const addPeople = (list: EmailRecipient[]) =>
+  const addPeople = (typed: EmailRecipient[]) => {
+    const list = allowed(typed);
     setPeople((prev) => {
       const seen = new Set(prev.map((r) => r.email.toLowerCase()));
       return [...prev, ...list.filter((r) => !seen.has(r.email.toLowerCase()) && (seen.add(r.email.toLowerCase()), true))];
     });
+  };
 
-  const contacts = s?.contacts ?? [];
+  const contacts = leadersOnly ? (s?.leaders ?? []) : (s?.contacts ?? []);
   const connected = outlook.data?.connected;
   const notPublished = summary.error && 'code' in summary.error && summary.error.code === 'not_published';
   // A partner with no open invoices gets nothing; every other card is sent.
@@ -453,13 +480,15 @@ export function ComposeSummary({
               <SignNameField id="rcv-sign-name" value={sign} onChange={changeSign} />
             </span>
             <span className="text-[12px]">Add</span>
-            <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
-              All partners
-            </Button>
+            {leadersOnly ? null : (
+              <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!activePartners.length} onClick={() => addPeople(activePartners)}>
+                All partners
+              </Button>
+            )}
             <Button size="sm" variant="secondary" className="h-7 px-2 text-[12.5px]" disabled={!s.leaders.length} onClick={() => addPeople(s.leaders)}>
               All leaders
             </Button>
-            {lastTo.length ? (
+            {lastTo.length && !leadersOnly ? (
               <Button size="sm" variant="quiet" className="h-7 px-2 text-[12.5px]" onClick={() => addPeople(lastTo)}>
                 Same as last time
               </Button>
@@ -530,7 +559,13 @@ export function ComposeSummary({
                     })}
                   </div>
                 ) : (
-                  <p className="px-3 py-2 text-[12.5px] text-ink-muted">Add a client partner, a leader or any address. Partners get their own email; the leaders share one.</p>
+                  <p className="px-3 py-2 text-[12.5px] text-ink-muted">
+                    {leadersOnly
+                      ? s.leaders.length
+                        ? 'This email goes to leaders only. Click All leaders.'
+                        : 'This email goes to leaders only. Add them in People, Leaders first.'
+                      : 'Add a client partner, a leader or any address. Partners get their own email; the leaders share one.'}
+                  </p>
                 )}
                 <div className="border-t border-line-soft px-2 [&>div]:border-b-0">
                   <RecipientRow field="to" label="Add" people={[]} contacts={contacts} onChange={addPeople} />
@@ -544,7 +579,7 @@ export function ComposeSummary({
                 {current.key === LEADERS ? (
                   <>
                     <RecipientRow field="to" label="To" people={current.to} contacts={contacts.filter((c) => !partnerEmails.has(lower(c.email)))} onChange={changeGroup} />
-                    <p className="text-[12px] text-ink-muted">One email to every leader · the whole sheet. Each leader sees who else got it.</p>
+                    <p className="text-[12px] text-ink-muted">{leadersOnly ? 'One email to every leader · client, amount and remarks. Type the remarks in the table below.' : 'One email to every leader · the whole sheet. Each leader sees who else got it.'}</p>
                   </>
                 ) : (
                   <div className="truncate text-[12.5px] text-ink-muted" title={current.to[0].email}>
@@ -553,7 +588,7 @@ export function ComposeSummary({
                     {current.kind === 'partner' ? ' · only this partner’s clients' : ' · the whole sheet'}
                   </div>
                 )}
-                <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc })} />
+                <RecipientRow field="cc" label="Cc" people={current.cc} contacts={contacts.filter((c) => !partnerEmails.has(c.email.toLowerCase()))} onChange={(cc) => patch(current.key, { cc: allowed(cc) })} />
                 {current.cc.some((c) => partnerEmails.has(c.email.toLowerCase())) ? (
                   <p role="alert" className="text-[12.5px] text-danger">
                     A client partner cannot be in Cc: they would see invoices that are not theirs. Remove them.
@@ -608,7 +643,9 @@ export function ComposeSummary({
                 </RemovableRows>
               </div>
             ) : (
-              <p className="p-3 text-[12.5px] text-ink-muted">A client partner gets their own email with only their clients’ invoices. The leaders share one email with the whole sheet.</p>
+              <p className="p-3 text-[12.5px] text-ink-muted">
+                {leadersOnly ? 'The leaders share one email: client, amount and remarks.' : 'A client partner gets their own email with only their clients’ invoices. The leaders share one email with the whole sheet.'}
+              </p>
             )}
           </div>
         </div>

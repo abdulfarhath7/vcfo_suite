@@ -28,6 +28,8 @@ vi.mock('@/db/repositories/receivables', async () => {
     finishSummarySend: (...a: unknown[]) => finishSummarySend(...a),
     getSummarySendStatus: (...a: unknown[]) => getSummarySendStatus(...a),
     sentReceiptsFor: async () => ({}),
+    // The receivables update goes to leaders only: the people these tests send to are the sheet's leaders.
+    listDigestRecipients: async () => ['yash@summit.in', 'rakesh@summit.in', 'ceo@sbcllp.in', 'a@b.in'].map((email) => ({ id: email, name: '', email, active: true })),
     systemRecordSentReceipts: async () => undefined,
     startEmailLog: (...a: unknown[]) => startEmailLog(...a),
     systemFinishEmailLog: (...a: unknown[]) => systemFinishEmailLog(...a),
@@ -113,9 +115,16 @@ describe('send-summary route', () => {
     expect(sendMailViaOutlook.mock.calls[0][1].invoiceIds).toBeUndefined();
   });
 
-  it('refuses a batch where a client partner would see another email', async () => {
-    getSummarySource.mockResolvedValue({ ...SOURCE, partners: [{ id: '22222222-2222-4222-8222-222222222222', slug: 'p', name: 'Pranay', email: 'pranay@sbcllp.in', active: true }] });
+  it('refuses a receivables update to anyone who is not a leader', async () => {
     const res = await call(one({ to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'pranay@sbcllp.in' }] }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'leaders_only' });
+    expect(recordSummarySend).not.toHaveBeenCalled();
+  });
+
+  it('refuses a Collections report where a client partner would see another email', async () => {
+    getSummarySource.mockResolvedValue({ ...SOURCE, partners: [{ id: '22222222-2222-4222-8222-222222222222', slug: 'p', name: 'Pranay', email: 'pranay@sbcllp.in', active: true }] });
+    const res = await call({ ...one({ to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'pranay@sbcllp.in' }] }), report: 'collections' });
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: 'partner_elsewhere' });
     expect(afterQueue).toHaveLength(0);

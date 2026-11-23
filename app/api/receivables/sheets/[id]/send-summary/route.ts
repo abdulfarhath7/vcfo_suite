@@ -3,13 +3,15 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
+import { getSummarySendStatus, getSummarySource, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
 
 /**
  * POST /api/receivables/sheets/:id/send-summary — Send email, from the sender's own Outlook. The
+ * receivables update goes to the sheet's leaders only (owner, 23 Nov 2026; 400 `leaders_only`); the
+ * rest of this paragraph is the Collections report. The
  * dialog sends one email per person (owner, 17 Nov 2026): a client partner's email holds only the
  * invoices of that partner's clients; a leader's (or anyone else's) holds the whole sheet. Each is
  * edited in the dialog. `checkSummaryEmails` refuses any batch where a partner would see another
@@ -56,7 +58,10 @@ export async function POST(request: Request, context: RouteContext) {
   if (collections) for (const e of emails) e.invoiceIds = undefined;
   try {
     const src = await getSummarySource(guard.ctx, id);
-    const checked = checkSummaryEmails(emails, src.partners);
+    // The receivables update goes to the sheet's leaders only (owner, 23 Nov 2026); the Collections
+    // report still goes to partners and leaders.
+    const leaders = collections ? undefined : (await listDigestRecipients(guard.ctx, id)).filter((r) => r.active);
+    const checked = checkSummaryEmails(emails, src.partners, leaders);
     if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
     // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
     const sent = collections ? {} : await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));

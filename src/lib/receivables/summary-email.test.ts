@@ -77,14 +77,13 @@ describe('summaryEmailHtml', () => {
   it('keeps the sheet layout and totals', () => {
     expect(html).toContain('>August-26<');
     expect(html).toContain('>September-26<');
-    expect(html).toContain('>Invoice no.<');
-    expect(html).toContain('>Invoice date<');
-    expect(html).toContain('>Partner<');
-    expect(html).toContain('>Received date<');
-    expect(html).toContain('>Received amount (₹)<');
+    // Client, amount and remarks only (owner, 23 Nov 2026).
+    expect(html).toContain('>Client<');
+    expect(html).toContain('>Amount (₹)<');
+    expect(html).toContain('>Remarks<');
+    for (const gone of ['Invoice no.', 'Invoice date', 'Partner', 'Due date', 'Received date', 'Status', 'Overdue']) expect(html).not.toContain(gone);
     expect(html).not.toContain('SBC');
-    expect(html).toContain('>Overdue · 18 days<'); // Duravant
-    expect(html).toContain('Received');
+    expect(html).toContain('>Received<'); // the remark a received row starts with
     expect(html).toContain("Still open in Sep'26");
     expect(html).toContain('99,00,894'); // Sep open: Duravant + Vena
     expect(html).toContain('1,19,11,394'); // total open
@@ -103,25 +102,25 @@ describe('summaryEmailHtml', () => {
     expect(summaryEmailHtml({ rows: [row({ clientName: '<x>', amountInr: 1 })], today: TODAY, liveUrl: 'u', signerName: 's' })).toContain('&lt;x&gt;');
   });
 
-  it('keeps the INR-only layout with no currency columns', () => {
-    expect(html).not.toContain('Currency');
-    expect(html).not.toContain('USD Amount');
-    expect(html).toContain('colspan="9"');
-  });
-
-  it('adds Currency and USD Amount columns when a row is foreign', () => {
+  it('shows a foreign invoice by its INR amount, with no currency columns', () => {
     const mixed = summaryEmailHtml({
       rows: [...ROWS, row({ id: 'f', clientName: 'Vena US', dueDate: '2026-11-20', amountInr: 999000, currency: 'USD', fcAmount: 12000, fxRate: 83.25 })],
       today: TODAY,
       liveUrl: 'u',
       signerName: 's',
     });
-    expect(mixed).toContain('>Currency<');
-    expect(mixed).toContain('>USD Amount<');
-    expect(mixed).toContain('colspan="11"');
-    expect(mixed).toContain('>12,000.00<');
-    expect(mixed).toContain('>INR<');
-    expect(mixed).toContain('1,29,10,394'); // total open now includes the booked INR of the USD row
+    expect(mixed).not.toContain('Currency');
+    expect(mixed).not.toContain('USD Amount');
+    expect(mixed).toContain('colspan="3"');
+    expect(mixed).toContain('>9,99,000<');
+    expect(mixed).toContain('1,29,10,394'); // total open includes the booked INR of the USD row
+  });
+
+  it('puts the typed remarks in the table and marks the cells only for the pop-up', () => {
+    const typed = summaryEmailHtml({ rows: ROWS, today: TODAY, liveUrl: 'u', signerName: 's', marks: true, remarks: { [ROWS[0]!.id]: 'Will pay <Friday>' } });
+    expect(typed).toContain('Will pay &lt;Friday&gt;');
+    expect(typed).toContain('data-remark');
+    expect(html).not.toContain('data-remark');
   });
 
   it('builds the subject from the date', () => {
