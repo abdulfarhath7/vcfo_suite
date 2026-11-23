@@ -2,7 +2,8 @@ import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
-import { checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
+import { depositsSectionHtml, withDepositsSection } from '@/lib/receivables/summary-email';
+import { checkDeposits, checkSummaryEmails, deliverSummary, outlookErrorCode } from '@/lib/receivables/summary-send';
 import { getSummarySendStatus, getSummarySource, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
@@ -22,6 +23,12 @@ import { denied, guardReceivables, receivablesError, type RouteContext } from '.
  * batch is then logged as one `sending` row and the route answers 202 { ok, queued, sendId }. The
  * Graph calls run after the response (`after` from next/server); the row ends `sent` or `failed`.
  *
+ * `deposits` (owner, 23 Nov 2026): the security deposits section of the receivables update, typed or
+ * pasted in the pop-up and not saved anywhere. It is checked here (400 `deposits_*`), refused on the
+ * Collections report (400 `deposits_summary_only`), and drawn again from the checked rows into each
+ * whole-sheet email, replacing whatever deposits block the body holds. An email without it loses
+ * any such block. The leaders-only check covers the email exactly as before.
+ *
  * GET ?send=<sendId> — the state of that send, which the dialog polls to show the outcome.
  */
 const person = z.object({ name: z.string().max(120).default(''), email: z.string().max(200) });
@@ -36,7 +43,12 @@ const email = z.object({
   invoiceIds: z.array(z.string().uuid()).max(1000).optional(),
 });
 /** `report`: the receivables update (the Sheet tab) or the Collections report (the Collections tab). */
-const schema = z.object({ emails: z.array(email).min(1, 'to_required').max(60), report: z.enum(['summary', 'collections']).default('summary') });
+const schema = z.object({
+  emails: z.array(email).min(1, 'to_required').max(60),
+  report: z.enum(['summary', 'collections']).default('summary'),
+  /** Checked on its own by `checkDeposits`, so a broken rule answers with its own code. */
+  deposits: z.unknown().optional(),
+});
 
 export async function POST(request: Request, context: RouteContext) {
   const guard = await guardReceivables();
@@ -45,16 +57,23 @@ export async function POST(request: Request, context: RouteContext) {
   const body = await parseJsonBody(request, schema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });
   const input = body.data as z.infer<typeof schema>;
-  // Each email's addresses: valid, each once.
+  // The Collections report lists received invoices as a record, not to tell anyone again, so it
+  // neither checks nor writes the "already sent" receipts.
+  const collections = input.report === 'collections';
+  // The security deposits belong to the receivables update only, which goes to leaders only.
+  if (collections && input.deposits !== undefined && input.deposits !== null) return NextResponse.json({ error: 'deposits_summary_only' }, { status: 400 });
+  const deposits = checkDeposits(input.deposits);
+  if (deposits.ok === false) return NextResponse.json({ error: deposits.error }, { status: 400 });
+  const section = depositsSectionHtml(deposits.deposits);
+  // Each email's addresses: valid, each once. A partner's email never gets the deposits; it is
+  // refused below anyway, since the receivables update goes to leaders only.
   const emails = [];
   for (const e of input.emails) {
     const people = cleanRecipients({ to: e.to, cc: e.cc, bcc: [] });
     if (people.invalid.length) return NextResponse.json({ error: 'bad_email', invalid: people.invalid }, { status: 400 });
-    emails.push({ ...e, to: people.to, cc: people.cc, html: tidyEmailHtml(e.html) });
+    const html = collections ? e.html : withDepositsSection(e.html, e.kind === 'full' ? section : '');
+    emails.push({ ...e, to: people.to, cc: people.cc, html: tidyEmailHtml(html) });
   }
-  // The Collections report lists received invoices as a record, not to tell anyone again, so it
-  // neither checks nor writes the "already sent" receipts.
-  const collections = input.report === 'collections';
   if (collections) for (const e of emails) e.invoiceIds = undefined;
   try {
     const src = await getSummarySource(guard.ctx, id);

@@ -8,6 +8,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InvoiceInput, InvoicePatch, ReceiptInput } from '@/lib/receivables/model';
 import type { InvoiceHistoryDto, PendingChangesDto } from '@/lib/receivables/history-wire';
+import type { DepositsSection } from '@/lib/receivables/deposits';
 import type { InvoiceNoteDto, ManagerSheetDto, OutlookStatusDto, PartnerDto, SummaryDto, SummaryEmailDto, VersionDto, VersionMetaDto } from '@/lib/receivables/wire';
 
 const ERROR_TEXT: Record<string, string> = {
@@ -31,6 +32,12 @@ const ERROR_TEXT: Record<string, string> = {
   bad_email: 'One of the addresses is not a valid email.',
   partner_to: 'A client partner\'s email must go to that partner alone.',
   leaders_only: 'The receivables update goes to leaders only. Add the person in People, Leaders first.',
+  deposits_title_too_long: 'The security deposits title is over 80 characters.',
+  deposits_too_many_rows: 'The security deposits section holds up to 50 rows.',
+  deposits_cell_too_long: 'A security deposits cell is too long (200 characters, 300 for the due column).',
+  deposits_bad_amount: 'A security deposit amount is not a number from 0 upwards.',
+  deposits_invalid: 'The security deposits section could not be read. Check the rows and try again.',
+  deposits_summary_only: 'The security deposits section goes on the receivables update only.',
   partner_elsewhere: 'A client partner can only get their own email. Remove them from Cc and from the other emails.',
   partner_unknown: 'That client partner is not on this sheet.',
   nothing_received: 'These invoices are not marked received.',
@@ -158,7 +165,8 @@ export function useOutlookStatus() {
 }
 
 /** Send email: one email per person (a partner's own invoices, or the whole sheet). */
-export type SummarySendInput = { emails: SummaryEmailDto[]; report?: 'summary' | 'collections' };
+/** `deposits`: the security deposits section, on the receivables update only (owner, 23 Nov 2026). */
+export type SummarySendInput = { emails: SummaryEmailDto[]; report?: 'summary' | 'collections'; deposits?: DepositsSection | null };
 
 /** The 202 of Send: the send is logged as `sending` and finishes after the response. */
 export type SummarySendQueued = { ok: true; queued: true; sendId: string; from: string; emails: number; to: number; cc: number; bcc: number };

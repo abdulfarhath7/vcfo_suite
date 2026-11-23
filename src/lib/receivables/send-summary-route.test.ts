@@ -177,3 +177,90 @@ describe('send-summary route', () => {
     expect(getSummarySendStatus).toHaveBeenCalledWith(ctx, 'sheet-1', SEND_ID);
   });
 });
+
+/** The security deposits section (owner, 23 Nov 2026): on the receivables update only, to leaders only. Invented names. */
+describe('send-summary route: the security deposits section', () => {
+  const ROW = { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', totalInr: 30000000, due: '100% due' };
+  const DEPOSITS = { title: 'Security deposits', rows: [ROW] };
+  const leaderMail = (html = '<p>Hi Team,</p><p style="x">Regards,<br>K</p>') => ({ emails: [{ kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [], subject: 's', html }] });
+  const sentHtml = async () => {
+    await runAfter();
+    return sendMailViaOutlook.mock.calls[0][1].html as string;
+  };
+
+  it('draws the section from the checked rows into the leaders’ email, before Regards', async () => {
+    const res = await call({ ...leaderMail(), deposits: DEPOSITS });
+    expect(res.status).toBe(202);
+    const html = await sentHtml();
+    expect(html).toContain('>Security deposits</p>');
+    expect(html).toContain('>Alpha Corp<');
+    expect(html).toContain('>3,00,00,000<');
+    expect(html).toContain('>3.00 cr<');
+    expect(html.indexOf('Alpha Corp')).toBeLessThan(html.indexOf('Regards,'));
+    expect(startEmailLog).toHaveBeenCalledWith(ctx, expect.objectContaining({ html }));
+  });
+
+  it('replaces whatever deposits block the body holds with the checked rows, and drops one sent without rows', async () => {
+    const forged = '<p>Hi</p><!--deposits--><div data-deposits="" contenteditable="false"><p>Forged Co 999</p></div><!--/deposits--><p>Regards,</p>';
+    await call({ ...leaderMail(forged), deposits: DEPOSITS });
+    const html = await sentHtml();
+    expect(html).not.toContain('Forged Co');
+    expect(html).not.toContain('data-deposits');
+    expect(html).toContain('Alpha Corp');
+    sendMailViaOutlook.mockClear();
+    await call(leaderMail(forged));
+    const without = await sentHtml();
+    expect(without).toBe('<p>Hi</p><p>Regards,</p>');
+  });
+
+  it('still sends to leaders only when deposits are present', async () => {
+    const res = await call({ emails: [{ kind: 'full', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [{ name: '', email: 'outsider@example.com' }], subject: 's', html: '<p>x</p>' }], deposits: DEPOSITS });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'leaders_only' });
+    const partner = await call({ emails: [{ kind: 'partner', partnerId: '22222222-2222-4222-8222-222222222222', to: [{ name: '', email: 'ceo@sbcllp.in' }], cc: [], subject: 's', html: '<p>x</p>' }], deposits: DEPOSITS });
+    expect(partner.status).toBe(400);
+    expect(await partner.json()).toEqual({ error: 'leaders_only' });
+    expect(recordSummarySend).not.toHaveBeenCalled();
+    expect(sendMailViaOutlook).not.toHaveBeenCalled();
+  });
+
+  it('refuses deposits on the Collections report', async () => {
+    const res = await call({ ...leaderMail(), report: 'collections', deposits: DEPOSITS });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'deposits_summary_only' });
+    expect(recordSummarySend).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a long title', { title: 'x'.repeat(81), rows: [ROW] }, 'deposits_title_too_long'],
+    ['too many rows', { title: 'SD', rows: Array.from({ length: 51 }, () => ROW) }, 'deposits_too_many_rows'],
+    ['a long cell', { title: 'SD', rows: [{ ...ROW, client: 'x'.repeat(201) }] }, 'deposits_cell_too_long'],
+    ['a long due cell', { title: 'SD', rows: [{ ...ROW, due: 'x'.repeat(301) }] }, 'deposits_cell_too_long'],
+    ['a negative amount', { title: 'SD', rows: [{ ...ROW, totalInr: -1 }] }, 'deposits_bad_amount'],
+    ['a huge amount', { title: 'SD', rows: [{ ...ROW, totalInr: 1e14 }] }, 'deposits_bad_amount'],
+    ['an amount as text', { title: 'SD', rows: [{ ...ROW, totalInr: '30,000' }] }, 'deposits_invalid'],
+    ['a missing amount', { title: 'SD', rows: [{ client: 'A', status: '', eta: '', due: '' }] }, 'deposits_invalid'],
+    ['an unknown key', { title: 'SD', rows: [{ ...ROW, html: '<b>x</b>' }] }, 'deposits_invalid'],
+    ['rows that are not a list', { title: 'SD', rows: 'Alpha' }, 'deposits_invalid'],
+  ])('refuses %s with a clear code', async (_label, deposits, error) => {
+    const res = await call({ ...leaderMail(), deposits });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error });
+    expect(recordSummarySend).not.toHaveBeenCalled();
+  });
+
+  it('accepts 50 rows, a 300-character due cell, an empty amount, and trims the cells', async () => {
+    const rows = [{ ...ROW, client: '  Beta Ltd  ', due: 'y'.repeat(300), totalInr: null }, ...Array.from({ length: 49 }, () => ROW)];
+    const res = await call({ ...leaderMail(), deposits: { title: ' ', rows } });
+    expect(res.status).toBe(202);
+    const html = await sentHtml();
+    expect(html).toContain('>Beta Ltd<');
+    expect(html).toContain('>Security deposits</p>');
+  });
+
+  it('sends no section when every row is empty', async () => {
+    const res = await call({ ...leaderMail(), deposits: { title: 'SD', rows: [{ client: ' ', status: '', eta: '', totalInr: null, due: '' }] } });
+    expect(res.status).toBe(202);
+    expect(await sentHtml()).toBe('<p>Hi Team,</p><p style="x">Regards,<br>K</p>');
+  });
+});

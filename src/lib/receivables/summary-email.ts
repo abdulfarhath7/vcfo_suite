@@ -6,6 +6,7 @@ import { partOf, type TemplateOverride } from './templates';
 import { monthBlockTitle, monthLong, monthShort } from './dates';
 import type { SnapshotRow } from './model';
 import { isOpen, monthsOf, receivedThisWeek, sumInr } from './summary';
+import { croreLabel, depositsTotal, type DepositsSection } from './deposits';
 
 /**
  * RECEIVABLES SUMMARY EMAIL — the body of "RE: Receivables update", in the format SBC's finance
@@ -69,6 +70,11 @@ export type SummaryEmailInput = {
   marks?: boolean;
   /** Remarks typed in the Send email pop-up, by invoice id. A received row without one says "Received". */
   remarks?: Record<string, string>;
+  /**
+   * The security deposits section (owner, 23 Nov 2026): typed or pasted in the Send email pop-up,
+   * for the leaders' email only. It is never drawn on a partner's email (`partnerSlug`).
+   */
+  deposits?: DepositsSection | null;
 };
 
 const longDay = (today: string) => {
@@ -165,9 +171,69 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
     intro !== null ? paras(intro) : `<p style="${P}">Please find the receivables summary as of today:</p>`,
     tables,
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;min-width:560px;border-collapse:collapse;margin:6px 0 18px;"><tr><td style="padding:10px 14px;background:${BAND};border-left:4px solid ${ORANGE};font-family:${SANS};font-size:14px;color:${INK};">Total receivables (open) <b style="font-family:${SANS};font-variant-numeric:tabular-nums;font-size:16px;padding-left:14px;">₹ ${money(total)}</b></td></tr></table>`,
+    // The security deposits, a section of its own after the receivables total; nothing when absent.
+    input.partnerSlug ? '' : depositsSectionHtml(input.deposits, input.marks),
     // Receivables v2: no link to the tool in any receivables email; `liveUrl` is no longer shown.
     // No firm name under the signature (owner, 18 Nov 2026).
     closing !== null ? paras(closing) : '',
     `<p style="${P}">Regards,<br>${signNameSpan(input.signerName)}</p>`,
   ].join('');
+}
+
+/*
+ * The security deposits section (owner, 23 Nov 2026). It sits after the receivables table and its
+ * total box, under its own heading, in its own table with the same orange column heads, so it reads
+ * as part of the same email but clearly as a different list. Its total row carries the sum and the
+ * crore figure. In the pop-up (`marks`) it is wrapped in comment markers and a block the person
+ * cannot edit in place: the rows are edited in the pop-up's own form, and `withDepositsSection`
+ * swaps the block when they change. The send route always draws it again from the rows it checked.
+ */
+const DEPOSITS_START = '<!--deposits-->';
+const DEPOSITS_END = '<!--/deposits-->';
+const DEPOSITS_HEADING = `margin:28px 0 4px;font-family:${SANS};font-size:15px;line-height:21px;font-weight:bold;color:${INK};`;
+
+export function depositsSectionHtml(deposits: DepositsSection | null | undefined, marks = false): string {
+  if (!deposits?.rows.length) return '';
+  const heads: Array<{ label: string; num?: boolean; width: string }> = [
+    { label: 'Client', width: '22%' },
+    { label: 'Status', width: '18%' },
+    { label: 'ETA for closure', width: '16%' },
+    { label: 'Total SD (₹)', num: true, width: '16%' },
+    { label: 'SD due now / post signing', width: '28%' },
+  ];
+  const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
+  const body = deposits.rows
+    .map((r, i) => {
+      const bg = i % 2 === 1 ? BAND : '#ffffff';
+      const amount = r.totalInr === null ? '' : money(r.totalInr);
+      return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.status)}</td><td ${td(bg, WRAP)}>${escapeHtml(r.eta)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.due)}</td></tr>`;
+    })
+    .join('');
+  const total = depositsTotal(deposits.rows);
+  const totalRow = `<tr><td style="${CELL}${TOTAL}">Total</td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}"></td><td style="${CELL}${TOTAL}${NUM}">${money(total)}</td><td style="${CELL}${TOTAL}">${croreLabel(total)}</td></tr>`;
+  const html = `<p style="${DEPOSITS_HEADING}">${escapeHtml(deposits.title)}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${heads
+    .map((h) => `<td width="${h.width}" style="${HEAD}width:${h.width};${h.num ? 'text-align:right;' : ''}">${h.label}</td>`)
+    .join('')}</tr>${body}${totalRow}</table>`;
+  return marks ? `${DEPOSITS_START}<div data-deposits="" contenteditable="false">${html}</div>${DEPOSITS_END}` : html;
+}
+
+const DEPOSITS_BLOCK = /<!--deposits-->[\s\S]*?<!--\/deposits-->/g;
+const REGARDS = /<p[^>]*>Regards,/;
+
+/**
+ * Puts `section` (or nothing, when it is empty) where the deposits block of `html` is, and drops
+ * any other copy. Without a block it goes in before "Regards,", or at the end. The pop-up uses it
+ * when the rows change; the send route uses it to replace whatever the body holds with the section
+ * drawn from the rows it checked, so the section is in an email only when the request carried it.
+ */
+export function withDepositsSection(html: string, section: string): string {
+  let placed = false;
+  const out = html.replace(DEPOSITS_BLOCK, () => {
+    if (placed) return '';
+    placed = true;
+    return section;
+  });
+  if (placed || !section) return out;
+  const m = REGARDS.exec(out);
+  return m ? `${out.slice(0, m.index)}${section}${out.slice(m.index)}` : `${out}${section}`;
 }

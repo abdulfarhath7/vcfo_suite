@@ -4,6 +4,8 @@ import { finishSummarySend, getSignName, systemFinishEmailLog, systemRecordSentR
 import { emails, fromEmailOf, notifyTeam } from './team-notify';
 import { sendMailViaOutlook } from '@/db/repositories/outlook-connections';
 import type { EmailRecipient, Partner } from './model';
+import { z } from 'zod';
+import { DEFAULT_DEPOSITS_TITLE, DEPOSIT_LIMITS, type DepositsSection } from './deposits';
 
 /**
  * The summary email's slow part (docs/specs/receivables/PLAN.md, Phase 4). The send-summary route
@@ -61,6 +63,41 @@ export function checkSummaryEmails(
     mails.push({ to, cc, bcc: [], subject: e.subject.trim(), html: e.html, invoiceIds: e.invoiceIds });
   }
   return { ok: true, mails };
+}
+
+/*
+ * The security deposits section of the receivables update (owner, 23 Nov 2026), as the send
+ * request carries it: title up to 80 characters, up to 50 rows, each text cell trimmed and up to
+ * 200 characters (the due column 300), the amount a number from 0 to 1e13 or null. Nothing else.
+ */
+const cell = (max: number) => z.string().trim().max(max, 'deposits_cell_too_long');
+const depositRow = z.strictObject({
+  client: cell(DEPOSIT_LIMITS.cell),
+  status: cell(DEPOSIT_LIMITS.cell),
+  eta: cell(DEPOSIT_LIMITS.cell),
+  totalInr: z.number().nonnegative('deposits_bad_amount').max(DEPOSIT_LIMITS.amount, 'deposits_bad_amount').nullable(),
+  due: cell(DEPOSIT_LIMITS.due),
+});
+const depositsSchema = z.strictObject({
+  title: z.string().trim().max(DEPOSIT_LIMITS.title, 'deposits_title_too_long'),
+  rows: z.array(depositRow).max(DEPOSIT_LIMITS.rows, 'deposits_too_many_rows'),
+});
+
+/**
+ * The deposits of a request, checked: null when there are none (or only empty rows), or the first
+ * broken rule as a code. A wrong type anywhere is `deposits_invalid`.
+ */
+export function checkDeposits(raw: unknown): { ok: true; deposits: DepositsSection | null } | { ok: false; error: string } {
+  if (raw === undefined || raw === null) return { ok: true, deposits: null };
+  const parsed = depositsSchema.safeParse(raw);
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? '';
+    return { ok: false, error: message.startsWith('deposits_') ? message : 'deposits_invalid' };
+  }
+  const rows = parsed.data.rows
+    .map((r) => ({ client: r.client, status: r.status, eta: r.eta, totalInr: r.totalInr ?? null, due: r.due }))
+    .filter((r) => r.client || r.status || r.eta || r.due || r.totalInr !== null);
+  return { ok: true, deposits: rows.length ? { title: parsed.data.title || DEFAULT_DEPOSITS_TITLE, rows } : null };
 }
 
 /** The slow part, after the response: one Graph call per email, then the outcome on the log row. */

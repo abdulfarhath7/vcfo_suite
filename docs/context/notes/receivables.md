@@ -33,3 +33,25 @@ Spec: `docs/specs/receivables/PLAN.md` (v1) and `docs/specs/receivables/V2.md` (
   to arrive reliably. DoubleTick refuses a template body that starts or ends with a placeholder.
 - Non-strict TypeScript: narrow `{ ok: true } | { ok: false }` results with `res.ok === false`.
   `!res.ok` does not narrow without `strictNullChecks`.
+
+## Security deposits section (receivables update, 23 Nov 2026)
+
+- **Where it comes from.** The leaders want the weekly list of client security deposits in the
+  receivables update, as a separate section. It is typed or pasted in the Send email pop-up
+  (the "Security deposits (separate section)" block at the bottom), never stored in the database.
+  "Add this section to the leaders' email" is off each time the pop-up opens; any edit turns it on.
+- **Remembered per browser.** The last rows of a sheet sit in `localStorage` under
+  `vcfo:rcv-deposits:<sheet id>`, so next week the person edits them. "Clear the rows" forgets them.
+  Another browser or a private window starts empty.
+- **Paste.** `parseDepositsPaste` reads tab-separated rows (Excel, Outlook), chat tables with `|`,
+  and cells split by two or more spaces. A header row (first cell "Client"), a total row (empty first
+  cell, or "Total" / "(total)") and rule rows are left out. `parseAmountInr` takes "₹ 3,00,00,000",
+  "30,000,000", "Rs. 30000000" or "INR 5,00,000"; "7.7cr" is not an amount, so the row is marked and
+  Send waits until it is fixed or emptied.
+- **Leaders only.** The section exists only on the leaders' email of the receivables update. The
+  pop-up shows it in the email as a block that cannot be edited in place, between comment markers
+  `<!--deposits-->` and `<!--/deposits-->`. The send route throws that block away and draws the
+  section again from the `deposits` it checked, so a body without `deposits` in the request never
+  carries the section. `summaryEmailHtml` never draws it when `partnerSlug` is set, and the
+  Collections report refuses `deposits`.
+

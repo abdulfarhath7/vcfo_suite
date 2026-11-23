@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { withSignName } from '@/lib/receivables/sign-name';
 import { alreadySentHits } from '@/lib/receivables/sent-receipts';
-import { emailRows, summaryEmailHtml } from '@/lib/receivables/summary-email';
+import { depositsSectionHtml, emailRows, summaryEmailHtml, withDepositsSection } from '@/lib/receivables/summary-email';
+import type { DepositsSection as DepositsPayload } from '@/lib/receivables/deposits';
 import { collectionsReport, type CollectionsPeriod } from '@/lib/receivables/collections';
 import { collectionsEmailHtml, collectionsEmailSubject } from '@/lib/receivables/collections-email';
 import { InvoicesInEmail, RemovableRows, type RemovedItem } from './compose/InvoicesInEmail';
+import { DepositsSection } from './compose/DepositsSection';
+import { useDepositsDraft } from './compose/use-deposits-draft';
 import { useKeepSignName } from '@/hooks/use-receivables-v2';
 import { SignNameField } from './SignNameField';
 import { ChevronDown, X } from 'lucide-react';
@@ -32,7 +35,8 @@ import { stamp } from '../format';
  * own card. Each card has its own Cc, subject and editable body. An invoice removed with ✕ leaves
  * every email of the send; the Removed panel puts it back in every email or in one email only
  * (owner, 19 Nov 2026). A client partner is never allowed in Cc or in the leaders' To. No Excel
- * file is ever attached.
+ * file is ever attached. The receivables update can carry a separate security deposits section
+ * (owner, 23 Nov 2026), typed or pasted below the email and shown in it as the leaders get it.
  */
 
 type Field = 'to' | 'cc' | 'bcc';
@@ -223,6 +227,9 @@ export function ComposeSummary({
   };
   // Remarks typed in the table of the email, by invoice id; kept when the body is rebuilt.
   const remarks = useRef<Record<string, string>>({});
+  // The security deposits section (owner, 23 Nov 2026): on the leaders' email of the update only.
+  const deposits = useDepositsDraft(data.sheet.id);
+  const depositsNow: DepositsPayload | null = collections ? null : deposits.payload;
   const keepRemarks = () => {
     body.current?.querySelectorAll('tr[data-inv] td[data-remark]').forEach((cell) => {
       const id = (cell.parentElement as HTMLElement).dataset.inv;
@@ -264,6 +271,7 @@ export function ComposeSummary({
       // Each row carries its invoice id for ✕ in the email; the route removes it before sending.
       marks: true,
       remarks: remarks.current,
+      deposits: d.key === LEADERS ? depositsNow : null,
     });
     return signed(html);
   };
@@ -357,6 +365,18 @@ export function ComposeSummary({
   };
   const current = active && drafts[active] ? drafts[active] : keys.length ? drafts[keys[0]] : null;
 
+  // New deposits rows go straight into the leaders' email, in place, keeping what was typed in it.
+  const depositsKey = JSON.stringify(depositsNow);
+  useEffect(() => {
+    if (collections) return;
+    const live = current?.key === LEADERS && body.current ? body.current.innerHTML : null;
+    if (live !== null) keepRemarks();
+    const section = depositsSectionHtml(depositsNow, true);
+    setDrafts((d) => (d[LEADERS] ? { ...d, [LEADERS]: { ...d[LEADERS], html: withDepositsSection(live ?? d[LEADERS].html, section) } } : d));
+    // Only a change of the rows rebuilds the section; the other values are read as they are now.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depositsKey]);
+
   /** The body being edited lives in the editor; it is kept on its draft before switching or sending. */
   const keepBody = () => {
     const el = body.current;
@@ -389,7 +409,11 @@ export function ComposeSummary({
     const html = body.current?.innerHTML;
     const final = sendable.map((d) => (current && d.key === current.key && html !== undefined ? { ...d, html } : d));
     send.mutate(
-      { emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: d.to, cc: d.cc, subject: d.subject, html: d.html, invoiceIds: collections ? undefined : keptIds(d) })), report: collections ? 'collections' : 'summary' },
+      {
+        emails: final.map((d) => ({ kind: d.kind, partnerId: d.partnerId, to: d.to, cc: d.cc, subject: d.subject, html: d.html, invoiceIds: collections ? undefined : keptIds(d) })),
+        report: collections ? 'collections' : 'summary',
+        ...(collections ? {} : { deposits: depositsNow }),
+      },
       {
         onSuccess: (r) => {
           const who = `${r.emails} email${r.emails === 1 ? '' : 's'} from ${r.from}.`;
@@ -449,7 +473,7 @@ export function ComposeSummary({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || deposits.problems.length > 0 || sendable.some((d) => !d.subject.trim()) || send.isPending}>
             {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
@@ -648,6 +672,7 @@ export function ComposeSummary({
               </p>
             )}
           </div>
+          {collections ? null : <DepositsSection draft={deposits} />}
         </div>
       ) : null}
     </Modal>

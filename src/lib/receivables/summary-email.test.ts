@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { SnapshotRow } from './model';
 import { sheetTotals, payTiming } from './summary';
-import { summaryEmailHtml, summaryEmailSubject } from './summary-email';
+import { depositsSectionHtml, summaryEmailHtml, summaryEmailSubject, withDepositsSection } from './summary-email';
 
 const TODAY = '2026-11-03';
 const row = (over: Partial<SnapshotRow>): SnapshotRow => ({
@@ -125,5 +125,70 @@ describe('summaryEmailHtml', () => {
 
   it('builds the subject from the date', () => {
     expect(summaryEmailSubject(TODAY)).toBe('Receivables update - 3 November');
+  });
+});
+
+describe('the security deposits section', () => {
+  const DEPOSITS = {
+    title: 'Security deposits',
+    rows: [
+      { client: 'Alpha Corp', status: 'LOI final stage', eta: 'week of 2nd', totalInr: 30000000, due: '100% due' },
+      { client: 'Beta <script>alert(1)</script> Ltd', status: 'Agreement review', eta: 'week of 9th', totalInr: 20000000, due: 'Half now & half <b>later</b>' },
+    ],
+  };
+  const base = { rows: ROWS, today: TODAY, liveUrl: 'u', signerName: 'Krishna' };
+
+  it('leaves the email exactly as it was when there are no deposits', () => {
+    const plain = summaryEmailHtml(base);
+    expect(summaryEmailHtml({ ...base, deposits: null })).toBe(plain);
+    expect(summaryEmailHtml({ ...base, deposits: { title: 'Security deposits', rows: [] } })).toBe(plain);
+    expect(summaryEmailHtml({ ...base, marks: true, deposits: null })).toBe(summaryEmailHtml({ ...base, marks: true }));
+    expect(plain).not.toContain('deposits');
+  });
+
+  it('adds its own heading, five columns, escaped rows and its own total after the receivables total', () => {
+    const html = summaryEmailHtml({ ...base, deposits: DEPOSITS });
+    for (const head of ['>Client<', '>Status<', '>ETA for closure<', '>Total SD (₹)<', '>SD due now / post signing<']) expect(html).toContain(head);
+    expect(html).toContain('>Security deposits</p>');
+    expect(html).toContain('>3,00,00,000<');
+    expect(html).toContain('>2,00,00,000<');
+    expect(html).toContain('>5,00,00,000<');
+    expect(html).toContain('>5.00 cr<');
+    expect(html).toContain('Beta &lt;script&gt;alert(1)&lt;/script&gt; Ltd');
+    expect(html).toContain('Half now &amp; half &lt;b&gt;later&lt;/b&gt;');
+    expect(html).not.toContain('<script>');
+    const receivablesTotal = html.indexOf('Total receivables (open)');
+    const section = html.indexOf('>Security deposits</p>');
+    expect(receivablesTotal).toBeGreaterThan(0);
+    expect(section).toBeGreaterThan(receivablesTotal);
+    expect(section).toBeLessThan(html.indexOf('Regards,'));
+    // The receivables total is unchanged by the deposits.
+    expect(html).toContain('₹ 1,19,11,394');
+  });
+
+  it('is never drawn on a partner’s email', () => {
+    const mine = summaryEmailHtml({ ...base, partnerSlug: 'sandeep', deposits: DEPOSITS });
+    expect(mine).not.toContain('Alpha Corp');
+    expect(mine).not.toContain('Security deposits');
+    expect(mine).toBe(summaryEmailHtml({ ...base, partnerSlug: 'sandeep' }));
+  });
+
+  it('draws an empty amount as an empty cell', () => {
+    const one = depositsSectionHtml({ title: 'SD', rows: [{ client: 'Gamma LLP', status: '', eta: '', totalInr: null, due: '' }] });
+    expect(one).toMatch(/text-align:right;"><\/td>/);
+    expect(one).toContain('>0.00 cr<');
+  });
+
+  it('swaps the marked block in place, and removes it when the rows are gone', () => {
+    const marked = summaryEmailHtml({ ...base, marks: true, deposits: DEPOSITS });
+    expect(marked).toContain('<!--deposits--><div data-deposits="" contenteditable="false">');
+    const server = withDepositsSection(marked, depositsSectionHtml(DEPOSITS));
+    expect(server).not.toContain('data-deposits');
+    expect(server).toBe(summaryEmailHtml({ ...base, marks: true }).replace(/(<table[^>]*><tr><td[^>]*>Total receivables \(open\)[\s\S]*?<\/table>)/, `$1${depositsSectionHtml(DEPOSITS)}`));
+    expect(withDepositsSection(marked, '')).toBe(summaryEmailHtml({ ...base, marks: true }));
+    // A body without the block gets the section before "Regards,".
+    const added = withDepositsSection('<p>Hi</p><p style="x">Regards,<br>K</p>', '<p>SD</p>');
+    expect(added).toBe('<p>Hi</p><p>SD</p><p style="x">Regards,<br>K</p>');
+    expect(withDepositsSection('<p>Hi</p>', '')).toBe('<p>Hi</p>');
   });
 });
