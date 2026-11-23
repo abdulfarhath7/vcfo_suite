@@ -11,8 +11,8 @@ import type { SentHit } from '@/lib/receivables/sent-receipts';
  * The email's own table is where an invoice is removed: `RemovableRows` puts ✕ at the right of the
  * row under the pointer (or the caret), outside the email text, so the ✕ is never sent. With
  * `everyEmail` the invoice leaves every email of the send. Nothing on the sheet changes. A received
- * invoice already sent to this person shows amber, and the email cannot go until the person
- * removes it: it is never removed for them. `InvoicesInEmail` is the line above the email: the
+ * invoice already sent to this person shows amber as a warning; the email can still go (owner,
+ * 23 Nov 2026). `InvoicesInEmail` is the line above the email: the
  * count, the invoices already sent and the removed ones, each with ↺ to put it back. With `panel`
  * (Send email, several emails) the Removed panel lists every invoice removed in the send, the emails
  * it is out of, and puts it back in every email or in the email in view only (owner, 19 Nov 2026).
@@ -69,7 +69,7 @@ export function InvoicesInEmail({
           {/* One line per invoice, with everyone who already got it (owner, 23 Nov 2026). */}
           {[...new Set(hits.map((h) => h.invoiceId))].map((id) => {
             const mine = hits.filter((h) => h.invoiceId === id);
-            return <li key={id}>{`⚠ ${name(id)} was already sent to ${mine.map((h) => h.email).join(', ')} on ${sheetDate(mine[0]!.sentAt.slice(0, 10))}. Remove it to send.`}</li>;
+            return <li key={id}>{`⚠ ${name(id)} was already sent to ${mine.map((h) => h.email).join(', ')} on ${sheetDate(mine[0]!.sentAt.slice(0, 10))}.`}</li>;
           })}
         </ul>
       ) : null}

@@ -4,8 +4,7 @@ import { parseJsonBody } from '@/lib/api/parse-body';
 import { cleanRecipients, tidyEmailHtml } from '@/lib/receivables/recipients';
 import { depositsSectionHtml, withDepositsSection } from '@/lib/receivables/summary-email';
 import { checkSummaryEmails, deliverSummary, mayCarryDeposits, outlookErrorCode } from '@/lib/receivables/summary-send';
-import { getSummarySendStatus, getSummarySource, listDeposits, listDigestRecipients, recordSummarySend, sentReceiptsFor, startEmailLog } from '@/db/repositories/receivables';
-import { alreadySentHits } from '@/lib/receivables/sent-receipts';
+import { getSummarySendStatus, getSummarySource, listDeposits, listDigestRecipients, recordSummarySend, startEmailLog } from '@/db/repositories/receivables';
 import { DEFAULT_DEPOSITS_TITLE } from '@/lib/receivables/deposits';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { denied, guardReceivables, receivablesError, type RouteContext } from '../../../_respond';
@@ -85,10 +84,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
     const checked = checkSummaryEmails(emails, src.partners);
     if (checked.ok === false) return NextResponse.json({ error: checked.error }, { status: 400 });
-    // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
-    const sent = collections ? {} : await sentReceiptsFor(guard.ctx, id, emails.flatMap((e) => e.invoiceIds ?? []));
-    const hits = emails.flatMap((e) => alreadySentHits(sent, e.invoiceIds ?? [], [...e.to, ...e.cc].map((r) => r.email)));
-    if (hits.length) return NextResponse.json({ error: 'receipt_already_sent', hits }, { status: 409 });
+    // An invoice a person already got is only a warning in the pop-up; it never stops a send (owner, 23 Nov 2026).
     const { msEmail } = await assertOutlookReady(guard.ctx);
     const to = emails.flatMap((e) => e.to);
     const cc = emails.flatMap((e) => e.cc);

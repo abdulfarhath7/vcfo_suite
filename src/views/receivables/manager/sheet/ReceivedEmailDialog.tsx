@@ -90,7 +90,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
           <Button variant="secondary" onClick={onClose}>
             Skip
           </Button>
-          <Button disabled={!d || !connected || !to.length || !subject.trim() || !keptIds.length || hits.length > 0 || send.isPending} onClick={submit}>
+          <Button disabled={!d || !connected || !to.length || !subject.trim() || !keptIds.length || send.isPending} onClick={submit}>
             <Send aria-hidden />
             {send.isPending ? 'Sending…' : 'Send from my Outlook'}
           </Button>
@@ -126,7 +126,7 @@ export function ReceivedEmailDialog({ sheetId, invoiceIds, onClose }: { sheetId:
           />
           {hits.length ? (
             <p role="alert" className="text-[12.5px] text-warning">
-              {`${hits.length} invoice${hits.length === 1 ? ' was' : 's were'} already sent to ${[...new Set(hits.map((h) => h.email))].join(', ')}. Remove ${hits.length === 1 ? 'it' : 'them'}, or change the recipients, to send.`}
+              {`${hits.length} invoice${hits.length === 1 ? ' was' : 's were'} already sent to ${[...new Set(hits.map((h) => h.email))].join(', ')}. You can still send; ✕ on a row takes it out.`}
             </p>
           ) : null}
           <RemovableRows

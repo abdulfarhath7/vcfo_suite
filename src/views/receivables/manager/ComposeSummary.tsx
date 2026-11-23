@@ -35,7 +35,7 @@ import { stamp } from '../format';
  * (owner, 23 Nov 2026), the sheet's saved deposits table (kept on the Sheet tab), shown in the
  * email as the leaders get it and left out with one tick box; it
  * goes on the leaders' email only, and only while everyone on that email is a leader. A received
- * invoice a person already got is left out of their email when the pop-up opens.
+ * invoice a person already got shows amber as a warning only; it never stops the send (owner, 23 Nov 2026).
  */
 
 type Field = 'to' | 'cc' | 'bcc';
@@ -167,25 +167,7 @@ export function ComposeSummary({
   useEffect(() => {
     if (prefilled.current || !summary.data) return;
     prefilled.current = true;
-    const d = summary.data;
-    setPeople(d.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })));
-    if (collections) return;
-    // A received invoice goes to a person once. The ones a partner or the leaders already got are
-    // left out of that email when the pop-up opens (owner, 23 Nov 2026), so nobody removes them one
-    // by one; the Removed panel lists them and can put one back.
-    const cards = [
-      { key: LEADERS, slug: undefined as string | undefined, also: undefined as string[] | undefined, to: d.leaders.map((l) => l.email) },
-      ...d.partnerDrafts.map((p) => ({ key: lower(p.email), slug: p.slug as string | undefined, also: p.alsoClientKeys as string[] | undefined, to: [p.email] })),
-    ];
-    const told = cards.map((c) => {
-      const ids = emailRows({ rows: d.rows, today: d.today, partnerSlug: c.slug, alsoClientKeys: c.also, picked: d.picked }).map((r) => r.id);
-      return { key: c.key, ids: [...new Set(alreadySentHits(d.alreadySent, ids, c.to).map((h) => h.invoiceId))] };
-    });
-    const all = [...new Set(told.flatMap((t) => t.ids))];
-    setRemoved(all);
-    // An invoice one card already got stays in the cards that did not.
-    setBackIn(Object.fromEntries(told.map((t) => [t.key, all.filter((id) => !t.ids.includes(id))])));
-    setLeftOut(Object.fromEntries(told.map((t) => [t.key, t.ids.length])));
+    setPeople(summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })));
   }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
@@ -225,8 +207,6 @@ export function ComposeSummary({
   const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => lower(p.email)));
   // Invoices taken out of every email of this send (owner, 19 Nov 2026); the sheet does not change.
   const [removed, setRemoved] = useState<string[]>([]);
-  // How many received invoices each email left out when the pop-up opened, because its people already got them.
-  const [leftOut, setLeftOut] = useState<Record<string, number>>({});
   // Removed invoices put back in one email only, by the email's key (owner, 19 Nov 2026).
   const [backIn, setBackIn] = useState<Record<string, string[]>>({});
   /** What one email leaves out: every removed invoice except the ones put back in it. */
@@ -403,7 +383,6 @@ export function ComposeSummary({
   const sendable = keys
     .map((k) => drafts[k])
     .filter((d) => (collections ? d.kind === 'full' || (reportFor(d.partnerId)?.rows.length ?? 0) > 0 : keptIds(d).length > 0 || (d.kind === 'full' && !outOf(d.key).length && !s?.picked)));
-  const blocked = sendable.flatMap(hitsOf);
   const ccLeak = sendable.some((d) => d.cc.some((c) => partnerEmails.has(c.email.toLowerCase())));
 
   const submit = () => {
@@ -475,7 +454,7 @@ export function ComposeSummary({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || blocked.length > 0 || depositsBlocked || sendable.some((d) => !d.subject.trim()) || send.isPending}>
+          <Button onClick={submit} disabled={!s || !connected || !sendable.length || ccLeak || depositsBlocked || sendable.some((d) => !d.subject.trim()) || send.isPending}>
             {send.isPending ? 'Sending…' : `Send ${sendable.length || ''} email${sendable.length === 1 ? '' : 's'}`.replace('  ', ' ')}
           </Button>
         </>
@@ -642,14 +621,9 @@ export function ComposeSummary({
                     panel={{ items: removedItems(current), onAll: putBackAll, onHere: putBackHere }}
                   />
                 )}
-                {!collections && leftOut[current.key] ? (
-                  <p className="text-[12.5px] text-ink-muted">
-                    {`${leftOut[current.key]} received invoice${leftOut[current.key] === 1 ? ' was' : 's were'} left out: ${current.key === LEADERS ? 'the leaders' : 'this person'} already got ${leftOut[current.key] === 1 ? 'it' : 'them'} in an earlier email. See “Removed from this send” to put one back.`}
-                  </p>
-                ) : null}
                 {hitsOf(current).length ? (
                   <p role="alert" className="text-[12.5px] text-warning">
-                    {`${hitInvoices(current)} received invoice${hitInvoices(current) === 1 ? ' was' : 's were'} already sent to ${current.key === LEADERS ? 'these leaders' : 'this person'}. Remove ${hitInvoices(current) === 1 ? 'it' : 'them'} to send.`}
+                    {`${hitInvoices(current)} received invoice${hitInvoices(current) === 1 ? ' was' : 's were'} already sent to ${current.key === LEADERS ? 'these leaders' : 'this person'}. You can still send; ✕ on a row takes it out.`}
                   </p>
                 ) : null}
                 <RemovableRows

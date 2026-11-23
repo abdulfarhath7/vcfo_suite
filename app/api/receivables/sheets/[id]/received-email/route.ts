@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { getSignName, receivedEmailSource, sentReceiptsFor, startEmailLog, systemRecordSentReceipts, templateFor } from '@/db/repositories/receivables';
 import { todayIst } from '@/lib/receivables/dates';
-import { alreadySentHits } from '@/lib/receivables/sent-receipts';
 import { assertOutlookReady } from '@/db/repositories/outlook-connections';
 import { partnerOwns } from '@/lib/receivables/co-partners';
 import { paymentReceivedEmail } from '@/lib/receivables/email-v2';
@@ -89,18 +88,8 @@ export async function POST(request: Request, context: RouteContext) {
       if (p && src.invoices.some((i) => !partnerOwns(p.id, i, src.links))) return NextResponse.json({ error: 'partner_elsewhere' }, { status: 400 });
     }
     // A received invoice goes to a person once (owner, 18 Nov 2026): the person removes it first.
-    const sent = await sentReceiptsFor(
-      guard.ctx,
-      id,
-      src.invoices.map((i) => i.id),
-    );
+    // An invoice a person already got is only a warning in the pop-up; it never stops a send (owner, 23 Nov 2026).
     const recipients = [...people.to, ...people.cc].map((r) => r.email);
-    const hits = alreadySentHits(
-      sent,
-      src.invoices.map((i) => i.id),
-      recipients,
-    );
-    if (hits.length) return NextResponse.json({ error: 'receipt_already_sent', hits }, { status: 409 });
     await assertOutlookReady(guard.ctx);
     const first = people.to[0];
     const log = await startEmailLog(guard.ctx, {
