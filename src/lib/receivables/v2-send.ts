@@ -31,6 +31,8 @@ import { emails, notifyTeam } from './team-notify';
 
 /** A waiting email goes from the Outlook of whoever approves it. */
 const WHOEVER = 'the Outlook of whoever approves';
+/** The team's WhatsApp update says where to approve (owner, 23 Nov 2026): nothing is sent until someone does. */
+const APPROVE_HOW = '. Nothing is sent until someone opens the link and presses Approve in Email log';
 import type { TemplateSet } from './templates';
 import type { WhatsAppPingStatus } from './v2-wire';
 
@@ -265,7 +267,7 @@ export async function sendApprovalEmails(input: ApprovalEmailsInput): Promise<{ 
       }
     }
   }
-  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (new or revised invoice) wait for approval`, { from: WHOEVER, to: waiting });
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (new or revised invoice) wait for approval${APPROVE_HOW}`, { from: WHOEVER, to: waiting });
   return out;
 }
 
@@ -317,7 +319,7 @@ export async function sendSheetRollups(sheet: SheetEmailSettings, now: Date = ne
     out.sent += 1;
     waiting.push(p.email);
   }
-  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (roll-up to the partners) wait for approval`, { from: WHOEVER, to: waiting });
+  if (out.sent) await notifyTeam(sheet.id, `${emails(out.sent)} (roll-up to the partners) wait for approval${APPROVE_HOW}`, { from: WHOEVER, to: waiting });
   return out;
 }
 
@@ -361,7 +363,7 @@ export async function sendSheetDigest(sheet: SheetEmailSettings, now: Date = new
   });
   if (!log) return 'skipped';
   await systemReplaceAwaiting(sheet.id, 'digest', null, log.id);
-  await notifyTeam(sheet.id, 'The leadership digest waits for approval', { from: WHOEVER, to: recipients.map((r) => r.email) });
+  await notifyTeam(sheet.id, `The leadership digest waits for approval${APPROVE_HOW}`, { from: WHOEVER, to: recipients.map((r) => r.email) });
   return 'sent';
 }
 

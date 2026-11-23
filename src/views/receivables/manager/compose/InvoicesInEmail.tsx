@@ -66,9 +66,11 @@ export function InvoicesInEmail({
       </p>
       {hits.length ? (
         <ul className="grid gap-0.5 text-warning">
-          {hits.map((h) => (
-            <li key={`${h.invoiceId}-${h.email}`}>{`⚠ ${name(h.invoiceId)} was already sent to ${h.email} on ${sheetDate(h.sentAt.slice(0, 10))}. Remove it to send.`}</li>
-          ))}
+          {/* One line per invoice, with everyone who already got it (owner, 23 Nov 2026). */}
+          {[...new Set(hits.map((h) => h.invoiceId))].map((id) => {
+            const mine = hits.filter((h) => h.invoiceId === id);
+            return <li key={id}>{`⚠ ${name(id)} was already sent to ${mine.map((h) => h.email).join(', ')} on ${sheetDate(mine[0]!.sentAt.slice(0, 10))}. Remove it to send.`}</li>;
+          })}
         </ul>
       ) : null}
       {panel && panel.items.length ? (

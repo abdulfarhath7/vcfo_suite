@@ -170,6 +170,15 @@ export function ComposeSummary({
     prefilled.current = true;
     // The receivables update opens with every leader, and nobody else (owner, 23 Nov 2026).
     setPeople(collections ? summary.data.partnerDrafts.filter(partnerHasMail).map((p) => ({ name: p.name, email: p.email })) : summary.data.leaders);
+    if (collections) return;
+    // A received invoice goes to a person once. The ones the leaders already got are left out of
+    // the email when the pop-up opens (owner, 23 Nov 2026), so the person does not remove them one
+    // by one; the Removed panel lists them and can put one back.
+    const d = summary.data;
+    const inEmail = emailRows({ rows: d.rows, today: d.today, picked: d.picked }).map((r) => r.id);
+    const told = [...new Set(alreadySentHits(d.alreadySent, inEmail, d.leaders.map((l) => l.email)).map((h) => h.invoiceId))];
+    setRemoved(told);
+    setLeftOut(told.length);
   }, [summary.data]);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [active, setActive] = useState<string | null>(null);
@@ -209,6 +218,8 @@ export function ComposeSummary({
   const partnerEmails = new Set((s?.partnerDrafts ?? []).map((p) => lower(p.email)));
   // Invoices taken out of every email of this send (owner, 19 Nov 2026); the sheet does not change.
   const [removed, setRemoved] = useState<string[]>([]);
+  // How many received invoices were left out when the pop-up opened, because the leaders already got them.
+  const [leftOut, setLeftOut] = useState(0);
   // Removed invoices put back in one email only, by the email's key (owner, 19 Nov 2026).
   const [backIn, setBackIn] = useState<Record<string, string[]>>({});
   /** What one email leaves out: every removed invoice except the ones put back in it. */
@@ -310,6 +321,8 @@ export function ComposeSummary({
   const draftRows = (d: Draft) => (s && !collections ? emailRows({ rows: s.rows, today: s.today, partnerSlug: d.slug, alsoClientKeys: d.alsoClientKeys, picked: s.picked }) : []);
   const keptIds = (d: Draft) => draftRows(d).filter((r) => !outOf(d.key).includes(r.id)).map((r) => r.id);
   const hitsOf = (d: Draft) => (s ? alreadySentHits(s.alreadySent, keptIds(d), [...d.to, ...d.cc].map((c) => c.email)) : []);
+  /** The invoices behind the hits, each once: one invoice sent to four leaders is one invoice to remove. */
+  const hitInvoices = (d: Draft) => new Set(hitsOf(d).map((h) => h.invoiceId)).size;
   /** Rebuilds the bodies of the emails that hold the invoice, from the new removed and put-back lists. */
   const applyOut = (id: string, rm: string[], back: Record<string, string[]>, only?: string) => {
     keepRemarks();
@@ -543,7 +556,7 @@ export function ComposeSummary({
                       const n = collections ? (reportFor(d.partnerId)?.rows.length ?? 0) : keptIds(d).length;
                       const out = collections ? 0 : draftRows(d).length - n;
                       const outNote = out ? ` · ${out} out` : '';
-                      const warn = hitsOf(d).length;
+                      const warn = hitInvoices(d);
                       const empty = !sendable.includes(d);
                       const label = warn
                         ? `⚠ ${warn} already sent`
@@ -640,9 +653,14 @@ export function ComposeSummary({
                     panel={{ items: removedItems(current), onAll: putBackAll, onHere: putBackHere }}
                   />
                 )}
+                {leadersOnly && leftOut ? (
+                  <p className="text-[12.5px] text-ink-muted">
+                    {`${leftOut} received invoice${leftOut === 1 ? ' was' : 's were'} left out: the leaders already got ${leftOut === 1 ? 'it' : 'them'} in an earlier email. ${leftOut === 1 ? 'It is' : 'They are'} listed under “Removed from this send”.`}
+                  </p>
+                ) : null}
                 {hitsOf(current).length ? (
                   <p role="alert" className="text-[12.5px] text-warning">
-                    {`${hitsOf(current).length} received invoice${hitsOf(current).length === 1 ? ' was' : 's were'} already sent to this person. Remove ${hitsOf(current).length === 1 ? 'it' : 'them'} to send.`}
+                    {`${hitInvoices(current)} received invoice${hitInvoices(current) === 1 ? ' was' : 's were'} already sent to ${current.key === LEADERS ? 'these leaders' : 'this person'}. Remove ${hitInvoices(current) === 1 ? 'it' : 'them'} to send.`}
                   </p>
                 ) : null}
                 <RemovableRows
