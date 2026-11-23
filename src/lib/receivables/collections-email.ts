@@ -38,7 +38,7 @@ type Col = { label: string; num?: boolean };
 function table(cols: Col[], rows: string[][]): string {
   const head = cols.map((c) => `<td style="${HEAD}${c.num ? 'text-align:right;' : ''}">${escapeHtml(c.label)}</td>`).join('');
   const body = rows
-    .map((cells, i) => `<tr>${cells.map((c, j) => `<td style="${CELL}background:${i % 2 ? BAND : '#ffffff'};${cols[j]?.num ? NUM : ''}">${c}</td>`).join('')}</tr>`)
+    .map((cells) => `<tr>${cells.map((c, j) => `<td style="${CELL}background:#ffffff;${cols[j]?.num ? NUM : ''}">${c}</td>`).join('')}</tr>`)
     .join('');
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${TABLE}"><tr>${head}</tr>${body}</table>`;
 }

@@ -27,7 +27,7 @@ const fcFormat = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maxi
 
 /*
  * The table theme (owner, 17 Nov 2026; refined 18 Nov 2026): a light peach month title, column
- * heads in orange (#e35f2a, white bold text), rows banded white and a lighter peach with thin grey
+ * heads in orange (#e35f2a, white bold text), rows white (no alternate colour since 23 Nov 2026) with thin grey
  * rules between them, received rows pale green, the month's open total bold under an orange rule,
  * amounts right-aligned in Roboto with even-width digits (owner, 19 Nov 2026: no typewriter font) and the status in colour (overdue red, due today amber,
  * received green). No firm name in the signature.
@@ -166,9 +166,10 @@ export function summaryEmailHtml(input: SummaryEmailInput): string {
       const list = shown.filter((r) => r.invoiceMonth === m);
       if (!list.length) return '';
       const body = list
-        .map((r, i) => {
+        .map((r) => {
           const open = isOpen(r);
-          const bg = !open ? PAID : i % 2 === 1 ? BAND : '#ffffff';
+          // No alternate row colour (owner, 23 Nov 2026): only a received row is shaded, in green.
+          const bg = !open ? PAID : '#ffffff';
           const st = statusOf(r, input.today);
           const fc = foreignAmountOf(r);
           const fx = foreign
@@ -230,8 +231,8 @@ export function depositsSectionHtml(deposits: DepositsSection | null | undefined
   ];
   const td = (bg: string, extra = '') => `style="${CELL}background:${bg};${extra}"`;
   const body = deposits.rows
-    .map((r, i) => {
-      const bg = i % 2 === 1 ? BAND : '#ffffff';
+    .map((r) => {
+      const bg = '#ffffff';
       const amount = r.totalInr === null ? '' : money(r.totalInr);
       return `<tr><td ${td(bg, `font-weight:600;${WRAP}`)}>${escapeHtml(r.client)}</td><td ${td(bg, NUM)}>${amount}</td><td ${td(bg, WRAP)}>${escapeHtml(r.remarks)}</td></tr>`;
     })

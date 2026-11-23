@@ -25,7 +25,7 @@ import { partOf, type TemplateOverride } from './templates';
 const SANS = SPECTRUM_EMAIL_FONTS.sans;
 /*
  * The SBC table theme the owner picked on 17 Nov 2026 (the firm's "MY DAY" email): an SBC orange
- * header row (#e35f2a) with white bold text, rows banded white and a light peach (#fdeee8), and
+ * header row (#e35f2a) with white bold text, rows white (no alternate colour since 23 Nov 2026), and
  * thin grey grid lines (#d6d6d6) inside and around. These three are the owner's own values and win
  * over the design tokens for email tables; red stays the `danger` token.
  */
@@ -33,7 +33,6 @@ const INK = '#1a1a1a';
 const MUTED = '#6b7079';
 const ORANGE = '#e35f2a';
 const ORANGE_EDGE = '#e35f2a';
-const ORANGE_ROW = '#fdf4f0';
 const GRID = '#e4e4e4';
 const RED = emailColor('danger');
 
@@ -132,7 +131,8 @@ function table(columns: Column[], rows: string[][], total?: string[], ids?: Arra
   const head = columns.map((c) => `<th style="${TH}${c.num ? 'text-align:right;' : ''}">${esc(c.label)}</th>`).join('');
   const body = rows
     .map((cells, i) => {
-      const bg = i % 2 === 1 ? ORANGE_ROW : '#ffffff';
+      // No alternate row colour (owner, 23 Nov 2026): every row is white.
+      const bg = '#ffffff';
       const mark = ids?.[i] ? ` data-inv="${esc(ids[i]!)}"` : '';
       return `<tr${mark} style="background:${bg};">${cells.map((c, j) => `<td style="${TD}${columns[j]?.num ? NUM : ''}background:${bg};">${c}</td>`).join('')}</tr>`;
     })
