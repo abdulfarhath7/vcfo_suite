@@ -14,6 +14,16 @@ import { connectorFrom, serverError } from '../../../_auth';
 const MAX_WIRE = 20 * 1024 * 1024;
 const MAX_JSON = 100 * 1024 * 1024;
 
+const direction = z.enum(['debit', 'credit']).optional();
+// Optional fields from connector 0.2+; an unknown bill type is dropped rather than failing the job.
+const billType = z.enum(['New Ref', 'Agst Ref', 'Advance', 'On Account']).optional().catch(undefined);
+const bill = z.object({
+  name: z.string().max(200),
+  amount: z.number().finite(),
+  direction,
+  billType,
+  creditPeriod: z.string().max(40).optional().catch(undefined),
+});
 const voucher = z.object({
   guid: z.string().max(200),
   voucherType: z.string().max(200),
@@ -22,7 +32,8 @@ const voucher = z.object({
   partyName: z.string().max(400),
   gstin: z.string().max(40).nullable().optional(),
   amount: z.number().finite(),
-  bills: z.array(z.object({ name: z.string().max(200), amount: z.number().finite() })).max(2000).optional(),
+  direction,
+  bills: z.array(bill).max(2000).optional(),
   cancelled: z.boolean().optional(),
 });
 const schema = z.union([

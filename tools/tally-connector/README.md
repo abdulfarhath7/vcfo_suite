@@ -84,11 +84,16 @@ request per month: a TDL collection of `Voucher` filtered with `$$IsSales:$Vouch
 (sales) or `$$IsReceipt:$VoucherTypeName` (receipts), so custom voucher types under those
 parents are included. `SVFROMDATE`/`SVTODATE` (YYYYMMDD) set the period. It fetches the GUID,
 type, number, date, party ledger, party GSTIN, amount, the cancelled and optional flags, and
-the ledger entries with their bill allocations.
+the ledger entries (with `ISDEEMEDPOSITIVE`) and their bill allocations (name, amount, `BILLTYPE`,
+`BILLCREDITPERIOD`).
 
-Mapping: cancelled and optional vouchers are skipped. The amount is the party ledger entry's
-amount as a positive number (the voucher amount if no party entry is found). The bills are the
-party entry's bill allocations, as positive amounts. Vouchers are de-duplicated by GUID, and
+Mapping: cancelled and optional vouchers are skipped. Amounts are read with Tally's sign rule
+(as in tally-database-loader, MIT): negative or "(-)" is a debit, positive a credit. The amount
+sent is the party ledger entry's amount as a positive number (the voucher amount if no party
+entry is found), and `direction` says its side: `debit` on a normal sale, `credit` on a normal
+receipt (`ISDEEMEDPOSITIVE` decides when the amount is zero). The bills are the party entry's bill
+allocations, as positive amounts with their own `direction`, `billType` and `creditPeriod`; an
+unnamed allocation is kept only when it is On Account or Advance. Vouchers are de-duplicated by GUID, and
 dates outside the month are dropped. Invalid XML characters that Tally emits (`&#4;` and
 similar) are removed before parsing. UTF-16 responses are handled.
 
@@ -107,7 +112,9 @@ All calls after pairing send `Authorization: Bearer <token>`. A 401 stops the co
 | `POST /api/tally/connector/jobs/:id/result` | gzip JSON, at most 20 MB: `{ok:false, error}` or `{ok:true, company, vouchers}` | 2xx |
 
 `Voucher = {guid, voucherType, voucherNo, date:'YYYY-MM-DD', partyName, gstin: string|null,
-amount: number (positive INR), bills?: [{name, amount}]}`.
+amount: number (positive INR), direction?: 'debit'|'credit', bills?: [{name, amount, direction?,
+billType?: 'New Ref'|'Agst Ref'|'Advance'|'On Account', creditPeriod?}]}`. The optional fields were
+added in 0.2.0; VCFO reads a 0.1.0 connector as before.
 
 ## Development
 

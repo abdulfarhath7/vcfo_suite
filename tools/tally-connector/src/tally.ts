@@ -4,9 +4,18 @@ import { fromTallyDate, splitByMonth, toTallyDate } from './months';
 
 export type JobType = 'sales' | 'receipts';
 
+export type Direction = 'debit' | 'credit';
+export type BillType = 'New Ref' | 'Agst Ref' | 'Advance' | 'On Account';
+
 export interface Bill {
   name: string;
+  /** Positive INR (the fixed contract). The side is in `direction`. */
   amount: number;
+  /** Optional contract field: the side of this allocation (debit raises the party's balance). */
+  direction?: Direction;
+  billType?: BillType;
+  /** Tally's credit period as written, for example "30 Days". */
+  creditPeriod?: string;
 }
 
 export interface Voucher {
@@ -16,7 +25,13 @@ export interface Voucher {
   date: string;
   partyName: string;
   gstin: string | null;
+  /** Positive INR (the fixed contract). The side is in `direction`. */
   amount: number;
+  /**
+   * Optional contract field: the side of the party ledger entry. A normal Sales voucher debits
+   * the party (receivable up), a normal Receipt credits it (receivable down).
+   */
+  direction?: Direction;
   bills?: Bill[];
 }
 
@@ -58,7 +73,8 @@ export function buildVoucherRequest(type: JobType, from: string, to: string, com
      <COLLECTION NAME="VCFOVouchers" ISMODIFY="No">
       <TYPE>Voucher</TYPE>
       <FETCH>GUID, VOUCHERTYPENAME, VOUCHERNUMBER, DATE, PARTYLEDGERNAME, PARTYGSTIN, AMOUNT, ISCANCELLED, ISOPTIONAL</FETCH>
-      <FETCH>ALLLEDGERENTRIES.LIST.LEDGERNAME, ALLLEDGERENTRIES.LIST.AMOUNT, ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.NAME, ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.AMOUNT</FETCH>
+      <FETCH>ALLLEDGERENTRIES.LIST.LEDGERNAME, ALLLEDGERENTRIES.LIST.AMOUNT, ALLLEDGERENTRIES.LIST.ISDEEMEDPOSITIVE</FETCH>
+      <FETCH>ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.NAME, ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.AMOUNT, ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.BILLTYPE, ALLLEDGERENTRIES.LIST.BILLALLOCATIONS.LIST.BILLCREDITPERIOD</FETCH>
       <FILTER>VCFOTypeFilter</FILTER>
      </COLLECTION>
      <SYSTEM TYPE="Formulae" NAME="VCFOTypeFilter">${TYPE_FILTER[type]}</SYSTEM>
@@ -195,11 +211,48 @@ const text = (v: unknown): string => {
   return '';
 };
 
-/** Tally amounts look like "-1180.00", "1,18,000.00" or "-100.00 USD @ ..."; returns the absolute rupee value. */
+/*
+ * Sign rule, after https://github.com/dhananjay1405/tally-database-loader (MIT License; the
+ * copyright notice is in that project's LICENSE file). Its src/tally.mts sets an amount field as
+ * `if $$IsDebit:$Amount then -$$NumValue:$Amount else $$NumValue:$Amount` with "(-)" replaced
+ * by "-", and its tally-export-config.yaml reads BillType and BillCreditPeriod from the bill
+ * allocations. In Tally's XML a debit is written as a negative number and a credit as a positive
+ * one, and formatted strings mark a negative as "(-)".
+ * So: negative = debit, positive = credit.
+ */
+
+/**
+ * Reads a Tally amount such as "-1180.00", "1,18,000.00", "(-)500.00" or "-100.00 USD @ ...".
+ * Returns the signed rupee value (debit negative, credit positive), or null when there is none.
+ */
 export function parseAmount(v: unknown): number | null {
-  const m = /-?\d+(?:\.\d+)?/.exec(text(v).replace(/,/g, ''));
+  const s = text(v).replace(/,/g, '').replace(/\(-\)\s*/g, '-');
+  const m = /-?\s*\d+(?:\.\d+)?/.exec(s);
   if (!m) return null;
-  return Math.round(Math.abs(parseFloat(m[0])) * 100) / 100;
+  const n = parseFloat(m[0].replace(/\s+/g, ''));
+  return n === 0 ? 0 : Math.round(n * 100) / 100;
+}
+
+/** The side of a signed amount; null for zero. `deemedPositive` (ISDEEMEDPOSITIVE "Yes" = debit) breaks the tie. */
+export function directionOf(signed: number | null, deemedPositive?: unknown): Direction | undefined {
+  if (signed != null && signed < 0) return 'debit';
+  if (signed != null && signed > 0) return 'credit';
+  const d = text(deemedPositive).toLowerCase();
+  if (d === 'yes') return 'debit';
+  if (d === 'no') return 'credit';
+  return undefined;
+}
+
+const BILL_TYPES: Record<string, BillType> = {
+  'new ref': 'New Ref',
+  'agst ref': 'Agst Ref',
+  'against ref': 'Agst Ref',
+  advance: 'Advance',
+  'on account': 'On Account',
+};
+
+function billTypeOf(v: unknown): BillType | undefined {
+  return BILL_TYPES[text(v).toLowerCase().replace(/\s+/g, ' ')];
 }
 
 const yes = (v: unknown) => text(v).toLowerCase() === 'yes';
@@ -212,8 +265,17 @@ function toBills(entry: any): Bill[] {
   const bills: Bill[] = [];
   for (const b of entry?.['BILLALLOCATIONS.LIST'] ?? []) {
     const name = text(b.NAME);
-    const amount = parseAmount(b.AMOUNT);
-    if (name && amount !== null) bills.push({ name, amount });
+    const signed = parseAmount(b.AMOUNT);
+    const billType = billTypeOf(b.BILLTYPE);
+    // An on-account or advance allocation often has no name; keep it so VCFO can say why it is skipped.
+    if (signed === null || (!name && billType !== 'On Account' && billType !== 'Advance')) continue;
+    const bill: Bill = { name, amount: Math.abs(signed) };
+    const direction = directionOf(signed);
+    if (direction) bill.direction = direction;
+    if (billType) bill.billType = billType;
+    const creditPeriod = text(b.BILLCREDITPERIOD);
+    if (creditPeriod) bill.creditPeriod = creditPeriod.slice(0, 40);
+    bills.push(bill);
   }
   return bills;
 }
@@ -231,7 +293,10 @@ export function mapVouchers(xml: string, range?: { from: string; to: string }): 
     const partyName = text(v.PARTYLEDGERNAME);
     const entries = ledgerEntries(v);
     const partyEntry = entries.find((e) => partyName && text(e.LEDGERNAME) === partyName);
-    const amount = parseAmount(partyEntry?.AMOUNT) ?? parseAmount(v.AMOUNT) ?? 0;
+    const partySigned = partyEntry ? parseAmount(partyEntry.AMOUNT) : null;
+    const amount = Math.abs(partySigned ?? parseAmount(v.AMOUNT) ?? 0);
+    // The side is read only from the party's own entry; the voucher-level AMOUNT has no fixed side.
+    const direction = partyEntry ? directionOf(partySigned, partyEntry.ISDEEMEDPOSITIVE) : undefined;
     const bills = partyEntry ? toBills(partyEntry) : entries.flatMap(toBills);
 
     const voucher: Voucher = {
@@ -243,6 +308,7 @@ export function mapVouchers(xml: string, range?: { from: string; to: string }): 
       gstin: text(v.PARTYGSTIN) || null,
       amount,
     };
+    if (direction) voucher.direction = direction;
     if (bills.length) voucher.bills = bills;
     out.push(voucher);
   }

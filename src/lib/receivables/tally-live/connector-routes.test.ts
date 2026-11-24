@@ -72,6 +72,20 @@ describe('POST result', () => {
     expect(saveJobResult).toHaveBeenCalledWith(CONNECTOR, 'j1', body);
   });
 
+  it('keeps the optional sides and bill types of connector 0.2+, and drops an unknown bill type', async () => {
+    saveJobResult.mockResolvedValue({ staged: 1 });
+    const bills = [
+      { name: 'A/1', amount: 100, direction: 'credit', billType: 'Agst Ref', creditPeriod: '30 Days' },
+      { name: 'A/2', amount: 5, direction: 'credit', billType: 'Something new' },
+    ];
+    const v2 = { ...body, vouchers: [{ ...body.vouchers[0], voucherType: 'Receipt', direction: 'credit', bills }] };
+    const res = await result.POST(new Request('http://x', authed({ method: 'POST', body: JSON.stringify(v2) })), params);
+    expect(res.status).toBe(200);
+    const sent = saveJobResult.mock.calls.at(-1)![2];
+    expect(sent.vouchers[0].direction).toBe('credit');
+    expect(sent.vouchers[0].bills).toEqual([bills[0], { name: 'A/2', amount: 5, direction: 'credit' }]);
+  });
+
   it('fails the job when the body cannot be read', async () => {
     saveJobResult.mockResolvedValue({ staged: 0 });
     const res = await result.POST(new Request('http://x', authed({ method: 'POST', body: JSON.stringify({ ok: true, vouchers: 'x' }) })), params);

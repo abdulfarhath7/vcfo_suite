@@ -38,6 +38,14 @@ period (export requests only), and posts them back. VCFO maps them and stages th
   20 MB as sent (100 MB unpacked). Either `{ok: false, error}` or
   `{ok: true, company, vouchers: Voucher[]}`, where
   `Voucher = {guid, voucherType, voucherNo, date: 'YYYY-MM-DD', partyName, gstin?, amount /* positive INR */, bills?: [{name, amount}]}`.
+  Optional additions (connector 0.2.0, 25 Nov 2026; an older connector leaves them out and is read
+  as before): `Voucher.direction?: 'debit'|'credit'` is the side of the party ledger entry, and
+  each bill may carry `direction?: 'debit'|'credit'`, `billType?: 'New Ref'|'Agst Ref'|'Advance'|'On Account'`
+  and `creditPeriod?: string` (as Tally writes it, for example "30 Days"). `amount` stays positive
+  on the voucher and on every bill; the side is only in `direction`. Tally writes a debit as a
+  negative amount (or with "(-)") and a credit as a positive one, so a normal sale is `debit`
+  (receivable up) and a normal receipt `credit` (receivable down). An on-account or advance
+  allocation may have an empty `name`. An unknown `billType` is dropped, not refused.
   Answers `200 {staged}`. A body that cannot be read fails the job and answers `400 invalid_body`.
 - **`POST /api/tally/connector/hello`**: `{version, tallyCompany, tallyReachable}` → `200 {ok: true}`.
   Updates `last_seen_at` and the status the Sheet tab shows.
@@ -51,6 +59,11 @@ period (export requests only), and posts them back. VCFO maps them and stages th
   reference; the bill name is the invoice number. A receipt with no named bill is skipped with
   "No bill reference in Tally" (listed in the job's notes). A payment already applied by an earlier
   sync (same voucher guid and invoice) is left out.
+- **Sides and bill types** (only when the connector sends them). A Sales voucher that credits the
+  party (a return entered as Sales) is left out with a warning. A Receipt that debits the party,
+  or a bill debited on a receipt, is skipped with "Reversal entry in Tally". An `On Account` or
+  `Advance` bill is skipped with "On account payment in Tally (no invoice)". `Agst Ref` bills
+  match an invoice by name; `New Ref` bills are matched by name too, as before.
 - **Approving a payment** calls `markReceived`: less than the open balance is a part payment, the
   rest settles the invoice. An invoice that is not on the sheet (`receipt_no_invoice`) or is
   already received (`receipt_received`) is refused and the row stays, with the reason shown.

@@ -6,7 +6,18 @@
 export type TallyJobType = 'sales' | 'receipts';
 export type TallyJobStatus = 'queued' | 'running' | 'done' | 'failed' | 'expired';
 
-/** One voucher as the connector reads it from TallyPrime (the fixed contract; amounts are positive INR). */
+/** The side of a Tally entry: debit raises the party's balance (a sale), credit lowers it (a receipt). */
+export type TallyDirection = 'debit' | 'credit';
+export type TallyBillType = 'New Ref' | 'Agst Ref' | 'Advance' | 'On Account';
+
+/** One bill-wise allocation. `amount` is positive INR; the optional fields come from connector 0.2+. */
+export type TallyBill = { name: string; amount: number; direction?: TallyDirection; billType?: TallyBillType; creditPeriod?: string };
+
+/**
+ * One voucher as the connector reads it from TallyPrime (the fixed contract; amounts are positive
+ * INR). `direction` and the bills' `direction`/`billType`/`creditPeriod` are optional additions:
+ * an older connector leaves them out and the mappers then behave as before.
+ */
 export type TallyVoucher = {
   guid: string;
   voucherType: string;
@@ -15,8 +26,10 @@ export type TallyVoucher = {
   partyName: string;
   gstin?: string | null;
   amount: number;
+  /** The side of the party ledger entry: 'debit' on a normal sale, 'credit' on a normal receipt. */
+  direction?: TallyDirection;
   /** Bill-wise references; on a receipt, each name is the invoice number it settles. */
-  bills?: Array<{ name: string; amount: number }>;
+  bills?: TallyBill[];
   /** Not in the contract; honoured when a connector sends it. */
   cancelled?: boolean;
 };

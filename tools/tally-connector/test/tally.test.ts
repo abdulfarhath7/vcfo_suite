@@ -5,6 +5,7 @@ import { assertReadOnlyRequest } from '../src/guard';
 import {
   buildCompanyRequest,
   buildVoucherRequest,
+  directionOf,
   mapCompanyName,
   mapVouchers,
   parseAmount,
@@ -24,7 +25,8 @@ describe('mapVouchers', () => {
       partyName: 'Acme Traders & Co',
       gstin: '29ABCDE1234F1Z5',
       amount: 118000,
-      bills: [{ name: 'SI/26-27/001', amount: 118000 }],
+      direction: 'debit',
+      bills: [{ name: 'SI/26-27/001', amount: 118000, direction: 'debit' }],
     });
   });
 
@@ -47,11 +49,32 @@ describe('mapVouchers', () => {
       date: '2026-04-20',
       partyName: 'Acme Traders & Co',
       amount: 50000,
+      direction: 'credit',
       bills: [
-        { name: 'SI/26-27/001', amount: 30000 },
-        { name: 'SI/25-26/118', amount: 20000 },
+        { name: 'SI/26-27/001', amount: 30000, direction: 'credit' },
+        { name: 'SI/25-26/118', amount: 20000, direction: 'credit' },
       ],
     });
+  });
+
+  it('keeps the side of each amount and the bill type and credit period', () => {
+    const [sale, salesReturn, receipt, reversal] = mapVouchers(fixture('signs.xml'));
+    // A normal sale debits the party (receivable up); the bill is a New Ref with its credit period.
+    expect(sale).toMatchObject({ amount: 118000, direction: 'debit' });
+    expect(sale.bills).toEqual([{ name: 'SI/26-27/164', amount: 118000, direction: 'debit', billType: 'New Ref', creditPeriod: '30 Days' }]);
+    // A return entered as Sales credits the party.
+    expect(salesReturn).toMatchObject({ amount: 5900, direction: 'credit' });
+    expect(salesReturn.bills).toEqual([{ name: 'SI/26-27/164', amount: 5900, direction: 'credit', billType: 'Agst Ref' }]);
+    // A normal receipt credits the party (receivable down); on-account and advance parts are kept, even unnamed.
+    expect(receipt).toMatchObject({ amount: 150000, direction: 'credit' });
+    expect(receipt.bills).toEqual([
+      { name: 'SI/26-27/164', amount: 112100, direction: 'credit', billType: 'Agst Ref' },
+      { name: 'ADV/1', amount: 20000, direction: 'credit', billType: 'Advance' },
+      { name: '', amount: 17900, direction: 'credit', billType: 'On Account' },
+    ]);
+    // A reversal written with "(-)" debits the party; the contract amount stays positive.
+    expect(reversal).toMatchObject({ voucherNo: 'RC/8', amount: 10000, direction: 'debit' });
+    expect(reversal.bills).toEqual([{ name: 'SI/26-27/164', amount: 10000, direction: 'debit', billType: 'Agst Ref' }]);
   });
 
   it('reports a Tally LINEERROR instead of returning nothing', () => {
@@ -68,10 +91,23 @@ describe('sanitizeTallyXml', () => {
 });
 
 describe('parseAmount', () => {
-  it('reads Indian grouping, signs and forex suffixes as positive rupees', () => {
-    expect(parseAmount('-1,18,000.00')).toBe(118000);
-    expect(parseAmount('-100.50 USD @ ₹ 83.00/USD')).toBe(100.5);
+  it('reads Indian grouping and forex suffixes, debit negative and credit positive', () => {
+    expect(parseAmount('-1,18,000.00')).toBe(-118000);
+    expect(parseAmount('1,18,000.00')).toBe(118000);
+    expect(parseAmount('(-)500.25')).toBe(-500.25);
+    expect(parseAmount('-100.50 USD @ ₹ 83.00/USD')).toBe(-100.5);
+    expect(parseAmount('0.00')).toBe(0);
     expect(parseAmount('')).toBeNull();
+  });
+});
+
+describe('directionOf', () => {
+  it('reads the side from the sign, and from ISDEEMEDPOSITIVE when the amount is zero', () => {
+    expect(directionOf(-1)).toBe('debit');
+    expect(directionOf(1)).toBe('credit');
+    expect(directionOf(0, 'Yes')).toBe('debit');
+    expect(directionOf(0, 'No')).toBe('credit');
+    expect(directionOf(null)).toBeUndefined();
   });
 });
 
@@ -88,6 +124,8 @@ describe('requests', () => {
     expect(sales).toContain('<SVTODATE TYPE="Date">20260430</SVTODATE>');
     expect(sales).toContain('$$IsSales:$VoucherTypeName');
     expect(sales).toContain('Summit &amp; Co');
+    expect(sales).toContain('BILLALLOCATIONS.LIST.BILLTYPE');
+    expect(sales).toContain('BILLALLOCATIONS.LIST.BILLCREDITPERIOD');
     expect(buildVoucherRequest('receipts', '2026-04-01', '2026-04-30')).toContain('$$IsReceipt:$VoucherTypeName');
     expect(() => assertReadOnlyRequest(sales)).not.toThrow();
     expect(() => assertReadOnlyRequest(buildCompanyRequest())).not.toThrow();

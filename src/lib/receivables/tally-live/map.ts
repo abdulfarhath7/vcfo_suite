@@ -11,6 +11,12 @@ import type { TallyVoucher } from './wire';
  * Receipts: a voucher whose type contains "Receipt" gives one receipt row per bill-wise reference;
  * the bill name is the invoice number it pays. A receipt with no named bill cannot be tied to an
  * invoice, so it is reported as skipped with the reason "No bill reference in Tally".
+ *
+ * Sides (connector 0.2+ sends `direction` and the bills' `billType`; an older connector does not,
+ * and then nothing below applies). A Sales voucher that credits the party (a return entered as
+ * Sales) is left out. A Receipt that debits the party, or a bill debited on a receipt, is a
+ * reversal and is skipped. On a receipt, an 'On Account' or 'Advance' bill pays no invoice and is
+ * skipped; 'Agst Ref' (and 'New Ref', as before) go by the bill name.
  */
 
 export type ReceiptRow = {
@@ -31,6 +37,8 @@ export type SkippedVoucher = { voucherNo: string; partyName: string; amount: num
 export type TallyReceipts = { company: string; period: string; rows: ReceiptRow[]; skipped: SkippedVoucher[]; receiptVouchers: number };
 
 export const NO_BILL_REASON = 'No bill reference in Tally';
+export const ON_ACCOUNT_REASON = 'On account payment in Tally (no invoice)';
+export const REVERSAL_REASON = 'Reversal entry in Tally';
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -73,6 +81,7 @@ export function mapSalesVouchers(vouchers: TallyVoucher[], company: string, peri
     if (!voucherNo) return void warnings.push(`A Sales voucher of ${v.partyName || 'no party'} has no voucher number; skipped.`);
     if (!ISO.test(v.date ?? '')) return void warnings.push(`${voucherNo}: no date; skipped.`);
     if (!Number.isFinite(v.amount) || v.amount <= 0) return void warnings.push(`${voucherNo}: no amount above zero; skipped.`);
+    if (v.direction === 'credit') return void warnings.push(`${voucherNo}: credits the party in Tally (a return or reversal entered as Sales); skipped.`);
     const clientName = clientNameOf(v.partyName ?? '');
     if (!clientName) return void warnings.push(`${voucherNo}: no party name; skipped.`);
     const invoiceKey = voucherKey(voucherNo);
@@ -101,9 +110,23 @@ export function mapReceiptVouchers(vouchers: TallyVoucher[], company: string, pe
       skipped.push({ voucherNo, partyName, amount, reason: 'No date in Tally' });
       continue;
     }
-    const bills = (v.bills ?? []).filter((b) => (b?.name ?? '').trim() && Number.isFinite(b.amount) && b.amount > 0);
+    if (v.direction === 'debit') {
+      skipped.push({ voucherNo, partyName, amount, reason: REVERSAL_REASON });
+      continue;
+    }
+    const bills: Array<{ name: string; amount: number }> = [];
+    let skippedHere = false;
+    for (const b of v.bills ?? []) {
+      if (!b || !Number.isFinite(b.amount) || b.amount <= 0) continue;
+      const reason =
+        b.billType === 'On Account' || b.billType === 'Advance' ? ON_ACCOUNT_REASON : b.direction === 'debit' ? REVERSAL_REASON : null;
+      if (reason) {
+        skipped.push({ voucherNo, partyName, amount: round2(b.amount), reason });
+        skippedHere = true;
+      } else if ((b.name ?? '').trim()) bills.push(b);
+    }
     if (!bills.length) {
-      skipped.push({ voucherNo, partyName, amount, reason: NO_BILL_REASON });
+      if (!skippedHere) skipped.push({ voucherNo, partyName, amount, reason: NO_BILL_REASON });
       continue;
     }
     for (const b of bills) {
