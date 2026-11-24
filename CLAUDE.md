@@ -139,9 +139,9 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
-- SharePoint client folders (`docs/context/notes/sharepoint.md`, branch `feat/sharepoint`) need migration
-  `0068_sharepoint_folder` (additive) on RDS, the Azure app's delegated `Files.Read.All` and `Sites.Read.All`,
-  and `SHAREPOINT_SITE_URL` before deploy. People reconnect Microsoft 365 once.
+- SharePoint client folders (`docs/context/notes/sharepoint.md`) are deployed (24 Nov 2026, RDS on 0068) but
+  hidden: add the Azure app's delegated `Files.Read.All` and `Sites.Read.All`, then set `SHAREPOINT_SITE_URL`
+  on App Runner. People then reconnect Microsoft 365 once.
 - Receivables on `main` (18–19 Nov 2026): migrations `0060` to `0065` are applied on RDS. `0066_receivables_team`
   (additive, the Team section) must be applied on RDS before the build that holds it is deployed.
 - Receivables v2 (`docs/specs/receivables/V2.md`, branch `feature/receivables-v2`) needs migrations

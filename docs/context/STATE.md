@@ -176,7 +176,7 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 - **Not covered yet (phase 2).** Interest on GST, TDS and advance tax, and PF damages: they need the amount due. FLA, Softex and the other penalties that are not a function of the date.
 - **To check with the tax team.** The GST cap uses the highest band (₹10,000) because turnover is not stored; the TDS fee cannot exceed the TDS for the quarter, which is not stored either; citations still name the Income-tax Act, 1961; the MSME-1 figure is a maximum, decided in adjudication.
 
-## SharePoint client folders (24 Nov 2026, on `feat/sharepoint`, not merged or deployed)
+## SharePoint client folders (24 Nov 2026, on `main` as 714d04ab, deployed)
 
 - Ask VCFO reads `/Clients/<client>` in the firm's SharePoint when asked ("take data of Kestrel from
   SharePoint") and puts what it finds on one review card through the drop pipeline. Gotchas:
@@ -188,6 +188,12 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 - Before deploy: add the two delegated permissions to the Azure app, set `SHAREPOINT_SITE_URL` (and
   `SHAREPOINT_CLIENTS_PATH` if the folder is not `/Clients`), and apply 0068 on RDS.
 - Not tested against a real SharePoint site yet; the Graph calls are covered by unit tests with fakes.
+- **Deployed 24 Nov 2026:** RDS snapshot `vcfo-suite-db-pre-0068-20261124`, then 0068 through the SSM
+  tunnel; image `vcfo-suite:714d04ab` (= `:latest`, built from `git archive HEAD`), App Runner deploy
+  SUCCEEDED 15:37 to 15:40 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-32eb0f64`.
+  SharePoint stays hidden until the Azure app has `Files.Read.All` and `Sites.Read.All` and
+  `SHAREPOINT_SITE_URL` is set on App Runner; until then the Outlook connect asks for the old four scopes.
+  Gate: `src/jobs/receivables-fx-rates.test.ts` fails (not touched, as on 23 Nov).
 
 ## Intentionally deferred / pilot limits
 
