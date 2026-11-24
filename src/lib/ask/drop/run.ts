@@ -25,7 +25,7 @@ import { dropSummaryLine, NOT_READ_BUDGET } from './summary';
 import { dropContentType, dropFileRefusal, isZipName, safeFileName } from './extensions';
 import { ASK_DROP_EVENT, DROP_WORKFLOW, emptyDropState, type DropFile, type DropGroup, type DropState } from './types';
 import { DEFAULT_UNZIP_LIMITS, unzipDrop, UnzipRefused } from './unzip';
-import { pullSharepointFiles } from './sharepoint-pull';
+import { COPY_LABEL, pullSharepointFiles } from './sharepoint-pull';
 
 /**
  * The drop job's work, one function per step: unpack the ZIPs, read each file, sort them into cards,
@@ -89,11 +89,13 @@ export async function dropPullStep(runId: string): Promise<{ copied: number; ski
   const source = state.source;
   if (!source || source.kind !== 'sharepoint' || source.pulled) return { copied: 0, skipped: 0 };
   if (run.status === 'queued') await updateAskRun(ctx, runId, { status: 'running' });
-  const result = await pullSharepointFiles(ctx, run, source);
+  const result = await pullSharepointFiles(ctx, run, source, async (done, total) => {
+    await updateAskRun(ctx, runId, { state: asJson({ ...state, progress: { done, total, label: COPY_LABEL } }) });
+  });
   const known = new Set(state.files.map((f) => `${f.attachmentId}|${f.path}`));
   const files = [...state.files, ...result.skipped.filter((f) => !known.has(`${f.attachmentId}|${f.path}`))];
   const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
-  const next: DropState = { ...state, files, ...(notes ? { notes } : {}), source: { ...source, pulled: true }, progress: { ...state.progress, label: 'Reading…' } };
+  const next: DropState = { ...state, files, ...(notes ? { notes } : {}), source: { ...source, pulled: true }, progress: { done: 0, total: 0, label: 'Reading…' } };
   await appendAskRunStep(ctx, runId, { kind: 'tool', name: 'sharepoint', label: 'Fetching from SharePoint', output: { copied: result.copied, skipped: result.skipped.length } });
   await updateAskRun(ctx, runId, { state: asJson(next) });
   return { copied: result.copied, skipped: result.skipped.length };

@@ -24,6 +24,10 @@ import { ZIP_ENTRY_MAX_BYTES } from './unzip';
  */
 
 export const DOWNLOAD_FAILED = 'Left out: this file could not be downloaded from SharePoint.';
+export const COPY_LABEL = 'Copying files from SharePoint';
+
+/** Called before the first download and after each file, so the chat can show "12 of 50". */
+export type PullProgress = (done: number, total: number) => Promise<void> | void;
 
 export interface PullResult {
   copied: number;
@@ -31,7 +35,7 @@ export interface PullResult {
   note?: string;
 }
 
-export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow, 'id' | 'conversationId'>, source: DropSharepointSource): Promise<PullResult> {
+export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow, 'id' | 'conversationId'>, source: DropSharepointSource, onProgress?: PullProgress): Promise<PullResult> {
   let link;
   let root;
   try {
@@ -60,6 +64,10 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
 
   const done = new Set((await listAskRunAttachments(ctx, run.id)).map((r) => r.relativePath));
   let copied = 0;
+  const total = walked.files.length;
+  // A retry starts at the files an earlier try already copied.
+  let handled = walked.files.filter((f) => done.has(`${folderName}/${f.path}`)).length;
+  await onProgress?.(handled, total);
   for (const file of walked.files) {
     const relativePath = `${folderName}/${file.path}`;
     if (done.has(relativePath)) continue;
@@ -69,6 +77,8 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     } catch (error) {
       console.error('[sharepoint] download failed', error instanceof Error ? error.message.slice(0, 200) : error);
       skipped.push({ attachmentId: `sharepoint:${file.itemId}`, path: relativePath, size: file.size, status: 'failed', reason: DOWNLOAD_FAILED });
+      handled += 1;
+      await onProgress?.(handled, total);
       continue;
     }
     const fileName = safeFileName(file.name);
@@ -86,6 +96,8 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
       relativePath,
     });
     copied += 1;
+    handled += 1;
+    await onProgress?.(handled, total);
   }
   return { copied, skipped };
 }

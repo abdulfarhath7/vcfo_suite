@@ -95,7 +95,7 @@ const send = vi.fn(async () => {
 vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => send(...(a as [])) } }));
 
 const pullSharepointFiles = vi.fn();
-vi.mock('./sharepoint-pull', () => ({ pullSharepointFiles: (...a: unknown[]) => pullSharepointFiles(...a) }));
+vi.mock('./sharepoint-pull', () => ({ COPY_LABEL: 'Copying files from SharePoint', pullSharepointFiles: (...a: unknown[]) => pullSharepointFiles(...a) }));
 
 const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus } = await import('./run');
 

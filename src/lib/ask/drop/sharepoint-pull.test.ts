@@ -71,6 +71,27 @@ describe('pullSharepointFiles', () => {
     ]);
   });
 
+  it('reports progress before the first file and after each one, a failed download included', async () => {
+    children.root = [{ id: 'a', name: 'A.pdf', size: 8, file: {} }, { id: 'b', name: 'B.pdf', size: 8, file: {} }, { id: 'c', name: 'C.pdf', size: 8, file: {} }];
+    graphDownload.mockRejectedValueOnce(new Error('graph_download_500'));
+    const seen: Array<[number, number]> = [];
+    await pullSharepointFiles(lead, run, source, (done, total) => {
+      seen.push([done, total]);
+    });
+    expect(seen).toEqual([[0, 3], [1, 3], [2, 3], [3, 3]]);
+  });
+
+  it('starts the count at the files a retry already copied', async () => {
+    children.root = [{ id: 'a', name: 'A.pdf', size: 8, file: {} }, { id: 'b', name: 'B.pdf', size: 8, file: {} }];
+    listAskRunAttachments.mockResolvedValue([{ relativePath: 'Kestrel Analytics/A.pdf' }]);
+    const seen: Array<[number, number]> = [];
+    await pullSharepointFiles(lead, run, source, (done, total) => {
+      seen.push([done, total]);
+    });
+    expect(seen).toEqual([[1, 2], [2, 2]]);
+    expect(graphDownload).toHaveBeenCalledTimes(1);
+  });
+
   it('turns a refusal for the whole folder into a note and copies nothing', async () => {
     openClientsRoot.mockRejectedValue(new SharepointRefused('Please reconnect Microsoft 365.'));
     expect(await pullSharepointFiles(lead, run, source)).toEqual({ copied: 0, skipped: [], note: 'Please reconnect Microsoft 365.' });

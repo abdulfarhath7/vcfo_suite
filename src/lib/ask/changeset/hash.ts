@@ -4,7 +4,9 @@ import type { JsonValue } from './types';
 function canonical(value: JsonValue | undefined): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
-    const keys = Object.keys(value).sort();
+    // A key whose value is undefined is left out, as JSONB leaves it out when the row is stored, so the
+    // hash of a draft in memory equals the hash of the same rows read back from Postgres.
+    const keys = Object.keys(value).filter((key) => value[key] !== undefined).sort();
     return `{${keys.map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
   }
   return JSON.stringify(value ?? null);

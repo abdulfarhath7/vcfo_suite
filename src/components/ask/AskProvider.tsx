@@ -291,6 +291,8 @@ export function AskProvider({ children }: { children: ReactNode }) {
       setThread((t) => [...t, { id: nextId(), kind: 'user', text: maskIdentityNumbers(text).slice(0, ECHO_MAX) }]);
       setBusy(true);
       setStatus(null);
+      // Runs this request reported as already ended; their answers must not start the progress bar.
+      const closedRuns = new Set<string>();
       try {
         await streamChat(
           {
@@ -306,7 +308,10 @@ export function AskProvider({ children }: { children: ReactNode }) {
           },
           (event) => {
             if (event.type === 'status' || event.type === 'progress') setStatus(event.label);
-            else if (event.type === 'run') return;
+            else if (event.type === 'run') {
+              if (!isRunActive({ status: event.status } as Parameters<typeof isRunActive>[0])) closedRuns.add(event.runId);
+              return;
+            }
             else if (event.type === 'answer') {
               setConversationId(event.conversationId);
               writeSession(key, event.conversationId);
@@ -317,6 +322,9 @@ export function AskProvider({ children }: { children: ReactNode }) {
                 ...t,
                 { id: nextId(), kind: 'assistant', messageId: event.messageId || null, answer: event.answer },
               ]);
+              // A background drop started by this message (a SharePoint fetch): show its progress bar.
+              const started = event.answer.runId;
+              if (shell !== 'client' && started && !event.answer.changesetId && !closedRuns.has(started)) setActiveRunId(started);
             } else {
               setThread((t) => [...t, { id: nextId(), kind: 'error', text: event.message }]);
             }

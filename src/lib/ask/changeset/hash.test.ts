@@ -15,4 +15,12 @@ describe('changesetHash', () => {
     expect(changesetHash([{ ...row, target: { stepId: 'pre-15', fieldId: 'pan' } }])).not.toBe(changesetHash([row]));
     expect(changesetHash([{ ...row, action: 'other' }])).not.toBe(changesetHash([row]));
   });
+
+  it('gives a draft and the same rows read back from JSONB one hash', () => {
+    // JSONB drops a key whose value is undefined; the card must still match at Save.
+    const draft = [{ action: 'vault.file', target: { attachmentId: 'a1', folder: undefined, nested: { x: 1, y: undefined } }, newValue: { name: 'f.pdf', note: undefined } }];
+    const stored = JSON.parse(JSON.stringify(draft));
+    expect(changesetHash(stored)).toBe(changesetHash(draft as never));
+    expect(changesetHash([{ ...row, target: { ...row.target, extra: null } }])).not.toBe(changesetHash([row]));
+  });
 });

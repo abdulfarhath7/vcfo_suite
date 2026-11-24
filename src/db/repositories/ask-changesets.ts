@@ -74,6 +74,11 @@ export async function createAskChangeset(
         heldReason: draft.heldReason,
       })),
     );
+    // The stored hash is taken over the rows as Postgres keeps them, as the approval reads them back.
+    // A draft in memory can differ from its JSONB copy, and the card could then never be saved.
+    const stored = await tx.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, row!.id)).orderBy(asc(askChangesetRows.ordinal));
+    const contentHash = changesetHash(stored.map((r) => ({ action: r.action, target: r.target as JsonValue, newValue: r.newValue as JsonValue })));
+    if (contentHash !== input.contentHash) await tx.update(askChangesets).set({ contentHash }).where(eq(askChangesets.id, row!.id));
     return row!.id;
   });
 }
