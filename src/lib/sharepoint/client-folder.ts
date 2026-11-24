@@ -5,7 +5,8 @@ import { getEngagementById, setSharepointFolder, type SharepointFolderLink } fro
 import { getGraphFileAccess } from '@/db/repositories/outlook-connections';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { sharepointConfig } from './config';
-import { GraphError, graphItem, graphItemByPath, graphListChildren, graphSiteDriveId } from './graph';
+import { GraphError, graphItem, graphItemByPath, graphListChildren, graphSiteDrives } from './graph';
+import { libraryCandidates } from './library';
 import { matchClientFolder, type FolderMatch } from './match';
 
 /**
@@ -64,10 +65,17 @@ export async function openClientsRoot(ctx: AuthContext): Promise<ClientsRoot> {
   const token = await getGraphFileAccess(ctx);
   if (token.ok === false) throw new SharepointRefused(token.code);
   try {
-    const driveId = await graphSiteDriveId(token.access, cfg.hostname, cfg.sitePath);
-    const root = await graphItemByPath(token.access, driveId, cfg.clientsPath);
-    if (!root.folder) throw new SharepointRefused('no_clients_folder');
-    return { access: token.access, driveId, rootId: root.id };
+    const site = await graphSiteDrives(token.access, cfg.hostname, cfg.sitePath);
+    for (const { driveId, path } of libraryCandidates(cfg.clientsPath, site)) {
+      try {
+        const root = await graphItemByPath(token.access, driveId, path);
+        if (root.folder) return { access: token.access, driveId, rootId: root.id };
+      } catch (error) {
+        // Not in this library; try the next reading of the path.
+        if (!(error instanceof GraphError && error.status === 404)) throw error;
+      }
+    }
+    throw new SharepointRefused('no_clients_folder');
   } catch (error) {
     throw graphRefusal(error, 'no_clients_folder');
   }

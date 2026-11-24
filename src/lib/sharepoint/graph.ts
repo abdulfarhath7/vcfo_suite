@@ -38,12 +38,24 @@ async function getJson<T>(access: string, url: string): Promise<T> {
 
 const encodePath = (path: string) => path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
 
-/** The site's default document library: the drive that holds the clients folder. */
-export async function graphSiteDriveId(access: string, hostname: string, sitePath: string): Promise<string> {
+export interface SiteDrive {
+  id: string;
+  /** The library's display name, for example "Documents" or "Steadfast". */
+  name: string;
+  /** The library's address; its last part is the URL name, for example "Shared Documents". */
+  webUrl?: string;
+}
+
+/** The site's document libraries and which one is the default. */
+export async function graphSiteDrives(access: string, hostname: string, sitePath: string): Promise<{ defaultId: string; drives: SiteDrive[] }> {
   const siteUrl = sitePath ? `${GRAPH}/sites/${hostname}:/${encodePath(sitePath)}` : `${GRAPH}/sites/${hostname}`;
   const site = await getJson<{ id: string }>(access, `${siteUrl}?$select=id`);
-  const drive = await getJson<{ id: string }>(access, `${GRAPH}/sites/${encodeURIComponent(site.id)}/drive?$select=id`);
-  return drive.id;
+  const base = `${GRAPH}/sites/${encodeURIComponent(site.id)}`;
+  const [main, list] = await Promise.all([
+    getJson<{ id: string }>(access, `${base}/drive?$select=id`),
+    getJson<{ value: SiteDrive[] }>(access, `${base}/drives?$select=id,name,webUrl`),
+  ]);
+  return { defaultId: main.id, drives: list.value };
 }
 
 /** A folder or file by its path inside the drive. */

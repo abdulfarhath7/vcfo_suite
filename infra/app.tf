@@ -244,6 +244,8 @@ locals {
     ) : {},
     # Receivables v2: the DoubleTick WhatsApp ping (doubletick.tf). Not secret; the key is below.
     local.doubletick_env,
+    # SharePoint client folders (sharepoint.tf).
+    local.sharepoint_env,
   )
 }
 
