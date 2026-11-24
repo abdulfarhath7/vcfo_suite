@@ -19,6 +19,12 @@ person accepts. Built 24 Nov 2026 on `feat/sharepoint`.
   registration first, then set the site URL, or the reconnect fails at Microsoft's consent page.
 - `SHAREPOINT_SITE_URL` and `SHAREPOINT_CLIENTS_PATH` (default `/Clients`) say where the folders are
   (`src/lib/sharepoint/config.ts`). With no site URL, SharePoint is hidden everywhere.
+- The path may start with a document library's name. SBC's folders sit at site
+  `https://steadfastconsultants.sharepoint.com/sites/steadfast_files`, library "SteadFast", folder
+  "Clients", so production sets `SHAREPOINT_CLIENTS_PATH=SteadFast/Clients`. `libraryCandidates`
+  (`src/lib/sharepoint/library.ts`) first tries a library named by the first segment (display name or
+  URL name) with the rest of the path, then the default library with the full path. Both values are
+  Terraform variables in `infra/sharepoint.tf`, set in `infra/terraform.tfvars`.
 
 ## How a fetch runs
 

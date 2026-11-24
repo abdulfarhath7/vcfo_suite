@@ -194,6 +194,13 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
   SharePoint stays hidden until the Azure app has `Files.Read.All` and `Sites.Read.All` and
   `SHAREPOINT_SITE_URL` is set on App Runner; until then the Outlook connect asks for the old four scopes.
   Gate: `src/jobs/receivables-fx-rates.test.ts` fails (not touched, as on 23 Nov).
+- **Turned on 24 Nov 2026 (evening):** the Azure app has all delegated permissions granted by the
+  admin (the two read scopes, and also `Files.ReadWrite.All`, `Sites.ReadWrite.All`, `Mail.Read`,
+  `Mail.ReadWrite`, `Mail.Read.Shared` for later work; no code uses those yet). Commit 8baa1acb finds
+  Clients inside a named library; image `vcfo-suite:8baa1acb` (= `:latest`) deployed, then Terraform
+  set `SHAREPOINT_SITE_URL=https://steadfastconsultants.sharepoint.com/sites/steadfast_files` and
+  `SHAREPOINT_CLIENTS_PATH=SteadFast/Clients`. Both deploys SUCCEEDED, `/login` answers 200. Each
+  person must reconnect Microsoft 365 once (Settings, Email). Not yet tried against the real site.
 
 ## Project head, questionnaire and obligations (24 Nov 2026, deployed)
 
