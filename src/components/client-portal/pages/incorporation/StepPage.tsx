@@ -73,9 +73,11 @@ import { portalFor } from './portals';
 import { FieldArea, PortalModal } from './modal';
 import { Col, Cols, Dot, DropZone, Empty, Island, ListRow, PageHead, Pager, SCard, markState, markTone, stepChip, useGo } from './spectrum';
 import { formLabel } from '@/lib/ui/form-label';
-import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { SidePanelFrame, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
 import { StepEmailsSent } from '@/components/email/StepEmailsSent';
 import { sinceHandOver, workHolder, workHolderLabel } from '@/lib/checklist/work-holder';
+import { useStepFieldStates } from '@/hooks/use-step-field-states';
+import { clientFieldAskChip } from '@/lib/steps/field-states';
 
 /* ---------------- answers ---------------- */
 
@@ -473,6 +475,9 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
     }
   };
 
+  // The fields SBC asked for or sent back on this step; each one carries a chip in the answers.
+  const fieldAsks = useStepFieldStates(d.engagementId, s?.id, Boolean(s)).data;
+
   if (!item) {
     return (
       <IncFrame pending={false} title="Step · Incorporation · VCFO Suite">
@@ -729,6 +734,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
           <KvRow
             key={`${r.label}-${i}`}
             r={released ? r : { label: r.label, value: '—' }}
+            ask={r.field ? clientFieldAskChip(fieldAsks?.find((a) => a.fieldId === r.field!.id)) : null}
             onFile={preview}
             edit={
               canEditRow(r)
@@ -863,7 +869,7 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
             }
           />
           {/* GL-05: the side panel (phase steps) can be pushed aside for more room. */}
-          <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
+          <Cols className={panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]'}>
             <Col>
               {/* BR-01, BR-02, BR-04: the draft, the signed copy and the client's edit on steps 2 and 3. */}
               {BOARD_RESOLUTION_STEPS.has(s.id) && d.engagementId ? <StepBoardResolution engagementId={d.engagementId} stepId={s.id} /> : null}
@@ -883,8 +889,9 @@ export default function StepPage({ stepParam }: { stepParam: string }) {
               {/* GL-07: who emailed this client about the step, when, to whom and the subject. */}
               {d.engagementId ? <StepEmailsSent engagementId={d.engagementId} itemId={s.id} title="Emails sent to you about this step" /> : null}
             </Col>
-            <SidePanelHandle open={panelOpen} onToggle={togglePanel} />
-            <Col className={panelOpen ? undefined : 'lg:hidden'}>{rail}</Col>
+            <SidePanelFrame open={panelOpen} onToggle={togglePanel}>
+              <Col>{rail}</Col>
+            </SidePanelFrame>
           </Cols>
           <Pager
             prev={prev ? { href: stepHrefOf(prev), label: `${prev.n} · ${prev.title}` } : { href: portalHref('incorporation'), label: 'All phases' }}
@@ -913,8 +920,24 @@ function stepTimelineLabel(s: PortalStep): string {
   return getChecklistStepTimelineLabel(s.item);
 }
 
-function KvRow({ r, onFile, edit }: { r: Row; onFile: (path: string) => void; edit?: { value: string; onChange: (v: string) => void } }) {
+function KvRow({
+  r,
+  onFile,
+  edit,
+  ask,
+}: {
+  r: Row;
+  onFile: (path: string) => void;
+  edit?: { value: string; onChange: (v: string) => void };
+  /** "Asked by SBC · 3d" or "Please correct" when SBC asked for this field. */
+  ask?: { label: string; tone: 'teal' | 'bad' } | null;
+}) {
   const no = r.value === '—';
+  const askChip = ask ? (
+    <Chip tone={ask.tone} className="ml-2 align-middle">
+      {ask.label}
+    </Chip>
+  ) : null;
   if (edit && r.field) {
     const f = r.field;
     const opts = f.type === 'select' || f.type === 'segmented' ? (f.options ?? []) : null;
@@ -922,6 +945,7 @@ function KvRow({ r, onFile, edit }: { r: Row; onFile: (path: string) => void; ed
       <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:items-center sm:gap-4 md:px-5">
         <dt className="min-w-0 text-[13px] text-ink-muted">
           {r.label}
+          {askChip}
           {r.note ? <small className="block text-[12px] text-ink-faint">{r.note}</small> : null}
         </dt>
         <dd className="m-0 min-w-0">
@@ -950,6 +974,7 @@ function KvRow({ r, onFile, edit }: { r: Row; onFile: (path: string) => void; ed
     <div className="grid gap-1 border-t border-line-soft px-4 py-2.5 first:border-t-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:gap-4 md:px-5">
       <dt className="min-w-0 text-[13px] text-ink-muted">
         {r.label}
+        {askChip}
         {r.note ? <small className="block text-[12px] text-ink-faint">{r.note}</small> : null}
       </dt>
       <dd className={cn('m-0 min-w-0 text-[13.5px] font-medium', no ? 'text-ink-faint' : r.value.startsWith('Provided') ? 'text-positive' : 'text-ink')}>

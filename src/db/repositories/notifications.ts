@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -191,6 +191,21 @@ export async function createNotificationsForUsers(
     )
     .returning();
   return inserted.map(toAppNotification);
+}
+
+/**
+ * System read: the notifications some users received since a time, newest first. For jobs that
+ * rate-limit their own sends (the field ask reminders read their last bell). Jobs only.
+ */
+export async function systemRecentNotificationsForUsers(userIds: string[], since: Date): Promise<AppNotification[]> {
+  if (userIds.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(notifications)
+    .where(and(inArray(notifications.userId, userIds), gte(notifications.createdAt, since)))
+    .orderBy(desc(notifications.createdAt))
+    .limit(200);
+  return rows.map(toAppNotification);
 }
 
 export async function markNotificationRead(

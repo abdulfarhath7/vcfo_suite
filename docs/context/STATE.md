@@ -195,6 +195,31 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
   `SHAREPOINT_SITE_URL` is set on App Runner; until then the Outlook connect asks for the old four scopes.
   Gate: `src/jobs/receivables-fx-rates.test.ts` fails (not touched, as on 23 Nov).
 
+## Project head, questionnaire and obligations (24 Nov 2026, deployed)
+
+- Every project page (admin, manager, super admin) has one actions button (`ProjectActionsMenu`,
+  `trigger="button"`) holding the list page's menu; the name line shows only manager and lead.
+- A new project is created from a finished questionnaire or from "Fill these later and create
+  project" in the Questionnaire tab, which also has "Clear questionnaire". Questions are worded
+  in the future tense.
+- Obligations: a company carries every statutory compliance for its legal form until the
+  questionnaire answers No (`src/lib/compliance/questionnaire-applicability.ts`). Before the
+  certificate the calendar is projected from the expected COI date; registration-led filings
+  start with the company until the registration has a date. The generator reconciles open
+  periods (untouched ones are removed, worked ones are marked not applicable by the system and
+  restored later). An on-demand Inngest function `compliance-regenerate`
+  (`compliance/engagement.changed`) runs after create, questionnaire save and expected COI
+  change. Reminders and WhatsApp nudges skip engagements that are not incorporated.
+- The lead can fill client-owned fields on Part A and Proposed directors
+  (`pre-inc-direct-flow.ts`). Managers and admins still read those 13 steps only (owner to decide).
+- "Ask client" now reaches the client: `fieldAskDelivery` (Inngest, 2-minute debounce per engagement and
+  step) sends one email listing the asked fields, adds a bell and the portal home card "Needs from
+  <company>"; `fieldAskReminders` (09:00 IST) reminds on days 3 and 7. A manual remind sends at most one
+  email per step per 24 hours. The client step page marks asked fields ("Asked by SBC") and sent-back
+  fields ("Please correct"). No WhatsApp yet. No migration.
+- The side progress panel's open and close button sits on the panel's edge (`SidePanelFrame` in
+  `src/components/ui/side-panel-toggle.tsx`), on lead, manager, admin and client step pages.
+
 ## Intentionally deferred / pilot limits
 
 - **Change or purge the seeded demo passwords on RDS before real users** (carried over from the removed `TASKS.md`)

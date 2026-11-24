@@ -5,6 +5,7 @@ import { engagementComplianceTriggers } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { getItem } from '@/data/checklist';
 import { QUESTIONNAIRE_SECTIONS } from '@/data/compliance-questionnaire';
+import { obligationRuledOut } from '@/lib/compliance/questionnaire-applicability';
 import { RULED_REGISTRATIONS, registrationRule, type RegistrationTrigger } from '@/data/registration-rules';
 import { COMPLIANCE_OBLIGATIONS, obligationApplies } from '@/lib/compliance/obligations-seed';
 import type { EntityLegalForm } from '@/lib/compliance/types';
@@ -122,17 +123,10 @@ export async function getComplianceStarts(ctx: AuthContext, engagementId?: strin
     byStep[stepId] = { applies, why: rule.why, rule: rule.rule, notNeeded: rule.notNeeded, answers: given, startsOn: dateOf(rule.trigger), starts };
   }
 
-  // The obligations to come: every one for the legal form, except those whose registration the
-  // questionnaire rules out, and the conditional foreign-investment ones without a Yes.
-  const ruledOut = new Set(
-    Object.entries(byStep)
-      .filter(([, a]) => a.applies === false)
-      .flatMap(([, a]) => a.starts.map((o) => o.id)),
-  );
-  const foreign = ['FI-01', 'FI-04'].some((q) => answers[q] === true);
+  // The obligations to come: every one for the legal form, except those the questionnaire rules
+  // out (`obligationRuledOut`, the rule the compliance calendar generator uses too).
   const upcoming = COMPLIANCE_OBLIGATIONS.filter((o) => applicable.has(o.id))
-    .filter((o) => !ruledOut.has(o.id) || startedBy.has(o.id))
-    .filter((o) => !o.isConditional || foreign)
+    .filter((o) => !obligationRuledOut(o.id, answers))
     .map((o) => toStarted(o.id, startedBy.get(o.id) ?? null))
     .filter((x): x is StartedObligation => Boolean(x));
 

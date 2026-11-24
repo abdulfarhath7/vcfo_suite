@@ -11,6 +11,8 @@ import { resolveEngagementRecipients } from '@/db/repositories/engagement-recipi
 import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
 import { listStaffContactsByIds } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
+import { requestComplianceRegenerate } from '@/lib/compliance/regenerate-event';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { createProjectBodySchema } from '@/lib/api/schemas';
 import { emptyEmailDispatch, pushEmailSubject } from '@/lib/email/email-dispatch';
 import { fetchEngagementProgressCcEmails } from '@/lib/email/fetch-engagement-progress-cc';
@@ -58,6 +60,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: message }, { status: 400 });
   }
+
+  // Every statutory compliance applies to a new company until its questionnaire says otherwise.
+  await requestComplianceRegenerate(engagementDbId(created.engagement.id));
 
   const engagementProgressCc = await fetchEngagementProgressCcEmails(
     auth.ctx,

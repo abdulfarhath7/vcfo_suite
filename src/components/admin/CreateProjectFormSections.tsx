@@ -88,8 +88,16 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
   };
 
   const SECTION_ORDER: FormFlowSection[] = ['entity', 'team', 'client', 'questionnaire'];
-  /** Questionnaire is optional — the submit gate is the three required tabs. */
   const requiredSectionsDone = entityDone && teamDone && clientDone;
+  /**
+   * A new project is created only from a finished questionnaire, or from the questionnaire's
+   * "Fill these later" button. Editing an existing project keeps the three required tabs as the gate.
+   */
+  const canCreate = requiredSectionsDone && (editMode || questionnaireDone);
+  /** In the questionnaire with the required tabs done, the deferral button is the only action. */
+  const deferInQuestionnaire =
+    !editMode && !questionnaireDone && requiredSectionsDone && activeSection === 'questionnaire';
+  const firstUnfinishedRequired = SECTION_ORDER.find((id) => id !== 'questionnaire' && !sectionComplete[id]);
   /** Next tab in order; from the last tab, jump back to the first unfinished one. */
   const goNext = () => {
     const idx = SECTION_ORDER.indexOf(activeSection);
@@ -234,6 +242,29 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
             {activeSection === 'questionnaire' ? (
               <div id="create-section-questionnaire">
                 <CreateProjectQuestionnaire answers={questionnaire} onChange={setQuestionnaire} />
+                {!editMode && !questionnaireDone ? (
+                  <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-line/60 pt-4">
+                    <span className="text-[12.5px] text-ink-muted">
+                      {requiredSectionsDone
+                        ? 'The project is created once every question is answered.'
+                        : 'Finish the earlier tabs first.'}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 px-4"
+                      disabled={submitting}
+                      onClick={() =>
+                        requiredSectionsDone
+                          ? void submit()
+                          : firstUnfinishedRequired && setActiveSection(firstUnfinishedRequired)
+                      }
+                    >
+                      {submitting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+                      Fill these later and create project
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -257,7 +288,7 @@ export function CreateProjectFormView(props: CreateProjectFormViewProps) {
                 Draft saved automatically
               </span>
             )}
-            {requiredSectionsDone ? (
+            {deferInQuestionnaire ? null : canCreate ? (
               <Button
                 type="button"
                 onClick={() => void submit()}

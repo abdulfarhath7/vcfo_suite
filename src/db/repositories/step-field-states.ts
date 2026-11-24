@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { stepFieldStates } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
@@ -9,6 +9,7 @@ import { postStaffMessage } from '@/db/repositories/client-messages';
 import { getItem } from '@/data/checklist';
 import { appEngagementId } from '@/lib/projects/legacy-engagement-ids';
 import type { StepFieldAction, StepFieldState, StepFieldStateWord } from '@/lib/steps/field-states';
+import { requestFieldAskDelivery } from '@/lib/steps/field-ask-event';
 
 export type { StepFieldAction, StepFieldState, StepFieldStateWord };
 
@@ -17,11 +18,15 @@ export type { StepFieldAction, StepFieldState, StepFieldStateWord };
  *
  * >>> ACCESS CONTROL (Path A) <<<
  *   developer — nothing; refused before the first query.
- *   client — reads the states of its own engagement (`assertEngagementAccess`); never writes.
+ *   client — reads the asked and sent-back states of its own engagement
+ *     (`assertEngagementAccess`), so the portal can mark what SBC asked for; never writes.
  *   intern / manager — read and write on engagements `assertEngagementAccess` allows.
  *   admin / super_admin — every engagement.
  * Writes target `access.dbId`, never the id the caller sent, and every change writes an audit
  * event. A reminder also posts one staff message on the client thread, keyed to the step.
+ *
+ * Ask, send back and remind also queue the client email and bell (`requestFieldAskDelivery`,
+ * job `src/jobs/field-ask-emails.ts`); the queue never blocks or fails the action.
  *
  * Actions: ask (state asked, asked_at now), remind (only an asked field; asked_at kept, so
  * "Asked · 3d" keeps counting), answered, approve (approved, reviewed_at now), send_back
@@ -76,7 +81,42 @@ export async function listStepFieldStates(
     ? and(eq(stepFieldStates.engagementId, a.dbId), eq(stepFieldStates.itemId, itemId))
     : eq(stepFieldStates.engagementId, a.dbId);
   const rows = await db.select().from(stepFieldStates).where(where);
-  return rows.map(toState);
+  // A client sees only what is waiting on it; the review states stay with the staff.
+  const visible = ctx.role === 'client' ? rows.filter((r) => r.state === 'asked' || r.state === 'sent_back') : rows;
+  return visible.map(toState);
+}
+
+/** The open asks of one step (asked or sent back), for the field ask job. No context: jobs only. */
+export async function systemOpenFieldAsks(
+  engagementDbId: string,
+  itemId: string,
+): Promise<Array<{ fieldId: string; state: StepFieldStateWord; askedAt: string | null }>> {
+  const rows = await db
+    .select({ fieldId: stepFieldStates.fieldId, state: stepFieldStates.state, askedAt: stepFieldStates.askedAt })
+    .from(stepFieldStates)
+    .where(
+      and(
+        eq(stepFieldStates.engagementId, engagementDbId),
+        eq(stepFieldStates.itemId, itemId),
+        inArray(stepFieldStates.state, ['asked', 'sent_back']),
+      ),
+    );
+  return rows.map((r) => ({ fieldId: r.fieldId, state: r.state as StepFieldStateWord, askedAt: r.askedAt?.toISOString() ?? null }));
+}
+
+/**
+ * Fields still asked whose `asked_at` falls between `from` and `to`, for the daily reminder
+ * job, which picks day 3 and day 7. No context: jobs only.
+ */
+export async function systemAskedFieldsBetween(
+  from: Date,
+  to: Date,
+): Promise<Array<{ engagementDbId: string; itemId: string; askedAt: string | null }>> {
+  const rows = await db
+    .select({ engagementDbId: stepFieldStates.engagementId, itemId: stepFieldStates.itemId, askedAt: stepFieldStates.askedAt })
+    .from(stepFieldStates)
+    .where(and(eq(stepFieldStates.state, 'asked'), gte(stepFieldStates.askedAt, from), lte(stepFieldStates.askedAt, to)));
+  return rows.map((r) => ({ engagementDbId: r.engagementDbId, itemId: r.itemId, askedAt: r.askedAt?.toISOString() ?? null }));
 }
 
 const NEXT: Record<Exclude<StepFieldAction, 'clear' | 'remind'>, StepFieldStateWord> = {
@@ -155,5 +195,8 @@ export async function applyStepFieldAction(
     summary: `${AUDIT[input.action]} on ${item.title}`,
     metadata: { itemId: item.id, fieldId },
   });
+  if (input.action === 'ask' || input.action === 'send_back' || input.action === 'remind') {
+    void requestFieldAskDelivery({ engagementDbId: a.dbId, itemId: item.id, kind: input.action === 'remind' ? 'remind' : 'ask' });
+  }
   return out;
 }

@@ -23,9 +23,10 @@ describe('DR-01 DIN verification', () => {
     expect(stampDinChecks({ [k('dinStatus')]: 'verified' }, { [k('dinStatus')]: 'verified' }, 'Divya', NOW)).toEqual({ [k('dinStatus')]: 'verified' });
   });
 
-  it('lets only the lead record the check, even while the client fills the step', () => {
+  it('lets only the lead record the check; the lead may fill the rest as well', () => {
     expect(canRoleEditField('intern', 'pre-15', k('dinStatus'))).toBe(true);
-    expect(canRoleEditField('intern', 'pre-15', k('firstName'))).toBe(false);
+    // The lead can fill the client's director fields too (owner decision 2026-11-24).
+    expect(canRoleEditField('intern', 'pre-15', k('firstName'))).toBe(true);
     expect(canRoleEditField('client', 'pre-15', k('dinStatus'))).toBe(false);
     expect(stripLeadOnlyResponses('pre-15', { [k('dinStatus')]: 'verified', [k('din')]: '01234567' })).toEqual({ [k('din')]: '01234567' });
   });

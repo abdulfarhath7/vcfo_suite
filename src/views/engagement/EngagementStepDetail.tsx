@@ -36,7 +36,7 @@ import { useState } from 'react';
 import { shortDate } from '@/components/timeline/timeline-model';
 import { docPackStepPath } from '@/lib/doc-pack/paths';
 import { useEngagementStepDetail } from '@/views/engagement/step-detail/use-engagement-step-detail';
-import { SidePanelHandle, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
+import { SidePanelFrame, useSidePanelOpen } from '@/components/ui/side-panel-toggle';
 import { FillOwnerBanner } from '@/components/incorporation/FillOwnerBanner';
 import { cn } from '@/lib/utils';
 import { RemindClientButton } from '@/components/reminders/RemindClientButton';
@@ -453,7 +453,7 @@ export default function EngagementStepDetail() {
             <div
               className={cn(
                 'grid gap-4 lg:items-start',
-                panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_auto_300px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]',
+                panelOpen ? 'lg:grid-cols-[minmax(0,1fr)_300px]' : 'lg:grid-cols-[minmax(0,1fr)_auto]',
               )}
             >
               <div className="min-w-0">
@@ -462,9 +462,10 @@ export default function EngagementStepDetail() {
                 {!isClientRoute ? <ClientFileRequestsPanel engagementId={eng.id} item={item} /> : null}
                 {!isClientRoute ? <StepEmailsSent engagementId={eng.id} itemId={item.id} /> : null}
               </div>
-              <SidePanelHandle open={panelOpen} onToggle={togglePanel} className="lg:sticky lg:top-[var(--shell-sticky-top)]" />
               {/* GL-05: the panel can be pushed aside; below lg it always stacks under the form. */}
-              <div className={cn('min-w-0', !panelOpen && 'lg:hidden')}>{internPhaseRail}</div>
+              <SidePanelFrame open={panelOpen} onToggle={togglePanel}>
+                {internPhaseRail}
+              </SidePanelFrame>
             </div>
           ) : (
             <>
@@ -478,24 +479,22 @@ export default function EngagementStepDetail() {
         <div
           className={cn(
             'grid gap-5 lg:items-start',
-            panelOpen ? 'lg:grid-cols-[minmax(14rem,16rem)_auto_minmax(0,1fr)]' : 'lg:grid-cols-[auto_minmax(0,1fr)]',
+            panelOpen ? 'lg:grid-cols-[minmax(14rem,16rem)_minmax(0,1fr)]' : 'lg:grid-cols-[auto_minmax(0,1fr)]',
           )}
         >
           {/* GL-05: the Manager and Admin step list can be pushed aside too; the form takes the width. */}
-          <aside
-            className={cn('hidden lg:sticky lg:top-[var(--shell-sticky-top)] lg:self-start', panelOpen && 'lg:block')}
-            data-step-progress-rail
-          >
-            <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
-              <ChecklistJourneyRail items={railItems} selectedId={item.id} onSelect={openStep} />
-            </Surface>
-          </aside>
-          <SidePanelHandle
+          <SidePanelFrame
             open={panelOpen}
             onToggle={togglePanel}
             side="left"
-            className="lg:sticky lg:top-[var(--shell-sticky-top)]"
-          />
+            className="hidden lg:sticky lg:top-[var(--shell-sticky-top)] lg:block lg:self-start"
+          >
+            <aside data-step-progress-rail>
+              <Surface className="max-h-[calc(100vh-var(--shell-sticky-top)-1.5rem)] overflow-y-auto p-3 sidebar-scroll">
+                <ChecklistJourneyRail items={railItems} selectedId={item.id} onSelect={openStep} />
+              </Surface>
+            </aside>
+          </SidePanelFrame>
 
           <div className="min-w-0">
             {checklistLoading && (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/context/AppContext';
 import { usePathname, useRouter } from 'next/navigation';
@@ -94,9 +94,15 @@ export function ProjectActionsMenu({
   engagement,
   className,
   onDeleted,
+  trigger = 'kebab',
+  extraItems,
 }: {
   engagement: Engagement;
   className?: string;
+  /** `kebab` for list rows; `button` is the outline icon button on a project's own page. */
+  trigger?: 'kebab' | 'button';
+  /** Page-specific entries (links, escalate) shown above the project actions. */
+  extraItems?: ReactNode;
   /** Called after a direct delete — detail pages navigate away. */
   onDeleted?: () => void;
 }) {
@@ -292,23 +298,41 @@ export function ProjectActionsMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={`Project settings for ${engagement.companyName}`}
-            onClick={(ev) => ev.stopPropagation()}
-            className={
-              className ??
-              'rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink data-[state=open]:bg-surface-sunken data-[state=open]:text-ink'
-            }
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
+          {trigger === 'button' ? (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={`Project actions for ${engagement.companyName}`}
+              className={className}
+            >
+              <MoreVertical aria-hidden />
+            </Button>
+          ) : (
+            <button
+              type="button"
+              aria-label={`Project settings for ${engagement.companyName}`}
+              onClick={(ev) => ev.stopPropagation()}
+              className={
+                className ??
+                'rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink data-[state=open]:bg-surface-sunken data-[state=open]:text-ink'
+              }
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52" onClick={(ev) => ev.stopPropagation()}>
           <DropdownMenuLabel className="max-w-48 truncate text-[11px] font-normal text-ink-muted">
             {engagement.companyName}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+
+          {extraItems ? (
+            <>
+              {extraItems}
+              <DropdownMenuSeparator />
+            </>
+          ) : null}
 
           {detailsAccess !== 'denied' ? (
             <>

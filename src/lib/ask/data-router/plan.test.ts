@@ -98,10 +98,10 @@ describe('planRows', () => {
     expect(draft.rows[0]!.heldReason).toMatch(/opens after/);
   });
 
-  it('holds a field this role cannot fill, naming who does', () => {
+  it("does not hold a lead's row on a client answer (owner decision 2026-11-24)", () => {
     const entry = catalogEntry('company.proposed_name_1')!;
     const { draft } = planRows(input([{ entry, value: { label: 'Proposed name 1', value: 'Acme', page: null, person: null, confidence: 1 }, source: { kind: 'paste' } }], openAt('pre-1')));
-    expect(draft.rows[0]!.heldReason).toMatch(/client fills/);
+    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'owner', ok: true }));
   });
 
   it('holds a direct-flow field from a manager, as the screen does', () => {
@@ -121,9 +121,9 @@ describe('planRows', () => {
     expect(draft.rows[1]!.displayNew).not.toContain('2345');
   });
 
-  it("DR-02: holds a lead's row on Proposed directors while the client fills it", () => {
+  it("does not hold a lead's row on Proposed directors while the client fills it", () => {
     const { draft } = planRows(input([place('director.din', '01234567')], openAt('pre-15')));
-    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'owner', ok: false, message: 'Held: The client fills this field.' }));
+    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'owner', ok: true }));
   });
 
   it('shows a wrong format as a question on the row, with the value masked', () => {

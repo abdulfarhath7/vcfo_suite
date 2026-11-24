@@ -42,20 +42,24 @@ const LEAD_ONLY_FIELD_IDS: Readonly<Record<string, readonly string[]>> = {
   'pre-1': ['nicCode', 'nicBusinessType', 'additionalNicCodes'],
 };
 
-/**
- * Steps whose answers belong to the client, except the lead-only fields and
- * the shared remarks (owner decision 2026-11-02 for Part A). The project lead
- * reads what the client entered and types only the NIC codes.
- */
 /** DR-02: the Proposed directors step (SPICe+ Part B). */
 export const PROPOSED_DIRECTORS_STEP_ID = 'pre-15';
-const CLIENT_OWNED_STEP_IDS: ReadonlySet<string> = new Set(['pre-1', PROPOSED_DIRECTORS_STEP_ID]);
+/**
+ * Steps whose answers only the client may write. Empty by owner decision
+ * (2026-11-24): "the lead should have the ability to fill any data, nothing
+ * should be restricted to that role". Part A (`pre-1`) and Proposed directors
+ * (`pre-15`) used to be listed here, which turned every client answer read-only
+ * for the lead. The lead, a manager and an admin can now write every field the
+ * client can; the client keeps its own rights (it still never writes a
+ * lead-only field). Put a step id back here only if the owner asks again.
+ */
+const CLIENT_OWNED_STEP_IDS: ReadonlySet<string> = new Set();
 const SHARED_FIELD_IDS: ReadonlySet<string> = new Set(['stepRemarks']);
 
 /**
- * DR-02: the Proposed directors step (SPICe+ Part B) belongs to the client like Part A: the lead
- * reads it. DR-04: a manager or admin can hand it to the lead ("Assign to Lead"); the client keeps
- * edit access, so both can fill it, until it is assigned back.
+ * DR-04: a manager or admin can hand the Proposed directors step to the lead ("Assign to Lead"),
+ * which tells the lead it is theirs to fill. Since 2026-11-24 both the client and the lead can fill
+ * it either way; the assignment only says who is expected to.
  */
 /** The steps a manager or admin may assign to the lead. */
 export const ASSIGNABLE_FILL_STEP_IDS: ReadonlySet<string> = new Set([PROPOSED_DIRECTORS_STEP_ID]);
@@ -113,8 +117,8 @@ function isFirmRole(role: string): boolean {
 /**
  * Who may write one field of one step.
  *
- * - Project lead: every field of every step, except the client's own answers
- *   on a client-owned step (Part A: the lead fills only the NIC codes).
+ * - Project lead: every field of every step (no step is client-owned since
+ *   2026-11-24, so `isClientOnlyField` is always false).
  * - Client: every field of a direct-flow step except the lead-only ones; never
  *   a field of any other step.
  * - Manager / admin: reads a direct-flow step (reopen is a separate action);

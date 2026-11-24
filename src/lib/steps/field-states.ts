@@ -52,3 +52,34 @@ export function fieldStatePresentation(
       return { chip: null, mark: 'next', tone: 'prog' };
   }
 }
+
+/**
+ * The chip a client sees next to a field SBC asked for: "Asked by SBC · 3d" (teal) for an asked
+ * field and "Please correct" (red) for a field sent back. Every other state shows nothing.
+ */
+export function clientFieldAskChip(
+  s: Pick<StepFieldState, 'state' | 'askedAt'> | null | undefined,
+  now: Date = new Date(),
+): { label: string; tone: 'teal' | 'bad' } | null {
+  if (!s) return null;
+  if (s.state === 'sent_back') return { label: 'Please correct', tone: 'bad' };
+  if (s.state !== 'asked') return null;
+  const d = daysSince(s.askedAt, now);
+  return { label: d === null ? 'Asked by SBC' : `Asked by SBC · ${d}d`, tone: 'teal' };
+}
+
+/** The steps with fields waiting on the client, counted per step, oldest ask first. */
+export function openAsksByStep(
+  states: Array<Pick<StepFieldState, 'itemId' | 'state' | 'askedAt'>>,
+): Array<{ itemId: string; asked: number; correct: number; oldestAskedAt: string | null }> {
+  const by = new Map<string, { itemId: string; asked: number; correct: number; oldestAskedAt: string | null }>();
+  for (const s of states) {
+    if (s.state !== 'asked' && s.state !== 'sent_back') continue;
+    const row = by.get(s.itemId) ?? { itemId: s.itemId, asked: 0, correct: 0, oldestAskedAt: null };
+    if (s.state === 'asked') row.asked += 1;
+    else row.correct += 1;
+    if (s.askedAt && (!row.oldestAskedAt || s.askedAt < row.oldestAskedAt)) row.oldestAskedAt = s.askedAt;
+    by.set(s.itemId, row);
+  }
+  return [...by.values()].sort((a, b) => (a.oldestAskedAt ?? '9999').localeCompare(b.oldestAskedAt ?? '9999'));
+}

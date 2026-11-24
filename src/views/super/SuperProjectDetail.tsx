@@ -3,8 +3,10 @@
 import { DownloadDocumentsButton } from '@/components/document-downloads/DownloadDocumentsDialog';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { ExternalLink, FileSignature, ListPlus, Mail, MoreVertical, Repeat, TriangleAlert } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useApp } from '@/context/AppContext';
+import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
+import { ExternalLink, FileSignature, ListPlus, MoreVertical, Repeat, TriangleAlert } from 'lucide-react';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
@@ -45,9 +47,9 @@ import { SUPER_PROJECTS_HREF } from '@/lib/super/super-overview';
  * SUPER ADMIN CLIENT RECORD (L2) — one engagement, end to end (prototype
  * `ClientRecordScreen`, C-0109).
  *
- * A plain head: the client tile, the name with the stage pill, the contact,
- * admin, manager and lead, with Reassign and Documents beside the name. The other
- * real actions keep one "More" menu: the read-only "inspect as" links into the role
+ * A plain head: the client tile, the name with the stage pill, the admin, manager
+ * and lead, with Documents beside the name. Every other action sits in one menu
+ * (`ProjectActionsMenu`, which adds the project changes after these): the read-only "inspect as" links into the role
  * shells, the board resolution editor (P-112), Assign task and Escalate (G-20).
  * Under it one white band with the step, days to COI, who holds the work and the
  * live step, then underline tabs (R-11): Incorporation opens on the Gantt timeline
@@ -69,6 +71,8 @@ export default function SuperProjectDetail() {
   // cached read, so opening a record from the list costs nothing extra.
   const firm = useSuperOverview();
   const [assignOpen, setAssignOpen] = useState(false);
+  const { engagements } = useApp();
+  const router = useRouter();
   const [taskOpen, setTaskOpen] = useState(false);
   const [escalateOpen, setEscalateOpen] = useState(false);
   // Days the current step has been open, and the expected certificate date, from the step events.
@@ -125,8 +129,6 @@ export default function SuperProjectDetail() {
   const owner = superOwnerOf(summary);
   const regSteps = detail.journey.filter((step) => step.phaseId === 'registration-phase-4');
   const adminName = staff.adminNameOf(summary.managerId);
-  // The first client login on the engagement is the contact the prototype mails.
-  const clientEmail = detail.team.find((member) => member.role === 'Client')?.email ?? null;
   const inc = !summary.incorporated;
   // Days to COI: before the certificate, the days left to the expected date; after it, the days it took.
   const coiOn = detail.timeline?.incorporationDate ?? null;
@@ -148,6 +150,44 @@ export default function SuperProjectDetail() {
   const daysHeld = practice?.currentStep[summary.id]?.days ?? summary.idleDays;
   const firmRows = firm.data?.engagements ?? [];
   const assignRows = firmRows.some((row) => row.id === summary.id) ? firmRows : [summary, ...firmRows];
+
+  // The project menu needs the full engagement; the firm list in context holds it.
+  const menuEngagement = engagements.find((e) => e.id === summary.id) ?? null;
+  const superItems = (
+    <>
+      <DropdownMenuItem onSelect={() => setAssignOpen(true)}>
+        <Repeat aria-hidden />
+        Reassign
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href={detail.enterAs.firm}>
+          <ExternalLink aria-hidden />
+          Firm view
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href={detail.enterAs.client}>
+          <ExternalLink aria-hidden />
+          Client portal
+        </Link>
+      </DropdownMenuItem>
+      {/* P-112: the super admin's board resolution editor for this client. */}
+      <DropdownMenuItem asChild>
+        <Link href={`${SUPER_PROJECTS_HREF}/${encodeURIComponent(summary.id)}/board-resolution`}>
+          <FileSignature aria-hidden />
+          Board resolution
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => setTaskOpen(true)}>
+        <ListPlus aria-hidden />
+        Assign task
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => setEscalateOpen(true)}>
+        <TriangleAlert aria-hidden />
+        Escalate
+      </DropdownMenuItem>
+    </>
+  );
 
   const tabs = [
     { key: 'steps', label: 'Incorporation', count: inc && cur ? `${cur}/${incTotal}` : `${incDone}/${preRegTotal}` },
@@ -194,21 +234,6 @@ export default function SuperProjectDetail() {
                 <AreaPill area={superStageWord(summary)} reg={summary.incorporated ? undefined : 'mca'} />
               </h1>
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ink-muted">
-                {summary.clientName ? (
-                  <>
-                    <span>{summary.clientName}</span>
-                    <span aria-hidden>·</span>
-                  </>
-                ) : null}
-                {clientEmail ? (
-                  <>
-                    <a href={`mailto:${clientEmail}`} className="inline-flex items-center gap-1 text-brand-text hover:underline">
-                      <Mail size={14} strokeWidth={1.6} aria-hidden />
-                      {clientEmail}
-                    </a>
-                    <span aria-hidden>·</span>
-                  </>
-                ) : null}
                 {adminName ? (
                   <>
                     <span>
@@ -227,49 +252,9 @@ export default function SuperProjectDetail() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={() => setAssignOpen(true)}>
-                <Repeat aria-hidden />
-                Reassign
-              </Button>
               <Button variant="outline" onClick={() => setTab('documents')}>
                 Documents {detail.documents.length}
               </Button>
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label="More actions">
-                    <MoreVertical aria-hidden />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[180px]">
-                  <DropdownMenuItem asChild>
-                    <Link href={detail.enterAs.firm}>
-                      <ExternalLink aria-hidden />
-                      Firm view
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href={detail.enterAs.client}>
-                      <ExternalLink aria-hidden />
-                      Client portal
-                    </Link>
-                  </DropdownMenuItem>
-                  {/* P-112: the super admin's board resolution editor for this client. */}
-                  <DropdownMenuItem asChild>
-                    <Link href={`${SUPER_PROJECTS_HREF}/${encodeURIComponent(summary.id)}/board-resolution`}>
-                      <FileSignature aria-hidden />
-                      Board resolution
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setTaskOpen(true)}>
-                    <ListPlus aria-hidden />
-                    Assign task
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setEscalateOpen(true)}>
-                    <TriangleAlert aria-hidden />
-                    Escalate
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <DownloadDocumentsButton engagementId={summary.id} />
               <RaiseEscalationButton
                 engagementId={summary.id}
@@ -278,6 +263,27 @@ export default function SuperProjectDetail() {
                 open={escalateOpen}
                 onOpenChange={setEscalateOpen}
               />
+              {/* One button for every action on this client: the inspect links and super-admin
+                  tools first, then the project changes every firm admin has. */}
+              {menuEngagement ? (
+                <ProjectActionsMenu
+                  engagement={menuEngagement}
+                  trigger="button"
+                  extraItems={superItems}
+                  onDeleted={() => router.push(SUPER_PROJECTS_HREF)}
+                />
+              ) : (
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" aria-label="More actions">
+                      <MoreVertical aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[180px]">
+                    {superItems}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 

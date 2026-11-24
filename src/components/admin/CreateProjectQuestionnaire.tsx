@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SegmentedPicker } from '@/components/admin/SegmentedPicker';
 import {
   QUESTIONNAIRE_SECTIONS,
+  questionnaireProgress,
   sectionProgress,
   setAnswer,
   visibleQuestions,
@@ -92,9 +94,41 @@ export function CreateProjectQuestionnaire({
   const [activeId, setActiveId] = useState(QUESTIONNAIRE_SECTIONS[0].id);
   const active = QUESTIONNAIRE_SECTIONS.find((s) => s.id === activeId) ?? QUESTIONNAIRE_SECTIONS[0];
   const questions = visibleQuestions(active, answers);
+  const answered = questionnaireProgress(answers).answered;
+  const [confirmClear, setConfirmClear] = useState(false);
 
   return (
     <div className="space-y-4">
+      {/* Clearing empties every answer, so the project falls back to all statutory compliances. */}
+      {answered > 0 ? (
+        <div className="flex flex-wrap items-center justify-end gap-2 text-[12.5px] text-ink-muted">
+          {confirmClear ? (
+            <>
+              <span>Clear all {answered} answers? Every statutory compliance applies again.</span>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmClear(false)}>
+                Keep
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-danger"
+                onClick={() => {
+                  onChange({});
+                  setConfirmClear(false);
+                }}
+              >
+                Clear answers
+              </Button>
+            </>
+          ) : (
+            <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmClear(true)}>
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              Clear questionnaire
+            </Button>
+          )}
+        </div>
+      ) : null}
       <div
         role="tablist"
         aria-label="Questionnaire sections"

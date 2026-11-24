@@ -10,8 +10,8 @@ import { isAdminOrManager } from '@/lib/auth';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
 
 /**
- * DR-02, DR-04: on the Proposed directors step, staff read who must fill it. By default "The
- * Client must fill this section" and the lead reads it; a manager or admin can press "Assign to
+ * DR-02, DR-04: on the Proposed directors step, staff read who is expected to fill it. By default
+ * the client is, and the project lead can fill it too (owner decision 2026-11-24); a manager or admin can press "Assign to
  * Lead" (the banner then reads "The Lead must fill this section") and "Assign to Client" to set it
  * back. Leads and clients never see the buttons; the server checks the role too.
  */
@@ -45,7 +45,7 @@ export function FillOwnerBanner({ engagement, itemId }: { engagement: Pick<Engag
     <div role="note" className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border-1.5 border-info-line bg-info-soft px-3 py-2 text-[13.5px] text-ink">
       <Info className="h-4 w-4 flex-none text-info" aria-hidden />
       <span className="min-w-0 flex-1">
-        {toLead ? 'The Lead must fill this section. The client can still add details.' : 'The Client must fill this section. The project lead reads it.'}
+        {toLead ? 'The Lead must fill this section. The client can still add details.' : 'The client fills this section. The project lead can fill it too.'}
       </span>
       {canAssign ? (
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void assign(toLead ? 'client' : 'lead')}>

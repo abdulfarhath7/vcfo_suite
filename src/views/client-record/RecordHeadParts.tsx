@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -11,24 +11,19 @@ import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
-import { isAdminOrManager, isFirmWideAdmin } from '@/lib/auth';
+import { isAdminOrManager } from '@/lib/auth';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
 import { isIncorporated } from '@/lib/compliance/incorporation-state';
 import { internOverviewNow, internOverviewPhases } from '@/lib/intern/intern-overview-progress';
 import { daysBetween } from '@/components/timeline/timeline-model';
-import { ReassignDialog } from '@/views/admin/work/ReassignDialog';
-import { AssignClientDialog } from '@/views/admin/clients/AssignClientDialog';
-import type { TeamTaskRow } from '@/components/staff/today/today-rows';
 import { useRecordDocuments } from '@/views/client-record/RecordDocuments';
 
 /**
  * Parts of the staff client record head (prototype `ClientRecordScreen` head), shared by the
  * lead's record and the manager and admin record.
  *
- *   - `RecordMetaLine`: contact name, email, "Manager <name>", "Project lead <name>" and the
- *     "Reassign" link. Managers and admins move the client to another lead (`ReassignDialog`,
- *     `/api/work/reassign`); firm-wide admins also move it to another manager
- *     (`AssignClientDialog`).
+ *   - `RecordMetaLine`: "Manager <name>" and "Project lead <name>" for managers and admins.
+ *     Changing either lives in the one actions button (`ProjectActionsMenu`).
  *   - `RecordNumbers`: "Step n of m", "n days to COI" before the certificate, "n d with <holder>"
  *     and the Now link with the step code and who holds the step.
  *   - `RecordDocumentsButton`: the outline "Documents n" button that opens the Documents tab.
@@ -50,108 +45,29 @@ function useManagers(enabled: boolean) {
 }
 
 export function RecordMetaLine({ engagement }: { engagement: Engagement }) {
-  const { user, teamMembers, engagements, tasks } = useApp();
-  const role = user?.role;
-  const staffLead = isAdminOrManager(role);
-  const firmAdmin = isFirmWideAdmin(role);
+  const { user, teamMembers } = useApp();
+  const staffLead = isAdminOrManager(user?.role);
   const managers = useManagers(staffLead);
-  const [reassign, setReassign] = useState<TeamTaskRow | null>(null);
-  const [assignOpen, setAssignOpen] = useState(false);
+  // A lead's own record names only the client (prototype: `portal !== "lead"`), so it has no line.
+  if (!staffLead) return null;
 
-  const email = engagement.clientEmail?.trim();
-  const contact = engagement.clientDisplayName?.trim();
-  const lead =
-    teamMembers.find((m) => m.id === engagement.internId) ??
-    (user && user.id === engagement.internId ? { id: user.id, name: user.name } : undefined);
-  const managerId = engagement.managerId ?? null;
-  const manager = managerId ? managers.data?.find((m) => m.id === managerId) : undefined;
-  const leads = useMemo(() => teamMembers.map((m) => ({ id: m.id, name: m.name })), [teamMembers]);
-
-  const openReassign = () => {
-    if (firmAdmin && !engagement.internId) {
-      setAssignOpen(true);
-      return;
-    }
-    if (!engagement.internId) return;
-    setReassign({
-      id: engagement.id,
-      engagementId: engagement.id,
-      companyName: engagement.companyName,
-      title: engagement.companyName,
-      leadId: engagement.internId,
-      leadName: lead?.name ?? 'Project lead',
-      area: '',
-      status: 'In progress',
-      withClient: false,
-      href: '',
-    });
-  };
-
-  const parts: ReactNode[] = [];
-  if (contact) parts.push(<span key="contact">{contact}</span>);
-  if (email) {
-    parts.push(
-      <a key="email" href={`mailto:${email}`} className="min-w-0 truncate hover:text-ink hover:underline" title={`Email ${engagement.companyName}`}>
-        {email}
-      </a>,
-    );
-  }
-  if (manager) {
-    parts.push(
-      <span key="manager">
-        Manager <b className="font-medium text-ink">{manager.name}</b>
-      </span>,
-    );
-  }
-  // A lead's own record names only the client (prototype: `portal !== "lead"`).
-  if (staffLead) {
-    parts.push(
-      <span key="lead">
-        Project lead <b className="font-medium text-ink">{lead?.name ?? 'Unassigned'}</b>
-      </span>,
-    );
-  }
+  const lead = teamMembers.find((m) => m.id === engagement.internId);
+  const manager = engagement.managerId ? managers.data?.find((m) => m.id === engagement.managerId) : undefined;
 
   return (
-    <>
-      <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13.5px] text-ink-muted">
-        {parts.map((p, i) => (
-          <span key={i} className="flex min-w-0 items-center gap-x-2">
-            {i > 0 ? <span aria-hidden>·</span> : null}
-            {p}
+    <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13.5px] text-ink-muted">
+      {manager ? (
+        <>
+          <span>
+            Manager <b className="font-medium text-ink">{manager.name}</b>
           </span>
-        ))}
-        {staffLead && (engagement.internId || firmAdmin) ? (
-          <>
-            <span aria-hidden>·</span>
-            <button type="button" onClick={openReassign} className="font-medium text-brand-text hover:underline">
-              Reassign
-            </button>
-          </>
-        ) : null}
-        {firmAdmin && engagement.internId ? (
-          <>
-            <span aria-hidden>·</span>
-            <button type="button" onClick={() => setAssignOpen(true)} className="font-medium text-brand-text hover:underline">
-              Change manager
-            </button>
-          </>
-        ) : null}
-      </p>
-      {staffLead ? (
-        <ReassignDialog row={reassign} onOpenChange={(open) => (!open ? setReassign(null) : undefined)} leads={leads} />
+          <span aria-hidden>·</span>
+        </>
       ) : null}
-      {firmAdmin ? (
-        <AssignClientDialog
-          open={assignOpen}
-          onOpenChange={setAssignOpen}
-          engagements={engagements}
-          tasks={tasks}
-          managers={managers.data ?? []}
-          clientId={engagement.id}
-        />
-      ) : null}
-    </>
+      <span>
+        Project lead <b className="font-medium text-ink">{lead?.name ?? 'Unassigned'}</b>
+      </span>
+    </p>
   );
 }
 

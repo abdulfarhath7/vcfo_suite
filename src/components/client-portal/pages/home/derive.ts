@@ -11,6 +11,7 @@ import { isClientFillAwaitingClient } from '@/lib/checklist/checklist-client-fil
 import { complianceGroupForAuthority, type ClientOverview, type ComplianceGroup } from '@/lib/client/client-overview';
 import { DUE_SOON_DAYS } from '@/lib/compliance/filings';
 import type { PortalIncorporationModel, PortalStep } from '@/lib/client-portal/step-model';
+import type { openAsksByStep } from '@/lib/steps/field-states';
 import type { ClientHome, HomeFiling, NeedKind, TimelinePhaseDates } from '@/lib/client/client-home';
 import type { DrillConfig, DrillRow, DrillStepMeta } from '@/components/client-portal/PortalProvider';
 import { phaseHref, portalHref, stepHref } from '@/components/client-portal/routes';
@@ -155,7 +156,12 @@ function needArea(step: PortalStep | undefined, filing: HomeFiling | undefined):
   return '';
 }
 
-export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | undefined, filingsById: Map<string, HomeFiling>): NeedRow[] {
+export function buildNeeds(
+  model: PortalIncorporationModel,
+  home: ClientHome | undefined,
+  filingsById: Map<string, HomeFiling>,
+  asks: ReturnType<typeof openAsksByStep> = [],
+): NeedRow[] {
   const out: NeedRow[] = [];
   for (const r of home?.needs ?? []) {
     const step = r.stepId ? model.byId[r.stepId] : undefined;
@@ -195,6 +201,32 @@ export function buildNeeds(model: PortalIncorporationModel, home: ClientHome | u
       kind = 'fill';
     }
     out.push({ key: `step:${s.id}`, title, sub: s.title, kind, due: s.due, stepId: s.id, stepN: s.n, href: stepHref(s.id), area: needArea(s, undefined), note: kind === 'correct' ? slice?.rejectionNote?.trim() || undefined : undefined });
+  }
+  // Fields SBC asked for on a step page (`step_field_states`): the step's row says how many, or
+  // a row of its own appears when the step is not otherwise waiting on the client.
+  for (const a of asks) {
+    const s = model.byId[a.itemId];
+    if (!s) continue;
+    const parts = [a.asked ? `${a.asked} asked by SBC` : '', a.correct ? `${a.correct} to correct` : ''].filter(Boolean);
+    const sub = [s.title, ...parts].join(' · ');
+    const existing = out.find((n) => n.key === `step:${s.id}`);
+    if (existing) {
+      existing.sub = sub;
+      if (a.correct) existing.kind = 'correct';
+      continue;
+    }
+    out.push({
+      key: `ask:${s.id}`,
+      title: a.correct ? `Correct ${s.title}` : `Fill in ${s.title}`,
+      sub,
+      kind: a.correct ? 'correct' : 'fill',
+      due: s.due,
+      stepId: s.id,
+      stepN: s.n,
+      href: stepHref(s.id),
+      createdAt: a.oldestAskedAt ?? undefined,
+      area: needArea(s, undefined),
+    });
   }
   return out;
 }

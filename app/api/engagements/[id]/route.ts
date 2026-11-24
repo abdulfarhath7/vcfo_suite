@@ -35,6 +35,7 @@ import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isFirmWideAdmin } from '@/lib/auth';
 import { emptyEmailDispatch } from '@/lib/email/email-dispatch';
 import { publicErrorMessage } from '@/lib/api-error';
+import { requestComplianceRegenerate } from '@/lib/compliance/regenerate-event';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -156,6 +157,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const row = await updateEngagement(guard.ctx, engagementDbId(id), patch);
+    // The questionnaire decides which statutory obligations apply; an empty one means all of them.
+    if (body.data.complianceQuestionnaire !== undefined) await requestComplianceRegenerate(row.id);
     const engagement = toAppEngagement(row);
     const email = emptyEmailDispatch();
 

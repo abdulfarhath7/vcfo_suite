@@ -11,6 +11,7 @@ import type { Engagement } from '@/data/engagements';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { extractTriggersFromChecklist } from '@/lib/compliance/extract-triggers';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
+import { questionnaireExclusion } from '@/lib/compliance/questionnaire-applicability';
 import type { EntityLegalForm } from '@/lib/compliance/types';
 import { withCalendarChanges, type CalendarChange } from '@/lib/watch/calendar-proposal';
 
@@ -23,8 +24,9 @@ export function computeAllFilings(
 
   for (const engagement of engagements) {
     const state = checklistStates[engagement.id] ?? {};
+    // Before the certificate the calendar is projected from the expected COI date, as the job does.
     const triggers = extractTriggersFromChecklist(state, {
-      incorporationDate: engagement.incorporationDate ?? null,
+      incorporationDate: engagement.incorporationDate ?? engagement.expectedCoiOn ?? null,
     });
 
     const instances = withCalendarChanges(
@@ -33,6 +35,8 @@ export function computeAllFilings(
         entityLegalForm: (engagement.entityLegalForm ?? 'company') as EntityLegalForm,
         triggers,
         ownerId: engagement.internId,
+        assumeRegistered: true,
+        exclude: questionnaireExclusion(engagement.complianceQuestionnaire),
       }),
       calendarChanges,
     );

@@ -11,6 +11,8 @@ import { usePortal } from '@/components/client-portal/PortalProvider';
 import { usePortalIncorporation, todayIST } from '@/components/client-portal/hooks';
 import { useClientOverview } from '@/hooks/use-client-overview';
 import type { ClientHome } from '@/lib/client/client-home';
+import { useStepFieldStates } from '@/hooks/use-step-field-states';
+import { openAsksByStep } from '@/lib/steps/field-states';
 import {
   buildAlerts,
   buildDocs,
@@ -45,6 +47,8 @@ export function useHome() {
   const { model, engagement, loading: modelLoading } = usePortalIncorporation();
   const ov = useClientOverview();
   const homeQ = useHomeQuery(shell?.engagementId);
+  // Fields SBC asked for on step pages join "Needs from <company>" (the client's to-do list).
+  const asksQ = useStepFieldStates(shell?.engagementId);
   const overview = ov.data?.overview ?? undefined;
   const home = homeQ.data ?? undefined;
   const today = todayIST();
@@ -54,7 +58,7 @@ export function useHome() {
   const derived = useMemo(() => {
     const filings = home?.filings.rows ?? [];
     const filingsById = new Map(filings.map((f) => [f.id, f]));
-    const needs = buildNeeds(model, home, filingsById);
+    const needs = buildNeeds(model, home, filingsById, openAsksByStep(asksQ.data ?? []));
     const alerts = buildAlerts(after, today, model, needs, filings, company);
     const timeline = buildTimeline(model, overview?.engagement.incorporationDate);
     const regs = buildRegistrations(model);
@@ -63,7 +67,7 @@ export function useHome() {
     const buckets = { filed: 0, dueSoon: 0, overdue: 0, upcoming: 0 };
     for (const f of filings) buckets[bucketOf(f, today)] += 1;
     return { filings, needs, alerts, timeline, regs, post, docs, buckets };
-  }, [model, home, overview, after, today, company]);
+  }, [model, home, overview, after, today, company, asksQ.data]);
 
   const lead = overview?.team.find((t) => t.role === 'Project Lead')?.name ?? shell?.team.find((t) => t.role === 'Project Lead')?.name;
   const manager = overview?.team.find((t) => t.role === 'Project Manager')?.name ?? shell?.team.find((t) => t.role === 'Project Manager')?.name;

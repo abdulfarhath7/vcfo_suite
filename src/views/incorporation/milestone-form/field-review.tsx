@@ -1,12 +1,13 @@
 'use client';
 
 import { isLeadOnlyField } from '@/lib/incorporation/pre-inc-direct-flow';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
 import { StepMark } from '@/components/ui/step-track';
 import { useApp } from '@/context/AppContext';
-import { fieldStatePresentation, type StepFieldAction, type StepFieldState } from '@/lib/steps/field-states';
+import { clientFieldAskChip, fieldStatePresentation, type StepFieldAction, type StepFieldState } from '@/lib/steps/field-states';
+import { stepFieldStatesKey, useStepFieldStates } from '@/hooks/use-step-field-states';
 import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 
 /**
@@ -18,40 +19,23 @@ import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
  * one message on the client thread), "Accept" and "Reject" on a field under review, "Ask again" on
  * a field sent back. The data is `step_field_states` through
  * `/api/engagements/:id/field-states`, which scopes by role; one query per step feeds every
- * field. Staff only: a client session renders nothing.
+ * field. A client session sees no actions and no mark; a field SBC asked for shows the chip
+ * "Asked by SBC · 3d", and a field sent back shows "Please correct" (`clientFieldAskChip`).
  */
 
 const CHIP_TONE: Record<StepFieldState['state'], ChipTone> = { asked: 'teal', answered: 'warn', approved: 'ok', sent_back: 'bad' };
 
 const STAFF = new Set(['super_admin', 'admin', 'manager', 'intern']);
 
-function key(engagementId: string, itemId: string) {
-  return ['step-field-states', engagementId, itemId] as const;
-}
-
-function useStepFieldStates(engagementId: string | undefined, itemId: string, enabled = true) {
-  return useQuery({
-    queryKey: key(engagementId ?? '', itemId),
-    enabled: Boolean(engagementId) && enabled,
-    queryFn: async (): Promise<StepFieldState[]> => {
-      const res = await fetch(`/api/engagements/${encodeURIComponent(engagementId!)}/field-states?itemId=${encodeURIComponent(itemId)}`);
-      const out = (await res.json().catch(() => ({}))) as { ok?: boolean; states?: StepFieldState[] };
-      if (!res.ok || !out.ok) throw new Error('Could not load the field states');
-      return out.states ?? [];
-    },
-    staleTime: 30_000,
-  });
-}
-
-function useIsStaff(): boolean {
+function useViewer(): { staff: boolean; client: boolean } {
   const { user } = useApp();
-  return Boolean(user?.role && STAFF.has(user.role));
+  return { staff: Boolean(user?.role && STAFF.has(user.role)), client: user?.role === 'client' };
 }
 
 function useFieldState(engagementId: string | undefined, itemId: string, fieldId: string) {
-  const staff = useIsStaff();
-  const q = useStepFieldStates(engagementId, itemId, staff);
-  return { staff, loaded: q.isSuccess, state: q.data?.find((s) => s.fieldId === fieldId) ?? null };
+  const { staff, client } = useViewer();
+  const q = useStepFieldStates(engagementId, itemId, staff || client);
+  return { staff, client, loaded: q.isSuccess, state: q.data?.find((s) => s.fieldId === fieldId) ?? null };
 }
 
 /** The 20px ST5 mark before a field's label. */
@@ -75,7 +59,7 @@ export function FieldReviewControls({
   label: string;
 }) {
   const queryClient = useQueryClient();
-  const { staff, loaded, state } = useFieldState(engagementId, itemId, fieldId);
+  const { staff, client, loaded, state } = useFieldState(engagementId, itemId, fieldId);
   const run = useMutation({
     mutationFn: async (action: StepFieldAction) => {
       const res = await fetch(`/api/engagements/${encodeURIComponent(engagementId!)}/field-states`, {
@@ -88,11 +72,19 @@ export function FieldReviewControls({
       return action;
     },
     onSuccess: (action) => {
-      void queryClient.invalidateQueries({ queryKey: key(engagementId!, itemId) });
+      void queryClient.invalidateQueries({ queryKey: stepFieldStatesKey(engagementId!, itemId) });
       if (action === 'remind') toastSuccess('Reminder sent', label);
     },
     onError: (err) => toastError('Could not update the field', errorMessage(err)),
   });
+  if (client && engagementId && loaded) {
+    const ask = clientFieldAskChip(state);
+    return ask ? (
+      <Chip tone={ask.tone} className="flex-none">
+        {ask.label}
+      </Chip>
+    ) : null;
+  }
   if (!staff || !engagementId || !loaded) return null;
   // The project lead's own fields (Part A NIC codes) are never asked of the client.
   if (isLeadOnlyField(itemId, fieldId)) return null;

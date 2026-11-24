@@ -24,12 +24,13 @@ import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
 import { RecordDocumentsButton,
   RecordMetaLine, RecordNumbers, RecordStageChip, recordOverviewCount } from '@/views/client-record/RecordHeadParts';
 import { RecordTimelineCard } from '@/components/timeline';
+import { ProjectActionsMenu } from '@/components/admin/ProjectActionsMenu';
 
 /**
  * STAFF CLIENT RECORD (admin + manager; prototype `ClientRecordScreen`).
  *
- * The head shows the client tile in its identity colour, the name and stage, the contact,
- * manager and project lead with "Reassign", and the numbers line (step, days to COI, days with
+ * The head shows the client tile in its identity colour, the name and stage, the manager and
+ * project lead, one actions button (`ProjectActionsMenu`), and the numbers line (step, days to COI, days with
  * the holder, the Now link). The Incorporation tab holds the Timeline card (the shared Gantt,
  * with "Edit the timeline" for the roles that set dates) and the Steps card with the ST5 phase
  * track and the step list. Gates run with the `client` viewer, so nothing on the step list is
@@ -116,6 +117,12 @@ export default function ProjectDetail() {
             <RaiseEscalationButton engagementId={eng.id} companyName={eng.companyName} size="sm" />
             <RecordDocumentsButton engagement={eng} onOpen={() => setRecordTab('documents')} />
             <DownloadDocumentsButton engagementId={eng.id} />
+            {/* One button for every project change: details, manager, leads, client, delete. */}
+            <ProjectActionsMenu
+              engagement={eng}
+              trigger="button"
+              onDeleted={() => router.push(`${staffBase}/projects`)}
+            />
           </div>
         </div>
         <RecordStats>

@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, gte, inArray, isNull, lte, ne, notInArray, or, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, isNull, lte, ne, notInArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   complianceInstanceWorkflow,
@@ -276,6 +276,8 @@ export async function systemPlanComplianceReminders(today: string): Promise<Plan
     .where(
       and(
         isNull(engagements.deletedAt),
+        // Before the certificate the periods are projected from the expected COI date: no reminders.
+        isNotNull(engagements.incorporationDate),
         isNull(complianceInstances.filedOn),
         or(isNull(complianceInstances.status), ne(complianceInstances.status, 'filed')),
         gte(complianceInstances.dueDate, from),
@@ -285,7 +287,7 @@ export async function systemPlanComplianceReminders(today: string): Promise<Plan
   const instOverrides = await loadOverridesFor('statutory', insts.map((r) => r.inst.id));
   for (const r of insts) {
     const stage = statutoryStage(r.inst, r.workflow);
-    if (stage === 'completed') continue;
+    if (stage === 'completed' || stage === 'not-applicable') continue;
     const activity = r.activityId ? (activities.get(r.activityId) ?? null) : null;
     const blocked = reminderBlockers({
       engagementId: r.inst.engagementId,

@@ -26,11 +26,33 @@ const PAST_HORIZON_MONTHS = 12;
 function triggerDate(
   obligation: ComplianceObligation,
   triggers: EngagementComplianceTriggers,
+  assumeRegistered = false,
 ): string | null {
+  const own = registrationDate(obligation, triggers);
+  if (own !== undefined) {
+    // Until a registration has its date, `assumeRegistered` starts its filings with the company.
+    return own ?? (assumeRegistered ? triggers.incorporationDate ?? null : null);
+  }
   switch (obligation.triggerType) {
     case 'fy_end':
     case 'incorporation':
       return triggers.incorporationDate ?? null;
+    case 'fixed_annual':
+      return triggers.incorporationDate ?? '2000-01-01';
+    case 'event':
+    case 'manual':
+      return null;
+    default:
+      return null;
+  }
+}
+
+/** The registration date an obligation starts from; undefined when it is not registration-led. */
+function registrationDate(
+  obligation: ComplianceObligation,
+  triggers: EngagementComplianceTriggers,
+): string | null | undefined {
+  switch (obligation.triggerType) {
     case 'gst_registration':
       return triggers.gstRegistrationDate ?? null;
     case 'tds_liability':
@@ -41,13 +63,8 @@ function triggerDate(
       return triggers.esiRegistrationDate ?? null;
     case 'pt_registration':
       return triggers.ptRegistrationDate ?? null;
-    case 'fixed_annual':
-      return triggers.incorporationDate ?? '2000-01-01';
-    case 'event':
-    case 'manual':
-      return null;
     default:
-      return null;
+      return undefined;
   }
 }
 
@@ -202,6 +219,13 @@ export interface GenerateInstancesInput {
   ownerId: string;
   asOfDate?: Date;
   horizonMonths?: number;
+  /**
+   * Start registration-led filings (GST, TDS, PF, ESI, PT) from the incorporation date while the
+   * registration has no date yet, so a new company carries every statutory compliance.
+   */
+  assumeRegistered?: boolean;
+  /** Obligations to leave out, such as the ones the compliance questionnaire rules out. */
+  exclude?: (obligationId: string) => boolean;
 }
 
 export function generateComplianceInstances(input: GenerateInstancesInput): ComplianceInstance[] {
@@ -230,8 +254,9 @@ export function generateComplianceInstances(input: GenerateInstancesInput): Comp
   for (const obligation of COMPLIANCE_OBLIGATIONS) {
     if (!obligationApplies(obligation, input.entityLegalForm)) continue;
     if (obligation.triggerType === 'manual' || obligation.triggerType === 'event') continue;
+    if (input.exclude?.(obligation.id)) continue;
 
-    const anchor = triggerDate(obligation, input.triggers);
+    const anchor = triggerDate(obligation, input.triggers, input.assumeRegistered);
     if (!anchor && obligation.triggerType !== 'fixed_annual') continue;
 
     const { dueRule } = obligation;

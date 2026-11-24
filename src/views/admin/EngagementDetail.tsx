@@ -434,18 +434,6 @@ export default function EngagementDetail() {
                   <StageChip stage={eng.stage} />
                 </div>
                 <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13.5px] text-ink-muted">
-                  {eng.clientEmail?.trim() ? (
-                    <>
-                      <a
-                        href={`mailto:${eng.clientEmail.trim()}`}
-                        className="min-w-0 truncate hover:text-ink hover:underline"
-                        title={`Email ${eng.companyName}`}
-                      >
-                        {eng.clientEmail.trim()}
-                      </a>
-                      <span aria-hidden>·</span>
-                    </>
-                  ) : null}
                   <span>
                     Delivery owner <b className="font-medium text-ink">{intern?.name ?? 'Unassigned'}</b>
                   </span>

@@ -3,6 +3,8 @@ import 'server-only';
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
+  complianceInstanceDetails,
+  complianceInstanceProofs,
   complianceInstanceWorkflow,
   complianceInstances,
   complianceObligations,
@@ -19,6 +21,7 @@ import { generateComplianceInstances } from '@/lib/compliance/generate-instances
 import { extractTriggersFromChecklist } from '@/lib/compliance/extract-triggers';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { COMPLIANCE_OBLIGATIONS } from '@/lib/compliance/obligations-seed';
+import { questionnaireExclusion } from '@/lib/compliance/questionnaire-applicability';
 import { OBLIGATION_ACTIVITY } from '@/data/compliance-activities';
 import {
   periodKey,
@@ -197,6 +200,8 @@ export interface SystemGenerateResult {
   engagements: number;
   generated: number;
   upserted: number;
+  /** Open periods removed, marked not applicable, or restored by `reconcileEngagementInstances`. */
+  reconciled: number;
   digest: Array<{
     engagementId: string;
     companyName: string;
@@ -212,6 +217,8 @@ export interface SystemGenerateResult {
  */
 export async function systemGenerateComplianceInstances(
   asOfDate: Date = new Date(),
+  /** One engagement only (database id), for the on-demand run after a project changes. */
+  only?: { engagementDbId: string },
 ): Promise<SystemGenerateResult> {
   await ensureObligationsSeeded();
 
@@ -231,17 +238,17 @@ export async function systemGenerateComplianceInstances(
       )
   ).map((r) => ({ trigger: r.trigger, engagement: r.engagement }));
 
-  // Also cover engagements that only have incorporation_date on the row and
-  // no triggers table entry yet.
+  // Also cover engagements with no triggers table entry yet: incorporated ones, and ones still
+  // incorporating whose expected COI date is set (their calendar is projected from that date).
   const withTriggers = new Set(rows.map((r) => r.engagement.id));
   const bare = await db.select().from(engagements);
   for (const eng of bare) {
     if (withTriggers.has(eng.id)) continue;
-    if (!eng.incorporationDate) continue;
+    if (!eng.incorporationDate && !eng.expectedCoiOn) continue;
     rows.push({
       trigger: {
         engagementId: eng.id,
-        incorporationDate: eng.incorporationDate,
+        incorporationDate: eng.incorporationDate ?? null,
         gstRegistrationDate: null,
         tanRegistrationDate: null,
         pfRegistrationDate: null,
@@ -262,8 +269,10 @@ export async function systemGenerateComplianceInstances(
   const existing = await existingPeriodKeys(changes);
   const digest: SystemGenerateResult['digest'] = [];
   const toUpsert: UpsertComplianceInstanceInput[] = [];
+  let reconciled = 0;
 
   for (const { trigger, engagement } of rows) {
+    if (only && engagement.id !== only.engagementDbId) continue;
     const ownerUuid = await resolveOwnerUuid(
       engagement.internId,
       engagement.adminId,
@@ -275,15 +284,29 @@ export async function systemGenerateComplianceInstances(
     if (!triggers.incorporationDate && engagement.incorporationDate) {
       triggers.incorporationDate = engagement.incorporationDate;
     }
+    // Before the certificate, the expected COI date stands in for the incorporation date.
+    if (!triggers.incorporationDate && engagement.expectedCoiOn) {
+      triggers.incorporationDate = engagement.expectedCoiOn;
+    }
+    if (!triggers.incorporationDate) continue;
+
+    // Every statutory compliance for the legal form, less the ones the questionnaire rules out.
+    const generated = generateComplianceInstances({
+      engagementId: engagement.id,
+      entityLegalForm: (engagement.entityLegalForm ?? 'company') as EntityLegalForm,
+      triggers,
+      ownerId: ownerUuid ?? engagement.internId,
+      asOfDate,
+      assumeRegistered: true,
+      exclude: questionnaireExclusion(engagement.complianceQuestionnaire as Record<string, unknown> | null),
+    });
+    reconciled += await reconcileEngagementInstances(
+      engagement.id,
+      new Set(generated.map((i) => `${i.obligationId}|${i.periodLabel ?? ''}`)),
+    );
 
     const instances = withCalendarChanges(
-      generateComplianceInstances({
-        engagementId: engagement.id,
-        entityLegalForm: (engagement.entityLegalForm ?? 'company') as EntityLegalForm,
-        triggers,
-        ownerId: ownerUuid ?? engagement.internId,
-        asOfDate,
-      }),
+      generated,
       changes,
       existing,
       todayIST(asOfDate),
@@ -311,8 +334,80 @@ export async function systemGenerateComplianceInstances(
     engagements: rows.length,
     generated: toUpsert.length,
     upserted,
+    reconciled,
     digest,
   };
+}
+
+/** Obligations the generator owns; manual and event ones are added by people and never touched. */
+const GENERATED_OBLIGATIONS = COMPLIANCE_OBLIGATIONS.filter(
+  (o) => o.triggerType !== 'manual' && o.triggerType !== 'event',
+).map((o) => o.id);
+
+/**
+ * Brings one engagement's open periods in line with what the generator now produces, after the
+ * questionnaire ruled an obligation out or the real incorporation date replaced the expected one.
+ *
+ *  - A filed period never changes.
+ *  - An open period nobody has worked on (no stage, details, proof, thread or window) that is no
+ *    longer generated is removed, so it leaves the calendar.
+ *  - One somebody has worked on is kept and marked not applicable by the system (`updated_by`
+ *    null). When the period is generated again, that system mark is lifted.
+ * Returns the number of periods changed.
+ */
+async function reconcileEngagementInstances(engagementId: string, keep: ReadonlySet<string>): Promise<number> {
+  const open = await db
+    .select({
+      id: complianceInstances.id,
+      obligationId: complianceInstances.obligationId,
+      periodLabel: complianceInstances.periodLabel,
+      windowFrom: complianceInstances.windowFrom,
+      stage: complianceInstanceWorkflow.stage,
+      stageBy: complianceInstanceWorkflow.updatedBy,
+      hasWorkflow: complianceInstanceWorkflow.instanceId,
+      hasDetails: complianceInstanceDetails.instanceId,
+      proofs: sql<number>`(select count(*)::int from ${complianceInstanceProofs} where ${complianceInstanceProofs.instanceId} = ${complianceInstances.id})`,
+      events: sql<number>`(select count(*)::int from ${filingEvents} where ${filingEvents.instanceId} = ${complianceInstances.id})`,
+    })
+    .from(complianceInstances)
+    .leftJoin(complianceInstanceWorkflow, eq(complianceInstanceWorkflow.instanceId, complianceInstances.id))
+    .leftJoin(complianceInstanceDetails, eq(complianceInstanceDetails.instanceId, complianceInstances.id))
+    .where(
+      and(
+        eq(complianceInstances.engagementId, engagementId),
+        isNull(complianceInstances.filedOn),
+        sql`${complianceInstances.status} <> 'filed'`,
+        inArray(complianceInstances.obligationId, GENERATED_OBLIGATIONS),
+      ),
+    );
+
+  const remove: string[] = [];
+  const markNa: string[] = [];
+  const restore: string[] = [];
+  for (const row of open) {
+    const systemNa = row.stage === 'not-applicable' && row.stageBy === null;
+    if (keep.has(`${row.obligationId}|${row.periodLabel ?? ''}`)) {
+      if (systemNa) restore.push(row.id);
+      continue;
+    }
+    const touched =
+      Boolean(row.hasWorkflow) || Boolean(row.hasDetails) || Boolean(row.windowFrom) || row.proofs > 0 || row.events > 0;
+    if (!touched) remove.push(row.id);
+    else if (row.stage !== 'not-applicable') markNa.push(row.id);
+  }
+
+  if (remove.length) await db.delete(complianceInstances).where(inArray(complianceInstances.id, remove));
+  if (restore.length) await db.delete(complianceInstanceWorkflow).where(inArray(complianceInstanceWorkflow.instanceId, restore));
+  if (markNa.length) {
+    await db
+      .insert(complianceInstanceWorkflow)
+      .values(markNa.map((instanceId) => ({ instanceId, engagementId, stage: 'not-applicable', updatedBy: null })))
+      .onConflictDoUpdate({
+        target: complianceInstanceWorkflow.instanceId,
+        set: { stage: 'not-applicable', updatedBy: null, updatedAt: new Date() },
+      });
+  }
+  return remove.length + restore.length + markNa.length;
 }
 
 // ---------- Approved due-date changes ----------
@@ -450,6 +545,8 @@ export async function systemListComplianceNudges(today: Date): Promise<Complianc
         status: complianceInstances.status,
         companyName: engagements.companyName,
         deletedAt: engagements.deletedAt,
+        incorporationDate: engagements.incorporationDate,
+        stage: complianceInstanceWorkflow.stage,
         obligationName: complianceObligations.particular,
         frequency: complianceObligations.frequency,
       })
@@ -459,6 +556,7 @@ export async function systemListComplianceNudges(today: Date): Promise<Complianc
         complianceObligations,
         eq(complianceObligations.id, complianceInstances.obligationId),
       )
+      .leftJoin(complianceInstanceWorkflow, eq(complianceInstanceWorkflow.instanceId, complianceInstances.id))
       .where(inArray(complianceInstances.dueDate, [dueYesterday, ...ahead.map(([d]) => d)]));
 
     const out: ComplianceNudgeRow[] = [];
@@ -466,6 +564,10 @@ export async function systemListComplianceNudges(today: Date): Promise<Complianc
       // Soft-deleted projects are hidden everywhere else — do not message them.
       if (row.deletedAt) continue;
       if (row.status === 'filed') continue;
+      // Before the certificate the calendar is projected from the expected COI date; nothing is
+      // really due yet, so nobody is messaged. A period marked not applicable is not chased either.
+      if (!row.incorporationDate) continue;
+      if (row.stage === 'not-applicable') continue;
       const base = {
         instanceId: row.instanceId,
         engagementDbId: row.engagementDbId,

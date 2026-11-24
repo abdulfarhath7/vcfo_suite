@@ -8,6 +8,7 @@ import { queueWhatsAppSends } from '@/lib/notify/send-whatsapp';
 import { systemGetRemindDays } from '@/db/repositories/notification-prefs';
 import { dueNudgeToday } from '@/lib/notify/reminder-days';
 import { withRunNow } from '@/jobs/dev-controls';
+import { COMPLIANCE_REGENERATE_EVENT } from '@/lib/compliance/regenerate-event';
 
 /**
  * Scheduled: expand compliance obligations into dated instances.
@@ -98,5 +99,23 @@ export const complianceGenerate = inngest.createFunction(
     });
 
     return { ...result, nudges };
+  },
+);
+
+/**
+ * On demand: regenerate one engagement's compliance periods right after it changes (created, the
+ * questionnaire saved or cleared, the expected COI date set), so the Obligations tab and the
+ * calendar do not wait for the 06:00 run. It writes periods only; it sends no messages.
+ */
+export const complianceRegenerate = inngest.createFunction(
+  { id: 'compliance-regenerate', concurrency: { limit: 1, key: 'event.data.engagementDbId' } },
+  { event: COMPLIANCE_REGENERATE_EVENT },
+  async ({ event, step }) => {
+    const engagementDbId = String(event.data?.engagementDbId ?? '');
+    if (!engagementDbId) return { skipped: 'no engagement' };
+    return step.run('generate-instances', async () => {
+      const result = await systemGenerateComplianceInstances(new Date(), { engagementDbId });
+      return { generated: result.generated, reconciled: result.reconciled };
+    });
   },
 );

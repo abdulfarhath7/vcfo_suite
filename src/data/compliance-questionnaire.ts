@@ -49,18 +49,18 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'A',
     title: 'Foreign investments',
     questions: [
-      yesNo('FI-01', 'Does the entity have any foreign investment (FDI)?'),
-      yesNo('FI-02', 'Was FDI received during the current financial year?', {
+      yesNo('FI-01', 'Will the entity receive any foreign investment (FDI)?'),
+      yesNo('FI-02', 'Will FDI be received during the current financial year?', {
         id: 'FI-01',
         equals: true,
       }),
-      yesNo('FI-03', 'Were shares transferred between resident & non-resident?', {
+      yesNo('FI-03', 'Will shares be transferred between resident & non-resident?', {
         id: 'FI-01',
         equals: true,
       }),
-      yesNo('FI-04', 'Does the entity have foreign assets OR liabilities as on 31-Mar?'),
-      yesNo('FI-05', 'Has the entity made any Overseas Investment (ODI)?'),
-      yesNo('FI-06', 'Any downstream / indirect foreign investment?', {
+      yesNo('FI-04', 'Will the entity have foreign assets OR liabilities as on 31-Mar?'),
+      yesNo('FI-05', 'Will the entity make any Overseas Investment (ODI)?'),
+      yesNo('FI-06', 'Will there be any downstream / indirect foreign investment?', {
         id: 'FI-01',
         equals: true,
       }),
@@ -71,14 +71,14 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'B',
     title: 'Foreign trade',
     questions: [
-      yesNo('FT-01', 'Does the entity import goods?'),
-      yesNo('FT-02', 'Does the entity export goods?'),
-      yesNo('FT-03', 'Does the entity import or export services?'),
-      yesNo('FT-04', 'Any foreign remittances made (payments abroad)?'),
-      yesNo('FT-05', 'Does the entity have foreign currency borrowings (ECB)?'),
+      yesNo('FT-01', 'Will the entity import goods?'),
+      yesNo('FT-02', 'Will the entity export goods?'),
+      yesNo('FT-03', 'Will the entity import or export services?'),
+      yesNo('FT-04', 'Will the entity make foreign remittances (payments abroad)?'),
+      yesNo('FT-05', 'Will the entity take foreign currency borrowings (ECB)?'),
       {
         id: 'FT-06',
-        label: 'Is the entity registered / operating under STPI or Non-STPI?',
+        label: 'Will the entity register / operate under STPI or Non-STPI?',
         kind: 'picklist',
         options: ['STPI', 'Non-STPI', 'Neither'],
       },
@@ -89,16 +89,16 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'C',
     title: 'GST',
     questions: [
-      yesNo('GST-01', 'Is the entity registered under GST?'),
-      yesNo('GST-03', 'Opted into QRMP scheme (quarterly return, monthly pay)?', {
+      yesNo('GST-01', 'Will the entity register under GST?'),
+      yesNo('GST-03', 'Will it opt into the QRMP scheme (quarterly return, monthly pay)?', {
         id: 'GST-01',
         equals: true,
       }),
-      yesNo('GST-04', 'Any interstate supplies?', { id: 'GST-01', equals: true }),
-      yesNo('GST-05', 'Any exports under GST?', { id: 'GST-01', equals: true }),
-      yesNo('GST-06', 'Any reverse-charge (RCM) transactions?', { id: 'GST-01', equals: true }),
-      yesNo('GST-07', 'Any supplies to / from SEZ?', { id: 'GST-01', equals: true }),
-      yesNo('GST-08', 'Is e-invoicing applicable?', { id: 'GST-01', equals: true }),
+      yesNo('GST-04', 'Will there be any interstate supplies?', { id: 'GST-01', equals: true }),
+      yesNo('GST-05', 'Will there be any exports under GST?', { id: 'GST-01', equals: true }),
+      yesNo('GST-06', 'Will there be any reverse-charge (RCM) transactions?', { id: 'GST-01', equals: true }),
+      yesNo('GST-07', 'Will there be any supplies to / from SEZ?', { id: 'GST-01', equals: true }),
+      yesNo('GST-08', 'Will e-invoicing apply?', { id: 'GST-01', equals: true }),
     ],
   },
   {
@@ -106,15 +106,15 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'D',
     title: 'Employees & payroll',
     questions: [
-      { id: 'EMP-01', label: 'Total number of employees', kind: 'number' },
-      yesNo('EMP-02', 'Employees present in more than one state?'),
-      yesNo('EMP-03', 'Is PF (Provident Fund) applicable? (>=20 employees)'),
-      yesNo('EMP-04', 'Is ESI applicable? (>=10 employees & wage threshold)'),
-      yesNo('EMP-05', 'Professional Tax (PT) applicable in the state?'),
-      yesNo('EMP-06', 'Does the entity run monthly payroll?'),
-      yesNo('EMP-07', 'Shops & Establishment registration required?'),
-      yesNo('EMP-08', 'Labour Welfare Fund (LWF) applicable in state?'),
-      yesNo('EMP-09', 'Gratuity applicable? (>=10 employees)'),
+      { id: 'EMP-01', label: 'Expected number of employees', kind: 'number' },
+      yesNo('EMP-02', 'Will employees be in more than one state?'),
+      yesNo('EMP-03', 'Will PF (Provident Fund) apply? (>=20 employees)'),
+      yesNo('EMP-04', 'Will ESI apply? (>=10 employees & wage threshold)'),
+      yesNo('EMP-05', 'Will Professional Tax (PT) apply in the state?'),
+      yesNo('EMP-06', 'Will the entity run monthly payroll?'),
+      yesNo('EMP-07', 'Will Shops & Establishment registration be required?'),
+      yesNo('EMP-08', 'Will Labour Welfare Fund (LWF) apply in the state?'),
+      yesNo('EMP-09', 'Will gratuity apply? (>=10 employees)'),
     ],
   },
   {
@@ -122,10 +122,10 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'E',
     title: 'Direct tax',
     questions: [
-      yesNo('TAX-01', 'Does the entity deduct TDS?'),
-      yesNo('TAX-02', 'Does the entity collect TCS?'),
-      yesNo('TAX-03', 'Is a Tax Audit applicable? (turnover threshold)'),
-      yesNo('TAX-04', 'Is Advance Tax payable?'),
+      yesNo('TAX-01', 'Will the entity deduct TDS?'),
+      yesNo('TAX-02', 'Will the entity collect TCS?'),
+      yesNo('TAX-03', 'Will a Tax Audit apply? (turnover threshold)'),
+      yesNo('TAX-04', 'Will Advance Tax be payable?'),
     ],
   },
   {
@@ -133,12 +133,12 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'F',
     title: 'Transfer pricing',
     questions: [
-      yesNo('TP-01', 'Any international transactions with associated enterprises?'),
-      yesNo('TP-02', 'Part of a group with consolidated revenue > 3000 Cr?', {
+      yesNo('TP-01', 'Will there be international transactions with associated enterprises?'),
+      yesNo('TP-02', 'Will it be part of a group with consolidated revenue > 3000 Cr?', {
         id: 'TP-01',
         equals: true,
       }),
-      yesNo('TP-03', 'Any specified domestic transactions?'),
+      yesNo('TP-03', 'Will there be any specified domestic transactions?'),
     ],
   },
   {
@@ -146,8 +146,8 @@ export const QUESTIONNAIRE_SECTIONS: readonly QuestionnaireSection[] = [
     letter: 'G',
     title: 'MSME & vendors',
     questions: [
-      yesNo('MSME-01', 'Is the entity registered as an MSME (Udyam)?'),
-      yesNo('MSME-02', 'Does the entity buy from MSME vendors?'),
+      yesNo('MSME-01', 'Will the entity register as an MSME (Udyam)?'),
+      yesNo('MSME-02', 'Will the entity buy from MSME vendors?'),
     ],
   },
 ] as const;

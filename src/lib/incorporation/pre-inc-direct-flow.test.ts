@@ -66,24 +66,24 @@ describe('lead-only fields', () => {
 });
 
 describe('canRoleEditField', () => {
-  it('lets the lead edit everything except the client\'s own Part A answers', () => {
+  it('lets the lead edit every field, the client\'s Part A answers included', () => {
     expect(canRoleEditField('intern', 'pre-1', 'nicCode')).toBe(true);
     expect(canRoleEditField('intern', 'pre-1', 'additionalNicCodes.e12345678.code')).toBe(true);
     expect(canRoleEditField('intern', 'pre-1', 'stepRemarks')).toBe(true);
-    expect(canRoleEditField('intern', 'pre-1', 'businessDescription')).toBe(false);
-    expect(canRoleEditField('intern', 'pre-1', 'director1FirstName')).toBe(false);
+    expect(canRoleEditField('intern', 'pre-1', 'businessDescription')).toBe(true);
+    expect(canRoleEditField('intern', 'pre-1', 'director1FirstName')).toBe(true);
     expect(canRoleEditField('intern', 'pre-13', 'equityShares')).toBe(true);
     expect(canRoleEditField('intern', 'post-1', 'x')).toBe(true);
   });
 
-  it('strips the client\'s Part A answers from a lead\'s save', () => {
+  it('keeps the client\'s Part A answers in a lead\'s save', () => {
     expect(
       stripClientOnlyResponses('pre-1', { nicCode: '62011', businessDescription: 'x', stepRemarks: 'note' }),
-    ).toEqual({ nicCode: '62011', stepRemarks: 'note' });
+    ).toEqual({ nicCode: '62011', businessDescription: 'x', stepRemarks: 'note' });
     expect(stripClientOnlyResponses('pre-14', { registeredOfficeCompleteAddress: 'a' })).toEqual({
       registeredOfficeCompleteAddress: 'a',
     });
-    expect(isClientOnlyField('pre-1', 'parentEntityName')).toBe(true);
+    expect(isClientOnlyField('pre-1', 'parentEntityName')).toBe(false);
     expect(isClientOnlyField('pre-1', 'nicCode')).toBe(false);
   });
 
@@ -263,9 +263,10 @@ describe('directFlowRoleLabel', () => {
 describe('clientOnlyFieldsChangedBy (DR-02)', () => {
   const stored = { responses: { 'directors.e1.name': 'Asha' } };
 
-  it('names the client-only fields a lead, manager or admin would change', () => {
+  it('refuses no staff change: no field is client-only since 2026-11-24', () => {
     for (const role of ['intern', 'manager', 'admin', 'super_admin']) {
-      expect(clientOnlyFieldsChangedBy(role, 'pre-15', { 'directors.e1.name': 'Ravi' }, stored)).toEqual(['directors.e1.name']);
+      expect(clientOnlyFieldsChangedBy(role, 'pre-15', { 'directors.e1.name': 'Ravi' }, stored)).toEqual([]);
+      expect(clientOnlyFieldsChangedBy(role, 'pre-1', { businessDescription: 'Software services' }, {})).toEqual([]);
     }
   });
 
@@ -277,11 +278,9 @@ describe('clientOnlyFieldsChangedBy (DR-02)', () => {
     ).toEqual([]);
   });
 
-  it('lets the lead change the section once it is assigned to the lead, but not a manager', () => {
+  it('lets the lead and a manager change the section whoever it is assigned to', () => {
     const assigned = { ...stored, fillAssignedTo: 'lead' };
     expect(clientOnlyFieldsChangedBy('intern', 'pre-15', { 'directors.e1.name': 'Ravi' }, assigned)).toEqual([]);
-    expect(clientOnlyFieldsChangedBy('manager', 'pre-15', { 'directors.e1.name': 'Ravi' }, assigned)).toEqual([
-      'directors.e1.name',
-    ]);
+    expect(clientOnlyFieldsChangedBy('manager', 'pre-15', { 'directors.e1.name': 'Ravi' }, assigned)).toEqual([]);
   });
 });

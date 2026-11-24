@@ -1,5 +1,5 @@
 import 'server-only';
-import { complianceGenerate } from '@/jobs/compliance-generate';
+import { complianceGenerate, complianceRegenerate } from '@/jobs/compliance-generate';
 import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { watchCheck } from '@/jobs/watch-check';
 import { watchProcess } from '@/jobs/watch-process';
@@ -30,6 +30,7 @@ import { expiryAlerts } from '@/jobs/expiry-alerts';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { gstRegistrationStart } from '@/jobs/gst-registration-start';
+import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -40,6 +41,7 @@ import type { JobFunction } from './types';
 export function registeredJobs(): JobFunction[] {
   return describeFunctions([
     complianceGenerate,
+    complianceRegenerate,
     announcementFeeds,
     whatsappSend,
     askIngest,
@@ -72,5 +74,7 @@ export function registeredJobs(): JobFunction[] {
     myDayEmail,
     assistFilingDeadlines,
     gstRegistrationStart,
+    fieldAskDelivery,
+    fieldAskReminders,
   ]);
 }

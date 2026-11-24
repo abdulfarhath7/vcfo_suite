@@ -1,6 +1,6 @@
 import { serve } from 'inngest/next';
 import { inngest } from '@/jobs/client';
-import { complianceGenerate } from '@/jobs/compliance-generate';
+import { complianceGenerate, complianceRegenerate } from '@/jobs/compliance-generate';
 import { kpiSnapshots } from '@/jobs/kpi-snapshots';
 import { staffAlerts } from '@/jobs/staff-alerts';
 import { dailyDigest } from '@/jobs/daily-digest';
@@ -32,8 +32,9 @@ import { expiryAlerts } from '@/jobs/expiry-alerts';
 import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { statutoryCalendarAskSync } from '@/jobs/statutory-calendar-ask';
+import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart],
+  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders],
 });

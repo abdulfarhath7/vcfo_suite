@@ -12,10 +12,9 @@ const lead = { role: 'intern' as const, name: 'Divya' };
 const client = { role: 'client' as const, name: 'Asha' };
 
 describe('checklistPatchForRole', () => {
-  it('keeps a lead from writing a client-only answer on a direct-flow step', () => {
-    expect(() =>
-      checklistPatchForRole(lead, 'pre-1', { responses: { director1FirstName: 'Asha', nicCode: '62011' } }, undefined, NOW),
-    ).toThrow(ChecklistPatchRefused);
+  it("lets a lead write the client's answers on a direct-flow step (owner decision 2026-11-24)", () => {
+    const patch = checklistPatchForRole(lead, 'pre-1', { responses: { director1FirstName: 'Asha', nicCode: '62011' } }, undefined, NOW);
+    expect(patch.responses).toEqual({ director1FirstName: 'Asha', nicCode: '62011' });
   });
 
   it('keeps a lead from stamping a review on a direct-flow step or the manager step', () => {
@@ -32,33 +31,20 @@ describe('checklistPatchForRole', () => {
     expect(patch).toMatchObject({ lastEditedByName: 'Divya', lastEditedAt: NOW, responses: { directors: 'e1' } });
   });
 
-  it('DR-02: refuses with 403 a lead who changes Proposed directors while the client fills it', () => {
-    try {
-      checklistPatchForRole(lead, 'pre-15', { responses: { directors: 'e1' } }, undefined, NOW);
-      expect.unreachable('the save should be refused');
-    } catch (error) {
-      expect(error).toBeInstanceOf(ChecklistPatchRefused);
-      expect((error as InstanceType<typeof ChecklistPatchRefused>).status).toBe(403);
-    }
+  it('lets a lead change Proposed directors while the client fills it', () => {
+    const patch = checklistPatchForRole(lead, 'pre-15', { responses: { directors: 'e1' } }, undefined, NOW);
+    expect(patch.responses).toEqual({ directors: 'e1' });
   });
 
-  it('DR-02: refuses a manager and an admin on client-only fields, even after Assign to Lead', () => {
+  it('lets a manager and an admin write the client fields, assigned to the lead or not', () => {
     for (const role of ['manager', 'admin', 'super_admin'] as const) {
       for (const slice of [undefined, { fillAssignedTo: 'lead' }]) {
-        expect(() =>
-          checklistPatchForRole({ role, name: 'M' }, 'pre-15', { responses: { 'directors.e1.name': 'X' } }, slice as never, NOW),
-        ).toThrow(ChecklistPatchRefused);
+        const patch = checklistPatchForRole({ role, name: 'M' }, 'pre-15', { responses: { 'directors.e1.name': 'X' } }, slice as never, NOW);
+        expect(patch.responses).toEqual({ 'directors.e1.name': 'X' });
       }
-      expect(() =>
-        checklistPatchForRole({ role, name: 'M' }, 'pre-1', { responses: { director1FirstName: 'X' } }, undefined, NOW),
-      ).toThrow(ChecklistPatchRefused);
+      const partA = checklistPatchForRole({ role, name: 'M' }, 'pre-1', { responses: { director1FirstName: 'X' } }, undefined, NOW);
+      expect(partA.responses).toEqual({ director1FirstName: 'X' });
     }
-  });
-
-  it('DR-02: drops client-only keys sent with the stored value instead of refusing', () => {
-    const prev = { responses: { director1FirstName: 'Asha' } } as never;
-    const patch = checklistPatchForRole(lead, 'pre-1', { responses: { director1FirstName: 'Asha', nicCode: '62011' } }, prev, NOW);
-    expect(patch.responses).toEqual({ nicCode: '62011' });
   });
 
   it('DR-02: keeps the DIN check fields writable by the lead', () => {

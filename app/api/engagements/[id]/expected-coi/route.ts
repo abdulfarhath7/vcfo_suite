@@ -4,6 +4,8 @@ import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { setExpectedCoi } from '@/db/repositories/schedule';
 import { publicErrorMessage } from '@/lib/api-error';
+import { requestComplianceRegenerate } from '@/lib/compliance/regenerate-event';
+import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -28,6 +30,8 @@ export async function PUT(request: Request, context: RouteContext) {
   }
   try {
     const result = await setExpectedCoi(guard.ctx, id, body.data.on);
+    // Before the certificate the compliance calendar is projected from this date.
+    await requestComplianceRegenerate(engagementDbId(id));
     return NextResponse.json(result);
   } catch (err) {
     const message = publicErrorMessage(err, 'expected_coi_failed');
