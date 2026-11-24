@@ -181,6 +181,20 @@ export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string,
 /** The practice block's three labels, in order (R-51). */
 export const PRACTICE_BLOCK_LABELS = ['Incorporation', 'Compliances', 'Registrations'] as const;
 
+/** Registrations group: Overview + GST Lookup for staff roles. */
+function registrationsGroup(registrationsPath: string, gstLookupPath: string): NavGroupDef {
+  return {
+    id: `registrations:${registrationsPath}`,
+    label: 'Registrations',
+    icon: BadgeCheck,
+    iconTone: TONE.work,
+    items: [
+      { to: registrationsPath, label: 'Overview', icon: BadgeCheck, iconTone: TONE.work },
+      { to: gstLookupPath, label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
+    ],
+  };
+}
+
 /**
  * R-51 (D-29): the practice block every practice role shares, in the client's order:
  * Incorporation (Landmark), Compliances (Obligations, Calendar, Filings), Registrations
@@ -198,7 +212,7 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
         { ...complianceLeaves(practice)[0], to: `${practice}/compliances` },
         { ...complianceLeaves(practice)[2], to: `${practice}/filings` },
       ]),
-      { to: `${practice}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
+      registrationsGroup(`${practice}/registrations`, '/app/admin/tools/gst-lookup'),
     ];
   }
   return [
@@ -206,7 +220,9 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
       ? { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work }
       : incorporationGroup(base),
     compliancesGroup(compliancesBasePath(role, base)),
-    { to: `${base}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
+    role === 'client'
+      ? { to: `${base}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work }
+      : registrationsGroup(`${base}/registrations`, `${base}/tools/gst-lookup`),
   ];
 }
 
@@ -262,7 +278,6 @@ const firmAdminItems: NavEntry[] = [
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/admin'),
   NAV_TOOLS_BREAK,
-  { to: '/app/admin/tools/gst-lookup', label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
   { to: '/app/admin/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
   { to: '/app/admin/ask-vcfo/sources', label: 'Ask VCFO sources', icon: BookMarked, iconTone: TONE.knowledge },
   { to: '/app/admin/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
@@ -302,7 +317,6 @@ const superAdminItems: NavEntry[] = [
   { to: '/app/super/vault', label: 'Documents', icon: FolderOpen, iconTone: TONE.files },
   updatesGroup('/app/super'),
   NAV_TOOLS_BREAK,
-  { to: '/app/admin/tools/gst-lookup', label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
   { to: '/app/admin/dashboard', label: 'Firm', icon: Building2, iconTone: TONE.work },
   { to: '/app/admin/people', label: 'People', icon: Users, iconTone: TONE.people },
   { to: '/app/admin/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
@@ -345,7 +359,6 @@ function managerItems(staffBase: string): NavEntry[] {
     { to: `${staffBase}/mail`, label: 'Email', icon: Mail, iconTone: TONE.work },
     docsGroup(staffBase),
     NAV_TOOLS_BREAK,
-    { to: `${staffBase}/tools/gst-lookup`, label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
     { to: `${staffBase}/analytics`, label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
     { to: `${staffBase}/audit-log`, label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
   ];
@@ -371,7 +384,6 @@ const internItems: NavEntry[] = [
   { to: '/app/lead/mail', label: 'Email', icon: Mail, iconTone: TONE.work },
   docsGroup('/app/lead', Archive),
   NAV_TOOLS_BREAK,
-  { to: '/app/lead/tools/gst-lookup', label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
   { to: '/app/lead/analytics', label: 'Analytics', icon: BarChart3, iconTone: TONE.analytics },
   { to: '/app/lead/audit-log', label: 'Audit', icon: HistoryIcon, iconTone: TONE.audit },
 ];
