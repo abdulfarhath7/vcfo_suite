@@ -34,6 +34,15 @@ describe('walkFolder', () => {
     expect(skipped.find((s) => s.path === 'old.xls')?.reason).toContain('save it as .xlsx');
   });
 
+  it('counts files read before and gives the 50 places to new files', async () => {
+    const many = Array.from({ length: 55 }, (_, i) => file(`f${i}`, `doc-${String(i).padStart(2, '0')}.pdf`));
+    const walked = await walkFolder(tree({ root: many }), 'root', DEFAULT_WALK_LIMITS, (item) => Number(item.id.slice(1)) < 10);
+    expect(walked.alreadySeen).toBe(10);
+    expect(walked.files).toHaveLength(45);
+    expect(walked.files[0]!.name).toBe('doc-10.pdf');
+    expect(walked.skipped.filter((s) => s.reason === TOO_MANY_FILES)).toHaveLength(0);
+  });
+
   it('keeps the drop limits: 50 files, 200 MB, 25 MB a file', async () => {
     const many = Array.from({ length: 52 }, (_, i) => file(`f${i}`, `doc-${String(i).padStart(2, '0')}.pdf`));
     const walked = await walkFolder(tree({ root: many }), 'root');

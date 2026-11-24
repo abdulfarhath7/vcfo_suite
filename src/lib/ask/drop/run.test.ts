@@ -97,6 +97,13 @@ vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => send(...
 const pullSharepointFiles = vi.fn();
 vi.mock('./sharepoint-pull', () => ({ COPY_LABEL: 'Copying files from SharePoint', pullSharepointFiles: (...a: unknown[]) => pullSharepointFiles(...a) }));
 
+const findCachedRead = vi.fn(async (..._a: unknown[]): Promise<string | null> => null);
+const markRead = vi.fn();
+vi.mock('@/db/repositories/sharepoint-files-seen', () => ({
+  findCachedSharepointRead: (...a: unknown[]) => findCachedRead(...a),
+  markSharepointFileRead: (...a: unknown[]) => markRead(...a),
+}));
+
 const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus } = await import('./run');
 
 function file(id: string, fileName: string, data: Buffer | Uint8Array, extra: Partial<Row> = {}): Row {
@@ -159,6 +166,23 @@ describe('runAskDrop from SharePoint', () => {
     ]);
     expect(messages[0]!.text).toMatch(/card for Acme/);
     expect(messages[0]!.text).toMatch(/Acme\/plan\.dwg \(not read\)/);
+  });
+
+  it('reuses a stored read of the same bytes, with no model call, and marks each new read', async () => {
+    rows = [];
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme' } };
+    pullSharepointFiles.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('sp-1', 'pan.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/KYC/pan.pdf', profileId: ctx.userId }));
+      rows.push(file('sp-2', 'coi.pdf', Buffer.from('%PDF-2'), { relativePath: 'Acme/coi.pdf', profileId: ctx.userId }));
+      return { copied: 2, skipped: [] };
+    });
+    objects.set('reads/earlier', Buffer.from(JSON.stringify({ docType: 'pan_card', company: 'Acme', values: [], sensitive: true, usedModel: true })));
+    findCachedRead.mockImplementation(async (_ctx, _eng, attachmentId) => (attachmentId === 'sp-1' ? 'reads/earlier' : null));
+    await runAskDrop('run-1');
+    expect(modelSaw).toHaveLength(1);
+    expect(markRead.mock.calls.map((c) => [c[1], c[2]])).toEqual([['eng-1', 'sp-1'], ['eng-1', 'sp-2']]);
+    const state = run.state as { files: Array<{ path: string; docType?: string }> };
+    expect(state.files.find((f) => f.path === 'Acme/KYC/pan.pdf')?.docType).toBe('pan_card');
   });
 
   it('does not copy the folder again once it is pulled, and does nothing for an upload', async () => {

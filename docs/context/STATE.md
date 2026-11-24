@@ -201,6 +201,15 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
   set `SHAREPOINT_SITE_URL=https://steadfastconsultants.sharepoint.com/sites/steadfast_files` and
   `SHAREPOINT_CLIENTS_PATH=SteadFast/Clients`. Both deploys SUCCEEDED, `/login` answers 200. Each
   person must reconnect Microsoft 365 once (Settings, Email). Not yet tried against the real site.
+- **First real fetch, 24 Nov 2026:** Bonterra's folder "Bonterra India" (224 files) matched; 50 files
+  were copied, read and put on one card in about 3 minutes. Save failed ("This card changed after you
+  saw it") and the chat showed no progress. Fixed in 64b455b4 (hash taken over the stored rows,
+  progress bar for chat-started drops), deployed 21:38 IST.
+- **P2, 24 Nov 2026:** migration `0069_sharepoint_files_seen` (additive, RDS snapshot
+  `vcfo-suite-db-pre-0069-20261124`, applied on RDS): a fetch leaves out files already read and
+  unchanged, reuses a read of the same bytes, and "show me the progress" is answered from the run
+  (`src/lib/ask/drop/progress.ts`). Inngest still has no event key in production, so drops run
+  inside the web process.
 
 ## Project head, questionnaire and obligations (24 Nov 2026, deployed)
 

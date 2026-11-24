@@ -26,6 +26,7 @@ import { dropContentType, dropFileRefusal, isZipName, safeFileName } from './ext
 import { ASK_DROP_EVENT, DROP_WORKFLOW, emptyDropState, type DropFile, type DropGroup, type DropState } from './types';
 import { DEFAULT_UNZIP_LIMITS, unzipDrop, UnzipRefused } from './unzip';
 import { COPY_LABEL, pullSharepointFiles } from './sharepoint-pull';
+import { findCachedSharepointRead, markSharepointFileRead } from '@/db/repositories/sharepoint-files-seen';
 
 /**
  * The drop job's work, one function per step: unpack the ZIPs, read each file, sort them into cards,
@@ -198,6 +199,20 @@ export async function dropUnpackStep(runId: string): Promise<string[] | null> {
   return toRead;
 }
 
+/** The stored read of the same bytes on this project, marked as not made by the model this time. */
+async function cachedSharepointRead(ctx: AuthContext, engagementId: string, attachmentId: string): Promise<ReadResult | null> {
+  try {
+    const key = await findCachedSharepointRead(ctx, engagementId, attachmentId);
+    const stored = key ? await getObjectBuffer(key) : null;
+    if (!stored) return null;
+    return { ...(JSON.parse(stored.toString('utf8')) as ReadResult), usedModel: false };
+  } catch (error) {
+    // A missing or broken stored read only means the file is read again.
+    console.error('[ask-vcfo] cached read unavailable', error instanceof Error ? error.message.slice(0, 200) : error);
+    return null;
+  }
+}
+
 /** Step 2, once per file. Reads it with the run's budget and keeps the read beside the file. */
 export async function dropReadStep(runId: string, attachmentId: string): Promise<DropFile['status'] | null> {
   const open = await openDrop(runId);
@@ -228,10 +243,16 @@ export async function dropReadStep(runId: string, attachmentId: string): Promise
     const bytes = await getObjectBuffer(attachment.s3Key);
     if (!bytes) throw new ReadRefused('That file is no longer available. Please drop it again.');
     if (attachment.kind === 'paste') pastedNames = namesFromLabelledText(bytes.toString('utf8'));
-    const result: ReadResult = attachment.kind === 'paste'
-      ? await readPaste(bytes.toString('utf8'), runCtx.deps)
-      : await readFile({ fileName: attachment.fileName, data: bytes }, runCtx.deps);
-    await putObject(readKey(ctx, runId, attachmentId), JSON.stringify(result), 'application/json');
+    // A SharePoint file whose bytes this project already read reuses that read: no model call.
+    const sharepoint = state.source?.kind === 'sharepoint' ? state.source.engagementId : null;
+    const cached = sharepoint && attachment.kind === 'file' ? await cachedSharepointRead(ctx, sharepoint, attachmentId) : null;
+    const result: ReadResult = cached
+      ?? (attachment.kind === 'paste'
+        ? await readPaste(bytes.toString('utf8'), runCtx.deps)
+        : await readFile({ fileName: attachment.fileName, data: bytes }, runCtx.deps));
+    const key = readKey(ctx, runId, attachmentId);
+    await putObject(key, JSON.stringify(result), 'application/json');
+    if (sharepoint) await markSharepointFileRead(ctx, sharepoint, attachmentId, key);
     await updateOwnAskAttachment(ctx, attachmentId, { status: 'read', docType: result.docType, sensitive: result.sensitive });
     await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: 'Reading', output: { path: file.path, docType: result.docType, values: result.values.length } });
     await save({ status: 'read', docType: result.docType });

@@ -8,6 +8,12 @@ vi.mock('@/db/repositories/ask-attachments', () => ({
   createAskAttachment: (...a: unknown[]) => createAskAttachment(...a),
   listAskRunAttachments: (...a: unknown[]) => listAskRunAttachments(...a),
 }));
+const listSeen = vi.fn();
+const recordCopied = vi.fn();
+vi.mock('@/db/repositories/sharepoint-files-seen', () => ({
+  listSeenSharepointFiles: (...a: unknown[]) => listSeen(...a),
+  recordSharepointFileCopied: (...a: unknown[]) => recordCopied(...a),
+}));
 const putObject = vi.fn();
 vi.mock('@/storage/s3', () => ({ putObject: (...a: unknown[]) => putObject(...a) }));
 
@@ -40,6 +46,8 @@ beforeEach(() => {
   openClientsRoot.mockResolvedValue({ access: 'tok', driveId: 'drive-1', rootId: 'clients' });
   listAskRunAttachments.mockResolvedValue([]);
   graphDownload.mockResolvedValue(Buffer.from('%PDF-1.4'));
+  listSeen.mockResolvedValue(new Map());
+  createAskAttachment.mockImplementation(async (_c: unknown, input: { relativePath: string }) => ({ id: `att:${input.relativePath}` }));
 });
 
 describe('pullSharepointFiles', () => {
@@ -90,6 +98,33 @@ describe('pullSharepointFiles', () => {
     });
     expect(seen).toEqual([[1, 2], [2, 2]]);
     expect(graphDownload).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves out files an earlier fetch read unchanged, and records each copy with its bytes hash', async () => {
+    children.root = [
+      { id: 'a', name: 'A.pdf', size: 8, file: {}, cTag: 'c1' },
+      { id: 'b', name: 'B.pdf', size: 8, file: {}, cTag: 'c2' },
+      { id: 'c', name: 'C.pdf', size: 8, file: {}, cTag: 'c3' },
+    ];
+    listSeen.mockResolvedValue(new Map([
+      ['a', { itemId: 'a', cTag: 'c1', sha256: 'x', readKey: 'k' }],
+      ['b', { itemId: 'b', cTag: 'OLD', sha256: 'y', readKey: 'k' }],
+      ['c', { itemId: 'c', cTag: 'c3', sha256: 'z', readKey: null }],
+    ]));
+    const result = await pullSharepointFiles(lead, run, source);
+    expect(result.copied).toBe(2);
+    expect(result.note).toBe('1 file was read in an earlier fetch and did not change, so I left it out.');
+    expect(recordCopied.mock.calls.map((c) => c[2].itemId)).toEqual(['b', 'c']);
+    expect(recordCopied.mock.calls[0]![2]).toMatchObject({ cTag: 'c2', path: 'Kestrel Analytics/B.pdf', attachmentId: 'att:Kestrel Analytics/B.pdf' });
+    expect(recordCopied.mock.calls[0]![2].sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('says nothing is new when every file was read before', async () => {
+    children.root = [{ id: 'a', name: 'A.pdf', size: 8, file: {}, cTag: 'c1' }];
+    listSeen.mockResolvedValue(new Map([['a', { itemId: 'a', cTag: 'c1', sha256: 'x', readKey: 'k' }]]));
+    const result = await pullSharepointFiles(lead, run, source);
+    expect(result).toMatchObject({ copied: 0 });
+    expect(result.note).toContain('Nothing new in the SharePoint folder Kestrel Analytics');
   });
 
   it('turns a refusal for the whole folder into a note and copies nothing', async () => {

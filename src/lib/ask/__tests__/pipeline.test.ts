@@ -24,7 +24,8 @@ vi.mock('@/db/repositories/ask-messages', () => ({
 const getAskConversationWithMessages = vi.fn();
 const systemRecordAskUsage = vi.fn();
 const systemTodayTokenTotal = vi.fn();
-vi.mock('@/db/repositories/ask-runs', () => ({ findWaitingAskRun: vi.fn(async () => null) }));
+const findRecentAskDropRun = vi.fn();
+vi.mock('@/db/repositories/ask-runs', () => ({ findWaitingAskRun: vi.fn(async () => null), findRecentAskDropRun: (...a: unknown[]) => findRecentAskDropRun(...a) }));
 vi.mock('@/db/repositories/ask-usage', () => ({
   systemRecordAskUsage: (...a: unknown[]) => systemRecordAskUsage(...a),
   systemTodayTokenTotal: (...a: unknown[]) => systemTodayTokenTotal(...a),
@@ -116,6 +117,7 @@ beforeEach(() => {
   systemTodayTokenTotal.mockResolvedValue(0);
   loadProjectSnapshot.mockImplementation(async () => defaultSnapshotLoad());
   createAskConversation.mockResolvedValue({ id: 'conv-1' });
+  findRecentAskDropRun.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -589,5 +591,71 @@ describe('path, usage and limits', () => {
     setAskProviderForTests(mockProvider([guard('project_status')]));
     const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', message: 'Where are we?' });
     expect(answer?.line).toBe(REFUSAL_COPY.pathStopped);
+  });
+});
+
+describe('a drop working in the conversation', () => {
+  const sharepointRun = (status: string, extra: Record<string, unknown> = {}) => ({
+    id: 'run-1',
+    status,
+    state: {
+      files: [],
+      groups: [],
+      unplaced: [],
+      instruction: 'fetch',
+      progress: { done: 23, total: 50, label: 'Reading…' },
+      source: { kind: 'sharepoint', engagementId: 'e1', folderName: 'Bonterra India', pulled: true },
+      ...extra,
+    },
+  });
+  const rendered = () => result([toolUse('render_answer', { line: 'A DIN identifies a director.', citations: [], actions: [] })]);
+
+  it('answers "show me the progress" from the run, with no model call', async () => {
+    findRecentAskDropRun.mockResolvedValue(sharepointRun('running'));
+    const provider = mockProvider([]);
+    setAskProviderForTests(provider);
+    const { answer } = await run('intern', { shell: 'admin', conversationId: '00000000-0000-4000-8000-000000000001', message: 'show me the progress' });
+    expect(provider.calls).toHaveLength(0);
+    expect(answer?.line).toContain('Bonterra India: Reading, 23 of 50 files');
+    expect(answer?.line).not.toMatch(/can't|cannot|did not fetch/i);
+    expect(findRecentAskDropRun.mock.calls[0]![0]).toMatchObject({ userId: 'user-intern' });
+    expect(appendAskMessage.mock.calls.at(-1)![2]).toMatchObject({ path: 'fixed_workflow' });
+  });
+
+  it('says a finished drop made a card', async () => {
+    findRecentAskDropRun.mockResolvedValue(
+      sharepointRun('waiting_approval', {
+        groups: [{ engagementId: 'e1', companyName: 'Bonterra', changesetId: '00000000-0000-4000-8000-0000000000aa' }],
+        files: [{ attachmentId: 'a', path: 'x.pdf', size: 1, status: 'placed', engagementId: 'e1' }],
+      }),
+    );
+    setAskProviderForTests(mockProvider([]));
+    const { answer } = await run('admin', { shell: 'admin', message: 'is it done?' });
+    expect(answer?.line).toMatch(/^It finished\. I prepared a card for Bonterra, 1 file\. Nothing is saved until you accept\./);
+  });
+
+  it('never looks for a drop in the client shell', async () => {
+    findRecentAskDropRun.mockResolvedValue(sharepointRun('running'));
+    setAskProviderForTests(mockProvider([guard('explain'), rendered()]));
+    const { answer } = await run('client', { shell: 'client', engagementId: 'eng-1', message: 'show me the progress' });
+    expect(findRecentAskDropRun).not.toHaveBeenCalled();
+    expect(answer?.line).not.toContain('Bonterra');
+  });
+
+  it('falls through to the normal answer when there is no drop', async () => {
+    const provider = mockProvider([guard('explain'), rendered()]);
+    setAskProviderForTests(provider);
+    await run('admin', { shell: 'admin', message: 'show me the progress' });
+    expect(provider.calls).toHaveLength(2);
+  });
+
+  it('tells the model about the drop, so a free answer stays honest', async () => {
+    findRecentAskDropRun.mockResolvedValue(sharepointRun('running'));
+    const provider = mockProvider([guard('explain'), rendered()]);
+    setAskProviderForTests(provider);
+    await run('admin', { shell: 'admin', message: 'Explain the stamp duty rule for Part A' });
+    const system = provider.calls[1]!.system.map((b) => b.text).join('\n');
+    expect(system).toContain('a fetch of the SharePoint folder Bonterra India is running');
+    expect(system).toContain('Never say nothing was fetched');
   });
 });

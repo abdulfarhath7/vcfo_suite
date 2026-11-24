@@ -7,7 +7,8 @@ import type { DriveItem } from './graph';
  * Walks one client's SharePoint folder and decides, before anything is downloaded, which files the
  * drop takes. It keeps the drop's own limits: 50 files, 200 MB in all, 25 MB a file, the same file
  * types a drop reads. Sub-folders are walked depth first, in name order, at most eight levels deep.
- * System files (dotfiles, Thumbs.db) are left out without a word, as the ZIP reader does.
+ * System files (dotfiles, Thumbs.db) are left out without a word, as the ZIP reader does. A file an
+ * earlier fetch already read, with the same content tag, is only counted, so the 50 go to new files.
  *
  * Pure apart from `listChildren`, which the caller backs with Graph (or a fake in tests).
  */
@@ -32,6 +33,7 @@ export interface WalkFile {
   /** The path inside the client folder, with forward slashes. */
   path: string;
   size: number;
+  cTag: string | null;
 }
 
 export interface WalkSkip {
@@ -41,7 +43,7 @@ export interface WalkSkip {
   reason: string;
 }
 
-export const TOO_MANY_FILES = 'Left out: the folder has more than 50 files. Ask again after moving the files already done.';
+export const TOO_MANY_FILES = 'Left out for now: a fetch takes 50 files. Ask again for the next ones.';
 export const TOO_LARGE_TOTAL = 'Left out: the folder holds more than 200 MB.';
 export const TOO_LARGE_FILE = 'Left out: the file is larger than 25 MB.';
 export const NOT_A_FILE = 'Left out: this is a OneNote notebook or a link, not a file.';
@@ -51,10 +53,13 @@ export async function walkFolder(
   listChildren: (itemId: string) => Promise<DriveItem[]>,
   rootId: string,
   limits: WalkLimits = DEFAULT_WALK_LIMITS,
-): Promise<{ files: WalkFile[]; skipped: WalkSkip[] }> {
+  /** True for a file an earlier fetch already read, unchanged: it is left out and only counted. */
+  isSeen: (item: DriveItem) => boolean = () => false,
+): Promise<{ files: WalkFile[]; skipped: WalkSkip[]; alreadySeen: number }> {
   const files: WalkFile[] = [];
   const skipped: WalkSkip[] = [];
   let bytes = 0;
+  let alreadySeen = 0;
 
   async function visit(itemId: string, prefix: string, depth: number): Promise<void> {
     const children = [...(await listChildren(itemId))].sort((a, b) => a.name.localeCompare(b.name));
@@ -84,6 +89,10 @@ export async function walkFolder(
         skipped.push({ itemId: child.id, path, size, reason: TOO_LARGE_FILE });
         continue;
       }
+      if (isSeen(child)) {
+        alreadySeen += 1;
+        continue;
+      }
       if (files.length >= limits.maxFiles) {
         skipped.push({ itemId: child.id, path, size, reason: TOO_MANY_FILES });
         continue;
@@ -92,11 +101,11 @@ export async function walkFolder(
         skipped.push({ itemId: child.id, path, size, reason: TOO_LARGE_TOTAL });
         continue;
       }
-      files.push({ itemId: child.id, name: child.name, path, size });
+      files.push({ itemId: child.id, name: child.name, path, size, cTag: child.cTag ?? null });
       bytes += size;
     }
   }
 
   await visit(rootId, '', 0);
-  return { files, skipped };
+  return { files, skipped, alreadySeen };
 }

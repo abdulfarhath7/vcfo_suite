@@ -52,3 +52,22 @@ person accepts. Built 24 Nov 2026 on `feat/sharepoint`.
 - Unit tests: `src/lib/sharepoint/*.test.ts`, `src/lib/ask/drop/sharepoint-pull.test.ts`, the
   SharePoint cases in `src/lib/ask/drop/run.test.ts` and `src/lib/ask/do/pick-action.test.ts`.
 - A real run needs the Azure permissions, the env vars, and a reconnect on the dev server.
+
+## Asking again, and not paying twice (migration 0069)
+
+- `sharepoint_files_seen` holds one row per project and SharePoint item: its content tag (`cTag`),
+  the sha256 of its bytes, the attachment it was copied into, and `read_key`, the S3 key of the stored
+  read. Repository: `src/db/repositories/sharepoint-files-seen.ts`, scoped by `assertEngagementAccess`.
+- A fetch leaves out a file that an earlier fetch read (`read_key` set) and whose `cTag` is the same,
+  and only counts it (`walkFolder`'s `isSeen`), so the 50 places go to new files and "ask again"
+  moves through a large folder. A file copied but never read (a failed run) is not counted as seen.
+- The read step (`dropReadStep`) first looks for a stored read of the same bytes on the same project
+  and reuses it with no model call; every new read stores its key on the row.
+- A discarded card does not undo "seen": its files are left out of the next fetch. To fetch them
+  again, change the file in SharePoint or clear the project's rows.
+- A chat message that starts a fetch turns on the progress bar (`AskProvider`, answer with `runId`
+  and no `changesetId`); the copy step reports "Copying files from SharePoint, n of N".
+- A card's content hash is taken over its rows as Postgres stores them (`createAskChangeset`) and
+  skips `undefined` keys (`changeset/hash.ts`); before 64b455b4 a card made in memory could never
+  be saved ("This card changed after you saw it").
+

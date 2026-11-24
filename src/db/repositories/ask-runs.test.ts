@@ -35,7 +35,7 @@ vi.mock('@/db/client', () => ({ db: { select: chain, update: chain, insert: chai
 const access = vi.fn();
 vi.mock('@/db/repositories/engagements', () => ({ assertEngagementAccess: (...a: unknown[]) => access(...a) }));
 
-const { appendAskRunStep, createAskRun, findWaitingAskRun, lockAskRun, updateAskRun } = await import('./ask-runs');
+const { appendAskRunStep, createAskRun, findRecentAskDropRun, findWaitingAskRun, lockAskRun, updateAskRun } = await import('./ask-runs');
 const { AskForbiddenError } = await import('@/lib/ask/access');
 
 const me: AuthContext = { userId: 'me', email: 'x@x.test', name: 'X', role: 'intern' };
@@ -62,6 +62,15 @@ describe('ask runs', () => {
     expect(params()).toContain('me');
     await updateAskRun(me, 'r', { status: 'done' });
     expect(params()).toContain('me');
+  });
+
+  it('finds the recent drop of this conversation for this person only', async () => {
+    await findRecentAskDropRun(me, 'c', new Date());
+    expect(params()).toEqual(expect.arrayContaining(['me', 'c', 'drop', 'queued', 'running']));
+  });
+
+  it('refuses a role without Ask before reading a drop', async () => {
+    await expect(findRecentAskDropRun({ ...me, role: 'developer' as AuthContext['role'] }, 'c', new Date())).rejects.toBeInstanceOf(AskForbiddenError);
   });
 
   it('refuses to lock a run to an engagement the person cannot reach', async () => {

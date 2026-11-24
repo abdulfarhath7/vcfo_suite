@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, desc, eq, gt, inArray, isNull, max, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull, max, or, sql } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 import { db } from '@/db/client';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
@@ -129,6 +129,37 @@ export async function findActiveAskRun(ctx: AuthContext, conversationId: string,
         eq(askRuns.workflow, 'drop'),
         inArray(askRuns.status, ['queued', 'running']),
         gt(askRuns.createdAt, new Date(now.getTime() - ACTIVE_HOURS * 3_600_000)),
+      ),
+    )
+    .orderBy(desc(askRuns.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
+/** How long a settled drop still answers "is it done?" in its conversation. */
+const RECENT_DROP_MINUTES = 30;
+
+/**
+ * The drop this conversation is talking about: one still queued or running, one still asking "Where
+ * should these go?", or one that settled in the last half hour (a card waiting, done or failed). The
+ * chat answers "show me the progress" from it instead of guessing. Only the run's own person reads it.
+ */
+export async function findRecentAskDropRun(ctx: AuthContext, conversationId: string, now: Date): Promise<AskRunRow | null> {
+  assertAskRole(ctx);
+  const [row] = await db
+    .select()
+    .from(askRuns)
+    .where(
+      and(
+        eq(askRuns.profileId, ctx.userId),
+        eq(askRuns.conversationId, conversationId),
+        // The literal matches DROP_WORKFLOW in src/lib/ask/drop/types.ts.
+        eq(askRuns.workflow, 'drop'),
+        or(
+          // Still working, or still waiting on the person's "Where should these go?" answer.
+          and(inArray(askRuns.status, ['queued', 'running', 'waiting_reply']), gt(askRuns.createdAt, new Date(now.getTime() - ACTIVE_HOURS * 3_600_000))),
+          gt(askRuns.updatedAt, new Date(now.getTime() - RECENT_DROP_MINUTES * 60_000)),
+        ),
       ),
     )
     .orderBy(desc(askRuns.createdAt))

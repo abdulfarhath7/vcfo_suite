@@ -1315,6 +1315,34 @@ export const askAnswerFeedback = pgTable(
   }),
 );
 
+/**
+ * The SharePoint files a project's fetches have already read (migration 0069). A later fetch leaves
+ * out a file whose content tag is unchanged, so "take data again" moves on to the next files, and a
+ * file whose bytes (sha256) were read before reuses that read instead of paying for it again.
+ * `read_key` is the S3 key of the stored read; a row without it was copied but never read.
+ */
+export const sharepointFilesSeen = pgTable(
+  'sharepoint_files_seen',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    engagementId: uuid('engagement_id')
+      .notNull()
+      .references(() => engagements.id, { onDelete: 'cascade' }),
+    itemId: text('item_id').notNull(),
+    cTag: text('c_tag'),
+    sha256: text('sha256').notNull(),
+    path: text('path').notNull(),
+    attachmentId: uuid('attachment_id'),
+    readKey: text('read_key'),
+    seenAt: timestamp('seen_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueItem: uniqueIndex('sharepoint_files_seen_item').on(t.engagementId, t.itemId),
+    bySha: index('sharepoint_files_seen_sha').on(t.engagementId, t.sha256),
+    byAttachment: index('sharepoint_files_seen_attachment').on(t.attachmentId),
+  }),
+);
+
 export * from './schema-portal-home';
 export * from './schema-portal-incorporation';
 export * from './schema-portal-compliances';

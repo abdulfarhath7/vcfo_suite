@@ -18,6 +18,8 @@ export interface DriveItem {
   file?: { mimeType?: string };
   /** Set for a OneNote notebook and similar packages, which are not plain files. */
   package?: { type?: string };
+  /** Content tag: changes only when the file's bytes change, not on a rename or a move. */
+  cTag?: string;
 }
 
 export class GraphError extends Error {
@@ -60,18 +62,18 @@ export async function graphSiteDrives(access: string, hostname: string, sitePath
 
 /** A folder or file by its path inside the drive. */
 export async function graphItemByPath(access: string, driveId: string, path: string): Promise<DriveItem> {
-  return getJson<DriveItem>(access, `${GRAPH}/drives/${encodeURIComponent(driveId)}/root:/${encodePath(path)}?$select=id,name,size,folder,file,package`);
+  return getJson<DriveItem>(access, `${GRAPH}/drives/${encodeURIComponent(driveId)}/root:/${encodePath(path)}?$select=id,name,size,folder,file,package,cTag`);
 }
 
 /** One folder item, by id, to check it still exists and to read its name. */
 export async function graphItem(access: string, driveId: string, itemId: string): Promise<DriveItem> {
-  return getJson<DriveItem>(access, `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}?$select=id,name,size,folder,file,package`);
+  return getJson<DriveItem>(access, `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}?$select=id,name,size,folder,file,package,cTag`);
 }
 
 /** Every child of a folder, following Graph's pages. */
 export async function graphListChildren(access: string, driveId: string, itemId: string): Promise<DriveItem[]> {
   const items: DriveItem[] = [];
-  let url: string | undefined = `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/children?$select=id,name,size,folder,file,package&$top=200`;
+  let url: string | undefined = `${GRAPH}/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/children?$select=id,name,size,folder,file,package,cTag&$top=200`;
   let pages = 0;
   while (url && pages < 50) {
     const page: { value: DriveItem[]; '@odata.nextLink'?: string } = await getJson(access, url);

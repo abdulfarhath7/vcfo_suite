@@ -1,9 +1,10 @@
 import 'server-only';
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { AuthContext } from '@/auth/guards';
 import { createAskAttachment, listAskRunAttachments } from '@/db/repositories/ask-attachments';
 import type { AskRunRow } from '@/db/repositories/ask-runs';
+import { listSeenSharepointFiles, recordSharepointFileCopied } from '@/db/repositories/sharepoint-files-seen';
 import { openClientsRoot, projectFolderLink, SharepointRefused } from '@/lib/sharepoint/client-folder';
 import { walkFolder } from '@/lib/sharepoint/folder';
 import { graphDownload, graphListChildren } from '@/lib/sharepoint/graph';
@@ -50,7 +51,16 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
 
   const { access, driveId } = root;
   const folderName = link.folderName || source.folderName;
-  const walked = await walkFolder((itemId) => graphListChildren(access, driveId, itemId), link.folderId);
+  // A file an earlier fetch read, unchanged, is left out, so asking again moves on to the next files.
+  const seen = await listSeenSharepointFiles(ctx, source.engagementId);
+  const isSeen = (item: { id: string; cTag?: string }) => {
+    const before = seen.get(item.id);
+    return Boolean(before?.readKey && item.cTag && before.cTag === item.cTag);
+  };
+  const walked = await walkFolder((itemId) => graphListChildren(access, driveId, itemId), link.folderId, undefined, isSeen);
+  const seenNote = walked.alreadySeen > 0
+    ? `${walked.alreadySeen} file${walked.alreadySeen === 1 ? ' was' : 's were'} read in an earlier fetch and did not change, so I left ${walked.alreadySeen === 1 ? 'it' : 'them'} out.`
+    : undefined;
   const skipped: DropFile[] = walked.skipped.map((s) => ({
     attachmentId: `sharepoint:${s.itemId}`,
     path: `${folderName}/${s.path}`,
@@ -59,7 +69,7 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     reason: s.reason,
   }));
   if (walked.files.length === 0 && walked.skipped.length === 0) {
-    return { copied: 0, skipped, note: `The SharePoint folder ${folderName} has no files in it.` };
+    return { copied: 0, skipped, note: seenNote ? `Nothing new in the SharePoint folder ${folderName}: ${seenNote}` : `The SharePoint folder ${folderName} has no files in it.` };
   }
 
   const done = new Set((await listAskRunAttachments(ctx, run.id)).map((r) => r.relativePath));
@@ -85,7 +95,7 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     const contentType = dropContentType(fileName);
     const s3Key = `ask/attachments/${ctx.userId}/${randomUUID()}/${fileName}`;
     await putObject(s3Key, bytes, contentType);
-    await createAskAttachment(ctx, {
+    const attachment = await createAskAttachment(ctx, {
       kind: 'file',
       fileName,
       contentType,
@@ -95,9 +105,13 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
       runId: run.id,
       relativePath,
     });
+    if (attachment?.id) {
+      const sha256 = createHash('sha256').update(bytes).digest('hex');
+      await recordSharepointFileCopied(ctx, source.engagementId, { itemId: file.itemId, cTag: file.cTag, sha256, path: relativePath, attachmentId: attachment.id });
+    }
     copied += 1;
     handled += 1;
     await onProgress?.(handled, total);
   }
-  return { copied, skipped };
+  return { copied, skipped, ...(seenNote ? { note: seenNote } : {}) };
 }

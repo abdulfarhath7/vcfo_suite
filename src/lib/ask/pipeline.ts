@@ -16,6 +16,7 @@ import {
   getAskConversationWithMessages,
 } from '@/db/repositories/ask-conversations';
 import { appendAskMessage } from '@/db/repositories/ask-messages';
+import { findRecentAskDropRun } from '@/db/repositories/ask-runs';
 import { findSavedAnswer, saveAnswer, type SavedAnswerKey } from '@/db/repositories/ask-saved-answers';
 import { systemRecordAskUsage, systemTodayTokenTotal } from '@/db/repositories/ask-usage';
 import { firmDisplayName } from '@/lib/shell/brand';
@@ -65,6 +66,7 @@ import {
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
+import { dropContextLine, dropProgressAnswer, isDropProgressQuestion } from '@/lib/ask/drop/progress';
 import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
 
 /**
@@ -321,6 +323,28 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     return true;
   };
 
+  // The drop (an upload or a SharePoint fetch) this conversation started, read once and only when
+  // needed. Drops are staff work, so the client shell never looks; the repository scopes the read to
+  // the run's own person.
+  let recentDropRead: ReturnType<typeof findRecentAskDropRun> | null = null;
+  const recentDrop = () =>
+    (recentDropRead ??= shell === 'client'
+      ? Promise.resolve(null)
+      : findRecentAskDropRun(ctx, conversationId!, now).catch((error) => {
+          console.warn('[ask-vcfo] recent drop lookup failed', error);
+          return null;
+        }));
+
+  // ---- 0. "Show me the progress" while a drop works: answered from the run, no model ----
+  if (typed && !request.context && isDropProgressQuestion(typed)) {
+    const run = await recentDrop();
+    if (run) {
+      if (await stopIfKilled('fixed_workflow')) return;
+      await finish(dropProgressAnswer(run, { role: ctx.role }), { path: 'fixed_workflow' });
+      return;
+    }
+  }
+
   // ---- 1. Suggestion click: deterministic, no model (T1) ----
   if (request.suggestionId && !request.message) {
     if (await stopIfKilled('suggestion')) return;
@@ -553,6 +577,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     ...(modelSnapshot ? [SNAPSHOT_SOURCE_ID] : []),
   ]);
 
+  // A drop in this conversation goes into the model's context, so a free answer never says that
+  // nothing was fetched. Its folder and client names are engagement data, so client data off leaves it out.
+  const staffCapabilities = async () => {
+    const text = await staffCapabilityText(ctx.role);
+    const run = clientData ? await recentDrop() : null;
+    return run ? `${text} ${dropContextLine(run)}` : text;
+  };
   emit({ type: 'status', label: STATUS_LABELS.writing });
   const depth = request.depth ?? 'normal';
   const enrich = (raw: unknown) => {
@@ -577,7 +608,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       depth,
       decision,
       tools,
-      capabilities: shell === 'client' ? undefined : await staffCapabilityText(ctx.role),
+      capabilities: shell === 'client' ? undefined : await staffCapabilities(),
       validate: (raw, toolResultTexts) => {
         const vctx = { shell, allowedCitationIds, toolResultTexts: [...toolResultTexts, ...datedSources] };
         const full = validateAnswer(enrich(raw), vctx);
