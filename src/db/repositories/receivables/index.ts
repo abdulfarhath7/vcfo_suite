@@ -9,7 +9,23 @@ export { addPartner, deletePartner, updatePartner } from './partners';
 export { addClient, deleteClient, listClients, setPartnerClients, systemCoPartnerLinks, updateClient, type ClientInput, type ClientPatch, type ClientRow } from './clients';
 export { addDigestRecipient, listDigestRecipients, removeDigestRecipient, updateDigestRecipient } from './digest-recipients';
 export { listDeposits, saveDeposits } from './deposits';
-export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, type ApprovalOutcome } from './imports';
+export { approveImportRows, discardBatch, getPendingImports, rejectImportRows, requestAmountChange, stageTallyImport, stageTallyReceipts, type ApprovalOutcome } from './imports';
+export {
+  TallyJobError,
+  claimNextJob,
+  connectorByToken,
+  connectorHello,
+  createPairingCode,
+  getSyncJob,
+  getTallyStatus,
+  listRecentJobs,
+  pairConnector,
+  queueSyncJob,
+  revokeConnector,
+  saveJobResult,
+  touchConnector,
+  type ConnectorRow,
+} from './tally-sync';
 export {
   approveEmailLogs,
   getEmailLogEntry,

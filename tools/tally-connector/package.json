@@ -1,0 +1,27 @@
+{
+  "name": "vcfo-tally-connector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only bridge from TallyPrime on the office PC to VCFO Suite.",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=20" },
+  "bin": { "vcfo-tally-connector": "dist/connector.cjs" },
+  "scripts": {
+    "build": "node scripts/bundle.mjs",
+    "build:exe": "node scripts/build-exe.mjs",
+    "start": "node dist/connector.cjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.24.0",
+    "postject": "^1.0.0-alpha.6",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

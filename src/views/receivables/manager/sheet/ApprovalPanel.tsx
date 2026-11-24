@@ -26,6 +26,12 @@ import { DatePick } from './DatePick';
  * (one box per client, which also moves the due dates of its new rows); the due date is per row.
  * "Approve N → Invoices" sends the ticked rows with their edits; rows the server refuses (a
  * received invoice, a client with no partner) stay in the panel and are named in a toast.
+ *
+ * PAYMENT rows come from a Sync from Tally (docs/specs/receivables/TALLY-LIVE.md): one payment
+ * against one invoice, with the day it arrived and the receipt number. Approving marks the invoice
+ * received, or part-paid when the payment is less than the balance. A payment whose invoice is not
+ * on the sheet, or is already received, cannot be ticked and says why. Each pending upload or sync
+ * has its own line with a Discard button.
  */
 
 const KIND: Record<ImportRowKind, { label: string; tone: 'ok' | 'warn' | 'idle' | 'bad' | 'prog' }> = {
@@ -34,6 +40,7 @@ const KIND: Record<ImportRowKind, { label: string; tone: 'ok' | 'warn' | 'idle' 
   same: { label: 'SAME', tone: 'idle' },
   no_partner: { label: 'NO PARTNER', tone: 'bad' },
   matched: { label: 'MATCHED', tone: 'prog' },
+  receipt: { label: 'PAYMENT', tone: 'prog' },
 };
 
 const REFUSED: Record<string, string> = {
@@ -43,6 +50,11 @@ const REFUSED: Record<string, string> = {
   not_found: 'the invoice is gone',
   due_date: 'a due date is not valid',
   invoice_date: 'no invoice date',
+  receipt_no_invoice: 'no invoice with this number on the sheet',
+  receipt_received: 'the invoice is already received',
+  receipt_failed: 'the payment could not be applied',
+  paid_on: 'no payment date from Tally',
+  amount: 'no payment amount above zero',
 };
 
 const TH = 'whitespace-nowrap border-b border-line bg-surface-sunken px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[.04em] text-ink-muted';
@@ -74,7 +86,7 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       for (const r of rows) {
         if (touched.has(r.id)) {
           if (prev.has(r.id)) next.add(r.id);
-        } else if (r.kind === 'new' || r.kind === 'changed' || r.kind === 'matched') next.add(r.id);
+        } else if (r.kind === 'new' || r.kind === 'changed' || r.kind === 'matched' || (r.kind === 'receipt' && r.invoiceId && !r.reason)) next.add(r.id);
       }
       return next;
     });
@@ -106,7 +118,7 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
         pg.clients.push(cg);
       }
       cg.rows.push(r);
-      if (r.kind !== 'same') pg.total += r.amountInr;
+      if (r.kind !== 'same' && r.kind !== 'receipt') pg.total += r.amountInr;
     }
     // Partners by name, "No client partner yet" last; clients by name.
     return [...byPartner.values()]
@@ -125,7 +137,7 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
     });
   };
 
-  const tickable = (r: ImportRowDto) => r.kind !== 'same' && !needsPartner(r);
+  const tickable = (r: ImportRowDto) => r.kind !== 'same' && !needsPartner(r) && (r.kind !== 'receipt' || (Boolean(r.invoiceId) && !r.reason));
   const chosen = rows.filter((r) => ticked.has(r.id) && tickable(r));
   const busy = actions.approve.isPending || actions.reject.isPending || actions.discard.isPending;
 
@@ -163,19 +175,20 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       { onSuccess: (res) => toastSuccess(`${res.rejected} row${res.rejected === 1 ? '' : 's'} rejected`), onError: (e) => toastError('Not rejected', e instanceof Error ? e.message : undefined) },
     );
 
-  const discard = () =>
-    pending.batch &&
-    actions.discard.mutate(pending.batch.id, {
-      onSuccess: () => toastSuccess('Upload discarded', 'Nothing was added to the sheet.'),
+  const batches = pending.batches ?? (pending.batch ? [pending.batch] : []);
+  const discard = (batchId: string) =>
+    actions.discard.mutate(batchId, {
+      onSuccess: () => toastSuccess('Discarded', 'Nothing was added to the sheet.'),
       onError: (e) => toastError('Not discarded', e instanceof Error ? e.message : undefined),
     });
 
-  const counts = rows.reduce<Record<ImportRowKind, number>>((acc, r) => ((acc[r.kind] += 1), acc), { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0 });
+  const counts = rows.reduce<Record<ImportRowKind, number>>((acc, r) => ((acc[r.kind] += 1), acc), { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0, receipt: 0 });
   const meta = [
     counts.new ? `${counts.new} new` : '',
     counts.changed ? `${counts.changed} changed` : '',
     counts.matched ? `${counts.matched} matched by client and amount` : '',
     counts.no_partner ? `${counts.no_partner} with no partner` : '',
+    counts.receipt ? `${counts.receipt} payment${counts.receipt === 1 ? '' : 's'}` : '',
     counts.same ? `${counts.same} same` : '',
   ]
     .filter(Boolean)
@@ -187,12 +200,6 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       meta={meta}
       right={
         <div className="flex flex-wrap items-center gap-2">
-          {pending.batch ? (
-            <Button size="sm" variant="quiet" disabled={busy} onClick={discard}>
-              <Trash2 aria-hidden />
-              Discard upload
-            </Button>
-          ) : null}
           <Button size="sm" variant="secondary" disabled={busy || !chosen.length} onClick={reject}>
             <X aria-hidden />
             Reject
@@ -205,14 +212,20 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
       }
     >
       <div className="flex flex-col gap-3">
-        {pending.batch ? (
-          <p className="text-[12.5px] text-ink-muted">
-            {`${pending.batch.fileName}`}
-            {pending.batch.company ? ` · ${pending.batch.company}` : ''}
-            {pending.batch.period ? ` · ${pending.batch.period}` : ''}
-            {pending.batch.uploadedByName ? ` · uploaded by ${pending.batch.uploadedByName}` : ''}
-          </p>
-        ) : null}
+        {batches.map((b) => (
+          <div key={b.id} className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[12.5px] text-ink-muted">
+              {b.source === 'tally_live' ? `${b.fileName} · ${b.kind === 'receipts' ? 'payments' : 'invoices'}` : b.fileName}
+              {b.company ? ` · ${b.company}` : ''}
+              {b.source !== 'tally_live' && b.period ? ` · ${b.period}` : ''}
+              {b.uploadedByName ? ` · ${b.source === 'tally_live' ? 'synced' : 'uploaded'} by ${b.uploadedByName}` : ''}
+            </p>
+            <Button size="sm" variant="quiet" disabled={busy} onClick={() => discard(b.id)}>
+              <Trash2 aria-hidden />
+              {b.source === 'tally_live' ? 'Discard sync' : 'Discard upload'}
+            </Button>
+          </div>
+        ))}
         {groups.map((pg) => (
           <section key={pg.key} aria-label={pg.name} className="rounded-md border border-line bg-surface-raised">
             <header className="flex items-center justify-between gap-2 border-b border-line bg-surface-sunken px-3 py-2">
@@ -302,7 +315,9 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
                             <td className={cn(TD, 'font-mono text-[12px]')}>{r.invoiceNo ?? '—'}</td>
                             <td className={cn(TD, 'tabular-nums')}>{r.invoiceDate ? sheetDate(r.invoiceDate) : '—'}</td>
                             <td className={TD}>
-                              {r.kind === 'same' ? (
+                              {r.kind === 'receipt' ? (
+                                <span className="tabular-nums">{r.receivedOn ? `Paid ${sheetDate(r.receivedOn)}` : '—'}</span>
+                              ) : r.kind === 'same' ? (
                                 <span className="tabular-nums">{d ? sheetDate(d) : '—'}</span>
                               ) : (
                                 <DatePick variant="cell" label={`Due date of ${r.invoiceNo ?? r.clientName}`} value={d ?? ''} onChange={(v) => setDue((x) => ({ ...x, [r.id]: v }))} />
@@ -320,14 +335,18 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
                               )}
                             </td>
                             <td className={cn(TD, 'text-[12.5px] text-ink-2')}>
-                              {r.reason ??
+                              {r.kind === 'receipt' ? (
+                                <ReceiptNote row={r} />
+                              ) : (
+                                r.reason ??
                                 (r.kind === 'changed'
                                   ? 'Tally shows a different amount'
                                   : r.kind === 'same'
                                     ? 'Already on the sheet'
                                     : r.kind === 'matched'
                                       ? 'Same client and amount as an invoice with no number; approve to fill in the Tally number'
-                                      : '')}
+                                      : '')
+                              )}
                               {r.requestedByName && r.source === 'staff' ? <span className="block text-[11.5px] text-ink-muted">{`by ${r.requestedByName}`}</span> : null}
                             </td>
                           </tr>
@@ -352,5 +371,26 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
         ) : null}
       </div>
     </DashSection>
+  );
+}
+
+/** What a payment row does once approved: settles the invoice or leaves a balance; or why it cannot. */
+function ReceiptNote({ row }: { row: ImportRowDto }) {
+  const receipt = row.receiptNo ? `Receipt ${row.receiptNo}` : 'Receipt';
+  if (row.reason) {
+    return (
+      <span>
+        <span className="text-danger">{row.reason}</span>
+        <span className="block text-[11.5px] text-ink-muted">{receipt}</span>
+      </span>
+    );
+  }
+  const open = row.oldAmountInr;
+  const left = open !== null ? Math.round((open - row.amountInr) * 100) / 100 : null;
+  return (
+    <span>
+      {left !== null && left > 0.005 ? `Part payment; ₹${inr(left)} stays open` : 'Settles the invoice'}
+      <span className="block text-[11.5px] text-ink-muted">{receipt}</span>
+    </span>
   );
 }

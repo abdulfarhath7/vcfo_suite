@@ -491,6 +491,13 @@
       "when": 1795536467937,
       "tag": "0069_sharepoint_files_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1795545463151,
+      "tag": "0070_tally_live_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -86,6 +86,11 @@ const ERROR_TEXT: Record<string, string> = {
   doubletick_not_configured: 'DoubleTick is not set up on the server yet.',
   no_phone: 'Add your WhatsApp number in Account settings first.',
   whatsapp_failed: 'DoubleTick did not send the message.',
+  /* Tally live sync (docs/specs/receivables/TALLY-LIVE.md). */
+  sync_type: 'Pick Invoices or Payments.',
+  sync_period: 'Pick a period of up to 400 days, the start before the end.',
+  tally_not_connected: 'Connect Tally first.',
+  sync_running: 'A sync from Tally is already running for this sheet. Wait for it to finish.',
 };
 
 class ReceivablesApiError extends Error {
