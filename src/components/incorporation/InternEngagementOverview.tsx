@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { ProgressEmailCcSection } from '@/components/incorporation/ProgressEmailCcSection';
 import { RecordTile } from '@/components/incorporation/RecordHead';
+import { SharepointFolderControl } from '@/components/incorporation/SharepointFolderControl';
 import styles from './intern-engagement-overview.module.css';
 
 /**
@@ -60,6 +61,7 @@ export function InternEngagementOverview({
             </div>
           </div>
           {actions}
+          <SharepointFolderControl engagementId={engagementId} />
           <ProgressEmailCcSection engagementId={engagementId} variant="inline" className={styles.cc} />
         </div>
         {stats}

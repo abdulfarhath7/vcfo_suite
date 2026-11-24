@@ -36,7 +36,7 @@ export const SERVICE_SCOPES: Record<ServiceConfig['id'], string[]> = {
   storage: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject', 's3:ListBucket'],
   jobs: ['events:send', 'runs:read'],
   ask: ['messages:create'],
-  outlook: ['offline_access', 'User.Read', 'Mail.Send', 'Calendars.ReadWrite'],
+  outlook: ['offline_access', 'User.Read', 'Mail.Send', 'Calendars.ReadWrite', 'Files.Read.All', 'Sites.Read.All'],
   credentials: ['aes-256-gcm'],
   logs: ['logs:FilterLogEvents', 'logs:DescribeLogGroups', 'logs:PutRetentionPolicy'],
   deploys: ['apprunner:DescribeService', 'apprunner:ListOperations', 'apprunner:StartDeployment', 'apprunner:UpdateService'],

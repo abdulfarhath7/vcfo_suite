@@ -115,7 +115,7 @@ access, tunnels and Auth.js URLs are in `docs/context/notes/tooling.md`.
 - `docs/context/STATE.md` — what is verified and deployed, what is deferred.
 - `docs/context/HOW-TO-BUILD.md` — recipes (page, route, repository, migration, job, UI) and a "Where is X?" table.
 - `docs/context/notes/*.md` — gotchas per area (aws, checklist-workflow, compliance,
-  data-access, demo-data, design-system, email, incorporation-docs, lead-ui, notifications,
+  data-access, demo-data, design-system, email, incorporation-docs, lead-ui, notifications, sharepoint,
   receivables, shell-ui, tooling). Append when something costs more than a minute.
 - `docs/context/AWS-DEPLOY.md` and `infra/README.md` — the deploy runbook.
 - `docs/specs/` — specs still in progress; finished specs are in git history. `QUESTIONS.md`
@@ -139,6 +139,9 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- SharePoint client folders (`docs/context/notes/sharepoint.md`, branch `feat/sharepoint`) need migration
+  `0068_sharepoint_folder` (additive) on RDS, the Azure app's delegated `Files.Read.All` and `Sites.Read.All`,
+  and `SHAREPOINT_SITE_URL` before deploy. People reconnect Microsoft 365 once.
 - Receivables on `main` (18–19 Nov 2026): migrations `0060` to `0065` are applied on RDS. `0066_receivables_team`
   (additive, the Team section) must be applied on RDS before the build that holds it is deployed.
 - Receivables v2 (`docs/specs/receivables/V2.md`, branch `feature/receivables-v2`) needs migrations

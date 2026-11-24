@@ -11,6 +11,7 @@ import {
   graphSendMail,
   graphSendMailWithLink,
   graphUpdateTeamsEvent,
+  hasFileScope,
   refreshAccessToken,
   type GraphFileAttachment,
   type GraphTeamsEventInput,
@@ -29,6 +30,8 @@ export type OutlookConnectionPublic = {
   /** K-40: add the signature below to every message sent from the app. */
   signatureEnabled: boolean;
   signatureText: string | null;
+  /** The connection may read SharePoint files; false until a connection from before 24 Nov 2026 is renewed. */
+  filesEnabled: boolean;
 };
 
 export async function getOutlookStatus(ctx: AuthContext): Promise<OutlookConnectionPublic> {
@@ -38,16 +41,18 @@ export async function getOutlookStatus(ctx: AuthContext): Promise<OutlookConnect
       msEmail: outlookConnections.msEmail,
       signatureEnabled: outlookConnections.signatureEnabled,
       signatureText: outlookConnections.signatureText,
+      scopes: outlookConnections.scopes,
     })
     .from(outlookConnections)
     .where(eq(outlookConnections.userId, ctx.userId))
     .limit(1);
-  if (!row) return { connected: false, signatureEnabled: false, signatureText: null };
+  if (!row) return { connected: false, signatureEnabled: false, signatureText: null, filesEnabled: false };
   return {
     connected: true,
     msEmail: row.msEmail,
     signatureEnabled: row.signatureEnabled,
     signatureText: row.signatureText,
+    filesEnabled: hasFileScope(row.scopes),
   };
 }
 
@@ -93,6 +98,8 @@ export async function upsertOutlookConnection(
     accessToken: string;
     refreshToken: string;
     expiresInSec: number;
+    /** The granted scopes from the token response; left as stored when Microsoft sends none. */
+    scopes?: string | null;
   },
 ): Promise<void> {
   assertStaff(ctx);
@@ -105,6 +112,7 @@ export async function upsertOutlookConnection(
     refreshTokenEnc: encryptSecret(input.refreshToken),
     expiresAt,
     updatedAt: new Date(),
+    ...(input.scopes ? { scopes: input.scopes } : {}),
   };
   await db
     .insert(outlookConnections)
@@ -118,6 +126,7 @@ export async function upsertOutlookConnection(
         refreshTokenEnc: values.refreshTokenEnc,
         expiresAt: values.expiresAt,
         updatedAt: values.updatedAt,
+        ...(input.scopes ? { scopes: input.scopes } : {}),
       },
     });
 }
@@ -142,7 +151,7 @@ async function validAccessToken(ctx: AuthContext): Promise<{ access: string; msE
     return { access: decryptSecret(row.accessTokenEnc), msEmail: row.msEmail };
   }
 
-  const tokens = await refreshAccessToken(refresh);
+  const tokens = await refreshAccessToken(refresh, row.scopes);
   const nextRefresh = tokens.refresh_token ?? refresh;
   await upsertOutlookConnection(ctx, {
     msEmail: row.msEmail,
@@ -150,8 +159,38 @@ async function validAccessToken(ctx: AuthContext): Promise<{ access: string; msE
     accessToken: tokens.access_token,
     refreshToken: nextRefresh,
     expiresInSec: tokens.expires_in ?? 3600,
+    // Only a connection that already records its scopes keeps them current; an older row stays
+    // null, so it is still told to reconnect for SharePoint.
+    scopes: row.scopes ? tokens.scope : null,
   });
   return { access: tokens.access_token, msEmail: row.msEmail };
+}
+
+export type GraphFileAccess =
+  | { ok: true; access: string; msEmail: string }
+  | { ok: false; code: 'not_connected' | 'reconnect' };
+
+/**
+ * A Graph token that may read SharePoint files as the caller. `not_connected` when the person has
+ * no Microsoft 365 link, `reconnect` when the link predates file reading (24 Nov 2026) or its
+ * refresh failed. Staff only; the token never leaves the server.
+ */
+export async function getGraphFileAccess(ctx: AuthContext): Promise<GraphFileAccess> {
+  assertStaff(ctx);
+  const [row] = await db
+    .select({ scopes: outlookConnections.scopes })
+    .from(outlookConnections)
+    .where(eq(outlookConnections.userId, ctx.userId))
+    .limit(1);
+  if (!row) return { ok: false, code: 'not_connected' };
+  if (!hasFileScope(row.scopes)) return { ok: false, code: 'reconnect' };
+  try {
+    const { access, msEmail } = await validAccessToken(ctx);
+    return { ok: true, access, msEmail };
+  } catch (err) {
+    console.error('[outlook] token for SharePoint failed', err instanceof Error ? err.message.slice(0, 200) : err);
+    return { ok: false, code: 'reconnect' };
+  }
 }
 
 /** Fetch the connected mailbox’s Graph profile photo. Staff only. */
@@ -210,7 +249,7 @@ async function systemAccessToken(userId: string): Promise<string | null> {
   try {
     if (row.expiresAt.getTime() - Date.now() > 2 * 60 * 1000) return decryptSecret(row.accessTokenEnc);
     const refresh = decryptSecret(row.refreshTokenEnc);
-    const tokens = await refreshAccessToken(refresh);
+    const tokens = await refreshAccessToken(refresh, row.scopes);
     await db
       .update(outlookConnections)
       .set({
@@ -218,6 +257,7 @@ async function systemAccessToken(userId: string): Promise<string | null> {
         refreshTokenEnc: encryptSecret(tokens.refresh_token ?? refresh),
         expiresAt: new Date(Date.now() + Math.max(60, tokens.expires_in ?? 3600) * 1000),
         updatedAt: new Date(),
+        ...(row.scopes && tokens.scope ? { scopes: tokens.scope } : {}),
       })
       .where(eq(outlookConnections.userId, userId));
     return tokens.access_token;

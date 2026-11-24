@@ -178,6 +178,13 @@ export const engagements = pgTable(
     expectedCoiOn: date('expected_coi_on'),
     // SQL type is text[], not jsonb — merge-cc.ts treats it as a string array.
     progressCcEmails: text('progress_cc_emails').array().notNull().default([]),
+    /**
+     * The client's own folder in the firm's SharePoint (`/Clients/<client>`), linked the first time
+     * Ask VCFO fetches from it or on the project's settings. Graph ids, never a URL the browser opens.
+     */
+    sharepointDriveId: text('sharepoint_drive_id'),
+    sharepointFolderId: text('sharepoint_folder_id'),
+    sharepointFolderName: text('sharepoint_folder_name'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     /** Soft delete — non-null rows are hidden everywhere except the admin recycle bin. */
@@ -955,6 +962,12 @@ export const outlookConnections = pgTable('outlook_connections', {
   signatureEnabled: boolean('signature_enabled').notNull().default(false),
   /** The signature as plain text; line breaks are kept. */
   signatureText: text('signature_text'),
+  /**
+   * The Graph scopes Microsoft granted, space separated, as the token response lists them. Null for
+   * connections made before SharePoint reading (24 Nov 2026); those cannot read files until the
+   * person reconnects, and their refresh keeps asking for the older scopes only.
+   */
+  scopes: text('scopes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

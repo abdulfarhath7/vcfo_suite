@@ -176,6 +176,19 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 - **Not covered yet (phase 2).** Interest on GST, TDS and advance tax, and PF damages: they need the amount due. FLA, Softex and the other penalties that are not a function of the date.
 - **To check with the tax team.** The GST cap uses the highest band (₹10,000) because turnover is not stored; the TDS fee cannot exceed the TDS for the quarter, which is not stored either; citations still name the Income-tax Act, 1961; the MSME-1 figure is a maximum, decided in adjudication.
 
+## SharePoint client folders (24 Nov 2026, on `feat/sharepoint`, not merged or deployed)
+
+- Ask VCFO reads `/Clients/<client>` in the firm's SharePoint when asked ("take data of Kestrel from
+  SharePoint") and puts what it finds on one review card through the drop pipeline. Gotchas:
+  `docs/context/notes/sharepoint.md`.
+- No new connect button: the Outlook connection asks for `Files.Read.All` and `Sites.Read.All`, and
+  people connected before 24 Nov reconnect once (Settings, Email shows "Needs reconnect").
+- Migration `0068_sharepoint_folder` (additive): `engagements.sharepoint_drive_id`,
+  `sharepoint_folder_id`, `sharepoint_folder_name` and `outlook_connections.scopes`.
+- Before deploy: add the two delegated permissions to the Azure app, set `SHAREPOINT_SITE_URL` (and
+  `SHAREPOINT_CLIENTS_PATH` if the folder is not `/Clients`), and apply 0068 on RDS.
+- Not tested against a real SharePoint site yet; the Graph calls are covered by unit tests with fakes.
+
 ## Intentionally deferred / pilot limits
 
 - **Change or purge the seeded demo passwords on RDS before real users** (carried over from the removed `TASKS.md`)

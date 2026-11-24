@@ -14,6 +14,7 @@ import { companiesNamed, lockEngagement } from '@/lib/ask/data-router/lock';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
 import type { LlmProvider } from '@/lib/ask/provider';
 import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
+import { startSharepointDrop } from '@/lib/sharepoint/start-drop';
 
 /**
  * The second Do workflow: one plain request ("remind Routeware about the NOC", "mark name
@@ -25,7 +26,7 @@ import { gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-g
  */
 
 const CARD_DAYS = 7;
-const PICKABLE_AREAS = ['tasks.', 'statuses.', 'requests.', 'reminders.'];
+const PICKABLE_AREAS = ['tasks.', 'statuses.', 'requests.', 'reminders.', 'sharepoint.'];
 
 const OUTPUT_SCHEMA = (names: readonly string[]) => ({
   type: 'object',
@@ -256,6 +257,19 @@ export async function pickAndPrepare(req: PickRequest): Promise<AnswerEnvelope |
   }
 
   const actx: ActionContext = { auth: ctx, engagementId, conversationId: req.conversationId, runId: null, now: req.now, via: 'ask' };
+
+  // A SharePoint fetch starts a drop on the client's folder; the answer carries the run, so the chat
+  // shows its progress and its card exactly as for dropped files.
+  if (action.name === 'sharepoint.fetch') {
+    const started = await startSharepointDrop(ctx, {
+      engagementId,
+      conversationId: req.conversationId,
+      message: req.message,
+      projectPath: `/projects/${row.slug || row.id}`,
+    });
+    if (started.ok === false) return line(started.message);
+    return line(`I am reading the SharePoint folder ${started.folderName} for ${started.companyName}. I will put what I find on a card; nothing is saved until you accept.`, { runId: started.runId });
+  }
 
   // T1: private and reversible, so it runs now. Only the email draft is T1 today.
   if (action.tier === 'T1') {

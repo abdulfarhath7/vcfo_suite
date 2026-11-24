@@ -69,6 +69,20 @@ export interface DropState {
   overBudget?: boolean;
   /** Questions and notes from sorting, for the closing message. Identity numbers are masked. */
   notes?: string[];
+  /**
+   * Set when the files come from the client's SharePoint folder instead of an upload. The folder's
+   * Graph ids stay on the project row, not here, because the run state is masked.
+   */
+  source?: DropSharepointSource;
+}
+
+export interface DropSharepointSource {
+  kind: 'sharepoint';
+  engagementId: string;
+  /** The folder name as SharePoint shows it, for the messages. */
+  folderName: string;
+  /** True once the files were copied into the drop, so a retry does not copy them again. */
+  pulled?: boolean;
 }
 
 export function emptyDropState(): DropState {

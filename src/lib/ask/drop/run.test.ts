@@ -94,6 +94,9 @@ const send = vi.fn(async () => {
 });
 vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => send(...(a as [])) } }));
 
+const pullSharepointFiles = vi.fn();
+vi.mock('./sharepoint-pull', () => ({ pullSharepointFiles: (...a: unknown[]) => pullSharepointFiles(...a) }));
+
 const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus } = await import('./run');
 
 function file(id: string, fileName: string, data: Buffer | Uint8Array, extra: Partial<Row> = {}): Row {
@@ -133,6 +136,38 @@ describe('queueAskDrop', () => {
     expect(state.answerMessageId).toBe('msg-1');
     expect(messages[0]!.answer.changesetId).toBe('d0000000-0000-4000-8000-00000000000d');
     expect(messages[0]!.text).toMatch(/card for Acme/);
+  });
+});
+
+describe('runAskDrop from SharePoint', () => {
+  it('copies the folder in first, as the owner, then reads and sorts it like a dropped folder', async () => {
+    rows = [];
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme' } };
+    pullSharepointFiles.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('sp-1', 'pan.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/KYC/pan.pdf', profileId: ctx.userId }));
+      return { copied: 1, skipped: [{ attachmentId: 'sharepoint:x', path: 'Acme/plan.dwg', size: 3, status: 'skipped', reason: 'not read' }] };
+    });
+    await runAskDrop('run-1');
+    expect(pullSharepointFiles).toHaveBeenCalledTimes(1);
+    expect(pullSharepointFiles.mock.calls[0]![0]).toBe(owner);
+    expect(run.status).toBe('waiting_approval');
+    const state = run.state as { files: Array<{ path: string; status: string }>; source: { pulled?: boolean } };
+    expect(state.source.pulled).toBe(true);
+    expect(state.files.map((f) => [f.path, f.status])).toEqual([
+      ['Acme/KYC/pan.pdf', 'placed'],
+      ['Acme/plan.dwg', 'skipped'],
+    ]);
+    expect(messages[0]!.text).toMatch(/card for Acme/);
+    expect(messages[0]!.text).toMatch(/Acme\/plan\.dwg \(not read\)/);
+  });
+
+  it('does not copy the folder again once it is pulled, and does nothing for an upload', async () => {
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme', pulled: true } };
+    await runAskDrop('run-1');
+    run = { ...run, status: 'queued', state: { files: [], groups: [], unplaced: [], progress: { done: 0, total: 0, label: '' }, instruction: '' } };
+    actor = { ctx: owner, run };
+    await runAskDrop('run-1');
+    expect(pullSharepointFiles).not.toHaveBeenCalled();
   });
 });
 

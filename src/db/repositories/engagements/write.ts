@@ -177,6 +177,32 @@ export async function updateEngagement(
   return row;
 }
 
+export interface SharepointFolderLink {
+  driveId: string;
+  folderId: string;
+  folderName: string;
+}
+
+/**
+ * Links a project to its client folder in SharePoint, or unlinks it with null. Staff who can reach
+ * the project may set it (a lead fetching for their own client links it the first time); clients
+ * may not. Ids only: the folder is read later as the person who asks, with their own Graph token.
+ */
+export async function setSharepointFolder(ctx: AuthContext, id: string, link: SharepointFolderLink | null): Promise<void> {
+  if (ctx.role === 'client' || ctx.role === 'developer' || ctx.role === 'partner') throw new Error('not permitted');
+  const existing = await getEngagementById(ctx, engagementDbId(id));
+  if (!existing) throw new Error('Engagement not found or not permitted');
+  await db
+    .update(engagements)
+    .set({
+      sharepointDriveId: link?.driveId ?? null,
+      sharepointFolderId: link?.folderId ?? null,
+      sharepointFolderName: link?.folderName.slice(0, 300) ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(engagements.id, existing.id));
+}
+
 export async function updateProgressCcEmails(
   ctx: AuthContext,
   appOrDbId: string,

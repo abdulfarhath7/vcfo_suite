@@ -4,8 +4,49 @@ import { authSecrets } from '@/auth/secrets';
 import { azureClientSecret, isInvalidClient } from '@/lib/secrets/app-secrets';
 import { withSecretRetry } from '@/lib/secrets/runtime-secret';
 
-/** Calendars.ReadWrite (2 Nov 2026): board meeting Teams links. Older connections lack it until reconnected. */
-const OUTLOOK_SCOPES = ['offline_access', 'User.Read', 'Mail.Send', 'Calendars.ReadWrite'].join(' ');
+/**
+ * The scopes asked for on connect. Calendars.ReadWrite (2 Nov 2026) is for board meeting Teams
+ * links. Files.Read.All and Sites.Read.All (24 Nov 2026) let Ask VCFO read a client's SharePoint
+ * folder as the person, so it sees only what that person may open. Older connections lack them
+ * until the person reconnects.
+ */
+const BASE_SCOPES = ['offline_access', 'User.Read', 'Mail.Send', 'Calendars.ReadWrite'];
+const FILE_SCOPES = ['Files.Read.All', 'Sites.Read.All'];
+
+/**
+ * The file scopes are asked for only once a SharePoint site is set (SHAREPOINT_SITE_URL), so a
+ * deploy before the Azure app has those permissions never puts a new consent in front of people
+ * who only want email.
+ */
+function connectScopes(): string {
+  return [...BASE_SCOPES, ...(process.env.SHAREPOINT_SITE_URL?.trim() ? FILE_SCOPES : [])].join(' ');
+}
+
+/**
+ * What a connection made before 24 Nov 2026 was granted. Its refresh asks for these only, because
+ * asking a refresh for a scope the person never consented to is refused by Microsoft, and that
+ * would stop their email too.
+ */
+const LEGACY_SCOPES = BASE_SCOPES.join(' ');
+
+/** The scope names from a token response, without the Graph prefix, for example `Files.Read.All`. */
+export function grantedScopes(scope: string | null | undefined): string[] {
+  if (!scope) return [];
+  return [...new Set(scope.split(/\s+/).filter(Boolean).map((s) => s.replace(/^https:\/\/graph\.microsoft\.com\//i, '')))];
+}
+
+/** True when the stored scopes let the app read SharePoint files. */
+export function hasFileScope(scopes: string | null | undefined): boolean {
+  const names = grantedScopes(scopes).map((s) => s.toLowerCase());
+  return names.includes('files.read.all') || names.includes('sites.read.all');
+}
+
+/** The scope list a refresh may ask for: what was granted, or the older list for older rows. */
+function refreshScopes(stored: string | null | undefined): string {
+  const names = grantedScopes(stored);
+  if (names.length === 0) return LEGACY_SCOPES;
+  return [...new Set(['offline_access', ...names])].join(' ');
+}
 
 function azureTenant(): string {
   return process.env.AZURE_AD_TENANT_ID?.trim() || 'common';
@@ -79,7 +120,7 @@ export function authorizeUrl(state: string): string {
     response_type: 'code',
     redirect_uri: outlookRedirectUri(),
     response_mode: 'query',
-    scope: OUTLOOK_SCOPES,
+    scope: connectScopes(),
     state,
     prompt: 'select_account',
   });
@@ -91,18 +132,23 @@ export type TokenResponse = {
   refresh_token?: string;
   expires_in?: number;
   token_type?: string;
+  /** The scopes Microsoft granted, space separated. */
+  scope?: string;
 };
 
 export async function exchangeCodeForTokens(code: string): Promise<TokenResponse> {
   return postToken({
+    scope: connectScopes(),
     grant_type: 'authorization_code',
     code,
     redirect_uri: outlookRedirectUri(),
   });
 }
 
-export async function refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+/** `storedScopes` is the connection's `scopes` column; null for a connection made before 24 Nov 2026. */
+export async function refreshAccessToken(refreshToken: string, storedScopes?: string | null): Promise<TokenResponse> {
   return postToken({
+    scope: refreshScopes(storedScopes),
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
   });
@@ -140,7 +186,6 @@ async function postTokenWith(clientId: string, clientSecret: string, body: Recor
       body: new URLSearchParams({
         client_id: clientId,
         client_secret: clientSecret,
-        scope: OUTLOOK_SCOPES,
         ...body,
       }),
     },

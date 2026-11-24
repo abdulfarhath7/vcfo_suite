@@ -21,6 +21,7 @@ export function OutlookMailboxCard({
   const [connected, setConnected] = useState(false);
   const [msEmail, setMsEmail] = useState<string | undefined>();
   const [signatureOn, setSignatureOn] = useState(false);
+  const [sharepoint, setSharepoint] = useState<{ configured: boolean; enabled: boolean }>({ configured: false, enabled: false });
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -36,6 +37,8 @@ export function OutlookMailboxCard({
           msEmail?: string;
           signatureEnabled?: boolean;
           signatureText?: string | null;
+          sharepointConfigured?: boolean;
+          filesEnabled?: boolean;
         };
         if (cancelled) return;
         setConfigured(json.configured !== false);
@@ -43,6 +46,7 @@ export function OutlookMailboxCard({
         onConnectedChange?.(Boolean(json.connected));
         setMsEmail(json.msEmail);
         setSignatureOn(Boolean(json.signatureEnabled && json.signatureText?.trim()));
+        setSharepoint({ configured: Boolean(json.sharepointConfigured), enabled: Boolean(json.filesEnabled) });
       } catch {
         if (!cancelled) {
           setConnected(false);
@@ -144,6 +148,25 @@ export function OutlookMailboxCard({
           {connected ? (
             <SettingsRow label="Signature" hint="Added under every message you send from VCFO">
               <Chip tone={signatureOn ? 'ok' : 'idle'}>{signatureOn ? 'On' : 'Off'}</Chip>
+            </SettingsRow>
+          ) : null}
+          {connected && sharepoint.configured ? (
+            <SettingsRow label="SharePoint" hint="Ask VCFO reads client folders as you, so it sees only what you can open">
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip tone={sharepoint.enabled ? 'ok' : 'idle'}>{sharepoint.enabled ? 'Can read' : 'Needs reconnect'}</Chip>
+                {sharepoint.enabled ? null : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => {
+                      window.location.href = '/api/outlook/connect';
+                    }}
+                  >
+                    Reconnect
+                  </Button>
+                )}
+              </div>
             </SettingsRow>
           ) : null}
           {connected && asking ? (

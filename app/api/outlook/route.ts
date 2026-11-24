@@ -4,6 +4,7 @@ import { requireAnyRole } from '@/auth/guards';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { getOutlookStatus, updateOutlookSignature } from '@/db/repositories/outlook-connections';
 import { outlookConfigured } from '@/lib/outlook/oauth';
+import { sharepointConfig } from '@/lib/sharepoint/config';
 import { publicErrorMessage } from '@/lib/api-error';
 
 /** GET /api/outlook — connection status for the signed-in staff user. */
@@ -16,6 +17,7 @@ export async function GET() {
     const status = await getOutlookStatus(guard.ctx);
     return NextResponse.json({
       configured: outlookConfigured(),
+      sharepointConfigured: sharepointConfig() !== null,
       ...status,
     });
   } catch (err) {

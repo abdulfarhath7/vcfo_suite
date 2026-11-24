@@ -1,5 +1,5 @@
 import { inngest } from './client';
-import { ASK_DROP_EVENT, dropAssembleStep, dropFinishStep, dropReadStep, dropUnpackStep, failAskDrop } from '@/lib/ask/drop/run';
+import { ASK_DROP_EVENT, dropAssembleStep, dropFinishStep, dropPullStep, dropReadStep, dropUnpackStep, failAskDrop } from '@/lib/ask/drop/run';
 
 /**
  * Ask VCFO drop: the files, folders and ZIPs a lead dropped into the chat, read and sorted into review
@@ -21,6 +21,8 @@ export const askDrop = inngest.createFunction(
   async ({ event, step }) => {
     const runId = String((event.data as { runId?: unknown })?.runId ?? '');
     if (!runId) return { skipped: 'invalid_payload' };
+    // A SharePoint fetch copies the client folder in first; for an upload this does nothing.
+    await step.run('sharepoint', () => dropPullStep(runId));
     const toRead = await step.run('unpack', () => dropUnpackStep(runId));
     if (toRead === null) return { runId, skipped: 'not_runnable' };
     for (const attachmentId of toRead) await step.run(`read-${attachmentId}`, () => dropReadStep(runId, attachmentId));

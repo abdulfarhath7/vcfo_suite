@@ -21,6 +21,7 @@ const AREA_LOADERS = {
   labour: () => import('./labour'),
   'client-portal': () => import('./client-portal'),
   filing: () => import('./filing'),
+  sharepoint: () => import('./sharepoint'),
 } satisfies Record<string, () => Promise<{ actions: AnyAction[] }>>;
 
 export type ActionArea = keyof typeof AREA_LOADERS;

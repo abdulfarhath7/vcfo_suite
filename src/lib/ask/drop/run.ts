@@ -25,6 +25,7 @@ import { dropSummaryLine, NOT_READ_BUDGET } from './summary';
 import { dropContentType, dropFileRefusal, isZipName, safeFileName } from './extensions';
 import { ASK_DROP_EVENT, DROP_WORKFLOW, emptyDropState, type DropFile, type DropGroup, type DropState } from './types';
 import { DEFAULT_UNZIP_LIMITS, unzipDrop, UnzipRefused } from './unzip';
+import { pullSharepointFiles } from './sharepoint-pull';
 
 /**
  * The drop job's work, one function per step: unpack the ZIPs, read each file, sort them into cards,
@@ -73,6 +74,29 @@ function pathOf(row: AskAttachmentRow): string {
 /** The folder a ZIP's entries are filed under: its own path without `.zip`. */
 function zipFolder(zip: AskAttachmentRow): string {
   return pathOf(zip).replace(/\.zip$/i, '');
+}
+
+/**
+ * Step 0, for a SharePoint fetch only. Copies the client folder's files into the drop as attachment
+ * rows, the same rows an upload makes, so every later step is the upload path unchanged. A file that
+ * is already copied (same path) is not copied again on a retry. Files left out are listed with a
+ * reason, and kept by the unpack step.
+ */
+export async function dropPullStep(runId: string): Promise<{ copied: number; skipped: number } | null> {
+  const open = await openDrop(runId);
+  if (!open) return null;
+  const { ctx, run, state } = open;
+  const source = state.source;
+  if (!source || source.kind !== 'sharepoint' || source.pulled) return { copied: 0, skipped: 0 };
+  if (run.status === 'queued') await updateAskRun(ctx, runId, { status: 'running' });
+  const result = await pullSharepointFiles(ctx, run, source);
+  const known = new Set(state.files.map((f) => `${f.attachmentId}|${f.path}`));
+  const files = [...state.files, ...result.skipped.filter((f) => !known.has(`${f.attachmentId}|${f.path}`))];
+  const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
+  const next: DropState = { ...state, files, ...(notes ? { notes } : {}), source: { ...source, pulled: true }, progress: { ...state.progress, label: 'Reading…' } };
+  await appendAskRunStep(ctx, runId, { kind: 'tool', name: 'sharepoint', label: 'Fetching from SharePoint', output: { copied: result.copied, skipped: result.skipped.length } });
+  await updateAskRun(ctx, runId, { state: asJson(next) });
+  return { copied: result.copied, skipped: result.skipped.length };
 }
 
 /**
@@ -344,6 +368,7 @@ export async function failAskDrop(runId: string, error: unknown): Promise<void> 
 /** The whole drop in this process, step after step, for when no Inngest is reachable. */
 export async function runAskDrop(runId: string): Promise<{ status: string } | null> {
   try {
+    await dropPullStep(runId);
     const toRead = await dropUnpackStep(runId);
     if (toRead === null) return null;
     for (const attachmentId of toRead) await dropReadStep(runId, attachmentId);

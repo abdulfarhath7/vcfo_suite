@@ -477,6 +477,13 @@
       "when": 1795442223878,
       "tag": "0067_receivables_deposits",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1795511532126,
+      "tag": "0068_sharepoint_folder",
+      "breakpoints": true
     }
   ]
 }

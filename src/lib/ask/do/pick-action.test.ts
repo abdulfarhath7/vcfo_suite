@@ -24,6 +24,8 @@ vi.mock('@/db/repositories/document-requests', () => ({ createDocumentRequest: v
 vi.mock('@/lib/email/send-after-response', () => ({ notifyEngagementEventSoon: vi.fn() }));
 vi.mock('@/lib/reminders/send-client-reminder', () => ({ sendClientReminder: vi.fn() }));
 vi.mock('@/storage/s3', () => ({ getObjectBuffer: vi.fn(), putObject: vi.fn(), bucketKey: (b: string, k: string) => `${b}/${k}` }));
+const startSharepointDrop = vi.fn();
+vi.mock('@/lib/sharepoint/start-drop', () => ({ startSharepointDrop: (...a: unknown[]) => startSharepointDrop(...a) }));
 
 const { pickAndPrepare, pickableActions, resolveStep } = await import('./pick-action');
 
@@ -71,6 +73,7 @@ describe('pickableActions', () => {
       'requests.create',
       'requests.createListFromTemplate',
       'requests.sendList',
+      'sharepoint.fetch',
       'statuses.setStep',
       'tasks.create',
     ]);
@@ -131,6 +134,28 @@ describe('pickAndPrepare', () => {
     expect(createAskChangeset).not.toHaveBeenCalled();
     expect(answer?.links?.[0]?.dest).toEqual({ to: 'composeReminder', engagementId: 'trial', subject: 'NOC for the registered office', body: 'Hello, please share the NOC.' });
     expect(answer?.line).toContain('Nothing is sent');
+  });
+
+  it('starts a SharePoint fetch for the client and carries the run so the chat shows its progress', async () => {
+    startSharepointDrop.mockResolvedValue({ ok: true, runId: 'run-sp', folderName: 'Routeware', companyName: ROUTEWARE.companyName });
+    const answer = await run('take data of Routeware from SharePoint', { action: 'sharepoint.fetch', company: 'Routeware' });
+    expect(startSharepointDrop).toHaveBeenCalledWith(lead, expect.objectContaining({ engagementId: ROUTEWARE.id, conversationId: 'conv-1', projectPath: '/projects/routeware' }));
+    expect(answer?.runId).toBe('run-sp');
+    expect(answer?.line).toContain('nothing is saved until you accept');
+    expect(createAskChangeset).not.toHaveBeenCalled();
+  });
+
+  it('passes on why a SharePoint fetch cannot start', async () => {
+    startSharepointDrop.mockResolvedValue({ ok: false, message: 'Please reconnect Microsoft 365 in Settings, Email once.' });
+    const answer = await run('get Trial files from SharePoint', { action: 'sharepoint.fetch', company: 'Trial' });
+    expect(answer?.line).toBe('Please reconnect Microsoft 365 in Settings, Email once.');
+    expect(answer?.runId).toBeUndefined();
+  });
+
+  it('never fetches SharePoint for a client out of scope', async () => {
+    const answer = await run('take data of Acme from SharePoint', { action: 'sharepoint.fetch', company: 'Acme Widgets' });
+    expect(answer?.line).toBe('I cannot find Acme Widgets among your clients.');
+    expect(startSharepointDrop).not.toHaveBeenCalled();
   });
 
   it('says so when the client is not in scope', async () => {

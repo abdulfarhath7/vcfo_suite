@@ -59,6 +59,7 @@ export async function GET(request: Request) {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       expiresInSec: tokens.expires_in ?? 3600,
+      scopes: tokens.scope ?? null,
     });
   } catch (e) {
     const message = publicErrorMessage(e, 'connect_failed');

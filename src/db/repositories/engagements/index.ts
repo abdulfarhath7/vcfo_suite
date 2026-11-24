@@ -41,6 +41,7 @@ export {
 } from './read';
 export {
   updateEngagement,
+  setSharepointFolder,
   updateProgressCcEmails,
   softDeleteEngagement,
   restoreEngagement,
@@ -54,6 +55,7 @@ export {
   decideClientFillRequest,
   unlockChecklistFields,
 } from './checklist-workflow';
+export type { SharepointFolderLink } from './write';
 export type {
   DirectSubmitOutcome,
   ClientFillRequestOutcome,
