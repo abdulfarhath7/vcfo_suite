@@ -7,6 +7,7 @@ import { watchDailySummary } from '@/jobs/watch-daily-summary';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
 import { askDrop } from '@/jobs/ask-drop';
+import { askFill } from '@/jobs/ask-fill';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
 import { weeklyDigest } from '@/jobs/weekly-digest';
@@ -46,6 +47,7 @@ export function registeredJobs(): JobFunction[] {
     whatsappSend,
     askIngest,
     askDrop,
+    askFill,
     askIndexRefresh,
     askIndexSweep,
     complianceReminders,

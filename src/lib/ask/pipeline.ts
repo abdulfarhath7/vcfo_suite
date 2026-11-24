@@ -66,6 +66,9 @@ import {
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
+import { isFillRequest, modeFromText } from '@/lib/ask/fill/intent';
+import { FillRefused, startFill } from '@/lib/ask/fill/run';
+import { findOpenFillCardInConversation } from '@/db/repositories/ask-changesets';
 import { dropContextLine, dropProgressAnswer, isDropProgressQuestion } from '@/lib/ask/drop/progress';
 import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
 
@@ -105,6 +108,8 @@ export const chatRequestSchema = z.object({
     .optional(),
   depth: z.enum(ANSWER_DEPTHS).optional(),
   language: z.string().trim().min(2).max(35).optional(),
+  /** The person's "Fill into app" mode chip, used when this message starts a fill. */
+  fillMode: z.enum(['manual', 'auto']).optional(),
 }).refine((body) => body.shell !== 'client' || (body.message?.length ?? 0) <= CLIENT_MESSAGE_MAX, { path: ['message'] });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
@@ -313,6 +318,48 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     await finish(result.answer, { path: 'fixed_workflow', ...extra });
     return true;
   };
+
+  // "Fill it into the app": the newest open card in this conversation goes into the steps, page by
+  // page (Manual) or in the background (Auto). Staff only; the card's own rules decide what is saved.
+  if (
+    shell !== 'client' &&
+    ctx.role !== 'client' &&
+    typed &&
+    !request.context &&
+    attachmentIds.length === 0 &&
+    !pending &&
+    !flags.killedPaths.has('fixed_workflow') &&
+    isFillRequest(typed)
+  ) {
+    const mode = modeFromText(typed) ?? request.fillMode ?? 'manual';
+    const work = (line: string, fill?: { runId: string; mode: 'manual' | 'auto' }): AnswerEnvelope => ({
+      line,
+      citations: [],
+      actions: [],
+      origin: 'work',
+      depth: 'normal',
+      // `fill` only, not `runId`: an answer's bare runId is read as a background drop to poll.
+      ...(fill ? { fill } : {}),
+    });
+    const cardId = await findOpenFillCardInConversation(ctx, conversationId, now);
+    if (!cardId) {
+      await finish(work('There is no open card in this chat to fill. Fetch the client folder or paste the details first, then ask me to fill it.'), { path: 'fixed_workflow' });
+      return;
+    }
+    try {
+      const started = await startFill(ctx, { changesetId: cardId, mode, conversationId });
+      const company = started.view.companyName || 'this project';
+      const line =
+        started.mode === 'auto'
+          ? `I am filling ${company} step by step (Auto) in the background; I will post here when done.`
+          : `I am filling ${company} step by step (Manual): watch the page and accept each one here.`;
+      await finish(work(line, { runId: started.runId, mode: started.mode }), { path: 'fixed_workflow' });
+    } catch (error) {
+      if (!(error instanceof FillRefused)) console.error('[ask-vcfo] fill from chat failed', error);
+      await finish(work(error instanceof FillRefused ? error.message : 'I could not start the fill. Nothing was saved.'), { path: 'fixed_workflow' });
+    }
+    return;
+  }
   if (shell !== 'client' && (attachmentIds.length > 0 || pending || (request.message && isDataMessage(request.message)))) {
     if (await doWork()) return;
   }

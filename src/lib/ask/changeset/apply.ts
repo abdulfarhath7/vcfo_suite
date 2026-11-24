@@ -36,8 +36,8 @@ export class ChangesetRefused extends Error {
   }
 }
 
-const OPEN: readonly string[] = ['proposed', 'partly_applied'];
-const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
+export const OPEN: readonly string[] = ['proposed', 'partly_applied'];
+export const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
 
 export function canDecideRow(found: Pick<ChangesetAccess, 'owner' | 'manager'>, row: Pick<AskChangesetRowRow, 'target'>): boolean {
   return rowNeedsManager(row) ? found.manager : found.owner;
@@ -61,7 +61,7 @@ async function loadOpen(ctx: AuthContext, id: string, now: Date): Promise<Change
 const inputOf = (row: AskChangesetRowRow) => ({ ...row.target, value: row.newValue });
 
 /** Runs every still-open row's rules again, in order, with earlier rows' answers counted. */
-async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRow[]) {
+export async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRow[]) {
   const pending: Record<string, string> = {};
   const updates: Parameters<typeof updateAskChangesetRows>[2][number][] = [];
   for (const row of rows) {
@@ -224,7 +224,7 @@ async function loadAction(row: AskChangesetRowRow): Promise<AnyAction | null> {
   return action && agentMayExecute(action.tier) && !askFlags().killedTiers.has(action.tier) ? action : null;
 }
 
-async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
+export async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
   const failed = (error: string) => ({ patch: { status: 'failed', error } });
   const action = await loadAction(row);
   if (!action) return failed('This action is switched off.');

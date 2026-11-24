@@ -18,9 +18,23 @@ const PATTERNS: readonly RegExp[] = [
 
 const DIN_IN_CONTEXT = /\b(DIN[\s:#-]*)(\d{8})\b/gi;
 
-export function maskIdentityNumbers(text: string): string {
+/** A record id (UUID). Its 8-character first group can read as a passport number ("b5412801"). */
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+
+function maskPart(text: string): string {
   const masked = PATTERNS.reduce((out, pattern) => out.replace(pattern, lastFour), text);
   return masked.replace(DIN_IN_CONTEXT, (_all, label: string, digits: string) => `${label}${lastFour(digits)}`);
+}
+
+/** Masks identity numbers in text. Record ids (UUIDs) are left whole, so a stored run still finds its project and card. */
+export function maskIdentityNumbers(text: string): string {
+  let out = '';
+  let last = 0;
+  for (const match of text.matchAll(UUID)) {
+    out += maskPart(text.slice(last, match.index)) + match[0];
+    last = match.index + match[0].length;
+  }
+  return out + maskPart(text.slice(last));
 }
 
 /** The whole of one identity value, for a field already known to hold one. */

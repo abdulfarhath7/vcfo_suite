@@ -1,6 +1,7 @@
 import type { AnswerDepth, AnswerEnvelope, AskShell, ProjectSnapshot } from '@/data/ask/schema';
 import type { ChangesetView } from '@/lib/ask/changeset/view-types';
 import type { DropRunView } from '@/lib/ask/drop/types';
+import type { FillMode, FillRunView } from '@/lib/ask/fill/types';
 
 /** Browser client for /api/ask/*. Every call surfaces a friendly error message. */
 
@@ -71,6 +72,8 @@ export type ChatBody = {
   depth?: AnswerDepth;
   attachmentIds?: string[];
   page?: { path: string };
+  /** The composer's Manual / Auto chip, used when the message asks to fill a card into the app. */
+  fillMode?: FillMode;
 };
 
 export type ChatEvent =
@@ -381,4 +384,20 @@ export async function decideChangeset(id: string, body: { contentHash: string; a
 
 export async function undoChangeset(id: string): Promise<ChangesetView> {
   return json(await sendChangeset(`${changesetUrl(id)}/undo`, 'POST', {}), 'Could not undo this.');
+}
+
+const fillUrl = (runId: string) => `/api/ask/fill/${encodeURIComponent(runId)}`;
+
+/** Starts "Fill into app" on a card. */
+export async function startFill(body: { changesetId: string; mode: FillMode; conversationId?: string }): Promise<{ runId: string; mode: FillMode; view: FillRunView }> {
+  return json(await sendChangeset('/api/ask/fill', 'POST', body), 'Could not start the fill.');
+}
+
+export async function getFill(runId: string): Promise<FillRunView> {
+  return json(await fetch(fillUrl(runId), { cache: 'no-store' }), 'Could not load the fill.');
+}
+
+/** Manual mode: the page was saved and submitted ('accepted'), or the person pressed Stop. */
+export async function stepFill(runId: string, body: { stepId: string; action: 'accepted' | 'stop' }): Promise<FillRunView> {
+  return json(await sendChangeset(`${fillUrl(runId)}/step`, 'POST', body), 'Could not move the fill on.');
 }

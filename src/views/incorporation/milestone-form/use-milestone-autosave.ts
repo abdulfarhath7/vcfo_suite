@@ -84,6 +84,11 @@ export function useMilestoneAutoSave({
   const saveInFlightRef = useRef(false);
   const pendingAfterFlightRef = useRef<ChecklistItemResponses | null>(null);
   const mountedRef = useRef(true);
+  /** Ask VCFO live fill: while it types, nothing autosaves; Accept saves through Save now. */
+  const autoSavePausedRef = useRef(false);
+  const setAutoSavePaused = useCallback((paused: boolean) => {
+    autoSavePausedRef.current = paused;
+  }, []);
 
   // Keep the latest draft/saved available to debounced autosave callbacks and
   // timeouts without listing them as dependencies. Synced in a passive
@@ -182,7 +187,7 @@ export function useMilestoneAutoSave({
       // Nothing typed in this form instance → nothing to flush. Without this a
       // remount (the scope key settling on load) posted the pre-1 engagement
       // defaults back as if the lead had answered them.
-      if (!userEditedRef.current) return;
+      if (!userEditedRef.current || autoSavePausedRef.current) return;
       const partial = getChangedPartial(fields, draftRef.current, savedRef.current);
       const editablePartial = writableForViewer(partial);
       if (Object.keys(editablePartial).length === 0) return;
@@ -290,7 +295,7 @@ export function useMilestoneAutoSave({
 
   const scheduleAutoSave = useCallback(
     (immediate = false) => {
-      if (!autoSaveEnabled || !userEditedRef.current) return;
+      if (!autoSaveEnabled || !userEditedRef.current || autoSavePausedRef.current) return;
 
       clearDebounce();
 
@@ -376,6 +381,7 @@ export function useMilestoneAutoSave({
     clearDebounce,
     performSave,
     scheduleAutoSave,
+    setAutoSavePaused,
   };
 }
 

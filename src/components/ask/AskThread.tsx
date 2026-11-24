@@ -11,6 +11,8 @@ import { useAskOptional } from './ask-context';
 import { AskAvatar, AskUserBubble } from './AskUserBubble';
 import { DropProgress } from './drop/DropProgress';
 import { DropRunCards } from './drop/DropRunCards';
+import { FillRail } from './fill/FillRail';
+import { useFillState } from './fill/fill-store';
 
 /** An answer row: the VCFO mark, then the answer (owner item F2). */
 function AnswerRow({ children }: { children: ReactNode }) {
@@ -27,10 +29,11 @@ export function AskThread() {
   const ask = useAskOptional();
   const { user } = useApp();
   const endRef = useRef<HTMLDivElement>(null);
+  const fill = useFillState();
   const count = ask?.thread.length ?? 0;
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }, [count, ask?.status, ask?.handoffDraft, ask?.activeRunId]);
+  }, [count, ask?.status, ask?.handoffDraft, ask?.activeRunId, fill?.runId, fill?.phase]);
   if (!ask) return null;
 
   let lastQuestion = '';
@@ -80,6 +83,11 @@ export function AskThread() {
       {ask.activeRunId && ask.run ? (
         <AnswerRow>
           <DropProgress run={ask.run} />
+        </AnswerRow>
+      ) : null}
+      {ask.shell !== 'client' && fill ? (
+        <AnswerRow>
+          <FillRail />
         </AnswerRow>
       ) : null}
       <div aria-live="polite" className="min-h-[1.25rem]">

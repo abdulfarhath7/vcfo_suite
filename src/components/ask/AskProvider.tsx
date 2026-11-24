@@ -26,6 +26,8 @@ import {
 } from '@/hooks/ask/ask-api';
 import { isRunActive, useAskRun } from '@/hooks/ask/use-ask-run';
 import { useAskStatus } from '@/hooks/ask/use-ask-status';
+import { dispatchFillStart, fillStartOf, readFillMode } from './fill/fill-mode';
+import { useFillState } from './fill/fill-store';
 import {
   AskContext,
   type AskDropInput,
@@ -104,7 +106,7 @@ function writeHistory(key: string, list: AskHistoryEntry[]) {
 }
 
 export function AskProvider({ children }: { children: ReactNode }) {
-  const { user, engagements } = useApp();
+  const { user, engagements, refreshEngagementChecklist } = useApp();
   const role = user?.role ?? null;
   const { enabled, firmName, features } = useAskStatus(role);
   const [open, setOpenState] = useState(false);
@@ -264,6 +266,29 @@ export function AskProvider({ children }: { children: ReactNode }) {
       });
   }, [runSettled, busy, conversationId, refreshList]);
 
+  // A fill run that settled (done, stopped or failed) wrote its closing line into the chat and moved
+  // rows on its card: read the thread and the cards again so both show without a reload.
+  const fill = useFillState();
+  const fillSettled = fill && (fill.phase === 'done' || fill.phase === 'stopped' || fill.phase === 'error') ? fill.runId : null;
+  useEffect(() => {
+    if (!fillSettled) return;
+    void queryClient.invalidateQueries({ queryKey: ['ask', 'changeset'] });
+    // The project page behind the chat shows the steps the fill completed.
+    const engagementId = fill?.view?.engagementId;
+    if (engagementId) void refreshEngagementChecklist(engagementId).catch(() => undefined);
+    const cid = conversationRef.current;
+    if (!cid || busy) return;
+    fetchConversation(cid)
+      .then(({ messages }) => {
+        if (conversationRef.current === cid) setThread(toThread(messages));
+      })
+      .catch(() => {
+        // The rail already says how the fill ended; the closing line shows when the chat is reopened.
+      });
+    // Once per settled run; a chat message still streaming keeps its bubble.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fillSettled, queryClient]);
+
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
     if (next) setBackPill(false);
@@ -305,6 +330,8 @@ export function AskProvider({ children }: { children: ReactNode }) {
             depth: input.depth,
             attachmentIds: input.attachmentIds,
             page: shell === 'client' ? undefined : { path: window.location.pathname },
+            // Staff only: how a "fill this into the app" request runs (the composer's mode chip).
+            ...(shell === 'client' ? {} : { fillMode: readFillMode() }),
           },
           (event) => {
             if (event.type === 'status' || event.type === 'progress') setStatus(event.label);
@@ -325,6 +352,9 @@ export function AskProvider({ children }: { children: ReactNode }) {
               // A background drop started by this message (a SharePoint fetch): show its progress bar.
               const started = event.answer.runId;
               if (shell !== 'client' && started && !event.answer.changesetId && !closedRuns.has(started)) setActiveRunId(started);
+              // An answer that started a fill run: the live fill player picks it up.
+              const fill = shell === 'client' ? null : fillStartOf(event.answer);
+              if (fill) dispatchFillStart(fill);
             } else {
               setThread((t) => [...t, { id: nextId(), kind: 'error', text: event.message }]);
             }

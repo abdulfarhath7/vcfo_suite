@@ -336,6 +336,8 @@ export const answerEnvelopeSchema = z.object({
   /** The review card this answer carries, and the fixed workflow or agent run behind it. */
   changesetId: z.string().uuid().optional(),
   runId: z.string().uuid().optional(),
+  /** A "Fill into app" run this answer started or closed; the browser's live player picks it up. */
+  fill: z.object({ runId: z.string().uuid(), mode: z.enum(['manual', 'auto']) }).optional(),
 });
 export type AnswerEnvelope = z.infer<typeof answerEnvelopeSchema>;
 

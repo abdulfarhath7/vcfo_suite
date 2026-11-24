@@ -52,6 +52,14 @@ describe('getAskChangesetForDecision', () => {
     expect(await getAskChangesetForDecision(owner, 'cs')).toMatchObject({ owner: true, manager: false, viewerId: 'lead-a' });
   });
 
+  it('gives a numeric-looking checklist answer back as its text', async () => {
+    // The JSONB value is parsed twice on the way out, so "1500000" arrives as the number 1500000.
+    rows = [{ id: 'r', action: 'checklist.setResponse', target: { stepId: 'pre-1' }, oldValue: 0, newValue: 1500000 }, { id: 'v', action: 'labour.uploadSheet', target: {}, oldValue: null, newValue: 7 }];
+    const found = await getAskChangesetForDecision(owner, 'cs');
+    expect(found!.rows[0]).toMatchObject({ newValue: '1500000', oldValue: '0' });
+    expect(found!.rows[1]).toMatchObject({ newValue: 7 });
+  });
+
   it('hides a card from its owner once they lose the engagement', async () => {
     access.mockResolvedValue(unreachable);
     expect(await getAskChangesetForDecision(owner, 'cs')).toBeNull();

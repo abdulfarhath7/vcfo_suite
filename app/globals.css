@@ -702,6 +702,54 @@
     outline-offset: 2px;
   }
 
+  /* Ask VCFO live fill (Manual): the field being typed glows like .ask-focus-ring, a picker pops,
+     a filled field gets a small green tick, and Accept flashes the page's fields once. The player
+     sets data-ask-fill on the field shell (src/components/ask/fill/fill-runner.ts). */
+  [data-ask-fill] {
+    position: relative;
+    border-radius: var(--radius-md);
+  }
+  [data-ask-fill="active"], [data-ask-fill="pop"] {
+    outline: 2px solid oklch(var(--ring));
+    outline-offset: 4px;
+  }
+  [data-ask-fill="pop"] {
+    animation: ask-fill-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  }
+  @keyframes ask-fill-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.015); }
+    100% { transform: scale(1); }
+  }
+  [data-ask-fill="done"]::after {
+    content: "✓";
+    position: absolute;
+    top: 0;
+    inset-inline-end: -1.15rem;
+    display: grid;
+    place-items: center;
+    width: 0.95rem;
+    height: 0.95rem;
+    border-radius: 9999px;
+    background: oklch(var(--positive-soft));
+    color: oklch(var(--positive));
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    animation: ask-fill-tick 0.3s ease-out 1;
+  }
+  @keyframes ask-fill-tick {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  [data-ask-fill="flash"] {
+    animation: notified-flash 2s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-ask-fill="flash"] { animation: none; box-shadow: 0 0 0 3px oklch(var(--brand) / 0.55); }
+  }
+  [data-reduce-motion="true"] [data-ask-fill="flash"] { box-shadow: 0 0 0 3px oklch(var(--brand) / 0.55); }
+
   .journey-unlock {
     animation: journey-unlock 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }

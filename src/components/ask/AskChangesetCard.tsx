@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { decideChangeset, editChangesetRow, fetchChangeset, undoChangeset } from '@/hooks/ask/ask-api';
+import { decideChangeset, editChangesetRow, fetchChangeset, startFill, undoChangeset } from '@/hooks/ask/ask-api';
 import type { ChangesetRowView, ChangesetView } from '@/lib/ask/changeset/view-types';
 import { ChangesetGroup } from './changeset/ChangesetGroup';
 import { ChangesetRow } from './changeset/ChangesetRow';
+import { dispatchFillStart, useFillMode } from './fill/fill-mode';
 
 /**
  * The review card: step, field, old value, new value, source and check result on every row, with
@@ -19,6 +20,8 @@ import { ChangesetRow } from './changeset/ChangesetRow';
  */
 
 const FOLD_ABOVE = 20;
+/** Row statuses still to save; matches OPEN_ROW in src/lib/ask/changeset/apply.ts (server-only). */
+const OPEN_ROWS: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
 
 export function AskChangesetCard({ changesetId }: { changesetId: string }) {
   const queryClient = useQueryClient();
@@ -35,6 +38,13 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
       setEditing(null);
     },
   });
+  const [fillMode] = useFillMode();
+  // "Fill into app" puts the rows the step order holds into the steps one by one; the live player
+  // (Manual) or the job (Auto) picks the run up from the start event.
+  const fill = useMutation({
+    mutationFn: () => startFill({ changesetId, mode: fillMode }),
+    onSuccess: (started) => dispatchFillStart({ runId: started.runId, mode: started.mode }),
+  });
 
   if (loadError) return <p className="rounded-md bg-surface-sunken px-3 py-2 text-[13px] text-ink-muted">This card is not available.</p>;
   if (!card) return null;
@@ -44,6 +54,7 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
   const chosen = card.rows.filter((row) => accepted.has(row.id) && canPick(row));
   const isClear = (row: ChangesetRowView) => canPick(row) && !row.needsLook;
   const easy = card.rows.filter(isClear);
+  const heldByOrder = open && card.rows.some((row) => OPEN_ROWS.has(row.status) && row.checks.some((check) => check.rule === 'gate' && !check.ok));
   const acceptMore = (ids: string[]) => setAccepted((now) => new Set([...now, ...ids]));
   const byId = new Map(card.rows.map((row) => [row.id, row]));
   // An older server may send no groups; the whole card is then one plain list.
@@ -128,6 +139,11 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
             </Button>
           </>
         ) : null}
+        {heldByOrder ? (
+          <Button type="button" size="sm" variant="outline" disabled={fill.isPending || change.isPending} onClick={() => fill.mutate()} title="Save these values step by step, in checklist order">
+            {fill.isPending ? 'Starting…' : `Fill into app (${fillMode === 'auto' ? 'Auto' : 'Manual'})`}
+          </Button>
+        ) : null}
         {card.canUndo ? (
           <Button type="button" size="sm" variant="outline" disabled={change.isPending} onClick={() => change.mutate(() => undoChangeset(card.id))}>
             Undo
@@ -135,6 +151,11 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
         ) : null}
         {card.status === 'rejected' ? <p className="text-[12px] text-ink-muted">Discarded. Nothing was saved.</p> : null}
         {card.status === 'expired' ? <p className="text-[12px] text-ink-muted">This card expired. Please send the details again.</p> : null}
+        {fill.error ? (
+          <p role="alert" className="w-full text-[12px] text-danger">
+            {(fill.error as Error).message}
+          </p>
+        ) : null}
         {change.error ? (
           <p role="alert" className="w-full text-[12px] text-danger">
             {(change.error as Error).message}

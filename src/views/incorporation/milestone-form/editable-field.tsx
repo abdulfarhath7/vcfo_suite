@@ -98,7 +98,13 @@ export function createEditableFieldRenderer(
         : null;
 
     return (
-      <div key={field.id} className={fieldShellClass(field, compactChrome ? 'space-y-1.5' : 'space-y-2')}>
+      <div
+        key={field.id}
+        // Ask VCFO live fill finds the field by step and key (repeat entries use their dotted key).
+        data-ask-field={`${item.id}:${field.id}`}
+        data-ask-field-type={field.type}
+        className={fieldShellClass(field, compactChrome ? 'space-y-1.5' : 'space-y-2')}
+      >
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-3">
             <FieldReviewMark engagementId={engagementId} itemId={item.id} fieldId={field.id} />

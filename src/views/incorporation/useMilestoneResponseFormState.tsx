@@ -37,6 +37,7 @@ import { createReadOnlyFieldRenderers } from './milestone-form/read-only-field';
 import { createEditableFieldRenderer } from './milestone-form/editable-field';
 import { renderMilestoneFieldGroups } from './milestone-form/field-groups';
 import type { MilestoneFormCtx } from './milestone-form/types';
+import { createLiveFillHandlers, useLiveFillBridge, type LiveFillHandlers } from './milestone-form/live-fill-bridge';
 
 export interface MilestoneResponseFormStateProps {
   item: ChecklistItem;
@@ -95,6 +96,14 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
     ...access,
     ...autoSave,
   });
+  // Ask VCFO live fill: the player reaches this form through the bridge while it can be edited.
+  // Assigned below, after the early return; the bridge reads it at use time (post-commit).
+  let liveFill: LiveFillHandlers | null = null;
+  useLiveFillBridge({
+    engagementIds: [sources.engagement?.id, engagementId, sources.engagement?.slug],
+    stepId: item.id,
+    read: () => liveFill,
+  });
   if (!sources.fields.length || (!autoSave.canEdit && !access.formReadOnly)) return null;
 
   const ctx: MilestoneFormCtx = {
@@ -118,6 +127,9 @@ export function useMilestoneResponseFormState(props: MilestoneResponseFormStateP
   const readOnlyRenderers = createReadOnlyFieldRenderers({ ...ctx, ...fieldEdits });
   const renderEditableField = createEditableFieldRenderer({ ...ctx, ...fieldEdits, ...readOnlyRenderers });
   const renderedFieldGroups = renderMilestoneFieldGroups({ ...ctx, ...readOnlyRenderers, renderEditableField });
+  if (!ctx.formReadOnly && !readOnly && autoSave.canEdit) {
+    liveFill = createLiveFillHandlers({ ...ctx, ...fieldEdits, handleSaveNow, handleInternSubmit, handleSubmit });
+  }
 
   const {
     provenanceNote,

@@ -8,6 +8,7 @@ import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
 import { askDrop } from '@/jobs/ask-drop';
+import { askFill } from '@/jobs/ask-fill';
 import { askIndexRefresh, askIndexSweep } from '@/jobs/ask-index-refresh';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
@@ -36,5 +37,5 @@ import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders],
+  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askFill, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders],
 });
