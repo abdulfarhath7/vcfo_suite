@@ -139,6 +139,9 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Ask VCFO "Fill into app" (5960fd87) and Receivables Tally live sync (83d9dda7) are on `main`, **not
+  deployed** (25 Nov 2026). The owner runs `aws login` first; then snapshot RDS (on 0069), apply
+  `0070_tally_live_sync` (additive) and push the image. Details: `docs/context/STATE.md`.
 - SharePoint client folders (`docs/context/notes/sharepoint.md`) are live (24 Nov 2026, RDS on 0068, image
   8baa1acb, site and `SteadFast/Clients` path set on App Runner). People reconnect Microsoft 365 once; the
   first real fetch is still to be tried.
