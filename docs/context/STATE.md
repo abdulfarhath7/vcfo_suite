@@ -188,6 +188,8 @@ instead of the VCFO Assist extension. The plan and the comparison with the exten
 `docs/specs/vcfo-assist-agents/CS-QUESTIONS.md`) and proposed guards G19 to G23 (section 7 of
 `SAFETY.md`, not in force). No code, no migration. G8, G12 and firm policy SBC-STD-AI-02 still
 forbid live use; nothing is built until the CS answers and the owner amends the policy.
+The full agent list (11 agents, 17 portal packs, 50 form recipes, build waves) is in
+`docs/specs/live-portal-browser/AGENTS.md`.
 
 ## Demo logins in their own database, PLAN H2 (26 Nov 2026, uncommitted on `main`, not deployed)
 
