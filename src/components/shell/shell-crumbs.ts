@@ -76,6 +76,7 @@ const PAGE_LABEL: Record<string, string> = {
   ask: 'Ask VCFO',
   learn: 'Library',
   'gst-lookup': 'GST Lookup',
+  lookup: 'MCA Lookup',
 };
 
 const PAGE_ICON: Record<string, ShellCrumbIcon> = {

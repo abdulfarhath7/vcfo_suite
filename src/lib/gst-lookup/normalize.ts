@@ -1,24 +1,8 @@
+import { asStringArray, parseIndianDate, str } from '@/lib/lookup/fields';
 import type { NormalizedGstData, HsnItem } from './types';
 
-/** Convert DD/MM/YYYY to YYYY-MM-DD. Returns the original string if it doesn't match. */
-function parseIndianDate(v: string): string {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
-  if (!m) return v;
-  return `${m[3]}-${m[2]}-${m[1]}`;
-}
-
-export function str(v: unknown): string {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
-  if (v == null) return '';
-  return String(v);
-}
-
-export function asStringArray(v: unknown): string[] {
-  if (Array.isArray(v)) return v.map(String);
-  if (typeof v === 'string') return v ? [v] : [];
-  return [];
-}
+// The field coercions live in src/lib/lookup/fields.ts, shared with the DIN lookup.
+export { asStringArray, str };
 
 export function extractHsn(v: unknown): HsnItem[] {
   if (!Array.isArray(v)) return [];
