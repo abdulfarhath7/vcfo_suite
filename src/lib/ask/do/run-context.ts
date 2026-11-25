@@ -130,7 +130,17 @@ export function createRunContext(input: {
     if (!(await checkAskRateLimit(ctx, config.rateLimit, now)).ok) throw new ReadRefused(REFUSAL_COPY.rateLimited);
   };
 
-  const provider = async (): Promise<LlmProvider> => {
+  // Built once, even when several reads ask for it at the same moment (a drop reads three files at
+  // once), so every call is metered by the one provider and the run's spend adds up.
+  let building: Promise<LlmProvider> | null = null;
+  const provider = (): Promise<LlmProvider> => {
+    if (guarded) return Promise.resolve(guarded);
+    building ??= buildProvider().finally(() => {
+      building = null;
+    });
+    return building;
+  };
+  const buildProvider = async (): Promise<LlmProvider> => {
     if (guarded) return guarded;
     // The kill switch comes first: with client data off, nothing of the client reaches a model.
     if (!askClientDataEnabled()) throw new ReadRefused(CLIENT_DATA_OFF_DO);

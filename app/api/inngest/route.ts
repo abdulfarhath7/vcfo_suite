@@ -1,5 +1,6 @@
 import { serve } from 'inngest/next';
 import { inngest } from '@/jobs/client';
+import { scopedInngestHandler } from '@/jobs/demo-route';
 import { complianceGenerate, complianceRegenerate } from '@/jobs/compliance-generate';
 import { kpiSnapshots } from '@/jobs/kpi-snapshots';
 import { staffAlerts } from '@/jobs/staff-alerts';
@@ -8,6 +9,7 @@ import { announcementFeeds } from '@/jobs/announcement-feeds';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
 import { askDrop } from '@/jobs/ask-drop';
+import { askFill } from '@/jobs/ask-fill';
 import { askIndexRefresh, askIndexSweep } from '@/jobs/ask-index-refresh';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
@@ -33,8 +35,14 @@ import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { statutoryCalendarAskSync } from '@/jobs/statutory-calendar-ask';
 import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
+import { zohoDiscover, zohoReceivablesSync } from '@/jobs/integrations-zoho';
 
-export const { GET, POST, PUT } = serve({
+const handlers = serve({
   client: inngest,
-  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders],
+  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askFill, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders, zohoDiscover, zohoReceivablesSync],
 });
+
+/** PLAN H2: a demo event's step runs inside `runInDemo` (src/jobs/demo-route.ts). */
+export const GET = handlers.GET;
+export const POST = scopedInngestHandler(handlers.POST);
+export const PUT = handlers.PUT;

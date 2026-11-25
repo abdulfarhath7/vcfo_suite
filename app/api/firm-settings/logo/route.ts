@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import {
   FirmSettingsForbiddenError,
   getFirmLogoKey,
@@ -45,7 +46,7 @@ export async function GET() {
 
 /** POST /api/firm-settings/logo — multipart `file` (PNG, JPEG, WebP or GIF, 2 MB); replaces the logo. */
 export async function POST(request: Request) {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
 
 /** DELETE /api/firm-settings/logo — admin and super admin remove the logo. */
 export async function DELETE() {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

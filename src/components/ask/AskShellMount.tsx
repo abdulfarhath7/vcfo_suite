@@ -8,6 +8,7 @@ import { AskPanel } from './AskPanel';
 import { BackToAskPill } from './BackToAskPill';
 import { useAskPushPadding } from './use-ask-layout';
 import { AskProvider } from './AskProvider';
+import { LiveFillPlayer } from './fill/LiveFillPlayer';
 
 /**
  * Mounts Ask VCFO for the roles `canUseAsk` admits (client, project lead, manager,
@@ -24,6 +25,7 @@ export function AskShellMount({ userRole, children }: { userRole: string | null 
       <AskAvatarLauncher />
       <BackToAskPill />
       <AskFocusHandler />
+      <LiveFillPlayer />
     </AskProvider>
   );
 }

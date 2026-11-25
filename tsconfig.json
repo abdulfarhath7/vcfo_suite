@@ -41,6 +41,7 @@
   ],
   "exclude": [
     "node_modules",
+    "tools",
     ".next",
     "playwright.config.ts",
     "e2e",

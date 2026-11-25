@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   listEngagementClients,
@@ -29,7 +30,7 @@ const substituteSchema = z.object({
  * Clients may substitute themselves or another client on the same project.
  */
 export async function POST(request: Request, context: RouteContext) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

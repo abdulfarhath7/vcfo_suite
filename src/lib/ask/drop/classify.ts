@@ -2,6 +2,7 @@ import { statesForPicker } from '@/data/labour-registers/states';
 import { companiesNamed, type LockableEngagement } from '@/lib/ask/data-router/lock';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
+import { isEmailName } from './email';
 import { COPY_FIELD_BY_DOC, UPLOAD_FIELD_BY_DOC, UPLOAD_FIELDS, type UploadField } from '@/lib/ask/field-catalog/upload-fields';
 import type { UploadSlot } from '@/lib/labour-registers/parse';
 import { parsePeriodHint, type PeriodHint } from '@/lib/labour-registers/period-hint';
@@ -91,6 +92,12 @@ const VAULT_CATEGORY: Record<string, string> = {
   driving_licence: 'Identity',
   utility_bill: 'Address proof',
   form: 'Forms',
+  board_resolution: 'Incorporation',
+  moa: 'Incorporation',
+  aoa: 'Incorporation',
+  noc: 'Address proof',
+  address_proof: 'Address proof',
+  consent_letter: 'Director KYC',
 };
 
 export function vaultCategory(docType: string): string {
@@ -266,6 +273,9 @@ function destinationOf(input: ClassifyInput): DropDestination {
       stateCode: stateFromNames(names),
     };
   }
+  // An email is kept as correspondence: a checklist upload field takes the document itself, and the
+  // email's type comes from its attachment, so the .eml would land where the PDF belongs.
+  if (isEmailName(input.fileName)) return { kind: 'vault', category: vaultCategory(read.docType) };
   const byDoc = UPLOAD_FIELD_BY_DOC[read.docType] ?? [];
   if (byDoc.length > 0) return { kind: 'checklist', docType: read.docType, fields: [...byDoc], copy: Boolean(COPY_FIELD_BY_DOC[read.docType]) && byDoc.every((f) => f.group === 'directors') };
   const byLabel = read.docType === 'other' || read.docType === 'form' ? uploadFieldsByLabel(input.fileName) : [];

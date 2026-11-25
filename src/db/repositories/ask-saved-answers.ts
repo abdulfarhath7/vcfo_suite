@@ -26,6 +26,8 @@ const audienceFor = (ctx: AuthContext, asked: SavedAnswerKey['audience']) => (ct
 
 export async function findSavedAnswer(ctx: AuthContext, key: SavedAnswerKey): Promise<AnswerEnvelope | null> {
   assertAskRole(ctx);
+  // Demo logins (src/lib/demo-logins.ts) neither read nor feed the firm's shared answer cache.
+  if (ctx.demo) return null;
   const [row] = await db
     .update(askSavedAnswers)
     .set({ hits: sql`${askSavedAnswers.hits} + 1`, lastHitAt: new Date() })
@@ -45,6 +47,7 @@ export async function findSavedAnswer(ctx: AuthContext, key: SavedAnswerKey): Pr
 /** Answers from an older knowledge version can never match again, so saving clears them out. */
 export async function saveAnswer(ctx: AuthContext, key: SavedAnswerKey, answer: AnswerEnvelope, sourceMessageId: string | null): Promise<void> {
   assertAskRole(ctx);
+  if (ctx.demo) return;
   await db.delete(askSavedAnswers).where(ne(askSavedAnswers.knowledgeVersion, key.knowledgeVersion));
   await db
     .insert(askSavedAnswers)

@@ -65,3 +65,15 @@ Spec: `docs/specs/receivables/PLAN.md` (v1) and `docs/specs/receivables/V2.md` (
   is on the leaders' email. "Only to leaders" in the leadership's message of 23 Nov 2026 was about
   this section, not about the receivables update.
 
+
+## Tally live sync (T1, 25 Nov 2026)
+
+- Spec and contract: `docs/specs/receivables/TALLY-LIVE.md`. The connector routes under
+  `/api/tally/connector/*` have no session; `proxy.ts` does not match `/api`, so they need no
+  allowlist. Tokens and pairing codes are stored only as sha256.
+- `markReceived` writes with `db`, not a transaction, so `approveImportRows` applies PAYMENT rows
+  after its own transaction, claiming each row (pending → approved) first and putting it back when
+  the payment is refused.
+- Invoices and payments are separate pending batches (`receivable_import_batches.kind`); the
+  approval panel lists every pending batch with its own Discard button (`PendingImportsDto.batches`).
+- The connector may send `null` for `name`, `version` and `tallyCompany`; the schemas accept it.

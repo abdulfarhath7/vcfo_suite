@@ -1,6 +1,17 @@
+Last updated: 2026-11-26 (**deployed**: `main` at 5f5e2a67 is live. Demo logins for admin, manager, lead and client on `@vcfosuite.com` now live in their own database `vcfo_demo` on the same RDS instance (created and migrated to 0072, seeded with the three demo companies). The old demo rows were removed from the main database after snapshot `vcfo-pre-demo-db-20261126` and the script's own snapshot (3 projects, 5 profiles). Checked live: each demo role signs in, lists only the three demo companies (the client only Kaveri Analytics) and no real client name appears. Every deploy with a new migration must now also run `npm run db:migrate-demo:prod`.)
+
+Last updated: 2026-11-25 (on `main`, **not committed, not deployed**: PLAN M for Ask VCFO, reading every document. A fetch or "fill X into the app" reads the SharePoint folder, the documents already in the app and any attached files in one drop; a second, targeted read per document puts prose such as the business description (board resolution) and main objects (MOA) on its field with a quote checked against the text; mixed scanned PDFs, Excel formula cells, Word headers and tables, and .eml/.msg emails with attachments are read; three files are read at a time; the card shows each value's file, page and quote. New dependencies postal-mime and @kenjiuno/msgreader. No migration. Notes: `docs/context/notes/ask-do.md` "Reading every document" and `docs/context/notes/sharepoint.md` "The documents in the app join the fetch".)
+
+Last updated: 2026-11-26 (**deployed**: `main` at f40ac883 is live. It adds Ask fill drafts on every step with completeness marks and Submit ready steps, the Watch it fill / Fill instantly choice, fetch-then-fill in one message, the full-page Ask VCFO layout, and the shared demo logins for a lead and a client. RDS got snapshot `vcfo-pre-0072-20261126`, then `0072_demo_logins`, then `npm run db:seed-demo-logins`. Checked live: the demo lead lists only the three demo companies, the demo client only Kaveri Analytics, password change returns 403 for both, and the demo manager record cannot sign in.)
+
+Last updated: 2026-11-26 (on `main`, **not committed, not deployed**: PLAN K for Ask VCFO "Fill into app". A step not open yet now takes card values as drafts; Fill never submits (Auto saves every step as a draft, Manual's Accept is a Save); the lead's step rail and the fill rail show a green tick or a red dot with "N to fill"; the closing chat message counts values, complete steps and what the rest need, with an Open link; "Submit ready steps" submits complete steps in order and stops at the first that is not ready; steps filled before they opened are noted ("please check"). The started line says Auto for Auto with "Watch it fill". No migration. Notes: `docs/context/notes/checklist-workflow.md`, "Drafts on steps not open yet".)
+
+Last updated: 2026-11-26 (**deployed**: `main` at f71a1b17 is live on App Runner (image digest sha256:fef862e9). It holds Ask VCFO Fill into app, Receivables Tally live sync T1 with signed amounts, the Zoho hub with Sync from Zoho on receivables, and GST registration from Ask VCFO through VCFO Assist. RDS got snapshot `vcfo-pre-0070-0071-20261126` and then migrations `0070_tally_live_sync` and `0071_integrations_zoho`. Zoho stays inactive until `ZOHO_CLIENT_ID` and the secret `vcfo/zoho-client-secret` are set. The extension still fills only the mock GST portal; Part A was checked once on the live portal with dummy data and no request sent.)
+
 # STATE — verified build state
 
-Last updated: 2026-11-25 (DIN Lookup on `feat/gst-lookup`, **not deployed**: an eight-digit DIN draws the MCA "View Director / Designated Partner Details" report inside the Suite — details card, Associated companies and Associated LLPs with the portal’s own columns (status, designation, category of appointment, original and current-designation dates, cessation), standing appointments first and ceased ones under their own heading, a column drawn only when some row fills it, and Print through the existing print block. One page at `…/tools/din-lookup` for admin, manager and lead, under Registrations beside GST Lookup, with two sources. **Search** calls the FalconeBiz `director_details` API server-side (needs `FALCON_API_KEY` and `FALCON_API_DOMAIN`) and needs no MCA login. **Read from MCA** opens a request that the VCFO Assist extension picks up inside the same person’s browser and answers from their own logged-in MCA tab (route R1 of `docs/specs/mca-connect/HANDOFF.md`): the Suite holds no MCA password and answers no captcha or OTP, a request belongs to one person and lives 15 minutes, and the path is behind `VCFO_ASSIST_ENABLED`. Both sources run through one normaliser and one 24-hour cache, and the record shows which source filled it. The checklist DIN check (`DinCheckControl`, DR-01) gains **Check with MCA**: it fetches the record, compares the name as a set of words and offers Record as verified / Record as mismatch — it records nothing by itself (SBC-STD-AI-02). **Migration `0071_din_lookup` (two new tables, additive) must be applied on RDS before deploy.** The extension half is not built: its selectors need the live portal, which owner rule 2 holds behind the CS opinion. Nothing in this work touched MCA, and no live FalconeBiz call has been made yet; the Falcon path was proved against a stub of the documented endpoint, and the report against the real 06419899 report. Notes: `notes/mca-lookup.md`; capture contract: `docs/specs/mca-connect/DIN-CAPTURE.md`.)
+Last updated: 2026-11-25 (DIN Lookup on `feat/gst-lookup`, **not deployed**: an eight-digit DIN draws the MCA "View Director / Designated Partner Details" report inside the Suite — details card, Associated companies and Associated LLPs with the portal’s own columns (status, designation, category of appointment, original and current-designation dates, cessation), standing appointments first and ceased ones under their own heading, a column drawn only when some row fills it, and Print through the existing print block. One page at `…/tools/din-lookup` for admin, manager and lead, under Registrations beside GST Lookup, with two sources. **Search** calls the FalconeBiz `director_details` API server-side (needs `FALCON_API_KEY` and `FALCON_API_DOMAIN`) and needs no MCA login. **Read from MCA** opens a request that the VCFO Assist extension picks up inside the same person’s browser and answers from their own logged-in MCA tab (route R1 of `docs/specs/mca-connect/HANDOFF.md`): the Suite holds no MCA password and answers no captcha or OTP, a request belongs to one person and lives 15 minutes, and the path is behind `VCFO_ASSIST_ENABLED`. Both sources run through one normaliser and one 24-hour cache, and the record shows which source filled it. The checklist DIN check (`DinCheckControl`, DR-01) gains **Check with MCA**: it fetches the record, compares the name as a set of words and offers Record as verified / Record as mismatch — it records nothing by itself (SBC-STD-AI-02). **Migration `0073_lookups_gst_and_din` (two new tables, additive) must be applied on RDS before deploy.** The extension half is not built: its selectors need the live portal, which owner rule 2 holds behind the CS opinion. Nothing in this work touched MCA, and no live FalconeBiz call has been made yet; the Falcon path was proved against a stub of the documented endpoint, and the report against the real 06419899 report. Notes: `notes/mca-lookup.md`; capture contract: `docs/specs/mca-connect/DIN-CAPTURE.md`.)
+Last updated: 2026-11-25 (on `main`, pushed, **not deployed**: Ask VCFO "Fill into app" (5960fd87) and Receivables Tally live sync T1 with the connector (83d9dda7). Fill puts a review card's checklist values into the steps in checklist order: Manual opens each step page, types the values in front of the person and saves and submits on Accept; Auto applies and submits each step in the background (Inngest, inline fallback). Only the project lead can run it; it stops at a manager or client step, a locked step or a refused submit. Tested locally in a browser for Manual, Auto, Stop, chat ("fill it into the app", "fill it automatically"), admin refused and reduced motion. The same commit stops record ids being masked as passport numbers in run state and reads number-like checklist answers back as text. **Before deploy: the owner runs `aws login`, then RDS (on 0069) gets a snapshot and migration `0070_tally_live_sync` (additive), then the image is pushed.** `src/lib/ask/capabilities.test.ts` can time out at 5 s on a loaded machine; it passes when run alone.)
 
 Last updated: 2026-11-17 (receivables v2 on `feature/receivables-v2`, **not merged, not deployed**, see the row "Receivables v2"; **migrations `0058_receivables_v2` and `0059_drop_bank_credits` must be applied on RDS before deploy**).
 
@@ -169,6 +180,24 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 | Receivables update to leaders only | on `main` 23 Nov 2026 (owner's request from the firm's leadership). Send email on the Sheet tab now makes one email, to the sheet's leaders (People ▸ Leaders) only: no partner emails, and no other address in To or Cc. The pop-up refuses anyone else and so does the route (`leaders_only`, `checkSummaryEmails` in `src/lib/receivables/summary-send.ts`). The table has three columns: Client, Amount (₹) and Remarks, one row per invoice under its month band, with the month totals and the total box as before; a foreign invoice shows its INR amount. Remarks are typed in the table in the pop-up and are not saved on the sheet; a received row starts with "Received". The Collections report and the automatic emails are unchanged. No migration. Checked in a browser on the local demo sheet (no email was sent: Outlook is not connected locally). **Deployed 23 Nov 2026**: image `vcfo-suite:f3cbcf0f` (= `:latest`), App Runner deploy SUCCEEDED 16:32 to 16:35 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-8123a5d1`. Gate before deploy: typecheck and lint clean, 6578 tests pass and one fails, `src/jobs/receivables-fx-rates.test.ts` (the rate alert email no longer holds the manager link), which this change does not touch. No signed-in live check was run. |
 | Receivables Send email unblocked | on `main` 23 Nov 2026, **deployed** with the security deposits section (84e515de): image `vcfo-suite:cf91c3b2` (= `:latest`), App Runner deploy SUCCEEDED 18:22 to 18:25 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-f3cbcf0f`. The leaders' email was blocked on its second send of a week, because a received invoice goes to a person once and each one had to be removed by hand. The pop-up now leaves those invoices out when it opens, says how many, and lists them under "Removed from this send"; the warning is one line per invoice. The team's WhatsApp update for emails that wait for approval now says nothing is sent until someone presses Approve in Email log (WhatsApp never approves; a member with "can approve" does, in the tool). Checked in a browser on the local demo sheet with the deposits section; no email was sent. Gate: typecheck and lint clean; `src/jobs/receivables-fx-rates.test.ts` still fails (not touched), and `src/lib/ask/capabilities.test.ts` failed once under load and passes alone. No migration. |
 | Receivables security deposits section | on branch `receivables/sd-section` 23 Nov 2026 (owner's request), **not yet deployed**. The receivables update (Send email on the Sheet tab, leaders only) can carry a separate section, "Security deposits" by default: Client, Status, ETA for closure, Total SD (₹) and SD due now / post signing, with its own heading, its own orange-headed table and its own total row (sum and crore figure), after the receivables total box. The rows are typed or pasted (from Excel, Outlook or a chat) in a folding block at the bottom of the Send email pop-up (`src/views/receivables/manager/compose/DepositsSection.tsx`, state in `use-deposits-draft.ts`); the parser and amount reader are `src/lib/receivables/deposits.ts`. They are not saved on the server: they travel with the send request as `deposits`, and this browser remembers the last rows per sheet. The send route checks them (`checkDeposits` in `summary-send.ts`: title up to 80 characters, up to 50 rows, cells up to 200 characters and the due column 300, amount 0 to 1e13 or null; 400 `deposits_*`), refuses them on the Collections report (`deposits_summary_only`) and draws the section again from the checked rows (`depositsSectionHtml`, `withDepositsSection` in `summary-email.ts`). A partner's email never gets it; the leaders-only check is unchanged. Without deposits the email is byte for byte what it was. The weekly leadership digest and the Templates tab are unchanged. No migration. |
+
+## Demo logins in their own database, PLAN H2 (26 Nov 2026, uncommitted on `main`, not deployed)
+
+Demo logins for every role (`admin@`, `manager@`, `lead@`, `client@vcfosuite.com`; password: see
+`DEMO_LOGIN_PASSWORD`) on the same app and URL, isolated by a second database `vcfo_demo`
+(`DEMO_DB_NAME`) on the same Postgres server. `db` routes each query by the demo scope
+(`src/db/demo-scope.ts`: session token, `runInDemo`, Inngest events with `demo: true`); S3 keys get
+`demo/`. Deploy: `db:migrate-demo:prod`, `db:seed-demo-logins:prod`, deploy the image, then
+`db:remove-demo-from-main:prod -- --yes`. Details: `docs/context/notes/demo-data.md`, "Demo logins".
+
+## Demo logins on the real app, PLAN H (25 Nov 2026, deployed 26 Nov; superseded by PLAN H2)
+
+`lead@vcfosuite.com` and `client@vcfosuite.com` sign in to the real
+application and see only three demo companies flagged `is_demo`. Migration `0072_demo_logins`
+(additive: `profiles.is_demo`, `engagements.is_demo`) must be applied on RDS before the build that
+holds it is deployed; then `npm run db:seed-demo-logins:prod`. No demo admin or manager login: the
+guard refuses a demo profile in any role but lead and client. Rules, refusals, outbound-mail
+handling, tests and what is not covered: `docs/context/notes/demo-data.md`, "Demo logins".
 
 ## Late-fee calculator, phase 1 (13 Nov 2026, on `PRITHISH`, not deployed)
 
@@ -479,3 +508,54 @@ A view-only QA pass over the Lead, Admin, Manager and Client portals produced th
 - The work-email placeholder reads `name@sbcllp.in` instead of `name@vcfosuite.com`.
 
 Still open from that run: there are no Terms or Privacy pages to link to (legal text needed from the firm), the Manager/Admin "Team tasks" count shows 8 overdue compliance tasks for an unincorporated client while the Lead portal shows 0, and new accounts are pre-filled with the shared default password `DEFAULT_CLIENT_TEMP_PASSWORD` in `src/lib/api/schemas.ts`.
+
+## GST registration through VCFO Assist (25 Nov 2026, uncommitted, not deployed)
+
+"Register Kestrel for GST": the tool is filled first, then VCFO Assist fills GST REG-01 from it;
+the person signs in, types the OTPs and the captcha, authenticates Aadhaar and submits with DSC or
+EVC (SBC-STD-AI-02). The GST pack stays `mock-only` until the CS opinion.
+
+- Contract: `src/lib/registrations/gst-profile.ts` (`GST_SOURCE_FIELDS`, the portal vocabulary) and
+  its prose copy `vcfo_assist/docs/gst-profile-contract.md` (the extension appends "Requested
+  additions" there). Builder and readiness: `gst-profile-build.ts`, `gst-readiness.ts`; repository
+  `src/db/repositories/gst-profile.ts` (doc-pack access rule, reg-4 fields, GST step requests, vault).
+- `GET /api/engagements/[id]/assist-profile?form=gst-reg-01` answers the profile with signed
+  document URLs; `POST /api/assist/engagements/[id]/result` with `form: 'gst-reg-01'` writes the ARN,
+  SRN or GSTIN into the reg-4 tracker (lead only, idempotent, audited; `gst-assist.ts`).
+- Sourcing chain (`gst-sourcing.ts`): tool, then the SharePoint drop, then Zoho when linked, then a
+  draft request list. `GET/POST /api/engagements/[id]/gst-registration` serves the page card.
+- reg-4 gained client fields (district, trade name, reason, possession, activities, HSN, SAC, …) and
+  SBC fields (jurisdiction parts, signatory) in `src/data/compliance-inputs.ts`; no migration.
+- UI: `GstApplicationCard` and `StartOnGstPortal` on the GST registration record and the reg-4 step;
+  Ask VCFO intent in `src/lib/ask/gst/` with the chat card `src/components/ask/gst/AskGstCard.tsx`.
+- From chat and papers (25 Nov, second pass): Ask VCFO review cards write the reg-4 fields through
+  the action `registrations.setField` (`src/lib/actions/registrations/set-field.ts`, the same
+  `saveSubjectFields` as the cards, audited, undoable; rules in `field-rules.ts`). A value whose
+  checklist step is finished goes to a GST copy (`place-state` on the client side, `promoter-N-address`
+  on the SBC side, hidden while empty) instead of "reopen first"; on a GST run a step not open yet does
+  too. The builder prefers the copies. Values the client entered and the lead has not confirmed are
+  listed on the GST card with the GST step's own Confirm; they do not block. Suite opens no portal tab
+  (the extension's side panel does). A pasted line that fits no field is listed under the card ("I could
+  not place this"); "Director 2 Kavya Bhat residential address: …" now reads as that director's address.
+
+## Steps card phase sections (25 Nov 2026, merged to `main` in PR #72, not deployed)
+
+The Steps card of a client record (`RecordStepsCard`, used by the lead, manager and admin record
+pages) no longer shows one phase at a time. Name application, Incorporation, Post-incorporation and
+Registrations are collapsible sections. Each section header is the phase's progress summary: its
+bar, its done count and a Done, In progress or Not started chip. A follow-up on the same day removed
+the ST5 phase track that first sat above the sections, because the headers already showed the same
+progress. On phones the header bar sits under the phase name.
+
+- `InternPhaseSections` (in `src/components/incorporation/InternOverviewProgress.tsx`) replaced
+  `InternPhaseTabs`. The current phase opens by default, several sections can be open, the card head
+  has "Expand all" and "Collapse all", and `?phase=n` opens that section and scrolls to it.
+- The open sections are kept per engagement in localStorage under
+  `vcfo.intern.engagementOpenPhases.{id}` (helpers in `src/lib/intern/intern-overview-progress.ts`).
+  The old `engagementPhaseTab` key is no longer read.
+- `RecordPhaseBar` was pulled out of `RecordPhaseTrack` so the headers draw the same bar.
+  `RecordPhaseTrack` itself is now used only by the admin record, which picks a phase in place.
+- Registrations now lists its steps (Reg-1 to Reg-23) inside its section, under the count line and
+  the "Open registrations" button.
+- Verified with `npm run check` and in the browser as `lead-divya` on Kestrel Robotics (desktop and
+  phone width). Tests: `src/components/incorporation/InternPhaseSections.test.tsx`.

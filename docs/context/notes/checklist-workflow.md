@@ -297,3 +297,26 @@ Spec `docs/specs/pre-inc-direct-flow/` (CONTEXT, AUDIT, REPORT).
 - Registrations pages (staff `RegistrationsView` and `RegistrationView`, client `RegistrationsPage`
   and `RegistrationPage`) carry the `reg-soft` wrapper class, which raises the radius tokens to
   8-14px inside those pages only. The rest of the app keeps the 6px design tokens.
+
+## Drafts on steps not open yet (PLAN K, 26 Nov 2026)
+
+- The card rule (`checkResponseRow` in `src/lib/actions/checklist/rules.ts`) lets a step that is only
+  `locked` (not open yet) take a draft save: the `gate` check is ok with the note "Saved as a draft: …
+  opens after …". Still held: a finished step (`done`), a field another role owns (DR-04), and a
+  `waiting` step unless the row goes to the manager. Submit order is unchanged: the save path never
+  submits, and `submitDirectFlowStep` / the gate decide submits as before. The server save path
+  (`patchChecklistItem`) only ever refused locked steps for clients, so nothing changed there; the lead
+  already opens and edits every step (`internViewerAccess`).
+- The data router still prefers an open step for a fact that several steps use, and a GST run still
+  writes the registration's copy for a step not open yet (`copyInstead` in `data-router/plan.ts`).
+- Fill into app never submits. Auto saves every step's rows as drafts in order; Manual walks every
+  page and Accept is a Save. "Submit ready steps" (`submitReadySteps`, `POST /api/ask/fill/:runId/submit-ready`)
+  submits complete steps in order and stops at the first that is not ready.
+- Completeness marks: `src/lib/incorporation/step-completeness.ts` reads the step's own validator
+  (`validateStepAgainstState`). The lead's step rail and the fill rail show `StepCompletenessMark`
+  (the tab tick, or the tab's red square with "N to fill"). The rail marks only the open step and
+  steps holding drafts, and never on a manager's rail (their copy of the state hides the lead's drafts).
+- Stale copies, minimal version: a step filled before it opened is recorded as `early` on the run and
+  on its `ask.fill.step` audit line ("filled … before it opened; please check it"). While the fill
+  rail is open, a value it saved that another step now holds differently (`otherStepValue`) shows as
+  "Check …". There is no field-level yellow mark on the step page yet.

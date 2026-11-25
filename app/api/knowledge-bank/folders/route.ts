@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { knowledgeBankCreateFolderBodySchema } from '@/lib/api/schemas';
 import { parseJsonBody } from '@/lib/api/validate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -7,7 +8,7 @@ import { createKnowledgeBankFolder } from '@/db/repositories/knowledge-bank';
 import { publicErrorMessage } from '@/lib/api-error';
 
 export async function POST(request: Request) {
-  const auth = await requireAnyRole('admin', 'manager', 'intern');
+  const auth = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

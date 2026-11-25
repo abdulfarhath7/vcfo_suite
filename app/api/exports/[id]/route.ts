@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { exportFileForOwner } from '@/db/repositories/export-files';
 import { EXPORT_CONTENT_TYPES } from '@/lib/exports/record-export';
 import { getObjectBuffer } from '@/storage/s3';
@@ -8,7 +9,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 /** GET /api/exports/[id]: download one's own background export (GL-06, PR-02) while it is kept. */
 export async function GET(_request: Request, context: RouteContext) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const { id } = await context.params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'not_found' }, { status: 404 });

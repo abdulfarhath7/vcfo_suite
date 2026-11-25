@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { isForeign } from '@/lib/receivables/fx';
 import { FileSpreadsheet, Flag, Mail, Plus } from 'lucide-react';
 import { SidePanel } from '@/components/ui/side-panel';
@@ -29,6 +29,7 @@ import { BulkReceivedDialog, CreditNoteDialog, DisputeDialog } from './sheet/She
 import { SheetFilterBar } from './sheet/SheetFilterBar';
 import { SheetSummary } from './sheet/SheetSummary';
 import { SheetTable } from './sheet/SheetTable';
+import { SourceSync } from './sheet/SourceSync';
 import { useSheetTab, type RowGroup } from './sheet/use-sheet-tab';
 
 /**
@@ -40,6 +41,9 @@ import { useSheetTab, type RowGroup } from './sheet/use-sheet-tab';
  *
  * Phase 9: a foreign invoice shows its foreign amount, booked rate and the INR at today's rate in
  * the FX column; its INR amount is the booked INR and changes through Currency and rate.
+ *
+ * Tally live sync: "Sync from Tally" asks the connector on the Tally PC for invoices or payments
+ * (sheet/TallySync.tsx, docs/specs/receivables/TALLY-LIVE.md); its rows wait in the same queue.
  *
  * Receivables v2: "Import from Tally" uploads a Sales Register; the rows wait in the Awaiting
  * approval queue (a side panel opened from the toolbar's "N waiting for approval" button), with staff
@@ -58,6 +62,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
   const imports = useImportActions(data.sheet.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const openReview = useCallback(() => setReviewOpen(true), []);
   /** The Send email pop-up: the whole sheet (true) or only the picked invoices (their ids). */
   const [composing, setComposing] = useState<boolean | string[]>(false);
   const waiting = pending.data?.rows.filter((r) => r.kind !== 'same').length ?? 0;
@@ -114,6 +119,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
               <FileSpreadsheet aria-hidden />
               {imports.upload.isPending ? 'Reading…' : 'Import Tally'}
             </Button>
+            <SourceSync sheetId={data.sheet.id} today={today} onImportExcel={() => fileRef.current?.click()} onReview={openReview} />
             <input
               ref={fileRef}
               type="file"

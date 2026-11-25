@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdminOrManager, requireAnyRole, type GuardResult } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { askFlags } from '@/lib/ask/config';
 
 /**
@@ -16,4 +17,6 @@ async function checked(guard: Promise<GuardResult>): Promise<WatchGuard> {
 }
 
 export const watchStaff = (): Promise<WatchGuard> => checked(requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
+/** A lead adding an update to the firm queue; a demo login may not (src/lib/demo-logins.ts). */
+export const watchStaffWriter = (): Promise<WatchGuard> => checked(requireAnyRole('super_admin', 'admin', 'manager', 'intern').then(noDemo));
 export const watchReviewer = (): Promise<WatchGuard> => checked(requireAdminOrManager());

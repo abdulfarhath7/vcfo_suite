@@ -9,6 +9,15 @@ export interface ReadValue {
   person: string | null;
   /** 1 when code read it from the text; a model's own estimate on a scan. */
   confidence: number;
+  /**
+   * The words of the document the value comes from. A targeted read always gives one, and for a long
+   * field (a summary of the business) it is what is checked against the document text.
+   */
+  quote?: string;
+  /** Set by a targeted read: the catalog key it asked for, so the value goes straight to that field. */
+  targetKey?: string;
+  /** The file inside the file it came from: an email's attachment. */
+  from?: string;
 }
 
 /**

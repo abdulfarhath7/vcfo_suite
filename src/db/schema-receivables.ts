@@ -30,6 +30,7 @@ import { boolean, date, index, integer, jsonb, numeric, pgTable, primaryKey, tex
 import * as base from './schema';
 import type { ReminderRules, SnapshotRow, EmailRecipient } from '@/lib/receivables/model';
 import type { ShareFilters } from '@/lib/receivables/share-filters';
+import type { TallyJobDto } from '@/lib/receivables/tally-live/wire';
 
 export const receivableSheets = pgTable(
   'receivable_sheets',
@@ -65,6 +66,14 @@ export const receivableSheets = pgTable(
     emailNewInvoiceEnabled: boolean('email_new_invoice_enabled').notNull().default(false),
     emailRollupEnabled: boolean('email_rollup_enabled').notNull().default(false),
     emailRevisedEnabled: boolean('email_revised_enabled').notNull().default(false),
+    /**
+     * Where the sheet's invoices and payments come from (Zoho Z1, docs/specs/integrations/ZOHO.md):
+     * excel | tally (both show Sync from Tally and Import Excel) | zoho (Sync from Zoho). 0071.
+     */
+    source: text('source').notNull().default('excel'),
+    /** For source zoho: 'books' or 'invoice', and the Zoho organisation id that feeds the sheet. Set by a firm-wide admin. */
+    zohoApp: text('zoho_app'),
+    zohoOrgId: text('zoho_org_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -674,6 +683,10 @@ export const receivableImportBatches = pgTable(
     company: text('company').notNull().default(''),
     period: text('period').notNull().default(''),
     uploadedBy: uuid('uploaded_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    /** excel (a Sales Register upload) | tally_live (a Sync from the Tally connector, TALLY-LIVE.md). */
+    source: text('source').notNull().default('excel'),
+    /** sales | receipts. A new batch replaces only the pending batch of the same kind. */
+    kind: text('kind').notNull().default('sales'),
     /** pending | approved | discarded. */
     status: text('status').notNull().default('pending'),
     rowCount: integer('row_count').notNull().default(0),
@@ -701,7 +714,7 @@ export const receivableImportRows = pgTable(
     sheetId: uuid('sheet_id')
       .notNull()
       .references(() => receivableSheets.id, { onDelete: 'cascade' }),
-    /** new | changed | same | no_partner. */
+    /** new | changed | same | no_partner | matched | receipt (a payment from a Tally sync). */
     kind: text('kind').notNull(),
     /** The invoice a `changed` or `same` row matched. */
     invoiceId: uuid('invoice_id').references(() => receivableInvoices.id, { onDelete: 'cascade' }),
@@ -719,7 +732,12 @@ export const receivableImportRows = pgTable(
     dueDate: date('due_date'),
     /** Why the amount changed (required on a staff change). */
     reason: text('reason'),
-    /** tally | staff. */
+    /** A `receipt` row: the day the money arrived, the Tally receipt voucher number, and
+     * `<voucher guid>:<invoice key>`, which stops the same payment being applied twice. */
+    receivedOn: date('received_on'),
+    receiptNo: text('receipt_no'),
+    receiptRef: text('receipt_ref'),
+    /** tally | tally_live | staff. */
     source: text('source').notNull(),
     requestedBy: uuid('requested_by').references(() => base.profiles.id, { onDelete: 'set null' }),
     /** pending | approved | rejected | skipped. */
@@ -731,6 +749,7 @@ export const receivableImportRows = pgTable(
   (t) => ({
     sheetIdx: index('receivable_import_rows_sheet_idx').on(t.sheetId, t.status),
     batchIdx: index('receivable_import_rows_batch_idx').on(t.batchId),
+    receiptRefIdx: index('receivable_import_rows_receipt_ref_idx').on(t.sheetId, t.receiptRef),
   }),
 );
 
@@ -808,5 +827,77 @@ export const receivableDeposits = pgTable(
   },
   (t) => ({
     sheetIdx: index('receivable_deposits_sheet_idx').on(t.sheetId, t.position),
+  }),
+);
+
+/**
+ * Tally live sync (docs/specs/receivables/TALLY-LIVE.md): the small connector on the office PC
+ * that runs TallyPrime. A row starts as a pairing code (only its sha256 is kept, valid 10 minutes);
+ * pairing stores the sha256 of the connector's token and clears the code. A new pairing revokes the
+ * sheet's older connectors, so a sheet has one live connector at most.
+ */
+export const tallyConnectors = pgTable(
+  'tally_connectors',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    /** The PC's name as the connector reports it. */
+    name: text('name').notNull().default(''),
+    tokenHash: text('token_hash'),
+    pairingCodeHash: text('pairing_code_hash'),
+    pairingExpiresAt: timestamp('pairing_expires_at', { withTimezone: true }),
+    tallyCompany: text('tally_company'),
+    version: text('version'),
+    /** The connector's last word on whether TallyPrime answered on its port. */
+    tallyReachable: boolean('tally_reachable'),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    pairedAt: timestamp('paired_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdBy: uuid('created_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    tokenIdx: uniqueIndex('tally_connectors_token_hash_idx').on(t.tokenHash),
+    codeIdx: index('tally_connectors_pairing_code_idx').on(t.pairingCodeHash),
+    sheetIdx: index('tally_connectors_sheet_idx').on(t.sheetId),
+  }),
+);
+
+/**
+ * One Sync from Tally: queued by staff, claimed by the connector (running), then done, failed or
+ * expired (nobody claimed it within 2 minutes). A sheet has at most one queued or running job,
+ * which the partial unique index enforces.
+ */
+export const tallySyncJobs = pgTable(
+  'tally_sync_jobs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sheetId: uuid('sheet_id')
+      .notNull()
+      .references(() => receivableSheets.id, { onDelete: 'cascade' }),
+    connectorId: uuid('connector_id').references(() => tallyConnectors.id, { onDelete: 'set null' }),
+    /** sales | receipts. */
+    type: text('type').notNull(),
+    fromDate: date('from_date').notNull(),
+    toDate: date('to_date').notNull(),
+    /** queued | running | done | failed | expired. */
+    status: text('status').notNull().default('queued'),
+    requestedBy: uuid('requested_by').references(() => base.profiles.id, { onDelete: 'set null' }),
+    error: text('error'),
+    /** Vouchers read, rows staged, vouchers skipped, receipt vouchers, and notes for the person. */
+    stats: jsonb('stats').$type<NonNullable<TallyJobDto['stats']>>(),
+    /** The import batch the result was staged as. */
+    batchId: uuid('batch_id').references(() => receivableImportBatches.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (t) => ({
+    sheetIdx: index('tally_sync_jobs_sheet_idx').on(t.sheetId, t.createdAt),
+    activeIdx: uniqueIndex('tally_sync_jobs_active_idx')
+      .on(t.sheetId)
+      .where(sql`status in ('queued', 'running')`),
   }),
 );

@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   if (!READABLE_EXTENSIONS.has(fileName.toLowerCase().split('.').pop() ?? '')) {
-    return NextResponse.json({ error: 'I can read PDF, Word, Excel, CSV, text and image files.' }, { status: 400 });
+    return NextResponse.json({ error: dropFileRefusal(fileName) ?? 'I can read PDF, Word, Excel, CSV, text, email and image files.' }, { status: 400 });
   }
   const s3Key = `ask/attachments/${gate.ctx.userId}/${randomUUID()}/${fileName}`;
   const contentType = file.type || 'application/octet-stream';

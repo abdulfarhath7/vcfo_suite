@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSuperAdmin } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createDeveloperProfile, FirmOrgForbiddenError } from '@/db/repositories/firm-org';
 import { publicErrorMessage } from '@/lib/api-error';
@@ -13,7 +14,7 @@ const createSchema = z.object({
 
 /** POST /api/admin/people/developers — the super admin creates a developer account. */
 export async function POST(request: Request) {
-  const guard = await requireSuperAdmin();
+  const guard = noDemo(await requireSuperAdmin());
   if (guard.ok === false) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }

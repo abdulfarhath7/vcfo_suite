@@ -30,6 +30,8 @@ import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
 import { CopyForAssist } from '@/components/assist-profile/CopyForAssist';
 import { AssistAgentHint } from '@/components/assist-profile/AssistAgentHint';
+import { GstApplicationCard } from '@/components/assist-profile/GstApplicationCard';
+import { GST_STEP_ID } from '@/lib/registrations/gst-tracker';
 import { ReopenStepButton } from '@/components/incorporation/ReopenStepButton';
 import { ASSIST_PROFILE_STEP_IDS } from '@/lib/assist-profile/paths';
 import { useState } from 'react';
@@ -274,7 +276,16 @@ export default function EngagementStepDetail() {
     />
   ) : null;
 
-  const assistHint = !isClientRoute ? <AssistAgentHint stepId={item.id} /> : null;
+  const assistHint = !isClientRoute ? (
+    item.id === GST_STEP_ID ? (
+      <>
+        <AssistAgentHint stepId={item.id} />
+        <GstApplicationCard engagementId={eng.id} className="mb-3.5" />
+      </>
+    ) : (
+      <AssistAgentHint stepId={item.id} />
+    )
+  ) : null;
 
   const stepFormBody = (
     <>

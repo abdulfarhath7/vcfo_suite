@@ -36,8 +36,8 @@ export class ChangesetRefused extends Error {
   }
 }
 
-const OPEN: readonly string[] = ['proposed', 'partly_applied'];
-const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
+export const OPEN: readonly string[] = ['proposed', 'partly_applied'];
+export const OPEN_ROW: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
 
 export function canDecideRow(found: Pick<ChangesetAccess, 'owner' | 'manager'>, row: Pick<AskChangesetRowRow, 'target'>): boolean {
   return rowNeedsManager(row) ? found.manager : found.owner;
@@ -61,7 +61,7 @@ async function loadOpen(ctx: AuthContext, id: string, now: Date): Promise<Change
 const inputOf = (row: AskChangesetRowRow) => ({ ...row.target, value: row.newValue });
 
 /** Runs every still-open row's rules again, in order, with earlier rows' answers counted. */
-async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRow[]) {
+export async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRow[]) {
   const pending: Record<string, string> = {};
   const updates: Parameters<typeof updateAskChangesetRows>[2][number][] = [];
   for (const row of rows) {
@@ -70,10 +70,13 @@ async function recheckRows(actx: ActionContext, rows: readonly AskChangesetRowRo
     const parsed = action?.input.safeParse(inputOf(row));
     if (!action?.recheck || !parsed?.success) continue;
     const checked = await action.recheck(actx, parsed.data, pending);
+    // "Documents differ" comes from reading, not from the screen's rules, so a recheck keeps it while
+    // the row still holds the value it was raised on (an edit or "Use this" settles it).
+    const differ = row.status === 'edited' ? [] : (row.checks ?? []).filter((check) => check.rule === 'documents_differ' && !checked.checks.some((c) => c.rule === check.rule));
     updates.push({
       id: row.id,
       patch: {
-        checks: checked.checks,
+        checks: [...checked.checks, ...differ],
         heldReason: checked.heldReason,
         status: checked.heldReason ? 'held' : row.status === 'held' ? 'proposed' : row.status,
         oldValue: checked.oldValue,
@@ -99,12 +102,13 @@ function keyOf(row: AskChangesetRowRow): string | null {
  * hash recomputed before the card can show it. A sensitive value is typed in full and shown masked.
  */
 /**
- * The actions whose value a person may change on the card. Only a checklist answer is a value; every
+ * The actions whose value a person may change on the card. Only a checklist answer or a registration
+ * field (`registrations.setField`) is a value; every
  * file row (a checklist upload, a labour sheet, compliance evidence, a vault file) carries a file
  * that cannot be retyped, so it is accepted or left, never edited. The card and the edit route both
  * use this, so a hand-made request cannot edit what the card does not offer.
  */
-const VALUE_EDIT_ACTIONS: ReadonlySet<string> = new Set(['checklist.setResponse']);
+const VALUE_EDIT_ACTIONS: ReadonlySet<string> = new Set(['checklist.setResponse', 'registrations.setField']);
 
 /**
  * The one part of a file row a person may change: a labour sheet's state, which the drop may have
@@ -224,7 +228,7 @@ async function loadAction(row: AskChangesetRowRow): Promise<AnyAction | null> {
   return action && agentMayExecute(action.tier) && !askFlags().killedTiers.has(action.tier) ? action : null;
 }
 
-async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
+export async function applyRow(actx: ActionContext, row: AskChangesetRowRow): Promise<{ patch: Parameters<typeof updateAskChangesetRows>[2][number]['patch'] }> {
   const failed = (error: string) => ({ patch: { status: 'failed', error } });
   const action = await loadAction(row);
   if (!action) return failed('This action is switched off.');

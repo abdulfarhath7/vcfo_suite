@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { MICROSOFT_PROVIDER_ID, microsoftSignInConfigured } from '@/auth/microsoft';
 import { getOwnSignInLink, removeOwnSignInLink } from '@/db/repositories/sign-in-links';
 
@@ -17,7 +18,7 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const auth = await requireAnyRole('admin', 'manager', 'intern');
+  const auth = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (auth.ok === false) return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   const removed = await removeOwnSignInLink(auth.ctx, MICROSOFT_PROVIDER_ID);
   return NextResponse.json({ ok: true, removed });

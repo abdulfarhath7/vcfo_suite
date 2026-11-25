@@ -22,6 +22,10 @@ import { ZIP_ENTRY_MAX_BYTES } from './unzip';
  *
  * A file that cannot be downloaded is left out with a reason rather than failing the drop; a refusal
  * for the whole folder (no token, no access) becomes a note for the closing message.
+ *
+ * A file an earlier fetch read and that did not change is not downloaded again, but it is not
+ * forgotten either (PLAN M5): it joins the drop as a row with no bytes, marked `origin: 'stored'`,
+ * and the read step takes its stored read, so the new card still carries its values.
  */
 
 export const DOWNLOAD_FAILED = 'Left out: this file could not be downloaded from SharePoint.';
@@ -33,6 +37,8 @@ export type PullProgress = (done: number, total: number) => Promise<void> | void
 export interface PullResult {
   copied: number;
   skipped: DropFile[];
+  /** Files read in an earlier fetch, unchanged: their stored reads are used again. */
+  stored?: DropFile[];
   note?: string;
 }
 
@@ -59,7 +65,7 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
   };
   const walked = await walkFolder((itemId) => graphListChildren(access, driveId, itemId), link.folderId, undefined, isSeen);
   const seenNote = walked.alreadySeen > 0
-    ? `${walked.alreadySeen} file${walked.alreadySeen === 1 ? ' was' : 's were'} read in an earlier fetch and did not change, so I left ${walked.alreadySeen === 1 ? 'it' : 'them'} out.`
+    ? `${walked.alreadySeen} file${walked.alreadySeen === 1 ? ' was' : 's were'} read in an earlier fetch and did not change, so I used what I read then.`
     : undefined;
   const skipped: DropFile[] = walked.skipped.map((s) => ({
     attachmentId: `sharepoint:${s.itemId}`,
@@ -68,11 +74,33 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     status: 'skipped',
     reason: s.reason,
   }));
+  const done = new Set((await listAskRunAttachments(ctx, run.id)).map((r) => r.relativePath));
+  // The files read before: a row each, with no bytes, whose read step reuses the stored read.
+  const stored: DropFile[] = [];
+  for (const file of walked.seen) {
+    const relativePath = `${folderName}/${file.path}`;
+    const before = seen.get(file.itemId);
+    if (done.has(relativePath) || !before) continue;
+    const fileName = safeFileName(file.name);
+    const attachment = await createAskAttachment(ctx, {
+      kind: 'file',
+      fileName,
+      contentType: dropContentType(fileName),
+      sizeBytes: file.size,
+      s3Key: null,
+      conversationId: run.conversationId,
+      runId: run.id,
+      relativePath,
+    });
+    if (!attachment?.id) continue;
+    // The same bytes keep their stored read on the row (`recordSharepointFileCopied`).
+    await recordSharepointFileCopied(ctx, source.engagementId, { itemId: file.itemId, cTag: file.cTag, sha256: before.sha256, path: relativePath, attachmentId: attachment.id });
+    stored.push({ attachmentId: attachment.id, path: relativePath, size: file.size, status: 'queued', origin: 'stored' });
+  }
   if (walked.files.length === 0 && walked.skipped.length === 0) {
-    return { copied: 0, skipped, note: seenNote ? `Nothing new in the SharePoint folder ${folderName}: ${seenNote}` : `The SharePoint folder ${folderName} has no files in it.` };
+    return { copied: 0, skipped, stored, note: seenNote ? `Nothing new in the SharePoint folder ${folderName}: ${seenNote}` : `The SharePoint folder ${folderName} has no files in it.` };
   }
 
-  const done = new Set((await listAskRunAttachments(ctx, run.id)).map((r) => r.relativePath));
   let copied = 0;
   const total = walked.files.length;
   // A retry starts at the files an earlier try already copied.
@@ -113,5 +141,5 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     handled += 1;
     await onProgress?.(handled, total);
   }
-  return { copied, skipped, ...(seenNote ? { note: seenNote } : {}) };
+  return { copied, skipped, stored, ...(seenNote ? { note: seenNote } : {}) };
 }

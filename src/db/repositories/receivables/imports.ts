@@ -1,14 +1,16 @@
 import 'server-only';
-import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { profiles, receivableClients, receivableImportBatches, receivableImportRows, receivableInvoices } from '@/db/schema';
 import type { AuthContext } from '@/auth/guards';
 import { addDaysIso, monthStart } from '@/lib/receivables/dates';
 import { clientKey } from '@/lib/receivables/client-key';
 import { voucherKey, type TallySalesRegister } from '@/lib/receivables/tally-sales-register';
+import type { TallyReceipts } from '@/lib/receivables/tally-live/map';
 import type { ApproveEdit, ImportBatchDto, ImportRowDto, ImportRowKind, PendingImportsDto } from '@/lib/receivables/v2-wire';
 import { cleanCreditDays, findOrCreateClient, sheetPartnerId, type ClientRow } from './clients';
-import { ISO_DATE, UUID, conflict, invalid, invoiceLabel, logChange, money, notFound, num, scopedInvoice, scopedSheet, type InvoiceRow } from './shared';
+import { markReceived } from './invoices';
+import { ISO_DATE, ReceivablesError, UUID, conflict, invalid, invoiceLabel, logChange, money, notFound, num, scopedInvoice, scopedSheet, type InvoiceRow } from './shared';
 
 /**
  * RECEIVABLES v2 — the Tally import and the approval panel (docs/specs/receivables/V2.md).
@@ -23,6 +25,10 @@ import { ISO_DATE, UUID, conflict, invalid, invoiceLabel, logChange, money, notF
  * tries the invoices that have no number yet (loaded from the weekly workbook): the same client
  * (`client_key`) and the same amount within one rupee, the earliest due date first. That row is
  * MATCHED, and approving it fills in the invoice number, date and GSTIN from Tally.
+ *
+ * Tally live sync (docs/specs/receivables/TALLY-LIVE.md) stages through the same functions with the
+ * source `tally_live`: sales rows exactly as an upload, and payments as `receipt` rows
+ * (`stageTallyReceipts`), which approval applies through `markReceived`.
  */
 
 /** Amounts within this many rupees count as the same invoice when matching by client and amount. */
@@ -38,7 +44,14 @@ export type ApprovalOutcome = {
   newInvoiceIds: string[];
   revised: Array<{ invoiceId: string; oldAmountInr: number; newAmountInr: number; reason: string | null }>;
   refused: Array<{ rowId: string; code: string }>;
+  /** Invoices a payment from Tally was applied to (received in full or in part). */
+  received: string[];
 };
+
+/** Where a batch came from: an Excel upload or a Sync from the Tally connector. */
+/** zoho: a Sync from Zoho Books (docs/specs/integrations/ZOHO.md), staged exactly as a Tally sync. */
+export type StageOptions = { source?: 'excel' | 'tally_live' | 'zoho' };
+type BatchKind = 'sales' | 'receipts';
 
 const sameMoney = (a: number | null, b: number | null) => a !== null && b !== null && Math.round(a * 100) === Math.round(b * 100);
 
@@ -108,6 +121,18 @@ async function closeBatchIfDone(tx: Tx, batchId: string | null): Promise<void> {
     .where(and(eq(receivableImportBatches.id, batchId), eq(receivableImportBatches.status, 'pending')));
 }
 
+/** Discards the sheet's pending batches of one kind, so a new upload or sync replaces them. */
+async function discardPendingBatches(tx: Tx, sheetId: string, kind: BatchKind, now: Date): Promise<void> {
+  const old = await tx
+    .select({ id: receivableImportBatches.id })
+    .from(receivableImportBatches)
+    .where(and(eq(receivableImportBatches.sheetId, sheetId), eq(receivableImportBatches.status, 'pending'), eq(receivableImportBatches.kind, kind)));
+  if (!old.length) return;
+  const ids = old.map((b) => b.id);
+  await tx.update(receivableImportRows).set({ status: 'skipped', decidedAt: now }).where(and(inArray(receivableImportRows.batchId, ids), eq(receivableImportRows.status, 'pending')));
+  await tx.update(receivableImportBatches).set({ status: 'discarded', updatedAt: now }).where(inArray(receivableImportBatches.id, ids));
+}
+
 /**
  * Stages one Tally Sales Register upload as a pending batch. A sheet has one pending batch at a
  * time, so an earlier pending batch is discarded first. For each row: the client is found by its
@@ -117,30 +142,24 @@ async function closeBatchIfDone(tx: Tx, batchId: string | null): Promise<void> {
  *  - a match whose amount differs → `changed`;
  *  - a match whose amount is equal → `same`, which also clears the invoice's "Fix in Tally" flag.
  */
-export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileName: string, parsed: TallySalesRegister): Promise<PendingImportsDto> {
+export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileName: string, parsed: TallySalesRegister, opts: StageOptions = {}): Promise<PendingImportsDto & { batchId: string }> {
   const sheet = await scopedSheet(ctx, sheetId);
+  const source = opts.source ?? 'excel';
+  const rowSource = source === 'tally_live' || source === 'zoho' ? source : 'tally';
   const name = fileName.trim().slice(0, 200) || 'Sales Register.xlsx';
-  await db.transaction(async (tx) => {
+  const batchId = await db.transaction(async (tx) => {
     const now = new Date();
-    const old = await tx
-      .select({ id: receivableImportBatches.id })
-      .from(receivableImportBatches)
-      .where(and(eq(receivableImportBatches.sheetId, sheet.id), eq(receivableImportBatches.status, 'pending')));
-    if (old.length) {
-      const ids = old.map((b) => b.id);
-      await tx.update(receivableImportRows).set({ status: 'skipped', decidedAt: now }).where(and(inArray(receivableImportRows.batchId, ids), eq(receivableImportRows.status, 'pending')));
-      await tx.update(receivableImportBatches).set({ status: 'discarded', updatedAt: now }).where(inArray(receivableImportBatches.id, ids));
-    }
+    await discardPendingBatches(tx, sheet.id, 'sales', now);
     const [batch] = await tx
       .insert(receivableImportBatches)
-      .values({ sheetId: sheet.id, fileName: name, company: parsed.company.slice(0, 200), period: parsed.period.slice(0, 60), uploadedBy: ctx.userId })
+      .values({ sheetId: sheet.id, fileName: name, company: parsed.company.slice(0, 200), period: parsed.period.slice(0, 60), uploadedBy: ctx.userId, source, kind: 'sales' })
       .returning();
 
     const byKey = await invoicesByKey(tx, sheet.id);
     const unnumbered = await unnumberedInvoices(tx, sheet.id);
     const claimed = new Set<string>();
     const clients = new Map<string, ClientRow>();
-    const counts: Record<ImportRowKind, number> = { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0 };
+    const counts: Record<ImportRowKind, number> = { new: 0, changed: 0, same: 0, no_partner: 0, matched: 0, receipt: 0 };
     const values: Array<typeof receivableImportRows.$inferInsert> = [];
     for (const r of parsed.rows) {
       const cacheKey = r.clientName.toLowerCase();
@@ -183,7 +202,7 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
         amountInr: money(r.amountInr),
         oldAmountInr: match ? money(num(match.amountInr) ?? 0) : null,
         dueDate: match ? String(match.dueDate) : addDaysIso(r.invoiceDate, client.creditDays),
-        source: 'tally',
+        source: rowSource,
         requestedBy: ctx.userId,
       });
     }
@@ -193,9 +212,80 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
       // MATCHED rows have no column of their own; they are counted with SAME here and shown apart from the rows.
       .set({ rowCount: values.length, newCount: counts.new, changedCount: counts.changed, sameCount: counts.same + counts.matched, noPartnerCount: counts.no_partner, updatedAt: now })
       .where(eq(receivableImportBatches.id, batch.id));
-    await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `Tally Sales Register ${name} uploaded: ${values.length} rows waiting for approval`, affectsPage: false }, tx);
+    const what = source === 'tally_live' || source === 'zoho' ? `${name} (invoices)` : `Tally Sales Register ${name} uploaded`;
+    await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `${what}: ${values.length} rows waiting for approval`, affectsPage: false }, tx);
+    return batch.id;
   });
-  return { ...(await getPendingImports(ctx, sheet.id)), warnings: parsed.warnings };
+  return { ...(await getPendingImports(ctx, sheet.id)), warnings: parsed.warnings, batchId };
+}
+
+/**
+ * Stages the payments of one Tally sync as a pending `receipts` batch (an earlier pending receipts
+ * batch is discarded; a pending invoices batch stays). Each row is one bill reference of a receipt
+ * voucher, matched to the sheet's invoice by voucher key. A payment already applied by an earlier
+ * sync (the same voucher guid and invoice) is left out. A row whose invoice is unknown or already
+ * received is still shown, with the reason, so the person sees it; approval refuses it.
+ * Nothing is staged, and no batch made, when no row is left.
+ */
+export async function stageTallyReceipts(
+  ctx: AuthContext,
+  sheetId: string,
+  fileName: string,
+  receipts: TallyReceipts,
+  opts: { source?: 'tally_live' | 'zoho' } = {},
+): Promise<{ batchId: string | null; staged: number; alreadyApplied: number }> {
+  const sheet = await scopedSheet(ctx, sheetId);
+  const source = opts.source ?? 'tally_live';
+  const name = fileName.trim().slice(0, 200) || 'Tally sync';
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const refs = [...new Set(receipts.rows.map((r) => r.ref))];
+    const applied = new Set<string>();
+    for (let i = 0; i < refs.length; i += 500) {
+      const done = await tx
+        .select({ ref: receivableImportRows.receiptRef })
+        .from(receivableImportRows)
+        .where(and(eq(receivableImportRows.sheetId, sheet.id), eq(receivableImportRows.status, 'approved'), inArray(receivableImportRows.receiptRef, refs.slice(i, i + 500))));
+      for (const d of done) if (d.ref) applied.add(d.ref);
+    }
+    const fresh = receipts.rows.filter((r) => !applied.has(r.ref));
+    await discardPendingBatches(tx, sheet.id, 'receipts', now);
+    if (!fresh.length) return { batchId: null, staged: 0, alreadyApplied: receipts.rows.length };
+
+    const [batch] = await tx
+      .insert(receivableImportBatches)
+      .values({ sheetId: sheet.id, fileName: name, company: receipts.company.slice(0, 200), period: receipts.period.slice(0, 60), uploadedBy: ctx.userId, source, kind: 'receipts' })
+      .returning();
+    const byKey = await invoicesByKey(tx, sheet.id);
+    const values: Array<typeof receivableImportRows.$inferInsert> = fresh.map((r) => {
+      const inv = byKey.get(r.invoiceKey);
+      const reason = !inv ? 'No invoice with this number on the sheet' : inv.status !== 'open' ? 'The invoice is already received' : null;
+      return {
+        batchId: batch.id,
+        sheetId: sheet.id,
+        kind: 'receipt',
+        invoiceId: inv?.id ?? null,
+        invoiceNo: inv?.invoiceNo ?? r.invoiceNo,
+        invoiceKey: r.invoiceKey,
+        invoiceDate: inv?.invoiceDate ? String(inv.invoiceDate) : null,
+        clientName: inv?.clientName ?? (r.partyName || 'Unknown party'),
+        clientId: inv?.clientId ?? null,
+        partnerId: inv?.partnerId ?? null,
+        amountInr: money(r.amountInr),
+        oldAmountInr: inv ? money(num(inv.amountInr) ?? 0) : null,
+        receivedOn: r.date,
+        receiptNo: r.voucherNo || null,
+        receiptRef: r.ref,
+        reason,
+        source,
+        requestedBy: ctx.userId,
+      };
+    });
+    for (let i = 0; i < values.length; i += 200) await tx.insert(receivableImportRows).values(values.slice(i, i + 200));
+    await tx.update(receivableImportBatches).set({ rowCount: values.length, updatedAt: now }).where(eq(receivableImportBatches.id, batch.id));
+    await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `${name} (payments): ${values.length} rows waiting for approval`, affectsPage: false }, tx);
+    return { batchId: batch.id, staged: values.length, alreadyApplied: receipts.rows.length - fresh.length };
+  });
 }
 
 /** The approval panel: the pending batch, if any, and every pending row (Tally and staff). */
@@ -207,7 +297,8 @@ export async function getPendingImports(ctx: AuthContext, sheetId: string): Prom
       .from(receivableImportBatches)
       .leftJoin(profiles, eq(profiles.id, receivableImportBatches.uploadedBy))
       .where(and(eq(receivableImportBatches.sheetId, sheet.id), eq(receivableImportBatches.status, 'pending')))
-      .limit(1),
+      .orderBy(desc(receivableImportBatches.createdAt))
+      .limit(10),
     db
       .select({ row: receivableImportRows, creditDays: receivableClients.creditDays, requestedByName: profiles.name })
       .from(receivableImportRows)
@@ -216,25 +307,27 @@ export async function getPendingImports(ctx: AuthContext, sheetId: string): Prom
       .where(and(eq(receivableImportRows.sheetId, sheet.id), eq(receivableImportRows.status, 'pending')))
       .orderBy(asc(receivableImportRows.clientName), asc(receivableImportRows.invoiceDate)),
   ]);
-  const b = batches[0];
-  const batch: ImportBatchDto | null = b
-    ? {
-        id: b.batch.id,
-        fileName: b.batch.fileName,
-        company: b.batch.company,
-        period: b.batch.period,
-        uploadedByName: b.uploadedByName ?? null,
-        createdAt: b.batch.createdAt.toISOString(),
-        rowCount: b.batch.rowCount,
-        newCount: b.batch.newCount,
-        changedCount: b.batch.changedCount,
-        sameCount: b.batch.sameCount,
-        noPartnerCount: b.batch.noPartnerCount,
-        matchedCount: rows.filter((r) => r.row.kind === 'matched' && r.row.batchId === b.batch.id).length,
-      }
-    : null;
+  const all: ImportBatchDto[] = batches.map((b) => ({
+    id: b.batch.id,
+    fileName: b.batch.fileName,
+    company: b.batch.company,
+    period: b.batch.period,
+    uploadedByName: b.uploadedByName ?? null,
+    createdAt: b.batch.createdAt.toISOString(),
+    rowCount: b.batch.rowCount,
+    newCount: b.batch.newCount,
+    changedCount: b.batch.changedCount,
+    sameCount: b.batch.sameCount,
+    noPartnerCount: b.batch.noPartnerCount,
+    matchedCount: rows.filter((r) => r.row.kind === 'matched' && r.row.batchId === b.batch.id).length,
+    receiptCount: rows.filter((r) => r.row.kind === 'receipt' && r.row.batchId === b.batch.id).length,
+    source: b.batch.source === 'tally_live' || b.batch.source === 'zoho' ? b.batch.source : 'excel',
+    kind: b.batch.kind === 'receipts' ? 'receipts' : 'sales',
+  }));
   return {
-    batch,
+    // The invoices batch keeps the old single-batch field; `batches` lists every pending one.
+    batch: all.find((b) => b.kind === 'sales') ?? all[0] ?? null,
+    batches: all,
     rows: rows.map(({ row, creditDays, requestedByName }) => toRowDto(row, creditDays ?? 7, requestedByName ?? null)),
   };
 }
@@ -245,6 +338,8 @@ function toRowDto(row: ImportRow, creditDays: number, requestedByName: string | 
     batchId: row.batchId,
     kind: row.kind as ImportRowKind,
     source: row.source === 'staff' ? 'staff' : 'tally',
+    receivedOn: row.receivedOn ? String(row.receivedOn) : null,
+    receiptNo: row.receiptNo,
     invoiceId: row.invoiceId,
     invoiceNo: row.invoiceNo,
     invoiceDate: row.invoiceDate ? String(row.invoiceDate) : null,
@@ -275,13 +370,17 @@ function cleanIds(ids: unknown): string[] {
  *    (a staff change also flags "Fix in Tally"); a received or part-paid invoice refuses with
  *    `paid_locked` and its row stays pending;
  *  - SAME rows are skipped;
- *  - edited credit days and a partner picked for a client are saved on the client.
+ *  - edited credit days and a partner picked for a client are saved on the client;
+ *  - RECEIPT rows (payments from a Tally sync) go through `markReceived` after the transaction, one
+ *    at a time: less than the open amount is a part payment, the rest settles the invoice. An
+ *    unknown invoice refuses with `receipt_no_invoice`, a received one with `receipt_received`.
  * Rows refused for a reason are listed in `refused`; the rest are approved.
  */
 export async function approveImportRows(ctx: AuthContext, sheetId: string, rowIds: string[], edits: ApproveEdit[] = []): Promise<ApprovalOutcome> {
   const sheet = await scopedSheet(ctx, sheetId);
   const ids = cleanIds(rowIds);
-  const outcome: ApprovalOutcome = { approved: 0, invoiceIds: [], newInvoiceIds: [], revised: [], refused: [] };
+  const outcome: ApprovalOutcome = { approved: 0, invoiceIds: [], newInvoiceIds: [], revised: [], refused: [], received: [] };
+  const receiptRows: ImportRow[] = [];
   if (!ids.length) return outcome;
   const editOf = new Map<string, ApproveEdit>();
   for (const e of edits ?? []) if (e && typeof e.rowId === 'string') editOf.set(e.rowId, e);
@@ -327,6 +426,10 @@ export async function approveImportRows(ctx: AuthContext, sheetId: string, rowId
       const client = r.clientId ? clients.get(r.clientId) : undefined;
       if (r.kind === 'same') {
         skipped.push(r.id);
+        continue;
+      }
+      if (r.kind === 'receipt') {
+        receiptRows.push(r);
         continue;
       }
       if (r.kind === 'matched') {
@@ -454,7 +557,7 @@ export async function approveImportRows(ctx: AuthContext, sheetId: string, rowId
         })
         .where(eq(receivableInvoices.id, inv.id))
         .returning();
-      const why = r.reason ? `: ${r.reason}` : r.source === 'tally' ? ' (from Tally)' : '';
+      const why = r.reason ? `: ${r.reason}` : r.source !== 'staff' ? ' (from Tally)' : '';
       await logChange(
         { sheetId: sheet.id, invoiceId: inv.id, actorId: ctx.userId, summary: `${invoiceLabel(row)} amount revised (r${revision})${why}`, field: 'amountInr', before: money(before), after: money(after) },
         tx,
@@ -481,7 +584,59 @@ export async function approveImportRows(ctx: AuthContext, sheetId: string, rowId
     }
     for (const batchId of new Set(rows.map((r) => r.batchId))) await closeBatchIfDone(tx, batchId);
   });
+  if (receiptRows.length) await applyReceiptRows(ctx, sheet.id, receiptRows, outcome);
   return outcome;
+}
+
+/**
+ * Applies approved payment rows through `markReceived`, which writes outside a transaction of its
+ * own. Each row is claimed first (pending → approved), so a second click cannot apply it twice, and
+ * put back to pending when the payment is refused.
+ */
+async function applyReceiptRows(ctx: AuthContext, sheetId: string, rows: ImportRow[], outcome: ApprovalOutcome): Promise<void> {
+  let applied = 0;
+  for (const r of rows) {
+    if (!r.invoiceId) {
+      outcome.refused.push({ rowId: r.id, code: 'receipt_no_invoice' });
+      continue;
+    }
+    const [inv] = await db
+      .select()
+      .from(receivableInvoices)
+      .where(and(eq(receivableInvoices.id, r.invoiceId), eq(receivableInvoices.sheetId, sheetId), isNull(receivableInvoices.deletedAt)))
+      .limit(1);
+    if (!inv) {
+      outcome.refused.push({ rowId: r.id, code: 'receipt_no_invoice' });
+      continue;
+    }
+    if (inv.status !== 'open') {
+      outcome.refused.push({ rowId: r.id, code: 'receipt_received' });
+      continue;
+    }
+    const [claimed] = await db
+      .update(receivableImportRows)
+      .set({ status: 'approved', decidedBy: ctx.userId, decidedAt: new Date() })
+      .where(and(eq(receivableImportRows.id, r.id), eq(receivableImportRows.status, 'pending')))
+      .returning({ id: receivableImportRows.id });
+    if (!claimed) continue;
+    const amount = num(r.amountInr) ?? 0;
+    const open = num(inv.amountInr) ?? 0;
+    try {
+      await markReceived(ctx, inv.id, { paidOn: r.receivedOn ? String(r.receivedOn) : '', amount, part: amount < open - 0.005 });
+      outcome.received.push(inv.id);
+      outcome.invoiceIds.push(inv.id);
+      outcome.approved += 1;
+      applied += 1;
+    } catch (e) {
+      await db.update(receivableImportRows).set({ status: 'pending', decidedBy: null, decidedAt: null }).where(eq(receivableImportRows.id, r.id));
+      const code = e instanceof ReceivablesError ? (e.code === 'not_open' ? 'receipt_received' : e.code) : 'receipt_failed';
+      outcome.refused.push({ rowId: r.id, code });
+    }
+  }
+  await db.transaction(async (tx) => {
+    if (applied) await logChange({ sheetId, invoiceId: null, actorId: ctx.userId, summary: `${applied} payment${applied === 1 ? '' : 's'} from Tally applied` }, tx);
+    for (const batchId of new Set(rows.map((r) => r.batchId))) await closeBatchIfDone(tx, batchId);
+  });
 }
 
 /** Rejects pending rows; nothing changes on the invoices. */

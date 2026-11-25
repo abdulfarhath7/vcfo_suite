@@ -20,6 +20,7 @@ import { isUuid } from '@/lib/slug';
 import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs';
 import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { assertNotDemo } from '@/lib/demo-logins';
 import { generateTotpSecret, otpauthUri } from '@/lib/totp/totp';
 import { encryptTotpSecret, reencryptTotpSecret } from '@/lib/totp/secret-box';
 import { checkTotpCode } from '@/lib/totp/check';
@@ -111,6 +112,7 @@ export async function createInternProfile(
   ctx: AuthContext,
   input: CreateInternProfileInput,
 ): Promise<CreateInternProfileResult> {
+  assertNotDemo(ctx, 'createInternProfile');
   if (!isAdminOrManager(ctx.role)) {
     throw new Error('Only admins or managers may create project leads');
   }
@@ -188,6 +190,7 @@ export async function createClientProfile(
   ctx: AuthContext,
   input: CreateClientProfileInput,
 ): Promise<CreateClientProfileResult> {
+  assertNotDemo(ctx, 'createClientProfile');
   if (!isAdminOrManager(ctx.role)) {
     throw new Error('Only admins or managers may create client accounts');
   }
@@ -244,6 +247,7 @@ export async function updateOwnPassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<'ok' | 'invalid_credentials' | 'account_not_found'> {
+  assertNotDemo(ctx, 'updateOwnPassword');
   const [row] = await db
     .select({ passwordHash: profiles.passwordHash })
     .from(profiles)
@@ -354,6 +358,7 @@ export async function createAdminProfile(
   ctx: AuthContext,
   input: { email: string; password: string; fullName?: string },
 ): Promise<{ userId: string; name: string; email: string }> {
+  assertNotDemo(ctx, 'createAdminProfile');
   if (!isFirmWideAdmin(ctx.role)) {
     throw new Error('Only firm admins may create admins');
   }
@@ -381,6 +386,7 @@ export async function createManagerProfile(
   ctx: AuthContext,
   input: { email: string; password: string; fullName?: string },
 ): Promise<{ userId: string; name: string; email: string }> {
+  assertNotDemo(ctx, 'createManagerProfile');
   if (!isFirmWideAdmin(ctx.role)) {
     throw new Error('Only firm admins may create project managers');
   }
@@ -415,6 +421,7 @@ export async function deleteProfileAccount(
   ctx: AuthContext,
   profileId: string,
 ): Promise<{ deletedId: string; email: string; role: string; name: string }> {
+  assertNotDemo(ctx, 'deleteProfileAccount');
   if (!isAdminOrManager(ctx.role)) {
     throw new Error('Not permitted');
   }
@@ -593,6 +600,7 @@ export async function setOwnAvatarObjectKey(
   ctx: AuthContext,
   objectKey: string | null,
 ): Promise<{ avatarUrl: string | null }> {
+  assertNotDemo(ctx, 'setOwnAvatarObjectKey');
   const [updated] = await db
     .update(profiles)
     .set({ avatarObjectKey: objectKey, updatedAt: new Date() })
@@ -630,6 +638,7 @@ export async function updateOwnProfile(
   | { ok: true; name: string; email: string; phone: string | null; designation?: string | null; membershipNo?: string | null }
   | { ok: false; error: 'account_not_found' | 'invalid_credentials' | 'email_already_registered' }
 > {
+  assertNotDemo(ctx, 'updateOwnProfile');
   const [row] = await db
     .select({
       id: profiles.id,
@@ -738,6 +747,7 @@ export async function updatePersonEmail(
   profileId: string,
   newEmail: string,
 ): Promise<{ id: string; name: string; email: string; previousEmail: string }> {
+  assertNotDemo(ctx, 'updatePersonEmail');
   if (!isAdminOrManager(ctx.role)) {
     throw new Error('Not permitted');
   }
@@ -1040,6 +1050,8 @@ export type SignInCandidate = {
   /** True when two-step sign-in is confirmed for this person. */
   twoStepOn: boolean;
   totpSecretEnc: string | null;
+  /** A demo login (`profiles.is_demo`); only ever found in the demo database. */
+  isDemo: boolean;
 };
 
 /**
@@ -1067,6 +1079,7 @@ export async function systemCheckSignInPassword(emailInput: string, password: st
       updatedAt: profiles.updatedAt,
       totpSecretEnc: profiles.totpSecretEnc,
       totpEnabledAt: profiles.totpEnabledAt,
+      isDemo: profiles.isDemo,
     })
     .from(profiles)
     .where(eq(profiles.email, email))
@@ -1089,6 +1102,7 @@ export async function systemCheckSignInPassword(emailInput: string, password: st
     updatedAt: row.updatedAt,
     twoStepOn: Boolean(row.totpEnabledAt && row.totpSecretEnc),
     totpSecretEnc: row.totpSecretEnc,
+    isDemo: Boolean(row.isDemo),
   };
 }
 
@@ -1148,6 +1162,7 @@ export async function getOwnTwoStep(ctx: AuthContext): Promise<TwoStepStatus> {
 export async function startOwnTwoStepSetup(
   ctx: AuthContext,
 ): Promise<{ secret: string; uri: string } | 'already_on'> {
+  assertNotDemo(ctx, 'startOwnTwoStepSetup');
   const row = await readOwnTwoStepRow(ctx);
   if (row.totpEnabledAt && row.totpSecretEnc) return 'already_on';
   const secret = generateTotpSecret();
@@ -1163,6 +1178,7 @@ export async function confirmOwnTwoStep(
   ctx: AuthContext,
   code: string,
 ): Promise<{ ok: true; status: TwoStepStatus } | { ok: false; error: 'not_started' | 'already_on' | 'invalid_code' | 'locked' }> {
+  assertNotDemo(ctx, 'confirmOwnTwoStep');
   const row = await readOwnTwoStepRow(ctx);
   if (row.totpEnabledAt && row.totpSecretEnc) return { ok: false, error: 'already_on' };
   if (!row.totpSecretEnc) return { ok: false, error: 'not_started' };
@@ -1183,6 +1199,7 @@ export async function disableOwnTwoStep(
   ctx: AuthContext,
   code: string,
 ): Promise<{ ok: true } | { ok: false; error: 'not_on' | 'invalid_code' | 'locked' }> {
+  assertNotDemo(ctx, 'disableOwnTwoStep');
   const row = await readOwnTwoStepRow(ctx);
   if (!row.totpEnabledAt || !row.totpSecretEnc) return { ok: false, error: 'not_on' };
   const check = await checkTotpCode(ctx.userId, row.totpSecretEnc, code);
@@ -1205,6 +1222,7 @@ export async function resetTwoStepFor(
   ctx: AuthContext,
   profileId: string,
 ): Promise<'ok' | 'forbidden' | 'not_found' | 'self'> {
+  assertNotDemo(ctx, 'resetTwoStepFor');
   if (!isFirmWideAdmin(ctx.role)) return 'forbidden';
   if (!isUuid(profileId)) return 'not_found';
   if (profileId === ctx.userId) return 'self';

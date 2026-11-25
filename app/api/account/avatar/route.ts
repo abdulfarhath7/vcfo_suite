@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireOwnAccount } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import {
   getOwnAvatarObjectKey,
   setOwnAvatarObjectKey,
@@ -43,7 +44,7 @@ export async function GET() {
 
 /** POST /api/account/avatar — multipart `file`; replaces any previous photo. */
 export async function POST(request: Request) {
-  const auth = await requireOwnAccount();
+  const auth = noDemo(await requireOwnAccount());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
 
 /** DELETE /api/account/avatar — remove the signed-in user’s photo. */
 export async function DELETE() {
-  const auth = await requireOwnAccount();
+  const auth = noDemo(await requireOwnAccount());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

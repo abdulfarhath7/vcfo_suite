@@ -136,6 +136,30 @@ export async function findActiveAskRun(ctx: AuthContext, conversationId: string,
   return row ?? null;
 }
 
+/**
+ * A fill still open on this card for this person (running, or waiting on the page), so a second
+ * "Fill into app" does not start a second run over the same rows. Older than ACTIVE_HOURS counts as
+ * stuck. The literal matches FILL_WORKFLOW in src/lib/ask/fill/types.ts.
+ */
+export async function findOpenAskFillRun(ctx: AuthContext, changesetId: string, now: Date): Promise<AskRunRow | null> {
+  assertAskRole(ctx);
+  const [row] = await db
+    .select()
+    .from(askRuns)
+    .where(
+      and(
+        eq(askRuns.profileId, ctx.userId),
+        eq(askRuns.workflow, 'fill'),
+        inArray(askRuns.status, ['running', 'waiting_user']),
+        sql`${askRuns.state}->>'changesetId' = ${changesetId}`,
+        gt(askRuns.createdAt, new Date(now.getTime() - ACTIVE_HOURS * 3_600_000)),
+      ),
+    )
+    .orderBy(desc(askRuns.createdAt))
+    .limit(1);
+  return row ?? null;
+}
+
 /** How long a settled drop still answers "is it done?" in its conversation. */
 const RECENT_DROP_MINUTES = 30;
 

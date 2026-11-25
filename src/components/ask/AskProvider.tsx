@@ -26,6 +26,8 @@ import {
 } from '@/hooks/ask/ask-api';
 import { isRunActive, useAskRun } from '@/hooks/ask/use-ask-run';
 import { useAskStatus } from '@/hooks/ask/use-ask-status';
+import { dispatchFillStart, fillStartOf, readFillMode, serverFillMode } from './fill/fill-mode';
+import { useFillState } from './fill/fill-store';
 import {
   AskContext,
   type AskDropInput,
@@ -104,7 +106,7 @@ function writeHistory(key: string, list: AskHistoryEntry[]) {
 }
 
 export function AskProvider({ children }: { children: ReactNode }) {
-  const { user, engagements } = useApp();
+  const { user, engagements, refreshEngagementChecklist } = useApp();
   const role = user?.role ?? null;
   const { enabled, firmName, features } = useAskStatus(role);
   const [open, setOpenState] = useState(false);
@@ -247,6 +249,19 @@ export function AskProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     conversationRef.current = conversationId;
   }, [conversationId]);
+  // The messages on screen, so the settled reload can tell which answers are new; and the fill
+  // runs this page has already handed to the live player (once per run).
+  const threadIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    threadIdsRef.current = new Set(thread.map((item) => item.id));
+  }, [thread]);
+  const startedFills = useRef<Set<string>>(new Set());
+  const startFillOnce = useCallback((answer: unknown) => {
+    const fill = fillStartOf(answer);
+    if (!fill || startedFills.current.has(fill.runId)) return;
+    startedFills.current.add(fill.runId);
+    dispatchFillStart(fill);
+  }, []);
   useEffect(() => {
     if (!runSettled || busy) return;
     const cid = conversationId;
@@ -255,14 +270,45 @@ export function AskProvider({ children }: { children: ReactNode }) {
     fetchConversation(cid)
       .then(({ messages }) => {
         // Only when the person is still on the same chat.
-        if (conversationRef.current === cid) setThread(toThread(messages));
         refreshList();
+        if (conversationRef.current !== cid) return;
+        const known = threadIdsRef.current;
+        setThread(toThread(messages));
+        // A fetch-then-fill posts its fill answer from the drop job, after the drop settles: a new
+        // answer that started a fill run hands it to the live player (Manual types it; Auto with
+        // "Watch it fill" types and saves it; Auto with "Fill instantly" shows the job's progress).
+        if (shell !== 'client') {
+          for (const m of messages) if (m.answer && !known.has(m.id)) startFillOnce(m.answer);
+        }
       })
       .catch(() => {
         if (conversationRef.current !== cid) return;
         setThread((t) => [...t, { id: nextId(), kind: 'error', text: 'The files were worked through, but the answer could not be loaded. Open the chat again to see it.' }]);
       });
-  }, [runSettled, busy, conversationId, refreshList]);
+  }, [runSettled, busy, conversationId, refreshList, shell, startFillOnce]);
+
+  // A fill run that settled (done, stopped or failed) wrote its closing line into the chat and moved
+  // rows on its card: read the thread and the cards again so both show without a reload.
+  const fill = useFillState();
+  const fillSettled = fill && (fill.phase === 'done' || fill.phase === 'stopped' || fill.phase === 'error') ? fill.runId : null;
+  useEffect(() => {
+    if (!fillSettled) return;
+    void queryClient.invalidateQueries({ queryKey: ['ask', 'changeset'] });
+    // The project page behind the chat shows the steps the fill completed.
+    const engagementId = fill?.view?.engagementId;
+    if (engagementId) void refreshEngagementChecklist(engagementId).catch(() => undefined);
+    const cid = conversationRef.current;
+    if (!cid || busy) return;
+    fetchConversation(cid)
+      .then(({ messages }) => {
+        if (conversationRef.current === cid) setThread(toThread(messages));
+      })
+      .catch(() => {
+        // The rail already says how the fill ended; the closing line shows when the chat is reopened.
+      });
+    // Once per settled run; a chat message still streaming keeps its bubble.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fillSettled, queryClient]);
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next);
@@ -305,6 +351,9 @@ export function AskProvider({ children }: { children: ReactNode }) {
             depth: input.depth,
             attachmentIds: input.attachmentIds,
             page: shell === 'client' ? undefined : { path: window.location.pathname },
+            // Staff only: how a "fill this into the app" request runs (the composer's mode and speed
+            // chips; Auto with "Watch it fill" runs in the browser, so the server is asked for Manual).
+            ...(shell === 'client' ? {} : { fillMode: serverFillMode(), fillChip: readFillMode() }),
           },
           (event) => {
             if (event.type === 'status' || event.type === 'progress') setStatus(event.label);
@@ -325,6 +374,8 @@ export function AskProvider({ children }: { children: ReactNode }) {
               // A background drop started by this message (a SharePoint fetch): show its progress bar.
               const started = event.answer.runId;
               if (shell !== 'client' && started && !event.answer.changesetId && !closedRuns.has(started)) setActiveRunId(started);
+              // An answer that started a fill run: the live fill player picks it up.
+              if (shell !== 'client') startFillOnce(event.answer);
             } else {
               setThread((t) => [...t, { id: nextId(), kind: 'error', text: event.message }]);
             }
@@ -345,7 +396,7 @@ export function AskProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [shell, busy, engagementId, conversationId, key, remember, refreshList],
+    [shell, busy, engagementId, conversationId, key, remember, refreshList, startFillOnce],
   );
 
   const sendDrop = useCallback(

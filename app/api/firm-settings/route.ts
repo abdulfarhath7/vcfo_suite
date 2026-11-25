@@ -1,6 +1,7 @@
 import { publicErrorMessage } from '@/lib/api-error';
 import { NextResponse } from 'next/server';
 import { requireAdmin, requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { firmSettingsPatchSchema } from '@/lib/firm-settings/firm-settings';
 import {
@@ -36,7 +37,7 @@ export async function GET() {
 
 /** PATCH /api/firm-settings — admin and super admin change one or more fields. */
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

@@ -8,6 +8,7 @@ import { getProgressCcRecipients } from '@/lib/email/merge-cc';
 import { isUuid } from '@/lib/slug';
 import { listLeadIdsByEngagementIds } from '@/db/repositories/engagement-leads-membership';
 import { listManagerIdsForEngagement } from '@/db/repositories/engagement-managers-membership';
+import { isDemoEmail } from '@/lib/demo-logins';
 
 export type EngagementParty = {
   userId: string;
@@ -204,6 +205,8 @@ export async function resolveEngagementRecipients(
       and(
         inArray(profiles.role, ['admin', 'super_admin']),
         eq(profiles.status, 'active'),
+        // A demo engagement (src/lib/demo-logins.ts) never copies or bells a real admin.
+        ...(row.isDemo ? [eq(profiles.isDemo, true)] : []),
       ),
     );
   const admins: EngagementParty[] = [];
@@ -215,7 +218,9 @@ export async function resolveEngagementRecipients(
   }
 
   const client = primary ?? clients[0] ?? null;
-  const progressCc = getProgressCcRecipients(row.progressCcEmails ?? [], {
+  // A demo engagement only copies demo mailboxes, which are logged and never sent.
+  const ccList = (row.progressCcEmails ?? []).filter((e) => !row.isDemo || isDemoEmail(e));
+  const progressCc = getProgressCcRecipients(ccList, {
     excludeTo: client?.email,
   });
 

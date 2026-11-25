@@ -1,4 +1,5 @@
 import 'server-only';
+import { isDemoRequest } from '@/lib/demo-request';
 
 /**
  * DOUBLETICK WhatsApp transport (receivables v2, docs/specs/receivables/V2.md).
@@ -105,6 +106,11 @@ export async function sendDoubleTickMessage(input: {
 }): Promise<DoubleTickResult> {
   const config = input.config ?? readDoubleTickConfig();
   if (!isDoubleTickConfigured(config)) return { ok: false, error: 'doubletick_not_configured', permanent: true };
+  // Demo logins (src/lib/demo-logins.ts): nothing leaves a demo person's request.
+  if (!input.fetchImpl && (await isDemoRequest())) {
+    console.log('[whatsapp:doubletick] demo login, not sent', input.templateName ?? 'text');
+    return { ok: false, error: 'demo_login', permanent: true };
+  }
   const to = doubleTickNumber(input.to);
   if (to.length < 9) return { ok: false, error: 'no_phone', permanent: true };
   const from = doubleTickNumber(config.fromNumber);

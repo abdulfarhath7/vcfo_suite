@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import {
   authorizeUrl,
   createOauthState,
@@ -12,7 +13,7 @@ import { OUTLOOK_RETURN_PATHS } from '@/lib/outlook/return-path';
  * `?return=/receivables/manager` brings the user back there instead of to settings.
  */
 export async function GET(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

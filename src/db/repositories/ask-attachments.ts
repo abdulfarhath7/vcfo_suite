@@ -24,7 +24,8 @@ export async function createAskAttachment(
     fileName: string;
     contentType: string | null;
     sizeBytes: number;
-    s3Key: string;
+    /** Null for a SharePoint file a fetch reuses from a stored read, so nothing was downloaded. */
+    s3Key: string | null;
     conversationId?: string | null;
     runId?: string | null;
     relativePath?: string | null;

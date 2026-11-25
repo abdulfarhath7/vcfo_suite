@@ -16,7 +16,7 @@ vi.mock('./apply', () => ({
   rowStateEditable: (action: string) => action === 'labour.uploadSheet',
 }));
 
-const { loadChangesetView } = await import('./view');
+const { loadChangesetView, rowSourceText } = await import('./view');
 
 const base = { displayOld: '', displayNew: 'x', sensitive: false, checks: [{ rule: 'scope', ok: true }], status: 'proposed', heldReason: null, error: null };
 const file = (fileName: string) => ({ kind: 'attachment', attachmentId: '00000000-0000-4000-8000-000000000001', fileName });
@@ -51,5 +51,19 @@ describe('loadChangesetView', () => {
     expect(byId.get('r2')!.options).toContainEqual({ value: 'KA', label: 'Karnataka' });
     expect(byId.get('r3')).toMatchObject({ label: 'lease.pdf', stepTitle: 'Vault · Contracts', groupKind: 'vault' });
     expect(view!.canUndo).toBe(true);
+  });
+});
+
+describe('rowSourceText (PLAN M11)', () => {
+  it('names the file, the attachment inside it, the page and the words a value was read from', () => {
+    expect(rowSourceText({ kind: 'attachment', fileName: 'Bonterra.eml › moa.pdf', page: 2, quote: 'The main objects to be pursued by the company' })).toBe(
+      'Bonterra.eml › moa.pdf, page 2: “The main objects to be pursued by the company”',
+    );
+    expect(rowSourceText({ kind: 'attachment', fileName: 'br.docx' })).toBe('br.docx');
+    expect(rowSourceText({ kind: 'paste' })).toBe('Pasted text');
+    expect(rowSourceText(null)).toBeNull();
+    const long = rowSourceText({ kind: 'attachment', fileName: 'a.pdf', quote: 'x '.repeat(200) })!;
+    expect(long.length).toBeLessThan(180);
+    expect(long.endsWith('…”')).toBe(true);
   });
 });

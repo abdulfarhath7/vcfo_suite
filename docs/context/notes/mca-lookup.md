@@ -85,7 +85,7 @@ need the live MCA pages, and owner rule 2 holds that behind the CS opinion.
 
 ## Cache
 
-`din_lookup_cache` (migration `0071_din_lookup`, additive: two tables) keyed by DIN, with the
+`din_lookup_cache` (migration `0073_lookups_gst_and_din`, additive: it adds the GST and DIN caches and the request queue) keyed by DIN, with the
 normalised record as `jsonb`, the `source` it came from (`falcon` or `mca-portal`), `fetched_at`
 and `fetched_by`. Reads inside 24 hours come from Postgres whichever source filled them; the
 Refresh button posts `refresh: true` and goes to the provider. MCA master

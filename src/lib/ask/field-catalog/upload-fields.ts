@@ -73,6 +73,9 @@ const FIELD_IDS_BY_DOC: Readonly<Record<string, readonly string[]>> = {
   driving_licence: ['drivingLicenceCopyUrl'],
   utility_bill: ['utilityBillCopyUrl', 'registeredOfficeUtilityBillCopyUrl'],
   incorporation_certificate: ['certificateOfIncorporationFinalUrl', 'certificateOfIncorporationUrl'],
+  board_resolution: ['signedBoardResolutionUrl'],
+  noc: ['registeredOfficeNocUrl'],
+  address_proof: ['registeredOfficeNocUrl'],
 };
 
 export const UPLOAD_FIELD_BY_DOC: Readonly<Record<string, readonly UploadField[]>> = Object.fromEntries(

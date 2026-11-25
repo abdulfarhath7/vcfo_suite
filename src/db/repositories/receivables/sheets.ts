@@ -10,6 +10,7 @@ import type { ManagerInvoiceDto, PartnerDto } from '@/lib/receivables/wire';
 import type { EmailSettingsDto } from '@/lib/receivables/v2-wire';
 import { toPartnerDto } from './partner-logins';
 import { assertEditorRole, invalid, scopedSheet, toInvoice, type SheetRow } from './shared';
+import { assertNotDemo } from '@/lib/demo-logins';
 
 export type SheetSummary = Pick<SheetRow, 'id' | 'name' | 'clientOrgName' | 'managerUserId' | 'requireKey' | 'publishedVersionId'>;
 
@@ -105,6 +106,7 @@ function validRules(r: ReminderRules): ReminderRules {
 }
 
 export async function updateSheetSettings(ctx: AuthContext, sheetId: string, patch: { requireKey?: boolean; reminderRules?: ReminderRules }): Promise<SheetRow> {
+  assertNotDemo(ctx, 'updateSheetSettings');
   const sheet = await scopedSheet(ctx, sheetId);
   const set: Partial<typeof receivableSheets.$inferInsert> = { updatedAt: new Date() };
   if (typeof patch.requireKey === 'boolean') set.requireKey = patch.requireKey;
@@ -141,6 +143,7 @@ export async function getEmailSettings(ctx: AuthContext, sheetId: string): Promi
 
 /** v2: switches the automatic emails on or off and sets their schedule. */
 export async function updateEmailSettings(ctx: AuthContext, sheetId: string, patch: Partial<EmailSettingsDto>): Promise<EmailSettingsDto> {
+  assertNotDemo(ctx, 'updateEmailSettings');
   const sheet = await scopedSheet(ctx, sheetId);
   const set: Partial<typeof receivableSheets.$inferInsert> = { updatedAt: new Date() };
   if (typeof patch.digestEnabled === 'boolean') set.digestEnabled = patch.digestEnabled;

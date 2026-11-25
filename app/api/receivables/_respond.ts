@@ -4,6 +4,7 @@ import { requireAnyRole } from '@/auth/guards';
 import { ReceivablesError } from '@/db/repositories/receivables';
 import { INVOICE_CURRENCY_CODES } from '@/lib/receivables/currencies';
 import { RECEIVABLES_STAFF_ROLES } from '@/lib/receivables/roles';
+import { DEMO_BLOCKED_MESSAGE, isDemoBlockedError } from '@/lib/demo-logins';
 
 /**
  * Shared parts of the /api/receivables routes (docs/specs/receivables/PLAN.md): the staff guard,
@@ -20,6 +21,7 @@ export function denied(guard: { status: number; error: string }) {
 
 export function receivablesError(e: unknown) {
   if (e instanceof ReceivablesError) return NextResponse.json({ error: e.code }, { status: e.status });
+  if (isDemoBlockedError(e)) return NextResponse.json({ error: DEMO_BLOCKED_MESSAGE, code: 'demo_blocked' }, { status: 403 });
   console.error('[receivables] route failed', e instanceof Error ? e.message : e);
   return NextResponse.json({ error: 'server_error' }, { status: 500 });
 }

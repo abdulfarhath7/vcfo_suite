@@ -139,6 +139,10 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Deployed 26 Nov 2026: `main` at c54ceeb5 (Ask reads every document: app documents, board resolution, MOA, emails, scans; Fill with drafts, Tally T1, Zoho hub, GST registration, demo logins for
+  every role in the separate `vcfo_demo` database, see `docs/context/notes/demo-data.md`); RDS on 0072 (both databases).
+  After any new migration run `npm run db:migrate-demo:prod` too. Zoho needs `ZOHO_CLIENT_ID` and the secret
+  `vcfo/zoho-client-secret`; GST live portal waits for the CS opinion.
 - SharePoint client folders (`docs/context/notes/sharepoint.md`) are live (24 Nov 2026, RDS on 0068, image
   8baa1acb, site and `SteadFast/Clients` path set on App Runner). People reconnect Microsoft 365 once; the
   first real fetch is still to be tried.

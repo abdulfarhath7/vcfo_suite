@@ -148,6 +148,7 @@ export function ProjectsView(props: ProjectsViewProps) {
             <Link href={adminProjectPath(item.e, projectBase)} className="block truncate font-medium text-ink hover:underline" title={item.e.companyName}>
               {shortCompany(item.e.companyName)}
             </Link>
+            {item.e.isDemo ? <Tag className="ml-0 mt-0.5">Demo</Tag> : null}
             {item.e.clientDisplayName ? (
               <span className={cn('block truncate text-[12px] text-ink-muted', GRID_SUB)}>{item.e.clientDisplayName}</span>
             ) : null}
@@ -344,6 +345,7 @@ export function ProjectsView(props: ProjectsViewProps) {
                     <Link href={adminProjectPath(item.e, projectBase)} className="grid min-w-0 flex-1 gap-1.5">
                       <span className="flex min-w-0 items-center gap-2">
                         <b className="min-w-0 truncate font-medium text-ink">{item.e.companyName}</b>
+                        {item.e.isDemo ? <Tag className="flex-none">Demo</Tag> : null}
                         <Chip tone={HEALTH_TONE[item.facts.health]} className="ml-auto flex-none">
                           {item.facts.health}
                         </Chip>

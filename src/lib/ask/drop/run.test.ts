@@ -97,6 +97,9 @@ vi.mock('@/jobs/client', () => ({ inngest: { send: (...a: unknown[]) => send(...
 const pullSharepointFiles = vi.fn();
 vi.mock('./sharepoint-pull', () => ({ COPY_LABEL: 'Copying files from SharePoint', pullSharepointFiles: (...a: unknown[]) => pullSharepointFiles(...a) }));
 
+const pullAppDocuments = vi.fn();
+vi.mock('./app-docs-pull', () => ({ APP_COPY_LABEL: 'Gathering the documents in the app', pullAppDocuments: (...a: unknown[]) => pullAppDocuments(...a) }));
+
 const findCachedRead = vi.fn(async (..._a: unknown[]): Promise<string | null> => null);
 const markRead = vi.fn();
 vi.mock('@/db/repositories/sharepoint-files-seen', () => ({
@@ -104,7 +107,10 @@ vi.mock('@/db/repositories/sharepoint-files-seen', () => ({
   markSharepointFileRead: (...a: unknown[]) => markRead(...a),
 }));
 
-const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus } = await import('./run');
+const fillAfterDrop = vi.fn(async (..._a: unknown[]) => ({ runId: 'fill-1' as string | null }));
+vi.mock('@/lib/ask/fill/after-fetch', () => ({ fillAfterDrop: (...a: unknown[]) => fillAfterDrop(...a) }));
+
+const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus, dropFinishStep, readProgressLabel } = await import('./run');
 
 function file(id: string, fileName: string, data: Buffer | Uint8Array, extra: Partial<Row> = {}): Row {
   const key = `k/${id}/${fileName}`;
@@ -185,6 +191,80 @@ describe('runAskDrop from SharePoint', () => {
     expect(state.files.find((f) => f.path === 'Acme/KYC/pan.pdf')?.docType).toBe('pan_card');
   });
 
+  it('reads SharePoint and the documents in the app in one fetch, reusing stored reads and taking only their values (PLAN M3-M5)', async () => {
+    rows = [];
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme', appDocs: true } };
+    pullSharepointFiles.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('sp-1', 'moa.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/moa.pdf', profileId: ctx.userId }));
+      // Read in an earlier fetch and unchanged: a row with no bytes.
+      rows.push({ ...file('st-1', 'pan.pdf', Buffer.from('')), s3Key: null, relativePath: 'Acme/KYC/pan.pdf', profileId: ctx.userId });
+      return { copied: 1, skipped: [], stored: [{ attachmentId: 'st-1', path: 'Acme/KYC/pan.pdf', size: 4, status: 'queued', origin: 'stored' }] };
+    });
+    pullAppDocuments.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('app-1', 'board-resolution.docx', Buffer.from('PK'), { relativePath: 'In the app/Board resolution (final)/board-resolution.docx', profileId: ctx.userId }));
+      return { files: [{ attachmentId: 'app-1', path: 'In the app/Board resolution (final)/board-resolution.docx', size: 2, status: 'queued', origin: 'app' }], reused: 0 };
+    });
+    objects.set('reads/earlier', Buffer.from(JSON.stringify({ docType: 'pan_card', company: 'Acme', values: [{ label: 'PAN', value: 'ABCDE1234F', page: 1, person: 'Asha Rao', confidence: 1 }], parts: [], sensitive: true, usedModel: true })));
+    findCachedRead.mockImplementation(async (_ctx, _eng, attachmentId) => (attachmentId === 'st-1' ? 'reads/earlier' : null));
+    await runAskDrop('run-1');
+    expect(pullAppDocuments).toHaveBeenCalledTimes(1);
+    expect(pullAppDocuments.mock.calls[0]![0]).toBe(owner);
+    // Two files are read by the model; the stored one costs nothing and needs no bytes.
+    expect(modelSaw).toHaveLength(2);
+    const call = assemble.mock.calls[0]![0] as unknown as { reads: Array<{ attachment: { id: string }; result: { values: unknown[] } }>; valuesOnly?: Set<string>; overrides?: Map<string, { engagementId: string }> };
+    expect(call.reads.map((r) => r.attachment.id).sort()).toEqual(['app-1', 'sp-1', 'st-1']);
+    expect(call.reads.find((r) => r.attachment.id === 'st-1')!.result.values).toHaveLength(1);
+    expect([...(call.valuesOnly ?? [])].sort()).toEqual(['app-1', 'st-1']);
+    expect(call.overrides?.get('app-1')).toEqual({ engagementId: 'eng-1' });
+    const state = run.state as { source: { pulled?: boolean; appPulled?: boolean }; files: Array<{ attachmentId: string; origin?: string; ms?: number; values?: number }> };
+    expect(state.source).toMatchObject({ pulled: true, appPulled: true });
+    expect(state.files.find((f) => f.attachmentId === 'app-1')).toMatchObject({ origin: 'app', values: 1 });
+    expect(typeof state.files.find((f) => f.attachmentId === 'sp-1')?.ms).toBe('number');
+  });
+
+  it('reads only the documents in the app when SharePoint is not read', async () => {
+    rows = [];
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: '', sharepoint: false, appDocs: true, companyName: 'Acme' } };
+    pullAppDocuments.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('app-1', 'moa.pdf', Buffer.from('%PDF'), { relativePath: 'In the app/MOA/moa.pdf', profileId: ctx.userId }));
+      return { files: [{ attachmentId: 'app-1', path: 'In the app/MOA/moa.pdf', size: 4, status: 'queued', origin: 'app' }], reused: 0 };
+    });
+    await runAskDrop('run-1');
+    expect(pullSharepointFiles).not.toHaveBeenCalled();
+    expect(run.status).toBe('waiting_approval');
+  });
+
+  it('starts the fill the request asked for once the card is ready, once only', async () => {
+    rows = [];
+    const scope = { stepIds: ['pre-1'], label: 'Phase 1 — Name Application' };
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme' }, fillAfter: { mode: 'manual', scope } };
+    pullSharepointFiles.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('sp-1', 'pan.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/KYC/pan.pdf', profileId: ctx.userId }));
+      return { copied: 1, skipped: [] };
+    });
+    await runAskDrop('run-1');
+    expect(fillAfterDrop).toHaveBeenCalledTimes(1);
+    const [ctx, input] = fillAfterDrop.mock.calls[0] as [AuthContext, { conversationId: string; state: { groups: Array<{ changesetId: string }>; fillAfter: unknown } }];
+    expect(ctx).toBe(owner);
+    expect(input.conversationId).toBe('conv-1');
+    expect(input.state.groups[0]!.changesetId).toBe('d0000000-0000-4000-8000-00000000000d');
+    expect(input.state.fillAfter).toMatchObject({ mode: 'manual', scope });
+    expect(run.status).toBe('waiting_approval');
+    expect((run.state as { fillAfter: unknown }).fillAfter).toEqual({ mode: 'manual', scope, started: true, runId: 'fill-1' });
+    // A retry of the finish step does not start it again.
+    run.status = 'running';
+    await dropFinishStep('run-1');
+    expect(fillAfterDrop).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles the drop even when the fill after it throws', async () => {
+    run.state = { ...(run.state as object), fillAfter: { mode: 'auto' } };
+    fillAfterDrop.mockRejectedValueOnce(new Error('boom'));
+    await runAskDrop('run-1');
+    expect(run.status).toBe('waiting_approval');
+    expect((run.state as { fillAfter: unknown }).fillAfter).toEqual({ mode: 'auto', started: true });
+  });
+
   it('does not copy the folder again once it is pulled, and does nothing for an upload', async () => {
     run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme', pulled: true } };
     await runAskDrop('run-1');
@@ -233,15 +313,19 @@ describe('runAskDrop', () => {
 
   it('stops at the token budget, keeps what it prepared and lists what it did not read', async () => {
     run.budgetTokens = 30;
-    modelUsage = 10; // the first file spends 20, the second still starts, the third is over
+    // Three files are read at once, so the first batch still starts in full (60 tokens); the fourth,
+    // in the next batch, is over the budget and is not read.
+    modelUsage = 10;
     rows.push(file('a-3', 'third.txt', Buffer.from('x')));
+    rows.push(file('a-4', 'fourth.txt', Buffer.from('x')));
     await runAskDrop('run-1');
     expect(run.status).toBe('over_budget');
     const state = run.state as { files: Array<{ path: string; status: string; reason?: string }>; overBudget?: boolean; groups: unknown[] };
     expect(state.overBudget).toBe(true);
     expect(state.groups).toHaveLength(1);
-    expect(state.files.find((f) => f.path === 'third.txt')).toMatchObject({ status: 'skipped' });
-    expect(messages[0]!.text).toMatch(/Not read: third\.txt/);
+    expect(state.files.find((f) => f.path === 'third.txt')).toMatchObject({ status: 'placed' });
+    expect(state.files.find((f) => f.path === 'fourth.txt')).toMatchObject({ status: 'skipped' });
+    expect(messages[0]!.text).toMatch(/Not read: fourth\.txt/);
   });
 
   it('keeps the cards an earlier try made and sorts only the other files', async () => {
@@ -272,5 +356,13 @@ describe('runAskDrop', () => {
     // A retry of the step does not unpack again.
     await dropUnpackStep('run-1');
     expect(rows.filter((r) => r.parentId === 'z-1')).toHaveLength(1);
+  });
+});
+
+describe('readProgressLabel', () => {
+  it('says how far the reading is and what the last file gave', () => {
+    expect(readProgressLabel(12, 50, { values: 3, docType: 'board_resolution' })).toBe('Read 12 of 50 · 3 values from the board resolution');
+    expect(readProgressLabel(1, 2, { values: 1, docType: 'other' })).toBe('Read 1 of 2 · 1 value');
+    expect(readProgressLabel(2, 2, { values: 0 })).toBe('Read 2 of 2');
   });
 });

@@ -1,3 +1,4 @@
+import { noDemo } from '@/lib/demo-logins';
 import { listPatches, proposePatch } from '@/db/repositories/assist-patches';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { proposePatchSchema } from '@/lib/assist-agents/api-schemas';
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
 /** POST /api/assist/patches — propose a recipe fix found by a T1, T3 or T4 heal. Labels only. */
 export async function POST(request: Request) {
-  const guard = await assistStaffGuard();
+  const guard = noDemo(await assistStaffGuard());
   if (guard.ok === false) return guardFailure(guard);
   const body = await parseJsonBody(request, proposePatchSchema);
   if (body.ok === false) return json({ ok: false, error: body.error }, body.status);

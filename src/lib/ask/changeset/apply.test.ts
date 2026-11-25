@@ -33,7 +33,7 @@ vi.mock('@/db/repositories/ask-changesets', () => ({
 const audit = vi.fn();
 vi.mock('@/db/repositories/audit-events', () => ({ recordAuditEvent: (...a: unknown[]) => audit(...a) }));
 
-const { ChangesetRefused, decideChangeset, editChangesetRow, undoChangeset } = await import('./apply');
+const { ChangesetRefused, decideChangeset, editChangesetRow, recheckRows, undoChangeset } = await import('./apply');
 
 const makeRow = (id: string, patch: Record<string, unknown> = {}) => ({
   id,
@@ -245,3 +245,15 @@ describe('undoChangeset', () => {
     await expect(undoChangeset(manager, 'cs-1')).rejects.toMatchObject({ status: 403 });
   });
 });
+
+describe('recheckRows keeps "documents differ" (PLAN M)', () => {
+  it('keeps the difference a recheck cannot see, until the row is edited', async () => {
+    recheck.mockResolvedValue(passes);
+    const differ = { rule: 'documents_differ', ok: false, message: 'Quarry MOA.pdf says To develop software.', choice: 'To develop software.' };
+    const rows = [makeRow('a', { checks: [{ rule: 'gate', ok: true }, differ] }), makeRow('b', { status: 'edited', checks: [differ] })];
+    const updates = await recheckRows({ ctx: lead } as never, rows as never);
+    expect(updates[0]!.patch.checks).toEqual([{ rule: 'gate', ok: true }, differ]);
+    expect(updates[1]!.patch.checks).toEqual([{ rule: 'gate', ok: true }]);
+  });
+});
+

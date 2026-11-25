@@ -83,3 +83,57 @@ describe('a drop started from a chat message', () => {
     expect(screen.queryByTestId('ask-drop-progress')).toBeNull();
   });
 });
+
+describe('a fetch-then-fill whose fill answer arrives after the drop', () => {
+  const FILL_RUN = '22222222-2222-4222-8222-222222222222';
+  const fillAnswer = { line: 'The card is ready, so I am filling it (Manual).', citations: [], actions: [], origin: 'work', depth: 'normal', fill: { runId: FILL_RUN, mode: 'manual' } };
+
+  function serveSettled() {
+    fetchMock.mockImplementation((url: string) => {
+      if (url === '/api/ask/chat') {
+        return Promise.resolve(new Response(JSON.stringify({ type: 'answer', conversationId: 'c1', messageId: 'm1', answer }) + '\n', { status: 200 }));
+      }
+      if (url.startsWith(`/api/ask/runs/${RUN}`)) {
+        return Promise.resolve(new Response(JSON.stringify({ id: RUN, status: 'done', progress: { done: 50, total: 50, label: 'Done' }, files: [], groups: [], unplaced: [], answerMessageId: 'm2' }), { status: 200 }));
+      }
+      if (url === '/api/ask/conversations/c1') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              messages: [
+                { id: 'u1', sender: 'user', text: 'fill Bonterra from SharePoint', answer: null },
+                { id: 'm1', sender: 'assistant', text: answer.line, answer },
+                { id: 'm2', sender: 'assistant', text: fillAnswer.line, answer: fillAnswer },
+              ],
+            }),
+            { status: 200 },
+          ),
+        );
+      }
+      if (url.startsWith('/api/ask/conversations?')) return Promise.resolve(new Response(JSON.stringify({ conversations: [], hasMore: false }), { status: 200 }));
+      return Promise.resolve(new Response('{}', { status: 404 }));
+    });
+  }
+
+  it('hands the new fill run to the live player once, with the remembered Auto and "Watch it fill"', async () => {
+    window.localStorage.setItem('vcfo.ask.fillMode', 'auto');
+    window.localStorage.setItem('vcfo.ask.fillSpeed', 'watch');
+    const started: unknown[] = [];
+    const onStart = (event: Event) => started.push((event as CustomEvent).detail);
+    window.addEventListener('vcfo:ask-fill-start', onStart);
+    try {
+      serveSettled();
+      await send('fill Bonterra from SharePoint');
+      expect(await screen.findByText(fillAnswer.line)).toBeInTheDocument();
+      await waitFor(() => expect(started).toHaveLength(1));
+      // Auto with "Watch it fill" was asked of the server as Manual; the player saves each page itself.
+      expect(started[0]).toEqual({ runId: FILL_RUN, mode: 'manual', autoAccept: true });
+      const chat = fetchMock.mock.calls.find(([u]) => u === '/api/ask/chat');
+      expect(JSON.parse(String((chat?.[1] as RequestInit).body)).fillMode).toBe('manual');
+      await new Promise((r) => setTimeout(r, 50));
+      expect(started).toHaveLength(1);
+    } finally {
+      window.removeEventListener('vcfo:ask-fill-start', onStart);
+    }
+  });
+});

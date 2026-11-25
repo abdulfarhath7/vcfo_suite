@@ -85,7 +85,9 @@ export interface ChangesetRowProps {
 export function ChangesetRow({ row, open, pickable, accepted, editing, pending, onToggle, onEdit, onCancelEdit, onSaveEdit }: ChangesetRowProps) {
   const chip = rowChip(row);
   const failed = row.checks.filter((check) => !check.ok && check.message);
-  const notes = row.error ? [row.error] : failed.map((check) => check.message!);
+  const notes = row.error ? [{ text: row.error, choice: undefined }] : failed.map((check) => ({ text: check.message!, choice: check.choice }));
+  // Two documents disagree: the other value can be taken with one press, through the row's edit.
+  const canChoose = open && row.canDecide && row.editable && row.status !== 'applied' && !editing && !pending;
   // A file row is labelled with its file name, so "From" would only repeat it.
   const showSource = row.source && row.source !== row.label;
   return (
@@ -110,9 +112,14 @@ export function ChangesetRow({ row, open, pickable, accepted, editing, pending, 
         ) : null}
       </dl>
       {notes.map((note) => (
-        <p key={note} className="mt-1 text-[12px] text-ink-muted">
-          {note}
-        </p>
+        <div key={note.text} className="mt-1 flex flex-wrap items-start gap-x-2 gap-y-1">
+          <p className="min-w-0 flex-1 break-words text-[12px] text-ink-muted">{note.text}</p>
+          {note.choice && canChoose ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => onSaveEdit(note.choice!)}>
+              Use this
+            </Button>
+          ) : null}
+        </div>
       ))}
       {editing ? (
         <RowEditor row={row} pending={pending} onCancel={onCancelEdit} onSave={onSaveEdit} />

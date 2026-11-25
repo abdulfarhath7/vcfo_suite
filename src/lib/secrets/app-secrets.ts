@@ -37,3 +37,14 @@ export function isInvalidClient(err: unknown): boolean {
   if (e.code === 'invalid_client' || e.status === 401) return true;
   return typeof e.message === 'string' && /invalid_client|AADSTS7000215|AADSTS7000222/i.test(e.message);
 }
+
+/**
+ * Zoho (Integrations hub, docs/specs/integrations/ZOHO.md): the client secret of the server-based
+ * app in the Zoho API console. ZOHO_CLIENT_SECRET locally; on AWS set ZOHO_CLIENT_SECRET_SECRET_ID
+ * to the Secrets Manager secret `vcfo/zoho-client-secret` (plain string, or JSON with one of the keys).
+ */
+export const zohoClientSecret = runtimeSecret({
+  envVar: 'ZOHO_CLIENT_SECRET',
+  secretIdVar: 'ZOHO_CLIENT_SECRET_SECRET_ID',
+  jsonKeys: ['ZOHO_CLIENT_SECRET', 'clientSecret', 'client_secret', 'value'],
+});

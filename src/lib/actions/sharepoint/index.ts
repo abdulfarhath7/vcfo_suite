@@ -30,7 +30,7 @@ const fetchFolder = defineAction({
     if (!loaded) return { ok: false, error: 'This project is not available.' };
     const started = await startSharepointDrop(actx.auth, { engagementId: loaded.row.id, conversationId: actx.conversationId, message: '' });
     if (started.ok === false) return { ok: false, error: started.message };
-    return { ok: true, summary: `Reading the SharePoint folder ${started.folderName} for ${started.companyName}` };
+    return { ok: true, summary: `Reading ${started.sources} for ${started.companyName}` };
   },
 });
 

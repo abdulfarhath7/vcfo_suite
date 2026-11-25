@@ -127,3 +127,11 @@ describe('parseDropReply', () => {
     expect(parseDropReply('Acme', 0, engagements)).toBeNull();
   });
 });
+
+describe('an email whose attachment is a checklist document (PLAN M9)', () => {
+  it('keeps the email in the vault instead of filing it as the document', () => {
+    const out = classifyFile(file('e1', 'Quarry office NOC.eml', { docType: 'noc' }), hints);
+    expect(out.destination.kind).toBe('vault');
+    expect(classifyFile(file('n1', 'Office NOC.pdf', { docType: 'noc' }), hints).destination.kind).toBe('checklist');
+  });
+});

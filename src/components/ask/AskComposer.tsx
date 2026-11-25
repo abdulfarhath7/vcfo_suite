@@ -11,6 +11,7 @@ import { useAskOptional } from './ask-context';
 import { collectFromDataTransfer, collectFromFileList, DROP_ACCEPT, needsDrop, screenPicks, type Collected, type DropPick, type SkippedFile } from './drop/collect';
 import { UploadList } from './drop/DropProgress';
 import { SkippedList } from './drop/SkippedList';
+import { FillModeChip } from './fill/FillModeChip';
 
 const STAFF_MESSAGE_MAX = 20_000;
 const CLIENT_MESSAGE_MAX = 2_000;
@@ -215,6 +216,7 @@ export function AskComposer() {
           <SendHorizontal className="h-4 w-4" strokeWidth={1.6} />
         </button>
       </form>
+      {client ? null : <FillModeChip />}
       {uploadError ? (
         <p role="alert" className="px-1 text-[12px] text-danger">
           {uploadError}

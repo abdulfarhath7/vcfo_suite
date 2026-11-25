@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOwnAccount } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { getOwnProfile, updateOwnProfile } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { emailSchema } from '@/lib/api/schemas';
@@ -42,7 +43,7 @@ export async function GET() {
 
 /** PATCH /api/account/profile — update name / phone / email (email needs password). */
 export async function PATCH(request: Request) {
-  const auth = await requireOwnAccount();
+  const auth = noDemo(await requireOwnAccount());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

@@ -35,6 +35,7 @@ export const authConfigBase = {
         token.role = (user as { role?: string }).role;
         token.internId = (user as { internId?: string }).internId;
         token.clientId = (user as { clientId?: string }).clientId;
+        if ((user as { demo?: boolean }).demo === true) token.demo = true;
       }
       return token;
     },
@@ -52,6 +53,7 @@ export const authConfigBase = {
         (session.user as { clientId?: string }).clientId = token.clientId as
           | string
           | undefined;
+        (session.user as { demo?: boolean }).demo = token.demo === true ? true : undefined;
       }
       return session;
     },

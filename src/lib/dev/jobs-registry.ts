@@ -7,6 +7,7 @@ import { watchDailySummary } from '@/jobs/watch-daily-summary';
 import { whatsappSend } from '@/jobs/whatsapp-send';
 import { askIngest } from '@/jobs/ask-ingest';
 import { askDrop } from '@/jobs/ask-drop';
+import { askFill } from '@/jobs/ask-fill';
 import { complianceReminders } from '@/jobs/compliance-reminders';
 import { savedReportsSend } from '@/jobs/saved-reports-send';
 import { weeklyDigest } from '@/jobs/weekly-digest';
@@ -31,6 +32,7 @@ import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
+import { zohoDiscover, zohoReceivablesSync } from '@/jobs/integrations-zoho';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -46,6 +48,7 @@ export function registeredJobs(): JobFunction[] {
     whatsappSend,
     askIngest,
     askDrop,
+    askFill,
     askIndexRefresh,
     askIndexSweep,
     complianceReminders,
@@ -76,5 +79,7 @@ export function registeredJobs(): JobFunction[] {
     gstRegistrationStart,
     fieldAskDelivery,
     fieldAskReminders,
+    zohoDiscover,
+    zohoReceivablesSync,
   ]);
 }

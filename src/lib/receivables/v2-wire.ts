@@ -27,8 +27,10 @@ export type DigestRecipientDto = { id: string; name: string; email: string; acti
 /**
  * `matched`: an invoice with no number (loaded from the weekly workbook) that a Tally row matched by
  * client and amount; approving it fills in the Tally invoice number and date.
+ * `receipt`: a payment from a Tally sync against one invoice (docs/specs/receivables/TALLY-LIVE.md);
+ * approving it marks the invoice received, or part-paid when the payment is less than the balance.
  */
-export type ImportRowKind = 'new' | 'changed' | 'same' | 'no_partner' | 'matched';
+export type ImportRowKind = 'new' | 'changed' | 'same' | 'no_partner' | 'matched' | 'receipt';
 export type ImportRowStatus = 'pending' | 'approved' | 'rejected' | 'skipped';
 
 export type ImportRowDto = {
@@ -51,6 +53,9 @@ export type ImportRowDto = {
   reason: string | null;
   requestedByName: string | null;
   createdAt: string;
+  /** A `receipt` row: the day the money arrived and the Tally receipt voucher number. */
+  receivedOn?: string | null;
+  receiptNo?: string | null;
 };
 
 export type ImportBatchDto = {
@@ -67,10 +72,15 @@ export type ImportBatchDto = {
   noPartnerCount: number;
   /** Rows matched by client and amount (counted from the rows, not stored). */
   matchedCount: number;
+  /** Payment rows still waiting (counted from the rows). */
+  receiptCount?: number;
+  /** excel: a Sales Register upload; tally_live: a Sync from Tally; zoho: a Sync from Zoho Books. */
+  source?: 'excel' | 'tally_live' | 'zoho';
+  kind?: 'sales' | 'receipts';
 };
 
 /** Everything the approval panel shows: the pending batch (if any) and every pending row. */
-export type PendingImportsDto = { batch: ImportBatchDto | null; rows: ImportRowDto[]; warnings?: string[] };
+export type PendingImportsDto = { batch: ImportBatchDto | null; batches?: ImportBatchDto[]; rows: ImportRowDto[]; warnings?: string[] };
 
 /** One row's edits at approval: the due date, the client's credit days and, for a client with no partner, the partner. */
 export type ApproveEdit = { rowId: string; dueDate?: string; creditDays?: number; partnerId?: string | null };

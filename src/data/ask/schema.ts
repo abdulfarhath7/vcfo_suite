@@ -5,6 +5,7 @@
  * anything else fails zod and the answer renders as text only.
  */
 import { z } from 'zod';
+import { gstCardSchema } from '@/lib/ask/gst/card';
 
 const LEGAL_FORMS = ['company', 'llp', 'partnership', 'proprietorship'] as const;
 const RESIDENCIES = ['domestic', 'foreign'] as const;
@@ -336,6 +337,12 @@ export const answerEnvelopeSchema = z.object({
   /** The review card this answer carries, and the fixed workflow or agent run behind it. */
   changesetId: z.string().uuid().optional(),
   runId: z.string().uuid().optional(),
+  /** A "Fill into app" run this answer started or closed; the browser's live player picks it up. */
+  fill: z.object({ runId: z.string().uuid(), mode: z.enum(['manual', 'auto']) }).optional(),
+  /** GST registration readiness ("register Kestrel for GST"), staff only; see `src/lib/ask/gst/card.ts`. */
+  gst: gstCardSchema.optional(),
+  /** Lines of a paste or a file that fit no field, masked; the card lists them as "I could not place this". */
+  unplaced: z.array(z.string().max(300)).max(10).optional(),
 });
 export type AnswerEnvelope = z.infer<typeof answerEnvelopeSchema>;
 

@@ -21,6 +21,11 @@ export interface InputField {
   label: string;
   /** Identifiers (GSTIN, PAN, TAN, CIN) show in mono (R-28). */
   mono?: boolean;
+  /**
+   * A copy of a checklist value kept for one registration, written when the checklist step is
+   * finished (a finished step is never reopened for a registration). The cards hide it while empty.
+   */
+  copy?: boolean;
 }
 
 export interface SubjectInputs {
@@ -29,6 +34,12 @@ export interface SubjectInputs {
 }
 
 const f = (key: string, label: string, mono?: boolean): InputField => ({ key, label, ...(mono ? { mono } : {}) });
+
+/** How many directors' GST copies of the residential address `reg-4` holds. */
+export const GST_PROMOTER_COPY_SLOTS = 6;
+
+/** The `reg-4` SBC key of the GST copy of director `n`'s residential address (1 = first director). */
+export const gstPromoterAddressKey = (n: number): string => `promoter-${n}-address`;
 
 /* --------------------------------------------------------------------------------------- */
 /* Obligations                                                                              */
@@ -139,12 +150,42 @@ const BY_REGISTRATION: Record<string, SubjectInputs> = {
     sbc: [f('number', 'ESI code', true), f('arn', 'Application reference', true)],
   },
   'reg-4': {
-    client: [f('business', 'Goods or services supplied'), f('place', 'Principal place of business'), f('turnover', 'Expected yearly turnover (INR)')],
-    // The GST tracker's milestones (`src/lib/registrations/gst-tracker.ts`); the first three keys predate it.
+    // The first three keys predate the GST application; the rest are what GST REG-01 asks that the
+    // checklist does not hold (`src/lib/registrations/gst-profile.ts`, GST_CLIENT_KEY).
+    client: [
+      f('business', 'Goods or services supplied'),
+      f('place', 'Principal place of business'),
+      f('turnover', 'Expected yearly turnover (INR)'),
+      f('district', 'District of the principal place'),
+      f('place-state', 'State of the principal place'),
+      f('trade-name', 'Trade name (if different from the company name)'),
+      f('commencement-date', 'Date of commencement of business'),
+      f('reason', 'Reason for registration (voluntary, crossing the threshold, others)'),
+      f('possession', 'Premises: owned, rented, leased, consent or shared'),
+      f('activities', 'Activities at the premises (office, services, warehouse …)'),
+      f('hsn', 'HSN codes of the main goods (up to five)', true),
+      f('sac', 'SAC codes of the main services (up to five)', true),
+      f('latitude', 'Principal place latitude'),
+      f('longitude', 'Principal place longitude'),
+      f('additional-places', 'Additional places of business (one address per line)'),
+      f('bank-account', 'Bank account number (optional at registration)', true),
+      f('bank-ifsc', 'Bank IFSC (optional at registration)', true),
+      f('pt-ec', 'Professional tax enrolment number (if any)', true),
+      f('aadhaar-opt-in', 'Aadhaar authentication (yes or no)'),
+    ],
+    // The GST tracker's milestones (`src/lib/registrations/gst-tracker.ts`); the first three keys
+    // predate it. The jurisdiction parts and the signatory are read by the GST REG-01 profile.
     sbc: [
       f('number', 'GSTIN', true),
       f('arn', 'Application reference (ARN)', true),
       f('jurisdiction', 'Jurisdiction'),
+      f('jurisdiction-sector', 'State jurisdiction: sector / circle / ward / charge / unit'),
+      f('jurisdiction-circle', 'State jurisdiction: circle'),
+      f('jurisdiction-ward', 'State jurisdiction: ward'),
+      f('centre-commissionerate', 'Centre jurisdiction: commissionerate'),
+      f('centre-division', 'Centre jurisdiction: division'),
+      f('centre-range', 'Centre jurisdiction: range'),
+      f('signatory', 'Authorised signatory (director number, 1 = first)'),
       f('filed-on', 'Application filed on'),
       f('arn-date', 'ARN generated on'),
       f('aadhaar', 'Aadhaar authentication'),
@@ -153,6 +194,8 @@ const BY_REGISTRATION: Record<string, SubjectInputs> = {
       f('registered-on', 'Date of registration'),
       f('rejection-reason', 'Reason for rejection'),
       f('revised-date', 'Revised date'),
+      // The GST copies of each director's residential address, for a finished directors step.
+      ...Array.from({ length: GST_PROMOTER_COPY_SLOTS }, (_, i) => ({ ...f(gstPromoterAddressKey(i + 1), `Residential address of director ${i + 1} (GST copy)`), copy: true })),
     ],
   },
   // The LUT tracker's fields (`src/lib/registrations/lut-tracker.ts`); `arn` and `fy` predate it.

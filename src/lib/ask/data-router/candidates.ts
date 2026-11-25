@@ -11,7 +11,8 @@ import type { ReadValue } from './types';
  */
 
 /** Virtual keys (a whole name) fill other keys, so they count as places to write. */
-const WRITABLE = FIELD_CATALOG.filter((entry) => entry.expands?.length || (entry.format !== 'file' && writableUses(entry).length > 0));
+/** A fact with no field of its own that `fills` another (the main objects) counts as well. */
+const WRITABLE = FIELD_CATALOG.filter((entry) => entry.expands?.length || entry.fills || (entry.format !== 'file' && writableUses(entry).length > 0));
 
 let synonyms: Set<string> | null = null;
 export function catalogSynonyms(): ReadonlySet<string> {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquare, PanelLeftClose, PanelLeftOpen, Plus, Search, X } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { useAskSuggestions } from '@/hooks/ask/use-ask-suggestions';
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { AskComposer } from './AskComposer';
 import { useAskOptional, type AskHistoryEntry } from './ask-context';
 import { AskThread } from './AskThread';
-import { VisorBadge, VisorHead } from './Visor';
+import { VisorHead } from './Visor';
 import './ask-avatar.css';
 
 const ghost =
@@ -33,35 +33,33 @@ function groupHistory(history: AskHistoryEntry[], term: string) {
   return HISTORY_GROUPS.filter((g) => out.has(g)).map((g) => ({ group: g, items: out.get(g)! }));
 }
 
-/** The left column: New chat, a search box and the past chats grouped by date. */
-function ChatList({ onPicked, onCollapse }: { onPicked: () => void; onCollapse?: () => void }) {
+/**
+ * The left rail: New chat, a search box and the past chats grouped by date. The top bar already
+ * names the page, so the rail has no heading; `action` is the hide (desktop) or close (drawer)
+ * control beside New chat.
+ */
+function ChatList({ onPicked, action }: { onPicked: () => void; action?: ReactNode }) {
   const ask = useAskOptional()!;
   const [term, setTerm] = useState('');
   const groups = useMemo(() => groupHistory(ask.history, term), [ask.history, term]);
   const current = ask.conversationId;
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex min-h-[56px] flex-none items-center gap-2 px-3">
-        <VisorBadge size={30} />
-        <span className="flex-1 text-[15px] font-medium text-ink">Ask VCFO</span>
-        {onCollapse ? (
-          <button type="button" onClick={onCollapse} aria-label="Hide chats" title="Hide chats" className={cn(ghost, 'w-8 justify-center px-0')}>
-            <PanelLeftClose className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+      <div className="flex-none space-y-2 px-3 pb-3 pt-3">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              ask.reset();
+              onPicked();
+            }}
+            className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] font-medium text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.8} aria-hidden />
+            New chat
           </button>
-        ) : null}
-      </div>
-      <div className="flex-none space-y-2 px-3 pb-3">
-        <button
-          type="button"
-          onClick={() => {
-            ask.reset();
-            onPicked();
-          }}
-          className="flex h-10 w-full items-center gap-2 rounded-md border-1.5 border-line-strong bg-surface-raised px-3 text-[14px] font-medium text-ink hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus-ring/25"
-        >
-          <Plus className="h-4 w-4" strokeWidth={1.8} aria-hidden />
-          New chat
-        </button>
+          {action}
+        </div>
         <label className="flex h-9 items-center gap-2 rounded-md border border-line bg-surface-raised px-2.5 focus-within:border-brand focus-within:ring-4 focus-within:ring-focus-ring/25">
           <Search className="h-4 w-4 flex-none text-ink-faint" strokeWidth={1.6} aria-hidden />
           <span className="sr-only">Search chats</span>
@@ -121,7 +119,7 @@ function Welcome({ firstName, scopeLine }: { firstName: string; scopeLine: strin
   const suggestions = (query.data?.suggestions ?? []).slice(0, 4);
   const snapshot = query.data?.snapshot ?? null;
   return (
-    <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 pb-8 pt-[clamp(24px,8vh,96px)] text-center">
+    <div className="mx-auto flex w-full max-w-[760px] flex-col items-center px-4 pb-8 pt-[clamp(24px,8vh,96px)] text-center">
       <span className="ask-hero-bot grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-full border-1.5 border-line bg-surface-raised shadow-dialog" aria-hidden>
         <VisorHead style={{ width: 76, height: 96, marginTop: 22 }} />
       </span>
@@ -170,9 +168,10 @@ function Welcome({ firstName, scopeLine }: { firstName: string; scopeLine: strin
 
 /**
  * The dedicated Ask VCFO page, `/app/<role>/ask`, which the sidebar's Ask VCFO opens (owner
- * decision 2 Nov 2026; first built as owner item F4). A chat-app layout: past chats on the
- * left (New chat, search, grouped by date, hideable), the conversation in a centred column with
- * the composer pinned under it, and on a new chat the robot with a greeting, the composer and
+ * decision 2 Nov 2026; first built as owner item F4). A chat-app layout that fills the content
+ * area edge to edge (owner, 25 Nov 2026: no card around the chat): past chats in a full-height
+ * left rail (New chat, search, grouped by date, hideable), the conversation in a centred column
+ * with the composer pinned under it, and on a new chat the robot with a greeting, the composer and
  * suggestion cards in the middle. The chat list comes from the server
  * (`GET /api/ask/conversations`, React Query in the provider). It reads and writes the same Ask
  * provider as the pop-up, so "Open full page" there shows the same conversation. While the page
@@ -207,7 +206,7 @@ export function AskFullPage() {
 
   if (!ask?.enabled) {
     return (
-      <div className="cp-tw">
+      <div className="cp-tw p-4 md:p-8">
         <p className="rounded-md border-1.5 border-line bg-surface-raised px-4 py-6 text-center text-[14px] text-ink-muted">Ask VCFO is off</p>
       </div>
     );
@@ -224,84 +223,101 @@ export function AskFullPage() {
   const empty = ask.thread.length === 0;
   const title = empty ? 'New chat' : (ask.history.find((h) => h.id === ask.conversationId)?.title ?? 'Ask VCFO');
 
+  // Thread, composer and welcome share one readable column; backgrounds and hairlines run full width.
+  const column = 'mx-auto w-full max-w-[920px]';
+
   return (
-    // The staff shell pads its content column; the client portal's pages pad themselves.
-    <div className={cn('cp-tw', client && 'p-4 md:p-6')}>
-      <div
-        className={cn(
-          'ask-vpv-scope relative grid min-h-[520px] grid-cols-1 overflow-hidden rounded-md border-1.5 border-line bg-surface-raised text-ink',
-          client ? 'h-[calc(100dvh-112px)]' : 'h-[calc(100dvh-140px)]',
-          !listHidden && 'md:grid-cols-[272px_minmax(0,1fr)]',
-          ask.busy && 'ask-think',
-        )}
-      >
-        {!listHidden ? (
-          <aside className="hidden min-h-0 border-r border-line-soft bg-surface-sunken/60 md:block">
-            <ChatList onPicked={() => undefined} onCollapse={() => setListHidden(true)} />
-          </aside>
-        ) : null}
-
-        {/* Phones and tablets: the chat list slides in over the page. */}
-        {drawer ? (
-          <div className="absolute inset-0 z-20 md:hidden">
-            <button type="button" aria-label="Close chats" className="absolute inset-0 bg-ink/30" onClick={() => setDrawer(false)} />
-            <div role="dialog" aria-label="Chats" className="absolute inset-y-0 left-0 w-[min(300px,85%)] border-r border-line bg-surface-raised shadow-dialog">
-              <button type="button" onClick={() => setDrawer(false)} aria-label="Close chats" className={cn(ghost, 'absolute right-2 top-3 z-10 w-8 justify-center px-0')}>
-                <X className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+    // The page is the chat: no card, border or margin. It fills the content area under the top bar
+    // (the staff shell drops its padding on this route; the client portal's pages pad themselves),
+    // and on phones it stops above the 64px tab bar.
+    <div
+      className={cn(
+        'cp-tw ask-vpv-scope relative grid min-h-[420px] grid-cols-1 overflow-hidden bg-surface-raised text-ink',
+        client
+          ? 'h-[calc(100dvh-var(--cp-top-h,63px)-3px-64px-env(safe-area-inset-bottom))] md:mb-[calc(-1*var(--vp-launch-h,0px))] md:h-[calc(100dvh-var(--cp-top-h,63px)-3px)]'
+          : 'h-[calc(100dvh-var(--shell-sticky-top)-4rem-env(safe-area-inset-bottom))] md:h-[calc(100dvh-var(--shell-sticky-top))]',
+        !listHidden && 'md:grid-cols-[280px_minmax(0,1fr)]',
+        ask.busy && 'ask-think',
+      )}
+    >
+      {!listHidden ? (
+        <aside aria-label="Chats" className="hidden min-h-0 border-r border-line bg-surface-sunken/60 md:block">
+          <ChatList
+            onPicked={() => undefined}
+            action={
+              <button type="button" onClick={() => setListHidden(true)} aria-label="Hide chats" title="Hide chats" className={cn(ghost, 'h-10 w-10 flex-none justify-center px-0')}>
+                <PanelLeftClose className="h-4 w-4" strokeWidth={1.6} aria-hidden />
               </button>
-              <ChatList onPicked={() => setDrawer(false)} />
-            </div>
-          </div>
-        ) : null}
+            }
+          />
+        </aside>
+      ) : null}
 
-        <section ref={mainRef} aria-label="Ask VCFO" className="flex min-h-0 flex-col">
-          <div className="flex min-h-[56px] flex-none items-center gap-2 border-b border-line-soft px-3">
-            <button type="button" onClick={() => setDrawer(true)} aria-label="Show chats" className={cn(ghost, 'w-8 justify-center px-0 md:hidden')}>
+      {/* Phones and tablets: the chat list slides in over the page. */}
+      {drawer ? (
+        <div className="absolute inset-0 z-20 md:hidden">
+          <button type="button" aria-label="Close chats" className="absolute inset-0 bg-ink/30" onClick={() => setDrawer(false)} />
+          <div role="dialog" aria-label="Chats" className="absolute inset-y-0 left-0 w-[min(300px,85%)] border-r border-line bg-surface-raised shadow-dialog">
+            <ChatList
+              onPicked={() => setDrawer(false)}
+              action={
+                <button type="button" onClick={() => setDrawer(false)} aria-label="Close chats" className={cn(ghost, 'h-10 w-10 flex-none justify-center px-0')}>
+                  <X className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+                </button>
+              }
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <section ref={mainRef} aria-label="Ask VCFO" className="flex min-h-0 flex-col">
+        <div className="flex min-h-[52px] flex-none items-center gap-2 border-b border-line-soft px-3 md:px-6">
+          <button type="button" onClick={() => setDrawer(true)} aria-label="Show chats" className={cn(ghost, 'w-8 justify-center px-0 md:hidden')}>
+            <PanelLeftOpen className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+          </button>
+          {listHidden ? (
+            <button type="button" onClick={() => setListHidden(false)} aria-label="Show chats" title="Show chats" className={cn(ghost, 'hidden w-8 justify-center px-0 md:inline-flex')}>
               <PanelLeftOpen className="h-4 w-4" strokeWidth={1.6} aria-hidden />
             </button>
-            {listHidden ? (
-              <button type="button" onClick={() => setListHidden(false)} aria-label="Show chats" title="Show chats" className={cn(ghost, 'hidden w-8 justify-center px-0 md:inline-flex')}>
-                <PanelLeftOpen className="h-4 w-4" strokeWidth={1.6} aria-hidden />
-              </button>
-            ) : null}
-            <h1 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{title}</h1>
-            {ask.preview ? (
-              <span className="hidden rounded-sm bg-brand-soft px-2 py-0.5 text-[12px] font-medium text-brand-text sm:inline">
-                Client view · {ask.preview.companyName}
-              </span>
-            ) : null}
-            <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[12px] text-ink-muted lg:inline">
-              {client ? 'Verified sources' : scoped ? 'Your clients' : 'Firm-wide'}
+          ) : null}
+          <h1 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{title}</h1>
+          {ask.preview ? (
+            <span className="hidden rounded-sm bg-brand-soft px-2 py-0.5 text-[12px] font-medium text-brand-text sm:inline">
+              Client view · {ask.preview.companyName}
             </span>
-            {!empty ? (
-              <button type="button" onClick={ask.reset} className={ghost}>
-                <Plus className="h-4 w-4" strokeWidth={1.6} aria-hidden />
-                <span className="hidden sm:inline">New chat</span>
-                <span className="sr-only sm:hidden">New chat</span>
-              </button>
-            ) : null}
-          </div>
+          ) : null}
+          <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[12px] text-ink-muted lg:inline">
+            {client ? 'Verified sources' : scoped ? 'Your clients' : 'Firm-wide'}
+          </span>
+          {/* The rail holds New chat; this one is for phones and for when the rail is hidden. */}
+          {!empty ? (
+            <button type="button" onClick={ask.reset} className={cn(ghost, !listHidden && 'md:hidden')}>
+              <Plus className="h-4 w-4" strokeWidth={1.6} aria-hidden />
+              <span className="hidden sm:inline">New chat</span>
+              <span className="sr-only sm:hidden">New chat</span>
+            </button>
+          ) : null}
+        </div>
 
-          {empty ? (
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <Welcome firstName={firstName} scopeLine={scopeLine} />
+        {empty ? (
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <Welcome firstName={firstName} scopeLine={scopeLine} />
+          </div>
+        ) : (
+          <>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+              <div className={column}>
+                <AskThread />
+              </div>
             </div>
-          ) : (
-            <>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
-                <div className="mx-auto w-full max-w-[768px]">
-                  <AskThread />
-                </div>
+            <div className="flex-none border-t border-line-soft px-4 pb-4 pt-3 md:px-8 md:pb-5">
+              <div className={column}>
+                <AskComposer />
               </div>
-              <div className="flex-none px-4 pb-4 pt-2">
-                <div className="mx-auto w-full max-w-[768px]">
-                  <AskComposer />
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
 }

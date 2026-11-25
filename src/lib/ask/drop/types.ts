@@ -32,6 +32,16 @@ export interface DropFile {
   destination?: string;
   /** Why it was skipped, failed or left unplaced. Identity numbers are masked. */
   reason?: string;
+  /**
+   * Where the file came from when it is not a new upload or a new SharePoint file: `app` for a
+   * document already in the app, `stored` for a SharePoint file an earlier fetch read, unchanged.
+   * Either way only its values go on the card; the file itself is already where it belongs.
+   */
+  origin?: 'app' | 'stored';
+  /** How long the read took, in milliseconds. */
+  ms?: number;
+  /** How many values the read found. */
+  values?: number;
 }
 
 /** One review card, for one client. */
@@ -74,15 +84,51 @@ export interface DropState {
    * Graph ids stay on the project row, not here, because the run state is masked.
    */
   source?: DropSharepointSource;
+  /**
+   * Set when the person asked to fetch and then fill in one message ("fetch Bonterra's data and
+   * put it in name application"): once the card is ready, the finish step starts the fill on it.
+   */
+  fillAfter?: DropFillAfter;
 }
 
+export interface DropFillAfter {
+  mode: 'manual' | 'auto';
+  /** The chip's mode when it differs from `mode` (Auto with "Watch it fill" runs as Manual). */
+  chip?: 'manual' | 'auto';
+  /** The steps the request named; absent means every step on the card. */
+  scope?: { stepIds: string[]; label: string };
+  /** Set once the finish step tried the fill, so a retry does not start it twice. */
+  started?: boolean;
+  /** The fill run, when one started. */
+  runId?: string;
+}
+
+/**
+ * A fetch for one project (PLAN M4): its SharePoint folder, the documents already in the app, or
+ * both. The kind stays `sharepoint` for runs stored before 26 Nov 2026.
+ */
 export interface DropSharepointSource {
   kind: 'sharepoint';
   engagementId: string;
-  /** The folder name as SharePoint shows it, for the messages. */
+  /** The folder name as SharePoint shows it, for the messages. Empty when SharePoint is not read. */
   folderName: string;
   /** True once the files were copied into the drop, so a retry does not copy them again. */
   pulled?: boolean;
+  /** False when the SharePoint folder is not read (not set up, not linked); absent means it is. */
+  sharepoint?: boolean;
+  /** Also read the project's documents already in the app. */
+  appDocs?: boolean;
+  /** True once the app's documents were added, so a retry does not add them again. */
+  appPulled?: boolean;
+  /** The client's name, for the messages when there is no folder name. */
+  companyName?: string;
+}
+
+/** The words for where a fetch reads from: "the SharePoint folder X and the documents in the app". */
+export function fetchSourceWords(source: DropSharepointSource): string {
+  const folder = source.sharepoint !== false && source.folderName ? `the SharePoint folder ${source.folderName}` : '';
+  const app = source.appDocs ? `the documents in the app${!folder && source.companyName ? ` for ${source.companyName}` : ''}` : '';
+  return [folder, app].filter(Boolean).join(' and ') || 'the SharePoint folder';
 }
 
 export function emptyDropState(): DropState {

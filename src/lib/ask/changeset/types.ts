@@ -35,6 +35,11 @@ export interface RowCheck {
   rule: string;
   ok: boolean;
   message?: string;
+  /**
+   * `documents_differ` only: the other document's value, so the card can offer it ("Use this").
+   * Never set for a sensitive field, whose values are shown masked.
+   */
+  choice?: string;
 }
 
 /** Where a proposed value came from, so the reviewer can check it. */

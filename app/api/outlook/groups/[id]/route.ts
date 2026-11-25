@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { deleteMailGroup, MailGroupError, updateMailGroup } from '@/db/repositories/mail-groups';
 import { groupIdSchema, updateMailGroupSchema } from '../schema';
@@ -17,7 +18,7 @@ function fail(err: unknown) {
 
 /** PATCH /api/outlook/groups/:id — rename, share or change members. Owner, or an admin for a shared group. */
 export async function PATCH(request: Request, context: RouteContext) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -41,7 +42,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 /** DELETE /api/outlook/groups/:id — owner, or an admin for a shared group. */
 export async function DELETE(_request: Request, context: RouteContext) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

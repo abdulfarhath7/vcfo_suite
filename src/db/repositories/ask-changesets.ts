@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, eq, gt, inArray, max } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, max } from 'drizzle-orm';
 import type { AuthContext } from '@/auth/guards';
 import { db } from '@/db/client';
 import { assertEngagementAccess } from '@/db/repositories/engagements';
@@ -30,6 +30,20 @@ export interface ChangesetAccess {
   owner: boolean;
   /** May approve a row that only a manager may approve. */
   manager: boolean;
+}
+
+/**
+ * A checklist answer as the text the form stores. The JSONB value is parsed twice on the way out (by
+ * the driver, then by Drizzle), so a stored "1500000" or "true" comes back as a number or a boolean;
+ * it is turned back into its text here, on every read, so the rules, the apply and the hash all see
+ * the value the card proposed.
+ */
+export function rowValuesAsText<T extends Pick<AskChangesetRowRow, 'action' | 'newValue' | 'oldValue'>>(row: T): T {
+  if (row.action !== 'checklist.setResponse') return row;
+  const text = (v: unknown) => (typeof v === 'number' || typeof v === 'boolean' ? String(v) : v);
+  const newValue = text(row.newValue);
+  const oldValue = text(row.oldValue);
+  return newValue === row.newValue && oldValue === row.oldValue ? row : { ...row, newValue, oldValue };
 }
 
 export const rowNeedsManager = (row: Pick<AskChangesetRowRow, 'target'>): boolean => row.target.needsManager === true;
@@ -76,7 +90,7 @@ export async function createAskChangeset(
     );
     // The stored hash is taken over the rows as Postgres keeps them, as the approval reads them back.
     // A draft in memory can differ from its JSONB copy, and the card could then never be saved.
-    const stored = await tx.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, row!.id)).orderBy(asc(askChangesetRows.ordinal));
+    const stored = (await tx.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, row!.id)).orderBy(asc(askChangesetRows.ordinal))).map(rowValuesAsText);
     const contentHash = changesetHash(stored.map((r) => ({ action: r.action, target: r.target as JsonValue, newValue: r.newValue as JsonValue })));
     if (contentHash !== input.contentHash) await tx.update(askChangesets).set({ contentHash }).where(eq(askChangesets.id, row!.id));
     return row!.id;
@@ -126,7 +140,7 @@ export async function appendAskChangesetRows(
         heldReason: draft.heldReason,
       })),
     );
-    const rows = await tx.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, id)).orderBy(asc(askChangesetRows.ordinal));
+    const rows = (await tx.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, id)).orderBy(asc(askChangesetRows.ordinal))).map(rowValuesAsText);
     const contentHash = changesetHash(rows.map((r) => ({ action: r.action, target: r.target as JsonValue, newValue: r.newValue as JsonValue })));
     // The title counts every row, so a card that gained rows from a reply says so.
     await tx.update(askChangesets).set({ contentHash, ...(opts.title ? { title: opts.title(rows) } : {}) }).where(eq(askChangesets.id, id));
@@ -165,13 +179,40 @@ export async function listAskRunChangesets(
   return out;
 }
 
+/**
+ * The newest card in this conversation, prepared for this person, still open and not expired, that
+ * holds a checklist row still to save: the card a chat "fill it into the app" means. Null when none.
+ * The literals match OPEN / OPEN_ROW in src/lib/ask/changeset/apply.ts and FILL_ACTIONS in
+ * src/lib/ask/fill/plan.ts.
+ */
+export async function findOpenFillCardInConversation(ctx: AuthContext, conversationId: string, now: Date): Promise<string | null> {
+  assertAskRole(ctx);
+  const [row] = await db
+    .selectDistinct({ id: askChangesets.id, createdAt: askChangesets.createdAt })
+    .from(askChangesets)
+    .innerJoin(askChangesetRows, eq(askChangesetRows.changesetId, askChangesets.id))
+    .where(
+      and(
+        eq(askChangesets.profileId, ctx.userId),
+        eq(askChangesets.conversationId, conversationId),
+        inArray(askChangesets.status, ['proposed', 'partly_applied']),
+        gt(askChangesets.expiresAt, now),
+        inArray(askChangesetRows.action, ['checklist.setResponse', 'checklist.attachFile']),
+        inArray(askChangesetRows.status, ['proposed', 'edited', 'accepted', 'held', 'failed']),
+      ),
+    )
+    .orderBy(desc(askChangesets.createdAt))
+    .limit(1);
+  return row?.id ?? null;
+}
+
 export async function getAskChangesetForDecision(ctx: AuthContext, id: string): Promise<ChangesetAccess | null> {
   assertAskRole(ctx);
   const [changeset] = await db.select().from(askChangesets).where(eq(askChangesets.id, id)).limit(1);
   if (!changeset) return null;
   const access = changeset.engagementId ? await assertEngagementAccess(ctx, changeset.engagementId) : null;
   if (access && !access.ok) return null;
-  const rows = await db.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, id)).orderBy(asc(askChangesetRows.ordinal));
+  const rows = (await db.select().from(askChangesetRows).where(eq(askChangesetRows.changesetId, id)).orderBy(asc(askChangesetRows.ordinal))).map(rowValuesAsText);
   const owner = changeset.profileId === ctx.userId;
   const manager = isAdminOrManager(ctx.role) && access !== null;
   if (!owner && !(manager && rows.some(rowNeedsManager))) return null;

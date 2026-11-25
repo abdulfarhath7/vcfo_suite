@@ -1,10 +1,11 @@
 import { inngest } from './client';
-import { ASK_DROP_EVENT, dropAssembleStep, dropFinishStep, dropPullStep, dropReadStep, dropUnpackStep, failAskDrop } from '@/lib/ask/drop/run';
+import { ASK_DROP_EVENT, dropAssembleStep, dropFinishStep, dropPullStep, dropReadBatch, dropUnpackStep, failAskDrop, readBatches } from '@/lib/ask/drop/run';
 
 /**
  * Ask VCFO drop: the files, folders and ZIPs a lead dropped into the chat, read and sorted into review
  * cards in the background while the person may close the panel. Each stage is its own step, and each
- * file its own read step, so a retry repeats only what failed and never pays for a file twice. One
+ * batch of up to three files read at once is its own read step, so a retry repeats only what failed
+ * and never pays for a file twice (a file already read is skipped). One
  * drop runs at a time per person. The job prepares cards only; it never runs an action.
  */
 export const askDrop = inngest.createFunction(
@@ -21,11 +22,11 @@ export const askDrop = inngest.createFunction(
   async ({ event, step }) => {
     const runId = String((event.data as { runId?: unknown })?.runId ?? '');
     if (!runId) return { skipped: 'invalid_payload' };
-    // A SharePoint fetch copies the client folder in first; for an upload this does nothing.
+    // A fetch copies the client's SharePoint folder and the app's documents in first; for an upload this does nothing.
     await step.run('sharepoint', () => dropPullStep(runId));
     const toRead = await step.run('unpack', () => dropUnpackStep(runId));
     if (toRead === null) return { runId, skipped: 'not_runnable' };
-    for (const attachmentId of toRead) await step.run(`read-${attachmentId}`, () => dropReadStep(runId, attachmentId));
+    for (const batch of readBatches(toRead)) await step.run(`read-${batch[0]}`, () => dropReadBatch(runId, batch));
     await step.run('assemble', () => dropAssembleStep(runId));
     const finished = await step.run('finish', () => dropFinishStep(runId));
     return { runId, status: finished?.status ?? 'skipped' };

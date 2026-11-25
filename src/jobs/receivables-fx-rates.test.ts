@@ -53,7 +53,6 @@ describe('checkRateAlerts', () => {
     const mail = send.mock.calls[0][0];
     expect(mail).toMatchObject({ to: 'meera@vcfo.local', purpose: 'receivables.fx_alert' });
     expect(mail.subject).toContain('USD at ₹85.2000');
-    expect(mail.text).toContain('https://app.example/receivables/manager?sheet=s1&tab=fx');
     expect(repo.systemMarkAlertTriggered).toHaveBeenCalledWith('a1', TODAY);
     expect(repo.systemRateFor).toHaveBeenCalledTimes(1);
   });

@@ -5,6 +5,7 @@ import { db } from '@/db/client';
 import { profiles } from '@/db/schema';
 import { isFirmWideAdmin, isValidDbRole } from '@/lib/auth';
 import { systemIsSessionActive, systemTouchLastSeen } from '@/db/repositories/user-sessions';
+import { demoEnabled, isDemoScope } from '@/db/demo-scope';
 
 /**
  * Role guards for API routes and server actions.
@@ -45,6 +46,12 @@ export interface AuthContext {
   clientId?: string;
   /** The `user_sessions` row of this device; absent on tokens issued before G-25. */
   sessionId?: string;
+  /**
+   * A shared demo login (`profiles.is_demo`, src/lib/demo-logins.ts). It lives in the demo
+   * database (PLAN H2), so every role sees only demo data; account, user-management,
+   * integration and outbound actions still refuse it.
+   */
+  demo?: boolean;
 }
 
 type Ok = { ok: true; ctx: AuthContext };
@@ -61,13 +68,13 @@ export type GuardResult = Ok | Err;
  */
 const LOOKUP_TTL_MS = 3_000;
 type PersonLookup = {
-  row: { id: string; email: string; name: string | null; role: string; internId: string | null; clientId: string | null; status: string } | undefined;
+  row: { id: string; email: string; name: string | null; role: string; internId: string | null; clientId: string | null; status: string; isDemo: boolean | null } | undefined;
   sessionActive: boolean;
 };
 const lookups = new Map<string, { at: number; value: Promise<PersonLookup> }>();
 
-function lookupPerson(userId: string, sid: string | undefined): Promise<PersonLookup> {
-  const key = `${userId}:${sid ?? ''}`;
+function lookupPerson(userId: string, sid: string | undefined, demo: boolean): Promise<PersonLookup> {
+  const key = `${demo ? 'demo' : 'main'}:${userId}:${sid ?? ''}`;
   const now = Date.now();
   const hit = lookups.get(key);
   if (hit && now - hit.at < LOOKUP_TTL_MS) return hit.value;
@@ -84,6 +91,7 @@ function lookupPerson(userId: string, sid: string | undefined): Promise<PersonLo
         internId: profiles.internId,
         clientId: profiles.clientId,
         status: profiles.status,
+        isDemo: profiles.isDemo,
       })
       .from(profiles)
       .where(eq(profiles.id, userId))
@@ -118,13 +126,22 @@ async function currentContext(opts: { allowDeveloper?: boolean; allowPartner?: b
         internId?: string;
         clientId?: string;
         sid?: string;
+        demo?: boolean;
       }
     | undefined;
   if (!u?.id) return null;
   const sid = typeof u.sid === 'string' && u.sid ? u.sid : undefined;
 
+  // PLAN H2: a demo session must be inside the demo scope (src/db/demo-scope.ts), which sends
+  // every query of this request to the demo database. The scope comes from the same session
+  // token, so they agree; if they ever do not, or the demo database is switched off, refuse
+  // rather than read the main database for a demo login.
+  const demo = u.demo === true;
+  if (demo !== (await isDemoScope())) return null;
+  if (demo && !demoEnabled()) return null;
+
   // Prefer live profile row over JWT custom claims (source of truth).
-  const { row, sessionActive } = await lookupPerson(u.id, sid);
+  const { row, sessionActive } = await lookupPerson(u.id, sid, demo);
 
   if (!sessionActive) return null;
   if (!row || row.status !== 'active') return null;
@@ -132,6 +149,9 @@ async function currentContext(opts: { allowDeveloper?: boolean; allowPartner?: b
   if (row.role === 'intern' && !row.internId?.trim()) return null;
   if (row.role === 'developer' && !opts.allowDeveloper) return null;
   if (row.role === 'partner' && !opts.allowPartner) return null;
+  // The session and the database row must agree: a demo profile is only ever found in the
+  // demo database, and a real session never reads one.
+  if (Boolean(row.isDemo) !== demo) return null;
 
   // Throttled inside and never throws, so it does not hold up the request.
   void systemTouchLastSeen(row.id, sid);
@@ -144,6 +164,7 @@ async function currentContext(opts: { allowDeveloper?: boolean; allowPartner?: b
     internId: row.internId ?? undefined,
     clientId: row.clientId ?? undefined,
     sessionId: sid,
+    ...(row.isDemo ? { demo: true } : {}),
   };
 }
 

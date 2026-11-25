@@ -4,7 +4,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { publicErrorMessage } from '@/lib/api-error';
 import { intakeFile, intakeLink, WatchIntakeError } from '@/lib/watch/intake';
 import { intakePastedMail } from '@/lib/watch/mail-intake';
-import { watchStaff } from '../_guard';
+import { watchStaffWriter } from '../_guard';
 
 const fieldsSchema = z.object({
   url: z.string().trim().max(1000).optional(),
@@ -18,7 +18,7 @@ const fieldsSchema = z.object({
  * It enters the same pipeline at the read step, which is how MCA and Income Tax India notices arrive.
  */
 export async function POST(request: Request) {
-  const guard = await watchStaff();
+  const guard = await watchStaffWriter();
   if (guard.ok === false) return guard.response;
   const form = await request.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: 'invalid_form' }, { status: 400 });

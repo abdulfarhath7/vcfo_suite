@@ -2,6 +2,8 @@ import 'server-only';
 
 import type { AuthContext } from '@/auth/guards';
 import { getDocPackInputs } from '@/db/repositories/doc-pack';
+import { gstDocumentStorageKey } from '@/db/repositories/gst-profile';
+import { isGstDocumentKey } from '@/lib/registrations/gst-profile';
 import { getDocumentById } from '@/db/repositories/documents';
 import { getSpiceAttachments } from '@/db/repositories/spice-attachments';
 import { ENGAGEMENT_DOCUMENTS_BUCKET } from '@/lib/board-resolution/board-resolution-storage';
@@ -94,6 +96,9 @@ export type AttachmentFile =
 
 /** One file by its key. Over the limit is refused before the bytes are read. */
 export async function readAssistAttachment(ctx: AuthContext, engagementParam: string, key: string): Promise<AttachmentFile> {
+  // GST REG-01 documents (`src/lib/registrations/gst-profile.ts`, GST_DOCUMENT_KEYS): same route,
+  // same staff access, read through the GST profile's own scoped documents.
+  if (isGstDocumentKey(key)) return readGstAttachment(ctx, engagementParam, key);
   const slots = await slotsFor(ctx, engagementParam);
   if (slots.ok === false) return slots;
   const slot = slots.value.slots.find((s) => s.key === key);
@@ -107,4 +112,18 @@ export async function readAssistAttachment(ctx: AuthContext, engagementParam: st
   if (bytes.length > MAX_ATTACHMENT_BYTES) return { ok: false, status: 413, error: 'file_too_large' };
   const fileName = fileNameFromKey(slot.storageKey);
   return { ok: true, dbId: slots.value.dbId, label: slot.label, fileName, contentType: contentTypeFromName(fileName), bytes };
+}
+
+async function readGstAttachment(ctx: AuthContext, engagementParam: string, key: string): Promise<AttachmentFile> {
+  if (ctx.role === 'client' || ctx.role === 'developer') return { ok: false, status: 403, error: 'forbidden' };
+  const found = await gstDocumentStorageKey(ctx, engagementParam, key);
+  if (found.ok === false) return found;
+  const size = await storedSize(found.storageKey);
+  if (size === null) return { ok: false, status: 404, error: 'no_file' };
+  if (size > MAX_ATTACHMENT_BYTES) return { ok: false, status: 413, error: 'file_too_large' };
+  const bytes = await getObjectBuffer(found.storageKey);
+  if (!bytes) return { ok: false, status: 404, error: 'no_file' };
+  if (bytes.length > MAX_ATTACHMENT_BYTES) return { ok: false, status: 413, error: 'file_too_large' };
+  const fileName = fileNameFromKey(found.storageKey);
+  return { ok: true, dbId: found.dbId, label: found.label, fileName, contentType: contentTypeFromName(fileName), bytes };
 }

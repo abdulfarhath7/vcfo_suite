@@ -128,6 +128,7 @@ function systemPrompt(actions: readonly AnyAction[], today: string): string {
     'Actions:',
     ...actions.map((a) => `- ${a.name}: ${a.description}`),
     '- none: the request is not one of these. Filling checklist answers or fields from details, attaching a file, or anything else is none.',
+    'A request to fill, upload or save a review card into the app ("fill it into the app") is handled elsewhere: answer none.',
     'Copy the company and the step as the user wrote them. Never invent a company, a step, a date or a note the user did not give.',
     'For tasks.create and requests.create write a short title from the request. For reminders.draftEmail write a short subject and a plain, polite email body from what the user asked.',
     `Today is ${today}. Turn "tomorrow", "Friday" or "in 3 days" into YYYY-MM-DD; leave dueDate empty when no day is given.`,
@@ -268,7 +269,7 @@ export async function pickAndPrepare(req: PickRequest): Promise<AnswerEnvelope |
       projectPath: `/projects/${row.slug || row.id}`,
     });
     if (started.ok === false) return line(started.message);
-    return line(`I am reading the SharePoint folder ${started.folderName} for ${started.companyName}. I will put what I find on a card; nothing is saved until you accept.`, { runId: started.runId });
+    return line(`I am reading ${started.sources} for ${started.companyName}. I will put what I find on a card; nothing is saved until you accept.`, { runId: started.runId });
   }
 
   // T1: private and reversible, so it runs now. Only the email draft is T1 today.

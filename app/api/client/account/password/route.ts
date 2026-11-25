@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { updateOwnPassword } from '@/db/repositories/profiles';
 import { getOwnPasswordChangedAt, stampOwnPasswordChanged } from '@/db/repositories/notification-prefs';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -19,7 +20,7 @@ const bodySchema = z.object({
 
 /** POST /api/client/account/password — same as /api/account/password, plus the change date. */
 export async function POST(request: Request) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ ok: false, error: body.error }, { status: body.status });

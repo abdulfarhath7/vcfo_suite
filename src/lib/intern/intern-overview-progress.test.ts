@@ -24,8 +24,8 @@ import {
   internRegistrationCardItems,
   internRegistrationHeadingForTitle,
   internRegistrationHeadingGroups,
-  internEngagementPhaseTabDefault,
-  internEngagementPhaseTabStorageKey,
+  internEngagementOpenPhasesDefault,
+  internEngagementOpenPhasesStorageKey,
   internOverviewCurrentItemInPhase,
   INTERN_OVERVIEW_PHASE_TAB_IDS,
 } from '@/lib/intern/intern-overview-progress';
@@ -252,31 +252,37 @@ describe('internOverviewPhaseForItem', () => {
       'post-inc-phase-3',
       'registration-phase-4',
     ]);
-    expect(internEngagementPhaseTabStorageKey('pexpo-inc')).toBe(
-      'vcfo.intern.engagementPhaseTab.pexpo-inc',
+    expect(internEngagementOpenPhasesStorageKey('pexpo-inc')).toBe(
+      'vcfo.intern.engagementOpenPhases.pexpo-inc',
     );
-    expect(internEngagementPhaseTabStorageKey('other-co')).toBe(
-      'vcfo.intern.engagementPhaseTab.other-co',
+    expect(internEngagementOpenPhasesStorageKey('other-co')).toBe(
+      'vcfo.intern.engagementOpenPhases.other-co',
     );
-    expect(internEngagementPhaseTabStorageKey('pexpo-inc')).not.toBe(
-      internEngagementPhaseTabStorageKey('other-co'),
+    expect(internEngagementOpenPhasesStorageKey('pexpo-inc')).not.toBe(
+      internEngagementOpenPhasesStorageKey('other-co'),
     );
   });
 
-  it('prefers the stored intern overview tab, else the current phase, else the first tab', () => {
+  it('opens the stored phase sections, else the current phase, else the first phase', () => {
     const ids = INTERN_OVERVIEW_PHASE_TAB_IDS;
-    expect(internEngagementPhaseTabDefault('post-inc-phase-3', 'pre-inc-phase-2', ids)).toBe(
+    expect(internEngagementOpenPhasesDefault('post-inc-phase-3', 'pre-inc-phase-2', ids)).toEqual([
       'post-inc-phase-3',
-    );
-    expect(internEngagementPhaseTabDefault(null, 'pre-inc-phase-2', ids)).toBe('pre-inc-phase-2');
-    expect(internEngagementPhaseTabDefault('', 'registration-phase-4', ids)).toBe(
-      'registration-phase-4',
-    );
-    expect(internEngagementPhaseTabDefault('not-a-phase', 'pre-inc-phase-2', ids)).toBe(
+    ]);
+    expect(
+      internEngagementOpenPhasesDefault('pre-inc-phase-1,registration-phase-4', 'pre-inc-phase-2', ids),
+    ).toEqual(['pre-inc-phase-1', 'registration-phase-4']);
+    expect(internEngagementOpenPhasesDefault(null, 'pre-inc-phase-2', ids)).toEqual(['pre-inc-phase-2']);
+    // An empty stored list means the viewer closed every section.
+    expect(internEngagementOpenPhasesDefault('', 'registration-phase-4', ids)).toEqual([]);
+    expect(internEngagementOpenPhasesDefault('not-a-phase', 'pre-inc-phase-2', ids)).toEqual([
       'pre-inc-phase-2',
-    );
-    expect(internEngagementPhaseTabDefault(null, 'unknown', ids)).toBe('pre-inc-phase-1');
-    expect(internEngagementPhaseTabDefault(null, null, ids)).toBe('pre-inc-phase-1');
+    ]);
+    expect(
+      internEngagementOpenPhasesDefault('pre-inc-phase-2,not-a-phase,pre-inc-phase-2', null, ids),
+    ).toEqual(['pre-inc-phase-2']);
+    expect(internEngagementOpenPhasesDefault(null, 'unknown', ids)).toEqual(['pre-inc-phase-1']);
+    expect(internEngagementOpenPhasesDefault(null, null, ids)).toEqual(['pre-inc-phase-1']);
+    expect(internEngagementOpenPhasesDefault(null, null, [])).toEqual([]);
   });
 
   it('advances intern Next through headings; last tab is Submit', () => {

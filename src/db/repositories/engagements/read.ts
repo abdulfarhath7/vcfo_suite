@@ -141,6 +141,7 @@ export function toAppEngagement(
     clientUserId: row.clientUserId,
     clientEmail: client?.email ?? null,
     clientDisplayName: row.clientName?.trim() || client?.name?.trim() || null,
+    ...(row.isDemo ? { isDemo: true } : {}),
     complianceQuestionnaire:
       'complianceQuestionnaire' in row &&
       row.complianceQuestionnaire &&

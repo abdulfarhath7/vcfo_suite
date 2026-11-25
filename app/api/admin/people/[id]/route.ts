@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdminOrManager } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { deleteProfileAccount, updatePersonEmail } from '@/db/repositories/profiles';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -15,7 +16,7 @@ const patchSchema = z.object({
 
 /** PATCH /api/admin/people/[id] — change sign-in email (admin anyone; manager leads). */
 export async function PATCH(request: Request, ctx: Ctx) {
-  const auth = await requireAdminOrManager();
+  const auth = noDemo(await requireAdminOrManager());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -71,7 +72,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
 /** DELETE /api/admin/people/[id] — admin: anyone; manager: their leads. */
 export async function DELETE(_request: Request, ctx: Ctx) {
-  const auth = await requireAdminOrManager();
+  const auth = noDemo(await requireAdminOrManager());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

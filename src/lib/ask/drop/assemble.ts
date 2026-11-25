@@ -70,6 +70,11 @@ export interface AssembleInput {
   overrides?: ReadonlyMap<string, DropOverride>;
   /** Cards this drop already made; new rows for one of these clients go onto its card. */
   groups?: readonly DropGroup[];
+  /**
+   * Files whose values only go on the card: documents already in the app, and SharePoint files an
+   * earlier fetch read. They are already where they belong, so no file row is made for them.
+   */
+  valuesOnly?: ReadonlySet<string>;
 }
 
 export interface AssembleResult {
@@ -233,6 +238,7 @@ export async function assembleDrop(input: AssembleInput): Promise<AssembleResult
     // The state from a reply is applied where the state is settled, below.
     if (found.destination.kind === 'labour' && override.period) found.destination.period = override.period;
   }
+  for (const found of classified) if (input.valuesOnly?.has(found.attachmentId)) found.destination = { kind: 'values' };
 
   // One group per client, in the order the files came.
   const byClient = new Map<string, Array<{ read: DropRead; found: FileClassification<Engagement> }>>();
@@ -296,7 +302,7 @@ export async function assembleDrop(input: AssembleInput): Promise<AssembleResult
 
     const planFor = async (read: DropRead, destination: DropDestination): Promise<FilePlan> => {
       const base = { engagementId: row.id, attachmentId: read.attachment.id, value: read.attachment.fileName };
-      if (destination.kind === 'values') return { kind: 'values', destination: 'Checklist values' };
+      if (destination.kind === 'values') return { kind: 'values', destination: input.valuesOnly?.has(read.attachment.id) ? 'Values only (the file is already in the app)' : 'Checklist values' };
       if (destination.kind === 'labour') {
         if (!destination.period) return { kind: 'unplaced', reason: UNPLACED_REASONS.period };
         batches ??= await listBatches(ctx, { engagementId: row.id });
@@ -409,6 +415,9 @@ export async function assembleDrop(input: AssembleInput): Promise<AssembleResult
         appendTo: existing?.changesetId ?? null,
       });
       notes.push(...card.questions.map(maskIdentityNumbers));
+      // A value read from a file that fits no field is named, never dropped without a word.
+      const unplaced = (card.unplaced ?? []).map((text) => text.trim().replace(/[.;:,]+$/, '')).filter(Boolean);
+      if (unplaced.length > 0) notes.push(`I could not place ${unplaced.length === 1 ? 'this' : 'these'}: ${unplaced.join('; ')}.`);
       if (card.kind === 'card') {
         // A reply's rows join the client's open card; a card decided since then gets a new one beside it.
         if (existing?.changesetId !== card.changesetId) groups.push({ engagementId: row.id, companyName: row.companyName, changesetId: card.changesetId });

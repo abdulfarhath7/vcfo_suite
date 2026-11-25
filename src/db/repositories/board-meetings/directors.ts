@@ -9,6 +9,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { displayName, readProposedDirectors } from '@/lib/incorporation/proposed-directors';
 import { addDaysIso, isIsoDate, todayIst } from '@/lib/board-meetings/dates';
 import { UUID, invalid, notFound, scopedEngagement } from './shared';
+import { isDemoEmail } from '@/lib/demo-logins';
 
 /**
  * COMPANY DIRECTORS — the director list of one client company over time. The director picker
@@ -114,6 +115,16 @@ function checkInput(input: DirectorInput): void {
   if (input.appointedOn && !isIsoDate(input.appointedOn)) throw invalid('bad_date');
 }
 
+/**
+ * A demo login (src/lib/demo-logins.ts) may only give a director a demo mailbox: board notices
+ * and reminders go out from jobs that run outside the demo request, so a real address typed on
+ * a demo company would be mailed.
+ */
+function checkDemoEmail(ctx: AuthContext, email: string | null | undefined): void {
+  const e = clean(email);
+  if (ctx.demo && e && !isDemoEmail(e)) throw invalid('demo_email_only');
+}
+
 /** DIR-12 within 30 days of an appointment or a cessation (event-based ROC filing). */
 async function recordDir12(engagementId: string, eventDate: string, particular: string): Promise<void> {
   try {
@@ -133,6 +144,7 @@ export async function addDirector(ctx: AuthContext, engagementId: string, input:
   if (ctx.role === 'client') throw notFound();
   const engagement = await scopedEngagement(ctx, engagementId);
   checkInput(input);
+  checkDemoEmail(ctx, input.email);
   await systemSeedDirectors(engagement);
   const appointedOn = input.appointedOn || todayIst();
   const [row] = await db
@@ -165,6 +177,7 @@ async function scopedDirector(ctx: AuthContext, directorId: string): Promise<Dir
 export async function updateDirector(ctx: AuthContext, directorId: string, input: Partial<DirectorInput>): Promise<DirectorDto> {
   const row = await scopedDirector(ctx, directorId);
   checkInput({ name: input.name ?? row.name, din: input.din ?? row.din, email: input.email ?? row.email, appointedOn: input.appointedOn ?? null });
+  if (input.email !== undefined) checkDemoEmail(ctx, input.email);
   const [next] = await db
     .update(companyDirectors)
     .set({
