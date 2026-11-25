@@ -12,10 +12,47 @@ export interface RecordPhase {
 }
 
 /**
+ * One phase's progress bar: green and full when the phase is done, blurple with a soft ring for the
+ * current phase, faint grey for a later phase that is partly done, empty otherwise. The track below
+ * and the Steps card's phase section headers draw the same bar.
+ */
+export function RecordPhaseBar({
+  done,
+  total,
+  current,
+  className,
+}: {
+  done: number;
+  total: number;
+  current: boolean;
+  className?: string;
+}) {
+  const full = total > 0 && done >= total;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <span
+      className={cn(
+        'relative block h-2.5 overflow-hidden rounded-bar bg-surface-sunken',
+        current && 'ring-[1.5px] ring-brand-line',
+        className,
+      )}
+    >
+      {full || pct > 0 ? (
+        <i
+          className={cn('absolute inset-y-0 left-0 rounded-bar', full ? 'bg-positive-mid' : current ? 'bg-brand' : 'bg-ink-faint')}
+          style={{ width: full ? '100%' : `max(${pct}%, 6px)` }}
+        />
+      ) : null}
+    </span>
+  );
+}
+
+/**
  * ST5 phase track of a client record (R-22; prototype `PhaseTrack`). One bar per phase, sized by
- * its step count: a finished phase is green, the current one blurple with a soft ring, a later
- * one grey; a later phase that is partly done fills in faint grey. Each bar is a button that picks the phase in place (R-36). On phones only the four
- * bars show, with the picked phase written under them.
+ * its step count (see `RecordPhaseBar` for the colours). Each bar is a button: with `picked` it
+ * picks the phase in place (R-36) and, on phones, where only the four bars show, the picked phase
+ * is written under them; without `picked` it only reports the click (the Steps card opens and
+ * scrolls to that phase's section).
  */
 export function RecordPhaseTrack({
   phases,
@@ -24,24 +61,24 @@ export function RecordPhaseTrack({
   className,
 }: {
   phases: readonly RecordPhase[];
-  picked: string;
+  /** The phase shown in place; leave it out when the bars jump to sections instead. */
+  picked?: string | null;
   onPick: (id: string) => void;
   className?: string;
 }) {
   const cur = phases.findIndex((p) => p.done < p.total);
-  const pickedPhase = phases.find((p) => p.id === picked) ?? phases[0];
+  const pickedPhase = picked == null ? null : phases.find((p) => p.id === picked) ?? phases[0];
   return (
     <div className={cn('grid gap-2', className)}>
       <div className="flex gap-2" role="group" aria-label="Phases">
         {phases.map((p, i) => {
           const full = p.total > 0 && p.done >= p.total;
           const isCur = i === cur;
-          const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
           return (
             <button
               key={p.id}
               type="button"
-              aria-pressed={picked === p.id}
+              aria-pressed={picked == null ? undefined : picked === p.id}
               aria-label={`${p.label} · ${p.done} of ${p.total}`}
               onClick={() => onPick(p.id)}
               style={{ flex: `${Math.max(1, p.total)} 1 0` }}
@@ -53,19 +90,7 @@ export function RecordPhaseTrack({
               <span className={cn('hidden truncate text-[13px] font-medium md:block', full || isCur ? 'text-ink' : 'text-ink-muted')}>
                 {p.label}
               </span>
-              <span
-                className={cn(
-                  'relative block h-2.5 overflow-hidden rounded-bar bg-surface-sunken',
-                  isCur && 'ring-[1.5px] ring-brand-line',
-                )}
-              >
-                {full || pct > 0 ? (
-                  <i
-                    className={cn('absolute inset-y-0 left-0 rounded-bar', full ? 'bg-positive-mid' : isCur ? 'bg-brand' : 'bg-ink-faint')}
-                    style={{ width: full ? '100%' : `max(${pct}%, 6px)` }}
-                  />
-                ) : null}
-              </span>
+              <RecordPhaseBar done={p.done} total={p.total} current={isCur} />
               <span className="hidden min-w-0 items-baseline gap-1.5 whitespace-nowrap md:flex">
                 <span
                   className={cn(

@@ -97,36 +97,50 @@ export const INTERN_OVERVIEW_PHASE_TAB_IDS = [
   'registration-phase-4',
 ] as const;
 
-/** Per-project last intern overview tab: `vcfo.intern.engagementPhaseTab.{engagementId}`. */
-const INTERN_ENGAGEMENT_PHASE_TAB_STORAGE_PREFIX = 'vcfo.intern.engagementPhaseTab.';
+/**
+ * Per-project open phase sections on the client record's Steps card:
+ * `vcfo.intern.engagementOpenPhases.{engagementId}`, the open phase ids joined by commas. An empty
+ * string means the viewer closed every section. The key replaced the single "last picked phase"
+ * key (`engagementPhaseTab`) when the card moved from a phase picker to collapsible sections.
+ */
+const INTERN_ENGAGEMENT_OPEN_PHASES_STORAGE_PREFIX = 'vcfo.intern.engagementOpenPhases.';
 
-export function internEngagementPhaseTabStorageKey(engagementId: string): string {
-  return `${INTERN_ENGAGEMENT_PHASE_TAB_STORAGE_PREFIX}${engagementId}`;
+export function internEngagementOpenPhasesStorageKey(engagementId: string): string {
+  return `${INTERN_ENGAGEMENT_OPEN_PHASES_STORAGE_PREFIX}${engagementId}`;
 }
 
-export function internEngagementPhaseTabDefault(
+/**
+ * The phase sections open when the Steps card mounts. A stored list wins (an empty one keeps every
+ * section closed); with nothing stored, or nothing valid stored, the current phase opens, else the
+ * first phase.
+ */
+export function internEngagementOpenPhasesDefault(
   stored: string | null | undefined,
   currentPhaseId: string | null | undefined,
   phaseIds: readonly string[],
-): string {
-  if (stored && phaseIds.includes(stored)) return stored;
-  if (currentPhaseId && phaseIds.includes(currentPhaseId)) return currentPhaseId;
-  return phaseIds[0] ?? INTERN_OVERVIEW_PHASE_TAB_IDS[0];
+): string[] {
+  if (stored === '') return [];
+  if (stored) {
+    const valid = stored.split(',').filter((id, i, all) => phaseIds.includes(id) && all.indexOf(id) === i);
+    if (valid.length > 0) return valid;
+  }
+  if (currentPhaseId && phaseIds.includes(currentPhaseId)) return [currentPhaseId];
+  return phaseIds.length > 0 ? [phaseIds[0]!] : [];
 }
 
-export function readInternEngagementPhaseTab(engagementId: string): string | null {
+export function readInternEngagementOpenPhases(engagementId: string): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return window.localStorage.getItem(internEngagementPhaseTabStorageKey(engagementId));
+    return window.localStorage.getItem(internEngagementOpenPhasesStorageKey(engagementId));
   } catch {
     return null;
   }
 }
 
-export function writeInternEngagementPhaseTab(engagementId: string, phaseId: string): void {
+export function writeInternEngagementOpenPhases(engagementId: string, phaseIds: readonly string[]): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(internEngagementPhaseTabStorageKey(engagementId), phaseId);
+    window.localStorage.setItem(internEngagementOpenPhasesStorageKey(engagementId), phaseIds.join(','));
   } catch {
     /* private mode / quota */
   }
