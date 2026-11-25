@@ -78,6 +78,57 @@ The plan and its decisions are in `docs/specs/ask-vcfo/DROP-PLAN.md`.
 - A labour sheet (`isLabourSheet`) is never read as values and costs no tokens. The month comes from the attendance
   grid's dates, then the file and folder names (`parsePeriodHint`); sheet names are not used.
 
+## Reading every document (PLAN M)
+
+- Each file is read twice at most. The first read (`read.ts`) finds the document type and the labelled values. When
+  the type is known, `addTargeted` (`data-router/targeted.ts`) asks one more model call for the catalog fields that
+  list that type in `foundIn` (`field-catalog/rules.ts`) and that the first read did not find (`missingTargets`). The
+  reply cap is 4,000 tokens so prose fits. A board resolution gives the business description, NIC code, proposed
+  names, capital and signatory; an MOA gives the main objects and capital; a COI gives CIN, PAN, TAN and the date; a
+  PAN card gives the director's name, father's name, date of birth and PAN.
+- The anti-hallucination rule: every targeted value carries a quote, and the quote must appear in the document text.
+  A short value must appear word for word. A long text (business description, main objects) may be a cleaned summary
+  of at most 1,000 characters, but its quote needs three or more words and 60% of its words must be the document's
+  own. A visual read (a scan) must still give a quote and its confidence is capped at 0.9. A value that fails is
+  dropped, not shown.
+- A targeted value carries `targetKey`, so placing goes straight to that catalog entry. An entry with `fills`
+  (`company.main_objects`) writes to another entry's fields (`company.business_description`); when a board
+  resolution also gives a description, the card shows the two as "documents differ".
+- Document types added: `board_resolution`, `moa`, `aoa`, `noc`, `address_proof`, `consent_letter`. A vague type
+  from the model (other, form, company letter) is replaced by `guessDocType`, from the words and the file name.
+- PDFs with scanned pages: `pdf-pages.ts` finds the pages with under 40 characters of text and an image. Text pages
+  are read as text; scanned pages are rendered (unpdf with `@napi-rs/canvas`, 1,400 px JPEG, five per call, 30 at
+  most) and sent as pictures labelled "Page n". When rendering fails the whole PDF goes as a document block (20 MB).
+- Excel: `cellText` gives a formula its result, rich text its characters, a link its text and a date as
+  YYYY-MM-DD, so no "[object Object]" reaches the model. Word: tables are read as rows joined with " | " in the
+  order they sit, and the headers, footers, footnotes and endnotes are added once each.
+- Emails: `.eml` (postal-mime) and `.msg` (@kenjiuno/msgreader) are read by `drop/email.ts`. The attachments are
+  read first, as files of their own (10 at most, two levels deep), then the body as prose. Each attachment value
+  carries `from`, so the card says "Quarry office NOC.eml › Office NOC.pdf". An old `.doc` is refused with "save
+  it as .docx".
+- An email file itself is kept in the vault, never in a checklist upload field: its type comes from its attachment,
+  so without that rule the .eml was filed as the office NOC (`classify.ts`, found in the 25 Nov browser check).
+- Strict facts: a catalog entry with `onlyFrom` is filled from a file only when the file is one of those document
+  types (`form`, and any workbook, counts as the client's details sheet); pasted text is not limited. The date of
+  incorporation, CIN, company PAN and TAN come only from a certificate, a PAN card or the details sheet. An entry
+  with `valueMatches` also needs its value to match a pattern, so GST "nature of possession" takes "rented" or
+  "owned", never an address. `placementRefusal` (`place.ts`) decides; a refused value is listed under "I could not
+  place these" with its reason, and the field chooser is never offered a field the file may not fill.
+- Two documents on one fact: the first value stays on the row, and the `documents_differ` check names the other file
+  and carries its value as `choice`, which the card offers as "Use this" (not for sensitive fields). A value read for
+  its own field comes before one that only `fills` it, so the board resolution's description leads and the MOA's
+  main objects are the choice. `recheckRows` keeps this check until the row is edited; before 26 Nov a recheck wiped
+  it, which is why the live run showed only one description. The summary support check compares five-letter stems
+  and ignores glue words ("company", "will"), so "develop and license" matches "developing, licensing".
+- Sources on the card: every row keeps its file, page and a masked quote of up to 300 characters; `rowSourceText`
+  (`changeset/view.ts`) shows the file, the page and 160 characters of the quote.
+- Speed: `dropReadBatch` reads three files at a time with one shared budget. Writes to the run row are serialised.
+  Each file records its time (`ms`) and value count, and the progress line says "Read 12 of 50 · 3 values from the
+  board resolution". A batch checks the budget before each read, so the 400k budget can be passed by up to two
+  reads that were already running.
+- Cost: a targeted read sends the document text (60,000 characters at most, about 3k to 15k tokens) and gets up to
+  4k tokens back. A typical incorporation fetch of ten to fifteen documents costs about 50k to 150k tokens.
+
 ## Testing it
 
 - `npm run eval:fill:live` runs the golden set on the real model. Keep every document in `tests/ask/evals/fill/fixtures`

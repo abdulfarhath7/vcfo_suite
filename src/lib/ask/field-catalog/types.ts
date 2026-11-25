@@ -52,5 +52,24 @@ export interface CatalogEntry {
   options?: Array<{ value: string; label: string }>;
   /** Other keys this one fills: a whole name fills first, middle and last name. */
   expands?: string[];
+  /**
+   * The document types this fact is printed in (`board_resolution`, `moa`, `incorporation_certificate`
+   * …). Once a file is known to be one of these, the reader asks the model for exactly these facts
+   * (`readTargeted`), so a fact written as prose, such as the business description in a board
+   * resolution, still reaches its field.
+   */
+  foundIn?: string[];
+  /** What the reader asks for, in words, for a targeted read. A long field says its summary limit here. */
+  extract?: string;
+  /** A fact with no field of its own fills this entry instead: the main objects fill the business description. */
+  fills?: string;
+  /**
+   * A strict fact is taken from a file only when the file is one of these document types (`form`
+   * covers a client details sheet; a workbook counts as one). A date in an NOC is never the date of
+   * incorporation. Pasted text is not limited: the person typed the label themselves.
+   */
+  onlyFrom?: string[];
+  /** A pattern (case-insensitive) the value must match, so an address is never taken as "rented" or "owned". */
+  valueMatches?: string;
   uses: FieldUse[];
 }

@@ -27,7 +27,28 @@ export interface CanonicalRule {
    */
   inputs?: string[];
   expands?: string[];
+  /** See `CatalogEntry.foundIn`. */
+  foundIn?: string[];
+  /** See `CatalogEntry.extract`. */
+  extract?: string;
+  /** See `CatalogEntry.fills`. */
+  fills?: string;
+  /** See `CatalogEntry.onlyFrom`. */
+  onlyFrom?: string[];
+  /** See `CatalogEntry.valueMatches`. */
+  valueMatches?: string;
 }
+
+/** Where the targeted read looks for each fact (`CatalogEntry.foundIn`). */
+const IN_RESOLUTION = ['board_resolution'];
+const IN_CONSTITUTION = ['board_resolution', 'moa', 'aoa'];
+const IN_COI = ['incorporation_certificate'];
+const IN_OFFICE_PROOF = ['board_resolution', 'noc', 'address_proof', 'rent_agreement'];
+const ON_PAN_CARD = ['pan_card'];
+/** Facts of record: only the certificate, a PAN card or the client's own details sheet states them (`onlyFrom`). */
+const OF_RECORD = ['incorporation_certificate', 'pan_card', 'form'];
+/** How the premises are held: only a paper about the premises, or the client's details sheet. */
+const ON_PREMISES = ['rent_agreement', 'noc', 'address_proof', 'utility_bill', 'form'];
 
 const person = (key: string, label: string, synonyms: string[], fields: string[], extra: Partial<CanonicalRule> = {}): CanonicalRule => ({
   key: `director.${key}`,
@@ -40,6 +61,8 @@ const person = (key: string, label: string, synonyms: string[], fields: string[]
 
 export const CANONICAL_RULES: readonly CanonicalRule[] = [
   person('name', 'Director name (whole)', ['name', 'full name', 'name of director', 'director name', 'applicant name', 'name of card holder', 'holder name'], [], {
+    foundIn: ON_PAN_CARD,
+    extract: 'The card holder\'s full name as printed.',
     expands: ['director.first_name', 'director.middle_name', 'director.last_name'],
   }),
   person('first_name', 'Director first name', ['first name', 'given name', 'forename'], ['firstName', 'pre-1/director#FirstName']),
@@ -49,15 +72,15 @@ export const CANONICAL_RULES: readonly CanonicalRule[] = [
   person('india_resident', 'Director resident of India', ['resident of india', 'india resident', 'residential status', 'resident'], ['indiaResident', 'pre-1/director#IndiaResident'], { format: 'choice' }),
   person('nationality', 'Director nationality', ['nationality', 'citizenship', 'country of citizenship'], ['nationality'], { format: 'choice' }),
   person('din', 'Director DIN', ['din', 'din number', 'director identification number'], ['din'], { format: 'din', sensitivity: 'identity', inputs: ['din'] }),
-  person('dob', 'Director date of birth', ['date of birth', 'dob', 'birth date', 'd o b', 'born on'], ['dob'], { format: 'date' }),
-  person('father_name', "Director father's name", ["father's name", 'fathers name', 'father name', 'name of father'], ['fatherName']),
+  person('dob', 'Director date of birth', ['date of birth', 'dob', 'birth date', 'd o b', 'born on'], ['dob'], { format: 'date', foundIn: ON_PAN_CARD, extract: 'The date of birth as printed.' }),
+  person('father_name', "Director father's name", ["father's name", 'fathers name', 'father name', 'name of father'], ['fatherName'], { foundIn: ON_PAN_CARD, extract: "The father's name as printed." }),
   person('qualification', 'Director qualification', ['qualification', 'highest qualification', 'education', 'highest educational qualification'], ['highestEducationalQualification'], { format: 'choice' }),
   person('occupation', 'Director occupation', ['occupation', 'occupation type', 'profession'], ['occupationType'], { format: 'choice' }),
   person('mobile', 'Director mobile number', ['mobile', 'mobile number', 'mobile no', 'phone', 'phone number', 'contact number'], ['mobileNumber'], { format: 'mobile', inputs: ['mobile'] }),
   person('email', 'Director personal e-mail', ['email', 'e mail', 'email id', 'email address', 'e mail address', 'personal email', 'personal e mail'], ['personalMailId'], { format: 'email', inputs: ['email'] }),
   person('email_official', 'Director official e-mail', ['official email', 'official e mail', 'work email'], ['officialMailId'], { format: 'email' }),
   person('aadhaar', 'Director Aadhaar number', ['aadhaar', 'aadhar', 'aadhaar number', 'aadhaar no', 'uid', 'uidai number'], ['aadhaarNumber'], { format: 'aadhaar', sensitivity: 'identity' }),
-  person('pan', 'Director PAN', ['pan', 'pan number', 'pan no', 'permanent account number', 'income tax pan'], ['panNumber'], { format: 'pan', sensitivity: 'identity' }),
+  person('pan', 'Director PAN', ['pan', 'pan number', 'pan no', 'permanent account number', 'income tax pan'], ['panNumber'], { format: 'pan', sensitivity: 'identity', foundIn: ON_PAN_CARD, extract: 'The 10-character PAN.' }),
   person('passport', 'Director passport number', ['passport', 'passport number', 'passport no'], ['passportNumber'], { format: 'passport', sensitivity: 'identity' }),
   person('driving_licence', 'Director driving licence number', ['driving licence', 'driving license', 'dl number', 'licence number'], ['drivingLicenceNumber'], { sensitivity: 'identity' }),
   person('utility_bill_type', 'Director utility bill type', ['utility bill type', 'bill type'], ['utilityBillType'], { format: 'choice' }),
@@ -72,26 +95,38 @@ export const CANONICAL_RULES: readonly CanonicalRule[] = [
 
   { key: 'company.name', label: 'Company name', subject: 'company', synonyms: ['company name', 'name of the company', 'incorporated company name'], fields: ['pre-12/incorporatedCompanyName'] },
   { key: 'company.approved_name', label: 'Approved company name', subject: 'company', synonyms: ['approved company name', 'approved name'], fields: ['pre-5/approvedCompanyName'] },
-  { key: 'company.cin', label: 'Company CIN', format: 'cin', subject: 'company', synonyms: ['cin', 'corporate identification number', 'corporate identity number', 'company cin'], fields: ['pre-12/cin'], inputs: ['cin'] },
-  { key: 'company.pan', label: 'Company PAN', format: 'pan', sensitivity: 'identity', subject: 'company', synonyms: ['company pan', 'pan of the company', 'permanent account number', 'pan'], fields: ['pre-12/pan'], inputs: ['pan'] },
-  { key: 'company.tan', label: 'Company TAN', format: 'tan', subject: 'company', synonyms: ['tan', 'tan number', 'tax deduction account number', 'tax deduction and collection account number'], fields: ['pre-12/tan'], inputs: ['tan'] },
+  { key: 'company.cin', label: 'Company CIN', format: 'cin', subject: 'company', synonyms: ['cin', 'corporate identification number', 'corporate identity number', 'company cin'], fields: ['pre-12/cin'], inputs: ['cin'], foundIn: IN_COI, onlyFrom: OF_RECORD, extract: 'The 21-character corporate identity number (CIN).' },
+  { key: 'company.pan', label: 'Company PAN', format: 'pan', sensitivity: 'identity', subject: 'company', synonyms: ['company pan', 'pan of the company', 'permanent account number', 'pan'], fields: ['pre-12/pan'], inputs: ['pan'], foundIn: IN_COI, onlyFrom: OF_RECORD, extract: "The company's PAN, when the certificate states it." },
+  { key: 'company.tan', label: 'Company TAN', format: 'tan', subject: 'company', synonyms: ['tan', 'tan number', 'tax deduction account number', 'tax deduction and collection account number'], fields: ['pre-12/tan'], inputs: ['tan'], foundIn: IN_COI, onlyFrom: OF_RECORD, extract: "The company's TAN, when the certificate states it." },
   { key: 'company.gstin', label: 'Company GSTIN', format: 'gstin', subject: 'company', synonyms: ['gstin', 'gst number', 'gst registration number', 'gst no'], fields: ['reg-4/gstinNumber'], inputs: ['gstin'] },
-  { key: 'company.incorporation_date', label: 'Date of incorporation', format: 'date', subject: 'company', synonyms: ['date of incorporation', 'incorporation date', 'incorporated on'], fields: ['pre-12/dateOfIncorporation'] },
+  { key: 'company.incorporation_date', label: 'Date of incorporation', format: 'date', subject: 'company', synonyms: ['date of incorporation', 'incorporation date', 'incorporated on'], fields: ['pre-12/dateOfIncorporation'], foundIn: IN_COI, onlyFrom: OF_RECORD, extract: 'The date of incorporation.' },
   { key: 'company.pf_code', label: 'PF establishment code', subject: 'company', synonyms: ['pf code', 'pf establishment code', 'provident fund code'], fields: ['pre-12/pfCode'], inputs: ['pf-code'] },
   { key: 'company.esi_code', label: 'ESI code', subject: 'company', synonyms: ['esi code', 'esic code', 'employees state insurance code'], fields: ['pre-12/esiCode'], inputs: ['esi-code'] },
-  { key: 'company.proposed_name_1', label: 'Proposed company name 1', subject: 'company', synonyms: ['proposed name 1', 'first proposed name', 'proposed company name 1'], fields: ['pre-1/proposedName1'] },
-  { key: 'company.proposed_name_2', label: 'Proposed company name 2', subject: 'company', synonyms: ['proposed name 2', 'second proposed name', 'proposed company name 2'], fields: ['pre-1/proposedName2'] },
-  { key: 'company.nic_code', label: 'Main NIC code', subject: 'company', synonyms: ['nic code', 'main nic code', 'nic', 'national industrial classification'], fields: ['pre-1/nicCode'] },
+  { key: 'company.proposed_name_1', label: 'Proposed company name 1', subject: 'company', synonyms: ['proposed name 1', 'first proposed name', 'proposed company name 1'], fields: ['pre-1/proposedName1'], foundIn: IN_RESOLUTION, extract: 'The first name proposed for the new company, in full.' },
+  { key: 'company.proposed_name_2', label: 'Proposed company name 2', subject: 'company', synonyms: ['proposed name 2', 'second proposed name', 'proposed company name 2'], fields: ['pre-1/proposedName2'], foundIn: IN_RESOLUTION, extract: 'The second name proposed for the new company, in full.' },
+  { key: 'company.nic_code', label: 'Main NIC code', subject: 'company', synonyms: ['nic code', 'main nic code', 'nic', 'national industrial classification'], fields: ['pre-1/nicCode'], foundIn: ['board_resolution', 'moa'], extract: 'The main NIC-2008 code of the business: five digits only.' },
   { key: 'company.business_type', label: 'Business type', subject: 'company', synonyms: ['business type'], fields: ['pre-1/nicBusinessType'] },
-  { key: 'company.business_description', label: 'Business description', format: 'longtext', subject: 'company', synonyms: ['business description', 'description of business', 'nature of business', 'business activity'], fields: ['pre-1/businessDescription'] },
-  { key: 'capital.authorised', label: 'Authorised share capital', format: 'amount', subject: 'company', synonyms: ['authorised share capital', 'authorized share capital', 'authorised capital', 'authorized capital'], fields: ['pre-1/authorisedShareCapital'] },
-  { key: 'capital.paid_up', label: 'Paid-up share capital', format: 'amount', subject: 'company', synonyms: ['paid up share capital', 'paid up capital', 'initial paid up share capital'], fields: ['pre-1/paidUpShareCapital'] },
-  { key: 'capital.nominal', label: 'Nominal value per equity share', subject: 'company', synonyms: ['nominal value per equity share', 'nominal value', 'face value', 'face value per share', 'nominal value of each equity share'], fields: ['pre-1/nominalValuePerEquityShare', 'pre-13/equityNominalValue'] },
+  { key: 'company.business_description', label: 'Business description', format: 'longtext', subject: 'company', synonyms: ['business description', 'description of business', 'nature of business', 'business activity'], fields: ['pre-1/businessDescription'], foundIn: ['board_resolution', 'company_letter'], extract: 'What the business will do and how it will operate in India, as a clean summary of at most 100 words in plain sentences.' },
+  {
+    key: 'company.main_objects',
+    label: 'Main objects',
+    format: 'longtext',
+    subject: 'company',
+    synonyms: ['main objects', 'main objects of the company', 'objects to be pursued by the company', 'objects clause', 'main object'],
+    fields: [],
+    foundIn: ['moa'],
+    extract: 'The main objects the company is set up to pursue (the main objects clause), as a clean summary of at most 100 words in plain sentences.',
+    // There is no field for the objects clause; it says what the business is, so it fills the business description.
+    fills: 'company.business_description',
+  },
+  { key: 'capital.authorised', label: 'Authorised share capital', format: 'amount', subject: 'company', synonyms: ['authorised share capital', 'authorized share capital', 'authorised capital', 'authorized capital'], fields: ['pre-1/authorisedShareCapital'], foundIn: IN_CONSTITUTION, extract: 'The authorised share capital in rupees, as printed.' },
+  { key: 'capital.paid_up', label: 'Paid-up share capital', format: 'amount', subject: 'company', synonyms: ['paid up share capital', 'paid up capital', 'initial paid up share capital'], fields: ['pre-1/paidUpShareCapital'], foundIn: IN_RESOLUTION, extract: 'The initial paid-up share capital in rupees, as printed.' },
+  { key: 'capital.nominal', label: 'Nominal value per equity share', subject: 'company', synonyms: ['nominal value per equity share', 'nominal value', 'face value', 'face value per share', 'nominal value of each equity share'], fields: ['pre-1/nominalValuePerEquityShare', 'pre-13/equityNominalValue'], foundIn: IN_CONSTITUTION, extract: 'The nominal (face) value of one equity share, as printed.' },
   { key: 'capital.equity_quantity', label: 'Number of equity shares', subject: 'company', synonyms: ['number of equity shares', 'equity shares', 'no of equity shares'], fields: ['pre-13/equityQuantity'] },
 
   // The GST step keeps its own copy of the principal place (`reg-4/place`, `reg-4/place-state`),
   // written there when the registered office step is finished.
-  { key: 'office.address', label: 'Registered office address', format: 'longtext', subject: 'office', synonyms: ['registered office', 'registered office address', 'complete address of the proposed registered office', 'office address', 'principal place of business', 'address of the principal place of business'], fields: ['pre-14/registeredOfficeCompleteAddress'], inputs: ['reg-4/place'] },
+  { key: 'office.address', label: 'Registered office address', format: 'longtext', subject: 'office', synonyms: ['registered office', 'registered office address', 'complete address of the proposed registered office', 'office address', 'principal place of business', 'address of the principal place of business'], fields: ['pre-14/registeredOfficeCompleteAddress'], inputs: ['reg-4/place'], foundIn: IN_OFFICE_PROOF, extract: 'The complete address of the registered office (or the premises), as printed.' },
   { key: 'office.state', label: 'Registered office state', format: 'choice', subject: 'office', synonyms: ['registered office state', 'state of registered office', 'state', 'state of the principal place', 'principal place state'], fields: ['pre-14/registeredOfficeState'], inputs: ['reg-4/place-state'] },
 
   // What GST REG-01 asks that no checklist step holds: the GST step's own fields (`reg-4`).
@@ -99,22 +134,22 @@ export const CANONICAL_RULES: readonly CanonicalRule[] = [
   { key: 'gst.trade_name', label: 'Trade name', subject: 'company', synonyms: ['trade name', 'trade name of the business'], fields: [], inputs: ['reg-4/trade-name'] },
   { key: 'gst.commencement_date', label: 'Date of commencement of business', format: 'date', subject: 'company', synonyms: ['date of commencement of business', 'date of commencement', 'commencement date', 'business commencement date'], fields: [], inputs: ['reg-4/commencement-date'] },
   { key: 'gst.reason', label: 'Reason for GST registration', subject: 'company', synonyms: ['reason for registration', 'reason to obtain registration', 'reason for gst registration'], fields: [], inputs: ['reg-4/reason'] },
-  { key: 'gst.possession', label: 'Nature of possession of the premises', subject: 'office', synonyms: ['premises', 'nature of possession', 'nature of possession of the premises', 'possession of the premises', 'possession'], fields: [], inputs: ['reg-4/possession'] },
+  { key: 'gst.possession', label: 'Nature of possession of the premises', subject: 'office', synonyms: ['premises', 'nature of possession', 'nature of possession of the premises', 'possession of the premises', 'possession'], fields: [], inputs: ['reg-4/possession'], onlyFrom: ON_PREMISES, valueMatches: '\\b(own|owned|ownership|rent|rented|lease|leased|licen[cs]e|consent|shared)\\b' },
   { key: 'gst.activities', label: 'Business activity at the premises', subject: 'office', synonyms: ['nature of business activity', 'nature of business activity at the premises', 'activities at the premises', 'business activity at the premises'], fields: [], inputs: ['reg-4/activities'] },
   { key: 'gst.hsn', label: 'HSN codes of the main goods', subject: 'company', synonyms: ['hsn', 'hsn code', 'hsn codes', 'hsn codes of the goods', 'hsn codes of the main goods'], fields: [], inputs: ['reg-4/hsn'] },
   { key: 'gst.sac', label: 'SAC codes of the main services', subject: 'company', synonyms: ['sac', 'sac code', 'sac codes', 'sac codes of the services', 'sac codes of the main services'], fields: [], inputs: ['reg-4/sac'] },
   { key: 'office.utility_bill_type', label: 'Office utility bill type', format: 'choice', subject: 'office', synonyms: ['office utility bill type', 'registered office utility bill type'], fields: ['pre-14/registeredOfficeUtilityBillType'] },
   { key: 'office.utility_bill_number', label: 'Office utility bill number', subject: 'office', synonyms: ['office utility bill number', 'registered office utility bill number'], fields: ['pre-14/registeredOfficeUtilityBillNumber'] },
 
-  { key: 'parent.name', label: 'Foreign entity name', subject: 'parent', synonyms: ['foreign entity', 'foreign entity name', 'name of the foreign entity', 'parent company', 'parent entity', 'holding company'], fields: ['pre-1/parentEntityName'] },
-  { key: 'parent.address', label: 'Foreign entity address', format: 'longtext', subject: 'parent', synonyms: ['foreign entity address', 'parent company address', 'parent entity address'], fields: ['pre-1/parentEntityAddress'] },
+  { key: 'parent.name', label: 'Foreign entity name', subject: 'parent', synonyms: ['foreign entity', 'foreign entity name', 'name of the foreign entity', 'parent company', 'parent entity', 'holding company'], fields: ['pre-1/parentEntityName'], foundIn: IN_RESOLUTION, extract: 'The name of the foreign or parent company passing the resolution.' },
+  { key: 'parent.address', label: 'Foreign entity address', format: 'longtext', subject: 'parent', synonyms: ['foreign entity address', 'parent company address', 'parent entity address'], fields: ['pre-1/parentEntityAddress'], foundIn: IN_RESOLUTION, extract: 'The registered address of the foreign or parent company.' },
   { key: 'parent.country', label: 'Foreign entity country', format: 'choice', subject: 'parent', synonyms: ['country of incorporation', 'foreign entity country', 'parent country'], fields: ['pre-1/parentEntityCountry'] },
   { key: 'parent.state', label: 'Foreign entity state', subject: 'parent', synonyms: ['state of incorporation', 'foreign entity state', 'parent state'], fields: ['pre-1/parentEntityState'] },
 
-  { key: 'signatory.first_name', label: 'Signatory first name', subject: 'signatory', synonyms: ['signatory first name', 'person signing first name'], fields: ['pre-1/signatoryFirstName'] },
+  { key: 'signatory.first_name', label: 'Signatory first name', subject: 'signatory', synonyms: ['signatory first name', 'person signing first name'], fields: ['pre-1/signatoryFirstName'], foundIn: IN_RESOLUTION, extract: 'The first name of the person the resolution authorises to sign.' },
   { key: 'signatory.middle_name', label: 'Signatory middle name', subject: 'signatory', synonyms: ['signatory middle name'], fields: ['pre-1/signatoryMiddleName'] },
-  { key: 'signatory.last_name', label: 'Signatory last name', subject: 'signatory', synonyms: ['signatory last name', 'person signing last name'], fields: ['pre-1/signatoryLastName'] },
-  { key: 'signatory.designation', label: 'Signatory designation', subject: 'signatory', synonyms: ['signatory designation', 'designation of the person signing', 'designation'], fields: ['pre-1/signatoryDesignation'] },
+  { key: 'signatory.last_name', label: 'Signatory last name', subject: 'signatory', synonyms: ['signatory last name', 'person signing last name'], fields: ['pre-1/signatoryLastName'], foundIn: IN_RESOLUTION, extract: 'The last name of the person the resolution authorises to sign.' },
+  { key: 'signatory.designation', label: 'Signatory designation', subject: 'signatory', synonyms: ['signatory designation', 'designation of the person signing', 'designation'], fields: ['pre-1/signatoryDesignation'], foundIn: IN_RESOLUTION, extract: 'The designation of the person the resolution authorises to sign.' },
 
   { key: 'subscriber.name', label: 'Subscriber name', subject: 'subscriber', synonyms: ['subscriber', 'subscriber name', 'name of subscriber'], fields: ['pre-16/subscribers.name'] },
   { key: 'subscriber.type', label: 'Subscriber type', format: 'choice', subject: 'subscriber', synonyms: ['subscriber type'], fields: ['pre-16/subscribers.type'] },

@@ -20,7 +20,7 @@ export type SkippedFile = { path: string; reason: string };
  * `src/lib/ask/data-router/read.ts`, which is server-only) plus ZIP and macro-enabled workbooks,
  * as `dropFileRefusal` allows on the server.
  */
-export const DROP_EXTENSIONS: ReadonlySet<string> = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'xlsx', 'xlsm', 'csv', 'tsv', 'txt', 'zip']);
+export const DROP_EXTENSIONS: ReadonlySet<string> = new Set(['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'xlsx', 'xlsm', 'csv', 'tsv', 'txt', 'eml', 'msg', 'zip']);
 
 /** The file picker's `accept` list, built from the same set. */
 export const DROP_ACCEPT = [...DROP_EXTENSIONS].map((ext) => `.${ext}`).join(',');

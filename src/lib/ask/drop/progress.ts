@@ -1,7 +1,7 @@
 import type { AnswerEnvelope } from '@/data/ask/schema';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { dropSummaryLine } from './summary';
-import { emptyDropState, type DropState } from './types';
+import { emptyDropState, fetchSourceWords, type DropState } from './types';
 
 /**
  * "Show me the progress" while a drop (an upload or a SharePoint fetch) works in the background. The
@@ -49,7 +49,7 @@ function stateOf(run: DropRunFacts): DropState {
 
 /** "the SharePoint folder Bonterra India" or "your 12 files", for the sentences below. */
 function subjectOf(state: DropState): string {
-  if (state.source?.kind === 'sharepoint') return `the SharePoint folder ${state.source.folderName}`;
+  if (state.source?.kind === 'sharepoint') return fetchSourceWords(state.source);
   const count = state.files.length;
   return count > 0 ? `your ${count} file${count === 1 ? '' : 's'}` : 'your files';
 }
@@ -107,7 +107,7 @@ export function dropProgressAnswer(run: DropRunFacts, opts: { role?: string } = 
  */
 export function dropContextLine(run: DropRunFacts): string {
   const state = stateOf(run);
-  const source = state.source?.kind === 'sharepoint' ? `a fetch of the SharePoint folder ${state.source.folderName}` : 'a drop of files';
+  const source = state.source?.kind === 'sharepoint' ? `a fetch of ${fetchSourceWords(state.source)}` : 'a drop of files';
   const where = run.status === 'running' || run.status === 'queued' ? `is ${run.status} (${progressText(state)})` : `ended as ${run.status.replace(/_/g, ' ')}`;
   const cards = state.groups.length > 0 ? `, with review cards for ${state.groups.map((g) => g.companyName).join(', ')}` : '';
   return maskIdentityNumbers(

@@ -358,6 +358,22 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
 
   // "Fill it into the app": the newest open card in this conversation goes into the steps, page by
   // page (Manual) or in the background (Auto). Staff only; the card's own rules decide what is saved.
+  // "Fill Bonterra into the app" with files attached reads those files in the same fetch as the
+  // client's SharePoint folder and documents in the app (PLAN M4); with no client named, the files
+  // take the paste-and-file path below as before.
+  if (shell !== 'client' && ctx.role !== 'client' && typed && !request.context && attachmentIds.length > 0 && !pending && !flags.killedPaths.has('fixed_workflow') && isFillRequest(typed)) {
+    const typedMode = modeFromText(typed);
+    const mode = typedMode ?? request.fillMode ?? 'manual';
+    const chip = typedMode ?? request.fillChip ?? mode;
+    const fetched = await startFetchThenFill(ctx, { message: typed, conversationId, pagePath: request.page?.path, mode, chip, scope: scopeFromText(typed), attachmentIds }).catch((error) => {
+      console.error('[ask-vcfo] fetch with files before fill failed', error);
+      return null;
+    });
+    if (fetched?.runId) {
+      await finish({ line: fetched.line, citations: [], actions: [], origin: 'work', depth: 'normal', runId: fetched.runId }, { path: 'fixed_workflow' });
+      return;
+    }
+  }
   if (
     shell !== 'client' &&
     ctx.role !== 'client' &&

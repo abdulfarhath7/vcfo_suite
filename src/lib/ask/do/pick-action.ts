@@ -269,7 +269,7 @@ export async function pickAndPrepare(req: PickRequest): Promise<AnswerEnvelope |
       projectPath: `/projects/${row.slug || row.id}`,
     });
     if (started.ok === false) return line(started.message);
-    return line(`I am reading the SharePoint folder ${started.folderName} for ${started.companyName}. I will put what I find on a card; nothing is saved until you accept.`, { runId: started.runId });
+    return line(`I am reading ${started.sources} for ${started.companyName}. I will put what I find on a card; nothing is saved until you accept.`, { runId: started.runId });
   }
 
   // T1: private and reversible, so it runs now. Only the email draft is T1 today.

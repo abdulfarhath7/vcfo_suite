@@ -17,7 +17,7 @@ vi.mock('@/db/repositories/engagements', () => ({
     { id: 'eng-k', slug: 'kestrel', companyName: 'Kestrel Labs Private Limited', deletedAt: null },
   ]),
 }));
-const startDrop = vi.fn(async (..._a: unknown[]) => ({ ok: true as const, runId: 'drop-1', folderName: 'Bonterra', companyName: 'Bonterra India Private Limited' }));
+const startDrop = vi.fn(async (..._a: unknown[]) => ({ ok: true as const, runId: 'drop-1', folderName: 'Bonterra', companyName: 'Bonterra India Private Limited', sources: 'the SharePoint folder Bonterra and the documents in the app' }));
 vi.mock('@/lib/sharepoint/start-drop', () => ({ startSharepointDrop: (...a: unknown[]) => startDrop(...a) }));
 const messages: Array<{ text: string; answer: { fill?: { runId: string; mode: string } } }> = [];
 vi.mock('@/db/repositories/ask-messages', () => ({

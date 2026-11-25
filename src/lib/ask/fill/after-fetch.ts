@@ -33,7 +33,16 @@ const modeWord = (mode: FillMode) => (mode === 'auto' ? 'Auto' : 'Manual');
  */
 export async function startFetchThenFill(
   ctx: AuthContext,
-  input: { message: string; conversationId: string | null; pagePath?: string; mode: FillMode; chip?: FillMode; scope: FillScope | null },
+  input: {
+    message: string;
+    conversationId: string | null;
+    pagePath?: string;
+    mode: FillMode;
+    chip?: FillMode;
+    scope: FillScope | null;
+    /** Files the person attached to the message, read in the same fetch (PLAN M4). */
+    attachmentIds?: readonly string[];
+  },
 ): Promise<FetchThenFillStart | null> {
   if (ctx.role === 'client') return null;
   const wantsFetch = asksToFetch(input.message);
@@ -55,11 +64,13 @@ export async function startFetchThenFill(
     message: input.message,
     projectPath: `/projects/${engagement.slug || engagement.id}`,
     fillAfter,
+    ...(input.attachmentIds?.length ? { attachmentIds: input.attachmentIds } : {}),
   });
   if (started.ok === false) return { line: `${started.message} Nothing was filled.` };
   const what = input.scope ? `${input.scope.label} into the app` : 'it into the app';
+  const files = input.attachmentIds?.length ? ` with the ${input.attachmentIds.length === 1 ? 'file' : `${input.attachmentIds.length} files`} you attached` : '';
   return {
-    line: `There was no card in this chat yet, so I am reading the SharePoint folder ${started.folderName} for ${started.companyName} first. When the card is ready I will fill ${what} (${modeWord(input.chip ?? input.mode)}).`,
+    line: `There was no card in this chat yet, so I am reading ${started.sources.includes(started.companyName) ? `${started.sources}${files}` : `${started.sources}${files} for ${started.companyName}`} first. When the card is ready I will fill ${what} (${modeWord(input.chip ?? input.mode)}).`,
     runId: started.runId,
   };
 }

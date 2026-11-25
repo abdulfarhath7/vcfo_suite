@@ -11,6 +11,23 @@ import { groupChangesetRows, rowPlace } from './view-groups';
 import type { ChangesetRowStatus, ChangesetStatus } from './types';
 import type { ChangesetRowView, ChangesetView } from './view-types';
 
+const QUOTE_SHOWN = 160;
+
+/**
+ * Where a row's value came from, as the card shows it: the file (and the attachment inside it, for
+ * an email), the page, and the words it was read from, so a summary such as the business
+ * description can be checked against its document at a glance.
+ */
+export function rowSourceText(source: { kind: string; fileName?: string; page?: number; quote?: string } | null | undefined): string | null {
+  if (!source) return null;
+  const pageNote = source.page ? `page ${source.page}` : '';
+  const quote = source.quote?.trim() ? `“${source.quote.trim().length > QUOTE_SHOWN ? `${source.quote.trim().slice(0, QUOTE_SHOWN - 1).trimEnd()}…` : source.quote.trim()}”` : '';
+  const where =
+    source.kind === 'attachment' ? [source.fileName, pageNote].filter(Boolean).join(', ') || 'Attached file' : source.kind === 'paste' ? 'Pasted text' : source.kind === 'message' ? 'Your message' : null;
+  if (!where) return null;
+  return quote ? `${where}: ${quote}` : where;
+}
+
 export async function loadChangesetView(ctx: AuthContext, id: string): Promise<ChangesetView | null> {
   const found = await getAskChangesetSummary(ctx, id);
   if (!found) return null;
@@ -18,9 +35,7 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
   const rows = found.rows.map((row): ChangesetRowView => {
     const target = row.target as unknown as ResponseTarget;
     const field = target.stepId ? fieldOf(target) : null;
-    const pageNote = row.source?.page ? `page ${row.source.page}` : '';
-    const source =
-      row.source?.kind === 'attachment' ? [row.source.fileName, pageNote].filter(Boolean).join(', ') || 'Attached file' : row.source?.kind === 'paste' ? 'Pasted text' : row.source?.kind === 'message' ? 'Your message' : null;
+    const source = rowSourceText(row.source);
     const place = rowPlace(row, (slot) => SLOT_LABEL[slot as keyof typeof SLOT_LABEL] ?? slot);
     const open = row.status === 'proposed' || row.status === 'edited' || row.status === 'held' || row.status === 'failed';
     // A labour sheet's state is chosen from the list of states; the edit sends the state code.

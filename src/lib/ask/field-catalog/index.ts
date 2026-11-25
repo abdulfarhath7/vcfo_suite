@@ -14,6 +14,19 @@ export function catalogEntry(key: string): CatalogEntry | undefined {
   return BY_KEY.get(key);
 }
 
+/** The entry a value of this entry is written to: itself, or the one it `fills`. */
+export function placedEntry(entry: CatalogEntry): CatalogEntry {
+  return entry.fills ? (BY_KEY.get(entry.fills) ?? entry) : entry;
+}
+
+/**
+ * The facts a targeted read asks for once a file is known to be this type of document
+ * (`CatalogEntry.foundIn`), in catalog order. Empty for a type no fact names.
+ */
+export function targetsFor(docType: string): CatalogEntry[] {
+  return FIELD_CATALOG.filter((entry) => entry.foundIn?.includes(docType));
+}
+
 /** The GST tracker's own milestones (filed on, ARN, outcome …) are recorded on the tracker, never from a paper. */
 const GST_TRACKER_KEYS: ReadonlySet<string> = new Set(Object.values(GST_FIELD).filter((key) => key !== GST_FIELD.jurisdiction));
 const GST_STEP_KEYS: ReadonlySet<string> = (() => {

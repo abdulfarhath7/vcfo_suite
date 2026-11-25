@@ -141,6 +141,20 @@ function maskedAnswer(entry: CatalogEntry, value: string): string {
   return entry.sensitivity === 'identity' ? maskIdentityValue(value) : value;
 }
 
+/**
+ * Two documents on one fact: the card keeps the first value and names the other, with the file it
+ * came from, and offers it as a choice unless the field is sensitive. Code never picks.
+ */
+function differs(entry: CatalogEntry, value: string, source: RowSource | null): RowCheck {
+  const where = source?.kind === 'attachment' && source.fileName ? source.fileName : 'Another source';
+  return {
+    rule: 'documents_differ',
+    ok: false,
+    message: `${where} says ${maskedAnswer(entry, value)}${/[.!?]$/.test(value) ? '' : '.'}`,
+    ...(entry.sensitivity === 'identity' ? {} : { choice: value }),
+  };
+}
+
 export function planRows(input: PlanInput): PlanResult {
   const questions: string[] = [];
   const rows: ChangesetRowDraft[] = [];
@@ -276,7 +290,7 @@ export function planRows(input: PlanInput): PlanResult {
       const earlier = seen.get(made.key);
       if (earlier) {
         const normal = checkFormat(entry, value.value).value;
-        if (earlier.newValue !== normal) earlier.checks.push({ rule: 'documents_differ', ok: false, message: `Another source says ${maskedAnswer(entry, normal)}.` });
+        if (earlier.newValue !== normal) earlier.checks.push(differs(entry, normal, source));
         return true;
       }
       if (made.row) {
@@ -303,8 +317,7 @@ export function planRows(input: PlanInput): PlanResult {
       // Two documents on one fact: keep the first and show the difference. Code never picks.
       const normal = checkFormat(entry, value.value).value;
       if (earlier.newValue !== normal) {
-        const check: RowCheck = { rule: 'documents_differ', ok: false, message: `Another source says ${maskedAnswer(entry, normal)}.` };
-        earlier.checks.push(check);
+        earlier.checks.push(differs(entry, normal, source));
       }
       continue;
     }

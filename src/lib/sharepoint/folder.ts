@@ -55,8 +55,10 @@ export async function walkFolder(
   limits: WalkLimits = DEFAULT_WALK_LIMITS,
   /** True for a file an earlier fetch already read, unchanged: it is left out and only counted. */
   isSeen: (item: DriveItem) => boolean = () => false,
-): Promise<{ files: WalkFile[]; skipped: WalkSkip[]; alreadySeen: number }> {
+): Promise<{ files: WalkFile[]; skipped: WalkSkip[]; alreadySeen: number; seen: WalkFile[] }> {
   const files: WalkFile[] = [];
+  /** The files left out as already read, so the fetch can still use what was read from them. */
+  const seen: WalkFile[] = [];
   const skipped: WalkSkip[] = [];
   let bytes = 0;
   let alreadySeen = 0;
@@ -91,6 +93,7 @@ export async function walkFolder(
       }
       if (isSeen(child)) {
         alreadySeen += 1;
+        seen.push({ itemId: child.id, name: child.name, path, size, cTag: child.cTag ?? null });
         continue;
       }
       if (files.length >= limits.maxFiles) {
@@ -107,5 +110,5 @@ export async function walkFolder(
   }
 
   await visit(rootId, '', 0);
-  return { files, skipped, alreadySeen };
+  return { files, skipped, alreadySeen, seen };
 }

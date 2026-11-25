@@ -41,6 +41,11 @@ export function buildFieldCatalog(): CatalogEntry[] {
     subject: rule.subject,
     ...(field ? plainOptions(field) : {}),
     ...(rule.expands ? { expands: rule.expands } : {}),
+    ...(rule.foundIn ? { foundIn: rule.foundIn } : {}),
+    ...(rule.extract ? { extract: rule.extract } : {}),
+    ...(rule.fills ? { fills: rule.fills } : {}),
+    ...(rule.onlyFrom ? { onlyFrom: rule.onlyFrom } : {}),
+    ...(rule.valueMatches ? { valueMatches: rule.valueMatches } : {}),
     uses: [],
   });
   for (const rule of CANONICAL_RULES) put(fromRule(rule));

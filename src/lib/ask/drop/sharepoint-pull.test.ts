@@ -55,7 +55,7 @@ describe('pullSharepointFiles', () => {
     children.root = [{ id: 'a', name: 'PAN.pdf', size: 8, file: {} }, { id: 'f', name: 'Directors', size: 0, folder: {} }];
     children.f = [{ id: 'b', name: 'Ravi Aadhaar.jpg', size: 8, file: {} }];
     const result = await pullSharepointFiles(lead, run, source);
-    expect(result).toEqual({ copied: 2, skipped: [] });
+    expect(result).toEqual({ copied: 2, skipped: [], stored: [] });
     expect(createAskAttachment.mock.calls.map((c) => c[1].relativePath)).toEqual(['Kestrel Analytics/Directors/Ravi Aadhaar.jpg', 'Kestrel Analytics/PAN.pdf']);
     expect(createAskAttachment.mock.calls[0]![1]).toMatchObject({ kind: 'file', runId: 'run-1', conversationId: 'conv-1', contentType: 'image/jpeg' });
     expect(putObject).toHaveBeenCalledTimes(2);
@@ -113,10 +113,14 @@ describe('pullSharepointFiles', () => {
     ]));
     const result = await pullSharepointFiles(lead, run, source);
     expect(result.copied).toBe(2);
-    expect(result.note).toBe('1 file was read in an earlier fetch and did not change, so I left it out.');
-    expect(recordCopied.mock.calls.map((c) => c[2].itemId)).toEqual(['b', 'c']);
-    expect(recordCopied.mock.calls[0]![2]).toMatchObject({ cTag: 'c2', path: 'Kestrel Analytics/B.pdf', attachmentId: 'att:Kestrel Analytics/B.pdf' });
-    expect(recordCopied.mock.calls[0]![2].sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(result.note).toBe('1 file was read in an earlier fetch and did not change, so I used what I read then.');
+    // The unchanged file joins the drop with no bytes, keeping its hash so its stored read is reused (PLAN M5).
+    expect(result.stored).toEqual([expect.objectContaining({ path: 'Kestrel Analytics/A.pdf', status: 'queued', origin: 'stored' })]);
+    expect(createAskAttachment.mock.calls[0]![1]).toMatchObject({ relativePath: 'Kestrel Analytics/A.pdf', s3Key: null });
+    expect(recordCopied.mock.calls.map((c) => c[2].itemId)).toEqual(['a', 'b', 'c']);
+    expect(recordCopied.mock.calls[0]![2]).toMatchObject({ cTag: 'c1', sha256: 'x' });
+    expect(recordCopied.mock.calls[1]![2]).toMatchObject({ cTag: 'c2', path: 'Kestrel Analytics/B.pdf', attachmentId: 'att:Kestrel Analytics/B.pdf' });
+    expect(recordCopied.mock.calls[1]![2].sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('says nothing is new when every file was read before', async () => {

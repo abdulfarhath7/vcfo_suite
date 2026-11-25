@@ -562,6 +562,45 @@ async function resolveFileIn(
   return null;
 }
 
+/** One file of a project's documents, ready for Ask VCFO to read (PLAN M3). */
+export interface AppDocumentFile {
+  /** The documents tree's ref (`m:…`, `d:…`, `br:signed`, `r:…`), stable for the same file. */
+  ref: string;
+  label: string;
+  fileName: string;
+  /** The storage key the bytes are read from. */
+  key: string;
+  sizeBytes: number | null;
+  stepId: string | null;
+  date: string | null;
+}
+
+/**
+ * Every current file of a project that the caller may open: checklist uploads, vault and index
+ * rows, the finalised board resolution (signed copy and docx) and files sent against document
+ * requests. It is the same tree the Documents page shows, so the scope is that page's: staff whose
+ * role reaches the project (`assertEngagementAccess`), a step's files only once released to the
+ * viewer. Replaced versions and missing rows are left out. No bytes are read here.
+ */
+export async function listAppDocumentFiles(ctx: AuthContext, engagementId: string): Promise<AppDocumentFile[]> {
+  if (ctx.role === 'client' || ctx.role === 'developer' || ctx.role === 'partner') return [];
+  const mine = await documentsEngagement(ctx, engagementId);
+  if (!mine) return [];
+  const payload = await documentsFor(ctx, mine);
+  let br: ReturnType<typeof getBoardResolutionByEngagementId> | null = null;
+  const boardResolution = () => (br ??= getBoardResolutionByEngagementId(ctx, mine.dbId));
+  const out: AppDocumentFile[] = [];
+  const seen = new Set<string>();
+  for (const node of payload.nodes) {
+    if (!node.ref || node.replaced || seen.has(node.ref)) continue;
+    seen.add(node.ref);
+    const file = await resolveFileIn(ctx, mine, node.ref, boardResolution);
+    if (!file) continue;
+    out.push({ ref: node.ref, label: node.label, fileName: file.fileName, key: file.key, sizeBytes: node.sizeBytes ?? null, stepId: node.stepId ?? null, date: node.date ?? null });
+  }
+  return out;
+}
+
 export async function readClientDocumentFile(
   ctx: AuthContext,
   ref: string,

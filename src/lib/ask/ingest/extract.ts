@@ -35,25 +35,80 @@ function decodeXml(s: string): string {
     .replace(/&amp;/g, '&');
 }
 
-/** Paragraphs of a .docx, headings marked with "#" so the chunker can use them. */
+/** The text of one stretch of WordprocessingML: runs, tabs and line breaks. */
+function runText(xml: string): string {
+  return decodeXml(
+    (xml.match(/<w:t[^>]*>[^<]*<\/w:t>|<w:tab\/>|<w:br\/>/g) ?? [])
+      .map((t) => (t.startsWith('<w:tab') ? '\t' : t.startsWith('<w:br') ? '\n' : t.replace(/<[^>]+>/g, '')))
+      .join(''),
+  ).trim();
+}
+
+/** Paragraphs of a part, headings marked with "#". */
+function paragraphsOf(xml: string): string[] {
+  return xml.split(/<\/w:p>/).flatMap((p) => {
+    const heading = /<w:pStyle w:val="(Heading\d|Title)"/.test(p);
+    const text = runText(p);
+    return text ? [heading ? `# ${text}` : text] : [];
+  });
+}
+
+/** A table as one line per row, cells joined by " | ", so a row keeps its label and its value together. */
+function tableText(xml: string): string {
+  return xml
+    .split(/<\/w:tr>/)
+    .map((row) =>
+      row
+        .split(/<\/w:tc>/)
+        .map((cell) => paragraphsOf(cell).join(' ').replace(/\s+/g, ' ').trim())
+        .filter((cell, i, all) => cell || i < all.length - 1)
+        .join(' | ')
+        .replace(/^[\s|]+|[\s|]+$/g, ''),
+    )
+    .filter(Boolean)
+    .join('\n');
+}
+
+/** The body of a part in reading order: paragraphs, and each table as rows. */
+function partText(xml: string): string {
+  const blocks: string[] = [];
+  let rest = xml;
+  // Tables are cut out first, so their cells are not read as loose paragraphs.
+  for (;;) {
+    const start = rest.indexOf('<w:tbl>');
+    if (start < 0) break;
+    const end = rest.indexOf('</w:tbl>', start);
+    if (end < 0) break;
+    blocks.push(...paragraphsOf(rest.slice(0, start)));
+    const table = tableText(rest.slice(start, end));
+    if (table) blocks.push(table);
+    rest = rest.slice(end + '</w:tbl>'.length);
+  }
+  blocks.push(...paragraphsOf(rest));
+  return blocks.join('\n\n');
+}
+
+/**
+ * Text of a .docx: the body (headings marked with "#", tables as rows), then the headers, footers,
+ * footnotes and endnotes, where a letterhead often carries the company's name, CIN and address.
+ */
 export function docxToText(bytes: Buffer): string {
+  let zip: PizZip;
   let xml: string;
   try {
-    xml = new PizZip(bytes).file('word/document.xml')?.asText() ?? '';
+    zip = new PizZip(bytes);
+    xml = zip.file('word/document.xml')?.asText() ?? '';
   } catch {
     throw new ExtractError('This file is not a readable .docx document.');
   }
   if (!xml) throw new ExtractError('This .docx has no document body.');
-  const paragraphs = xml.split(/<\/w:p>/).map((p) => {
-    const heading = /<w:pStyle w:val="(Heading\d|Title)"/.test(p);
-    const text = decodeXml(
-      (p.match(/<w:t[^>]*>[^<]*<\/w:t>|<w:tab\/>|<w:br\/>/g) ?? [])
-        .map((t) => (t.startsWith('<w:tab') ? '\t' : t.startsWith('<w:br') ? '\n' : t.replace(/<[^>]+>/g, '')))
-        .join(''),
-    ).trim();
-    return text ? (heading ? `# ${text}` : text) : '';
-  });
-  return paragraphs.filter(Boolean).join('\n\n');
+  const extras = Object.keys(zip.files)
+    .filter((name) => /^word\/(?:header\d*|footer\d*|footnotes|endnotes)\.xml$/.test(name))
+    .sort()
+    .map((name) => partText(zip.file(name)?.asText() ?? ''))
+    .filter(Boolean);
+  // A header repeated on every section is read once.
+  return [partText(xml), ...new Set(extras)].filter(Boolean).join('\n\n');
 }
 
 /** A page with less text than this and an image on it is a scan. A blank page is left out. */

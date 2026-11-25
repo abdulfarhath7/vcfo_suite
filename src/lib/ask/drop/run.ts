@@ -14,7 +14,8 @@ import { listAskRunChangesets } from '@/db/repositories/ask-changesets';
 import { appendAskMessage } from '@/db/repositories/ask-messages';
 import { appendAskRunStep, askRunActor, updateAskRun, type AskRunRow } from '@/db/repositories/ask-runs';
 import type { JsonValue } from '@/lib/ask/changeset/types';
-import { readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
+import { inPool, readFile, readPaste, ReadRefused } from '@/lib/ask/data-router/read';
+import { docTypeWords } from '@/lib/ask/data-router/targeted';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { createRunContext, RUN_OVER_BUDGET_COPY, RunOverBudget } from '@/lib/ask/do/run-context';
 import { maskIdentityNumbers, namesFromLabelledText, type KnownPerson } from '@/lib/ask/mask';
@@ -26,6 +27,7 @@ import { dropContentType, dropFileRefusal, isZipName, safeFileName } from './ext
 import { ASK_DROP_EVENT, DROP_WORKFLOW, emptyDropState, type DropFile, type DropGroup, type DropState } from './types';
 import { DEFAULT_UNZIP_LIMITS, unzipDrop, UnzipRefused } from './unzip';
 import { COPY_LABEL, pullSharepointFiles } from './sharepoint-pull';
+import { APP_COPY_LABEL, pullAppDocuments } from './app-docs-pull';
 import { findCachedSharepointRead, markSharepointFileRead } from '@/db/repositories/sharepoint-files-seen';
 
 /**
@@ -78,28 +80,54 @@ function zipFolder(zip: AskAttachmentRow): string {
 }
 
 /**
- * Step 0, for a SharePoint fetch only. Copies the client folder's files into the drop as attachment
- * rows, the same rows an upload makes, so every later step is the upload path unchanged. A file that
- * is already copied (same path) is not copied again on a retry. Files left out are listed with a
- * reason, and kept by the unpack step.
+ * Step 0, for a fetch only (PLAN M4). Copies the client folder's SharePoint files into the drop as
+ * attachment rows, the same rows an upload makes, so every later step is the upload path unchanged,
+ * and then adds the project's documents already in the app (`pullAppDocuments`). A file that is
+ * already in the drop (same path) is not added again on a retry. Files left out are listed with a
+ * reason, and kept by the unpack step. Files whose stored read is reused are listed here, marked
+ * with their origin, so the sorting step takes only their values.
  */
-export async function dropPullStep(runId: string): Promise<{ copied: number; skipped: number } | null> {
+export async function dropPullStep(runId: string): Promise<{ copied: number; skipped: number; app?: number } | null> {
   const open = await openDrop(runId);
   if (!open) return null;
-  const { ctx, run, state } = open;
+  const { ctx, run } = open;
+  let state = open.state;
   const source = state.source;
-  if (!source || source.kind !== 'sharepoint' || source.pulled) return { copied: 0, skipped: 0 };
+  if (!source || source.kind !== 'sharepoint') return { copied: 0, skipped: 0 };
+  const readsSharepoint = source.sharepoint !== false && !source.pulled;
+  const readsApp = Boolean(source.appDocs) && !source.appPulled;
+  if (!readsSharepoint && !readsApp) return { copied: 0, skipped: 0 };
   if (run.status === 'queued') await updateAskRun(ctx, runId, { status: 'running' });
-  const result = await pullSharepointFiles(ctx, run, source, async (done, total) => {
-    await updateAskRun(ctx, runId, { state: asJson({ ...state, progress: { done, total, label: COPY_LABEL } }) });
-  });
-  const known = new Set(state.files.map((f) => `${f.attachmentId}|${f.path}`));
-  const files = [...state.files, ...result.skipped.filter((f) => !known.has(`${f.attachmentId}|${f.path}`))];
-  const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
-  const next: DropState = { ...state, files, ...(notes ? { notes } : {}), source: { ...source, pulled: true }, progress: { done: 0, total: 0, label: 'Reading…' } };
-  await appendAskRunStep(ctx, runId, { kind: 'tool', name: 'sharepoint', label: 'Fetching from SharePoint', output: { copied: result.copied, skipped: result.skipped.length } });
+  const keyOf = (f: { attachmentId: string; path: string }) => `${f.attachmentId}|${f.path}`;
+  const addFiles = (more: DropFile[]) => {
+    const known = new Set(state.files.map(keyOf));
+    return [...state.files, ...more.filter((f) => !known.has(keyOf(f)))];
+  };
+  let copied = 0;
+  let skipped = 0;
+  if (readsSharepoint) {
+    const result = await pullSharepointFiles(ctx, run, source, async (done, total) => {
+      await updateAskRun(ctx, runId, { state: asJson({ ...state, progress: { done, total, label: COPY_LABEL } }) });
+    });
+    const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
+    state = { ...state, files: addFiles([...(result.stored ?? []), ...result.skipped]), ...(notes ? { notes } : {}), source: { ...source, pulled: true } };
+    copied = result.copied;
+    skipped = result.skipped.length;
+    await appendAskRunStep(ctx, runId, { kind: 'tool', name: 'sharepoint', label: 'Fetching from SharePoint', output: { copied: result.copied, reused: result.stored?.length ?? 0, skipped: result.skipped.length } });
+  }
+  let app: number | undefined;
+  if (readsApp) {
+    await updateAskRun(ctx, runId, { state: asJson({ ...state, progress: { done: 0, total: 0, label: APP_COPY_LABEL } }) });
+    const room = Math.max(0, DROP_MAX_FILES - copied);
+    const result = await pullAppDocuments(ctx, run, source, { room });
+    const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
+    state = { ...state, files: addFiles(result.files), ...(notes ? { notes } : {}), source: { ...(state.source ?? source), appPulled: true } };
+    app = result.files.length;
+    await appendAskRunStep(ctx, runId, { kind: 'tool', name: 'app_documents', label: 'Reading the documents in the app', output: { files: result.files.length, reused: result.reused } });
+  }
+  const next: DropState = { ...state, progress: { done: 0, total: 0, label: 'Reading…' } };
   await updateAskRun(ctx, runId, { state: asJson(next) });
-  return { copied: result.copied, skipped: result.skipped.length };
+  return { copied, skipped, ...(app !== undefined ? { app } : {}) };
 }
 
 /**
@@ -213,62 +241,111 @@ async function cachedSharepointRead(ctx: AuthContext, engagementId: string, atta
   }
 }
 
-/** Step 2, once per file. Reads it with the run's budget and keeps the read beside the file. */
-export async function dropReadStep(runId: string, attachmentId: string): Promise<DropFile['status'] | null> {
-  const open = await openDrop(runId);
-  if (!open) return null;
-  const { ctx, run, state } = open;
-  const file = state.files.find((f) => f.attachmentId === attachmentId && f.status === 'queued');
-  if (!file) return state.files.find((f) => f.attachmentId === attachmentId)?.status ?? null;
+/** At most this many files of a drop are read at once (PLAN M10). */
+export const DROP_READ_PARALLEL = 3;
 
-  // A pasted text's labelled names are masked too, once the text is read; patterns (emails, phones,
-  // identity numbers) are masked in every call whatever the source.
-  let pastedNames: KnownPerson[] = [];
+/** "Read 12 of 50 · 3 values from the board resolution". */
+export function readProgressLabel(done: number, total: number, last?: { values: number; docType?: string } | null): string {
+  const head = `Read ${done} of ${total}`;
+  if (!last || last.values === 0) return head;
+  const what = last.docType && last.docType !== 'other' && last.docType !== 'form' ? ` from the ${docTypeWords(last.docType)}` : '';
+  return `${head} · ${last.values} value${last.values === 1 ? '' : 's'}${what}`;
+}
+
+/**
+ * Step 2: reads these files, up to three at a time, with one budget and one metered provider for
+ * the batch, and keeps each read beside its file. Each file's status, time and number of values are
+ * written to the run as it finishes, one write at a time, so the chat's progress moves file by
+ * file. A file of a fetch whose bytes this project already read reuses that read (no model call,
+ * and no download: a SharePoint file read before has no bytes in the drop at all).
+ */
+export async function dropReadBatch(runId: string, attachmentIds: readonly string[]): Promise<Array<DropFile['status'] | null>> {
+  const open = await openDrop(runId);
+  if (!open) return attachmentIds.map(() => null);
+  const { ctx, run, state } = open;
+  const queued = attachmentIds.map((id) => state.files.find((f) => f.attachmentId === id && f.status === 'queued') ?? null);
+  if (queued.every((f) => !f)) return attachmentIds.map((id) => state.files.find((f) => f.attachmentId === id)?.status ?? null);
+
+  // A pasted text's labelled names are masked too; they are learnt before the first call, because
+  // the masker is built once for the batch. Patterns (emails, phones, identity numbers) are masked
+  // in every call whatever the source.
+  const rows = await getOwnAskAttachments(ctx, attachmentIds.filter((_, i) => queued[i]));
+  const pastes = new Map<string, Buffer>();
+  const pastedNames: KnownPerson[] = [];
+  for (const row of rows) {
+    if (row.kind !== 'paste' || !row.s3Key) continue;
+    const bytes = await getObjectBuffer(row.s3Key);
+    if (!bytes) continue;
+    pastes.set(row.id, bytes);
+    pastedNames.push(...namesFromLabelledText(bytes.toString('utf8')));
+  }
   const runCtx = createRunContext({ ctx, run, now: new Date(), people: () => pastedNames });
-  const save = async (patch: Partial<DropFile>, flags: Partial<DropState> = {}) => {
+  const project = state.source?.kind === 'sharepoint' ? state.source.engagementId : null;
+
+  // Writes go one after another, each with the state as it is now.
+  let writes: Promise<void> = Promise.resolve();
+  const record = (file: DropFile, patch: Partial<DropFile>, flags: Partial<DropState> = {}, last?: { values: number; docType?: string }) => {
     Object.assign(file, patch);
-    const done = Math.min(state.progress.done + 1, state.progress.total);
-    const next: DropState = { ...state, ...flags, progress: { ...state.progress, done, label: `Read ${done} of ${state.progress.total}` } };
-    await runCtx.recordUsage();
-    await runCtx.close('running', { state: asJson(next) });
+    Object.assign(state, flags);
+    const total = state.progress.total;
+    const done = Math.min(state.progress.done + 1, total);
+    state.progress = { ...state.progress, done, label: readProgressLabel(done, total, last) };
+    const snapshot = asJson({ ...state, files: state.files.map((f) => ({ ...f })) });
+    writes = writes.then(() => updateAskRun(ctx, runId, { state: snapshot }).then(() => undefined));
+    return writes;
   };
 
-  if (runCtx.spentTokens() >= run.budgetTokens) {
-    await save({ status: 'skipped', reason: NOT_READ_BUDGET }, { overBudget: true });
-    return 'skipped';
-  }
-  const [attachment] = await getOwnAskAttachments(ctx, [attachmentId]);
-  try {
-    if (!attachment?.s3Key) throw new ReadRefused('That file is no longer available. Please drop it again.');
-    const bytes = await getObjectBuffer(attachment.s3Key);
-    if (!bytes) throw new ReadRefused('That file is no longer available. Please drop it again.');
-    if (attachment.kind === 'paste') pastedNames = namesFromLabelledText(bytes.toString('utf8'));
-    // A SharePoint file whose bytes this project already read reuses that read: no model call.
-    const sharepoint = state.source?.kind === 'sharepoint' ? state.source.engagementId : null;
-    const cached = sharepoint && attachment.kind === 'file' ? await cachedSharepointRead(ctx, sharepoint, attachmentId) : null;
-    const result: ReadResult = cached
-      ?? (attachment.kind === 'paste'
-        ? await readPaste(bytes.toString('utf8'), runCtx.deps)
-        : await readFile({ fileName: attachment.fileName, data: bytes }, runCtx.deps));
-    const key = readKey(ctx, runId, attachmentId);
-    await putObject(key, JSON.stringify(result), 'application/json');
-    if (sharepoint) await markSharepointFileRead(ctx, sharepoint, attachmentId, key);
-    await updateOwnAskAttachment(ctx, attachmentId, { status: 'read', docType: result.docType, sensitive: result.sensitive });
-    await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: 'Reading', output: { path: file.path, docType: result.docType, values: result.values.length } });
-    await save({ status: 'read', docType: result.docType });
-    return 'read';
-  } catch (error) {
-    if (error instanceof RunOverBudget) {
-      await save({ status: 'skipped', reason: NOT_READ_BUDGET }, { overBudget: true });
+  const readOne = async (index: number): Promise<DropFile['status'] | null> => {
+    const attachmentId = attachmentIds[index]!;
+    const file = queued[index];
+    if (!file) return state.files.find((f) => f.attachmentId === attachmentId)?.status ?? null;
+    const started = Date.now();
+    if (runCtx.spentTokens() >= run.budgetTokens) {
+      await record(file, { status: 'skipped', reason: NOT_READ_BUDGET }, { overBudget: true });
       return 'skipped';
     }
-    const known = error instanceof ReadRefused;
-    if (!known) console.error('[ask-vcfo] drop read failed', maskIdentityNumbers(error instanceof Error ? (error.stack ?? error.message) : String(error)));
-    const reason = maskIdentityNumbers(known ? error.message : 'This file could not be read.');
-    if (attachment) await updateOwnAskAttachment(ctx, attachmentId, { status: 'failed', error: reason });
-    await save({ status: 'failed', reason });
-    return 'failed';
-  }
+    const attachment = rows.find((r) => r.id === attachmentId);
+    try {
+      if (!attachment) throw new ReadRefused('That file is no longer available. Please drop it again.');
+      const cached = project && attachment.kind === 'file' ? await cachedSharepointRead(ctx, project, attachmentId) : null;
+      let result: ReadResult;
+      if (cached) result = cached;
+      else {
+        const bytes = attachment.kind === 'paste' ? (pastes.get(attachmentId) ?? null) : attachment.s3Key ? await getObjectBuffer(attachment.s3Key) : null;
+        if (!bytes) throw new ReadRefused('That file is no longer available. Please drop it again.');
+        result = attachment.kind === 'paste' ? await readPaste(bytes.toString('utf8'), runCtx.deps) : await readFile({ fileName: attachment.fileName, data: bytes }, runCtx.deps);
+      }
+      const key = readKey(ctx, runId, attachmentId);
+      await putObject(key, JSON.stringify(result), 'application/json');
+      if (project && attachment.kind === 'file') await markSharepointFileRead(ctx, project, attachmentId, key);
+      await updateOwnAskAttachment(ctx, attachmentId, { status: 'read', docType: result.docType, sensitive: result.sensitive });
+      await appendAskRunStep(ctx, runId, { kind: result.usedModel ? 'model' : 'tool', name: 'read', label: cached ? 'Reading (stored)' : 'Reading', output: { path: file.path, docType: result.docType, values: result.values.length, ms: Date.now() - started } });
+      await record(file, { status: 'read', docType: result.docType, ms: Date.now() - started, values: result.values.length }, {}, { values: result.values.length, docType: result.docType });
+      return 'read';
+    } catch (error) {
+      if (error instanceof RunOverBudget) {
+        await record(file, { status: 'skipped', reason: NOT_READ_BUDGET }, { overBudget: true });
+        return 'skipped';
+      }
+      const known = error instanceof ReadRefused;
+      if (!known) console.error('[ask-vcfo] drop read failed', maskIdentityNumbers(error instanceof Error ? (error.stack ?? error.message) : String(error)));
+      const reason = maskIdentityNumbers(known ? error.message : 'This file could not be read.');
+      if (attachment) await updateOwnAskAttachment(ctx, attachmentId, { status: 'failed', error: reason });
+      await record(file, { status: 'failed', reason, ms: Date.now() - started });
+      return 'failed';
+    }
+  };
+
+  const settled = await inPool(attachmentIds.map((_, i) => i), DROP_READ_PARALLEL, readOne);
+  await writes;
+  await runCtx.recordUsage();
+  await runCtx.close('running', { state: asJson(state) });
+  return settled.map((r) => (r.status === 'fulfilled' ? r.value : 'failed'));
+}
+
+/** Step 2 for one file: a batch of one. */
+export async function dropReadStep(runId: string, attachmentId: string): Promise<DropFile['status'] | null> {
+  return (await dropReadBatch(runId, [attachmentId]))[0] ?? null;
 }
 
 /**
@@ -308,8 +385,24 @@ export async function dropAssembleStep(runId: string): Promise<{ groups: number;
   const reads = (await loadDropReads(ctx, runId, files)).filter((read) => !onCard.has(read.attachment.id));
 
   let next: DropState = { ...state, files, ...(seeded.length > 0 ? { groups: seeded } : {}), progress: { ...state.progress, label: 'Sorting…' } };
+  // A document already in the app, or a SharePoint file read before, gives its values only, and is
+  // for the fetched project whatever its names say.
+  const project = state.source?.kind === 'sharepoint' ? state.source.engagementId : null;
+  const valuesOnly = new Set(files.filter((f) => f.origin).map((f) => f.attachmentId));
+  const overrides = new Map(project ? [...valuesOnly].map((id) => [id, { engagementId: project }] as const) : []);
   try {
-    const result = await assembleDrop({ runCtx, conversationId: run.conversationId, instruction: state.instruction, page: state.page, reads, files, now: new Date(), ...(seeded.length > 0 ? { groups: seeded } : {}) });
+    const result = await assembleDrop({
+      runCtx,
+      conversationId: run.conversationId,
+      instruction: state.instruction,
+      page: state.page,
+      reads,
+      files,
+      now: new Date(),
+      ...(seeded.length > 0 ? { groups: seeded } : {}),
+      ...(valuesOnly.size > 0 ? { valuesOnly } : {}),
+      ...(overrides.size > 0 ? { overrides } : {}),
+    });
     next = {
       ...next,
       files: result.files,
@@ -401,13 +494,20 @@ export async function failAskDrop(runId: string, error: unknown): Promise<void> 
   await updateAskRun(ctx, runId, { status: 'failed', error: 'drop job failed', state: asJson(state), finishedAt: new Date() });
 }
 
+/** The files to read, in batches of `DROP_READ_PARALLEL`; each batch is one job step. */
+export function readBatches(ids: readonly string[]): string[][] {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += DROP_READ_PARALLEL) out.push(ids.slice(i, i + DROP_READ_PARALLEL));
+  return out;
+}
+
 /** The whole drop in this process, step after step, for when no Inngest is reachable. */
 export async function runAskDrop(runId: string): Promise<{ status: string } | null> {
   try {
     await dropPullStep(runId);
     const toRead = await dropUnpackStep(runId);
     if (toRead === null) return null;
-    for (const attachmentId of toRead) await dropReadStep(runId, attachmentId);
+    for (const batch of readBatches(toRead)) await dropReadBatch(runId, batch);
     await dropAssembleStep(runId);
     return await dropFinishStep(runId);
   } catch (error) {

@@ -70,10 +70,13 @@ export async function recheckRows(actx: ActionContext, rows: readonly AskChanges
     const parsed = action?.input.safeParse(inputOf(row));
     if (!action?.recheck || !parsed?.success) continue;
     const checked = await action.recheck(actx, parsed.data, pending);
+    // "Documents differ" comes from reading, not from the screen's rules, so a recheck keeps it while
+    // the row still holds the value it was raised on (an edit or "Use this" settles it).
+    const differ = row.status === 'edited' ? [] : (row.checks ?? []).filter((check) => check.rule === 'documents_differ' && !checked.checks.some((c) => c.rule === check.rule));
     updates.push({
       id: row.id,
       patch: {
-        checks: checked.checks,
+        checks: [...checked.checks, ...differ],
         heldReason: checked.heldReason,
         status: checked.heldReason ? 'held' : row.status === 'held' ? 'proposed' : row.status,
         oldValue: checked.oldValue,

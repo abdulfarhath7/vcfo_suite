@@ -71,3 +71,23 @@ person accepts. Built 24 Nov 2026 on `feat/sharepoint`.
   skips `undefined` keys (`changeset/hash.ts`); before 64b455b4 a card made in memory could never
   be saved ("This card changed after you saw it").
 
+## The documents in the app join the fetch (PLAN M3 to M5)
+
+- "Fetch Bonterra" and "fill Bonterra into the app" read the SharePoint folder and the documents already in the app
+  in one drop: vault documents, checklist uploads, client documents and the final board resolution. The list is
+  `listAppDocumentFiles` (`src/db/repositories/client-documents.ts`), built on the person's own Documents tree, so it
+  holds only what that person can open. Clients never fetch. The draft board resolution is not read.
+- `pullAppDocuments` (`src/lib/ask/drop/app-docs-pull.ts`) adds each file as an attachment row whose `s3_key` is the
+  stored file's own key; nothing is copied. The path shown is `In the app/<label>/<file>`.
+- The same `sharepoint_files_seen` table remembers them, with the item id `app:<ref>` and the content tag
+  `<key>|<size>`. A file read before and unchanged is reused without a download or a model call.
+- A SharePoint file read in an earlier fetch is no longer only counted: it becomes a row with no bytes (`s3_key`
+  null) whose stored read is merged into the new card, so a refetch shows everything known. The note says "so I
+  used what I read then".
+- Files from the app and stored reads give values only. They are never filed again, and their project is the one
+  fetched.
+- When SharePoint is not set up or the folder cannot be found, the fetch reads the documents in the app alone and
+  the closing note says "SharePoint was not read: ...". `appDocs: false` keeps the old refusal.
+- Files attached to a "fill X into the app" message are read in the same drop (`attachmentIds` on
+  `startSharepointDrop`); only the person's own rows that are not in another run are taken.
+

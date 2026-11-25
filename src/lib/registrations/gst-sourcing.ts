@@ -71,7 +71,7 @@ export async function fetchGstFromSharepoint(
   return {
     ok: true,
     runId: started.runId,
-    message: `Reading the SharePoint folder ${started.folderName} for ${started.companyName}. A review card follows; save it into the tool, then start on the GST portal.`,
+    message: `Reading ${started.sources} for ${started.companyName}. A review card follows; save it into the tool, then start on the GST portal.`,
   };
 }
 
