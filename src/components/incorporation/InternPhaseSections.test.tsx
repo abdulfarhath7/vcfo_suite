@@ -23,11 +23,8 @@ function renderSections(openPhaseId?: string) {
   );
 }
 
-/** A section header (the track's bars share the phase names but carry no `aria-expanded`). */
-const header = (name: string) =>
-  screen
-    .getAllByRole('button', { name: new RegExp(`^${name}`) })
-    .find((el) => el.hasAttribute('aria-expanded'))!;
+/** A section header: the button named after its phase, which carries `aria-expanded`. */
+const header = (name: string) => screen.getByRole('button', { name: new RegExp(`^${name}`) });
 
 describe('InternPhaseSections', () => {
   beforeEach(() => {
@@ -35,9 +32,9 @@ describe('InternPhaseSections', () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('keeps the progress track and opens only the current phase at first', () => {
+  it('has no phase track and opens only the current phase at first', () => {
     renderSections();
-    expect(screen.getByRole('group', { name: 'Phases' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Phases' })).toBeNull();
     expect(screen.getByText('steps of pre-inc-phase-2')).toBeInTheDocument();
     expect(screen.queryByText('steps of pre-inc-phase-1')).toBeNull();
     expect(header('Incorporation')).toHaveAttribute('aria-expanded', 'true');
@@ -80,16 +77,10 @@ describe('InternPhaseSections', () => {
     expect(window.localStorage.getItem(internEngagementOpenPhasesStorageKey('eng-1'))).toBe('');
   });
 
-  it('opens a phase and scrolls to it when its bar is clicked', () => {
-    renderSections();
-    fireEvent.click(screen.getByRole('button', { name: 'Registrations · 0 of 23' }));
-    expect(screen.getByText('steps of registration-phase-4')).toBeInTheDocument();
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
-  });
-
-  it('opens the phase named by ?phase= on top of the stored sections', () => {
+  it('opens the phase named by ?phase= on top of the stored sections and scrolls to it', () => {
     window.localStorage.setItem(internEngagementOpenPhasesStorageKey('eng-1'), 'pre-inc-phase-1');
     renderSections('post-inc-phase-3');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
     expect(screen.getByText('steps of pre-inc-phase-1')).toBeInTheDocument();
     expect(screen.getByText('steps of post-inc-phase-3')).toBeInTheDocument();
     expect(screen.queryByText('steps of pre-inc-phase-2')).toBeNull();

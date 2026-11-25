@@ -524,23 +524,23 @@ EVC (SBC-STD-AI-02). The GST pack stays `mock-only` until the CS opinion.
   (the extension's side panel does). A pasted line that fits no field is listed under the card ("I could
   not place this"); "Director 2 Kavya Bhat residential address: …" now reads as that director's address.
 
-## Steps card phase sections (25 Nov 2026, on `claude/zealous-knuth-rqwrxf`, not deployed)
+## Steps card phase sections (25 Nov 2026, merged to `main` in PR #72, not deployed)
 
 The Steps card of a client record (`RecordStepsCard`, used by the lead, manager and admin record
-pages) no longer shows one phase at a time. The ST5 phase track stays on top as the progress summary,
-and Name application, Incorporation, Post-incorporation and Registrations sit below it as
-collapsible sections. Each section header repeats the phase's bar, its done count and a Done,
-In progress or Not started chip.
+pages) no longer shows one phase at a time. Name application, Incorporation, Post-incorporation and
+Registrations are collapsible sections. Each section header is the phase's progress summary: its
+bar, its done count and a Done, In progress or Not started chip. A follow-up on the same day removed
+the ST5 phase track that first sat above the sections, because the headers already showed the same
+progress. On phones the header bar sits under the phase name.
 
 - `InternPhaseSections` (in `src/components/incorporation/InternOverviewProgress.tsx`) replaced
   `InternPhaseTabs`. The current phase opens by default, several sections can be open, the card head
-  has "Expand all" and "Collapse all", and a bar opens its section and scrolls to it. `?phase=n`
-  opens that section too.
+  has "Expand all" and "Collapse all", and `?phase=n` opens that section and scrolls to it.
 - The open sections are kept per engagement in localStorage under
   `vcfo.intern.engagementOpenPhases.{id}` (helpers in `src/lib/intern/intern-overview-progress.ts`).
   The old `engagementPhaseTab` key is no longer read.
-- `RecordPhaseBar` was pulled out of `RecordPhaseTrack` so the headers draw the same bar; the track's
-  `picked` prop is now optional (the admin record still picks in place with it).
+- `RecordPhaseBar` was pulled out of `RecordPhaseTrack` so the headers draw the same bar.
+  `RecordPhaseTrack` itself is now used only by the admin record, which picks a phase in place.
 - Registrations now lists its steps (Reg-1 to Reg-23) inside its section, under the count line and
   the "Open registrations" button.
 - Verified with `npm run check` and in the browser as `lead-divya` on Kestrel Robotics (desktop and
