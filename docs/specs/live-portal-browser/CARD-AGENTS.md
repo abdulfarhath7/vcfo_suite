@@ -152,3 +152,16 @@ before any portal work.
 | 5 | Live portal tab (new) | `/app/lead/live-portal/<session>` | Portal on the left, the agent's buttons on the right |
 
 Clients never see the card robot or the live portal. Use a laptop or a desktop; a tablet works; a phone is too small to type the captcha.
+
+## Owner change (25 Nov 2026): the live portal shows inside the app
+
+The live portal opens inside the same Suite page, not only in a new tab.
+
+- The government site is never put in an iframe (its headers forbid it). The app shows a video
+  stream of SBC's server browser, so it can sit in any Suite page.
+- Live mode on the record page (pages 1 to 3): the sidebar folds, the portal stream takes about
+  70% of the width, and the agent rail takes the rest. The rail keeps the card's key values.
+- A small live preview stays on the card when live mode is closed. Click it to open live mode again.
+- A "Pop out" button opens the same session in its own tab (for a second screen). One session
+  is shared, so the two views never conflict.
+- Page 5 (`/app/lead/live-portal/<session>`) stays as the pop-out page and for Assist runs.
