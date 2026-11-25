@@ -18,6 +18,8 @@ import { MICROSOFT_PROVIDER_ID, microsoftEmailOf, microsoftProviders, onMicrosof
 import { systemResolveExternalSignIn } from '@/db/repositories/sign-in-links';
 import { systemRecordSignIn } from '@/db/repositories/client-audit';
 import { cityFromHeaders, deviceLabel } from '@/lib/sign-in-device';
+import { isDemoEmail } from '@/lib/demo-logins';
+import { demoEnabled, runInMain, runInScope } from '@/db/demo-scope';
 
 /**
  * Two-step sign-in outcomes (G-25). Each reaches the browser as `code` on the
@@ -73,61 +75,85 @@ const credentialsProvider = Credentials({
     password: { label: 'Password', type: 'password' },
     otp: { label: 'Code', type: 'text' },
   },
-  async authorize(creds, request) {
-    const email = String(creds?.email ?? '');
-    const ip = request ? clientIp(request.headers) : 'unknown';
-    if (!(await takeSignInAttempt('sign-in', email, ip))) throw new SignInRateLimited();
-
-    // Two-step accounts: the code is asked for and checked BEFORE the password, so no answer
-    // depends on whether the password was right unless the caller also holds a valid code.
-    const twoStep = await systemSignInTwoStep(email);
-    if (twoStep) {
-      const otp = String(creds?.otp ?? '').trim();
-      if (!otp) throw new TwoStepRequired();
-      const check = await checkTotpCode(twoStep.id, twoStep.totpSecretEnc, otp);
-      if (check === 'locked') throw new TwoStepLocked();
-      if (check === 'invalid') throw new TwoStepInvalid();
-    }
-
-    const row = await systemCheckSignInPassword(email, String(creds?.password ?? ''));
-    if (!row) return null;
-    // Two-step was turned on between the two reads: ask for a code rather than let it through.
-    if (row.twoStepOn && !twoStep) throw new TwoStepRequired();
-
-    const userAgent = request?.headers.get('user-agent');
-    // C-851: the sign-in city when a CDN in front of the app sends a geo header.
-    const city = cityFromHeaders(request?.headers);
-    const sid = await systemCreateUserSession({
-      userId: row.id,
-      userAgent,
-      ip: ip === 'unknown' ? null : ip,
-      city,
-    });
-    // C-787: the sign-in goes on the audit log (a client's on its company's). Not awaited, never throws.
-    void systemRecordSignIn({
-      userId: row.id,
-      email: row.email,
-      name: row.name,
-      role: row.role,
-      clientId: row.clientId,
-      device: deviceLabel(userAgent),
-      city,
-      method: row.twoStepOn ? 'Password and code' : 'Password',
-    });
-
-    return {
-      id: row.id,
-      email: row.email,
-      name: row.name ?? undefined,
-      role: row.role,
-      internId: row.internId ?? undefined,
-      clientId: row.clientId ?? undefined,
-      hasAvatar: Boolean(row.avatarObjectKey),
-      avatarVersion: row.updatedAt.getTime(),
-      sid: sid ?? undefined,
-    };
-  },
+  authorize: (creds, request) => authorizeCredentials(creds, request),
 });
+
+/**
+ * PLAN H2: an email on the demo domain is looked up and checked ONLY in the demo database, any
+ * other email ONLY in the main one, whatever session cookie the browser still holds. Exported for
+ * the tests.
+ */
+export async function authorizeCredentials(
+  creds: Partial<Record<'email' | 'password' | 'otp', unknown>> | undefined,
+  request: Request | undefined,
+) {
+  const demo = isDemoEmail(String(creds?.email ?? ''));
+  if (demo && !demoEnabled()) return null;
+  return runInScope(demo, () => authorizeIn(creds, request, demo));
+}
+
+async function authorizeIn(
+  creds: Partial<Record<'email' | 'password' | 'otp', unknown>> | undefined,
+  request: Request | undefined,
+  demo: boolean,
+) {
+  const email = String(creds?.email ?? '');
+  const ip = request ? clientIp(request.headers) : 'unknown';
+  if (!(await takeSignInAttempt('sign-in', email, ip))) throw new SignInRateLimited();
+
+  // Two-step accounts: the code is asked for and checked BEFORE the password, so no answer
+  // depends on whether the password was right unless the caller also holds a valid code.
+  const twoStep = await systemSignInTwoStep(email);
+  if (twoStep) {
+    const otp = String(creds?.otp ?? '').trim();
+    if (!otp) throw new TwoStepRequired();
+    const check = await checkTotpCode(twoStep.id, twoStep.totpSecretEnc, otp);
+    if (check === 'locked') throw new TwoStepLocked();
+    if (check === 'invalid') throw new TwoStepInvalid();
+  }
+
+  const row = await systemCheckSignInPassword(email, String(creds?.password ?? ''));
+  if (!row) return null;
+  // Second fence: a demo profile never signs in from the main database, and the demo database
+  // holds nothing else.
+  if (row.isDemo !== demo) return null;
+  // Two-step was turned on between the two reads: ask for a code rather than let it through.
+  if (row.twoStepOn && !twoStep) throw new TwoStepRequired();
+
+  const userAgent = request?.headers.get('user-agent');
+  // C-851: the sign-in city when a CDN in front of the app sends a geo header.
+  const city = cityFromHeaders(request?.headers);
+  const sid = await systemCreateUserSession({
+    userId: row.id,
+    userAgent,
+    ip: ip === 'unknown' ? null : ip,
+    city,
+  });
+  // C-787: the sign-in goes on the audit log (a client's on its company's). Not awaited, never throws.
+  void systemRecordSignIn({
+    userId: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    clientId: row.clientId,
+    device: deviceLabel(userAgent),
+    city,
+    method: row.twoStepOn ? 'Password and code' : 'Password',
+  });
+
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name ?? undefined,
+    role: row.role,
+    internId: row.internId ?? undefined,
+    clientId: row.clientId ?? undefined,
+    hasAvatar: Boolean(row.avatarObjectKey),
+    avatarVersion: row.updatedAt.getTime(),
+    sid: sid ?? undefined,
+    ...(demo ? { demo: true } : {}),
+  };
+}
 
 /**
  * Auth.js error logger: the library's own format, plus the M7 hook that drops a refused
@@ -149,7 +175,10 @@ const authConfig = {
     async signOut(message) {
       const token = 'token' in message ? message.token : null;
       if (typeof token?.sid === 'string' && typeof token.sub === 'string') {
-        await systemRevokeSession(token.sid, token.sub);
+        const { sid, sub } = token;
+        const demo = token.demo === true;
+        if (demo && !demoEnabled()) return;
+        await runInScope(demo, () => systemRevokeSession(sid, sub));
       }
     },
   },
@@ -161,16 +190,23 @@ const authConfig = {
      */
     async signIn({ account, user, profile }) {
       if (account?.provider !== MICROSOFT_PROVIDER_ID) return true;
-      const result = await systemResolveExternalSignIn({
-        provider: MICROSOFT_PROVIDER_ID,
-        subject: account.providerAccountId,
-        email: microsoftEmailOf(profile as Record<string, unknown> | undefined, user?.email),
-        link: false,
-      });
+      const msEmail = microsoftEmailOf(profile as Record<string, unknown> | undefined, user?.email);
+      // Demo logins are password-only; a Microsoft identity always maps onto the main database.
+      if (isDemoEmail(msEmail)) return '/login?error=microsoft_not_allowed';
+      const result = await runInMain(() =>
+        systemResolveExternalSignIn({
+          provider: MICROSOFT_PROVIDER_ID,
+          subject: account.providerAccountId,
+          email: msEmail,
+          link: false,
+        }),
+      );
       return 'reason' in result ? `/login?error=microsoft_${result.reason}` : true;
     },
     async jwt({ token, user, account, profile }) {
       if (user && account?.provider === MICROSOFT_PROVIDER_ID) {
+        if (isDemoEmail(microsoftEmailOf(profile as Record<string, unknown> | undefined, user.email))) return null;
+        return runInMain(async () => {
         // Map the Microsoft identity onto the VCFO profile and make (or touch) the link.
         const result = await systemResolveExternalSignIn({
           provider: MICROSOFT_PROVIDER_ID,
@@ -208,6 +244,7 @@ const authConfig = {
           avatarVersion: p.updatedAt.getTime(),
           ...(sid ? { sid } : {}),
         };
+        });
       }
       if (user) {
         const u = user as {
@@ -217,6 +254,7 @@ const authConfig = {
           hasAvatar?: boolean;
           avatarVersion?: number;
           sid?: string;
+          demo?: boolean;
         };
         token.role = u.role;
         token.internId = u.internId;
@@ -224,6 +262,8 @@ const authConfig = {
         token.hasAvatar = Boolean(u.hasAvatar);
         token.avatarVersion = u.avatarVersion;
         if (u.sid) token.sid = u.sid;
+        if (u.demo === true) token.demo = true;
+        else delete token.demo;
         return token;
       }
 
@@ -231,30 +271,40 @@ const authConfig = {
       // If the profile was deleted/reseeded, clear the token so middleware + APIs
       // both treat the user as signed out (avoids /app shell with 401 APIs).
       if (token.sub) {
+        const sub = token.sub;
+        const demo = token.demo === true;
+        // A demo token reads only the demo database (PLAN H2); switched off means signed out.
+        if (demo && !demoEnabled()) return {};
         const sid = typeof token.sid === 'string' ? token.sid : null;
-        const rowQuery = db
-          .select({
-            role: profiles.role,
-            internId: profiles.internId,
-            clientId: profiles.clientId,
-            status: profiles.status,
-            name: profiles.name,
-            email: profiles.email,
-            avatarObjectKey: profiles.avatarObjectKey,
-            updatedAt: profiles.updatedAt,
-          })
-          .from(profiles)
-          .where(eq(profiles.id, token.sub))
-          .limit(1);
-        const [[row], sessionActive] = await Promise.all([
-          rowQuery,
-          sid ? systemIsSessionActive(sid, token.sub) : Promise.resolve(true),
-        ]);
+        const [[row], sessionActive] = await runInScope(demo, () =>
+          Promise.all([
+            db
+              .select({
+                role: profiles.role,
+                internId: profiles.internId,
+                clientId: profiles.clientId,
+                status: profiles.status,
+                name: profiles.name,
+                email: profiles.email,
+                avatarObjectKey: profiles.avatarObjectKey,
+                updatedAt: profiles.updatedAt,
+                isDemo: profiles.isDemo,
+              })
+              .from(profiles)
+              .where(eq(profiles.id, sub))
+              .limit(1),
+            sid ? systemIsSessionActive(sid, sub) : Promise.resolve(true),
+          ]),
+        );
         // A device signed out from Profile: clear the token like a deleted profile.
         if (!sessionActive) {
           return {};
         }
         if (!row || row.status !== 'active') {
+          return {};
+        }
+        // The token and the database must agree on demo (fail closed both ways).
+        if (Boolean(row.isDemo) !== demo) {
           return {};
         }
         if (row.role === 'intern' && !row.internId?.trim()) {
@@ -291,6 +341,8 @@ const authConfig = {
           typeof token.avatarVersion === 'number' ? token.avatarVersion : undefined;
         // The device id; `currentContext` reads it to check the row is not revoked.
         (session.user as { sid?: string }).sid = typeof token.sid === 'string' ? token.sid : undefined;
+        // PLAN H2: a demo login; `currentContext` checks it against the demo scope.
+        (session.user as { demo?: boolean }).demo = token.demo === true ? true : undefined;
       }
       return session;
     },

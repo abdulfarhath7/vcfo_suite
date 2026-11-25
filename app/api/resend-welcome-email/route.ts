@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAdminOrManager } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { resendWelcomeEmailBodySchema } from '@/lib/api/schemas';
 import { checkWelcomeEmailRateLimit } from '@/lib/api/rate-limit';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -13,7 +14,7 @@ import { fetchEngagementProgressCcEmails } from '@/lib/email/fetch-engagement-pr
 import { resolvePortalUrl, sendWelcomeEmail } from '@/lib/email/welcome-email';
 
 export async function POST(request: Request) {
-  const auth = await requireAdminOrManager();
+  const auth = noDemo(await requireAdminOrManager());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

@@ -31,6 +31,13 @@
  * `--demo-logins` runs scripts/seed-demo-logins.ts instead (npm run db:seed-demo-logins:prod):
  * the shared demo lead and client logins and their demo companies, flagged `is_demo`.
  *
+ * PLAN H2 (the demo logins in their own database, DEMO_DB_NAME, default `vcfo_demo`):
+ * `--migrate-demo` runs scripts/migrate-demo.ts (npm run db:migrate-demo:prod): creates the demo
+ * database on the same RDS instance if it is missing and applies every migration to it.
+ * `--remove-demo-from-main` runs scripts/remove-demo-from-main.ts (npm run
+ * db:remove-demo-from-main:prod): a dry run of deleting the old `is_demo` rows from the main
+ * database; add `--yes` to delete, which first takes a manual RDS snapshot and waits for it.
+ *
  * `--reset-clients` runs scripts/reset-client-data.ts instead of the demo seed
  * (npm run clients:reset:prod). It only counts unless `--yes` is also given; with
  * `--yes` it first takes a manual RDS snapshot and waits for it, so the deleted
@@ -50,6 +57,8 @@ const resetClients = process.argv.includes('--reset-clients');
 const migrate = process.argv.includes('--migrate');
 // `--demo-logins` runs scripts/seed-demo-logins.ts (npm run db:seed-demo-logins:prod).
 const demoLogins = process.argv.includes('--demo-logins');
+const migrateDemo = process.argv.includes('--migrate-demo');
+const removeDemoFromMain = process.argv.includes('--remove-demo-from-main');
 const confirmed = process.argv.includes('--yes');
 const dbId = arg('db', 'vcfo-suite-db');
 const region = arg('region', process.env.AWS_REGION || 'ap-south-1');
@@ -124,8 +133,8 @@ if (!nat) {
 
 /* ---- 1b. A snapshot before a reset that deletes ---- */
 
-if (resetClients && confirmed) {
-  const snapshotId = `${dbId}-before-client-reset-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`;
+if ((resetClients || removeDemoFromMain) && confirmed) {
+  const snapshotId = `${dbId}-before-${removeDemoFromMain ? 'demo-removal' : 'client-reset'}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`;
   console.log(`Taking RDS snapshot ${snapshotId} before deleting anything…`);
   aws(['rds', 'create-db-snapshot', '--db-instance-identifier', dbId, '--db-snapshot-identifier', snapshotId]);
   execFileSync(
@@ -151,7 +160,7 @@ try {
     const vars =
       described.Service?.SourceConfiguration?.ImageRepository?.ImageConfiguration
         ?.RuntimeEnvironmentVariables ?? {};
-    for (const key of ['S3_BUCKET', 'S3_REGION']) {
+    for (const key of ['S3_BUCKET', 'S3_REGION', 'DEMO_DB_NAME']) {
       if (vars[key]) storageEnv[key] = vars[key];
     }
     console.log(
@@ -224,6 +233,10 @@ const seed = spawn(
     ...(migrate ? ['node_modules/drizzle-kit/bin.cjs', 'migrate'] : ['--conditions=react-server', '--import', 'tsx']),
     ...(migrate ? [] : resetClients
       ? ['scripts/reset-client-data.ts', ...(confirmed ? ['--yes'] : [])]
+      : removeDemoFromMain
+        ? ['scripts/remove-demo-from-main.ts', ...(confirmed ? ['--yes'] : [])]
+      : migrateDemo
+        ? ['scripts/migrate-demo.ts']
       : demoLogins
         ? ['scripts/seed-demo-logins.ts']
         : ['scripts/seed-demo-clients.ts', ...(remove ? ['--remove'] : [])]),
@@ -249,6 +262,7 @@ const seed = spawn(
       S3_SECRET_ACCESS_KEY: '',
       S3_REGION: storageEnv.S3_REGION ?? region,
       ...(storageEnv.S3_BUCKET ? { S3_BUCKET: storageEnv.S3_BUCKET } : {}),
+      ...(storageEnv.DEMO_DB_NAME ? { DEMO_DB_NAME: storageEnv.DEMO_DB_NAME } : {}),
     },
   },
 );

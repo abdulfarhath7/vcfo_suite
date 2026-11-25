@@ -4,6 +4,8 @@ import { systemSignInTwoStep } from '@/db/repositories/profiles';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { clientIp } from '@/lib/growth/demo-request';
 import { takeSignInAttempt } from '@/lib/sign-in-throttle';
+import { isDemoEmail } from '@/lib/demo-logins';
+import { demoEnabled, runInScope } from '@/db/demo-scope';
 
 const bodySchema = z.object({
   email: z.string().trim().min(1).max(160),
@@ -24,9 +26,14 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: 400 });
-  if (!(await takeSignInAttempt('two-step', body.data.email, clientIp(request.headers)))) {
-    return NextResponse.json({ codeRequired: false });
-  }
-  const twoStep = await systemSignInTwoStep(body.data.email);
-  return NextResponse.json({ codeRequired: Boolean(twoStep) });
+  // PLAN H2: a demo email is looked up only in the demo database, like the real sign-in.
+  const demo = isDemoEmail(body.data.email);
+  if (demo && !demoEnabled()) return NextResponse.json({ codeRequired: false });
+  return runInScope(demo, async () => {
+    if (!(await takeSignInAttempt('two-step', body.data.email, clientIp(request.headers)))) {
+      return NextResponse.json({ codeRequired: false });
+    }
+    const twoStep = await systemSignInTwoStep(body.data.email);
+    return NextResponse.json({ codeRequired: Boolean(twoStep) });
+  });
 }

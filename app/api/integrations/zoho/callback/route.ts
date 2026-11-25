@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { siteUrl } from '@/lib/site-url';
 import { publicErrorMessage } from '@/lib/api-error';
 import { exchangeZohoCode, parseZohoState, trustedAccountsServer } from '@/lib/integrations/zoho/oauth';
@@ -15,7 +16,7 @@ const RETURN_PATH = '/app/admin/firm-settings';
  */
 export async function GET(request: Request) {
   const origin = siteUrl();
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) return NextResponse.redirect(`${origin}/login?zoho=error`);
 
   const back = `${origin}${RETURN_PATH}`;

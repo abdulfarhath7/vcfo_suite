@@ -1,28 +1,18 @@
 import 'server-only';
-import { headers } from 'next/headers';
+import { isDemoScope } from '@/db/demo-scope';
 
 /**
- * Marks the current request as made by a demo login (docs/context/notes/demo-data.md, "Demo
+ * True when the current call belongs to a demo login (docs/context/notes/demo-data.md, "Demo
  * logins"), so outbound email and WhatsApp started inside it are written to the log only.
  *
- * Next.js keeps one headers object per request and `headers()` returns the same one every time,
- * so a WeakSet of it is a per-request flag that needs no change to the route handlers. Outside a
- * request (an Inngest job, a script, a test) `headers()` throws and the request is not a demo one;
- * those sends are still caught by the demo mailbox rule (`isDemoEmail`).
+ * Since PLAN H2 this is the demo scope of `src/db/demo-scope.ts`: a request whose session token
+ * is a demo one, an Inngest job whose event carried `demo: true`, or a `runInDemo` block (the
+ * demo seed). The same answer decides which database the call reads, so a call that reads the
+ * demo database never sends a real message.
  */
-const demoRequests = new WeakSet<object>();
-
-export async function markDemoRequest(): Promise<void> {
-  try {
-    demoRequests.add(await headers());
-  } catch {
-    /* not inside a request */
-  }
-}
-
 export async function isDemoRequest(): Promise<boolean> {
   try {
-    return demoRequests.has(await headers());
+    return await isDemoScope();
   } catch {
     return false;
   }

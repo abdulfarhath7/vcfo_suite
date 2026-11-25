@@ -176,9 +176,18 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 | Receivables Send email unblocked | on `main` 23 Nov 2026, **deployed** with the security deposits section (84e515de): image `vcfo-suite:cf91c3b2` (= `:latest`), App Runner deploy SUCCEEDED 18:22 to 18:25 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-f3cbcf0f`. The leaders' email was blocked on its second send of a week, because a received invoice goes to a person once and each one had to be removed by hand. The pop-up now leaves those invoices out when it opens, says how many, and lists them under "Removed from this send"; the warning is one line per invoice. The team's WhatsApp update for emails that wait for approval now says nothing is sent until someone presses Approve in Email log (WhatsApp never approves; a member with "can approve" does, in the tool). Checked in a browser on the local demo sheet with the deposits section; no email was sent. Gate: typecheck and lint clean; `src/jobs/receivables-fx-rates.test.ts` still fails (not touched), and `src/lib/ask/capabilities.test.ts` failed once under load and passes alone. No migration. |
 | Receivables security deposits section | on branch `receivables/sd-section` 23 Nov 2026 (owner's request), **not yet deployed**. The receivables update (Send email on the Sheet tab, leaders only) can carry a separate section, "Security deposits" by default: Client, Status, ETA for closure, Total SD (₹) and SD due now / post signing, with its own heading, its own orange-headed table and its own total row (sum and crore figure), after the receivables total box. The rows are typed or pasted (from Excel, Outlook or a chat) in a folding block at the bottom of the Send email pop-up (`src/views/receivables/manager/compose/DepositsSection.tsx`, state in `use-deposits-draft.ts`); the parser and amount reader are `src/lib/receivables/deposits.ts`. They are not saved on the server: they travel with the send request as `deposits`, and this browser remembers the last rows per sheet. The send route checks them (`checkDeposits` in `summary-send.ts`: title up to 80 characters, up to 50 rows, cells up to 200 characters and the due column 300, amount 0 to 1e13 or null; 400 `deposits_*`), refuses them on the Collections report (`deposits_summary_only`) and draws the section again from the checked rows (`depositsSectionHtml`, `withDepositsSection` in `summary-email.ts`). A partner's email never gets it; the leaders-only check is unchanged. Without deposits the email is byte for byte what it was. The weekly leadership digest and the Templates tab are unchanged. No migration. |
 
-## Demo logins on the real app (25 Nov 2026, uncommitted on `main`, not deployed)
+## Demo logins in their own database, PLAN H2 (26 Nov 2026, uncommitted on `main`, not deployed)
 
-`lead@vcfosuite.com` and `client@vcfosuite.com` (password `Demo@2026`) sign in to the real
+Demo logins for every role (`admin@`, `manager@`, `lead@`, `client@vcfosuite.com`; password: see
+`DEMO_LOGIN_PASSWORD`) on the same app and URL, isolated by a second database `vcfo_demo`
+(`DEMO_DB_NAME`) on the same Postgres server. `db` routes each query by the demo scope
+(`src/db/demo-scope.ts`: session token, `runInDemo`, Inngest events with `demo: true`); S3 keys get
+`demo/`. Deploy: `db:migrate-demo:prod`, `db:seed-demo-logins:prod`, deploy the image, then
+`db:remove-demo-from-main:prod -- --yes`. Details: `docs/context/notes/demo-data.md`, "Demo logins".
+
+## Demo logins on the real app, PLAN H (25 Nov 2026, deployed 26 Nov; superseded by PLAN H2)
+
+`lead@vcfosuite.com` and `client@vcfosuite.com` sign in to the real
 application and see only three demo companies flagged `is_demo`. Migration `0072_demo_logins`
 (additive: `profiles.is_demo`, `engagements.is_demo`) must be applied on RDS before the build that
 holds it is deployed; then `npm run db:seed-demo-logins:prod`. No demo admin or manager login: the

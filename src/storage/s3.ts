@@ -8,6 +8,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { isDemoScope } from '@/db/demo-scope';
 
 /**
  * Object storage. Replaces Supabase Storage.
@@ -42,6 +43,19 @@ const s3 = new S3Client({
 
 const BUCKET = process.env.S3_BUCKET || 'vcfo-documents';
 
+/**
+ * PLAN H2: inside a demo scope (a demo login's request or job, src/db/demo-scope.ts) every object
+ * key gets this prefix when it reaches S3, so demo uploads sit apart from real files and a demo
+ * login can never read a real object, even with a real path. The keys callers pass and the paths
+ * stored in the database stay unprefixed; the prefix is added and removed only here.
+ */
+export const DEMO_KEY_PREFIX = 'demo/';
+
+/** The key as stored in S3 for the current scope. */
+export async function physicalKey(key: string): Promise<string> {
+  return (await isDemoScope()) ? `${DEMO_KEY_PREFIX}${key.replace(/^\/+/, '')}` : key;
+}
+
 export async function putObject(
   key: string,
   body: Buffer | Uint8Array | string,
@@ -50,7 +64,7 @@ export async function putObject(
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
-      Key: key,
+      Key: await physicalKey(key),
       Body: body,
       ContentType: contentType,
     }),
@@ -64,7 +78,7 @@ export async function putObject(
  */
 export async function getObjectBuffer(key: string): Promise<Buffer | null> {
   try {
-    const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: await physicalKey(key) }));
     if (!res.Body) return null;
     return Buffer.from(await res.Body.transformToByteArray());
   } catch (error) {
@@ -80,7 +94,7 @@ export async function getObjectBuffer(key: string): Promise<Buffer | null> {
  */
 export async function objectExists(key: string): Promise<boolean> {
   try {
-    await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    await s3.send(new HeadObjectCommand({ Bucket: BUCKET, Key: await physicalKey(key) }));
     return true;
   } catch (error) {
     const e = error as { name?: string; $metadata?: { httpStatusCode?: number } };
@@ -96,7 +110,7 @@ export async function signedDownloadUrl(
 ): Promise<string> {
   return getSignedUrl(
     s3,
-    new GetObjectCommand({ Bucket: BUCKET, Key: key }),
+    new GetObjectCommand({ Bucket: BUCKET, Key: await physicalKey(key) }),
     { expiresIn: expiresInSeconds },
   );
 }
@@ -112,14 +126,18 @@ export async function listObjects(
 ): Promise<Array<{ key: string; size: number | null; lastModified: string | null }>> {
   const out: Array<{ key: string; size: number | null; lastModified: string | null }> = [];
   let token: string | undefined;
+  const demo = await isDemoScope();
+  const physicalPrefix = demo ? `${DEMO_KEY_PREFIX}${prefix.replace(/^\/+/, '')}` : prefix;
   do {
     const res = await s3.send(
-      new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix, ContinuationToken: token }),
+      new ListObjectsV2Command({ Bucket: BUCKET, Prefix: physicalPrefix, ContinuationToken: token }),
     );
     for (const o of res.Contents ?? []) {
       if (!o.Key) continue;
+      // Callers see the same keys they would outside the demo scope.
+      if (demo && !o.Key.startsWith(DEMO_KEY_PREFIX)) continue;
       out.push({
-        key: o.Key,
+        key: demo ? o.Key.slice(DEMO_KEY_PREFIX.length) : o.Key,
         size: o.Size ?? null,
         lastModified: o.LastModified ? o.LastModified.toISOString() : null,
       });
@@ -130,7 +148,7 @@ export async function listObjects(
 }
 
 export async function deleteObject(key: string): Promise<void> {
-  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: await physicalKey(key) }));
 }
 
 /**

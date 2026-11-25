@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { publicErrorMessage } from '@/lib/api-error';
 import { getFirmConnection } from '@/db/repositories/integrations';
 import { queueZohoDiscover } from '@/lib/integrations/zoho/run-discover';
 
 /** POST /api/integrations/zoho/discover — run discovery, the auto map and the field check again. */
 export async function POST() {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   try {
     const conn = await getFirmConnection(guard.ctx);

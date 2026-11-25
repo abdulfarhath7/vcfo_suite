@@ -1,18 +1,21 @@
 /**
  * Shared demo logins on the real application (docs/context/notes/demo-data.md, "Demo logins").
  *
- *   npm run db:seed-demo-logins              # local database (.env.local)
+ *   npm run db:seed-demo-logins              # local: the demo database next to .env.local's
  *   npm run db:seed-demo-logins:prod         # production RDS, through the SSM tunnel
  *   npm run db:seed-demo-logins -- --reset   # also drop everything visitors added on the demo companies
  *
- * Logins (password Demo@2026, or DEMO_LOGIN_PASSWORD):
- *   lead@vcfosuite.com    Project lead on the three demo companies
- *   client@vcfosuite.com  Client portal of Kaveri Analytics
+ * PLAN H2: the demo world is its own database (DEMO_DB_NAME, default `vcfo_demo`) on the same
+ * Postgres server, never the main one. The script creates that database when it is missing,
+ * applies every migration to it, and then writes everything inside `runInDemo`, so each query
+ * goes to the demo database (src/db/demo-scope.ts). Placeholder files go under the `demo/`
+ * storage prefix for the same reason.
  *
- * admin@vcfosuite.com and manager@vcfosuite.com are deliberately NOT sign-in accounts. An admin or
- * a manager reads firm-wide data in many repositories, so the guard admits a demo profile only as
- * a lead or a client (src/lib/demo-logins.ts). manager@vcfosuite.com exists as an inactive profile
- * with no password, only so the demo companies and the demo receivables sheet have an owner.
+ * Logins (the password is DEMO_LOGIN_PASSWORD, or the default in this file):
+ *   admin@vcfosuite.com    Firm admin of the demo firm
+ *   manager@vcfosuite.com  Project manager of the three demo companies, owner of the receivables sheet
+ *   lead@vcfosuite.com     Project lead on the three demo companies
+ *   client@vcfosuite.com   Client portal of Kaveri Analytics
  *
  * State of each company: incorporation fully done (all 14 steps, the certificate, PAN, TAN, board
  * resolutions and the post-incorporation steps); registrations half done (GST with a GSTIN, LUT
@@ -22,9 +25,9 @@
  * overdue and the rest upcoming. Plus tasks, documents, a receivables sheet and a budget.
  *
  * SAFETY
- *   - Every row it writes is flagged `is_demo` (profiles, engagements) or hangs off one.
- *   - It never changes or deletes a row that is not demo: an existing non-demo profile on a demo
- *     email, or a non-demo engagement on a demo slug, stops the run before anything is written.
+ *   - It only ever writes to the demo database, and refuses when DEMO_DB_NAME names the main one.
+ *   - Every row it writes is flagged `is_demo` (profiles, engagements) or hangs off one, which the
+ *     sign-in and the guard check as a second fence.
  *   - Rerunning is safe. Seeded rows on the demo companies (documents, tasks, filings, GST fields,
  *     activity, the budget) are rebuilt; ids of the people and companies are kept. `--reset`
  *     deletes and recreates the demo companies, which also drops whatever visitors added.
@@ -64,6 +67,9 @@ import { DEMO_EMAIL_DOMAIN } from '../src/lib/demo-logins';
 import { createBudget } from '../src/db/repositories/budgets';
 import { publishSheet, systemAddSheetEditor, systemCreateSheet } from '../src/db/repositories/receivables';
 import { documentStorageKey, seedPlaceholders } from '../src/storage/demo-placeholders';
+import { firmSettings } from '../src/db/schema-firm';
+import { runInDemo } from '../src/db/demo-scope';
+import { describeTarget, ensureDemoDatabase, migrateDemoDatabase, requireDemoDbName } from './demo-db';
 
 const PASSWORD = process.env.DEMO_LOGIN_PASSWORD?.trim() || 'Demo@2026';
 const SLUG_PREFIX = 'vcfodemo-';
@@ -104,7 +110,7 @@ type Person = {
   key: string;
   email: string;
   name: string;
-  role: 'intern' | 'client' | 'manager';
+  role: 'admin' | 'intern' | 'client' | 'manager';
   designation: string;
   login: boolean;
   internId?: string;
@@ -112,10 +118,11 @@ type Person = {
 };
 
 const PEOPLE: Person[] = [
+  { key: 'admin', email: email('admin'), name: 'Nandini Rao', role: 'admin', designation: 'Firm Admin', login: true },
+  { key: 'manager', email: email('manager'), name: 'Kavya Menon', role: 'manager', designation: 'Project Manager', login: true },
   { key: 'lead', email: email('lead'), name: 'Arjun Rao', role: 'intern', designation: 'Project Lead', login: true, internId: LEAD_INTERN_ID },
   { key: 'client', email: email('client'), name: 'Meera Iyer', role: 'client', designation: 'Finance Director, Kaveri Analytics', login: true, clientId: 'demo-client-kaveri' },
-  // Owner records only: inactive, no password, never a session (see the header).
-  { key: 'manager', email: email('manager'), name: 'Kavya Menon', role: 'manager', designation: 'Project Manager', login: false },
+  // Client contacts of the other two companies: records only, inactive, no password.
   { key: 'client-tunga', email: email('tungabhadra'), name: 'Rohan Kulkarni', role: 'client', designation: 'Director, Tungabhadra Foods', login: false, clientId: 'demo-client-tungabhadra' },
   { key: 'client-narmada', email: email('narmada'), name: 'Sarah Whitfield', role: 'client', designation: 'CFO, Narmada Cloudworks Inc.', login: false, clientId: 'demo-client-narmada' },
 ];
@@ -327,11 +334,6 @@ function gstFields(c: Company): Array<{ fieldKey: string; value: string }> {
  * Seed helpers
  * ------------------------------------------------------------------ */
 
-function target(): string {
-  if (process.env.DB_SECRET_ARN) return `RDS ${process.env.DB_NAME ?? ''} via ${process.env.DB_HOST}:${process.env.DB_PORT}`;
-  return (process.env.DATABASE_URL ?? '').replace(/:\/\/[^@]*@/, '://***@') || '(no database configured)';
-}
-
 /** Stop before writing anything if a demo email or slug is held by a real row. */
 async function assertNoCollision(): Promise<void> {
   const people = await db.select({ email: profiles.email, isDemo: profiles.isDemo }).from(profiles).where(inArray(profiles.email, PEOPLE.map((p) => p.email)));
@@ -371,8 +373,16 @@ async function upsertPerson(p: Person, passwordHash: string): Promise<string> {
  * ------------------------------------------------------------------ */
 
 async function main() {
+  const name = requireDemoDbName();
+  await ensureDemoDatabase();
+  await migrateDemoDatabase();
+  console.log(`\nSeeding ${describeTarget(name)}\n`);
+  await runInDemo(seed);
+  process.exit(0);
+}
+
+async function seed() {
   const reset = process.argv.includes('--reset');
-  console.log(`Database: ${target()}\n`);
   await assertNoCollision();
 
   if (reset) {
@@ -387,6 +397,17 @@ async function main() {
   const managerId = ids.get('manager')!;
   const leadId = ids.get('lead')!;
   await db.update(profiles).set({ reportsToManagerId: managerId }).where(and(eq(profiles.id, leadId), eq(profiles.isDemo, true)));
+
+  /* The demo firm's settings (the demo database holds no other firm). */
+  const firm = {
+    firmName: 'VCFO Suite Demo Firm',
+    supportEmail: email('support'),
+    supportPhone: null,
+    address: 'Demo address, not a real office',
+    updatedBy: ids.get('admin')!,
+    updatedAt: new Date(),
+  };
+  await db.insert(firmSettings).values({ id: 'firm', ...firm }).onConflictDoUpdate({ target: firmSettings.id, set: firm });
 
   await db
     .insert(complianceObligations)
@@ -633,11 +654,11 @@ async function main() {
   await publishSheet(managerCtx, sheet.id, 'Demo data');
   console.log(`  ${invoiceSeeds.length} invoices on "${SHEET}", published; the demo lead is an editor.`);
 
-  console.log(`\nDone. Demo logins (password ${PASSWORD === 'Demo@2026' ? 'Demo@2026' : 'from DEMO_LOGIN_PASSWORD'}):`);
-  console.log(`  ${email('lead')}    project lead on all three demo companies`);
-  console.log(`  ${email('client')}  client portal of Kaveri Analytics`);
-  console.log(`  ${email('manager')} is an inactive owner record, not a login; there is no demo admin.`);
-  process.exit(0);
+  console.log(`\nDone. Demo logins (password ${process.env.DEMO_LOGIN_PASSWORD?.trim() ? 'from DEMO_LOGIN_PASSWORD' : 'the default in this script'}):`);
+  console.log(`  ${email('admin')}    firm admin of the demo firm`);
+  console.log(`  ${email('manager')}  project manager of the three demo companies`);
+  console.log(`  ${email('lead')}     project lead on all three demo companies`);
+  console.log(`  ${email('client')}   client portal of Kaveri Analytics`);
 }
 
 main().catch((err) => {

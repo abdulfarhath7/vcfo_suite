@@ -20,7 +20,7 @@ import { isUuid } from '@/lib/slug';
 import { systemGetWhatsAppGatePrefs } from '@/db/repositories/notification-prefs';
 import type { WhatsAppGatePrefs } from '@/lib/notify/prefs-gate';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
-import { assertNotDemo, demoRoleAllowed } from '@/lib/demo-logins';
+import { assertNotDemo } from '@/lib/demo-logins';
 import { generateTotpSecret, otpauthUri } from '@/lib/totp/totp';
 import { encryptTotpSecret, reencryptTotpSecret } from '@/lib/totp/secret-box';
 import { checkTotpCode } from '@/lib/totp/check';
@@ -1050,6 +1050,8 @@ export type SignInCandidate = {
   /** True when two-step sign-in is confirmed for this person. */
   twoStepOn: boolean;
   totpSecretEnc: string | null;
+  /** A demo login (`profiles.is_demo`); only ever found in the demo database. */
+  isDemo: boolean;
 };
 
 /**
@@ -1086,8 +1088,6 @@ export async function systemCheckSignInPassword(emailInput: string, password: st
   const ok = await bcrypt.compare(password, row?.passwordHash || DUMMY_BCRYPT_HASH);
   if (!row?.passwordHash || !ok) return null;
   if (row.status !== 'active') return null;
-  // Demo logins sign in only as a lead or a client (src/lib/demo-logins.ts).
-  if (!demoRoleAllowed(row.isDemo, row.role)) return null;
   // Interns without a scoping key see an empty portfolio — refuse login.
   if (row.role === 'intern' && !row.internId?.trim()) return null;
 
@@ -1102,6 +1102,7 @@ export async function systemCheckSignInPassword(emailInput: string, password: st
     updatedAt: row.updatedAt,
     twoStepOn: Boolean(row.totpEnabledAt && row.totpSecretEnc),
     totpSecretEnc: row.totpSecretEnc,
+    isDemo: Boolean(row.isDemo),
   };
 }
 

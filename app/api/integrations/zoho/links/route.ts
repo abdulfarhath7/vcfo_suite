@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { publicErrorMessage } from '@/lib/api-error';
 import { acceptAllSuggested, decideLink, getFirmConnection, listMapTargetOptions } from '@/db/repositories/integrations';
 import { queueZohoDiscover } from '@/lib/integrations/zoho/run-discover';
@@ -28,7 +29,7 @@ const Body = z.union([
 ]);
 
 export async function POST(request: Request) {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });

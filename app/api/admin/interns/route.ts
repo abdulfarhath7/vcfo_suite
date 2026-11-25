@@ -2,6 +2,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 import { NextResponse } from 'next/server';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { requireAdminOrManager } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { createInternBodySchema } from '@/lib/api/schemas';
 import { checkInternCreateRateLimit } from '@/lib/api/rate-limit';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
@@ -30,7 +31,7 @@ export async function GET() {
 
 /** POST /api/admin/interns — create project lead + optional welcome email. */
 export async function POST(request: Request) {
-  const auth = await requireAdminOrManager();
+  const auth = noDemo(await requireAdminOrManager());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

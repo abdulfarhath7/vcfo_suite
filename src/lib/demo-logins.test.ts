@@ -1,22 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DEMO_BLOCKED_MESSAGE, DemoBlockedError, assertNotDemo, demoRoleAllowed, isDemoBlockedError, isDemoEmail } from './demo-logins';
+import { DEMO_BLOCKED_MESSAGE, DemoBlockedError, assertNotDemo, isDemoBlockedError, isDemoEmail } from './demo-logins';
 
 describe('demo logins (pure rules)', () => {
-  it('admits a demo profile only as a lead or a client', () => {
-    expect(demoRoleAllowed(true, 'intern')).toBe(true);
-    expect(demoRoleAllowed(true, 'client')).toBe(true);
-    for (const role of ['admin', 'super_admin', 'manager', 'developer', 'partner', '', null]) {
-      expect(demoRoleAllowed(true, role)).toBe(false);
-    }
-  });
-
-  it('never affects a real profile', () => {
-    for (const role of ['admin', 'super_admin', 'manager', 'intern', 'client', 'developer']) {
-      expect(demoRoleAllowed(false, role)).toBe(true);
-      expect(demoRoleAllowed(null, role)).toBe(true);
-    }
-  });
-
   it('recognises demo mailboxes, with or without a display name', () => {
     expect(isDemoEmail('lead@vcfosuite.com')).toBe(true);
     expect(isDemoEmail('Arjun Rao <LEAD@VCFOSUITE.COM>')).toBe(true);

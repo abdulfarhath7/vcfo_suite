@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { createZohoState, zohoAuthorizeUrl, zohoConfigured } from '@/lib/integrations/zoho/oauth';
 
 /**
@@ -7,7 +8,7 @@ import { createZohoState, zohoAuthorizeUrl, zohoConfigured } from '@/lib/integra
  * Super admin and admin only. The signed state rides in an httpOnly cookie for 15 minutes.
  */
 export async function GET() {
-  const guard = await requireAdmin();
+  const guard = noDemo(await requireAdmin());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   if (!zohoConfigured()) return NextResponse.json({ error: 'zoho_not_configured' }, { status: 503 });
 

@@ -113,27 +113,59 @@ once real staff accounts exist.
 
 ## Demo logins (shared, on the real application)
 
-People outside SBC sign in to the real application (`app.sbctrack.in`) with shared demo logins.
-There is no separate demo site or database: the demo people and companies live in the production
-database next to real clients, flagged `is_demo` (migration `0072_demo_logins`, additive). Keeping
-them apart is the job of `src/lib/demo-logins.ts`.
+People outside SBC sign in to the real application (`app.sbctrack.in`, the same URL and login
+page) with shared demo logins. Since PLAN H2 (26 Nov 2026) the demo world is **its own database**
+on the same Postgres server: `DEMO_DB_NAME`, default `vcfo_demo`. The main database holds no demo
+rows (run `npm run db:remove-demo-from-main` once to take out the PLAN H copies).
 
 | Login | Role | Sees |
 | --- | --- | --- |
-| `lead@vcfosuite.com` | project lead | the three demo companies and the demo receivables sheet |
+| `admin@vcfosuite.com` | firm admin | the whole demo firm (three companies, the demo people, the receivables sheet) |
+| `manager@vcfosuite.com` | project manager | the three demo companies it manages, owner of the receivables sheet |
+| `lead@vcfosuite.com` | project lead | the three demo companies and the demo receivables sheet (editor) |
 | `client@vcfosuite.com` | client | the client portal of Kaveri Analytics |
 
-The password is `Demo@2026` (`DEMO_LOGIN_PASSWORD` overrides it at seed time).
+The password is set at seed time: see `DEMO_LOGIN_PASSWORD` (the seed falls back to its own
+default when it is unset). Do not write the password in docs; the repository is public.
 
-**There is no demo admin or demo manager login, on purpose.** An admin reads firm-wide data in
-dozens of repositories (metrics, people, receivables, audit, practice dashboards), and a manager
-has firm-wide reads too (knowledge bank, email templates, unassigned leads). Confining them would
-mean a filter in every one of those places, so instead the guard (`currentContext` in
-`src/auth/guards.ts`) and the sign-in (`systemCheckSignInPassword`) refuse a demo profile whose
-role is not `intern` or `client`. A lead and a client are already scoped to the engagements they
-are assigned to, and every demo engagement is assigned only to demo people.
-`manager@vcfosuite.com` exists as an inactive profile with no password, only to own the demo
-companies and the receivables sheet. Turning it on would still not give it a session.
+### How the isolation works
+
+- **One choke point.** `src/db/client.ts` exports the same `db`, but its pool is a `ScopedPool`
+  that hands every query and every `connect()` to the main pool or the demo pool, chosen per call
+  by `isDemoScope()` (`src/db/demo-scope.ts`). A transaction takes one connection from one pool,
+  so it never mixes the two. The demo pool uses the same host, user, rotating secret and TLS, and
+  is made on first use. No repository changed.
+- **The scope.** `isDemoScope()` is true inside `runInDemo(fn)`, false inside `runInMain(fn)`,
+  and otherwise follows the current Next.js request: a request whose Auth.js session cookie holds
+  a token with `demo: true` is a demo request from its first query to its last (route handlers,
+  server components, server actions, `after()` work). The token is decoded once per request, so
+  nothing has to "enter" the scope and no query can reach the main database first. Scripts, cron
+  jobs and signed-out pages use the main database.
+- **Sign-in.** `authorizeCredentials` (`src/auth/config.ts`) checks an `@vcfosuite.com` email only
+  in the demo database (`runInDemo`) and any other email only in the main one (`runInMain`),
+  whatever cookie the browser still holds; the two-step pre-check does the same. A demo sign-in
+  puts `demo: true` in the JWT and the session. A row whose `is_demo` does not match the database
+  it was found in is refused. Microsoft sign-in always runs on the main database and refuses a
+  demo email.
+- **Every request.** The JWT refresh in `config.ts` and `currentContext` in `src/auth/guards.ts`
+  refuse when the session says demo but the scope does not (or the reverse), when the profile
+  row's `is_demo` disagrees with the session, and when demo logins are switched off. Every role
+  is admitted: firm-wide for a demo admin means the demo firm.
+- **Switched off.** `DEMO_DB_NAME=off` (or empty) refuses demo sign-in, signs out demo sessions,
+  and makes any demo query throw instead of falling back to the main database.
+- **Jobs.** The Inngest client middleware (`src/jobs/client.ts`) adds `demo: true` to every event
+  sent inside a demo scope. `/api/inngest` (`src/jobs/demo-route.ts`) runs a step whose event
+  carries it inside `runInDemo`; a demo event that reaches a job outside the scope is refused
+  before the body runs. Inline fallbacks run inside the request, so they follow it. Cron jobs
+  run for the main database only; there is no demo pass (reminders and digests for demo people
+  would be dropped as outbound mail anyway).
+- **Files.** `src/storage/s3.ts` adds the prefix `demo/` to every key inside a demo scope (put,
+  get, head, signed URL, delete, list; list hands keys back without it). Stored paths stay
+  unprefixed. A demo login cannot read a real object even with a real path.
+- **Ask VCFO.** Token budget, rate limits and history are rows in whichever database the request
+  uses, so the demo world has its own daily budget; the tighter demo cap still applies.
+- **Second fence.** Seeded rows stay flagged `is_demo`, and a demo AuthContext carries
+  `demo: true`, so the PLAN H refusals below still apply to every demo role.
 
 ### What a demo login cannot do
 
@@ -142,10 +174,13 @@ Every refusal says "Not available on demo logins" (HTTP 403).
 - Its own account: password, email, profile, photo, two-step sign-in, sign-in links, signing out
   other devices, notification preferences, the WhatsApp number (`noDemo(...)` on the
   `/api/account/*` and `/api/client/account*` routes, `assertNotDemo` in `profiles.ts`).
-- User management: client team invites, adding or replacing a client on a project, creating,
-  deleting or re-emailing anyone (`profiles.ts`, `client/team`, `engagements/[id]/clients*`).
+- User management, so the shared logins stay stable: client team invites, adding or replacing a
+  client on a project, creating, deleting or re-emailing anyone, welcome emails, reporting lines
+  and developer accounts (`profiles.ts`, `client/team`, `engagements/[id]/clients*`,
+  `admin/people/reporting`, `admin/people/developers`, `send-welcome-email`, `resend-welcome-email`).
 - Integrations: Outlook connect, send and groups, SharePoint folder, Tally pairing and sync, Zoho
-  sync, sheet email settings (`receivables/tally-sync.ts`, `zoho-sync.ts`, `sheets.ts`).
+  connect, discover, links and sync, sheet email settings (`receivables/tally-sync.ts`,
+  `zoho-sync.ts`, `sheets.ts`, `app/api/integrations/zoho/*`).
 - Firm-wide data and writes: the knowledge bank, email templates, shared mail groups, labour
   register verdicts and code rules, Watch intake, escalations to admins, Assist recipe patches,
   progress CC lists, firm settings and logo, exports.
@@ -166,21 +201,34 @@ progress CC keeps only demo mailboxes, so real admins get no bell or CC about de
 
 ### Real staff
 
-Real admins still see the demo companies; the admin project list labels them "Demo"
-(`Engagement.isDemo`). They also count in firm-wide dashboards and KPIs.
+Real staff never see the demo companies: they live in the other database. The admin project list
+still labels an `is_demo` row "Demo", which now only shows inside the demo world.
 
 ### Commands
 
 ```bash
-npm run db:migrate                        # applies 0072_demo_logins (additive)
-npm run db:seed-demo-logins               # local
-npm run db:seed-demo-logins:prod          # production, through the SSM tunnel (scripts/demo-prod.mjs --demo-logins)
-npm run db:seed-demo-logins -- --reset    # also drop what visitors added on the demo companies
+npm run db:migrate-demo                      # create vcfo_demo if missing, apply every migration
+npm run db:seed-demo-logins                  # create + migrate + seed the demo database (local)
+npm run db:seed-demo-logins -- --reset       # also drop what visitors added on the demo companies
+npm run db:remove-demo-from-main             # dry run: counts of is_demo rows in the MAIN database
+npm run db:remove-demo-from-main -- --yes    # delete them (one transaction)
+# production, through the SSM tunnel (scripts/demo-prod.mjs):
+npm run db:migrate-demo:prod
+npm run db:seed-demo-logins:prod
+npm run db:remove-demo-from-main:prod        # add -- --yes to delete; takes an RDS snapshot first
 ```
 
-The seed only writes rows flagged `is_demo` or hanging off them, and stops before writing if a
-real profile or project holds a demo email or slug. Rerunning rebuilds the seeded rows (documents,
-tasks, filings, GST fields, activity, audit, budgets, the sheet's invoices) and keeps the ids.
+The seed writes only to the demo database (it refuses when `DEMO_DB_NAME` names the main one),
+creates it from `template0` when it is missing, and runs the migrations first. It writes the demo
+firm settings, the four logins plus two inactive client contacts, the three companies, documents
+(placeholder PDFs under `demo/`), tasks, filings, GST fields, activity, budgets and the receivables
+sheet. Rerunning rebuilds the seeded rows and keeps the ids. Every deploy that adds a migration
+runs `db:migrate-demo` after `db:migrate`.
+
+The cleanup deletes only `is_demo` engagements, the receivables sheets owned by `is_demo`
+profiles, and `is_demo` profiles, with their child rows: CASCADE and SET NULL keys are left to
+Postgres; a NO ACTION key is set to null when the column allows it and the row is deleted when it
+does not. A non-demo profile on the demo domain is reported and never touched.
 
 State: incorporation fully done on all three companies (the 14 SPICe+ steps, certificate, PAN,
 TAN, board resolution, post-incorporation); registrations half done (GST with GSTIN, LUT and MSME
@@ -193,19 +241,23 @@ built from those PANs with a valid check character, DINs `9991xxxx`.
 
 ### Tests
 
-- `src/lib/demo-logins.test.ts`, `src/auth/guards-demo.test.ts`, `src/lib/email/send-email-demo.test.ts`,
-  `src/lib/ask/rate-limit-demo.test.ts`: the rules, without a database.
-- `src/db/repositories/demo-isolation.db.test.ts`: the cross-tenant suite against a real database
-  with real-looking data (skipped unless `DEMO_ISOLATION_DB_URL` is set; the header lists the
-  seed commands).
+- `src/db/demo-scope.test.ts`: routing (inside and outside `runInDemo`, nesting, timers,
+  transactions, concurrent scopes, lazy builders), the request scope from a real encoded session
+  cookie (demo, real, forged, secure name), and `DEMO_DB_NAME=off`.
+- `src/auth/sign-in-demo.test.ts`: sign-in routing by email domain for every role.
+- `src/auth/guards-demo.test.ts`: the guard's fail-closed checks.
+- `src/jobs/demo-scope-jobs.test.ts`: event tagging, the Inngest route scope, the backstop, and
+  the S3 `demo/` prefix.
+- `src/lib/email/send-email-demo.test.ts`, `src/lib/ask/rate-limit-demo.test.ts`,
+  `src/lib/demo-logins.test.ts`: the outbound and Ask rules.
+- `src/db/repositories/demo-isolation.db.test.ts`: the PLAN H cross-tenant suite (skipped unless
+  `DEMO_ISOLATION_DB_URL` is set).
 
 ### Not covered
 
-- Firm-wide reads a lead already had and that hold no client data: the statutory calendar,
-  obligations, agenda library, announcements, Watch updates (public regulatory news), the
-  firm settings read (firm name, support contact) and the Ask knowledge documents.
-- Demo use counts against the firm's single daily AI token budget, and demo client questions
-  appear in the admins' question-gap review.
-- Jobs that email contacts typed on a demo company other than directors (for example a client
-  contact) rely on those contacts being demo mailboxes; the client team and client invite routes
-  are closed to demo logins, so no new contact can be added from a demo login.
+- Cron jobs have no demo pass (see Jobs above).
+- Public links made inside the demo world (a receivables share link, a set-password link) are
+  looked up in the main database when someone opens them signed out, so they do not work. That
+  fails closed.
+- Old demo placeholder objects written by PLAN H at unprefixed keys (`.../vcfodemo/...`) stay in
+  the bucket; they hold only placeholder PDFs.

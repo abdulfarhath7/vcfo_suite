@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAdmin, requireAdminOrManager } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   createAdminProfile,
@@ -45,7 +46,7 @@ export async function GET() {
  * Client accounts are created with projects (POST /api/engagements), not here.
  */
 export async function POST(request: Request) {
-  const auth = await requireAdminOrManager();
+  const auth = noDemo(await requireAdminOrManager());
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
