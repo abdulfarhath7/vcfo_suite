@@ -41,7 +41,8 @@ function expectBlockShape(three: NavEntry[]) {
   // NV-01: staff Incorporation is a dropdown (the client keeps a plain link).
   expect(isNavSectionBreak(inc) ? null : inc.icon).toBe(Landmark);
   expect(isNavGroup(comp) ? comp.icon : null).toBe(CalendarCheck);
-  expect(isNavGroup(reg) || isNavSectionBreak(reg) ? null : reg.icon).toBe(BadgeCheck);
+  // Registrations is a group for staff (with the GST and DIN lookups) and a flat item for the client.
+  expect(isNavSectionBreak(reg) ? null : reg.icon).toBe(BadgeCheck);
 }
 
 const STAFF: Array<{ role: Role; base: string; before: string }> = [
@@ -67,8 +68,11 @@ describe('practice block (R-51)', () => {
         `${base}/compliances/calendar`,
         `${base}/compliances/filings`,
         `${base}/registrations`,
+        `${base}/tools/gst-lookup`,
+        `${base}/tools/lookup`,
       ]);
       expect(isNavGroup(b.three[1]) ? b.three[1].items.map((l) => l.label) : []).toEqual(['Obligations', 'Calendar', 'Filings']);
+      expect(isNavGroup(b.three[2]) ? b.three[2].items.map((l) => l.label) : []).toEqual(['Overview', 'GST Lookup', 'MCA Lookup']);
       // Each entry appears once: the old Registrations row after Compliances is gone.
       expect(b.items.filter((e) => label(e) === 'Registrations')).toHaveLength(1);
     });
@@ -93,6 +97,8 @@ describe('practice block (R-51)', () => {
       '/app/super/practice/compliances',
       '/app/super/practice/filings',
       '/app/super/practice/registrations',
+      '/app/admin/tools/gst-lookup',
+      '/app/admin/tools/lookup',
     ]);
     expect(isNavGroup(b.three[1]) ? b.three[1].items.map((l) => l.label) : []).toEqual(['Obligations', 'Filings']);
   });

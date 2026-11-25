@@ -17,6 +17,8 @@ import {
   Columns3,
   Database,
   FileText,
+  Fingerprint,
+  IdCard,
   FolderClosed,
   FolderOpen,
   History as HistoryIcon,
@@ -180,6 +182,21 @@ export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string,
 /** The practice block's three labels, in order (R-51). */
 export const PRACTICE_BLOCK_LABELS = ['Incorporation', 'Compliances', 'Registrations'] as const;
 
+/** Registrations group: Overview plus the two number lookups, for staff roles. */
+function registrationsGroup(registrationsPath: string, toolsBase: string): NavGroupDef {
+  return {
+    id: `registrations:${registrationsPath}`,
+    label: 'Registrations',
+    icon: BadgeCheck,
+    iconTone: TONE.work,
+    items: [
+      { to: registrationsPath, label: 'Overview', icon: BadgeCheck, iconTone: TONE.work },
+      { to: `${toolsBase}/gst-lookup`, label: 'GST Lookup', icon: Fingerprint, iconTone: TONE.work },
+      { to: `${toolsBase}/lookup`, label: 'MCA Lookup', icon: IdCard, iconTone: TONE.work },
+    ],
+  };
+}
+
 /**
  * R-51 (D-29): the practice block every practice role shares, in the client's order:
  * Incorporation (Landmark), Compliances (Obligations, Calendar, Filings), Registrations
@@ -197,7 +214,7 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
         { ...complianceLeaves(practice)[0], to: `${practice}/compliances` },
         { ...complianceLeaves(practice)[2], to: `${practice}/filings` },
       ]),
-      { to: `${practice}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
+      registrationsGroup(`${practice}/registrations`, '/app/admin/tools'),
     ];
   }
   return [
@@ -205,7 +222,9 @@ function practiceBlock(role: Role, base: string): NavEntry[] {
       ? { to: `${base}/incorporation`, label: 'Incorporation', icon: Landmark, iconTone: TONE.work }
       : incorporationGroup(base),
     compliancesGroup(compliancesBasePath(role, base)),
-    { to: `${base}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work },
+    role === 'client'
+      ? { to: `${base}/registrations`, label: 'Registrations', icon: BadgeCheck, iconTone: TONE.work }
+      : registrationsGroup(`${base}/registrations`, `${base}/tools`),
   ];
 }
 

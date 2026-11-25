@@ -75,6 +75,8 @@ const PAGE_LABEL: Record<string, string> = {
   'ask-vcfo': 'Ask VCFO',
   ask: 'Ask VCFO',
   learn: 'Library',
+  'gst-lookup': 'GST Lookup',
+  lookup: 'MCA Lookup',
 };
 
 const PAGE_ICON: Record<string, ShellCrumbIcon> = {
@@ -345,6 +347,12 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail('calendar', [
       { label: 'Compliances', href: `${base}/compliances/calendar` },
       { label: pageLabel(nested ?? 'calendar'), href: `${base}/compliances/${nested ?? 'calendar'}` },
+    ]);
+  }
+
+  if (page === 'tools' && nested) {
+    return trail(pageIcon(nested, null), [
+      { label: pageLabel(nested), href: null },
     ]);
   }
 
