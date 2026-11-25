@@ -26,6 +26,7 @@ import { useRegistrationFacts } from '@/hooks/use-registration-facts';
 import { InfoButton } from '@/components/ui/info-button';
 import { canRecordRegistrationTracker } from '@/lib/registrations/tracker-access';
 import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
+import { GstApplicationCard } from '@/components/assist-profile/GstApplicationCard';
 import { GST_STEP_ID, gstSchedule } from '@/lib/registrations/gst-tracker';
 import { LUT_STEP_ID } from '@/lib/registrations/lut-tracker';
 import { LutRegistrationTracker, LutScheduleDate } from '@/components/compliances/LutRegistrationTracker';
@@ -254,6 +255,10 @@ export function RegistrationView({
                 mayStart={row.word !== 'Done'}
               />
             )}
+
+            {/* GST REG-01 through VCFO Assist (owner brief, 25 Nov 2026): the tool is filled first, then the
+                extension fills the portal; the person signs in, types the OTPs and submits (SBC-STD-AI-02). */}
+            {isGst ? <GstApplicationCard engagementId={engagement.id} /> : null}
 
             {/* S-774-style From the client on the registration: asked documents, needs not asked yet, the client's details. */}
             {row.word === 'Not needed' ? null : (

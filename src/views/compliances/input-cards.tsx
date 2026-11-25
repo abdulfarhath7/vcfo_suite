@@ -268,7 +268,8 @@ export function StaffSbcFieldsCard({
 }) {
   const q = useSubjectInputs({ engagementId, kind, key: subjectKey });
   const act = useInputsAction();
-  const rows = q.data?.sbc ?? [];
+  // A registration's copy of a finished checklist value shows only once it holds one.
+  const rows = (q.data?.sbc ?? []).filter((f) => !f.copy || f.value);
   const save = (key: string, value: string, before: string | null) => {
     if ((value.trim() || null) === before) return;
     act.mutate(

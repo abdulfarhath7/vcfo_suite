@@ -67,6 +67,8 @@ import {
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
 import { isFillRequest, modeFromText } from '@/lib/ask/fill/intent';
+import { gstIntent } from '@/lib/ask/gst/intent';
+import { gstWorkAnswer, type GstWorkAnswer } from '@/lib/ask/gst/answer';
 import { FillRefused, startFill } from '@/lib/ask/fill/run';
 import { findOpenFillCardInConversation } from '@/db/repositories/ask-changesets';
 import { dropContextLine, dropProgressAnswer, isDropProgressQuestion } from '@/lib/ask/drop/progress';
@@ -318,6 +320,39 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     await finish(result.answer, { path: 'fixed_workflow', ...extra });
     return true;
   };
+
+  // "Register Kestrel for GST": the GST application's readiness from the tool, then the SharePoint
+  // papers, the client, or the portal (src/lib/ask/gst). Code only, no model call. Staff only; ahead
+  // of the fill branch so "fill Kestrel on the GST portal" opens the portal flow, not a card fill.
+  const gst =
+    shell !== 'client' && ctx.role !== 'client' && typed && !request.context && attachmentIds.length === 0 && !pending && !flags.killedPaths.has('fixed_workflow')
+      ? gstIntent(typed)
+      : null;
+  if (gst) {
+    let out: GstWorkAnswer;
+    try {
+      out = await gstWorkAnswer(ctx, gst, { conversationId, pagePath: request.page?.path });
+    } catch (error) {
+      console.error('[ask-vcfo] GST registration answer failed', error);
+      out = { line: 'I could not check the GST registration just now. Nothing was changed.' };
+    }
+    await finish(
+      {
+        line: out.line,
+        citations: [],
+        actions: [],
+        origin: 'work',
+        depth: 'normal',
+        ...(out.gst ? { gst: out.gst } : {}),
+        ...(out.runId ? { runId: out.runId } : {}),
+        ...(out.target
+          ? { links: [{ dest: { to: 'projectStep' as const, engagementId: out.target.engagementId, stepId: out.target.stepId }, label: 'Open GST registration' }] }
+          : {}),
+      },
+      { path: 'fixed_workflow' },
+    );
+    return;
+  }
 
   // "Fill it into the app": the newest open card in this conversation goes into the steps, page by
   // page (Manual) or in the background (Auto). Staff only; the card's own rules decide what is saved.

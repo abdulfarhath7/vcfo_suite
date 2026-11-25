@@ -180,6 +180,39 @@ function parseTable(lines: string[], page: number | null): ReadValue[] | null {
   );
 }
 
+const PERSON_WORD = '(?:director|subscriber|shareholder|promoter)';
+const PERSON_FIRST = new RegExp(`^(?:additional\\s+)?(${PERSON_WORD})\\s*(?:no\\.?\\s*)?(\\d+)?\\s+(.+)$`, 'i');
+const PERSON_LAST = new RegExp(`^(.+?)\\s+of\\s+(?:the\\s+)?(${PERSON_WORD})\\s*(?:no\\.?\\s*)?(.+)$`, 'i');
+
+/**
+ * A label that names its person: "Director 2 Kavya Bhat residential address" or "Residential address
+ * of director Kavya Bhat". The fact is the longest ending (or start) that is a known field name, and
+ * the words left over are the person: a name, else "Director 2". Null when the label is a plain field
+ * name or no known field name is in it.
+ */
+export function splitPersonLabel(label: string): { label: string; person: string } | null {
+  const known = catalogSynonyms();
+  if (known.has(normal(label))) return null;
+  const first = PERSON_FIRST.exec(label.trim());
+  if (first) {
+    const words = first[3]!.split(/\s+/);
+    for (let i = 0; i < words.length; i += 1) {
+      const fact = words.slice(i).join(' ');
+      if (!known.has(normal(fact))) continue;
+      const name = words.slice(0, i).join(' ').trim();
+      const noun = first[1]!.charAt(0).toUpperCase() + first[1]!.slice(1).toLowerCase();
+      if (name || first[2]) return { label: fact, person: name || `${noun} ${first[2]}` };
+    }
+  }
+  const last = PERSON_LAST.exec(label.trim());
+  if (last && known.has(normal(last[1]!))) {
+    const who = last[3]!.trim();
+    const noun = last[2]!.charAt(0).toUpperCase() + last[2]!.slice(1).toLowerCase();
+    return { label: last[1]!.trim(), person: /^\d+$/.test(who) ? `${noun} ${who}` : who };
+  }
+  return null;
+}
+
 /** `Label: value` lines, with headings such as "Director 2" marking whose they are. */
 function parseKeyValues(lines: string[], page: number | null): { values: ReadValue[]; company: string | null } | null {
   type Section = { heading: string | null; values: ReadValue[] };
@@ -202,7 +235,10 @@ function parseKeyValues(lines: string[], page: number | null): { values: ReadVal
     const [label, value] = [match[1]!.trim(), match[2]!.trim()];
     if (COMPANY_LABEL.test(normal(label))) company = value;
     else if (HEADING.test(label)) sections.push({ heading: label, values: [{ label: 'Name', value, page, person: null, confidence: 1 }] });
-    else sections.at(-1)!.values.push({ label, value, page, person: null, confidence: 1 });
+    else {
+      const named = splitPersonLabel(label);
+      sections.at(-1)!.values.push({ label: named?.label ?? label, value, page, person: named?.person ?? null, confidence: 1 });
+    }
   }
   if (pairs === 0 || pairs / (pairs + plain) < 0.6) return null;
   const values = sections.flatMap((section) => {
@@ -210,7 +246,7 @@ function parseKeyValues(lines: string[], page: number | null): { values: ReadVal
     const first = section.values.find((v) => normal(v.label) === 'first name')?.value;
     const last = section.values.find((v) => normal(v.label) === 'last name')?.value;
     const person = named ?? ([first, last].filter(Boolean).join(' ') || section.heading);
-    return section.values.map((v) => ({ ...v, person }));
+    return section.values.map((v) => ({ ...v, person: v.person ?? person }));
   });
   return { values, company };
 }

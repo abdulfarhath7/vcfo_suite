@@ -102,6 +102,11 @@ export interface RowCheckResult {
   sensitive: boolean;
 }
 
+/** The step gate's kind for this person: `done` is a finished step, which is never reopened from a card. */
+export function stepGateKind(state: StepState, role: string, stepId: string): string {
+  return getStepGate(gateActiveCatalog(state, checklistGateViewerFrom('admin', role)), stepId).kind;
+}
+
 export function checkResponseRow(input: {
   role: string;
   target: ResponseTarget;

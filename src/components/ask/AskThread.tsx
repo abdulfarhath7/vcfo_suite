@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { PREVIEW_CLIENT_LINE } from '@/lib/ask/preview';
 import { AskAnswerCard } from './AskAnswerCard';
 import { AskChangesetCard } from './AskChangesetCard';
+import { AskGstCard } from './gst/AskGstCard';
 import { AskPreviewPicker } from './AskPreviewPicker';
 import { AskHandoffForm } from './AskHandoffForm';
 import { useApp } from '@/context/AppContext';
@@ -71,11 +72,13 @@ export function AskThread() {
         return (
           <AnswerRow key={item.id}>
             <AskAnswerCard answer={item.answer} messageId={item.messageId} lastQuestion={lastQuestion} />
-            {item.answer.changesetId ? (
-              <div className="mt-2">
-                <AskChangesetCard changesetId={item.answer.changesetId} />
+            {item.answer.changesetId || item.answer.unplaced?.length ? (
+              <div className="mt-2 grid gap-2">
+                {item.answer.changesetId ? <AskChangesetCard changesetId={item.answer.changesetId} /> : null}
+                {item.answer.unplaced?.length ? <UnplacedLines lines={item.answer.unplaced} /> : null}
               </div>
             ) : null}
+            {item.answer.gst && ask.shell !== 'client' ? <AskGstCard gst={item.answer.gst} /> : null}
             {item.answer.runId && ask.shell !== 'client' ? <DropRunCards runId={item.answer.runId} shownChangesetId={item.answer.changesetId} /> : null}
           </AnswerRow>
         );
@@ -101,5 +104,22 @@ export function AskThread() {
       <AskHandoffForm key={ask.handoffDraft ?? 'none'} />
       <div ref={endRef} />
     </div>
+  );
+}
+
+/** The lines of a paste or a file that fit no field: shown with the card, never dropped without a word. */
+function UnplacedLines({ lines }: { lines: string[] }) {
+  return (
+    <section aria-label="I could not place this" className="rounded-lg border border-line bg-surface-raised px-3 py-2.5 text-[12.5px]">
+      <p className="font-medium text-ink">I could not place this</p>
+      <ul className="mt-1 grid gap-0.5">
+        {lines.map((text) => (
+          <li key={text} className="break-words text-ink-2">
+            {text}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-ink-muted">Say where it goes, or type it on the right step.</p>
+    </section>
   );
 }

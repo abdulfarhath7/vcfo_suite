@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readAssistAttachment } from '@/db/repositories/assist-attachments';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
+import { isGstDocumentKey } from '@/lib/registrations/gst-profile';
 import { NO_STORE, assistStaff, filingError } from '@/lib/mca-filing/route-helpers';
 
 type RouteContext = { params: Promise<{ id: string; key: string }> };
@@ -23,7 +24,7 @@ export async function GET(_request: Request, context: RouteContext) {
     await recordAuditEvent(auth.ctx, {
       engagementId: file.dbId,
       action: 'assist_attachment.read',
-      summary: `VCFO Assist fetched the SPICe+ attachment ${key}`,
+      summary: `VCFO Assist fetched the ${isGstDocumentKey(key) ? 'GST REG-01' : 'SPICe+'} attachment ${key}`,
       metadata: { key, size: file.bytes.length },
     });
     return NextResponse.json({ ok: true, fileName: file.fileName, contentType: file.contentType, base64: file.bytes.toString('base64') }, { headers: NO_STORE });

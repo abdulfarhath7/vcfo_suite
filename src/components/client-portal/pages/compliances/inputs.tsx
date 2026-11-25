@@ -233,7 +233,7 @@ export function SbcFieldsCard({
   extra?: Array<{ k: string; v: string | null; mono?: boolean }>;
 }) {
   const q = useSubjectInputs({ kind, key: subjectKey, enabled: Boolean(subjectKey) });
-  const fields: SubjectField[] = q.data?.sbc ?? (fallback ?? []).map((f) => ({ ...f, value: null }));
+  const fields: SubjectField[] = (q.data?.sbc ?? (fallback ?? []).map((f) => ({ ...f, value: null }))).filter((f) => !f.copy || f.value);
   const seen = new Set(extra.map((e) => e.k.toLowerCase()));
   const rows = [
     ...extra,

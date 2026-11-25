@@ -409,6 +409,8 @@ export async function assembleDrop(input: AssembleInput): Promise<AssembleResult
         appendTo: existing?.changesetId ?? null,
       });
       notes.push(...card.questions.map(maskIdentityNumbers));
+      // A value read from a file that fits no field is named, never dropped without a word.
+      notes.push(...(card.unplaced ?? []).map((text) => `I could not place this: ${text}`));
       if (card.kind === 'card') {
         // A reply's rows join the client's open card; a card decided since then gets a new one beside it.
         if (existing?.changesetId !== card.changesetId) groups.push({ engagementId: row.id, companyName: row.companyName, changesetId: card.changesetId });

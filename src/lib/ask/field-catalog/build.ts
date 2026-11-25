@@ -82,15 +82,23 @@ export function buildFieldCatalog(): CatalogEntry[] {
     }
   }
 
+  // A rule names an input by its bare key (any list) or as `<ref>/<key>` (one list), `#` for a number.
+  const inputSpecFor = (rule: CanonicalRule, ref: string, key: string): string | null =>
+    rule.inputs?.find((spec) => spec === key || (spec.includes('/') && specOf(spec).test(`${ref}/${key}`))) ?? null;
+
   const addInput = (source: FieldUse['source'], ref: string, input: InputField) => {
     const label = normalizeLabel(input.label);
-    const rule = CANONICAL_RULES.find((r) => r.inputs?.includes(input.key) || (r.inputs && r.synonyms.includes(label)));
+    const matched = CANONICAL_RULES.map((r) => ({ r, spec: inputSpecFor(r, ref, input.key) })).find((m) => m.spec);
+    const rule = matched?.r ?? CANONICAL_RULES.find((r) => r.inputs && r.synonyms.includes(label));
+    // A numbered input (`promoter-2-address`) is one use with a slot, and its label names no fact.
+    const slotted = matched?.spec?.includes('#') ? matched.spec.split('/').pop()! : null;
     const key = rule?.key ?? `${source}.${label.replace(/ /g, '_')}`;
     const seen =
       entries.get(key) ??
       ({ key, label: input.label, synonyms: [label], format: 'text', sensitivity: 'normal', subject: 'general', uses: [] } satisfies CatalogEntry);
-    if (!seen.synonyms.includes(label)) seen.synonyms.push(label);
-    if (!seen.uses.some((u) => u.source === source && u.ref === ref && u.field === input.key)) seen.uses.push({ source, ref, field: input.key });
+    if (!slotted && !seen.synonyms.includes(label)) seen.synonyms.push(label);
+    const field = slotted ?? input.key;
+    if (!seen.uses.some((u) => u.source === source && u.ref === ref && u.field === field)) seen.uses.push({ source, ref, field });
     put(seen);
   };
 

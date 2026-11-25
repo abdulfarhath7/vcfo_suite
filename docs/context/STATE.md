@@ -479,3 +479,32 @@ A view-only QA pass over the Lead, Admin, Manager and Client portals produced th
 - The work-email placeholder reads `name@sbcllp.in` instead of `name@vcfosuite.com`.
 
 Still open from that run: there are no Terms or Privacy pages to link to (legal text needed from the firm), the Manager/Admin "Team tasks" count shows 8 overdue compliance tasks for an unincorporated client while the Lead portal shows 0, and new accounts are pre-filled with the shared default password `DEFAULT_CLIENT_TEMP_PASSWORD` in `src/lib/api/schemas.ts`.
+
+## GST registration through VCFO Assist (25 Nov 2026, uncommitted, not deployed)
+
+"Register Kestrel for GST": the tool is filled first, then VCFO Assist fills GST REG-01 from it;
+the person signs in, types the OTPs and the captcha, authenticates Aadhaar and submits with DSC or
+EVC (SBC-STD-AI-02). The GST pack stays `mock-only` until the CS opinion.
+
+- Contract: `src/lib/registrations/gst-profile.ts` (`GST_SOURCE_FIELDS`, the portal vocabulary) and
+  its prose copy `vcfo_assist/docs/gst-profile-contract.md` (the extension appends "Requested
+  additions" there). Builder and readiness: `gst-profile-build.ts`, `gst-readiness.ts`; repository
+  `src/db/repositories/gst-profile.ts` (doc-pack access rule, reg-4 fields, GST step requests, vault).
+- `GET /api/engagements/[id]/assist-profile?form=gst-reg-01` answers the profile with signed
+  document URLs; `POST /api/assist/engagements/[id]/result` with `form: 'gst-reg-01'` writes the ARN,
+  SRN or GSTIN into the reg-4 tracker (lead only, idempotent, audited; `gst-assist.ts`).
+- Sourcing chain (`gst-sourcing.ts`): tool, then the SharePoint drop, then Zoho when linked, then a
+  draft request list. `GET/POST /api/engagements/[id]/gst-registration` serves the page card.
+- reg-4 gained client fields (district, trade name, reason, possession, activities, HSN, SAC, …) and
+  SBC fields (jurisdiction parts, signatory) in `src/data/compliance-inputs.ts`; no migration.
+- UI: `GstApplicationCard` and `StartOnGstPortal` on the GST registration record and the reg-4 step;
+  Ask VCFO intent in `src/lib/ask/gst/` with the chat card `src/components/ask/gst/AskGstCard.tsx`.
+- From chat and papers (25 Nov, second pass): Ask VCFO review cards write the reg-4 fields through
+  the action `registrations.setField` (`src/lib/actions/registrations/set-field.ts`, the same
+  `saveSubjectFields` as the cards, audited, undoable; rules in `field-rules.ts`). A value whose
+  checklist step is finished goes to a GST copy (`place-state` on the client side, `promoter-N-address`
+  on the SBC side, hidden while empty) instead of "reopen first"; on a GST run a step not open yet does
+  too. The builder prefers the copies. Values the client entered and the lead has not confirmed are
+  listed on the GST card with the GST step's own Confirm; they do not block. Suite opens no portal tab
+  (the extension's side panel does). A pasted line that fits no field is listed under the card ("I could
+  not place this"); "Director 2 Kavya Bhat residential address: …" now reads as that director's address.

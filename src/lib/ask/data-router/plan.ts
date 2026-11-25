@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getItem } from '@/data/checklist';
-import { checkResponseRow, displayValue, fieldOf, needsManagerApproval, responseKey, type ResponseTarget, type RowEngagement } from '@/lib/actions/checklist/rules';
+import { checkResponseRow, displayValue, fieldOf, needsManagerApproval, responseKey, stepGateKind, type ResponseTarget, type RowEngagement } from '@/lib/actions/checklist/rules';
+import { checkSubjectFieldRow, subjectFieldSide, type SubjectFieldTarget } from '@/lib/actions/registrations/field-rules';
 import type { ChangesetDraft, ChangesetRowDraft, RowCheck, RowSource } from '@/lib/ask/changeset/types';
 import { catalogEntry, writableUses } from '@/lib/ask/field-catalog';
 import { COPY_FIELD_BY_DOC } from '@/lib/ask/field-catalog/upload-fields';
@@ -41,6 +42,14 @@ export interface PlanInput {
   files?: AttachedFile[];
   /** What the person asked, for "director 2". */
   instruction: string;
+  /**
+   * The GST step's fields as saved (`reg-4`, both sides). With them a value REG-01 needs that no
+   * checklist step holds gets a row on the GST step, and a value whose checklist step is finished
+   * goes to the GST copy instead of waiting for the step to be reopened. Absent leaves them out.
+   */
+  registration?: { key: string; client: Record<string, string | null>; sbc: Record<string, string | null> };
+  /** The run is about GST registration: a value whose checklist step is not open yet also goes to the GST copy. */
+  gst?: boolean;
 }
 
 export interface PlanResult {
@@ -158,9 +167,70 @@ export function planRows(input: PlanInput): PlanResult {
     };
   };
 
+  /** A row on a registration step's field (`registrations.setField`); `position` fills a director slot. */
+  const registrationRow = (
+    entry: CatalogEntry,
+    use: FieldUse,
+    value: string,
+    label: string,
+    source: RowSource | null,
+    extra: { position?: number; home?: { step: string; field: string } } = {},
+  ): { key: string; row: ChangesetRowDraft | null } | null => {
+    const reg = input.registration;
+    if (!reg || use.ref !== reg.key) return null;
+    if (use.field.includes('#') && !extra.position) return null;
+    const fieldKey = use.field.replace('#', String(extra.position ?? ''));
+    const side = subjectFieldSide(use.ref, fieldKey);
+    if (!side) return null;
+    const target: SubjectFieldTarget = {
+      engagementId: input.engagementId,
+      kind: 'registration',
+      key: use.ref,
+      side,
+      fieldKey,
+      catalogKey: entry.key,
+      ...(extra.home ? { homeStep: extra.home.step, homeField: extra.home.field } : {}),
+    };
+    const oldValue = (reg[side][fieldKey] ?? '').trim();
+    const homeValue = extra.home ? input.state[extra.home.step]?.responses?.[extra.home.field] : undefined;
+    const checked = checkSubjectFieldRow({ role: input.role, target, value, oldValue, homeValue });
+    const key = `${use.ref}#${side}/${fieldKey}`;
+    if (checked.oldValue && checked.oldValue === checked.value) return { key, row: null };
+    return {
+      key,
+      row: {
+        action: 'registrations.setField',
+        target: Object.fromEntries(Object.entries(target).filter(([, v]) => v !== undefined)) as ChangesetRowDraft['target'],
+        label,
+        oldValue: checked.oldValue,
+        newValue: checked.value,
+        displayOld: checked.oldValue,
+        displayNew: checked.value,
+        sensitive: false,
+        source,
+        checks: checked.checks,
+        ...(checked.heldReason ? { heldReason: checked.heldReason } : {}),
+      },
+    };
+  };
+
+  /**
+   * A checklist row held only by its step's gate goes to the registration's copy of the field: always
+   * when the step is finished (it is never reopened for a registration), and on a GST run also when
+   * the step is not open yet. A field another role fills stays held.
+   */
+  const copyInstead = (row: ChangesetRowDraft, stepId: string): boolean =>
+    Boolean(input.registration) &&
+    row.checks.some((check) => check.rule === 'gate' && !check.ok) &&
+    !row.checks.some((check) => check.rule === 'owner' && !check.ok) &&
+    (input.gst === true || stepGateKind(input.state, input.role, stepId) === 'done');
+
+  const registrationUse = (entry: CatalogEntry): FieldUse | undefined =>
+    input.registration ? writableUses(entry).find((use) => use.source === 'registration' && use.ref === input.registration!.key) : undefined;
+
   /** The first place this person may fill now; else the first place, held with the reason. */
   const companyUse = (entry: CatalogEntry): FieldUse | null => {
-    const uses = writableUses(entry);
+    const uses = writableUses(entry).filter((use) => use.source === 'checklist');
     const open = uses.find((use) => {
       const { checks } = checkResponseRow({
         role: input.role,
@@ -196,7 +266,24 @@ export function planRows(input: PlanInput): PlanResult {
       continue;
     }
     const use = subject ? writableUses(entry).find((u) => u.repeat === PERSON_LISTS[subject].group) : companyUse(entry);
+    const regUse = registrationUse(entry);
+    const keepRegistrationRow = (made: { key: string; row: ChangesetRowDraft | null } | null): boolean => {
+      if (!made) return false;
+      const earlier = seen.get(made.key);
+      if (earlier) {
+        const normal = checkFormat(entry, value.value).value;
+        if (earlier.newValue !== normal) earlier.checks.push({ rule: 'documents_differ', ok: false, message: `Another source says ${maskedAnswer(entry, normal)}.` });
+        return true;
+      }
+      if (made.row) {
+        seen.set(made.key, made.row);
+        rows.push(made.row);
+      }
+      return true;
+    };
     if (!use) {
+      // A value only the GST step holds (district, premises, SAC codes …).
+      if (regUse && !subject && keepRegistrationRow(registrationRow(entry, regUse, value.value, `GST registration · ${entry.label}`, source))) continue;
       questions.push(`I have no place to save "${value.label}".`);
       continue;
     }
@@ -219,6 +306,14 @@ export function planRows(input: PlanInput): PlanResult {
     }
     const row = makeRow(target, value.value, displayLabel(subject, person, value.person, entry.label), source);
     if (!row) continue;
+    // The checklist step is finished (or, on a GST run, not open yet): the GST copy takes the value.
+    if (regUse && copyInstead(row, use.ref) && (!person || !person.newEntry)) {
+      const copy = registrationRow(entry, regUse, value.value, `${displayLabel(subject, person, value.person, entry.label)} (GST copy)`, source, {
+        position: person?.position,
+        home: { step: use.ref, field: responseKey(target) },
+      });
+      if (keepRegistrationRow(copy)) continue;
+    }
     seen.set(key, row);
     rows.push(row);
   }

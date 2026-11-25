@@ -1,7 +1,7 @@
 import 'server-only';
 
 import type { LlmProvider } from '@/lib/ask/provider';
-import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
+import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { candidatesFor } from './candidates';
 import { chooseFields, type ChoiceInput } from './choose';
 import { ReadRefused } from './read';
@@ -19,16 +19,23 @@ export interface SourceRead {
 }
 
 const MIN_CONFIDENCE = 0.6;
-const LABEL_MAX_WORDS = 6;
+const UNPLACED_MAX_CHARS = 300;
 
 export async function placeValues(
   reads: readonly SourceRead[],
   deps: { instruction: string; provider: () => Promise<LlmProvider>; model: string },
-): Promise<{ placed: PlacedValue[]; questions: string[]; files: AttachedFile[]; chooseCalls: number }> {
+): Promise<{ placed: PlacedValue[]; questions: string[]; unplaced: string[]; files: AttachedFile[]; chooseCalls: number }> {
   const { instruction } = deps;
   const subjectHint = /subscriber|shareholder/i.test(instruction) ? 'subscriber' : /director|promoter/i.test(instruction) ? 'director' : null;
   const asked = /\b(?:director|subscriber|shareholder|promoter)\s*(?:no\.?\s*)?\d+\b/i.exec(instruction)?.[0] ?? subjectHint;
   const questions: string[] = [];
+  // Lines read as a label and a value that fit no field: the card lists them ("I could not place
+  // this"), so nothing the person pasted or dropped disappears without a word.
+  const unplaced: string[] = [];
+  const unplace = (value: { label: string; value: string }) => {
+    const text = maskIdentityNumbers(`${value.label}: ${value.value}`).slice(0, UNPLACED_MAX_CHARS);
+    if (!unplaced.includes(text)) unplaced.push(text);
+  };
   const placed: PlacedValue[] = [];
   const toChoose: Array<ChoiceInput & { source: PlacedValue['source'] }> = [];
   for (const { result, attachment } of reads) {
@@ -48,8 +55,9 @@ export async function placeValues(
       if ((exact ?? candidates[0])?.key === 'company.name' && named.length === 0) continue;
       if (exact) placed.push({ value, entry: exact, source: here });
       else if (candidates.length > 0) toChoose.push({ value, candidates, source: here });
-      // A long "label" is a sentence that happened to hold a colon, not a value left behind.
-      else if (result.usedModel || normalizeLabel(value.label).split(' ').length < LABEL_MAX_WORDS) questions.push(`I do not know where "${value.label}" goes, so I left it out.`);
+      // Nothing fits: a short label is a field the catalog does not know; a long one may be a
+      // sentence that held a colon, or a label with a name in it. Either way the card shows it.
+      else unplace(value);
     }
   }
   if (toChoose.length > 0) {
@@ -59,15 +67,15 @@ export async function placeValues(
         const entry = chosen.get(index);
         if (entry?.key === 'company.name') return;
         if (entry) placed.push({ value: item.value, entry, source: item.source });
-        else questions.push(`I do not know where "${item.value.label}" goes, so I left it out.`);
+        else unplace(item.value);
       });
     } catch (error) {
       if (!(error instanceof ReadRefused)) console.error('[ask-vcfo] field choice failed', error);
-      questions.push(`I could not place ${toChoose.map((t) => t.value.label).slice(0, 5).join(', ')}.`);
+      for (const item of toChoose) unplace(item.value);
     }
   }
   const files: AttachedFile[] = reads.flatMap(({ result, attachment }) =>
     attachment?.kind === 'file' ? [{ attachmentId: attachment.id, fileName: attachment.fileName, docType: result.docType, person: result.values.find((v) => v.person)?.person ?? asked }] : [],
   );
-  return { placed, questions, files, chooseCalls: toChoose.length };
+  return { placed, questions, unplaced, files, chooseCalls: toChoose.length };
 }

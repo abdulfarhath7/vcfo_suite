@@ -99,12 +99,13 @@ function keyOf(row: AskChangesetRowRow): string | null {
  * hash recomputed before the card can show it. A sensitive value is typed in full and shown masked.
  */
 /**
- * The actions whose value a person may change on the card. Only a checklist answer is a value; every
+ * The actions whose value a person may change on the card. Only a checklist answer or a registration
+ * field (`registrations.setField`) is a value; every
  * file row (a checklist upload, a labour sheet, compliance evidence, a vault file) carries a file
  * that cannot be retyped, so it is accepted or left, never edited. The card and the edit route both
  * use this, so a hand-made request cannot edit what the card does not offer.
  */
-const VALUE_EDIT_ACTIONS: ReadonlySet<string> = new Set(['checklist.setResponse']);
+const VALUE_EDIT_ACTIONS: ReadonlySet<string> = new Set(['checklist.setResponse', 'registrations.setField']);
 
 /**
  * The one part of a file row a person may change: a labour sheet's state, which the drop may have

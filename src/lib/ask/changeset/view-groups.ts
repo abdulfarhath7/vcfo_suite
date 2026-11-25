@@ -94,7 +94,8 @@ export interface RowPlace {
 export function rowPlace(row: RowPlaceInput, slotLabel: (slot: string) => string = (slot) => slot): RowPlace {
   const kind = groupKindOf(row.action);
   const sourceFile = row.source?.kind === 'attachment' ? (row.source.fileName ?? null) : null;
-  const stepId = text(row.target.stepId);
+  // A registration field row (`registrations.setField`) sits on its registration step.
+  const stepId = text(row.target.stepId) || (row.action === 'registrations.setField' ? text(row.target.key) : '');
   const stepTitle = stepId ? (getItem(stepId)?.title ?? stepId) : null;
   const fileLabel = sourceFile ?? row.label;
   if (kind === 'labour') {

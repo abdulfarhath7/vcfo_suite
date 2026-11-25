@@ -5,6 +5,7 @@ import { getAskChangesetSummary } from '@/db/repositories/ask-changesets';
 import { fieldOf, rowCanApply, type ResponseTarget } from '@/lib/actions/checklist/rules';
 import { SLOT_LABEL } from '@/lib/actions/labour/upload-sheet';
 import { statesForPicker } from '@/data/labour-registers/states';
+import { catalogEntry } from '@/lib/ask/field-catalog';
 import { canDecideRow, rowEditable, rowStateEditable } from './apply';
 import { groupChangesetRows, rowPlace } from './view-groups';
 import type { ChangesetRowStatus, ChangesetStatus } from './types';
@@ -24,7 +25,9 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
     const open = row.status === 'proposed' || row.status === 'edited' || row.status === 'held' || row.status === 'failed';
     // A labour sheet's state is chosen from the list of states; the edit sends the state code.
     const stateEdit = rowStateEditable(row.action);
-    const options = stateEdit ? statesForPicker().map((s) => ({ value: s.code, label: s.name })) : field?.options?.map((o) => ({ value: o.value, label: o.label }));
+    // A registration field row takes its choices and its date editor from the catalog entry it was placed under.
+    const entry = row.action === 'registrations.setField' && typeof row.target.catalogKey === 'string' ? catalogEntry(row.target.catalogKey) : undefined;
+    const options = stateEdit ? statesForPicker().map((s) => ({ value: s.code, label: s.name })) : (field?.options ?? entry?.options)?.map((o) => ({ value: o.value, label: o.label }));
     return {
       id: row.id,
       stepId: target.stepId ?? null,
@@ -44,7 +47,7 @@ export async function loadChangesetView(ctx: AuthContext, id: string): Promise<C
       editable: open && rowEditable(row.action),
       ...(options?.length ? { options } : {}),
       ...(stateEdit && typeof row.target.stateCode === 'string' ? { editValue: row.target.stateCode, editLabel: `State for ${place.label}` } : {}),
-      inputType: options?.length ? 'choice' : field?.type === 'date' ? 'date' : 'text',
+      inputType: options?.length ? 'choice' : field?.type === 'date' || entry?.format === 'date' ? 'date' : 'text',
       groupKey: place.groupKey,
       groupTitle: place.groupTitle,
       groupKind: place.kind,

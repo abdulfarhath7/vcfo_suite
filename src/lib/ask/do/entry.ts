@@ -10,6 +10,8 @@ import { checklistStateFromRow, getEngagementBySlug, getEngagementById, listEnga
 import { createNotificationsForUsers } from '@/db/repositories/notifications';
 import { appendAskRunStep, createAskRun, findWaitingAskRun, lockAskRun } from '@/db/repositories/ask-runs';
 import { checklist } from '@/data/checklist';
+import { getSubjectInputs } from '@/db/repositories/compliance-inputs';
+import { GST_STEP_ID } from '@/lib/registrations/gst-tracker';
 import { changesetHash } from '@/lib/ask/changeset/hash';
 import type { ChangesetRowDraft, JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askConfig, askFlags } from '@/lib/ask/config';
@@ -54,6 +56,10 @@ interface PendingState {
 }
 
 const CARD_DAYS = 7;
+/** The lines the card lists under "I could not place this"; the answer schema allows this many. */
+const UNPLACED_SHOWN = 10;
+/** A run about GST registration: a value whose checklist step is not open yet goes to the GST step's copy. */
+const GST_RUN = /\bgst\b/i;
 const MIN_SYNONYM_LENGTH = 4;
 export const STORED_USER_TEXT_MAX = 1_000;
 
@@ -281,9 +287,12 @@ export async function handleDoWork(
   const card = await prepareClientCard(ctx, runCtx, { row, state, reads, instruction, conversationId, now });
   const questions = [...new Set(refusals), ...card.questions];
   const askMore = questions.length > 0 ? ` ${[...new Set(questions)].slice(0, 5).join(' ')}` : '';
+  const unplaced = card.unplaced.slice(0, UNPLACED_SHOWN);
+  const unplacedNote = unplaced.length > 0 ? ` I could not place ${unplaced.length === 1 ? 'one line' : `${unplaced.length} lines`}; ${unplaced.length === 1 ? 'it is' : 'they are'} listed under the card.` : '';
+  const withUnplaced = unplaced.length > 0 ? { unplaced } : {};
   if (card.kind === 'nothing') {
     const nothing = card.placed > 0 ? `Everything here is already saved for ${row.companyName}.` : `I found nothing to save for ${row.companyName}.`;
-    return finish(line(`${nothing}${askMore}`));
+    return finish(line(`${nothing}${unplacedNote}${askMore}`, withUnplaced));
   }
   if (card.kind === 'unavailable') return finish(line('That project is not available.'), 'failed');
   const { count, held, managerRows, changesetId } = card;
@@ -292,15 +301,16 @@ export async function handleDoWork(
     ? ` ${managerRows} ${managerRows === 1 ? 'value needs' : 'values need'} your manager's approval as well; I have told them.`
     : '';
   return finish(
-    line(`I prepared ${count} value${count === 1 ? '' : 's'} for ${row.companyName}. Nothing is saved until you accept.${heldNote}${managerNote}${askMore}`, { changesetId }),
+    line(`I prepared ${count} value${count === 1 ? '' : 's'} for ${row.companyName}. Nothing is saved until you accept.${heldNote}${managerNote}${unplacedNote}${askMore}`, { changesetId, ...withUnplaced }),
     'waiting_approval',
   );
 }
 
+/** `unplaced`: lines read as a label and a value that fit no field, masked, for the card's "I could not place this". */
 export type PreparedCard =
-  | { kind: 'card'; changesetId: string; count: number; held: number; /** Rows that wait for a manager the lead cannot stand in for; 0 for a manager or admin. */ managerRows: number; placed: number; questions: string[] }
-  | { kind: 'nothing'; placed: number; questions: string[] }
-  | { kind: 'unavailable'; questions: string[] };
+  | { kind: 'card'; changesetId: string; count: number; held: number; /** Rows that wait for a manager the lead cannot stand in for; 0 for a manager or admin. */ managerRows: number; placed: number; questions: string[]; unplaced: string[] }
+  | { kind: 'nothing'; placed: number; questions: string[]; unplaced: string[] }
+  | { kind: 'unavailable'; questions: string[]; unplaced: string[] };
 
 /**
  * One client's review card from what was read: find the place for each value, run the screen's rules,
@@ -331,18 +341,29 @@ export async function prepareClientCard(
   const { runId, provider, progress } = runCtx;
   // Find the place for each value: code first, then one small-model call for the rest.
   progress('Finding the right fields…');
-  const { placed, questions: placeQuestions, files, chooseCalls } = await placeValues(reads, { instruction, provider, model: askConfig().models.extract });
+  const { placed, questions: placeQuestions, unplaced, files, chooseCalls } = await placeValues(reads, { instruction, provider, model: askConfig().models.extract });
   if (chooseCalls > 0) await appendAskRunStep(ctx, runId, { kind: 'model', name: 'choose', output: { asked: chooseCalls, chosen: placed.length } });
   const questions = [...placeQuestions];
 
   progress('Checking the rules…');
   const copyFiles = input.copyFor ? files.filter((f) => input.copyFor!(f.attachmentId)) : files;
-  const plan = planRows({ role: ctx.role, engagementId: row.id, companyName: row.companyName, engagement: row, state, placed, files: copyFiles, instruction });
+  // The GST step's fields, so REG-01 values no checklist step holds, and copies of values on finished
+  // steps, can be rows too. Read as this person, so the scope rule is the GST page's.
+  // A GST step that cannot be read leaves only its rows out; the checklist rows still come.
+  const gstStep = await getSubjectInputs(ctx, { engagementId: row.id, kind: 'registration', key: GST_STEP_ID }).catch((error: unknown) => {
+    console.warn('[ask-vcfo] GST step fields not read', error instanceof Error ? error.message : error);
+    return null;
+  });
+  const registration = gstStep
+    ? { key: GST_STEP_ID, client: Object.fromEntries(gstStep.client.map((f) => [f.key, f.value])), sbc: Object.fromEntries(gstStep.sbc.map((f) => [f.key, f.value])) }
+    : undefined;
+  const gst = GST_RUN.test(instruction);
+  const plan = planRows({ role: ctx.role, engagementId: row.id, companyName: row.companyName, engagement: row, state, placed, files: copyFiles, instruction, registration, gst });
   questions.push(...plan.questions);
   if (input.fileRows?.length) plan.draft.rows.push(...input.fileRows);
   if (input.title) plan.draft.title = input.title(plan.draft.rows);
 
-  if (plan.draft.rows.length === 0) return { kind: 'nothing', placed: placed.length, questions };
+  if (plan.draft.rows.length === 0) return { kind: 'nothing', placed: placed.length, questions, unplaced };
   const appended = input.appendTo ? await appendAskChangesetRows(ctx, input.appendTo, plan.draft.rows, now, { title: input.title }) : false;
   const contentHash = changesetHash(plan.draft.rows.map((r) => ({ action: r.action, target: r.target, newValue: r.newValue })));
   const changesetId = appended
@@ -354,7 +375,7 @@ export async function prepareClientCard(
         runId,
         expiresAt: new Date(now.getTime() + CARD_DAYS * 86_400_000),
       });
-  if (!changesetId) return { kind: 'unavailable', questions };
+  if (!changesetId) return { kind: 'unavailable', questions, unplaced };
   await appendAskRunStep(ctx, runId, { kind: 'approval', name: 'changeset', status: 'waiting', changesetId, output: { rows: plan.draft.rows.length } });
 
   const managerRows = plan.draft.rows.filter((r) => r.target.needsManager === true);
@@ -381,5 +402,6 @@ export async function prepareClientCard(
     managerRows: waitsForManager ? managerRows.length : 0,
     placed: placed.length,
     questions,
+    unplaced,
   };
 }

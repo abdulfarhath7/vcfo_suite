@@ -21,7 +21,10 @@ export interface CanonicalRule {
   subject: FieldSubject;
   synonyms: string[];
   fields: string[];
-  /** Names used on the compliance input lists, by their `key`. */
+  /**
+   * Names used on the compliance input lists: a bare `key` on any list, or `<subject>/<key>` on one
+   * registration or obligation only, with `#` for a director number (`reg-4/promoter-#-address`).
+   */
   inputs?: string[];
   expands?: string[];
 }
@@ -59,7 +62,8 @@ export const CANONICAL_RULES: readonly CanonicalRule[] = [
   person('driving_licence', 'Director driving licence number', ['driving licence', 'driving license', 'dl number', 'licence number'], ['drivingLicenceNumber'], { sensitivity: 'identity' }),
   person('utility_bill_type', 'Director utility bill type', ['utility bill type', 'bill type'], ['utilityBillType'], { format: 'choice' }),
   person('utility_bill_number', 'Director utility bill number', ['utility bill number', 'bill number', 'consumer number', 'account number on the bill'], ['utilityBillNumber']),
-  person('address', 'Director address', ['address', 'residential address', 'address as per utility bill', 'present address', 'permanent address'], ['utilityBillAddress']),
+  // `reg-4/promoter-#-address` is the GST copy, written when the directors step is finished.
+  person('address', 'Director address', ['address', 'residential address', 'address as per utility bill', 'present address', 'permanent address'], ['utilityBillAddress'], { inputs: ['reg-4/promoter-#-address'] }),
   person('pan_copy', 'Copy of PAN card', [], ['panCopyUrl'], { format: 'file' }),
   person('aadhaar_copy', 'Copy of Aadhaar card', [], ['aadhaarCopyUrl'], { format: 'file' }),
   person('passport_copy', 'Copy of passport', [], ['passportCopyUrl'], { format: 'file' }),
@@ -85,8 +89,20 @@ export const CANONICAL_RULES: readonly CanonicalRule[] = [
   { key: 'capital.nominal', label: 'Nominal value per equity share', subject: 'company', synonyms: ['nominal value per equity share', 'nominal value', 'face value', 'face value per share', 'nominal value of each equity share'], fields: ['pre-1/nominalValuePerEquityShare', 'pre-13/equityNominalValue'] },
   { key: 'capital.equity_quantity', label: 'Number of equity shares', subject: 'company', synonyms: ['number of equity shares', 'equity shares', 'no of equity shares'], fields: ['pre-13/equityQuantity'] },
 
-  { key: 'office.address', label: 'Registered office address', format: 'longtext', subject: 'office', synonyms: ['registered office', 'registered office address', 'complete address of the proposed registered office', 'office address'], fields: ['pre-14/registeredOfficeCompleteAddress'] },
-  { key: 'office.state', label: 'Registered office state', format: 'choice', subject: 'office', synonyms: ['registered office state', 'state of registered office', 'state'], fields: ['pre-14/registeredOfficeState'] },
+  // The GST step keeps its own copy of the principal place (`reg-4/place`, `reg-4/place-state`),
+  // written there when the registered office step is finished.
+  { key: 'office.address', label: 'Registered office address', format: 'longtext', subject: 'office', synonyms: ['registered office', 'registered office address', 'complete address of the proposed registered office', 'office address', 'principal place of business', 'address of the principal place of business'], fields: ['pre-14/registeredOfficeCompleteAddress'], inputs: ['reg-4/place'] },
+  { key: 'office.state', label: 'Registered office state', format: 'choice', subject: 'office', synonyms: ['registered office state', 'state of registered office', 'state', 'state of the principal place', 'principal place state'], fields: ['pre-14/registeredOfficeState'], inputs: ['reg-4/place-state'] },
+
+  // What GST REG-01 asks that no checklist step holds: the GST step's own fields (`reg-4`).
+  { key: 'gst.district', label: 'District of the principal place', subject: 'office', synonyms: ['district', 'district of the principal place', 'district of principal place of business', 'principal place district'], fields: [], inputs: ['reg-4/district'] },
+  { key: 'gst.trade_name', label: 'Trade name', subject: 'company', synonyms: ['trade name', 'trade name of the business'], fields: [], inputs: ['reg-4/trade-name'] },
+  { key: 'gst.commencement_date', label: 'Date of commencement of business', format: 'date', subject: 'company', synonyms: ['date of commencement of business', 'date of commencement', 'commencement date', 'business commencement date'], fields: [], inputs: ['reg-4/commencement-date'] },
+  { key: 'gst.reason', label: 'Reason for GST registration', subject: 'company', synonyms: ['reason for registration', 'reason to obtain registration', 'reason for gst registration'], fields: [], inputs: ['reg-4/reason'] },
+  { key: 'gst.possession', label: 'Nature of possession of the premises', subject: 'office', synonyms: ['premises', 'nature of possession', 'nature of possession of the premises', 'possession of the premises', 'possession'], fields: [], inputs: ['reg-4/possession'] },
+  { key: 'gst.activities', label: 'Business activity at the premises', subject: 'office', synonyms: ['nature of business activity', 'nature of business activity at the premises', 'activities at the premises', 'business activity at the premises'], fields: [], inputs: ['reg-4/activities'] },
+  { key: 'gst.hsn', label: 'HSN codes of the main goods', subject: 'company', synonyms: ['hsn', 'hsn code', 'hsn codes', 'hsn codes of the goods', 'hsn codes of the main goods'], fields: [], inputs: ['reg-4/hsn'] },
+  { key: 'gst.sac', label: 'SAC codes of the main services', subject: 'company', synonyms: ['sac', 'sac code', 'sac codes', 'sac codes of the services', 'sac codes of the main services'], fields: [], inputs: ['reg-4/sac'] },
   { key: 'office.utility_bill_type', label: 'Office utility bill type', format: 'choice', subject: 'office', synonyms: ['office utility bill type', 'registered office utility bill type'], fields: ['pre-14/registeredOfficeUtilityBillType'] },
   { key: 'office.utility_bill_number', label: 'Office utility bill number', subject: 'office', synonyms: ['office utility bill number', 'registered office utility bill number'], fields: ['pre-14/registeredOfficeUtilityBillNumber'] },
 
