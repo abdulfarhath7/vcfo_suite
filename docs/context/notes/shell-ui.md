@@ -66,7 +66,7 @@ Gotchas already paid for once. Append when something costs more than a minute to
   Client **sub-rows** use a nested pair (`*-client-active` / `*-client-rail`) so the pill slides
   between companies and View all without stealing the parent Clients highlight.
 - Lead dashboard motion lives in intern-only surfaces (Today, My work, Clients, InternClientsNav,
-  InternPhaseTabs, intern journey rail via `allowLockedOpen`). Shared
+  InternPhaseSections, intern journey rail via `allowLockedOpen`). Shared
   Analytics / Compliance / Mail / Audit keep their existing PageTransition only.
 - Reuse `src/lib/shell/motion.ts` presets and `MotionActivePill`. Always respect `useReducedMotion`.
   Prefer `m` (LazyMotion) over `motion`.

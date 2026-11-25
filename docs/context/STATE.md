@@ -510,3 +510,25 @@ EVC (SBC-STD-AI-02). The GST pack stays `mock-only` until the CS opinion.
   listed on the GST card with the GST step's own Confirm; they do not block. Suite opens no portal tab
   (the extension's side panel does). A pasted line that fits no field is listed under the card ("I could
   not place this"); "Director 2 Kavya Bhat residential address: …" now reads as that director's address.
+
+## Steps card phase sections (25 Nov 2026, on `claude/zealous-knuth-rqwrxf`, not deployed)
+
+The Steps card of a client record (`RecordStepsCard`, used by the lead, manager and admin record
+pages) no longer shows one phase at a time. The ST5 phase track stays on top as the progress summary,
+and Name application, Incorporation, Post-incorporation and Registrations sit below it as
+collapsible sections. Each section header repeats the phase's bar, its done count and a Done,
+In progress or Not started chip.
+
+- `InternPhaseSections` (in `src/components/incorporation/InternOverviewProgress.tsx`) replaced
+  `InternPhaseTabs`. The current phase opens by default, several sections can be open, the card head
+  has "Expand all" and "Collapse all", and a bar opens its section and scrolls to it. `?phase=n`
+  opens that section too.
+- The open sections are kept per engagement in localStorage under
+  `vcfo.intern.engagementOpenPhases.{id}` (helpers in `src/lib/intern/intern-overview-progress.ts`).
+  The old `engagementPhaseTab` key is no longer read.
+- `RecordPhaseBar` was pulled out of `RecordPhaseTrack` so the headers draw the same bar; the track's
+  `picked` prop is now optional (the admin record still picks in place with it).
+- Registrations now lists its steps (Reg-1 to Reg-23) inside its section, under the count line and
+  the "Open registrations" button.
+- Verified with `npm run check` and in the browser as `lead-divya` on Kestrel Robotics (desktop and
+  phone width). Tests: `src/components/incorporation/InternPhaseSections.test.tsx`.

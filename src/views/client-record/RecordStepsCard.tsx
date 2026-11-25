@@ -8,7 +8,7 @@ import type { ChecklistItem } from '@/data/checklist';
 import type { Engagement } from '@/data/engagements';
 import { Button } from '@/components/ui/button';
 import { ChecklistPhaseStepRow } from '@/components/incorporation/ChecklistPhaseStepRow';
-import { InternPhaseTabs } from '@/components/incorporation/InternOverviewProgress';
+import { InternPhaseSections } from '@/components/incorporation/InternOverviewProgress';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { getStepGate, type ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import { buildIncorporationModel } from '@/lib/client-portal/step-model';
@@ -37,8 +37,9 @@ const PHASE_LABEL: Record<string, string> = {
 /**
  * STEPS CARD of a staff client record (prototype `ClientRecordScreen` "Steps" card with
  * `PhaseTrack` and `StepList`). One card for the lead, the manager and the admin: the ST5 phase
- * track picks a phase in place, the card lists its steps with dates, holder, lead and status, and
- * "What's this?" opens the step's Ask VCFO panel.
+ * track shows each phase's progress, and the four phases sit below it as collapsible sections that
+ * list their steps with dates, holder, lead and status. "What's this?" opens the step's Ask VCFO
+ * panel.
  *
  * `gates` decide the marks and are the viewer's own (a lead's are the intern gates; a manager or
  * admin reads with the client gates, so nothing here edits). `hrefFor` is the role's step route.
@@ -103,7 +104,7 @@ export function RecordStepsCard({
 
   return (
     <>
-      <InternPhaseTabs
+      <InternPhaseSections
         engagementId={engagement.id}
         currentPhaseId={now?.phaseId ?? null}
         phases={tabs}
@@ -128,7 +129,7 @@ export function RecordStepsCard({
             });
             return (
               <>
-                <div className="flex flex-wrap items-center gap-3 py-1 text-[14px]">
+                <div className="flex flex-wrap items-center gap-3 pb-2 text-[14px]">
                   <span className="min-w-0 flex-1">
                     <b className="font-medium tabular-nums">{counts?.done ?? 0}</b>
                     <span className="text-ink-muted"> of {counts?.total ?? phase.items.length} registrations</span>
@@ -145,6 +146,9 @@ export function RecordStepsCard({
                       <ChevronRight size={14} strokeWidth={1.6} aria-hidden />
                     </Button>
                   ) : null}
+                </div>
+                <div className="flex flex-col">
+                  {phase.items.map((it, i) => row(it, i, phase.items.length, phase.items[i - 1]))}
                 </div>
               </>
             );
@@ -173,7 +177,7 @@ export function RecordStepsCard({
             </div>
           );
         }}
-      </InternPhaseTabs>
+      </InternPhaseSections>
       <StepAboutPanel
         stepId={about?.id ?? null}
         stepLabel={about?.label}

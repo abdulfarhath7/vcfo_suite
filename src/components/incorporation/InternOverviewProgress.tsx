@@ -1,25 +1,26 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { m, useReducedMotion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { StepMark } from '@/components/ui/step-track';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { RecordPhaseTrack } from '@/components/incorporation/RecordPhaseTrack';
+import { RecordPhaseBar, RecordPhaseTrack } from '@/components/incorporation/RecordPhaseTrack';
+import { Chip } from '@/components/ui/spectrum-chip';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { ChecklistItem } from '@/data/checklist';
 import type { ChecklistStepGate } from '@/lib/checklist/checklist-step-gate';
 import {
-  internEngagementPhaseTabDefault,
+  internEngagementOpenPhasesDefault,
   internNodeKind,
   internOverviewPhaseTitle,
   internPhaseProgressFraction,
   internPhaseProgressLabel,
   internPhaseStepCounts,
   internRegistrationHeadingGroups,
-  readInternEngagementPhaseTab,
-  writeInternEngagementPhaseTab,
+  readInternEngagementOpenPhases,
+  writeInternEngagementOpenPhases,
   type InternOverviewNow,
   type InternOverviewPhase,
 } from '@/lib/intern/intern-overview-progress';
@@ -191,10 +192,13 @@ export type InternPhaseTab = {
 };
 
 /**
- * The step card of a lead's client record: the ST5 phase track picks a phase in place and the
- * card lists its steps. The last picked phase is kept per engagement.
+ * The step card of a lead's client record. The ST5 phase track sits on top as the progress
+ * summary, and each phase below it is a collapsible section whose header repeats the phase's bar,
+ * its done count and a status chip. The current phase opens by default; several can be open at
+ * once, and the open sections are kept per engagement. A bar opens its section and scrolls to it.
+ * `children(phaseId)` renders a section's steps, only while it is open.
  */
-export function InternPhaseTabs({
+export function InternPhaseSections({
   engagementId,
   currentPhaseId,
   phases,
@@ -206,7 +210,7 @@ export function InternPhaseTabs({
   engagementId: string;
   currentPhaseId: string | null;
   phases: readonly InternPhaseTab[];
-  /** Opens on this phase (`?phase=n` from a phase bar in a list). */
+  /** Opens this phase and scrolls to it (`?phase=n` from a phase bar in a list). */
   openPhaseId?: string | null;
   /** Right-hand head action, such as "Open current step". */
   headAction?: ReactNode;
@@ -216,39 +220,60 @@ export function InternPhaseTabs({
 }) {
   const reduceMotion = useReducedMotion();
   const phaseIds = phases.map((phase) => phase.id);
-  const currentPhaseIdRef = useRef(currentPhaseId);
-  const phaseIdsRef = useRef(phaseIds);
-  currentPhaseIdRef.current = currentPhaseId;
-  phaseIdsRef.current = phaseIds;
+  const phaseKey = phaseIds.join(',');
+  const sectionRefs = useRef(new Map<string, HTMLElement>());
+  const [scrollTo, setScrollTo] = useState<string | null>(null);
 
-  const [tab, setTab] = useState(() =>
-    internEngagementPhaseTabDefault(null, currentPhaseId, phaseIds),
+  const [open, setOpen] = useState<string[]>(() =>
+    internEngagementOpenPhasesDefault(null, currentPhaseId, phaseIds),
   );
 
+  // Re-runs when the current phase settles (the gates load after the card mounts), so a viewer
+  // with nothing stored lands on the phase in progress. A stored list is unaffected by that.
   useLayoutEffect(() => {
-    setTab(
-      internEngagementPhaseTabDefault(
-        openPhaseId ?? readInternEngagementPhaseTab(engagementId),
-        currentPhaseIdRef.current,
-        phaseIdsRef.current,
-      ),
+    const ids = phaseKey ? phaseKey.split(',') : [];
+    const next = internEngagementOpenPhasesDefault(
+      readInternEngagementOpenPhases(engagementId),
+      currentPhaseId,
+      ids,
     );
-  }, [engagementId, openPhaseId]);
+    if (openPhaseId && ids.includes(openPhaseId)) {
+      setOpen(next.includes(openPhaseId) ? next : [...next, openPhaseId]);
+      setScrollTo(openPhaseId);
+    } else {
+      setOpen(next);
+    }
+  }, [engagementId, openPhaseId, phaseKey, currentPhaseId]);
+
+  useEffect(() => {
+    if (!scrollTo) return;
+    sectionRefs.current.get(scrollTo)?.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'start',
+    });
+    setScrollTo(null);
+  }, [scrollTo, reduceMotion]);
 
   if (phases.length === 0) return null;
 
-  const value = phaseIds.includes(tab)
-    ? tab
-    : internEngagementPhaseTabDefault(null, currentPhaseId, phaseIds);
-  const selected = phases.find((phase) => phase.id === value) ?? phases[0]!;
-  const panelMotion = reduceMotion ? fadeSwapReduced : fadeSwap;
+  const update = (next: string[]) => {
+    // Keep the catalog order so the stored list reads the same however it was opened.
+    const ordered = phaseIds.filter((id) => next.includes(id));
+    setOpen(ordered);
+    writeInternEngagementOpenPhases(engagementId, ordered);
+  };
+  const toggle = (id: string) => update(open.includes(id) ? open.filter((x) => x !== id) : [...open, id]);
+  const jumpTo = (id: string) => {
+    if (!open.includes(id)) update([...open, id]);
+    setScrollTo(id);
+  };
+
   const totalDone = phases.reduce((n, p) => n + p.done, 0);
   const total = phases.reduce((n, p) => n + p.total, 0);
-
-  const onValueChange = (next: string) => {
-    setTab(next);
-    writeInternEngagementPhaseTab(engagementId, next);
-  };
+  // The track's rule: the current phase is the first one not yet finished.
+  const trackCurrent = phases.find((p) => p.done < p.total)?.id ?? null;
+  const allOpen = open.length === phases.length;
+  const bodyMotion = reduceMotion ? fadeSwapReduced : fadeSwap;
 
   return (
     <section className="surface min-w-0 overflow-hidden" aria-label="Incorporation phases">
@@ -258,27 +283,98 @@ export function InternPhaseTabs({
         <span className="truncate text-[13px] tabular-nums text-ink-muted">
           {headMeta ?? `${totalDone} of ${total} done`}
         </span>
-        <span className="ml-auto flex items-center">{headAction}</span>
+        <span className="ml-auto flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => update(allOpen ? [] : phaseIds)}
+            className="shrink-0 text-[13px] text-ink-muted hover:text-ink hover:underline"
+          >
+            {allOpen ? 'Collapse all' : 'Expand all'}
+          </button>
+          {headAction}
+        </span>
       </div>
-      <div className="p-4 md:px-5">
+      <div className="border-b border-line-soft p-4 md:px-5">
         <RecordPhaseTrack
           phases={phases.map((p) => ({ id: p.id, label: p.label ?? internOverviewPhaseTitle(p.id, p.title), done: p.done, total: p.total, range: p.range }))}
-          picked={selected.id}
-          onPick={onValueChange}
+          onPick={jumpTo}
         />
-        <div className="mt-4 border-t border-line-soft pt-3" role="region" aria-label={internOverviewPhaseTitle(selected.id, selected.title)}>
-          <AnimatePresence mode="wait" initial={false}>
-            <m.div
-              key={value}
-              initial={panelMotion.initial}
-              animate={panelMotion.animate}
-              exit={panelMotion.exit}
-              transition={panelMotion.transition}
+      </div>
+      <div>
+        {phases.map((phase) => {
+          const label = phase.label ?? internOverviewPhaseTitle(phase.id, phase.title);
+          const isOpen = open.includes(phase.id);
+          const full = phase.total > 0 && phase.done >= phase.total;
+          const current = phase.id === trackCurrent;
+          const chip = full ? 'Done' : current || phase.done > 0 ? 'In progress' : 'Not started';
+          const bodyId = `phase-section-${phase.id}`;
+          return (
+            <div
+              key={phase.id}
+              ref={(el) => {
+                if (el) sectionRefs.current.set(phase.id, el);
+                else sectionRefs.current.delete(phase.id);
+              }}
+              className="scroll-mt-20 border-b border-line-soft last:border-b-0"
             >
-              {children(value)}
-            </m.div>
-          </AnimatePresence>
-        </div>
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={bodyId}
+                onClick={() => toggle(phase.id)}
+                className="grid w-full grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-surface-sunken/60 md:px-5"
+              >
+                <ChevronRight
+                  size={16}
+                  strokeWidth={1.8}
+                  aria-hidden
+                  className={cn(
+                    'transition-transform duration-150 motion-reduce:transition-none',
+                    isOpen ? 'rotate-90 text-ink' : 'text-ink-muted',
+                  )}
+                />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-[14.5px] font-medium text-ink">{label}</span>
+                  {phase.range ? (
+                    <span className="truncate font-mono text-[12px] text-ink-muted">{phase.range}</span>
+                  ) : null}
+                </span>
+                <span className="flex items-center gap-3">
+                  <RecordPhaseBar
+                    done={phase.done}
+                    total={phase.total}
+                    current={current}
+                    className="hidden h-2 w-24 sm:block"
+                  />
+                  <span
+                    className={cn(
+                      'min-w-[2.25rem] text-right text-[12.5px] font-medium tabular-nums',
+                      full ? 'text-positive' : current ? 'text-brand-text' : 'text-ink-muted',
+                    )}
+                  >
+                    {phase.done}/{phase.total}
+                  </span>
+                  <Chip>{chip}</Chip>
+                </span>
+              </button>
+              {/* Fades in on open only: a closing section leaves at once, so the sections below
+                  do not jump after a scroll has been measured. */}
+              {isOpen ? (
+                <m.div
+                  id={bodyId}
+                  role="region"
+                  aria-label={label}
+                  initial={bodyMotion.initial}
+                  animate={bodyMotion.animate}
+                  transition={bodyMotion.transition}
+                  className="px-4 pb-3 md:px-5 md:pl-12"
+                >
+                  {children(phase.id)}
+                </m.div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
