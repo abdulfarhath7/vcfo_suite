@@ -181,3 +181,14 @@ The live portal opens inside the same Suite page, not only in a new tab.
   and icon ("Your turn"), plays a short sound, and sends a desktop notification if the user allows it.
 - When the portal page moves on, the agent continues and the app shows "Thanks, I continue".
 - Keystrokes typed in the portal tab go only to the server browser. Suite never logs or stores them.
+
+## Owner change (25 Nov 2026): no "Open live portal" button
+
+- One click on the card robot ("Start") does everything: Check data, start the server browser,
+  open the portal start page in live mode and the portal tab, then wait at the login.
+- If required data is missing, it stops before the portal and lists what is missing. When the
+  list is fixed, it continues by itself.
+- The server browser is warmed when the robot panel opens, so the portal appears in about one
+  second instead of 30 to 60 seconds. A warm browser that is not used stops after 2 minutes.
+- Nothing starts just because a page is opened: one page view must not start a government
+  portal session (cost, account lockouts, and every manager who views the page would start one).
