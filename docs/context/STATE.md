@@ -275,6 +275,7 @@ handling, tests and what is not covered: `docs/context/notes/demo-data.md`, "Dem
 - AWS: SES production access (quota case 178914709000400 opened 2026-09-11) + DKIM verification (records in DNS, pending), Inngest cloud keys, `project` cost-allocation tag activation (key not yet visible in Billing)
 - Full email digest from compliance job (console log today)
 - Operational Readiness as primary nav/queues (data kept; filtered from primary UX)
+- eMudhra integration (Aadhaar eSign, emSigner workflows, DSC ordering and renewal) is planned, not built: `docs/specs/emudhra/PLAN.md`. It waits on a meeting with the eMudhra tech team (`docs/specs/emudhra/MEETING-QUESTIONS.md`) for the API specification, UAT keys and partner pricing.
 
 ## Re-verify when ready
 
