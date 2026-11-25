@@ -1,6 +1,6 @@
 # eMudhra in VCFO Suite: where it fits, how we integrate, what it costs
 
-Status: plan only, written 25 Nov 2026. No code is built. Phase 1 starts after the meeting with the eMudhra tech team (questions in `MEETING-QUESTIONS.md`). Prices below are public retail figures or market ranges and must be confirmed with eMudhra.
+Status: plan only, written 25 Nov 2026. No code is built. Phase 1 starts after the meeting with the eMudhra tech team (questions in `MEETING-QUESTIONS.md`). The full list of items to get from eMudhra, with cost and use, is in `REQUIREMENTS.md`. Prices below are public retail figures or market ranges and must be confirmed with eMudhra.
 
 ## Context
 
