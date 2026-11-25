@@ -192,3 +192,20 @@ The live portal opens inside the same Suite page, not only in a new tab.
   second instead of 30 to 60 seconds. A warm browser that is not used stops after 2 minutes.
 - Nothing starts just because a page is opened: one page view must not start a government
   portal session (cost, account lockouts, and every manager who views the page would start one).
+
+## Owner change (25 Nov 2026): the "Before I fill" check
+
+After Start and before the portal opens, the agent shows one screen: what the form needs, what
+Suite has, and what is missing. The user decides each missing item. Nothing is filled until the
+user clicks "Fill now".
+
+- Four groups: Ready (value and its source), Needs your confirmation (client values the lead has
+  not confirmed), Missing and required, Missing and optional. Documents are listed the same way.
+- For each missing item the user picks one action: Get it from SharePoint, Get it from Zoho,
+  Ask the client (draft request list), Type it now, I will type it on the portal (the agent leaves
+  that field and marks it, G16), or Skip (optional items only).
+- "Fill now" is enabled only when every required item is present or set to "I will type it on the
+  portal". "Save and come back" keeps the choices; the agent continues by itself when the data arrives.
+- Reuse: `GstApplicationCard.tsx` (missing list, sources, SharePoint and client-request buttons),
+  `ConfirmClientValues.tsx`, `use-gst-registration.ts`, `use-assist-profile.ts` for MCA forms,
+  and the G13 preview table (what will be written to which field).
