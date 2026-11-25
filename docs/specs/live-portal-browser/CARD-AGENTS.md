@@ -165,3 +165,19 @@ The live portal opens inside the same Suite page, not only in a new tab.
 - A "Pop out" button opens the same session in its own tab (for a second screen). One session
   is shared, so the two views never conflict.
 - Page 5 (`/app/lead/live-portal/<session>`) stays as the pop-out page and for Assist runs.
+
+## Owner change (25 Nov 2026): watch in the app, act in the portal tab
+
+- In the app (live mode on the card page) the user watches the agent fill. The view is
+  watch-only while the agent works, so a stray click cannot disturb the fill. A "Pause" button stops it.
+- The fill is visible: the agent types each field at a readable speed, the extension's overlay
+  (`extensions/vcfo-assist/src/portal/overlay.ts`) draws a box round the field being written, and
+  the rail ticks the fields off with a progress bar. Reuse the look of Ask VCFO "Watch it fill"
+  (`src/components/ask/fill/GhostCursor.tsx`, `FillRail.tsx`).
+- At a human step (login, captcha, OTP, DSC or EVC, Submit, Pay) the agent stops. The app shows
+  "Your turn: go to the Live portal tab and type the captcha" with a "Go to portal tab" button.
+  The portal tab is the only view that takes keys and clicks.
+- Browsers do not let a page switch tabs by itself. So the app also flashes the portal tab's title
+  and icon ("Your turn"), plays a short sound, and sends a desktop notification if the user allows it.
+- When the portal page moves on, the agent continues and the app shows "Thanks, I continue".
+- Keystrokes typed in the portal tab go only to the server browser. Suite never logs or stores them.
