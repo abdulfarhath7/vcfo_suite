@@ -186,6 +186,21 @@ they mean a single mistake does not cause one.
 - The profile is fetched inside a signed-in Suite tab (see `docs/specs/assist-profile/06-no-cors.md`),
   so no extra credential exists to leak.
 
+### 7. Proposed guards for the firm-hosted live browser (not in force)
+
+These guards are proposed for the live portal browser in `docs/specs/live-portal-browser/PLAN.md`.
+They are not in force and no code implements them yet. G8 and G12 keep their current wording
+until the CS answers question 32 in `CS-QUESTIONS.md` and the owner amends SBC-STD-AI-02. G1 to G7,
+G9 to G11 and G13 to G18 apply to the live browser unchanged.
+
+| # | Proposed guard | Threats stopped |
+|---|---|---|
+| G19 | One browser per filing, destroyed at the end. The portal session lives only in that container's memory; no browser profile, cookie, storage or token is written to disk, S3 or the database, and the container is stopped at DONE, cancel, 15 minutes idle or 90 minutes in all. This replaces G8's "in the extension" wording for the live browser. | T-CRED |
+| G20 | Attended through the stream. A run starts only while a staff member has the live stream open; the stream token is signed by Suite for one session and one user, expires in minutes, and is refused for clients, other leads and a stopped session. If the viewer disconnects, the engine pauses. This replaces G12's "user's own visible tab" for the live browser. | T-CRED, T-LIVE |
+| G21 | One run per portal login. Suite refuses a second live session for the same portal login label while one is open, so no parallel sessions can lock an account. | T-CRED, T-LIVE |
+| G22 | No captcha or screen capture. The stream is shown to the viewer and never recorded; the agent takes no screenshot; the engine's scanner never reads a captcha image (G2) through the remote browser either. | T-SOLV, T-LEAK |
+| G23 | Fixed, logged egress. Every portal request leaves through SBC's one Elastic IP in ap-south-1; the run log records that IP, the container id and each viewer's Suite user and IP (extends G14). | All (detection, defence) |
+
 ## How the guards are tested
 
 | Guard | Test | Where |

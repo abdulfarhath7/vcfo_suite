@@ -188,6 +188,23 @@ of these.
     a client's details before the recording leaves their laptop (see `PORTAL-CAPTURE.md`). Is that
     acceptable on the income tax portal and on TRACES?
 
+### Part E — a firm-hosted live browser
+
+32. **A browser on SBC's own servers instead of the user's PC.** We would like to run the same
+    attended filling in a fresh Chromium browser on SBC's own AWS account in Mumbai, one browser
+    per filing, instead of in the staff member's own Chrome. The staff member watches that browser
+    live in a VCFO Suite tab and types the login, captcha and OTP into it themselves; the agent
+    fills only the other fields and never presses Submit, Pay or Sign. The portal session exists
+    only in that browser's memory while the filing is open, nothing is kept after it closes, the
+    screen is not recorded, and the portal sees one fixed Indian IP address that belongs to SBC.
+    DSC signing stays on the signer's own PC. (a) Is this still "attended filling in the user's own
+    session" for questions 12 and 30, or does a firm-hosted browser change the position? (b) Is the
+    firm holding the live session in its servers' memory for the length of one filing consistent
+    with the ICSI and ICAI rules on client credentials? (c) Does using one SBC IP address for many
+    clients' filings raise any issue on MCA or the GST portal? (d) Would you attach any condition
+    (for example, only staff whose own login is used, or a written client consent)? The design is in
+    `docs/specs/live-portal-browser/PLAN.md` and the proposed guards G19 to G23 in `SAFETY.md`.
+
 We would be grateful for your answer by [date]. Until we receive it, the extension stays
 switched off for every live portal, and we continue testing only against the mock.
 
