@@ -5,7 +5,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { StepMark } from '@/components/ui/step-track';
 import { CardHeadTile } from '@/components/common/CardHeadTile';
-import { RecordPhaseBar, RecordPhaseTrack } from '@/components/incorporation/RecordPhaseTrack';
+import { RecordPhaseBar } from '@/components/incorporation/RecordPhaseTrack';
 import { Chip } from '@/components/ui/spectrum-chip';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -192,10 +192,9 @@ export type InternPhaseTab = {
 };
 
 /**
- * The step card of a lead's client record. The ST5 phase track sits on top as the progress
- * summary, and each phase below it is a collapsible section whose header repeats the phase's bar,
- * its done count and a status chip. The current phase opens by default; several can be open at
- * once, and the open sections are kept per engagement. A bar opens its section and scrolls to it.
+ * The step card of a lead's client record. Each phase is a collapsible section whose header is the
+ * phase's progress summary: its bar, its done count and a status chip. The current phase opens by
+ * default; several can be open at once, and the open sections are kept per engagement.
  * `children(phaseId)` renders a section's steps, only while it is open.
  */
 export function InternPhaseSections({
@@ -263,14 +262,10 @@ export function InternPhaseSections({
     writeInternEngagementOpenPhases(engagementId, ordered);
   };
   const toggle = (id: string) => update(open.includes(id) ? open.filter((x) => x !== id) : [...open, id]);
-  const jumpTo = (id: string) => {
-    if (!open.includes(id)) update([...open, id]);
-    setScrollTo(id);
-  };
 
   const totalDone = phases.reduce((n, p) => n + p.done, 0);
   const total = phases.reduce((n, p) => n + p.total, 0);
-  // The track's rule: the current phase is the first one not yet finished.
+  // The current phase is the first one not yet finished (the same rule as `RecordPhaseTrack`).
   const trackCurrent = phases.find((p) => p.done < p.total)?.id ?? null;
   const allOpen = open.length === phases.length;
   const bodyMotion = reduceMotion ? fadeSwapReduced : fadeSwap;
@@ -293,12 +288,6 @@ export function InternPhaseSections({
           </button>
           {headAction}
         </span>
-      </div>
-      <div className="border-b border-line-soft p-4 md:px-5">
-        <RecordPhaseTrack
-          phases={phases.map((p) => ({ id: p.id, label: p.label ?? internOverviewPhaseTitle(p.id, p.title), done: p.done, total: p.total, range: p.range }))}
-          onPick={jumpTo}
-        />
       </div>
       <div>
         {phases.map((phase) => {
@@ -338,6 +327,13 @@ export function InternPhaseSections({
                   {phase.range ? (
                     <span className="truncate font-mono text-[12px] text-ink-muted">{phase.range}</span>
                   ) : null}
+                  {/* Phones: the bar goes under the name so the name keeps the row's width. */}
+                  <RecordPhaseBar
+                    done={phase.done}
+                    total={phase.total}
+                    current={current}
+                    className="mt-1.5 h-1.5 w-full max-w-[160px] sm:hidden"
+                  />
                 </span>
                 <span className="flex items-center gap-3">
                   <RecordPhaseBar

@@ -49,10 +49,8 @@ export function RecordPhaseBar({
 
 /**
  * ST5 phase track of a client record (R-22; prototype `PhaseTrack`). One bar per phase, sized by
- * its step count (see `RecordPhaseBar` for the colours). Each bar is a button: with `picked` it
- * picks the phase in place (R-36) and, on phones, where only the four bars show, the picked phase
- * is written under them; without `picked` it only reports the click (the Steps card opens and
- * scrolls to that phase's section).
+ * its step count (see `RecordPhaseBar` for the colours). Each bar is a button that picks the phase
+ * in place (R-36). On phones only the four bars show, with the picked phase written under them.
  */
 export function RecordPhaseTrack({
   phases,
@@ -61,13 +59,12 @@ export function RecordPhaseTrack({
   className,
 }: {
   phases: readonly RecordPhase[];
-  /** The phase shown in place; leave it out when the bars jump to sections instead. */
-  picked?: string | null;
+  picked: string;
   onPick: (id: string) => void;
   className?: string;
 }) {
   const cur = phases.findIndex((p) => p.done < p.total);
-  const pickedPhase = picked == null ? null : phases.find((p) => p.id === picked) ?? phases[0];
+  const pickedPhase = phases.find((p) => p.id === picked) ?? phases[0];
   return (
     <div className={cn('grid gap-2', className)}>
       <div className="flex gap-2" role="group" aria-label="Phases">
@@ -78,7 +75,7 @@ export function RecordPhaseTrack({
             <button
               key={p.id}
               type="button"
-              aria-pressed={picked == null ? undefined : picked === p.id}
+              aria-pressed={picked === p.id}
               aria-label={`${p.label} · ${p.done} of ${p.total}`}
               onClick={() => onPick(p.id)}
               style={{ flex: `${Math.max(1, p.total)} 1 0` }}
