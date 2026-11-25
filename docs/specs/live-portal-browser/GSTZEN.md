@@ -31,6 +31,33 @@ GSTZen helps a lot for GST returns and GST data. It does not help with GST regis
 | E-invoice, e-way bill | Generate, cancel, details | Later, if SBC prepares these for clients |
 | Account | JWT login (token valid 24 hours), Create GSTIN | Server-side only |
 
+### GST work NOT in the GSTZen API list (25 Nov 2026)
+
+"Not in the list" means the public docs show no API for it. Confirm each one with GSTZen.
+
+| Area | GST work | Form | Route until GSTZen confirms |
+|---|---|---|---|
+| Registration | New registration | REG-01 | Live browser after the CS answer; prepare data only until then |
+| Registration | Aadhaar authentication of promoters and signatory | (link sent by the portal) | Each person on their own phone; the tracker reminds them |
+| Registration | Reply to a clarification notice | REG-03 / REG-04 | Live browser or manual |
+| Registration | Registration certificate download | REG-06 | Manual upload to the tracker |
+| Registration | Amendment of core or non-core fields | REG-14 | Live browser or manual |
+| Registration | Cancellation and revocation | REG-16 / REG-21 | Live browser or manual |
+| Registration | Add or change an authorised signatory; register a DSC on the portal | - | Manual |
+| Registration | Switch on API access for the GSP | Portal profile setting | The client does it once, during onboarding |
+| Export | Letter of undertaking | RFD-11 (LUT) | Live browser or manual |
+| Composition | Opt in or opt out | CMP-02 / CMP-04 | Manual |
+| Composition | Quarterly statement and annual return | CMP-08 / GSTR-4 | Manual or a future API |
+| Other returns | Non-resident, ISD, TDS deductor, TCS (e-commerce), final return | GSTR-5 / 6 / 7 / 8 / 10 | Manual, by need |
+| Other returns | Job work statement | ITC-04 | Manual |
+| ITC forms | ITC declarations | ITC-01 / 02 / 03 | Manual |
+| Payment | Create a challan and pay | PMT-06 | The person pays from their own bank (always) |
+| Payment | Voluntary payment | DRC-03 | Manual |
+| Refunds | Refund application | RFD-01 | Live browser or manual |
+| Notices | Reply to a notice or show-cause notice (the Notice API only reads) | ASMT-11, DRC-06 and others | Draft the reply in Suite; the person uploads it |
+| Appeals | Appeal | APL-01 | Manual, with the CA |
+| IMS | Accept or reject invoices (the docs show counts, lists and status only) | IMS actions | Confirm with GSTZen |
+
 Limit seen in the docs: the plan allows 25 GSTINs ("You have exceeded your current plan's limit
 of 25 GSTINs"). Check SBC's plan against the number of clients.
 
