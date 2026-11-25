@@ -29,7 +29,7 @@ import { BulkReceivedDialog, CreditNoteDialog, DisputeDialog } from './sheet/She
 import { SheetFilterBar } from './sheet/SheetFilterBar';
 import { SheetSummary } from './sheet/SheetSummary';
 import { SheetTable } from './sheet/SheetTable';
-import { TallySync } from './sheet/TallySync';
+import { SourceSync } from './sheet/SourceSync';
 import { useSheetTab, type RowGroup } from './sheet/use-sheet-tab';
 
 /**
@@ -119,7 +119,7 @@ export function SheetTab({ data, actions, today, external }: { data: ManagerShee
               <FileSpreadsheet aria-hidden />
               {imports.upload.isPending ? 'Reading…' : 'Import Tally'}
             </Button>
-            <TallySync sheetId={data.sheet.id} today={today} onImportExcel={() => fileRef.current?.click()} onReview={openReview} />
+            <SourceSync sheetId={data.sheet.id} today={today} onImportExcel={() => fileRef.current?.click()} onReview={openReview} />
             <input
               ref={fileRef}
               type="file"

@@ -32,6 +32,7 @@ import { myDayEmail } from '@/jobs/my-day-email';
 import { assistFilingDeadlines } from '@/jobs/assist-filing-deadlines';
 import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
+import { zohoDiscover, zohoReceivablesSync } from '@/jobs/integrations-zoho';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -78,5 +79,7 @@ export function registeredJobs(): JobFunction[] {
     gstRegistrationStart,
     fieldAskDelivery,
     fieldAskReminders,
+    zohoDiscover,
+    zohoReceivablesSync,
   ]);
 }

@@ -1,22 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/ui/copy-button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Field } from '@/components/ui/field';
 import { Modal } from '@/components/ui/modal';
 import { toastError, toastSuccess } from '@/lib/toast-errors';
-import { call } from '@/hooks/use-receivables';
-import { pendingKey } from '@/hooks/use-receivables-v2';
-import { tallyJobKey, useTallyActions, useTallyJob, useTallyStatus } from '@/hooks/use-tally-sync';
-import type { PendingImportsDto } from '@/lib/receivables/v2-wire';
+import { tallyJobKey, tallyKey, useTallyActions, useTallyJob, useTallyStatus } from '@/hooks/use-tally-sync';
 import type { TallyJobDto, TallyJobType } from '@/lib/receivables/tally-live/wire';
 import { cn } from '@/lib/utils';
-import { DatePick } from './DatePick';
 import { TOOL_BTN } from './PublishBar';
+import { SyncDialog, SyncFailedModal, useSyncFinish } from './sync-shared';
 
 /**
  * "Sync from Tally" on the Sheet tab (docs/specs/receivables/TALLY-LIVE.md). The main half opens
@@ -27,17 +23,13 @@ import { TOOL_BTN } from './PublishBar';
  * not answer ends with the reason and "Import Excel instead".
  */
 
-const TYPE_LABEL: Record<TallyJobType, string> = { sales: 'Invoices', receipts: 'Payments' };
+const TALLY_COPY: Record<TallyJobType, string> = {
+  sales: 'Sales vouchers of the period come in as rows to approve, the same as an Excel import.',
+  receipts: 'Receipts with a bill reference come in as payments to approve; approving marks the invoice received, or part-paid.',
+};
 
-/** 1 April of the financial year `today` falls in. */
-function financialYearStart(today: string): string {
-  const y = Number(today.slice(0, 4));
-  return Number(today.slice(5, 7)) >= 4 ? `${y}-04-01` : `${y - 1}-04-01`;
-}
-
-const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
-
-export function TallySync({ sheetId, today, onImportExcel, onReview }: { sheetId: string; today: string; onImportExcel: () => void; onReview: () => void }) {
+/** `menuExtra` adds items under the caret (SourceSync's "Use Zoho Books…"). */
+export function TallySync({ sheetId, today, onImportExcel, onReview, menuExtra }: { sheetId: string; today: string; onImportExcel: () => void; onReview: () => void; menuExtra?: ReactNode }) {
   const qc = useQueryClient();
   const [connectOpen, setConnectOpen] = useState(false);
   const status = useTallyStatus(sheetId, connectOpen);
@@ -52,35 +44,8 @@ export function TallySync({ sheetId, today, onImportExcel, onReview }: { sheetId
   const followId = jobId ?? status.data?.activeJob?.id ?? null;
   const job = useTallyJob(sheetId, followId);
   const live = job.data && (job.data.status === 'queued' || job.data.status === 'running') ? job.data : null;
-  const finished = useRef<string | null>(null);
-
-  useEffect(() => {
-    const j = job.data;
-    if (!j || j.status === 'queued' || j.status === 'running' || finished.current === j.id) return;
-    finished.current = j.id;
-    setJobId(null);
-    void qc.invalidateQueries({ queryKey: ['receivables', 'tally', sheetId] });
-    if (j.status === 'done') {
-      void (async () => {
-        await qc.invalidateQueries({ queryKey: pendingKey(sheetId) });
-        const pending = await qc.fetchQuery({ queryKey: pendingKey(sheetId), queryFn: () => call<PendingImportsDto>(`/api/receivables/sheets/${sheetId}/imports/pending`) });
-        const invoices = pending.rows.filter((r) => r.kind !== 'same' && r.kind !== 'receipt').length;
-        const payments = pending.rows.filter((r) => r.kind === 'receipt').length;
-        // The job's notes carry the reasons (a receipt with no bill reference, payments already applied).
-        const notes = j.stats?.notes?.length ? ` ${j.stats.notes.slice(0, 3).map((n) => (/[.!?]$/.test(n) ? n : `${n}.`)).join(' ')}${j.stats.notes.length > 3 ? ' …' : ''}` : '';
-        if (!invoices && !payments) {
-          toastSuccess('Tally is in step with the sheet', `Nothing new for ${j.from} to ${j.to}.${notes}`);
-          return;
-        }
-        const parts = [invoices ? plural(invoices, 'invoice') : '', payments ? plural(payments, 'payment') : ''].filter(Boolean);
-        const skipped = j.stats?.skipped ? `${j.stats.skipped} voucher(s) from Tally were skipped.` : '';
-        toastSuccess(`${parts.join(' and ')} waiting for approval`, `${skipped}${notes}`.trim() || undefined);
-        onReview();
-      })();
-    } else {
-      setFailed(j);
-    }
-  }, [job.data, qc, sheetId, onReview]);
+  const settle = useCallback(() => setJobId(null), []);
+  const rearm = useSyncFinish({ sheetId, job: job.data, statusKey: tallyKey(sheetId), sourceWord: 'Tally', onReview, onFailed: setFailed, onSettled: settle });
 
   const busy = Boolean(live) || actions.sync.isPending;
   const label = live ? (live.status === 'queued' ? 'Waiting for the Tally PC…' : 'Reading Tally…') : 'Sync from Tally';
@@ -112,22 +77,25 @@ export function TallySync({ sheetId, today, onImportExcel, onReview }: { sheetId
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setConnectOpen(true)}>{connector ? 'Connect again…' : 'Connect Tally…'}</DropdownMenuItem>
             {connector ? <DropdownMenuItem onSelect={() => setConfirmRevoke(true)}>Disconnect</DropdownMenuItem> : null}
+            {menuExtra}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {syncType ? (
         <SyncDialog
+          title="Sync from Tally"
+          copy={TALLY_COPY}
           type={syncType}
           today={today}
           busy={actions.sync.isPending}
-          connectorLine={connector ? `${connector.online ? 'Online' : 'Offline'}${connector.tallyCompany ? ` · ${connector.tallyCompany}` : ''}${connector.name ? ` · ${connector.name}` : ''}` : ''}
+          sub={connector ? `${connector.online ? 'Online' : 'Offline'}${connector.tallyCompany ? ` · ${connector.tallyCompany}` : ''}${connector.name ? ` · ${connector.name}` : ''}` : ''}
           onType={setSyncType}
           onClose={() => setSyncType(null)}
           onSync={(input) =>
             actions.sync.mutate(input, {
               onSuccess: (j) => {
-                finished.current = null;
+                rearm();
                 // Seed the job so the button says "Waiting for the Tally PC…" at once, not after the first poll.
                 qc.setQueryData(tallyJobKey(sheetId, j.id), j);
                 setJobId(j.id);
@@ -173,103 +141,8 @@ export function TallySync({ sheetId, today, onImportExcel, onReview }: { sheetId
         </Modal>
       ) : null}
 
-      {failed ? (
-        <Modal
-          open
-          onOpenChange={(o) => !o && setFailed(null)}
-          title="The sync did not finish"
-          size="sm"
-          footer={
-            <>
-              <Button variant="secondary" onClick={() => setFailed(null)}>
-                Close
-              </Button>
-              <Button
-                onClick={() => {
-                  setFailed(null);
-                  onImportExcel();
-                }}
-              >
-                Import Excel instead
-              </Button>
-            </>
-          }
-        >
-          <p className="text-[13px] text-ink-2">{failed.error ?? 'Tally did not answer.'}</p>
-        </Modal>
-      ) : null}
+      {failed ? <SyncFailedModal job={failed} fallback="Tally did not answer." onClose={() => setFailed(null)} onImportExcel={onImportExcel} /> : null}
     </>
-  );
-}
-
-function SyncDialog({
-  type,
-  today,
-  busy,
-  connectorLine,
-  onType,
-  onClose,
-  onSync,
-}: {
-  type: TallyJobType;
-  today: string;
-  busy: boolean;
-  connectorLine: string;
-  onType: (t: TallyJobType) => void;
-  onClose: () => void;
-  onSync: (input: { type: TallyJobType; from: string; to: string }) => void;
-}) {
-  const [from, setFrom] = useState(() => financialYearStart(today));
-  const [to, setTo] = useState(today);
-  const valid = Boolean(from && to && from <= to);
-  return (
-    <Modal
-      open
-      onOpenChange={(o) => !o && onClose()}
-      title="Sync from Tally"
-      sub={connectorLine || undefined}
-      size="sm"
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button disabled={!valid || busy} onClick={() => onSync({ type, from, to })}>
-            {busy ? 'Starting…' : `Sync ${TYPE_LABEL[type].toLowerCase()}`}
-          </Button>
-        </>
-      }
-    >
-      <div className="grid gap-3">
-        <div role="radiogroup" aria-label="What to fetch" className="inline-flex w-fit rounded-md border border-line p-0.5">
-          {(['sales', 'receipts'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={type === t}
-              onClick={() => onType(t)}
-              className={cn('rounded px-3 py-1 text-[12.5px]', type === t ? 'bg-surface-sunken font-semibold text-ink' : 'text-ink-muted hover:bg-hover')}
-            >
-              {TYPE_LABEL[t]}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="From" htmlFor="tally-sync-from">
-            <DatePick id="tally-sync-from" label="Sync from" value={from} max={to || undefined} quick={[]} onChange={setFrom} />
-          </Field>
-          <Field label="To" htmlFor="tally-sync-to">
-            <DatePick id="tally-sync-to" label="Sync to" value={to} min={from || undefined} quick={[0]} onChange={setTo} />
-          </Field>
-        </div>
-        <p className="text-[12.5px] text-ink-muted">
-          {type === 'sales'
-            ? 'Sales vouchers of the period come in as rows to approve, the same as an Excel import.'
-            : 'Receipts with a bill reference come in as payments to approve; approving marks the invoice received, or part-paid.'}
-        </p>
-      </div>
-    </Modal>
   );
 }
 

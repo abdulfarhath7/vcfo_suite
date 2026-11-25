@@ -215,14 +215,14 @@ export function ApprovalPanel({ sheetId, pending, partners }: { sheetId: string;
         {batches.map((b) => (
           <div key={b.id} className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[12.5px] text-ink-muted">
-              {b.source === 'tally_live' ? `${b.fileName} · ${b.kind === 'receipts' ? 'payments' : 'invoices'}` : b.fileName}
+              {(b.source === 'tally_live' || b.source === 'zoho') ? `${b.fileName} · ${b.kind === 'receipts' ? 'payments' : 'invoices'}` : b.fileName}
               {b.company ? ` · ${b.company}` : ''}
-              {b.source !== 'tally_live' && b.period ? ` · ${b.period}` : ''}
-              {b.uploadedByName ? ` · ${b.source === 'tally_live' ? 'synced' : 'uploaded'} by ${b.uploadedByName}` : ''}
+              {b.source !== 'tally_live' && b.source !== 'zoho' && b.period ? ` · ${b.period}` : ''}
+              {b.uploadedByName ? ` · ${(b.source === 'tally_live' || b.source === 'zoho') ? 'synced' : 'uploaded'} by ${b.uploadedByName}` : ''}
             </p>
             <Button size="sm" variant="quiet" disabled={busy} onClick={() => discard(b.id)}>
               <Trash2 aria-hidden />
-              {b.source === 'tally_live' ? 'Discard sync' : 'Discard upload'}
+              {(b.source === 'tally_live' || b.source === 'zoho') ? 'Discard sync' : 'Discard upload'}
             </Button>
           </div>
         ))}

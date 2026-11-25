@@ -26,6 +26,7 @@ export {
   touchConnector,
   type ConnectorRow,
 } from './tally-sync';
+export { getZohoSheetStatus, getZohoSheetSyncJob, queueZohoSheetSync, setSheetSource, systemStartZohoSheetSync, type ZohoSyncParams } from './zoho-sync';
 export {
   approveEmailLogs,
   getEmailLogEntry,

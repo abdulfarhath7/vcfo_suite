@@ -32,6 +32,7 @@ import {
   type ServiceTargets,
 } from '@/lib/firm-settings/firm-settings';
 import type { FirmIntegration } from '@/lib/firm-settings/integrations';
+import { ZohoIntegrationRow } from './zoho/ZohoIntegration';
 
 /**
  * The Firm settings cards the prototype has beyond the first build (P-231 to P-241):
@@ -586,6 +587,7 @@ export function IntegrationsSection({ isSuper }: { isSuper: boolean }) {
               </li>
             );
           })}
+          <ZohoIntegrationRow />
         </ul>
       )}
     </DashSection>

@@ -74,8 +74,8 @@ export type ImportBatchDto = {
   matchedCount: number;
   /** Payment rows still waiting (counted from the rows). */
   receiptCount?: number;
-  /** excel: a Sales Register upload; tally_live: a Sync from Tally. */
-  source?: 'excel' | 'tally_live';
+  /** excel: a Sales Register upload; tally_live: a Sync from Tally; zoho: a Sync from Zoho Books. */
+  source?: 'excel' | 'tally_live' | 'zoho';
   kind?: 'sales' | 'receipts';
 };
 

@@ -327,7 +327,7 @@ export async function claimNextJob(connector: ConnectorRow, now = new Date()): P
  * Rebuilds the AuthContext of the person who pressed Sync, for staging with no session. An inactive
  * profile or a role that cannot edit receivables gets null; `scopedSheet` then checks the sheet.
  */
-async function jobActor(userId: string | null): Promise<AuthContext | null> {
+export async function jobActor(userId: string | null): Promise<AuthContext | null> {
   if (!userId) return null;
   const [p] = await db
     .select({ id: profiles.id, email: profiles.email, name: profiles.name, role: profiles.role, internId: profiles.internId, clientId: profiles.clientId, status: profiles.status })

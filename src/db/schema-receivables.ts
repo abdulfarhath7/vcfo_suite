@@ -66,6 +66,14 @@ export const receivableSheets = pgTable(
     emailNewInvoiceEnabled: boolean('email_new_invoice_enabled').notNull().default(false),
     emailRollupEnabled: boolean('email_rollup_enabled').notNull().default(false),
     emailRevisedEnabled: boolean('email_revised_enabled').notNull().default(false),
+    /**
+     * Where the sheet's invoices and payments come from (Zoho Z1, docs/specs/integrations/ZOHO.md):
+     * excel | tally (both show Sync from Tally and Import Excel) | zoho (Sync from Zoho). 0071.
+     */
+    source: text('source').notNull().default('excel'),
+    /** For source zoho: 'books' or 'invoice', and the Zoho organisation id that feeds the sheet. Set by a firm-wide admin. */
+    zohoApp: text('zoho_app'),
+    zohoOrgId: text('zoho_org_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

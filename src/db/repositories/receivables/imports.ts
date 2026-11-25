@@ -49,7 +49,8 @@ export type ApprovalOutcome = {
 };
 
 /** Where a batch came from: an Excel upload or a Sync from the Tally connector. */
-export type StageOptions = { source?: 'excel' | 'tally_live' };
+/** zoho: a Sync from Zoho Books (docs/specs/integrations/ZOHO.md), staged exactly as a Tally sync. */
+export type StageOptions = { source?: 'excel' | 'tally_live' | 'zoho' };
 type BatchKind = 'sales' | 'receipts';
 
 const sameMoney = (a: number | null, b: number | null) => a !== null && b !== null && Math.round(a * 100) === Math.round(b * 100);
@@ -144,7 +145,7 @@ async function discardPendingBatches(tx: Tx, sheetId: string, kind: BatchKind, n
 export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileName: string, parsed: TallySalesRegister, opts: StageOptions = {}): Promise<PendingImportsDto & { batchId: string }> {
   const sheet = await scopedSheet(ctx, sheetId);
   const source = opts.source ?? 'excel';
-  const rowSource = source === 'tally_live' ? 'tally_live' : 'tally';
+  const rowSource = source === 'tally_live' || source === 'zoho' ? source : 'tally';
   const name = fileName.trim().slice(0, 200) || 'Sales Register.xlsx';
   const batchId = await db.transaction(async (tx) => {
     const now = new Date();
@@ -211,7 +212,7 @@ export async function stageTallyImport(ctx: AuthContext, sheetId: string, fileNa
       // MATCHED rows have no column of their own; they are counted with SAME here and shown apart from the rows.
       .set({ rowCount: values.length, newCount: counts.new, changedCount: counts.changed, sameCount: counts.same + counts.matched, noPartnerCount: counts.no_partner, updatedAt: now })
       .where(eq(receivableImportBatches.id, batch.id));
-    const what = source === 'tally_live' ? `${name} (invoices)` : `Tally Sales Register ${name} uploaded`;
+    const what = source === 'tally_live' || source === 'zoho' ? `${name} (invoices)` : `Tally Sales Register ${name} uploaded`;
     await logChange({ sheetId: sheet.id, invoiceId: null, actorId: ctx.userId, summary: `${what}: ${values.length} rows waiting for approval`, affectsPage: false }, tx);
     return batch.id;
   });
@@ -231,8 +232,10 @@ export async function stageTallyReceipts(
   sheetId: string,
   fileName: string,
   receipts: TallyReceipts,
+  opts: { source?: 'tally_live' | 'zoho' } = {},
 ): Promise<{ batchId: string | null; staged: number; alreadyApplied: number }> {
   const sheet = await scopedSheet(ctx, sheetId);
+  const source = opts.source ?? 'tally_live';
   const name = fileName.trim().slice(0, 200) || 'Tally sync';
   return db.transaction(async (tx) => {
     const now = new Date();
@@ -251,7 +254,7 @@ export async function stageTallyReceipts(
 
     const [batch] = await tx
       .insert(receivableImportBatches)
-      .values({ sheetId: sheet.id, fileName: name, company: receipts.company.slice(0, 200), period: receipts.period.slice(0, 60), uploadedBy: ctx.userId, source: 'tally_live', kind: 'receipts' })
+      .values({ sheetId: sheet.id, fileName: name, company: receipts.company.slice(0, 200), period: receipts.period.slice(0, 60), uploadedBy: ctx.userId, source, kind: 'receipts' })
       .returning();
     const byKey = await invoicesByKey(tx, sheet.id);
     const values: Array<typeof receivableImportRows.$inferInsert> = fresh.map((r) => {
@@ -274,7 +277,7 @@ export async function stageTallyReceipts(
         receiptNo: r.voucherNo || null,
         receiptRef: r.ref,
         reason,
-        source: 'tally_live',
+        source,
         requestedBy: ctx.userId,
       };
     });
@@ -318,7 +321,7 @@ export async function getPendingImports(ctx: AuthContext, sheetId: string): Prom
     noPartnerCount: b.batch.noPartnerCount,
     matchedCount: rows.filter((r) => r.row.kind === 'matched' && r.row.batchId === b.batch.id).length,
     receiptCount: rows.filter((r) => r.row.kind === 'receipt' && r.row.batchId === b.batch.id).length,
-    source: b.batch.source === 'tally_live' ? 'tally_live' : 'excel',
+    source: b.batch.source === 'tally_live' || b.batch.source === 'zoho' ? b.batch.source : 'excel',
     kind: b.batch.kind === 'receipts' ? 'receipts' : 'sales',
   }));
   return {
