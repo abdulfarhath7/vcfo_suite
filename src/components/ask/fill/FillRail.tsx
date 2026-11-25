@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { AlertCircle, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { submitReadyFill } from '@/hooks/ask/ask-api';
 import type { FillRunView } from '@/lib/ask/fill/types';
-import { fillActions, useFillState, type FillState } from './fill-store';
+import { StepCompletenessMark } from '@/components/incorporation/StepCompletenessMark';
+import { fillActions, patchFillState, useFillState, type FillState } from './fill-store';
+import { FillSpeedPicker } from './FillModeChip';
 
 type StepView = FillRunView['steps'][number];
 
@@ -13,9 +17,9 @@ const PHASE_LINE: Partial<Record<FillState['phase'], string>> = {
   loading: 'Getting the fill ready',
   typing: 'Filling the page',
   waiting: 'Check the page, change anything you like, then accept it',
-  saving: 'Saving and submitting the page',
-  auto: 'Filling and saving each step',
-  done: 'Every step is filled',
+  saving: 'Saving the page as a draft',
+  auto: 'Filling and saving each step as a draft',
+  done: 'Every step is filled. Nothing was submitted.',
   stopped: 'Stopped. Done steps stay saved; the card keeps the rest.',
 };
 
@@ -47,16 +51,35 @@ const STATUS_WORD: Record<StepView['status'], string> = {
 
 /**
  * The fill's rail in the Ask thread: each step done, active (pulsing), waiting or stopped with
- * its reason, the live count, and Accept page / Stop while Manual waits on the person.
+ * its reason, the live count, and Accept page / Stop while Manual waits on the person. While the
+ * browser player drives the run, the speed picker switches "Watch it fill" and "Fill instantly"
+ * from the next field.
  */
 export function FillRail() {
   const fill = useFillState();
+  const [submitting, setSubmitting] = useState(false);
   if (!fill) return null;
   const { view, phase, mode, typed } = fill;
   const actions = fillActions();
   const busy = phase === 'loading' || phase === 'opening' || phase === 'typing' || phase === 'saving' || phase === 'auto';
   const finished = phase === 'done' || phase === 'stopped' || Boolean(actions.dismiss);
   const line = fill.message ?? PHASE_LINE[phase] ?? '';
+  // The browser player drives this run (not the server job), so the speed can change mid-run.
+  const browserDriven = phase !== 'auto' && view?.mode !== 'auto';
+  const settled = Boolean(view) && view!.status !== 'running' && view!.status !== 'waiting_user';
+  const ready = settled && view!.steps.some((s) => s.status !== 'stopped' && s.completeness?.complete);
+  const submitReady = async () => {
+    if (!view) return;
+    setSubmitting(true);
+    try {
+      const result = await submitReadyFill(view.id);
+      patchFillState({ view: result.view, message: result.line });
+    } catch (error) {
+      patchFillState({ message: (error as Error)?.message || 'The steps could not be submitted.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <m.section
@@ -80,7 +103,9 @@ export function FillRail() {
           {view.steps.map((step) => {
             const live = step.status === 'active' ? Math.max(step.filled, typed[step.stepId] ?? 0) : step.filled;
             return (
-              <m.li key={step.stepId} layout="position" className="flex min-w-0 items-start gap-2">
+              // A plain row, no layout animation: when the closing message lands above the rail, a
+              // layout-animated row would slide from its old spot and draw over the new text.
+              <li key={step.stepId} className="flex min-w-0 items-start gap-2">
                 <span className="pt-px">
                   <StepMark status={step.status} />
                 </span>
@@ -92,7 +117,16 @@ export function FillRail() {
                   {step.status === 'stopped' && step.stopReason ? (
                     <span className="block text-[11.5px] text-warning">{step.stopReason}</span>
                   ) : null}
+                  {step.early && step.filled > 0 && !step.checks?.length ? (
+                    <span className="block text-[11.5px] text-ink-muted">Filled before it opened. Check it once the earlier steps are final.</span>
+                  ) : null}
+                  {step.checks?.map((check) => (
+                    <span key={check.label} className="block text-[11.5px] text-warning">
+                      Check {check.label}: {check.message}
+                    </span>
+                  ))}
                 </span>
+                {step.completeness && step.status !== 'pending' && step.status !== 'active' ? <StepCompletenessMark mark={step.completeness} className="pt-px" /> : null}
                 {step.total > 0 ? (
                   <span className="flex-none font-mono text-[11.5px] tabular-nums text-ink-muted">
                     <AnimatePresence mode="popLayout" initial={false}>
@@ -103,7 +137,7 @@ export function FillRail() {
                     /{step.total}
                   </span>
                 ) : null}
-              </m.li>
+              </li>
             );
           })}
         </ol>
@@ -116,10 +150,24 @@ export function FillRail() {
         </p>
       ) : null}
 
+      {browserDriven && !finished ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span id="ask-fill-rail-speed" className="text-[11.5px] text-ink-muted">
+            Speed
+          </span>
+          <FillSpeedPicker labelledBy="ask-fill-rail-speed" className="w-[13.5rem]" />
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-1.5">
         {phase === 'waiting' ? (
           <Button type="button" size="sm" variant="soft" onClick={() => actions.accept?.()}>
             Accept page
+          </Button>
+        ) : null}
+        {ready && finished ? (
+          <Button type="button" size="sm" variant="soft" disabled={submitting} onClick={() => void submitReady()}>
+            {submitting ? 'Submitting…' : 'Submit ready steps'}
           </Button>
         ) : null}
         {phase === 'error' && actions.retry ? (

@@ -2,6 +2,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {
@@ -20,7 +21,7 @@ const writeSchema = z.object({
 
 /** GET /api/email-templates — firm-scoped compose templates. */
 export async function GET() {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -36,7 +37,7 @@ export async function GET() {
 
 /** POST /api/email-templates — create a firm compose template. */
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

@@ -219,11 +219,13 @@ export function planRows(input: PlanInput): PlanResult {
    * when the step is finished (it is never reopened for a registration), and on a GST run also when
    * the step is not open yet. A field another role fills stays held.
    */
-  const copyInstead = (row: ChangesetRowDraft, stepId: string): boolean =>
-    Boolean(input.registration) &&
-    row.checks.some((check) => check.rule === 'gate' && !check.ok) &&
-    !row.checks.some((check) => check.rule === 'owner' && !check.ok) &&
-    (input.gst === true || stepGateKind(input.state, input.role, stepId) === 'done');
+  const copyInstead = (row: ChangesetRowDraft, stepId: string): boolean => {
+    if (!input.registration || row.checks.some((check) => check.rule === 'owner' && !check.ok)) return false;
+    const held = row.checks.some((check) => check.rule === 'gate' && !check.ok);
+    const kind = stepGateKind(input.state, input.role, stepId);
+    // A step not open yet takes a draft now (PLAN K), but a GST run still writes the registration's copy.
+    return input.gst === true ? held || kind === 'locked' : held && kind === 'done';
+  };
 
   const registrationUse = (entry: CatalogEntry): FieldUse | undefined =>
     input.registration ? writableUses(entry).find((use) => use.source === 'registration' && use.ref === input.registration!.key) : undefined;
@@ -231,7 +233,7 @@ export function planRows(input: PlanInput): PlanResult {
   /** The first place this person may fill now; else the first place, held with the reason. */
   const companyUse = (entry: CatalogEntry): FieldUse | null => {
     const uses = writableUses(entry).filter((use) => use.source === 'checklist');
-    const open = uses.find((use) => {
+    const fillable = (use: FieldUse) => {
       const { checks } = checkResponseRow({
         role: input.role,
         target: { engagementId: input.engagementId, stepId: use.ref, fieldId: use.field },
@@ -241,7 +243,9 @@ export function planRows(input: PlanInput): PlanResult {
         isFile: true,
       });
       return !checks.some((check) => !check.ok && (check.rule === 'gate' || check.rule === 'owner'));
-    });
+    };
+    // An open step first; a step not open yet takes a draft (PLAN K) when no open step uses the fact.
+    const open = uses.find((use) => fillable(use) && stepGateKind(input.state, input.role, use.ref) !== 'locked') ?? uses.find(fillable);
     return open ?? uses[0] ?? null;
   };
 

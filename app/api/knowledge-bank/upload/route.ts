@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { knowledgeBankObjectPath } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { resolveUploadContentType } from '@/lib/upload-limits';
 import { KNOWLEDGE_BANK_EXTENSIONS } from '@/lib/upload-limits';
@@ -9,7 +10,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 
 /** POST /api/knowledge-bank/upload — browser uploads bytes; returns storage path + file id. */
 export async function POST(request: Request) {
-  const auth = await requireAnyRole('admin', 'manager', 'intern');
+  const auth = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

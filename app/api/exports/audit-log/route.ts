@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { auditLogExportRows, normaliseName, scopedClientNameSet } from '@/lib/exports/list-sources';
 import { recordExport } from '@/lib/exports/record-export';
 import { standardDownloadName } from '@/lib/files/download-name';
@@ -20,7 +21,7 @@ function param(p: URLSearchParams, name: string, max: number, fallback = ''): st
  * Staff only.
  */
 export async function GET(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const p = new URL(request.url).searchParams;
   const filters = {

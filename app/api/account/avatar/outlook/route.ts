@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { fetchOwnOutlookPhoto } from '@/db/repositories/outlook-connections';
 import { setOwnAvatarObjectKey } from '@/db/repositories/profiles';
 import {
@@ -12,7 +13,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 
 /** POST /api/account/avatar/outlook — copy Graph `/me/photo` into the user’s avatar. */
 export async function POST() {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ ok: false, error: guard.error }, { status: guard.status });
   }

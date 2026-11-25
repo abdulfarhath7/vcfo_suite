@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { exportInBackground } from '@/lib/exports/background-export';
 import {
@@ -47,7 +48,7 @@ const Body = z.object({
  * caller's scope is dropped, so a file never holds a client its maker cannot see.
  */
 export async function POST(request: Request) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const body = await parseJsonBody(request, Body);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });

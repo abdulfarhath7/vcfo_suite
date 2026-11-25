@@ -7,6 +7,8 @@ import { requireAsk } from '@/lib/ask/route-guard';
 const body = z.object({
   changesetId: z.string().uuid(),
   mode: z.enum(['manual', 'auto']),
+  /** The chip's mode: Auto with "Watch it fill" is a browser-driven Manual run, still called Auto. */
+  chip: z.enum(['manual', 'auto']).optional(),
   conversationId: z.string().uuid().optional(),
 });
 

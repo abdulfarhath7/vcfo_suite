@@ -3,9 +3,10 @@
 /** Field types that get their value at once (a chip pops) instead of being typed. */
 const INSTANT_TYPES = new Set(['select', 'segmented', 'radio', 'checkbox', 'date', 'file', 'repeat']);
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-/** About 25 ms a character, but no field takes longer than ~1.2 s however long the value is. */
+/** About 25 ms a character, but no field takes longer than ~700 ms however long the value is. */
 export const TYPE_DELAY_MS = 25;
-const MAX_TICKS = 48;
+export const MAX_FIELD_MS = 700;
+const MAX_TICKS = Math.floor(MAX_FIELD_MS / TYPE_DELAY_MS);
 
 export function prefersReducedMotion(): boolean {
   if (typeof document === 'undefined') return true;

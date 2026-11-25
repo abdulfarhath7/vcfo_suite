@@ -12,6 +12,15 @@ export const FILL_WORKFLOW = 'fill';
 export const ASK_FILL_EVENT = 'ask/fill.run';
 
 export type FillMode = 'manual' | 'auto';
+
+/**
+ * The steps one fill may work on, from the request ("name application" is Phase 1). Rows of other
+ * steps stay on the card untouched. `label` names the steps in the chat.
+ */
+export interface FillScope {
+  stepIds: string[];
+  label: string;
+}
 export const FILL_MODES: readonly FillMode[] = ['manual', 'auto'];
 
 export type FillRunStatus = 'running' | 'waiting_user' | 'done' | 'stopped' | 'failed';
@@ -22,10 +31,19 @@ export const FILL_MODE_STORAGE_KEY = 'vcfo.ask.fillMode';
 /** The window event the card fires once a fill has started, for the live player. */
 export const FILL_START_EVENT = 'vcfo:ask-fill-start';
 
+/** A step's saved answers against its required ones (`src/lib/incorporation/step-completeness.ts`). */
+export interface FillCompleteness {
+  complete: boolean;
+  missing: number;
+  labels: string[];
+}
+
 export type FillRunView = {
   id: string;
   status: 'running' | 'waiting_user' | 'done' | 'stopped' | 'failed';
   mode: 'manual' | 'auto';
+  /** What the person chose on the chip. Auto with "Watch it fill" runs as a browser-driven Manual run. */
+  chip?: 'manual' | 'auto';
   engagementId: string;
   companyName: string;
   current: string | null;
@@ -37,6 +55,12 @@ export type FillRunView = {
     filled: number;
     total: number;
     stopReason?: string;
+    /** Required answers saved on the step now; absent for a step with no rules to read. */
+    completeness?: FillCompleteness;
+    /** The step was filled before it opened. */
+    early?: boolean;
+    /** Values this fill saved that another step now holds differently: check them. */
+    checks?: Array<{ label: string; message: string }>;
     rows: Array<{
       rowId: string;
       fieldKey: string;
@@ -54,7 +78,10 @@ export type FillRunView = {
 export interface FillStepState {
   stepId: string;
   status: FillStepStatus;
+  /** Why the run stopped here, or why it left this step and went on (a step it may not fill). */
   stopReason?: string;
+  /** The step was not open yet when its values were saved as a draft (PLAN K). */
+  early?: boolean;
 }
 
 export interface FillState {
@@ -62,9 +89,13 @@ export interface FillState {
   engagementId: string;
   companyName: string;
   mode: FillMode;
+  /** The chip's mode, when it differs from how the server runs the fill (Auto with "Watch it fill"). */
+  chip?: FillMode;
   current: string | null;
   stopReason?: string;
   steps: FillStepState[];
+  /** The steps the request named, when it named some; the plan held only these. */
+  scope?: FillScope;
   /** The closing chat message, once written. */
   answerMessageId?: string;
 }

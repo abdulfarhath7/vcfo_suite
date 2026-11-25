@@ -122,6 +122,12 @@ export const profiles = pgTable('profiles', {
   designation: text('designation'),
   /** ICAI or ICSI membership number for staff, shown in mono on Profile (P-617, S-653). */
   membershipNo: text('membership_no'),
+  /**
+   * A demo login (`npm run db:seed-demo-logins`, docs/context/notes/demo-data.md "Demo logins").
+   * Its AuthContext carries `demo: true`: only the lead and client roles are admitted, and
+   * account, user-management, integration and firm-wide writes are refused.
+   */
+  isDemo: boolean('is_demo').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -185,6 +191,8 @@ export const engagements = pgTable(
     sharepointDriveId: text('sharepoint_drive_id'),
     sharepointFolderId: text('sharepoint_folder_id'),
     sharepointFolderName: text('sharepoint_folder_name'),
+    /** A demo company from `npm run db:seed-demo-logins`; labelled "Demo" for real staff. */
+    isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     /** Soft delete — non-null rows are hidden everywhere except the admin recycle bin. */

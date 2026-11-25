@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { assertEngagementProgressCcAccess } from '@/lib/api/engagement-progress-cc-access';
 import { parseJsonBody } from '@/lib/api/parse-body';
@@ -46,7 +47,7 @@ const putSchema = z.object({ folderId: z.string().min(1).max(200).nullable() });
 
 /** PUT /api/engagements/:id/sharepoint: links the project to a folder under Clients, or unlinks it. */
 export async function PUT(request: Request, context: RouteContext) {
-  const guard = await requireAnyRole(...STAFF);
+  const guard = noDemo(await requireAnyRole(...STAFF));
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const [body, params] = await Promise.all([parseJsonBody(request, putSchema), context.params]);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });

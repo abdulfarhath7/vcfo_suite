@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { rejectLargeBody } from '@/lib/api/body-limit';
 import { formById } from '@/data/labour-registers/forms';
 import {
@@ -31,7 +32,7 @@ import { putObject } from '@/storage/s3';
  *   → { evidenceKey, evidenceFileName }
  */
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const tooLarge = rejectLargeBody(request, MAX_UPLOAD_BYTES);

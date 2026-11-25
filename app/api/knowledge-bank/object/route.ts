@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { isKnowledgeBankStoragePath } from '@/lib/knowledge-bank/knowledge-bank-storage';
 import { bucketKey, deleteObject, signedDownloadUrl } from '@/storage/s3';
 import { publicErrorMessage } from '@/lib/api-error';
 
 /** GET /api/knowledge-bank/signed-url?path=&expiresIn= — short-lived download URL. */
 export async function GET(request: Request) {
-  const auth = await requireAnyRole('admin', 'manager', 'intern');
+  const auth = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
 /** DELETE /api/knowledge-bank/object?path= — remove orphaned upload. */
 export async function DELETE(request: Request) {
-  const auth = await requireAnyRole('admin', 'manager', 'intern');
+  const auth = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (auth.ok === false) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: auth.status });
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOwnAccount } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { getOwnNotificationPrefs, updateOwnNotificationPrefs } from '@/db/repositories/notification-prefs';
 import { parseJsonBody } from '@/lib/api/parse-body';
 
@@ -36,7 +37,7 @@ export async function GET() {
 
 /** PATCH — partial. Email for documents, steps, deadlines and timeline stays on and cannot be switched off. */
 export async function PATCH(request: Request) {
-  const guard = await requireOwnAccount();
+  const guard = noDemo(await requireOwnAccount());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const body = await parseJsonBody(request, patchSchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: 400 });

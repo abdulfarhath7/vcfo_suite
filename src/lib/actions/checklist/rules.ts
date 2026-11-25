@@ -76,7 +76,7 @@ function ownerMessage(stepId: string, key: string, slice?: object | null): strin
 }
 
 /** A value already on the screen for the same fact, on another step. */
-function otherStepValue(
+export function otherStepValue(
   target: ResponseTarget,
   entryIndex: number | null,
   state: StepState,
@@ -144,7 +144,9 @@ export function checkResponseRow(input: {
   const gate = getStepGate(gates, target.stepId);
   const title = getItem(target.stepId)?.title ?? target.stepId;
   if (gate.kind === 'locked') {
-    checks.push({ rule: 'gate', ok: false, message: gate.blockedByTitle ? `Held: "${title}" opens after "${gate.blockedByTitle}".` : `Held: "${title}" is not open yet.` });
+    // PLAN K: a step that is only not open yet takes the value as a draft. A save never submits, so
+    // the order steps are submitted in (and every approval) is unchanged.
+    checks.push({ rule: 'gate', ok: true, message: gate.blockedByTitle ? `Saved as a draft: "${title}" opens after "${gate.blockedByTitle}".` : `Saved as a draft: "${title}" is not open yet.` });
   } else if (gate.kind === 'done') {
     checks.push({ rule: 'gate', ok: false, message: `Held: "${title}" is finished. It has to be reopened first.` });
   } else if (gate.kind === 'waiting' && !target.needsManager) {

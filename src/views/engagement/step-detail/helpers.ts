@@ -11,6 +11,25 @@ import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-ke
 import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
 import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { recordStepPlace } from '@/views/client-record/RecordHeadParts';
+import { stepCompleteness, type CompletenessEngagement } from '@/lib/incorporation/step-completeness';
+
+/**
+ * The lead's completeness marks (PLAN K): a step not finished yet that holds answers (or is the one
+ * open now) shows a green tick when every required answer is saved, or a red dot with "N to fill".
+ * Untouched later steps stay plain, so the rail does not fill with dots.
+ */
+function railCompleteness(
+  stepId: string,
+  gate: ChecklistStepGate,
+  checklistState: Record<string, ChecklistItemStateSlice | undefined>,
+  engagement: CompletenessEngagement,
+) {
+  if (gate.kind === 'done') return null;
+  const responses = checklistState[stepId]?.responses ?? {};
+  const started = Object.values(responses).some((value) => String(value ?? '').trim().length > 0);
+  if (!started && gate.kind !== 'active') return null;
+  return stepCompleteness({ stepId, state: checklistState, engagement });
+}
 
 /** "Last edited by Kiran Rao (Client), 12 Oct 2026, 4:05 pm" — IST, like every other time in the app. */
 export function lastEditedLine(slice: ChecklistItemStateSlice | undefined): string | null {
@@ -35,6 +54,8 @@ export function journeyRailItems(
   ownershipType: OwnershipType | undefined,
   schedule: EngagementSchedule | undefined,
   viewerIsClient: boolean,
+  /** The lead's rail: the engagement the completeness marks read (company type, parent entity). */
+  completenessFor?: CompletenessEngagement | null,
 ): JourneyRailItem[] {
   // SB-01: the rail lists Part B in MCA form order. The step number stays the
   // checklist position and the staff code turns into the MCA section, so no
@@ -44,7 +65,9 @@ export function journeyRailItems(
     const gate = getStepGate(gates, step.id);
     const slice = checklistState[step.id];
     const window = windowForStep(schedule, step.id);
+    const completeness = completenessFor ? railCompleteness(step.id, gate, checklistState, completenessFor) : null;
     return {
+      ...(completeness ? { completeness } : {}),
       ...(window && viewerIsClient ? { windowLabel: formatWindow(window) } : {}),
       ...(!viewerIsClient ? { stepCode: partBStepDisplayLabel(step.id, recordStepPlace(step.id)?.code) } : {}),
       item: step,

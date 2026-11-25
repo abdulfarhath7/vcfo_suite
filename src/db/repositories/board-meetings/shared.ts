@@ -159,12 +159,22 @@ export function managerProfileId(engagement: Pick<EngagementDbRow, 'managerId' |
   return engagement.managerId ?? engagement.adminId ?? null;
 }
 
-/** Active firm admins (super admin and admin), for CC and bell rows. */
-export async function firmAdmins(): Promise<PersonLite[]> {
+/**
+ * Active firm admins (super admin and admin), for CC and bell rows. For a demo engagement
+ * (`is_demo`, src/lib/demo-logins.ts) only demo admins count, so no real admin is copied on it.
+ */
+export async function firmAdmins(opts: { demo?: boolean } = {}): Promise<PersonLite[]> {
   const rows = await db
     .select({ id: profiles.id, name: profiles.name, email: profiles.email, role: profiles.role })
     .from(profiles)
-    .where(and(inArray(profiles.role, ['admin', 'super_admin']), eq(profiles.status, 'active'), isNull(profiles.removedAt)));
+    .where(
+      and(
+        inArray(profiles.role, ['admin', 'super_admin']),
+        eq(profiles.status, 'active'),
+        isNull(profiles.removedAt),
+        ...(opts.demo ? [eq(profiles.isDemo, true)] : []),
+      ),
+    );
   return rows.map((r) => ({ id: r.id, name: r.name?.trim() || r.email.split('@')[0] || 'Admin', email: r.email, role: r.role }));
 }
 

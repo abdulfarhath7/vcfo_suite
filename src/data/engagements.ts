@@ -74,6 +74,8 @@ export const PARENT_ENTITY_ONLY_STEP_IDS = ['pre-2', 'pre-3'] as const;
 
 export interface Engagement {
   id: string;
+  /** A demo company (`engagements.is_demo`, src/lib/demo-logins.ts); real staff see it labelled "Demo". */
+  isDemo?: boolean;
   /** URL slug from company name (Supabase engagements.slug) */
   slug?: string;
   clientId: string;

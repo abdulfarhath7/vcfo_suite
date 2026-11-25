@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createMailGroup, listMailGroups, MailGroupError } from '@/db/repositories/mail-groups';
 import { createMailGroupSchema } from './schema';
@@ -15,7 +16,7 @@ function fail(err: unknown) {
 
 /** GET /api/outlook/groups — the caller's mail groups and the shared ones (G-23). */
 export async function GET() {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -31,7 +32,7 @@ export async function GET() {
  * Only firm-wide admins may set `shared` (403 otherwise).
  */
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

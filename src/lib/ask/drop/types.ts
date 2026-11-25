@@ -74,6 +74,23 @@ export interface DropState {
    * Graph ids stay on the project row, not here, because the run state is masked.
    */
   source?: DropSharepointSource;
+  /**
+   * Set when the person asked to fetch and then fill in one message ("fetch Bonterra's data and
+   * put it in name application"): once the card is ready, the finish step starts the fill on it.
+   */
+  fillAfter?: DropFillAfter;
+}
+
+export interface DropFillAfter {
+  mode: 'manual' | 'auto';
+  /** The chip's mode when it differs from `mode` (Auto with "Watch it fill" runs as Manual). */
+  chip?: 'manual' | 'auto';
+  /** The steps the request named; absent means every step on the card. */
+  scope?: { stepIds: string[]; label: string };
+  /** Set once the finish step tried the fill, so a retry does not start it twice. */
+  started?: boolean;
+  /** The fill run, when one started. */
+  runId?: string;
 }
 
 export interface DropSharepointSource {

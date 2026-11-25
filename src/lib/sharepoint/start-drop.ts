@@ -6,7 +6,7 @@ import { recordAuditEvent } from '@/db/repositories/audit-events';
 import type { JsonValue } from '@/lib/ask/changeset/types';
 import { askBudgets, askFlags } from '@/lib/ask/config';
 import { queueAskDrop } from '@/lib/ask/drop/run';
-import { DROP_WORKFLOW, emptyDropState, type DropState } from '@/lib/ask/drop/types';
+import { DROP_WORKFLOW, emptyDropState, type DropFillAfter, type DropState } from '@/lib/ask/drop/types';
 import { maskIdentityNumbers } from '@/lib/ask/mask';
 import { resolveProjectFolder, SharepointRefused } from './client-folder';
 
@@ -24,7 +24,14 @@ const CHOOSE_SHOWN = 5;
 
 export async function startSharepointDrop(
   ctx: AuthContext,
-  input: { engagementId: string; conversationId: string | null; message: string; projectPath?: string },
+  input: {
+    engagementId: string;
+    conversationId: string | null;
+    message: string;
+    projectPath?: string;
+    /** Start a fill on the card once it is ready (see `DropState.fillAfter`). */
+    fillAfter?: DropFillAfter;
+  },
 ): Promise<SharepointDropStart> {
   if (ctx.role === 'client') return { ok: false, message: 'Reading SharePoint is not available here.' };
   const flags = askFlags();
@@ -56,6 +63,7 @@ export async function startSharepointDrop(
     ...(input.projectPath ? { page: { path: input.projectPath } } : {}),
     source: { kind: 'sharepoint', engagementId: input.engagementId, folderName: link.folderName },
     progress: { done: 0, total: 0, label: 'Fetching from SharePoint…' },
+    ...(input.fillAfter ? { fillAfter: input.fillAfter } : {}),
   };
   const run = await createAskRun(ctx, {
     conversationId: input.conversationId,

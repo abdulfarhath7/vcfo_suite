@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   clearCodeRuleOverride,
@@ -52,7 +53,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const body = await parseJsonBody(request, bodySchema);
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager'));
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
 
   const url = new URL(request.url);

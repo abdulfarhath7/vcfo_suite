@@ -110,3 +110,102 @@ npm run clients:reset:prod -- --yes       # production, RDS snapshot first, then
 
 The `@vcfo.local` seed staff logins survive the reset; change their passwords or remove them
 once real staff accounts exist.
+
+## Demo logins (shared, on the real application)
+
+People outside SBC sign in to the real application (`app.sbctrack.in`) with shared demo logins.
+There is no separate demo site or database: the demo people and companies live in the production
+database next to real clients, flagged `is_demo` (migration `0072_demo_logins`, additive). Keeping
+them apart is the job of `src/lib/demo-logins.ts`.
+
+| Login | Role | Sees |
+| --- | --- | --- |
+| `lead@vcfosuite.com` | project lead | the three demo companies and the demo receivables sheet |
+| `client@vcfosuite.com` | client | the client portal of Kaveri Analytics |
+
+The password is `Demo@2026` (`DEMO_LOGIN_PASSWORD` overrides it at seed time).
+
+**There is no demo admin or demo manager login, on purpose.** An admin reads firm-wide data in
+dozens of repositories (metrics, people, receivables, audit, practice dashboards), and a manager
+has firm-wide reads too (knowledge bank, email templates, unassigned leads). Confining them would
+mean a filter in every one of those places, so instead the guard (`currentContext` in
+`src/auth/guards.ts`) and the sign-in (`systemCheckSignInPassword`) refuse a demo profile whose
+role is not `intern` or `client`. A lead and a client are already scoped to the engagements they
+are assigned to, and every demo engagement is assigned only to demo people.
+`manager@vcfosuite.com` exists as an inactive profile with no password, only to own the demo
+companies and the receivables sheet. Turning it on would still not give it a session.
+
+### What a demo login cannot do
+
+Every refusal says "Not available on demo logins" (HTTP 403).
+
+- Its own account: password, email, profile, photo, two-step sign-in, sign-in links, signing out
+  other devices, notification preferences, the WhatsApp number (`noDemo(...)` on the
+  `/api/account/*` and `/api/client/account*` routes, `assertNotDemo` in `profiles.ts`).
+- User management: client team invites, adding or replacing a client on a project, creating,
+  deleting or re-emailing anyone (`profiles.ts`, `client/team`, `engagements/[id]/clients*`).
+- Integrations: Outlook connect, send and groups, SharePoint folder, Tally pairing and sync, Zoho
+  sync, sheet email settings (`receivables/tally-sync.ts`, `zoho-sync.ts`, `sheets.ts`).
+- Firm-wide data and writes: the knowledge bank, email templates, shared mail groups, labour
+  register verdicts and code rules, Watch intake, escalations to admins, Assist recipe patches,
+  progress CC lists, firm settings and logo, exports.
+- Tasks go to the demo person only; directors on a demo company take only `@vcfosuite.com` emails
+  (board notices are mailed from jobs outside the request).
+- Ask VCFO: a tighter cap (`ASK_DEMO_RATE_LIMIT_HOUR`, default 10; `ASK_DEMO_RATE_LIMIT_DAY`,
+  default 40 model answers per demo account, shared by every visitor) and no use of the firm's
+  shared answer cache. Retrieval goes through the same scoped repositories, so only demo
+  engagements reach the model.
+
+### Outbound messages
+
+`sendEmailNoLog` logs and drops any mail that names an `@vcfosuite.com` address (to, cc, reply-to,
+from) or that started inside a demo person's request (`src/lib/demo-request.ts` marks the request).
+WhatsApp (`sendWhatsAppTemplate`, DoubleTick) is dropped inside a demo request. For a demo
+engagement, `resolveEngagementRecipients` and `firmAdmins` count only demo admins (none), and the
+progress CC keeps only demo mailboxes, so real admins get no bell or CC about demo companies.
+
+### Real staff
+
+Real admins still see the demo companies; the admin project list labels them "Demo"
+(`Engagement.isDemo`). They also count in firm-wide dashboards and KPIs.
+
+### Commands
+
+```bash
+npm run db:migrate                        # applies 0072_demo_logins (additive)
+npm run db:seed-demo-logins               # local
+npm run db:seed-demo-logins:prod          # production, through the SSM tunnel (scripts/demo-prod.mjs --demo-logins)
+npm run db:seed-demo-logins -- --reset    # also drop what visitors added on the demo companies
+```
+
+The seed only writes rows flagged `is_demo` or hanging off them, and stops before writing if a
+real profile or project holds a demo email or slug. Rerunning rebuilds the seeded rows (documents,
+tasks, filings, GST fields, activity, audit, budgets, the sheet's invoices) and keeps the ids.
+
+State: incorporation fully done on all three companies (the 14 SPICe+ steps, certificate, PAN,
+TAN, board resolution, post-incorporation); registrations half done (GST with GSTIN, LUT and MSME
+done; PF and PT in progress; ESI and Shops & Establishment not started); Narmada Cloudworks has
+GST ready to start, for the VCFO Assist demo; FY 2026-27 filings filed up to last month, a few of
+this month's past due dates overdue, the rest upcoming. Kaveri Analytics carries a receivables
+sheet (nine INR invoices, the lead as editor) and Kaveri and Tungabhadra carry draft budgets.
+Identifiers are fake: PAN and TAN in the `ZZ` series, CIN registration numbers `9999xx`, GSTINs
+built from those PANs with a valid check character, DINs `9991xxxx`.
+
+### Tests
+
+- `src/lib/demo-logins.test.ts`, `src/auth/guards-demo.test.ts`, `src/lib/email/send-email-demo.test.ts`,
+  `src/lib/ask/rate-limit-demo.test.ts`: the rules, without a database.
+- `src/db/repositories/demo-isolation.db.test.ts`: the cross-tenant suite against a real database
+  with real-looking data (skipped unless `DEMO_ISOLATION_DB_URL` is set; the header lists the
+  seed commands).
+
+### Not covered
+
+- Firm-wide reads a lead already had and that hold no client data: the statutory calendar,
+  obligations, agenda library, announcements, Watch updates (public regulatory news), the
+  firm settings read (firm name, support contact) and the Ask knowledge documents.
+- Demo use counts against the firm's single daily AI token budget, and demo client questions
+  appear in the admins' question-gap review.
+- Jobs that email contacts typed on a demo company other than directors (for example a client
+  contact) rely on those contacts being demo mailboxes; the client team and client invite routes
+  are closed to demo logins, so no new contact can be added from a demo login.

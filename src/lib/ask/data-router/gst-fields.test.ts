@@ -150,7 +150,8 @@ describe('planRows: the GST step', () => {
     const early = openAt('pre-13');
     const notYet = planRows(input([place('office.state', 'Telangana')], early));
     expect(notYet.draft.rows[0]!.action).toBe('checklist.setResponse');
-    expect(notYet.draft.rows[0]!.heldReason).toMatch(/opens after|not open yet/);
+    // PLAN K: a step not open yet takes the value as a draft instead of holding it.
+    expect(notYet.draft.rows[0]!.heldReason).toBeUndefined();
     const gstRun = planRows(input([place('office.state', 'Telangana')], early, { gst: true }));
     expect(gstRun.draft.rows[0]!.action).toBe('registrations.setField');
   });

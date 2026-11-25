@@ -93,6 +93,9 @@ export function createStepView(state: StepDetailState, eng: Engagement, item: Ch
     ? 'Your project lead is still preparing this step. Their answers appear here once they ask for your approval.'
     : undefined;
 
+  // Completeness marks read the lead's own drafts; a manager's copy of the state hides them, so only
+  // the lead's rail shows the marks.
+  const completenessFor = isIntern && !isClientRoute ? eng : null;
   const railItems = journeyRailItems(
     bucketSteps,
     gates,
@@ -101,6 +104,7 @@ export function createStepView(state: StepDetailState, eng: Engagement, item: Ch
     eng.ownershipType,
     eng.schedule,
     isClientRoute,
+    completenessFor,
   );
   const internPhaseRailItems = internPhase
     ? journeyRailItems(
@@ -111,6 +115,7 @@ export function createStepView(state: StepDetailState, eng: Engagement, item: Ch
         eng.ownershipType,
         eng.schedule,
         isClientRoute,
+        completenessFor,
       )
     : [];
   /**

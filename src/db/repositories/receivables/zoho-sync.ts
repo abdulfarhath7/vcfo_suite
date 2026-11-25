@@ -8,6 +8,7 @@ import type { TallyJobDto, TallyJobStatus } from '@/lib/receivables/tally-live/w
 import type { SheetSource, ZohoSheetStatusDto } from '@/lib/integrations/zoho/wire';
 import { ISO_DATE, UUID, conflict, invalid, logChange, notFound, scopedSheet, type SheetRow } from './shared';
 import { jobActor } from './tally-sync';
+import { assertNotDemo } from '@/lib/demo-logins';
 
 /**
  * RECEIVABLES — Sync from Zoho Books (docs/specs/integrations/ZOHO.md). A sheet's source is
@@ -103,6 +104,7 @@ export async function getZohoSheetStatus(ctx: AuthContext, sheetId: string): Pro
 
 /** Sets the sheet's source. Only firm-wide admins may choose Zoho and its organisation. */
 export async function setSheetSource(ctx: AuthContext, sheetId: string, input: { source: unknown; zohoApp?: unknown; zohoOrgId?: unknown }): Promise<ZohoSheetStatusDto> {
+  assertNotDemo(ctx, 'setSheetSource');
   const sheet = await scopedSheet(ctx, sheetId);
   const source = input.source === 'excel' || input.source === 'tally' || input.source === 'zoho' ? input.source : null;
   if (!source) throw invalid('sheet_source');
@@ -133,6 +135,7 @@ export async function setSheetSource(ctx: AuthContext, sheetId: string, input: {
 
 /** Queues one Sync from Zoho. The caller runs it (Inngest or inline). */
 export async function queueZohoSheetSync(ctx: AuthContext, sheetId: string, input: { type: unknown; from: unknown; to: unknown }): Promise<TallyJobDto> {
+  assertNotDemo(ctx, 'queueZohoSheetSync');
   const sheet = await scopedSheet(ctx, sheetId);
   const type = input.type === 'sales' || input.type === 'receipts' ? input.type : null;
   if (!type) throw invalid('sync_type');

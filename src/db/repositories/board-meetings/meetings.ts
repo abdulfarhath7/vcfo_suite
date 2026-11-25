@@ -565,7 +565,7 @@ async function defaultRecipients(engagement: EngagementDbRow, directors: Directo
   add(managerId, 'Manager');
   add(leadId, 'Lead');
   if (!engagement.adminId) {
-    const admins = await firmAdmins();
+    const admins = await firmAdmins({ demo: engagement.isDemo });
     const first = admins.find((a) => a.role === 'admin') ?? admins[0];
     if (first && !cc.some((c) => c.email === first.email)) cc.unshift({ kind: 'cc', directorId: null, name: first.name, email: first.email, role: 'Admin' });
   }
@@ -1033,7 +1033,7 @@ export async function systemMeetingPeople(engagement: EngagementDbRow): Promise<
   };
   let admin = pick(engagement.adminId);
   if (!admin) {
-    const all = await firmAdmins();
+    const all = await firmAdmins({ demo: engagement.isDemo });
     const a = all.find((x) => x.role === 'admin') ?? all[0];
     admin = a ? { id: a.id, name: a.name, email: a.email } : null;
   }

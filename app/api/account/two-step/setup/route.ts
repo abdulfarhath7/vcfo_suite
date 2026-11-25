@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireOwnAccount } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { startOwnTwoStepSetup } from '@/db/repositories/profiles';
 
 /**
@@ -8,7 +9,7 @@ import { startOwnTwoStepSetup } from '@/db/repositories/profiles';
  * for a code until `/confirm` accepts a first code.
  */
 export async function POST() {
-  const guard = await requireOwnAccount();
+  const guard = noDemo(await requireOwnAccount());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const result = await startOwnTwoStepSetup(guard.ctx);
   if (result === 'already_on') return NextResponse.json({ error: 'already_on' }, { status: 409 });

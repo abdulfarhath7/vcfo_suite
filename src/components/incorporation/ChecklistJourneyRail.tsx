@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { CheckCircle2, Circle, Clock, MoreVertical, User } from 'lucide-react';
 import { LayoutGroup, useReducedMotion } from 'framer-motion';
 import { MotionActivePill } from '@/components/shell/MotionActivePill';
+import { StepCompletenessMark } from '@/components/incorporation/StepCompletenessMark';
+import type { StepCompleteness } from '@/lib/incorporation/step-completeness';
 
 export function notifyChecklistStepLocked(message: string | null) {
   toastInfo(message ?? 'This opens after the previous step is complete.');
@@ -60,6 +62,8 @@ export interface JourneyRailItem {
   windowLabel?: string;
   /** The staff rail's mono code ("Step 13", "Reg-3"); "Step n" from `stepNumber` when absent. */
   stepCode?: string;
+  /** The lead's rail: required answers saved (green tick) or missing (red dot, "N to fill"). */
+  completeness?: StepCompleteness;
 }
 
 interface ChecklistJourneyRailProps {
@@ -162,7 +166,7 @@ export function ChecklistJourneyRail({
       <LayoutGroup id="intern-journey-rail">
       <ol className="list-none space-y-0">
         {items.map((row, index) => {
-          const { item, gate, status, stepNumber, attachments = [], windowLabel, stepCode } = row;
+          const { item, gate, status, stepNumber, attachments = [], windowLabel, stepCode, completeness } = row;
           const selected = selectedId === item.id;
           const next = items[index + 1];
           const isLast = index === items.length - 1;
@@ -207,6 +211,7 @@ export function ChecklistJourneyRail({
                 <span className="mt-[3px] shrink-0">
                   <HolderIcon role={item.responsibleRole} />
                 </span>
+                {completeness ? <StepCompletenessMark mark={completeness} className="ml-auto mt-[2px]" /> : null}
               </div>
               {!visuallyLocked && (
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 empty:hidden">
@@ -284,6 +289,7 @@ export function ChecklistJourneyRail({
                 >
                   {item.title}
                 </button>
+                {completeness ? <StepCompletenessMark mark={completeness} className="relative z-[1]" /> : null}
                 <span className="relative z-[1] flex-none">
                   <HolderIcon role={item.responsibleRole} />
                 </span>

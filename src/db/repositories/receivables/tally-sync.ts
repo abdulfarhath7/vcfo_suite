@@ -22,6 +22,7 @@ import {
 } from '@/lib/receivables/tally-live/wire';
 import { stageTallyImport, stageTallyReceipts } from './imports';
 import { ISO_DATE, UUID, conflict, invalid, logChange, notFound, scopedSheet } from './shared';
+import { assertNotDemo } from '@/lib/demo-logins';
 
 /**
  * RECEIVABLES — Tally live sync (docs/specs/receivables/TALLY-LIVE.md).
@@ -106,6 +107,7 @@ async function liveConnector(sheetId: string): Promise<ConnectorRow | null> {
  * the new code is used.
  */
 export async function createPairingCode(ctx: AuthContext, sheetId: string, now = new Date()): Promise<PairingCodeDto> {
+  assertNotDemo(ctx, 'createPairingCode');
   const sheet = await scopedSheet(ctx, sheetId);
   const code = newPairingCode();
   const expiresAt = new Date(now.getTime() + PAIRING_TTL_MS);
@@ -120,6 +122,7 @@ export async function createPairingCode(ctx: AuthContext, sheetId: string, now =
 
 /** Disconnect: the sheet's connector and any unused code stop working, and a waiting sync ends. */
 export async function revokeConnector(ctx: AuthContext, sheetId: string, now = new Date()): Promise<{ revoked: number }> {
+  assertNotDemo(ctx, 'revokeConnector');
   const sheet = await scopedSheet(ctx, sheetId);
   const rows = await db
     .update(tallyConnectors)
@@ -183,6 +186,7 @@ async function recentJobs(sheetId: string, limit: number): Promise<TallyJobDto[]
  * (the partial unique index also refuses a race between two clicks).
  */
 export async function queueSyncJob(ctx: AuthContext, sheetId: string, input: { type: unknown; from: unknown; to: unknown }, now = new Date()): Promise<TallyJobDto> {
+  assertNotDemo(ctx, 'queueSyncJob');
   const sheet = await scopedSheet(ctx, sheetId);
   const type = input.type === 'sales' || input.type === 'receipts' ? (input.type as TallyJobType) : null;
   if (!type) throw invalid('sync_type');

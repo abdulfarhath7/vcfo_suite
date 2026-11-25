@@ -93,9 +93,10 @@ describe('planRows', () => {
     expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'documents_differ', ok: false }));
   });
 
-  it('holds a row on a locked step, with the reason', () => {
+  it('saves a row on a step not open yet as a draft, with the note (PLAN K)', () => {
     const { draft } = planRows(input([place('director.din', '01234567')], openAt('pre-1')));
-    expect(draft.rows[0]!.heldReason).toMatch(/opens after/);
+    expect(draft.rows[0]!.heldReason).toBeUndefined();
+    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'gate', ok: true, message: expect.stringMatching(/Saved as a draft: .+ opens after/) }));
   });
 
   it("does not hold a lead's row on a client answer (owner decision 2026-11-24)", () => {

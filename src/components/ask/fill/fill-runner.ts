@@ -8,9 +8,9 @@ import {
   waitForLiveFillBridge,
   type LiveFillBridge,
 } from '@/views/incorporation/milestone-form/live-fill-bridge';
-import type { FillMode } from './fill-mode';
+import { effectiveFillSpeed, type FillMode } from './fill-mode';
 import { getFillState, moveFillCursor, patchFillState, setFillActions, startFillState } from './fill-store';
-import { fieldTarget, isInstantField, nextFrame, prefersReducedMotion, sleep, typeInto, waitForField } from './type-into';
+import { fieldTarget, isInstantField, nextFrame, sleep, typeInto, waitForField } from './type-into';
 
 type FillStep = FillRunView['steps'][number];
 type FillRow = FillStep['rows'][number];
@@ -23,10 +23,17 @@ export type FillRunnerDeps = {
   bridgeTimeoutMs?: number;
   /** Auto mode poll interval. */
   pollMs?: number;
+  /**
+   * Auto with "Watch it fill": the server run is browser-driven, and the player saves each typed
+   * page itself (as a draft) instead of waiting for Accept.
+   */
+  autoAccept?: boolean;
 };
 
 const FINISHED = new Set<FillRunView['status']>(['done', 'stopped', 'failed']);
 const FLASH_MS = 2000;
+/** Auto with "Watch it fill": how long the typed page shows before it is saved. */
+const AUTO_LOOK_MS = 400;
 
 const activeStep = (view: FillRunView): FillStep | undefined =>
   view.steps.find((s) => s.status === 'active') ??
@@ -40,10 +47,15 @@ function errorText(error: unknown, fallback: string): string {
 }
 
 /**
- * One fill run in the browser. Manual: open each step page, type its rows into the form through
- * the bridge, wait for Accept or Stop in the chat rail, then Save and Submit with the form's own
- * handlers and tell the server, which checks the step and opens the next one. Auto: the server
- * does the work; this only polls the run so the rail shows progress.
+ * One fill run in the browser. Manual: open each step page (a step not open yet too), type its rows
+ * into the form through the bridge, wait for Accept or Stop in the chat rail, then Save with the
+ * form's own handler (a draft: a fill never submits) and tell the server, which checks the page was
+ * saved and opens the next one. Auto with "Watch it fill" (`autoAccept`) does the same without
+ * waiting for Accept. Auto with "Fill instantly": the server does the work; this only polls the run
+ * so the rail shows progress. "Submit ready steps" on the rail submits complete steps afterwards.
+ *
+ * The speed ("Watch it fill" or "Fill instantly") is read before every field, so a switch on the
+ * rail applies from the next field; reduced motion is always instant.
  */
 export class FillRunner {
   private cancelledFlag = false;
@@ -85,7 +97,7 @@ export class FillRunner {
   }
 
   async start(): Promise<void> {
-    startFillState(this.runId, this.mode);
+    startFillState(this.runId, this.deps.autoAccept && this.mode === 'manual' ? 'auto' : this.mode);
     setFillActions({
       accept: () => this.decide?.('accepted'),
       retry: () => this.decide?.('retry'),
@@ -166,8 +178,16 @@ export class FillRunner {
       if (this.cancelled) return;
       if (this.stopRequested) return this.stopStep(step);
 
-      patchFillState({ phase: 'waiting', message: null });
-      const decision = await this.waitDecision();
+      let decision: Decision = 'accepted';
+      if (this.deps.autoAccept) {
+        // A short look at the typed page before it is saved; Stop still wins here.
+        if (effectiveFillSpeed() === 'watch') await sleep(AUTO_LOOK_MS);
+        if (this.cancelled) return;
+        if (this.stopRequested) return this.stopStep(step);
+      } else {
+        patchFillState({ phase: 'waiting', message: null });
+        decision = await this.waitDecision();
+      }
       if (this.cancelled) return;
       if (decision === 'stop') return this.stopStep(step);
       if (decision === 'retry') continue;
@@ -182,8 +202,8 @@ export class FillRunner {
       try {
         this.flash(step.stepId, keys);
         // The form is the source of truth: whatever the person changed before Accept is saved.
+        // Saved only, never submitted: the person submits in order, or with "Submit ready steps".
         await live.save();
-        await live.submit();
         this.typedOver.clear();
         live.pauseAutosave(false);
         view = await stepFill(this.runId, { stepId: step.stepId, action: 'accepted' });
@@ -244,7 +264,6 @@ export class FillRunner {
 
   /** Types every open row of the step; returns the keys it filled. */
   private async typeStep(bridge: LiveFillBridge, step: FillStep): Promise<string[]> {
-    const reduce = prefersReducedMotion();
     const entries = new Map<string, string>();
     const keys: string[] = [];
     let typed = 0;
@@ -260,6 +279,9 @@ export class FillRunner {
     for (const row of step.rows) {
       if (this.cancelled || this.stopRequested) break;
       if (row.held) continue;
+      // Read per field: a switch on the rail applies from the next field.
+      const instant = effectiveFillSpeed() === 'instant';
+      if (instant) moveFillCursor({ visible: false });
       const key = await this.keyFor(bridge, row, entries);
       keys.push(key);
       if (bridge.getValue(key) === row.value) {
@@ -268,20 +290,20 @@ export class FillRunner {
       }
       if (!this.typedOver.has(key)) this.typedOver.set(key, { before: bridge.getValue(key), typed: row.value });
       if (bridge.switchSectionFor(key)) await nextFrame();
-      const shell = await waitForField(fieldSelector(step.stepId, key), reduce ? 300 : 1500);
+      const shell = await waitForField(fieldSelector(step.stepId, key), instant ? 300 : 1500);
       if (shell) {
-        shell.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+        shell.scrollIntoView({ block: 'center', behavior: instant ? 'auto' : 'smooth' });
         shell.setAttribute('data-ask-fill', 'active');
-        if (!reduce) {
+        if (!instant) {
           await sleep(280);
           const rect = fieldTarget(shell).getBoundingClientRect();
           moveFillCursor({ visible: true, x: rect.left + Math.min(24, rect.width / 2), y: rect.top + rect.height / 2 });
           await sleep(220);
         }
       }
-      if (reduce || isInstantField(shell, row.value)) {
+      if (instant || isInstantField(shell, row.value)) {
         bridge.setField(key, row.value);
-        if (!reduce) {
+        if (!instant) {
           shell?.setAttribute('data-ask-fill', 'pop');
           moveFillCursor({ pulse: (getFillState()?.cursor.pulse ?? 0) + 1 });
           await sleep(180);
@@ -293,7 +315,7 @@ export class FillRunner {
       }
       shell?.setAttribute('data-ask-fill', 'done');
       tick();
-      if (!reduce) await sleep(120);
+      if (!instant) await sleep(120);
     }
     return keys;
   }

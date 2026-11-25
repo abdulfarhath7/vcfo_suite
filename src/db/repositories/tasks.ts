@@ -30,6 +30,7 @@ import {
 } from '@/lib/intern/personal-todos';
 import { taskAssignmentPatch, taskCompletionPatch } from '@/lib/metrics/trend-stamps';
 import { queueIndexRefresh } from '@/lib/ask/index-cards/queue';
+import { assertNotDemo } from '@/lib/demo-logins';
 
 /**
  * TASKS REPOSITORY — replaces vcfo.tasks localStorage.
@@ -181,6 +182,8 @@ export async function createTask(
   }
   const access = await assertEngagementAccess(ctx, input.engagementId);
   if (!access.ok) throw new Error('Engagement not found or not permitted');
+  // A demo login (src/lib/demo-logins.ts) assigns tasks to itself only, never to a real person.
+  if (ctx.demo && input.assigneeId && input.assigneeId !== ctx.userId) assertNotDemo(ctx, 'createTask.assignee');
 
   const title = input.title?.trim() || input.checklistKey?.trim() || 'Task';
   const status = appStatusToDb(input.status ?? 'not-started');

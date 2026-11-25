@@ -41,6 +41,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "node --conditions=react-server --import tsx scripts/seed.ts",
     "db:seed-demo": "node --conditions=react-server --import tsx scripts/seed-demo.ts",
+    "db:seed-demo-logins": "node --conditions=react-server --import tsx scripts/seed-demo-logins.ts",
+    "db:seed-demo-logins:prod": "node scripts/demo-prod.mjs --demo-logins",
     "db:purge-demo": "node --conditions=react-server --import tsx scripts/purge-demo-data.ts",
     "receivables:seed-demo": "node --conditions=react-server --import tsx scripts/seed-receivables-demo.ts",
     "receivables:import": "node --conditions=react-server --import tsx scripts/import-receivables.ts",

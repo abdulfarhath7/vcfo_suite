@@ -2,6 +2,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   EscalationForbiddenError,
@@ -50,7 +51,7 @@ export async function GET(request: Request) {
 
 /** POST /api/super/escalations — raise an escalation on an engagement the caller can access. */
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

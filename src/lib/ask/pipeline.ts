@@ -66,10 +66,11 @@ import {
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
-import { isFillRequest, modeFromText } from '@/lib/ask/fill/intent';
+import { isFillRequest, modeFromText, scopeFromText } from '@/lib/ask/fill/intent';
+import { startFetchThenFill, type FetchThenFillStart } from '@/lib/ask/fill/after-fetch';
 import { gstIntent } from '@/lib/ask/gst/intent';
 import { gstWorkAnswer, type GstWorkAnswer } from '@/lib/ask/gst/answer';
-import { FillRefused, startFill } from '@/lib/ask/fill/run';
+import { FillRefused, fillStartedLine, startFill } from '@/lib/ask/fill/run';
 import { findOpenFillCardInConversation } from '@/db/repositories/ask-changesets';
 import { dropContextLine, dropProgressAnswer, isDropProgressQuestion } from '@/lib/ask/drop/progress';
 import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
@@ -112,6 +113,7 @@ export const chatRequestSchema = z.object({
   language: z.string().trim().min(2).max(35).optional(),
   /** The person's "Fill into app" mode chip, used when this message starts a fill. */
   fillMode: z.enum(['manual', 'auto']).optional(),
+  fillChip: z.enum(['manual', 'auto']).optional(),
 }).refine((body) => body.shell !== 'client' || (body.message?.length ?? 0) <= CLIENT_MESSAGE_MAX, { path: ['message'] });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
@@ -366,8 +368,13 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     !flags.killedPaths.has('fixed_workflow') &&
     isFillRequest(typed)
   ) {
-    const mode = modeFromText(typed) ?? request.fillMode ?? 'manual';
-    const work = (line: string, fill?: { runId: string; mode: 'manual' | 'auto' }): AnswerEnvelope => ({
+    const typedMode = modeFromText(typed);
+    const mode = typedMode ?? request.fillMode ?? 'manual';
+    // The chip's word ("Auto" for Auto with "Watch it fill"), unless the message named a mode itself.
+    const chip = typedMode ?? request.fillChip ?? mode;
+    // "name application", "phase 2", "step 3": only those steps run; the card keeps the rest.
+    const scope = scopeFromText(typed);
+    const work = (line: string, fill?: { runId: string; mode: 'manual' | 'auto' }, dropRunId?: string): AnswerEnvelope => ({
       line,
       citations: [],
       actions: [],
@@ -375,20 +382,26 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       depth: 'normal',
       // `fill` only, not `runId`: an answer's bare runId is read as a background drop to poll.
       ...(fill ? { fill } : {}),
+      ...(dropRunId ? { runId: dropRunId } : {}),
     });
     const cardId = await findOpenFillCardInConversation(ctx, conversationId, now);
     if (!cardId) {
+      // "Fetch bonterra data and put it in the app": no card yet, so the client's folder is read
+      // first and the drop starts the fill on its card when it is ready (src/lib/ask/fill/after-fetch.ts).
+      const fetched = await startFetchThenFill(ctx, { message: typed, conversationId, pagePath: request.page?.path, mode, chip, scope }).catch((error) => {
+        console.error('[ask-vcfo] fetch before fill failed', error);
+        return { line: 'I could not start the fetch. Nothing was read or filled.' } as FetchThenFillStart;
+      });
+      if (fetched) {
+        await finish(work(fetched.line, undefined, fetched.runId), { path: 'fixed_workflow' });
+        return;
+      }
       await finish(work('There is no open card in this chat to fill. Fetch the client folder or paste the details first, then ask me to fill it.'), { path: 'fixed_workflow' });
       return;
     }
     try {
-      const started = await startFill(ctx, { changesetId: cardId, mode, conversationId });
-      const company = started.view.companyName || 'this project';
-      const line =
-        started.mode === 'auto'
-          ? `I am filling ${company} step by step (Auto) in the background; I will post here when done.`
-          : `I am filling ${company} step by step (Manual): watch the page and accept each one here.`;
-      await finish(work(line, { runId: started.runId, mode: started.mode }), { path: 'fixed_workflow' });
+      const started = await startFill(ctx, { changesetId: cardId, mode, chip, conversationId, scope });
+      await finish(work(fillStartedLine(started, scope), { runId: started.runId, mode: started.mode }), { path: 'fixed_workflow' });
     } catch (error) {
       if (!(error instanceof FillRefused)) console.error('[ask-vcfo] fill from chat failed', error);
       await finish(work(error instanceof FillRefused ? error.message : 'I could not start the fill. Nothing was saved.'), { path: 'fixed_workflow' });

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth, type AuthContext } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   ClientTeamError,
@@ -63,7 +64,7 @@ const bodySchema = z.discriminatedUnion('action', [
 ]);
 
 export async function POST(request: Request) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) return NextResponse.json({ error: guard.error }, { status: guard.status });
   const body = await parseJsonBody(request, bodySchema);
   if (body.ok === false) return NextResponse.json({ error: body.error }, { status: body.status });

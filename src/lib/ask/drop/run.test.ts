@@ -104,7 +104,10 @@ vi.mock('@/db/repositories/sharepoint-files-seen', () => ({
   markSharepointFileRead: (...a: unknown[]) => markRead(...a),
 }));
 
-const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus } = await import('./run');
+const fillAfterDrop = vi.fn(async (..._a: unknown[]) => ({ runId: 'fill-1' as string | null }));
+vi.mock('@/lib/ask/fill/after-fetch', () => ({ fillAfterDrop: (...a: unknown[]) => fillAfterDrop(...a) }));
+
+const { queueAskDrop, runAskDrop, dropUnpackStep, dropStatus, dropFinishStep } = await import('./run');
 
 function file(id: string, fileName: string, data: Buffer | Uint8Array, extra: Partial<Row> = {}): Row {
   const key = `k/${id}/${fileName}`;
@@ -183,6 +186,37 @@ describe('runAskDrop from SharePoint', () => {
     expect(markRead.mock.calls.map((c) => [c[1], c[2]])).toEqual([['eng-1', 'sp-1'], ['eng-1', 'sp-2']]);
     const state = run.state as { files: Array<{ path: string; docType?: string }> };
     expect(state.files.find((f) => f.path === 'Acme/KYC/pan.pdf')?.docType).toBe('pan_card');
+  });
+
+  it('starts the fill the request asked for once the card is ready, once only', async () => {
+    rows = [];
+    const scope = { stepIds: ['pre-1'], label: 'Phase 1 — Name Application' };
+    run.state = { ...(run.state as object), source: { kind: 'sharepoint', engagementId: 'eng-1', folderName: 'Acme' }, fillAfter: { mode: 'manual', scope } };
+    pullSharepointFiles.mockImplementation(async (ctx: AuthContext) => {
+      rows.push(file('sp-1', 'pan.pdf', Buffer.from('%PDF'), { relativePath: 'Acme/KYC/pan.pdf', profileId: ctx.userId }));
+      return { copied: 1, skipped: [] };
+    });
+    await runAskDrop('run-1');
+    expect(fillAfterDrop).toHaveBeenCalledTimes(1);
+    const [ctx, input] = fillAfterDrop.mock.calls[0] as [AuthContext, { conversationId: string; state: { groups: Array<{ changesetId: string }>; fillAfter: unknown } }];
+    expect(ctx).toBe(owner);
+    expect(input.conversationId).toBe('conv-1');
+    expect(input.state.groups[0]!.changesetId).toBe('d0000000-0000-4000-8000-00000000000d');
+    expect(input.state.fillAfter).toMatchObject({ mode: 'manual', scope });
+    expect(run.status).toBe('waiting_approval');
+    expect((run.state as { fillAfter: unknown }).fillAfter).toEqual({ mode: 'manual', scope, started: true, runId: 'fill-1' });
+    // A retry of the finish step does not start it again.
+    run.status = 'running';
+    await dropFinishStep('run-1');
+    expect(fillAfterDrop).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles the drop even when the fill after it throws', async () => {
+    run.state = { ...(run.state as object), fillAfter: { mode: 'auto' } };
+    fillAfterDrop.mockRejectedValueOnce(new Error('boom'));
+    await runAskDrop('run-1');
+    expect(run.status).toBe('waiting_approval');
+    expect((run.state as { fillAfter: unknown }).fillAfter).toEqual({ mode: 'auto', started: true });
   });
 
   it('does not copy the folder again once it is pulled, and does nothing for an upload', async () => {

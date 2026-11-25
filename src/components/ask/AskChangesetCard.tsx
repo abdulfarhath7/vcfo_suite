@@ -7,7 +7,7 @@ import { decideChangeset, editChangesetRow, fetchChangeset, startFill, undoChang
 import type { ChangesetRowView, ChangesetView } from '@/lib/ask/changeset/view-types';
 import { ChangesetGroup } from './changeset/ChangesetGroup';
 import { ChangesetRow } from './changeset/ChangesetRow';
-import { dispatchFillStart, useFillMode } from './fill/fill-mode';
+import { dispatchFillStart, serverFillMode, useFillMode, useFillSpeed } from './fill/fill-mode';
 
 /**
  * The review card: step, field, old value, new value, source and check result on every row, with
@@ -39,11 +39,13 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
     },
   });
   const [fillMode] = useFillMode();
+  const [fillSpeed] = useFillSpeed();
   // "Fill into app" puts the rows the step order holds into the steps one by one; the live player
   // (Manual) or the job (Auto) picks the run up from the start event.
   const fill = useMutation({
-    mutationFn: () => startFill({ changesetId, mode: fillMode }),
-    onSuccess: (started) => dispatchFillStart({ runId: started.runId, mode: started.mode }),
+    mutationFn: () => startFill({ changesetId, mode: serverFillMode(fillMode), chip: fillMode }),
+    onSuccess: (started) =>
+      dispatchFillStart({ runId: started.runId, mode: started.mode, autoAccept: started.mode === 'manual' && fillMode === 'auto' }),
   });
 
   if (loadError) return <p className="rounded-md bg-surface-sunken px-3 py-2 text-[13px] text-ink-muted">This card is not available.</p>;
@@ -141,7 +143,7 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
         ) : null}
         {heldByOrder ? (
           <Button type="button" size="sm" variant="outline" disabled={fill.isPending || change.isPending} onClick={() => fill.mutate()} title="Save these values step by step, in checklist order">
-            {fill.isPending ? 'Starting…' : `Fill into app (${fillMode === 'auto' ? 'Auto' : 'Manual'})`}
+            {fill.isPending ? 'Starting…' : `Fill into app (${fillMode === 'auto' ? 'Auto' : 'Manual'}, ${fillSpeed === 'watch' ? 'watch it fill' : 'instantly'})`}
           </Button>
         ) : null}
         {card.canUndo ? (

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import {
   inviteEngagementClient,
@@ -44,7 +45,7 @@ export async function GET(_request: Request, context: RouteContext) {
  * Existing clients on the engagement may invite; staff may also invite.
  */
 export async function POST(request: Request, context: RouteContext) {
-  const guard = await requireAuth();
+  const guard = noDemo(await requireAuth());
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

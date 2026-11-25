@@ -13,7 +13,8 @@ import { GhostCursor } from './GhostCursor';
 /**
  * Ask VCFO "Fill into app" in the browser. Mounted once in the shell (it survives route
  * changes), it listens for `vcfo:ask-fill-start` from the review card or a chat answer and runs
- * the fill: Manual opens each step page and types it live, Auto shows the server's progress.
+ * the fill: Manual opens each step page and types it live; Auto with "Watch it fill" types it live
+ * and saves each page itself; Auto with "Fill instantly" shows the server's progress.
  * Staff only; a client shell never starts a fill.
  */
 export function LiveFillPlayer() {
@@ -34,6 +35,7 @@ export function LiveFillPlayer() {
       if (!detail?.runId) return;
       runnerRef.current?.cancel();
       const runner = new FillRunner(detail.runId, detail.mode === 'auto' ? 'auto' : 'manual', {
+        autoAccept: detail.autoAccept === true,
         navigate: (engagementId, stepId) => {
           const { router: r, base: b } = navRef.current;
           // The role-correct step URL, without the arrival params (the player does its own focus).

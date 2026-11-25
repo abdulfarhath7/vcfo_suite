@@ -22,3 +22,23 @@ describe('SB-01 step side rail', () => {
     expect(rows[0]!.stepCode).toBeUndefined();
   });
 });
+
+describe('PLAN K completeness marks on the lead rail', () => {
+  const phase1 = getPreIncPhases()[0]!.items;
+
+  it('marks the open step and steps holding drafts, never untouched later steps or the manager rail', () => {
+    const state = { 'pre-5': { status: 'in-progress', responses: { approvedCompanyName: 'Bonterra Private Limited' } } } as never;
+    const gates = gateActiveCatalog(state, 'intern');
+    const rows = journeyRailItems(phase1, gates, state, null, 'independent', undefined, false, { ownershipType: 'independent' });
+    const byId = Object.fromEntries(rows.map((r) => [r.item.id, r.completeness]));
+    // Client Details is the open step: it shows what it still needs.
+    expect(byId['pre-1']).toMatchObject({ complete: false });
+    // Name Approval is not open yet but holds a draft, so it is marked too.
+    expect(byId['pre-5']).toMatchObject({ complete: false });
+    expect(byId['pre-5']!.missing).toBeGreaterThan(0);
+    // Name Application is untouched and not open: no mark.
+    expect(byId['pre-4']).toBeUndefined();
+    const managerRows = journeyRailItems(phase1, gates, state, null, 'independent', undefined, false);
+    expect(managerRows.every((r) => r.completeness === undefined)).toBe(true);
+  });
+});

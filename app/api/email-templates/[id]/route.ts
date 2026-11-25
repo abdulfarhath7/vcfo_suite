@@ -2,6 +2,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import {
@@ -32,7 +33,7 @@ function mapRepoError(message: string): number {
 
 /** GET /api/email-templates/:id */
 export async function GET(_request: Request, context: RouteContext) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -52,7 +53,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 /** PATCH /api/email-templates/:id */
 export async function PATCH(request: Request, context: RouteContext) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
@@ -87,7 +88,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 /** DELETE /api/email-templates/:id */
 export async function DELETE(_request: Request, context: RouteContext) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }

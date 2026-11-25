@@ -8,6 +8,7 @@ import type {
 import { sendViaEum } from '@/lib/notify/send-whatsapp-eum';
 import { sendDoubleTickMessage } from '@/lib/notify/send-whatsapp-doubletick';
 import { orderedVariables } from '@/lib/notify/templates';
+import { isDemoRequest } from '@/lib/demo-request';
 import type { NotifyEvent, NotifyRecipient, NotifyVariables } from '@/lib/notify/types';
 
 /**
@@ -41,6 +42,12 @@ export async function sendWhatsAppTemplate(input: {
   deps?: SendWhatsAppDeps;
 }): Promise<WhatsAppSendResult> {
   const config = input.deps?.config ?? readWhatsAppConfig();
+
+  // Demo logins (src/lib/demo-logins.ts): nothing leaves a demo person's request.
+  if (!input.deps && (await isDemoRequest())) {
+    console.log('[whatsapp] demo login, not sent', input.event);
+    return { ok: false, status: 'skipped', skipReason: 'disabled' };
+  }
 
   const decision = resolveWhatsAppChannel({
     recipient: input.recipient,

@@ -361,6 +361,19 @@ export async function dropFinishStep(runId: string): Promise<{ status: string } 
     const message = await appendAskMessage(ctx, run.conversationId, { sender: 'assistant', text, answer, origin: 'work', path: 'fixed_workflow' });
     if (message) next.answerMessageId = message.id;
   }
+  // "Fetch ... and put it in the app": the fill the request asked for starts on the card now, before
+  // the drop settles, so the chat reads the card and the fill line together when it reloads. It is
+  // marked tried in the same write that settles the drop, so a retry does not start it twice.
+  if (next.fillAfter && !next.fillAfter.started) {
+    let fillRunId: string | null = null;
+    try {
+      const { fillAfterDrop } = await import('@/lib/ask/fill/after-fetch');
+      fillRunId = (await fillAfterDrop(ctx, { conversationId: run.conversationId, state: next }))?.runId ?? null;
+    } catch (error) {
+      console.error('[ask-vcfo] fill after drop failed', runId, error instanceof Error ? error.message : String(error));
+    }
+    next.fillAfter = { ...next.fillAfter, started: true, ...(fillRunId ? { runId: fillRunId } : {}) };
+  }
   const open_ = status === 'waiting_approval' || status === 'waiting_reply';
   await updateAskRun(ctx, runId, { status, state: asJson(next), ...(open_ ? {} : { finishedAt: new Date() }) });
   return { status };

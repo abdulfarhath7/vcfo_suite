@@ -38,14 +38,18 @@ export function isFillRow(row: Pick<FillPlanRow, 'action' | 'target'>): boolean 
   return FILL_ACTIONS.has(row.action) && typeof row.target.stepId === 'string' && row.target.stepId.length > 0;
 }
 
-/** The steps of a card that hold checklist rows, in checklist order, with their titles. */
-export function planFill(rows: readonly FillPlanRow[]): FillPlanStep[] {
+/**
+ * The steps of a card that hold checklist rows, in checklist order, with their titles. With a scope
+ * (the steps the request named), only those steps are planned; the card keeps the other rows.
+ */
+export function planFill(rows: readonly FillPlanRow[], scope?: readonly string[] | null): FillPlanStep[] {
   const order = orderIndex();
+  const only = scope && scope.length > 0 ? new Set(scope) : null;
   const byStep = new Map<string, string[]>();
   for (const row of rows) {
     if (!isFillRow(row) || GONE.has(row.status)) continue;
     const stepId = String(row.target.stepId);
-    if (!order.has(stepId)) continue;
+    if (!order.has(stepId) || (only && !only.has(stepId))) continue;
     byStep.set(stepId, [...(byStep.get(stepId) ?? []), row.id]);
   }
   return [...byStep.entries()]

@@ -30,6 +30,8 @@ export function AppShell({
   const { prefs, reduceMotion } = useShellAppearance();
   const pathname = usePathname();
   const internProjectOpen = isInternEngagementPathname(pathname);
+  // The dedicated Ask VCFO page is a chat app: it fills the content area edge to edge.
+  const fillPage = /^\/app\/[a-z]+\/ask\/?$/.test(pathname ?? "");
   // R-49: under 1100px the sidebar is always the rail.
   const narrowDesktop = useSidebarNarrow();
   const navExpanded = !narrowDesktop && shellDesktopNavExpanded(sidebarMode, pathname, user?.role);
@@ -108,8 +110,8 @@ export function AppShell({
           {/* md:pb-32 leaves room under every page so its last row scrolls clear of the Ask VCFO robot. */}
           <main
             className={cn(
-              "mx-auto page-fade-up px-4 pb-28 pt-5 md:px-8 md:pb-32 md:pt-7",
-              mainMaxWidth,
+              "mx-auto page-fade-up",
+              fillPage ? "max-w-none" : ["px-4 pb-28 pt-5 md:px-8 md:pb-32 md:pt-7", mainMaxWidth],
             )}
           >
             {children}

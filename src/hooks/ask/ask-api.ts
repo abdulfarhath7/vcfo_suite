@@ -74,6 +74,8 @@ export type ChatBody = {
   page?: { path: string };
   /** The composer's Manual / Auto chip, used when the message asks to fill a card into the app. */
   fillMode?: FillMode;
+  /** The chip's own mode, so the started line says Auto for a browser-driven Auto run. */
+  fillChip?: FillMode;
 };
 
 export type ChatEvent =
@@ -389,7 +391,7 @@ export async function undoChangeset(id: string): Promise<ChangesetView> {
 const fillUrl = (runId: string) => `/api/ask/fill/${encodeURIComponent(runId)}`;
 
 /** Starts "Fill into app" on a card. */
-export async function startFill(body: { changesetId: string; mode: FillMode; conversationId?: string }): Promise<{ runId: string; mode: FillMode; view: FillRunView }> {
+export async function startFill(body: { changesetId: string; mode: FillMode; chip?: FillMode; conversationId?: string }): Promise<{ runId: string; mode: FillMode; chip?: FillMode; view: FillRunView }> {
   return json(await sendChangeset('/api/ask/fill', 'POST', body), 'Could not start the fill.');
 }
 
@@ -397,7 +399,12 @@ export async function getFill(runId: string): Promise<FillRunView> {
   return json(await fetch(fillUrl(runId), { cache: 'no-store' }), 'Could not load the fill.');
 }
 
-/** Manual mode: the page was saved and submitted ('accepted'), or the person pressed Stop. */
+/** Manual mode: the page was saved as a draft ('accepted'), or the person pressed Stop. */
 export async function stepFill(runId: string, body: { stepId: string; action: 'accepted' | 'stop' }): Promise<FillRunView> {
   return json(await sendChangeset(`${fillUrl(runId)}/step`, 'POST', body), 'Could not move the fill on.');
+}
+
+/** "Submit ready steps" on a finished fill: submits complete steps in order, stops at the first that is not. */
+export async function submitReadyFill(runId: string): Promise<{ submitted: string[]; stopReason: string | null; line: string; view: FillRunView }> {
+  return json(await sendChangeset(`${fillUrl(runId)}/submit-ready`, 'POST', {}), 'Could not submit the steps.');
 }

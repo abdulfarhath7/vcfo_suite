@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAnyRole } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import {
   exchangeCodeForTokens,
   graphMe,
@@ -13,7 +14,7 @@ import { publicErrorMessage } from '@/lib/api-error';
 
 /** GET /api/outlook/callback — Microsoft OAuth redirect. */
 export async function GET(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   const origin = siteUrl();
 
   if (guard.ok === false) {

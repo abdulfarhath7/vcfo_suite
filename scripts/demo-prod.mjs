@@ -28,6 +28,9 @@
  * --region <region>, --port <local port>, --nat <instance id>,
  * --service <App Runner service name>.
  *
+ * `--demo-logins` runs scripts/seed-demo-logins.ts instead (npm run db:seed-demo-logins:prod):
+ * the shared demo lead and client logins and their demo companies, flagged `is_demo`.
+ *
  * `--reset-clients` runs scripts/reset-client-data.ts instead of the demo seed
  * (npm run clients:reset:prod). It only counts unless `--yes` is also given; with
  * `--yes` it first takes a manual RDS snapshot and waits for it, so the deleted
@@ -45,6 +48,8 @@ function arg(name, fallback) {
 const remove = process.argv.includes('--remove');
 const resetClients = process.argv.includes('--reset-clients');
 const migrate = process.argv.includes('--migrate');
+// `--demo-logins` runs scripts/seed-demo-logins.ts (npm run db:seed-demo-logins:prod).
+const demoLogins = process.argv.includes('--demo-logins');
 const confirmed = process.argv.includes('--yes');
 const dbId = arg('db', 'vcfo-suite-db');
 const region = arg('region', process.env.AWS_REGION || 'ap-south-1');
@@ -219,7 +224,9 @@ const seed = spawn(
     ...(migrate ? ['node_modules/drizzle-kit/bin.cjs', 'migrate'] : ['--conditions=react-server', '--import', 'tsx']),
     ...(migrate ? [] : resetClients
       ? ['scripts/reset-client-data.ts', ...(confirmed ? ['--yes'] : [])]
-      : ['scripts/seed-demo-clients.ts', ...(remove ? ['--remove'] : [])]),
+      : demoLogins
+        ? ['scripts/seed-demo-logins.ts']
+        : ['scripts/seed-demo-clients.ts', ...(remove ? ['--remove'] : [])]),
   ],
   {
     stdio: 'inherit',

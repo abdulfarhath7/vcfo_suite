@@ -10,30 +10,33 @@ import { askRunActor, createAskRun, findOpenAskFillRun, getOwnAskRun, lockAskRun
 import { recordAuditEvent } from '@/db/repositories/audit-events';
 import { checklistStateFromRow, getEngagementById } from '@/db/repositories/engagements';
 import { submitStepWithNotices } from '@/lib/actions/checklist/submit-step';
-import { fieldOf, responseKey } from '@/lib/actions/checklist/rules';
+import { fieldOf, otherStepValue, responseKey } from '@/lib/actions/checklist/rules';
 import type { ActionContext } from '@/lib/actions/types';
 import { applyRow, OPEN, OPEN_ROW, recheckRows } from '@/lib/ask/changeset/apply';
 import type { JsonValue, RowCheck } from '@/lib/ask/changeset/types';
 import { checklistGateViewerFrom, gateActiveCatalog, getStepGate } from '@/lib/checklist/checklist-step-gate';
 import { isDirectFlowStep, isDirectFlowStepComplete, MANAGER_APPROVAL_STEP_ID } from '@/lib/incorporation/pre-inc-direct-flow';
+import { stepCompleteness, type CompletenessEngagement } from '@/lib/incorporation/step-completeness';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isFillRow, planFill } from './plan';
-import { ASK_FILL_EVENT, FILL_WORKFLOW, type FillMode, type FillRunView, type FillState, type FillStepState } from './types';
+import { ASK_FILL_EVENT, FILL_WORKFLOW, type FillMode, type FillRunView, type FillScope, type FillState, type FillStepState } from './types';
 
 /**
- * "Fill into app": the card's checklist values put into the steps one step at a time, in checklist
- * order, because a step opens only after the one before it is complete.
+ * "Fill into app" (PLAN K): the card's checklist values saved into every step as drafts, in
+ * checklist order, including steps not open yet. A fill never submits: the person submits each step
+ * in order as before, or presses "Submit ready steps" (`submitReadySteps`), which submits complete
+ * steps through the step page's own submit and stops at the first one that is not ready.
  *
  * - Auto: `fillStep` applies the step's clear rows through the card's own `applyRow` (so every rule
- *   runs again and Undo still works) and submits the step as the lead; the next step then opens and
- *   its rows are checked again. `src/jobs/ask-fill.ts` runs it, or `runAskFill` in this process.
- * - Manual: the browser types the values into the page in front of the person, who saves and
- *   submits there. The server never writes a field value; `acceptManualStep` only checks that the
- *   step is complete and marks each row saved or left.
+ *   runs again and Undo still works), then goes on to the next step. `src/jobs/ask-fill.ts` runs it,
+ *   or `runAskFill` in this process.
+ * - Manual: the browser types the values into the page in front of the person, who checks them and
+ *   accepts; the page is saved (not submitted). The server never writes a field value;
+ *   `acceptManualStep` checks the page was saved and marks each row saved or left.
  *
- * Both stop at a step the manager approves, a step the lead cannot submit, a locked step, or a
- * submit the validator refuses, and say why. The run's state holds ids and reasons only; values stay
- * on the card's rows.
+ * A step this person may not fill (the manager's approval step, the client's step, a page they cannot
+ * edit) is left with its reason and the run goes on. The run's state holds ids and reasons only;
+ * values stay on the card's rows.
  */
 
 export class FillRefused extends Error {
@@ -97,9 +100,13 @@ async function loadRun(ctx: AuthContext, runId: string): Promise<{ run: AskRunRo
   return { run, state: fillStateOf(run) };
 }
 
-async function loadChecklist(ctx: AuthContext, engagementId: string) {
+async function loadProject(ctx: AuthContext, engagementId: string) {
   const row = await getEngagementById(ctx, engagementDbId(engagementId));
-  return row ? checklistStateFromRow(row) : null;
+  return row ? { row, checklist: checklistStateFromRow(row) } : null;
+}
+
+async function loadChecklist(ctx: AuthContext, engagementId: string) {
+  return (await loadProject(ctx, engagementId))?.checklist ?? null;
 }
 
 function actionContext(ctx: AuthContext, found: ChangesetAccess, now: Date): ActionContext {
@@ -108,18 +115,34 @@ function actionContext(ctx: AuthContext, found: ChangesetAccess, now: Date): Act
 
 type Checklist = NonNullable<Awaited<ReturnType<typeof loadChecklist>>>;
 
-/** Why this step cannot be filled and submitted by this person, or null when it can. */
+const gateOf = (ctx: Pick<AuthContext, 'role'>, checklist: Checklist, stepId: string) =>
+  getStepGate(gateActiveCatalog(checklist, checklistGateViewerFrom('admin', ctx.role)), stepId);
+
+/** Why this person may not submit this step now, or null when the submit may go ahead. */
 export function stepBlocker(ctx: Pick<AuthContext, 'role'>, stepId: string, rows: readonly Pick<AskChangesetRowRow, 'target'>[], checklist: Checklist): string | null {
   const title = titleOf(stepId);
-  const gate = getStepGate(gateActiveCatalog(checklist, checklistGateViewerFrom('admin', ctx.role)), stepId);
+  const gate = gateOf(ctx, checklist, stepId);
   if (gate.kind === 'locked') return gate.blockedByTitle ? `"${title}" opens after "${gate.blockedByTitle}", so I stopped there.` : `"${title}" is not open yet, so I stopped there.`;
   if (stepId === MANAGER_APPROVAL_STEP_ID || rows.some(rowNeedsManager)) return `"${title}" needs the manager's approval, so I stopped there. The manager approves it on its page.`;
   if (!isDirectFlowStep(stepId)) {
     return getItem(stepId)?.responsibleRole === 'client'
       ? `"${title}" is the client's step, so I stopped there.`
-      : `"${title}" is finished on its own page, not by a fill, so I stopped there.`;
+      : `"${title}" is finished on its own page, not by a submit, so I stopped there.`;
   }
   if (ctx.role !== 'intern') return `Only the project lead submits "${title}", so I stopped there.`;
+  return null;
+}
+
+/**
+ * Why a fill leaves this step and goes on, or null when it fills it. A fill only saves drafts, so a
+ * step not open yet is filled too; the manager's approval step and the client's own step are not.
+ * A Manual run types into the page, so a page this person cannot edit is left as well.
+ */
+export function fillSkipReason(ctx: Pick<AuthContext, 'role'>, mode: FillMode, stepId: string, rows: readonly Pick<AskChangesetRowRow, 'target'>[], checklist: Checklist): string | null {
+  const title = titleOf(stepId);
+  if (stepId === MANAGER_APPROVAL_STEP_ID || rows.some(rowNeedsManager)) return `"${title}" needs the manager's approval, so I left it. The manager fills it from the card.`;
+  if (!isDirectFlowStep(stepId) && getItem(stepId)?.responsibleRole === 'client') return `"${title}" is the client's step, so I left it.`;
+  if (mode === 'manual' && !gateOf(ctx, checklist, stepId).canEdit) return `"${title}" cannot be edited by you yet, so I left it on the card. Save it from the card or with Auto.`;
   return null;
 }
 
@@ -138,8 +161,9 @@ function patched(rows: readonly AskChangesetRowRow[], patches: ReadonlyArray<{ i
 
 /**
  * Moves the run to the first pending step it can work on: a step already complete counts as done, a
- * step this person cannot fill and submit stops the run with its reason. The active step's rows are
- * checked again, so a row the gate held reads clear once its step is open. Returns the new state.
+ * step this person may not fill is left with its reason and the run goes on. The active step's rows
+ * are checked again. A step not open yet is filled as a draft and remembered as filled early.
+ * Returns the new state.
  */
 async function moveOn(ctx: AuthContext, state: FillState, found: ChangesetAccess, now: Date): Promise<{ state: FillState; rows: AskChangesetRowRow[] }> {
   let rows = found.rows;
@@ -158,12 +182,13 @@ async function moveOn(ctx: AuthContext, state: FillState, found: ChangesetAccess
       continue;
     }
     const own = stepRowsOf({ ...found, rows }, step.stepId);
-    const blocker = stepBlocker(ctx, step.stepId, own, checklist);
-    if (blocker) {
+    const skip = fillSkipReason(ctx, state.mode, step.stepId, own, checklist);
+    if (skip) {
       step.status = 'stopped';
-      next.stopReason = step.stopReason = blocker;
-      return { state: next, rows };
+      step.stopReason = skip;
+      continue;
     }
+    if (gateOf(ctx, checklist, step.stepId).kind === 'locked') step.early = true;
     step.status = 'active';
     next.current = step.stepId;
     const updates = await recheckRows(actionContext(ctx, found, now), openRowsOf(own));
@@ -179,15 +204,77 @@ async function moveOn(ctx: AuthContext, state: FillState, found: ChangesetAccess
 function runStatusOf(state: FillState): FillRunView['status'] {
   if (state.stopReason && !state.current) return 'stopped';
   if (state.current) return state.mode === 'manual' ? 'waiting_user' : 'running';
-  return state.steps.some((s) => s.status === 'stopped') ? 'stopped' : 'done';
+  return 'done';
 }
 
-/** The closing chat line once a run settles. Names steps, never values. */
-export function fillSummaryLine(state: FillState): string {
-  const done = state.steps.filter((s) => s.status === 'done').map((s) => titleOf(s.stepId));
-  const stopped = state.steps.find((s) => s.status === 'stopped');
-  const head = done.length > 0 ? `I filled ${done.length} step${done.length === 1 ? '' : 's'} for ${state.companyName}: ${done.join(', ')}.` : `I did not complete any step for ${state.companyName}.`;
-  return stopped?.stopReason ? `${head} ${stopped.stopReason}` : `${head} Every step on the card is done.`;
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** "A, B, C and 2 more". */
+function firstFew(labels: readonly string[], few = 3): string {
+  if (labels.length <= few) return labels.join(', ');
+  return `${labels.slice(0, few).join(', ')} and ${labels.length - few} more`;
+}
+
+export interface FillSummary {
+  line: string;
+  /** The steps still needing answers, one fact each, for the answer's key facts. */
+  needs: Array<{ stepId: string; title: string; text: string }>;
+  /** The first step that still needs answers: the summary's "Open step" link. */
+  openStepId: string | null;
+}
+
+/**
+ * The closing chat message once a run settles: values and steps filled, how many steps are complete
+ * and how many answers the rest still need, the steps left with their reason, and the steps filled
+ * before they opened. Names steps and fields, never values.
+ */
+export function fillSummary(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>): FillSummary {
+  const filled = view.steps.filter((s) => s.filled > 0);
+  const values = filled.reduce((sum, s) => sum + s.filled, 0);
+  const marked = view.steps.filter((s) => s.completeness && s.status !== 'stopped');
+  const complete = marked.filter((s) => s.completeness!.complete);
+  const incomplete = marked.filter((s) => !s.completeness!.complete);
+  const more = incomplete.reduce((sum, s) => sum + s.completeness!.missing, 0);
+  const parts: string[] = [];
+  parts.push(values > 0 ? `Filled ${plural(values, 'value')} in ${plural(filled.length, 'step')} for ${view.companyName}.` : `Nothing new was filled for ${view.companyName}.`);
+  if (marked.length > 0) {
+    parts.push(
+      incomplete.length === 0
+        ? `${complete.length === 1 ? 'The step is' : `All ${complete.length} steps are`} complete and ready to submit.`
+        : `${plural(complete.length, 'step')} complete, ${incomplete.length} need ${more} more.`,
+    );
+  }
+  const left = view.steps.filter((s) => s.status === 'stopped' && s.stopReason && s.stopReason !== view.stopReason);
+  if (left.length > 0) parts.push(left.map((s) => s.stopReason).join(' '));
+  if (view.stopReason) parts.push(view.stopReason);
+  const early = view.steps.filter((s) => s.early && s.filled > 0);
+  if (early.length > 0) parts.push(`${plural(early.length, 'step')} ${early.length === 1 ? 'was' : 'were'} filled before ${early.length === 1 ? 'it' : 'they'} opened: check ${early.length === 1 ? 'it' : 'them'} once the earlier steps are final.`);
+  if (complete.length > 0) parts.push('Nothing was submitted; submit each step in order, or press Submit ready steps.');
+  const needs = incomplete.map((s) => ({ stepId: s.stepId, title: s.title, text: s.completeness!.labels.length > 0 ? `Needs ${firstFew(s.completeness!.labels)}` : `${s.completeness!.missing} to fill` }));
+  return { line: parts.join(' ').slice(0, 1200), needs, openStepId: incomplete[0]?.stepId ?? null };
+}
+
+/** The closing line alone, as the chat's text. */
+export function fillSummaryLine(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>): string {
+  const summary = fillSummary(view);
+  if (summary.needs.length === 0) return summary.line;
+  return `${summary.line} ${summary.needs.map((n) => `${n.title}: ${n.text}.`).join(' ')}`.slice(0, 1200);
+}
+
+function summaryAnswer(view: FillRunView, run: Pick<AskRunRow, 'id'>, mode: FillMode): AnswerEnvelope {
+  const summary = fillSummary(view);
+  const facts = summary.needs.slice(0, 6).map((n) => ({ k: n.title.slice(0, 60), v: n.text.slice(0, 200) }));
+  const line = summary.needs.length === 1 ? `${summary.line} ${summary.needs[0]!.title}: ${summary.needs[0]!.text}.`.slice(0, 1200) : summary.line;
+  return {
+    line,
+    citations: [],
+    actions: [],
+    origin: 'work',
+    depth: 'normal',
+    fill: { runId: run.id, mode },
+    ...(facts.length >= 2 ? { visual: { type: 'keyFacts' as const, facts } } : {}),
+    ...(summary.openStepId ? { links: [{ dest: { to: 'projectStep' as const, engagementId: view.engagementId, stepId: summary.openStepId }, label: `Open ${titleOf(summary.openStepId)}`.slice(0, 60), primary: true }] } : {}),
+  };
 }
 
 /**
@@ -195,13 +282,16 @@ export function fillSummaryLine(state: FillState): string {
  * closing answer carries only `fill`: the card is already above it in the chat, and a bare `runId`
  * would be read as a background drop.
  */
-async function saveRun(ctx: AuthContext, run: AskRunRow, state: FillState): Promise<FillState> {
+async function saveRun(ctx: AuthContext, run: AskRunRow, state: FillState, rows?: readonly AskChangesetRowRow[]): Promise<FillState> {
   const status = runStatusOf(state);
   const settled = status === 'done' || status === 'stopped';
   const next = { ...state };
   if (settled && !next.answerMessageId && run.conversationId) {
-    const text = fillSummaryLine(next);
-    const answer: AnswerEnvelope = { line: text.slice(0, 1200), citations: [], actions: [], origin: 'work', depth: 'normal', fill: { runId: run.id, mode: next.mode } };
+    const cardRows = rows ?? (await getAskChangesetForDecision(ctx, state.changesetId).catch(() => null))?.rows ?? [];
+    const project = await loadProject(ctx, state.engagementId).catch(() => null);
+    const view = buildFillView({ ...run, status }, next, { rows: cardRows }, project);
+    const answer = summaryAnswer(view, run, next.mode);
+    const text = fillSummaryLine(view);
     const message = await appendAskMessage(ctx, run.conversationId, { sender: 'assistant', text, answer, origin: 'work', path: 'fixed_workflow' });
     if (message) next.answerMessageId = message.id;
   }
@@ -210,11 +300,13 @@ async function saveRun(ctx: AuthContext, run: AskRunRow, state: FillState): Prom
 }
 
 async function auditStep(ctx: AuthContext, state: FillState, stepId: string, fields: string[], extra: Record<string, unknown> = {}): Promise<void> {
+  const early = state.steps.find((s) => s.stepId === stepId)?.early === true;
   await recordAuditEvent(ctx, {
     engagementId: state.engagementId,
     action: 'ask.fill.step',
-    summary: `Ask VCFO filled "${titleOf(stepId)}" (${state.mode})`,
-    metadata: { via: 'ask', mode: state.mode, stepId, changesetId: state.changesetId, fields, ...extra },
+    // The step page's activity reads this line: a step filled before it opened says to check it.
+    summary: early ? `Ask VCFO filled "${titleOf(stepId)}" before it opened (${state.chip ?? state.mode}); please check it once the earlier steps are final` : `Ask VCFO filled "${titleOf(stepId)}" (${state.chip ?? state.mode})`,
+    metadata: { via: 'ask', mode: state.mode, stepId, changesetId: state.changesetId, fields, submitted: false, ...(early ? { early: true } : {}), ...extra },
     result: 'ok',
   });
 }
@@ -250,8 +342,9 @@ export interface FillStepResult {
 }
 
 /**
- * Auto mode, one step: check the step's rows again, apply every clear row through `applyRow`, submit
- * the step, then open the next one. Refuses a manual run: there the browser does the writing.
+ * Auto mode, one step: check the step's rows again, apply every clear row through `applyRow` as a
+ * draft, then go on to the next step. Nothing is submitted. Refuses a manual run: there the browser
+ * does the writing.
  */
 export async function fillStep(ctx: AuthContext, runId: string, stepId: string): Promise<FillStepResult> {
   const { run, state } = await loadRun(ctx, runId);
@@ -274,8 +367,14 @@ export async function fillStep(ctx: AuthContext, runId: string, stepId: string):
   let rows = found.rows;
   if (!isDirectFlowStepComplete(stepId, checklist[stepId])) {
     const own = stepRowsOf(found, stepId);
-    const blocker = stepBlocker(ctx, stepId, own, checklist);
-    if (blocker) return stop(blocker, rows);
+    const skip = fillSkipReason(ctx, state.mode, stepId, own, checklist);
+    if (skip) {
+      step.status = 'stopped';
+      step.stopReason = skip;
+      const moved = await moveOn(ctx, { ...state, steps }, { ...found, rows }, now);
+      const saved = await saveRun(ctx, run, moved.state, moved.rows);
+      return { next: saved.current, status: runStatusOf(saved), stopReason: saved.stopReason };
+    }
 
     const actx = actionContext(ctx, found, now);
     const updates = await recheckRows(actx, openRowsOf(own));
@@ -291,14 +390,8 @@ export async function fillStep(ctx: AuthContext, runId: string, stepId: string):
       if (outcome.patch.status === 'applied') fields.push(responseKey(row.target as never));
       else if (outcome.patch.status === 'failed') failed.push(row.label);
     }
-    if (failed.length > 0) {
-      // A value the card holds did not save: submitting now would complete the step without it.
-      await auditStep(ctx, state, stepId, fields, { submitted: false });
-      return stop(`"${titleOf(stepId)}" was not submitted because ${failed.join(', ')} could not be saved. Check the card, then fill again.`, rows);
-    }
-    const refused = await submitStep(ctx, state.engagementId, stepId);
-    await auditStep(ctx, state, stepId, fields, { submitted: !refused });
-    if (refused) return stop(refused, rows);
+    // A value that did not save stays on the card with its error; the step is never submitted here.
+    await auditStep(ctx, { ...state, steps }, stepId, fields, failed.length > 0 ? { failed } : {});
   }
   step.status = 'done';
   step.stopReason = undefined;
@@ -307,14 +400,14 @@ export async function fillStep(ctx: AuthContext, runId: string, stepId: string):
   const latest = await getOwnAskRun(ctx, runId);
   if (!latest || latest.status !== 'running') return { next: null, status: latest ? runStatusOf(fillStateOf(latest)) : 'stopped' };
   const moved = await moveOn(ctx, { ...state, steps }, { ...found, rows }, now);
-  const saved = await saveRun(ctx, run, moved.state);
+  const saved = await saveRun(ctx, run, moved.state, moved.rows);
   return { next: saved.current, status: runStatusOf(saved), stopReason: saved.stopReason };
 }
 
 /**
- * Manual mode: the person saved and submitted the step on its page. Checks the step is complete,
- * marks each row saved when the page holds the card's value and left ("changed by you on the
- * page") when it does not, and opens the next step. No field value is written here.
+ * Manual mode: the person accepted the step and the page saved it (a draft, not a submit). Checks the
+ * page was saved, marks each row saved when the page holds the card's value and left ("changed by you
+ * on the page") when it does not, and opens the next step. No field value is written here.
  */
 export async function acceptManualStep(ctx: AuthContext, runId: string, stepId: string): Promise<FillRunView> {
   const { run, state } = await loadRun(ctx, runId);
@@ -324,19 +417,30 @@ export async function acceptManualStep(ctx: AuthContext, runId: string, stepId: 
   const checklist = await loadChecklist(ctx, state.engagementId);
   if (!checklist) throw new FillRefused('This project is not available.', 404);
   const slice = checklist[stepId];
-  if (!isDirectFlowStepComplete(stepId, slice)) throw new FillRefused('This step is not submitted yet. Save and submit it on the page first.');
+  const saved = slice?.responses ?? {};
+  const open = openRowsOf(stepRowsOf(found, stepId));
+  const keyOf = (row: AskChangesetRowRow) => responseKey(row.target as { fieldId: string; group?: string; entryId?: string });
+  const onPageOf = (row: AskChangesetRowRow) => (saved[keyOf(row)] ?? '').trim();
+  const sameOf = (row: AskChangesetRowRow) => {
+    const value = rowText(row.newValue)?.trim() ?? '';
+    return row.action === 'checklist.attachFile' ? onPageOf(row).length > 0 : onPageOf(row) === value && value.length > 0;
+  };
+  // The page typed every clear row; when none of them reads anything new on the saved step, the
+  // page was not saved (a value the person changed still reads as changed).
+  const typed = open.filter((row) => isClear(row.checks) && !row.heldReason);
+  const unsaved = typed.length > 0 && typed.every((row) => !sameOf(row) && onPageOf(row) === (rowText(row.oldValue) ?? '').trim());
+  if (unsaved) throw new FillRefused('This page is not saved yet. Save it on the page first, then accept.');
 
   const now = new Date();
-  const saved = slice?.responses ?? {};
   const updates: Array<{ id: string; patch: Partial<AskChangesetRowRow> }> = [];
   const fields: string[] = [];
   const left: string[] = [];
-  for (const row of openRowsOf(stepRowsOf(found, stepId))) {
+  for (const row of open) {
     const target = row.target as { engagementId: string; stepId: string; fieldId: string; group?: string; entryId?: string };
-    const key = responseKey(target);
-    const value = rowText(row.newValue)?.trim() ?? '';
-    const onPage = (saved[key] ?? '').trim();
-    const same = row.action === 'checklist.attachFile' ? onPage.length > 0 : onPage === value && value.length > 0;
+    const key = keyOf(row);
+    const same = sameOf(row);
+    // A row the page never typed (held by a rule) stays on the card as it was.
+    if (!same && !typed.includes(row)) continue;
     if (same) {
       fields.push(key);
       const undoData = { engagementId: target.engagementId, stepId, key, previous: rowText(row.oldValue) ?? '', applied: saved[key] ?? '', ...(target.group && target.entryId ? { group: target.group, entryId: target.entryId, addedEntry: row.target.newEntry === true } : {}) };
@@ -348,13 +452,79 @@ export async function acceptManualStep(ctx: AuthContext, runId: string, stepId: 
   }
   if (updates.length > 0) await updateAskChangesetRows(ctx, found, updates);
   const rows = patched(found.rows, updates);
-  await auditStep(ctx, state, stepId, fields, { submitted: true, left });
+  await auditStep(ctx, state, stepId, fields, { left });
   await settleCard(ctx, found, rows, now);
 
   const steps = state.steps.map((s) => (s.stepId === stepId ? { ...s, status: 'done' as const, stopReason: undefined } : s));
   const moved = await moveOn(ctx, { ...state, steps }, { ...found, rows }, now);
-  const next = await saveRun(ctx, run, moved.state);
-  return buildFillView({ ...run, status: runStatusOf(next) }, next, { ...found, rows: moved.rows });
+  const next = await saveRun(ctx, run, moved.state, moved.rows);
+  return buildFillView({ ...run, status: runStatusOf(next) }, next, { ...found, rows: moved.rows }, await loadProject(ctx, state.engagementId));
+}
+
+export interface SubmitReadyResult {
+  /** The steps submitted, in order. */
+  submitted: string[];
+  /** Why it stopped before the end, or null when every complete step went through. */
+  stopReason: string | null;
+  line: string;
+  view: FillRunView;
+}
+
+/**
+ * "Submit ready steps": the fill's steps in checklist order, each submitted through the step page's
+ * own submit (`submitStepWithNotices`, which validates again) while it is complete. Stops at the first
+ * step that is not complete, not open, or not this person's to submit, and says why. A step already
+ * submitted is passed over.
+ */
+export async function submitReadySteps(ctx: AuthContext, runId: string): Promise<SubmitReadyResult> {
+  const { run, state } = await loadRun(ctx, runId);
+  if (run.status === 'running' || run.status === 'waiting_user') throw new FillRefused('The fill is still going. Submit the steps once it has finished.');
+  const found = await getAskChangesetForDecision(ctx, state.changesetId).catch(() => null);
+  const rows = found?.rows ?? [];
+  const submitted: string[] = [];
+  let stopReason: string | null = null;
+  for (const step of state.steps) {
+    const project = await loadProject(ctx, state.engagementId);
+    if (!project) {
+      stopReason = 'This project is not available.';
+      break;
+    }
+    if (isDirectFlowStepComplete(step.stepId, project.checklist[step.stepId])) continue;
+    const own = rows.filter((row) => isFillRow(row) && row.target.stepId === step.stepId);
+    const blocker = stepBlocker(ctx, step.stepId, own, project.checklist);
+    if (blocker) {
+      stopReason = blocker;
+      break;
+    }
+    const mark = stepCompleteness({ stepId: step.stepId, state: project.checklist, engagement: project.row as CompletenessEngagement });
+    if (mark && !mark.complete) {
+      stopReason = `"${titleOf(step.stepId)}" still needs ${mark.labels.length > 0 ? firstFew(mark.labels) : plural(mark.missing, 'answer')}, so I stopped there.`;
+      break;
+    }
+    const refused = await submitStep(ctx, state.engagementId, step.stepId);
+    if (refused) {
+      stopReason = refused;
+      break;
+    }
+    submitted.push(titleOf(step.stepId));
+  }
+  const head = submitted.length > 0 ? `Submitted ${plural(submitted.length, 'step')}: ${submitted.join(', ')}.` : 'No step was submitted.';
+  const line = stopReason ? `${head} ${stopReason}` : `${head} Every complete step on this fill is submitted.`;
+  await recordAuditEvent(ctx, {
+    engagementId: state.engagementId,
+    action: 'ask.fill.submit_ready',
+    summary: `Ask VCFO submitted ${plural(submitted.length, 'ready step')}`,
+    metadata: { via: 'ask', changesetId: state.changesetId, submitted, ...(stopReason ? { stoppedAt: stopReason } : {}) },
+    result: 'ok',
+  });
+  if (run.conversationId) {
+    const answer: AnswerEnvelope = { line: line.slice(0, 1200), citations: [], actions: [], origin: 'work', depth: 'normal' };
+    await appendAskMessage(ctx, run.conversationId, { sender: 'assistant', text: line, answer, origin: 'work', path: 'fixed_workflow' }).catch((error) =>
+      console.warn('[ask-vcfo] submit-ready message not written', error),
+    );
+  }
+  const view = buildFillView(run, state, found, await loadProject(ctx, state.engagementId));
+  return { submitted, stopReason, line, view };
 }
 
 /** The person pressed Stop. Steps already done stay saved; the card keeps the rest. */
@@ -367,17 +537,37 @@ export async function stopFill(ctx: AuthContext, runId: string): Promise<FillRun
   return getFillView(ctx, runId, next);
 }
 
+/**
+ * The chat line once a fill has started, for the pipeline and for a fill that follows a fetch. The
+ * word follows the chip: Auto with "Watch it fill" runs in the browser (a Manual run on the server)
+ * but is still Auto to the person.
+ */
+export function fillStartedLine(started: { mode: FillMode; chip?: FillMode; view: Pick<FillRunView, 'companyName'> }, scope?: FillScope | null): string {
+  const company = started.view.companyName || 'this project';
+  const only = scope ? ` (${scope.label} only)` : '';
+  if (started.mode === 'auto') return `I am filling ${company}${only} (Auto) in the background, saving every step as a draft; I will post here when done.`;
+  if (started.chip === 'auto') return `I am filling ${company}${only} (Auto) on screen: each page is typed and saved as a draft, nothing is submitted.`;
+  return `I am filling ${company}${only} step by step (Manual): watch each page, then accept it here to save it as a draft.`;
+}
+
 /** Starts a fill on a card. Auto mode queues the job; manual mode waits for the page. */
-export async function startFill(ctx: AuthContext, input: { changesetId: string; mode: FillMode; conversationId?: string | null }): Promise<{ runId: string; mode: FillMode; view: FillRunView }> {
+export async function startFill(
+  ctx: AuthContext,
+  input: { changesetId: string; mode: FillMode; chip?: FillMode; conversationId?: string | null; scope?: FillScope | null },
+): Promise<{ runId: string; mode: FillMode; chip?: FillMode; view: FillRunView }> {
   const found = await loadCard(ctx, input.changesetId);
-  const plan = planFill(found.rows);
-  if (plan.length === 0) throw new FillRefused('This card has no checklist values to fill.', 400);
+  const scope = input.scope && input.scope.stepIds.length > 0 ? input.scope : null;
+  const plan = planFill(found.rows, scope?.stepIds);
+  if (plan.length === 0) {
+    if (scope && planFill(found.rows).length > 0) throw new FillRefused(`This card has no values for ${scope.label}, so nothing was filled. The card keeps its other rows.`, 400);
+    throw new FillRefused('This card has no checklist values to fill.', 400);
+  }
   // One open run per card. A run the page left behind (a reload, a closed tab) is picked up again
   // rather than refused, because after a reload nothing on screen could stop it any more.
   const open = await findOpenAskFillRun(ctx, found.changeset.id, new Date());
   if (open) {
     const openState = fillStateOf(open);
-    return { runId: open.id, mode: openState.mode, view: buildFillView(open, openState, found) };
+    return { runId: open.id, mode: openState.mode, ...(openState.chip ? { chip: openState.chip } : {}), view: buildFillView(open, openState, found) };
   }
   const engagementId = found.changeset.engagementId!;
   // A conversation the person does not own is not used; the card's own is, when it is theirs.
@@ -388,26 +578,55 @@ export async function startFill(ctx: AuthContext, input: { changesetId: string; 
     engagementId,
     companyName: found.companyName,
     mode: input.mode,
+    ...(input.chip && input.chip !== input.mode ? { chip: input.chip } : {}),
     current: null,
     steps: plan.map((p) => ({ stepId: p.stepId, status: 'pending' })),
+    ...(scope ? { scope } : {}),
   };
   const run = await createAskRun(ctx, { conversationId, workflow: FILL_WORKFLOW, goal: `Fill ${found.companyName} (${input.mode})`, budgetTokens: 0, status: 'running', state: asJson(initial) });
   await lockAskRun(ctx, run.id, engagementId);
   const moved = await moveOn(ctx, initial, found, new Date());
-  const state = await saveRun(ctx, run, moved.state);
+  const state = await saveRun(ctx, run, moved.state, moved.rows);
   const status = runStatusOf(state);
   if (input.mode === 'auto' && status === 'running') await queueAskFill(run.id, { profileId: ctx.userId });
-  return { runId: run.id, mode: input.mode, view: buildFillView({ ...run, status }, state, { ...found, rows: moved.rows }) };
+  return {
+    runId: run.id,
+    mode: input.mode,
+    ...(state.chip ? { chip: state.chip } : {}),
+    view: buildFillView({ ...run, status }, state, { ...found, rows: moved.rows }, await loadProject(ctx, engagementId)),
+  };
+}
+
+type Project = NonNullable<Awaited<ReturnType<typeof loadProject>>>;
+
+/**
+ * The values this fill saved on a step that another step now holds differently (a name or an
+ * address changed on an earlier step after it was copied here): the person should check them.
+ */
+function staleChecks(stepId: string, own: readonly AskChangesetRowRow[], checklist: Checklist): Array<{ label: string; message: string }> {
+  const saved = checklist[stepId]?.responses ?? {};
+  const out: Array<{ label: string; message: string }> = [];
+  for (const row of own) {
+    if (row.status !== 'applied' || row.action !== 'checklist.setResponse') continue;
+    const target = row.target as { engagementId: string; stepId: string; fieldId: string; group?: string; entryId?: string };
+    const value = (saved[responseKey(target)] ?? '').trim();
+    if (!value) continue;
+    const position = target.group && target.entryId ? (saved[target.group] ?? '').split(',').indexOf(target.entryId) + 1 : 0;
+    const other = otherStepValue(target, position || null, checklist);
+    if (other && other.value !== value) out.push({ label: row.label, message: `"${other.stepTitle}" now holds a different value. Please check.` });
+  }
+  return out;
 }
 
 /** What the chat rail and the live player read. A manual run's active step carries its values to type. */
-export function buildFillView(run: Pick<AskRunRow, 'id' | 'status'>, state: FillState, found: Pick<ChangesetAccess, 'rows'> | null): FillRunView {
+export function buildFillView(run: Pick<AskRunRow, 'id' | 'status'>, state: FillState, found: Pick<ChangesetAccess, 'rows'> | null, project?: Project | null): FillRunView {
   const rows = found?.rows ?? [];
   const status = (['running', 'waiting_user', 'done', 'stopped', 'failed'] as const).find((s) => s === run.status) ?? 'running';
   return {
     id: run.id,
     status,
     mode: state.mode,
+    ...(state.chip ? { chip: state.chip } : {}),
     engagementId: state.engagementId,
     companyName: state.companyName,
     current: state.current,
@@ -415,6 +634,8 @@ export function buildFillView(run: Pick<AskRunRow, 'id' | 'status'>, state: Fill
     steps: state.steps.map((step) => {
       const own = rows.filter((row) => isFillRow(row) && row.target.stepId === step.stepId && row.status !== 'undone');
       const typing = state.mode === 'manual' && step.status === 'active';
+      const mark = project ? stepCompleteness({ stepId: step.stepId, state: project.checklist, engagement: project.row as CompletenessEngagement }) : null;
+      const checks = project && step.early ? staleChecks(step.stepId, own, project.checklist) : [];
       return {
         stepId: step.stepId,
         title: titleOf(step.stepId),
@@ -422,6 +643,9 @@ export function buildFillView(run: Pick<AskRunRow, 'id' | 'status'>, state: Fill
         filled: own.filter((row) => row.status === 'applied').length,
         total: own.length,
         ...(step.stopReason ? { stopReason: step.stopReason } : {}),
+        ...(mark ? { completeness: mark } : {}),
+        ...(step.early ? { early: true } : {}),
+        ...(checks.length > 0 ? { checks } : {}),
         rows: openRowsOf(own).map((row) => {
           const target = row.target as { fieldId: string; group?: string; entryId?: string; newEntry?: boolean };
           const held = isClear(row.checks) && !row.heldReason ? undefined : heldOf(row);
@@ -446,7 +670,8 @@ export function buildFillView(run: Pick<AskRunRow, 'id' | 'status'>, state: Fill
 export async function getFillView(ctx: AuthContext, runId: string, known?: FillState): Promise<FillRunView> {
   const { run, state } = await loadRun(ctx, runId);
   const found = await getAskChangesetForDecision(ctx, state.changesetId).catch(() => null);
-  return buildFillView(run, known ?? state, found);
+  const project = await loadProject(ctx, state.engagementId).catch(() => null);
+  return buildFillView(run, known ?? state, found, project);
 }
 
 // ---- The auto loop: the job's steps, and the in-process fallback ----

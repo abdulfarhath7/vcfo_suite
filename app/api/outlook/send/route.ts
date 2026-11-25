@@ -1,6 +1,7 @@
 import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAnyRole, type AuthContext } from '@/auth/guards';
+import { noDemo } from '@/lib/demo-logins';
 import { rejectLargeBody } from '@/lib/api/body-limit';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { getOutlookStatus, sendMailViaOutlook } from '@/db/repositories/outlook-connections';
@@ -164,7 +165,7 @@ async function collectAttachments(
  * under the body.
  */
 export async function POST(request: Request) {
-  const guard = await requireAnyRole('super_admin', 'admin', 'manager', 'intern');
+  const guard = noDemo(await requireAnyRole('super_admin', 'admin', 'manager', 'intern'));
   if (guard.ok === false) {
     return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
