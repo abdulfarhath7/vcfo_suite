@@ -41,6 +41,44 @@ What the codebase scan found (Explore agent, 25 Nov 2026):
 
 So we pay per signature (eSign) and per certificate (DSC). The cost can be absorbed or passed to the client as a line in the engagement fee.
 
+### Cost for one incorporation, step by step
+
+Assumptions: one private company; two Indian resident directors who are also the two subscribers;
+one parent-entity signatory; neither director has a valid DSC; a Class 3 sign-only DSC for two
+years with a USB token; eSign at eMudhra's list price of ₹5 per signed document. Prices exclude
+18% GST. They are retail or reseller figures, to be replaced with SBC's partner rates.
+
+| Step (use case #) | What is bought | Unit price | Qty | Cost once |
+|---|---|---|---|---|
+| DSC for directors (#4, pre-7) | Class 3 DSC, 2 years, with token | ₹1,200 – 1,800 | 2 | ₹2,400 – 3,600 |
+| Board resolution / NOC (#1, pre-3) | Aadhaar eSign | ₹5 | 1 | ₹5 |
+| Director pack (#2): DIR-2, DIR-8, INC-9, ID and address declaration, deposit declaration | Aadhaar eSign | ₹5 | 5 × 2 = 10 | ₹50 |
+| Subscription sheet / INC-33, INC-34 (#3) | eSign: 2 subscribers and 1 witness | ₹5 | 3 | ₹15 |
+| Client approvals and SPICe+ confirmation (#8, pre-9) | eSign | ₹5 | 2 | ₹10 |
+| Engagement letter (#9) | eSign | ₹5 | 1 | ₹5 |
+| First board meeting (#6, post-1): notice, circular resolution (2 directors), minutes | eSign | ₹5 | 4 | ₹20 |
+| Registrations (#10): power of attorney, LUT witness | eSign (DSC reused from #4) | ₹5 | 2 | ₹10 |
+| MCA form signing (#13) | emBridge is free; it uses the DSC from #4 | ₹0 | — | ₹0 |
+| Signature verification (#7) | Our own code with the public CCA roots | ₹0 | — | ₹0 |
+| Docx to PDF, email | LibreOffice in our image; SES or Resend | ₹0 | — | ₹0 |
+| WhatsApp nudges | Meta utility template through AWS | under ₹1 per message | about 10 | under ₹10 |
+| **Total for one company** | | | 23 eSigns and 2 DSCs | **about ₹2,500 – 3,700** (with GST about ₹2,950 – 4,400) |
+
+Cases that cost more, or only later:
+
+| Case | Price | When |
+|---|---|---|
+| Foreign national director DSC (#12) | ₹7,500 – 11,500 each (reseller listings) | Per foreign director, instead of the ₹1,200 – 1,800 DSC |
+| Director already holds a valid DSC | ₹0 for #4 | Common for repeat directors |
+| DSC renewal (#5) | about ₹900 – 1,700 (no new token) | After two years |
+| emSigner platform fee | Not published; quote needed | Only if we use emSigner workflows rather than the bare eSign API |
+| Identity checks (#11) | Not published; quote needed | Only if eMudhra offers it |
+| Signed invoices (#15) | Organisation or bulk signer certificate; quote needed | Not part of one incorporation |
+
+The two DSCs are about 97% of the cost; all 23 eSigns together cost about ₹115. Ask eMudhra whether
+a document with several signers is billed per document or per signature (it changes rows #3 and #6
+only slightly).
+
 ---
 
 ## 2. Use cases: where eMudhra fits in VCFO Suite
@@ -254,4 +292,6 @@ Feature flag `EMUDHRA_ENABLED`; when off, every flow keeps today's upload path, 
 - eMudhra eSign individual / organisation plans: https://esign.sandbox.emudhra.com/individual , https://esign.sandbox.emudhra.com/organization
 - emSigner product page: https://emudhra.com/en-in/emsigner/header-global
 - CCA eSign API v2.1: https://www.cca.gov.in/sites/files/pdf/ACT/eSign-APIv2.1.pdf
+- DSC price ranges (2026): https://www.indiafilings.com/emudhra/pricing , https://www.taxaj.com/learn/digital-signature-certificate-cost-india/
+- Foreign national DSC: https://certificate.digital/foreign-dsc
 - Third-party emSigner listings: https://www.softwaresuggest.com/emsigner , https://www.sourceforge.net/software/product/emSigner
