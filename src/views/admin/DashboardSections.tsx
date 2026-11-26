@@ -9,6 +9,7 @@ import { ymdFromIsoInIst, ymdInIst } from '@/lib/intern/intern-work';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { DashHero, type DashHeroStat } from '@/components/dash/DashHero';
 import { MyDayCard } from '@/views/my-day/MyDayCard';
+import { AgentsToday } from '@/views/agents/AgentsToday';
 import { PhaseTimeline, type Phase } from '@/components/admin/PhaseTimeline';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
@@ -261,6 +262,7 @@ export function AdminDashboardView({
 
         {/* IDEAS-PLAN F: the caller's ranked plan for today. */}
         <MyDayCard />
+        <AgentsToday />
 
         {/*
           One grid with two independent columns, so a tall rail never leaves a gap under the main column.

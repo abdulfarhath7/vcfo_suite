@@ -2,6 +2,7 @@
 
 import { SEO } from '@/components/SEO';
 import { AgendaLibrarySection } from '@/views/board-meetings/AgendaLibrarySection';
+import { AgentSettingsLink } from '@/views/agents/AgentSettingsLink';
 import { PageTransition } from '@/components/shell/PageTransition';
 import { SkeletonRows } from '@/components/ui/empty-state';
 import { SuperPageError } from '@/components/super/parts/super-parts';
@@ -57,6 +58,7 @@ export function FirmSettingsBody() {
           <ReminderSection settings={settings} canEdit={canEdit} save={onSave} />
           {canEdit ? <AssistCertifierSection settings={settings} canEdit={canEdit} save={onSave} /> : null}
           {canEdit ? <IntegrationsSection isSuper={isSuper} /> : null}
+          {canEdit ? <AgentSettingsLink /> : null}
           {canEdit ? <SettingsHistorySection rows={history} /> : null}
         </div>
       </div>

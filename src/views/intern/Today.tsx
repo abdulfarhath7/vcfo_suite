@@ -19,6 +19,7 @@ import { LeadPhaseProgress } from '@/components/intern/LeadPhaseProgress';
 import { FilingsMatrix } from '@/components/intern/FilingsMatrix';
 import { LeadSideRail } from '@/components/intern/LeadSideRail';
 import { MyDayCard } from '@/views/my-day/MyDayCard';
+import { AgentsToday } from '@/views/agents/AgentsToday';
 import { TodayScopeTabs } from '@/components/staff/today/today-parts';
 import { engagementInScope, todayStatusOf, type TodayScope } from '@/components/staff/today/today-rows';
 import type { InternWorkItem } from '@/lib/intern/intern-work';
@@ -95,6 +96,8 @@ export default function InternToday() {
           <div className="flex min-w-0 flex-col gap-5">
             {/* IDEAS-PLAN F: the ranked plan for today, above the Action queue. */}
             <MyDayCard />
+            {/* MASTER-PLAN screen 1: the card agents waiting for the lead or running. */}
+            <AgentsToday />
             <LeadActionQueue
               userId={user?.id ?? ''}
               items={items}

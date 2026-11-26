@@ -139,11 +139,21 @@ describe('withAssistRuns', () => {
     ['admin', '/app/admin/assist-runs'],
     ['manager', '/app/manager/assist-runs'],
     ['intern', '/app/lead/assist-runs'],
-  ] as const)('%s gets Assist runs right after the tools break', (role, href) => {
+  ] as const)('%s gets Agent runs right after the tools break', (role, href) => {
     const items = withAssistRuns(sidebarItemsFor(role, '/app/manager'), role, '/app/manager');
     const at = items.findIndex((e) => isNavSectionBreak(e));
     const next = items[at + 1]!;
     expect(!isNavSectionBreak(next) && !isNavGroup(next) && next.to).toBe(href);
+    expect(!isNavSectionBreak(next) && !isNavGroup(next) && next.label).toBe('Agent runs');
+  });
+
+  it.each([
+    ['super_admin', '/app/super/agent-results', true],
+    ['admin', '/app/admin/agent-results', true],
+    ['manager', '/app/manager/agent-results', false],
+    ['intern', '/app/lead/agent-results', false],
+  ] as const)('%s gets Agent results: %s is %s', (role, href, has) => {
+    expect(hrefs(withAssistRuns(sidebarItemsFor(role, '/app/manager'), role, '/app/manager')).includes(href)).toBe(has);
   });
 
   it.each(['client', 'developer', 'partner'] as const)('%s never gets it', (role: Role) => {

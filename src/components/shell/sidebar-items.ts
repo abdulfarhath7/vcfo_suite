@@ -163,9 +163,12 @@ export function withOfficialUpdates(items: NavEntry[]): NavEntry[] {
 }
 
 /**
- * VCFO Assist agents (docs/specs/vcfo-assist-agents/PLAN.md): every staff role gets "Assist runs"
- * at the top of the tools cluster. Clients, partners and the developer console never do. Applied
- * by `RoleSidebar` on top of `sidebarItemsFor`, so the base lists (and their tests) stay as they are.
+ * Card agents (docs/specs/vcfo-assist-agents/PLAN.md, docs/specs/live-portal-browser/MASTER-PLAN.md):
+ * every staff role gets "Agent runs" (the control room, at `/assist-runs` so older links keep
+ * working) at the top of the tools cluster; the super admin and the admin also get "Agent results"
+ * right after it. Clients, partners and the developer console never do. Applied by `RoleSidebar`
+ * on top of `sidebarItemsFor`, so the base lists (and their tests) stay as they are. Settings >
+ * Agents is reached from Firm settings and from the Agent runs page.
  */
 export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string, inDevConsole = false): NavEntry[] {
   if (inDevConsole) return items;
@@ -173,8 +176,9 @@ export function withAssistRuns(items: NavEntry[], role: Role, staffBase: string,
     role === 'super_admin' ? '/app/super' : role === 'admin' ? '/app/admin' : role === 'intern' ? '/app/lead' : role === 'manager' ? staffBase : null;
   if (!base) return items;
   const at = items.findIndex((entry) => isNavSectionBreak(entry) && entry.id === NAV_TOOLS_BREAK.id);
-  const item: NavItem = { to: `${base}/assist-runs`, label: 'Assist runs', icon: Bot, iconTone: TONE.work };
-  return at < 0 ? [...items, item] : [...items.slice(0, at + 1), item, ...items.slice(at + 1)];
+  const added: NavItem[] = [{ to: `${base}/assist-runs`, label: 'Agent runs', icon: Bot, iconTone: TONE.work }];
+  if (role === 'super_admin' || role === 'admin') added.push({ to: `${base}/agent-results`, label: 'Agent results', icon: BarChart3, iconTone: TONE.analytics });
+  return at < 0 ? [...items, ...added] : [...items.slice(0, at + 1), ...added, ...items.slice(at + 1)];
 }
 
 /** The practice block's three labels, in order (R-51). */

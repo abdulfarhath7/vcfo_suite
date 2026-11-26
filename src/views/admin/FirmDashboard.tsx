@@ -33,6 +33,7 @@ import { trendWithLive, useHomeTrends } from '@/hooks/use-home-trends';
 import { useStampHomeTiles } from '@/hooks/use-stamp-home-tiles';
 import { clientRowFacts } from '@/views/admin/clients/client-row';
 import { MyDayCard } from '@/views/my-day/MyDayCard';
+import { AgentsToday } from '@/views/agents/AgentsToday';
 
 type ManagerOption = { id: string; name: string; email: string };
 
@@ -237,6 +238,7 @@ export default function FirmDashboard() {
 
         {/* IDEAS-PLAN F: the caller's ranked plan for today. */}
         <MyDayCard />
+        <AgentsToday />
 
         <AdminPracticeCards practice={practiceQuery.data} loading={practiceQuery.isPending} base="/app/admin" />
 
