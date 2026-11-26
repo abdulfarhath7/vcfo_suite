@@ -10,4 +10,11 @@ export interface CardAgentBodyProps {
   instanceId?: string | null;
   task: CardAgentInfo;
   onClose: () => void;
+  /**
+   * Browser route: the "Before I fill" keys the person chose to type on the portal themselves
+   * ("I type on the portal"); the agent leaves those fields and marks them (G16).
+   */
+  typeOnPortal?: string[];
+  /** The client's name, for the body's own head lines. */
+  companyName?: string;
 }

@@ -30,6 +30,7 @@ import { DocPackHeaderButton } from '@/components/doc-pack/DocPackHeaderButton';
 import { DocPackRailCard } from '@/components/doc-pack/DocPackRailCard';
 import { CopyForAssist } from '@/components/assist-profile/CopyForAssist';
 import { AssistAgentHint } from '@/components/assist-profile/AssistAgentHint';
+import { useCardAgent } from '@/hooks/use-card-agent';
 import { GstApplicationCard } from '@/components/assist-profile/GstApplicationCard';
 import { GST_STEP_ID } from '@/lib/registrations/gst-tracker';
 import { ReopenStepButton } from '@/components/incorporation/ReopenStepButton';
@@ -96,6 +97,9 @@ export default function EngagementStepDetail() {
     checklistState,
     responses,
   } = state;
+
+  // The card robot beside Ask VCFO for this step (staff only; the client route never registers one).
+  useCardAgent({ engagementId: isClientRoute ? null : eng?.id, stepId: item?.id });
 
   if (eng && !isInternRoute && !isClientRoute && eng.slug && engagementParam !== eng.slug) {
     redirect(stepPath(eng, stepParam));

@@ -35,11 +35,12 @@ describe('assistHintForStep', () => {
 });
 
 describe('AssistAgentHint', () => {
-  it('shows the sub-agent, its status and the side panel line', () => {
+  it('points to the robot on the page, with the side panel only as the fallback', () => {
     render(<AssistAgentHint stepId="pre-4" />);
-    expect(screen.getByText('VCFO Assist can fill Name reservation on the portal')).toBeTruthy();
-    expect(screen.getByText('Beta')).toBeTruthy();
-    expect(screen.getByText(/Open the VCFO Assist side panel in Chrome next to the portal/)).toBeTruthy();
+    expect(screen.getByText('Name Reservation Agent is on this page')).toBeTruthy();
+    expect(screen.queryByText('Beta')).toBeNull();
+    expect(screen.getByText(/Name reservation: SPICe\+ Part A\. Click its robot at the bottom right of this page/)).toBeTruthy();
+    expect(screen.getByText(/the VCFO Assist side panel in Chrome next to the portal is the fallback/)).toBeTruthy();
   });
 
   it('renders nothing for a step no agent covers', () => {

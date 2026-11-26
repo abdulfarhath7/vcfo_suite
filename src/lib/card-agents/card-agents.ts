@@ -40,10 +40,10 @@ export function dataSourceOf(task: Pick<AssistSubAgent, 'id' | 'portal' | 'recip
 
 /** The robot's colour: one data token per top-level agent. */
 export const CARD_AGENT_COLOUR: Record<AssistAgentId, string> = {
-  incorporation: 'hsl(var(--data-1))',
-  'post-incorporation': 'hsl(var(--data-2))',
-  registration: 'hsl(var(--data-3))',
-  compliance: 'hsl(var(--data-4))',
+  incorporation: 'oklch(var(--data-1))',
+  'post-incorporation': 'oklch(var(--data-2))',
+  registration: 'oklch(var(--data-3))',
+  compliance: 'oklch(var(--data-4))',
 };
 
 export interface CardAgentLiveInputs {

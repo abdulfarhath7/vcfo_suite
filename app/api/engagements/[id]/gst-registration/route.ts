@@ -29,6 +29,8 @@ export async function GET(_request: Request, context: RouteContext) {
       projectKey: loaded.slug || loaded.engagementId,
       view,
       missing: loaded.result.missing,
+      // The values the tool holds, for the card agent's "Before I fill" Ready list (staff only, as the Assist profile).
+      fields: loaded.result.fields,
       notes: loaded.result.notes,
       documents: loaded.result.documents.map(({ storageKey: _key, ...d }) => d),
       zoho: loaded.zoho,

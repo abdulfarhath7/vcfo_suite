@@ -33,6 +33,7 @@ import { ObligationAboutCards } from '@/views/compliances/obligation-about-cards
 import { LateFeeAmount } from '@/components/compliances/LateFee';
 import { formatRupees, totalLateFees } from '@/lib/compliance/late-fees';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import { useCardAgent } from '@/hooks/use-card-agent';
 import { statHref } from '@/views/compliances/tasks/task-list';
 import {
   dueWithinSoon,
@@ -78,6 +79,9 @@ export function ObligationView({
   const companyId = clients.length === 1 ? clients[0]!.id : normaliseCompanyParam(params.get('company'), clients);
   const scoped = useMemo(() => rowsForCompany(instances, companyId), [instances, companyId]);
   const group = useMemo(() => groupObligations(scoped, register.details, now)[0], [scoped, register.details, now]);
+  // With one client's period in view, that filing's card robot sits beside Ask VCFO (staff shell only).
+  const oneFiling = group?.rows.length === 1 ? group.rows[0]!.row : null;
+  useCardAgent({ engagementId: oneFiling?.engagementId, obligationId, instanceId: oneFiling?.id });
 
   if (register.isPending) {
     return (
