@@ -37,7 +37,8 @@ const ALLOWED: Record<DemoRole, string[]> = {
   client: ['/app/client'],
 };
 
-const ERROR_TEXT = /Something went wrong|A temporary error occurred|This page could not be found|404/;
+// "404" only as a whole word: demo acknowledgement numbers such as ACK404672210 are not error pages.
+const ERROR_TEXT = /Something went wrong|A temporary error occurred|This page could not be found|\b404\b/;
 
 type Row = { role: DemoRole; start: string; link: string; expected: string; actual: string; result: 'Pass' | 'Fail'; why: string };
 const rows: Row[] = [];
