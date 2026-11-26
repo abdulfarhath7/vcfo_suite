@@ -207,6 +207,45 @@ are set.
 - `ignore_changes` on the AUTH_SECRET and Azure secret versions, so an apply never
   puts back a value that was rotated by hand.
 
+## Card agents: live browser and GSTZen (`live-browser.tf`)
+
+Both are off by default (`live_browser_enabled = false`, `gstzen_enabled = false`), so a plan on
+the current state creates nothing. The broker and its rules are in `services/live-browser/README.md`
+and `docs/context/notes/live-browser.md`.
+
+`live_browser_enabled = true` (needs `db_private = true`) adds:
+
+- an Elastic IP on the NAT instance: the one fixed address MCA and GSTN see (proposed G23); the
+  NAT's address changes once, when the EIP attaches;
+- ECR `vcfo-suite-live-browser`, an ECS cluster and one Fargate task (2 vCPU, 4 GB, x86_64) in the
+  private subnets, logs in `/ecs/vcfo-suite-live-browser` for 180 days, a task role with no
+  permissions and an execution role that reads only the shared secret;
+- an internet-facing ALB on `live_browser_domain` (default `live.sbctrack.in`): HTTPS with WebSocket
+  upgrade and a one-hour idle timeout; the stream and PDF routes are open (each needs a Suite-signed
+  token); the control routes are forwarded only from the NAT's EIP (App Runner's egress); everything
+  else gets 403 from the ALB; only the ALB's security group reaches the task;
+- `vcfo-suite/LIVE_BROWSER_SHARED_SECRET` (value by hand), readable by the app role, the broker's
+  execution role and the secret admins;
+- App Runner env `LIVE_BROWSER_URL`, `LIVE_BROWSER_PUBLIC_URL` and the secret
+  `LIVE_BROWSER_SHARED_SECRET`.
+
+`gstzen_enabled = true` adds App Runner env `GSTZEN_BASE_URL`, `GSTZEN_USERNAME` and the secrets
+`vcfo-suite/GSTZEN_PASSWORD` and `vcfo-suite/GSTZEN_API_TOKEN` (values by hand).
+
+```bash
+terraform apply -target=aws_secretsmanager_secret.live_browser_secret -target=aws_acm_certificate.live_browser
+aws secretsmanager put-secret-value --secret-id vcfo-suite/LIVE_BROWSER_SHARED_SECRET --secret-string "$(openssl rand -hex 32)"
+terraform output live_browser_certificate_dns     # add the record at the registrar, wait for ISSUED
+docker build -f services/live-browser/Dockerfile -t "$(terraform output -raw live_browser_ecr_url):latest" .
+docker push "$(terraform output -raw live_browser_ecr_url):latest"
+terraform apply
+terraform output live_browser_alb_dns             # CNAME live.sbctrack.in to it
+```
+
+Then an admin switches the browser route on in Settings > Agents. Nothing fills a live portal
+until the pack is `cs-cleared` and named in `ASSIST_LIVE_PACKS`; until then sessions open the mock
+portal the broker serves inside the task (`live_browser_mock_portal`).
+
 ## Not here yet
 
 - The private network files (VPC connector, NAT instance, private subnets) in git:

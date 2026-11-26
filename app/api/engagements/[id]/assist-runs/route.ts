@@ -1,9 +1,8 @@
-import { createAgentRun, listAgentRuns } from '@/db/repositories/assist-agent-runs';
+import { listAgentRuns } from '@/db/repositories/assist-agent-runs';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { createAgentRunSchema } from '@/lib/assist-agents/api-schemas';
-import { assistHostAllowed, findSubAgent } from '@/lib/assist-agents/catalog';
 import { assistErrorResponse, assistStaffGuard, guardFailure, json, requestSeen } from '@/lib/assist-agents/http';
-import { getRecipe } from '@/lib/assist-agents/registry';
+import { startAgentRunOp } from '@/lib/assist-agents/run-ops';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -25,42 +24,19 @@ export async function GET(_request: Request, context: RouteContext) {
  * POST /api/engagements/[id]/assist-runs — start a run of one sub-agent. The agent, recipe id and
  * recipe version come from the server's catalog, not the body. A live portal host is refused
  * unless the task's own portal pack is live (`cs-cleared` and named in `ASSIST_LIVE_PACKS`; the CS
- * opinion gate); the mock host always works. The run
- * keeps the evidence log: the user, the MCA login label, the device and the client IP.
+ * opinion gate); the mock host always works. The run keeps the evidence log: the user, the MCA
+ * login label, the device and the client IP. The live browser's callback runs the same operation
+ * (`startAgentRunOp`).
  */
 export async function POST(request: Request, context: RouteContext) {
   const guard = await assistStaffGuard();
   if (guard.ok === false) return guardFailure(guard);
   const body = await parseJsonBody(request, createAgentRunSchema);
   if (body.ok === false) return json({ ok: false, error: body.error }, body.status);
-  const sub = findSubAgent(body.data.subAgent);
-  if (!sub) return json({ ok: false, error: 'unknown_sub_agent' }, 400);
-  const recipe = sub.recipeId ? getRecipe(sub.recipeId) : null;
-  if (!recipe) return json({ ok: false, error: 'no_recipe' }, 400);
-  if (body.data.recipeVersion && body.data.recipeVersion !== recipe.version) {
-    return json({ ok: false, error: 'recipe_outdated', recipeVersion: recipe.version }, 409);
-  }
-  if (!assistHostAllowed(body.data.portalHost, process.env, sub.pack ?? recipe.pack ?? null)) return json({ ok: false, error: 'live_portals_disabled' }, 403);
   const { id } = await context.params;
   try {
-    const run = await createAgentRun(
-      guard.ctx,
-      id,
-      {
-        agent: sub.agent,
-        subAgent: sub.id,
-        recipeId: recipe.id,
-        recipeVersion: recipe.version,
-        fieldsTotal: body.data.fieldsTotal ?? recipe.fields.length,
-        state: body.data.state,
-        mcaLoginLabel: body.data.mcaLoginLabel,
-        device: body.data.device,
-        extensionVersion: body.data.extensionVersion,
-      },
-      requestSeen(request),
-    );
-    if (!run) return json({ ok: false, error: 'not_found' }, 404);
-    return json({ ok: true, run }, 201);
+    const out = await startAgentRunOp(guard.ctx, id, body.data, requestSeen(request));
+    return json(out.body, out.status);
   } catch (error) {
     return assistErrorResponse(error, 'create run');
   }

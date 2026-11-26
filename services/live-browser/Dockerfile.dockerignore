@@ -1,0 +1,13 @@
+# Build context is the repository root; the broker image needs only these paths.
+*
+!services/live-browser/package.json
+!services/live-browser/package-lock.json
+!services/live-browser/build.mjs
+!services/live-browser/tsconfig.json
+!services/live-browser/src
+!src/lib/live-browser/contract.ts
+!extensions/vcfo-assist/package.json
+!extensions/vcfo-assist/src
+!extensions/vcfo-assist/mock-portal
+**/node_modules
+**/*.test.ts

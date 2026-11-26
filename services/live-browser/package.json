@@ -1,0 +1,24 @@
+{
+  "name": "vcfo-live-browser",
+  "description": "VCFO Live Browser: one Chromium per live portal session, streamed to VCFO Suite over a WebSocket and driven by the VCFO Assist engine.",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node dist/server.mjs",
+    "dev": "node build.mjs && node dist/server.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "playwright": "1.62.1",
+    "ws": "8.21.2"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.5",
+    "esbuild": "0.28.1",
+    "typescript": "6.0.3",
+    "vitest": "3.2.7"
+  }
+}

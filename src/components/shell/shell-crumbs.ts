@@ -285,6 +285,14 @@ export function shellBreadcrumb(pathname: string): ShellCrumb {
     return trail(internRoute || page === 'engagements' ? 'users' : 'briefcase', segs);
   }
 
+  // The live portal tab (a session id, never shown): it belongs under Assist runs.
+  if (page === 'live-portal') {
+    return trail('briefcase', [
+      { label: 'Assist runs', href: `${base}/assist-runs` },
+      { label: 'Live portal', href: null },
+    ]);
+  }
+
   if (nested && page === 'people') {
     return trail('users', [
       { label: 'People', href: `${base}/people` },
