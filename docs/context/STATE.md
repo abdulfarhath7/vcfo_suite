@@ -232,7 +232,12 @@ Specs and decisions: `docs/specs/live-portal-browser/` (`MASTER-PLAN.md`, `CARD-
 - **Verified (26 Nov 2026, local Postgres):** `npm run check` (typecheck, lint 0 errors, 7,220
   tests); the service's 12 tests; `e2e/live-portal.spec.ts` (3 passing: a client is refused, a lead
   fills SPICe+ Part A on the mock while the person types the login and submits, the card's Start →
-  Before I fill → Fill now opens live mode); the smoke suite (see the commit message).
+  Before I fill → Fill now opens live mode); `next build` (after listing `@napi-rs/canvas` in
+  `serverExternalPackages`, which a clean build of `main` also needed); the smoke suite against
+  `next start`: 154 of 160 pass, and the 6 failures are console errors from this machine, not the
+  change (no MinIO on :9000 for the vault and documents pages; Ask VCFO switched off, so
+  `/api/ask/admin/gaps` and the sources page answer 404). The link audit's `404` pattern now
+  matches only the whole word (a demo acknowledgement number ACK404… tripped it).
 - **Known gaps.** GSTZen not tested against the real API; DSC filing and signed-PDF attach not
   end to end; GSTR-1 uploads from Suite, GSTR-9C save, IMS actions not built; the client
   "Your turn" card is on the client home only; app-wide chart axes are missing because recharts
