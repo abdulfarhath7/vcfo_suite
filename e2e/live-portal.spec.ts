@@ -29,6 +29,7 @@ const SLUG = 'demo-kestrel-robotics';
 const BROKER = process.env.LIVE_BROWSER_URL ?? 'http://127.0.0.1:8091';
 const SECRET = process.env.LIVE_BROWSER_SHARED_SECRET ?? '';
 const LOGIN_LABEL = 'lead-divya.mca@demo.test';
+const CARD_LOGIN_LABEL = 'lead-divya.card@demo.test';
 const SHOTS = process.env.LIVE_PORTAL_SHOTS ?? path.resolve('test-results/live-portal');
 
 let savedBrowser: unknown = undefined;
@@ -74,7 +75,7 @@ test.beforeAll(async () => {
     savedBrowser = rows[0]?.value;
     await db.query(`insert into agent_settings (key, value) values ('browser', $1) on conflict (key) do update set value = excluded.value`, [JSON.stringify({ live: true, pilotUserIds: [] })]);
     // An earlier run's session for the same portal login would refuse this one (one per login, G21).
-    await db.query(`update live_browser_sessions set status = 'cancelled', ended_at = now(), end_reason = 'cancelled' where portal_login_label = $1 and ended_at is null`, [LOGIN_LABEL]);
+    await db.query(`update live_browser_sessions set status = 'cancelled', ended_at = now(), end_reason = 'cancelled' where portal_login_label = any($1) and ended_at is null`, [[LOGIN_LABEL, CARD_LOGIN_LABEL]]);
     const c = await db.query('select checklist_state from engagements where slug = $1', [SLUG]);
     savedChecklist = c.rows[0]?.checklist_state ?? null;
   });
@@ -197,4 +198,45 @@ test('a lead fills SPICe+ Part A in the live browser and the person submits', as
   expect(done.run).toMatchObject({ status: 'done', srn: 'AB1234567' });
   await expect.poll(async () => (await session(page, id)).status, { timeout: 30_000 }).toBe('done');
   expect((await session(page, id)).endReason).toBe('done');
+});
+
+test('the card robot: Start, Before I fill and Fill now open live mode in the page', async ({ page }) => {
+  await login(page, 'lead');
+  await page.goto(`/app/lead/engagements/${SLUG}/step/pre-4`);
+  await page.getByRole('button', { name: /^Open Name Reservation Agent/ }).click({ timeout: 120_000 });
+  const panel = page.locator('#card-agent-panel');
+  await panel.getByRole('button', { name: 'Start' }).click();
+  // Every required item Suite lacks is set to "I type on the portal" (the agent leaves and marks it, G16).
+  await expect(panel.getByRole('button', { name: 'Fill now' })).toBeVisible({ timeout: 60_000 });
+  for (const select of await panel.locator('select[id^="ca-choice-"]').all()) {
+    if (await select.locator('option[value="portal"]').count()) await select.selectOption('portal');
+  }
+  await page.screenshot({ path: path.join(SHOTS, '7-card-before-fill.png') });
+  await panel.getByRole('button', { name: 'Fill now' }).click();
+
+  // The body asks once which portal login is used (a label, never a password), then starts.
+  await panel.getByLabel('Which portal login are you using?').fill(CARD_LOGIN_LABEL);
+  await panel.getByTestId('live-start').click();
+  const live = page.getByTestId('live-mode');
+  await expect(live).toBeVisible({ timeout: 60_000 });
+  await expect(live.getByTestId('live-screen-watch')).toBeVisible();
+  await expect(live.getByTestId('live-frame')).toHaveAttribute('src', /^data:image\/jpeg;base64,/, { timeout: 30_000 });
+  await expect(live.getByTestId('your-turn')).toContainText('Log in', { timeout: 30_000 });
+  await expect(live.getByTestId('go-to-portal')).toBeVisible();
+  await page.screenshot({ path: path.join(SHOTS, '8-card-live-mode.png') });
+
+  // Closing live mode keeps the session; the card keeps a small live preview that opens it again.
+  await live.getByTestId('live-close').click();
+  await expect(live).toBeHidden();
+  const preview = panel.getByTestId('live-preview');
+  await expect(preview).toBeVisible();
+  await page.screenshot({ path: path.join(SHOTS, '9-card-preview.png') });
+  await preview.click();
+  await expect(page.getByTestId('live-mode')).toBeVisible();
+
+  // Stop the session from Suite: the broker closes the browser and the record says why.
+  const sessions = (await (await page.request.get(`/api/live-browser/sessions?engagementId=${await demoEngagementId(SLUG)}&taskId=spice-a`)).json()) as { sessions: Array<{ id: string; open: boolean; portalLoginLabel: string }> };
+  const mine = sessions.sessions.find((x) => x.open && x.portalLoginLabel === CARD_LOGIN_LABEL)!;
+  expect((await page.request.post(`/api/live-browser/sessions/${mine.id}/stop`)).ok()).toBe(true);
+  await expect.poll(async () => (await session(page, mine.id)).status, { timeout: 15_000 }).toBe('cancelled');
 });

@@ -362,7 +362,10 @@ export class LiveSession {
   viewState(): LiveViewState {
     const run = this.engine?.run ?? null;
     const s = this.summary();
-    const page = run ? this.recipe.pages[run.page] : undefined;
+    const page = this.recipe.pages[run?.page ?? 0];
+    // Before the agent plans a page, the rail lists that page's fields as waiting.
+    const planned = fieldViews(run);
+    const fields = planned.length ? planned : (page?.fields ?? []).map((f) => ({ key: f.key, label: f.label, status: 'pending' }));
     return {
       status: this.ended ? this.status : s.status,
       gate: s.gate,
@@ -371,8 +374,8 @@ export class LiveSession {
       page: run?.page ?? 0,
       pageCount: this.recipe.pages.length,
       pageTitle: page?.title ?? null,
-      fields: fieldViews(run),
-      fieldsTotal: s.fieldsTotal,
+      fields,
+      fieldsTotal: planned.length ? s.fieldsTotal : fields.length,
       fieldsDone: s.fieldsDone,
       typing: this.typing,
       paused: this.paused,

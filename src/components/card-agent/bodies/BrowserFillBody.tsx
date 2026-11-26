@@ -24,10 +24,8 @@ import type { CardAgentBodyProps } from './types';
  */
 
 type Props = CardAgentBodyProps & {
-  /** G13: the field keys approved with "Fill now"; omitted means every ready field. */
+  /** G13: the field keys approved with "Fill now"; omitted means every field "Before I fill" showed as ready. */
   approvedFields?: string[];
-  /** Fields the user will type on the portal: the agent leaves and marks them (G16). */
-  typeOnPortal?: string[];
 };
 
 const loginKey = (portal: string | null) => `vcfo.liveLogin.${portal ?? 'portal'}`;
