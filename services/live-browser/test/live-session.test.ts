@@ -223,7 +223,8 @@ describe('live browser session on the mock portal', () => {
 
     // The session ends by itself; the viewers are closed and nothing is kept.
     await until('the end event', () => events().some((e) => e.ended === 'done'), 20_000);
-    expect(broker.sessions.size).toBe(0);
+    // The end event is reported before the browser has closed; the pool slot frees right after.
+    await until('the session leaves the pool', () => broker.sessions.size === 0);
     expect(suite.badSignatures).toBe(0);
     const createdRun = suite.ops.find((o) => o.op === 'createRun');
     expect(createdRun && createdRun.op === 'createRun' && createdRun.body).toMatchObject({ subAgent: 'spice-a', portalHost: '127.0.0.1', mcaLoginLabel: 'lead.mca@firm.test' });

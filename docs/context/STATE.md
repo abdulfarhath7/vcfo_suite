@@ -1,3 +1,5 @@
+Last updated: 2026-11-26 (on `main`, **merged, not deployed**: card agents. A robot on every registration, MCA and compliance card beside Ask VCFO, the "Before I fill" check, GST returns through the GSTZen API with the client's consent OTP, the live portal browser (own service, `services/live-browser/`) with live mode and the portal tab, Agents today, Agent runs, Settings > Agents and Agent results. Everything is OFF until configured and switched on. **Migration `0073_card_agents` (six additive tables) must be applied on RDS and on `vcfo_demo` before the deploy.** See "Card agents" below.)
+
 Last updated: 2026-11-26 (**deployed**: `main` at 5f5e2a67 is live. Demo logins for admin, manager, lead and client on `@vcfosuite.com` now live in their own database `vcfo_demo` on the same RDS instance (created and migrated to 0072, seeded with the three demo companies). The old demo rows were removed from the main database after snapshot `vcfo-pre-demo-db-20261126` and the script's own snapshot (3 projects, 5 profiles). Checked live: each demo role signs in, lists only the three demo companies (the client only Kaveri Analytics) and no real client name appears. Every deploy with a new migration must now also run `npm run db:migrate-demo:prod`.)
 
 Last updated: 2026-11-25 (on `main`, **not committed, not deployed**: PLAN M for Ask VCFO, reading every document. A fetch or "fill X into the app" reads the SharePoint folder, the documents already in the app and any attached files in one drop; a second, targeted read per document puts prose such as the business description (board resolution) and main objects (MOA) on its field with a quote checked against the text; mixed scanned PDFs, Excel formula cells, Word headers and tables, and .eml/.msg emails with attachments are read; three files are read at a time; the card shows each value's file, page and quote. New dependencies postal-mime and @kenjiuno/msgreader. No migration. Notes: `docs/context/notes/ask-do.md` "Reading every document" and `docs/context/notes/sharepoint.md` "The documents in the app join the fetch".)
@@ -179,6 +181,62 @@ Last updated: 2026-11-09 (GST registration (`reg-4`) rebuilt as the GST portal's
 | Receivables update to leaders only | on `main` 23 Nov 2026 (owner's request from the firm's leadership). Send email on the Sheet tab now makes one email, to the sheet's leaders (People ▸ Leaders) only: no partner emails, and no other address in To or Cc. The pop-up refuses anyone else and so does the route (`leaders_only`, `checkSummaryEmails` in `src/lib/receivables/summary-send.ts`). The table has three columns: Client, Amount (₹) and Remarks, one row per invoice under its month band, with the month totals and the total box as before; a foreign invoice shows its INR amount. Remarks are typed in the table in the pop-up and are not saved on the sheet; a received row starts with "Received". The Collections report and the automatic emails are unchanged. No migration. Checked in a browser on the local demo sheet (no email was sent: Outlook is not connected locally). **Deployed 23 Nov 2026**: image `vcfo-suite:f3cbcf0f` (= `:latest`), App Runner deploy SUCCEEDED 16:32 to 16:35 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-8123a5d1`. Gate before deploy: typecheck and lint clean, 6578 tests pass and one fails, `src/jobs/receivables-fx-rates.test.ts` (the rate alert email no longer holds the manager link), which this change does not touch. No signed-in live check was run. |
 | Receivables Send email unblocked | on `main` 23 Nov 2026, **deployed** with the security deposits section (84e515de): image `vcfo-suite:cf91c3b2` (= `:latest`), App Runner deploy SUCCEEDED 18:22 to 18:25 IST, `/login` answers 200; rollback image `vcfo-suite:rollback-f3cbcf0f`. The leaders' email was blocked on its second send of a week, because a received invoice goes to a person once and each one had to be removed by hand. The pop-up now leaves those invoices out when it opens, says how many, and lists them under "Removed from this send"; the warning is one line per invoice. The team's WhatsApp update for emails that wait for approval now says nothing is sent until someone presses Approve in Email log (WhatsApp never approves; a member with "can approve" does, in the tool). Checked in a browser on the local demo sheet with the deposits section; no email was sent. Gate: typecheck and lint clean; `src/jobs/receivables-fx-rates.test.ts` still fails (not touched), and `src/lib/ask/capabilities.test.ts` failed once under load and passes alone. No migration. |
 | Receivables security deposits section | on branch `receivables/sd-section` 23 Nov 2026 (owner's request), **not yet deployed**. The receivables update (Send email on the Sheet tab, leaders only) can carry a separate section, "Security deposits" by default: Client, Status, ETA for closure, Total SD (₹) and SD due now / post signing, with its own heading, its own orange-headed table and its own total row (sum and crore figure), after the receivables total box. The rows are typed or pasted (from Excel, Outlook or a chat) in a folding block at the bottom of the Send email pop-up (`src/views/receivables/manager/compose/DepositsSection.tsx`, state in `use-deposits-draft.ts`); the parser and amount reader are `src/lib/receivables/deposits.ts`. They are not saved on the server: they travel with the send request as `deposits`, and this browser remembers the last rows per sheet. The send route checks them (`checkDeposits` in `summary-send.ts`: title up to 80 characters, up to 50 rows, cells up to 200 characters and the due column 300, amount 0 to 1e13 or null; 400 `deposits_*`), refuses them on the Collections report (`deposits_summary_only`) and draws the section again from the checked rows (`depositsSectionHtml`, `withDepositsSection` in `summary-email.ts`). A partner's email never gets it; the leaders-only check is unchanged. Without deposits the email is byte for byte what it was. The weekly leadership digest and the Templates tab are unchanged. No migration. |
+
+## Card agents (26 Nov 2026, merged to `main`, not deployed)
+
+Specs and decisions: `docs/specs/live-portal-browser/` (`MASTER-PLAN.md`, `CARD-AGENTS.md`,
+`DECISIONS.md`, `GSTZEN.md`, `PLAN.md`). Gotchas: `docs/context/notes/live-browser.md`,
+`docs/context/notes/gstzen.md`.
+
+- **Robots on cards.** `GET /api/card-agents` (staff only) returns the robots of a card (checklist
+  step or obligation) with an honest level: Ready, Practice (mock only), Prepares data, Coming.
+  The dock sits beside the Ask VCFO robot (`src/components/card-agent/`, mounted in
+  `AskShellMount`); one panel opens at a time. Wired into the registration record, the checklist
+  step, the obligation view and the obligation instance page, and onto the Registrations boxes.
+  The catalog (`src/lib/assist-agents/catalog.ts`) gained a robot for every registration step
+  (except POSH, patent and ICDR), the GST returns (`kind: 'api-file'`, hidden from the extension),
+  DPT-3, MSME-1, PF ECR and ESIC.
+- **Before I fill.** Ready, needs confirmation, missing required and optional, with a choice per
+  item (SharePoint, ask the client as a draft request list, Zoho, type it now, I type on the
+  portal, skip). Fill now unlocks only when every required item is present or marked for the
+  portal. Logic: `src/lib/card-agents/before-fill.ts`.
+- **GST returns through GSTZen** (`src/lib/gstzen/`, routes under `app/api/gstzen/`, jobs
+  `gst-return-work`, `gstn-session-refresh`, `gst-notices-daily`). Consent OTP and EVC OTP go to
+  GSTZen inside the request and are never stored. The client types their own OTP on the client
+  home ("Your turn" card). GSTR-3B saves the portal's auto-calculated liability, offsets and files
+  with EVC; GSTR-1 proceeds to file what is on the portal; GSTR-9 saves the auto figures; GSTR-9C
+  files with EVC once the auditor saved it on the portal. DSC filing is "coming". Not yet run
+  against the real or sandbox GSTZen API: three payload details to confirm are in `gstzen.md`.
+- **Live portal browser** (`services/live-browser/`): one Chromium per session, CDP screencast
+  over WebSocket, watch tokens (in the app) and act tokens (the portal tab, the starter or a
+  manager/admin only), the VCFO Assist engine and guards imported from the extension unchanged.
+  Session start checks the kill switch, the deploy config, the route switch, the recipe, the
+  portal host (mock unless the pack is live), one session per portal login and the monthly hours
+  cap. Live mode (`src/views/live-portal/`) and the act page `/app/<role>/live-portal/<id>`.
+  Reaper job `live-browser-reaper`. One node only: a deploy ends open sessions.
+- **Control room and settings.** "Agents today" on the staff homes, Agent runs (the renamed
+  Assist runs page, both routes), Settings > Agents (`/app/{admin,super}/agent-settings`: kill
+  switch, route switches with pilot users, packs read only, limits), Agent results
+  (`/app/{admin,super}/agent-results`, hours saved is an estimate from `minutes-saved.ts`).
+- **Infra.** `infra/live-browser.tf` behind `live_browser_enabled` and `gstzen_enabled` (both
+  off; needs `db_private = true`); App Runner env and secrets wired in `infra/app.tf`. `fmt` and
+  `validate` pass; no `plan` was run.
+- **To go live.** 1. Snapshot RDS, apply `0073_card_agents` on RDS and run
+  `npm run db:migrate-demo:prod`. 2. Deploy. 3. GSTZen: sign the GSP contract, set
+  `GSTZEN_USERNAME` and the secrets `GSTZEN_PASSWORD` (and `GSTZEN_API_TOKEN`), set
+  `gstzen_enabled`, confirm the three payload details on the GSTZen sandbox, then switch the route
+  on for a pilot user in Settings > Agents. 4. Live browser: set `live_browser_enabled`, build and
+  push the image from `services/live-browser/Dockerfile`, set `LIVE_BROWSER_*`, switch the route
+  on for a pilot user; it opens only the mock portal until a pack is `cs-cleared` and listed in
+  `ASSIST_LIVE_PACKS` (CS question 32, firm policy SBC-STD-AI-02).
+- **Verified (26 Nov 2026, local Postgres):** `npm run check` (typecheck, lint 0 errors, 7,220
+  tests); the service's 12 tests; `e2e/live-portal.spec.ts` (3 passing: a client is refused, a lead
+  fills SPICe+ Part A on the mock while the person types the login and submits, the card's Start →
+  Before I fill → Fill now opens live mode); the smoke suite (see the commit message).
+- **Known gaps.** GSTZen not tested against the real API; DSC filing and signed-PDF attach not
+  end to end; GSTR-1 uploads from Suite, GSTR-9C save, IMS actions not built; the client
+  "Your turn" card is on the client home only; app-wide chart axes are missing because recharts
+  2.15 bundles react-is 18 (fix: an npm `overrides` entry for `react-is`).
 
 ## Live portal browser on AWS, phase 0 (25 Nov 2026, docs only, uncommitted)
 
