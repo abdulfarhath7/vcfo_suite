@@ -37,10 +37,13 @@ import { statutoryCalendarAskSync } from '@/jobs/statutory-calendar-ask';
 import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
 import { zohoDiscover, zohoReceivablesSync } from '@/jobs/integrations-zoho';
 import { liveBrowserReaper } from '@/jobs/live-browser-reaper';
+import { gstReturnWork } from '@/jobs/gst-return-work';
+import { gstnSessionRefresh } from '@/jobs/gstn-session-refresh';
+import { gstNoticesDaily } from '@/jobs/gst-notices-daily';
 
 const handlers = serve({
   client: inngest,
-  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askFill, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders, zohoDiscover, zohoReceivablesSync, liveBrowserReaper],
+  functions: [complianceGenerate, complianceRegenerate, announcementFeeds, whatsappSend, askIngest, askDrop, askFill, askIndexRefresh, askIndexSweep, complianceReminders, savedReportsSend, weeklyDigest, kpiSnapshots, staffAlerts, dailyDigest, serviceChecks, devCleanup, complianceTaskReminders, complianceTaskRepeatOnComplete, complianceTaskRepeatSweep, boardMeetingReminders, receivablesFxRates, receivablesRollup, receivablesLeadershipDigest, receivablesApprovalEmails, receivablesEmailPing, watchCheck, watchProcess, watchDailySummary, budgetAlerts, requestListReminders, expiryAlerts, myDayEmail, assistFilingDeadlines, statutoryCalendarAskSync, gstRegistrationStart, fieldAskDelivery, fieldAskReminders, zohoDiscover, zohoReceivablesSync, liveBrowserReaper, gstReturnWork, gstnSessionRefresh, gstNoticesDaily],
 });
 
 /** PLAN H2: a demo event's step runs inside `runInDemo` (src/jobs/demo-route.ts). */

@@ -16,6 +16,8 @@ import { errorMessage, toastError } from '@/lib/toast-errors';
 import { cn } from '@/lib/utils';
 import { useInputsAction, useSubjectInputs } from '@/components/compliances/use-compliance-records';
 import { TrackerCard } from '@/components/compliances/tracker-card';
+import { GstinCheck } from '@/components/gstzen/GstinCheck';
+import { GstNoticesSection } from '@/components/gstzen/GstNoticesSection';
 import { useApp } from '@/context/AppContext';
 import { checklistStateKeyForEngagement } from '@/lib/checklist/checklist-state-key';
 import { uploadMilestoneDocument } from '@/lib/documents/milestone-document-storage';
@@ -88,7 +90,7 @@ export function GstRegistrationTracker({
   const stages = gstStages(values);
   const notice = gstNotice(schedule, values, today, audience);
 
-  const stageProps = { values, canEdit, saving, onSave: save };
+  const stageProps = { values, canEdit, saving, onSave: save, audience };
   const content: Record<GstStageKey, ReactNode> = {
     filing: <FilingStage {...stageProps} />,
     aadhaar: <AadhaarStage {...stageProps} />,
@@ -177,6 +179,8 @@ type StageProps = {
   canEdit: boolean;
   saving: boolean;
   onSave: (patch: Record<string, string | null>, message?: string) => Promise<boolean>;
+  /** Who reads the record; the GSTN check and GST notices show for the firm only. */
+  audience?: 'firm' | 'client';
 };
 
 export const val = (values: Record<string, string | null>, key: string) => (values[key] ?? '').trim();
@@ -366,6 +370,7 @@ function OutcomeStage({
   onSave,
   engagementId,
   certificate,
+  audience,
 }: StageProps & { engagementId?: string; certificate?: ReactNode }) {
   const outcome = gstOutcome(values);
   const [choice, setChoice] = useState<'approved' | 'resubmission' | null>(outcome);
@@ -374,6 +379,15 @@ function OutcomeStage({
   const resubmit = useDraft(values, RESUBMIT_KEYS);
   const { engagements } = useApp();
   const engagement = engagementId ? engagements.find((e) => e.id === engagementId) : undefined;
+
+  const savedGstin = val(values, GST_FIELD.gstin);
+  const gstnTools =
+    audience === 'firm' && engagementId && outcome === 'approved' && GSTIN_RE.test(savedGstin) ? (
+      <>
+        <GstinCheck engagementId={engagementId} gstin={savedGstin} onUseJurisdiction={canEdit ? (j) => void onSave({ [GST_FIELD.jurisdiction]: j }, 'Jurisdiction saved') : undefined} />
+        <GstNoticesSection engagementId={engagementId} />
+      </>
+    ) : null;
 
   if (!canEdit) {
     if (outcome === 'approved') {
@@ -387,6 +401,7 @@ function OutcomeStage({
             ]}
           />
           {certificate}
+          {gstnTools}
         </div>
       );
     }
@@ -463,6 +478,7 @@ function OutcomeStage({
           <SaveRow dirty={approved.dirty || outcome !== 'approved'} saving={saving} onClick={() => void saveApproved()} label="Save approval" />
           {/* The lead uploads REG-06 to the checklist step; the client sees the download once it is on file. */}
           {engagement ? <CertificateUpload engagementId={engagement.id} scopeId={checklistStateKeyForEngagement(engagement)} certificate={certificate} /> : certificate}
+          {gstnTools}
         </>
       ) : choice === 'resubmission' ? (
         <>

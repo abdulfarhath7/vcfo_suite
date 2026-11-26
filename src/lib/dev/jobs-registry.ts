@@ -34,6 +34,9 @@ import { gstRegistrationStart } from '@/jobs/gst-registration-start';
 import { fieldAskDelivery, fieldAskReminders } from '@/jobs/field-ask-emails';
 import { zohoDiscover, zohoReceivablesSync } from '@/jobs/integrations-zoho';
 import { liveBrowserReaper } from '@/jobs/live-browser-reaper';
+import { gstReturnWork } from '@/jobs/gst-return-work';
+import { gstnSessionRefresh } from '@/jobs/gstn-session-refresh';
+import { gstNoticesDaily } from '@/jobs/gst-notices-daily';
 import { describeFunctions } from './parse';
 import type { JobFunction } from './types';
 
@@ -83,5 +86,8 @@ export function registeredJobs(): JobFunction[] {
     zohoDiscover,
     zohoReceivablesSync,
     liveBrowserReaper,
+    gstReturnWork,
+    gstnSessionRefresh,
+    gstNoticesDaily,
   ]);
 }

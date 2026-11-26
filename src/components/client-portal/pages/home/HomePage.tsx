@@ -8,7 +8,8 @@
  * Registrations runs full width. Below 1024px the columns dissolve and `order` sets the phone
  * card order, so phones show the same cards at 390px.
  *
- * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing.
+ * "Message <lead>" (MessagesCard, G-09) sits under What SBC is doing. "Action needed" (YourTurnCard,
+ * card agents screen 8) tops the narrow column while a GST OTP waits for the client.
  *
  * A step row opens the step page (prototype). The compliance buttons open the shared Spectrum
  * drill (`complianceDrill`). Pop-ups: the upload dialog, the timeline editor, the PAN/TAN reveal
@@ -33,6 +34,7 @@ import { AreaCard, CompCard, IdsCard, NextCard, PostIncCard, RegCard, TimelineCa
 import { TimelineEditor } from './TimelineEditor';
 import { MeetingsCard } from './MeetingsCard';
 import { MessagesCard } from './MessagesCard';
+import { YourTurnCard } from './YourTurnCard';
 import { JourneyMap } from './journey/JourneyMap';
 import { UploadDialog } from './UploadDialog';
 import { complianceDrill, dLong, docUrl, type DocItem, type NeedRow } from './derive';
@@ -185,6 +187,7 @@ export function HomePage() {
                 <ActivityCard h={h} className="max-lg:order-[13]" />
               </div>
               <div className={COL}>
+                <YourTurnCard className="max-lg:order-1" />
                 <NeedsCard h={h} onUpload={upload} className="max-lg:order-1" />
                 <NextCard h={h} className="max-lg:order-2" />
                 <CompCard h={h} onOpen={(tab) => h.portal.drill(complianceDrill(h.filings, h.today, h.home?.filings.fyLabel ?? '', tab))} className="max-lg:order-4" />
@@ -206,6 +209,7 @@ export function HomePage() {
               <ActivityCard h={h} className="max-lg:order-8" />
             </div>
             <div className={COL}>
+              <YourTurnCard className="max-lg:order-1" />
               <NeedsCard h={h} onUpload={upload} className="max-lg:order-1" />
               <HoldsCard h={h} className="max-lg:order-3" />
               <AlertsCard h={h} className="max-lg:order-4" />
