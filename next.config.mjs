@@ -114,8 +114,10 @@ const nextConfig = {
   },
   // fs.readFileSync(process.cwd(), 'public/templates/...') is not auto-traced on Vercel.
   // react-pdf ships its own font/layout engine; bundling it breaks at runtime. pdfjs-dist reads
-  // the text of MCA PDFs on the server and loads its worker file by import.
-  serverExternalPackages: ['@react-pdf/renderer', 'unpdf', 'pdfjs-dist'],
+  // the text of MCA PDFs on the server and loads its worker file by import. @napi-rs/canvas is a
+  // native module (a .node binary) that Ask's PDF page reader loads; Turbopack cannot place it in a
+  // chunk ("non-ecmascript placeable asset"), so it must be required at run time instead.
+  serverExternalPackages: ['@react-pdf/renderer', 'unpdf', 'pdfjs-dist', '@napi-rs/canvas'],
   outputFileTracingIncludes: {
     // Pre-2 picks the foreign or an Indian (NOC) template per project.
     '/api/engagements/[id]/board-resolution/generate': [
