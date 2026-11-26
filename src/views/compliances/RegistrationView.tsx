@@ -12,7 +12,8 @@ import type { StepState } from '@/components/ui/step-track';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useApp } from '@/context/AppContext';
 import { getChecklistStepTimelineLabel, getRegistrationPhases } from '@/data/checklist';
-import { adminProjectStepPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
+import { adminProjectPath, adminProjectStepPath, internEngagementPath, internEngagementStepPath } from '@/lib/projects/project-step-path';
+import { registrationRule } from '@/data/registration-rules';
 import { cn } from '@/lib/utils';
 import type { ComplianceScope } from '@/views/compliances/compliance-scope';
 import { daysUntil, isIdentifier } from '@/lib/compliance/spectrum-status';
@@ -136,6 +137,13 @@ export function RegistrationView({
   const stagesDone = marks.filter((m) => m === 'done').length;
   const lateDays = row.word === 'Overdue' && row.dueDate ? -(daysUntil(row.dueDate, now) ?? 0) : 0;
   const kbHref = `${shellBase}/knowledge-bank?q=${encodeURIComponent(row.name)}`;
+  // The project's Questionnaire tab, opened on the first question that decides this registration.
+  const firstQuestion = registrationRule(item.id)?.questions?.[0];
+  const questionnaireHref = `${
+    shellBase === '/app/lead'
+      ? internEngagementPath(engagement)
+      : adminProjectPath(engagement, shellBase === '/app/manager' ? '/app/manager' : '/app/admin')
+  }?tab=questionnaire${firstQuestion ? `&q=${encodeURIComponent(firstQuestion)}` : ''}`;
   const contact = engagement.clientDisplayName?.trim();
   const manager = engagement.managerId ? nameOf(engagement.managerId) : undefined;
   const onIt = [contact, lead, manager].filter(Boolean) as string[];
@@ -288,7 +296,7 @@ export function RegistrationView({
                 Find the SOP in the knowledge bank
               </Link>
             </DashSection>
-            <AppliesCard engagementId={engagement.id} stepId={item.id} companyName={engagement.companyName} notNeeded={row.word === 'Not needed'} />
+            <AppliesCard engagementId={engagement.id} stepId={item.id} companyName={engagement.companyName} notNeeded={row.word === 'Not needed'} questionnaireHref={questionnaireHref} />
             <StartsCard engagementId={engagement.id} stepId={item.id} obligationsBase={`${shellBase}/compliances/obligations`} />
             <DashSection
               title="Renewal"

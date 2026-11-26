@@ -72,3 +72,12 @@ export function obligationRuledOut(obligationId: string, answers: Answers): bool
 export function questionnaireExclusion(answers: Answers): (obligationId: string) => boolean {
   return (obligationId) => obligationRuledOut(obligationId, answers);
 }
+
+/** The obligations a question helps decide, for the "Decides" hint beside each question. */
+export function questionObligationIds(questionId: string): string[] {
+  const ids: string[] = [];
+  for (const [obligationId, groups] of GROUPS) {
+    if (groups.some((g) => g.includes(questionId))) ids.push(obligationId);
+  }
+  return ids;
+}

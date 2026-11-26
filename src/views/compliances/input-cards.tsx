@@ -326,7 +326,20 @@ export function StaffSbcFieldsCard({
 }
 
 /** Why the registration applies, or why it is not needed (S-813). */
-export function AppliesCard({ engagementId, stepId, companyName, notNeeded }: { engagementId: string; stepId: string; companyName: string; notNeeded: boolean }) {
+export function AppliesCard({
+  engagementId,
+  stepId,
+  companyName,
+  notNeeded,
+  questionnaireHref,
+}: {
+  engagementId: string;
+  stepId: string;
+  companyName: string;
+  notNeeded: boolean;
+  /** The project's Questionnaire tab, for the "Not answered" note. */
+  questionnaireHref?: string;
+}) {
   const q = useComplianceStarts(engagementId);
   const rule = q.data?.byStep[stepId];
   if (!rule) return null;
@@ -339,7 +352,7 @@ export function AppliesCard({ engagementId, stepId, companyName, notNeeded }: { 
       flush
       right={
         <InfoButton title={title} label={`${title}: explanation`}>
-          <AppliesExplanation rule={rule} skip={skip} companyName={companyName} />
+          <AppliesExplanation rule={rule} skip={skip} companyName={companyName} questionnaireHref={questionnaireHref} />
         </InfoButton>
       }
     >
@@ -352,10 +365,12 @@ function AppliesExplanation({
   rule,
   skip,
   companyName,
+  questionnaireHref,
 }: {
   rule: NonNullable<ReturnType<typeof useComplianceStarts>['data']>['byStep'][string];
   skip: boolean;
   companyName: string;
+  questionnaireHref?: string;
 }) {
   return (
     <>
@@ -369,7 +384,17 @@ function AppliesExplanation({
             ))}
           </ul>
         ) : (
-          <p className="text-ink-muted">Not answered in the compliance questionnaire</p>
+          <p className="text-ink-muted">
+            Not answered in the compliance questionnaire.
+            {questionnaireHref ? (
+              <>
+                {' '}
+                <Link href={questionnaireHref} className="font-medium text-brand-text hover:underline">
+                  Answer it now
+                </Link>
+              </>
+            ) : null}
+          </p>
         )}
         <p className="text-ink-muted">Rule: {rule.rule}</p>
     </>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateComplianceInstances } from '@/lib/compliance/generate-instances';
-import { obligationRuledOut, questionnaireExclusion } from '@/lib/compliance/questionnaire-applicability';
+import { obligationRuledOut, questionObligationIds, questionnaireExclusion } from '@/lib/compliance/questionnaire-applicability';
 
 const ids = (exclude?: (id: string) => boolean, assumeRegistered = true) =>
   new Set(
@@ -51,5 +51,11 @@ describe('questionnaire applicability', () => {
     expect(less.has('gst-gstr-3b')).toBe(false);
     expect(less.has('gst-gstr-1')).toBe(false);
     expect(less.has('labour-pf-payment')).toBe(true);
+  });
+
+  it('lists the obligations a question decides', () => {
+    expect(questionObligationIds('TAX-01')).toContain('it-tds-payment');
+    expect(questionObligationIds('MSME-02')).toEqual(expect.arrayContaining(['mca-msme-1-apr', 'mca-msme-1-oct']));
+    expect(questionObligationIds('NOT-A-QUESTION')).toEqual([]);
   });
 });

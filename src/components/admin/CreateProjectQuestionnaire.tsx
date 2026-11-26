@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,18 +26,36 @@ function QuestionRow({
   question,
   answers,
   onChange,
+  hint,
+  focused,
 }: {
   question: QuestionnaireQuestion;
   answers: QuestionnaireAnswers;
   onChange: (next: QuestionnaireAnswers) => void;
+  hint?: ReactNode;
+  focused?: boolean;
 }) {
   const value = answers[question.id];
   const set = (next: boolean | number | string | null) =>
     onChange(setAnswer(answers, question.id, next));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focused) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [focused]);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5">
-      <p className="min-w-0 flex-1 text-[13px] leading-snug text-ink">{question.label}</p>
+    <div
+      ref={ref}
+      id={`question-${question.id}`}
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2.5',
+        focused && '-mx-4 bg-highlight-soft px-4',
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] leading-snug text-ink">{question.label}</p>
+        {hint ? <div className="mt-0.5 text-[11.5px] leading-snug text-ink-muted">{hint}</div> : null}
+      </div>
 
       {question.kind === 'boolean' ? (
         <SegmentedPicker
@@ -80,18 +98,35 @@ function QuestionRow({
 }
 
 /**
- * Step 4 — the compliance questionnaire, one tab per lettered section so the
- * whole thing never becomes a long scroll. Conditional questions appear and
- * disappear as their parent is answered.
+ * The compliance questionnaire, one tab per lettered section so the whole thing never becomes a
+ * long scroll. Conditional questions appear and disappear as their parent is answered.
+ *
+ * It is step 4 of the create and edit project form (`layout="tabs"`, sections across the top) and
+ * the Questionnaire tab of the project record (`layout="side"`, sections down the left, see
+ * `src/views/client-record/RecordQuestionnaire.tsx`). `focusQuestionId` opens the section that
+ * holds that question and marks it; `renderHint` adds a muted line under a question.
  */
 export function CreateProjectQuestionnaire({
   answers,
   onChange,
+  layout = 'tabs',
+  focusQuestionId,
+  renderHint,
 }: {
   answers: QuestionnaireAnswers;
   onChange: (next: QuestionnaireAnswers) => void;
+  layout?: 'tabs' | 'side';
+  focusQuestionId?: string | null;
+  renderHint?: (question: QuestionnaireQuestion) => ReactNode;
 }) {
-  const [activeId, setActiveId] = useState(QUESTIONNAIRE_SECTIONS[0].id);
+  const focusSectionId = focusQuestionId
+    ? QUESTIONNAIRE_SECTIONS.find((s) => s.questions.some((q) => q.id === focusQuestionId))?.id
+    : undefined;
+  const [activeId, setActiveId] = useState(focusSectionId ?? QUESTIONNAIRE_SECTIONS[0].id);
+  useEffect(() => {
+    if (focusSectionId) setActiveId(focusSectionId);
+  }, [focusSectionId]);
+  const side = layout === 'side';
   const active = QUESTIONNAIRE_SECTIONS.find((s) => s.id === activeId) ?? QUESTIONNAIRE_SECTIONS[0];
   const questions = visibleQuestions(active, answers);
   const answered = questionnaireProgress(answers).answered;
@@ -129,10 +164,15 @@ export function CreateProjectQuestionnaire({
           )}
         </div>
       ) : null}
+      <div className={cn(side && 'grid gap-4 md:grid-cols-[13rem_minmax(0,1fr)] md:items-start')}>
       <div
         role="tablist"
         aria-label="Questionnaire sections"
-        className="flex flex-wrap gap-1 rounded-lg bg-surface-sunken/40 p-1 ring-1 ring-line/80"
+        aria-orientation={side ? 'vertical' : 'horizontal'}
+        className={cn(
+          'flex gap-1 rounded-lg bg-surface-sunken/40 p-1 ring-1 ring-line/80',
+          side ? 'flex-wrap md:flex-col md:flex-nowrap' : 'flex-wrap',
+        )}
       >
         {QUESTIONNAIRE_SECTIONS.map((section) => {
           const isActive = section.id === active.id;
@@ -145,7 +185,8 @@ export function CreateProjectQuestionnaire({
               aria-selected={isActive}
               onClick={() => setActiveId(section.id)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-t-md px-2.5 py-1.5 text-[12px] transition-colors',
+                'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] transition-colors',
+                side ? 'rounded-md md:justify-between md:text-left' : 'rounded-t-md',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 // GL-03: the shared open-tab look (underline, bold brand text).
                 tabStateClass(isActive),
@@ -171,8 +212,11 @@ export function CreateProjectQuestionnaire({
             question={question}
             answers={answers}
             onChange={onChange}
+            hint={renderHint?.(question)}
+            focused={question.id === focusQuestionId}
           />
         ))}
+      </div>
       </div>
     </div>
   );
