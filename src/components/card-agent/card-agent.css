@@ -1,0 +1,33 @@
+/*
+ * The card agent robot and its corner dock (docs/specs/live-portal-browser/MASTER-PLAN.md
+ * screens 2 and 3). Motion is the VCFO Assist extension's robot (panel.css) with a `ca-` prefix,
+ * so it never meets the extension's or Ask VCFO's own rules.
+ */
+.ca-robot{--robot-face:oklch(var(--surface-raised));overflow:visible;flex:none}
+.ca-robot-antenna{transform-origin:32px 14px}
+.ca-robot-eye{transform-box:fill-box;transform-origin:center}
+.ca-robot-idle .ca-robot-eye{animation:ca-blink 4.2s infinite}
+.ca-robot-idle .ca-robot-antenna{animation:ca-bob 2.6s ease-in-out infinite}
+.ca-robot-working .ca-robot-body{animation:ca-bounce .7s ease-in-out infinite}
+.ca-robot-working .ca-robot-bulb{animation:ca-glow .8s ease-in-out infinite}
+.ca-robot-working .ca-robot-eyes{animation:ca-scan 1.4s ease-in-out infinite}
+.ca-robot-working .ca-robot-gear{animation:ca-glow .5s ease-in-out infinite}
+.ca-robot-blocked{filter:grayscale(.7)}
+@keyframes ca-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes ca-bob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes ca-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes ca-glow{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes ca-scan{0%,100%{transform:translateX(-2px)}50%{transform:translateX(2px)}}
+
+/* The dock: the card robot sits left of the Ask VCFO robot, on the same bottom line as the Ask
+   VCFO pill. It steps aside while the page scrolls or when it would cover a control in a fixed
+   layer (the same rule as the Ask VCFO robot, use-avatar-yield.ts). */
+#card-agent-dock{position:fixed;bottom:0;z-index:40;display:flex;align-items:flex-end;pointer-events:none}
+#card-agent-dock .ca-launch{pointer-events:auto;margin-bottom:clamp(14px,1.25vw + 8px,24px);transition:opacity .2s,transform .2s}
+#card-agent-dock.yield .ca-launch{opacity:0;transform:translateY(8px);pointer-events:none}
+@media (max-width:767px){#card-agent-dock,#card-agent-panel{display:none}}
+
+@media (prefers-reduced-motion: reduce){
+  .ca-robot *,#card-agent-dock .ca-launch{animation:none!important;transition:none!important}
+}
+[data-reduce-motion="true"] .ca-robot *,[data-reduce-motion="true"] #card-agent-dock .ca-launch{animation:none!important;transition:none!important}

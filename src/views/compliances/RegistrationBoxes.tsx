@@ -5,10 +5,16 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, ChevronRight, Eye, EyeOff, Globe2, KeyRound, Landmark, Lightbulb, Receipt, ShieldCheck, Users, type LucideIcon } from 'lucide-react';
 
+import { LevelBadge } from '@/components/card-agent/LevelBadge';
+import { Robot } from '@/components/card-agent/Robot';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useApp } from '@/context/AppContext';
+import { useCardAgentStepLevels } from '@/hooks/use-card-agent';
+import { isAdminOrManager } from '@/lib/auth';
+import type { CardAgentInfo } from '@/lib/card-agents/card-agents';
 import { cn } from '@/lib/utils';
 import { apiFetch } from '@/lib/projects/engagements-db';
 import { AppApiError, toastError, toastSuccess } from '@/lib/toast-errors';
@@ -26,6 +32,9 @@ import type { RegCategory, RegistrationRow } from '@/views/compliances/registrat
  * - Every other registration shows the portal username and password, saved encrypted in the
  *   client credentials workbook.
  * - Labour Registers opens the labour registers page, where the role has one.
+ *
+ * Staff see each box's card robot and what it can do today (MASTER-PLAN screen 2), from
+ * `GET /api/card-agents?stepIds=`. The client never sees a robot.
  */
 
 /** Registrations that keep their own tracker instead of the username and password form. */
@@ -96,12 +105,17 @@ export function RegistrationBoxes({
   labourRegistersHref?: string | null;
 }) {
   const boxes = useMemo(() => boxesOf(rows), [rows]);
+  const { role } = useApp();
+  const robots = useCardAgentStepLevels(
+    boxes.map((b) => b.id),
+    isAdminOrManager(role) || role === 'intern',
+  ).data;
   const [openId, setOpenId] = useState<string | null>(null);
   const open = boxes.find((box) => box.id === openId) ?? null;
   // Labour Registers sits after the FEMA filings, as on the sketch.
   const labourAt = Math.min(boxes.length, FIRST_STEPS.length);
 
-  const tiles = boxes.map((box) => <BoxTile key={box.id} box={box} onOpen={() => setOpenId(box.id)} />);
+  const tiles = boxes.map((box) => <BoxTile key={box.id} box={box} robot={robots?.[box.id]?.[0]} onOpen={() => setOpenId(box.id)} />);
   if (labourRegistersHref) tiles.splice(labourAt, 0, <LabourRegistersTile key="labour-registers" href={labourRegistersHref} />);
 
   return (
@@ -138,7 +152,7 @@ export function RegistrationBoxes({
   );
 }
 
-function BoxTile({ box, onOpen }: { box: RegBox; onOpen: () => void }) {
+function BoxTile({ box, robot, onOpen }: { box: RegBox; robot?: CardAgentInfo; onOpen: () => void }) {
   const look = CATEGORY_LOOK[box.category];
   const pct = box.live > 0 ? Math.round((box.granted / box.live) * 100) : 0;
   return (
@@ -162,6 +176,13 @@ function BoxTile({ box, onOpen }: { box: RegBox; onOpen: () => void }) {
         </span>
         <ChevronRight className="mt-1 h-4 w-4 flex-none text-ink-faint transition-transform group-hover:translate-x-0.5 group-hover:text-brand-text" aria-hidden />
       </span>
+      {robot ? (
+        <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-2">
+          <Robot color={robot.colour} size={22} mood={robot.level === 'coming' ? 'blocked' : 'idle'} />
+          <span className="min-w-0 truncate">{robot.name}</span>
+          <LevelBadge level={robot.level} className="ml-auto" />
+        </span>
+      ) : null}
       <span className="mt-auto flex flex-col gap-1.5">
         <span className="flex items-baseline justify-between text-[12.5px] text-ink-muted">
           <span>

@@ -161,6 +161,16 @@ vi.mock('@/views/compliances/tasks/api', async (orig) => ({
   useMoveTaskDates: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+// The card robots on the Registrations boxes (MASTER-PLAN screen 2): the GST box has one.
+vi.mock('@/hooks/use-card-agent', async () => {
+  const { findSubAgent } = await import('@/lib/assist-agents/catalog');
+  const { toCardAgentInfo } = await import('@/lib/card-agents/card-agents');
+  return {
+    useCardAgent: () => undefined,
+    useCardAgentStepLevels: () => ({ data: { 'reg-4': [toCardAgentInfo(findSubAgent('gst-reg-01')!, 'prepare')] } }),
+  };
+});
+
 vi.mock('@tanstack/react-query', async (orig) => ({
   ...(await orig<typeof import('@tanstack/react-query')>()),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -275,6 +285,7 @@ describe('RegistrationsView', () => {
     search = new URLSearchParams('company=acme');
     render(<RegistrationsView shellBase="/app/manager" scope={scope} />);
     expect(screen.getByRole('tab', { name: 'Boxes' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: /GST Registration/ })).toHaveTextContent('GST Reg AgentPrepares data');
     act(() => screen.getByRole('button', { name: /GST Registration/ }).click());
     const gstDialog = screen.getByRole('dialog');
     expect(within(gstDialog).getByRole('link', { name: /Acme/ }).getAttribute('href')).toBe(
