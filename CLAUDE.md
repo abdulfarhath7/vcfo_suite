@@ -139,6 +139,9 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
+- Card agents (26 Nov 2026, on `main`, not deployed): apply `0073_card_agents` on RDS and run
+  `npm run db:migrate-demo:prod` before the deploy. Everything is off until configured and switched
+  on in Settings > Agents; the steps are in `docs/context/STATE.md`, "Card agents".
 - Deployed 26 Nov 2026: `main` at c54ceeb5 (Ask reads every document: app documents, board resolution, MOA, emails, scans; Fill with drafts, Tally T1, Zoho hub, GST registration, demo logins for
   every role in the separate `vcfo_demo` database, see `docs/context/notes/demo-data.md`); RDS on 0072 (both databases).
   After any new migration run `npm run db:migrate-demo:prod` too. Zoho needs `ZOHO_CLIENT_ID` and the secret
