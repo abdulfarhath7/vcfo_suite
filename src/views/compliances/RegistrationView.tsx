@@ -23,6 +23,7 @@ import { AppliesCard, StaffFromClientCard, StaffSbcFieldsCard, StartsCard } from
 import { registrationChecklist } from '@/data/before-filing';
 import { CertificateButton, RegistrationDatesDialog, renewalLine } from '@/views/compliances/registration-renewal';
 import { useRegistrationFacts } from '@/hooks/use-registration-facts';
+import { useCardAgent } from '@/hooks/use-card-agent';
 import { InfoButton } from '@/components/ui/info-button';
 import { canRecordRegistrationTracker } from '@/lib/registrations/tracker-access';
 import { GstRegistrationTracker, GstScheduleDates } from '@/components/compliances/GstRegistrationTracker';
@@ -99,6 +100,8 @@ export function RegistrationView({
   const facts = engagementId && item ? factsQ.data?.[engagementId]?.[item.id] : undefined;
   const [editing, setEditing] = useState(false);
   const basePath = `${shellBase}/registrations`;
+  // The card robot beside Ask VCFO (staff shell only; nothing for a registration that is not needed).
+  useCardAgent({ engagementId, stepId: row && row.word !== 'Not needed' ? item?.id : null });
 
   if (!engagement || !item || !row) {
     return (

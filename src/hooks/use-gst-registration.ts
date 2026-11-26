@@ -15,6 +15,8 @@ export interface GstRegistrationRead {
   projectKey: string;
   view: GstReadinessView;
   missing: GstMissing[];
+  /** Flat `sourceField` → value the tool holds (the card agent's Ready list). */
+  fields?: Record<string, string | number | boolean>;
   notes: Array<{ key: string; note: string }>;
   documents: Array<{ key: string; label: string; fileName: string; source: string }>;
   zoho: { linked: boolean; name?: string };

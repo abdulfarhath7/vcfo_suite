@@ -44,6 +44,7 @@ import { STAGE_LABEL, dueText, type WorkflowStage } from '@/views/compliances/ta
 import { FilterSelect } from '@/components/ui/native-select';
 import { isAdminOrManager } from '@/lib/auth';
 import { useMayWriteFilings, useRegister } from '@/views/compliances/use-register';
+import { useCardAgent } from '@/hooks/use-card-agent';
 
 
 /** Focus the reason field when the send-back form opens. */
@@ -88,6 +89,8 @@ export function StatDetailView({ basePath, obligationId, instanceId }: { basePat
 
 function StatDetailBody({ basePath, d, now }: { basePath: string; d: StatutoryDetailDto; now: Date }) {
   const { user } = useApp();
+  // This filing's card robot beside Ask VCFO (staff shell only).
+  useCardAgent({ engagementId: d.engagementId, obligationId: d.obligationId, instanceId: d.id });
   const act = useStatutoryAction(d.id);
   const setDays = useSetReminderDays();
   const mayWrite = useMayWriteFilings();
