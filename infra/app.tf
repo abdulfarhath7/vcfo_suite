@@ -246,6 +246,9 @@ locals {
     local.doubletick_env,
     # SharePoint client folders (sharepoint.tf).
     local.sharepoint_env,
+    # Card agents (live-browser.tf): the live browser broker and the GSTZen API. Off by default.
+    local.live_browser_env,
+    local.gstzen_env,
   )
 }
 
@@ -286,6 +289,9 @@ resource "aws_apprunner_service" "app" {
           local.doubletick_secrets,
           # Receivables approval: the hourly clock's secret (cron.tf).
           local.cron_secrets,
+          # Card agents (live-browser.tf): the broker's HMAC key and the GSTZen credentials.
+          local.live_browser_secrets,
+          local.gstzen_secrets,
         )
       }
     }

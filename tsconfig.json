@@ -48,6 +48,7 @@
     "vitest.config.ts",
     "supabase/functions",
     "scripts",
-    "extensions"
+    "extensions",
+    "services"
   ]
 }

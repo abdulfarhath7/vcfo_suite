@@ -22,3 +22,5 @@ Dockerfile
 .dockerignore
 graphify-out
 tools
+# The live browser broker is its own image (services/live-browser/Dockerfile).
+services

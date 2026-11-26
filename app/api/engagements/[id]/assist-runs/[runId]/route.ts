@@ -1,13 +1,7 @@
-import { getAgentRun, updateAgentRun } from '@/db/repositories/assist-agent-runs';
-import { assertEngagementAccess } from '@/db/repositories/engagements';
 import { parseJsonBody } from '@/lib/api/parse-body';
 import { updateAgentRunSchema } from '@/lib/assist-agents/api-schemas';
-import { AssistAgentAccessError } from '@/db/repositories/assist-agent-runs';
-import { assistProfileFor } from '@/lib/api/assist-profile';
-import { resolveDscSigners } from '@/lib/assist-agents/dsc-signers';
 import { assistErrorResponse, assistStaffGuard, guardFailure, isRowId, json, requestSeen } from '@/lib/assist-agents/http';
-import { recordRunSrn } from '@/lib/assist-agents/record-srn';
-import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
+import { getAgentRunOp, updateAgentRunOp } from '@/lib/assist-agents/run-ops';
 
 type RouteContext = { params: Promise<{ id: string; runId: string }> };
 
@@ -18,11 +12,8 @@ export async function GET(_request: Request, context: RouteContext) {
   const { id, runId } = await context.params;
   if (!isRowId(runId)) return json({ ok: false, error: 'not_found' }, 404);
   try {
-    const run = await getAgentRun(guard.ctx, runId);
-    // Compare uuids: the URL may name the engagement by uuid, legacy id or slug.
-    const access = run ? await assertEngagementAccess(guard.ctx, id) : null;
-    if (!run || !access?.ok || engagementDbId(run.engagementId) !== access.dbId) return json({ ok: false, error: 'not_found' }, 404);
-    return json({ ok: true, run });
+    const out = await getAgentRunOp(guard.ctx, id, runId);
+    return json(out.body, out.status);
   } catch (error) {
     return assistErrorResponse(error, 'get run');
   }
@@ -42,25 +33,8 @@ export async function PATCH(request: Request, context: RouteContext) {
   const { id, runId } = await context.params;
   if (!isRowId(runId)) return json({ ok: false, error: 'not_found' }, 404);
   try {
-    const { dscSigners: refs, ...rest } = body.data;
-    // Signer references become names from Suite's own records; the extension never sends a name.
-    let dscSigners;
-    if (refs) {
-      const built = await assistProfileFor(guard.ctx, id);
-      if (built.ok === false) return json({ ok: false, error: 'not_found' }, 404);
-      dscSigners = resolveDscSigners(built.result.profile, refs, { name: guard.ctx.name, email: guard.ctx.email });
-      if (!dscSigners) throw new AssistAgentAccessError('unknown_signer', 400);
-    }
-    const { run, finished, engagementDbId: dbId } = await updateAgentRun(
-      guard.ctx,
-      id,
-      runId,
-      { ...rest, ...(dscSigners ? { dscSigners } : {}) },
-      requestSeen(request),
-    );
-    // The resolved uuid, not `id`: the URL may name the engagement by its slug.
-    const srnWriteBack = finished && run.status === 'done' && run.srn ? await recordRunSrn(guard.ctx, dbId, run.subAgent, run.srn) : undefined;
-    return json({ ok: true, run, ...(srnWriteBack ? { srnWriteBack } : {}) });
+    const out = await updateAgentRunOp(guard.ctx, id, runId, body.data, requestSeen(request));
+    return json(out.body, out.status);
   } catch (error) {
     return assistErrorResponse(error, 'update run');
   }
