@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { warmLiveBrowser } from '@/hooks/use-live-browser';
 import { ArrowLeft, Play, X } from 'lucide-react';
 
 import { useAskOptional } from '@/components/ask/ask-context';
@@ -70,6 +71,12 @@ function PanelBody({
   useEffect(() => {
     ref.current?.focus();
   }, []);
+  // Keep a server browser warm while the panel is open for a robot that can fill (CARD-AGENTS.md,
+  // "one-click start"). Warming never starts a session or opens a portal.
+  const canFill = agents.some((a) => a.route === 'browser' && (a.level === 'practice' || a.level === 'ready'));
+  useEffect(() => {
+    if (canFill) void warmLiveBrowser();
+  }, [canFill]);
 
   const body = (() => {
     if (view.kind === 'before') {

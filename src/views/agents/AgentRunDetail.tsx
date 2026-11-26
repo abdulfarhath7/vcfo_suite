@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import type { AgentRunItem } from '@/lib/card-agents/overview';
+import { portalWindowName } from '@/views/live-portal/attention';
 import { AgentStateChip, ROUTE_LABEL } from './agent-run-parts';
 
 /**
@@ -56,7 +58,11 @@ export function AgentRunDetail({
   /** Opens the VCFO Assist run's evidence log, when the run has one loaded. */
   onOpenEvidence?: (assistRunId: string) => void;
 }) {
+  const pathname = usePathname();
   if (!run) return null;
+  // An open live session can be reopened in its portal tab (the same named window live mode uses).
+  const segment = /^\/app\/([^/]+)\//.exec(pathname ?? '')?.[1];
+  const liveHref = run.source === 'session' && !run.endedAt && segment ? `/app/${segment}/live-portal/${run.rowId}` : null;
   return (
     <Modal
       open
@@ -77,6 +83,11 @@ export function AgentRunDetail({
             <Button variant="outline" size="sm" onClick={() => onOpenEvidence(run.assistRunId!)}>
               Evidence and certifier checks
             </Button>
+          ) : null}
+          {liveHref ? (
+            <Link href={liveHref} target={portalWindowName(run.rowId)} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+              Open the portal again
+            </Link>
           ) : null}
           {run.href ? (
             <Link href={run.href} className={buttonVariants({ size: 'sm' })}>
