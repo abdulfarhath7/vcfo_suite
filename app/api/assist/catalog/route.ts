@@ -17,8 +17,11 @@ import { getFirmSettings } from '@/db/repositories/firm-settings';
 
 const withVersion = <T extends { recipeId: string | null }>(sub: T) => ({ ...sub, recipeVersion: sub.recipeId ? (getRecipe(sub.recipeId)?.version ?? null) : null });
 
+/** API-route tasks (GST returns through the GSP) are not browser work, so the extension never lists them. */
+const forExtension = (node: AssistCatalogNode): boolean => node.type !== 'task' || node.kind !== 'api-file';
+
 function treeWithVersions(node: AssistCatalogNode): unknown {
-  return node.type === 'task' ? withVersion(node) : { ...node, children: node.children.map(treeWithVersions) };
+  return node.type === 'task' ? withVersion(node) : { ...node, children: node.children.filter(forExtension).map(treeWithVersions) };
 }
 
 /**
@@ -35,7 +38,7 @@ export async function GET() {
   if (guard.ok === false) return guardFailure(guard);
   const agents = ASSIST_AGENTS.map((agent) => ({
     ...agent,
-    subAgents: agent.subAgents.map(withVersion),
+    subAgents: agent.subAgents.filter((sub) => sub.kind !== 'api-file').map(withVersion),
   }));
   let firm: { supportEmail: string | null; supportPhone: string | null } = { supportEmail: null, supportPhone: null };
   try {

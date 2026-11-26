@@ -6,13 +6,18 @@ import { ASSIST_AGENTS, ASSIST_CATALOG_TREE, allSubAgents, assistHostAllowed, as
 import { getPack, getRecipe } from './registry';
 
 describe('assist agent catalog', () => {
-  it('has the four agents in order, the sixteen original task ids unchanged, and the tax tasks after them', () => {
+  it('has the four agents in order, the original task ids unchanged, and the card agents added after them', () => {
     expect(ASSIST_AGENTS.map((a) => a.id)).toEqual(['incorporation', 'post-incorporation', 'registration', 'compliance']);
     expect(allSubAgents().map((s) => s.id)).toEqual([
       'spice-a', 'spice-b', 'agile-pro-s', 'emoa', 'eaoa', 'inc-9',
       'inc-20a', 'adt-1',
       'gst-reg-01', 'udyam', 'iec', 'shops-establishment', 'pt',
-      'dir-3-kyc', 'aoc-4', 'mgt-7',
+      // Card agents (docs/specs/live-portal-browser/AGENTS.md): every registration card has its robot.
+      'lut', 'pf-registration', 'esi-registration', 'pan-tan', 'lei', 'trade-licence', 'stpi', 'trademark',
+      'clra', 'icegate', 'trademark-renewal', 'fc-gpr', 'fdi-reporting', 'odi-reporting', 'fla-return', 'fc-trs',
+      'dir-3-kyc', 'aoc-4', 'mgt-7', 'dpt-3', 'msme-1',
+      // GST returns through the GSP API (GSTZEN.md) and the monthly labour filings.
+      'gstr-1', 'gstr-3b', 'gstr-9', 'gstr-9c', 'pf-ecr', 'esic-return',
       'challan-281', 'tds-return-24q-26q', 'form-16', 'challan-280', 'itr',
     ]);
     expect(new Set(allSubAgents().map((s) => s.id)).size).toBe(allSubAgents().length);
@@ -33,8 +38,10 @@ describe('assist agent catalog', () => {
   it('gives every task a pack the registry holds (or none for state portals), a kind and human gates', () => {
     for (const sub of allSubAgents()) {
       if (sub.pack) expect(getPack(sub.pack), sub.id).toBeTruthy();
-      else expect(sub.portal).toBe('state');
-      expect(['portal-fill', 'file-builder', 'challan-prepare']).toContain(sub.kind);
+      // No pack yet: state and other portals with no capture, and API tasks, which use no browser at all.
+      else if (sub.kind === 'api-file') expect(sub.portal).toBe('gst');
+      else expect(['state', 'lei', 'stpi', 'ip-india', 'rbi', 'bank', 'shram-suvidha', 'icegate'], sub.id).toContain(sub.portal);
+      expect(['portal-fill', 'file-builder', 'challan-prepare', 'api-file']).toContain(sub.kind);
       expect(sub.gates.length).toBeGreaterThan(0);
       if (sub.pack) for (const g of sub.gates) expect(getPack(sub.pack)!.gates, `${sub.id} ${g}`).toContain(g);
       if (sub.recipeId) expect(getRecipe(sub.recipeId)!.pack).toBe(sub.pack);
@@ -61,9 +68,9 @@ describe('assist agent catalog', () => {
     for (const sub of allSubAgents()) {
       if (sub.agent === 'compliance') {
         expect(sub.stepId).toBeNull();
-        // The tax tasks have no compliance activity yet.
-        if (sub.activityId) expect(ACTIVITY_SEED.some((a) => a.id === sub.activityId)).toBe(true);
-        else expect(sub.path[1]).toBe('income-tax-tds');
+        // The tax tasks and the annual GST returns have no compliance activity yet.
+        if (sub.activityId) expect(ACTIVITY_SEED.some((a) => a.id === sub.activityId), sub.id).toBe(true);
+        else expect(['income-tax-tds', 'gst-returns'], sub.id).toContain(sub.path[1]);
         continue;
       }
       expect(sub.stepId, sub.id).toMatch(prefix[sub.agent]!);
@@ -88,8 +95,11 @@ describe('assist agent catalog', () => {
       if (sub.recipeId) {
         expect(getRecipe(sub.recipeId)?.subAgent).toBe(sub.id);
         expect(sub.status).not.toBe('later');
+      } else if (sub.kind === 'api-file') {
+        // API tasks need no recipe: they file through the GSP, so they can be beta without one.
+        expect(sub.status, sub.id).toBe('beta');
       } else {
-        expect(sub.status).toBe('later');
+        expect(sub.status, sub.id).toBe('later');
       }
     }
     expect(findSubAgent('spice-a')?.status).toBe('beta');

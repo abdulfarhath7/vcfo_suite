@@ -29,8 +29,31 @@ import { packHasHost, packLive } from './pack';
 
 export type AssistAgentId = 'incorporation' | 'post-incorporation' | 'registration' | 'compliance';
 export type AssistSubAgentStatus = 'ready' | 'beta' | 'later';
-export type AssistPortal = 'mca' | 'gst' | 'udyam' | 'dgft' | 'state' | 'income-tax' | 'traces' | 'protean';
-export type AssistTaskKind = 'portal-fill' | 'file-builder' | 'challan-prepare';
+export type AssistPortal =
+  | 'mca'
+  | 'gst'
+  | 'udyam'
+  | 'dgft'
+  | 'state'
+  | 'income-tax'
+  | 'traces'
+  | 'protean'
+  | 'epfo'
+  | 'esic'
+  | 'icegate'
+  | 'ip-india'
+  | 'rbi'
+  | 'lei'
+  | 'stpi'
+  | 'shram-suvidha'
+  | 'bank';
+/**
+ * `api-file`: no browser. The agent files through an official API (GST returns through the GSP,
+ * GSTZen; `docs/specs/live-portal-browser/GSTZEN.md`). The person still gives every OTP and pays.
+ */
+export type AssistTaskKind = 'portal-fill' | 'file-builder' | 'challan-prepare' | 'api-file';
+/** How a card agent reaches the government: the live browser, an official API, or neither (a file or documents). */
+export type AssistTaskRoute = 'browser' | 'api' | 'none';
 export type AssistTaskGate = 'LOGIN' | 'CAPTCHA' | 'OTP' | 'DSC' | 'SUBMIT' | 'PAY' | 'EVC';
 
 /** One task (the name `AssistSubAgent` is kept: every existing caller means a runnable task). */
@@ -56,6 +79,10 @@ export interface AssistSubAgent {
   srnField?: string;
   /** One plain sentence for the panel, for example who pays a challan. */
   note?: string;
+  /** Compliance register obligations (`src/lib/compliance/obligations-seed.ts`) whose card shows this agent. */
+  obligationIds?: string[];
+  /** The robot's name on the card, for example "GST Reg Agent". Defaults to the title + " agent". */
+  agentName?: string;
   /** Ids from the agent down to this task, for example `['compliance', 'income-tax-tds', 'tds', 'challan-281']`. */
   path: string[];
 }
@@ -88,41 +115,69 @@ const mca = (t: Omit<TaskInput, 'portal' | 'portalHost' | 'pack'>): TreeInput =>
 /** The tree as authored. Each top-level group is an agent (a robot in the panel). */
 const TREE: readonly TreeInput[] = [
   group('incorporation', 'Incorporation', [
-    mca({ id: 'spice-a', title: 'Name reservation', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', stepId: 'pre-4', srnField: SRN_FIELD_ID, gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY'] }),
-    mca({ id: 'spice-b', title: 'Incorporation form', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', stepId: 'pre-10', srnField: SRN_FIELD_ID }),
+    mca({ id: 'spice-a', title: 'Name reservation', agentName: 'Name Reservation Agent', form: 'SPICe+ Part A', status: 'beta', recipeId: 'spice-a', stepId: 'pre-4', srnField: SRN_FIELD_ID, gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'PAY'] }),
+    mca({ id: 'spice-b', title: 'Incorporation form', agentName: 'SPICe+ Agent', form: 'SPICe+ Part B', status: 'beta', recipeId: 'spice-b', stepId: 'pre-10', srnField: SRN_FIELD_ID }),
     // The linked forms are filed with Part B under its SRN, so only Part B writes the SRN back.
-    mca({ id: 'agile-pro-s', title: 'GST, EPFO, ESIC and bank', form: 'AGILE-PRO-S', status: 'beta', recipeId: 'agile-pro-s', stepId: 'pre-10', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT'] }),
-    mca({ id: 'emoa', title: 'Memorandum of association', form: 'e-MoA (INC-33)', status: 'beta', recipeId: 'emoa', stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
-    mca({ id: 'eaoa', title: 'Articles of association', form: 'e-AoA (INC-34)', status: 'beta', recipeId: 'eaoa', stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
-    mca({ id: 'inc-9', title: 'Subscriber and director declaration', form: 'INC-9', status: 'later', recipeId: null, stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
+    mca({ id: 'agile-pro-s', title: 'GST, EPFO, ESIC and bank', agentName: 'AGILE-PRO-S Agent', form: 'AGILE-PRO-S', status: 'beta', recipeId: 'agile-pro-s', stepId: 'pre-10', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT'] }),
+    mca({ id: 'emoa', title: 'Memorandum of association', agentName: 'e-MoA Agent', form: 'e-MoA (INC-33)', status: 'beta', recipeId: 'emoa', stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
+    mca({ id: 'eaoa', title: 'Articles of association', agentName: 'e-AoA Agent', form: 'e-AoA (INC-34)', status: 'beta', recipeId: 'eaoa', stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
+    mca({ id: 'inc-9', title: 'Subscriber and director declaration', agentName: 'INC-9 Agent', form: 'INC-9', status: 'later', recipeId: null, stepId: 'pre-10', gates: ['LOGIN', 'DSC', 'SUBMIT'] }),
   ]),
   group('post-incorporation', 'Post-incorporation', [
-    mca({ id: 'inc-20a', title: 'Commencement of business', form: 'INC-20A', status: 'later', recipeId: null, stepId: 'post-6', srnField: SRN_FIELD_ID }),
-    mca({ id: 'adt-1', title: 'Auditor appointment', form: 'ADT-1', status: 'later', recipeId: null, stepId: 'post-2', srnField: SRN_FIELD_ID }),
+    mca({ id: 'inc-20a', title: 'Commencement of business', agentName: 'INC-20A Agent', form: 'INC-20A', status: 'later', recipeId: null, stepId: 'post-6', srnField: SRN_FIELD_ID }),
+    mca({ id: 'adt-1', title: 'Auditor appointment', agentName: 'ADT-1 Agent', form: 'ADT-1', status: 'later', recipeId: null, stepId: 'post-2', srnField: SRN_FIELD_ID }),
   ]),
   group('registration', 'Registration', [
     // GST, Udyam and IEC return an ARN or a certificate number, not an MCA SRN; it stays on the run.
-    task({ id: 'gst-reg-01', title: 'GST registration', form: 'GST REG-01', status: 'later', portal: 'gst', portalHost: 'reg.gst.gov.in', pack: 'gst', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'EVC', 'SUBMIT'], recipeId: null, stepId: 'reg-4', note: 'The GST portal bars unauthorised interfaces: the agent prepares the data in Suite and you type it, until the CS opinion.' }),
-    task({ id: 'udyam', title: 'Udyam (MSME) registration', form: 'Udyam', status: 'later', portal: 'udyam', portalHost: 'udyamregistration.gov.in', pack: 'udyam', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT'], recipeId: null, stepId: 'reg-15' }),
-    task({ id: 'iec', title: 'Import Export Code', form: 'IEC', status: 'later', portal: 'dgft', portalHost: 'www.dgft.gov.in', pack: 'dgft', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT', 'PAY'], recipeId: null, stepId: 'reg-8' }),
-    task({ id: 'shops-establishment', title: 'Shops and establishments', form: 'Shops and Establishments', status: 'later', portal: 'state', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-9' }),
+    task({ id: 'gst-reg-01', title: 'GST registration', agentName: 'GST Reg Agent', form: 'GST REG-01', status: 'later', portal: 'gst', portalHost: 'reg.gst.gov.in', pack: 'gst', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'EVC', 'SUBMIT'], recipeId: null, stepId: 'reg-4', note: 'The GST portal bars unauthorised interfaces: the agent prepares the data in Suite and you type it, until the CS opinion.' }),
+    task({ id: 'udyam', title: 'Udyam (MSME) registration', agentName: 'Udyam Agent', form: 'Udyam', status: 'later', portal: 'udyam', portalHost: 'udyamregistration.gov.in', pack: 'udyam', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT'], recipeId: null, stepId: 'reg-15' }),
+    task({ id: 'iec', title: 'Import Export Code', agentName: 'IEC Agent', form: 'IEC', status: 'later', portal: 'dgft', portalHost: 'www.dgft.gov.in', pack: 'dgft', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'DSC', 'SUBMIT', 'PAY'], recipeId: null, stepId: 'reg-8' }),
+    task({ id: 'shops-establishment', title: 'Shops and establishments', agentName: 'S&E Agent', form: 'Shops and Establishments', status: 'later', portal: 'state', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-9' }),
     task({ id: 'pt', title: 'Professional tax', form: 'PT registration', status: 'later', portal: 'state', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-7' }),
+    task({ id: 'lut', title: 'Letter of undertaking', agentName: 'LUT Agent', form: 'LUT (RFD-11)', status: 'later', portal: 'gst', portalHost: 'services.gst.gov.in', pack: 'gst', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'EVC', 'DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-5', note: 'Not in the GSP API. The agent prepares the data in Suite until the CS opinion.' }),
+    task({ id: 'pf-registration', title: 'PF registration', agentName: 'PF Agent', form: 'EPFO establishment registration', status: 'later', portal: 'epfo', portalHost: 'unifiedportal-emp.epfindia.gov.in', pack: 'epfo', gates: PORTAL_GATES, recipeId: null, stepId: 'reg-1', note: 'Often done with AGILE-PRO-S at incorporation.' }),
+    task({ id: 'esi-registration', title: 'ESI registration', agentName: 'ESI Agent', form: 'ESIC employer registration', status: 'later', portal: 'esic', portalHost: 'www.esic.gov.in', pack: 'esic', gates: PORTAL_GATES, recipeId: null, stepId: 'reg-3', note: 'Often done with AGILE-PRO-S at incorporation.' }),
+    task({ id: 'pan-tan', title: 'PAN and TAN', agentName: 'PAN TAN Agent', form: 'Form 49A / 49B', status: 'later', portal: 'protean', portalHost: null, pack: 'protean-tin', gates: ['LOGIN', 'DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-2', note: 'Usually issued with SPICe+.' }),
+    task({ id: 'lei', title: 'LEI registration', agentName: 'LEI Agent', form: 'LEI', status: 'later', portal: 'lei', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-6' }),
+    task({ id: 'trade-licence', title: 'Trade licence', agentName: 'Trade Licence Agent', form: 'Trade licence', status: 'later', portal: 'state', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-10', note: 'One recipe per city.' }),
+    task({ id: 'stpi', title: 'STPI registration', agentName: 'STPI Agent', form: 'STPI', status: 'later', portal: 'stpi', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-11' }),
+    task({ id: 'trademark', title: 'Trademark application', agentName: 'Trademark Agent', form: 'TM-A', status: 'later', portal: 'ip-india', portalHost: null, pack: null, gates: ['LOGIN', 'DSC', 'SUBMIT', 'PAY'], recipeId: null, stepId: 'reg-12' }),
+    task({ id: 'clra', title: 'CLRA registration', agentName: 'CLRA Agent', form: 'CLRA', status: 'later', portal: 'shram-suvidha', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-13' }),
+    task({ id: 'icegate', title: 'ICEGATE registration', agentName: 'ICEGATE Agent', form: 'ICEGATE', status: 'later', portal: 'icegate', portalHost: null, pack: null, gates: PORTAL_GATES, recipeId: null, stepId: 'reg-16' }),
+    task({ id: 'trademark-renewal', title: 'Trademark renewal', agentName: 'TM Renewal Agent', form: 'TM-R', status: 'later', portal: 'ip-india', portalHost: null, pack: null, gates: ['LOGIN', 'DSC', 'SUBMIT', 'PAY'], recipeId: null, stepId: 'reg-17' }),
+    task({ id: 'fc-gpr', title: 'FC-GPR filing', agentName: 'FC-GPR Agent', form: 'FC-GPR', status: 'later', portal: 'rbi', portalHost: 'firms.rbi.org.in', pack: null, gates: ['LOGIN', 'CAPTCHA', 'DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-20' }),
+    task({ id: 'fdi-reporting', title: 'FDI reporting', agentName: 'FDI Agent', form: 'Entity master (FIRMS)', status: 'later', portal: 'rbi', portalHost: 'firms.rbi.org.in', pack: null, gates: ['LOGIN', 'CAPTCHA', 'DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-21' }),
+    task({ id: 'odi-reporting', title: 'ODI reporting', agentName: 'ODI Agent', form: 'ODI forms', status: 'later', kind: 'file-builder', portal: 'bank', portalHost: null, pack: null, gates: ['DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-22', note: 'Filed through the AD bank: the agent prepares the documents.' }),
+    task({ id: 'fla-return', title: 'FLA return', agentName: 'FLA Agent', form: 'FLA (FLAIR)', status: 'later', portal: 'rbi', portalHost: 'flair.rbi.org.in', pack: null, gates: ['LOGIN', 'CAPTCHA', 'SUBMIT'], recipeId: null, stepId: 'reg-23', obligationIds: ['fema-fla'] }),
+    task({ id: 'fc-trs', title: 'FC-TRS filing', agentName: 'FC-TRS Agent', form: 'FC-TRS', status: 'later', portal: 'rbi', portalHost: 'firms.rbi.org.in', pack: null, gates: ['LOGIN', 'CAPTCHA', 'DSC', 'SUBMIT'], recipeId: null, stepId: 'reg-24' }),
   ]),
   group('compliance', 'Compliance', [
     group('mca-annual', 'MCA annual filings', [
-      mca({ id: 'dir-3-kyc', title: 'Director KYC', form: 'DIR-3 KYC', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-M08' }),
-      mca({ id: 'aoc-4', title: 'Financial statements', form: 'AOC-4', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-015-AOC4' }),
-      mca({ id: 'mgt-7', title: 'Annual return', form: 'MGT-7 / MGT-7A', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-015-MGT7' }),
+      mca({ id: 'dir-3-kyc', title: 'Director KYC', agentName: 'DIR-3 KYC Agent', form: 'DIR-3 KYC', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-M08', obligationIds: ['mca-dir3-kyc', 'llp-partner-kyc'] }),
+      mca({ id: 'aoc-4', title: 'Financial statements', agentName: 'AOC-4 Agent', form: 'AOC-4', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-015-AOC4', obligationIds: ['mca-aoc-4'] }),
+      mca({ id: 'mgt-7', title: 'Annual return', agentName: 'MGT-7 Agent', form: 'MGT-7 / MGT-7A', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-015-MGT7', obligationIds: ['mca-mgt-7'] }),
+      mca({ id: 'dpt-3', title: 'Return of deposits', agentName: 'DPT-3 Agent', form: 'DPT-3', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-M07', obligationIds: ['mca-dpt-3'] }),
+      mca({ id: 'msme-1', title: 'MSME dues return', form: 'MSME-1', status: 'later', recipeId: null, stepId: null, activityId: 'ACT-014', obligationIds: ['mca-msme-1-apr', 'mca-msme-1-oct'] }),
+    ]),
+    group('gst-returns', 'GST returns', [
+      task({ id: 'gstr-1', title: 'GSTR-1 sales return', agentName: 'GSTR-1 Agent', form: 'GSTR-1', status: 'beta', kind: 'api-file', portal: 'gst', portalHost: null, pack: null, gates: ['OTP', 'EVC', 'DSC'], recipeId: null, stepId: null, activityId: 'ACT-001-1', obligationIds: ['gst-gstr-1'], note: 'Filed through the GSP API (GSTZen). The client gives the consent OTP; the signatory gives the EVC OTP or signs.' }),
+      task({ id: 'gstr-3b', title: 'GSTR-3B monthly return', agentName: 'GSTR-3B Agent', form: 'GSTR-3B', status: 'beta', kind: 'api-file', portal: 'gst', portalHost: null, pack: null, gates: ['OTP', 'PAY', 'EVC', 'DSC'], recipeId: null, stepId: null, activityId: 'ACT-001-3B', obligationIds: ['gst-gstr-3b'], note: 'Filed through the GSP API (GSTZen). You pay any cash due from your own bank.' }),
+      task({ id: 'gstr-9', title: 'GSTR-9 annual return', agentName: 'GSTR-9 Agent', form: 'GSTR-9', status: 'beta', kind: 'api-file', portal: 'gst', portalHost: null, pack: null, gates: ['OTP', 'EVC', 'DSC'], recipeId: null, stepId: null, obligationIds: ['gst-gstr-9'], note: 'Filed through the GSP API (GSTZen).' }),
+      task({ id: 'gstr-9c', title: 'GSTR-9C reconciliation', agentName: 'GSTR-9C Agent', form: 'GSTR-9C', status: 'beta', kind: 'api-file', portal: 'gst', portalHost: null, pack: null, gates: ['OTP', 'DSC'], recipeId: null, stepId: null, note: 'Filed through the GSP API (GSTZen).' }),
+    ]),
+    group('labour', 'Labour', [
+      task({ id: 'pf-ecr', title: 'PF monthly return', agentName: 'PF ECR Agent', form: 'PF ECR', status: 'later', portal: 'epfo', portalHost: 'unifiedportal-emp.epfindia.gov.in', pack: 'epfo', gates: ['LOGIN', 'CAPTCHA', 'PAY', 'SUBMIT'], recipeId: null, stepId: null, activityId: 'ACT-024', obligationIds: ['labour-pf-payment'] }),
+      task({ id: 'esic-return', title: 'ESIC monthly contribution', agentName: 'ESIC Agent', form: 'ESIC contribution', status: 'later', portal: 'esic', portalHost: 'www.esic.gov.in', pack: 'esic', gates: ['LOGIN', 'CAPTCHA', 'PAY', 'SUBMIT'], recipeId: null, stepId: null, activityId: 'ACT-027', obligationIds: ['labour-esi-return'] }),
     ]),
     group('income-tax-tds', 'Income tax & TDS', [
       group('tds', 'TDS', [
-        task({ id: 'challan-281', title: 'Monthly TDS challan', form: 'Challan 281 (ITNS 281)', status: 'later', kind: 'challan-prepare', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'PAY'], recipeId: null, stepId: null, note: 'The agent prepares the challan; you create it and pay it through your own bank.' }),
-        task({ id: 'tds-return-24q-26q', title: 'Quarterly TDS return (24Q / 26Q)', form: '24Q / 26Q', status: 'later', kind: 'file-builder', portal: 'protean', portalHost: null, pack: 'protean-tin', gates: ['LOGIN', 'DSC', 'SUBMIT'], recipeId: null, stepId: null, note: 'A file builder, not a web fill: Suite builds the return file for the FVU; you validate, upload and sign it.' }),
-        task({ id: 'form-16', title: 'Form 16 / 16A download', form: 'Form 16 / 16A', status: 'later', kind: 'portal-fill', portal: 'traces', portalHost: 'www.tdscpc.gov.in', pack: 'traces', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT'], recipeId: null, stepId: null, note: 'The KYC page asks for real deductee details; it stays yours.' }),
+        task({ id: 'challan-281', title: 'Monthly TDS challan', agentName: 'TDS Challan Agent', form: 'Challan 281 (ITNS 281)', status: 'later', kind: 'challan-prepare', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'PAY'], recipeId: null, stepId: null, note: 'The agent prepares the challan; you create it and pay it through your own bank.', obligationIds: ['it-tds-payment'] }),
+        task({ id: 'tds-return-24q-26q', title: 'Quarterly TDS return (24Q / 26Q)', agentName: 'TDS Return Agent', form: '24Q / 26Q', status: 'later', kind: 'file-builder', portal: 'protean', portalHost: null, pack: 'protean-tin', gates: ['LOGIN', 'DSC', 'SUBMIT'], recipeId: null, stepId: null, obligationIds: ['it-tds-return-q1', 'it-tds-return-q2', 'it-tds-return-q3', 'it-tds-return-q4'], note: 'A file builder, not a web fill: Suite builds the return file for the FVU; you validate, upload and sign it.' }),
+        task({ id: 'form-16', title: 'Form 16 / 16A download', agentName: 'Form 16 Agent', form: 'Form 16 / 16A', status: 'later', kind: 'portal-fill', portal: 'traces', portalHost: 'www.tdscpc.gov.in', pack: 'traces', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT'], recipeId: null, stepId: null, obligationIds: ['it-form-16'], note: 'The KYC page asks for real deductee details; it stays yours.' }),
       ]),
       group('income-tax', 'Income tax', [
-        task({ id: 'challan-280', title: 'Advance tax challan', form: 'Challan 280 (ITNS 280)', status: 'later', kind: 'challan-prepare', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'PAY'], recipeId: null, stepId: null, note: 'The agent prepares the challan; you create it and pay it through your own bank.' }),
-        task({ id: 'itr', title: 'Income tax return', form: 'ITR', status: 'later', kind: 'portal-fill', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'EVC'], recipeId: null, stepId: null, note: 'Later. E-verification is always yours.' }),
+        task({ id: 'challan-280', title: 'Advance tax challan', agentName: 'Advance Tax Agent', form: 'Challan 280 (ITNS 280)', status: 'later', kind: 'challan-prepare', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'PAY'], recipeId: null, stepId: null, obligationIds: ['it-advance-tax-q1', 'it-advance-tax-q2', 'it-advance-tax-q3', 'it-advance-tax-q4'], note: 'The agent prepares the challan; you create it and pay it through your own bank.' }),
+        task({ id: 'itr', title: 'Income tax return', agentName: 'ITR Agent', form: 'ITR', status: 'later', kind: 'portal-fill', portal: 'income-tax', portalHost: 'eportal.incometax.gov.in', pack: 'income-tax-efiling', gates: ['LOGIN', 'CAPTCHA', 'OTP', 'SUBMIT', 'EVC'], recipeId: null, stepId: null, obligationIds: ['it-itr'], note: 'Later. E-verification is always yours.' }),
       ]),
     ]),
   ]),
@@ -139,6 +194,18 @@ function build(input: TreeInput, agent: AssistAgentId, parent: string[]): Assist
 
 /** The catalog tree: one group per agent, groups and tasks below, to any depth. */
 export const ASSIST_CATALOG_TREE: readonly AssistCatalogNode[] = TREE.map((t) => build(t, (t as { group: AssistAgentId }).group, []));
+
+/** How a task reaches the government (see `AssistTaskRoute`). */
+export function taskRoute(task: Pick<AssistSubAgent, 'kind'>): AssistTaskRoute {
+  if (task.kind === 'api-file') return 'api';
+  if (task.kind === 'file-builder') return 'none';
+  return 'browser';
+}
+
+/** The robot's name on its card. */
+export function agentNameOf(task: Pick<AssistSubAgent, 'agentName' | 'title'>): string {
+  return task.agentName ?? `${task.title} agent`;
+}
 
 /** Every task under a node, in tree order. */
 export function tasksUnder(node: AssistCatalogNode): AssistSubAgent[] {

@@ -1371,3 +1371,4 @@ export * from './schema-request-lists';
 export * from './schema-expiries';
 export * from './schema-assist';
 export * from './schema-integrations';
+export * from './schema-agents';
