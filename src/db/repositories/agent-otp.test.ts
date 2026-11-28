@@ -169,7 +169,8 @@ describe('scope', () => {
 
 describe('GSTN sessions', () => {
   it('stores status and expiry only', async () => {
-    const expiresAt = new Date('2026-11-26T22:00:00Z');
+    // Relative to now, so the session is still in the future whenever the test runs.
+    const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000);
     results = [[{ gstin: 'G', engagementId: OWN, status: 'active', expiresAt, establishedBy: 'user-client', establishedAt: new Date(), refreshedAt: null, updatedAt: new Date() }]];
     const v = await sessions.recordGstnSessionEstablished(ctx('client'), { engagementId: OWN, gstin: 'G', expiresAt });
     expect(v.status).toBe('active');
