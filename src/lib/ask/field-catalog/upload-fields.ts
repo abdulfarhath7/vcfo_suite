@@ -69,7 +69,8 @@ export function isUploadField(stepId: string, fieldId: string): boolean {
 const FIELD_IDS_BY_DOC: Readonly<Record<string, readonly string[]>> = {
   pan_card: ['panCopyUrl'],
   aadhaar_card: ['aadhaarCopyUrl'],
-  passport: ['passportCopyUrl'],
+  // A director's passport copy, or the KYC of the person signing the board resolution (pre-1).
+  passport: ['passportCopyUrl', 'passportUrl'],
   driving_licence: ['drivingLicenceCopyUrl'],
   utility_bill: ['utilityBillCopyUrl', 'registeredOfficeUtilityBillCopyUrl'],
   incorporation_certificate: ['certificateOfIncorporationFinalUrl', 'certificateOfIncorporationUrl'],
