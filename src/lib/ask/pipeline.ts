@@ -427,7 +427,7 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
     }
     const fillCardId = cardId ?? card!.id;
     try {
-      const started = await startFill(ctx, { changesetId: fillCardId, mode, chip, conversationId, scope });
+      const started = await startFill(ctx, { changesetId: fillCardId, mode, chip, conversationId, scope, everything: true });
       await finish(work(fillStartedLine(started, scope), { runId: started.runId, mode: started.mode }), { path: 'fixed_workflow' });
     } catch (error) {
       if (!(error instanceof FillRefused)) console.error('[ask-vcfo] fill from chat failed', error);

@@ -99,7 +99,7 @@ export async function fillAfterDrop(ctx: AuthContext, input: { conversationId: s
     line = 'The folder gave me nothing to put on a card, so nothing was filled.';
   } else {
     try {
-      const started = await startFill(ctx, { changesetId: group.changesetId, mode: after.mode, ...(after.chip ? { chip: after.chip } : {}), conversationId: input.conversationId, scope });
+      const started = await startFill(ctx, { changesetId: group.changesetId, mode: after.mode, ...(after.chip ? { chip: after.chip } : {}), conversationId: input.conversationId, scope, everything: true });
       fill = { runId: started.runId, mode: started.mode };
       line =
         started.mode === 'manual'

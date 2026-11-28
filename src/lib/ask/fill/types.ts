@@ -98,4 +98,21 @@ export interface FillState {
   scope?: FillScope;
   /** The closing chat message, once written. */
   answerMessageId?: string;
+  /** Set on a "fill everything" run: what the gaps ladder did before the steps were filled. */
+  ladder?: FillLadder;
+  /** The draft board resolution's line for the closing message, once settled. */
+  boardResolutionLine?: string;
+}
+
+/**
+ * What a "fill everything" run found beyond the card (src/lib/ask/fill/everything.ts): answers it
+ * filled as suggestions, answers it put on one draft "Ask client" request list, and answers it left
+ * with the reason. Step ids and field labels only, never a value, because the run state is masked.
+ */
+export interface FillLadder {
+  suggested: Array<{ stepId: string; label: string }>;
+  askClient: Array<{ stepId: string; label: string }>;
+  left: Array<{ stepId: string; label: string; reason: string }>;
+  /** The draft request list for the client, when there was anything to ask. Never sent by the fill. */
+  requestList?: { id: string; href: string; items: number };
 }

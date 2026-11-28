@@ -122,7 +122,7 @@ describe('fillAfterDrop', () => {
       fillAfter: { mode: 'manual', scope },
     });
     expect(await fillAfterDrop(lead, { conversationId: 'conv-1', state })).toEqual({ runId: 'fill-1' });
-    expect(startFill).toHaveBeenCalledWith(lead, { changesetId: 'card-b', mode: 'manual', conversationId: 'conv-1', scope });
+    expect(startFill).toHaveBeenCalledWith(lead, { changesetId: 'card-b', mode: 'manual', conversationId: 'conv-1', scope, everything: true });
     expect(messages).toHaveLength(1);
     expect(messages[0]!.answer.fill).toEqual({ runId: 'fill-1', mode: 'manual' });
     expect(messages[0]!.text).toMatch(/Name Application only/);
