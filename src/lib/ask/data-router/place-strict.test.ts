@@ -112,14 +112,14 @@ describe('two documents give the business description', () => {
     });
     const row = draft.rows.find((r) => r.label === 'Business description')!;
     expect(row.newValue).toBe(RESOLUTION_TEXT);
-    expect(row.checks).toContainEqual({ rule: 'documents_differ', ok: false, message: `Quarry MOA.pdf says ${MAIN_OBJECTS}`, choice: MAIN_OBJECTS });
+    expect(row.checks).toContainEqual({ rule: 'documents_chosen', ok: true, message: `Documents differ: I used Quarry Board Resolution.docx. Quarry MOA.pdf says ${MAIN_OBJECTS}`, choice: MAIN_OBJECTS });
   });
 
   it('offers no choice for a sensitive fact, only the masked difference', async () => {
     const pan = (v: string, id: string) => ({ result: read('pan_card', [value('PAN', v, { person: 'Asha Rao' })]), attachment: file(id, `${id}.jpg`) });
     const { placed } = await placeValues([pan('ABCDE1234F', 'p1'), pan('ABCDE1234G', 'p2')], { instruction: '', provider: chooser({}).provider, model: 'm' });
     const { draft } = planRows({ role: 'intern', engagementId: 'e', companyName: 'Q', engagement: { ownershipType: 'indian' }, state: {} as never, placed, instruction: '' });
-    const differ = draft.rows.flatMap((r) => r.checks).find((c) => c.rule === 'documents_differ')!;
+    const differ = draft.rows.flatMap((r) => r.checks).find((c) => c.rule === 'documents_chosen')!;
     expect(differ.choice).toBeUndefined();
     expect(differ.message).not.toContain('ABCDE1234G');
   });

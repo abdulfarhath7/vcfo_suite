@@ -84,7 +84,8 @@ export interface ChangesetRowProps {
 
 export function ChangesetRow({ row, open, pickable, accepted, editing, pending, onToggle, onEdit, onCancelEdit, onSaveEdit }: ChangesetRowProps) {
   const chip = rowChip(row);
-  const failed = row.checks.filter((check) => !check.ok && check.message);
+  // A failed check, and the note of two documents that differ (code chose one; the other is offered).
+  const failed = row.checks.filter((check) => (!check.ok || check.rule === 'documents_chosen') && check.message);
   const notes = row.error ? [{ text: row.error, choice: undefined }] : failed.map((check) => ({ text: check.message!, choice: check.choice }));
   // Two documents disagree: the other value can be taken with one press, through the row's edit.
   const canChoose = open && row.canDecide && row.editable && row.status !== 'applied' && !editing && !pending;

@@ -12,6 +12,7 @@ import { isRepeatField, repeatEntries, type RepeatEntry } from '@/lib/checklist/
 import { getClientResponseFields } from '@/lib/checklist/checklist-responses';
 import type { ChecklistItemStateSlice } from '@/lib/checklist/checklist-state-key';
 import { checkFormat } from './formats';
+import { compareSources, sourceStrength } from './source-strength';
 import type { ReadValue } from './types';
 
 /**
@@ -141,18 +142,43 @@ function maskedAnswer(entry: CatalogEntry, value: string): string {
   return entry.sensitivity === 'identity' ? maskIdentityValue(value) : value;
 }
 
+const fileWord = (source: RowSource | null | undefined) => (source?.kind === 'attachment' && source.fileName ? source.fileName : 'another source');
+
 /**
- * Two documents on one fact: the card keeps the first value and names the other, with the file it
- * came from, and offers it as a choice unless the field is sensitive. Code never picks.
+ * Two documents on one fact (the fill-everything build): code chooses by the documents' strength
+ * (`compareSources`: signed, final, plain, draft, then the newer one), so a fill never stops to ask.
+ * The chosen row carries a note that names the other file and its value, and offers that value with
+ * "Use this" unless the field is sensitive. The note is `ok`, so it does not hold the row back.
  */
-function differs(entry: CatalogEntry, value: string, source: RowSource | null): RowCheck {
-  const where = source?.kind === 'attachment' && source.fileName ? source.fileName : 'Another source';
+export const DOCUMENTS_CHOSEN = 'documents_chosen';
+
+function chosenNote(entry: CatalogEntry, loser: { value: string; source: RowSource | null }, winner: RowSource | null): RowCheck {
+  const strength = sourceStrength(winner);
+  const why = strength.word ? ` (${strength.word})` : '';
+  const value = maskedAnswer(entry, loser.value);
   return {
-    rule: 'documents_differ',
-    ok: false,
-    message: `${where} says ${maskedAnswer(entry, value)}${/[.!?]$/.test(value) ? '' : '.'}`,
-    ...(entry.sensitivity === 'identity' ? {} : { choice: value }),
+    rule: DOCUMENTS_CHOSEN,
+    ok: true,
+    message: `Documents differ: I used ${fileWord(winner)}${why}. ${fileWord(loser.source)} says ${value}${/[.!?]$/.test(value) ? '' : '.'}`,
+    ...(entry.sensitivity === 'identity' ? {} : { choice: loser.value }),
   };
+}
+
+/**
+ * Settles a second value for a fact already on the card: the stronger document's value stays or
+ * takes the row's place (`replacement` is the row the new value would make), and the other is kept
+ * as a note. Returns nothing; it changes `earlier` in place so the row keeps its place on the card.
+ */
+function settleConflict(entry: CatalogEntry, earlier: ChangesetRowDraft, incoming: { value: string; source: RowSource | null; replacement: ChangesetRowDraft | null }): void {
+  const normal = checkFormat(entry, incoming.value).value;
+  if (earlier.newValue === normal) return;
+  const notes = earlier.checks.filter((check) => check.rule === DOCUMENTS_CHOSEN);
+  if (incoming.replacement && compareSources(incoming.source, earlier.source) > 0) {
+    const lost = { value: typeof earlier.newValue === 'string' ? earlier.newValue : String(earlier.newValue ?? ''), source: earlier.source };
+    Object.assign(earlier, incoming.replacement, { checks: [...incoming.replacement.checks, ...notes, chosenNote(entry, lost, incoming.source)] });
+    return;
+  }
+  earlier.checks.push(chosenNote(entry, { value: normal, source: incoming.source }, earlier.source));
 }
 
 export function planRows(input: PlanInput): PlanResult {
@@ -289,8 +315,7 @@ export function planRows(input: PlanInput): PlanResult {
       if (!made) return false;
       const earlier = seen.get(made.key);
       if (earlier) {
-        const normal = checkFormat(entry, value.value).value;
-        if (earlier.newValue !== normal) earlier.checks.push(differs(entry, normal, source));
+        settleConflict(entry, earlier, { value: value.value, source, replacement: made.row });
         return true;
       }
       if (made.row) {
@@ -314,11 +339,8 @@ export function planRows(input: PlanInput): PlanResult {
     const key = `${use.ref}/${responseKey(target)}`;
     const earlier = seen.get(key);
     if (earlier) {
-      // Two documents on one fact: keep the first and show the difference. Code never picks.
-      const normal = checkFormat(entry, value.value).value;
-      if (earlier.newValue !== normal) {
-        earlier.checks.push(differs(entry, normal, source));
-      }
+      // Two documents on one fact: the stronger one's value is used, the other kept as a note.
+      settleConflict(entry, earlier, { value: value.value, source, replacement: makeRow(target, value.value, earlier.label, source) });
       continue;
     }
     const row = makeRow(target, value.value, displayLabel(subject, person, value.person, entry.label), source);
