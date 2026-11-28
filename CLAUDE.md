@@ -139,9 +139,13 @@ are not part of the port and were not committed. A second pass the same day buil
 
 ## Next steps / known issues
 
-- Card agents (26 Nov 2026, on `main`, not deployed): apply `0073_card_agents` on RDS and run
-  `npm run db:migrate-demo:prod` before the deploy. Everything is off until configured and switched
-  on in Settings > Agents; the steps are in `docs/context/STATE.md`, "Card agents".
+- Deployed 28 Nov 2026: `main` at eaf9e706 (PR #74 "Tweaks": Ask fill everything, Accept all and fill, client
+  Calendar tab, step rail ticks follow Done, no checkbox-like field mark). No migration; RDS stays on 0073.
+  Rollback image `vcfo-suite:28b3e04d`. Fill everything is not yet tried on a live SharePoint folder.
+- Deployed 27 Nov 2026: `main` at 28b3e04d (card agents: card robots, Before I fill, GSTZen GST returns,
+  the live portal browser, Settings > Agents). RDS on 0073 in both databases; snapshot
+  `vcfo-suite-db-before-28b3e04d-2026-11-27-22-32`; rollback image `vcfo-suite:c54ceeb5`. Every agent is off
+  until configured and switched on in Settings > Agents; the go-live steps are in `docs/context/STATE.md`, "Card agents".
 - Deployed 26 Nov 2026: `main` at c54ceeb5 (Ask reads every document: app documents, board resolution, MOA, emails, scans; Fill with drafts, Tally T1, Zoho hub, GST registration, demo logins for
   every role in the separate `vcfo_demo` database, see `docs/context/notes/demo-data.md`); RDS on 0072 (both databases).
   After any new migration run `npm run db:migrate-demo:prod` too. Zoho needs `ZOHO_CLIENT_ID` and the secret
