@@ -12,6 +12,7 @@ import { directFlowRoleLabel } from '@/lib/incorporation/pre-inc-direct-flow';
 import { orderByMcaSection, partBStepDisplayLabel } from '@/lib/checklist/part-b-sections';
 import { recordStepPlace } from '@/views/client-record/RecordHeadParts';
 import { stepCompleteness, type CompletenessEngagement } from '@/lib/incorporation/step-completeness';
+import { shownDoneGate } from '@/lib/incorporation/shown-step-gates';
 
 /**
  * The lead's completeness marks (PLAN K): a step not finished yet that holds answers (or is the one
@@ -62,8 +63,11 @@ export function journeyRailItems(
   // number reads out of sequence. Opening and gating are unchanged.
   const numbered = steps.map((step, index) => ({ step, index }));
   return orderByMcaSection(numbered, (row) => row.step.id).map(({ step, index }) => {
-    const gate = getStepGate(gates, step.id);
     const slice = checklistState[step.id];
+    const gated = getStepGate(gates, step.id);
+    const status = gateDisplayStatus(deriveChecklistDisplayStatus(step.id, step, slice, brSnapshot ?? undefined), gated);
+    // The node, the connector and the "x of y" count follow the status the step's head shows.
+    const gate = shownDoneGate(gated, status);
     const window = windowForStep(schedule, step.id);
     const completeness = completenessFor ? railCompleteness(step.id, gate, checklistState, completenessFor) : null;
     return {
@@ -72,10 +76,7 @@ export function journeyRailItems(
       ...(!viewerIsClient ? { stepCode: partBStepDisplayLabel(step.id, recordStepPlace(step.id)?.code) } : {}),
       item: step,
       gate,
-      status: gateDisplayStatus(
-        deriveChecklistDisplayStatus(step.id, step, slice, brSnapshot ?? undefined),
-        gate,
-      ),
+      status,
       stepNumber: index + 1,
       attachments: getStepAttachmentRequirements(
         step,

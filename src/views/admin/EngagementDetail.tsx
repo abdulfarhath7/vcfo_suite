@@ -69,6 +69,7 @@ import {
   gateDisplayStatus,
   getStepGate,
 } from '@/lib/checklist/checklist-step-gate';
+import { shownStepGates } from '@/lib/incorporation/shown-step-gates';
 import { notifyChecklistStepLocked } from '@/components/incorporation/ChecklistJourneyRail';
 import { RecordTabBar, RecordTabPanel, useRecordTab } from '@/views/client-record/RecordTabs';
 import { RecordStepsCard } from '@/views/client-record/RecordStepsCard';
@@ -181,7 +182,8 @@ export default function EngagementDetail() {
     ? 'intern'
     : checklistGateViewerFrom('admin', user?.role);
   const gates = useMemo(
-    () => gateActiveCatalog(checklistState, gateViewer),
+    // The marks and counts follow each step's own Done, as the step page's head does.
+    () => shownStepGates(gateActiveCatalog(checklistState, gateViewer), checklistState),
     [checklistState, gateViewer],
   );
 
